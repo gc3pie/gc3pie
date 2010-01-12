@@ -254,7 +254,10 @@ class SshLrms(LRMS):
 # todo compare & contrast
         return 
 
-    def submit(self,application,inputfile,outputfile,cores,memory):
+    def submit_job(self, unique_token, application, input_file):
+
+# todo : fix this:
+#    def submit_job(self,application,inputfile,outputfile,cores,memory):
 
         """Submit a job."""
 
@@ -272,11 +275,14 @@ class SshLrms(LRMS):
             print cmd
         except: 
             command_failed(cmd, "the submission to " + frontend + "failed.")
+            # todo: remove sys.exit and use exceptions (here and elsewhere)
             sys.exit(1)
             
         lrms_jobid = get_qsub_jobid(output)
 
-        return lrms_jobid
+        # todo: make sure this works right (look at sergio's block)
+        return [lrms_jobid,retval[1]]
+
 
     def check_status(unique_token):
         """Check status of a job."""
