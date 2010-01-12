@@ -1,0 +1,88 @@
+"""gget docstring.
+
+Called with a single argument: unique token job name.
+
+Example: python gget.py exam01-12345-123456789abcdef-ocikbpra.uzh.ch
+"""
+
+__version__ = 0.1
+
+import logging
+import os
+import sys
+
+from gc3utils.common import *
+import gc3utils.SshResource
+
+def main():
+    
+    configure_logging(10)
+
+# example jobdir:
+# exam01-1262889733.4379079-8f7f5e97f1ce4c775887292c6c1636cd-ocikbpra.uzh.ch
+
+    jobdir = parse_commandline_jobdir_only(sys.argv)
+
+    logging.debug('jobdir: ' + jobdir)
+
+    check_jobdir(jobdir)
+
+    jobdir_split = jobdir.split('-')
+    print jobdir_split
+
+#    resource_name = parse_unique_token(resource_name)
+
+#    parse_settings()
+
+    identity = 'something'
+
+    """
+    Next steps:                                                                                                                                                                                      
+    - parse_settings for machine type
+    - look in jobdir for lrms_output 
+    - parse lrms_output for job_id
+    - look up list of needed files from application config (assume gamess for now)
+    """
+
+    if resource_type == "ssh":
+        resource = SshResource(blah)
+    elif resource_type == "nordugrid":
+        resource = NordugridResource(blah)
+
+
+    try: 
+        check_authentication(identity)
+    except:
+        print "check_authentication failed. exiting."
+        sys.exit(1)
+
+    try:
+#        resource_name.get_results(lrms_jobid, lrms_log) -> return exit code
+        resource_name.get_results(lrms_jobid, lrms_log) -> return exit code
+    except:
+        print "get_results failed. exiting."
+        sys.exit(1)
+
+
+    dump_stdout_stderr_to_unique_token_or_lrms_log()
+
+    check_outputfile() 
+        # according to application config
+        # ...existance?
+        # ...validity?
+
+    """
+    Next steps:
+    - ssh to resource and rsync back needed files.
+    - verify results
+    - ssh to resource and purge old stuff
+    """
+
+    touch jobdir/.finished
+
+    sys.exit(0)
+
+
+
+if __name__ == "__main__":
+    main()

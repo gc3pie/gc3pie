@@ -1,0 +1,151 @@
+#!/usr/bin/env python
+
+__author__="Sergio Maffioletti (sergio.maffioletti@gc3.uzh.ch)"
+__date__="01 January 2009"
+__copyright__="Copyright 2009 2011 Grid Computing Competence Center - UZH/GC3"
+__version__="0.1a"
+
+import logging
+import os
+import sys
+import ConfigParser
+from optparse import OptionParser
+
+from gc3utils.campusgrid import *
+from gc3utils import campusgrid
+#from gc3utils import utils
+
+default_config_file_location="$HOME/.gc3/config"
+#default_job_folder_location="$PWD"
+resource_list = {}
+defaults = {}
+
+def check_file(file_uri):
+  logging.debug('checking %s',file_uri)
+  if ( os.path.exists(file_uri) & os.path.isfile(file_uri) ):
+    return 0
+  else:
+    return 1
+
+def readConfig(config_file_location):
+
+  global defaults
+  global resource_list
+  
+  try:
+    _configFileLocation = os.path.expandvars(config_file_location)
+    if ( os.path.exists(_configFileLocation) & os.path.isfile(_configFileLocation) ):
+      # Config File exists; read it
+      config = ConfigParser.ConfigParser()
+      config.readfp(open(_configFileLocation))
+      defaults = config.defaults()
+      
+      _resources = config.sections()
+      for _resource in _resources:
+        _option_list = config.options(_resource)
+        _resource_options = {}
+        for _option in _option_list:
+          _resource_options[_option] = config.get(_resource,_option)
+        resource_list[_resource] = _resource_options
+      return 0
+    else:
+      logging.error('config file [%s] not found or not readable ',_configFileLocation)
+      raise
+  except:
+    logging.error('Exception in readConfig')
+    raise
+
+def main():
+
+  try:
+    # Parse command line arguments
+
+    _usage = "Usage: %prog [options] jobid"
+    parser = OptionParser(usage=_usage)
+    parser.add_option("-v", action="count", dest="verbosity", default=0, help="Set verbosity level")
+    (options, args) = parser.parse_args()
+
+    # Configure logging service
+    if ( options.verbosity > 5):
+      _logging_level = 10
+    else:
+      _logging_level = (( 6 - options.verbosity) * 10)
+
+    logging.basicConfig(level=_logging_level, format='%(levelname)-8s : %(message)s')
+
+    if len(args) != 1:
+      logging.critical('Command line argument parsing\t\t\t[ failed ]\n\tIncorrect number of arguments; expected 1 got %d ',len(args))
+      parser.print_help()
+      raise
+
+    logging.info('Parsing command line arguments\t\t[ ok ]')
+    
+    lrms_jobid = args[0]
+
+    if ( (os.path.exists(lrms_jobid) == False ) | (os.path.isdir(lrms_jobid) == False) ):
+      logging.critical('Jobid Not valid')
+      raise
+      
+    if ( readConfig(default_config_file_location) != 0 ):
+      logging.critical('Loading configuration file\t\t\t[ failed ]')
+      raise          
+
+    logging.info('Loading configuration file\t\t\t[ ok ]')
+
+    # check lrms_jobid file
+    if ( check_file(lrms_jobid+'/'+defaults['lrms_jobid']) != 0 ):
+      logging.critical('lrms_jobid file argument\t\t\t[ failed ]')
+      raise
+
+    logging.info('lrms_jobid file check\t\t\t[ ok ]')
+
+    _fileHandle = open(lrms_jobid+'/'+defaults['lrms_jobid'],'r')
+    _raw_resource_info = _fileHandle.read()
+    _fileHandle.close()
+
+    _list_resource_info = re.split('\t',_raw_resource_info)
+
+    logging.debug('frontend: [ %s ] jobid: [ %s ]',_list_resource_info[0],_list_resource_info[1])
+    logging.info('reading lrms_jobid info\t\t\t[ ok ]')
+
+    if ( _list_resource_info[0] in resource_list ):
+      logging.debug('Found match for resource [ %s ]',_list_resource_info[0])
+      logging.debug('Creating lrms instance')
+      resource = resource_list[_list_resource_info[0]]
+      if ( resource['type'] == "arc" ):
+        lrms = ArcLrms(resource)
+      elif ( resource['type'] == "ssh"):
+        logging.warning('SSH not yet implemented')
+        raise
+      else:
+        logging.error('Unknown resource type %s',resource['type'])
+        raise
+
+      if ( (lrms.isValid != 1) | (lrms.check_authentication() != 0) ):
+        logging.error('Failed validating lrms instance for resource %s',resource['resource_name'])
+        raise
+
+      logging.info('Init LRMS\t\t\t[ ok ]')
+      _lrms_jobid = _list_resource_info[1]
+      retval = lrms.check_status(_lrms_jobid)
+
+      logging.debug('check_status\t\t\t[ ok ]')
+
+      sys.stdout.write('Job: '+lrms_jobid+'\n')
+      sys.stdout.write(retval+'\n')
+      sys.stdout.flush()
+      
+    else:
+      logging.critical('Failed finding matching resource name [ %s ]',_list_resource_info[0])
+      raise
+
+    return 0
+                
+  except:
+    logging.info('%s',sys.exc_info()[1])
+    sys.stderr.write('Command failure\n')
+    sys.stderr.flush()
+    return 1
+
+if __name__ == "__main__":
+  sys.exit(main())
