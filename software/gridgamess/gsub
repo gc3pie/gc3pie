@@ -11,13 +11,7 @@ import ConfigParser
 from optparse import OptionParser
 import logging
 from gc3utils import campusgrid
-from gc3utils import utils
 from gc3utils.campusgrid import *
-#from gc3utils.Lrms import *
-#from gc3utils.ArcLrmsResource import *
-#from gc3utils.SshResource import *
-#from gc3utils.SshResource import *
-#from gc3utils.gc3loc import *
 
 default_config_file_location="$HOME/.gc3/config"
 default_job_folder_location="$PWD"
