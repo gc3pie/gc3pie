@@ -60,45 +60,51 @@ def main():
 
     logging.info('lrms_jobid file check\t\t\t[ ok ]')
 
-    _fileHandle = open(lrms_jobid+'/'+defaults['lrms_jobid'],'r')
-    _raw_resource_info = _fileHandle.read()
-    _fileHandle.close()
+    # check finished file
+    if ( not check_inputfile(lrms_jobid+'/'+defaults['lrms_finished']) ):
+      _fileHandle = open(lrms_jobid+'/'+defaults['lrms_jobid'],'r')
+      _raw_resource_info = _fileHandle.read()
+      _fileHandle.close()
 
-    _list_resource_info = re.split('\t',_raw_resource_info)
+      _list_resource_info = re.split('\t',_raw_resource_info)
 
-    logging.debug('frontend: [ %s ] jobid: [ %s ]',_list_resource_info[0],_list_resource_info[1])
-    logging.info('reading lrms_jobid info\t\t\t[ ok ]')
+      logging.debug('frontend: [ %s ] jobid: [ %s ]',_list_resource_info[0],_list_resource_info[1])
+      logging.info('reading lrms_jobid info\t\t\t[ ok ]')
 
-    if ( _list_resource_info[0] in resource_list ):
-      logging.debug('Found match for resource [ %s ]',_list_resource_info[0])
-      logging.debug('Creating lrms instance')
-      resource = resource_list[_list_resource_info[0]]
-      if ( resource['type'] == "arc" ):
-        lrms = ArcLrms(resource)
-      elif ( resource['type'] == "ssh"):
-        logging.warning('SSH not yet implemented')
-        raise
+      if ( _list_resource_info[0] in resource_list ):
+        logging.debug('Found match for resource [ %s ]',_list_resource_info[0])
+        logging.debug('Creating lrms instance')
+        resource = resource_list[_list_resource_info[0]]
+        if ( resource['type'] == "arc" ):
+          lrms = ArcLrms(resource)
+        elif ( resource['type'] == "ssh"):
+          logging.warning('SSH not yet implemented')
+          raise
+        else:
+          logging.error('Unknown resource type %s',resource['type'])
+          raise
+
+        if ( (lrms.isValid != 1) | (lrms.check_authentication() != 0) ):
+          logging.error('Failed validating lrms instance for resource %s',resource['resource_name'])
+          raise
+
+        logging.info('Init LRMS\t\t\t[ ok ]')
+        _lrms_jobid = _list_resource_info[1]
+        _lrms_dirfolder = dirname(lrms_jobid)      
+        (retval,lrms_log) = lrms.check_status(_lrms_jobid)
+
+        logging.info('check _status\t\t\t[ ok ]')
+
       else:
-        logging.error('Unknown resource type %s',resource['type'])
+        logging.critical('Failed finding matching resource name [ %s ]',_list_resource_info[0])
         raise
-      if ( (lrms.isValid != 1) | (lrms.check_authentication() != 0) ):
-        logging.error('Failed validating lrms instance for resource %s',resource['resource_name'])
-        raise
-
-      logging.info('Init LRMS\t\t\t[ ok ]')
-      _lrms_jobid = _list_resource_info[1]
-      _lrms_dirfolder = dirname(lrms_jobid)      
-      (retval,lrms_log) = lrms.check_status(_lrms_jobid)
-
-      logging.info('check _status\t\t\t[ ok ]')
-
-      sys.stdout.write('Job: '+lrms_jobid+'\n')
-      sys.stdout.write(retval+'\n')
-      sys.stdout.flush()
 
     else:
-      logging.critical('Failed finding matching resource name [ %s ]',_list_resource_info[0])
-      raise
+      retval = "Status: FINISHED"
+
+    sys.stdout.write('Job: '+lrms_jobid+'\n')
+    sys.stdout.write(retval+'\n')
+    sys.stdout.flush()                          
 
     return 0
                 

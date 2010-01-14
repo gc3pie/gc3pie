@@ -194,10 +194,10 @@ class ArcLrms(LRMS):
             raise
 
     def check_status(self, lrms_jobid):
-        submitted_list = ['ACCEPTING','SUBMITTING','PREPARING']
-        running_list = ['INLRMS:Q','INLRMS:R','EXECUTED']
-        finished_list = ['FINISHED']
-        failed_list = ['FAILED']
+#        submitted_list = ['ACCEPTING','SUBMITTING','PREPARING']
+        running_list = ['INLRMS:Q','INLRMS:R','EXECUTED', 'ACCEPTING','SUBMITTING','PREPARING']
+        finished_list = ['FINISHED', 'FAILED']
+#        failed_list = ['FAILED']
         try:
             # Ready for real submission
             _command = "ngstat "+lrms_jobid
@@ -216,7 +216,7 @@ class ArcLrms(LRMS):
                 raise
 
             if ( jobstatusunknown_pattern in  retval[1] ):
-                jobstatus = "Status: SUBMITTED"
+                jobstatus = "Status: RUNNING"
             elif ( jobstatusok_pattern in retval[1] ):
 
                 # Extracting ARC job status
@@ -225,14 +225,18 @@ class ArcLrms(LRMS):
 
                 logging.debug('lrms_jobstatus\t\t\t[ %s ]',lrms_jobstatus)
 
-                if ( lrms_jobstatus in submitted_list ):
-                    jobstatus = "Status: SUBMITTED"
-                elif ( lrms_jobstatus in running_list ):
+                if ( lrms_jobstatus in running_list ):
                     jobstatus = "Status: RUNNING"
-                elif ( ( lrms_jobstatus in finished_list ) | ( lrms_jobstatus in failed_list )):
-                    lrms_exitcode = re.split(jobexitcode_pattern,retval[1])[1]
-                    lrms_exitcode = re.split("\n",lrms_exitcode)[0]
-                    jobstatus = "Status: FINISHED\nExit Code: "+lrms_exitcode
+                elif ( lrms_jobstatus in finished_list ):
+                    jobstatus = "Status: FINISHED"
+#                if ( lrms_jobstatus in submitted_list ):
+#                    jobstatus = "Status: SUBMITTED"
+#                elif ( lrms_jobstatus in running_list ):
+#                    jobstatus = "Status: RUNNING"
+#                elif ( ( lrms_jobstatus in finished_list ) | ( lrms_jobstatus in failed_list )):
+#                    lrms_exitcode = re.split(jobexitcode_pattern,retval[1])[1]
+#                    lrms_exitcode = re.split("\n",lrms_exitcode)[0]
+#                    jobstatus = "Status: FINISHED\nExit Code: "+lrms_exitcode
                 else:
                     jobstatus = "Status: [ "+lrms_jobstatus+" ]"
 
