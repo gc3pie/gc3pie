@@ -250,9 +250,11 @@ class ArcLrms(LRMS):
         try:
             result_location_pattern="Results stored at "
             
-            _command = "ngget -d 2 -dir "+job_dir+" "+lrms_jobid
+            _command = "ngget -s FINISHED -d 2 -dir "+job_dir+" "+lrms_jobid
 
             logging.debug('Running ARC command [ %s ]',_command)
+
+            job_results_retrieved_pattern = "successfuly downloaded: 0"
 
             retval = commands.getstatusoutput(_command)
             if ( ( retval[0] != 0 ) ):
@@ -274,7 +276,9 @@ class ArcLrms(LRMS):
                         logging.debug('Removing [ %s ]',_result_location_folder)
                         shutil.rmtree(_result_location_folder)
                 logging.info('get_results\t\t\t[ ok ]')
-            return [True,retval[1]]
+                return [True,retval[1]]
+            else:
+                return [False,retval[1]]
         except:
             logging.critical('Failure in retrieving results')
             raise
