@@ -90,22 +90,12 @@ def main():
       _lrms_dirfolder = dirname(lrms_jobid)      
       (retval,lrms_log) = lrms.check_status(_lrms_jobid)
 
-      # dump lrms_log
-      try:
-        logging.debug('Dumping lrms_log and lrms_jobid')
-        _fileHandle = open(lrms_jobid+'/'+defaults['lrms_log'],'a')
-        _fileHandle.write(LRMSLOG_PREFIX)
-        _fileHandle.write(lrms_log+'\n')
-        _fileHandle.close()
-      except:
-        logging.error('Failed dumping lrms_log [ %s ]',sys.exc_info()[1])
-
-      logging.debug('check _status\t\t\t[ ok ]')
+      logging.info('check _status\t\t\t[ ok ]')
 
       sys.stdout.write('Job: '+lrms_jobid+'\n')
       sys.stdout.write(retval+'\n')
       sys.stdout.flush()
-      
+
     else:
       logging.critical('Failed finding matching resource name [ %s ]',_list_resource_info[0])
       raise

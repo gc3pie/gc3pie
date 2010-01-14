@@ -8,6 +8,7 @@ import re
 import md5
 import time
 import ConfigParser
+import shutil
 
 # -----------------------------------------------------
 # Interface design
@@ -196,7 +197,7 @@ class ArcLrms(LRMS):
         submitted_list = ['ACCEPTING','SUBMITTING','PREPARING']
         running_list = ['INLRMS:Q','INLRMS:R','EXECUTED']
         finished_list = ['FINISHED']
-        
+        failed_list = ['FAILED']
         try:
             # Ready for real submission
             _command = "ngstat "+lrms_jobid
@@ -228,8 +229,9 @@ class ArcLrms(LRMS):
                     jobstatus = "Status: SUBMITTED"
                 elif ( lrms_jobstatus in running_list ):
                     jobstatus = "Status: RUNNING"
-                elif ( lrms_jobstatus in finished_list ):
+                elif ( ( lrms_jobstatus in finished_list ) | ( lrms_jobstatus in failed_list )):
                     lrms_exitcode = re.split(jobexitcode_pattern,retval[1])[1]
+                    lrms_exitcode = re.split("\n",lrms_exitcode)[0]
                     jobstatus = "Status: FINISHED\nExit Code: "+lrms_exitcode
                 else:
                     jobstatus = "Status: [ "+lrms_jobstatus+" ]"
@@ -242,6 +244,8 @@ class ArcLrms(LRMS):
 
     def get_results(self,lrms_jobid,job_dir):
         try:
+            result_location_pattern="Results stored at "
+            
             _command = "ngget -d 2 -dir "+job_dir+" "+lrms_jobid
 
             logging.debug('Running ARC command [ %s ]',_command)
@@ -252,6 +256,20 @@ class ArcLrms(LRMS):
                 logging.error("ngget command\t\t[ failed ]")
                 logging.debug(retval[1])
                 raise
+
+            if ( result_location_pattern in retval[1] ):
+                _result_location_folder = re.split(result_location_pattern,retval[1])[1]
+                _result_location_folder = re.split("\n",_result_location_folder)[0]
+                logging.debug('Moving result data from [ %s ]',_result_location_folder)
+                if ( os.path.isdir(_result_location_folder) ):
+                    retval = commands.getstatusoutput("cp -ap "+_result_location_folder+"/* "+job_dir)
+                    if ( retval[0] != 0 ):
+                        logging.error('Failed copying results data from [ %s ] to [ %s ]',_result_location_folder,job_dir)
+                    else:
+                        logging.info('Copying results\t\t[ ok ]')
+                        logging.debug('Removing [ %s ]',_result_location_folder)
+                        shutil.rmtree(_result_location_folder)
+                logging.info('get_results\t\t\t[ ok ]')
             return [True,retval[1]]
         except:
             logging.critical('Failure in retrieving results')
