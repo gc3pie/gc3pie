@@ -288,33 +288,55 @@ class ArcLrms(LRMS):
 #
 
 class SshLrms(LRMS):
+
+    ssh_options = "-o ConnectTimeout=30"
+    ssh_location = "/usr/bin/ssh"
+    scp_location = "/usr/bin/scp"
+    rsync_location = "/usr/bin/rsync"
     
     isValid = 0
     def __init__(self, resource):
-        if ( (resource['frontend'] != "") & (resource['type'] == "ssh") ):
+#        if ( (resource['frontend'] != "") & (resource['type'] == "ssh") ):
+#            self.resource = resource
+#            if ( 'cores' not in resource ):
+#                self.resource['cores'] = "1"
+#            if ( 'memory' not in resource ):
+#                self.resource['memory'] = "1000"
+#            if ( 'walltime' not in resource ):
+#                self.resource['walltime'] = "12"
+#            self.isValid = 1
+
+        if (resource['frontend'] == "ssh"):
             self.resource = resource
-            if ( 'cores' not in resource ):
+            # shall we really set hardcoded defaults ?
+            if ( 'cores' not in self.resource ):
                 self.resource['cores'] = "1"
-            if ( 'memory' not in resource ):
+            if ( 'memory' not in self.resource ):
                 self.resource['memory'] = "1000"
-            if ( 'walltime' not in resource ):
+            if ( 'walltime' not in self.resource ):
                 self.resource['walltime'] = "12"
             self.isValid = 1
 
+
     """Here are the common functions needed in every Resource Class."""
 
-    def check_authentication(username, frontend):
+    def check_authentication(self):
+#    def check_authentication(username, frontend):
         """Make sure ssh to server works."""
-        # ssh username@frontend date 
-        # ssh -o ConnectTimeout=1 idesl2.uzh.ch uname -a
-        testcommand = "uname -a"
-        cmd = ssh_location + " " + ssh_options + " " + username + "@" + frontend + " " + testcommand
-        logging.debug('check_authentication cmd: ' + cmd)
+        
 
         try:
+            # ssh username@frontend date 
+            # ssh -o ConnectTimeout=1 idesl2.uzh.ch uname -a
+            testcommand = "uname -a"
+            cmd = self.ssh_location + " " + self.ssh_options + " " + username + "@" + frontend + " " + testcommand
+            logging.debug('check_authentication cmd: ' + cmd)
+
             os.system(cmd)
+
         except:
-            command_failed(cmd, "the connection test to " + frontend + "failed.")
+            raise
+#            command_failed(cmd, "the connection test to " + frontend + "failed.")
 
         return
 
@@ -335,7 +357,7 @@ class SshLrms(LRMS):
         """ ssh mpackard@ocikbpra.uzh.ch 'cd unique_token ; $qgms_location -n cores input_file """
 # todo remove :
 #        cmd = ssh_location + username + "@" + frontend + "'cd ' + unique_token + " ; $" + qgms_location + " -n " + ncores + " " + input + "'"
-        cmd = "%s %s@%s 'cd %s; $%s -n %s %s'" % (ssh_location, username, frontend, jobdir, qgms_location, ncores, input)
+        cmd = "%s %s@%s 'cd %s; $%s -n %s %s'" % (self.ssh_location, username, frontend, jobdir, qgms_location, ncores, input)
         logging.debug('submit cmd: ' + cmd)
 
         try:
@@ -355,7 +377,7 @@ class SshLrms(LRMS):
 
     def check_status(unique_token):
         """Check status of a job."""
-        cmd = ssh_location + " " + ssh_options + " " + username + "@" + frontend + " " + testcommand
+        cmd = self.ssh_location + " " + ssh_options + " " + username + "@" + frontend + " " + testcommand
         logging.debug('check_status cmd: ' + cmd)
         return 
 
@@ -428,11 +450,6 @@ class SshLrms(LRMS):
         def copyback(options):
             """Copy a file back via rsync or scp.  Prefer rsync."""
 
-        ssh_options = "-o ConnectTimeout=30"
-        ssh_location = "/usr/bin/ssh"
-        scp_location = "/usr/bin/scp"
-        rsync_location = "/usr/bin/rsync"
-
         # if rsync is available, use it 
         # if not, use scp
         # if not, fail
@@ -448,6 +465,7 @@ class SshLrms(LRMS):
 #        else:
 #            logging.critical('Copyback failed.  Exiting.')
 #            sys.exit(1)
+        cmd = self.rsync_location + 'some_options'
 
         logging.debug('copyback cmd: ' + cmd)
         return cmd
