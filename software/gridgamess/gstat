@@ -20,40 +20,7 @@ default_config_file_location="$HOME/.gc3/config"
 resource_list = {}
 defaults = {}
 
-def check_file(file_uri):
-  logging.debug('checking %s',file_uri)
-  if ( os.path.exists(file_uri) & os.path.isfile(file_uri) ):
-    return 0
-  else:
-    return 1
-
-def readConfig(config_file_location):
-
-  global defaults
-  global resource_list
-  
-  try:
-    _configFileLocation = os.path.expandvars(config_file_location)
-    if ( os.path.exists(_configFileLocation) & os.path.isfile(_configFileLocation) ):
-      # Config File exists; read it
-      config = ConfigParser.ConfigParser()
-      config.readfp(open(_configFileLocation))
-      defaults = config.defaults()
-      
-      _resources = config.sections()
-      for _resource in _resources:
-        _option_list = config.options(_resource)
-        _resource_options = {}
-        for _option in _option_list:
-          _resource_options[_option] = config.get(_resource,_option)
-        resource_list[_resource] = _resource_options
-      return 0
-    else:
-      logging.error('config file [%s] not found or not readable ',_configFileLocation)
-      raise
-  except:
-    logging.error('Exception in readConfig')
-    raise
+LRMSLOG_PREFIX='=== gstat =====\n'
 
 def main():
 
@@ -66,12 +33,7 @@ def main():
     (options, args) = parser.parse_args()
 
     # Configure logging service
-    if ( options.verbosity > 5):
-      _logging_level = 10
-    else:
-      _logging_level = (( 6 - options.verbosity) * 10)
-
-    logging.basicConfig(level=_logging_level, format='%(levelname)-8s : %(message)s')
+    configure_logging(options.verbosity)
 
     if len(args) != 1:
       logging.critical('Command line argument parsing\t\t\t[ failed ]\n\tIncorrect number of arguments; expected 1 got %d ',len(args))
@@ -86,15 +48,14 @@ def main():
       logging.critical('Jobid Not valid')
       raise
       
-    if ( readConfig(default_config_file_location) != 0 ):
-      logging.critical('Loading configuration file\t\t\t[ failed ]')
-      raise          
+    # read configuration file
+    (defaults,resource_list) = readConfig(default_config_file_location)
 
     logging.info('Loading configuration file\t\t\t[ ok ]')
 
     # check lrms_jobid file
-    if ( check_file(lrms_jobid+'/'+defaults['lrms_jobid']) != 0 ):
-      logging.critical('lrms_jobid file argument\t\t\t[ failed ]')
+    if ( not check_inputfile(lrms_jobid+'/'+defaults['lrms_jobid']) ):
+      logging.critical('Input file argument\t\t\t[ failed ]')
       raise
 
     logging.info('lrms_jobid file check\t\t\t[ ok ]')
@@ -120,16 +81,26 @@ def main():
       else:
         logging.error('Unknown resource type %s',resource['type'])
         raise
-
       if ( (lrms.isValid != 1) | (lrms.check_authentication() != 0) ):
         logging.error('Failed validating lrms instance for resource %s',resource['resource_name'])
         raise
 
       logging.info('Init LRMS\t\t\t[ ok ]')
       _lrms_jobid = _list_resource_info[1]
-      retval = lrms.check_status(_lrms_jobid)
+      _lrms_dirfolder = dirname(lrms_jobid)      
+      (retval,lrms_log) = lrms.check_status(_lrms_jobid)
 
-      logging.debug('check_status\t\t\t[ ok ]')
+      # dump lrms_log
+      try:
+        logging.debug('Dumping lrms_log and lrms_jobid')
+        _fileHandle = open(lrms_jobid+'/'+defaults['lrms_log'],'a')
+        _fileHandle.write(LRMSLOG_PREFIX)
+        _fileHandle.write(lrms_log+'\n')
+        _fileHandle.close()
+      except:
+        logging.error('Failed dumping lrms_log [ %s ]',sys.exc_info()[1])
+
+      logging.debug('check _status\t\t\t[ ok ]')
 
       sys.stdout.write('Job: '+lrms_jobid+'\n')
       sys.stdout.write(retval+'\n')

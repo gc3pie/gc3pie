@@ -1,88 +1,122 @@
-"""gget docstring.
+#!/usr/bin/env python
 
-Called with a single argument: unique token job name.
-
-Example: python gget.py exam01-12345-123456789abcdef-ocikbpra.uzh.ch
-"""
-
-__version__ = 0.1
+__author__="Sergio Maffioletti (sergio.maffioletti@gc3.uzh.ch)"
+__date__="01 January 2009"
+__copyright__="Copyright 2009 2011 Grid Computing Competence Center - UZH/GC3"
+__version__="0.1a"
 
 import logging
 import os
 import sys
+from optparse import OptionParser
 
-from gc3utils.common import *
-import gc3utils.SshResource
+from gc3utils.campusgrid import *
+from gc3utils import campusgrid
+
+default_config_file_location="$HOME/.gc3/config"
+resource_list = {}
+defaults = {}
+
+LRMSLOG_PREFIX='=== gget ===\n'
 
 def main():
+
+  try:
+    # Parse command line arguments
+
+    _usage = "Usage: %prog [options] jobid"
+    parser = OptionParser(usage=_usage)
+    parser.add_option("-v", action="count", dest="verbosity", default=0, help="Set verbosity level")
+    (options, args) = parser.parse_args()
+
+    # Configure logging service
+    configure_logging(options.verbosity)
+
+    if len(args) != 1:
+      logging.critical('Command line argument parsing\t\t\t[ failed ]\n\tIncorrect number of arguments; expected 1 got %d ',len(args))
+      parser.print_help()
+      raise
+
+    logging.info('Parsing command line arguments\t\t[ ok ]')
     
-    configure_logging(10)
+    lrms_jobid = args[0]
 
-# example jobdir:
-# exam01-1262889733.4379079-8f7f5e97f1ce4c775887292c6c1636cd-ocikbpra.uzh.ch
+    if ( (os.path.exists(lrms_jobid) == False ) | (os.path.isdir(lrms_jobid) == False) ):
+      logging.critical('Jobid Not valid')
+      raise
+      
+    # read configuration file
+    (defaults,resource_list) = readConfig(default_config_file_location)
 
-    jobdir = parse_commandline_jobdir_only(sys.argv)
+    logging.info('Loading configuration file\t\t\t[ ok ]')
 
-    logging.debug('jobdir: ' + jobdir)
+    # check lrms_jobid file
+    if ( not check_inputfile(lrms_jobid+'/'+defaults['lrms_jobid']) ):
+      logging.critical('Invalid jobid\t\t\t[ failed ]')
+      raise
 
-    check_jobdir(jobdir)
+    logging.info('lrms_jobid file check\t\t\t[ ok ]')
 
-    jobdir_split = jobdir.split('-')
-    print jobdir_split
+    _fileHandle = open(lrms_jobid+'/'+defaults['lrms_jobid'],'r')
+    _raw_resource_info = _fileHandle.read()
+    _fileHandle.close()
 
-#    resource_name = parse_unique_token(resource_name)
+    _list_resource_info = re.split('\t',_raw_resource_info)
 
-#    parse_settings()
+    logging.debug('frontend: [ %s ] jobid: [ %s ]',_list_resource_info[0],_list_resource_info[1])
+    logging.info('reading lrms_jobid info\t\t\t[ ok ]')
 
-    identity = 'something'
+    if ( _list_resource_info[0] in resource_list ):
+      logging.debug('Found match for resource [ %s ]',_list_resource_info[0])
+      logging.debug('Creating lrms instance')
+      resource = resource_list[_list_resource_info[0]]
+      if ( resource['type'] == "arc" ):
+        lrms = ArcLrms(resource)
+      elif ( resource['type'] == "ssh"):
+        logging.warning('SSH not yet implemented')
+        raise
+      else:
+        logging.error('Unknown resource type %s',resource['type'])
+        raise
+      if ( (lrms.isValid != 1) | (lrms.check_authentication() != 0) ):
+        logging.error('Failed validating lrms instance for resource %s',resource['resource_name'])
+        raise
 
-    """
-    Next steps:                                                                                                                                                                                      
-    - parse_settings for machine type
-    - look in jobdir for lrms_output 
-    - parse lrms_output for job_id
-    - look up list of needed files from application config (assume gamess for now)
-    """
+      logging.info('Init LRMS\t\t\t[ ok ]')
+      _lrms_jobid = _list_resource_info[1]
+      #_lrms_dirfolder = dirname(lrms_jobid)
+      (retval,lrms_log) = lrms.get_results(_lrms_jobid,lrms_jobid)
 
-    if resource_type == "ssh":
-        resource = SshResource(blah)
-    elif resource_type == "nordugrid":
-        resource = NordugridResource(blah)
+      # dump lrms_log
+      try:
+        logging.debug('Dumping lrms_log')
+        _fileHandle = open(lrms_jobid+'/'+defaults['lrms_log'],'a')
+        _fileHandle.write(LRMSLOG_PREFIX)
+        _fileHandle.write(lrms_log+'\n')
+        _fileHandle.close()
+      except:
+        logging.error('Failed dumping lrms_log [ %s ]',sys.exc_info()[1])
 
+      if ( retval == False ):
+        logging.error('Failed getting results')
+        raise
 
-    try: 
-        check_authentication(identity)
-    except:
-        print "check_authentication failed. exiting."
-        sys.exit(1)
+      logging.debug('check_status\t\t\t[ ok ]')
 
-    try:
-#        resource_name.get_results(lrms_jobid, lrms_log) -> return exit code
-        resource_name.get_results(lrms_jobid, lrms_log) -> return exit code
-    except:
-        print "get_results failed. exiting."
-        sys.exit(1)
+      sys.stdout.write('Job results successfully retrieved in [ '+lrms_jobid+' ]\n')
+      sys.stdout.flush()
 
+    else:
+      logging.critical('Failed finding matching resource name [ %s ]',_list_resource_info[0])
+      raise
 
-    dump_stdout_stderr_to_unique_token_or_lrms_log()
-
-    check_outputfile() 
-        # according to application config
-        # ...existance?
-        # ...validity?
-
-    """
-    Next steps:
-    - ssh to resource and rsync back needed files.
-    - verify results
-    - ssh to resource and purge old stuff
-    """
-
-    touch jobdir/.finished
-
-    sys.exit(0)
-
-
+    return 0
+                
+  except:
+    logging.info('%s',sys.exc_info()[1])
+    sys.stderr.write('Command failure\n')
+    sys.stderr.flush()
+    return 1
 
 if __name__ == "__main__":
-    main()
+  sys.exit(main())

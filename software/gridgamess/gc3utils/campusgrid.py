@@ -7,6 +7,11 @@ import getpass
 import re
 import md5
 import time
+import ConfigParser
+
+# -----------------------------------------------------
+# Interface design
+#
 
 class LRMS:
 
@@ -25,10 +30,12 @@ class LRMS:
     def check_status(self,lrms_jobid):
         pass
     
-    def get_results(lrms_jobid):
+    def get_results(self,lrms_jobid,job_dir):
         pass
 
-# ----------------------------------------
+# -----------------------------------------------------
+# ARC lrms
+#
     
 class ArcLrms(LRMS):
 
@@ -42,8 +49,11 @@ class ArcLrms(LRMS):
     resource = []
 
     def __init__(self, resource):
-        if ( (resource['frontend'] != "") & (resource['type'] == "arc") ):
+        # check first that manadtory fields are defined
+        # if resource['frontend'] == "" means access to the entire arc based infrastructure
+        if (resource['type'] == "arc"):
             self.resource = resource
+            # shall we really set hardcoded defaults ?
             if ( 'cores' not in self.resource ):
                 self.resource['cores'] = "1"
             if ( 'memory' not in self.resource ):
@@ -144,9 +154,17 @@ class ArcLrms(LRMS):
                     # Shall we dump anyway into lrms_log befor raising ?
                     raise
 
-                # Ready for real submission
-                _command = "ngsub -d2 -c "+self.resource['frontend']+" -f "+_file_handle.name
 
+                logging.debug('checking resource [ %s ]',self.resource['frontend'])
+                # Ready for real submission
+                if ( self.resource['frontend'] == "" ):
+                    # frontend not defined; use the entire arc-based infrastructure
+                    _command = "ngsub -d2 -f "+_file_handle.name
+                else:
+                    _command = "ngsub -d2 -c "+self.resource['frontend']+" -f "+_file_handle.name
+
+                logging.debug('Running ARC command [ %s ]',_command)
+            
                 retval = commands.getstatusoutput(_command)
 
                 jobid_pattern = "Job submitted with jobid: "
@@ -175,7 +193,7 @@ class ArcLrms(LRMS):
             raise
 
     def check_status(self, lrms_jobid):
-        submitted_list = ['ACCEPTING','SUBMITTING']
+        submitted_list = ['ACCEPTING','SUBMITTING','PREPARING']
         running_list = ['INLRMS:Q','INLRMS:R','EXECUTED']
         finished_list = ['FINISHED']
         
@@ -183,40 +201,65 @@ class ArcLrms(LRMS):
             # Ready for real submission
             _command = "ngstat "+lrms_jobid
 
+            logging.debug('Running ARC command [ %s ]',_command)
+
             retval = commands.getstatusoutput(_command)
-            jobstatus_pattern = "Status: "
+            jobstatusunknown_pattern = "Job information not found"
+            jobstatusok_pattern = "Status: "
             jobexitcode_pattern = "Exit Code: "
-            if ( ( retval[0] != 0 ) | ( jobstatus_pattern not in retval[1] ) ):
+            if ( retval[0] != 0 ):
+                # | ( jobstatus_pattern not in retval[1] ) ):
                 # Failed somehow
                 logging.error("ngstat command\t\t[ failed ]")
                 logging.debug(retval[1])
                 raise
 
-            # Extracting ARC job status
-            lrms_jobstatus = re.split(jobstatus_pattern,retval[1])[1]
-            lrms_jobstatus = re.split("\n",lrms_jobstatus)[0]
-
-            logging.debug('lrms_jobstatus\t\t\t[ %s ]',lrms_jobstatus)
-
-            if ( lrms_jobstatus in submitted_list ):
+            if ( jobstatusunknown_pattern in  retval[1] ):
                 jobstatus = "Status: SUBMITTED"
-            elif ( lrms_jobstatus in running_list ):
-                jobstatus = "Status: RUNNING"
-            elif ( lrms_jobstatus in finished_list ):
-                lrms_exitcode = re.split(jobexitcode_pattern,retval[1])[1]
-                jobstatus = "Status: FINISHED\nExit Code: "+lrms_exitcode
-            else:
-                jobstatus = "Status: [ "+lrms_jobstatus+" ]"
+            elif ( jobstatusok_pattern in retval[1] ):
 
-            return jobstatus
+                # Extracting ARC job status
+                lrms_jobstatus = re.split(jobstatusok_pattern,retval[1])[1]
+                lrms_jobstatus = re.split("\n",lrms_jobstatus)[0]
+
+                logging.debug('lrms_jobstatus\t\t\t[ %s ]',lrms_jobstatus)
+
+                if ( lrms_jobstatus in submitted_list ):
+                    jobstatus = "Status: SUBMITTED"
+                elif ( lrms_jobstatus in running_list ):
+                    jobstatus = "Status: RUNNING"
+                elif ( lrms_jobstatus in finished_list ):
+                    lrms_exitcode = re.split(jobexitcode_pattern,retval[1])[1]
+                    jobstatus = "Status: FINISHED\nExit Code: "+lrms_exitcode
+                else:
+                    jobstatus = "Status: [ "+lrms_jobstatus+" ]"
+
+            return [jobstatus,retval[1]]
 
         except:
             logging.critical('Failure in checking status')
             raise
-                                
-# ----------------------------------------
 
+    def get_results(self,lrms_jobid,job_dir):
+        try:
+            _command = "ngget -d 2 -dir "+job_dir+" "+lrms_jobid
 
+            logging.debug('Running ARC command [ %s ]',_command)
+
+            retval = commands.getstatusoutput(_command)
+            if ( ( retval[0] != 0 ) ):
+                # Failed somehow
+                logging.error("ngget command\t\t[ failed ]")
+                logging.debug(retval[1])
+                raise
+            return [True,retval[1]]
+        except:
+            logging.critical('Failure in retrieving results')
+            raise
+
+# -----------------------------------------------------
+# SSH lrms
+#
 
 class SshLrms(LRMS):
     
@@ -393,10 +436,11 @@ class SshLrms(LRMS):
 #check_status
 #get_results
 
-
+# ================================================================
 #
-# Here are some generic functions that everyone can use.
-
+#                     Generic functions
+#
+# ================================================================
 
 def sumfile(fobj):
     """Returns an md5 hash for an object with read() method."""
@@ -413,8 +457,7 @@ def sumfile(fobj):
 def md5sum(fname):
     """Returns an md5 hash for file fname, or stdin if fname is "-"."""
     """Stolen from http://code.activestate.com/recipes/266486/"""
-    if fname == '-':
-        ret = sumfile(sys.stdin)
+    if fname == '-':        ret = sumfile(sys.stdin)
     else:
         try:
             f = file(fname, 'rb')
@@ -429,13 +472,15 @@ def md5sum(fname):
 
 def create_unique_token(inputfile, clustername):
     """create a unique job token based on md5sum, timestamp, clustername, and jobname"""
-    inputmd5 = md5sum(inputfile)
-    inname = inputname(inputfile)
-    timestamp = str(time.time())
-    unique_token = inname + "-" + timestamp + "-" + inputmd5 + "-" + clustername
-    return unique_token
-
-
+    try:
+        inputmd5 = md5sum(inputfile)
+        inname = inputname(inputfile)
+        timestamp = str(time.time())
+        unique_token = inname + "-" + timestamp + "-" + inputmd5 + "-" + clustername
+        return unique_token
+    except:
+        logging.debug('Failed crating unique token')
+        raise
 
 def dirname(rawinput):
     """Return the dirname of the input file."""
@@ -466,7 +511,6 @@ def inputname(rawinput):
     basename = os.path.basename(rawinput)
     pattern = re.compile('.inp$')
     inputname = re.sub(pattern, '', basename)
-
     return inputname
 
 
@@ -477,9 +521,8 @@ def inputfilename(rawinput):
     Return the name of the input file.
     """
     logging.debug('Checking inputfilename from [ %s ]',rawinput)
-    
-    inputfilename = os.path.basename(rawinput)
 
+    inputfilename = os.path.basename(rawinput)
     return inputfilename
 
 
@@ -498,12 +541,12 @@ def check_inputfile(inputfile_fullpath):
     - estimate runtime
     - etc.
     """
+    logging.debug('checking\t\t\t[ %s ]',inputfile_fullpath)
 
     if os.path.isfile(inputfile_fullpath):
         return True
     else:
         return False
-
 
 def check_jobdir(jobdir):
     """
@@ -526,13 +569,14 @@ def configure_logging(verbosity):
     if ( verbosity > 5):
         logging_level = 10
     else:
-        logging_level = (( 6 - options.verbosity) * 10)
+        logging_level = (( 6 - verbosity) * 10)
 
     logging.basicConfig(level=logging_level, format='%(asctime)s %(levelname)-8s %(message)s')
 
     return
 
 
+# Not usefull
 def parse_commandline_jobdir_only(args):
     """
     Parse command line arguments.
@@ -554,6 +598,7 @@ def parse_commandline_jobdir_only(args):
 
     return jobdir
 
+
 def check_qgms_version(minimum_version):
     """
     This will check that the qgms script is an acceptably new version.
@@ -567,9 +612,42 @@ def check_qgms_version(minimum_version):
     # todo: write some function that goes out and determines version
 
     if minimum_version < current_version:
-        print "qgms script version is too old.  Please update it and resubmit."
-        sys.exit(1)
+        logging.error('qgms script version is too old.  Please update it and resubmit.')
+        return False
 
-    return
+    return True
 
 
+
+def readConfig(config_file_location):
+
+    resource_list = {}
+    defaults = {}
+
+    try:
+        _configFileLocation = os.path.expandvars(config_file_location)
+        if ( os.path.exists(_configFileLocation) & os.path.isfile(_configFileLocation) ):
+            # Config File exists; read it
+            config = ConfigParser.ConfigParser()
+            config.readfp(open(_configFileLocation))
+            defaults = config.defaults()
+
+            _resources = config.sections()
+            for _resource in _resources:
+                _option_list = config.options(_resource)
+                _resource_options = {}
+                for _option in _option_list:
+                    _resource_options[_option] = config.get(_resource,_option)
+                _resource_options['resource_name'] = _resource
+                resource_list[_resource] = _resource_options
+            if (len(resource_list) > 0 ):
+                return [defaults,resource_list]
+            else:
+                logging.debug('Empty resource list')
+                raise
+        else:
+            logging.error('config file [%s] not found or not readable ',_configFileLocation)
+            raise
+    except:
+        logging.error('Exception in readConfig')
+        raise
