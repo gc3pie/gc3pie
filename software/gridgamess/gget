@@ -8,6 +8,7 @@ __version__="0.1a"
 import logging
 import os
 import sys
+import array
 from optparse import OptionParser
 
 from gc3utils.campusgrid import *
@@ -35,25 +36,21 @@ def main():
     if len(args) != 1:
       logging.critical('Command line argument parsing\t\t\t[ failed ]\n\tIncorrect number of arguments; expected 1 got %d ',len(args))
       parser.print_help()
-      raise
+      raise Exception('wrong number on arguments')
+
 
     logging.info('Parsing command line arguments\t\t[ ok ]')
     
     lrms_jobid = args[0]
 
-    if ( (os.path.exists(lrms_jobid) == False ) | (os.path.isdir(lrms_jobid) == False) ):
-      logging.critical('Jobid Not valid')
-      raise
-      
     # read configuration file
     (defaults,resource_list) = readConfig(default_config_file_location)
 
     logging.info('Loading configuration file\t\t\t[ ok ]')
 
-    # check lrms_jobid file
-    if ( not check_inputfile(lrms_jobid+'/'+defaults['lrms_jobid']) ):
-      logging.critical('Invalid jobid\t\t\t[ failed ]')
-      raise
+    if ( (os.path.exists(lrms_jobid) == False ) | (os.path.isdir(lrms_jobid) == False) | ( not check_inputfile(lrms_jobid+'/'+defaults['lrms_jobid']) ) ):
+      logging.critical('Jobid Not valid')
+      raise Exception('invalid jobid')
 
     logging.info('lrms_jobid file check\t\t\t[ ok ]')
 
@@ -64,6 +61,11 @@ def main():
       _fileHandle.close()
 
       _list_resource_info = re.split('\t',_raw_resource_info)
+
+      logging.debug('lrms_jobid file returned %s elements',array.count(_list_resource_info))
+
+      if ( array.count(_list_resource_info) != 2 ):
+        raise Exception('failed retieving jobid')
 
       logging.debug('frontend: [ %s ] jobid: [ %s ]',_list_resource_info[0],_list_resource_info[1])
       logging.info('reading lrms_jobid info\t\t\t[ ok ]')
@@ -76,14 +78,14 @@ def main():
           lrms = ArcLrms(resource)
         elif ( resource['type'] == "ssh"):
           logging.warning('SSH not yet implemented')
-          raise
+          raise Exception('could not instanciate LRMS')
         else:
           logging.error('Unknown resource type %s',resource['type'])
-          raise
+          raise  Exception('unknown resource type')
 
         if ( (lrms.isValid != 1) | (lrms.check_authentication() != 0) ):
           logging.error('Failed validating lrms instance for resource %s',resource['resource_name'])
-          raise
+          raise Exception('failed authenticating to LRMS')
 
         logging.info('Init LRMS\t\t\t[ ok ]')
         _lrms_jobid = _list_resource_info[1]
@@ -102,7 +104,7 @@ def main():
 
         if ( retval == False ):
           logging.error('Failed getting results')
-          raise
+          raise Exception('failed getting results from LRMS')
 
         logging.debug('check_status\t\t\t[ ok ]')
 
@@ -125,8 +127,7 @@ def main():
 
   except:
     logging.info('%s',sys.exc_info()[1])
-    sys.stderr.write('Command failure\n')
-    sys.stderr.flush()
+    print "gget failed: "+str(sys.exc_info()[1])
     return 1
 
 if __name__ == "__main__":

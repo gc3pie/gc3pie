@@ -121,7 +121,7 @@ class ArcLrms(LRMS):
                 
             return 0
         except:
-            raise
+            raise Exception('failed in check_authentication')
 
 
     def submit_job(self, unique_token, application, input_file):
@@ -153,7 +153,7 @@ class ArcLrms(LRMS):
                     logging.error("Create XRSL\t\t[ failed ]")
                     logging.debug(retval[1])
                     # Shall we dump anyway into lrms_log befor raising ?
-                    raise
+                    raise Exception('failed creating submission file')
 
 
                 logging.debug('checking resource [ %s ]',self.resource['frontend'])
@@ -174,7 +174,7 @@ class ArcLrms(LRMS):
                     # Failed somehow
                     logging.error("ngsub command\t\t[ failed ]")
                     logging.debug(retval[1])
-                    raise
+                    raise Exception('failed submitting to LRMS')
 
                 # assuming submit successfull
                 logging.debug("ngsub command\t\t[ ok ]")
@@ -188,7 +188,7 @@ class ArcLrms(LRMS):
 
             else:
                 logging.critical('XRSL file not found %s',self.GAMESS_XRSL_TEMPLATE)
-                raise
+                raise Exception('template file for submission scritp not found')
         except:
             logging.critical('Failure in submitting')
             raise
@@ -205,7 +205,8 @@ class ArcLrms(LRMS):
             logging.debug('Running ARC command [ %s ]',_command)
 
             retval = commands.getstatusoutput(_command)
-            jobstatusunknown_pattern = "Job information not found"
+            jobstatusunknown_pattern = "This job was only very recently"
+            jobstatusremoved_pattern = "Job information not found"
             jobstatusok_pattern = "Status: "
             jobexitcode_pattern = "Exit Code: "
             if ( retval[0] != 0 ):
@@ -213,10 +214,12 @@ class ArcLrms(LRMS):
                 # Failed somehow
                 logging.error("ngstat command\t\t[ failed ]")
                 logging.debug(retval[1])
-                raise
+                raise Exception('failed checking status to LRMS')
 
-            if ( jobstatusunknown_pattern in  retval[1] ):
+            if ( jobstatusunknown_pattern in retval[1] ):
                 jobstatus = "Status: RUNNING"
+            elif ( jobstatusremoved_pattern in retval[1] ):
+                jobstatus = "Status: FINISHED"
             elif ( jobstatusok_pattern in retval[1] ):
 
                 # Extracting ARC job status
@@ -261,7 +264,7 @@ class ArcLrms(LRMS):
                 # Failed somehow
                 logging.error("ngget command\t\t[ failed ]")
                 logging.debug(retval[1])
-                raise
+                raise Exception('failed getting results from LRMS')
 
             if ( result_location_pattern in retval[1] ):
                 _result_location_folder = re.split(result_location_pattern,retval[1])[1]
@@ -524,7 +527,7 @@ def create_unique_token(inputfile, clustername):
         return unique_token
     except:
         logging.debug('Failed crating unique token')
-        raise
+        raise Exception('failed crating unique token')
 
 def dirname(rawinput):
     """Return the dirname of the input file."""
@@ -688,10 +691,10 @@ def readConfig(config_file_location):
                 return [defaults,resource_list]
             else:
                 logging.debug('Empty resource list')
-                raise
+#                raise Exception('no available resources found')
         else:
             logging.error('config file [%s] not found or not readable ',_configFileLocation)
-            raise
+            raise Exception('config file not found')
     except:
         logging.error('Exception in readConfig')
         raise

@@ -56,7 +56,7 @@ def main():
 
   try:
     # Parse command line arguments
-    _usage = "Usage: %prog [options] application input-file"
+    _usage = "%prog [options] application input-file"
     parser = OptionParser(usage=_usage)
     parser.add_option("-v", action="count", dest="verbosity", default=0, help="Set verbosity level")
     parser.add_option("-r", "--resource", action="store", dest="resource_name", metavar="STRING", default="", help='Select resource destination')
@@ -68,19 +68,19 @@ def main():
 
     if len(args) != 2: 
       logging.critical('Command line argument parsing\t\t\t[ failed ]\n\tIncorrect number of arguments; expected 2 got %d ',len(args))
-      parser.error('wrong number on arguments')
-      parser.print_help()
-      raise
+#      parser.error('wrong number on arguments')
+#      parser.print_help()
+      raise Exception('wrong number on arguments')
     
     # Checking whether it has been passed a valid application
     if ( args[0] != "gamess" ) & ( args[0] != "apbs" ):
       logging.critical('Application argument\t\t\t[ failed ]\n\tUnknown application: '+str(args[0]))
-      raise
+      raise Exception('invalid application argument')
 
     # check input file
     if ( not check_inputfile(args[1]) ):
       logging.critical('Input file argument\t\t\t[ failed ]'+args[1])
-      raise
+      raise Exception('invalid input-file argument')
 
     _application_to_run = args[0]
     _input_file = args[1]
@@ -112,8 +112,8 @@ def main():
           logging.debug('Found match for user defined resource: %s',options.resource_name)
           candidate_resource = [resource_list[options.resource_name]]
         else:
-          logging.critical('Failed finding matching fir user defined resources: %s ',options.resource_name)
-          raise
+          logging.critical('failed matching user defined resource: %s ',options.resource_name)
+          raise Exception('failed matching user defined resource')
 
         logging.info('Check user defined resources\t\t\t[ ok ]')
 
@@ -141,7 +141,7 @@ def main():
 
       if ( len(_lrms_list) == 0 ):
         logging.critical('Could not initialize ANY lrms resource')
-        raise
+        raise Exception('no available LRMS found')
 
       logging.info('Init pool of LRMS resources \t\t\t[ ok ]')
 
@@ -204,7 +204,7 @@ def main():
 
       if ( lrms_jobid == None ):
         logging.critical('Submit to LRMS\t\t\t[ failed ]')
-        raise      
+        raise Exception('submission to LRMS failed')      
       else:
         logging.info('Submit to LRMS\t\t\t\t[ ok ]')
 
@@ -227,8 +227,7 @@ def main():
     logging.info('%s',sys.exc_info()[1])
     # think of a better error message
     # Should intercept the exception somehow and generate error message accordingly ?
-    sys.stderr.write('Command failure\n')
-    sys.stderr.flush()
+    print "gsub failed: "+str(sys.exc_info()[1])
     return 1
   
 if __name__ == "__main__":
