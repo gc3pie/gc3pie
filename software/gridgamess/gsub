@@ -95,11 +95,9 @@ def main():
     # defaults['lrms_log'] 
     # defaults['lrms_jobid']
 
-
-
-    #if ( readConfig(default_config_file_location)[0] = 0 ):
-    #  logging.critical('Loading configuration file\t\t\t[ failed ]')
-    #  raise
+    # Check if any resource configuration has been leaded
+    if ( len(resource_list) == 0 ):
+      raise Exception('could not read any valid resource configuration from config file')
 
     logging.info('Loading configuration file\t\t\t[ ok ]')
 
@@ -132,7 +130,7 @@ def main():
           logging.error('Unknown resource type %s',resource['type'])
           continue
 
-        if ( (lrms.isValid == 1) & (lrms.check_authentication() == 0) ):
+        if ( (lrms.isValid == 1) & (lrms.check_authentication() == True) ):
           _lrms_list.append(lrms)
         else:
           logging.error('Failed validating lrms instance for resource %s',resource['resource_name'])

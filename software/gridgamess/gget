@@ -8,7 +8,6 @@ __version__="0.1a"
 import logging
 import os
 import sys
-import array
 from optparse import OptionParser
 
 from gc3utils.campusgrid import *
@@ -62,9 +61,9 @@ def main():
 
       _list_resource_info = re.split('\t',_raw_resource_info)
 
-      logging.debug('lrms_jobid file returned %s elements',array.count(_list_resource_info))
+      logging.debug('lrms_jobid file returned %s elements',len(_list_resource_info))
 
-      if ( array.count(_list_resource_info) != 2 ):
+      if ( len(_list_resource_info) != 2 ):
         raise Exception('failed retieving jobid')
 
       logging.debug('frontend: [ %s ] jobid: [ %s ]',_list_resource_info[0],_list_resource_info[1])
@@ -83,7 +82,7 @@ def main():
           logging.error('Unknown resource type %s',resource['type'])
           raise  Exception('unknown resource type')
 
-        if ( (lrms.isValid != 1) | (lrms.check_authentication() != 0) ):
+        if ( (lrms.isValid != 1) | (lrms.check_authentication() == False) ):
           logging.error('Failed validating lrms instance for resource %s',resource['resource_name'])
           raise Exception('failed authenticating to LRMS')
 

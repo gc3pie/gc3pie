@@ -79,7 +79,7 @@ def main():
           logging.error('Unknown resource type %s',resource['type'])
           raise Exception('unknown resource type')
 
-        if ( (lrms.isValid != 1) | (lrms.check_authentication() != 0) ):
+        if ( (lrms.isValid != 1) | (lrms.check_authentication() == False) ):
           logging.error('Failed validating lrms instance for resource %s',resource['resource_name'])
           raise Exception('failed authenticating to LRMS')
 

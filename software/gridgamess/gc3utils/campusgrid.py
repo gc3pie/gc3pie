@@ -102,7 +102,7 @@ class ArcLrms(LRMS):
                     if ( retval[0] != 0 ):
                         # Failed renewing slcs
                         logging.critical("failed renewing slcs: %s",retval[1])
-                        return 1
+                        return False
 
                     logging.info('Initializing slcs\t\t\t[ ok ]')
                     
@@ -115,11 +115,11 @@ class ArcLrms(LRMS):
                     # Failed renewing voms credential
                     # FATAL ERROR
                     logging.critical("Initializing voms-proxy\t\t[ failed]\n\t%s",retval[1])
-                    return 1
+                    return False
                 logging.info('Initializing voms-proxy\t\t[ ok ]')
             logging.info('check_authentication\t\t\t\t[ ok ]')
                 
-            return 0
+            return True
         except:
             raise Exception('failed in check_authentication')
 
@@ -299,16 +299,6 @@ class SshLrms(LRMS):
     
     isValid = 0
     def __init__(self, resource):
-#        if ( (resource['frontend'] != "") & (resource['type'] == "ssh") ):
-#            self.resource = resource
-#            if ( 'cores' not in resource ):
-#                self.resource['cores'] = "1"
-#            if ( 'memory' not in resource ):
-#                self.resource['memory'] = "1000"
-#            if ( 'walltime' not in resource ):
-#                self.resource['walltime'] = "12"
-#            self.isValid = 1
-
         if (resource['frontend'] == "ssh"):
             self.resource = resource
             # shall we really set hardcoded defaults ?
@@ -322,12 +312,12 @@ class SshLrms(LRMS):
 
 
     """Here are the common functions needed in every Resource Class."""
-
+    
     def check_authentication(self):
-#    def check_authentication(username, frontend):
         """Make sure ssh to server works."""
+        # We can make the assumption the local username is the same on hte remote host, whatever it is
+        # We can also assume local username has passwordless ssh access to resources (or ssh-agent running)
         
-
         try:
             # ssh username@frontend date 
             # ssh -o ConnectTimeout=1 idesl2.uzh.ch uname -a
@@ -335,14 +325,13 @@ class SshLrms(LRMS):
             cmd = self.ssh_location + " " + self.ssh_options + " " + username + "@" + frontend + " " + testcommand
             logging.debug('check_authentication cmd: ' + cmd)
 
-            os.system(cmd)
+            retval = commands.getstatusoutput(cmd)
+            if ( retval[0] != 0 ):
+                raise Exception('failed in check_authentication')
 
+            return True
         except:
             raise
-#            command_failed(cmd, "the connection test to " + frontend + "failed.")
-
-        return
-
 
     def submit2(input, unique_token, application, lrms_log):
 # todo compare & contrast
@@ -364,19 +353,18 @@ class SshLrms(LRMS):
         logging.debug('submit cmd: ' + cmd)
 
         try:
-#            os.system(cmd)
-# todo uncomment when the cmd looks good 
-            print cmd
+# todo uncomment when the cmd looks good
+#            retval = commands.getstatusoutput(cmd)
+
+            if ( retval[0] != 0 ):
+                raise Exception('submission to LRMS failed')
+
+            lrms_jobid = get_qsub_jobid(retval[1])
+            return [lrms_jobid,retval[1]]
+
         except: 
-            command_failed(cmd, "the submission to " + frontend + "failed.")
-            # todo: remove sys.exit and use exceptions (here and elsewhere)
-            sys.exit(1)
-            
-        lrms_jobid = get_qsub_jobid(output)
-
-        # todo: make sure this works right (look at sergio's block)
-        return [lrms_jobid,retval[1]]
-
+            logging.critical('failed submittion to %s', self.resource['frontend'])
+            raise
 
     def check_status(unique_token):
         """Check status of a job."""
@@ -687,11 +675,9 @@ def readConfig(config_file_location):
                     _resource_options[_option] = config.get(_resource,_option)
                 _resource_options['resource_name'] = _resource
                 resource_list[_resource] = _resource_options
-            if (len(resource_list) > 0 ):
-                return [defaults,resource_list]
-            else:
-                logging.debug('Empty resource list')
-#                raise Exception('no available resources found')
+
+            logging.debug('readConfig resource_list lenght of [ %d ]',len(resource_list))
+            return [defaults,resource_list]
         else:
             logging.error('config file [%s] not found or not readable ',_configFileLocation)
             raise Exception('config file not found')
