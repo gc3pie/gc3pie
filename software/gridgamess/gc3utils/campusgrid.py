@@ -292,10 +292,11 @@ class ArcLrms(LRMS):
 
 class SshLrms(LRMS):
 
-    ssh_options = "-o ConnectTimeout=30"
     ssh_location = "/usr/bin/ssh"
     scp_location = "/usr/bin/scp"
     rsync_location = "/usr/bin/rsync"
+    ssh_options = "-o ConnectTimeout=30"
+    rsync_options= '"-e ssh ' + ssh_options + '"'
     resource = []
     
     isValid = 0
@@ -379,40 +380,39 @@ class SshLrms(LRMS):
             raise
 
 
-    def check_status(self, unique_token):
+    def check_status(self, lrms_jobid):
         """Check status of a job."""
-        _command = self.ssh_location + " " + ssh_options + " " + self.resource['username'] + "@" + self.resource['frontend'] + " " + testcommand
-        logging.debug('check_status _command: ' + _command)
 
-        retval = commands.getstatusoutput(_command)
+        try:
+            # then check the lrms_jobid with qstat
+            _testcommand = 'qstat -j %s' % lrms_jobid
 
-        if ( retval[0] != 0 ):
-            raise Exception('check_status failed')
-            return retval[1]
+            _command = self.ssh_location + " " + self.ssh_options + " " + self.resource['username'] + "@" + self.resource['frontend'] + " '" + _testcommand + "'"
+            logging.debug('check_status _command: ' + _command)
 
-        return True
+            retval = (commands.getstatusoutput(_command))
+
+            # for some reason we have to use os.WEXITSTATUS to get the real exit code here
+            _realretval = str(os.WEXITSTATUS(retval[0]))
+            
+            logging.debug('check_status _real_retval: ' + _realretval)
+
+            if ( _realretval == '1' ):
+                jobstatus = "Status: FINISHED"
+            else: 
+                jobstatus = "Status: RUNNING"
+        
+            return [jobstatus,retval[1]]
+    
+        except:
+            logging.critical('Failure in checking status')
+            raise
 
 
     def get_results(self,lrms_jobid,unique_token):
         """Retrieve results of a job."""
 # todo remove :
 #        cmd = scp_location + username + "@" + frontend + "'cd ' + unique_token + " ; $" + qgms_location + " -n " + ncores + " " + input + "'" 
-        _command = "%s %s@%s 'cd %s; %s -n %s %s'" % (self.scp_location, 
-            self.resource['username'], 
-            self.resource['frontend'], 
-            unique_token, 
-            self.resource['gamess_location'], 
-            self.resource['ncores'], 
-            input)
-
-        logging.debug('get_results _command: ' + _command)
-
-        finishedfile = unique_token + ".finished"
-
-        if os.path.isfile(finishedfile): 
-            print "Job is already finished.  Exiting."
-            sys.exit(1)
-
 
         """
         Next steps:
@@ -423,23 +423,31 @@ class SshLrms(LRMS):
         # todo : create parse_for_lrms_jobid
         lrms_jobid = get_qsub_jobid(unique_token)
 
+        _command = "%s %s@%s 'cd %s; %s -n %s %s'" % (_copy_command, 
+            self.resource['username'], 
+            self.resource['frontend'], 
+            unique_token, 
+            self.resource['gamess_location'], 
+            self.resource['ncores'], 
+            input)
+
+
         # now try to copy back all the files with the right suffixes
 
-        suffixes = ('dat', 'cosmo', 'irc')
-        for suffix in suffixes:
-            options = [ssh_options, self.resource['username'], self.resource['frontend'], jobdir_fullpath, jobname, lrms_jobid, suffix, jobdir]
-        # todo : check options
-            copyback(options)
+        full_path_to_remote_unique_id = "blah"
+        full_path_to_local_unique_id = "blah"
 
+        suffixes = ('', '.dat', '.cosmo', '.irc')
+        for suffix in suffixes:
+            remote_file = '%s/%s.o%s%s' % (full_path_to_remote_unique_id, jobname, lrms_jobid, suffix)
+            local_file = '%s/%s.%s' % (full_path_to_local_unique_id, jobname, suffix)
+        # todo : check options
+            self.copyback_file(remote_file, local_file)
 
         # now try to clean up 
         # todo : clean up  
 
-
-        # if all is well, touch the finishedfile
-        open(finishedfile, 'w').close() 
-        
-        return
+        return True
 
 
     """Below are the functions needed only for the SshLrms class."""
@@ -463,7 +471,9 @@ class SshLrms(LRMS):
     def copy_input(self, input_file, unique_token, username, frontend):
         """Try to create remote directory named unique_token, then copy input_file there."""
         
-        # todo: add a switch that tries rsync first, then falls back to ssh
+        # todo: change the name of this method (so it is less confusing with copy out vs copy back?
+        # todo: add a switch that tries rsync first, then falls back to ssh.
+        # todo: generalize the rsync vs scp and have both copy_input and copyback_file use 1 method
 
         # first mkdir 
         _mkdir_command = "%s %s@%s mkdir ~/%s" % ( self.ssh_location, username, frontend, unique_token )
@@ -491,28 +501,42 @@ class SshLrms(LRMS):
         return True
 
 
-    def copyback(options):
+    def copyback_file(self, remote_file, local_file):
         """Copy a file back via rsync or scp.  Prefer rsync."""
 
         # if rsync is available, use it 
         # if not, use scp
         # if not, fail
 
-#           if os.path.isfile(rsync_location):
-#               options.insert(0, rsync_location)
-#               tup = tuple(options)
-#               cmd = '%s -e ssh %s %s@%s:%s/%s.o%s.%s %s' % (tup)
-#           elif os.path.isfile(scp_location):
-#               options.insert(0, scp_location)
-#               tup = tuple(options)
-#               cmd = '%s %s %s@%s:%s/%s.o%s.%s %s' % (tup)
-#        else:
-#            logging.critical('Copyback failed.  Exiting.')
-#            sys.exit(1)
-        _command = self.rsync_location + 'some_options'
+        logging.debug('get_results _command: ' + _command)
 
-        logging.debug('copyback _command: ' + _command)
-        return _command
+        if os.path.isfile(self.rsync_location):
+            _method = self.rsync_location
+            _method_options = self.rsync_options
+        elif os.path.isfile(self.scp_location):
+            _method = self.scp_location
+            _method_options = self.scp_options
+        else:
+            logging.critical('could not locate a suitable copy executable.')
+            return False
+
+        _command = '%s %s %s@%s:%s %s' % (
+                _method,
+                _method_options, 
+                self.resource['username'], 
+                self.resource['frontend'], 
+                remote_file,
+                local_file)
+
+        logging.debug('copyback_file _command: ' + _command)
+
+        try:
+            _command
+            return True
+        except:
+            logging.critical('failed to copy %s' % remote_file )
+            raise
+
 
 
 # todo: check that this stuff is ok to remove - mike
@@ -706,7 +730,6 @@ def check_qgms_version(minimum_version):
         return False
 
     return True
-
 
 
 def readConfig(config_file_location):
