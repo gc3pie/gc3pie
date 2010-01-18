@@ -490,14 +490,15 @@ def sumfile(fobj):
 
 
 def md5sum(fname):
-    """Returns an md5 hash for file fname, or stdin if fname is "-"."""
-    """Stolen from http://code.activestate.com/recipes/266486/"""
-    if fname == '-':        ret = sumfile(sys.stdin)
+    # Returns an md5 hash for file fname, or stdin if fname is \"-\"."""
+
+    if ( fname == "-" ):
+        ret = sumfile(sys.stdin)
     else:
         try:
             f = file(fname, 'rb')
         except:
-            print 'Failed to open file.  Exiting.'
+            logging.critical('Failed to open [ %s ]')
             sys.exit(1)
 #            return 'Failed to open file'
         ret = sumfile(f)
