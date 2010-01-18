@@ -296,6 +296,7 @@ class SshLrms(LRMS):
     ssh_location = "/usr/bin/ssh"
     scp_location = "/usr/bin/scp"
     rsync_location = "/usr/bin/rsync"
+    resource = []
     
     isValid = 0
     def __init__(self, resource):
@@ -322,7 +323,7 @@ class SshLrms(LRMS):
             # ssh username@frontend date 
             # ssh -o ConnectTimeout=1 idesl2.uzh.ch uname -a
             testcommand = "uname -a"
-            cmd = self.ssh_location + " " + self.ssh_options + " " + username + "@" + frontend + " " + testcommand
+            cmd = self.ssh_location + " " + self.ssh_options + " " + self.resource['username'] + "@" + self.resource['frontend'] + " " + testcommand
             logging.debug('check_authentication cmd: ' + cmd)
 
             retval = commands.getstatusoutput(cmd)
@@ -349,7 +350,13 @@ class SshLrms(LRMS):
         """ ssh mpackard@ocikbpra.uzh.ch 'cd unique_token ; $qgms_location -n cores input_file """
 # todo remove :
 #        cmd = ssh_location + username + "@" + frontend + "'cd ' + unique_token + " ; $" + qgms_location + " -n " + ncores + " " + input + "'"
-        cmd = "%s %s@%s 'cd %s; $%s -n %s %s'" % (self.ssh_location, username, frontend, jobdir, qgms_location, ncores, input)
+        cmd = "%s %s@%s 'cd %s; $%s -n %s %s'" % (self.ssh_location, \
+            self.resource['username'], \
+            self.resource['frontend'], \
+            jobdir, \
+            self.resource['qgms_location'], \
+            self.resource['ncores'], \
+            input)
         logging.debug('submit cmd: ' + cmd)
 
         try:
@@ -368,7 +375,7 @@ class SshLrms(LRMS):
 
     def check_status(unique_token):
         """Check status of a job."""
-        cmd = self.ssh_location + " " + ssh_options + " " + username + "@" + frontend + " " + testcommand
+        cmd = self.ssh_location + " " + ssh_options + " " + self.resource['username'] + "@" + self.resource['frontend'] + " " + testcommand
         logging.debug('check_status cmd: ' + cmd)
         return 
 
@@ -376,7 +383,14 @@ class SshLrms(LRMS):
         """Retrieve results of a job."""
 # todo remove :
 #        cmd = scp_location + username + "@" + frontend + "'cd ' + unique_token + " ; $" + qgms_location + " -n " + ncores + " " + input + "'" 
-        cmd = "%s %s@%s 'cd %s; %s -n %s %s'" % (scp_location, username, frontend, jobdir, qgms_location, ncores, input)
+        cmd = "%s %s@%s 'cd %s; %s -n %s %s'" % (self.scp_location, 
+            self.resource['username'], 
+            self.resource['frontend'], 
+            jobdir, 
+            self.resource['gamess_location'], 
+            self.resource['ncores'], 
+            input)
+
         logging.debug('get_results cmd: ' + cmd)
 
         finishedfile = unique_token + ".finished"
@@ -392,13 +406,14 @@ class SshLrms(LRMS):
 
         """
 
+        # todo : wtf is this?
         lrms_jobid = 12345
 
         # now try to copy back all the files with the right suffixes
 
         suffixes = ('dat', 'cosmo', 'irc')
         for suffix in suffixes:
-            options = [ssh_options, identity, resource_frontend, jobdir_fullpath, jobname, lrms_jobid, suffix, jobdir]
+            options = [ssh_options, self.resource['username'], self.resource['frontend'], jobdir_fullpath, jobname, lrms_jobid, suffix, jobdir]
         # todo : check options
             copyback(options)
 
