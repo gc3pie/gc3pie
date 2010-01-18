@@ -78,6 +78,7 @@ def main():
           logging.error('Unknown resource type %s',resource['type'])
           raise Exception('unknown resource type')
 
+        # check authentication
         if ( (lrms.isValid != 1) | (lrms.check_authentication() == False) ):
           logging.error('Failed validating lrms instance for resource %s',resource['resource_name'])
           raise Exception('failed authenticating to LRMS')
@@ -85,6 +86,8 @@ def main():
         logging.info('Init LRMS\t\t\t[ ok ]')
         _lrms_jobid = _list_resource_info[1]
         _lrms_dirfolder = dirname(lrms_jobid)      
+
+        # check job status
         (retval,lrms_log) = lrms.check_status(_lrms_jobid)
 
         logging.info('check _status\t\t\t[ ok ]')
