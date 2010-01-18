@@ -300,7 +300,7 @@ class SshLrms(LRMS):
     
     isValid = 0
     def __init__(self, resource):
-        if (resource['frontend'] == "ssh"):
+        if (resource['type'] == "ssh"):
             self.resource = resource
             # shall we really set hardcoded defaults ?
             if ( 'cores' not in self.resource ):
@@ -318,25 +318,22 @@ class SshLrms(LRMS):
         """Make sure ssh to server works."""
         # We can make the assumption the local username is the same on hte remote host, whatever it is
         # We can also assume local username has passwordless ssh access to resources (or ssh-agent running)
+
         
         try:
             # ssh username@frontend date 
             # ssh -o ConnectTimeout=1 idesl2.uzh.ch uname -a
             testcommand = "uname -a"
-            cmd = self.ssh_location + " " + self.ssh_options + " " + self.resource['username'] + "@" + self.resource['frontend'] + " " + testcommand
-            logging.debug('check_authentication cmd: ' + cmd)
+            _command = self.ssh_location + " " + self.ssh_options + " " + self.resource['username'] + "@" + self.resource['frontend'] + " " + testcommand
+            logging.debug('check_authentication _command: ' + _command)
 
-            retval = commands.getstatusoutput(cmd)
+            retval = commands.getstatusoutput(_command)
             if ( retval[0] != 0 ):
                 raise Exception('failed in check_authentication')
 
             return True
         except:
             raise
-
-    def submit2(input, unique_token, application, lrms_log):
-# todo compare & contrast
-        return 
 
     def submit_job(self, unique_token, application, input_file):
 
@@ -347,51 +344,62 @@ class SshLrms(LRMS):
 
         # dump stdout+stderr to unique_token/lrms_log
         # should look something like this when done:
-        """ ssh mpackard@ocikbpra.uzh.ch 'cd unique_token ; $qgms_location -n cores input_file """
+        """ ssh mpackard@ocikbpra.uzh.ch 'cd unique_token ; $gamess_location -n cores input_file """
 # todo remove :
 #        cmd = ssh_location + username + "@" + frontend + "'cd ' + unique_token + " ; $" + qgms_location + " -n " + ncores + " " + input + "'"
-        cmd = "%s %s@%s 'cd %s; $%s -n %s %s'" % (self.ssh_location, \
+        _command = "%s %s@%s 'cd %s; %s -n %s %s'" % (self.ssh_location, \
             self.resource['username'], \
             self.resource['frontend'], \
-            jobdir, \
-            self.resource['qgms_location'], \
+            unique_token, \
+            self.resource['gamess_location'], \
             self.resource['ncores'], \
-            input)
-        logging.debug('submit cmd: ' + cmd)
+            input_file)
+
+        logging.debug('submit _command: ' + _command)
+
+#        try:
+        self.copy_input(input_file, unique_token, self.resource['username'], self.resource['frontend'])
+
+#        except: 
+#            logging.critical('failed to copy %s to %s', input_file, self.resource['frontend'])
+#            raise
 
         try:
-# todo uncomment when the cmd looks good
-#            retval = commands.getstatusoutput(cmd)
+# for debugging purpose we set cmd to soemthing easy
+# todo remove for production
+            _command = "ls"
+
+            retval = commands.getstatusoutput(_command)
 
             if ( retval[0] != 0 ):
                 raise Exception('submission to LRMS failed')
 
-            lrms_jobid = get_qsub_jobid(retval[1])
-            return [lrms_jobid,retval[1]]
+            lrms_jobid = self.get_qsub_jobid(retval[1])
+            return lrms_jobid,retval[1]
 
         except: 
-            logging.critical('failed submittion to %s', self.resource['frontend'])
+            logging.critical('failed submission to %s', self.resource['frontend'])
             raise
 
     def check_status(unique_token):
         """Check status of a job."""
-        cmd = self.ssh_location + " " + ssh_options + " " + self.resource['username'] + "@" + self.resource['frontend'] + " " + testcommand
-        logging.debug('check_status cmd: ' + cmd)
+        _command = self.ssh_location + " " + ssh_options + " " + self.resource['username'] + "@" + self.resource['frontend'] + " " + testcommand
+        logging.debug('check_status _command: ' + _command)
         return 
 
     def get_results(unique_token):
         """Retrieve results of a job."""
 # todo remove :
 #        cmd = scp_location + username + "@" + frontend + "'cd ' + unique_token + " ; $" + qgms_location + " -n " + ncores + " " + input + "'" 
-        cmd = "%s %s@%s 'cd %s; %s -n %s %s'" % (self.scp_location, 
+        _command = "%s %s@%s 'cd %s; %s -n %s %s'" % (self.scp_location, 
             self.resource['username'], 
             self.resource['frontend'], 
-            jobdir, 
+            unique_token, 
             self.resource['gamess_location'], 
             self.resource['ncores'], 
             input)
 
-        logging.debug('get_results cmd: ' + cmd)
+        logging.debug('get_results _command: ' + _command)
 
         finishedfile = unique_token + ".finished"
 
@@ -406,8 +414,8 @@ class SshLrms(LRMS):
 
         """
 
-        # todo : wtf is this?
-        lrms_jobid = 12345
+        # todo : create parse_for_lrms_jobid
+        lrms_jobid = get_qsub_jobid(unique_token)
 
         # now try to copy back all the files with the right suffixes
 
@@ -430,19 +438,19 @@ class SshLrms(LRMS):
 
     """Below are the special functions needed only for this class."""
 
-    def get_qsub_jobid(output):
+    def get_qsub_jobid(self.output):
         """Parse the qsub output for the local jobid."""
+        # cd unique_token
+        # lrms_jobid = grep something from output
+        teststring = 'Your job 8799 ("tj") has been submitted'
+        # todo : make this actually do something
+        lrms_jobid = '8799'
+
+        logging.debug('get_qsub_jobid jobid: ' + lrms_jobid)
+
         return lrms_jobid
 
-    def command_failed(cmd, custom_message):
-        """This just prints out a common fail header."""
-        print "This command failed:"
-        print cmd
-        print custom_message + "  Exiting."
-        sys.exit(1)
-        return 
-
-    def copy_input(input, unique_token, frontend):
+    def copy_input(self, input_file, unique_token, username, frontend):
         """Try to create remote directory named unique_token, then copy input_file there."""
         
         # todo : do we need this?
@@ -451,10 +459,19 @@ class SshLrms(LRMS):
         # try rsync first
         # if not try scp
         # if not fail
-        return
 
-        def copyback(options):
-            """Copy a file back via rsync or scp.  Prefer rsync."""
+        _command = "%s %s %s@%s:~/%s" % ( self.scp_location, input_file, username, frontend, unique_token )
+        logging.debug('copy_input _command: ' + _command)
+
+        try:
+            _command
+            return True
+        except:
+            logging.critical('Failed to copy %s to %s' % input_file, frontend)
+            raise
+
+    def copyback(options):
+        """Copy a file back via rsync or scp.  Prefer rsync."""
 
         # if rsync is available, use it 
         # if not, use scp
@@ -471,10 +488,10 @@ class SshLrms(LRMS):
 #        else:
 #            logging.critical('Copyback failed.  Exiting.')
 #            sys.exit(1)
-        cmd = self.rsync_location + 'some_options'
+        _command = self.rsync_location + 'some_options'
 
-        logging.debug('copyback cmd: ' + cmd)
-        return cmd
+        logging.debug('copyback _command: ' + _command)
+        return _command
 
 
 # todo: check that this stuff is ok to remove - mike
