@@ -40,6 +40,7 @@ def main():
 
     logging.info('Parsing command line arguments\t\t[ ok ]')
     
+    # todo : change this variable name.  It should be unique_token or jobid.  
     lrms_jobid = args[0]
 
     # read configuration file
@@ -106,7 +107,7 @@ def main():
 
         logging.debug('check_status\t\t\t[ ok ]')
 
-        # Job finished; resutls retrieved; writing .finished file
+        # Job finished; results retrieved; writing .finished file
         try:
           logging.debug('Creating finished file')
           open(lrms_jobid+"/"+defaults['lrms_finished'],'w').close()      
