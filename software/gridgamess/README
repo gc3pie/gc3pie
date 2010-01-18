@@ -17,6 +17,13 @@ lrms_log = .lrms_log
 lrms_finished = .finished
 debug = 0
 
+[unibe]
+type = arc
+frontend = smscg.unibe.ch
+walltime = 12
+cores = 4
+applications = gamess
+
 [smscg]
 type = arc
 frontend = 
@@ -26,7 +33,7 @@ applications = gamess
 
 [idgc3]
 type = arc
-frontend = idgc301.uzh.ch
+frontend = idgc3grid01.uzh.ch
 walltime = 12
 cores = 4
 applications= gamess
