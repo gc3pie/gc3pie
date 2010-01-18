@@ -14,6 +14,8 @@ from gc3utils.campusgrid import *
 from gc3utils import campusgrid
 
 default_config_file_location="$HOME/.gc3/config"
+default_joblist_location = "$HOME/.gc3/.joblist"
+default_joblist_lock= "$HOME/.gc3/.joblist_lock"
 resource_list = {}
 defaults = {}
 
@@ -21,9 +23,12 @@ LRMSLOG_PREFIX='=== gget ===\n'
 
 def main():
 
+  global default_joblist_location
+  global default_joblist_lock
+
   try:
     # Parse command line arguments
-
+    
     _usage = "Usage: %prog [options] jobid"
     parser = OptionParser(usage=_usage)
     parser.add_option("-v", action="count", dest="verbosity", default=0, help="Set verbosity level")
@@ -114,7 +119,45 @@ def main():
         except:
           logging.error('Failed creating finished file [ %s ]',sys.exc_info()[1])
           # Should handle the exception differently ?
-        
+
+        logging.debug('Removing jobid from joblist file')
+        # Removing jobid from joblist file
+        try:          
+          default_joblist_location = os.path.expandvars(default_joblist_location)
+          default_joblist_lock = os.path.expandvars(default_joblist_lock)
+
+          if ( obtain_file_lock(default_joblist_location,default_joblist_lock) ):
+            _newFileHandle = tempfile.NamedTemporaryFile(suffix=".xrsl",prefix="gridgames_arc_")
+
+            _oldFileHandle  = open(default_joblist_location)
+            _oldFileHandle.seek(0)
+            for line in _oldFileHandle:
+              logging.debug('checking %s with %s',line,lrms_jobid)
+              if ( not lrms_jobid in line ):
+                logging.debug('writing line')
+                _newFileHandle.write(line)
+
+            _oldFileHandle.close()
+
+            os.remove(default_joblist_location)
+
+            _newFileHandle.seek(0)
+
+            logging.debug('replacing joblist file with %s',_newFileHandle.name)
+            os.system("cp "+_newFileHandle.name+" "+default_joblist_location)
+
+            _newFileHandle.close()
+
+          else:
+            raise Exception('Failed obtain lock')
+        except:
+          logging.error('Failed updating joblist file in %s',default_joblist_location)
+          logging.debug('Exception %s',sys.exc_info()[1])
+
+        # release lock
+        if ( (not release_file_lock(default_joblist_lock)) & (os.path.isfile(default_joblist_lock)) ):
+          logging.error('Failed removing lock file')
+
       else:
         logging.critical('Failed finding matching resource name [ %s ]',_list_resource_info[0])
         raise

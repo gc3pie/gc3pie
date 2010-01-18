@@ -14,45 +14,21 @@ from gc3utils import campusgrid
 from gc3utils.campusgrid import *
 
 default_config_file_location="$HOME/.gc3/config"
+default_joblist_location="$HOME/.gc3/.joblist"
+default_joblist_lock="$HOME/.gc3/.joblist_lock"
 default_job_folder_location="$PWD"
+default_wait_time = 3
 resource_list = {}
 defaults = {}
 
 def select_lrms(lrms_list):
   return 0
 
-def readConfig_old(config_file_location):
-
-  global defaults
-  global resource_list
-
-  try:
-    _configFileLocation = os.path.expandvars(config_file_location)
-    if ( os.path.exists(_configFileLocation) & os.path.isfile(_configFileLocation) ):
-      # Config File exists; read it
-      config = ConfigParser.ConfigParser()
-      config.readfp(open(_configFileLocation))
-      defaults = config.defaults()
-
-      _resources = config.sections()
-      for _resource in _resources:
-        _option_list = config.options(_resource)
-        _resource_options = {}
-        for _option in _option_list:
-          _resource_options[_option] = config.get(_resource,_option)
-        _resource_options['resource_name'] = _resource
-        resource_list[_resource] = _resource_options
-      return 0
-    else:
-      logging.error('config file [%s] not found or not readable ',_configFileLocation)
-      raise
-  except:
-    logging.error('Exception in readConfig')
-    raise
-
 def main():
 
   global default_job_folder_location
+  global default_joblist_location
+  global default_joblist_lock
 
   try:
     # Parse command line arguments
@@ -83,7 +59,7 @@ def main():
       raise Exception('invalid input-file argument')
 
     _application_to_run = args[0]
-    _input_file = args[1]
+    _input_file = os.path.abspath(args[1])
     logging.debug('Defined arguments as: application [%s], inputfile [%s]',_application_to_run,_input_file)
 
     logging.info('Parsing command line arguments\t\t[ ok ]')
@@ -212,6 +188,28 @@ def main():
         _fileHandle = open(default_job_folder_location+'/'+unique_token+'/'+defaults['lrms_jobid'],'w')
         _fileHandle.write(lrms.resource['resource_name']+'\t'+lrms_jobid)
         _fileHandle.close()
+
+        logging.debug('appending jobid to .jobs file as specified in defaults')
+        try:
+          # appending jobid to .jobs file as specified in defaults
+          default_joblist_location = os.path.expandvars(default_joblist_location)
+          default_joblist_lock = os.path.expandvars(default_joblist_lock)
+
+          logging.debug('obtaining lock')
+          if ( obtain_file_lock(default_joblist_location,default_joblist_lock) ):
+            _fileHandle = open(default_joblist_location,'a')
+            _fileHandle.write(default_job_folder_location+'/'+unique_token+'\n')
+            _fileHandle.close()
+          else:
+            raise Exception('Failed obtain lock')
+
+        except:
+          logging.error('Failed in appending current jobid to list of jobs in %s',default_joblist_location)
+          logging.debug('Exception %s',sys.exc_info()[1])
+
+        # release lock
+        if ( (not release_file_lock(default_joblist_lock)) & (os.path.isfile(default_joblist_lock)) ):
+          logging.error('Failed removing lock file')
 
         logging.info('Dumping lrms log information\t\t\t[ ok ]')
 

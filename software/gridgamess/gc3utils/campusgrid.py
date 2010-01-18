@@ -205,7 +205,8 @@ class ArcLrms(LRMS):
             logging.debug('Running ARC command [ %s ]',_command)
 
             retval = commands.getstatusoutput(_command)
-            jobstatusunknown_pattern = "This job was only very recently"
+            # jobstatusunknown_pattern = "This job was only very recently"
+            jobstatusunknown_pattern = "Job information not found"
             jobstatusremoved_pattern = "Job information not found"
             jobstatusok_pattern = "Status: "
             jobexitcode_pattern = "Exit Code: "
@@ -218,8 +219,8 @@ class ArcLrms(LRMS):
 
             if ( jobstatusunknown_pattern in retval[1] ):
                 jobstatus = "Status: RUNNING"
-            elif ( jobstatusremoved_pattern in retval[1] ):
-                jobstatus = "Status: FINISHED"
+#            elif ( jobstatusremoved_pattern in retval[1] ):
+#                jobstatus = "Status: FINISHED"
             elif ( jobstatusok_pattern in retval[1] ):
 
                 # Extracting ARC job status
@@ -253,7 +254,7 @@ class ArcLrms(LRMS):
         try:
             result_location_pattern="Results stored at "
             
-            _command = "ngget -s FINISHED -d 2 -dir "+job_dir+" "+lrms_jobid
+            _command = "ngget -keep -s FINISHED -d 2 -dir "+job_dir+" "+lrms_jobid
 
             logging.debug('Running ARC command [ %s ]',_command)
 
@@ -762,3 +763,41 @@ def readConfig(config_file_location):
     except:
         logging.error('Exception in readConfig')
         raise
+
+def obtain_file_lock(default_joblist_location, default_joblist_lock):
+    # Obtain lock
+    lock_obtained = False
+    retries = 3
+    default_wait_time = 1
+
+    logging.debug('trying creating lock for %s in %s',default_joblist_location,default_joblist_lock)    
+
+    while lock_obtained == False:
+        if ( retries > 0 ):
+            try:
+                os.link(default_joblist_location,default_joblist_lock)
+                lock_obtained = True
+                break
+            except OSError:
+                # lock already created; wait
+                logging.debug('Lock already created; retry later [ %d ]',retries)
+                time.sleep(default_wait_time)
+                retries = retries - 1
+            except:
+                logging.error('failed obtaining lock due to %s',sys.exc_info()[1])
+                raise
+        else:
+            logging.error('could not obtain lock for updating list of jobs')
+            break
+
+    return lock_obtained
+
+def release_file_lock(default_joblist_lock):
+    try:
+        os.remove(default_joblist_lock)
+        return True
+    except:
+        logging.debug('Failed removing lock due to %s',sys.exc_info()[1])
+        return False
+
+                                                                                                                                                                                                                                                     
