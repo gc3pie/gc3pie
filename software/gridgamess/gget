@@ -77,7 +77,7 @@ def main():
           lrms = ArcLrms(resource)
         elif ( resource['type'] == "ssh"):
           logging.warning('SSH not yet implemented')
-          raise Exception('could not instanciate LRMS')
+          raise Exception('could not instantiate LRMS')
         else:
           logging.error('Unknown resource type %s',resource['type'])
           raise  Exception('unknown resource type')
