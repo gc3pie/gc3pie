@@ -85,6 +85,7 @@ How to use gridgamess suite
 
 	Note: if no resource is specified, gsub will simply pick the first one in the list
 	Note2: use "-r <resource_name>" as an additional parameter for forcing submission to a given resource
+	Example:  gsub -r ocikbpra gamess /home/mpackard/gamess/inputs/exam01.inp
 
 5.1) gsub returns a jobid which is a foldername created as follow:
 	$PWD/<internal_coding>
