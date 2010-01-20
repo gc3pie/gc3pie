@@ -453,6 +453,21 @@ class SshLrms(LRMS):
 
     """Below are the functions needed only for the SshLrms class."""
 
+    def get_qsub_jobid(self, _output):
+        """Parse the qsub output for the local jobid."""
+        # cd unique_token
+        # lrms_jobid = grep something from output
+        # todo : something with _output
+        # todo : make this actually do something
+        # lrms_jobid = _output.pull_out_the_number
+        lrms_jobid = re.split(" ",_output)[2]
+
+        logging.debug('get_qsub_jobid jobid: ' + lrms_jobid)
+
+        return lrms_jobid
+
+
+
     def copy_input(self, input_file, unique_token, username, frontend):
         """Try to create remote directory named unique_token, then copy input_file there."""
         

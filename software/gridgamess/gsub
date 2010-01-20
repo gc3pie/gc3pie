@@ -67,9 +67,6 @@ def main():
     # read configuration file
     (defaults,resource_list) = readConfig(default_config_file_location)
 
-    print defaults
-    print resource_list
-
     # How to handle empty defaults
     # defaults['lrms_log'] 
     # defaults['lrms_jobid']
@@ -146,10 +143,6 @@ def main():
       _dirname = dirname(_input_file)
       _inputname = inputname(_input_file)
       _inputfilename = inputfilename(_input_file)
-
-      print _dirname
-      print _inputname
-      print _inputfilename
 
       # create_unique_token
       unique_token = create_unique_token(_input_file,lrms.resource['resource_name'])
