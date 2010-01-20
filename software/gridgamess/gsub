@@ -67,6 +67,9 @@ def main():
     # read configuration file
     (defaults,resource_list) = readConfig(default_config_file_location)
 
+    print defaults
+    print resource_list
+
     # How to handle empty defaults
     # defaults['lrms_log'] 
     # defaults['lrms_jobid']
@@ -144,6 +147,10 @@ def main():
       _inputname = inputname(_input_file)
       _inputfilename = inputfilename(_input_file)
 
+      print _dirname
+      print _inputname
+      print _inputfilename
+
       # create_unique_token
       unique_token = create_unique_token(_input_file,lrms.resource['resource_name'])
 
@@ -163,7 +170,7 @@ def main():
 
       # resource_name.submit_job(input, unique_token, application, lrms_log) -> returns [lrms_jobid,lrms_log]
       logging.debug('Submitting job with %s %s %s %s',unique_token, _application_to_run, _input_file, defaults['lrms_log'])
-      (lrms_jobid,lrms_log) = lrms.submit_job(unique_token, _application_to_run, _input_file)
+      (lrms_jobid,lrms_log) = lrms.submit_job(unique_token, _application_to_run, _inputfilename)
 
       logging.info('Submission process to LRMS backend\t\t\t[ ok ]')
 
@@ -189,26 +196,40 @@ def main():
         _fileHandle.write(lrms.resource['resource_name']+'\t'+lrms_jobid)
         _fileHandle.close()
 
+        # if joblist_location & joblist_lock are not defined, use default
+        try: 
+            joblist_location 
+        except NameError: 
+            joblist_location = os.path.expandvars(default_joblist_location)
+
+        try: 
+            joblist_lock 
+        except NameError:
+            joblist_lock = os.path.expandvars(default_joblist_lock)
+
+        # if joblist_location does not exist, create it
+        if not os.path.exists(joblist_location): 
+            open(joblist_location, 'w').close() 
+            logging.debug(joblist_location + ' did not exist.  created it.')
+
         logging.debug('appending jobid to .jobs file as specified in defaults')
         try:
           # appending jobid to .jobs file as specified in defaults
-          default_joblist_location = os.path.expandvars(default_joblist_location)
-          default_joblist_lock = os.path.expandvars(default_joblist_lock)
 
           logging.debug('obtaining lock')
-          if ( obtain_file_lock(default_joblist_location,default_joblist_lock) ):
-            _fileHandle = open(default_joblist_location,'a')
+          if ( obtain_file_lock(joblist_location,joblist_lock) ):
+            _fileHandle = open(joblist_location,'a')
             _fileHandle.write(default_job_folder_location+'/'+unique_token+'\n')
             _fileHandle.close()
           else:
             raise Exception('Failed obtain lock')
 
         except:
-          logging.error('Failed in appending current jobid to list of jobs in %s',default_joblist_location)
+          logging.error('Failed in appending current jobid to list of jobs in %s',joblist_location)
           logging.debug('Exception %s',sys.exc_info()[1])
 
         # release lock
-        if ( (not release_file_lock(default_joblist_lock)) & (os.path.isfile(default_joblist_lock)) ):
+        if ( (not release_file_lock(joblist_lock)) & (os.path.isfile(joblist_lock)) ):
           logging.error('Failed removing lock file')
 
         logging.info('Dumping lrms log information\t\t\t[ ok ]')

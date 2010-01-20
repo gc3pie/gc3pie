@@ -45,23 +45,22 @@ def main():
 
     logging.info('Parsing command line arguments\t\t[ ok ]')
     
-    # todo : change this variable name.  It should be unique_token or jobid.  
-    lrms_jobid = args[0]
+    unique_token = args[0]
 
     # read configuration file
     (defaults,resource_list) = readConfig(default_config_file_location)
 
     logging.info('Loading configuration file\t\t\t[ ok ]')
 
-    if ( (os.path.exists(lrms_jobid) == False ) | (os.path.isdir(lrms_jobid) == False) | ( not check_inputfile(lrms_jobid+'/'+defaults['lrms_jobid']) ) ):
+    if ( (os.path.exists(unique_token) == False ) | (os.path.isdir(unique_token) == False) | ( not check_inputfile(unique_token+'/'+defaults['lrms_jobid']) ) ):
       logging.critical('Jobid Not valid')
       raise Exception('invalid jobid')
 
-    logging.info('lrms_jobid file check\t\t\t[ ok ]')
+    logging.info('unique_token file check\t\t\t[ ok ]')
 
     # check .finished file
-    if ( not check_inputfile(lrms_jobid+'/'+defaults['lrms_finished']) ):
-      _fileHandle = open(lrms_jobid+'/'+defaults['lrms_jobid'],'r')
+    if ( not check_inputfile(unique_token+'/'+defaults['lrms_finished']) ):
+      _fileHandle = open(unique_token+'/'+defaults['lrms_jobid'],'r')
       _raw_resource_info = _fileHandle.read()
       _fileHandle.close()
 
@@ -93,13 +92,15 @@ def main():
 
         logging.info('Init LRMS\t\t\t[ ok ]')
         _lrms_jobid = _list_resource_info[1]
-        #_lrms_dirfolder = dirname(lrms_jobid)
-        (retval,lrms_log) = lrms.get_results(_lrms_jobid,lrms_jobid)
+        logging.debug('_list_resource_info : ' + _list_resource_info[1])
 
+        #_lrms_dirfolder = dirname(unique_token)
+        (retval,lrms_log) = lrms.get_results(_lrms_jobid,unique_token)
+        
         # dump lrms_log
         try:
           logging.debug('Dumping lrms_log')
-          _fileHandle = open(lrms_jobid+'/'+defaults['lrms_log'],'a')
+          _fileHandle = open(unique_token+'/'+defaults['lrms_log'],'a')
           _fileHandle.write(LRMSLOG_PREFIX)
           _fileHandle.write(lrms_log+'\n')
           _fileHandle.close()
@@ -115,7 +116,7 @@ def main():
         # Job finished; results retrieved; writing .finished file
         try:
           logging.debug('Creating finished file')
-          open(lrms_jobid+"/"+defaults['lrms_finished'],'w').close()      
+          open(unique_token+"/"+defaults['lrms_finished'],'w').close()      
         except:
           logging.error('Failed creating finished file [ %s ]',sys.exc_info()[1])
           # Should handle the exception differently ?
@@ -132,8 +133,8 @@ def main():
             _oldFileHandle  = open(default_joblist_location)
             _oldFileHandle.seek(0)
             for line in _oldFileHandle:
-              logging.debug('checking %s with %s',line,lrms_jobid)
-              if ( not lrms_jobid in line ):
+              logging.debug('checking %s with %s',line,unique_token)
+              if ( not unique_token in line ):
                 logging.debug('writing line')
                 _newFileHandle.write(line)
 
@@ -162,7 +163,7 @@ def main():
         logging.critical('Failed finding matching resource name [ %s ]',_list_resource_info[0])
         raise
 
-    sys.stdout.write('Job results successfully retrieved in [ '+lrms_jobid+' ]\n')
+    sys.stdout.write('Job results successfully retrieved in [ '+unique_token+' ]\n')
     sys.stdout.flush
 
     return 0

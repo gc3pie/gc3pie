@@ -9,6 +9,7 @@ import md5
 import time
 import ConfigParser
 import shutil
+import getpass
 
 # -----------------------------------------------------
 # Interface design
@@ -45,8 +46,8 @@ class ArcLrms(LRMS):
     VOMSPROXYINIT = "voms-proxy-init -q -voms smscg"
     SLCSINFO = "openssl x509 -noout -checkend 3600 -in ~/.globus/usercert.pem"
     SLCSINIT = "slcs-init --idp uzh.ch"
-    GAMESS_XRSL_TEMPLATE = "$HOME/.gc3/gamess_template.xrsl"
-    AAI_CREDENTIAL_REPO = "$HOME/.gc3/aai_credential"
+    GAMESS_XRSL_TEMPLATE = "~/.gc3/gamess_template.xrsl"
+    AAI_CREDENTIAL_REPO = "~/.gc3/aai_credential"
     resource = []
 
     def __init__(self, resource):
@@ -348,10 +349,7 @@ class SshLrms(LRMS):
         # example: ssh mpackard@ocikbpra.uzh.ch 'cd unique_token ; $gamess_location -n cores input_file 
 
         # dump stdout+stderr to unique_token/lrms_log
-        # should look something like this when done:
 
-# todo remove :
-#        cmd = ssh_location + username + "@" + frontend + "'cd ' + unique_token + " ; $" + qgms_location + " -n " + ncores + " " + input + "'"
         try:
 
             # copy input first
@@ -369,7 +367,7 @@ class SshLrms(LRMS):
 
             if ( retval[0] != 0 ):
                 logging.critical("_submit_command failed")
-                raise retval[1]
+                raise 
 
             lrms_jobid = self.get_qsub_jobid(retval[1])
 
@@ -412,62 +410,48 @@ class SshLrms(LRMS):
 
     def get_results(self,lrms_jobid,unique_token):
         """Retrieve results of a job."""
-# todo remove :
-#        cmd = scp_location + username + "@" + frontend + "'cd ' + unique_token + " ; $" + qgms_location + " -n " + ncores + " " + input + "'" 
 
-        """
-        Next steps:
-        - parse settings to figure out what output files should be copied back (assume gamess for now)
+        # todo: - parse settings to figure out what output files should be copied back (assume gamess for now)
 
-        """
+        try:
+	        jobname = unique_token.split('-')[0]
 
-        # todo : create parse_for_lrms_jobid
-        lrms_jobid = get_qsub_jobid(unique_token)
+                full_path_to_remote_unique_id = os.path.expandvars('$HOME'+'/'+unique_token)
+                full_path_to_local_unique_id = unique_token
 
-        _command = "%s %s@%s 'cd %s; %s -n %s %s'" % (_copy_command, 
-            self.resource['username'], 
-            self.resource['frontend'], 
-            unique_token, 
-            self.resource['gamess_location'], 
-            self.resource['ncores'], 
-            input)
+	        # first copy the normal gamess output
+	        remote_file = '%s/%s.o%s' % (full_path_to_remote_unique_id, jobname, lrms_jobid)
+	        local_file = '%s/%s.out' % (full_path_to_local_unique_id, jobname)
+	        # todo : check options
+	        retval = self.copyback_file(remote_file, local_file)
+	        if ( retval[0] != 0 ):
+	            logging.critical('could not retrieve gamess output: ' + local_file)
+	        else:
+	            logging.debug('retrieved: ' + local_file)
+	
+	        # then copy the special output files
+		    suffixes = ('.dat', '.cosmo', '.irc')
+		    for suffix in suffixes:
+		        remote_file = '%s/%s.o%s%s' % (full_path_to_remote_unique_id, jobname, lrms_jobid, suffix)
+		        local_file = '%s/%s%s' % (full_path_to_local_unique_id, jobname, suffix)
+		        # todo : check options
+	            retval = self.copyback_file(remote_file, local_file)
+	            if ( retval[0] != 0 ):
+	                logging.critical('did not retrieve: ' + local_file)
+	            else:
+	                logging.debug('retrieved: ' + local_file)
 
+            # now try to clean up 
+            # todo : clean up  
 
-        # now try to copy back all the files with the right suffixes
+                return [True, retval[1]]
 
-        full_path_to_remote_unique_id = "blah"
-        full_path_to_local_unique_id = "blah"
-
-        suffixes = ('', '.dat', '.cosmo', '.irc')
-        for suffix in suffixes:
-            remote_file = '%s/%s.o%s%s' % (full_path_to_remote_unique_id, jobname, lrms_jobid, suffix)
-            local_file = '%s/%s.%s' % (full_path_to_local_unique_id, jobname, suffix)
-        # todo : check options
-            self.copyback_file(remote_file, local_file)
-
-        # now try to clean up 
-        # todo : clean up  
-
-        return True
-
+        except:
+            logging.critical('Failure in retrieving results')
+            raise
+            
 
     """Below are the functions needed only for the SshLrms class."""
-
-
-    def get_qsub_jobid(self, _output):
-        """Parse the qsub output for the local jobid."""
-        # cd unique_token
-        # lrms_jobid = grep something from output
-
-        # todo : something with _output
-        # todo : make this actually do something
-        # lrms_jobid = _output.pull_out_the_number
-        lrms_jobid = re.split(" ",_output)[2]
-
-        logging.debug('get_qsub_jobid jobid: ' + lrms_jobid)
-
-        return lrms_jobid
-
 
     def copy_input(self, input_file, unique_token, username, frontend):
         """Try to create remote directory named unique_token, then copy input_file there."""
@@ -509,8 +493,8 @@ class SshLrms(LRMS):
         # if not, use scp
         # if not, fail
 
-        logging.debug('get_results _command: ' + _command)
 
+        # try rsync, then scp
         if os.path.isfile(self.rsync_location):
             _method = self.rsync_location
             _method_options = self.rsync_options
@@ -521,6 +505,7 @@ class SshLrms(LRMS):
             logging.critical('could not locate a suitable copy executable.')
             return False
 
+        # define command
         _command = '%s %s %s@%s:%s %s' % (
                 _method,
                 _method_options, 
@@ -531,23 +516,21 @@ class SshLrms(LRMS):
 
         logging.debug('copyback_file _command: ' + _command)
 
-        try:
-            _command
-            return True
-        except:
-            logging.critical('failed to copy %s' % remote_file )
-            raise
+        # do the copy
+        retval = (commands.getstatusoutput(_command))
+                                
+        # for some reason we have to use os.WEXITSTATUS to get the real exit code here
+        _realretval = str(os.WEXITSTATUS(retval[0]))
+        logging.debug('copyback_file _real_retval: ' + _realretval)
+        logging.debug(retval[1])
+
+        # check exit status and return
+        if ( _realretval != 0 ):
+            logging.critical('command failed: %s ' % (_command))
+
+        return retval
 
 
-
-# todo: check that this stuff is ok to remove - mike
-#check_authentication
-#copy_input
-#submit_job -> returns .lrms_jobid
-#copy_input if necessary
-#parse .lrms_output for .lrms_jobid
-#check_status
-#get_results
 
 # ================================================================
 #
@@ -764,18 +747,25 @@ def readConfig(config_file_location):
         logging.error('Exception in readConfig')
         raise
 
-def obtain_file_lock(default_joblist_location, default_joblist_lock):
+def obtain_file_lock(joblist_location, joblist_lock):
     # Obtain lock
     lock_obtained = False
     retries = 3
     default_wait_time = 1
 
-    logging.debug('trying creating lock for %s in %s',default_joblist_location,default_joblist_lock)    
+
+    # if joblist_location does not exist, create it
+    if not os.path.exists(joblist_location):
+        open(joblist_location, 'w').close()
+        logging.debug(joblist_location + ' did not exist.  created it.')
+
+
+    logging.debug('trying creating lock for %s in %s',joblist_location,joblist_lock)    
 
     while lock_obtained == False:
         if ( retries > 0 ):
             try:
-                os.link(default_joblist_location,default_joblist_lock)
+                os.link(joblist_location,joblist_lock)
                 lock_obtained = True
                 break
             except OSError:
@@ -792,12 +782,11 @@ def obtain_file_lock(default_joblist_location, default_joblist_lock):
 
     return lock_obtained
 
-def release_file_lock(default_joblist_lock):
+def release_file_lock(joblist_lock):
     try:
-        os.remove(default_joblist_lock)
+        os.remove(joblist_lock)
         return True
     except:
         logging.debug('Failed removing lock due to %s',sys.exc_info()[1])
         return False
 
-                                                                                                                                                                                                                                                     
