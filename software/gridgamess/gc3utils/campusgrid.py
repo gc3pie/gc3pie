@@ -46,8 +46,8 @@ class ArcLrms(LRMS):
     VOMSPROXYINIT = "voms-proxy-init -q -voms smscg"
     SLCSINFO = "openssl x509 -noout -checkend 3600 -in ~/.globus/usercert.pem"
     SLCSINIT = "slcs-init --idp uzh.ch"
-    GAMESS_XRSL_TEMPLATE = "~/.gc3/gamess_template.xrsl"
-    AAI_CREDENTIAL_REPO = "~/.gc3/aai_credential"
+    GAMESS_XRSL_TEMPLATE = "$HOME/.gc3/gamess_template.xrsl"
+    AAI_CREDENTIAL_REPO = "$HOME/.gc3/aai_credential"
     resource = []
 
     def __init__(self, resource):
@@ -135,6 +135,7 @@ class ArcLrms(LRMS):
                 _file_handle = tempfile.NamedTemporaryFile(suffix=".xrsl",prefix="gridgames_arc_")
                 logging.debug('tmp file %s',_file_handle.name)
 
+                logging.debug('checking input file %s',input_file)
                 # getting information from input_file
                 _file_name = os.path.basename(input_file)
                 _file_name = _file_name.split(".")[0]

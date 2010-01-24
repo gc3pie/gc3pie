@@ -163,7 +163,7 @@ def main():
 
       # resource_name.submit_job(input, unique_token, application, lrms_log) -> returns [lrms_jobid,lrms_log]
       logging.debug('Submitting job with %s %s %s %s',unique_token, _application_to_run, _input_file, defaults['lrms_log'])
-      (lrms_jobid,lrms_log) = lrms.submit_job(unique_token, _application_to_run, _inputfilename)
+      (lrms_jobid,lrms_log) = lrms.submit_job(unique_token, _application_to_run, _input_file)
 
       logging.info('Submission process to LRMS backend\t\t\t[ ok ]')
 
