@@ -11,7 +11,7 @@ import ConfigParser
 import shutil
 import getpass
 
-__all__ = ["configure_logging","check_inputfile","readConfig"]
+# __all__ = ["configure_logging","check_inputfile","readConfig","check_qgms_version","dirname","inputname","inputfilename","create_unique_token"]
 
 # ================================================================
 #

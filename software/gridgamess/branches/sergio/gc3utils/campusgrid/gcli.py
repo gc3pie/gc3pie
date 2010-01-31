@@ -1,6 +1,22 @@
-import gc3utils.campusgrid.utils
+from utils import *
+import sys
+import os
+import logging
+import ConfigParser
+from optparse import OptionParser
+from ArcLRMS import *
+
+default_config_file_location="$HOME/.gc3/config"
+default_joblist_location="$HOME/.gc3/.joblist"
+default_joblist_lock="$HOME/.gc3/.joblist_lock"
+default_job_folder_location="$PWD"
+default_wait_time = 3
 
 class Gcli:
+
+    resource_list = {}
+    defaults = {}
+
 
     def __init__(self, config_file_location):
         try:
@@ -17,7 +33,14 @@ class Gcli:
             raise
                                                         
 
+    def __select_lrms(self,lrms_list):
+        return 0
+
     def gsub(self, application_to_run, input_file, selected_resource, job_local_dir, cores, memory, walltime):
+        global default_job_folder_location
+        global default_joblist_location
+        global default_joblist_lock
+
         try:
             # Checking whether it has been passed a valid application
             if ( application_to_run != "gamess" ) & ( application_to_run != "apbs" ):
@@ -51,19 +74,19 @@ class Gcli:
                 
             # start candidate_resource loop
             for resource in candidate_resource:
-                logging.debug('Creating instance of type %s for %s',self.resource['type'],self.resource['frontend'])
-                if ( self.resource['type'] == "arc" ):
+                logging.debug('Creating instance of type %s for %s',resource['type'],resource['frontend'])
+                if ( resource['type'] == "arc" ):
                     lrms = ArcLrms(resource)
                 elif ( resource['type'] == "ssh"):
                     lrms = SshLrms(resource)
                 else:
-                    logging.error('Unknown resource type %s',self.resource['type'])
+                    logging.error('Unknown resource type %s',resource['type'])
                     continue
 
                 if ( (lrms.isValid == 1) & (lrms.check_authentication() == True) ):
                     _lrms_list.append(lrms)
                 else:
-                    logging.error('Failed validating lrms instance for resource %s',self.resource['resource_name'])
+                    logging.error('Failed validating lrms instance for resource %s',resource['resource_name'])
 
             # end of candidate_resource loop
 
@@ -116,15 +139,15 @@ class Gcli:
             lrms_jobid = None
 
             # resource_name.submit_job(input, unique_token, application, lrms_log) -> returns [lrms_jobid,lrms_log]
-            logging.debug('Submitting job with %s %s %s %s',unique_token, application_to_run, input_file, defaults['lrms_log'])
-            (lrms_jobid,lrms_log) = lrms.submit_job(unique_token, application_to_run, _inputfilename)
+            logging.debug('Submitting job with %s %s %s %s',unique_token, application_to_run, input_file, self.defaults['lrms_log'])
+            (lrms_jobid,lrms_log) = lrms.submit_job(unique_token, application_to_run, input_file)
 
             logging.info('Submission process to LRMS backend\t\t\t[ ok ]')
 
             # dump lrms_log
             try:
                 logging.debug('Dumping lrms_log and lrms_jobid')
-                _fileHandle = open(default_job_folder_location+'/'+unique_token+'/'+defaults['lrms_log'],'a')
+                _fileHandle = open(default_job_folder_location+'/'+unique_token+'/'+self.defaults['lrms_log'],'a')
                 _fileHandle.write(lrms_log+'\n')
                 _fileHandle.close()
             except:
@@ -139,7 +162,7 @@ class Gcli:
             # dumping lrms_jobid
             # not catching the exception as this is suppoed to be a fatal failure;
             # thus propagated to gsub's main try
-            _fileHandle = open(default_job_folder_location+'/'+unique_token+'/'+defaults['lrms_jobid'],'w')
+            _fileHandle = open(default_job_folder_location+'/'+unique_token+'/'+self.defaults['lrms_jobid'],'w')
             _fileHandle.write(lrms.resource['resource_name']+'\t'+lrms_jobid)
             _fileHandle.close()
 
@@ -174,6 +197,10 @@ class Gcli:
                 logging.error('Failed in appending current jobid to list of jobs in %s',joblist_location)
                 logging.debug('Exception %s',sys.exc_info()[1])
 
+            # release lock
+            if ( (not release_file_lock(joblist_lock)) & (os.path.isfile(joblist_lock)) ):
+                logging.error('Failed removing lock file')
+                
             logging.info('Dumping lrms log information\t\t\t[ ok ]')
 
             return [0,default_job_folder_location+'/'+unique_token]
@@ -187,6 +214,68 @@ class Gcli:
     def gstat(self, jobod):
         pass
 
-    
+def main():
+    global default_job_folder_location
+    global default_joblist_location
+    global default_joblist_lock
 
-    
+    try:
+        program_name = sys.argv[0]
+        if ( os.path.basename(program_name) == "gsub" ):
+            # Gsub
+            # Parse command line arguments
+            _usage = "%prog [options] application input-file"
+            parser = OptionParser(usage=_usage)
+            parser.add_option("-v", action="count", dest="verbosity", default=0, help="Set verbosity level")
+            parser.add_option("-r", "--resource", action="store", dest="resource_name", metavar="STRING", default="", help='Select resource destination')
+            (options, args) = parser.parse_args()
+
+            # Configure logging service
+            configure_logging(options.verbosity)
+
+            if len(args) != 2:
+                logging.critical('Command line argument parsing\t\t\t[ failed ]\n\tIncorrect number of arguments; expected 2 got %d ',len(args))
+                #      parser.error('wrong number on arguments')
+                #      parser.print_help()
+                raise Exception('wrong number on arguments')
+
+            # Checking whether it has been passed a valid application
+            if ( args[0] != "gamess" ) & ( args[0] != "apbs" ):
+                logging.critical('Application argument\t\t\t[ failed ]\n\tUnknown application: '+str(args[0]))
+                raise Exception('invalid application argument')
+
+            # check input file
+            if ( not check_inputfile(args[1]) ):
+                logging.critical('Input file argument\t\t\t[ failed ]'+args[1])
+                raise Exception('invalid input-file argument')
+                                        
+        elif ( os.path.basename(program_name) == "gstat" ):
+            # Gstat
+            print "Called gstat"
+        elif ( os.path.basename(program_name) == "gget" ):
+            print "Called gget"
+            # Gget
+        else:
+            # Error
+            print "Unknown command "+program_name
+            return 1
+
+        gcli = Gcli(default_config_file_location)
+
+        if ( os.path.basename(program_name) == "gsub" ):
+            # gsub prototype: application_to_run, input_file, selected_resource, job_local_dir, cores, memory, walltime
+            (exitcode,jobid) = gcli.gsub(args[0],os.path.abspath(args[1]),None,None,None,None,None)
+            if (not exitcode):
+                print jobid
+            else:
+                raise Exception("submission terminated")
+    except:
+        logging.info('%s',sys.exc_info()[1])
+        # think of a better error message
+        # Should intercept the exception somehow and generate error message accordingly ?
+        print "gsub failed: "+str(sys.exc_info()[1])
+        return 1
+                
+if __name__ == "__main__":
+      sys.exit(main())
+      
