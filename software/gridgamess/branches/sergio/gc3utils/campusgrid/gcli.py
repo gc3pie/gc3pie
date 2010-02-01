@@ -333,6 +333,27 @@ class Gcli:
         return 0
 
     def gstat(self, unique_token):
+        global default_joblist_location
+
+        if ( unique_token != None):
+            return self.__gstat(unique_token)
+        else:
+            # Read content of .joblist and return gstat for each of them
+            default_joblist_location = os.path.expandvars(default_joblist_location)
+            joblist  = open(default_joblist_location,'r')
+            joblist.seek(0)
+            lrmsjobid_single_string = joblist.read()
+            joblist.close()
+            lrmsjobid_list = re.split('\n',lrmsjobid_single_string)
+            status_list = []
+            if ( len(lrmsjobid_list) > 0 ):
+                for _lrmsjobid in lrmsjobid_list:
+                    if ( _lrmsjobid != "" ):
+                        logging.debug('Checking status fo jobid [ %s ]',_lrmsjobid)
+                        status_list.append(self.__gstat(_lrmsjobid))
+            return [0,status_list]
+
+    def __gstat(self, unique_token):
         if ( (os.path.exists(unique_token) == False ) | (os.path.isdir(unique_token) == False) | ( not check_inputfile(unique_token+'/'+self.defaults['lrms_jobid']) ) ):
             logging.critical('Jobid Not valid')
             raise Exception('invalid jobid')
@@ -346,10 +367,10 @@ class Gcli:
             _fileHandle.close()
 
             _list_resource_info = re.split('\t',_raw_resource_info)
-                                        
+            
             logging.debug('frontend: [ %s ] jobid: [ %s ]',_list_resource_info[0],_list_resource_info[1])
             logging.info('reading lrms_jobid info\t\t\t[ ok ]')
-
+            
             if ( _list_resource_info[0] in self.resource_list ):
                 logging.debug('Found match for resource [ %s ]',_list_resource_info[0])
                 logging.debug('Creating lrms instance')
@@ -382,7 +403,7 @@ class Gcli:
         else:
             retval = "Status: FINISHED"
 
-        return [0,retval]
+        return [unique_token,retval]
         
 def main():
     global default_job_folder_location
@@ -397,7 +418,7 @@ def main():
             _usage = "%prog [options] application input-file"
             parser = OptionParser(usage=_usage)
             parser.add_option("-v", action="count", dest="verbosity", default=0, help="Set verbosity level")
-            parser.add_option("-r", "--resource", action="store", dest="resource_name", metavar="STRING", default="", help='Select resource destination')
+            parser.add_option("-r", "--resource", action="store", dest="resource_name", metavar="STRING", default=None, help='Select resource destination')
             (options, args) = parser.parse_args()
 
             # Configure logging service
@@ -431,8 +452,8 @@ def main():
             # Configure logging service
             configure_logging(options.verbosity)
 
-            if len(args) != 1:
-                logging.critical('Command line argument parsing\t\t\t[ failed ]\n\tIncorrect number of arguments; expected 1 got %d ',len(args))
+            if len(args) > 1:
+                logging.critical('Command line argument parsing\t\t\t[ failed ]\n\tIncorrect number of arguments; expected either 0 or 1 got %d ',len(args))
                 parser.print_help()
                 raise Exception('wrong number on arguments')
 
@@ -466,20 +487,25 @@ def main():
 
         if ( os.path.basename(program_name) == "gsub" ):
             # gsub prototype: application_to_run, input_file, selected_resource, job_local_dir, cores, memory, walltime
-            (exitcode,jobid) = gcli.gsub(args[0],os.path.abspath(args[1]),None,None,None,None,None)
+#            if ( self.options.resource_name )
+            (exitcode,jobid) = gcli.gsub(args[0],os.path.abspath(args[1]),options.resource_name,None,None,None,None)
             if (not exitcode):
                 print jobid
             else:
                 raise Exception("submission terminated")
         elif (os.path.basename(program_name) == "gstat" ):
-            (retval,job_status) = gcli.gstat(args[0])
+            if ( len(args) > 0 ):
+                (retval,job_status) = gcli.gstat(args[0])
+            else:
+                (retval,job_status_list) = gcli.gstat(None)
             if (not retval):
-                sys.stdout.write('Job: '+args[0]+'\n')
-                sys.stdout.write(job_status+'\n')
-                sys.stdout.flush()
+                for _job_status_report in job_status_list:
+                    sys.stdout.write('Job: '+_job_status_report[0]+'\n')
+                    sys.stdout.write(_job_status_report[1]+'\n')
+                    sys.stdout.flush()
             else:
                 logging.debug('retval returned %d',retval)
-                raise Exception("gstat terminated")
+                raise Exception("gstat terminated")                
         elif (os.path.basename(program_name) == "gget"):
             retval = gcli.gget(unique_token)
             if (not retval):
