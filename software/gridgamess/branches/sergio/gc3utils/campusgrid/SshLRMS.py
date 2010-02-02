@@ -67,7 +67,11 @@ class SshLrms(LRMS):
 
 
     def submit_job(self, unique_token, application, input_file):
-        """Submit a job."""
+        """Submit a job.
+
+        On the backend, the command will look something like this:
+        # ssh user@remote_frontend 'cd unique_token ; $gamess_location -n cores input_file'
+        """
 
 # todo : fix this:
 #    def submit_job(self,application,inputfile,outputfile,cores,memory):
@@ -143,11 +147,15 @@ class SshLrms(LRMS):
 
         # todo: - parse settings to figure out what output files should be copied back (assume gamess for now)
 
-        try:
-	        jobname = unique_token.split('-')[0]
+        _unique_token = os.path.basename(unique_token)
 
-                full_path_to_remote_unique_id = os.path.expandvars('$HOME'+'/'+unique_token)
-                full_path_to_local_unique_id = unique_token
+
+        try:
+	        jobname = _unique_token.split('-')[0]
+
+                # todo: this expandvars $home is not going to work on clusters where home is different.  fix.
+                full_path_to_remote_unique_id = os.path.expandvars('$HOME'+'/'+_unique_token)
+                full_path_to_local_unique_id = _unique_token
 
 	        # first copy the normal gamess output
 	        remote_file = '%s/%s.o%s' % (full_path_to_remote_unique_id, jobname, lrms_jobid)
@@ -162,11 +170,13 @@ class SshLrms(LRMS):
 	        # then copy the special output files
 		    suffixes = ('.dat', '.cosmo', '.irc')
 		    for suffix in suffixes:
+                logging.debug('suffix: ' + suffix)
 		        remote_file = '%s/%s.o%s%s' % (full_path_to_remote_unique_id, jobname, lrms_jobid, suffix)
 		        local_file = '%s/%s%s' % (full_path_to_local_unique_id, jobname, suffix)
 		        # todo : check options
 	            retval = self.copyback_file(remote_file, local_file)
 	            if ( retval[0] != 0 ):
+	            if ( self.copyback_file(remote_file, local_file) != 0 ):
 	                logging.critical('did not retrieve: ' + local_file)
 	            else:
 	                logging.debug('retrieved: ' + local_file)
@@ -174,11 +184,11 @@ class SshLrms(LRMS):
             # now try to clean up 
             # todo : clean up  
 
-                return [True, retval[1]]
-
         except:
             logging.critical('Failure in retrieving results')
             raise
+
+        return [True, retval[1]]
             
 
     """Below are the functions needed only for the SshLrms class."""
