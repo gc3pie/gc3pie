@@ -452,6 +452,8 @@ def main():
             # Configure logging service
             configure_logging(options.verbosity)
 
+            logging.debug('Command lines argument length: [ %d ]',len(args))
+
             if len(args) > 1:
                 logging.critical('Command line argument parsing\t\t\t[ failed ]\n\tIncorrect number of arguments; expected either 0 or 1 got %d ',len(args))
                 parser.print_help()
