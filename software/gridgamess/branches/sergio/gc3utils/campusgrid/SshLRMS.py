@@ -25,7 +25,7 @@ class SshLrms(LRMS):
     scp_location = "/usr/bin/scp"
     rsync_location = "/usr/bin/rsync"
     ssh_options = "-o ConnectTimeout=30"
-    rsync_options= '"-e ssh ' + ssh_options + '"'
+    rsync_options= '-e "ssh ' + ssh_options + '"'
     resource = []
     
     isValid = 0
@@ -170,16 +170,16 @@ class SshLrms(LRMS):
 	        # then copy the special output files
 		    suffixes = ('.dat', '.cosmo', '.irc')
 		    for suffix in suffixes:
-                logging.debug('suffix: ' + suffix)
+                	logging.debug('suffix: ' + suffix)
 		        remote_file = '%s/%s.o%s%s' % (full_path_to_remote_unique_id, jobname, lrms_jobid, suffix)
 		        local_file = '%s/%s%s' % (full_path_to_local_unique_id, jobname, suffix)
 		        # todo : check options
-	            retval = self.copyback_file(remote_file, local_file)
-	            if ( retval[0] != 0 ):
-	            if ( self.copyback_file(remote_file, local_file) != 0 ):
-	                logging.critical('did not retrieve: ' + local_file)
-	            else:
-	                logging.debug('retrieved: ' + local_file)
+	            	retval = self.copyback_file(remote_file, local_file)
+	            	if ( retval[0] != 0 ):
+	            		if ( self.copyback_file(remote_file, local_file) != 0 ):
+	                		logging.critical('did not retrieve: ' + local_file)
+	            		else:
+	                		logging.debug('retrieved: ' + local_file)
 
             # now try to clean up 
             # todo : clean up  
