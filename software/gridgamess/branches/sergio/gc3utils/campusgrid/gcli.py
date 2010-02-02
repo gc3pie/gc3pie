@@ -12,6 +12,7 @@ import logging
 import ConfigParser
 from optparse import OptionParser
 from ArcLRMS import *
+from SshLRMS import *
 
 default_config_file_location="$HOME/.gc3/config"
 default_joblist_location="$HOME/.gc3/.joblist"

@@ -11,7 +11,9 @@ import ConfigParser
 import shutil
 import getpass
 import utils
-import LRMS
+from utils import *
+from LRMS import LRMS
+
 
 # -----------------------------------------------------
 # SSH lrms
@@ -74,6 +76,9 @@ class SshLrms(LRMS):
         # example: ssh mpackard@ocikbpra.uzh.ch 'cd unique_token ; $gamess_location -n cores input_file 
 
         # dump stdout+stderr to unique_token/lrms_log
+	
+	# homogenize the input
+	_inputfilename = inputfilename(input_file)
 
         try:
 
@@ -84,7 +89,7 @@ class SshLrms(LRMS):
                 raise
 
             # then try to submit it to the local queueing system 
-            _submit_command = "%s %s@%s 'cd ~/%s; %s/qgms -n %s %s'" % (self.ssh_location, self.resource['username'], self.resource['frontend'], unique_token, self.resource['gamess_location'], self.resource['ncores'], input_file)
+            _submit_command = "%s %s@%s 'cd ~/%s; %s/qgms -n %s %s'" % (self.ssh_location, self.resource['username'], self.resource['frontend'], unique_token, self.resource['gamess_location'], self.resource['ncores'], _inputfilename)
 	
             logging.debug('submit _submit_command: ' + _submit_command)
 
