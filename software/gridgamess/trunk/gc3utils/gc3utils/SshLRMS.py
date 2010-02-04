@@ -168,21 +168,29 @@ class SshLrms(LRMS):
 	            logging.debug('retrieved: ' + local_file)
 	
 	        # then copy the special output files
-		    suffixes = ('.dat', '.cosmo', '.irc')
-		    for suffix in suffixes:
-                	logging.debug('suffix: ' + suffix)
+		    cp_suffixes = ('.dat', '.cosmo', '.irc')
+		    for suffix in cp_suffixes:
+                	logging.debug('cp_suffix: ' + suffix)
 		        remote_file = '%s/%s.o%s%s' % (full_path_to_remote_unique_id, jobname, lrms_jobid, suffix)
 		        local_file = '%s/%s%s' % (full_path_to_local_unique_id, jobname, suffix)
 		        # todo : check options
-	            	retval = self.copyback_file(remote_file, local_file)
-	            	if ( retval[0] != 0 ):
-	            		if ( self.copyback_file(remote_file, local_file) != 0 ):
-	                		logging.critical('did not retrieve: ' + local_file)
-	            		else:
-	                		logging.debug('retrieved: ' + local_file)
+	                if ( self.copyback_file(remote_file, local_file) != 0 ):
+	                    logging.critical('did not retrieve: ' + local_file)
+	            	else:
+	                    logging.debug('retrieved: ' + local_file)
 
             # now try to clean up 
-            # todo : clean up  
+            rm_suffixes = ('.inp','.o'+lrms_jobid,'.o'+lrms_jobid+'.dat','.o'+lrms_jobid+'.inp','.po'+lrms_jobid,'.qsub')
+		    for suffix in rm_suffixes:
+                logging.debug('rm_suffix: ' + suffix)
+		        remote_file = '%s/%s%s' % (full_path_to_remote_unique_id, jobname, suffix)
+		        # todo : check options
+	            if ( self.purge_remotefile(remote_file) != 0 ):
+	                logging.critical('did not purge remote file: ' + remote_file)
+	            else:
+	                logging.debug('purged remote file: ' + remote_file)
+
+            # todo : check clean up  
 
         except:
             logging.critical('Failure in retrieving results')
@@ -255,7 +263,7 @@ class SshLrms(LRMS):
             _method_options = self.rsync_options
         elif os.path.isfile(self.scp_location):
             _method = self.scp_location
-            _method_options = self.scp_options
+            _method_options = self.ssh_options
         else:
             logging.critical('could not locate a suitable copy executable.')
             return False
@@ -284,3 +292,34 @@ class SshLrms(LRMS):
             logging.critical('command failed: %s ' % (_command))
 
         return retval
+
+    def purge_remotefile(self, remote_file):
+        """Remove a remote file."""
+
+        _method = self.ssh_location
+        _method_options = self.ssh_options
+
+        # define command
+        _command = '%s %s %s@%s rm %s' % (
+                _method,
+                _method_options, 
+                self.resource['username'], 
+                self.resource['frontend'], 
+                remote_file)
+
+        logging.debug('purge_remotefile _command: ' + _command)
+
+        # do the remove
+        retval = (commands.getstatusoutput(_command))
+
+        # for some reason we have to use os.WEXITSTATUS to get the real exit code here
+        _realretval = str(os.WEXITSTATUS(retval[0]))
+        logging.debug('purge_remotefile _real_retval: ' + _realretval)
+        logging.debug(retval[1])
+
+        # check exit status and return
+        if ( _realretval != 0 ):
+            logging.critical('command failed: %s ' % (_command))
+
+        return retval
+
