@@ -5,7 +5,18 @@ Webpage: none yet
 ===
 
 
-Required configuration
+Installation
+======================
+
+If you checked out this directory to your $HOME:
+
+Add the $HOME/gc3utils dir to your $PYTHONPATH environment variable, and $HOME/gc3utils/tools to your $PATH.  To make it permanent, put this in your ~/.bashrc file:
+
+export PYTHONPATH=$HOME/gc3utils:$PYTHONPATH
+export PATH=$HOME/gc3utils/tools:$PATH
+
+
+Require configuration
 ======================
 
 1) in $HOME create folder named .gc3
