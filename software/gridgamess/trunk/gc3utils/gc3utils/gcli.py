@@ -224,8 +224,8 @@ class Gcli:
                 try:
                     # dbfile_location should be an absolute path including the db filename, e.g.:
                     # /home/alice/.gc3/gamess.db
-                    db = Database() 
-                    db.create_database(dbfile_location)
+                    #db = Database() 
+                    #db.create_database(dbfile_location)
 
                     logging.debug(dbfile_location + ' did not exist.  Created it.')
 

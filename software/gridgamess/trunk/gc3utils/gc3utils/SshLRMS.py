@@ -179,10 +179,10 @@ class SshLrms(LRMS):
 	            	else:
 	                    logging.debug('retrieved: ' + local_file)
 
-            # now try to clean up 
-            rm_suffixes = ('.inp','.o'+lrms_jobid,'.o'+lrms_jobid+'.dat','.o'+lrms_jobid+'.inp','.po'+lrms_jobid,'.qsub')
+            	    # now try to clean up 
+                    rm_suffixes = ('.inp','.o'+lrms_jobid,'.o'+lrms_jobid+'.dat','.o'+lrms_jobid+'.inp','.po'+lrms_jobid,'.qsub')
 		    for suffix in rm_suffixes:
-                logging.debug('rm_suffix: ' + suffix)
+                        logging.debug('rm_suffix: ' + suffix)
 		        remote_file = '%s/%s%s' % (full_path_to_remote_unique_id, jobname, suffix)
 		        # todo : check options
 	            if ( self.purge_remotefile(remote_file) != 0 ):
