@@ -13,7 +13,7 @@ import ConfigParser
 from optparse import OptionParser
 from ArcLRMS import *
 from SshLRMS import *
-import Database
+from Database import Database
 
 homedir = os.path.expandvars('$HOME')
 rcdir = homedir + "/.gc3"
