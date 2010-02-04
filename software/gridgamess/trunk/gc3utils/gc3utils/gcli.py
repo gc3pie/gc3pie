@@ -13,10 +13,13 @@ import ConfigParser
 from optparse import OptionParser
 from ArcLRMS import *
 from SshLRMS import *
+import Database
 
-default_config_file_location="$HOME/.gc3/config"
-default_joblist_location="$HOME/.gc3/.joblist"
-default_joblist_lock="$HOME/.gc3/.joblist_lock"
+homedir = os.path.expandvars('$HOME')
+rcdir = homedir + "/.gc3"
+default_config_file_location = rcdir + "/config"
+default_joblist_location = rcdir + "/.joblist"
+default_joblist_lock = rcdir + "/.joblist_lock"
 default_job_folder_location="$PWD"
 default_wait_time = 3
 
@@ -208,6 +211,26 @@ class Gcli:
             # release lock
             if ( (not release_file_lock(joblist_lock)) & (os.path.isfile(joblist_lock)) ):
                 logging.error('Failed removing lock file')
+
+
+            # database section
+            # todo: right now the db doesn't do anything.  this can be improved later.
+
+            dbfile_location = rcdir + "/" + application_to_run + ".db"
+            logging.debug('dbfile_locatioon: ' + dbfile_location)
+
+            # if database does not exist, create it 
+            if not os.path.exists(dbfile_location):
+                try:
+                    # dbfile_location should be an absolute path including the db filename, e.g.:
+                    # /home/alice/.gc3/gamess.db
+                    db = Database() 
+                    db.create_database(dbfile_location)
+
+                    logging.debug(dbfile_location + ' did not exist.  Created it.')
+
+                except:
+                    raise 
                 
             logging.info('Dumping lrms log information\t\t\t[ ok ]')
 
