@@ -481,6 +481,12 @@ def main():
 
             unique_token = args[0]
 
+        elif ( os.path.basename(program_name) == "gkill" ):
+            logging.info('gkill is not implemented yet')
+
+        elif ( os.path.basename(program_name) == "glist" ):
+            logging.info('glist is not implemented yet')
+
         else:
             # Error
             print "Unknown command "+program_name
