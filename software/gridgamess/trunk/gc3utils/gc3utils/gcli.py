@@ -13,7 +13,7 @@ import ConfigParser
 from optparse import OptionParser
 from ArcLRMS import *
 from SshLRMS import *
-from Database import Database
+#from Database import Database
 
 homedir = os.path.expandvars('$HOME')
 rcdir = homedir + "/.gc3"
@@ -360,7 +360,7 @@ class Gcli:
         global default_joblist_location
 
         if ( unique_token != None):
-            return self.__gstat(unique_token)
+            return [0,[self.__gstat(unique_token)]]
         else:
             # Read content of .joblist and return gstat for each of them
             default_joblist_location = os.path.expandvars(default_joblist_location)
@@ -375,6 +375,7 @@ class Gcli:
                     if ( _lrmsjobid != "" ):
                         logging.debug('Checking status fo jobid [ %s ]',_lrmsjobid)
                         status_list.append(self.__gstat(_lrmsjobid))
+            logging.debug('status_list contains [ %d ] elelemnts',len(status_list))
             return [0,status_list]
 
     def __gstat(self, unique_token):
@@ -419,13 +420,15 @@ class Gcli:
                 # check job status
                 (retval,lrms_log) = lrms.check_status(_lrms_jobid)
 
-                logging.info('check _status\t\t\t[ ok ]')
+                logging.info('check status\t\t\t[ ok ]')
             else:
                 logging.critical('Failed finding matching resource name [ %s ]',_list_resource_info[0])
                 raise Exception('failed finding matching resource')
 
         else:
             retval = "Status: FINISHED"
+
+        logging.debug('Returning [ %s ] [ %s ]',unique_token,retval)
 
         return [unique_token,retval]
         
@@ -527,10 +530,11 @@ def main():
                 raise Exception("submission terminated")
         elif (os.path.basename(program_name) == "gstat" ):
             if ( len(args) > 0 ):
-                (retval,job_status) = gcli.gstat(args[0])
+                (retval,job_status_list) = gcli.gstat(args[0])
             else:
                 (retval,job_status_list) = gcli.gstat(None)
             if (not retval):
+                logging.debug('Job_status_list')
                 for _job_status_report in job_status_list:
                     sys.stdout.write('Job: '+_job_status_report[0]+'\n')
                     sys.stdout.write(_job_status_report[1]+'\n')
