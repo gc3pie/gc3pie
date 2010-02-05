@@ -90,18 +90,15 @@ class WriteGamessInp:
         maxCol = 1000
         outRow = 1
         outCol = 1
-        #output = ''
-        countCol = 0
         for row in mat:
-            for col in row:
-                if countCol % numCol == 0:
-                    #output +='\n%2s%3s'% (outRow, outCol % maxCol) #First two cols are row index (max 99), next three are col index (max 999)
-                    file.write('\n%2s%3s'% (outRow, outCol % maxCol))
-                    outCol += 1;                 
-                file.write('%15s' % col) #the numbers are only 14 chars + a minus sign '% 9.8E'
-                countCol +=1
+            split_rows=tuple(MyUtilities.split_seq(row, numCol))
+            for row_to_print in split_rows:
+                output = '\n%2s%3s'% (outRow, outCol % maxCol)
+                file.write(output)
+                output=''.join('%15s'%i for i in row_to_print)
+                file.write(output)
+                outCol += 1;                 
             outRow = (outRow + 1) % maxRow
-            countCol = 0
             outCol=1
         return output
 

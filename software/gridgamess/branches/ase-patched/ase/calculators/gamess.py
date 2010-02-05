@@ -16,19 +16,50 @@ import time as time
 import numpy as np
 from pyparsing import *
 
+from ase.atoms import Atoms 
+
+class GamessAtoms(Atoms):
+    symmetry = None
+    comment = None
+        
+    def get_shoenflies_space_group(self):
+        return self.symmetry
+    
+    def get_comment(self):
+        return self.comment
+    
+    def set_shoenflies_space_group(self, symmetry):
+        self.symmetry = symmetry
+    
+    def set_comment(self, comment):
+        self.comment = comment
+    def copy(self):
+        import copy
+        new_atoms = GamessAtoms(Atoms.copy(self))
+        new_atoms.set_comment(copy.deepcopy(self.get_comment()))
+        new_atoms.set_shoenflies_space_group(copy.deepcopy(self.get_shoenflies_space_group()))
+        return new_atoms
+
+        
+        
+        
 class GamessParams:
     def __init__(self):
         '''Holds the GAMESS run parameters
         Constructor
         '''
-        self.end = '$END'
         self.groups = dict()
+        self.hessian = None
+        self.orbitals = None
         
     def get_keys(self):
         return self.groups.keys()
     
     def get_group(self, key):
         return self.groups[key]
+    
+    def get_groups(self):
+        return self.groups
     
     def set_group_param(self, group_key, param_key, value):
         if not group_key in self.groups:
@@ -40,29 +71,17 @@ class GamessParams:
         group_dict=self.groups[group_key]
         return group_dict[param_key]
     
-#    def get_starting_search_string(self):
-#        return "|".join(['\\%s'%(i) for i in self.keys])
-#    
-#    def get_ending_search_string(self):
-#        ends = list()
-#        for i in range(0, len(self.groups)):
-#            ends.append(self.end)
-#        return "|".join(['\\%s'%(i) for i in ends])
+    def get_hessian(self):
+        return self.hessian
     
-    def build_params(self):
-        """Returns a string of parameters in the way GAMESS 
-        expects to see them in the inp file.
-        
-        $GROUP1 PARAM1=VALUE1 PARAM2=VALUE2 $END
-        $GROUP2 PARAM3=VALUE1 PARAM4=VALUE2 $END
-        """
-        output = ''
-        for group_key, params_dict in self.groups.iteritems():
-            output += ' %s '%(group_key)
-            for param_key, param in params_dict.iteritems():
-                output += '%s=%s '%(param_key, param)
-            output += '%s\n'%(self.end)
-        return output
+    def get_orbitals(self):
+        return self.orbitals
+    
+    def set_orbitals(self, orbitals):
+        self.orbitals = orbitals
+    
+    def set_hessian(self, hessian):
+        self.hessian = hessian
 
 class Gamess(object):
     """Create the file that specifies the GAMESS job
@@ -94,7 +113,7 @@ class Gamess(object):
     def is_changed(self):
         check_if_changed = [self.atoms, self.gamess_params, self.filename]
         return self.monitor.is_changed(check_if_changed)
-        
+
     def set_atoms(self, atoms):
         self.atoms = atoms.copy()
 
@@ -106,7 +125,6 @@ class Gamess(object):
         #There are many different energies that we can return here.
         self.update(atoms)
         return float(self.parsed_dat.get_energy())
-        
 #        if force_consistent:
 #            return self.energy_free
 #        else:
@@ -120,7 +138,13 @@ class Gamess(object):
         for i in range(0, len(grad)):
             mat[i] = grad[i][1]
         return mat
-
+    
+    def get_coords_result(self, atoms):
+        self.update(atoms)
+        raw_coords=self.parsed_dat.get_coords()
+        coords = np.array(raw_coords[1::2], dtype=float)
+        return coords
+        
     def get_hessian(self, atoms, raw_format=False):
         self.update(atoms)
         if raw_format:
@@ -257,7 +281,7 @@ class ParseGamessDat(object):
             return self.group[self.HESS][index]
         return None
     
-    def get_coord(self, index=-1):
+    def get_coords(self, index=-1):
         if self.COORD in self.group:
             return self.group[self.COORD][index]
         return None
@@ -299,7 +323,7 @@ class ParseGamessDat(object):
             else:
                 data.append(value)
             last = (int(key[0]), int(key[1]))
-        return data
+        return tuple(map(tuple, data))
     
     def read_vec(self, text_block=None, returnRule=False):
         if returnRule:
@@ -310,13 +334,24 @@ class ParseGamessDat(object):
         else:
             groupTitle = self.VEC
             resultset = list()
+            last_key = ('')
+            fun_append = resultset.append
+            fun_struct_unpack = struct.unpack
             for line in text_block.splitlines(True)[1:-1]: #Do not parse heading and ending
                     cnt = (len(line) - 5) / 15 #Count how many values we have minus the key
                     fmt = "2s3s" + cnt*"15s" + "1x"
-                    vals = list(struct.unpack(fmt, line))
-                    vals = MyUtilities.striplist(vals)
-                    resultset.append([vals[0:2], vals[2:]]) # Keys                    
-            resultset = self.fix_gamess_matrix(resultset)
+                    vals = fun_struct_unpack(fmt, line)
+                    vals = map(string.strip, vals)
+                    #resultset.append([vals[0:2], vals[2:]]) # Keys
+                    key=vals[0:2]
+                    value=vals[2:]
+                    if last_key == (int(key[0]), int(key[1]) - 1):
+                        resultset[-1].extend(value)
+                    else:
+                        fun_append(value)
+                    last_key = (int(key[0]), int(key[1]))
+            #resultset = self.fix_gamess_matrix(resultset)
+            map(tuple, resultset)
             if groupTitle in self.group:
                 self.group[groupTitle].append(resultset)
             else:
@@ -331,13 +366,24 @@ class ParseGamessDat(object):
         else:
             groupTitle = self.HESS
             resultset = list()        
-            for line in file.text_block(True)[2:-1]: #Skip the first two lines
+            last_key = ('')
+            fun_append = resultset.append
+            fun_struct_unpack = struct.unpack
+            for line in text_block.splitlines(True)[2:-1]: #Skip the first two lines
                     cnt = (len(line) - 5) / 15 #Count how many values we have minus the key
                     fmt = "2s3s" + cnt*"15s" + "1x"
-                    vals = list(struct.unpack(fmt, line))
-                    vals = striplist(vals)
-                    resultset.append([vals[0:2], vals[2:]]) # Keys                    
-            resultset = self.fix_gamess_matrix(resultset)
+                    vals = fun_struct_unpack(fmt, line)
+                    vals = map(string.strip, vals)
+                    #resultset.append([vals[0:2], vals[2:]]) # Keys
+                    key=vals[0:2]
+                    value=vals[2:]
+                    if last_key == (int(key[0]), int(key[1]) - 1):
+                        resultset[-1].extend(value)
+                    else:
+                        fun_append(value)
+                    last_key = (int(key[0]), int(key[1]))
+#            resultset = self.fix_gamess_matrix(resultset)
+            map(tuple, resultset)
             if groupTitle in self.group:
                 self.group[groupTitle].append(resultset)
             else:
@@ -609,6 +655,12 @@ class MyUtilities(object):
         return([x.strip() for x in l])
     
     @staticmethod
+    def strip_tuple(l):
+        '''String the white space from a tuple that contains strings
+        '''
+        return(tuple([x.strip() for x in l]))
+    
+    @staticmethod
     def search_list_for_substring(l, substring):
         """Search a list to see if any of the list's strings contain the substring."""
         for i in range(0, len(l)): 
@@ -620,8 +672,11 @@ class MyUtilities(object):
     @staticmethod
     def split_seq(iterable, size):
         """ Split a interable into chunks of the given size
-            [1,2,3,4], size=2 becomes [[1,2],[3,4]]
+            tuple(split_seq([1,2,3,4], size=2)
+                            returns ([1,2],[3,4])
+            
         """
+        import itertools
         it = iter(iterable)
         item = list(itertools.islice(it, size))
         while item:
