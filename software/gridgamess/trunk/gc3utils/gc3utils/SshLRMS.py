@@ -151,38 +151,68 @@ class SshLrms(LRMS):
 
 
         try:
-	        jobname = _unique_token.split('-')[0]
+            jobname = _unique_token.split('-')[0]
 
-                # todo: this expandvars $home is not going to work on clusters where home is different.  fix.
-                full_path_to_remote_unique_id = os.path.expandvars('$HOME'+'/'+_unique_token)
-                full_path_to_local_unique_id = _unique_token
+            # todo: this expandvars $home is not going to work on clusters where home is different.  fix.
+            full_path_to_remote_unique_id = os.path.expandvars('$HOME'+'/'+_unique_token)
+            full_path_to_local_unique_id = _unique_token
 
-	        # first copy the normal gamess output
-	        remote_file = '%s/%s.o%s' % (full_path_to_remote_unique_id, jobname, lrms_jobid)
-	        local_file = '%s/%s.out' % (full_path_to_local_unique_id, jobname)
-	        # todo : check options
-	        retval = self.copyback_file(remote_file, local_file)
-	        if ( retval[0] != 0 ):
-	            logging.critical('could not retrieve gamess output: ' + local_file)
-	        else:
-	            logging.debug('retrieved: ' + local_file)
+            # create a list of lists 
+            # each element in the outer list is itself a list
+            # each inner list has 2 elements, a remote file location and a local file location
+            # i.e. [copy_from, copy_to]
+             
+            copyfiles_list = []
+
+	        # first add the output file
+            remote_file = '%s/%s.o%s' % (full_path_to_remote_unique_id, jobname, lrms_jobid)
+            local_file = '%s/%s.out' % (full_path_to_local_unique_id, jobname)
+            remote2local_list = [remote_file, local_file]
+            copyfiles_list.append(remote2local_list)
+
+            # then add the rest of the special output files
+            cp_suffixes = ('.dat', \
+                '.cosmo', \
+                '.irc')
+            for suffix in cp_suffixes:
+                remote_file = '%s/%s.o%s%s' % (full_path_to_remote_unique_id, jobname, lrms_jobid, suffix) 
+                local_file = '%s/%s%s' % (full_path_to_local_unique_id, jobname, suffix)
+                remote2local_list = [remote_file, local_file]
+                copyfiles_list.append(remote2local_list)
+
+            logging.debug('copyfiles_list: ' + str(copyfiles_list))
+
+            for elem in copyfiles_list:
+                remote_file = elem[0]
+                local_file = elem[1] 
+                
+                # if we already have the file, don't copy again
+                if ( os.path.exists(local_file) & os.path.isfile(local_file) ):
+                    logging.debug(local_file + " already copied.  skipping.")
+                    continue
+                else:
+	                # todo : check options
+                    retval = self.copyback_file(remote_file, local_file)
+                    if ( retval[0] != 0 ):
+                        logging.critical('could not retrieve gamess output: ' + local_file)
+                    else:
+                        logging.debug('retrieved: ' + local_file)
 	
-	        # then copy the special output files
-		    cp_suffixes = ('.dat', '.cosmo', '.irc')
-		    for suffix in cp_suffixes:
-                	logging.debug('cp_suffix: ' + suffix)
-		        remote_file = '%s/%s.o%s%s' % (full_path_to_remote_unique_id, jobname, lrms_jobid, suffix)
-		        local_file = '%s/%s%s' % (full_path_to_local_unique_id, jobname, suffix)
-		        # todo : check options
-	                if ( self.copyback_file(remote_file, local_file) != 0 ):
-	                    logging.critical('did not retrieve: ' + local_file)
-	            	else:
-	                    logging.debug('retrieved: ' + local_file)
 
-            	    # now try to clean up 
-                    rm_suffixes = ('.inp','.o'+lrms_jobid,'.o'+lrms_jobid+'.dat','.o'+lrms_jobid+'.inp','.po'+lrms_jobid,'.qsub')
-		    for suffix in rm_suffixes:
-                        logging.debug('rm_suffix: ' + suffix)
+            # now try to clean up the remote files 
+
+            purgefiles_list = []
+
+            # now try to clean up 
+            rm_suffixes = ('.inp', \
+                '.o'+lrms_jobid, \
+                '.o'+lrms_jobid+'.dat', \
+                '.o'+lrms_jobid+'.inp', \
+                '.po'+lrms_jobid, \
+                '.qsub')
+            # create list of remote files to remove
+            for suffix in rm_suffixes:
+                logging.debug('rm_suffix: ' + suffix)
 		        remote_file = '%s/%s%s' % (full_path_to_remote_unique_id, jobname, suffix)
 		        # todo : check options
 	            if ( self.purge_remotefile(remote_file) != 0 ):
@@ -190,6 +220,29 @@ class SshLrms(LRMS):
 	            else:
 	                logging.debug('purged remote file: ' + remote_file)
 
+            # create list of remote files to remove
+            for suffix in rm_suffixes:
+                logging.debug('rm_suffix: ' + suffix)
+                remote_file = "%s/%s%s" % (full_path_to_remote_unique_id, jobname, suffix)
+                purgefiles_list.append(remote_file)
+		        # todo : check options 
+
+            purgefiles_string = " ".join(purgefiles_list)
+
+            logging.debug('remote_files to remove: ' + purgefiles_string)
+            try:
+                self.purge_remotefile(purgefiles_string)
+                logging.debug('purged remote file(s): ' + purgefiles_string)
+            except:
+                raise
+
+
+            # remove full_path_to_remote_unique_id
+            if ( self.purge_remotedir(full_path_to_remote_unique_id) != 0 ):
+                logging.critical('did not purge remote dir: ' + full_path_to_remote_unique_id)
+            else:
+                logging.debug('purged remote dir: ' + full_path_to_remote_unique_id)
+            
             # todo : check clean up  
 
         except:
@@ -269,12 +322,12 @@ class SshLrms(LRMS):
             return False
 
         # define command
-        _command = '%s %s %s@%s:%s %s' % (
-                _method,
-                _method_options, 
-                self.resource['username'], 
-                self.resource['frontend'], 
-                remote_file,
+        _command = '%s %s %s@%s:%s %s' % ( \
+                _method, \
+                _method_options, \
+                self.resource['username'], \
+                self.resource['frontend'], \
+                remote_file, \
                 local_file)
 
         logging.debug('copyback_file _command: ' + _command)
@@ -293,19 +346,21 @@ class SshLrms(LRMS):
 
         return retval
 
-    def purge_remotefile(self, remote_file):
+    def purge_remotefile(self, remote_files):
         """Remove a remote file."""
+
+        logging.debug("remote_files: " + remote_files)
 
         _method = self.ssh_location
         _method_options = self.ssh_options
 
         # define command
-        _command = '%s %s %s@%s rm %s' % (
-                _method,
-                _method_options, 
-                self.resource['username'], 
-                self.resource['frontend'], 
-                remote_file)
+        _command = '%s %s %s@%s rm %s' % ( \
+                _method, \
+                _method_options, \
+                self.resource['username'], \
+                self.resource['frontend'], \
+                remote_files)
 
         logging.debug('purge_remotefile _command: ' + _command)
 
@@ -315,6 +370,36 @@ class SshLrms(LRMS):
         # for some reason we have to use os.WEXITSTATUS to get the real exit code here
         _realretval = str(os.WEXITSTATUS(retval[0]))
         logging.debug('purge_remotefile _real_retval: ' + _realretval)
+        logging.debug(retval[1])
+
+        # check exit status and return
+        if ( _realretval != 0 ):
+            logging.critical('command failed: %s ' % (_command))
+
+        return retval
+
+    def purge_remotedir(self, remote_dir):
+        """Remove a remote directory."""
+
+        _method = self.ssh_location
+        _method_options = self.ssh_options
+
+        # define command
+        _command = '%s %s %s@%s rmdir %s' % ( \
+                _method, \
+                _method_options, \
+                self.resource['username'], \
+                self.resource['frontend'], \
+                remote_dir)
+
+        logging.debug('purge_remotedir _command: ' + _command)
+
+        # do the remove
+        retval = (commands.getstatusoutput(_command))
+
+        # for some reason we have to use os.WEXITSTATUS to get the real exit code here
+        _realretval = str(os.WEXITSTATUS(retval[0]))
+        logging.debug('purge_remotedir _real_retval: ' + _realretval)
         logging.debug(retval[1])
 
         # check exit status and return
