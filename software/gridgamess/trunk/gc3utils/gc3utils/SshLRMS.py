@@ -204,21 +204,22 @@ class SshLrms(LRMS):
             purgefiles_list = []
 
             # now try to clean up 
-            rm_suffixes = ('.inp', \
-                '.o'+lrms_jobid, \
-                '.o'+lrms_jobid+'.dat', \
-                '.o'+lrms_jobid+'.inp', \
-                '.po'+lrms_jobid, \
+            rm_suffixes = ('.inp', 
+                '.o'+lrms_jobid, 
+                '.o'+lrms_jobid+'.dat', 
+                '.o'+lrms_jobid+'.inp', 
+                '.po'+lrms_jobid, 
                 '.qsub')
+
             # create list of remote files to remove
             for suffix in rm_suffixes:
                 logging.debug('rm_suffix: ' + suffix)
-		        remote_file = '%s/%s%s' % (full_path_to_remote_unique_id, jobname, suffix)
+                remote_file = '%s/%s%s' % (full_path_to_remote_unique_id, jobname, suffix)
 		        # todo : check options
-	            if ( self.purge_remotefile(remote_file) != 0 ):
-	                logging.critical('did not purge remote file: ' + remote_file)
-	            else:
-	                logging.debug('purged remote file: ' + remote_file)
+                if ( self.purge_remotefile(remote_file) != 0 ):
+                    logging.critical('did not purge remote file: ' + remote_file)
+                else:
+                    logging.debug('purged remote file: ' + remote_file)
 
             # create list of remote files to remove
             for suffix in rm_suffixes:
