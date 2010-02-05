@@ -4,6 +4,7 @@
 [DEFAULT]
 lrms_jobid = .lrms_jobid
 lrms_log = .lrms_log
+lrms_finished = .finished
 debug = 0
 
 ''' Resource Configurations '''
@@ -32,6 +33,7 @@ ncores = 32
 gamess_location = /share/apps/gamess-2009R4-mx-intel
 walltime = -1
 memory_per_core = 3
+applications = gamess
 
 [ocinh0]
 type = ssh
@@ -40,7 +42,7 @@ ncores = 32
 gamess_location = /share/apps/gamess-2009R4-ethernet-gfortran
 walltime = -1
 memory_per_core = 1
-
+applications = gamess
 
 [schrodinger]
 type = ssh
@@ -49,22 +51,14 @@ ncores = 32
 gamess_location = /home/oci/mpackard/autogms/20090814_schrodinger_ethernet_intelcompilers/gamess
 walltime = 60
 memory_per_core = 3
+applications = gamess
 
 [gc3]
-type = ssh
+type = arc
 frontend = idgc3grid01.uzh.ch
 ncores = 32
 gamess_location = /share/apps/gamess-2009R4-ethernet-gfortran
-walltime = -1
+walltime = 12
 memory_per_core = 3
-
-
-
-''' Application Configurations '''
-
-[gamess]
-exec_location = path to executable
-output_files = list of files to copy back
-cleanup_file = files to remove when finished
-
+applications = gamess
 
