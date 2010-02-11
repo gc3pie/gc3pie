@@ -10,6 +10,8 @@ import time
 import ConfigParser
 import shutil
 import getpass
+import smtplib
+from email.mime.text import MIMEText
 
 # __all__ = ["configure_logging","check_inputfile","readConfig","check_qgms_version","dirname","inputname","inputfilename","create_unique_token"]
 
@@ -271,3 +273,17 @@ def release_file_lock(joblist_lock):
         logging.debug('Failed removing lock due to %s',sys.exc_info()[1])
         return False
 
+def send_email(_to,_from,_subject,_msg):
+    try:
+        _message = MIMEText(_msg)
+        _message['Subject'] = _subject
+        _message['From'] = _from
+        _message['To'] = _to
+        
+        s = smtplib.SMTP()
+        s.connect()
+        s.sendmail(_from,[_to],_message.as_string())
+        s.quit()
+        
+    except:
+        logging.error('Failed sending email [ %s ]',sys.exc_info()[1])

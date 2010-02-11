@@ -98,11 +98,17 @@ class Gcli:
                     logging.error('Unknown resource type %s',resource['type'])
                     continue
 
-                if ( (lrms.isValid == 1) & (lrms.check_authentication() == True) ):
-                    _lrms_list.append(lrms)
+                if (lrms.isValid == 1):
+                    try:
+                        if (lrms.check_authentication() == True):
+                            _lrms_list.append(lrms)
+                    except:
+                        if ( resource['type'] == "arc" ):
+                            if ( self.defaults['email_contact'] != "" ):
+                                logging.debug('Sending notification email to [ %s ]',self.defaults['email_contact'])
+                                send_email(self.defaults['email_contact'],"info@gc3.uzh.ch","GC3 Warning: Renew Grid credential","Please renew your credential")
                 else:
                     logging.error('Failed validating lrms instance for resource %s',resource['resource_name'])
-
             # end of candidate_resource loop
 
             if ( len(_lrms_list) == 0 ):

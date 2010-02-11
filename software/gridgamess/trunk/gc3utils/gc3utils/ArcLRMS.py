@@ -9,9 +9,10 @@ import md5
 import time
 import ConfigParser
 import shutil
-import getpass
+import subprocess
 from utils import *
 from LRMS import LRMS
+
 
 # -----------------------------------------------------
 # ARC lrms
@@ -82,7 +83,7 @@ class ArcLrms(LRMS):
                     if ( retval[0] != 0 ):
                         # Failed renewing slcs
                         logging.critical("failed renewing slcs: %s",retval[1])
-                        return False
+                        raise Exception('failed slcs-init')
 
                     logging.info('Initializing slcs\t\t\t[ ok ]')
                     
@@ -90,15 +91,27 @@ class ArcLrms(LRMS):
                 # Another interactive command
 
                 logging.debug('Initializing voms-proxy')
-                retval = commands.getstatusoutput("echo \'"+input_passwd+"\' | "+self.VOMSPROXYINIT+" -pwstdin")
-                if ( retval[0] != 0 ):
+
+                p1 = subprocess.Popen(['echo',input_passwd],stdout=subprocess.PIPE)
+                p2 = subprocess.Popen(['voms-proxy-init','-valid','24:00','-voms','smscg','-q','-pwstdin'],stdin=p1.stdout,stdout=subprocess.PIPE)
+                if p2.wait() != 0:
                     # Failed renewing voms credential
                     # FATAL ERROR
-                    logging.critical("Initializing voms-proxy\t\t[ failed]\n\t%s",retval[1])
-                    return False
+                    logging.critical("Initializing voms-proxy\t\t[ failed ]\n\t%s",retval[1])
+                    raise Exception('failed voms-proxy-init')
+
+#                retval = commands.getstatusoutput("echo \'"+input_passwd+"\' | "+self.VOMSPROXYINIT+" -pwstdin")
+#                if ( retval[0] != 0 ):
+                    # Failed renewing voms credential
+                    # FATAL ERROR
+#                    logging.critical("Initializing voms-proxy\t\t[ failed]\n\t%s",retval[1])
+#                    return False
                 logging.info('Initializing voms-proxy\t\t[ ok ]')
             logging.info('check_authentication\t\t\t\t[ ok ]')
-                
+
+            # disposing content of passord variable
+            input_passwd = None
+
             return True
         except:
             raise Exception('failed in check_authentication')
