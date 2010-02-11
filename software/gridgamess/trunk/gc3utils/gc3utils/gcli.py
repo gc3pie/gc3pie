@@ -63,8 +63,12 @@ class Gcli:
                 logging.critical('Input file argument\t\t\t[ failed ]'+input_file)
                 raise Exception('invalid input-file argument')
 
-            logging.info('Parsing arguments\t\t[ ok ]')
+            if ( job_local_dir != None ):
+                if ( os.path.isdir(job_local_dir) ):
+                    logging.debug('setting job_local_dir to [ %s ]',job_local_dir)
+                    default_job_folder_location = job_local_dir
 
+            logging.info('Parsing arguments\t\t[ ok ]')
 
             # Initialize LRMSs
             _lrms_list = []
@@ -446,6 +450,8 @@ def main():
             parser = OptionParser(usage=_usage)
             parser.add_option("-v", action="count", dest="verbosity", default=0, help="Set verbosity level")
             parser.add_option("-r", "--resource", action="store", dest="resource_name", metavar="STRING", default=None, help='Select resource destination')
+            parser.add_option("-d", "--jobdir", action="store", dest="job_local_dir", metavar="STRING", default=None, help='Select job local folder location')
+            
             (options, args) = parser.parse_args()
 
             # Configure logging service
@@ -523,7 +529,7 @@ def main():
         if ( os.path.basename(program_name) == "gsub" ):
             # gsub prototype: application_to_run, input_file, selected_resource, job_local_dir, cores, memory, walltime
 #            if ( self.options.resource_name )
-            (exitcode,jobid) = gcli.gsub(args[0],os.path.abspath(args[1]),options.resource_name,None,None,None,None)
+            (exitcode,jobid) = gcli.gsub(args[0],os.path.abspath(args[1]),options.resource_name,options.job_local_dir,None,None,None)
             if (not exitcode):
                 print jobid
             else:

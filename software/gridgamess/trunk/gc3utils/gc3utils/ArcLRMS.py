@@ -117,7 +117,7 @@ class ArcLrms(LRMS):
                 # getting information from input_file
                 _file_name = os.path.basename(input_file)
                 _file_name_path = os.path.dirname(input_file)
-                _file_name = _file_name.split(".")[0]
+                _file_name = _file_name.split(".inp")[0]
                 logging.debug('Input file path %s dirpath %s from %s',_file_name,_file_name_path,input_file)
                 
                 _command = "sed -e 's|CORES|"+self.resource['cores']+"|g' -e 's|INPUT_FILE_NAME|"+_file_name+"|g' -e 's|INPUT_FILE_PATH|"+_file_name_path+"|g' -e 's|MEMORY|"+self.resource['memory']+"|g'  -e 's|WALLTIME|"+self.resource['walltime']+"|g'  < "+self.GAMESS_XRSL_TEMPLATE+" > "+_file_handle.name
