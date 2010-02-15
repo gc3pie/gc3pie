@@ -53,6 +53,20 @@ class Gcli:
         global default_joblist_lock
 
         try:
+            if ( ( cores == None ) | ( cores < 1 ) ):
+                cores = 1
+            int(cores)
+
+            if ( ( memory == None ) | ( memory < 1 ) ):
+                memory = 100
+            int(memory)
+
+            if ( ( walltime == None ) | ( walltime < 1 ) ):
+                walltime = 1
+            int(walltime)
+
+            logging.debug('submitting request with %s cores, %s memory and %s walltime',cores,memory,walltime)
+
             # Checking whether it has been passed a valid application
             if ( application_to_run != "gamess" ) & ( application_to_run != "apbs" ):
                 logging.critical('Application argument\t\t\t[ failed ]\n\tUnknown application: '+application_to_run)
@@ -89,6 +103,18 @@ class Gcli:
                 
             # start candidate_resource loop
             for resource in candidate_resource:
+
+                # Checking whether the imposed limits could be sustained by the candicate lrms
+                if ( ( "cores" in resource ) & ( int(resource['cores']) < cores ) ):
+                    logging.debug('Rejecting lrms for cores limits')
+                    continue
+                if ( ( "memory" in resource ) & ( int(resource['memory']) < memory ) ):
+                    logging.debug('Rejecting lrms for memory limits')
+                    continue
+                if ( ( "walltime" in resource ) & ( int(resource['walltime']) < walltime ) ):
+                    logging.debug('Rejecting lrms for walltime limits')
+                    continue
+
                 logging.debug('Creating instance of type %s for %s',resource['type'],resource['frontend'])
                 if ( resource['type'] == "arc" ):
                     lrms = ArcLrms(resource)

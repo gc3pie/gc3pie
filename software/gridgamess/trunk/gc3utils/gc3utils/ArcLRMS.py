@@ -22,7 +22,8 @@ class ArcLrms(LRMS):
 
     isValid = 0
     VOMSPROXYINFO = "grid-proxy-info -exists -valid 1:10"
-    VOMSPROXYINIT = "voms-proxy-init -q -voms smscg"
+#    VOMSPROXYINIT = "voms-proxy-init -q -voms smscg"
+    VOMSPROXYINIT = ['voms-proxy-init','-valid','24:00','-voms','smscg','-q','-pwstdin']
     SLCSINFO = "openssl x509 -noout -checkend 3600 -in ~/.globus/usercert.pem"
     SLCSINIT = "slcs-init --idp uzh.ch"
     GAMESS_XRSL_TEMPLATE = "$HOME/.gc3/gamess_template.xrsl"
@@ -39,8 +40,14 @@ class ArcLrms(LRMS):
                 self.resource['cores'] = "1"
             if ( 'memory' not in self.resource ):
                 self.resource['memory'] = "1000"
+            logging.debug('checking walltime value')
             if ( 'walltime' not in self.resource ):
-                self.resource['walltime'] = "12"
+                self.resource['walltime'] = "0"
+            else:
+                logging.debug('walltime set to [ %d ]',int(self.resource['walltime']))
+                if ( int(self.resource['walltime']) < 1 ):
+                    self.resource['walltime'] = "0"
+            logging.debug('walltime now set to [ %d ]',int(self.resource['walltime']))
             self.isValid = 1
 
     def check_authentication(self):
@@ -93,8 +100,9 @@ class ArcLrms(LRMS):
                 logging.debug('Initializing voms-proxy')
 
                 p1 = subprocess.Popen(['echo',input_passwd],stdout=subprocess.PIPE)
-                p2 = subprocess.Popen(['voms-proxy-init','-valid','24:00','-voms','smscg','-q','-pwstdin'],stdin=p1.stdout,stdout=subprocess.PIPE)
-                if p2.wait() != 0:
+                p2 = subprocess.Popen(self.VOMSPROXYINIT,stdin=p1.stdout,stdout=subprocess.PIPE)
+#                p2 = subprocess.Popen(['voms-proxy-init','-valid','24:00','-voms','smscg','-q','-pwstdin'],stdin=p1.stdout,stdout=subprocess.PIPE)
+                if ( p2.wait() != 0 ):
                     # Failed renewing voms credential
                     # FATAL ERROR
                     logging.critical("Initializing voms-proxy\t\t[ failed ]\n\t%s",retval[1])
@@ -132,8 +140,10 @@ class ArcLrms(LRMS):
                 _file_name_path = os.path.dirname(input_file)
                 _file_name = _file_name.split(".inp")[0]
                 logging.debug('Input file path %s dirpath %s from %s',_file_name,_file_name_path,input_file)
-                
-                _command = "sed -e 's|CORES|"+self.resource['cores']+"|g' -e 's|INPUT_FILE_NAME|"+_file_name+"|g' -e 's|INPUT_FILE_PATH|"+_file_name_path+"|g' -e 's|MEMORY|"+self.resource['memory']+"|g'  -e 's|WALLTIME|"+self.resource['walltime']+"|g'  < "+self.GAMESS_XRSL_TEMPLATE+" > "+_file_handle.name
+
+                # Modify xrsl template
+                # step one: set inputfile references
+                _command = "sed -e 's|INPUT_FILE_NAME|"+_file_name+"|g' -e 's|INPUT_FILE_PATH|"+_file_name_path+"|g' < "+self.GAMESS_XRSL_TEMPLATE+" > "+_file_handle.name
 
                 # Cleaning up
                 _file_handle.close()
@@ -148,6 +158,23 @@ class ArcLrms(LRMS):
                     # Shall we dump anyway into lrms_log befor raising ?
                     raise Exception('failed creating submission file')
 
+                if ( int(self.resource['walltime']) > 0 ):
+                    logging.debug('setting walltime...')
+                    _command = "(cputime=\""+self.resource['walltime']+"\")\n"
+
+                if ( int(self.resource['cores']) > 0 ):
+                    logging.debug('setting cores...')
+                    _command = _command+"(count=\""+self.resource['cores']+"\")\n"
+
+                if ( int(self.resource['memory']) > 0 ):
+                    logging.debug('setting memory')
+                    _command = _command+"(memory=\""+self.resource['memory']+"\")"
+
+                _command = "echo '"+_command+"' >> "+_file_handle.name
+                retval = commands.getstatusoutput(_command)
+                if ( retval[0] != 0 ):
+                    logging.error("Create XRSL\t\t[ failed ]")
+                    raise Exception('failed creating submission file')
 
                 logging.debug('checking resource [ %s ]',self.resource['frontend'])
                 # Ready for real submission
