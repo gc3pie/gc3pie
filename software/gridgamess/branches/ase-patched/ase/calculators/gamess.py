@@ -108,7 +108,7 @@ class Gamess(object):
             was changed on us. if it has, we need to do a new calculation, 
             if it has not, we can use 
             the one that exists."""
-        self.monitor = MyUtilities.Monitor()
+        self.monitor = Monitor()
         
     def is_changed(self):
         check_if_changed = [self.atoms, self.gamess_params, self.filename]
@@ -629,24 +629,24 @@ class ParseKernal(object):
                 return i
         return None
 
+class Monitor(object):
+    '''Monitors the object to see if has been changed.
+    
+    Each time is_changed(object) it compares it to the last object
+    that is_changed was passed. If different, returns false,
+    otherwise returns true.        
+    '''
+    from cPickle import dumps
+    _cm_last_dump = None
+    def is_changed(self, obj):
+        prev_dump = self._cm_last_dump
+        self._cm_last_dump = None
+        cur_dump = self.dumps(obj, -1)
+        self._cm_last_dump = cur_dump
+        return ( ( prev_dump is not None ) and ( prev_dump != cur_dump ) )
+            
 class MyUtilities(object):
     import itertools
-    
-    class Monitor(object):
-        '''Monitors the object to see if has been changed.
-        
-        Each time is_changed(object) it compares it to the last object
-        that is_changed was passed. If different, returns false,
-        otherwise returns true.        
-        '''
-        from cPickle import dumps
-        _cm_last_dump = None
-        def is_changed(self, obj):
-            prev_dump = self._cm_last_dump
-            self._cm_last_dump = None
-            cur_dump = self.dumps(obj, -1)
-            self._cm_last_dump = cur_dump
-            return ( ( prev_dump is not None ) and ( prev_dump != cur_dump ) )
 
     @staticmethod
     def striplist(l):
