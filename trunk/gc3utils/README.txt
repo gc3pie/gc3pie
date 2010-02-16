@@ -122,8 +122,3 @@ How to use gridgamess suite
 
 7.1) if gget completes successfully, results are stored in the jobid folder
 
-
-
-
-
-test.
