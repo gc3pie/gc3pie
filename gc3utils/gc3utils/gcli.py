@@ -32,7 +32,14 @@ class Gcli:
     def __init__(self, config_file_location):
         try:
             # read configuration file
-            (self.defaults,self.resource_list) = readConfig(config_file_location)
+            _local_resource_list = {}
+            (self.defaults,_local_resource_list) = readConfig(config_file_location)
+
+            for _resource in _local_resource_list.values():
+                if ("ncores" in _resource) & ("memory_per_core" in _resource) & ("walltime" in _resource) & ("type" in _resource) & ("frontend" in _resource) & ("applications" in _resource):
+                    # Adding valid resources
+                    logging.debug('Adding valid resource description [ %s ]',_resource['resource_name'])
+                    self.resource_list[_resource['resource_name']] = _resource
 
             # Check if any resource configuration has been leaded
             if ( len(self.resource_list) == 0 ):
@@ -42,7 +49,6 @@ class Gcli:
         except:
             logging.critical('Failed init gcli')
             raise
-                                                        
 
     def __select_lrms(self,lrms_list):
         return 0
@@ -53,20 +59,6 @@ class Gcli:
         global default_joblist_lock
 
         try:
-            if ( ( cores == None ) | ( cores < 1 ) ):
-                cores = 1
-            int(cores)
-
-            if ( ( memory == None ) | ( memory < 1 ) ):
-                memory = 100
-            int(memory)
-
-            if ( ( walltime == None ) | ( walltime < 1 ) ):
-                walltime = 1
-            int(walltime)
-
-            logging.debug('submitting request with %s cores, %s memory and %s walltime',cores,memory,walltime)
-
             # Checking whether it has been passed a valid application
             if ( application_to_run != "gamess" ) & ( application_to_run != "apbs" ):
                 logging.critical('Application argument\t\t\t[ failed ]\n\tUnknown application: '+application_to_run)
@@ -83,6 +75,8 @@ class Gcli:
                     default_job_folder_location = job_local_dir
 
             logging.info('Parsing arguments\t\t[ ok ]')
+
+            logging.debug('submitting request with %s cores, %sGB memory and %s hours walltime',cores,memory,walltime)
 
             # Initialize LRMSs
             _lrms_list = []
@@ -105,15 +99,23 @@ class Gcli:
             for resource in candidate_resource:
 
                 # Checking whether the imposed limits could be sustained by the candicate lrms
-                if ( ( "cores" in resource ) & ( int(resource['cores']) < cores ) ):
-                    logging.debug('Rejecting lrms for cores limits')
-                    continue
-                if ( ( "memory" in resource ) & ( int(resource['memory']) < memory ) ):
-                    logging.debug('Rejecting lrms for memory limits')
-                    continue
-                if ( ( "walltime" in resource ) & ( int(resource['walltime']) < walltime ) ):
-                    logging.debug('Rejecting lrms for walltime limits')
-                    continue
+                if ( cores != None ):
+                    if ( ( "ncores" in resource ) & ( int(resource['ncores']) < int(cores) ) ):
+                        logging.error('Rejecting lrms for cores limits')
+                        continue
+                    resource['ncores'] = cores
+
+                if ( memory != None ):
+                    if ( ( "memory_per_core" in resource ) & ( int(resource['memory_per_core']) < int(memory) ) ):
+                        logging.error('Rejecting lrms for memory limits')
+                        continue
+                    resource['memory_per_core'] = memory
+
+                if ( walltime != None ):
+                    if ( ( "walltime" in resource ) & ( int(resource['walltime']) < int(walltime) ) & (int(resource['walltime']) >= 0 )):
+                        logging.error('Rejecting lrms for walltime limits')
+                        continue
+                    resource['walltime'] = walltime
 
                 logging.debug('Creating instance of type %s for %s',resource['type'],resource['frontend'])
                 if ( resource['type'] == "arc" ):
@@ -252,21 +254,21 @@ class Gcli:
             # database section
             # todo: right now the db doesn't do anything.  this can be improved later.
 
-            dbfile_location = rcdir + "/" + application_to_run + ".db"
-            logging.debug('dbfile_locatioon: ' + dbfile_location)
+#            dbfile_location = rcdir + "/" + application_to_run + ".db"
+#            logging.debug('dbfile_locatioon: ' + dbfile_location)
 
             # if database does not exist, create it 
-            if not os.path.exists(dbfile_location):
-                try:
+#            if not os.path.exists(dbfile_location):
+#                try:
                     # dbfile_location should be an absolute path including the db filename, e.g.:
                     # /home/alice/.gc3/gamess.db
                     #db = Database() 
                     #db.create_database(dbfile_location)
 
-                    logging.debug(dbfile_location + ' did not exist.  Created it.')
+#                    logging.debug(dbfile_location + ' did not exist.  Created it.')
 
-                except:
-                    raise 
+#                except:
+#                    raise 
                 
             logging.info('Dumping lrms log information\t\t\t[ ok ]')
 
@@ -483,7 +485,10 @@ def main():
             parser.add_option("-v", action="count", dest="verbosity", default=0, help="Set verbosity level")
             parser.add_option("-r", "--resource", action="store", dest="resource_name", metavar="STRING", default=None, help='Select resource destination')
             parser.add_option("-d", "--jobdir", action="store", dest="job_local_dir", metavar="STRING", default=None, help='Select job local folder location')
-            
+            parser.add_option("-c", "--cores", action="store", dest="ncores", metavar="INT", default=None, help='Set number of requested cores')
+            parser.add_option("-m", "--memory", action="store", dest="memory_per_core", metavar="INT", default=None, help='Set memory per core request (GB)')
+            parser.add_option("-w", "--walltime", action="store", dest="walltime", metavar="INT", default=None, help='Set requested walltime (hours)')
+
             (options, args) = parser.parse_args()
 
             # Configure logging service
@@ -561,7 +566,7 @@ def main():
         if ( os.path.basename(program_name) == "gsub" ):
             # gsub prototype: application_to_run, input_file, selected_resource, job_local_dir, cores, memory, walltime
 #            if ( self.options.resource_name )
-            (exitcode,jobid) = gcli.gsub(args[0],os.path.abspath(args[1]),options.resource_name,options.job_local_dir,None,None,None)
+            (exitcode,jobid) = gcli.gsub(args[0],os.path.abspath(args[1]),options.resource_name,options.job_local_dir,options.ncores,options.memory_per_core,options.walltime)
             if (not exitcode):
                 print jobid
             else:
