@@ -29,38 +29,52 @@ Require configuration
 	cat $HOME/.gc3/config
 
 -------------------------------
+# Note: do not change the DEFAULT values unless you know what you are doing
 [DEFAULT]
 lrms_jobid = .lrms_jobid
 lrms_log = .lrms_log
 lrms_finished = .finished
 debug = 0
 
+# Template of a resouce block
+# [Resource_name]
+# type = <arc,ssh>
+# frontend = <hostname>   Name of the fronend node to be contacted
+# walltime = <int>        Maximum walltime in minutes the resource ca allow for a
+#                         single job
+# ncores = <int>          Maximun number of cores a single job can require
+# applications = gamess 
+# memory_per_core = <int> Maximum number of memory in MB a single job can require per
+#                         allocated core
+# gamess_location = <Path_to_local_gamess_location>
+
 [unibe]
 type = arc
 frontend = smscg.unibe.ch
 walltime = 12
-cores = 4
+ncores = 4
 applications = gamess
+memory_per_core = 1000
 
 [smscg]
 type = arc
 frontend = 
 walltime = 12
-cores = 2
+ncores = 2
 applications = gamess
 
 [idgc3]
 type = arc
 frontend = idgc3grid01.uzh.ch
 walltime = 12
-cores = 4
+ncores = 4
 applications= gamess
 
 [ocikbpra]
 type = arc
 frontend = ocikbpra.unizh.ch
 walltime = 12
-cores = 2
+ncores = 2
 applications = gamess
 
 -------------------------------
@@ -80,14 +94,12 @@ applications = gamess
 &(executable="$GAMESS_LOCATION/nggms")
 (arguments="INPUT_FILE_NAME")
 (jobname=GAMESS_INPUT_FILE_NAME) 
-(stdout=out) 
-(stderr=err)
-(count="CORES")
-(memory="MEMORY")
-(cputime="WALLTIME")
+(stdout=INPUT_FILE_NAME.stdout) 
+(stderr=INPUT_FILE_NAME.stderr)
+(gmlog="gmlog")
 (inputFiles=(INPUT_FILE_NAME.inp "INPUT_FILE_PATH/INPUT_FILE_NAME.inp"))
 (outputFiles=(INPUT_FILE_NAME.dat ""))
-(runTimeEnvironment=APPS/CHEM/GAMESS-2009)	
+(runTimeEnvironment=APPS/CHEM/GAMESS-2009)
 
 	Note: please do not change the template unless you know what you are doing
 
@@ -121,4 +133,7 @@ How to use gridgamess suite
 	gget <jobid>
 
 7.1) if gget completes successfully, results are stored in the jobid folder
+
+
+
 
