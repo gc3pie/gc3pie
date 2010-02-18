@@ -62,13 +62,15 @@ frontend =
 walltime = 12
 ncores = 2
 applications = gamess
+memory_per_core = 1000
 
 [idgc3]
 type = arc
 frontend = idgc3grid01.uzh.ch
 walltime = 12
-ncores = 4
+ncores = 8
 applications= gamess
+memory_per_core = 2000
 
 [ocikbpra]
 type = arc
@@ -76,6 +78,7 @@ frontend = ocikbpra.unizh.ch
 walltime = 12
 ncores = 2
 applications = gamess
+memory_per_core = 1000
 
 -------------------------------
 
