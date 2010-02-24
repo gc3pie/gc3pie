@@ -87,11 +87,24 @@ class SshLrms(LRMS):
             ssh.close()
             raise
 
-        # copy input 
+        # make remote unique_token dir 
+        _remotepath = unique_token
         try:
-            self.copy_input(ssh, sftp, input_file, unique_token)
+            sftp.mkdir(_remotepath)
+        except Exception, e:
+            ssh.close()
+            logging.critical(e)
+            logging.critical('copy_input mkdir failed')
+            raise
+
+        # then copy the input file to it
+        _localpath = input_file
+        _remotepath = unique_token + '/' + inputfilename(input_file)
+        try:
+            sftp.put(_localpath, _remotepath)
         except:
             ssh.close()
+            logging.critical('copy_input put failed')
             raise
 
         # then try to submit it to the local queueing system 
@@ -183,6 +196,12 @@ class SshLrms(LRMS):
 	        # first add the output file
             remote_file = '%s/%s.o%s' % (full_path_to_remote_unique_id, jobname, lrms_jobid)
             local_file = '%s/%s.stdout' % (full_path_to_local_unique_id, jobname)
+            remote2local_list = [remote_file, local_file]
+            copyfiles_list.append(remote2local_list)
+
+	        # .po file
+            remote_file = '%s/%s.po%s' % (full_path_to_remote_unique_id, jobname, lrms_jobid)
+            local_file = '%s/%s.po' % (full_path_to_local_unique_id, jobname)
             remote2local_list = [remote_file, local_file]
             copyfiles_list.append(remote2local_list)
 
@@ -284,45 +303,9 @@ class SshLrms(LRMS):
         return lrms_jobid
 
 
-
-    def copy_input(self, ssh, sftp, input_file, unique_token):
-        """Try to create remote directory named unique_token, then copy input_file there."""
-        
-        # todo: change the name of this method (so it is less confusing with copy out vs copy back?
-        # todo: add a switch that tries rsync first, then falls back to ssh.
-        # todo: generalize the rsync vs scp and have both copy_input and copyback_file use 1 method
-
-
-        # we need to know the $HOME directory on the remote machine
-#        _command = 'echo $HOME'
-#        stdin, stdout, stderr = ssh.exec_command(_command)
-#        _remotehome = stdout.readline()
-
-        # create unique_token directory
-        _remotepath = unique_token
-        try:
-            sftp.mkdir(_remotepath)
-        except Exception, e:
-            ssh.close()
-            logging.critical(e)
-            logging.critical('copy_input mkdir failed')
-            raise
-
-        # then copy the input file to it
-        _localpath = input_file
-        _remotepath = unique_token + '/' + inputfilename(input_file)
-        try:
-            sftp.put(_localpath, _remotepath)
-        except:
-            ssh.close()
-            logging.critical('copy_input put failed')
-            raise
-
-        # todo: add a check here that compares the md5 of the copied file to the md5 in the unique_token
-
-        return True
-
     def connect_ssh(self,host):
+        """Create an ssh connection."""
+        # todo : add fancier key handling and password asking stuff
         try:
             ssh = paramiko.SSHClient()
             ssh.load_system_host_keys()
