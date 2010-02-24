@@ -131,12 +131,14 @@ class Gcli:
                         if (lrms.check_authentication() == True):
                             _lrms_list.append(lrms)
                     except:
+# todo : make this a function
                         if ( resource['type'] == "arc" ):
                             if ( self.defaults['email_contact'] != "" ):
                                 logging.debug('Sending notification email to [ %s ]',self.defaults['email_contact'])
                                 send_email(self.defaults['email_contact'],"info@gc3.uzh.ch","GC3 Warning: Renew Grid credential","Please renew your credential")
                 else:
                     logging.error('Failed validating lrms instance for resource %s',resource['resource_name'])
+
             # end of candidate_resource loop
 
             if ( len(_lrms_list) == 0 ):
