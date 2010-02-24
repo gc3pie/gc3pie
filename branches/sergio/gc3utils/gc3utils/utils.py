@@ -12,6 +12,7 @@ import shutil
 import getpass
 import smtplib
 from email.mime.text import MIMEText
+from arclib import *
 
 # __all__ = ["configure_logging","check_inputfile","readConfig","check_qgms_version","dirname","inputname","inputfilename","create_unique_token"]
 
@@ -287,3 +288,81 @@ def send_email(_to,_from,_subject,_msg):
         
     except:
         logging.error('Failed sending email [ %s ]',sys.exc_info()[1])
+
+def CheckGridAuthentication():
+    try:
+        c = Certificate(PROXY)
+        if ( c.IsExpired() ):
+            return False
+        return True
+    except:
+        return False
+
+def RenewGridCredential():
+    VOMSPROXYINFO = "grid-proxy-info -exists -valid 1:10"
+    #    VOMSPROXYINIT = "voms-proxy-init -q -voms smscg"
+    VOMSPROXYINIT = ['voms-proxy-init','-valid','24:00','-voms','smscg','-q','-pwstdin']
+    SLCSINFO = "openssl x509 -noout -checkend 3600 -in ~/.globus/usercert.pem"
+    SLCSINIT = "slcs-init --idp uzh.ch"
+    GAMESS_XRSL_TEMPLATE = "$HOME/.gc3/gamess_template.xrsl"
+    AAI_CREDENTIAL_REPO = "$HOME/.gc3/aai_credential"
+                            
+    try:
+        logging.debug('Checking voms-proxy status')
+        c = Certificate(PROXY)
+        if ( c.IsExpired() ):
+            # Probably failed because of expired credential
+            # Checking slcs first
+            logging.debug('Checking voms-proxy status\t\t[ failed ]')
+            # Getting AAI username
+            _aaiUserName = None
+            AAI_CREDENTIAL_REPO = os.path.expandvars(AAI_CREDENTIAL_REPO)
+            logging.debug('checking AAI credential file [ %s ]',AAI_CREDENTIAL_REPO)
+            if ( os.path.exists(AAI_CREDENTIAL_REPO) & os.path.isfile(AAI_CREDENTIAL_REPO) ):
+                logging.debug('Opening AAI credential file in %s',AAI_CREDENTIAL_REPO)
+                _fileHandle = open(AAI_CREDENTIAL_REPO,'r')
+                _aaiUserName = _fileHandle.read()
+                _aaiUserName = _aaiUserName.rstrip("\n")
+                logging.debug('_aaiUserName: %s',_aaiUserName)
+                if ( _aaiUserName is None ):
+                    _aaiUserName = raw_input('Insert AAI/Switch username for user '+getpass.getuser()+': ')
+                input_passwd = getpass.getpass('Insert AAI/Switch password for user '+_aaiUserName+' : ')
+                logging.debug('Checking slcs status')
+                c = Certificate(USERCERT)
+                if ( c.IsExpired() ):
+                    # Failed because slcs credential expired
+                    # trying renew slcs
+                    # this should be an interactiave command
+                    logging.debug('Checking slcs status\t\t[ failed ]')
+                    logging.debug('Initializing slcs')
+                    retval = commands.getstatusoutput(SLCSINIT+" -u "+_aaiUserName+" -p "+input_passwd+" -k "+input_passwd)
+                    if ( retval[0] != 0 ):
+                        logging.critical("failed renewing slcs: %s",retval[1])
+                        raise Exception('failed slcs-init')
+                        
+                    logging.info('Initializing slcs\t\t\t[ ok ]')
+                
+                # Try renew voms credential
+                # Another interactive command
+                        
+                logging.debug('Initializing voms-proxy')
+                
+                p1 = subprocess.Popen(['echo',input_passwd],stdout=subprocess.PIPE)
+                p2 = subprocess.Popen(VOMSPROXYINIT,stdin=p1.stdout,stdout=subprocess.PIPE)
+                if ( p2.wait() != 0 ):
+                    # Failed renewing voms credential
+                    # FATAL ERROR
+                    logging.critical("Initializing voms-proxy\t\t[ failed ]")
+                    raise Exception('failed voms-proxy-init')
+
+                logging.info('Initializing voms-proxy\t\t[ ok ]')
+                logging.info('check_authentication\t\t\t\t[ ok ]')
+                        
+                # disposing content of passord variable
+                input_passwd = None
+        return True
+    except:
+        logging.error('Check grid credential failed  [ %s ]',sys.exc_info()[1])
+        return False
+
+

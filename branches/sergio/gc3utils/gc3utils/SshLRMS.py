@@ -32,23 +32,23 @@ class SshLrms(LRMS):
     def __init__(self, resource):
         if (resource['type'] == "ssh"):
             self.resource = resource
-            # shall we really set hardcoded defaults ?
-            if ( 'cores' not in self.resource ):
-                self.resource['cores'] = "1"
-            if ( 'memory' not in self.resource ):
-                self.resource['memory'] = "1000"
-            if ( 'walltime' not in self.resource ):
-                self.resource['walltime'] = "12"
             self.isValid = 1
-
-
+            
+            self.resource['ncores'] = int(self.resource['ncores'])
+            self.resource['memory_per_core'] = int(self.resource['memory_per_core']) * 1000
+            self.resource['walltime'] = int(self.resource['walltime'])
+            if (self.resource['walltime'] > 0 ):
+                # convert from hours to minutes
+                self.resource['walltime'] = self.resource['walltime'] * 60
+                
+            logging.debug('Init resource %s with %d cores, %d walltime, %d memory',self.resource['resource_name'],self.resource['ncores'],self.resource['walltime'],self.resource['memory_per_core'])
+            
     """Here are the common functions needed in every Resource Class."""
     
     def check_authentication(self):
         """Make sure ssh to server works."""
-        # We can make the assumption the local username is the same on hte remote host, whatever it is
+        # We can make the assumption the local username is the same on the remote host, whatever it is
         # We can also assume local username has passwordless ssh access to resources (or ssh-agent running)
-
         
         try:
             # ssh username@frontend date 
@@ -59,11 +59,13 @@ class SshLrms(LRMS):
 
             retval = commands.getstatusoutput(_command)
             if ( retval[0] != 0 ):
-                raise Exception('failed in check_authentication')
+                raise Exception('failed [ %d ]',retval[0])
 
             return True
+
         except:
-            raise
+            raise Exception('failed in check_authentication')
+
 
 
     def submit_job(self, unique_token, application, input_file):
