@@ -19,7 +19,9 @@ def make_map():
     map.connect('/error/{action}/{id}', controller='error')
 
     # CUSTOM ROUTES HERE
-
+    # For the XML controller we map the raw url to an action
+    # on the XMLRPCController class
+    map.connect('/{controller}') 
     map.connect('/{controller}/{action}')
     map.connect('/{controller}/{action}/{id}')
 
