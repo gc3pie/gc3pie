@@ -14,10 +14,6 @@ import utils
 import paramiko
 from utils import *
 from LRMS import LRMS
-# todo remove later
-import base64
-import socket
-import traceback
 
 
 # -----------------------------------------------------
@@ -309,7 +305,7 @@ class SshLrms(LRMS):
         try:
             ssh = paramiko.SSHClient()
             ssh.load_system_host_keys()
-            ssh.connect(host,timeout=30)
+            ssh.connect(host,timeout=30,username=self.resource['username'])
             sftp = ssh.open_sftp()
             return ssh, sftp
 
