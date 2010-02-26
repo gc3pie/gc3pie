@@ -16,18 +16,17 @@ class XmlgridjobController(XMLRPCController):
         return 'Hello World, I am XmlgridjobController' 
     index.signature = [['string']]
     
-    def upload(self, myfile,  title,  author,  type):
-        '''This method is used to upload a file to the database.'''
-        
+    def create(self, title,  author,  attach_name, myfile):
+        '''This method is used to create a new task and 
+        save it to the database.'''        
         new_job = GridjobModel()            
         new_job.title = title
         new_job.author = author
-        new_job.type = type            
-        new_job.attach(myfile.name, myfile.file)            
-        myfile.file.close()
-        return ('Successfully uploaded: %s, title: %s' % \
-            (myfile, title))
-    upload.signature = [['string','string','string', 'string', 'string']]
+        new_job.save()
+        new_job.attach(attach_name, myfile.read())      
+        myfile.close()
+        return ('Successfully create a new job')
+    create.signature = [['string','string', 'string', 'base64']]
     
     def retrieve(self, id):
         '''Retrieves a job from the database.

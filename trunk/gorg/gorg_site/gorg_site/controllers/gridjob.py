@@ -24,17 +24,16 @@ class GridjobController(BaseController):
         return None
     
     def submit_form(self):
-        return render('/submit_form.mako')
+        return render('/submit_job_form.mako')
 
     def upload(self):
         xmlController = XmlgridjobController()        
         myfile = request.POST['myfile']
         title = request.POST['title']
         author = request.POST['author']
-        type = 'GAMESS'
-        xmlController.upload(myfile,  title,  author,  type)
+        xmlController.create(title,  author,  myfile.name, myfile.file)
         c.mess = 'Successfully uploaded: %s, title: %s' % \
                 (myfile, title)
-        return render('/upload_result.mako')
+        return render('/submit_job_finish.mako')
    
 
