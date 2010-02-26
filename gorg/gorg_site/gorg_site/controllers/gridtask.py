@@ -4,6 +4,7 @@ from pylons import request, response, session, tmpl_context as c
 from pylons.controllers.util import abort, redirect_to
 
 from gorg_site.lib.base import BaseController, render
+from gorg_site.controllers.xmlgridtask import XmlgridtaskController
 
 log = logging.getLogger(__name__)
 

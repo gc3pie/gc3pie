@@ -4,7 +4,7 @@ from pylons import request, response, session, tmpl_context as c
 from pylons.controllers.util import abort, redirect_to
 from gorg_site.lib.base import BaseController, render
 from gorg_site.controllers.xmlgridjob import XmlgridjobController
-
+from pylons.decorators import jsonify
 import os
 import shutil
 
@@ -23,9 +23,12 @@ class GridjobController(BaseController):
         """Post / users: Create a new job in the database."""
         return None
     
+    @jsonify
     def submit_form(self):
+        if request.environ['CONTENT_TYPE'] == 'application/json':
+            return {'response':'I am json'}
         return render('/submit_job_form.mako')
-
+    
     def upload(self):
         xmlController = XmlgridjobController()        
         myfile = request.POST['myfile']
@@ -34,6 +37,6 @@ class GridjobController(BaseController):
         xmlController.create(title,  author,  myfile.name, myfile.file)
         c.mess = 'Successfully uploaded: %s, title: %s' % \
                 (myfile, title)
-        return render('/submit_job_finish.mako')
+        return c.mess #render('/submit_job_finish.mako')
    
 
