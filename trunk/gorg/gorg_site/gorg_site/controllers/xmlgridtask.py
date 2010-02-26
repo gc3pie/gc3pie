@@ -9,7 +9,13 @@ import cPickle
 log = logging.getLogger(__name__)
 
 class XmlgridtaskController(XMLRPCController):
-
+    def __init__(self):
+        XMLRPCController.__init__(self)
+        # The max size of the xml the server can receive server
+        # Must be increased here to handle file transfers 
+        # over the xml-rcp call.
+        self.max_body_length= config.get('xml_controller.max_xml_size')
+        
     def index(self):
         # Return a rendered template
         #return render('/xmlgridtask.mako')
@@ -20,11 +26,12 @@ class XmlgridtaskController(XMLRPCController):
         task = GridjobModel.load(id)
         if not id in task.job_relations:
             task.job_relations[id]=list()
-        if my_parent:
-            task.job_relations[my_parent].append(id)
+        for a_parent in my_parent:
+            task.job_relations[a_parent].append(id)
         task.save()
         return XmlgridtaskController._pickle_object(task)
-    retrieve.signature = [['string','string', 'string']]
+    add_job.signature = [['string','string'], 
+                                       ['string','string', 'struct']]
 
     def retrieve(self, id):
         '''Retrieves a job from the database.
