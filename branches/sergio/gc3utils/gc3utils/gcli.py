@@ -50,6 +50,27 @@ class Gcli:
             logging.critical('Failed init gcli')
             raise
 
+    def renewGridCredential(self,_aaiUserName):
+        # Getting AAI username
+#        _aaiUserName = None
+
+        try:
+            self.AAI_CREDENTIAL_REPO = os.path.expandvars(self.AAI_CREDENTIAL_REPO)
+            logging.debug('checking AAI credential file [ %s ]',self.AAI_CREDENTIAL_REPO)
+            if ( os.path.exists(self.AAI_CREDENTIAL_REPO) & os.path.isfile(self.AAI_CREDENTIAL_REPO) ):
+                logging.debug('Opening AAI credential file in %s',self.AAI_CREDENTIAL_REPO)
+                _fileHandle = open(self.AAI_CREDENTIAL_REPO,'r')
+                _aaiUserName = _fileHandle.read()
+                _aaiUserName = _aaiUserName.rstrip("\n")
+                logging.debug('_aaiUserName: %s',_aaiUserName)
+                RenewGridCredential(_aaiUserName)
+            else:
+                logging.critical('AAI_Credential information file not found')
+                raise Exception('AAI_Credential information file not found')
+        except:
+            logging.critical('Failed renewing grid credential [%s]',sys.exc_info()[1])
+            return False
+
     def __select_lrms(self,lrms_list):
         return 0
 
@@ -131,12 +152,14 @@ class Gcli:
                         if (lrms.check_authentication() == True):
                             _lrms_list.append(lrms)
                     except:
+# todo : make this a function
                         if ( resource['type'] == "arc" ):
                             if ( self.defaults['email_contact'] != "" ):
                                 logging.debug('Sending notification email to [ %s ]',self.defaults['email_contact'])
                                 send_email(self.defaults['email_contact'],"info@gc3.uzh.ch","GC3 Warning: Renew Grid credential","Please renew your credential")
                 else:
                     logging.error('Failed validating lrms instance for resource %s',resource['resource_name'])
+
             # end of candidate_resource loop
 
             if ( len(_lrms_list) == 0 ):
@@ -510,6 +533,19 @@ def main():
                 logging.critical('Input file argument\t\t\t[ failed ]'+args[1])
                 raise Exception('invalid input-file argument')
                                         
+        elif ( os.path.basename(program_name) == "grid-credential-renew" ):
+            _usage = "Usage: %prog [options] aai_user_name"
+            parser = OptionParser(usage=_usage)
+            parser.add_option("-v", action="count", dest="verbosity", default=0, help="Set verbosity level")
+            (options, args) = parser.parse_args()
+
+            # Configure logging service
+            configure_logging(options.verbosity)
+
+            _aai_username = None
+            if len(args) == 1:
+                _aai_username = args[0]
+                        
         elif ( os.path.basename(program_name) == "gstat" ):
             # Gstat
             # Parse command line arguments
@@ -563,7 +599,11 @@ def main():
 
         gcli = Gcli(default_config_file_location)
 
-        if ( os.path.basename(program_name) == "gsub" ):
+        if ( os.path.basename(program_name) == "grid-credential-renew" ):
+            exitcode = ArcLrms.renewGridCredential(_aai_username)
+            if (exitcode):
+                raise Exception("failed renewing credential")
+        elif ( os.path.basename(program_name) == "gsub" ):
             # gsub prototype: application_to_run, input_file, selected_resource, job_local_dir, cores, memory, walltime
 #            if ( self.options.resource_name )
             (exitcode,jobid) = gcli.gsub(args[0],os.path.abspath(args[1]),options.resource_name,options.job_local_dir,options.ncores,options.memory_per_core,options.walltime)

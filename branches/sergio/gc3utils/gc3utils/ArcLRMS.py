@@ -17,7 +17,7 @@ from LRMS import LRMS
 # -----------------------------------------------------
 # ARC lrms
 #
-    
+
 class ArcLrms(LRMS):
 
     isValid = 0
@@ -45,6 +45,25 @@ class ArcLrms(LRMS):
                 self.resource['walltime'] = self.resource['walltime'] * 60
 
             logging.debug('Init resource %s with %d cores, %d walltime, %d memory',self.resource['resource_name'],self.resource['ncores'],self.resource['walltime'],self.resource['memory_per_core'])
+
+    @staticmethod
+    def renewGridCredential(_aaiUserName):
+        AAI_CREDENTIAL_REPO = os.path.expandvars("$HOME/.gc3/aai_credential")
+        try:
+            logging.debug('checking AAI credential file [ %s ]',AAI_CREDENTIAL_REPO)
+            if ( os.path.exists(AAI_CREDENTIAL_REPO) & os.path.isfile(AAI_CREDENTIAL_REPO) ):
+                logging.debug('Opening AAI credential file in %s',AAI_CREDENTIAL_REPO)
+                _fileHandle = open(AAI_CREDENTIAL_REPO,'r')
+                _aaiUserName = _fileHandle.read()
+                _aaiUserName = _aaiUserName.rstrip("\n")
+                logging.debug('_aaiUserName: %s',_aaiUserName)
+                RenewGridCredential(_aaiUserName)
+            else:
+                logging.critical('AAI_Credential information file not found')
+                raise Exception('AAI_Credential information file not found')
+        except:
+            logging.critical('Failed renewing grid credential [%s]',sys.exc_info()[1])
+            return False
 
     def check_authentication(self):
         try:
