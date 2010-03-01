@@ -3,10 +3,10 @@ import logging
 from pylons import request, response, session, tmpl_context as c
 from pylons.controllers.util import abort, redirect_to
 from gorg_site.lib.base import BaseController, render
-from gorg_site.controllers.xmlgridjob import XmlgridjobController
 from pylons.decorators import jsonify
 import os
-import shutil
+from gorg_site.model.gridjob import GridjobModel
+
 
 log = logging.getLogger(__name__)
 PERMANENT_STORE = '/home/mmonroe/uploads/'
@@ -19,24 +19,28 @@ class GridjobController(BaseController):
         # or, return a response
         return 'Hello World'
 
-    def create(self):
-        """Post / users: Create a new job in the database."""
-        return None
-    
     @jsonify
-    def submit_form(self):
+    def json_test(self):
         if request.environ['CONTENT_TYPE'] == 'application/json':
             return {'response':'I am json'}
         return render('/submit_job_form.mako')
+        
+    def submit_form(self):
+        return render('/submit_job_form.mako')
     
-    def upload(self):
-        xmlController = XmlgridjobController()        
-        myfile = request.POST['myfile']
+    def create(self):
+        """Post / users: Create a new job in the database."""
+        # Myfile is a fieldstorage object provided by pylons
+        # myfile.filename = basename of file, myfile.file = file like object
+        # myfile.value = contents of file
+        myfile = request.POST['myfile'] 
         title = request.POST['title']
         author = request.POST['author']
-        xmlController.create(title,  author,  myfile.name, myfile.file)
+        user_type='GAMESS'
+        new_job=GridjobModel()
+        new_job.create(title,  author,  user_type, myfile.filename, myfile.file)
         c.mess = 'Successfully uploaded: %s, title: %s' % \
-                (myfile, title)
-        return c.mess #render('/submit_job_finish.mako')
+                (myfile.filename, title)
+        return render('/submit_job_finish.mako')
    
 
