@@ -36,7 +36,9 @@ class Gcli:
             (self.defaults,_local_resource_list) = readConfig(config_file_location)
 
             for _resource in _local_resource_list.values():
-                if ("ncores" in _resource) & ("memory_per_core" in _resource) & ("walltime" in _resource) & ("type" in _resource) & ("frontend" in _resource) & ("applications" in _resource):
+                if ("ncores" in _resource) & ("memory_per_core" in _resource) & \
+                        ("walltime" in _resource) & ("type" in _resource) & ("frontend" in _resource) \
+                        & ("applications" in _resource):
                     # Adding valid resources
                     logging.debug('Adding valid resource description [ %s ]',_resource['resource_name'])
                     self.resource_list[_resource['resource_name']] = _resource
@@ -112,7 +114,7 @@ class Gcli:
                     resource['memory_per_core'] = memory
 
                 if ( walltime != None ):
-                    if ( ( "walltime" in resource ) & ( int(resource['walltime']) < int(walltime) ) & (int(resource['walltime']) >= 0 )):
+                    if ( ( "walltime" in resource ) & ( float(resource['walltime']) < float(walltime) ) & (float(resource['walltime']) >= 0 )):
                         logging.error('Rejecting lrms for walltime limits')
                         continue
                     resource['walltime'] = walltime
@@ -489,7 +491,7 @@ def main():
             parser.add_option("-d", "--jobdir", action="store", dest="job_local_dir", metavar="STRING", default=None, help='Select job local folder location')
             parser.add_option("-c", "--cores", action="store", dest="ncores", metavar="INT", default=None, help='Set number of requested cores')
             parser.add_option("-m", "--memory", action="store", dest="memory_per_core", metavar="INT", default=None, help='Set memory per core request (GB)')
-            parser.add_option("-w", "--walltime", action="store", dest="walltime", metavar="INT", default=None, help='Set requested walltime (hours)')
+            parser.add_option("-w", "--walltime", action="store", dest="walltime", metavar="FLOAT", default=None, help='Set requested walltime (hours)')
 
             (options, args) = parser.parse_args()
 
