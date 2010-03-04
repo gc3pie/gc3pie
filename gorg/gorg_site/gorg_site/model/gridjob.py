@@ -38,7 +38,7 @@ class GridjobModel(sch.Document):
     # Type defined by the user
     defined_type = sch.TextField(default='GridjobModel')
     run_params = sch.DictField(default=dict(selected_resource='',  cores=None, memory=None, walltime=None))
-      
+
 #    def __init__(self, author=None, title=None, defined_type=None):
 #        super(Gridjobdata, self).__init__()
 #        self.author = author
