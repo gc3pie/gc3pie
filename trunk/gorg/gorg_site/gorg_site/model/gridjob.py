@@ -55,16 +55,29 @@ class GridjobModel(sch.Document):
         Only the following are valid, %s'%(' ,'.join(self.run_params))
         self.run_params[param]=value
     
-    @staticmethod
-    def run_view(db, viewname):
+    def  put_attachment(self, db, content, filename=None, content_type=None):
+        # The doc needs to be in the database before we can attach anything to it
+        if not self.id:
+            self.store(db)
+        return db.put_attachment(self, content, filename, content_type)
+        
+    def get_attachment(self, db, filename, default=None):
+        return db.get_attachment(self, filename, default)
+    
+    def delete_attachment(self, db, filename):
+        return db.delete_attachment(doc, filename)
+    
+    @classmethod
+    def view(cls, db, viewname, **options):
         from couchdb.design import ViewDefinition
-        viewnames = GridjobModel.couchdb_views(only_names=True)
+        viewnames = cls.sync_views(db, only_names=True)
         assert viewname in viewnames
-        a_view=GridjobModel.view(db, 'all/%s'%viewname)
+        a_view = super(cls, cls).view(db, 'all/%s'%viewname, **options)
+        #a_view=.view(db, 'all/%s'%viewname, **options)
         return a_view
     
     @staticmethod
-    def couchdb_views(only_names=False):
+    def sync_views(db,  only_names=False):
         from couchdb.design import ViewDefinition
         if only_names:
             viewnames=('all', 'by_author', 'by_status', 'by_title')
@@ -75,5 +88,6 @@ class GridjobModel(sch.Document):
             by_status = ViewDefinition('all', 'by_status', map_func_status, wrapper=GridjobModel,  language='python')
             by_title = ViewDefinition('all', 'by_title', map_func_title, wrapper=GridjobModel, language='python')
             views=[all, by_author, by_status, by_title]
+            ViewDefinition.sync_many( db,  views)
         return views
     

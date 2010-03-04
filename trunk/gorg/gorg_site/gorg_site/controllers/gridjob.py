@@ -6,7 +6,7 @@ from gorg_site.lib.base import BaseController, render
 from pylons.decorators import jsonify
 import os
 from gorg_site.model.gridjob import GridjobModel
-from gorg_site.lib.databaseconnection import DatabaseConnection
+from gorg_site.lib.mydb import Mydb
 
 log = logging.getLogger(__name__)
 PERMANENT_STORE = '/home/mmonroe/uploads/'
@@ -36,13 +36,13 @@ class GridjobController(BaseController):
         myfile = request.POST['myfile'] 
         title = request.POST['title']
         author = request.POST['author']
-        db_connection=DatabaseConnection()
+        db=Mydb('gorg_site','http://127.0.0.1:5984').cdb()
         a_job = GridjobModel()
         a_job.author = author
         a_job.title = title
         a_job.status = 'SUBMITTED'
         a_job.defined_type = 'GAMESS'
-        db_connection.attach(a_job, myfile.filename,  myfile.file)
+        a_job.put_attachment(db, myfile.file, myfile.filename)
         c.mess = 'Successfully uploaded: %s, title: %s' % \
                 (myfile.filename, title)
         return render('/submit_job_finish.mako')
