@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE Project SYSTEM "Project-4.6.dtd">
 <!-- eric4 project file for project gorg -->
-<!-- Saved: 2010-02-26, 12:15:30 -->
+<!-- Saved: 2010-03-04, 08:31:38 -->
 <!-- Copyright (C) 2010 monroe@oci.uzh.ch,  -->
 <Project version="4.6">
   <Language></Language>
@@ -169,14 +169,14 @@
   <FiletypeAssociations>
     <FiletypeAssociation pattern="*.html" type="FORMS" />
     <FiletypeAssociation pattern="*.idl" type="INTERFACES" />
+    <FiletypeAssociation pattern="*.mo" type="TRANSLATIONS" />
     <FiletypeAssociation pattern="*.htm" type="FORMS" />
     <FiletypeAssociation pattern="*.po" type="TRANSLATIONS" />
     <FiletypeAssociation pattern="*.mako" type="FORMS" />
-    <FiletypeAssociation pattern="*.pot" type="TRANSLATIONS" />
     <FiletypeAssociation pattern="*.ptl" type="SOURCES" />
-    <FiletypeAssociation pattern="*.js" type="FORMS" />
     <FiletypeAssociation pattern="*.pyw" type="SOURCES" />
-    <FiletypeAssociation pattern="*.mo" type="TRANSLATIONS" />
+    <FiletypeAssociation pattern="*.js" type="FORMS" />
+    <FiletypeAssociation pattern="*.pot" type="TRANSLATIONS" />
     <FiletypeAssociation pattern="*.py" type="SOURCES" />
   </FiletypeAssociations>
 </Project>
