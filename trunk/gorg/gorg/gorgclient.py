@@ -13,7 +13,6 @@ def main():
     a_job.author = 'mark'
     a_job.status = 'SUBMITTED'
     a_job.defined_type = 'GAMESS'
-    a_job.run_params['what']=1000
     a_view=GridjobModel.view(db, 'all')
     myfile =  open('/home/mmonroe/Desktop/python-crontab-0.9.2.tar.gz', 'rb')
     a_job.put_attachment(db, myfile, 'a zip')
@@ -22,7 +21,10 @@ def main():
     # Now lets add it to a task
     a_task=GridtaskModel()
     a_task.author='mark'
-    a_task.add_job(a_job)
+    for i in range(100):
+        a_job = GridjobModel()
+        a_job.store(db)
+        a_task.add_job(a_job)
     a_task.store(db)
     job_list=a_task.get_jobs(db)
     print 'I added a task'
