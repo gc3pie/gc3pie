@@ -29,6 +29,7 @@ map_func_title = '''
 
 class GridjobModel(sch.Document):
     POSSIBLE_STATUS = ('FINISHED',  'SUBMITTED', 'ERROR', 'RUNNING', 'RETRIEVING')
+    VIEW_PREFIX = 'gridjob'
     author = sch.TextField()
     title = sch.TextField()
     dat = sch.DateTimeField(default=time.gmtime())
@@ -47,13 +48,8 @@ class GridjobModel(sch.Document):
     def __setattr__(self, name, value):
         if name == 'status':
             assert value in self.POSSIBLE_STATUS, 'Invalid status. \
-            Only the following are valid, %s'%(' ,'.join(POSSIBLE_STATUS))
+            Only the following are valid, %s'%(' ,'.join(self.POSSIBLE_STATUS))
         super(GridjobModel, self).__setattr__(name, value)
-    
-    def set_run_param(self, param, value):
-        assert param in self.run_params, 'Invalid run parameter. \
-        Only the following are valid, %s'%(' ,'.join(self.run_params))
-        self.run_params[param]=value
     
     def  put_attachment(self, db, content, filename=None, content_type=None):
         # The doc needs to be in the database before we can attach anything to it
@@ -72,21 +68,21 @@ class GridjobModel(sch.Document):
         from couchdb.design import ViewDefinition
         viewnames = cls.sync_views(db, only_names=True)
         assert viewname in viewnames
-        a_view = super(cls, cls).view(db, 'all/%s'%viewname, **options)
+        a_view = super(cls, cls).view(db, '%s/%s'%(cls.VIEW_PREFIX, viewname), **options)
         #a_view=.view(db, 'all/%s'%viewname, **options)
         return a_view
     
-    @staticmethod
-    def sync_views(db,  only_names=False):
+    @classmethod
+    def sync_views(cls, db,  only_names=False):
         from couchdb.design import ViewDefinition
         if only_names:
             viewnames=('all', 'by_author', 'by_status', 'by_title')
             return viewnames
         else:
-            all = ViewDefinition('all', 'all', map_func_all, wrapper=GridjobModel, language='python')
-            by_author = ViewDefinition('all', 'by_author', map_func_author, wrapper=GridjobModel, language='python')
-            by_status = ViewDefinition('all', 'by_status', map_func_status, wrapper=GridjobModel,  language='python')
-            by_title = ViewDefinition('all', 'by_title', map_func_title, wrapper=GridjobModel, language='python')
+            all = ViewDefinition(cls.VIEW_PREFIX, 'all', map_func_all, wrapper=cls, language='python')
+            by_author = ViewDefinition(cls.VIEW_PREFIX, 'by_author', map_func_author, wrapper=cls, language='python')
+            by_status = ViewDefinition(cls.VIEW_PREFIX, 'by_status', map_func_status, wrapper=cls,  language='python')
+            by_title = ViewDefinition(cls.VIEW_PREFIX, 'by_title', map_func_title, wrapper=cls, language='python')
             views=[all, by_author, by_status, by_title]
             ViewDefinition.sync_many( db,  views)
         return views
