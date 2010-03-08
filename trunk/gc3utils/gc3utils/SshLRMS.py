@@ -111,7 +111,7 @@ class SshLrms(LRMS):
         _walltime_in_seconds = self.resource['walltime']
         if (_walltime_in_seconds > 0 ):
             _walltime_in_seconds = _walltime_in_seconds * 3600 
-            _submit_command = _submit_command + ' -l %s ' % _walltime_in_seconds
+            _submit_command = _submit_command + ' -t %s ' % _walltime_in_seconds
 
         # add the input file name to the SGE submit command
 
