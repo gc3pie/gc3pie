@@ -108,10 +108,12 @@ class SshLrms(LRMS):
         _submit_command = 'cd ~/%s && %s/qgms -n %s' % (unique_token, self.resource['gamess_location'], self.resource['ncores'])
 
         # if walltime is provided, convert seconds and add to the SGE submit command
-        _walltime_in_seconds = self.resource['walltime']
-        if (_walltime_in_seconds > 0 ):
-            _walltime_in_seconds = _walltime_in_seconds * 3600 
-            _submit_command = _submit_command + ' -t %s ' % _walltime_in_seconds
+        _walltime_in_seconds = int(self.resource['walltime'])*3600
+        if ( _walltime_in_seconds > 0 ):
+            _submit_command = _submit_command + ' -t %i ' % _walltime_in_seconds
+
+        logging.debug('submit _walltime_in_seconds: ' + str(_walltime_in_seconds))
+#        logging.debug('submit _walltime_in_seconds: ' + str(self.resource['walltime']))
 
         # add the input file name to the SGE submit command
 
