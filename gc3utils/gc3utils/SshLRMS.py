@@ -199,7 +199,7 @@ class SshLrms(LRMS):
             stdin, stdout, stderr = ssh.exec_command('echo $HOME')
             remote_home = stdout.read().strip()
             full_path_to_remote_unique_id = remote_home+'/'+_unique_token
-            full_path_to_local_unique_id = _unique_token
+            full_path_to_local_unique_id = unique_token
             
             copyfiles_list = []
 
