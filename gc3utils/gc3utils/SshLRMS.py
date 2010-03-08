@@ -103,11 +103,23 @@ class SshLrms(LRMS):
             logging.critical('copy_input put failed')
             raise
 
-        # then try to submit it to the local queueing system 
-        _submit_command = 'cd ~/%s && %s/qgms -n %s %s' % (unique_token, self.resource['gamess_location'], self.resource['ncores'], _inputfilename)
-	
+
+        # build up the SGE submit command 
+        _submit_command = 'cd ~/%s && %s/qgms -n %s' % (unique_token, self.resource['gamess_location'], self.resource['ncores'])
+
+        # if walltime is provided, convert seconds and add to the SGE submit command
+        _walltime_in_seconds = self.resource['walltime']
+        if (_walltime_in_seconds > 0 ):
+            _walltime_in_seconds = _walltime_in_seconds * 3600 
+            _submit_command = _submit_command + ' -l %s ' % _walltime_in_seconds
+
+        # add the input file name to the SGE submit command
+
+        _submit_command = _submit_command + ' %s' % _inputfilename
+        
         logging.debug('submit _submit_command: ' + _submit_command)
 
+        #then try to submit it to the local queueing system 
         try:
             stdin, stdout, stderr = ssh.exec_command(_submit_command)
             out = stdout.read()
