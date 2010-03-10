@@ -265,6 +265,8 @@ class ParseGamessDat(object):
         self.parse_kernal.addRule(start, end, self.read_coord)
         start,  end = self.read_grad(returnRule=True)
         self.parse_kernal.addRule(start, end, self.read_grad)
+        start,  end = self.read_energy(returnRule=True)
+        self.parse_kernal.addRule(start, end, self.read_energy)
         start,  end = self.read_normal_mode_molplt(returnRule=True)
         self.parse_kernal.addRule(start, end, self.read_normal_mode_molplt)
     
@@ -407,7 +409,6 @@ class ParseGamessDat(object):
                 self.group[groupTitle].append(resultset)
             else:
                 self.group[groupTitle]=[resultset]
-            self.read_energy(text_block) # We will get the engery from this block of text
 
     def read_coord(self, text_block=None, returnRule=False):
         if returnRule:
@@ -417,23 +418,30 @@ class ParseGamessDat(object):
             return (heading, trailing)
         else:
             groupTitle= self.COORD
-            rule = OneOrMore(Group(Word(alphas) + Word(nums+'.')) + Group(OneOrMore(Word(nums+'-.', min=12, max=13))))
+            rule = OneOrMore(Group(Word(alphas) + Word(nums+'.')) + Group(OneOrMore(Word(nums+'-.', min=12))))
             result = rule.searchString(text_block).asList()[0]
             if groupTitle in self.group:
                 self.group[groupTitle].append(result)
             else:
                 self.group[groupTitle]=[result]
         
-    def read_energy(self, text_block):
-        groupTitle=self.ENERGY
-        #Define parse rule
-        rule=Literal('E=').suppress() + Word(nums+'-.')
-        result = rule.searchString(text_block).asList()[0]
-        if groupTitle in self.group:
-            self.group[groupTitle].append(result[0])
-        else:
-            self.group[groupTitle]=result
-    
+    def read_energy(self, text_block=None, returnRule=False):
+        if returnRule:
+            #Define parse rule
+            heading=r"""E\("""
+            trailing=r"""ITERS"""
+            return (heading, trailing)
+        else:        
+            groupTitle=self.ENERGY
+            '''The first energy is the one returned, not the NUC energy, but both are parsed for 
+            E(RHF)=     -308.7504263559, E(NUC)=  299.7127028401,    9 ITERS'''
+            rule=Group(Literal('E(') + Word(nums+'-'+alphas) + Literal(')=')).suppress() + Word(nums+'-.')
+            result = rule.searchString(text_block).asList()[0]
+            if groupTitle in self.group:
+                self.group[groupTitle].append(result[0])
+            else:
+                self.group[groupTitle]=result
+        
     #MJM TODO: FIX ME!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     def read_normal_mode_molplt(self, text_block=None, returnRule=False):
         """"MOLPT Normal Mode output is formated like the gradient output:
