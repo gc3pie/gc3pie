@@ -188,8 +188,13 @@ class SshLrms(LRMS):
 
 
         try:
-            jobname = _unique_token.split('-')[0]            
-
+            ''' Make sure we handle the situation when there is a '-' in the file name
+            We know the job name will be three '-' from the back of the unique_token
+            Example:
+            G-P-G.rst.restart_0-1268147228.33-fa72c57af2bbe092a0b9d95ee95aad22-schrodinger
+            '''
+            jobname =  '-'.join( _unique_token.split('-')[0:-3])
+           
             # create a list of lists 
             # each element in the outer list is itself a list
             # each inner list has 2 elements, a remote file location and a local file location
