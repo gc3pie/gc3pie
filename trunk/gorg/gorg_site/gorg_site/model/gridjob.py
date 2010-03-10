@@ -1,4 +1,6 @@
 from couchdb import schema as sch
+from couchdb.schema import  Schema
+
 from couchdb import client as client
 import time
 
@@ -28,17 +30,21 @@ map_func_title = '''
     '''
 
 class GridjobModel(sch.Document):
-    POSSIBLE_STATUS = ('FINISHED',  'SUBMITTED', 'ERROR', 'RUNNING', 'RETRIEVING')
+    POSSIBLE_STATUS = ('READY', 'WAITING','RUNNING','RETRIEVING','FINISHED', 'DONE','ERROR')
     VIEW_PREFIX = 'gridjob'
     author = sch.TextField()
     title = sch.TextField()
     dat = sch.DateTimeField(default=time.gmtime())
     type = sch.TextField(default='GridjobModel')
-    status = sch.TextField(default = 'SUBMITTED')
+    status = sch.TextField(default = 'READY')
     # Type defined by the user
     defined_type = sch.TextField(default='GridjobModel')
-    run_params = sch.DictField(default=dict(selected_resource='',  cores=None, memory=None, walltime=None))
-
+    run_params = sch.DictField(default=dict(application_to_run='gamess', selected_resource='ocikbpra',  cores=2, memory=1, walltime=-1))
+    # This works like a dictionary, but allows you to go a_job.test.application_to_run='a app' as well as a_job.test['application_to_run']='a app'
+    #test=sch.DictField(Schema.build(application_to_run=sch.TextField(default='gamess')))
+    gsub_message = sch.TextField()
+    file_input = sch.TextField()
+    gsub_unique_token = sch.TextField()
 #    def __init__(self, author=None, title=None, defined_type=None):
 #        super(Gridjobdata, self).__init__()
 #        self.author = author
@@ -55,7 +61,10 @@ class GridjobModel(sch.Document):
         # The doc needs to be in the database before we can attach anything to it
         if not self.id:
             self.store(db)
-        return db.put_attachment(self, content, filename, content_type)
+        result = db.put_attachment(self, content, filename, content_type)
+        # After we attach a file we need to update our rev and
+        # _attachment field
+        return self.load(db, self.id)
         
     def get_attachment(self, db, filename, default=None):
         return db.get_attachment(self, filename, default)
@@ -87,3 +96,4 @@ class GridjobModel(sch.Document):
             ViewDefinition.sync_many( db,  views)
         return views
     
+

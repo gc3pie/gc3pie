@@ -53,7 +53,7 @@ reduce_func_task_owns ='''
                 return [task_id, loop_it.next()]'''
 class GridtaskModel(sch.Document):       
     VIEW_PREFIX = 'gridtask'
-    POSSIBLE_STATUS = ('FINISHED',  'SUBMITTED', 'ERROR', 'RUNNING', 'RETRIEVING')
+    POSSIBLE_STATUS = ('READY', 'WAITING','RUNNING','RETRIEVING','FINISHED', 'DONE','ERROR')
     author = sch.TextField()
     title = sch.TextField()
     dat = sch.DateTimeField(default=time.gmtime())
@@ -64,7 +64,7 @@ class GridtaskModel(sch.Document):
     # A parent may or may not have childern
     # A parent without childern has an empty list
     job_relations = sch.DictField()
-    status = sch.TextField(default = 'SUBMITTED')
+    status = sch.TextField(default = 'READY')
 
     def add_job(self, a_job, my_parent=tuple()):
         assert a_job.id,  'Job must first be saved to the database before being added to a task.'
@@ -86,7 +86,7 @@ class GridtaskModel(sch.Document):
     def __setattr__(self, name, value):
         if name == 'status':
             assert value in self.POSSIBLE_STATUS, 'Invalid status. \
-            Only the following are valid, %s'%(' ,'.join(POSSIBLE_STATUS))
+            Only the following are valid, %s'%(' ,'.join(self.POSSIBLE_STATUS))
         super(GridtaskModel, self).__setattr__(name, value)
     
     @classmethod
