@@ -36,15 +36,31 @@ class GridjobController(BaseController):
         myfile = request.POST['myfile'] 
         title = request.POST['title']
         author = request.POST['author']
-        db=Mydb('gorg_site','http://127.0.0.1:5984').cdb()
+        db=Mydb().cdb()
         a_job = GridjobModel()
         a_job.author = author
         a_job.title = title
-        a_job.status = 'SUBMITTED'
         a_job.defined_type = 'GAMESS'
         a_job.put_attachment(db, myfile.file, myfile.filename)
         c.mess = 'Successfully uploaded: %s, title: %s' % \
                 (myfile.filename, title)
         return render('/submit_job_finish.mako')
+
+    def query_job(self):
+        """Post / users: Query an existing job in the database."""
+        jobid = request.GET['jobid'] 
+        db=Mydb().cdb()
+        a_job = GridjobModel().load(db,jobid)
+        c.a_job = a_job
+        return render('/submit_job_detail.mako')
+        
+    def display_job_attachment(self):
+        """Post / users: Query an existing job in the database."""
+        jobid = request.GET['jobid'] 
+        attachment = request.GET['attachment']
+        db=Mydb().cdb()
+        a_job = GridjobModel().load(db,jobid)
+        response.content_type = 'text/plain'
+        return a_job.get_attachment(db, attachment)
    
 
