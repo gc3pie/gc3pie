@@ -89,15 +89,17 @@ class Gamess(object):
     Class is used to write GAMESS job files.
     """
 
-    def __init__(self, label='gamess', gamess_params=GamessParams(), result_file=None):
-        self.EXT_INP = '.inp'
-        self.EXT_STDERR = '.stderr'
-        self.EXT_STDOUT= '.stdout'
-        self.EXT_DAT = '.dat'
+    def __init__(self, label='gamess', gamess_params=GamessParams(), 
+                 inp=None, stderr=None,  stdout=None,  dat=None):
+        
+        # These are assumed to be file like objects
+        self.f_input = inp
+        self.f_stderr = stderr
+        self.f_stdout = stdout
+        self.f_dat = dat
         
         self.label=label
         self.atoms = None
-        self.filename = result_file
         self.parsed_dat = ParseGamessDat()
         self.parsed_out = ParseGamessOut()
         self.gamess_params = gamess_params
@@ -111,7 +113,7 @@ class Gamess(object):
         self.monitor = Monitor()
         
     def is_changed(self):
-        check_if_changed = [self.atoms, self.gamess_params, self.filename]
+        check_if_changed = [self.atoms, self.gamess_params, self.f_input, self.f_stderr, self.f_stdout, self.f_dat]
         return self.monitor.is_changed(check_if_changed)
 
     def set_atoms(self, atoms):
@@ -171,8 +173,8 @@ class Gamess(object):
         
     def read(self, atoms):
         """Read the results form the GAMESS output files."""
-        self.parsed_dat.parse_file(self.get_filename_dat())
-        self.parsed_out.parse_file(self.get_filename_stdout())       
+        self.parsed_dat.parse_file(self.f_dat)
+        self.parsed_out.parse_file(self.f_stdout)       
         return
     
     def update(self, atoms):
@@ -180,22 +182,23 @@ class Gamess(object):
         """If we do not have a filename, we can not parse a file.
             That means we need to first make the output file by
             running GAMESS."""
-        if self.is_changed() or self.filename==None:
+        if self.is_changed() or self.f_stdout==None:
             self.calculate(atoms)
             self.parsed_a_file = False
         if not self.parsed_a_file:
             self.read(atoms)
             self.parsed_a_file = True
         return
-    
+    # TODO: Figure out how to handle the calculations
     def calculate(self, atoms):
+        pass
         """Run the GAMESS calculation in here"""
         from ase.io.gamess import WriteGamessInp
         gamess_writer = WriteGamessInp()
         self.set_filename()
-        gamess_writer.write(self.get_filename_input(), atoms)
+        gamess_writer.write(self.f_input, atoms)
         #Run the job some how
-        jobid = submitSGEJob(self.get_filename_input())
+        jobid = submitSGEJob(self.f_input)
         while not finishedSGEJob(jobid):
             print "waiting for jobid %s to finish"%(jobid)
             time.sleep(60)
@@ -205,14 +208,6 @@ class Gamess(object):
             self.filename=filename
         else:
             self.filename = '%s_%s'%(self.label, self.generate_random_string())
-    def get_filename_input(self):
-        return self.filename+self.EXT_INP
-    def get_filename_stdout(self):
-        return self.filename+self.EXT_STDOUT
-    def get_filename_stderr(self):
-        return self.filename+self.EXT_STDERR
-    def get_filename_dat(self):
-        return self.filename+self.EXT_DAT
         
     @staticmethod
     def generate_random_string():
@@ -253,9 +248,6 @@ class ParseGamessDat(object):
 #        self.group = dict(zip(keys, values))
         self.group = dict()
         
-        #The filename that we have parsed
-        self.filename = None
-    
         self.parse_kernal = ParseKernal()
         start,  end = self.read_vec(returnRule=True)
         self.parse_kernal.addRule(start, end, self.read_vec)
@@ -304,9 +296,8 @@ class ParseGamessDat(object):
             return self.group[self.NORM_MODE][index]
         return None
     
-    def parse_file(self, filename):
-        self.filename = filename
-        self.parse_kernal.parse(self.filename)
+    def parse_file(self, f_dat):
+        self.parse_kernal.parse(f_dat)
     
     @staticmethod
     def fix_gamess_matrix(mat):
@@ -428,7 +419,7 @@ class ParseGamessDat(object):
     def read_energy(self, text_block=None, returnRule=False):
         if returnRule:
             #Define parse rule
-            heading=r"""E\("""
+            heading=r"""^E[\(]{1}"""
             trailing=r"""ITERS"""
             return (heading, trailing)
         else:        
@@ -485,7 +476,6 @@ class ParseGamessOut(object):
         self.STATUS_GEOM_LOCATED='STATUS_GEOM_LOCATED'
         self.STATUS_NO_CPU_TIMEOUT = 'STATUS_NO_CPU_TIMEOUT'
         
-        self.filename = None
         self.group = dict()
         
         self.parse_kernal = ParseKernal()
@@ -496,9 +486,8 @@ class ParseGamessOut(object):
         start,  end = self.read_status_geom_located(returnRule=True)
         self.parse_kernal.addRule(start, end, self.read_status_geom_located)
 
-    def parse_file(self, filename):
-        self.filename = filename
-        self.parse_kernal.parse(self.filename)
+    def parse_file(self, f_dat):        
+        self.parse_kernal.parse(f_dat)
     
     def status_exit_successful(self):
         return self.group[self.STATUS_EXIT]
@@ -592,7 +581,7 @@ class ParseKernal(object):
         index = self.find_matched_index(result[0])
         return self.end[index]
         
-    def parse(self, filename):
+    def parse(self, fileIn):
         """ Extracts blocks of text from a file based on starting and ending rules.
             
             !!!!Does not support nested text blocks!!!!!
@@ -605,11 +594,10 @@ class ParseKernal(object):
         # Starting rules are a list of regexs that have been '|' together
         regStart=re.compile(self.getStartRule())        
         foundOne = False
-        fileIn = open(filename)
+        fileIn.seek(0)
         line = fileIn.readline()
         while line:
             if not foundOne:
-                #me=rulestart.parseString(line)
                 result=regStart.findall(line)
                 if result:
                     foundOne = True
@@ -621,15 +609,15 @@ class ParseKernal(object):
             # If I do, my block of text will be one line, otherwise it will grow until I find the ending rule.
             if foundOne: 
                 result=regEnd.findall(line)
-                #me=ruleend.parseString(line)
                 if result:
                     secondPos = fileIn.tell()
                     fileIn.seek(firstPos)                
                     blockText += fileIn.read(secondPos-firstPos)
                     funToCall(blockText)
                     foundOne=False
+                    #print 'FOUND!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
             line = fileIn.readline()
-        fileIn.close()
+        fileIn.seek(0)
     
     def find_matched_index(self, matchstr):
         for i in range(0, len(self.start)): 

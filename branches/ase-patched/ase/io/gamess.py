@@ -123,8 +123,8 @@ class ReadGamessInp:
         start,  end = self.read_params(returnRule=True)
         self.parse_kernal.addRule(start, end, self.read_params)
         
-    def read_file(self, filename):
-        self.parse_kernal.parse(filename)
+    def read_file(self, inp):
+        self.parse_kernal.parse(inp)
     
     def get_result_group(self):
         return self.group
