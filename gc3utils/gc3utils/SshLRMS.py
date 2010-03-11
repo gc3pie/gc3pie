@@ -300,6 +300,50 @@ class SshLrms(LRMS):
         # we don't have a return code or lrms_log for this situation, but we need to return them, so just make something fake
         dummy_output = 'nothing'
         return [True,dummy_output]
+
+    def list_jobs(self, shortview):
+        """List status of jobs."""
+
+        try:
+
+            # print the header
+            if shortview == False:
+                # long view
+                print "%-50s %-20s %-10s" % ("[unique_token]","[name]","[status]")
+            else:
+                # short view
+                print "%-20s %-10s" % ("[name]","[status]")
+            
+            # look in current directory for jobdirs
+            jobdirs = []
+            dirlist = os.listdir("./")
+            for dir in dirlist:
+                if os.path.isdir(dir) == True:
+                    if os.path.exists(dir + "/.lrms_jobid") and os.path.exists(dir + "/.lrms_log"):
+                        logging.debug(dir + "is a jobdir")
+                        jobdirs.append(dir)
+
+            # break down unique_token into vars
+            for dir in jobdirs:
+                unique_token = dir
+                name =  '-'.join( _unique_token.split('-')[0:-3])
+                status = check_status(unique_toke)
+
+                if shortview == False:
+                    # long view
+                    sys.stdout.write('%-20s %-10s' % (name, status))
+                else:
+                    # short view
+                    sys.stdout.write('%-50s %-20s %-10s' % (unique_token, filename, size))
+
+            sys.stdout.write('Jobs listed.\n')
+            sys.stdout.flush
+            
+        except Exception, e:
+            logging.critical('Failure in listing jobs')
+            raise e
+
+        return 
             
 
     """Below are the functions needed only for the SshLrms class."""

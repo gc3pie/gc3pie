@@ -415,7 +415,7 @@ class Gcli:
             if ( len(lrmsjobid_list) > 0 ):
                 for _lrmsjobid in lrmsjobid_list:
                     if ( _lrmsjobid != "" ):
-                        logging.debug('Checking status fo jobid [ %s ]',_lrmsjobid)
+                        logging.debug('Checking status of jobid [ %s ]',_lrmsjobid)
                         status_list.append(self.__gstat(_lrmsjobid))
             logging.debug('status_list contains [ %d ] elelemnts',len(status_list))
             return [0,status_list]
@@ -473,6 +473,53 @@ class Gcli:
         logging.debug('Returning [ %s ] [ %s ]',unique_token,retval)
 
         return [unique_token,retval]
+
+    def glist(self, shortview):
+        """List status of jobs."""
+        global default_joblist_location
+
+        try:
+
+            # print the header
+            if shortview == False:
+                # long view
+                print "%-100s %-20s %-10s" % ("[unique_token]","[name]","[status]")
+            else:
+                # short view
+                print "%-20s %-10s" % ("[name]","[status]")
+
+            # look in current directory for jobdirs
+            jobdirs = []
+            dirlist = os.listdir("./")
+            for dir in dirlist:
+                if os.path.isdir(dir) == True:
+                    if os.path.exists(dir + "/.lrms_jobid") and os.path.exists(dir + "/.lrms_log"):
+                        logging.debug(dir + "is a jobdir")
+                        jobdirs.append(dir)
+
+            # break down unique_token into vars
+            for dir in jobdirs:
+                unique_token = dir
+                name =  '-'.join( unique_token.split('-')[0:-3])
+                retval,job_status_list = self.gstat(unique_token)
+                first = job_status_list[0]
+                status = first[1].split(' ')[1]
+
+                if shortview == False:
+                    # long view
+                    print '%-100s %-20s %-10s' % (unique_token, name, status)
+                else:
+                    # short view
+                    print '%-20s %-10s' % (name, status)
+
+            logging.debug('Jobs listed.')
+
+        except Exception, e:
+            logging.critical('Failure in listing jobs')
+            raise e
+
+        return
+
         
 def main():
     global default_job_folder_location
@@ -558,7 +605,21 @@ def main():
             logging.info('gkill is not implemented yet')
 
         elif ( os.path.basename(program_name) == "glist" ):
-            logging.info('glist is not implemented yet')
+            # Glist
+            # Parse command line arguments
+
+            shortview = True
+
+            _usage = "%prog [options]"
+            parser = OptionParser(usage=_usage)
+            parser.add_option("-v", action="count", dest="verbosity", default=0, help="Set verbosity level")
+            parser.add_option("-s", "--short", action="store_true", dest="shortview", help="Short view.")
+            parser.add_option("-l", "--long", action="store_false", dest="shortview", help="Long view.")
+
+            (options, args) = parser.parse_args()
+
+            # Configure logging service
+            configure_logging(options.verbosity)
 
         else:
             # Error
@@ -596,6 +657,19 @@ def main():
                 sys.stdout.flush
             else:
                 raise Exception("gget terminated")
+        elif (os.path.basename(program_name) == "gkill"):
+            retval = gcli.gkill(unique_token)
+            if (not retval):
+                sys.stdout.write('Job killed: [ '+unique_token+' ]\n')
+                sys.stdout.flush
+            else:
+                raise Exception("gkill terminated")
+        elif (os.path.basename(program_name) == "glist"):
+            retval = gcli.glist(options.shortview)
+            if (not retval):
+                sys.stdout.flush
+            else:
+                raise Exception("glist terminated")
     except:
         logging.info('%s',sys.exc_info()[1])
         # think of a better error message

@@ -17,3 +17,9 @@ class LRMS:
 
     def get_results(self,lrms_jobid,job_dir):
         pass
+
+    def kill_job(self,lrms_jobid,job_dir):
+        pass
+
+    def list_jobs(self,shortview):
+        pass
