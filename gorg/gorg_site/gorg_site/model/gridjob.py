@@ -43,7 +43,8 @@ class GridjobModel(sch.Document):
     # This works like a dictionary, but allows you to go a_job.test.application_to_run='a app' as well as a_job.test['application_to_run']='a app'
     #test=sch.DictField(Schema.build(application_to_run=sch.TextField(default='gamess')))
     gsub_message = sch.TextField()
-    file_input = sch.TextField()
+    input_file = sch.TextField()
+    user_params = sch.DictField()
     gsub_unique_token = sch.TextField()
 #    def __init__(self, author=None, title=None, defined_type=None):
 #        super(Gridjobdata, self).__init__()
@@ -69,8 +70,36 @@ class GridjobModel(sch.Document):
     def get_attachment(self, db, filename, default=None):
         return db.get_attachment(self, filename, default)
     
+    def attachments_to_files(self, db, default=None):
+        '''We often want to save all of the attachs to a job as files
+        on the local computer.'''
+        import tempfile
+        temp_file = tempfile.NamedTemporaryFile()
+        temp_file.close()
+        f_attachments = dict()
+        # Loop through each attachment and save it
+        for attachment in self['_attachments']:
+            attached_data = self.get_attachment(db, attachment, default)
+            myfile = open( '%s.%s'%(temp_file.name, attachment), 'wb')
+            myfile.write(attached_data)
+            myfile.close()
+            f_attachments[attachment]=open(myfile.name, 'rb') 
+        return f_attachments
+    
     def delete_attachment(self, db, filename):
         return db.delete_attachment(doc, filename)
+    
+    def copy(self):
+        import copy
+        '''We want to make a copy of this job, so we can use the same setting to 
+        create another job.'''
+        new_job=GridjobModel()
+        new_job=copy.deepcopy(self)
+        del new_job['_id']
+        del new_job['_rev']
+        del new_job['_attachments']
+        new_job.status='READY'
+        return new_job
     
     @classmethod
     def view(cls, db, viewname, **options):
