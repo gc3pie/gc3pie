@@ -19,69 +19,34 @@ from pyparsing import *
 from ase.atoms import Atoms 
 
 class GamessAtoms(Atoms):
+    # Shoenflies space group
     symmetry = None
-    comment = None
-        
-    def get_shoenflies_space_group(self):
-        return self.symmetry
-    
-    def get_comment(self):
-        return self.comment
-    
-    def set_shoenflies_space_group(self, symmetry):
-        self.symmetry = symmetry
-    
-    def set_comment(self, comment):
-        self.comment = comment
+    # User comment in the INP file
+    comment = None 
+
     def copy(self):
         import copy
         new_atoms = GamessAtoms(Atoms.copy(self))
-        new_atoms.set_comment(copy.deepcopy(self.get_comment()))
-        new_atoms.set_shoenflies_space_group(copy.deepcopy(self.get_shoenflies_space_group()))
+        new_atoms.comment(copy.deepcopy(self.comment))
+        new_atoms.symmetry(copy.deepcopy(self.symmetry))
         return new_atoms
 
-        
-        
-        
 class GamessParams:
-    def __init__(self):
-        '''Holds the GAMESS run parameters
-        Constructor
-        '''
-        self.groups = dict()
-        self.hessian = None
-        self.orbitals = None
-        
-    def get_keys(self):
-        return self.groups.keys()
-    
-    def get_group(self, key):
-        return self.groups[key]
-    
-    def get_groups(self):
-        return self.groups
-    
+    '''Holds the GAMESS run parameters'''
+    groups = dict()
+   
+    def get_group(self, group_key):
+        return self.groups[group_key]
+
     def set_group_param(self, group_key, param_key, value):
         if not group_key in self.groups:
-            self.groups[group_key] = {param_key:dict()}
+            self.groups[group_key] = dict()
         group_dict=self.groups[group_key]
         group_dict[param_key]=value
     
     def get_group_param(self, group_key, param_key):
         group_dict=self.groups[group_key]
         return group_dict[param_key]
-    
-    def get_hessian(self):
-        return self.hessian
-    
-    def get_orbitals(self):
-        return self.orbitals
-    
-    def set_orbitals(self, orbitals):
-        self.orbitals = orbitals
-    
-    def set_hessian(self, hessian):
-        self.hessian = hessian
 
 class Gamess(object):
     """Create the file that specifies the GAMESS job

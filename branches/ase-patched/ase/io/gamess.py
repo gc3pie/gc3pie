@@ -13,21 +13,14 @@ class WriteGamessInp:
     
     Class is used to write GAMESS job files.
     """
-    def __init__(self):
-        '''
-        Constructor
-        '''
-        
     def build_coords(self, atoms):
         #We are only handling C1, no symmetry
         heading = ' $DATA\n'
         trailing = ' $END\n'        
         names = atoms.get_chemical_symbols()
         positions = atoms.get_positions()
-        masses = atoms.get_masses()
-        space_group=atoms.get_shoenflies_space_group()
-        comment=atoms.get_comment()
-        output = heading + comment + '\n' + space_group +'\n'
+        masses = atoms.get_masses()        
+        output = heading + atoms.comment + '\n' + atoms.symmetry +'\n'
         #GAMESS-US format requires a space after none C1 space groups!
         if space_group != 'C1':
             output += '\n'
@@ -53,15 +46,14 @@ class WriteGamessInp:
             output += '%s\n'%('$END')
         return output
     
-    def write(self, filename, atoms):
-        file = open(filename, 'w')
-        inp_file = self.build_params(atoms)
-        file.write(inp_file)
-        inp_file = self.build_coords(atoms)
-        file.write(inp_file)
-        inp_file = self.write_vec(atoms, file)
-        inp_file = self.write_hess(atoms, file)
-        file.close()       
+    def write(self, file_like, atoms):
+        output = self.build_params(atoms)
+        file_like.write(output)
+        output = self.build_coords(atoms)
+        file_like.write(output)
+        self.write_vec(atoms, file_like)
+        self.write_hess(atoms, file_like)
+        file_like.flush()
     
     def write_vec(self, atoms, file):
         vec = atoms.get_calculator().gamess_params.get_orbitals()
@@ -105,40 +97,30 @@ class WriteGamessInp:
 class ReadGamessInp:
     '''
     classdocs
-    '''
-    #Group titles used to reference values in the group dictionary
-    DATA = 'DATA'
-    COMMENT = 'COMMENT'
-    SYMMETRY = 'SYMMETRY'
-    PARAMS = 'PARAMS'
+    '''   
+    # The DATA group in the INP file specifies atom positions.
+    g_coords = None
+    # The comment group in the INP file where users can write what they want
+    g_comment = None
+    # The shoenflies space group
+    g_symmetry = None
+    # This will hold all of the flags GAMESS uses to execute a job.
+    g_params = None
     
-    def __init__(self):
+    def __init__(self, f_inp):
         '''
         Constructor
-        '''
-        self.group = dict()
+        '''        
         self.parse_kernal = ParseKernal()
         start,  end = self.read_coords(returnRule=True)
         self.parse_kernal.addRule(start, end, self.read_coords)
         start,  end = self.read_params(returnRule=True)
         self.parse_kernal.addRule(start, end, self.read_params)
-        
-    def read_file(self, inp):
-        self.parse_kernal.parse(inp)
-    
-    def get_result_group(self):
-        return self.group
-    
-    def get_coords(self):
-        """The data group in the INP file specifies atom positions.""" 
-        return self.group[self.DATA]
-    
-    def get_params(self):
-        """This will hold all of the flags GAMESS uses to execute a job.""" 
-        return self.group[self.PARAMS]
+        # Parse the file like object
+        self.parse_kernal.parse(f_inp)
     
     def get_molecule(self):        
-        data = self.get_coords()
+        data = self.g_coords
         atom_list = list()
         for i in range(0,len(data)):            
             a_position = data[i][1]
@@ -146,8 +128,8 @@ class ReadGamessInp:
             a_name = data[i][0][0]
             atom_list.append(Atom(symbol=a_name, mass=a_mass, position=a_position))
         atoms = GamessAtoms(atom_list)
-        atoms.set_comment(self.group[self.COMMENT])
-        atoms.set_shoenflies_space_group(self.group[self.SYMMETRY])
+        atoms.set_comment(self.comment)
+        atoms.set_shoenflies_space_group(self.g_symmetry)
         return atoms
     
     def read_params(self, text_block=None, returnRule=False):
@@ -163,9 +145,9 @@ class ReadGamessInp:
         'key=value' pairs. That way it will not match the '$DATA' group, nor
         comments, which are lines that start with '!'.
         """
-        if not self.PARAMS in self.group:
-            self.group[self.PARAMS] = GamessParams()
-        gamess_params=self.group[self.PARAMS]        
+        if not self.g_params:
+            self.g_params = GamessParams()
+        gamess_params=self.g_params
         if returnRule:
             #Define parse rule            
             heading=r"""^\s*\$\w+\s+[\w\.]+[=]{1}[\.\w]+"""
@@ -179,7 +161,7 @@ class ReadGamessInp:
                 param_key = i[0]
                 param = i[1]
                 gamess_params.set_group_param(group_key, param_key, param)                
-            self.group[self.PARAMS]=gamess_params
+            self.g_params=gamess_params
 
     def read_coords(self, text_block=None, returnRule=False):
         """Parsed the $DATA group in a GAMESS-US input file
@@ -199,11 +181,9 @@ class ReadGamessInp:
             return (heading, trailing)
         else:
             lines=text_block.splitlines(True)
-            self.group[self.COMMENT] = lines[1].strip()
-            self.group[self.SYMMETRY] = lines[2].strip()
+            self.g_comment = lines[1].strip()
+            self.g_symmetry = lines[2].strip()
             new_text_block = ''.join(lines[3:])
             rule = OneOrMore(Group(Group(Word(alphas) + Word(nums+'.')) + Group(OneOrMore(Word(nums+'-.')))))
             result = rule.searchString(new_text_block).asList()[0]
-            self.group[self.DATA]=result
-            
-
+            self.g_coords=result
