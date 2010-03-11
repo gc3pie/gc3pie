@@ -9,8 +9,7 @@ from gorg_site.gorg_site.lib.mydb import Mydb
 from gc3utils.gcli import Gcli
 
 class GridjobScheduler(object):
-    INPUT_FILE_ATTACHMENT_NAME = 'input_file'
-    INPUT_FILE_EXT = '.inp'
+    EXT_INP = '.inp'
    
     def __init__(self, db_name='gorg_site', db_url='http://127.0.0.1:5984', 
                  glic_location='/home/mmonroe/.gc3/config'):
@@ -23,8 +22,8 @@ class GridjobScheduler(object):
         for job in job_view_by_status:
             try:
                 # Pass the run_params dictionary as a keyword list to the function            
-                myfile = job.get_attachment(self.db, self.INPUT_FILE_ATTACHMENT_NAME)
-                temp_input = tempfile.NamedTemporaryFile(suffix=self.INPUT_FILE_EXT)
+                myfile = job.get_attachment(self.db, job.input_file)
+                temp_input = tempfile.NamedTemporaryFile(suffix=self.EXT_INP)
                 temp_input.write(myfile)
                 temp_input.flush()
                 run_params = job.run_params
@@ -35,6 +34,7 @@ class GridjobScheduler(object):
             except:
                 job.gsub_message=formatExceptionInfo()
                 job.status='ERROR'
+            temp_input.close()
             job.store(self.db)
 
     def handle_waiting_jobs(self):
