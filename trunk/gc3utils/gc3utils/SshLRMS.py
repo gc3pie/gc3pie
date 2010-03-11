@@ -218,7 +218,8 @@ class SshLrms(LRMS):
 
 	        # .po file
             remote_file = '%s/%s.po%s' % (full_path_to_remote_unique_id, jobname, lrms_jobid)
-            local_file = '%s/%s.po' % (full_path_to_local_unique_id, jobname)
+            # The arc gget uses stderr not po for the suffix. We therefore need to rename the file
+            local_file = '%s/%s.stderr' % (full_path_to_local_unique_id, jobname)
             remote2local_list = [remote_file, local_file]
             copyfiles_list.append(remote2local_list)
 
