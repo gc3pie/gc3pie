@@ -501,9 +501,12 @@ class Gcli:
             for dir in jobdirs:
                 unique_token = dir
                 name =  '-'.join( unique_token.split('-')[0:-3])
-                retval,job_status_list = self.gstat(unique_token)
-                first = job_status_list[0]
-                status = first[1].split(' ')[1]
+                if os.path.exists(dir + "/.finished"):
+                    status = "FINISHED"
+                else:
+                    retval,job_status_list = self.gstat(unique_token)
+                    first = job_status_list[0]
+                    status = first[1].split(' ')[1]
 
                 if shortview == False:
                     # long view
