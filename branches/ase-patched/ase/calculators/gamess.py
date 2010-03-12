@@ -31,6 +31,31 @@ class GamessAtoms(Atoms):
         new_atoms.symmetry(copy.deepcopy(self.symmetry))
         return new_atoms
 
+class Result(object):
+    atoms = None
+    params = None
+    calculator = None
+    def wait_for_calculation(self, status, timeout):
+        """Blocks until the job has the given status or
+        the timeout in seconds is reached."""
+        pass
+
+class GamessResult(Result):
+    
+    
+    def get_orbitals(self):
+        pass
+    def get_hessian(self):
+        pass
+    def get_forces(self):
+        pass
+    def get_potential_energy(self):
+        pass
+    
+    def wait_for_calculation(self, status='DONE', timeout=60):
+        pass
+        
+
 class GamessParams:
     '''Holds the GAMESS run parameters'''
     groups = dict()
@@ -49,11 +74,8 @@ class GamessParams:
         return group_dict[param_key]
 
 class Gamess(object):
-    """Create the file that specifies the GAMESS job
-    
-    Class is used to write GAMESS job files.
-    """
-
+    '''Calculator class that interfaces with GAMESS-US
+    '''
     def __init__(self, label='gamess', gamess_params=GamessParams(), 
                  inp=None, stderr=None,  stdout=None,  dat=None):
         
@@ -167,7 +189,7 @@ class Gamess(object):
         while not finishedSGEJob(jobid):
             print "waiting for jobid %s to finish"%(jobid)
             time.sleep(60)
-            
+
     def set_filename(self, filename=None):
         if filename:
             self.filename=filename
