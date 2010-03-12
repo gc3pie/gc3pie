@@ -28,7 +28,7 @@ def my_main(options, myChannel=None):
     from time import sleep
     import numpy as np
     import copy
-    import tempfile
+    import cStringIO as StringIO
     from ase.io.gamess import ReadGamessInp,WriteGamessInp
     from ase.calculators.gamess import Gamess
     
@@ -120,12 +120,10 @@ def my_main(options, myChannel=None):
             assert a_job.status != 'ERROR'
         """Parse the GAMESS file and generate a new file to submit if
             the calculation is not done yet."""
-        new_reader = ReadGamessInp()
         f_attachments= a_job.attachments_to_files(db)
-        new_reader.read_file(f_attachments['inp'])
+        new_reader = ReadGamessInp(f_attachments['inp'])
         a_molecule = new_reader.get_molecule()
-        params = new_reader.get_params()
-        a_molecule.set_calculator(Gamess(gamess_params=copy.deepcopy(params), **f_attachments))
+        a_molecule.set_calculator(Gamess(gamess_params=copy.deepcopy(new_reader.g_params), **f_attachments))
         #We get the last printed coords in string format, and need to convert them
         parsed_out=a_molecule.get_calculator().parsed_out
         #We tell the GAMESS calc to parse a the results here
@@ -143,14 +141,14 @@ def my_main(options, myChannel=None):
                 new_molecule.set_calculator(Gamess(gamess_params=params))
                 new_molecule.set_positions(a_molecule.get_calculator().get_coords_result(a_molecule))
                 new_writer = WriteGamessInp()
-                temp_new_input = tempfile.NamedTemporaryFile(suffix=EXT_INP)
-                new_writer.write(temp_new_input.name,  new_molecule)                               
-                a_job=a_job.put_attachment(db, temp_new_input, a_job.input_file)
+                new_input = StringIO.StringIO()                
+                new_writer.write(new_input,  new_molecule)
+                new_input.seek(0)
+                a_job=a_job.put_attachment(db, new_input, a_job.input_file)
                 logger.info('Saved job %s to database.'%(a_job.id))
                 a_task.add_job(a_job)
                 a_task.store(db)
-                myfile.close()
-                temp_new_input.close()
+                new_input.close()
             else:
                 done = True
                 logger.info('Restart sequence using %s has finished successfully.'%(filename))
