@@ -30,7 +30,7 @@ def my_main(options, myChannel=None):
     import copy
     import cStringIO as StringIO
     from ase.io.gamess import ReadGamessInp,WriteGamessInp
-    from ase.calculators.gamess import Gamess
+    from ase.calculators.gamess import GamessGridCalc
     
     from gc3utils.gcli import Gcli
     
@@ -47,7 +47,7 @@ def my_main(options, myChannel=None):
     RE_RESTART_NUM =  r""".restart_([0-9])*"""
     RE_INP = r""".inp"""
     EXT_INP = '.inp'
-    SLEEP_TIME=2#Seconds to sleep between job status checks when not using tasklets
+    SLEEP_TIME=.1#Seconds to sleep between job status checks when not using tasklets
     GRID_RESOURCE='schrodinger'
    
     def create_logger(options):
@@ -72,8 +72,6 @@ def my_main(options, myChannel=None):
         print 'Done running gridjobscheduler.py'
     
     logger=create_logger(options)
-
-    db=Mydb('gorg_site','http://127.0.0.1:5984').cdb()
     
     #Parse all the parametersto keep track of the file names
     (filepath, filename) = os.path.split(options.file)
@@ -81,79 +79,55 @@ def my_main(options, myChannel=None):
         filepath =  os.getcwd()
     
     # Create the job
-    a_job = GridjobModel()
-    a_job.author = 'mark'
-    a_job.defined_type = 'GAMESS'
-    a_job.title = os.path.basename(filename)
-    a_job.user_params['restart_number'] = 0
-    myfile =  open(options.file, 'rb')
-    a_job.input_file=os.path.basename(os.path.splitext(myfile.name)[-1].lstrip('.'))
-    a_job=a_job.put_attachment(db, myfile, os.path.splitext(myfile.name)[-1].lstrip('.'))
-    logger.info('Saved job %s to database.'%(a_job.id))
+    myfile = open(options.file, 'rb')
+    new_reader = ReadGamessInp(myfile)
     myfile.close()
-    
-    # Now lets add it to a task
+    params = copy.deepcopy(new_reader.params)
+    atoms = copy.deepcopy(new_reader.atoms)
+    params.j_user_params['restart_number'] = 0
+    gamess_calc = GamessGridCalc(j_db_name='gorg_site',j_db_url='http://127.0.0.1:5984')
+    # Now we make a task
     a_task=GridtaskModel()
     a_task.author='mark'
-    a_task.title = os.path.basename(myfile.name)
-    a_task.add_job(a_job)
-    a_task.store(db)
-    logger.info('Restart sequence saved in task id: %s'%(a_task.id))
-    job_list=a_task.get_jobs(db)
-    
+    a_task.title = 'Marks wonderful task'
+
     #Now we loop until we have meet our finish condition
     done = False
     while not done:
-        logger.info('Submitting file %s to batch system.'%(a_job.title))
-        while not a_job.status == 'DONE':
+        # Start the calculation
+        a_result = gamess_calc.calculate(atoms,  params, a_task)
+        logger.info('Task id %s.'%(a_task.id))
+        print a_task.id
+        logger.info('Submited job %s to batch system.'%(a_result.j_job.id))
+        job_done = False
+        while not job_done:
+            run_scheduler()
             if myChannel:
-                logger.info('Restart tasklet %s is going to sleep.'%(a_job.title))
+                logger.info('Restart tasklet wiating for job %s.'%(a_result.j_job.id))
                 del logger
                 myChannel.receive()
                 logger=create_logger(options)
             else:
-                logger.info('Restart %s is going to sleep.'%(a_job.title))
+                logger.info('Restart %s is going to sleep.'%(a_result.j_job.id))
                 sleep(SLEEP_TIME)
-            # Check the database to see if the job has completed
-            a_job=a_job.load(db, a_job.id)
-            run_scheduler()
-            assert a_job.status != 'ERROR'
-        """Parse the GAMESS file and generate a new file to submit if
-            the calculation is not done yet."""
-        f_attachments= a_job.attachments_to_files(db)
-        new_reader = ReadGamessInp(f_attachments['inp'])
-        a_molecule = new_reader.get_molecule()
-        a_molecule.set_calculator(Gamess(gamess_params=copy.deepcopy(new_reader.g_params), **f_attachments))
-        #We get the last printed coords in string format, and need to convert them
-        parsed_out=a_molecule.get_calculator().parsed_out
-        #We tell the GAMESS calc to parse a the results here
-        a_molecule.get_potential_energy()
-        if parsed_out.status_exit_successful():
-            if not parsed_out.status_geom_located():
-                # Delete the id so we will create a new job when we store it
-                a_job = a_job.copy()
-                a_job.user_params['restart_number'] += 1
-                new_molecule = a_molecule.copy() 
+            job_done, a_result = a_result.wait(timeout=10)
+            assert a_result.j_job.status != 'ERROR'
+        a_result.read()
+        if a_result.is_exit_successful():
+            if not a_result.is_geom_located():                
+                params.r_orbitals = a_result.get_orbitals(raw=True)
+                params.r_hessian = a_result.get_hessian(raw=True)
+                params.j_user_params['restart_number'] += 1
+                # Make sure that the orbitals an hessian will be read in the inp file
                 params.set_group_param('$GUESS', 'GUESS', 'MOREAD')
                 params.set_group_param('$STATPT', 'HESS', 'READ')
-                params.set_hessian(a_molecule.get_calculator().get_hessian(a_molecule, raw_format=True))
-                params.set_orbitals(a_molecule.get_calculator().get_orbitals(a_molecule, raw_format=True))
-                new_molecule.set_calculator(Gamess(gamess_params=params))
-                new_molecule.set_positions(a_molecule.get_calculator().get_coords_result(a_molecule))
-                new_writer = WriteGamessInp()
-                new_input = StringIO.StringIO()                
-                new_writer.write(new_input,  new_molecule)
-                new_input.seek(0)
-                a_job=a_job.put_attachment(db, new_input, a_job.input_file)
-                logger.info('Saved job %s to database.'%(a_job.id))
-                a_task.add_job(a_job)
-                a_task.store(db)
-                new_input.close()
+                atoms.set_positions(a_result.get_coords())
+                logger.info('Saved job %s to database.'%(a_result.j_job.id))
             else:
                 done = True
                 logger.info('Restart sequence using %s has finished successfully.'%(filename))
         else:
-            logger.critical('GAMESS returned an error while running file %s.'%(a_job.title))
+            logger.critical('GAMESS returned an error while running file %s.'%(a_result.j_job.id))
 
 def save_state(func, options):
     myChannel = stackless.channel()

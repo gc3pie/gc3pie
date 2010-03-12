@@ -11,55 +11,106 @@ import re
 import string
 import random
 import time as time
+import cStringIO as StringIO
 
 #Must install yourself
 import numpy as np
 from pyparsing import *
 
+sys.path.append('/home/mmonroe/apps/gorg')
+from gorg_site.gorg_site.model.gridjob import GridjobModel
+from gorg_site.gorg_site.model.gridtask import GridtaskModel
+from gorg_site.gorg_site.lib.mydb import Mydb
+
 from ase.atoms import Atoms 
+
 
 class GamessAtoms(Atoms):
     # Shoenflies space group
     symmetry = None
-    # User comment in the INP file
-    comment = None 
 
     def copy(self):
         import copy
         new_atoms = GamessAtoms(Atoms.copy(self))
-        new_atoms.comment(copy.deepcopy(self.comment))
-        new_atoms.symmetry(copy.deepcopy(self.symmetry))
+        new_atoms.symmetry= copy.deepcopy(self.symmetry)
         return new_atoms
 
 class Result(object):
-    atoms = None
-    params = None
-    calculator = None
-    def wait_for_calculation(self, status, timeout):
+    
+    def __init__(self, atoms, params, calculator):
+        import copy
+        self.atoms = atoms.copy()
+        self.params = copy.deepcopy(params)
+        self.calculator = copy.deepcopy(calculator)
+    
+    def wait(self, status, timeout):
         """Blocks until the job has the given status or
         the timeout in seconds is reached."""
         pass
 
 class GamessResult(Result):
     
-    
-    def get_orbitals(self):
-        pass
-    def get_hessian(self):
-        pass
-    def get_forces(self):
-        pass
-    def get_potential_energy(self):
-        pass
-    
-    def wait_for_calculation(self, status='DONE', timeout=60):
-        pass
-        
+    def __init__(self, atoms, params, calculator):
+        super(GamessResult, self).__init__(atoms, params, calculator)
+        self.parsed_dat = ParseGamessDat()
+        self.parsed_out = ParseGamessOut()
+        self.j_job = None
+        self.j_task = None
 
+    def wait(self, status='DONE', timeout=60):
+        result, self.j_job  = self.calculator.wait(self.j_job, status, timeout)
+        return (result, self)
+    
+    def get_coords(self):
+        raw_coords=self.parsed_dat.get_coords()
+        coords = np.array(raw_coords[1::2], dtype=float)
+        return coords
+
+    def get_orbitals(self, raw=False):
+        """In GAMESS the $VEC group contains the orbitals."""
+        if raw:
+            return self.parsed_dat.get_vec()
+        return np.array(self.parsed_dat.get_vec(), dtype=float)
+        
+    def get_hessian(self, raw=False):
+        """In GAMESS the $HES group contains the Hessian."""
+        if raw:
+            return self.parsed_dat.get_hess()
+        return np.array(self.parsed_dat.get_hess(), dtype=float)
+
+    def get_forces(self):
+        """This returns the gradients."""
+        grad = self.parsed_dat.get_forces()
+        mat = np.array(np.zeros((len(grad), 3)), dtype=float)
+        for i in range(0, len(grad)):
+            mat[i] = grad[i][1]
+        return mat
+
+    def get_potential_energy(self):
+        return float(self.parsed_dat.get_energy())
+    
+    def is_exit_successful(self):
+        return self.parsed_out.is_exit_successful()
+    
+    def is_geom_located(self):
+        return self.parsed_out.is_geom_located()
+        
+    def read(self):
+        """Read the results from the GAMESS output files."""
+        # Get the attachments from the database so we can parse them
+        f_output = self.calculator.get_files(self.j_job)
+        self.parsed_dat.parse_file(f_output['dat'])
+        self.parsed_out.parse_file(f_output['stdout'])
+        map(file.close,f_output.values())
+    
 class GamessParams:
     '''Holds the GAMESS run parameters'''
     groups = dict()
-   
+    j_user_params = dict()
+    j_title = 'A title goes here'
+    r_orbitals = None
+    r_hessian = None
+    
     def get_group(self, group_key):
         return self.groups[group_key]
 
@@ -73,147 +124,98 @@ class GamessParams:
         group_dict=self.groups[group_key]
         return group_dict[param_key]
 
-class Gamess(object):
-    '''Calculator class that interfaces with GAMESS-US
-    '''
-    def __init__(self, label='gamess', gamess_params=GamessParams(), 
-                 inp=None, stderr=None,  stdout=None,  dat=None):
-        
-        # These are assumed to be file like objects
-        self.f_input = inp
-        self.f_stderr = stderr
-        self.f_stdout = stdout
-        self.f_dat = dat
-        
-        self.label=label
-        self.atoms = None
-        self.parsed_dat = ParseGamessDat()
-        self.parsed_out = ParseGamessOut()
-        self.gamess_params = gamess_params
-        self.is_initialized = False
-        self.parsed_a_file = False
-        
-        """We need to keep track of whether or not the atoms/params object 
-            was changed on us. if it has, we need to do a new calculation, 
-            if it has not, we can use 
-            the one that exists."""
-        self.monitor = Monitor()
-        
-    def is_changed(self):
-        check_if_changed = [self.atoms, self.gamess_params, self.f_input, self.f_stderr, self.f_stdout, self.f_dat]
-        return self.monitor.is_changed(check_if_changed)
-
-    def set_atoms(self, atoms):
-        self.atoms = atoms.copy()
-
-    def get_atoms(self):
-        atoms = self.atoms.copy()
-        return atoms
-
-    def get_potential_energy(self, atoms, force_consistent=False):
-        #There are many different energies that we can return here.
-        self.update(atoms)
-        return float(self.parsed_dat.get_energy())
-#        if force_consistent:
-#            return self.energy_free
-#        else:
-#            return self.energy_zero
-
-    def get_forces(self, atoms):
-        """This returns the gradients."""
-        self.update(atoms)
-        grad = self.parsed_dat.get_force()
-        mat = np.array(np.zeros((len(grad), 3)), dtype=float)
-        for i in range(0, len(grad)):
-            mat[i] = grad[i][1]
-        return mat
+class MyCalculator(object):
+    """Base class for calculators. 
     
-    def get_coords_result(self, atoms):
-        self.update(atoms)
-        raw_coords=self.parsed_dat.get_coords()
-        coords = np.array(raw_coords[1::2], dtype=float)
-        return coords
-        
-    def get_hessian(self, atoms, raw_format=False):
-        self.update(atoms)
-        if raw_format:
-            return self.parsed_dat.get_hess()
-        return np.array(self.parsed_dat.get_hess(), dtype=float)
-    
-    def get_orbitals(self, atoms, raw_format=False):
-        """In GAMESS the $VEC group are the orbitals."""
-        self.update(atoms)
-        if raw_format:
-            return self.parsed_dat.get_vec()
-        return np.array(self.parsed_dat.get_vec(), dtype=float)
+    We might want a calculator that uses the grid and another one that
+    runs the applicationon the local computer. Both calculators need to implement 
+    the same functions, only how the application is run, and where the result files
+   are located would be different.
+   """
+    pass
 
-    #def get_stress(self, atoms):
-    #    self.update(atoms)
-    #    return self.stress
+class GamessGridCalc(MyCalculator):
+    """Calculator class that interfaces with GAMESS-US using
+    a database. The jobs in the database are executed on a grid.
+    """
     
-    def initialize(self, atoms):
-        if not self.is_initialized:
-            #We must start the change tracking
-            self.is_changed()
-            self.is_initialized = True
-        return atoms
-        
-    def read(self, atoms):
-        """Read the results form the GAMESS output files."""
-        self.parsed_dat.parse_file(self.f_dat)
-        self.parsed_out.parse_file(self.f_stdout)       
-        return
+    def __init__(self, author='mark', j_db_name='gorg_site', j_db_url='http://127.0.0.1:5984'):
+        self.j_author = author
+        self.j_db_name = j_db_name
+        self.j_db_url = j_db_url
+        self.j_input_file = 'inp'
     
-    def update(self, atoms):
-        self.initialize(atoms)
-        """If we do not have a filename, we can not parse a file.
-            That means we need to first make the output file by
-            running GAMESS."""
-        if self.is_changed() or self.f_stdout==None:
-            self.calculate(atoms)
-            self.parsed_a_file = False
-        if not self.parsed_a_file:
-            self.read(atoms)
-            self.parsed_a_file = True
-        return
-    # TODO: Figure out how to handle the calculations
-    def calculate(self, atoms):
-        pass
-        """Run the GAMESS calculation in here"""
+    def calculate(self, atoms, params, j_task=None, j_parent=tuple()):
+        """We run GAMESS in here."""
         from ase.io.gamess import WriteGamessInp
-        gamess_writer = WriteGamessInp()
-        self.set_filename()
-        gamess_writer.write(self.f_input, atoms)
-        #Run the job some how
-        jobid = submitSGEJob(self.f_input)
-        while not finishedSGEJob(jobid):
-            print "waiting for jobid %s to finish"%(jobid)
-            time.sleep(60)
+        result = GamessResult(atoms, params, self)
+        db=Mydb(self.j_db_name,self.j_db_url).cdb()
+        # Map the GamessParams used for running the job to the job in the db
+        a_job = GridjobModel()
+        a_job.author = self.j_author
+        a_job.defined_type = 'Gamess'
+        a_job.input_file = self.j_input_file
+        a_job.title = params.j_title
+        # Convert the python dictionary to one that uses the couchdb schema
+        for key in params.j_user_params:
+            a_job.user_params[key] = params.j_user_params[key]
+        
+        f_inp = StringIO.StringIO()
+        writer = WriteGamessInp()
+        writer.write(f_inp, atoms, params)
+        f_inp.seek(0)
+        a_job=a_job.put_attachment(db, f_inp, a_job.input_file)
+        del f_inp
+        # Store the job in the task
+        if j_task:
+            j_task.add_job(a_job, j_parent)
+            j_task.store(db)
+        result.j_job = a_job
+        result.j_task = j_task
+        return result
 
-    def set_filename(self, filename=None):
-        if filename:
-            self.filename=filename
+    def preexisting_result(self, j_id ):
+        """Rather than running GAMESS, we just read
+        and parse the results already in the database."""
+        db=Mydb(self.j_db_name,self.j_db_url).cdb()
+        a_job = GridjobModel().load(db, j_id)
+        f_attachments= a_job.attachments_to_files(db)
+        new_reader = ReadGamessInp(f_attachments['inp'])
+        result = GamessResult(new_reader.atoms, new_reader.params, self)        
+        result.j_job = a_job
+        return result
+
+    def get_files(self, j_job):
+        db=Mydb(self.j_db_name, self.j_db_url).cdb()
+        f_attachments= j_job.attachments_to_files(db)
+        return f_attachments
+
+    def wait(self, j_job, status='DONE', timeout=60, check_freq=10):
+        import time
+        if timeout == 'INFINITE':
+            timeout = sys.maxint
+        if check_freq > timeout:
+            check_freq = timeout
+        db=Mydb(self.j_db_name, self.j_db_url).cdb()
+        starting_time = time.time()
+        j_job=j_job.load(db, j_job.id)
+        while starting_time + timeout > time.time() and j_job.status != status:
+            time.sleep(check_freq)        
+            j_job=j_job.load(db, j_job.id)
+        if j_job.status == status:
+            # We did not timeout 
+            return True, j_job
         else:
-            self.filename = '%s_%s'%(self.label, self.generate_random_string())
-        
-    @staticmethod
-    def generate_random_string():
-        """Generate a unique file name for the GAMESS job."""
-        from uuid import uuid4 as uuidf
-        import md5 as md5
-        """
-        Generates a universally unique ID.
-        Any arguments only create more randomness.
-        """
-        t = long( time.time() * 1000 )
-        r = long( random.random()*100000000000000000L )
+            # We timed out
+            return False, j_job
 
-        # if we can't get a network address, just imagine one
-        a = random.random()*100000000000000000L
-        data = str(t)+' '+str(r)+' '+str(a)
-        data = md5.md5(data).hexdigest()
-        return data
-        
+class GamessLocalCalc(MyCalculator):
+    def generate_result_file(self, inp=None, stdout=None, stderr=None, dat=None):
+        """Rather than running GAMESS, we just read
+        and parse the results already on the file system."""
+        pass
+
+
 class ParseGamessDat(object):
     '''
     classdocs
@@ -273,7 +275,7 @@ class ParseGamessDat(object):
             return self.group[self.ENERGY][index]
         return None
 
-    def get_force(self, index=-1):
+    def get_forces(self, index=-1):
         if self.GRAD in self.group:
             return self.group[self.GRAD][index]
         return None
@@ -476,10 +478,10 @@ class ParseGamessOut(object):
     def parse_file(self, f_dat):        
         self.parse_kernal.parse(f_dat)
     
-    def status_exit_successful(self):
+    def is_exit_successful(self):
         return self.group[self.STATUS_EXIT]
     
-    def status_geom_located(self):
+    def is_geom_located(self):
         return self.group[self.STATUS_GEOM_LOCATED]
     
     def status_no_cpu_timeout(self):
