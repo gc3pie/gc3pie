@@ -28,7 +28,16 @@ map_func_title = '''
             if doc['type'] == 'GridjobModel':
                 yield doc['title'], doc
     '''
-
+map_func_author_job_status = '''
+    def mapfun(doc):
+        if 'type' and 'author' in doc:
+            if doc['type'] == 'GridjobModel':
+                yield (doc['author'], doc['status']), 1
+    '''
+reduce_func_author_job_status ='''
+    def reducefun(keys, values, rereduce):
+        return sum(values)
+    '''
 class GridjobModel(sch.Document):
     POSSIBLE_STATUS = ('READY', 'WAITING','RUNNING','RETRIEVING','FINISHED', 'DONE','ERROR')
     VIEW_PREFIX = 'gridjob'
@@ -105,7 +114,7 @@ class GridjobModel(sch.Document):
     def view(cls, db, viewname, **options):
         from couchdb.design import ViewDefinition
         viewnames = cls.sync_views(db, only_names=True)
-        assert viewname in viewnames
+        assert viewname in viewnames, 'View not in view name list.'
         a_view = super(cls, cls).view(db, '%s/%s'%(cls.VIEW_PREFIX, viewname), **options)
         #a_view=.view(db, 'all/%s'%viewname, **options)
         return a_view
@@ -114,14 +123,16 @@ class GridjobModel(sch.Document):
     def sync_views(cls, db,  only_names=False):
         from couchdb.design import ViewDefinition
         if only_names:
-            viewnames=('all', 'by_author', 'by_status', 'by_title')
+            viewnames=('all', 'by_author', 'by_status', 'by_title', 'by_author_job_status')
             return viewnames
         else:
             all = ViewDefinition(cls.VIEW_PREFIX, 'all', map_func_all, wrapper=cls, language='python')
             by_author = ViewDefinition(cls.VIEW_PREFIX, 'by_author', map_func_author, wrapper=cls, language='python')
             by_status = ViewDefinition(cls.VIEW_PREFIX, 'by_status', map_func_status, wrapper=cls,  language='python')
             by_title = ViewDefinition(cls.VIEW_PREFIX, 'by_title', map_func_title, wrapper=cls, language='python')
-            views=[all, by_author, by_status, by_title]
+            by_author_job_status = ViewDefinition(cls.VIEW_PREFIX, 'by_author_job_status', map_func_author_job_status, \
+                                                  reduce_fun=reduce_func_author_job_status, wrapper=cls, language='python')
+            views=[all, by_author, by_status, by_title, by_author_job_status]
             ViewDefinition.sync_many( db,  views)
         return views
     

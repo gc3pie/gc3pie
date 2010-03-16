@@ -3,28 +3,91 @@ import logging
 from pylons import request, response, session, tmpl_context as c
 from pylons.controllers.util import abort, redirect_to
 from gorg_site.lib.base import BaseController, render
+import webhelpers.paginate as paginate
 from pylons.decorators import jsonify
 import os
 from gorg_site.model.gridjob import GridjobModel
 from gorg_site.lib.mydb import Mydb
 
 log = logging.getLogger(__name__)
-PERMANENT_STORE = '/home/mmonroe/uploads/'
 
 class GridjobController(BaseController):
+    
+    def view_user_job_overview(self):
+        """An overview of all the jobs the author (id)
+        has in the database is displayed as well as there status."""
+        # id is the author name
+        author=session['author']
+        if author is None:
+            abort(404)            
+        # Fill the template info
+        c.title = 'Greetings'
+        c.heading = 'Sample Page'
+        c.content = "This is page %s"%author
+        # Get the info to display        
+        db=Mydb().cdb()
+        # Here we query the database and get the number of records for that
+        # author in the given state
+        counts = dict()
+        for a_status in GridjobModel().POSSIBLE_STATUS:
+            view = GridjobModel().view(db, 'by_author_job_status')
+            # When a status does not match, a None is returned.
+            # We therefore have to convert the None into a 0
+            a_row = view[[author, a_status]].rows
+            if a_row:
+                counts[a_status] = view[[author,   a_status]].rows[0]['value']
+            else:
+                counts[a_status] = 0
+        c.author_job_status_counts = counts
+        if c.author_job_status_counts is None:
+            abort(404)            
+        return render('/derived/user_job_overview.html')
 
-    def index(self):
-        # Return a rendered template
-        #return render('/gridjob.mako')
-        # or, return a response
-        return 'Hello World'
+    def view_user_jobs(self, id=None):
+        """A list of the jobs a given author in the given state is generated."""
+        author = session['author']
+        status = id
+        # Fill the template info
+        c.title = 'Greetings'
+        c.heading = 'Sample Page'
+        c.content = "This is page %s"%author
+        db=Mydb().cdb()
+        view = GridjobModel().view(db, 'by_status', key=status)
+        records = list()
+        for a_job in view:
+            records.append(a_job)
+        c.paginator = paginate.Page(
+            records,
+            page=int(request.params.get('page', 1)),
+            items_per_page = 10,
+            item_count=len(records)
+            )            
+        return render('/derived/user_jobs.html')
+    
+    def view_job(self, id=None):
+        """Post / users: Query an existing job in the database."""
+        if id is None:
+            abort(404)
+        # Fill the template info in
+        c.title = 'Greetings'
+        c.heading = 'Sample Page'
+        c.content = "This is page."
+        db=Mydb().cdb()
+        a_job = GridjobModel().load(db,id)
+        c.a_job = a_job
+        return render('/derived/view_job.html')
 
-    @jsonify
-    def json_test(self):
-        if request.environ['CONTENT_TYPE'] == 'application/json':
-            return {'response':'I am json'}
-        return render('/submit_job_form.mako')
-        
+    def view_job_attachment(self, id=None):
+        """Post / users: Query an existing job in the database."""
+        if id is None:
+            abort(404)
+        attachment = request.GET['attachment']
+        db=Mydb().cdb()
+        a_job = GridjobModel().load(db,id)
+        response.content_type = 'text/plain'
+        return a_job.get_attachment(db, attachment)
+
+#--------------------------- below not using now
     def submit_form(self):
         return render('/submit_job_form.mako')
     
@@ -53,14 +116,10 @@ class GridjobController(BaseController):
         a_job = GridjobModel().load(db,jobid)
         c.a_job = a_job
         return render('/submit_job_detail.mako')
-        
-    def display_job_attachment(self):
-        """Post / users: Query an existing job in the database."""
-        jobid = request.GET['jobid'] 
-        attachment = request.GET['attachment']
-        db=Mydb().cdb()
-        a_job = GridjobModel().load(db,jobid)
-        response.content_type = 'text/plain'
-        return a_job.get_attachment(db, attachment)
-   
+    
+    @jsonify
+    def _json_test(self):
+        if request.environ['CONTENT_TYPE'] == 'application/json':
+            return {'response':'I am json'}
+        return render('/submit_job_form.mako')
 
