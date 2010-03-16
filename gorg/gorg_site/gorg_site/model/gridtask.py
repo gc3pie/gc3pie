@@ -28,6 +28,17 @@ map_func_title = '''
             if doc['type'] == 'GridtaskModel':
                 yield doc['title'], doc
     '''
+map_func_author_task_status = '''
+    def mapfun(doc):
+        if 'type' and 'author' in doc:
+            if doc['type'] == 'GridtaskModel':
+                yield (doc['author'], doc['status']), 1
+    '''
+reduce_func_author_task_status ='''
+    def reducefun(keys, values, rereduce):
+        return sum(values)
+    '''
+
 # You can not use a view to retrieve all the jobs associated with a task.
 # The key must be the task key, so that you can filter on it. But you
 # can only match a job using the job key. Therefore you need to associate the 
@@ -102,7 +113,7 @@ class GridtaskModel(sch.Document):
     def sync_views(cls, db,  only_names=False):
         from couchdb.design import ViewDefinition
         if only_names:
-            viewnames=('all', 'by_author', 'by_status', 'by_title', 'get_jobs')
+            viewnames=('all', 'by_author', 'by_status', 'by_title', 'get_jobs', 'by_author_task_status')
             return viewnames
         else:
             all = ViewDefinition(cls.VIEW_PREFIX, 'all', map_func_all, wrapper=cls, language='python')
@@ -110,7 +121,8 @@ class GridtaskModel(sch.Document):
             by_status = ViewDefinition(cls.VIEW_PREFIX, 'by_status', map_func_status, wrapper=cls,  language='python')
             by_title = ViewDefinition(cls.VIEW_PREFIX, 'by_title', map_func_title, wrapper=cls, language='python')
             #get_jobs = ViewDefinition(cls.VIEW_PREFIX, 'get_jobs', map_func_task_owns, reduce_fun=reduce_func_task_owns, wrapper=cls, language='python')
-            
-            views=[all, by_author, by_status, by_title]
+            by_author_task_status = ViewDefinition(cls.VIEW_PREFIX, 'by_author_task_status', map_func_author_task_status, \
+                                      reduce_fun=reduce_func_author_task_status, wrapper=cls, language='python')
+            views=[all, by_author, by_status, by_title, by_author_task_status]
             ViewDefinition.sync_many( db,  views)
         return views
