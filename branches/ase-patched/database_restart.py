@@ -110,7 +110,7 @@ def my_main(options, myChannel=None):
             else:
                 logger.info('Restart %s is going to sleep.'%(a_result.j_job.id))
                 sleep(SLEEP_TIME)
-            job_done, a_result = a_result.wait(timeout=10)
+            job_done = a_result.wait(timeout=10)
             assert a_result.j_job.status != 'ERROR'
         a_result.read()
         if a_result.is_exit_successful():
