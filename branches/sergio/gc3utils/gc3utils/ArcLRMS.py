@@ -66,7 +66,15 @@ class ArcLrms(LRMS):
             return False
 
     def check_authentication(self):
+        return True
+    
         try:
+            logging.debug('Checking Grid Credential')
+            if ( (not utils.CheckGridAuthentication()) | (not utils.checkUserCertificate()) ):
+                logging.error('Credential Expired')
+                raise Exception("Credential Expired")
+            return True
+            
             logging.debug('Checking voms-proxy status')
             retval = commands.getstatusoutput(self.VOMSPROXYINFO)
             if ( retval[0] != 0 ):

@@ -13,7 +13,11 @@ import getpass
 import smtplib
 import subprocess
 from email.mime.text import MIMEText
+sys.path.append('/opt/nordugrid/lib/python2.3/site-packages')
+import warnings
+warnings.simplefilter("ignore")
 from arclib import *
+
 
 # __all__ = ["configure_logging","check_inputfile","readConfig","check_qgms_version","dirname","inputname","inputfilename","create_unique_token"]
 

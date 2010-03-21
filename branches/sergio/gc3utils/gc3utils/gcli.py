@@ -50,7 +50,25 @@ class Gcli:
             logging.critical('Failed init gcli')
             raise
 
-    def renewGridCredential(self,_aaiUserName):
+    def checkGridCredential(self):
+        if (not checkGridAccess()):
+            if ( self.defaults['email_contact'] != "" ):
+                logging.debug('Sending notification email to [ %s ]',self.defaults['email_contact'])
+                send_email(self.defaults['email_contact'],"info@gc3.uzh.ch","GC3 Warning: Renew Grid \
+                credential","Please renew your credential")
+
+
+    def checkGridAccess(self):
+        # First check whehter it is necessary to check grid credential or not
+        # if selected resource is type ARC or if there is at least 1 ARC resource in the resource list, then check Grid credential
+        
+        logging.debug('gcli: Checking Grid Credential')
+        if ( (not utils.CheckGridAuthentication()) | (not utils.checkUserCertificate()) ):
+            logging.error('Credential Expired')
+            return False
+        return True
+
+    def renewGridCredential(self):
         # Getting AAI username
 #        _aaiUserName = None
 
@@ -152,7 +170,6 @@ class Gcli:
                         if (lrms.check_authentication() == True):
                             _lrms_list.append(lrms)
                     except:
-# todo : make this a function
                         if ( resource['type'] == "arc" ):
                             if ( self.defaults['email_contact'] != "" ):
                                 logging.debug('Sending notification email to [ %s ]',self.defaults['email_contact'])
@@ -603,7 +620,14 @@ def main():
             exitcode = ArcLrms.renewGridCredential(_aai_username)
             if (exitcode):
                 raise Exception("failed renewing credential")
-        elif ( os.path.basename(program_name) == "gsub" ):
+
+
+        # For All other commands, it is required to have a valid grid credential when dealing with ARC resources
+        logging.debug('gcli: checking grid credential')
+        if ( not gcli.checkGridAccess() ):
+            ArcLrms.renewGridCredential(None)
+
+        if ( os.path.basename(program_name) == "gsub" ):
             # gsub prototype: application_to_run, input_file, selected_resource, job_local_dir, cores, memory, walltime
 #            if ( self.options.resource_name )
             (exitcode,jobid) = gcli.gsub(args[0],os.path.abspath(args[1]),options.resource_name,options.job_local_dir,options.ncores,options.memory_per_core,options.walltime)
