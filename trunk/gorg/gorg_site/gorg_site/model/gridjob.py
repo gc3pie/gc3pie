@@ -1,117 +1,101 @@
 from couchdb import schema as sch
 from couchdb.schema import  Schema
-
+from gridrun import GridrunModel
+from baserole import BaseroleModel
 from couchdb import client as client
 import time
 
-map_func_all = '''
-    def mapfun(doc):
-        if 'type' in doc:
-            if doc['type'] == 'GridjobModel':
-                yield None, doc
+map_func_job = '''
+def mapfun(doc):
+    if 'base_type' in doc:
+        if doc['base_type'] == 'BaseroleModel':
+            if doc['sub_type'] == 'GridjobModel':
+                yield doc['_id'],doc
     '''
-map_func_status = '''
-    def mapfun(doc):
-        if 'type' and 'status' in doc:
-            if doc['type'] == 'GridjobModel':
-                yield doc['status'], doc
+map_func_by_task = '''
+def mapfun(doc):
+    if 'base_type' in doc:
+        if doc['base_type'] == 'BaseroleModel':
+            if doc['sub_type'] == 'GridjobModel':
+                yield doc['owned_by_task'], doc
     '''
-map_func_author = '''
-    def mapfun(doc):
-         if 'type' and 'author' in doc:
-            if doc['type'] == 'GridjobModel':
-                yield doc['author'], doc
-    '''
-map_func_title = '''
-    def mapfun(doc):
-        if 'type' and 'title' in doc:
-            if doc['type'] == 'GridjobModel':
-                yield doc['title'], doc
-    '''
-map_func_author_job_status = '''
-    def mapfun(doc):
-        if 'type' and 'author' in doc:
-            if doc['type'] == 'GridjobModel':
-                yield (doc['author'], doc['status']), 1
-    '''
-reduce_func_author_job_status ='''
-    def reducefun(keys, values, rereduce):
-        return sum(values)
-    '''
-class GridjobModel(sch.Document):
-    POSSIBLE_STATUS = ('READY', 'WAITING','RUNNING','RETRIEVING','FINISHED', 'DONE','ERROR')
-    VIEW_PREFIX = 'gridjob'
-    author = sch.TextField()
-    title = sch.TextField()
-    dat = sch.DateTimeField(default=time.gmtime())
-    type = sch.TextField(default='GridjobModel')
-    status = sch.TextField(default = 'READY')
-    # Type defined by the user
-    defined_type = sch.TextField(default='GridjobModel')
-    run_params = sch.DictField(default=dict(application_to_run='gamess', selected_resource='ocikbpra',  cores=2, memory=1, walltime=-1))
-    # This works like a dictionary, but allows you to go a_job.test.application_to_run='a app' as well as a_job.test['application_to_run']='a app'
-    #test=sch.DictField(Schema.build(application_to_run=sch.TextField(default='gamess')))
-    gsub_message = sch.TextField()
-    input_file = sch.TextField()
-    user_params = sch.DictField()
-    gsub_unique_token = sch.TextField()
-#    def __init__(self, author=None, title=None, defined_type=None):
-#        super(Gridjobdata, self).__init__()
-#        self.author = author
-#        self.title = title
-#        self.defined_type = defined_type
+
+class GridjobModel(BaseroleModel):
+    SUB_TYPE = 'GridjobModel'
+    VIEW_PREFIX = 'GridjobModel'
+
+    owned_by_task = sch.TextField()
+    owned_by_parent = sch.ListField(sch.TextField())
     
-    def __setattr__(self, name, value):
-        if name == 'status':
-            assert value in self.POSSIBLE_STATUS, 'Invalid status. \
-            Only the following are valid, %s'%(' ,'.join(self.POSSIBLE_STATUS))
-        super(GridjobModel, self).__setattr__(name, value)
+    _run_before_commit = None
     
-    def  put_attachment(self, db, content, filename=None, content_type=None):
-        # The doc needs to be in the database before we can attach anything to it
-        if not self.id:
-            self.store(db)
-        result = db.put_attachment(self, content, filename, content_type)
-        # After we attach a file we need to update our rev and
-        # _attachment field
-        return self.load(db, self.id)
+    def create_run(self, db, files_to_run, application_to_run='gamess', 
+                   selected_resource='ocikbpra',  cores=2, memory=1, walltime=-1):
+        self._run_before_commit = GridrunModel().create( db, files_to_run, self, application_to_run, 
+                            selected_resource,  cores, memory, walltime)
+        return self._run_before_commit
+
+    def create(self, author, title, a_task):
+        self.id = GridjobModel.generate_new_docid()
+        self.sub_type = self.SUB_TYPE
+        self.author = author
+        self.title = title
+        self.owned_by_task = a_task.id
+        return self
+    
+    def commit(self, db):        
+        view = GridrunModel.view_by_job(db, self.id)
+        # Make sure that a run in the database is associated with this job or
+        # that we are going to commit a run to the db in here
+        assert len(view) == 1 or self._run_before_commit is not None,  'No run associated with job %s'%self.id
+        if self._run_before_commit is not None:
+            self._run_before_commit.commit(db, self)
+            self._run_before_commit = None
+        self.store(db)
+    
+    def add_parents(self, my_parents):
+        # If the user only passes in a single parent, we should handle it well
+        if not isinstance(my_parents,tuple) and not isinstance(my_parents,list):
+            my_parents = [my_parents]
+        for a_parent in my_parents:
+            if not a_parent.id in self.owned_by_parent:
+                self.owned_by_parent.append(a_parent.id)
+    
+#    def get_parents(self, db):
+#        my_parents=list()
+#        for a_parent_id in self.owned_by_parent:
+#            a_parent = GridjobModel.load(db, a_parent_id)
+#            my_parents.append(a_parent)
+#        return tuple(my_parents)
+    
+    @staticmethod
+    def view_by_task(db, task_id):
+        return GridjobModel.my_view(db, 'by_task', key=task_id)
+    
+    def get_parents(self, db):
+        a_view = GridjobModel.my_view(db, 'by_job', keys=self.owned_by_parent)
+        parents = list()
+        for a_parent in a_view:
+            parents.append(a_parent)
+        return tuple(parents)
+
+    def get_task(self, db):
+        return GridtaskModel.load(db, self.owned_by_task)
+
+    def get_run(self, db):
+        if self._run_before_commit is None:
+            a_view = GridrunModel.view_by_job(db, self.id)
+            assert len(a_view) == 1, 'No run found. Does job %s have a run associated with it?'%job_id
+            return a_view.view.wrapper(a_view.rows[0])
+        else:
+            return self._run_before_commit
         
-    def get_attachment(self, db, filename, default=None):
-        return db.get_attachment(self, filename, default)
-    
-    def attachments_to_files(self, db, default=None):
-        '''We often want to save all of the attachs to a job as files
-        on the local computer.'''
-        import tempfile
-        temp_file = tempfile.NamedTemporaryFile()
-        temp_file.close()
-        f_attachments = dict()
-        # Loop through each attachment and save it
-        for attachment in self['_attachments']:
-            attached_data = self.get_attachment(db, attachment, default)
-            myfile = open( '%s.%s'%(temp_file.name, attachment), 'wb')
-            myfile.write(attached_data)
-            myfile.close()
-            f_attachments[attachment]=open(myfile.name, 'rb') 
-        return f_attachments
-    
-    def delete_attachment(self, db, filename):
-        return db.delete_attachment(doc, filename)
-    
-    def copy(self):
-        import copy
-        '''We want to make a copy of this job, so we can use the same setting to 
-        create another job.'''
-        new_job=GridjobModel()
-        new_job=copy.deepcopy(self)
-        del new_job['_id']
-        del new_job['_rev']
-        del new_job['_attachments']
-        new_job.status='READY'
-        return new_job
-    
+    def get_status(self, db):
+        a_run = self.get_run(db)
+        return a_run.status
+
     @classmethod
-    def view(cls, db, viewname, **options):
+    def my_view(cls, db, viewname, **options):
         from couchdb.design import ViewDefinition
         viewnames = cls.sync_views(db, only_names=True)
         assert viewname in viewnames, 'View not in view name list.'
@@ -123,17 +107,11 @@ class GridjobModel(sch.Document):
     def sync_views(cls, db,  only_names=False):
         from couchdb.design import ViewDefinition
         if only_names:
-            viewnames=('all', 'by_author', 'by_status', 'by_title', 'by_author_job_status')
+            viewnames=('by_job', 'by_task')
             return viewnames
         else:
-            all = ViewDefinition(cls.VIEW_PREFIX, 'all', map_func_all, wrapper=cls, language='python')
-            by_author = ViewDefinition(cls.VIEW_PREFIX, 'by_author', map_func_author, wrapper=cls, language='python')
-            by_status = ViewDefinition(cls.VIEW_PREFIX, 'by_status', map_func_status, wrapper=cls,  language='python')
-            by_title = ViewDefinition(cls.VIEW_PREFIX, 'by_title', map_func_title, wrapper=cls, language='python')
-            by_author_job_status = ViewDefinition(cls.VIEW_PREFIX, 'by_author_job_status', map_func_author_job_status, \
-                                                  reduce_fun=reduce_func_author_job_status, wrapper=cls, language='python')
-            views=[all, by_author, by_status, by_title, by_author_job_status]
+            by_job = ViewDefinition(cls.VIEW_PREFIX, 'by_job', map_func_job, wrapper=cls, language='python')
+            by_task = ViewDefinition(cls.VIEW_PREFIX, 'by_task', map_func_by_task, wrapper=cls, language='python')
+            views=[by_job, by_task]
             ViewDefinition.sync_many( db,  views)
         return views
-    
-

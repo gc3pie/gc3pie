@@ -1,110 +1,94 @@
 from couchdb import schema as sch
-from couchdb import client as client
+from couchdb.schema import  Schema
+from baserole import BaseroleModel
 from gridjob import GridjobModel
-
+from couchdb import client as client
 import time
 
-map_func_all = '''
-    def mapfun(doc):
-        if 'type' in doc:
-            if doc['type'] == 'GridtaskModel':
-                yield None, doc
-    '''
-map_func_status = '''
-    def mapfun(doc):
-        if 'type' and 'status' in doc:
-            if doc['type'] == 'GridtaskModel':
-                yield doc['status'], doc
+map_func_task = '''
+def mapfun(doc):
+    if 'base_type' in doc:
+        if doc['base_type'] == 'BaseroleModel':
+            if doc['sub_type'] == 'GridtaskModel':
+                yield doc['_id'],doc
     '''
 map_func_author = '''
-    def mapfun(doc):
-         if 'type' and 'author' in doc:
-            if doc['type'] == 'GridtaskModel':
-                yield doc['author'], doc
-    '''
-map_func_title = '''
-    def mapfun(doc):
-        if 'type' and 'title' in doc:
-            if doc['type'] == 'GridtaskModel':
-                yield doc['title'], doc
-    '''
-map_func_author_task_status = '''
-    def mapfun(doc):
-        if 'type' and 'author' in doc:
-            if doc['type'] == 'GridtaskModel':
-                yield (doc['author'], doc['status']), 1
-    '''
-reduce_func_author_task_status ='''
-    def reducefun(keys, values, rereduce):
-        return sum(values)
+def mapfun(doc):
+    if 'base_type' in doc:
+        if doc['base_type'] == 'BaseroleModel':
+            if doc['sub_type'] == 'GridtaskModel':
+                yield doc['author'],doc
     '''
 
-# You can not use a view to retrieve all the jobs associated with a task.
-# The key must be the task key, so that you can filter on it. But you
-# can only match a job using the job key. Therefore you need to associate the 
-# task key with each job key, and then use the job key to get the job. If the
-# job had a reference to the task, it would work, but we do not want that.
-map_func_task_owns = '''
-    def mapfun(doc):
-        if 'type' and 'title' in doc:
-            if doc['type'] == 'GridtaskModel':
-                yield doc['_id'], doc['job_relations']
-            if doc['type'] == 'GridjobModel':
-                yield doc['_id'], doc
+oldddd = '''
+def mapfun(doc):
+    if 'base_type' in doc:
+        if doc['base_type'] == 'GridjobModel':
+            if doc['sub_type'] == 'TASK':
+                if doc['owned_by_task']:                        
+                    yield (doc['_id'], doc['owned_by_task']), doc
+                else:
+                    yield (doc['_id'], doc['_id']), doc
+            if doc['sub_type'] == 'JOB':
+                yield (doc['owned_by_task'], doc['_id']) , doc
     '''
-reduce_func_task_owns ='''
-    def reducefun(keys, values, rereduce=False):
-        return keys
-    '''
-''' task_id = None
-        loop_it=values.__iter__()
-        for value in loop_it:
-            if value['type'] == 'GridtaskModel':
-                task_id=values['_id']
-                return [task_id, loop_it.next()]'''
-class GridtaskModel(sch.Document):       
-    VIEW_PREFIX = 'gridtask'
-    POSSIBLE_STATUS = ('READY', 'WAITING','RUNNING','RETRIEVING','FINISHED', 'DONE','ERROR')
-    author = sch.TextField()
-    title = sch.TextField()
-    dat = sch.DateTimeField(default=time.gmtime())
-    type = sch.TextField(default='GridtaskModel')
-    # Type defined by the user
-    defined_type = sch.TextField(default='GridtaskModel')
-    # Each new entry is added as a parent.
-    # A parent may or may not have childern
-    # A parent without childern has an empty list
-    job_relations = sch.DictField()
-    status = sch.TextField(default = 'READY')
 
-    def add_job(self, a_job, my_parent=tuple()):
-        assert a_job.id,  'Job must first be saved to the database before being added to a task.'
-        if not a_job.id in self.job_relations:
-            self.job_relations[a_job.id]=list()
-        # If the user only passes in a single parent, we should handle it well
-        if not hasattr(my_parent,'__iter__'):
-            my_parent = tuple(my_parent)
-        for a_parent in my_parent:
-            self.job_relations[a_parent].append(a_job.id)
+class GridtaskModel(BaseroleModel):
+    SUB_TYPE = 'GridtaskModel'
+    VIEW_PREFIX = 'GridtaskModel'
+    def create(self, author, title):
+        self.id = GridtaskModel.generate_new_docid()
+        self.sub_type = self.SUB_TYPE
+        self.author = author
+        self.title = title
+        return self
     
+    def commit(self, db):
+        # Make sure that a job in the database is associated with this task
+        view = GridjobModel.view_by_task(db, self.id)
+        assert len(view) > 0,  'No job in database associated with task %s'%self.id
+        self.store(db)
+        
     def get_jobs(self, db):
-        job_list=list()
-        for a_job_id in self.job_relations:
-            a_job = GridjobModel.load(db, a_job_id)
+        job_view = GridjobModel.view_by_task(db, self.id)
+        job_list = list()
+        for a_job in job_view:
             job_list.append(a_job)
         return tuple(job_list)
-            
-    def __setattr__(self, name, value):
-        if name == 'status':
-            assert value in self.POSSIBLE_STATUS, 'Invalid status. \
-            Only the following are valid, %s'%(' ,'.join(self.POSSIBLE_STATUS))
-        super(GridtaskModel, self).__setattr__(name, value)
+
+    def get_status(self, db):
+        """Returns the overall status of this task."""
+        job_view = GridjobModel.view_by_task(db, self.id)
+        status_list = list()
+        for a_job in job_view:            
+            status_list.append(a_job.get_status(db))
+        return tuple(status_list)
+    
+    def get_percent_done(self, db):
+        status_list=self.get_status(db)
+        num_done = 0
+        for a_status in status_list:
+            if a_status == 'DONE':
+                num_done +=1
+        # We treat a no status just like any other status value
+        return (num_done / len(status_list)) * 100
+    
+    def delete(self, db):
+        pass
+    
+    @staticmethod
+    def view_by_author(db, author):
+        return GridtaskModel.my_view(db, 'by_author', key=author)
+    
+    @staticmethod
+    def stat_():
+        pass
     
     @classmethod
-    def view(cls, db, viewname, **options):
+    def my_view(cls, db, viewname, **options):
         from couchdb.design import ViewDefinition
         viewnames = cls.sync_views(db, only_names=True)
-        assert viewname in viewnames
+        assert viewname in viewnames, 'View not in view name list.'
         a_view = super(cls, cls).view(db, '%s/%s'%(cls.VIEW_PREFIX, viewname), **options)
         #a_view=.view(db, 'all/%s'%viewname, **options)
         return a_view
@@ -113,16 +97,16 @@ class GridtaskModel(sch.Document):
     def sync_views(cls, db,  only_names=False):
         from couchdb.design import ViewDefinition
         if only_names:
-            viewnames=('all', 'by_author', 'by_status', 'by_title', 'get_jobs', 'by_author_task_status')
+            viewnames=('by_task','by_author')
             return viewnames
         else:
-            all = ViewDefinition(cls.VIEW_PREFIX, 'all', map_func_all, wrapper=cls, language='python')
+            by_task = ViewDefinition(cls.VIEW_PREFIX, 'by_task', map_func_task, wrapper=cls, language='python')
             by_author = ViewDefinition(cls.VIEW_PREFIX, 'by_author', map_func_author, wrapper=cls, language='python')
-            by_status = ViewDefinition(cls.VIEW_PREFIX, 'by_status', map_func_status, wrapper=cls,  language='python')
-            by_title = ViewDefinition(cls.VIEW_PREFIX, 'by_title', map_func_title, wrapper=cls, language='python')
-            #get_jobs = ViewDefinition(cls.VIEW_PREFIX, 'get_jobs', map_func_task_owns, reduce_fun=reduce_func_task_owns, wrapper=cls, language='python')
-            by_author_task_status = ViewDefinition(cls.VIEW_PREFIX, 'by_author_task_status', map_func_author_task_status, \
-                                      reduce_fun=reduce_func_author_task_status, wrapper=cls, language='python')
-            views=[all, by_author, by_status, by_title, by_author_task_status]
+            views=[by_task, by_author]
             ViewDefinition.sync_many( db,  views)
         return views
+
+def commit_all(db, a_task, job_list):
+    for a_job in job_list:
+        a_job.commit(db)
+    a_task.commit(db)
