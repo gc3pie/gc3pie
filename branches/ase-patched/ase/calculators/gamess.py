@@ -59,7 +59,7 @@ class GamessResult(Result):
 
     def wait(self, status='DONE', timeout=60):
         result, self.j_job  = self.calculator.wait(self.j_job, status, timeout)
-        return (result, self)
+        return result
     
     def get_coords(self):
         raw_coords=self.parsed_dat.get_coords()
