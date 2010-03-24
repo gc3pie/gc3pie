@@ -46,3 +46,25 @@ def main():
 if __name__ == "__main__":
     main()
     sys.exit()
+
+'''
+from couchdb import schema as sch
+from couchdb import client as client
+
+class MyMatrix(sch.Document):
+    np_matrix = sch.ListField(sch.ListField(sch.FloatField))
+
+from numpy import *
+a_matrix=array([[1,2,3],[1,2,5]])
+array([[1,2,3],[1,2,5]]).tolist()
+array([[1,2,3],[1,2,5]]).tofile()
+array([[1,2,3],[1,2,5]]).dumps()
+
+big_list=[]
+small_list=[]
+for i in range(1000):
+    small_list.append(i)
+
+for i in range(1000):
+    big_list.append(small_list)
+'''
