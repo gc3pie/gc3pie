@@ -36,17 +36,12 @@ class GamessAtoms(Atoms):
         return new_atoms
 
 class Result(object):
-    
     def __init__(self, atoms, params, calculator):
         import copy
         self.atoms = atoms.copy()
         self.params = copy.deepcopy(params)
         self.calculator = copy.deepcopy(calculator)
     
-    def wait(self, status, timeout):
-        """Blocks until the job has the given status or
-        the timeout in seconds is reached."""
-        pass
 
 class GamessResult(Result):
     
@@ -132,13 +127,19 @@ class MyCalculator(object):
     the same functions, only how the application is run, and where the result files
    are located would be different.
    """
-    pass
+    def calculate(self, atoms, params):
+        assert False, 'Must implement a calcuate method'
+    
+    def preexisting_result(self, location):
+        assert False, 'Must implement a preexisting_result method'
+    
+    def get_files(self):
+        assert False,  'Must implement a get_files method'
 
 class GamessGridCalc(MyCalculator):
     """Calculator class that interfaces with GAMESS-US using
     a database. The jobs in the database are executed on a grid.
     """
-    
     def __init__(self, author='mark', j_db_name='gorg_site', j_db_url='http://127.0.0.1:5984'):
         self.j_author = author
         self.j_db_name = j_db_name
@@ -202,7 +203,7 @@ class GamessGridCalc(MyCalculator):
         while starting_time + timeout > time.time() and j_job.status != status:
             time.sleep(check_freq)        
             j_job=j_job.load(db, j_job.id)
-        if j_job.status == status:
+        if j_job.status == status or j_job.status == 'ERROR':
             # We did not timeout 
             return True, j_job
         else:
@@ -210,11 +211,62 @@ class GamessGridCalc(MyCalculator):
             return False, j_job
 
 class GamessLocalCalc(MyCalculator):
-    def generate_result_file(self, inp=None, stdout=None, stderr=None, dat=None):
+    EXT_INPUT_FILE = 'inp'
+    EXT_STDOUT_FILE = 'stdout'
+    EXT_STDERR_FILE = 'stderr'
+    EXT_DAT_FILE = 'dat'
+    CMD_GAMESS = 'rungms'
+    
+    def __init__(self, f_dir='/tmp'):
+        self.f_dir = f_dir
+    
+    def preexisting_result(self, f_name):
         """Rather than running GAMESS, we just read
         and parse the results already on the file system."""
-        pass
-
+        from ase.io.gamess import ReadGamessInp
+        f_dict = self.get_files(f_name)
+        new_reader = ReadGamessInp(f_dict['inp'])
+        result = GamessResult(new_reader.atoms, new_reader.params, self)        
+        result.j_job = f_name
+        return result
+        
+    def get_files(self, j_id):
+        f_dict = dict()
+        f_dict[self.EXT_INPUT_FILE] = open('%s/%s.%s'%(self.f_dir, j_id, self.EXT_INPUT_FILE))
+        f_dict[self.EXT_STDOUT_FILE] = open('%s/%s.%s'%(self.f_dir, j_id, self.EXT_STDOUT_FILE))
+        f_dict[self.EXT_STDERR_FILE] = open('%s/%s.%s'%(self.f_dir, j_id, self.EXT_STDERR_FILE))
+        f_dict[self.EXT_DAT_FILE] = open('%s/%s.%s'%(self.f_dir, j_id, self.EXT_DAT_FILE))
+        return f_dict
+    
+    def calculate(self, atoms, params):
+        import os
+        from ase.io.gamess import WriteGamessInp
+        result = GamessResult(atoms, params, self)
+        writer = WriteGamessInp()
+        f_name = GamessLocalCalc.generate_new_docid()
+        f_inp = open('%s/%s.%s'%(self.f_dir, f_name, self.EXT_INPUT_FILE), 'w')
+        writer.write(f_inp, atoms, params)
+        f_inp.close()
+        cmd = 'cd %s; %s %s.%s 1> %s.%s 2> %s.%s'%(self.f_dir, self.CMD_GAMESS, 
+                                          f_name, self.EXT_INPUT_FILE, f_name, self.EXT_STDOUT_FILE, 
+                                          f_name, self.EXT_STDERR_FILE)
+        return_code = os.system(cmd)
+        assert return_code == 0, 'Error runing GAMESS. Check %s/%s.%s'%(self.f_dir, f_name, self.EXT_STDOUT_FILE)
+        result.j_job = f_name
+        return result
+     
+    def wait(self, j_job, status='DONE', timeout=60, check_freq=10):
+        if j_job.status == status or j_job.status == 'ERROR':
+            # We did not timeout 
+            return True, j_job
+        else:
+            # We timed out
+            return False, j_job
+        
+    @staticmethod
+    def generate_new_docid():
+        from uuid import uuid4
+        return uuid4().hex
 
 class ParseGamessDat(object):
     '''
@@ -727,25 +779,3 @@ class MyUtilities(object):
                 prev_isdigit = curr_isdigit
         _append(current_fragment)    
         return tuple(index)
-
-import subprocess
-from subprocess import Popen
-
-def finishedSGEJob(sgeID):    
-    cmd = 'qstat'
-    args = ' -j %s'%(sgeID)
-    stdOut,  stdErr = Popen([cmd + args], stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True).communicate()
-    if stdOut:
-        print "Job %s still running."%(sgeID)
-        return False
-    elif stdErr: #qstat writes to the error when the job is not in the queue anymore
-        #return re.findall(RE_JOBS, output)
-        print "Job %s is not in the qeueu."%(sgeID)
-        return True
-
-def submitSGEJob(filename):
-    RE_ID =  r"""(Your job ){1}([0-9]+)"""
-    cmd = '~/qgms'
-    arg = ' -n 16 %s'%(filename)
-    output = Popen([cmd + arg], stdout=subprocess.PIPE, shell=True).communicate()[0]
-    return re.search(RE_ID, output).group(2)
