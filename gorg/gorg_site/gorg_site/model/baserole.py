@@ -1,6 +1,7 @@
 from couchdb import schema as sch
 from couchdb.schema import  Schema
 from gridrun import GridrunModel
+from gridjob import GridjobModel
 from couchdb import client as client
 import time
 '''When you need to query for a key like this ('sad','saq') do this:
@@ -8,6 +9,7 @@ self.view(db,'who_task_owns',startkey=[self.id],endkey=[self.id,{}])
 when you want to match a key ('sad','sad') do this:
 a_job.view(db,'by_task_ownership',keys=[[a_task.id,a_task.id]])
 '''
+#GridrunModel.my_view(db, 'by_job_and_status', startkey=[job_id],endkey=[job_id,status])
 
 map_func_all = '''
 def mapfun(doc):
@@ -23,29 +25,56 @@ def mapfun(doc):
     '''
 map_func_title = '''
 def mapfun(doc):
-    if 'base_type' and 'title' in doc:
+    if 'base_type' doc:
         if doc['base_type'] == 'BaseroleModel':
             yield doc['title'], doc
     '''
 
+map_func_children = '''
+def mapfun(doc):
+    if 'base_type' in doc:
+        if doc['base_type'] == 'BaseroleModel':
+                for job_id in doc['children']:
+                    yield job_id, doc['_id']
+    '''
+
 class BaseroleModel(sch.Document):
     VIEW_PREFIX = 'BaseroleModel'
+    
     author = sch.TextField()
     title = sch.TextField()
     dat = sch.DateTimeField(default=time.gmtime())
-    # Type defined by the user
     base_type = sch.TextField(default='BaseroleModel')
     sub_type = sch.TextField()
-    user_defined_type = sch.TextField(default='gamess')
+    user_data_dict = sch.DictField()
+    result_data_dict = sch.DictField()
+    
+    children = sch.ListField(sch.TextField())
     
     # This works like a dictionary, but allows you to go a_job.test.application_to_run='a app' as well as a_job.test['application_to_run']='a app'
     #test=sch.DictField(Schema.build(application_to_run=sch.TextField(default='gamess')))
     
-    def create(self, db, author, title):
-        pass
+    def add_child(self, child):
+        assert isinstance(child, GridjobModel),  'Tasks can not be chilren.'
+        if not child.id in self.children:
+                self.children.append(child.id)
     
+    def create(self, db, author, title):
+        self.id = GridjobModel.generate_new_docid()
+        self.author = author
+        self.title = title
+        return self
+
     def commit(self, db):
         pass
+    
+    @staticmethod
+    def view_all(db):
+        return BaseroleModel.my_view(db, 'all')
+    
+    @staticmethod
+    def view_by_children(db):
+        return BaseroleModel.my_view(db, 'by_children')
     
     @staticmethod
     def generate_new_docid():
@@ -74,13 +103,15 @@ class BaseroleModel(sch.Document):
     def sync_views(cls, db,  only_names=False):
         from couchdb.design import ViewDefinition
         if only_names:
-            viewnames=('all', 'by_author', 'by_title')
+            viewnames=('all', 'by_author', 'by_title', 'by_children')
             return viewnames
         else:
             all = ViewDefinition(cls.VIEW_PREFIX, 'all', map_func_all, wrapper=cls, language='python')
             by_author = ViewDefinition(cls.VIEW_PREFIX, 'by_author', map_func_author, wrapper=cls, language='python')
             by_title = ViewDefinition(cls.VIEW_PREFIX, 'by_title', map_func_title, wrapper=cls, language='python')
-            views=[all, by_author, by_title]
+            by_children = ViewDefinition(cls.VIEW_PREFIX, 'by_children', map_func_children, wrapper=None, language='python')
+            views=[all, by_author, by_title, by_children]
             ViewDefinition.sync_many( db,  views)
         return views
-    
+        
+        

@@ -12,6 +12,7 @@ def mapfun(doc):
             if doc['sub_type'] == 'GridtaskModel':
                 yield doc['_id'],doc
     '''
+
 map_func_author = '''
 def mapfun(doc):
     if 'base_type' in doc:
@@ -19,7 +20,6 @@ def mapfun(doc):
             if doc['sub_type'] == 'GridtaskModel':
                 yield doc['author'],doc
     '''
-
 oldddd = '''
 def mapfun(doc):
     if 'base_type' in doc:
@@ -36,31 +36,36 @@ def mapfun(doc):
 class GridtaskModel(BaseroleModel):
     SUB_TYPE = 'GridtaskModel'
     VIEW_PREFIX = 'GridtaskModel'
-    def create(self, author, title):
-        self.id = GridtaskModel.generate_new_docid()
-        self.sub_type = self.SUB_TYPE
-        self.author = author
-        self.title = title
-        return self
+    sub_type = sch.TextField(default=self.SUB_TYPE)
+    
+    _job_list = list()
+    
+    def commit_all(self, db):
+        for a_job in _job_list:
+            a_job.commit(db)
+        self.commit(db)
     
     def commit(self, db):
         # Make sure that a job in the database is associated with this task
-        view = GridjobModel.view_by_task(db, self.id)
-        assert len(view) > 0,  'No job in database associated with task %s'%self.id
+        view = GridjobModel.view_all(db)
+        view[_job_list]
+        assert len(view[_job_list]) == len(_job_list),  'Not all jobs associated with this task are saved.'
         self.store(db)
-        
+    
+    def add_child(self, child):
+        super(GridtaskModel, self).add_child(child)
+        _job_list.append(child)
+
     def get_jobs(self, db):
-        job_view = GridjobModel.view_by_task(db, self.id)
-        job_list = list()
-        for a_job in job_view:
-            job_list.append(a_job)
-        return tuple(job_list)
+        for job_id in self.children:
+            a_job=GridjobModel.load(db, job_id)
+            _job_list.append(a_job)
+        return tuple(_job_list)
 
     def get_status(self, db):
         """Returns the overall status of this task."""
-        job_view = GridjobModel.view_by_task(db, self.id)
-        status_list = list()
-        for a_job in job_view:            
+        self.get_jobs(db)
+        for a_job in _job_list:            
             status_list.append(a_job.get_status(db))
         return tuple(status_list)
     
@@ -79,10 +84,6 @@ class GridtaskModel(BaseroleModel):
     @staticmethod
     def view_by_author(db, author):
         return GridtaskModel.my_view(db, 'by_author', key=author)
-    
-    @staticmethod
-    def stat_():
-        pass
     
     @classmethod
     def my_view(cls, db, viewname, **options):
@@ -105,8 +106,3 @@ class GridtaskModel(BaseroleModel):
             views=[by_task, by_author]
             ViewDefinition.sync_many( db,  views)
         return views
-
-def commit_all(db, a_task, job_list):
-    for a_job in job_list:
-        a_job.commit(db)
-    a_task.commit(db)

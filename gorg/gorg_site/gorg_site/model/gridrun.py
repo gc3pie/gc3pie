@@ -3,6 +3,7 @@ from couchdb import client as client
 
 import os
 import time
+import copy
 
 map_func_all = '''
 def mapfun(doc):
@@ -25,6 +26,13 @@ def mapfun(doc):
                 yield owner, doc
     '''
 
+map_func_by_status = '''
+def mapfun(doc):
+    if 'base_type' in doc:
+        if doc['base_type'] == 'GridrunModel':
+            yield doc['status'], doc
+    '''
+
 map_func_hash = '''
 def mapfun(doc):
     if 'base_type' in doc:
@@ -44,7 +52,9 @@ def reducefun(keys, values, rereduce):
     '''
 
 class GridrunModel(sch.Document):
-    POSSIBLE_STATUS = ('READY', 'WAITING','RUNNING','RETRIEVING','FINISHED', 'DONE','ERROR')
+    POSSIBLE_STATUS = dict(READY='READY', WAITING='WAITING',RUNNING='RUNNING', 
+                                           RETRIEVING='RETRIEVING',FINISHED='FINISHED', DONE='DONE',
+                                            ERROR='ERROR')
     VIEW_PREFIX = 'gridrun'
     SUB_TYPE = 'GridrunModel'
     
@@ -55,7 +65,7 @@ class GridrunModel(sch.Document):
     sub_type = sch.TextField()
 
     owned_by = sch.ListField(sch.TextField())
-    # This holds the files we wish to run as well as there hashes
+    # This holds the files we wish to run as well as their hashes
     files_to_run = sch.DictField()
     
     status = sch.TextField(default = 'READY')
@@ -67,10 +77,10 @@ class GridrunModel(sch.Document):
     
     def __setattr__(self, name, value):
         if name == 'status':
-            assert value in self.POSSIBLE_STATUS, 'Invalid status. \
-            Only the following are valid, %s'%(' ,'.join(self.POSSIBLE_STATUS))
+            assert value in self.POSSIBLE_STATUS.values(), 'Invalid status. \
+            Only the following are valid, %s'%(' ,'.join(self.POSSIBLE_STATUS.values()))
         super(GridrunModel, self).__setattr__(name, value)
-#GridrunModel.my_view(db, 'by_job_and_status', startkey=[job_id],endkey=[job_id,status])
+
     @staticmethod
     def view_by_job(db, job_id):
         return GridrunModel.my_view(db, 'by_job', key=job_id)
@@ -78,6 +88,14 @@ class GridrunModel(sch.Document):
     @staticmethod
     def view_by_hash(db, hash_list):
         return GridrunModel.my_view(db, 'by_hash', key=hash_list)
+    
+    @staticmethod
+    def view_by_status(db, status=None):
+        if status is None:
+            view = GridrunModel.my_view(db, 'by_status')
+        else:
+            view = GridrunModel.my_view(db, 'by_status', key=status)
+        return view
     
     @staticmethod
     def view_all(db):
@@ -102,7 +120,10 @@ class GridrunModel(sch.Document):
         # We keep a copy of the input files and only attach them to the run when we 
         # commit it to the database
         for a_file in files_to_run:
-            self._hold_file_pointers.append(open(a_file.name, 'rb'))
+            if isinstance(a_file, file):
+                self._hold_file_pointers.append(open(a_file.name, 'rb'))
+            else:
+                self._hold_file_pointers.append(copy.deepcopy(a_file))
         
         # Generate the input file hashes
         hash_dict = dict()
@@ -120,23 +141,32 @@ class GridrunModel(sch.Document):
         self.id = GridrunModel.generate_new_docid()
         return self
     
-    def commit(self, db, a_job):
-        # Can we use a run that is already in the database?
-        a_run_already_in_db = self._check_for_previous_run(db)
-        if a_run_already_in_db:
-            self = a_run_already_in_db
-            self.owned_by.append(a_job.id)
-            map(file.close, self._hold_file_pointers)
-        else:
-            # We need to attach the input files to the run,
-            # to do that we have to first store the run in the db
-            assert len(self._hold_file_pointers) > 0,  'No files associated with run %s'%self.id
+    def commit(self, db, a_job=None):
+        if a_job is None:
+            # Since the user did not give us a_job,
+            # the run must already be in the database.
+            # Lets just store it then.
+            view = GridrunModel.view_all(db)
+            assert len(view[self.id]) == 1, 'Must specify a_job before run can be stored for the first time.'
             self.store(db)
-            for a_file in self._hold_file_pointers:
-                base_name = os.path.basename(a_file.name)
-                self = self.put_attachment(db, a_file, base_name)
-                a_file.close()
-        self._hold_file_pointers = None
+        else:
+            # Can we use a run that is already in the database?
+            a_run_already_in_db = self._check_for_previous_run(db)
+            if a_run_already_in_db:
+                self = a_run_already_in_db
+                self.owned_by.append(a_job.id)
+                for a_file in self._hold_file_pointers:
+                        a_file.close()
+            else:
+                # We need to attach the input files to the run,
+                # to do that we have to first store the run in the db
+                assert len(self._hold_file_pointers) > 0,  'No files associated with run %s'%self.id
+                self.store(db)
+                for a_file in self._hold_file_pointers:
+                    base_name = os.path.basename(a_file.name)
+                    self = self.put_attachment(db, a_file, base_name)
+                    a_file.close()
+            self._hold_file_pointers = None
         self.store(db)
     
     def _check_for_previous_run(self, db):
@@ -154,19 +184,21 @@ class GridrunModel(sch.Document):
         # _attachment field
         return self.load(db, self.id)
     
-    def get_attachment(self, db, filename, default=None):
-        return db.get_attachment(self, filename, default)
+    def get_attachment(self, db, filename, when_not_found=None):
+        return db.get_attachment(self, filename, when_not_found)
     
-    def attachments_to_files(self, db, default=None):
+    def attachments_to_files(self, db, f_names=None):
         '''We often want to save all of the attachs to a job as files
         on the local computer.'''
         import tempfile
         temp_file = tempfile.NamedTemporaryFile()
         temp_file.close()
         f_attachments = dict()
+        if f_names is None:
+            f_names = self['_attachments']
         # Loop through each attachment and save it
-        for attachment in self['_attachments']:
-            attached_data = self.get_attachment(db, attachment, default)
+        for attachment in f_names:
+            attached_data = self.get_attachment(db, attachment)
             myfile = open( '%s.%s'%(temp_file.name, attachment), 'wb')
             myfile.write(attached_data)
             myfile.close()
@@ -189,7 +221,7 @@ class GridrunModel(sch.Document):
     def sync_views(cls, db,  only_names=False):
         from couchdb.design import ViewDefinition
         if only_names:
-            viewnames=('all', 'by_author', 'by_author_job_status', 'by_hash', 'by_job')
+            viewnames=('all', 'by_author', 'by_author_job_status', 'by_hash', 'by_job', 'by_status')
             return viewnames
         else:
             all = ViewDefinition(cls.VIEW_PREFIX, 'all', map_func_all, wrapper=cls, language='python')
@@ -199,7 +231,9 @@ class GridrunModel(sch.Document):
             by_hash = ViewDefinition(cls.VIEW_PREFIX, 'by_hash', map_func_hash, wrapper=cls, language='python')
             by_job = ViewDefinition(cls.VIEW_PREFIX, 'by_job', map_func_by_job, \
                                              wrapper=cls, language='python') 
-            views=[all, by_author, by_author_job_status, by_hash, by_job]
+            by_status = ViewDefinition(cls.VIEW_PREFIX, 'by_status', map_func_by_status, \
+                                             wrapper=cls, language='python') 
+            views=[all, by_author, by_author_job_status, by_hash, by_job, by_status]
             ViewDefinition.sync_many( db,  views)
         return views
     
