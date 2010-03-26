@@ -1,4 +1,4 @@
-from couchdgridjob.pyb import schema as sch
+from couchdb import schema as sch
 from couchdb.schema import  Schema
 from gridrun import GridrunModel
 from baserole import BaseroleModel
@@ -21,40 +21,63 @@ def mapfun(doc):
                 yield doc['author'],doc
     '''
 
+map_func_children = '''
+def mapfun(doc):
+    if 'base_type' in doc:
+        if doc['base_type'] == 'BaseroleModel':
+            if doc['sub_type'] == 'GridjobModel':
+                for job_id in doc['children']:
+                    yield job_id, doc
+    '''
+
 class GridjobModel(BaseroleModel):
     SUB_TYPE = 'GridjobModel'
     VIEW_PREFIX = 'GridjobModel'
-    sub_type = sch.TextField(default=self.SUB_TYPE)    
+    sub_type = sch.TextField(default=SUB_TYPE)    
     
-    _run_before_commit = None
+    def __init__(self, *args):
+        super(GridjobModel, self).__init__(*args)
+        self._run = None
     
-    def create(self, db, author, title,  files_to_run, application_to_run='gamess', 
+    def create(self, author, title,  files_to_run, application_to_run='gamess', 
                    selected_resource='ocikbpra',  cores=2, memory=1, walltime=-1):
-#TODO: There is a bug, GridrunModel() is taking on the _hold_file_pointers as if it is global. Once set, it stays set
-        self = super(GridjobModel, self).create(db, author, title)
-        self._run_before_commit = GridrunModel()
-        self._run_before_commit._hold_file_pointers=list()
-        self._run_before_commit = self._run_before_commit.create( db, files_to_run, self, application_to_run, 
+        self = super(GridjobModel, self).create(author, title)
+        self._run = GridrunModel()
+        self._run = self._run.create( author, files_to_run, self, application_to_run, 
                             selected_resource,  cores, memory, walltime)
         return self
 
     def commit(self, db):        
-        view = GridrunModel.view_by_job(db, self.id)
-        # Make sure that a run in the database is associated with this job or
-        # that we are going to commit a run to the db in here
-        assert len(view) == 1 or self._run_before_commit is not None,  'No run associated with job %s'%self.id
-        if self._run_before_commit is not None:
-            self._run_before_commit.commit(db, self)
-            self._run_before_commit = None
+        from gridtask import GridtaskModel
+        view = GridtaskModel.view_by_children(db)
+        assert len(view[self.id]) == 1, 'Commit the task associated with this job first.'
+        assert self._run is not None,  'No run associated with job %s'%self.id
+        self._run.commit(db, self)
         self.store(db)
-  
+    
+    def add_child(self, child):
+        assert isinstance(child, GridjobModel),  'Tasks can not be chilren.'
+        if not child.id in self.children:
+                self.children.append(child.id)
+    
+    def refresh(self, db):
+        self = GridjobModel.load(db, self.id)
+    
+    @staticmethod
+    def load_job(db, job_id):
+        a_job = GridjobModel.load(db, job_id)
+        a_job._run = GridrunModel.view_by_job(db, job_id)
+        return a_job
+
     def add_parent(self, parent):
         parent.add_child(self)
     
     def get_task(self, db):
-        view = GridjobModel.view_by_children(db)
-        task_id=view[self.id]
-        return GridtaskModel.load(db, task_id)
+        from gridtask import GridtaskModel
+
+        view = GridtaskModel.view_by_children(db)
+        a_task=view[self.id]
+        return a_task
     
     @staticmethod
     def view_by_job(db):
@@ -62,17 +85,20 @@ class GridjobModel(BaseroleModel):
     
     def get_children(self, db):
         job_list = list()
-        for job_id in children:
+        for job_id in self.children:
             job_list.append(GridjobModel.load(db, job_id))
         return tuple(job_list)
 
-    def get_run(self, db):
-        if self._run_before_commit is None:
-            a_view = GridrunModel.view_by_job(db, self.id)
-            assert len(a_view) == 1, 'No run found. Does job %s have a run associated with it?'%job_id
-            return a_view.view.wrapper(a_view.rows[0])
-        else:
-            return self._run_before_commit
+    def get_parents(self, db):
+        job_list = list()
+        view = GridjobModel.view_by_chilren(db)
+        for a_parent in view[self.id]:
+            job_list.append(a_parent)
+        return tuple(job_list)
+    
+    def get_run(self):
+        assert self._run is not None,  'No run is associated with this job'
+        return self._run
         
     def get_status(self, db):
         a_run = self.get_run(db)
@@ -91,11 +117,12 @@ class GridjobModel(BaseroleModel):
     def sync_views(cls, db,  only_names=False):
         from couchdb.design import ViewDefinition
         if only_names:
-            viewnames=('by_job', 'by_author')
+            viewnames=('by_job', 'by_author', 'by_children')
             return viewnames
         else:
             by_job = ViewDefinition(cls.VIEW_PREFIX, 'by_job', map_func_job, wrapper=cls, language='python')
             by_author = ViewDefinition(cls.VIEW_PREFIX, 'by_author', map_func_author, wrapper=cls, language='python')
-            views=[by_job, by_author]
+            by_children = ViewDefinition(cls.VIEW_PREFIX, 'by_children', map_func_children, wrapper=None, language='python')
+            views=[by_job, by_author, by_children]
             ViewDefinition.sync_many( db,  views)
         return views

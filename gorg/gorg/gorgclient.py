@@ -3,7 +3,7 @@ import sys
 sys.path.append('/home/mmonroe/apps/gorg')
 from gorg_site.gorg_site.model.gridjob import GridjobModel
 from gorg_site.gorg_site.model.baserole import BaseroleModel
-from gorg_site.gorg_site.model.gridtask import GridtaskModel, commit_all
+from gorg_site.gorg_site.model.gridtask import GridtaskModel
 from gorg_site.gorg_site.model.gridrun import GridrunModel
 
 from gorg_site.gorg_site.lib.mydb import Mydb
@@ -19,26 +19,18 @@ def main():
     BaseroleModel.sync_views(db)
 
     a_task = GridtaskModel().create('mark', 'a title')
-    
-    a_job = GridjobModel().create('mark', 'a title', a_task)
     myfile =  open('/home/mmonroe/apps/ase-patched/exam01.inp', 'rb')
-    a_run = a_job.create_run(db, myfile)
+    a_job = GridjobModel().create('mark', 'a title', myfile)
     myfile.close()
+    a_task.add_child(a_job)
     parent1=a_job
-    
-    a_job = GridjobModel().create('mark', 'a title', a_task)
+    me = GridtaskModel.load_task(db,"cb11754667c94265842621af739b1c07")
     myfile =  open('/home/mmonroe/apps/ase-patched/exam01.inp', 'rb')
-    a_job.add_parents(parent1)
-    a_run = a_job.create_run(db, myfile)
+    a_job = GridjobModel().create('mark', 'a title', myfile)
+    a_job.add_parent(parent1)
     myfile.close()
 
-    commit_all(db, a_task, (parent1, a_job))
-    
-    print a_job.get_run(db)
-    print a_job.get_status(db)
-    print a_task.get_jobs(db)
-    print a_task.get_status(db)
-    GridtaskModel.view_by_author(db, 'mark')
+    a_task.commit_all(db)
 
     print 'saved small job to db'    
     
