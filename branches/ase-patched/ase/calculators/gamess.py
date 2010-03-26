@@ -11,7 +11,8 @@ import re
 import string
 import random
 import time as time
-import cStringIO as StringIO
+import StringIO as StringIO
+import os
 
 #Must install yourself
 import numpy as np
@@ -19,6 +20,7 @@ from pyparsing import *
 
 sys.path.append('/home/mmonroe/apps/gorg')
 from gorg_site.gorg_site.model.gridjob import GridjobModel
+from gorg_site.gorg_site.model.gridrun import GridrunModel
 from gorg_site.gorg_site.model.gridtask import GridtaskModel
 from gorg_site.gorg_site.lib.mydb import Mydb
 
@@ -41,7 +43,10 @@ class Result(object):
         self.atoms = atoms.copy()
         self.params = copy.deepcopy(params)
         self.calculator = copy.deepcopy(calculator)
-    
+
+def queryable(func):
+    func.queryable=True
+    return func
 
 class GamessResult(Result):
     
@@ -49,18 +54,17 @@ class GamessResult(Result):
         super(GamessResult, self).__init__(atoms, params, calculator)
         self.parsed_dat = ParseGamessDat()
         self.parsed_out = ParseGamessOut()
-        self.j_job = None
-        self.j_task = None
+        self.job_id = None
 
     def wait(self, status='DONE', timeout=60):
-        result, self.j_job  = self.calculator.wait(self.j_job, status, timeout)
+        result = self.calculator.wait(self.job_id, status, timeout)
         return result
     
     def get_coords(self):
         raw_coords=self.parsed_dat.get_coords()
         coords = np.array(raw_coords[1::2], dtype=float)
         return coords
-
+    
     def get_orbitals(self, raw=False):
         """In GAMESS the $VEC group contains the orbitals."""
         if raw:
@@ -80,29 +84,46 @@ class GamessResult(Result):
         for i in range(0, len(grad)):
             mat[i] = grad[i][1]
         return mat
-
+    
+    @queryable
     def get_potential_energy(self):
         return float(self.parsed_dat.get_energy())
     
-    def is_exit_successful(self):
+    @queryable
+    def exit_successful(self):
         return self.parsed_out.is_exit_successful()
     
-    def is_geom_located(self):
+    @queryable
+    def geom_located(self):
         return self.parsed_out.is_geom_located()
         
     def read(self):
         """Read the results from the GAMESS output files."""
-        # Get the attachments from the database so we can parse them
-        f_output = self.calculator.get_files(self.j_job)
-        self.parsed_dat.parse_file(f_output['dat'])
-        self.parsed_out.parse_file(f_output['stdout'])
+        # The files come in as f_name/file-like pairs
+        # we need to search through them to get the two files
+        # we want. Those files end with .dat and .stdout
+        f_output = self.calculator.get_files(self.job_id)
+        f_map = dict()
+        for key in f_output:
+            if os.path.splitext(key)[-1] == '.dat':
+                f_map['.dat']= f_output[key]
+            elif os.path.splitext(key)[-1] == '.stdout':
+                f_map['.stdout']= f_output[key]
+        self.parsed_dat.parse_file(f_map['.dat'])
+        self.parsed_out.parse_file(f_map['.stdout'])
         map(file.close,f_output.values())
+    
+    def save_queryable(self):
+        for name in dir(self):
+            obj = getattr(self, name)
+            if hassattr(obj, 'queryable'):
+                self.calculator.save_queryable(name, obj(self))
     
 class GamessParams:
     '''Holds the GAMESS run parameters'''
     groups = dict()
-    j_user_params = dict()
-    j_title = 'A title goes here'
+    job_user_data_dict = dict()
+    title = None
     r_orbitals = None
     r_hessian = None
     
@@ -135,80 +156,97 @@ class MyCalculator(object):
     
     def get_files(self):
         assert False,  'Must implement a get_files method'
+    
+    def wait(self, job_id, status='DONE', timeout=60, check_freq=10):
+        assert False,  'Must implement a wait method'
+    
+    def save_queryable(self, job_id, key, value):
+        assert False,  'Must implement a push method'
 
 class GamessGridCalc(MyCalculator):
     """Calculator class that interfaces with GAMESS-US using
     a database. The jobs in the database are executed on a grid.
     """
     def __init__(self, author='mark', j_db_name='gorg_site', j_db_url='http://127.0.0.1:5984'):
-        self.j_author = author
+        self.author = author
         self.j_db_name = j_db_name
         self.j_db_url = j_db_url
-        self.j_input_file = 'inp'
     
-    def calculate(self, atoms, params, j_task=None, j_parent=tuple()):
+    def calculate(self, atoms, params, a_task=None, parents=tuple(), 
+                  selected_resource='ocikbpra',  cores=2, memory=1, walltime=-1):
         """We run GAMESS in here."""
         from ase.io.gamess import WriteGamessInp
         result = GamessResult(atoms, params, self)
         db=Mydb(self.j_db_name,self.j_db_url).cdb()
         # Map the GamessParams used for running the job to the job in the db
-        a_job = GridjobModel()
-        a_job.author = self.j_author
-        a_job.defined_type = 'Gamess'
-        a_job.input_file = self.j_input_file
-        a_job.title = params.j_title
-        # Convert the python dictionary to one that uses the couchdb schema
-        for key in params.j_user_params:
-            a_job.user_params[key] = params.j_user_params[key]
-        
+        if a_task is None:
+            a_task = GridtaskModel().create(self.author, params.title)
+        #Generate the input file
         f_inp = StringIO.StringIO()
+        f_inp.name = params.title + '.inp'
         writer = WriteGamessInp()
         writer.write(f_inp, atoms, params)
         f_inp.seek(0)
-        a_job=a_job.put_attachment(db, f_inp, a_job.input_file)
-        del f_inp
-        # Store the job in the task
-        if j_task:
-            j_task.add_job(a_job, j_parent)
-            j_task.store(db)
-        result.j_job = a_job
-        result.j_task = j_task
+        a_job = GridjobModel().create(self.author, params.title,  f_inp, 'gamess', 
+                           selected_resource,  cores, memory, walltime)
+        a_task.add_child(a_job)
+        map(a_job.add_parent, parents)
+        f_inp.close()
+        # Convert the python dictionary to one that uses the couchdb schema
+        for key in params.job_user_data_dict:
+            a_job.user_data_dict[key] = params.job_user_data_dict[key]
+        a_task.commit_all(db)
+        result.job_id = a_job.id
         return result
 
-    def preexisting_result(self, j_id ):
+    def preexisting_result(self, job_id ):
         """Rather than running GAMESS, we just read
         and parse the results already in the database."""
         db=Mydb(self.j_db_name,self.j_db_url).cdb()
-        a_job = GridjobModel().load(db, j_id)
-        f_attachments= a_job.attachments_to_files(db)
-        new_reader = ReadGamessInp(f_attachments['inp'])
-        result = GamessResult(new_reader.atoms, new_reader.params, self)        
-        result.j_job = a_job
+        a_job = GridjobModel().load_job(db, self.job_id)
+        a_run = a_job.get_run()
+        f_attachments= a_run.attachments_to_files(db)
+        reader = ReadGamessInp(f_attachments['inp'])
+        result = GamessResult(reader.atoms, reader.params, self)        
+        result.job_id = a_job.id
         return result
 
-    def get_files(self, j_job):
+    def get_files(self, job_id):
         db=Mydb(self.j_db_name, self.j_db_url).cdb()
-        f_attachments= j_job.attachments_to_files(db)
+        a_job=GridjobModel.load_job(db, job_id)
+        a_run = a_job.get_run()
+        f_attachments= a_run.attachments_to_files(db)
         return f_attachments
 
-    def wait(self, j_job, status='DONE', timeout=60, check_freq=10):
-        import time
+    def wait(self, job_id, status=GridrunModel.POSSIBLE_STATUS['DONE'], timeout=60, check_freq=10):
+        from time import sleep
         if timeout == 'INFINITE':
             timeout = sys.maxint
         if check_freq > timeout:
             check_freq = timeout
         db=Mydb(self.j_db_name, self.j_db_url).cdb()
         starting_time = time.time()
-        j_job=j_job.load(db, j_job.id)
-        while starting_time + timeout > time.time() and j_job.status != status:
-            time.sleep(check_freq)        
-            j_job=j_job.load(db, j_job.id)
-        if j_job.status == status or j_job.status == 'ERROR':
+        job_status = None
+        while True:
+            a_job=GridjobModel.load_job(db, job_id)
+            job_status = a_job.get_status(db)
+            if starting_time + timeout < time.time() or job_status == status:
+                break
+            else:
+                time.sleep(check_freq)          
+        if job_status == status or job_status == GridrunModel.POSSIBLE_STATUS['ERROR']:
             # We did not timeout 
-            return True, j_job
+            assert job_status != GridrunModel.POSSIBLE_STATUS['ERROR'], 'Run %s returned an error.'%a_job.get_run(db).id
+            return True
         else:
             # We timed out
-            return False, j_job
+            return False
+        
+    def save_queryable(self, job_id, key, value):
+        db=Mydb(self.j_db_name,self.j_db_url).cdb()
+        a_job = GridjobModel().load_load(db, self.job_id)
+        a_job.result_data_dict[key] = value
+        a_job.commit(db)
 
 class GamessLocalCalc(MyCalculator):
     EXT_INPUT_FILE = 'inp'
@@ -227,15 +265,15 @@ class GamessLocalCalc(MyCalculator):
         f_dict = self.get_files(f_name)
         new_reader = ReadGamessInp(f_dict['inp'])
         result = GamessResult(new_reader.atoms, new_reader.params, self)        
-        result.j_job = f_name
+        result.job_id = f_name
         return result
         
-    def get_files(self, j_id):
+    def get_files(self, job_id):
         f_dict = dict()
-        f_dict[self.EXT_INPUT_FILE] = open('%s/%s.%s'%(self.f_dir, j_id, self.EXT_INPUT_FILE))
-        f_dict[self.EXT_STDOUT_FILE] = open('%s/%s.%s'%(self.f_dir, j_id, self.EXT_STDOUT_FILE))
-        f_dict[self.EXT_STDERR_FILE] = open('%s/%s.%s'%(self.f_dir, j_id, self.EXT_STDERR_FILE))
-        f_dict[self.EXT_DAT_FILE] = open('%s/%s.%s'%(self.f_dir, j_id, self.EXT_DAT_FILE))
+        f_dict[self.EXT_INPUT_FILE] = open('%s/%s.%s'%(self.f_dir, job_id, self.EXT_INPUT_FILE))
+        f_dict[self.EXT_STDOUT_FILE] = open('%s/%s.%s'%(self.f_dir, job_id, self.EXT_STDOUT_FILE))
+        f_dict[self.EXT_STDERR_FILE] = open('%s/%s.%s'%(self.f_dir, job_id, self.EXT_STDERR_FILE))
+        f_dict[self.EXT_DAT_FILE] = open('%s/%s.%s'%(self.f_dir, job_id, self.EXT_DAT_FILE))
         return f_dict
     
     def calculate(self, atoms, params):
@@ -252,17 +290,18 @@ class GamessLocalCalc(MyCalculator):
                                           f_name, self.EXT_STDERR_FILE)
         return_code = os.system(cmd)
         assert return_code == 0, 'Error runing GAMESS. Check %s/%s.%s'%(self.f_dir, f_name, self.EXT_STDOUT_FILE)
-        result.j_job = f_name
+        result.job_id = f_name
         return result
      
-    def wait(self, j_job, status='DONE', timeout=60, check_freq=10):
-        if j_job.status == status or j_job.status == 'ERROR':
-            # We did not timeout 
-            return True, j_job
-        else:
-            # We timed out
-            return False, j_job
-        
+    def wait(self, job_id, status='DONE', timeout=60, check_freq=10):
+        """We block on the calculate method, so we know the job is done."""
+        return True
+    
+    def save_queryable(self, job_id, key, value):
+        print 'key %s'%key
+        print value
+        pass
+    
     @staticmethod
     def generate_new_docid():
         from uuid import uuid4
