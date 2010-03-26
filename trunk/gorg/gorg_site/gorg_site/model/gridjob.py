@@ -57,6 +57,7 @@ class GridjobModel(BaseroleModel):
     
     def add_child(self, child):
         assert isinstance(child, GridjobModel),  'Tasks can not be chilren.'
+#TODO: assert self.get_task(db) == assert child.get_task(db), 'Jobs must all be related to the same task'
         if not child.id in self.children:
                 self.children.append(child.id)
     
@@ -66,7 +67,8 @@ class GridjobModel(BaseroleModel):
     @staticmethod
     def load_job(db, job_id):
         a_job = GridjobModel.load(db, job_id)
-        a_job._run = GridrunModel.view_by_job(db, job_id)
+        view = GridrunModel.view_by_job(db, key=job_id)
+        a_job._run = view.view.wrapper(view.rows[0])
         return a_job
 
     def add_parent(self, parent):
@@ -74,14 +76,9 @@ class GridjobModel(BaseroleModel):
     
     def get_task(self, db):
         from gridtask import GridtaskModel
-
         view = GridtaskModel.view_by_children(db)
         a_task=view[self.id]
         return a_task
-    
-    @staticmethod
-    def view_by_job(db):
-        return GridjobModel.my_view(db, 'by_job')
     
     def get_children(self, db):
         job_list = list()
@@ -101,8 +98,12 @@ class GridjobModel(BaseroleModel):
         return self._run
         
     def get_status(self, db):
-        a_run = self.get_run(db)
+        a_run = self.get_run()
         return a_run.status
+
+    @staticmethod
+    def view_by_job(db, **options):
+        return GridjobModel.my_view(db, 'by_job', **options)
 
     @classmethod
     def my_view(cls, db, viewname, **options):

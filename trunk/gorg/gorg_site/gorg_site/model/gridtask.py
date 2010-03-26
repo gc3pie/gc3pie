@@ -100,12 +100,12 @@ class GridtaskModel(BaseroleModel):
         pass
     
     @staticmethod
-    def view_by_author(db, author):
-        return GridtaskModel.my_view(db, 'by_author', key=author)
+    def view_by_author(db, **options):
+        return GridtaskModel.my_view(db, 'by_author', **options)
     
     @staticmethod
-    def view_by_children(db):
-        return GridtaskModel.my_view(db, 'by_children')
+    def view_by_children(db, **options):
+        return GridtaskModel.my_view(db, 'by_children', **options)
     
     @classmethod
     def my_view(cls, db, viewname, **options):
