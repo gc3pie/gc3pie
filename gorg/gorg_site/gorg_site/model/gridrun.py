@@ -128,15 +128,15 @@ class GridrunModel(sch.Document):
             # Since the user did not give us a_job,
             # the run must already be in the database.
             # Lets just store it then.
-            view = GridrunModel.view_by_job(db, self.owned_by)
-            assert len(view[self.id]) > 1, 'Must specify a_job before run can be stored for the first time.'
-            self.store(db)
+            view = GridrunModel.view_by_job(db, keys=self.owned_by)
+            assert len(view) >= 1, 'Must specify a_job before run can be stored for the first time.'
         else:
             # Can we use a run that is already in the database?
             a_run_already_in_db = self._check_for_previous_run(db)
             if a_run_already_in_db:
                 self = a_run_already_in_db
-                self.owned_by.append(a_job.id)
+                if a_job.id not in self.owned_by:
+                    self.owned_by.append(a_job.id)
                 for a_file in self._hold_file_pointers:
                         a_file.close()
             else:
@@ -152,7 +152,7 @@ class GridrunModel(sch.Document):
         self.store(db)
 
     def _check_for_previous_run(self, db):
-        a_view = GridrunModel.view_by_hash(db, self.files_to_run.values())
+        a_view = GridrunModel.view_by_hash(db, key=self.files_to_run.values())
         if len(a_view) == 0:
             return None
         for a_run in a_view:
@@ -191,24 +191,20 @@ class GridrunModel(sch.Document):
         return db.delete_attachment(self, filename)
 
     @staticmethod
-    def view_by_job(db, job_id):
-        return GridrunModel.my_view(db, 'by_job', key=job_id)
+    def view_by_job(db, **options):
+        return GridrunModel.my_view(db, 'by_job', **options)
     
     @staticmethod
-    def view_by_hash(db, hash_list):
-        return GridrunModel.my_view(db, 'by_hash', key=hash_list)
+    def view_by_hash(db, **options):
+        return GridrunModel.my_view(db, 'by_hash', **options)
     
     @staticmethod
-    def view_by_status(db, status=None):
-        if status is None:
-            view = GridrunModel.my_view(db, 'by_status')
-        else:
-            view = GridrunModel.my_view(db, 'by_status', key=status)
-        return view
+    def view_by_status(db, **options):
+            return GridrunModel.my_view(db, 'by_status', **options)
     
     @staticmethod
-    def view_all(db):
-        return GridrunModel.my_view(db, 'all')
+    def view_all(db, **options):
+        return GridrunModel.my_view(db, 'all', **options)
 
     @classmethod
     def my_view(cls, db, viewname, **options):

@@ -65,12 +65,12 @@ class BaseroleModel(sch.Document):
         pass
     
     @staticmethod
-    def view_all(db):
-        return BaseroleModel.my_view(db, 'all')
+    def view_all(db, **options):
+        return BaseroleModel.my_view(db, 'all', **options)
     
     @staticmethod
-    def view_by_children(db):
-        return BaseroleModel.my_view(db, 'by_children')
+    def view_by_children(db, **options):
+        return BaseroleModel.my_view(db, 'by_children', **options)
     
     @staticmethod
     def generate_new_docid():
