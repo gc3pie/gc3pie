@@ -1,7 +1,5 @@
 from couchdb import schema as sch
 from couchdb.schema import  Schema
-from gridrun import GridrunModel
-from gridjob import GridjobModel
 from couchdb import client as client
 import time
 '''When you need to query for a key like this ('sad','saq') do this:
@@ -35,7 +33,7 @@ def mapfun(doc):
     if 'base_type' in doc:
         if doc['base_type'] == 'BaseroleModel':
                 for job_id in doc['children']:
-                    yield job_id, doc['_id']
+                    yield job_id, doc
     '''
 
 class BaseroleModel(sch.Document):
@@ -55,12 +53,10 @@ class BaseroleModel(sch.Document):
     #test=sch.DictField(Schema.build(application_to_run=sch.TextField(default='gamess')))
     
     def add_child(self, child):
-        assert isinstance(child, GridjobModel),  'Tasks can not be chilren.'
-        if not child.id in self.children:
-                self.children.append(child.id)
+        assert False,  'Must implement a add_child methos'
     
-    def create(self, db, author, title):
-        self.id = GridjobModel.generate_new_docid()
+    def create(self, author, title):
+        self.id = BaseroleModel.generate_new_docid()
         self.author = author
         self.title = title
         return self
@@ -103,14 +99,13 @@ class BaseroleModel(sch.Document):
     def sync_views(cls, db,  only_names=False):
         from couchdb.design import ViewDefinition
         if only_names:
-            viewnames=('all', 'by_author', 'by_title', 'by_children')
+            viewnames=('all', 'by_author', 'by_title')
             return viewnames
         else:
             all = ViewDefinition(cls.VIEW_PREFIX, 'all', map_func_all, wrapper=cls, language='python')
             by_author = ViewDefinition(cls.VIEW_PREFIX, 'by_author', map_func_author, wrapper=cls, language='python')
             by_title = ViewDefinition(cls.VIEW_PREFIX, 'by_title', map_func_title, wrapper=cls, language='python')
-            by_children = ViewDefinition(cls.VIEW_PREFIX, 'by_children', map_func_children, wrapper=None, language='python')
-            views=[all, by_author, by_title, by_children]
+            views=[all, by_author, by_title]
             ViewDefinition.sync_many( db,  views)
         return views
         

@@ -62,7 +62,7 @@ class GridrunModel(sch.Document):
     author = sch.TextField()
     dat = sch.DateTimeField(default=time.gmtime())
     base_type = sch.TextField(default='GridrunModel')
-    sub_type = sch.TextField()
+    sub_type = sch.TextField(default='GridrunModel')
 
     owned_by = sch.ListField(sch.TextField())
     # This holds the files we wish to run as well as their hashes
@@ -73,38 +73,20 @@ class GridrunModel(sch.Document):
     gsub_message = sch.TextField()
     gsub_unique_token = sch.TextField()
     
-    _hold_file_pointers = list()
-    
+    def __init__(self, *args):
+        super(GridrunModel, self).__init__(*args)
+        self._hold_file_pointers = list()
+        
     def __setattr__(self, name, value):
         if name == 'status':
             assert value in self.POSSIBLE_STATUS.values(), 'Invalid status. \
             Only the following are valid, %s'%(' ,'.join(self.POSSIBLE_STATUS.values()))
         super(GridrunModel, self).__setattr__(name, value)
-
-    @staticmethod
-    def view_by_job(db, job_id):
-        return GridrunModel.my_view(db, 'by_job', key=job_id)
-    
-    @staticmethod
-    def view_by_hash(db, hash_list):
-        return GridrunModel.my_view(db, 'by_hash', key=hash_list)
-    
-    @staticmethod
-    def view_by_status(db, status=None):
-        if status is None:
-            view = GridrunModel.my_view(db, 'by_status')
-        else:
-            view = GridrunModel.my_view(db, 'by_status', key=status)
-        return view
-    
-    @staticmethod
-    def view_all(db):
-        return GridrunModel.my_view(db, 'all')
     
     def get_jobs(self, db):
         job_list = list()
         for a_job_id in self.owned_by:
-            job_list.append(GridjobModel.load(db, a_job_id))
+            job_list.append(GridjobModel.load_job(db, a_job_id))
         return tuple(job_list)
     
     def get_tasks(self, db):
@@ -114,7 +96,7 @@ class GridrunModel(sch.Document):
             task_list.append(a_job.get_task(db))
         return tuple(task_list)
 
-    def create(self, db, files_to_run, a_job, application_to_run='gamess', selected_resource='ocikbpra',  cores=2, memory=1, walltime=-1):       
+    def create(self, author, files_to_run, a_job, application_to_run='gamess', selected_resource='ocikbpra',  cores=2, memory=1, walltime=-1):       
         if not isinstance(files_to_run, list) and not isinstance(files_to_run, tuple):
             files_to_run = [files_to_run]
         # We keep a copy of the input files and only attach them to the run when we 
@@ -146,8 +128,8 @@ class GridrunModel(sch.Document):
             # Since the user did not give us a_job,
             # the run must already be in the database.
             # Lets just store it then.
-            view = GridrunModel.view_all(db)
-            assert len(view[self.id]) == 1, 'Must specify a_job before run can be stored for the first time.'
+            view = GridrunModel.view_by_job(db, self.owned_by)
+            assert len(view[self.id]) > 1, 'Must specify a_job before run can be stored for the first time.'
             self.store(db)
         else:
             # Can we use a run that is already in the database?
@@ -168,7 +150,7 @@ class GridrunModel(sch.Document):
                     a_file.close()
             self._hold_file_pointers = None
         self.store(db)
-    
+
     def _check_for_previous_run(self, db):
         a_view = GridrunModel.view_by_hash(db, self.files_to_run.values())
         if len(a_view) == 0:
@@ -207,7 +189,27 @@ class GridrunModel(sch.Document):
     
     def delete_attachment(self, db, filename):
         return db.delete_attachment(self, filename)
+
+    @staticmethod
+    def view_by_job(db, job_id):
+        return GridrunModel.my_view(db, 'by_job', key=job_id)
     
+    @staticmethod
+    def view_by_hash(db, hash_list):
+        return GridrunModel.my_view(db, 'by_hash', key=hash_list)
+    
+    @staticmethod
+    def view_by_status(db, status=None):
+        if status is None:
+            view = GridrunModel.my_view(db, 'by_status')
+        else:
+            view = GridrunModel.my_view(db, 'by_status', key=status)
+        return view
+    
+    @staticmethod
+    def view_all(db):
+        return GridrunModel.my_view(db, 'all')
+
     @classmethod
     def my_view(cls, db, viewname, **options):
         from couchdb.design import ViewDefinition
