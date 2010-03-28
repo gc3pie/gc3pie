@@ -50,6 +50,33 @@ class Gcli:
             logging.critical('Failed init gcli')
             raise
 
+    def glist(self, resource_name):
+        try:
+            if resource_name is None:
+                # for time being we raise an exception with no implemented
+                raise Exception('glist with no resource_name not yet implemented')
+
+            if ( resource_name in self.resource_list ):
+                logging.debug('Found match for user defined resource: %s',resource_name)
+                resource_description = self.resource_list[resource_name]
+            else:
+                logging.critical('failed matching user defined resource: %s ',resource_name)
+                raise Exception('failed matching user defined resource')
+            
+            logging.info('Check user defined resources\t\t\t[ ok ]')
+
+            if ( resource_description['type'] == "arc" ):
+                lrms = ArcLrms(resource_description)
+            elif ( resource_description['type'] == "ssh"):
+                lrms = SshLrms(resource_description)
+            else:
+                logging.error('Unknown resource type %s',resource_description['type'])
+
+            return [0,lrms.GetResourceStatus()]
+            
+        except:
+            raise
+
     def checkGridCredential(self):
         if (not checkGridAccess()):
             if ( self.defaults['email_contact'] != "" ):
@@ -607,15 +634,40 @@ def main():
             logging.info('gkill is not implemented yet')
 
         elif ( os.path.basename(program_name) == "glist" ):
-            logging.info('glist is not implemented yet')
+            # Glist
+            # Parse command line arguments
+            
+            _usage = "Usage: %prog [options] resource_name"
+            parser = OptionParser(usage=_usage)
+            parser.add_option("-v", action="count", dest="verbosity", default=0, help="Set verbosity level")
+            (options, args) = parser.parse_args()
+            
+            # Configure logging service
+            configure_logging(options.verbosity)
+            
+            logging.debug('Command lines argument length: [ %d ]',len(args))
+            
+            if len(args) != 1:
+                logging.critical('Command line argument parsing\t\t\t[ failed ]\n\tIncorrect number of arguments; expected 1 got %d ',len(args))
+                parser.print_help()
+                raise Exception('wrong number on arguments')
+
+            logging.info('Parsing command line arguments\t\t[ ok ]')
+            
+            resource_name = args[0]
 
         else:
             # Error
             print "Unknown command "+program_name
             return 1
 
+
+        # End parsing command line arguments
+        # Beging implementing methods
+
         gcli = Gcli(default_config_file_location)
 
+        # grid-credential-renew
         if ( os.path.basename(program_name) == "grid-credential-renew" ):
             exitcode = ArcLrms.renewGridCredential(_aai_username)
             if (exitcode):
@@ -627,6 +679,8 @@ def main():
         if ( not gcli.checkGridAccess() ):
             ArcLrms.renewGridCredential(None)
 
+
+        # gsub
         if ( os.path.basename(program_name) == "gsub" ):
             # gsub prototype: application_to_run, input_file, selected_resource, job_local_dir, cores, memory, walltime
 #            if ( self.options.resource_name )
@@ -635,6 +689,8 @@ def main():
                 print jobid
             else:
                 raise Exception("submission terminated")
+
+        # gstat    
         elif (os.path.basename(program_name) == "gstat" ):
             if ( len(args) > 0 ):
                 (retval,job_status_list) = gcli.gstat(args[0])
@@ -648,7 +704,8 @@ def main():
                     sys.stdout.flush()
             else:
                 logging.debug('retval returned %d',retval)
-                raise Exception("gstat terminated")                
+                raise Exception("gstat terminated")
+        # ggest
         elif (os.path.basename(program_name) == "gget"):
             retval = gcli.gget(unique_token)
             if (not retval):
@@ -656,11 +713,29 @@ def main():
                 sys.stdout.flush
             else:
                 raise Exception("gget terminated")
+
+        # glist
+        elif (os.path.basename(program_name) == "glist"):
+            (retval,resource_object) = gcli.glist(resource_name)
+            if (not retval):
+                if resource_object.__dict__.has_key("resource_name"):
+                    sys.stdout.write('Resource Name: '+resource_object.__dict__["resource_name"]+'\n')
+                if resource_object.__dict__.has_key("total_slots"):
+                    sys.stdout.write('Total cores: '+str(resource_object.__dict__["total_slots"])+'\n')
+                if resource_object.__dict__.has_key("total_runnings"):
+                    sys.stdout.write('Total runnings: '+str(resource_object.__dict__["total_runnings"])+'\n')
+                if resource_object.__dict__.has_key("total_queued"):
+                    sys.stdout.write('Total queued: '+str(resource_object.__dict__["total_queued"])+'\n')
+                if resource_object.__dict__.has_key("memory_per_core"):
+                    sys.stdout.write('Memory per core: '+str(resource_object.__dict__["memory_per_core"])+'\n')
+                sys.stdout.flush()
+            else:
+                raise Exception("glist terminated")
     except:
         logging.info('%s',sys.exc_info()[1])
         # think of a better error message
         # Should intercept the exception somehow and generate error message accordingly ?
-        print "gsub failed: "+str(sys.exc_info()[1])
+        print os.path.basename(program_name)+" failed: "+str(sys.exc_info()[1])
         return 1
                 
 if __name__ == "__main__":

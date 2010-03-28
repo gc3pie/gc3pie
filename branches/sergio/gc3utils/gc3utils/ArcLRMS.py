@@ -12,7 +12,7 @@ import shutil
 import subprocess
 from utils import *
 from LRMS import LRMS
-
+from Resource import Resource
 
 # -----------------------------------------------------
 # ARC lrms
@@ -333,3 +333,6 @@ class ArcLrms(LRMS):
             logging.critical('Failure in retrieving results')
             raise
 
+    def GetResourceStatus(self):
+        logging.debug("Returning information of local resoruce")
+        return Resource(resource_name=self.resource['resource_name'],total_cores=self.resource['ncores'],memory_per_core=self.resource['memory_per_core'])
