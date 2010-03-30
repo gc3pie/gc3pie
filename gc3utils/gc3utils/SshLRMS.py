@@ -19,7 +19,6 @@ from LRMS import LRMS
 # -----------------------------------------------------
 # SSH lrms
 #
-# test
 
 class SshLrms(LRMS):
 
