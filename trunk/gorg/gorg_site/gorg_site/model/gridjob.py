@@ -1,7 +1,7 @@
 from couchdb import schema as sch
 from couchdb.schema import  Schema
 from gridrun import GridrunModel
-from baserole import BaseroleModel
+from baserole import BaseroleModel, BaseroleInterface
 from couchdb import client as client
 import time
 
@@ -83,32 +83,21 @@ class GridjobModel(BaseroleModel):
             ViewDefinition.sync_many( db,  views)
         return views
     
-class JobInterface(object):
-    def __init__(self, db):
-        self.db = db
-        self.a_job = None
+class JobInterface(BaseroleInterface):
     
     def create(self, author, title,  files_to_run, application_to_run='gamess', 
                         selected_resource='ocikbpra',  cores=2, memory=1, walltime=-1):
-        self.a_job = GridjobModel().create(author, title)
+        self.controlled = GridjobModel().create(author, title)
         a_run = GridrunModel()
-        a_run = a_run.create( self.db, files_to_run, self.a_job, application_to_run, 
+        a_run = a_run.create( self.db, files_to_run, self.controlled, application_to_run, 
                         selected_resource,  cores, memory, walltime)
-        self.a_job._run_id = a_run.id
-        self.a_job.commit(self.db)
+        self.controlled._run_id = a_run.id
+        self.controlled.commit(self.db)
         return self
     
     def load(self, id):
-        self.a_job=GridjobModel.load_job(self.db, id)
+        self.controlled=GridjobModel.load_job(self.db, id)
         return self
-
-    def add_child(self, child):
-        child_job = child.a_job
-        assert isinstance(child_job, GridjobModel),  'Only jobs can be chilren.'
-        self.a_job.refresh(self.db)
-        if child_job.id not in self.a_job.children:
-            self.a_job.children.append(child_job.id)
-        self.a_job.commit(self.db)
     
     def add_parent(self, parent):
         parent.add_child(self)
@@ -116,29 +105,18 @@ class JobInterface(object):
     def task():
         def fget(self):
             from gridtask import GridtaskModel
-            self.a_job.refresh(self.db)
+            self.controlled.refresh(self.db)
             view = GridtaskModel.view_by_children(self.db)
-            a_task=view[self.a_job.id]
+            a_task=view[self.controlled.id]
             return tuple(a_task)
         return locals()
     task = property(**task())
-
-    def children():            
-        def fget(self):
-            self.a_job.refresh(self.db)
-            job_list=list()
-            for job_id in self.a_job.children:
-                a_job = GridjobModel.load(self.db, job_id)
-                job_list.append(a_job)
-            return tuple(job_list)
-        return locals()
-    children = property(**children())
 
     def parents():            
         def fget(self):
             job_list = list()
             view = GridjobModel.view_by_children(self.db)
-            for a_parent in view[self.a_job.id]:
+            for a_parent in view[self.controlled.id]:
                 job_list.append(a_parent)
             return tuple(job_list)
         return locals()
@@ -146,7 +124,7 @@ class JobInterface(object):
     
     def run():
         def fget(self):
-            return GridrunModel.load(self.db, self.a_job._run_id)
+            return GridrunModel.load(self.db, self.controlled._run_id)
         return locals()
     run = property(**run())
 
@@ -172,35 +150,17 @@ class JobInterface(object):
             return self.run.attachments_to_files(self.db)
         return locals()
     attachments = property(**attachments())
-    
-    def user_data_dict():        
-        def fget(self):
-            self.a_job.refresh(self.db)
-            return self.a_job.user_data_dict
-        def fset(self, user_dict):
-            self.a_job.user_data_dict = user_dict
-            self.a_job.commit(self.db)
-        return locals()
-    user_data_dict = property(**user_data_dict())
-        
-    def result_data_dict():        
-        def fget(self):
-            self.a_job.refresh(self.db)
-            return self.a_job.result_data_dict
-        def fset(self, result_dict):
-            self.a_job.result_data_dict = result_dict
-            self.a_job.commit(self.db)
-        return locals()
-    result_data_dict = property(**result_data_dict())
-    
-    def id():        
-        def fget(self):
-            return self.a_job.id
-        return locals()
-    id = property(**id())
-    
+
     def run_id():        
         def fget(self):
-            return self.a_job._run_id
+            return self.controlled._run_id
         return locals()
     run_id = property(**run_id())
+    
+    def job():        
+        def fget(self):
+            return self.controlled
+        def fset(self, a_job):
+            self.controlled = a_job
+        return locals()
+    job = property(**job())

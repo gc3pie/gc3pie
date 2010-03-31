@@ -29,7 +29,7 @@ def main():
     parent.add_child(a_job)
     
     me = JobInterface(db)
-    me.a_job = GridjobModel.load_job(db,a_job.a_job.id)
+    me = JobInterface(db).load(a_job.id)
     myfile.close()
 
     print 'saved small job to db'    

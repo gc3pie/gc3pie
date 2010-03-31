@@ -1,6 +1,6 @@
 from couchdb import schema as sch
 from couchdb.schema import  Schema
-from baserole import BaseroleModel
+from baserole import BaseroleModel, BaseroleInterface
 from gridjob import GridjobModel, JobInterface
 from couchdb import client as client
 import time
@@ -91,41 +91,21 @@ class GridtaskModel(BaseroleModel):
             ViewDefinition.sync_many( db,  views)
         return views
     
-class TaskInterface(object):
-    def __init__(self, db):
-        self.db = db
-        self.a_task = None
+class TaskInterface(BaseroleInterface):
     
     def create(self, author, title):
-        self.a_task = GridtaskModel().create(author, title)
-        self.a_task.commit(self.db)
+        self.controlled = GridtaskModel().create(author, title)
+        self.controlled.commit(self.db)
         return self
-    
-    def load(self, id):
-        self.a_task=GridtaskModel.load(self.db, id)
-    
-    def children():
-        def fget(self):
-            self.a_task.refresh(self.db)
-            job_list=list()
-            for job_id in self.a_task.children:
-                a_job = JobInterface(self.db).load(job_id)
-                job_list.append(a_job)
-            return tuple(job_list)
-        return locals()
-    children = property(**children())
 
-    def add_child(self, child):
-        child_job = child.a_job
-        assert isinstance(child_job, GridjobModel),  'Only jobs can be chilren.'
-        if child_job.id not in self.a_task.children:
-            self.a_task.children.append(child_job.id)
-        self.a_task.commit(self.db)
+    def load(self, id):
+        self.controlled=GridtaskModel.load(self.db, id)
+        return self
 
     def status():
         def fget(self):
-            self.a_task.refresh(self.db)
-            for job_id in self.a_task.children:
+            self.controlled.refresh(self.db)
+            for job_id in self.controlled.children:
                 a_job = GridjobModel.load(self.db, job_id)
                 status_list.append(a_job.get_status())
             return tuple(status_list)
@@ -144,19 +124,10 @@ class TaskInterface(object):
         return locals()
     status_percent_done = property(**status_percent_done())
     
-    def user_data_dict():        
+    def task():
         def fget(self):
-            self.a_task.refresh(self.db)
-            return self.a_task.user_data_dict
-        def fset(self, user_dict):
-            self.a_task.user_data_dict = user_dict
-            self.a_task.commit(self.db)
+            return self.controlled
+        def fset(self, a_task):
+            self.controlled = a_task
         return locals()
-    user_data_dict = property(**user_data_dict())
-    
-    def id():        
-        def fget(self):
-            return self.a_task.id
-        return locals()
-    id = property(**id())
-    
+    task = property(**task())

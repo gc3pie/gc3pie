@@ -108,5 +108,57 @@ class BaseroleModel(sch.Document):
             views=[all, by_author, by_title]
             ViewDefinition.sync_many( db,  views)
         return views
-        
-        
+
+class BaseroleInterface(object):
+    def __init__(self, db):
+        self.db = db
+        self.controlled = None
+    
+    def create(self):
+        assert False, 'Must implement me.'
+    
+    def add_child(self, child):
+        from gridjob import GridjobModel
+        child_job = child.controlled
+        assert isinstance(child_job, GridjobModel),  'Only jobs can be chilren.'
+        self.controlled.refresh(self.db)
+        if child_job.id not in self.controlled.children:
+            self.controlled.children.append(child_job.id)
+        self.controlled.commit(self.db)
+
+    def children():            
+        def fget(self):
+            self.controlled.refresh(self.db)
+            job_list=list()
+            for job_id in self.controlled.children:
+                a_job = GridjobModel.load(self.db, job_id)
+                job_list.append(a_job)
+            return tuple(job_list)
+        return locals()
+    children = property(**children())
+
+    def user_data_dict():        
+        def fget(self):
+            self.controlled.refresh(self.db)
+            return self.controlled.user_data_dict
+        def fset(self, user_dict):
+            self.controlled.user_data_dict = user_dict
+            self.controlled.commit(self.db)
+        return locals()
+    user_data_dict = property(**user_data_dict())
+    
+    def result_data_dict():        
+        def fget(self):
+            self.controlled.refresh(self.db)
+            return self.controlled.result_data_dict
+        def fset(self, result_dict):
+            self.controlled.result_data_dict = result_dict
+            self.controlled.commit(self.db)
+        return locals()
+    result_data_dict = property(**result_data_dict())
+
+    def id():        
+        def fget(self):
+            return self.controlled.id
+        return locals()
+    id = property(**id())
