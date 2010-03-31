@@ -18,13 +18,13 @@ class GridjobScheduler(object):
         #Handle jobs that are ready to be submitted to the grid
         view_runs = self.view_status_runs[GridrunModel.POSSIBLE_STATUS['READY']]
         for a_run in view_runs:
-            try:
-                # Get the files that we need to generatea grid run
-                f_list = a_run.attachments_to_files(self.db, a_run.files_to_run.keys())
+            # Get the files that we need to generatea grid run
+            f_list = a_run.attachments_to_files(self.db, a_run.files_to_run.keys())
 #TODO: We handle multiple input files here, but gcli can not handle them
-                assert len(f_list)==1,  'gcli.gsub does not handle multiple input files.'
-                run_params = a_run.run_params
-                f_dir=os.path.dirname( f_list.values()[0].name)
+            assert len(f_list)==1,  'gcli.gsub does not handle multiple input files.'
+            run_params = a_run.run_params
+            f_dir=os.path.dirname( f_list.values()[0].name)
+            try:
                 result = self.gcli.gsub(job_local_dir=f_dir, input_file=f_list.values()[0].name, **run_params)
                 a_run.gsub_unique_token = result[1]
                 # TODO: Get the real status, the run may be waiting in the queue, not running
@@ -34,6 +34,7 @@ class GridjobScheduler(object):
                 a_run.status=GridrunModel.POSSIBLE_STATUS['ERROR']
             f_list.values()[0].close()
             a_run.commit(self.db)
+
 
     def handle_waiting_jobs(self):
         view_runs = self.view_status_runs[GridrunModel.POSSIBLE_STATUS['WAITING']]
@@ -69,7 +70,7 @@ class GridjobScheduler(object):
                 for f_name in output_files:
                     a_file = open(f_name, 'rb')
                     a_run = a_run.put_attachment(self.db, a_file, os.path.basename(a_file.name)) #os.path.splitext(a_file.name)[-1].lstrip('.')
-                    a_run.status=GridrunModel.POSSIBLE_STATUS['DONE']
+                a_run.status=GridrunModel.POSSIBLE_STATUS['DONE']
             except:
                 a_run.gsub_message=formatExceptionInfo()
                 a_run.status=GridrunModel.POSSIBLE_STATUS['ERROR']

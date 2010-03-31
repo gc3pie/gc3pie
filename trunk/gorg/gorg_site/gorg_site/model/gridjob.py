@@ -37,29 +37,10 @@ class GridjobModel(BaseroleModel):
     
     def __init__(self, *args):
         super(GridjobModel, self).__init__(*args)
-        self._run = None
+        self._run_id = None
     
-    def create(self, author, title,  files_to_run, application_to_run='gamess', 
-                   selected_resource='ocikbpra',  cores=2, memory=1, walltime=-1):
-        self = super(GridjobModel, self).create(author, title)
-        self._run = GridrunModel()
-        self._run = self._run.create( author, files_to_run, self, application_to_run, 
-                            selected_resource,  cores, memory, walltime)
-        return self
-
-    def commit(self, db):        
-        from gridtask import GridtaskModel
-        view = GridtaskModel.view_by_children(db)
-        assert len(view[self.id]) == 1, 'Commit the task associated with this job first.'
-        assert self._run is not None,  'No run associated with job %s'%self.id
-        self._run.commit(db, self)
+    def commit(self, db):
         self.store(db)
-    
-    def add_child(self, child):
-        assert isinstance(child, GridjobModel),  'Tasks can not be chilren.'
-#TODO: assert self.get_task(db) == assert child.get_task(db), 'Jobs must all be related to the same task'
-        if not child.id in self.children:
-                self.children.append(child.id)
     
     def refresh(self, db):
         self = GridjobModel.load(db, self.id)
@@ -68,42 +49,16 @@ class GridjobModel(BaseroleModel):
     def load_job(db, job_id):
         a_job = GridjobModel.load(db, job_id)
         view = GridrunModel.view_by_job(db, key=job_id)
-        a_job._run = view.view.wrapper(view.rows[0])
+        a_job._run_id = view.view.wrapper(view.rows[0]).id
         return a_job
-
-    def add_parent(self, parent):
-        parent.add_child(self)
     
-    def get_task(self, db):
-        from gridtask import GridtaskModel
-        view = GridtaskModel.view_by_children(db)
-        a_task=view[self.id]
-        return a_task
-    
-    def get_children(self, db):
-        job_list = list()
-        for job_id in self.children:
-            job_list.append(GridjobModel.load(db, job_id))
-        return tuple(job_list)
-
-    def get_parents(self, db):
-        job_list = list()
-        view = GridjobModel.view_by_chilren(db)
-        for a_parent in view[self.id]:
-            job_list.append(a_parent)
-        return tuple(job_list)
-    
-    def get_run(self):
-        assert self._run is not None,  'No run is associated with this job'
-        return self._run
-        
-    def get_status(self, db):
-        a_run = self.get_run()
-        return a_run.status
-
     @staticmethod
     def view_by_job(db, **options):
         return GridjobModel.my_view(db, 'by_job', **options)
+    
+    @staticmethod
+    def view_by_children(db, **options):
+        return GridjobModel.my_view(db, 'by_children', **options)
 
     @classmethod
     def my_view(cls, db, viewname, **options):
@@ -127,3 +82,125 @@ class GridjobModel(BaseroleModel):
             views=[by_job, by_author, by_children]
             ViewDefinition.sync_many( db,  views)
         return views
+    
+class JobInterface(object):
+    def __init__(self, db):
+        self.db = db
+        self.a_job = None
+    
+    def create(self, author, title,  files_to_run, application_to_run='gamess', 
+                        selected_resource='ocikbpra',  cores=2, memory=1, walltime=-1):
+        self.a_job = GridjobModel().create(author, title)
+        a_run = GridrunModel()
+        a_run = a_run.create( self.db, files_to_run, self.a_job, application_to_run, 
+                        selected_resource,  cores, memory, walltime)
+        self.a_job._run_id = a_run.id
+        self.a_job.commit(self.db)
+        return self
+    
+    def load(self, id):
+        self.a_job=GridjobModel.load_job(self.db, id)
+        return self
+
+    def add_child(self, child):
+        child_job = child.a_job
+        assert isinstance(child_job, GridjobModel),  'Only jobs can be chilren.'
+        self.a_job.refresh(self.db)
+        if child_job.id not in self.a_job.children:
+            self.a_job.children.append(child_job.id)
+        self.a_job.commit(self.db)
+    
+    def add_parent(self, parent):
+        parent.add_child(self)
+    
+    def task():
+        def fget(self):
+            from gridtask import GridtaskModel
+            self.a_job.refresh(self.db)
+            view = GridtaskModel.view_by_children(self.db)
+            a_task=view[self.a_job.id]
+            return tuple(a_task)
+        return locals()
+    task = property(**task())
+
+    def children():            
+        def fget(self):
+            self.a_job.refresh(self.db)
+            job_list=list()
+            for job_id in self.a_job.children:
+                a_job = GridjobModel.load(self.db, job_id)
+                job_list.append(a_job)
+            return tuple(job_list)
+        return locals()
+    children = property(**children())
+
+    def parents():            
+        def fget(self):
+            job_list = list()
+            view = GridjobModel.view_by_children(self.db)
+            for a_parent in view[self.a_job.id]:
+                job_list.append(a_parent)
+            return tuple(job_list)
+        return locals()
+    parents = property(**parents())
+    
+    def run():
+        def fget(self):
+            return GridrunModel.load(self.db, self.a_job._run_id)
+        return locals()
+    run = property(**run())
+
+    def status():
+        def fget(self):
+            a_run = self.run
+            return a_run.status
+        def fset(self, status):
+            a_run = self.run
+            a_run.status = status
+            a_run.commit(self.db)
+        return locals()
+    status = property(**status())
+    
+    def get_attachment(self, ext):
+        import os
+        for key in self.attachments:
+            if os.path.splitext(key)[-1] == '.'+ext:
+                return self.attachments[key]
+
+    def attachments():
+        def fget(self):
+            return self.run.attachments_to_files(self.db)
+        return locals()
+    attachments = property(**attachments())
+    
+    def user_data_dict():        
+        def fget(self):
+            self.a_job.refresh(self.db)
+            return self.a_job.user_data_dict
+        def fset(self, user_dict):
+            self.a_job.user_data_dict = user_dict
+            self.a_job.commit(self.db)
+        return locals()
+    user_data_dict = property(**user_data_dict())
+        
+    def result_data_dict():        
+        def fget(self):
+            self.a_job.refresh(self.db)
+            return self.a_job.result_data_dict
+        def fset(self, result_dict):
+            self.a_job.result_data_dict = result_dict
+            self.a_job.commit(self.db)
+        return locals()
+    result_data_dict = property(**result_data_dict())
+    
+    def id():        
+        def fget(self):
+            return self.a_job.id
+        return locals()
+    id = property(**id())
+    
+    def run_id():        
+        def fget(self):
+            return self.a_job._run_id
+        return locals()
+    run_id = property(**run_id())
