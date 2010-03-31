@@ -146,7 +146,7 @@ class JobInterface(BaseroleInterface):
             if os.path.splitext(key)[-1] == '.'+ext:
                 f_dict[key] = self.attachments[key]
         if len(f_dict) == 1:
-            return f_dict.values()
+            return f_dict.values()[0]
         else:
             return f_dict
 
