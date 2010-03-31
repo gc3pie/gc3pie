@@ -421,9 +421,11 @@ class Gcli:
             return [0,status_list]
 
     def __gstat(self, unique_token):
-        if ( (os.path.exists(unique_token) == False ) | (os.path.isdir(unique_token) == False) | ( not check_inputfile(unique_token+'/'+self.defaults['lrms_jobid']) ) ):
-            logging.critical('Jobid Not valid')
-            raise Exception('invalid jobid')
+        if ( (os.path.exists(unique_token) == False ) \
+            | (os.path.isdir(unique_token) == False) \
+            | ( not check_inputfile(unique_token+'/'+self.defaults['lrms_jobid']) ) ):
+                logging.critical('Jobid Not valid')
+                raise Exception('invalid jobid')
 
         logging.info('lrms_jobid file check\t\t\t[ ok ]')
 
@@ -523,6 +525,29 @@ class Gcli:
 
         return
 
+    def gkill(self, unique_token):
+        """Kill a job, and optionally remove the local job directory."""
+        global default_joblist_location
+
+        if ( (os.path.exists(unique_token) == False ) \
+            | (os.path.isdir(unique_token) == False) \
+            | ( not check_inputfile(unique_token+'/'+self.defaults['lrms_jobid']) ) ):
+                logging.critical('Jobid Not valid')
+                raise Exception('invalid jobid')
+
+        try:
+
+            if os.path.exists(unique_token + "/.finished"):
+                logging.critical('Job ' + unique_token + ' is already finished.')
+            else:
+                (retval,lrms_log) = lrms.kill_job(unique_token,keeplocal)
+                logging.critical('Sent request to kill job ' + unique_token + '.  It may take a few moments for the job to finish.')
+
+        except Exception, e:
+            logging.critical('Failed to kill job: ' + unique_token)
+            raise e
+
+        return
         
 def main():
     global default_job_folder_location
@@ -605,7 +630,29 @@ def main():
             unique_token = args[0]
 
         elif ( os.path.basename(program_name) == "gkill" ):
-            logging.info('gkill is not implemented yet')
+            # Gkill
+
+            # Parse command line arguments
+            shortview = True
+
+            _usage = "%prog [options] unique_token"
+            parser = OptionParser(usage=_usage)
+            parser.add_option("-v", action="count", dest="verbosity", default=0, help="Set verbosity level")
+
+            (options, args) = parser.parse_args()
+
+            # Configure logging service
+            configure_logging(options.verbosity)
+
+            logging.debug('Command lines argument length: [ %d ]',len(args))
+
+            if len(args) != 1:
+                logging.critical('Command line argument parsing\t\t\t[ failed ]\n\tIncorrect number of arguments; expected 1, got %d ',len(args))
+                parser.print_help()
+                print 'Usage: ' + _usage
+                raise Exception('wrong number on arguments')
+
+            unique_token = args[0]
 
         elif ( os.path.basename(program_name) == "glist" ):
             # Glist
@@ -623,6 +670,7 @@ def main():
 
             # Configure logging service
             configure_logging(options.verbosity)
+
 
         else:
             # Error
