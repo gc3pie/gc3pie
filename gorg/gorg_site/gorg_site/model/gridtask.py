@@ -1,7 +1,7 @@
 from couchdb import schema as sch
 from couchdb.schema import  Schema
 from baserole import BaseroleModel
-from gridjob import GridjobModel
+from gridjob import GridjobModel, JobInterface
 from couchdb import client as client
 import time
 
@@ -26,7 +26,7 @@ def mapfun(doc):
         if doc['base_type'] == 'BaseroleModel':
             if doc['sub_type'] == 'GridtaskModel':
                 for job_id in doc['children']:
-                    yield job_id, doc['_id']
+                    yield job_id, doc
     '''
 
 oldddd = '''
@@ -50,63 +50,24 @@ class GridtaskModel(BaseroleModel):
     
     def __init__(self, *args):
         super(GridtaskModel, self).__init__(*args)
-        self._job_list = list()
-    
-    def commit_all(self, db):
-        self.commit(db)
-        for a_job in self._job_list:
-            a_job.commit(db)
-        
+
     def commit(self, db):
         self.store(db)
     
-    def add_child(self, child):
-        assert isinstance(child, GridjobModel),  'Tasks can not be chilren.'
-        if not child.id in self.children:
-                self.children.append(child.id)
-        self._job_list.append(child)
-    
-    def get_jobs(self):
-        return tuple(self._job_list)
-    
     def refresh(self, db):
         self = GridtaskModel.load(db, self.id)
-    
-    @staticmethod
-    def load_task(db, task_id):
-        a_task =GridtaskModel.load(db, task_id)
-        for job_id in a_task.children:
-            a_job=GridjobModel.load_job(db, job_id)
-            a_task._job_list.append(a_job)
-        return a_task
-
-    def get_status(self, db):
-        """Returns the overall status of this task."""
-        self.get_jobs(db)
-        for a_job in _job_list:            
-            status_list.append(a_job.get_status(db))
-        return tuple(status_list)
-    
-    def get_percent_done(self, db):
-        status_list=self.get_status(db)
-        num_done = 0
-        for a_status in status_list:
-            if a_status == 'DONE':
-                num_done +=1
-        # We treat a no status just like any other status value
-        return (num_done / len(status_list)) * 100
-    
+        
     def delete(self, db):
         pass
     
     @staticmethod
     def view_by_author(db, **options):
-        return GridtaskModel.my_view(db, 'by_author', **options)
-    
+        return GridtaskModel.my_view(db,  'by_author', **options)
+
     @staticmethod
     def view_by_children(db, **options):
         return GridtaskModel.my_view(db, 'by_children', **options)
-    
+
     @classmethod
     def my_view(cls, db, viewname, **options):
         from couchdb.design import ViewDefinition
@@ -129,3 +90,73 @@ class GridtaskModel(BaseroleModel):
             views=[by_task, by_author, by_children]
             ViewDefinition.sync_many( db,  views)
         return views
+    
+class TaskInterface(object):
+    def __init__(self, db):
+        self.db = db
+        self.a_task = None
+    
+    def create(self, author, title):
+        self.a_task = GridtaskModel().create(author, title)
+        self.a_task.commit(self.db)
+        return self
+    
+    def load(self, id):
+        self.a_task=GridtaskModel.load(self.db, id)
+    
+    def children():
+        def fget(self):
+            self.a_task.refresh(self.db)
+            job_list=list()
+            for job_id in self.a_task.children:
+                a_job = JobInterface(self.db).load(job_id)
+                job_list.append(a_job)
+            return tuple(job_list)
+        return locals()
+    children = property(**children())
+
+    def add_child(self, child):
+        child_job = child.a_job
+        assert isinstance(child_job, GridjobModel),  'Only jobs can be chilren.'
+        if child_job.id not in self.a_task.children:
+            self.a_task.children.append(child_job.id)
+        self.a_task.commit(self.db)
+
+    def status():
+        def fget(self):
+            self.a_task.refresh(self.db)
+            for job_id in self.a_task.children:
+                a_job = GridjobModel.load(self.db, job_id)
+                status_list.append(a_job.get_status())
+            return tuple(status_list)
+        return locals()
+    status = property(**status())
+    
+    def status_percent_done():
+        def fget(self):
+            status_list = self.status
+            num_done = 0
+            for a_status in status_list:
+                if a_status == 'DONE':
+                    num_done +=1
+            # We treat a no status just like any other status value
+            return (num_done / len(status_list)) * 100
+        return locals()
+    status_percent_done = property(**status_percent_done())
+    
+    def user_data_dict():        
+        def fget(self):
+            self.a_task.refresh(self.db)
+            return self.a_task.user_data_dict
+        def fset(self, user_dict):
+            self.a_task.user_data_dict = user_dict
+            self.a_task.commit(self.db)
+        return locals()
+    user_data_dict = property(**user_data_dict())
+    
+    def id():        
+        def fget(self):
+            return self.a_task.id
+        return locals()
+    id = property(**id())
+    
