@@ -143,7 +143,7 @@ class JobInterface(BaseroleInterface):
         import os
         f_dict = dict()
         for key in self.attachments:
-            if os.path.splitext(key)[-1] == '.'+ext:
+           if key.rfind(ext) >= 0:
                 f_dict[key] = self.attachments[key]
         if len(f_dict) == 1:
             return f_dict.values()[0]
