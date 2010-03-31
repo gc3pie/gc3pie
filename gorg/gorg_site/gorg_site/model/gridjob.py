@@ -141,9 +141,14 @@ class JobInterface(BaseroleInterface):
     
     def get_attachment(self, ext):
         import os
+        f_dict = dict()
         for key in self.attachments:
             if os.path.splitext(key)[-1] == '.'+ext:
-                return self.attachments[key]
+                f_dict[key] = self.attachments[key]
+        if len(f_dict) == 1:
+            return f_dict.values()
+        else:
+            return f_dict
 
     def attachments():
         def fget(self):

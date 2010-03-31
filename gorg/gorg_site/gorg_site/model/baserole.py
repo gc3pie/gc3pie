@@ -120,7 +120,7 @@ class BaseroleInterface(object):
     def add_child(self, child):
         from gridjob import GridjobModel
         child_job = child.controlled
-        assert isinstance(child_job, GridjobModel),  'Only jobs can be chilren.'
+        assert child_job.__class__.__name__ == 'GridjobModel',  'Only jobs can be chilren.'
         self.controlled.refresh(self.db)
         if child_job.id not in self.controlled.children:
             self.controlled.children.append(child_job.id)
@@ -128,10 +128,11 @@ class BaseroleInterface(object):
 
     def children():            
         def fget(self):
+            from gridjob import JobInterface
             self.controlled.refresh(self.db)
             job_list=list()
             for job_id in self.controlled.children:
-                a_job = GridjobModel.load(self.db, job_id)
+                a_job = JobInterface(self.db).load(job_id)
                 job_list.append(a_job)
             return tuple(job_list)
         return locals()
