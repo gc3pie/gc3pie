@@ -128,21 +128,25 @@ def check_inputfile(inputfile_fullpath):
         return True
     else:
         return False
-
+    
 def check_jobdir(jobdir):
     """
     Perform various checks on the jobdir.
     Right now we just make sure it exists.  In the future it could include checks for:
 
-    - are the files inside valid
-    - etc.
+     - are the files inside valid
+     - etc.
     """
 
-    if os.path.isdir(jobdir):
-        return True
-    else:
+    if not os.path.exists(jobdir):
+        logging.critical(jobdir + 'does not exist.')
         return False
 
+    if not os.path.isdir(jobdir):
+        logging.critical(jobdir + 'is not a directory.')
+        return False
+        
+    return True
 
 def configure_logging(verbosity):
     """Configure logging service."""
