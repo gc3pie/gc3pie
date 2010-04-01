@@ -9,9 +9,9 @@ from gc3utils.gcli import Gcli
 
 class GridjobScheduler(object):
     def __init__(self, db_name='gorg_site', db_url='http://127.0.0.1:5984', 
-                 glic_location='/home/mmonroe/.gc3/config'):
+                 gcli_location='/home/mmonroe/.gc3/config'):
         self.db=Mydb(db_name,db_url).cdb()
-        self.gcli = Gcli(glic_location)
+        self.gcli = Gcli(gcli_location)
         self.view_status_runs = GridrunModel.view_by_status(self.db)
     
     def handle_ready_jobs(self):

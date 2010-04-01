@@ -19,6 +19,7 @@ def main():
 
     a_task = TaskInterface(db)
     a_task = a_task.create('mark', 'hope')
+    a_task.user_data_dict['me']=12
     a_job = JobInterface(db)
     myfile =  open('/home/mmonroe/apps/ase-patched/exam01.inp', 'rb')
     a_job = a_job.create('mark', 'hope', myfile)

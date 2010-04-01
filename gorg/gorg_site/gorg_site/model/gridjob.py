@@ -49,6 +49,7 @@ class GridjobModel(BaseroleModel):
     def load_job(db, job_id):
         a_job = GridjobModel.load(db, job_id)
         view = GridrunModel.view_by_job(db, key=job_id)
+        assert len(view) == 1,  'Job %s does not have a run associated with it.'%(a_job.id)
         a_job._run_id = view.view.wrapper(view.rows[0]).id
         return a_job
     
@@ -107,7 +108,8 @@ class JobInterface(BaseroleInterface):
             from gridtask import GridtaskModel
             self.controlled.refresh(self.db)
             view = GridtaskModel.view_by_children(self.db)
-            a_task=view[self.controlled.id]
+            task_id = view[self.controlled.id].id
+            a_task=TaskInterface(self.db).load(task_id)
             return tuple(a_task)
         return locals()
     task = property(**task())
