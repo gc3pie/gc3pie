@@ -52,6 +52,55 @@ class Gcli:
             logging.critical('Failed init gcli')
             raise
 
+    def glist(self, shortview):
+        """List status of jobs."""
+        global default_joblist_location
+
+        try:
+
+            # print the header
+            if shortview == False:
+                # long view
+                print "%-100s %-20s %-10s" % ("[unique_token]","[name]","[status]")
+            else:
+                # short view
+                print "%-20s %-10s" % ("[name]","[status]")
+
+            # look in current directory for jobdirs
+            jobdirs = []
+            dirlist = os.listdir("./")
+            for dir in dirlist:
+                if os.path.isdir(dir) == True:
+                    if os.path.exists(dir + "/.lrms_jobid") and os.path.exists(dir + "/.lrms_log"):
+                        logging.debug(dir + "is a jobdir")
+                        jobdirs.append(dir)
+
+            # break down unique_token into vars
+            for dir in jobdirs:
+                unique_token = dir
+                name =  '-'.join( unique_token.split('-')[0:-3])
+                if os.path.exists(dir + "/.finished"):
+                    status = "FINISHED"
+                else:
+                    retval,job_status_list = self.gstat(unique_token)
+                    first = job_status_list[0]
+                    status = first[1].split(' ')[1]
+
+                if shortview == False:
+                    # long view
+                    print '%-100s %-20s %-10s' % (unique_token, name, status)
+                else:
+                    # short view
+                    print '%-20s %-10s' % (name, status)
+
+            logging.debug('Jobs listed.')
+
+        except Exception, e:
+            logging.critical('Failure in listing jobs')
+            raise e
+
+        return
+
     def __select_lrms(self,lrms_list):
         return 0
 
@@ -130,7 +179,7 @@ class Gcli:
 
                 if (lrms.isValid == 1):
                     try:
-                        if (lrms.check_authentication() == True):
+                        if (lrms.CheckAuthentication() == True):
                             _lrms_list.append(lrms)
                     except:
 # todo : make this a function
@@ -191,9 +240,9 @@ class Gcli:
             lrms_log = None
             lrms_jobid = None
 
-            # resource_name.submit_job(input, unique_token, application, lrms_log) -> returns [lrms_jobid,lrms_log]
+            # resource_name.SubmitJob(input, unique_token, application, lrms_log) -> returns [lrms_jobid,lrms_log]
             logging.debug('Submitting job with %s %s %s %s',unique_token, application_to_run, input_file, self.defaults['lrms_log'])
-            (lrms_jobid,lrms_log) = lrms.submit_job(unique_token, application_to_run, input_file)
+            (lrms_jobid,lrms_log) = lrms.SubmitJob(unique_token, application_to_run, input_file)
 
             logging.info('Submission process to LRMS backend\t\t\t[ ok ]')
 
@@ -254,26 +303,27 @@ class Gcli:
             if ( (not release_file_lock(joblist_lock)) & (os.path.isfile(joblist_lock)) ):
                 logging.error('Failed removing lock file')
 
-
+            """
             # database section
             # todo: right now the db doesn't do anything.  this can be improved later.
 
-#            dbfile_location = rcdir + "/" + application_to_run + ".db"
-#            logging.debug('dbfile_locatioon: ' + dbfile_location)
+            dbfile_location = rcdir + "/" + application_to_run + ".db"
+            logging.debug('dbfile_locatioon: ' + dbfile_location)
 
             # if database does not exist, create it 
-#            if not os.path.exists(dbfile_location):
-#                try:
+            if not os.path.exists(dbfile_location):
+                try:
                     # dbfile_location should be an absolute path including the db filename, e.g.:
                     # /home/alice/.gc3/gamess.db
                     #db = Database() 
                     #db.create_database(dbfile_location)
 
-#                    logging.debug(dbfile_location + ' did not exist.  Created it.')
+                    logging.debug(dbfile_location + ' did not exist.  Created it.')
 
-#                except:
-#                    raise 
-                
+                except:
+                    raise 
+            """             
+            
             logging.info('Dumping lrms log information\t\t\t[ ok ]')
 
             return [0,default_job_folder_location+'/'+unique_token]
@@ -320,7 +370,7 @@ class Gcli:
                     logging.error('Unknown resource type %s',resource['type'])
                     raise  Exception('unknown resource type')
 
-                if ( (lrms.isValid != 1) | (lrms.check_authentication() == False) ):
+                if ( (lrms.isValid != 1) | (lrms.CheckAuthentication() == False) ):
                     logging.error('Failed validating lrms instance for resource %s',resource['resource_name'])
                     raise Exception('failed authenticating to LRMS')
 
@@ -329,7 +379,7 @@ class Gcli:
                 logging.debug('_list_resource_info : ' + _list_resource_info[1])
                 
                 #_lrms_dirfolder = dirname(unique_token)
-                (retval,lrms_log) = lrms.get_results(_lrms_jobid,unique_token)
+                (retval,lrms_log) = lrms.GetResults(_lrms_jobid,unique_token)
 
                 # dump lrms_log
                 try:
@@ -345,7 +395,7 @@ class Gcli:
                     logging.error('Failed getting results')
                     raise Exception('failed getting results from LRMS')
                 
-                logging.debug('check_status\t\t\t[ ok ]')
+                logging.debug('CheckStatus\t\t\t[ ok ]')
 
                 # Job finished; results retrieved; writing .finished file
                 try:
@@ -400,7 +450,7 @@ class Gcli:
 
     def gstat(self, unique_token):
         global default_joblist_location
-
+    
         if ( unique_token != None):
             return [0,[self.__gstat(unique_token)]]
         else:
@@ -421,12 +471,19 @@ class Gcli:
             return [0,status_list]
 
     def __gstat(self, unique_token):
-        if ( (os.path.exists(unique_token) == False ) \
-            | (os.path.isdir(unique_token) == False) \
-            | ( not check_inputfile(unique_token+'/'+self.defaults['lrms_jobid']) ) ):
-                logging.critical('Jobid Not valid')
-                raise Exception('invalid jobid')
-
+        
+        print 'wow'
+                
+        # Perform checks on the unique_token directory.
+        if not check_jobdir(unique_token):
+            raise Exception('invalid jobid')
+        
+        # Perform checks on the lrms_jobid file
+        _file = unique_token+'/'+self.defaults['lrms_jobid']
+        if not check_inputfile(_file):
+            logging.critical('check_inputfile failed for ' + _file )
+            raise Exception('check_inputfile failed for ' + _file )
+            
         logging.info('lrms_jobid file check\t\t\t[ ok ]')
 
         # check finished file
@@ -453,7 +510,7 @@ class Gcli:
                     raise Exception('unknown resource type')
 
                 # check authentication
-                if ( (lrms.isValid != 1) | (lrms.check_authentication() == False) ):
+                if ( (lrms.isValid != 1) | (lrms.CheckAuthentication() == False) ):
                     logging.error('Failed validating lrms instance for resource %s',resource['resource_name'])
                     raise Exception('failed authenticating to LRMS')
 
@@ -462,7 +519,7 @@ class Gcli:
                 _lrms_dirfolder = dirname(unique_token)
 
                 # check job status
-                (retval,lrms_log) = lrms.check_status(_lrms_jobid)
+                (retval,lrms_log) = lrms.CheckStatus(_lrms_jobid)
 
                 logging.info('check status\t\t\t[ ok ]')
             else:
@@ -476,71 +533,28 @@ class Gcli:
 
         return [unique_token,retval]
 
-    def glist(self, shortview):
-        """List status of jobs."""
-        global default_joblist_location
-
-        try:
-
-            # print the header
-            if shortview == False:
-                # long view
-                print "%-100s %-20s %-10s" % ("[unique_token]","[name]","[status]")
-            else:
-                # short view
-                print "%-20s %-10s" % ("[name]","[status]")
-
-            # look in current directory for jobdirs
-            jobdirs = []
-            dirlist = os.listdir("./")
-            for dir in dirlist:
-                if os.path.isdir(dir) == True:
-                    if os.path.exists(dir + "/.lrms_jobid") and os.path.exists(dir + "/.lrms_log"):
-                        logging.debug(dir + "is a jobdir")
-                        jobdirs.append(dir)
-
-            # break down unique_token into vars
-            for dir in jobdirs:
-                unique_token = dir
-                name =  '-'.join( unique_token.split('-')[0:-3])
-                if os.path.exists(dir + "/.finished"):
-                    status = "FINISHED"
-                else:
-                    retval,job_status_list = self.gstat(unique_token)
-                    first = job_status_list[0]
-                    status = first[1].split(' ')[1]
-
-                if shortview == False:
-                    # long view
-                    print '%-100s %-20s %-10s' % (unique_token, name, status)
-                else:
-                    # short view
-                    print '%-20s %-10s' % (name, status)
-
-            logging.debug('Jobs listed.')
-
-        except Exception, e:
-            logging.critical('Failure in listing jobs')
-            raise e
-
-        return
 
     def gkill(self, unique_token):
         """Kill a job, and optionally remove the local job directory."""
         global default_joblist_location
-
-        if ( (os.path.exists(unique_token) == False ) \
-            | (os.path.isdir(unique_token) == False) \
-            | ( not check_inputfile(unique_token+'/'+self.defaults['lrms_jobid']) ) ):
-                logging.critical('Jobid Not valid')
-                raise Exception('invalid jobid')
+                
+        if not check_jobdir(unique_token):
+            raise Exception('invalid jobid')
+        
+        if ( resource['type'] == "arc" ):
+            lrms = ArcLrms(resource)
+        elif ( resource['type'] == "ssh"):
+            lrms = SshLrms(resource)
+        else:
+            logging.error('Unknown resource type %s',resource['type'])
+            
 
         try:
-
+           
             if os.path.exists(unique_token + "/.finished"):
                 logging.critical('Job ' + unique_token + ' is already finished.')
             else:
-                (retval,lrms_log) = lrms.kill_job(unique_token,keeplocal)
+                (retval,lrms_log) = lrms.KillJob(unique_token,keeplocal)
                 logging.critical('Sent request to kill job ' + unique_token + '.  It may take a few moments for the job to finish.')
 
         except Exception, e:
@@ -721,11 +735,12 @@ def main():
                 sys.stdout.flush
             else:
                 raise Exception("glist terminated")
+
     except:
         logging.info('%s',sys.exc_info()[1])
         # think of a better error message
         # Should intercept the exception somehow and generate error message accordingly ?
-        print "gsub failed: "+str(sys.exc_info()[1])
+        print "gcli failed: "+str(sys.exc_info()[1])
         return 1
                 
 if __name__ == "__main__":

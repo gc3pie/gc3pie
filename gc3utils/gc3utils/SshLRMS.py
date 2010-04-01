@@ -40,7 +40,7 @@ class SshLrms(LRMS):
 
     """Here are the common functions needed in every Resource Class."""
     
-    def check_authentication(self):
+    def CheckAuthentication(self):
         """
         Make sure ssh to server works.
         We assume the user has already set up passwordless ssh access to the resource. 
@@ -48,25 +48,25 @@ class SshLrms(LRMS):
 
         ssh, sftp = self.connect_ssh(self.resource['frontend'])
         _command = "uname -a"
-        logging.debug('check_authentication command: ' + _command)
+        logging.debug('CheckAuthentication command: ' + _command)
 
         try:
             stdin, stdout, stderr = ssh.exec_command(_command)
             out = stdout.read()
             err = stderr.read()
-            logging.debug('check_authentication command stdout: ' + out)
-            logging.debug('check_authentication command stderr: ' + err)
+            logging.debug('CheckAuthentication command stdout: ' + out)
+            logging.debug('CheckAuthentication command stderr: ' + err)
             ssh.close()
 
         except:
             ssh.close()
             raise
-            logging.critical('check_authentication failed')
+            logging.critical('CheckAuthentication failed')
             return False
 
         return True
 
-    def submit_job(self, unique_token, application, input_file):
+    def SubmitJob(self, unique_token, application, input_file):
         """
         Submit a job.
 
@@ -145,7 +145,7 @@ class SshLrms(LRMS):
         return (lrms_jobid,out)
 
 
-    def check_status(self, lrms_jobid):
+    def CheckStatus(self, lrms_jobid):
         """Check status of a job."""
 
         try:
@@ -159,8 +159,8 @@ class SshLrms(LRMS):
             out = stdout.read()
             err = stderr.read()
             
-            logging.debug('check_status command stdout:' + out)
-            logging.debug('check_status command stderr:' + err)
+            logging.debug('CheckStatus command stdout:' + out)
+            logging.debug('CheckStatus command stderr:' + err)
 
             # todo : this test could be much better; fix if statement between possible qstat outputs
 
@@ -180,7 +180,7 @@ class SshLrms(LRMS):
         ssh.close()
         return (jobstatus,err)
 
-    def get_results(self,lrms_jobid,unique_token):
+    def GetResults(self,lrms_jobid,unique_token):
         """Retrieve results of a job."""
 
         # todo: - parse settings to figure out what output files should be copied back (assume gamess for now)
@@ -331,7 +331,7 @@ class SshLrms(LRMS):
             for dir in jobdirs:
                 unique_token = dir
                 name =  '-'.join( _unique_token.split('-')[0:-3])
-                status = check_status(unique_toke)
+                status = CheckStatus(unique_toke)
 
                 if shortview == False:
                     # long view
@@ -350,11 +350,11 @@ class SshLrms(LRMS):
         return 
             
 
-    def kill_job(self, unique_token):
+    def KillJob(self, unique_token):
         """Kill job."""
 
         try:
-
+            print "wow"
             lrms_jobid = get_lrms_jobid(unique_token)
             ssh, sftp = self.connect_ssh(self.resource['frontend'])
 
@@ -405,3 +405,6 @@ class SshLrms(LRMS):
             raise
 
 
+    def GetResourceStatus(self):
+            logging.debug("Returning information of local resoruce")
+            return Resource(resource_name=self.resource['resource_name'],total_cores=self.resource['ncores'],memory_per_core=self.resource['memory_per_core'])

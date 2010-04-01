@@ -46,7 +46,7 @@ class ArcLrms(LRMS):
 
             logging.debug('Init resource %s with %d cores, %d walltime, %d memory',self.resource['resource_name'],self.resource['ncores'],self.resource['walltime'],self.resource['memory_per_core'])
 
-    def check_authentication(self):
+    def CheckAuthentication(self):
         try:
             logging.debug('Checking voms-proxy status')
             retval = commands.getstatusoutput(self.VOMSPROXYINFO)
@@ -110,17 +110,17 @@ class ArcLrms(LRMS):
 #                    logging.critical("Initializing voms-proxy\t\t[ failed]\n\t%s",retval[1])
 #                    return False
                 logging.info('Initializing voms-proxy\t\t[ ok ]')
-            logging.info('check_authentication\t\t\t\t[ ok ]')
+            logging.info('CheckAuthentication\t\t\t\t[ ok ]')
 
             # disposing content of passord variable
             input_passwd = None
 
             return True
         except:
-            raise Exception('failed in check_authentication')
+            raise Exception('failed in CheckAuthentication')
 
 
-    def submit_job(self, unique_token, application, input_file):
+    def SubmitJob(self, unique_token, application, input_file):
         try:
             # Initialize xrsl from template
             self.GAMESS_XRSL_TEMPLATE = os.path.expandvars(self.GAMESS_XRSL_TEMPLATE)
@@ -212,7 +212,7 @@ class ArcLrms(LRMS):
             logging.critical('Failure in submitting')
             raise
 
-    def check_status(self, lrms_jobid):
+    def CheckStatus(self, lrms_jobid):
 #        submitted_list = ['ACCEPTING','SUBMITTING','PREPARING']
         running_list = ['INLRMS:Q','INLRMS:R','EXECUTED', 'ACCEPTING','SUBMITTING','PREPARING']
         finished_list = ['FINISHED', 'FAILED']
@@ -269,7 +269,7 @@ class ArcLrms(LRMS):
             logging.critical('Failure in checking status')
             raise
 
-    def get_results(self,lrms_jobid,job_dir):
+    def GetResults(self,lrms_jobid,job_dir):
         try:
             result_location_pattern="Results stored at "
             
@@ -298,7 +298,7 @@ class ArcLrms(LRMS):
                         logging.info('Copying results\t\t[ ok ]')
                         logging.debug('Removing [ %s ]',_result_location_folder)
                         shutil.rmtree(_result_location_folder)
-                logging.info('get_results\t\t\t[ ok ]')
+                logging.info('GetResults\t\t\t[ ok ]')
                 return [True,retval[1]]
             else:
                 return [False,retval[1]]
