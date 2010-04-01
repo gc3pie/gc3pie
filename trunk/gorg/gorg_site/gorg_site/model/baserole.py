@@ -125,7 +125,9 @@ class ObservableDict( object ):
         result = self.a_dict.__delitem__(key)
         self.interface.controlled.commit(self.interface.db)
         return result
-        
+    def __getitem__(self, key):
+        return self.a_dict.__getitem__(key)
+
 class BaseroleInterface(object):
     def __init__(self, db):
         self.db = db

@@ -20,6 +20,7 @@ def main():
     a_task = TaskInterface(db)
     a_task = a_task.create('mark', 'hope')
     a_task.user_data_dict['me']=12
+    a_task.user_data_dict['me']
     myfile =  open('/home/mmonroe/apps/ase-patched/exam01.inp', 'rb')
     for i in range(5):
         a_job = JobInterface(db)
