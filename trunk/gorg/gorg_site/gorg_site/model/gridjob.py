@@ -30,6 +30,14 @@ def mapfun(doc):
                     yield job_id, doc
     '''
 
+map_func_task_author_status = '''
+def mapfun(doc):
+    if 'base_type' in doc:
+        if doc['base_type'] == 'BaseroleModel':
+            if doc['sub_type'] == 'GridtaskModel':
+                yield doc['author'], {'_id':doc['children']}
+    '''
+
 class GridjobModel(BaseroleModel):
     SUB_TYPE = 'GridjobModel'
     VIEW_PREFIX = 'GridjobModel'
@@ -60,6 +68,16 @@ class GridjobModel(BaseroleModel):
     @staticmethod
     def view_by_children(db, **options):
         return GridjobModel.my_view(db, 'by_children', **options)
+    
+    @staticmethod
+    def view_by_author_status(db, **options):
+        options['include_docs']=True
+        return GridjobModel.my_view(db, 'by_author_status', **options)
+
+    @staticmethod
+    def view_by_task_author_status(db, **options):
+        options['include_docs']=True
+        return GridjobModel.my_view(db, 'by_task_author_status', **options)
 
     @classmethod
     def my_view(cls, db, viewname, **options):
@@ -74,13 +92,17 @@ class GridjobModel(BaseroleModel):
     def sync_views(cls, db,  only_names=False):
         from couchdb.design import ViewDefinition
         if only_names:
-            viewnames=('by_job', 'by_author', 'by_children')
+            viewnames=('by_job', 'by_author', 'by_children', 'by_author_status', 'by_task_author_status')
             return viewnames
         else:
             by_job = ViewDefinition(cls.VIEW_PREFIX, 'by_job', map_func_job, wrapper=cls, language='python')
             by_author = ViewDefinition(cls.VIEW_PREFIX, 'by_author', map_func_author, wrapper=cls, language='python')
             by_children = ViewDefinition(cls.VIEW_PREFIX, 'by_children', map_func_children, wrapper=None, language='python')
-            views=[by_job, by_author, by_children]
+            by_author_status = ViewDefinition(cls.VIEW_PREFIX, 'by_author_status', map_func_task_author_status, wrapper=cls,\
+                                             language='python') 
+            by_task_author_status = ViewDefinition(cls.VIEW_PREFIX, 'by_task_author_status', map_func_task_author_status, \
+                                                  wrapper=cls, language='python')
+            views=[by_job, by_author, by_children, by_author_status, by_task_author_status]
             ViewDefinition.sync_many( db,  views)
         return views
     

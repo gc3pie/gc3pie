@@ -2,6 +2,7 @@ from couchdb import schema as sch
 from couchdb.schema import  Schema
 from baserole import BaseroleModel, BaseroleInterface
 from gridjob import GridjobModel, JobInterface
+from gridrun import GridrunModel
 from couchdb import client as client
 import time
 
@@ -20,6 +21,15 @@ def mapfun(doc):
             if doc['sub_type'] == 'GridtaskModel':
                 yield doc['author'],doc
     '''
+
+#reduce_func_author_status ='''
+#def reducefun(keys, values, rereduce):
+#    status_list = list()
+#    for a_job in values['doc']:
+#        status_list = a_job['status']
+#    return status_list
+#    '''    
+
 map_func_children = '''
 def mapfun(doc):
     if 'base_type' in doc:
@@ -102,25 +112,45 @@ class TaskInterface(BaseroleInterface):
         self.controlled=GridtaskModel.load(self.db, id)
         return self
 
+    def _status(self):
+        status_list = list()
+        self.controlled.refresh(self.db)
+        view = GridrunModel.view_by_job_status(self.db, keys = self.controlled.children)
+        for a_row in view.rows:
+            status_list.append(a_row.value)
+        return tuple(status_list)
+    
     def status():
         def fget(self):
-            self.controlled.refresh(self.db)
-            for job_id in self.controlled.children:
-                a_job = GridjobModel.load(self.db, job_id)
-                status_list.append(a_job.get_status())
-            return tuple(status_list)
+            status_list = self._status()
+            status_dict = dict()
+            for a_status in GridrunModel.POSSIBLE_STATUS:
+                status_dict[a_status]  = 0
+            for a_status in status_list:
+                status_dict[a_status] += 1
+            return status_dict
         return locals()
     status = property(**status())
-    
+
+    def status_overall():
+        def fget(self):
+            status_dict = self.status
+            job_count = sum(status_dict.values())
+            for a_status in status_dict:
+                if status_dict[a_status] == job_count:
+                    return a_status
+            if status_dict[GridrunModel.POSSIBLE_STATUS['ERROR']] != 0:
+                return GridrunModel.POSSIBLE_STATUS['ERROR']
+            else:
+                return GridrunModel.POSSIBLE_STATUS['RUNNING']
+        return locals()
+    status_overall = property(**status_overall())
+
     def status_percent_done():
         def fget(self):
-            status_list = self.status
-            num_done = 0
-            for a_status in status_list:
-                if a_status == 'DONE':
-                    num_done +=1
+            status_dict = self._status()
             # We treat a no status just like any other status value
-            return (num_done / len(status_list)) * 100
+            return (tatus_dict['DONE'] / len(status_dict)) * 100
         return locals()
     status_percent_done = property(**status_percent_done())
     

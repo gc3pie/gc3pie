@@ -5,7 +5,8 @@ from pylons.controllers.util import abort, redirect_to
 
 from gorg_site.lib.base import BaseController, render
 from gorg_site.model.gridjob import GridjobModel
-from gorg_site.model.gridtask import GridtaskModel
+from gorg_site.model.gridrun import GridrunModel
+from gorg_site.model.gridtask import GridtaskModel, TaskInterface
 import webhelpers.paginate as paginate
 
 from gorg_site.lib.mydb import Mydb
@@ -29,16 +30,15 @@ class GridtaskController(BaseController):
         # Here we query the database and get the number of records for that
         # author in the given state
         counts = dict()
-        for a_status in GridtaskModel().POSSIBLE_STATUS:
-            view = GridtaskModel().view(db, 'by_author_task_status')
-            # When a status does not match, a None is returned.
-            # We therefore have to convert the None into a 0
-            a_row = view[[author, a_status]].rows
-            if a_row:
-                counts[a_status] = view[[author,   a_status]].rows[0]['value']
-            else:
-                counts[a_status] = 0
-        c.author_job_status_counts = counts
+        view = GridtaskModel.view_by_author(db, key = author)
+        task_interface = TaskInterface(db)
+        status_dict = dict()
+        for a_status in GridrunModel().POSSIBLE_STATUS:
+            status_dict[a_status]=0
+        for a_task in view:
+            task_interface.task = a_task
+            status_dict[task_interface.status_overall] +=1
+        c.author_job_status_counts = status_dict
         if c.author_job_status_counts is None:
             abort(404)            
         return render('/derived/user_task_overview.html')
@@ -52,10 +52,13 @@ class GridtaskController(BaseController):
         c.heading = 'Sample Page'
         c.content = "This is page %s"%author
         db=Mydb().cdb()
-        view = GridtaskModel().view(db, 'by_status', key=status)
+        view = GridtaskModel.view_by_author(db, key = author)
         records = list()
         for a_task in view:
-            records.append(a_task)
+            task_interface = TaskInterface(db)
+            task_interface.task=a_task
+            if task_interface.status_overall == status:
+                records.append(task_interface)
         c.paginator = paginate.Page(
             records,
             page=int(request.params.get('page', 1)),
@@ -73,8 +76,8 @@ class GridtaskController(BaseController):
         c.heading = 'Sample Page'
         c.content = "This is page."
         db=Mydb().cdb()
-        c.a_task = GridtaskModel().load(db,id)
-        records = c.a_task.get_jobs(db)
+        c.a_task = TaskInterface(db).load(id)
+        records = c.a_task.children
         c.paginator = paginate.Page(
             records,
             page=int(request.params.get('page', 1)),

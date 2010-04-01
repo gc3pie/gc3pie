@@ -6,7 +6,8 @@ from gorg_site.lib.base import BaseController, render
 import webhelpers.paginate as paginate
 from pylons.decorators import jsonify
 import os
-from gorg_site.model.gridjob import GridjobModel
+from gorg_site.model.gridrun import GridrunModel
+from gorg_site.model.gridjob import GridjobModel, JobInterface
 from gorg_site.lib.mydb import Mydb
 
 log = logging.getLogger(__name__)
@@ -29,8 +30,8 @@ class GridjobController(BaseController):
         # Here we query the database and get the number of records for that
         # author in the given state
         counts = dict()
-        for a_status in GridjobModel().POSSIBLE_STATUS:
-            view = GridjobModel().view(db, 'by_author_job_status')
+        for a_status in GridrunModel().POSSIBLE_STATUS:
+            view = GridrunModel.view_author_status(db)
             # When a status does not match, a None is returned.
             # We therefore have to convert the None into a 0
             a_row = view[[author, a_status]].rows
@@ -52,7 +53,7 @@ class GridjobController(BaseController):
         c.heading = 'Sample Page'
         c.content = "This is page %s"%author
         db=Mydb().cdb()
-        view = GridjobModel().view(db, 'by_status', key=status)
+        view = GridjobModel.view_by_author_status(db, key=(author, status))
         records = list()
         for a_job in view:
             records.append(a_job)
@@ -73,7 +74,7 @@ class GridjobController(BaseController):
         c.heading = 'Sample Page'
         c.content = "This is page."
         db=Mydb().cdb()
-        a_job = GridjobModel().load(db,id)
+        a_job = JobInterface(db).load(id)
         c.a_job = a_job
         return render('/derived/view_job.html')
 
@@ -83,9 +84,9 @@ class GridjobController(BaseController):
             abort(404)
         attachment = request.GET['attachment']
         db=Mydb().cdb()
-        a_job = GridjobModel().load(db,id)
+        a_job = JobInterface(db).load(id)
         response.content_type = 'text/plain'
-        return a_job.get_attachment(db, attachment)
+        return a_job.get_attachment(attachment)
 
 #--------------------------- below not using now
     def submit_form(self):

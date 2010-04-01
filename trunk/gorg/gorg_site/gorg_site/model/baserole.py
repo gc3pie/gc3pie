@@ -191,3 +191,30 @@ class BaseroleInterface(object):
             return self.controlled.id
         return locals()
     id = property(**id())
+    
+    def title():        
+        def fget(self):
+            return self.controlled.title
+        def fset(self, title):
+            self.controlled.title = title
+            self.controlled.commit(db)
+        return locals()
+    title = property(**title())
+    
+    def author():
+        def fget(self):
+            return self.controlled.author
+        def fset(self, author):
+            self.controlled.author = author
+            self.controlled.commit(db)
+        return locals()
+    author= property(**author())
+    
+    def dat():
+        def fget(self):
+            return self.controlled.dat
+        def fset(self, dat):
+            self.controlled.author = dat
+            self.controlled.commit(db)
+        return locals()
+    dat= property(**dat())
