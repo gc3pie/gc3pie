@@ -25,6 +25,13 @@ def mapfun(doc):
             for owner in doc['owned_by']:
                 yield owner, doc
     '''
+map_func_by_job_status = '''
+def mapfun(doc):
+    if 'base_type' in doc:
+        if doc['base_type'] == 'GridrunModel':
+            for owner in doc['owned_by']:
+                yield owner, doc['status']
+    '''
 
 map_func_by_status = '''
 def mapfun(doc):
@@ -39,14 +46,14 @@ def mapfun(doc):
         if doc['base_type'] == 'GridrunModel':
             yield doc['files_to_run'].values(), doc
     '''
-    
-map_func_author_run_status = '''
+
+map_func_author_status = '''
 def mapfun(doc):
     if 'base_type' in doc:
         if doc['base_type'] == 'GridrunModel':
             yield (doc['author'], doc['status']), 1
     '''
-reduce_func_author_job_status ='''
+reduce_func_author_status ='''
 def reducefun(keys, values, rereduce):
     return sum(values)
     '''
@@ -55,7 +62,7 @@ class GridrunModel(sch.Document):
     POSSIBLE_STATUS = dict(HOLD='HOLD', READY='READY', WAITING='WAITING',RUNNING='RUNNING', 
                                            RETRIEVING='RETRIEVING',FINISHED='FINISHED', DONE='DONE',
                                             ERROR='ERROR')
-    VIEW_PREFIX = 'gridrun'
+    VIEW_PREFIX = 'GridrunModel'
     SUB_TYPE = 'GridrunModel'
     
     # Attributes to store in the database
@@ -196,8 +203,13 @@ class GridrunModel(sch.Document):
         return GridrunModel.my_view(db, 'all', **options)
     
     @staticmethod
-    def view_author_job_status_count(db, **options):
-        return GridrunModel.my_view(db,'by_author_job_status',group=True)
+    def view_author_status(db, **options):
+        options['group']=True
+        return GridrunModel.my_view(db,'by_author_status', **options)
+    
+    @staticmethod
+    def view_by_job_status(db, **options):
+        return GridrunModel.my_view(db,'by_job_status', **options)
 
     @classmethod
     def my_view(cls, db, viewname, **options):
@@ -212,19 +224,22 @@ class GridrunModel(sch.Document):
     def sync_views(cls, db,  only_names=False):
         from couchdb.design import ViewDefinition
         if only_names:
-            viewnames=('all', 'by_author', 'by_author_job_status', 'by_hash', 'by_job', 'by_status')
+            viewnames=('all', 'by_author', 'by_author_status', 'by_hash', 'by_job', 'by_status', 'by_job_status')
             return viewnames
         else:
             all = ViewDefinition(cls.VIEW_PREFIX, 'all', map_func_all, wrapper=cls, language='python')
             by_author = ViewDefinition(cls.VIEW_PREFIX, 'by_author', map_func_author, wrapper=cls, language='python')
-            by_author_job_status = ViewDefinition(cls.VIEW_PREFIX, 'by_author_job_status', map_func_author_run_status, \
-                                                  reduce_fun=reduce_func_author_job_status, language='python')
+            by_author_status = ViewDefinition(cls.VIEW_PREFIX, 'by_author_status', map_func_author_status, wrapper=cls, \
+                                                  reduce_fun=reduce_func_author_status, language='python')
             by_hash = ViewDefinition(cls.VIEW_PREFIX, 'by_hash', map_func_hash, wrapper=cls, language='python')
             by_job = ViewDefinition(cls.VIEW_PREFIX, 'by_job', map_func_by_job, \
                                              wrapper=cls, language='python') 
             by_status = ViewDefinition(cls.VIEW_PREFIX, 'by_status', map_func_by_status, \
                                              wrapper=cls, language='python') 
-            views=[all, by_author, by_author_job_status, by_hash, by_job, by_status]
+            by_job_status = ViewDefinition(cls.VIEW_PREFIX, 'by_job_status', map_func_by_job_status, \
+                                             language='python') 
+
+            views=[all, by_author, by_author_status, by_hash, by_job, by_status, by_job_status]
             ViewDefinition.sync_many( db,  views)
         return views
     

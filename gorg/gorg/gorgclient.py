@@ -20,14 +20,19 @@ def main():
     a_task = TaskInterface(db)
     a_task = a_task.create('mark', 'hope')
     a_task.user_data_dict['me']=12
-    a_job = JobInterface(db)
     myfile =  open('/home/mmonroe/apps/ase-patched/exam01.inp', 'rb')
-    a_job = a_job.create('mark', 'hope', myfile)
-    myfile.seek(0)
+    for i in range(5):
+        a_job = JobInterface(db)
+        a_job = a_job.create('mark', 'hope', myfile)
+        myfile.seek(0)
+        a_task.add_child(a_job)
+    a_task.status_overall
     a_job.run
     parent = JobInterface(db)
     parent = parent.create('mark', 'hope', myfile)
     parent.add_child(a_job)
+    
+    view = GridtaskModel.view_by_author(db)
     
     me = JobInterface(db)
     me = JobInterface(db).load(a_job.id)
