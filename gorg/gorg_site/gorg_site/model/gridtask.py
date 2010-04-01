@@ -136,6 +136,8 @@ class TaskInterface(BaseroleInterface):
         def fget(self):
             status_dict = self.status
             job_count = sum(status_dict.values())
+            if job_count == 0:
+                return GridrunModel.POSSIBLE_STATUS['HOLD']
             for a_status in status_dict:
                 if status_dict[a_status] == job_count:
                     return a_status
