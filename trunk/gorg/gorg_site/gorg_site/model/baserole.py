@@ -109,6 +109,23 @@ class BaseroleModel(sch.Document):
             ViewDefinition.sync_many( db,  views)
         return views
 
+class ObservableDict( object ):
+    def __init__( self, interface, a_dict ):
+        self.interface=interface
+        self.a_dict = a_dict
+    def __setitem__( self, key, value ):
+        self.a_dict[key]=value
+        self.interface.controlled.user_data_dict[key]=value
+        self.interface.controlled.commit(self.interface.db)
+    def __repr__(self):
+        return self.a_dict.__repr__()
+    def __str__(self):
+        return self.a_dict.__str__()
+    def __delitem__(self, key):
+        result = self.a_dict.__delitem__(key)
+        self.interface.controlled.commit(self.interface.db)
+        return result
+        
 class BaseroleInterface(object):
     def __init__(self, db):
         self.db = db
@@ -117,10 +134,15 @@ class BaseroleInterface(object):
     def create(self):
         assert False, 'Must implement me.'
     
+    def __repr__(self):
+        return self.controlled.__repr__()
+    def __str__(self):
+        return self.controlled.__str__()
+    
     def add_child(self, child):
         from gridjob import GridjobModel
         child_job = child.controlled
-        assert child_job.__class__.__name__ == 'GridjobModel',  'Only jobs can be chilren.'
+        assert isinstance(child_job, GridjobModel),'Only jobs can be chilren.'
         self.controlled.refresh(self.db)
         if child_job.id not in self.controlled.children:
             self.controlled.children.append(child_job.id)
@@ -139,9 +161,14 @@ class BaseroleInterface(object):
     children = property(**children())
 
     def user_data_dict():        
+#TODO: Not sure how to handle the dictionaries. When a user changes the dict
+# we will only know to update the database if we put something in the __setitem__
+# dict function. But that might get wierd if the user uses the dict for something else,
+# and forgets that everything that goes into the dict is sent to the database.
         def fget(self):
             self.controlled.refresh(self.db)
-            return self.controlled.user_data_dict
+            obs_dict = ObservableDict(self, self.controlled.user_data_dict)
+            return obs_dict
         def fset(self, user_dict):
             self.controlled.user_data_dict = user_dict
             self.controlled.commit(self.db)
@@ -151,7 +178,8 @@ class BaseroleInterface(object):
     def result_data_dict():        
         def fget(self):
             self.controlled.refresh(self.db)
-            return self.controlled.result_data_dict
+            obs_dict = ObservableDict(self, self.controlled.result_data_dict)
+            return obs_dict
         def fset(self, result_dict):
             self.controlled.result_data_dict = result_dict
             self.controlled.commit(self.db)

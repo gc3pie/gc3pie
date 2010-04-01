@@ -194,6 +194,10 @@ class GridrunModel(sch.Document):
     @staticmethod
     def view_all(db, **options):
         return GridrunModel.my_view(db, 'all', **options)
+    
+    @staticmethod
+    def view_author_job_status_count(db, **options):
+        return GridrunModel.my_view(db,'by_author_job_status',group=True)
 
     @classmethod
     def my_view(cls, db, viewname, **options):
@@ -214,7 +218,7 @@ class GridrunModel(sch.Document):
             all = ViewDefinition(cls.VIEW_PREFIX, 'all', map_func_all, wrapper=cls, language='python')
             by_author = ViewDefinition(cls.VIEW_PREFIX, 'by_author', map_func_author, wrapper=cls, language='python')
             by_author_job_status = ViewDefinition(cls.VIEW_PREFIX, 'by_author_job_status', map_func_author_run_status, \
-                                                  reduce_fun=reduce_func_author_job_status, wrapper=cls, language='python')
+                                                  reduce_fun=reduce_func_author_job_status, language='python')
             by_hash = ViewDefinition(cls.VIEW_PREFIX, 'by_hash', map_func_hash, wrapper=cls, language='python')
             by_job = ViewDefinition(cls.VIEW_PREFIX, 'by_job', map_func_by_job, \
                                              wrapper=cls, language='python') 
