@@ -6,6 +6,7 @@ Created on Dec 28, 2009
 
 from gfunction import GFunction, run_function
 from optparse import OptionParser
+import logging
 import os
 import copy
 import sys
@@ -77,7 +78,7 @@ if __name__ == '__main__':
     #Setup logger
     LOGGING_LEVELS = (logging.CRITICAL, logging.ERROR, 
                                     logging.WARNING, logging.INFO, logging.DEBUG)
-    logging_level = len(LOGGING_LEVELS) if len(self.options.verbose) > len(LOGGING_LEVELS) else len(self.options.verbose)
+    logging_level = len(LOGGING_LEVELS) if len(options.verbose) > len(LOGGING_LEVELS) else len(options.verbose)
 
     #Parse all the parameters to keep track of the file names
     (filepath, filename) = os.path.split(options.file)
@@ -88,7 +89,7 @@ if __name__ == '__main__':
     db=Mydb(options.db_name,options.db_loc).cdb()
     
     # Parse the gamess inp file
-    myfile = open(self.options.file, 'rb')
+    myfile = open(options.file, 'rb')
     reader = ReadGamessInp(myfile)
     myfile.close()
     params = reader.params
