@@ -57,7 +57,7 @@ class GHessian(GFunction):
         for a_result in result_list:
             grad = a_result.get_forces()
             for j in range(0, len(grad)):
-                gradMat[count]=grad[j][1]
+                gradMat[count]=grad[j]
                 count +=1
         mat = self.calculateNumericalHessian(num_atoms, gradMat)
         postprocess_result = mat/self.GRADIENT_CONVERSION
