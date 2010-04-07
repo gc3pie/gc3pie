@@ -19,22 +19,23 @@ class GFunction(object):
     TASK_FILE_PREFIX = 'task_'
     myChannel = None
     
-    def __init__(self, options):
-        self.options = options
+    def __init__(self, db, calculator, logging_level=1):
+        self.logging_level = logging_level
         self.logger = self._create_logger()
-        self.db= Mydb(self.options.db_name,self.options.db_loc).cdb()
+        self.db = db
+        self.calculator = calculator
     
-    def preprocess(self):
+    def preprocess(self, atoms,  params):
         pass
     
-    def process_loop(self, a_task, calculator):
+    def process_loop(self, a_task):
         pass
 
-    def calculate(self, to_execute, calculator):
+    def execute_run(self, to_execute):
         sys.path.append('/home/mmonroe/apps/gorg')
         from gorg.gridjobscheduler import GridjobScheduler
         job_scheduler = GridjobScheduler()
-        result_list = calculator.calculate(to_execute)
+        result_list = self.calculator.calculate(to_execute)
         for a_result in result_list:
             self.logger.info('Submited job %s to batch system.'%(a_result.a_job.id))
         for a_result in result_list:
@@ -56,25 +57,21 @@ class GFunction(object):
     def postprocess(self, result_list):
         return result_list
         
-    def run(self, myChannel=None):
+    def run(self, atoms,  params, myChannel=None):
         if myChannel:
             self.myChannel = myChannel
-        a_task, calculator = self.preprocess()
+        a_task = self.preprocess(atoms,  params)
         done = False
         while not done:
-            done, result_list = self.process_loop(a_task, calculator)
+            done, result_list = self.process_loop(a_task)
         postprocess_result = self.postprocess(result_list)
         return postprocess_result
     
     def _create_logger(self):
         import logging
         import logging.handlers
+        logger.setLevel(self.logging_level)
         logger = logging.getLogger("restart_main")
-        #Setup logger
-        LOGGING_LEVELS = (logging.CRITICAL, logging.ERROR, 
-                                        logging.WARNING, logging.INFO, logging.DEBUG)
-        level = len(LOGGING_LEVELS) if len(self.options.verbose) > len(LOGGING_LEVELS) else len(self.options.verbose)
-        logger.setLevel(level)    
         file_handler = logging.handlers.RotatingFileHandler(
                   self.LOG_FILENAME, maxBytes=100000, backupCount=5)
         formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
@@ -82,12 +79,12 @@ class GFunction(object):
         logger.addHandler(file_handler)
         return logger
     
-def run_function(gfunction):
+def run_function(gfunction, atoms, params):
     if DEBUG_DO_NOT_USE_STACKLESS or not stackless_present:
-        gfunction.run()
+        gfunction.run(atoms,  params)
     else:
         myChannel = stackless.channel()
-        t1 = stackless.tasklet(gfunction.run)(options, myChannel)
+        t1 = stackless.tasklet(gfunction.run)(atoms, params, myChannel)
         t1.run()
         output = open('%s/%s'%(options.directory,'task_%s.pkl'%gfunction.task_id), 'wb')
         cPickle.dump(myChannel, output)
