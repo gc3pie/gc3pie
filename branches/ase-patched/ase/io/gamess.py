@@ -82,12 +82,16 @@ class WriteGamessInp:
         maxCol = 1000
         outRow = 1
         outCol = 1
+        if mat.__class__.__name__ == 'ndarray':
+            format = '%15.8E'
+        else:
+            format = '%15s'
         for row in mat:
             split_rows=tuple(MyUtilities.split_seq(row, numCol))
             for row_to_print in split_rows:
                 output = '\n%2s%3s'% (outRow, outCol % maxCol)
                 file_like.write(output)
-                output=''.join('%15s'%i for i in row_to_print)
+                output=''.join(format%i for i in row_to_print)
                 file_like.write(output)
                 outCol += 1;                 
             outRow = (outRow + 1) % maxRow
