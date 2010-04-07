@@ -823,3 +823,25 @@ class MyUtilities(object):
                 prev_isdigit = curr_isdigit
         _append(current_fragment)    
         return tuple(index)
+class tuct(dict):
+    '''A tuctionary, or tuct, is the combination of a tuple with
+    a dictionary. A tuct has named items, but they cannot be
+    deleted or rebound, nor new can be added. New key/value
+    paris can be added like this:
+    
+    tuct_store=tuct(test=1)
+    tuct_store['test']=90 # will not work
+    tuct_store.update(test=90) # updates test key to 90
+    tuct_store.setdefualt(newkey,100) # creates newkey and sets it to 100
+    tuct_store.update(anotherkey=90) # creates anotherkey and sets it to 90
+    '''
+    
+    def __setitem__(self, key, value):
+        print 'This is a tuct, not a dictionary.'
+
+    def __hash__(self):
+        items = self.items()
+        res = hash(items[0])
+        for item in items[1:]:
+            res ^= hash(item)
+        return res
