@@ -8,14 +8,12 @@ except:
 import cPickle
 from time import sleep
 import sys
-sys.path.append('/home/mmonroe/apps/gorg')
-from gorg_site.gorg_site.lib.mydb import Mydb
 DEBUG_DO_NOT_USE_STACKLESS=True
 
 class GFunction(object):
     LOG_FILENAME = '/tmp/python_scheduler_logger.out'
     # Time to sleep between polling job status
-    SLEEP_TIME = 1
+    SLEEP_TIME = .0001
     TASK_FILE_PREFIX = 'task_'
     myChannel = None
     
@@ -70,8 +68,8 @@ class GFunction(object):
     def _create_logger(self):
         import logging
         import logging.handlers
-        logger.setLevel(self.logging_level)
         logger = logging.getLogger("restart_main")
+        logger.setLevel(self.logging_level)
         file_handler = logging.handlers.RotatingFileHandler(
                   self.LOG_FILENAME, maxBytes=100000, backupCount=5)
         formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
@@ -79,7 +77,7 @@ class GFunction(object):
         logger.addHandler(file_handler)
         return logger
     
-def run_function(gfunction, atoms, params):
+def run_function(atoms, params, gfunction):
     if DEBUG_DO_NOT_USE_STACKLESS or not stackless_present:
         gfunction.run(atoms,  params)
     else:

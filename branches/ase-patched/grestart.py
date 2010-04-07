@@ -12,13 +12,15 @@ import sys
 
 from ase.io.gamess import ReadGamessInp
 from ase.calculators.gamess import GamessGridCalc
+sys.path.append('/home/mmonroe/apps/gorg')
+from gorg_site.gorg_site.lib.mydb import Mydb
 
 class GRestart(GFunction):
 
     def preprocess(self, atoms, params):
         from gorg_site.gorg_site.model.gridtask import TaskInterface
 
-        a_task = TaskInterface(self.db).create('mark', 'a_Task_title')
+        a_task = TaskInterface(self.db).create(self.calculator.author, 'GRestart')
         a_task.user_data_dict['restart_number'] = 0
         params.title = 'restart_number_%d'%a_task.user_data_dict['restart_number']
         a_job = self.calculator.generate(atoms, params, a_task)
@@ -26,7 +28,7 @@ class GRestart(GFunction):
 
     def process_loop(self, a_task):
         done = False
-        result_list = self.execute_run(a_task.children[-1], calculator)
+        result_list = self.execute_run(a_task.children[-1])
         a_result = result_list[-1]
         params = copy.deepcopy(a_result.params)
         atoms = copy.deepcopy(a_result.atoms)
@@ -46,7 +48,7 @@ class GRestart(GFunction):
                 done = True
                 self.logger.info('Restart sequence task id %s has finished successfully.'%(a_task.id))
         else:
-            msg = 'GAMESS returned an error while running file %s.'%(a_result.j_job.id)
+            msg = 'GAMESS returned an error while running job %s.'%(a_result.a_job.id)
             self.logger.critical(msg)
             raise Exception, msg
         return (done, result_list)
@@ -94,4 +96,5 @@ if __name__ == '__main__':
     
     gamess_calc = GamessGridCalc('mark', db)
     grestart = GRestart(db, gamess_calc, logging_level)
-    run_function(grestart)
+    run_function(atoms, params, grestart)
+    sys.exit()
