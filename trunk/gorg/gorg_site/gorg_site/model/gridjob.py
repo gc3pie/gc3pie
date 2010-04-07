@@ -29,6 +29,13 @@ def mapfun(doc):
                 for job_id in doc['children']:
                     yield job_id, doc
     '''
+map_func_author_status = '''
+def mapfun(doc):
+    if 'base_type' in doc:
+        if doc['base_type'] == 'GridrunModel':
+            for job_id in doc['owned_by']:
+                yield (doc['author'], doc['status']), {'_id':job_id}
+    '''
 
 map_func_task_author_status = '''
 def mapfun(doc):
@@ -98,7 +105,7 @@ class GridjobModel(BaseroleModel):
             by_job = ViewDefinition(cls.VIEW_PREFIX, 'by_job', map_func_job, wrapper=cls, language='python')
             by_author = ViewDefinition(cls.VIEW_PREFIX, 'by_author', map_func_author, wrapper=cls, language='python')
             by_children = ViewDefinition(cls.VIEW_PREFIX, 'by_children', map_func_children, wrapper=None, language='python')
-            by_author_status = ViewDefinition(cls.VIEW_PREFIX, 'by_author_status', map_func_task_author_status, wrapper=cls,\
+            by_author_status = ViewDefinition(cls.VIEW_PREFIX, 'by_author_status', map_func_author_status, wrapper=cls,\
                                              language='python') 
             by_task_author_status = ViewDefinition(cls.VIEW_PREFIX, 'by_task_author_status', map_func_task_author_status, \
                                                   wrapper=cls, language='python')
