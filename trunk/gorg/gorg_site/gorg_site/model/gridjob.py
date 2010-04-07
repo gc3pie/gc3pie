@@ -127,12 +127,12 @@ class JobInterface(BaseroleInterface):
     
     def task():
         def fget(self):
-            from gridtask import GridtaskModel
+            from gridtask import GridtaskModel, TaskInterface
             self.controlled.refresh(self.db)
             view = GridtaskModel.view_by_children(self.db)
-            task_id = view[self.controlled.id].id
+            task_id = view[self.controlled.id].rows[0].id
             a_task=TaskInterface(self.db).load(task_id)
-            return tuple(a_task)
+            return a_task
         return locals()
     task = property(**task())
 
