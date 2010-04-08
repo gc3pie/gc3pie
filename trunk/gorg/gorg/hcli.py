@@ -9,10 +9,12 @@ from utils import *
 import sys
 import os
 import logging
+import logging.handlers
 import ConfigParser
 from optparse import OptionParser
 from ArcLRMS import *
 from SshLRMS import *
+from ase-patched import *
 
 homedir = os.path.expandvars('$HOME')
 rcdir = homedir + "/.gc3"
@@ -30,7 +32,7 @@ class Hcli:
 
     def __init__(self, config_file_location):
         try:
-# probably don't need this stuff
+            # probably don't need this stuff
             # read configuration file
             """
             _local_resource_list = {}
@@ -77,50 +79,41 @@ class Hcli:
     
  
     def ParseOptions(self,program_name,args):
-        """Parse our general command line options."""
+        """
+        Parse our general command line options.
+    
+         * Takes as input a program name and the command line arguments.
+         * Returns: dictionary of options (options), list of remaining arguments (args)
+     
+        """
         
         _usage = "Usage: %prog [options] jobid"
         
         parser = OptionParser(usage=_usage)
+        
+        # todo : remove dummy options
+
+        # common options 
         parser.add_option("-v", action="count", dest="verbosity", default=0, help="Set verbosity level")
-        (options, args) = parser.parse_args()
-
-        # todo : change these options to real ones
-
-        # general options 
-        parser.add_option("-e","--example", action="store", dest="mpi_path", default=None, help="example")
-        parser.add_option("-d","--dummy", action="store", dest="mpi_path", default=None, help="dummy")
+        parser.add_option("-e","--example", action="store", dest="example", default=None, help="example")
+        parser.add_option("-w","--woo", action="store", dest="woo", default=None, help="dummy")
+        parser.add_option("-d", "--dir", dest="directory",default='~/tasks', help="Directory to save tasks in.")
+        parser.add_option("-f", "--file", dest="file",default='exam01.inp', help="Gamess inp to restart from.")
+        parser.add_option("-n", "--db_name", dest="db_name", default='gorg_site', help="Database name.")
+        parser.add_option("-l", "--db_loc", dest="db_loc", default='http://127.0.0.1:5984', help="Database URI.")
 
         # handle tasktype-specific options
         if tasktype == 'hessian':
-            parser.add_option("-f","--foo", action="store", dest="mpi_path", default=None, help="example")
+            parser.add_option("-x","--xoo", action="store", dest="xoo", default=None, help="example")
         elif tasktype == 'singlejob':
-            parser.add_option("-g","--goo", action="store", dest="mpi_path", default=None, help="example")
+            parser.add_option("-y","--yoo", action="store", dest="yoo", default=None, help="example")
         elif tasktype == 'continue':
-            parser.add_option("-h","--hoo", action="store", dest="mpi_path", default=None, help="example")
-
+            parser.add_option("-z","--zoo", action="store", dest="zoo", default=None, help="example")
       
         (options, args) = parser.parse_args()
 
         return options, args
-
-            
-        return options
-        
-        
-            
-        
-    def ParseOptions(sefl,tasktype):
-        """Parse our command line options."""
-
-
     
-    def ConfigureLogging(self, verbosity):
-        """Set up the logging system."""
-    
-        configure_logging(verbosity)
-        
-        return
     
     def SetupDatabase(self):
         """Initialize the database.  
@@ -178,22 +171,32 @@ def main():
         CheckInputFile(inputfile)
         
         
-    
+        db=Mydb(options.db_name,options.db_loc).cdb()
+
         
         # Call a different method depending on the type of task we want to create.
         if tasktype == 'hessian':
             try:
-                task = HessTask()
+                # task = HessTask()
+                gamess_calc = GamessGridCalc('mark', db)
+                ghess = GHessian(db, gamess_calc, logging_level)
+                ghess.run(atoms, params)
             except:
                 raise     
-        elif tasktype == 'singlejob':
+        elif tasktype == 'single':
             try:
-                task = SinglejobTask()
+                #task = SinglejobTask()
+                gamess_calc = GamessGridCalc('mark', db)
+                gsingle = GSingle(db, gamess_calc, logging_level)
+                gsingle.run(atoms, params)                
             except:
                 raise
-        elif tasktype == 'continue':
+        elif tasktype == 'restart':
             try:
-                task = ContinueTask()
+                #task = ContinueTask()
+                gamess_calc = GamessGridCalc('mark', db)
+                grestart = GRestart(db, gamess_calc, logging_level)
+                grestart.run(atoms, params)
             except:
                 raise
         else:
@@ -202,7 +205,7 @@ def main():
 
         hcli = Hcli(default_config_file_location)
         
-        logging.error("your task id is" + task.id)
+        logger.error("your task id is" + task.id)
         
 
     except:
