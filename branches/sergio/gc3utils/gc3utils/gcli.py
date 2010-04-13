@@ -13,7 +13,7 @@ import ConfigParser
 from optparse import OptionParser
 from ArcLRMS import *
 from SshLRMS import *
-#from Database import Database
+import Scheduler
 
 homedir = os.path.expandvars('$HOME')
 rcdir = homedir + "/.gc3"
@@ -25,10 +25,90 @@ default_wait_time = 3
 
 class Gcli:
 
-    resource_list = {}
+    SMSCG_AUTHENTICATION = 1
+    SSH_AUTHENTICATION = 2
+
+#    resource_list = {}
     defaults = {}
 
+    def __init__(self, defaults, resource_list):
+        try:
+            if ( len(resource_list) == 0 ):
+                raise Exception('could not read any valid resource configuration from config file')
+            self._resources = resource_list
+            self._defaults = defaults
+        except:
+            raise
 
+    def check_authentication(self,authentication_type):
+
+        if (authentication_type is Gcli.SMSCG_AUTHENTICATION):
+            # Check grid access
+            try:
+                logging.debug('check_authentication for SMSCG')
+                if ( (not utils.check_grid_authentication()) | (not utils.check_user_certificate()) ):
+                    logging.error('grid credential expired')
+                    return False
+                return True
+            except:
+                return False
+
+        if (authentication_type is Gcli.SSH_AUTHENTICATION):
+            # Check ssh access
+            try:
+                logging.debug('check_authentication for SSH')
+                if (not utils.check_ssh_authentication()):
+                    logging.error('ssh-agent not active')
+                    return False
+                return True
+            except:
+                return False
+
+        logging.error("Unknown requested authentication type [%d]",authentication_type)
+        raise Exception('Unknown requested authentication type')
+
+
+    def enable_authentication(self,authentication_type):
+
+        if (authentication_type is Gcli.SMSCG_AUTHENTICATION):
+            # Getting AAI username
+            #        _aaiUserName = None
+            try:
+                _aaiUserName = None
+                
+                self.AAI_CREDENTIAL_REPO = os.path.expandvars(self.AAI_CREDENTIAL_REPO)
+                logging.debug('checking AAI credential file [ %s ]',self.AAI_CREDENTIAL_REPO)
+                if ( os.path.exists(self.AAI_CREDENTIAL_REPO) & os.path.isfile(self.AAI_CREDENTIAL_REPO) ):
+                    logging.debug('Opening AAI credential file in %s',self.AAI_CREDENTIAL_REPO)
+                    _fileHandle = open(self.AAI_CREDENTIAL_REPO,'r')
+                    _aaiUserName = _fileHandle.read()
+                    _aaiUserName = _aaiUserName.rstrip("\n")
+                    logging.debug('_aaiUserName: %s',_aaiUserName)
+                utils.renew_grid_credential(_aaiUserName)
+            except:
+                logging.critical('Failed renewing grid credential [%s]',sys.exc_info()[1])
+                return False
+            return True
+        if (authentication_type is Gcli.SSH_AUTHENTICATION):
+            return True
+
+
+
+
+
+
+
+
+
+
+
+
+#    def checkGridCredential(self):
+#        if (not checkGridAccess()):
+#            if ( self.defaults['email_contact'] != "" ):
+#                logging.debug('Sending notification email to [ %s ]',self.defaults['email_contact'])
+#                send_email(self.defaults['email_contact'],"info@gc3.uzh.ch","GC3 Warning: Renew Grid credential","Please renew your credential")
+                
     def __init__(self, config_file_location):
         try:
             # read configuration file
@@ -51,6 +131,8 @@ class Gcli:
             raise
 
     def glist(self, resource_name):
+        # Returns an instance of object Resource containing a dictionary of Resource informations
+        # Throw an Exception in case the method cannot be completed or the Resource object cannot be built
         try:
             if resource_name is None:
                 # for time being we raise an exception with no implemented
@@ -71,10 +153,12 @@ class Gcli:
                 lrms = SshLrms(resource_description)
             else:
                 logging.error('Unknown resource type %s',resource_description['type'])
+                raise Exception('Unknown resource type')
 
             return [0,lrms.GetResourceStatus()]
             
         except:
+            logging.debug('glist failed due to exception')
             raise
 
     def checkGridCredential(self):
@@ -116,35 +200,96 @@ class Gcli:
             logging.critical('Failed renewing grid credential [%s]',sys.exc_info()[1])
             return False
 
-    def __select_lrms(self,lrms_list):
-        return 0
+    def __select_lrms(self,lrms_list,application):
+        # start candidate_resource loop
+        for lrms in lrms_list:
+            
+            if (application.cores > lrms.max_cores_per_job) | (application.memory > lrms.max_memory_per_core) | (application.walltime > lrms.max_walltime) :
+                continue
+            else:
+                return lrms
+        raise Exception('Failed finding lrms that could fullfill the application requirements')
 
-    def gsub(self, application_to_run, input_file, selected_resource, job_local_dir, cores, memory, walltime):
+
+    def gsub(self,application_obj):
+        
+        # def gsub(self, application_to_run, input_file, selected_resource, job_local_dir, cores, memory, walltime):
+        # returns an object of type Job
+        # throw an exception if the method fails or if the Job object cannot be built successfully
+        
         global default_job_folder_location
         global default_joblist_location
         global default_joblist_lock
-
+        
         try:
-            # Checking whether it has been passed a valid application
-            if ( application_to_run != "gamess" ) & ( application_to_run != "apbs" ):
-                logging.critical('Application argument\t\t\t[ failed ]\n\tUnknown application: '+application_to_run)
-                raise Exception('invalid application argument')
-
-            # Check input file
-            if ( not check_inputfile(input_file) ):
-                logging.critical('Input file argument\t\t\t[ failed ]'+input_file)
+            # Parsing passed arguments
+            if (not check_inputfile(application_obj.input_file_name)):
+                logging.critical('Input file argument\t\t\t[ failed ]'+application_obj.input_file_name)
                 raise Exception('invalid input-file argument')
-
-            if ( job_local_dir != None ):
-                if ( os.path.isdir(job_local_dir) ):
-                    logging.debug('setting job_local_dir to [ %s ]',job_local_dir)
-                    default_job_folder_location = job_local_dir
-
+            
+            logging.debug('checked inputfile')
+            logging.debug('input_file: %s',application_obj.input_file)
+            logging.debug('application tag: %s',application_obj.application_tag)
+            logging.debug('application arguments: %s',application_obj.application_arguments)
+            logging.debug('default_job_folder_location: %s',self._defaults.job_folder_location)
+            logging.debug('requested cores: %s',str(application_obj.requested_cores))
+            logging.debug('requested memory: %s GB',str(application_obj.requested_memory))
+            logging.debug('requested walltime: %s hours',str(application_obj.requested_walltime))
             logging.info('Parsing arguments\t\t[ ok ]')
 
-            logging.debug('submitting request with %s cores, %sGB memory and %s hours walltime',cores,memory,walltime)
-
+            # At this point self._resources contains either a list or a single LRMS reference 
             # Initialize LRMSs
+
+            _lrms_list = []
+
+            for _single_resource in self._resources:
+                logging.debug('Creating instance of type %s for %s',_single_resource.type,_single_resource.frontend)
+                try:
+                    if _single_resource.type is self.ARC_LRMS:
+                        _lrms_list.append(ArcLrms(_single_resource))
+                    elif _single_resource.type is self.SGE_LRMS:
+                        _lrms_list.append(SshLrms(_single_resource))
+                    else:
+                        logging.error('Unknown resource type %s',_single_resource.type)
+                        continue
+                except:
+                    logging.error('Exception creating LRMS instance')
+                    continue
+
+            # Do we need this check ?
+            if ( len(_lrms_list) == 0 ):
+                logging.critical('Could not initialize ANY lrms resource')
+                raise Exception('no available LRMS found')
+
+            logging.debug('Performing brokering')
+            # decide which resource to use
+            # (Job) = (Scheduler).PerformBrokering((Resource)[],(Application))
+            _selected_lrms = Scheduler.PerformBrokering(_lrms_list,application_obj)
+            logging.debug('Selected LRMS: %s',_selected_lrms.resource.frontend)
+            logging.info('Select LRMS\t\t\t\t\t[ ok ]')
+
+            # This method also takes care of crating the unique_token's folder
+            unique_token = __create_job_unique_token(application_obj.inputfile,_selected_lrms.resource_name)
+
+            # resource_name.submit_job(input, unique_token, application, lrms_log) -> returns [lrms_jobid,lrms_log]
+            logging.debug('Submitting job with %s %s %s %s',unique_token, application_to_run, input_file, self.defaults['lrms_log'])
+            try:
+                job_obj = _selected_lrms.submit_job(application_obj)
+                job_obj.update(unique_token=unique_token)
+                logging.info('Submission process to LRMS backend\t\t\t[ ok ]')
+            except:
+                logging.critical('Failed Submitting job: %s',sys.exc_info()[1])
+                raise
+
+            self.__log_job(job_obj)
+
+            # dumping lrms_jobid
+            # not catching the exception as this is suppoed to be a fatal failure;
+            # thus propagated to gsub's main try
+            _fileHandle = open(default_job_folder_location+'/'+unique_token+'/'+self.defaults['lrms_jobid'],'w')
+            _fileHandle.write(lrms.resource['resource_name']+'\t'+lrms_jobid)
+            _fileHandle.close()            
+
             _lrms_list = []
 
             if ( selected_resource != None ):
@@ -212,13 +357,11 @@ class Gcli:
 
             logging.info('Init pool of LRMS resources \t\t\t[ ok ]')
 
-            # check that qgms is a good version
-            minimum_version = 0.1
-            if ( not check_qgms_version(minimum_version) ):
-                logging.warning('Application version mismatch')
-
             # decide which resource to use
             # select_lrms returns an index
+            # new proptotype will be:
+            # (Job) = (Scheduler).PerformBrokering((Resource)[],(Application))
+            # _selected_lrms = scheduler.PerformBrokering(resource_list,application)
             _selected_lrms = self.__select_lrms(_lrms_list)
 
             logging.debug('Selected LRMS: %s',_selected_lrms)
@@ -317,28 +460,9 @@ class Gcli:
             if ( (not release_file_lock(joblist_lock)) & (os.path.isfile(joblist_lock)) ):
                 logging.error('Failed removing lock file')
 
-
-            # database section
-            # todo: right now the db doesn't do anything.  this can be improved later.
-
-#            dbfile_location = rcdir + "/" + application_to_run + ".db"
-#            logging.debug('dbfile_locatioon: ' + dbfile_location)
-
-            # if database does not exist, create it 
-#            if not os.path.exists(dbfile_location):
-#                try:
-                    # dbfile_location should be an absolute path including the db filename, e.g.:
-                    # /home/alice/.gc3/gamess.db
-                    #db = Database() 
-                    #db.create_database(dbfile_location)
-
-#                    logging.debug(dbfile_location + ' did not exist.  Created it.')
-
-#                except:
-#                    raise 
-                
             logging.info('Dumping lrms log information\t\t\t[ ok ]')
 
+            # In second release it will return an object of type Job which will contains also the unique_token
             return [0,default_job_folder_location+'/'+unique_token]
 
         except:
@@ -536,7 +660,42 @@ class Gcli:
         logging.debug('Returning [ %s ] [ %s ]',unique_token,retval)
 
         return [unique_token,retval]
-        
+
+
+    # Internal functions
+    def __create_job_unique_token(self,input_file_name,resource_name):
+        try:
+            # create_unique_token
+            unique_token = create_unique_token(input_file,resource_name)
+            
+            logging.debug('Generate Unique token: %s',unique_token)
+            logging.info('Generate Unique token\t\t\t[ ok ]')
+            
+            # creating folder for job's session
+            job_folder_location = os.path.expandvars(self._defaults.job_folder_location)
+            
+            logging.debug('creating folder for job session: %s/%s',self._defaults.job_folder_location,unique_token)
+            os.mkdir(self._defaults.job_folder_location+'/'+unique_token)
+            
+            logging.info('Create job folder\t\t\t[ ok ]')
+            return self._defaults.job_folder_location+'/'+unique_token
+        except:
+            logging.error('Failed creating job unique_token')
+            raise
+
+
+    def __log_job(job_obj):
+        # dumping lrms_jobid
+        # not catching the exception as this is suppoed to be a fatal failure;
+        # thus propagated to gsub's main try
+        _fileHandle = open(unique_token+'/'+self._defaults.lrms_jobid,'w')
+        _fileHandle.write(lrms.resource['resource_name']+'\t'+lrms_jobid)
+        _fileHandle.close()
+
+
+
+
+
 def main():
     global default_job_folder_location
     global default_joblist_location
@@ -669,9 +828,10 @@ def main():
 
         # grid-credential-renew
         if ( os.path.basename(program_name) == "grid-credential-renew" ):
-            exitcode = ArcLrms.renewGridCredential(_aai_username)
-            if (exitcode):
-                raise Exception("failed renewing credential")
+		if ( not gcli.checkGridAccess() ):
+            	   exitcode = ArcLrms.renewGridCredential(None)
+                   if (exitcode):
+                       raise Exception("failed renewing credential")
 
 
         # For All other commands, it is required to have a valid grid credential when dealing with ARC resources

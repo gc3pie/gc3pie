@@ -12,6 +12,7 @@ import shutil
 import getpass
 import smtplib
 import subprocess
+import Resource
 from email.mime.text import MIMEText
 sys.path.append('/opt/nordugrid/lib/python2.3/site-packages')
 import warnings
@@ -294,16 +295,16 @@ def send_email(_to,_from,_subject,_msg):
     except:
         logging.error('Failed sending email [ %s ]',sys.exc_info()[1])
 
-def CheckGridAuthentication():
+def check_grid_authentication():
     try:
         c = Certificate(PROXY)
         if ( c.IsExpired() ):
-            return False
+            raise
         return True
     except:
         return False
 
-def checkUserCertificate():
+def check_user_certificate():
     try:
         c = Certificate(USERCERT)
         if ( c.IsExpired() ):
@@ -312,7 +313,7 @@ def checkUserCertificate():
     except:
         return False
 
-def RenewGridCredential(_aaiUserName):
+def renew_grid_credential(_aaiUserName):
     VOMSPROXYINIT = ['voms-proxy-init','-valid','24:00','-voms','smscg','-q','-pwstdin']
     SLCSINFO = "openssl x509 -noout -checkend 3600 -in ~/.globus/usercert.pem"
     SLCSINIT = "slcs-init --idp uzh.ch"
