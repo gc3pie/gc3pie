@@ -69,7 +69,6 @@ class Gcli:
 
 
     def enable_authentication(self,authentication_type):
-
         if (authentication_type is Gcli.SMSCG_AUTHENTICATION):
             # Getting AAI username
             #        _aaiUserName = None
