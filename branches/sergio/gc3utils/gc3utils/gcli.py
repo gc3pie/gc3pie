@@ -716,7 +716,7 @@ def main():
 
         try:
             for resource in resources_list:
-                if (not options.resource_name) & (not options.resource_name is resource['resource_name']):
+                if (options.resource_name) & (not options.resource_name is resource['resource_name']):
                     logging.debug('Rejecting resource because of not matching with %s',options.resource_name)
                     continue
                 logging.debug('creating instance of Resource object... ')
