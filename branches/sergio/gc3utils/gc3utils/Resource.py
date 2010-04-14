@@ -1,5 +1,5 @@
 import types
-import InformationContainer
+from InformationContainer import *
 
 # -----------------------------------------------------
 # Resource
