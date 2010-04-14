@@ -127,6 +127,10 @@ class ObservableDict( object ):
         return result
     def __getitem__(self, key):
         return self.a_dict.__getitem__(key)
+    def update(self, a_dict):
+        result = self.a_dict.update(a_dict)
+        self.interface.controlled.commit(self.interface.db)
+        return result
 
 class BaseroleInterface(object):
     def __init__(self, db):
@@ -216,7 +220,53 @@ class BaseroleInterface(object):
         def fget(self):
             return self.controlled.dat
         def fset(self, dat):
-            self.controlled.author = dat
+            self.controlled.dat = dat
             self.controlled.commit(db)
         return locals()
     dat= property(**dat())
+    
+    def get_attachment(self, ext):
+        import os
+        f_dict = dict()
+        for key in self.attachments:
+           if key.rfind(ext) >= 0:
+                f_dict[key] = self.attachments[key]
+        assert len(f_dict) <= 1,  'More that one file matches your attachment request.'
+        if len(f_dict) == 1:
+            return f_dict.values()[0]
+        elif len(f_dict) > 1:
+            return f_dict
+
+    def attachments():
+        def fget(self):
+            return self._attachments_to_files()
+        return locals()
+    attachments = property(**attachments())
+    
+    def _get_attachment(self, filename, when_not_found=None):
+        return self.db.get_attachment(self.controlled, filename, when_not_found)
+    
+    def put_attachment(self, content, filename, content_type='text/plain'):
+        content.seek(0)
+        self.db.put_attachment(self.controlled, content, filename, content_type)
+        self.controlled = self.controlled.refresh(self.db)
+
+    def delete_attachment(self, filename):
+        return self.db.delete_attachment(self.controlled, filename)
+    
+    def _attachments_to_files(self, f_names=[]):
+        '''We often want to save all of the attachments on the local computer.'''
+        import tempfile
+        temp_file = tempfile.NamedTemporaryFile()
+        temp_file.close()
+        f_attachments = dict()
+        if not f_names and '_attachments' in self.controlled:
+            f_names = self.controlled['_attachments']
+        # Loop through each attachment and save it
+        for attachment in f_names:
+            attached_data = self._get_attachment(attachment)
+            myfile = open( '%s.%s'%(temp_file.name, attachment), 'wb')
+            myfile.write(attached_data)
+            myfile.close()
+            f_attachments[attachment]=open(myfile.name, 'rb') 
+        return f_attachments

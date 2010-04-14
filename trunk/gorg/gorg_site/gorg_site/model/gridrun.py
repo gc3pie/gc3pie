@@ -169,13 +169,13 @@ class GridrunModel(sch.Document):
     def delete_attachment(self, db, filename):
         return db.delete_attachment(self, filename)
     
-    def attachments_to_files(self, db, f_names=None):
+    def attachments_to_files(self, db, f_names=[]):
         '''We often want to save all of the attachments on the local computer.'''
         import tempfile
         temp_file = tempfile.NamedTemporaryFile()
         temp_file.close()
         f_attachments = dict()
-        if f_names is None:
+        if not f_names and '_attachments' in self:
             f_names = self['_attachments']
         # Loop through each attachment and save it
         for attachment in f_names:

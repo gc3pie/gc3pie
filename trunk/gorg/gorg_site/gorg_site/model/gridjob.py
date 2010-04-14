@@ -49,6 +49,7 @@ class GridjobModel(BaseroleModel):
     SUB_TYPE = 'GridjobModel'
     VIEW_PREFIX = 'GridjobModel'
     sub_type = sch.TextField(default=SUB_TYPE)    
+    parser_name = sch.TextField()
     
     def __init__(self, *args):
         super(GridjobModel, self).__init__(*args)
@@ -58,7 +59,8 @@ class GridjobModel(BaseroleModel):
         self.store(db)
     
     def refresh(self, db):
-        self = GridjobModel.load(db, self.id)
+        self = GridjobModel.load_job(db, self.id)
+        return self
     
     @staticmethod
     def load_job(db, job_id):
@@ -115,13 +117,14 @@ class GridjobModel(BaseroleModel):
     
 class JobInterface(BaseroleInterface):
     
-    def create(self, author, title,  files_to_run, application_to_run='gamess', 
+    def create(self, title,  parser_name, files_to_run, application_to_run='gamess', 
                         selected_resource='ocikbpra',  cores=2, memory=1, walltime=-1):
-        self.controlled = GridjobModel().create(author, title)
+        self.controlled = GridjobModel().create(self.db.username, title)
         a_run = GridrunModel()
         a_run = a_run.create( self.db, files_to_run, self.controlled, application_to_run, 
                         selected_resource,  cores, memory, walltime)
         self.controlled._run_id = a_run.id
+        self.parser = parser_name
         self.controlled.commit(self.db)
         return self
     
@@ -169,21 +172,33 @@ class JobInterface(BaseroleInterface):
             a_run.commit(self.db)
         return locals()
     status = property(**status())
-    
-    def get_attachment(self, ext):
-        import os
-        f_dict = dict()
-        for key in self.attachments:
-           if key.rfind(ext) >= 0:
-                f_dict[key] = self.attachments[key]
-        if len(f_dict) == 1:
-            return f_dict.values()[0]
+
+    def wait(self, target_status=GridrunModel.POSSIBLE_STATUS['DONE'], timeout=60, check_freq=10):
+        from time import sleep
+        if timeout == 'INFINITE':
+            timeout = sys.maxint
+        if check_freq > timeout:
+            check_freq = timeout
+        starting_time = time.time()
+        while True:
+            my_status = self.status
+            assert my_status != GridrunModel.POSSIBLE_STATUS['ERROR'], 'Job %s returned an error.'%self.id
+            if starting_time + timeout < time.time() or my_status == target_status:
+                break
+            else:
+                time.sleep(check_freq)
+        if my_status == target_status:
+            # We did not timeout 
+            return True
         else:
-            return f_dict
+            # Timed or errored out
+            return False
 
     def attachments():
         def fget(self):
-            return self.run.attachments_to_files(self.db)
+            f_dict = super(JobInterface, self).attachments
+            f_dict.update(self.run.attachments_to_files(self.db))
+            return f_dict
         return locals()
     attachments = property(**attachments())
 
@@ -193,6 +208,12 @@ class JobInterface(BaseroleInterface):
         return locals()
     run_id = property(**run_id())
     
+    def run_params():        
+        def fget(self):
+            return self.run.run_params
+        return locals()
+    run_params = property(**run_params())
+    
     def job():        
         def fget(self):
             return self.controlled
@@ -200,3 +221,29 @@ class JobInterface(BaseroleInterface):
             self.controlled = a_job
         return locals()
     job = property(**job())
+
+    def parser():        
+        def fget(self):
+            return self.controlled.parser_name
+        def fset(self, parser_name):
+            self.controlled.parser_name = parser_name
+            self.controlled.commit(self.db)
+        return locals()
+    parser = property(**parser())
+
+    def parsed():
+        def fget(self):
+            import cPickle as pickle
+            f_parsed = self.get_attachment('parsed')
+            if f_parsed:
+                parsed = pickle.load(f_parsed)
+                f_parsed.close()
+                return parsed
+        def fset(self, parsed):
+            import cPickle as pickle
+            import cStringIO as StringIO
+            pkl = StringIO.StringIO(pickle.dumps(parsed))
+            self.put_attachment(pkl,'parsed')
+        return locals()
+    parsed = property(**parsed())
+
