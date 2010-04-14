@@ -39,6 +39,14 @@ def mapfun(doc):
                     yield job_id, doc
     '''
 
+map_func_state = '''
+def mapfun(doc):
+    if 'base_type' in doc:
+        if doc['base_type'] == 'BaseroleModel':
+            if doc['sub_type'] == 'GridtaskModel':
+                yield doc['state'], doc
+    '''
+
 oldddd = '''
 def mapfun(doc):
     if 'base_type' in doc:
@@ -57,6 +65,7 @@ class GridtaskModel(BaseroleModel):
     SUB_TYPE = 'GridtaskModel'
     VIEW_PREFIX = 'GridtaskModel'
     sub_type = sch.TextField(default=SUB_TYPE)
+    state = sch.TextField()
     
     def __init__(self, *args):
         super(GridtaskModel, self).__init__(*args)
@@ -66,6 +75,7 @@ class GridtaskModel(BaseroleModel):
     
     def refresh(self, db):
         self = GridtaskModel.load(db, self.id)
+        return self
         
     def delete(self, db):
         pass
@@ -77,6 +87,10 @@ class GridtaskModel(BaseroleModel):
     @staticmethod
     def view_by_children(db, **options):
         return GridtaskModel.my_view(db, 'by_children', **options)
+    
+    @staticmethod
+    def view_by_state(db, **options):
+        return GridtaskModel.my_view(db, 'by_state', **options)
 
     @classmethod
     def my_view(cls, db, viewname, **options):
@@ -91,20 +105,21 @@ class GridtaskModel(BaseroleModel):
     def sync_views(cls, db,  only_names=False):
         from couchdb.design import ViewDefinition
         if only_names:
-            viewnames=('by_task','by_author', 'by_children')
+            viewnames=('by_task','by_author', 'by_children', 'by_state')
             return viewnames
         else:
             by_task = ViewDefinition(cls.VIEW_PREFIX, 'by_task', map_func_task, wrapper=cls, language='python')
             by_author = ViewDefinition(cls.VIEW_PREFIX, 'by_author', map_func_author, wrapper=cls, language='python')
             by_children = ViewDefinition(cls.VIEW_PREFIX, 'by_children', map_func_children, wrapper=cls, language='python')
-            views=[by_task, by_author, by_children]
+            by_state = ViewDefinition(cls.VIEW_PREFIX, 'by_state', map_func_state, wrapper=cls, language='python')
+            views=[by_task, by_author, by_children, by_state]
             ViewDefinition.sync_many( db,  views)
         return views
     
 class TaskInterface(BaseroleInterface):
     
-    def create(self, author, title):
-        self.controlled = GridtaskModel().create(author, title)
+    def create(self, title):
+        self.controlled = GridtaskModel().create(self.db.username, title)
         self.controlled.commit(self.db)
         return self
 
@@ -156,6 +171,27 @@ class TaskInterface(BaseroleInterface):
         return locals()
     status_percent_done = property(**status_percent_done())
     
+    def wait(self, target_status=GridrunModel.POSSIBLE_STATUS['DONE'], timeout=60, check_freq=10):
+        from time import sleep
+        if timeout == 'INFINITE':
+            timeout = sys.maxint
+        if check_freq > timeout:
+            check_freq = timeout
+        starting_time = time.time()
+        while True:
+            my_status = self.controlled.status_overall
+            assert my_status != GridrunModel.POSSIBLE_STATUS['ERROR'], 'Task %s returned an error.'%self.id
+            if starting_time + timeout < time.time() or my_status == target_status:
+                break
+            else:
+                time.sleep(check_freq)
+        if my_status == target_status:
+            # We did not timeout 
+            return True
+        else:
+            # Timed or errored out
+            return False
+    
     def task():
         def fget(self):
             return self.controlled
@@ -163,3 +199,12 @@ class TaskInterface(BaseroleInterface):
             self.controlled = a_task
         return locals()
     task = property(**task())
+    
+    def state():
+        def fget(self):
+            return self.controlled.state
+        def fset(self, state):
+            self.controlled.state = state
+            self.controlled.commit(self.db)
+        return locals()
+    state = property(**state())
