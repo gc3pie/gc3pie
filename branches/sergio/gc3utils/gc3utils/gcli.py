@@ -721,22 +721,26 @@ def main():
                         logging.debug('Rejecting resource because of not matching with %s',options.resource_name)
                         continue
                 logging.debug('creating instance of Resource object... ')
-                tmpres = Resource()
+                tmpres = Resource.Resource()
+
                 for items in resource:
+                    logging.debug('Updating with %s %s',items,resource[items])
                     tmpres.update(items=resource[items])
+
                 if tmpres.isValid():
                     resources.append(tmpres)
                 else:
-                    logging.warning('Failed adding resource %s',resource.name)
+                    logging.warning('Failed adding resource %s',resource['resource_name'])
         except:
             logging.critical('failed creating Resource list')
             raise
 
         # Create an default object for the defaults
         try:
-            default = Default()
+            default = Default.Default()
             for default_values in defaults:
                 defaul.update(default_values=defaults[default_values])
+
             if not default.isValid():
                 raise Exception('defaults not valids')
         except:

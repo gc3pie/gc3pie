@@ -7,5 +7,5 @@ from InformationContainer import *
 
 class Default(InformationContainer):
 
-    def isValid():
+    def isValid(self):
         return True

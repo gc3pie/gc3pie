@@ -7,7 +7,7 @@ from InformationContainer import *
 
 class Job(InformationContainer):
 
-    def isValid():
+    def isValid(self):
         return True
 
 

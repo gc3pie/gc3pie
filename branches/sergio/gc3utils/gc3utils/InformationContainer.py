@@ -7,7 +7,7 @@ class InformationContainer():
         args = ['%s=%s' % (k, repr(v)) for (k,v) in vars(self).items()]
         return 'InformationContainer%s)' % ', '.join(args)
     
-    def update(self, resource_info):
+    def update(self, **resource_info):
         self.__dict__.update(resource_info)
         
-    def isValid(): abstract
+    def isValid(self): abstract

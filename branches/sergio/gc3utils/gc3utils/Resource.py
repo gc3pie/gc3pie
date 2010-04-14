@@ -24,7 +24,8 @@ class Resource(InformationContainer):
     int type
     '''
 
-    def isValid():
+    def isValid(self):
+        print self.__dict__
         if ('max_cores_per_node' in self.__dict__) & ('type' in self.__dict__) & ('frontend' in self.__dict__) & ('name' in self.__dict__) & ('max_walltime' in self.__dict__) & ('max_memory_per_node' in self.__dict__) & ('total_cores' in self.__dict__):
             return True
         else:
