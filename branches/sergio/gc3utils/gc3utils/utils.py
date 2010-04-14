@@ -12,7 +12,6 @@ import shutil
 import getpass
 import smtplib
 import subprocess
-import Resource
 from email.mime.text import MIMEText
 sys.path.append('/opt/nordugrid/lib/python2.3/site-packages')
 import warnings
