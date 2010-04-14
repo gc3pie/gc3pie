@@ -38,11 +38,10 @@ class GamessAtoms(Atoms):
         return new_atoms
 
 class Result(object):
-    def __init__(self, atoms, params, calculator):
+    def __init__(self, atoms, params):
         import copy
         self.atoms = atoms.copy()
         self.params = copy.deepcopy(params)
-        self.calculator = copy.deepcopy(calculator)
 
 def queryable(func):
     func.queryable=True
@@ -50,15 +49,10 @@ def queryable(func):
 
 class GamessResult(Result):
     
-    def __init__(self, atoms, params, calculator):
-        super(GamessResult, self).__init__(atoms, params, calculator)
-        self.parsed_dat = ParseGamessDat()
-        self.parsed_out = ParseGamessOut()
-        self.a_job = None
-
-    def wait(self, status='DONE', timeout=60):
-        result = self.calculator.wait(self.a_job.id, status, timeout)
-        return result
+    def __init__(self,  atoms, params, parsed_dat, parsed_out):
+        super(GamessResult, self).__init__( atoms, params)
+        self.parsed_dat  = parsed_dat
+        self.parsed_out = parsed_out
     
     def get_coords(self):
         raw_coords=self.parsed_dat.get_coords()
@@ -96,25 +90,15 @@ class GamessResult(Result):
     @queryable
     def geom_located(self):
         return self.parsed_out.is_geom_located()
-        
-    def read(self):
-        """Read the results from the GAMESS output files."""
-        # The files come in as f_name/file-like pairs
-        # we need to search through them to get the two files
-        # we want. Those files end with .dat and .stdout
-        f_dat = self.calculator.get_file(self.a_job,'dat')
-        f_stdout = self.calculator.get_file(self.a_job,'stdout')
-        self.parsed_dat.parse_file(f_dat)
-        self.parsed_out.parse_file(f_stdout)
-        f_dat.close()
-        f_stdout.close()
     
-    def save_queryable(self):
+    def _get_queryable(self):
+        queryable = dict()
         for name in dir(self):
             obj = getattr(self, name)
-            if hassattr(obj, 'queryable'):
-                self.calculator.save_queryable(name, obj(self))
-    
+            if hasattr(obj, 'queryable'):
+                queryable[name]= obj()
+        return queryable
+
 class GamessParams:
     '''Holds the GAMESS run parameters'''
     groups = dict()
@@ -144,11 +128,9 @@ class MyCalculator(object):
     the same functions, only how the application is run, and where the result files
    are located would be different.
    """
-    def __init__(self, author):
-        self.author = author
-   
+    def __init__(self):
+        pass
 
-    
     def preexisting_result(self, location):
         assert False, 'Must implement a preexisting_result method'
     
@@ -165,11 +147,13 @@ class GamessGridCalc(MyCalculator):
     """Calculator class that interfaces with GAMESS-US using
     a database. The jobs in the database are executed on a grid.
     """
-    def __init__(self, author, mydb):
-        super(GamessGridCalc, self).__init__(author)
+    def __init__(self, mydb):
+        super(GamessGridCalc, self).__init__()
         self.db = mydb
-
-    def generate(self, atoms, params, a_task, selected_resource='ocikbpra',  cores=2, memory=1, walltime=-1):
+        self.parsed_dat = ParseGamessDat()
+        self.parsed_out = ParseGamessOut()
+    
+    def generate(self, atoms, params, a_task, application_to_run='gamess', selected_resource='ocikbpra',  cores=2, memory=1, walltime=-1):
         """We run GAMESS in here."""
         from ase.io.gamess import WriteGamessInp
         #Generate the input file
@@ -178,7 +162,7 @@ class GamessGridCalc(MyCalculator):
         writer = WriteGamessInp()
         writer.write(f_inp, atoms, params)
         f_inp.seek(0)
-        a_job = JobInterface(self.db).create(self.author, params.title,  f_inp, 'gamess', 
+        a_job = JobInterface(self.db).create(params.title,  self.__class__.__name__, f_inp, application_to_run, 
                            selected_resource,  cores, memory, walltime)
         f_inp.close()
         # Convert the python dictionary to one that uses the couchdb schema
@@ -191,7 +175,6 @@ class GamessGridCalc(MyCalculator):
 
     def calculate(self, a_thing):
         """We run GAMESS in here."""
-        result_list = list()
         if isinstance(a_thing, TaskInterface):
             job_list = tuple(a_thing.children)
         elif isinstance(a_thing, JobInterface):
@@ -203,48 +186,37 @@ class GamessGridCalc(MyCalculator):
         for a_job in job_list:
             if a_job.status == GridrunModel.POSSIBLE_STATUS['HOLD']:
                 a_job.status = GridrunModel.POSSIBLE_STATUS['READY']
-            result_list.append(self.preexisting_result(a_job.id ))
-            result_list[-1].a_job = a_job
-        return tuple(result_list)
+        return job_list
 
-    def preexisting_result(self, job_id ):
+    def parse(self, a_job, force_a_reparse=False):
         """Rather than running GAMESS, we just read
         and parse the results already in the database."""
         from ase.io.gamess import ReadGamessInp
-        a_job = JobInterface(self.db).load(job_id)
-        f_map = dict()
-        f_inp = a_job.get_attachment('inp')
-        reader = ReadGamessInp(f_inp)
-        f_inp.close()
-        result = GamessResult(reader.atoms, reader.params, self)        
-        result.a_job = a_job
-        return result
+        parser = None
+        if not force_a_reparse:            
+            parser = a_job.parser 
+            assert parser == self.__class__.__name__, 'Can not reparse, parse results are of type %s'%(parser)
+            a_result = a_job.parsed
+            if a_result:
+                assert isinstance(a_result, GamessResult), 'Incorrect parsed result type of %s.'%(type(a_result))
+        if a_result is None:
+            f_inp = a_job.get_attachment('inp')
+            reader = ReadGamessInp(f_inp)
+            f_inp.close()
+            f_dat = a_job.get_attachment('dat')
+            self.parsed_dat.parse_file(f_dat)
+            f_dat.close()            
+            f_stdout = a_job.get_attachment('stdout')
+            self.parsed_out.parse_file(f_stdout)
+            f_stdout.close()
+            a_result = GamessResult(reader.atoms, reader.params, self.parsed_dat.group, self.parsed_out.group)
+            self._save_parsed_result(a_job, a_result)
+        return a_result
 
-    def wait(self, job_id, status=GridrunModel.POSSIBLE_STATUS['DONE'], timeout=60, check_freq=10):
-        from time import sleep
-        if timeout == 'INFINITE':
-            timeout = sys.maxint
-        if check_freq > timeout:
-            check_freq = timeout
-        starting_time = time.time()
-        a_job = JobInterface(self.db).load(job_id)
-        while True:
-            job_status = a_job.status
-            assert job_status != GridrunModel.POSSIBLE_STATUS['ERROR'], 'Run %s returned an error.'%a_job.run_id
-            if starting_time + timeout < time.time() or job_status == status:
-                break
-            else:
-                time.sleep(check_freq)
-        if job_status == status:
-            # We did not timeout 
-            return True
-        else:
-            # Timed or errored out
-            return False
-
-    def save_queryable(self, job_id, key, value):
-        a_job = JobInterface(self.db).load(job_id)
-        a_job.result_data_dict[key] = value
+    def _save_parsed_result(self, a_job, a_result):
+        queryable = a_result._get_queryable()
+        a_job.result_data_dict.update(queryable)
+        a_job.parsed = a_result
 
 class GamessLocalCalc(MyCalculator):
     EXT_INPUT_FILE = 'inp'
@@ -312,6 +284,47 @@ class GamessLocalCalc(MyCalculator):
         from uuid import uuid4
         return uuid4().hex
 
+class GamessDat(dict):
+    #Group titles used to reference values in the group dictionary
+    VEC = 'VEC'
+    HESS = 'HESS'
+    COORD = 'COORD'
+    ENERGY = 'ENERGY'
+    GRAD = 'GRAD'
+    NORM_MODE = 'NORM_MODE'
+    
+    def get_vec(self, index=-1):
+        if self.VEC in self:
+            return self[self.VEC][index]
+        return None
+    
+    def get_hess(self, index=-1):
+        if self.HESS in self:
+            return self[self.HESS][index]
+        return None
+    
+    def get_coords(self, index=-1):
+        if self.COORD in self:
+            return self[self.COORD][index]
+        return None
+    
+    def get_energy(self, index=-1):
+        #Which energy is the questions!!!!
+        if self.ENERGY in self:
+            return self[self.ENERGY][index]
+        return None
+
+    def get_forces(self, index=-1):
+        if self.GRAD in self:
+            return self[self.GRAD][index]
+        return None
+
+    def get_normal_mode(self, index=-1):
+        if self.NORM_MODE in self:
+            return self[self.NORM_MODE][index]
+        return None
+
+
 class ParseGamessDat(object):
     '''
     classdocs
@@ -320,18 +333,12 @@ class ParseGamessDat(object):
         '''
         Constructor
         '''
-        #Group titles used to reference values in the group dictionary
-        self.VEC = 'VEC'
-        self.HESS = 'HESS'
-        self.COORD = 'COORD'
-        self.ENERGY = 'ENERGY'
-        self.GRAD = 'GRAD'
-        self.NORM_MODE = 'NORM_MODE'
+
 #        keys = [self.VEC, self.HESS, self.COORD, self.ENERGY, self.GRAD, self.NORM_MODE]
 #        values = [[], [], [], [], [], []]
 #        
 #        self.group = dict(zip(keys, values))
-        self.group = dict()
+        self.group = GamessDat()
         
         self.parse_kernal = ParseKernal()
         start,  end = self.read_vec(returnRule=True)
@@ -347,42 +354,9 @@ class ParseGamessDat(object):
         start,  end = self.read_normal_mode_molplt(returnRule=True)
         self.parse_kernal.addRule(start, end, self.read_normal_mode_molplt)
     
-    def get_result_group(self):
-        return self.group
-
-    def get_vec(self, index=-1):
-        if self.VEC in self.group:
-            return self.group[self.VEC][index]
-        return None
-    
-    def get_hess(self, index=-1):
-        if self.HESS in self.group:
-            return self.group[self.HESS][index]
-        return None
-    
-    def get_coords(self, index=-1):
-        if self.COORD in self.group:
-            return self.group[self.COORD][index]
-        return None
-    
-    def get_energy(self, index=-1):
-        #Which energy is the questions!!!!
-        if self.ENERGY in self.group:
-            return self.group[self.ENERGY][index]
-        return None
-
-    def get_forces(self, index=-1):
-        if self.GRAD in self.group:
-            return self.group[self.GRAD][index]
-        return None
-
-    def get_normal_mode(self, index=-1):
-        if self.NORM_MODE in self.group:
-            return self.group[self.NORM_MODE][index]
-        return None
-    
     def parse_file(self, f_dat):
         self.parse_kernal.parse(f_dat)
+        return self.group
     
     @staticmethod
     def fix_gamess_matrix(mat):
@@ -410,7 +384,7 @@ class ParseGamessDat(object):
             trailing=r"""\$END"""
             return (heading, trailing)
         else:
-            groupTitle = self.VEC
+            groupTitle = self.group.VEC
             resultset = list()
             last_key = ('')
             fun_append = resultset.append
@@ -442,7 +416,7 @@ class ParseGamessDat(object):
             trailing=r"""\$END"""
             return (heading, trailing)
         else:
-            groupTitle = self.HESS
+            groupTitle = self.group.HESS
             resultset = list()        
             last_key = ('')
             fun_append = resultset.append
@@ -474,7 +448,7 @@ class ParseGamessDat(object):
             trailing=r"""\$END"""
             return (heading, trailing)
         else:        
-            groupTitle = self.GRAD
+            groupTitle = self.group.GRAD
             resultset = list()
             for line in text_block.splitlines(True)[2:-1]: #Skip the first two header lines and last end line tag
                     fmt = "2s9x7s17s3x17s3x17s1x"
@@ -493,7 +467,7 @@ class ParseGamessDat(object):
             trailing=r"""--- """
             return (heading, trailing)
         else:
-            groupTitle= self.COORD
+            groupTitle= self.group.COORD
             rule = OneOrMore(Group(Word(alphas) + Word(nums+'.')) + Group(OneOrMore(Word(nums+'-.', min=12))))
             result = rule.searchString(text_block).asList()[0]
             if groupTitle in self.group:
@@ -508,7 +482,7 @@ class ParseGamessDat(object):
             trailing=r"""ITERS"""
             return (heading, trailing)
         else:        
-            groupTitle=self.ENERGY
+            groupTitle=self.group.ENERGY
             '''The first energy is the one returned, not the NUC energy, but both are parsed for 
             E(RHF)=     -308.7504263559, E(NUC)=  299.7127028401,    9 ITERS'''
             rule=Group(Literal('E(') + Word(nums+'-'+alphas) + Literal(')=')).suppress() + Word(nums+'-.')
@@ -531,7 +505,7 @@ class ParseGamessDat(object):
             return (heading, trailing)
         else:
             #Define parse rule
-            groupTitle=self.NORM_MODE
+            groupTitle=self.group.NORM_MODE
             if text_block:
                 section = section[0][0] #We have only one section in the dat file from MOLPLT data
                 rule=Literal('ATOMIC MASSES').suppress()+OneOrMore(Word(nums+'.'))        
@@ -548,6 +522,23 @@ class ParseGamessDat(object):
                 resultset['MODE']=resultMode
                 self.group[groupTitle]=resultset #There can only be one MOLPLT group
 
+
+class GamessOut(dict):
+    #For statuses True is always good, Faluse is always bad (error,did not complete,etc)
+    STATUS_EXIT = 'STATUS_EXIT_SUCCESSFUL'
+    STATUS_GEOM_LOCATED='STATUS_GEOM_LOCATED'
+    STATUS_NO_CPU_TIMEOUT = 'STATUS_NO_CPU_TIMEOUT'
+    
+    def is_exit_successful(self):
+        return self[self.STATUS_EXIT]
+    
+    def is_geom_located(self):
+        return self[self.STATUS_GEOM_LOCATED]
+    
+    def status_no_cpu_timeout(self):
+        return self[self.STATUS_NO_CPU_TIMEOUT]
+    
+    
 class ParseGamessOut(object):
     '''
     classdocs
@@ -556,12 +547,7 @@ class ParseGamessOut(object):
         '''
         Constructor
         '''
-        #For statuses True is always good, Faluse is always bad (error,did not complete,etc)
-        self.STATUS_EXIT = 'STATUS_EXIT_SUCCESSFUL'
-        self.STATUS_GEOM_LOCATED='STATUS_GEOM_LOCATED'
-        self.STATUS_NO_CPU_TIMEOUT = 'STATUS_NO_CPU_TIMEOUT'
-        
-        self.group = dict()
+        self.group = GamessOut()
         
         self.parse_kernal = ParseKernal()
         start,  end = self.read_status_cpu_timeout(returnRule=True)
@@ -573,18 +559,10 @@ class ParseGamessOut(object):
 
     def parse_file(self, f_dat):        
         self.parse_kernal.parse(f_dat)
-    
-    def is_exit_successful(self):
-        return self.group[self.STATUS_EXIT]
-    
-    def is_geom_located(self):
-        return self.group[self.STATUS_GEOM_LOCATED]
-    
-    def status_no_cpu_timeout(self):
-        return self.group[self.STATUS_NO_CPU_TIMEOUT]
+        return self.group
     
     def read_status_exit(self, text_block=None, returnRule=False):
-        groupTitle = self.STATUS_EXIT
+        groupTitle = self.group.STATUS_EXIT
         self.group[groupTitle]=False
         if returnRule:
             #Define parse rule
@@ -597,7 +575,7 @@ class ParseGamessOut(object):
         return            
      
     def read_status_geom_located(self, text_block=None, returnRule=False):
-        groupTitle = self.STATUS_GEOM_LOCATED
+        groupTitle = self.group.STATUS_GEOM_LOCATED
         self.group[groupTitle]=False
         if returnRule:
             #Define parse rule
@@ -610,7 +588,7 @@ class ParseGamessOut(object):
         return
 
     def read_status_cpu_timeout(self, text_block=None, returnRule=False):
-        groupTitle = self.STATUS_NO_CPU_TIMEOUT
+        groupTitle = self.group.STATUS_NO_CPU_TIMEOUT
         self.group[groupTitle]=True
         if returnRule:
             #Define parse rule
