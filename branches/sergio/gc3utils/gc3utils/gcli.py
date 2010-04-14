@@ -716,9 +716,10 @@ def main():
 
         try:
             for resource in resources_list:
-                if (options.resource_name) & (not options.resource_name is resource['resource_name']):
-                    logging.debug('Rejecting resource because of not matching with %s',options.resource_name)
-                    continue
+                if (options.resource_name):
+                    if (not options.resource_name is resource['resource_name']):
+                        logging.debug('Rejecting resource because of not matching with %s',options.resource_name)
+                        continue
                 logging.debug('creating instance of Resource object... ')
                 tmpres = Resource()
                 for items in resource:
