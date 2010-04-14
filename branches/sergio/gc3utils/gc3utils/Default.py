@@ -2,11 +2,10 @@ import types
 import InformationContainer
 
 # -----------------------------------------------------
-# Applications
+# Default
 #
 
-class Application(InformationContainer):
+class Default(InformationContainer):
 
     def isValid():
         return True
-

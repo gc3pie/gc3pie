@@ -206,9 +206,9 @@ def check_qgms_version(minimum_version):
     return True
 
 
-def readConfig(config_file_location):
+def read_config(config_file_location):
 
-    resource_list = {}
+    resource_list = []
     defaults = {}
 
     try:
@@ -226,7 +226,8 @@ def readConfig(config_file_location):
                 for _option in _option_list:
                     _resource_options[_option] = config.get(_resource,_option)
                 _resource_options['resource_name'] = _resource
-                resource_list[_resource] = _resource_options
+                resource_list.append(_resource_options)
+#                resource_list[_resource] = _resource_options
 
             logging.debug('readConfig resource_list lenght of [ %d ]',len(resource_list))
             return [defaults,resource_list]

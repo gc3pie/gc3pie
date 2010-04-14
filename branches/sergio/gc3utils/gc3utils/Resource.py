@@ -1,9 +1,11 @@
 import types
+import InformationContainer
+
 # -----------------------------------------------------
-# Resource lrms
+# Resource
 #
 
-class Resource():
+class Resource(InformationContainer):
     '''
     int max_cores_per_node
     int max_walltime
@@ -15,23 +17,15 @@ class Resource():
     int user_queued
     int user_run
     string frontend
+    string name
     int total_cores
     int max_quota
     int used_quota
     int type
     '''
 
-
-    def __init__(self, **resource_info):
-        self.__dict__.update(resource_info)
-
-    def __repr__(self):
-        args = ['%s=%s' % (k, repr(v)) for (k,v) in vars(self).items()]
-        return 'Resource(%s)' % ', '.join(args)
-    
-    def update(self, **resource_info):
-        self.__dict__.update(resource_info)
-        
-    
-
-
+    def isValid():
+        if ('max_cores_per_node' in self.__dict__) & ('type' in self.__dict__) & ('frontend' in self.__dict__) & ('name' in self.__dict__) & ('max_walltime' in self.__dict__) & ('max_memory_per_node' in self.__dict__) & ('total_cores' in self.__dict__):
+            return True
+        else:
+            return False
