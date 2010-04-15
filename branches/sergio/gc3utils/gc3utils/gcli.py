@@ -727,6 +727,8 @@ def main():
                     logging.debug('Updating with %s %s',items,resource[items])
                     tmpres.insert(items,resource[items])
 
+                logging.debug('checking validity with %s',str(tmpres.isValid()))
+                              
                 if tmpres.isValid():
                     resources.append(tmpres)
                 else:
