@@ -224,7 +224,7 @@ def read_config(config_file_location):
                 _resource_options = {}
                 for _option in _option_list:
                     _resource_options[_option] = config.get(_resource,_option)
-                _resource_options['name'] = _resource
+                _resource_options['resource_name'] = _resource
                 resource_list.append(_resource_options)
 #                resource_list[_resource] = _resource_options
 
