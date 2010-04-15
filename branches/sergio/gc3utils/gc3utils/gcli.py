@@ -42,6 +42,7 @@ class Gcli:
                 raise Exception('could not read any valid resource configuration from config file')
             self._resources = resource_list
             self._defaults = defaults
+
         except:
             raise
 
@@ -229,10 +230,11 @@ class Gcli:
         global default_joblist_lock
         
         # Parsing passed arguments
-        if (not check_inputfile(application_obj.input_file_name)):
-            logging.critical('Input file argument\t\t\t[ failed ]'+application_obj.input_file_name)
+        if (not check_inputfile(application_obj.input_file)):
+            logging.critical('Input file argument\t\t\t[ failed ]'+application_obj.input_file)
             raise Exception('invalid input-file argument')
-            
+
+        print dir(self._defaults)
         logging.debug('checked inputfile')
         logging.debug('input_file: %s',application_obj.input_file)
         logging.debug('application tag: %s',application_obj.application_tag)
@@ -245,6 +247,8 @@ class Gcli:
 
         # At this point self._resources contains either a list or a single LRMS reference 
         # Initialize LRMSs
+
+        raise Exception('bye bye')
 
         _lrms_list = []
 
@@ -745,6 +749,7 @@ def main():
         # Create an default object for the defaults
         try:
             default = Default.Default()
+            default.update(homedir=homedir,config_file_location=default_config_file_location,joblist_location=default_joblist_location,joblist_lock=default_joblist_lock,job_folder_location=default_job_folder_location,wait_time=default_wait_time)
             for default_values in defaults:
                 default.insert(default_values,defaults[default_values])
 
@@ -778,16 +783,13 @@ def main():
 
 
             # Create Application obj
-            application = Application.Application(application_tag=application_tag,input_file=input_file,job_local_dir=options.job_local_dir,memory_per_core=options.memory_per_core,ncores=options.ncores,resource_name=options.resource_name,walltime=options.walltime)
+            application = Application.Application(application_tag=application_tag,input_file=input_file,job_local_dir=options.job_local_dir,requested_memory=options.memory_per_core,requested_cores=options.ncores,requestd_resource=options.resource_name,requested_walltime=options.walltime,application_arguments=None)
 
             if not application.isValid():
                 raise Exception('Failed creating application object')
 
             print dir(application)
             
-            print 'bye bye'
-            return 0
-
             job = gcli.gsub(application)
 
             if job.isValid():
