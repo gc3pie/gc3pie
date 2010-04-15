@@ -11,6 +11,13 @@ import os
 import logging
 import logging.handlers
 import ConfigParser
+from gorg_site.gorg_site.lib.mydb import Mydb
+from gorg_site.gorg_site.model.gridjob import GridjobModel
+from gorg_site.gorg_site.model.gridjob import GridrunModel
+#from gorg_site.gorg_site.model.gridjob import GridtaskModel
+from gorg_site.gorg_site.model.gridjob import BaseroleModel
+
+
 from optparse import OptionParser
 #from ase-patched import *
 
@@ -46,8 +53,8 @@ def ParseOptions(program_name,args):
     parser.add_option("-v", action="count", dest="verbosity", default=0, help="Set verbosity level")
     parser.add_option("-e","--example", action="store", dest="example", default=None, help="example")
     parser.add_option("-w","--woo", action="store", dest="woo", default=None, help="dummy")
-    parser.add_option("-d", "--dir", dest="directory",default='~/tasks', help="Directory to save tasks in.")
-    parser.add_option("-i", "--input", dest="input",default=None, help="Input file.")
+    parser.add_option("-d", "--dir", dest="directory", default='~/tasks', help="Directory to save tasks in.")
+    parser.add_option("-i", "--input", dest="input", default=None, help="Input file.")
     parser.add_option("-n", "--db_name", dest="db_name", default='gorg_site', help="Database name.")
     parser.add_option("-l", "--db_loc", dest="db_loc", default='http://127.0.0.1:5984', help="Database URI.")
 
@@ -60,8 +67,11 @@ def ParseOptions(program_name,args):
     elif tasktype == 'restart':
         parser.add_option("-z","--zoo", action="store", dest="zoo", default=None, help="example")
   
+    
+    parser.set_default('tasktype', tasktype)
+    
     (options, args) = parser.parse_args()
-
+  
     return options, args
 
 
@@ -77,13 +87,17 @@ def SetupDatabase():
     dbhost = 'http://127.0.0.1'
     port = '5984'
     address = dbhost + ":" + port
-    database = Mydb('gorg_site',address).createdatabase()
-    database = Mydb('gorg_site',address).cdb()
+    
+    setupdatabase = Mydb(couchdb_user='mpackard',couchdb_database='gorg_site',couchdb_url=address)
+    setupdatabase.createdatabase()
+    database = setupdatabase.cdb()
+    #Correct
+    GridjobModel.sync_views(database)
     
     # todo : find out what this does
     GridjobModel.sync_views(database)
     GridrunModel.sync_views(database)
-    GridtaskModel.sync_views(database)
+#    GridtaskModel.sync_views(database)
     BaseroleModel.sync_views(database)
     
     return database

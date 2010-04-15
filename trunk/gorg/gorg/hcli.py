@@ -62,7 +62,7 @@ class Hcli:
             raise
 '''
    
-def Task(self,username,tasktitle,tasktype):
+def NewTask(self,username,tasktitle,tasktype):
     """Create a task.""" 
     
     # Handle tasktype-specific things.
@@ -79,6 +79,7 @@ def Task(self,username,tasktitle,tasktype):
         raise
 
     return task
+
 
  
 def CheckInputFile(inputfile):
@@ -126,6 +127,7 @@ def main():
         database = SetupDatabase()
         
         # Call a different method depending on the type of task we want to create.
+  
         if options.tasktype == 'hessian':
             try:
                 # task = HessTask()
