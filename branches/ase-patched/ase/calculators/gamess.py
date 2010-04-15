@@ -351,8 +351,8 @@ class ParseGamessDat(object):
         self.parse_kernal.addRule(start, end, self.read_grad)
         start,  end = self.read_energy(returnRule=True)
         self.parse_kernal.addRule(start, end, self.read_energy)
-        start,  end = self.read_normal_mode_molplt(returnRule=True)
-        self.parse_kernal.addRule(start, end, self.read_normal_mode_molplt)
+#        start,  end = self.read_normal_mode_molplt(returnRule=True)
+#        self.parse_kernal.addRule(start, end, self.read_normal_mode_molplt)
     
     def parse_file(self, f_dat):
         self.parse_kernal.parse(f_dat)
