@@ -326,7 +326,7 @@ def renew_grid_credential(_aaiUserName):
         # UserName set, go interactive asking password
         input_passwd = getpass.getpass('Insert AAI/Switch password for user '+_aaiUserName+' : ')
         logging.debug('Checking slcs status')
-        if ( checkUserCertificate() != True ):
+        if ( check_user_certificate() != True ):
             # Failed because slcs credential expired
             # trying renew slcs
             # this should be an interactiave command

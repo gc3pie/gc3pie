@@ -17,7 +17,7 @@ import Resource
 import Default
 import Scheduler
 import Job
-
+import Application
 
 homedir = os.path.expandvars('$HOME')
 rcdir = homedir + "/.gc3"
@@ -31,6 +31,7 @@ class Gcli:
 
     SMSCG_AUTHENTICATION = 1
     SSH_AUTHENTICATION = 2
+    AAI_CREDENTIAL_REPO = "$HOME/.gc3/aai_credential"
 
 #    resource_list = {}
 #    defaults = {}
@@ -607,11 +608,15 @@ def main():
                 logging.critical('Application argument\t\t\t[ failed ]\n\tUnknown application: '+str(args[0]))
                 raise Exception('invalid application argument')
 
+            application_tag = args[0]
+
             # check input file
             if ( not check_inputfile(args[1]) ):
                 logging.critical('Input file argument\t\t\t[ failed ]'+args[1])
                 raise Exception('invalid input-file argument')
-                                        
+
+            input_file = args[1]
+
         elif ( os.path.basename(program_name) == "grid-credential-renew" ):
             _usage = "Usage: %prog [options] aai_user_name"
             parser = OptionParser(usage=_usage)
@@ -741,20 +746,16 @@ def main():
         try:
             default = Default.Default()
             for default_values in defaults:
-                defaul.insert(default_values,defaults[default_values])
+                default.insert(default_values,defaults[default_values])
 
             if not default.isValid():
-                raise Exception('defaults not valids')
+                raise Exception('defaults not valid')
         except:
             logging.critical('Failed loading default values')
             raise
 
         #        gcli = Gcli(default_config_file_location)
         gcli = Gcli(default, resources)
-
-        print "bye bye"
-        return 0
-
 
 #======================================= 
 
@@ -775,15 +776,20 @@ def main():
         if ( os.path.basename(program_name) == "gsub" ):
             # gsub prototype: application_to_run, input_file, selected_resource, job_local_dir, cores, memory, walltime
 
+
             # Create Application obj
-            application = Application(application_tag=application_tag,input_file=input_file)
-            for option in options:
-                application.insert(option,options[option])
+            application = Application.Application(application_tag=application_tag,input_file=input_file,job_local_dir=options.job_local_dir,memory_per_core=options.memory_per_core,ncores=options.ncores,resource_name=options.resource_name,walltime=options.walltime)
+
             if not application.isValid():
                 raise Exception('Failed creating application object')
 
-            job = gcli.gsub(application)
+            print dir(application)
             
+            print 'bye bye'
+            return 0
+
+            job = gcli.gsub(application)
+
             if job.isValid():
                 sys.stdout.write(job.jobid)
                 sys.stdout.flush()
