@@ -10,4 +10,7 @@ class InformationContainer():
     def update(self, **resource_info):
         self.__dict__.update(resource_info)
         
+    def insert(self, key, val):
+        self.__dict__[key]=val
+
     def isValid(self): abstract

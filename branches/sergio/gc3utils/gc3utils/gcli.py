@@ -288,7 +288,7 @@ class Gcli:
         logging.debug('Submitting job with %s %s %s %s',unique_token, application_to_run, input_file, self.defaults['lrms_log'])
         try:
             job_obj = _selected_lrms.submit_job(application_obj)
-            job_obj.update(unique_token=unique_token)
+            job_obj.insert('unique_token',unique_token)
             logging.info('Submission process to LRMS backend\t\t\t[ ok ]')
         except:
             logging.critical('Failed Submitting job: %s',sys.exc_info()[1])
@@ -725,7 +725,7 @@ def main():
 
                 for items in resource:
                     logging.debug('Updating with %s %s',items,resource[items])
-                    tmpres.update(items=resource[items])
+                    tmpres.insert(items,resource[items])
 
                 if tmpres.isValid():
                     resources.append(tmpres)
@@ -739,7 +739,7 @@ def main():
         try:
             default = Default.Default()
             for default_values in defaults:
-                defaul.update(default_values=defaults[default_values])
+                defaul.insert(default_values,defaults[default_values])
 
             if not default.isValid():
                 raise Exception('defaults not valids')
@@ -776,7 +776,7 @@ def main():
             # Create Application obj
             application = Application(application_tag=application_tag,input_file=input_file)
             for option in options:
-                application.update(option=options[option])
+                application.insert(option,options[option])
             if not application.isValid():
                 raise Exception('Failed creating application object')
 
