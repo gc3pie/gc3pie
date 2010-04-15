@@ -3,55 +3,104 @@ Created on Dec 28, 2009
 
 @author: mmonroe
 '''
+from statemachine import *
+
 from optparse import OptionParser
 import logging
 import os
+import copy
 import sys
 import numpy as np
 
-from gfunction import GFunction, run_function
+from ase.io.gamess import ReadGamessInp
+from ase.calculators.gamess import GamessGridCalc
 sys.path.append('/home/mmonroe/apps/gorg')
 from gorg_site.gorg_site.lib.mydb import Mydb
 
 from ase.io.gamess import ReadGamessInp, WriteGamessInp
 from ase.calculators.gamess import GamessGridCalc
 
-class GHessian(GFunction):
+
+class Cargo(object):
+    def __init__(self, a_task, calculator):
+        self.a_task = a_task
+        self.calculator = calculator
+        
+class GHessian(StateMachine):
     H_TO_PERTURB = 0.0052918
     GRADIENT_CONVERSION=1.8897161646320724
+    WAIT = State()
+    PROCESS = State()
     
-    def preprocess(self, atoms, params):
-        from gorg_site.gorg_site.model.gridtask import TaskInterface
+    def __init__(self, logging_level=1):
+        super(GHessian, self).__init__(logging_level)
+        self.cargo = None
 
-        a_task = TaskInterface(self.db).create(self.calculator.author, 'GHessian')
+    def start(self, db, calculator, atoms, params, application_to_run='gamess', selected_resource='ocikbpra',  cores=2, memory=1, walltime=-1):
+        super(GHessian, self).start(self.WAIT )
+        from gorg_site.gorg_site.model.gridtask import TaskInterface
+        a_task = TaskInterface(db).create(self.__class__.__name__)
         a_task.user_data_dict['total_jobs'] = 0
-        perturbed_postions = self.repackage(atoms.get_positions())
         
+        perturbed_postions = self.repackage(atoms.get_positions())
         params.title = 'job_number_%d'%a_task.user_data_dict['total_jobs']
-        first_job = self.calculator.generate(atoms, params, a_task)
+        first_job = calculator.generate(atoms, params, a_task)
         for a_position in perturbed_postions[1:]:
             a_task.user_data_dict['total_jobs'] += 1
             params.title = 'job_number_%d'%a_task.user_data_dict['total_jobs']
             atoms.set_positions(a_position)
-            sec_job = self.calculator.generate(atoms, params, a_task)
-            sec_job.add_parent(first_job)
-            first_job = sec_job
-        return a_task
+            sec_job = calculator.generate(atoms, params, a_task)
+        calculator.calculate(a_task)
+        self.logger.info('Submitted task %s for execution.'%(a_task.id))
+        self.cargo = Cargo(a_task, calculator)
 
-    def process_loop(self, a_task):
+    def restart(self, db,  a_task):
+        super(GHessian, self).start(eval('self.%s'%(a_task.state)))
+        str_calc = a_task.user_data_dict['calculator']
+        self.cargo = Cargo(a_task, eval(str_calc + '(db)'))
+    
+    def save_state(self):
+        self.cargo.a_task.state = super(GHessian, self).save_state()
+        self.cargo.a_task.user_data_dict['calculator'] = self.cargo.calculator.__class__.__name__
+        return self.cargo.a_task
+    
+    @on_main(WAIT)
+    def wait(self):
+        sys.path.append('/home/mmonroe/apps/gorg')
+        from gorg.gridjobscheduler import GridjobScheduler
+        job_scheduler = GridjobScheduler()
+        job_list = self.cargo.a_task.children
+        new_state=self.PROCESS
+        for a_job in job_list:
+            job_done = False
+            job_scheduler.run()
+            self.logger.info('Restart waiting for job %s.'%(a_job.id))
+            job_done = a_job.wait(timeout=0)
+            if not job_done:
+                new_state=self.WAIT
+                break
+        return new_state
+    
+    @on_main(PROCESS)
+    def process_loop(self):
         done = False
-        result_list = self.execute_run(a_task)
-        for a_result in result_list:
+        job_list = self.cargo.a_task.children
+        for a_job in job_list:
+            a_result = self.cargo.calculator.parse(a_job)
             if not a_result.exit_successful():
-                msg = 'GAMESS returned an error while running job %s.'%(a_result.a_job.id)
+                msg = 'GAMESS returned an error while running job %s.'%(a_job.id)
                 self.logger.critical(msg)
                 raise Exception, msg
         done = True
-        return (done, result_list)
-    
-    def postprocess(self, result_list):
+        return self.DONE
+
+#TODO: Wouldn't if be nice if on_enter on_main and on_leave could share variables with each other?
+    @on_leave(PROCESS)
+    def postprocess(self):
+        result_list  = list()
+        for a_job in self.cargo.a_task.children:
+            result_list.append(self.cargo.calculator.parse(a_job))
         num_atoms = len(result_list[-1].atoms.get_positions())
-        a_task = result_list[-1].a_job.task
         gradMat = np.zeros((num_atoms*len(result_list), 3), dtype=np.longfloat)
         count = 0
         for a_result in result_list:
@@ -62,10 +111,9 @@ class GHessian(GFunction):
         mat = self.calculateNumericalHessian(num_atoms, gradMat)
         postprocess_result = mat/self.GRADIENT_CONVERSION
         
-        f_hess = open('%s_ghessian.mjm'%(a_task.id), 'w')
+        f_hess = open('%s_ghessian.mjm'%(self.cargo.a_task.id), 'w')
         WriteGamessInp.build_gamess_matrix(postprocess_result, f_hess)
         f_hess.close()
-        return postprocess_result
 
     def perturb(self, npCoords):
         stCoords= np.reshape(np.squeeze(npCoords), len(npCoords)*3, 'C')
@@ -88,35 +136,9 @@ class GHessian(GFunction):
                 hessian[i, j] = (1.0/(2.0*self.H_TO_PERTURB))*((gradient[i, j+1]-gradient[i, 0])+(gradient[j, i+1]-gradient[j, 0]))
         return hessian
 
-if __name__ == '__main__':
-    #Set up command line options
-    usage = "usage: %prog [options] arg"
-    parser = OptionParser(usage)
-    parser.add_option("-d", "--dir", dest="directory",default='~/tasks', 
-                      help="directory to save tasks in.")
-    parser.add_option("-f", "--file", dest="file",default='hess.test2.inp', 
-                      help="gamess inp to restart from.")
-    parser.add_option("-v", "--verbose", dest="verbose", default='', 
-                      help="add more v's to increase log output.")
-    parser.add_option("-n", "--db_name", dest="db_name", default='gorg_site', 
-                      help="add more v's to increase log output.")
-    parser.add_option("-l", "--db_loc", dest="db_loc", default='http://127.0.0.1:5984', 
-                      help="add more v's to increase log output.")
-    (options, args) = parser.parse_args()
-    options.directory=os.path.expanduser(options.directory.rstrip('/'))
-    
-    #Setup logger
-    LOGGING_LEVELS = (logging.CRITICAL, logging.ERROR, 
-                                    logging.WARNING, logging.INFO, logging.DEBUG)
-    logging_level = len(LOGGING_LEVELS) if len(options.verbose) > len(LOGGING_LEVELS) else len(options.verbose)
-
-    #Parse all the parameters to keep track of the file names
-    (filepath, filename) = os.path.split(options.file)
-    if not filepath:
-        filepath =  os.getcwd()
-    
+def main(options):
     # Connect to the database
-    db=Mydb(options.db_name,options.db_loc).cdb()
+    db=Mydb('mark',options.db_name,options.db_loc).cdb()
     
     # Parse the gamess inp file
     myfile = open(options.file, 'rb')
@@ -125,7 +147,33 @@ if __name__ == '__main__':
     params = reader.params
     atoms = reader.atoms
     
-    gamess_calc = GamessGridCalc('mark', db)
-    ghess = GHessian(db, gamess_calc, logging_level)
-    run_function(atoms, params, ghess)
+    fsm = GHessian(options.logging_level)
+    gamess_calc = GamessGridCalc(db)
+    fsm.start(db, gamess_calc, atoms, params)
+    fsm.run()
+    a_task = fsm.save_state()
+    print a_task.id
+    
+
+if __name__ == '__main__':
+    #Set up command line options
+    usage = "usage: %prog [options] arg"
+    parser = OptionParser(usage)
+    parser.add_option("-f", "--file", dest="file",default='hess.test2.gamess.inp', 
+                      help="gamess inp to restart from.")
+    parser.add_option("-v", "--verbose", dest="verbose", default='', 
+                      help="add more v's to increase log output.")
+    parser.add_option("-n", "--db_name", dest="db_name", default='gorg_site', 
+                      help="add more v's to increase log output.")
+    parser.add_option("-l", "--db_loc", dest="db_loc", default='http://127.0.0.1:5984', 
+                      help="add more v's to increase log output.")
+    (options, args) = parser.parse_args()
+    
+    #Setup logger
+    LOGGING_LEVELS = (logging.CRITICAL, logging.ERROR, 
+                                    logging.WARNING, logging.INFO, logging.DEBUG)
+    options.logging_level = len(LOGGING_LEVELS) if len(options.verbose) > len(LOGGING_LEVELS) else len(options.verbose)
+
+    main(options)
+
     sys.exit()

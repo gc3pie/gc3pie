@@ -1,10 +1,5 @@
-'''
-Created on Dec 28, 2009
+from statemachine import *
 
-@author: mmonroe
-'''
-
-from gfunction import GFunction, run_function
 from optparse import OptionParser
 import logging
 import os
@@ -16,54 +11,119 @@ from ase.calculators.gamess import GamessGridCalc
 sys.path.append('/home/mmonroe/apps/gorg')
 from gorg_site.gorg_site.lib.mydb import Mydb
 
-class GRestart(GFunction):
+class Cargo(object):
+    def __init__(self, a_task, calculator):
+        self.a_task = a_task
+        self.calculator = calculator
 
-    def preprocess(self, atoms, params):
+class GRestart(StateMachine):
+    WAIT = State()
+    EXECUTE = State()
+    PROCESS = State()
+    POSTPROCESS = State()
+    
+    def __init__(self, logging_level=1):
+        super(GRestart, self).__init__(logging_level)
+        self.cargo = None
+    
+    def start(self, db, calculator, atoms, params, application_to_run='gamess', selected_resource='ocikbpra',  cores=2, memory=1, walltime=-1):
+        super(GRestart, self).start(self.EXECUTE )
         from gorg_site.gorg_site.model.gridtask import TaskInterface
-
-        a_task = TaskInterface(self.db).create(self.calculator.author, 'GRestart')
+        a_task = TaskInterface(db).create(self.__class__.__name__)
         a_task.user_data_dict['restart_number'] = 0
         params.title = 'restart_number_%d'%a_task.user_data_dict['restart_number']
-        a_job = self.calculator.generate(atoms, params, a_task)
-        return a_task
+        a_job = calculator.generate(atoms, params, a_task, application_to_run, selected_resource, cores, memory, walltime)
+        self.cargo = Cargo(a_task, calculator)
 
-    def process_loop(self, a_task):
-        done = False
-        result_list = self.execute_run(a_task.children[-1])
-        a_result = result_list[-1]
+    def restart(self, db,  a_task):
+        super(GRestart, self).start(eval('self.%s'%(a_task.state)))
+        str_calc = a_task.user_data_dict['calculator']
+        self.cargo = Cargo(a_task, eval(str_calc + '(db)'))
+    
+    def save_state(self):
+        self.cargo.a_task.state = super(GRestart, self).save_state()
+        self.cargo.a_task.user_data_dict['calculator'] = self.cargo.calculator.__class__.__name__
+        return self.cargo.a_task
+
+    @on_main(EXECUTE)
+    def execute(self):
+        job_list = self.cargo.calculator.calculate(self.cargo.a_task.children[-1])
+        for a_job in job_list:
+            self.logger.info('Submited job %s to batch system.'%(a_job.id))
+        return self.WAIT
+    
+    @on_main(WAIT)
+    def wait(self):
+        sys.path.append('/home/mmonroe/apps/gorg')
+        from gorg.gridjobscheduler import GridjobScheduler
+        job_scheduler = GridjobScheduler()
+        job_list = [self.cargo.a_task.children[-1]]
+        new_state=self.PROCESS
+        for a_job in job_list:
+            job_done = False
+            job_scheduler.run()
+            self.logger.info('Restart waiting for job %s.'%(a_job.id))
+            job_done = a_job.wait(timeout=0)
+            if not job_done:
+                new_state=self.WAIT
+                break
+        return new_state
+    
+    @on_main(PROCESS)
+    def process(self):
+        a_job = self.cargo.a_task.children[-1]
+        a_result = self.cargo.calculator.parse(a_job)
         params = copy.deepcopy(a_result.params)
-        atoms = copy.deepcopy(a_result.atoms)
+        atoms = a_result.atoms.copy()
         if a_result.exit_successful():
             if not a_result.geom_located():                
                 params.r_orbitals = a_result.get_orbitals(raw=True)
                 params.r_hessian = a_result.get_hessian(raw=True)
-                a_task.user_data_dict['restart_number'] += 1
-                params.title = 'restart_number_%d'%a_task.user_data_dict['restart_number']
+                self.cargo.a_task.user_data_dict['restart_number'] += 1
+                params.title = 'restart_number_%d'%self.cargo.a_task.user_data_dict['restart_number']
                 # Make sure that the orbitals an hessian will be read in the inp file
                 params.set_group_param('$GUESS', 'GUESS', 'MOREAD')
                 params.set_group_param('$STATPT', 'HESS', 'READ')
                 atoms.set_positions(a_result.get_coords())
-                a_job = self.calculator.generate(atoms, params, a_task)
-                a_job.add_parent(a_result.a_job)
+                a_new_job = self.cargo.calculator.generate(atoms, params, self.cargo.a_task, **a_job.run_params)
+                a_new_job.add_parent(a_job)
+                new_state = self.EXECUTE
             else:
-                done = True
-                self.logger.info('Restart sequence task id %s has finished successfully.'%(a_task.id))
+                new_state = self.POSTPROCESS
+                self.logger.info('Restart sequence task id %s has finished successfully.'%(self.cargo.a_task.id))
         else:
-            msg = 'GAMESS returned an error while running job %s.'%(a_result.a_job.id)
+            msg = 'GAMESS returned an error while running job %s.'%(a_job.id)
             self.logger.critical(msg)
-            raise Exception, msg
-        return (done, result_list)
+            new_state = self.ERROR
+        return new_state
     
-    def postprocess(self, result_list):
-        postprocess_result = result_list
-        return postprocess_result
+    @on_main(POSTPROCESS)
+    def postprocess(self):
+        return self.DONE
+
+def main(options):
+    # Connect to the database
+    db=Mydb('mark',options.db_name,options.db_loc).cdb()
+    
+    # Parse the gamess inp file
+    myfile = open(options.file, 'rb')
+    reader = ReadGamessInp(myfile)
+    myfile.close()
+    params = reader.params
+    atoms = reader.atoms
+    
+    fsm = GRestart(options.logging_level)
+    gamess_calc = GamessGridCalc(db)
+    fsm.start(db, gamess_calc, atoms, params)
+    fsm.run()
+    a_task = fsm.save_state()
+    print a_task.id
+    
 
 if __name__ == '__main__':
     #Set up command line options
     usage = "usage: %prog [options] arg"
     parser = OptionParser(usage)
-    parser.add_option("-d", "--dir", dest="directory",default='~/tasks', 
-                      help="directory to save tasks in.")
     parser.add_option("-f", "--file", dest="file",default='exam01.inp', 
                       help="gamess inp to restart from.")
     parser.add_option("-v", "--verbose", dest="verbose", default='', 
@@ -73,29 +133,12 @@ if __name__ == '__main__':
     parser.add_option("-l", "--db_loc", dest="db_loc", default='http://127.0.0.1:5984', 
                       help="add more v's to increase log output.")
     (options, args) = parser.parse_args()
-    options.directory=os.path.expanduser(options.directory.rstrip('/'))
     
     #Setup logger
     LOGGING_LEVELS = (logging.CRITICAL, logging.ERROR, 
                                     logging.WARNING, logging.INFO, logging.DEBUG)
-    logging_level = len(LOGGING_LEVELS) if len(options.verbose) > len(LOGGING_LEVELS) else len(options.verbose)
+    options.logging_level = len(LOGGING_LEVELS) if len(options.verbose) > len(LOGGING_LEVELS) else len(options.verbose)
 
-    #Parse all the parameters to keep track of the file names
-    (filepath, filename) = os.path.split(options.file)
-    if not filepath:
-        filepath =  os.getcwd()
-    
-    # Connect to the database
-    db=Mydb(options.db_name,options.db_loc).cdb()
-    
-    # Parse the gamess inp file
-    myfile = open(options.file, 'rb')
-    reader = ReadGamessInp(myfile)
-    myfile.close()
-    params = reader.params
-    atoms = reader.atoms
-    
-    gamess_calc = GamessGridCalc('mark', db)
-    grestart = GRestart(db, gamess_calc, logging_level)
-    run_function(atoms, params, grestart)
+    main(options)
+
     sys.exit()
