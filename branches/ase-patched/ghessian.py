@@ -36,7 +36,7 @@ class GHessian(StateMachine):
         super(GHessian, self).__init__(logging_level)
         self.cargo = None
 
-    def start(self, db, calculator, atoms, params, application_to_run='gamess', selected_resource='ocikbpra',  cores=2, memory=1, walltime=-1):
+    def start(self, db, calculator, atoms, params, application_to_run='gamess', selected_resource='ocikbpra',  cores=8, memory=1, walltime=-1):
         super(GHessian, self).start(self.WAIT )
         from gorg_site.gorg_site.model.gridtask import TaskInterface
         a_task = TaskInterface(db).create(self.__class__.__name__)
@@ -44,12 +44,12 @@ class GHessian(StateMachine):
         
         perturbed_postions = self.repackage(atoms.get_positions())
         params.title = 'job_number_%d'%a_task.user_data_dict['total_jobs']
-        first_job = calculator.generate(atoms, params, a_task)
+        first_job = calculator.generate(atoms, params, a_task, application_to_run, selected_resource, cores, memory, walltime)
         for a_position in perturbed_postions[1:]:
             a_task.user_data_dict['total_jobs'] += 1
             params.title = 'job_number_%d'%a_task.user_data_dict['total_jobs']
             atoms.set_positions(a_position)
-            sec_job = calculator.generate(atoms, params, a_task)
+            sec_job = calculator.generate(atoms, params, a_task, application_to_run, selected_resource, cores, memory, walltime)
         calculator.calculate(a_task)
         self.logger.info('Submitted task %s for execution.'%(a_task.id))
         self.cargo = Cargo(a_task, calculator)
