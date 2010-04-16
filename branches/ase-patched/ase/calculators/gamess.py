@@ -351,8 +351,8 @@ class ParseGamessDat(object):
         self.parse_kernal.addRule(start, end, self.read_grad)
         start,  end = self.read_energy(returnRule=True)
         self.parse_kernal.addRule(start, end, self.read_energy)
-#        start,  end = self.read_normal_mode_molplt(returnRule=True)
-#        self.parse_kernal.addRule(start, end, self.read_normal_mode_molplt)
+        start,  end = self.read_normal_mode_molplt(returnRule=True)
+        self.parse_kernal.addRule(start, end, self.read_normal_mode_molplt)
     
     def parse_file(self, f_dat):
         self.parse_kernal.parse(f_dat)
@@ -426,7 +426,6 @@ class ParseGamessDat(object):
                     fmt = "2s3s" + cnt*"15s" + "1x"
                     vals = fun_struct_unpack(fmt, line)
                     vals = map(string.strip, vals)
-                    #resultset.append([vals[0:2], vals[2:]]) # Keys
                     key=vals[0:2]
                     value=vals[2:]
                     if last_key == (int(key[0]), int(key[1]) - 1):
@@ -434,7 +433,6 @@ class ParseGamessDat(object):
                     else:
                         fun_append(value)
                     last_key = (int(key[0]), int(key[1]))
-#            resultset = self.fix_gamess_matrix(resultset)
             map(tuple, resultset)
             if groupTitle in self.group:
                 self.group[groupTitle].append(resultset)
@@ -492,7 +490,6 @@ class ParseGamessDat(object):
             else:
                 self.group[groupTitle]=result
         
-    #MJM TODO: FIX ME!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     def read_normal_mode_molplt(self, text_block=None, returnRule=False):
         """"MOLPT Normal Mode output is formated like the gradient output:
         C FREQ(X) FREQ(Y) FREQ(Z)
@@ -506,22 +503,20 @@ class ParseGamessDat(object):
         else:
             #Define parse rule
             groupTitle=self.group.NORM_MODE
-            if text_block:
-                section = section[0][0] #We have only one section in the dat file from MOLPLT data
-                rule=Literal('ATOMIC MASSES').suppress()+OneOrMore(Word(nums+'.'))        
-                resultMass = rule.searchString(section).asList() #Atomic Masses
-                rule=Literal('FREQUENCY=').suppress()+Word(nums+'-.')        
-                resultFreq = rule.searchString(section).asList() #Frequencies
-                rule=Literal('(CM**-1)').suppress()+OneOrMore(Word(nums+'-.E'))        
-                resultMode = rule.searchString(section).asList() #Modes
-                #file.seek(0)        
-                resultset=dict()
-                resultset['ATOMIC_MASS']=resultMass[0]
-                resultset['FREQUENCY']=list()
-                for i in resultFreq: resultset['FREQUENCY'].append(i[0])
-                resultset['MODE']=resultMode
-                self.group[groupTitle]=resultset #There can only be one MOLPLT group
-
+            #Get ride of the first and last lines, it makes parsing easier
+            text_block = '\n'.join(text_block.split('\n')[1:-2])
+            rule=Literal('ATOMIC MASSES').suppress()+OneOrMore(Word(nums+'.'))        
+            resultMass = rule.searchString(text_block).asList() #Atomic Masses
+            rule=Literal('FREQUENCY=').suppress()+Word(nums+'-.')        
+            resultFreq = rule.searchString(text_block).asList() #Frequencies
+            rule=Literal('(CM**-1)').suppress()+OneOrMore(Word(nums+'-.E'))        
+            resultMode = rule.searchString(text_block).asList() #Modes
+            resultset=dict()
+            resultset['ATOMIC_MASS']=resultMass[0]
+            resultset['FREQUENCY']=list()
+            for i in resultFreq: resultset['FREQUENCY'].append(i[0])
+            resultset['MODE']=resultMode
+            self.group[groupTitle]=resultset #There can only be one MOLPLT group
 
 class GamessOut(dict):
     #For statuses True is always good, Faluse is always bad (error,did not complete,etc)

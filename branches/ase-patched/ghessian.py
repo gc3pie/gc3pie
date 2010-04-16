@@ -36,7 +36,7 @@ class GHessian(StateMachine):
         super(GHessian, self).__init__(logging_level)
         self.cargo = None
 
-    def start(self, db, calculator, atoms, params, application_to_run='gamess', selected_resource='ocikbpra',  cores=8, memory=1, walltime=-1):
+    def start(self, db, calculator, atoms, params, application_to_run='gamess', selected_resource='ocikbpra',  cores=2, memory=1, walltime=-1):
         super(GHessian, self).start(self.WAIT )
         from gorg_site.gorg_site.model.gridtask import TaskInterface
         a_task = TaskInterface(db).create(self.__class__.__name__)
