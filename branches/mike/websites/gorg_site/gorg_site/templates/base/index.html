@@ -1,0 +1,29 @@
+## -*- coding: utf-8 -*-
+
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN"
+"http://www.w3.org/TR/html4/strict.dtd">
+<html>
+<head>
+    <LINK REL=StyleSheet HREF="/css/main.css" TITLE="main">    
+    <title>${self.title()}</title>
+    ${self.head()}
+</head>
+<body>
+    ${self.header()}
+    ${self.tabs()}
+    ${self.menu()}
+    ${self.heading()}
+    ${self.breadcrumbs()}
+    ${next.body()}
+    ${self.footer()}
+</body>
+</html>
+
+<%def name="title()">SimpleSite</%def>
+<%def name="head()"></%def>
+<%def name="header()"><a name="top"></a></%def>
+<%def name="tabs()"></%def>
+<%def name="menu()"></%def>
+<%def name="heading()"><h1>${c.heading or 'No Title'}</h1></%def>
+<%def name="breadcrumbs()"></%def>
+<%def name="footer()"><p><a href="#top">Top ^</a></p></%def>

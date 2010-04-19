@@ -4,9 +4,9 @@ from pylons import request, response, session, tmpl_context as c
 from pylons.controllers.util import abort, redirect_to
 
 from gorg_site.lib.base import BaseController, render
-from gorg_site.model.gridjob import GridjobModel
-from gorg_site.model.gridrun import GridrunModel
-from gorg_site.model.gridtask import GridtaskModel, TaskInterface
+from gorg.model.gridjob import GridjobModel
+from gorg.model.gridrun import GridrunModel
+from gorg.model.gridtask import GridtaskModel, TaskInterface
 import webhelpers.paginate as paginate
 
 from gorg_site.lib.mydb import Mydb

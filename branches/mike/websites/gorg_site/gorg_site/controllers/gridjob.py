@@ -6,8 +6,8 @@ from gorg_site.lib.base import BaseController, render
 import webhelpers.paginate as paginate
 from pylons.decorators import jsonify
 import os
-from gorg_site.model.gridrun import GridrunModel
-from gorg_site.model.gridjob import GridjobModel, JobInterface
+from gorg.model.gridrun import GridrunModel
+from gorg.model.gridjob import GridjobModel, JobInterface
 from gorg_site.lib.mydb import Mydb
 
 log = logging.getLogger(__name__)
