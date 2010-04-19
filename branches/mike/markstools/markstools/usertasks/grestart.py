@@ -6,10 +6,9 @@ import os
 import copy
 import sys
 
-from ase.io.gamess import ReadGamessInp
-from ase.calculators.gamess import GamessGridCalc
-sys.path.append('/home/mmonroe/apps/gorg')
-from gorg_site.gorg_site.lib.mydb import Mydb
+from markstools.io.gamess import ReadGamessInp
+from markstools.calculators.gamess import GamessGridCalc
+from gorg.lib.utils import Mydb
 
 class Cargo(object):
     def __init__(self, a_task, calculator):

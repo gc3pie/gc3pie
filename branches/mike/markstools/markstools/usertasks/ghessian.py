@@ -3,7 +3,7 @@ Created on Dec 28, 2009
 
 @author: mmonroe
 '''
-from statemachine import *
+from markstools.lib.statemachine import *
 
 from optparse import OptionParser
 import logging
@@ -14,7 +14,7 @@ import numpy as np
 
 from markstools.io.gamess import ReadGamessInp, WriteGamessInp
 from markstools.calculators.gamess import GamessGridCalc
-from gorg.lib.mydb import Mydb
+from gorg.lib.utils import Mydb
 
 class Cargo(object):
     def __init__(self, a_task, calculator):

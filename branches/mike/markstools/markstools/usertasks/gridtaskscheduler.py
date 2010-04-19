@@ -5,9 +5,8 @@ from ghessian import GHessian
 from optparse import OptionParser
 import logging
 import sys
-sys.path.append('/home/mmonroe/apps/gorg')
-from gorg_site.gorg_site.model.gridtask import GridtaskModel, TaskInterface
-from gorg_site.gorg_site.lib.mydb import Mydb
+from gorg.model.gridtask import GridtaskModel, TaskInterface
+from gorg.lib.utils import Mydb
 from gc3utils.gcli import Gcli
 
 class GridtaskScheduler(object):
