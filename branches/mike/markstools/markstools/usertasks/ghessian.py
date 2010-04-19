@@ -12,13 +12,13 @@ import copy
 import sys
 import numpy as np
 
-from ase.io.gamess import ReadGamessInp
-from ase.calculators.gamess import GamessGridCalc
-sys.path.append('/home/mmonroe/apps/gorg')
+from io.gamess import ReadGamessInp
+from calculators.gamess import GamessGridCalc
+sys.path.append('/home/mmonroe/apps2/websites/')
 from gorg_site.gorg_site.lib.mydb import Mydb
 
-from ase.io.gamess import ReadGamessInp, WriteGamessInp
-from ase.calculators.gamess import GamessGridCalc
+from io.gamess import ReadGamessInp, WriteGamessInp
+from calculators.gamess import GamessGridCalc
 
 
 class Cargo(object):
