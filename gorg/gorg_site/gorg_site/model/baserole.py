@@ -23,7 +23,7 @@ def mapfun(doc):
     '''
 map_func_title = '''
 def mapfun(doc):
-    if 'base_type' doc:
+    if 'base_type' in doc:
         if doc['base_type'] == 'BaseroleModel':
             yield doc['title'], doc
     '''
