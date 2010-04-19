@@ -1,0 +1,3 @@
+include gorg_site/config/deployment.ini_tmpl
+recursive-include gorg_site/public *
+recursive-include gorg_site/templates *
