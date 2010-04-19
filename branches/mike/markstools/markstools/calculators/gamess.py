@@ -18,11 +18,10 @@ import os
 import numpy as np
 from pyparsing import *
 
-sys.path.append('/home/mmonroe/apps/gorg')
-from gorg_site.gorg_site.model.gridjob import JobInterface
-from gorg_site.gorg_site.model.gridrun import GridrunModel
-from gorg_site.gorg_site.model.gridtask import TaskInterface
-from gorg_site.gorg_site.lib.mydb import Mydb
+from gorg.model.gridjob import JobInterface
+from gorg.model.gridrun import GridrunModel
+from gorg.model.gridtask import TaskInterface
+from gorg.lib.utils import Mydb
 
 from ase.atoms import Atoms 
 

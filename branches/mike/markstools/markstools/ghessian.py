@@ -12,10 +12,9 @@ import copy
 import sys
 import numpy as np
 
-from io.gamess import ReadGamessInp, WriteGamessInp
-from calculators.gamess import GamessGridCalc
-sys.path.append('/home/mmonroe/apps2/websites/')
-from gorg_site.gorg_site.lib.mydb import Mydb
+from markstools.io.gamess import ReadGamessInp, WriteGamessInp
+from markstools.calculators.gamess import GamessGridCalc
+from gorg.lib.mydb import Mydb
 
 class Cargo(object):
     def __init__(self, a_task, calculator):

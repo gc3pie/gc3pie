@@ -6,7 +6,7 @@ from pyparsing import *
 import re
 
 from ase import Atom
-from ase.calculators.gamess import ParseKernal, GamessParams, GamessAtoms, MyUtilities
+from markstools.calculators.gamess import ParseKernal, GamessParams, GamessAtoms, MyUtilities
 
 class WriteGamessInp:
     """Create the file that specifies the GAMESS job
