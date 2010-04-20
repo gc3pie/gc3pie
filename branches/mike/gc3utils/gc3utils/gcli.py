@@ -8,7 +8,6 @@ __version__="0.2"
 from utils import *
 import sys
 import os
-import logging
 import ConfigParser
 from optparse import OptionParser
 from ArcLRMS import *
@@ -115,8 +114,6 @@ class Gcli:
         global default_job_folder_location
         global default_joblist_location
         global default_joblist_lock
-
-        logging.debug('blah')
 
         try:
             # Checking whether it has been passed a valid application
@@ -758,7 +755,8 @@ def main():
     #print options.verbosity
     
     global logging
-    logging = configure_logging(options.verbosity)
+    logprefix = 'mpackard'
+    logging = CreateLogger(logprefix, options.verbosity)
     
 
     try:

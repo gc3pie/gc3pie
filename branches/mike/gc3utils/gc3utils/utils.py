@@ -197,9 +197,15 @@ def configure_logging(verbosity):
     return logger
 
 
-def CreateLogger(name, logging_level):
+def CreateFileLogger(name, verbosity):
     import logging
     import logging.handlers
+
+    if ( verbosity > 5):
+        logging_level = 10
+    else:
+        logging_level = (( 6 - verbosity) * 10)
+
     LOG_FILENAME = name + '_log'
     logger = logging.getLogger('mylogger')
     logger.setLevel(logging_level)
