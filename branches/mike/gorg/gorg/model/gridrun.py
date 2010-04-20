@@ -2,7 +2,7 @@ from couchdb import schema as sch
 from couchdb import client as client
 
 import os
-import time
+from datetime import datetime
 import copy
 
 map_func_all = '''
@@ -67,7 +67,7 @@ class GridrunModel(sch.Document):
     
     # Attributes to store in the database
     author = sch.TextField()
-    dat = sch.DateTimeField(default=time.gmtime())
+    dat = sch.DateTimeField(default=datetime.today())
     base_type = sch.TextField(default='GridrunModel')
     sub_type = sch.TextField(default='GridrunModel')
 

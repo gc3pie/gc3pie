@@ -1,7 +1,7 @@
 from couchdb import schema as sch
 from couchdb.schema import  Schema
 from couchdb import client as client
-import time
+from datetime import datetime
 '''When you need to query for a key like this ('sad','saq') do this:
 self.view(db,'who_task_owns',startkey=[self.id],endkey=[self.id,{}])
 when you want to match a key ('sad','sad') do this:
@@ -41,7 +41,7 @@ class BaseroleModel(sch.Document):
     
     author = sch.TextField()
     title = sch.TextField()
-    dat = sch.DateTimeField(default=time.gmtime())
+    dat = sch.DateTimeField(default=datetime.today())
     base_type = sch.TextField(default='BaseroleModel')
     sub_type = sch.TextField()
     user_data_dict = sch.DictField()

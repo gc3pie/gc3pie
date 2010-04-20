@@ -2,9 +2,9 @@ import os
 import sys
 import tempfile
 import glob
-sys.path.append('/home/mmonroe/apps/gorg')
-from gorg_site.gorg_site.model.gridrun import GridrunModel
-from gorg_site.gorg_site.lib.mydb import Mydb
+
+from gorg.model.gridrun import GridrunModel
+from gorg.lib.utils import Mydb
 from gc3utils.gcli import Gcli
 
 class GridjobScheduler(object):
