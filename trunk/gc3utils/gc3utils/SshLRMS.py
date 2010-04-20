@@ -350,25 +350,29 @@ class SshLrms(LRMS):
         return 
             
 
-    def KillJob(self, unique_token):
+    def KillJob(self, lrms_jobid):
         """Kill job."""
 
+        ssh, sftp = self.connect_ssh(self.resource['frontend'])
+
+        # Kill the job on the remote queueing system.
+        
         try:
-            print "wow"
-            lrms_jobid = get_lrms_jobid(unique_token)
-            ssh, sftp = self.connect_ssh(self.resource['frontend'])
-
-            # Kill the job on the remote queueing system.
             stdin, stdout, stderr = ssh.exec_command('qdel ' + lrms_jobid)
-            
-            ssh.close()
+            out = stdout.read()
+            err = stderr.read()
 
+            logging.debug("_submit_command stdout:" + out)
+            logging.debug("_submit_command stderr:" + err)
+            
         except Exception, e:
             ssh.close()
             logging.critical('Failed to kill job: ' + unique_token)
             raise e
+        
+        ssh.close()
 
-        return 
+        return (0,out)
             
     """Below are the functions needed only for the SshLrms class."""
 
