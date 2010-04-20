@@ -197,7 +197,13 @@ def configure_logging(verbosity):
     return logger
 
 
-def CreateFileLogger(name, verbosity):
+def CreateFileLogger(name, file_prefix, verbosity):
+    '''
+    Create a file logger object.
+     * Requires logger name, file_prefix, verbosity
+     * Returns logger object.
+     
+    '''
     import logging
     import logging.handlers
 
@@ -206,8 +212,8 @@ def CreateFileLogger(name, verbosity):
     else:
         logging_level = (( 6 - verbosity) * 10)
 
-    LOG_FILENAME = name + '_log'
-    logger = logging.getLogger('mylogger')
+    LOG_FILENAME = file_prefix + '_log'
+    logger = logging.getLogger(name)
     logger.setLevel(logging_level)
     file_handler = logging.handlers.RotatingFileHandler(
               LOG_FILENAME, maxBytes=100000, backupCount=5)
