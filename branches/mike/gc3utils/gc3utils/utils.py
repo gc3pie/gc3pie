@@ -2,6 +2,7 @@ import sys
 import os
 import commands
 import logging
+import logging.handlers
 import tempfile
 import getpass
 import re
@@ -177,7 +178,6 @@ class Logger:
         logger.addHandler(file_handler)    
         return logger
 
-
 def configure_logging(verbosity):
     """
     Configure logging service.
@@ -186,6 +186,7 @@ def configure_logging(verbosity):
      - Returns: nothing
      
     """
+    
     if ( verbosity > 5):
         logging_level = 10
     else:
@@ -193,13 +194,10 @@ def configure_logging(verbosity):
 
     logger = logging.basicConfig(level=logging_level, format='%(asctime)s %(levelname)-8s %(message)s')
 
-    logger = _create_logger(logging_level)
-    
-    print type(logger)
-    logger.debug('wtf')
     return logger
 
-def CreateLogger(name,logging_level):
+
+def CreateLogger(name, logging_level):
     import logging
     import logging.handlers
     LOG_FILENAME = name + '_log'

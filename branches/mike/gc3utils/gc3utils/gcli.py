@@ -178,8 +178,7 @@ class Gcli:
                     resource['walltime'] = walltime
 
                 logging.debug('Creating instance of type %s for %s',resource['type'],resource['frontend'])
-                print 'yay'
-
+                
                 if ( resource['type'] == "arc" ):
                     lrms = ArcLrms(resource)
                 elif ( resource['type'] == "ssh"):
@@ -756,9 +755,11 @@ def main():
     (options, args) = ParseOptions(program_name,args)
         
     # Configure logging service
-    print options.verbosity
-    logging = configure_logging(options.verbosity)
+    #print options.verbosity
+    
     global logging
+    logging = configure_logging(options.verbosity)
+    
 
     try:
 
