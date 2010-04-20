@@ -472,8 +472,6 @@ class Gcli:
 
     def __gstat(self, unique_token):
         
-        print 'wow'
-                
         # Perform checks on the unique_token directory.
         if not check_jobdir(unique_token):
             raise Exception('invalid jobid')
@@ -536,11 +534,45 @@ class Gcli:
 
     def gkill(self, unique_token):
         """Kill a job, and optionally remove the local job directory."""
+
+        # todo : may be some redundancy to remove here
+        
+        global default_job_folder_location
+        global default_joblist_lock
         global default_joblist_location
-                
+        
         if not check_jobdir(unique_token):
             raise Exception('invalid jobid')
         
+        # check .finished file
+        if check_inputfile(unique_token+'/'+self.defaults['lrms_finished']):
+            logging.error('Job already finished.')
+            return 
+
+        # todo : may be some redundancy to remove here
+            
+        _fileHandle = open(unique_token+'/'+self.defaults['lrms_jobid'],'r')
+        _raw_resource_info = _fileHandle.read()
+        _fileHandle.close()
+
+        _list_resource_info = re.split('\t',_raw_resource_info)
+
+        logging.debug('lrms_jobid file returned %s elements',len(_list_resource_info))
+
+        if ( len(_list_resource_info) != 2 ):
+            raise Exception('failed to retrieve jobid')
+        
+        _resource = _list_resource_info[0]
+        _lrms_jobid = _list_resource_info[1]
+        
+        logging.debug('frontend: [ %s ] jobid: [ %s ]',_resource,_lrms_jobid)
+        logging.info('reading lrms_jobid info\t\t\t[ ok ]')
+
+        if ( _resource in self.resource_list ):
+            logging.debug('Found match for resource [ %s ]',_resource)
+            logging.debug('Creating lrms instance')
+            resource = self.resource_list[_resource]
+
         if ( resource['type'] == "arc" ):
             lrms = ArcLrms(resource)
         elif ( resource['type'] == "ssh"):
@@ -548,18 +580,11 @@ class Gcli:
         else:
             logging.error('Unknown resource type %s',resource['type'])
             
+        (retval,lrms_log) = lrms.KillJob(_lrms_jobid)
 
-        try:
-           
-            if os.path.exists(unique_token + "/.finished"):
-                logging.critical('Job ' + unique_token + ' is already finished.')
-            else:
-                (retval,lrms_log) = lrms.KillJob(unique_token,keeplocal)
-                logging.critical('Sent request to kill job ' + unique_token + '.  It may take a few moments for the job to finish.')
-
-        except Exception, e:
-            logging.critical('Failed to kill job: ' + unique_token)
-            raise e
+#        except Exception, e:
+#            logging.error('Failed to send qdel request to job: ' + unique_token)
+#            raise e
 
         return
         
@@ -719,20 +744,21 @@ def main():
             retval = gcli.gget(unique_token)
             if (not retval):
                 sys.stdout.write('Job results successfully retrieved in [ '+unique_token+' ]\n')
-                sys.stdout.flush
+                sys.stdout.flush()
             else:
                 raise Exception("gget terminated")
         elif (os.path.basename(program_name) == "gkill"):
             retval = gcli.gkill(unique_token)
             if (not retval):
-                sys.stdout.write('Job killed: [ '+unique_token+' ]\n')
-                sys.stdout.flush
+                sys.stdout.write('Sent request to kill job ' + unique_token)
+                sys.stdout.write('It may take a few moments for the job to finish.')
+                sys.stdout.flush()
             else:
                 raise Exception("gkill terminated")
         elif (os.path.basename(program_name) == "glist"):
             retval = gcli.glist(options.shortview)
             if (not retval):
-                sys.stdout.flush
+                sys.stdout.flush()
             else:
                 raise Exception("glist terminated")
 
