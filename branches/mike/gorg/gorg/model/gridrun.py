@@ -262,7 +262,9 @@ class GridrunModel(sch.Document):
                 break
             md5.update(data)
         f.seek(0)
-        return u'%s'%md5.digest()
+        #TODO: When mike runs this, it doesn't work
+        return u'%s'%(GridrunModel.generate_new_docid())
+        #return u'%s'%md5.digest()
     
     @staticmethod
     def generate_new_docid():
