@@ -154,7 +154,7 @@ class GamessGridCalc(MyCalculator):
     
     def generate(self, atoms, params, a_task, application_to_run='gamess', selected_resource='ocikbpra',  cores=2, memory=1, walltime=-1):
         """We run GAMESS in here."""
-        from ase.io.gamess import WriteGamessInp
+        from markstools.io.gamess import WriteGamessInp
         #Generate the input file
         f_inp = StringIO.StringIO()
         f_inp.name = params.title + '.inp'
@@ -190,7 +190,7 @@ class GamessGridCalc(MyCalculator):
     def parse(self, a_job, force_a_reparse=False):
         """Rather than running GAMESS, we just read
         and parse the results already in the database."""
-        from ase.io.gamess import ReadGamessInp
+        from markstools.io.gamess import ReadGamessInp
         parser = None
         if not force_a_reparse:            
             parser = a_job.parser 
@@ -233,7 +233,7 @@ class GamessLocalCalc(MyCalculator):
     def preexisting_result(self, f_name):
         """Rather than running GAMESS, we just read
         and parse the results already on the file system."""
-        from ase.io.gamess import ReadGamessInp
+        from markstools.io.gamess import ReadGamessInp
         f_dict = self.get_files(f_name)
         new_reader = ReadGamessInp(f_dict['inp'])
         result = GamessResult(new_reader.atoms, new_reader.params, self)        
@@ -259,7 +259,7 @@ class GamessLocalCalc(MyCalculator):
         
     def calculate(self, f_name):
         import os
-        from ase.io.gamess import WriteGamessInp
+        from markstools.io.gamess import WriteGamessInp
         result = GamessResult(atoms, params, self)
         cmd = 'cd %s; %s %s.%s 1> %s.%s 2> %s.%s'%(self.f_dir, self.CMD_GAMESS, 
                                           f_name, self.EXT_INPUT_FILE, f_name, self.EXT_STDOUT_FILE, 

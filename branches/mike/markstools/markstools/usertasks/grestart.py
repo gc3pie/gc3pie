@@ -8,7 +8,12 @@ import sys
 
 from markstools.io.gamess import ReadGamessInp
 from markstools.calculators.gamess import GamessGridCalc
+
+from gorg.model.gridtask import TaskInterface
 from gorg.lib.utils import Mydb
+from gorg.gridjobscheduler import GridjobScheduler
+
+
 
 class Cargo(object):
     def __init__(self, a_task, calculator):
@@ -27,7 +32,6 @@ class GRestart(StateMachine):
     
     def start(self, db, calculator, atoms, params, application_to_run='gamess', selected_resource='ocikbpra',  cores=2, memory=1, walltime=-1):
         super(GRestart, self).start(self.EXECUTE )
-        from gorg_site.gorg_site.model.gridtask import TaskInterface
         a_task = TaskInterface(db).create(self.__class__.__name__)
         a_task.user_data_dict['restart_number'] = 0
         params.title = 'restart_number_%d'%a_task.user_data_dict['restart_number']
@@ -53,8 +57,6 @@ class GRestart(StateMachine):
     
     @on_main(WAIT)
     def wait(self):
-        sys.path.append('/home/mmonroe/apps/gorg')
-        from gorg.gridjobscheduler import GridjobScheduler
         job_scheduler = GridjobScheduler()
         job_list = [self.cargo.a_task.children[-1]]
         new_state=self.PROCESS
@@ -114,7 +116,8 @@ def main(options):
     fsm = GRestart(options.logging_level)
     gamess_calc = GamessGridCalc(db)
     fsm.start(db, gamess_calc, atoms, params)
-    fsm.run()
+    for i in range(10):
+        fsm.run()
     a_task = fsm.save_state()
     print a_task.id
     
@@ -123,7 +126,7 @@ if __name__ == '__main__':
     #Set up command line options
     usage = "usage: %prog [options] arg"
     parser = OptionParser(usage)
-    parser.add_option("-f", "--file", dest="file",default='exam01.inp', 
+    parser.add_option("-f", "--file", dest="file",default='markstools/examples/exam01.inp', 
                       help="gamess inp to restart from.")
     parser.add_option("-v", "--verbose", dest="verbose", default='', 
                       help="add more v's to increase log output.")

@@ -1,3 +1,5 @@
+from markstools.lib.utils import format_exception_info
+
 #from string import upper
 #
 #class StateMachine(object):
@@ -88,7 +90,7 @@ class State(object):
         try:
             result = func(fsm)
         except:
-            msg = _format_exception_info()
+            msg = format_exception_info()
             print msg
             fsm.logger.critical(msg)
             raise
@@ -200,19 +202,6 @@ class StateMachine(object):
         file_handler.setFormatter(formatter)
         logger.addHandler(file_handler)
         return logger
-
-def _format_exception_info(maxTBlevel=5):
-    '''Make the exception output pretty'''
-    import traceback
-    import sys
-    cla, exc, trbk = sys.exc_info()
-    excName = cla.__name__
-    try:
-        excArgs = exc.__dict__["args"]
-    except KeyError:
-        excArgs = "<no args>"
-    excTb = traceback.format_tb(trbk, maxTBlevel)
-    return '%s %s\n%s'%(excName, excArgs, ''.join(excTb))
     
 
 class Oven(StateMachine):
