@@ -27,12 +27,13 @@ class Gcli:
     resource_list = {}
     defaults = {}
 
-    def __init__(self, config_file_location):
+    def __init__(self, config_file_location,logging_level):
         try:
             # read configuration file
             _local_resource_list = {}
             (self.defaults,_local_resource_list) = readConfig(config_file_location)
-
+            self._logger = CreateFileLogger(self.__class__.__name__,logging_level) 
+            
             for _resource in _local_resource_list.values():
                 if ("ncores" in _resource) & ("memory_per_core" in _resource) & \
                         ("walltime" in _resource) & ("type" in _resource) & ("frontend" in _resource) \
@@ -45,9 +46,9 @@ class Gcli:
             if ( len(self.resource_list) == 0 ):
                 raise Exception('could not read any valid resource configuration from config file')
 
-            logging.info('Loading configuration file %s \t[ ok ]',config_file_location)
+            self._logging.info('Loading configuration file %s \t[ ok ]',config_file_location)
         except:
-            logging.critical('Failed init gcli')
+            self._logging.critical('Failed init gcli')
             raise
 
 
@@ -74,7 +75,7 @@ class Gcli:
             for dir in dirlist:
                 if os.path.isdir(dir) == True:
                     if os.path.exists(dir + "/.lrms_jobid") and os.path.exists(dir + "/.lrms_log"):
-                        logging.debug(dir + "is a jobdir")
+                        self._logging.debug(dir + "is a jobdir")
                         jobdirs.append(dir)
 
             # break down unique_token into vars
@@ -95,10 +96,10 @@ class Gcli:
                     # short view
                     print '%-20s %-10s' % (name, status)
 
-            logging.debug('Jobs listed.')
+            self._logging.debug('Jobs listed.')
 
         except Exception, e:
-            logging.critical('Failure in listing jobs')
+            self._logging.critical('Failure in listing jobs')
             raise e
 
         return
@@ -118,39 +119,39 @@ class Gcli:
         try:
             # Checking whether it has been passed a valid application
             if ( application_to_run != "gamess" ) & ( application_to_run != "apbs" ):
-                logging.critical('Application argument\t\t\t[ failed ]\n\tUnknown application: '+application_to_run)
+                self._logging.critical('Application argument\t\t\t[ failed ]\n\tUnknown application: '+application_to_run)
                 raise Exception('invalid application argument')
 
             # Check input file
             if ( not check_inputfile(input_file) ):
-                logging.critical('Input file argument\t\t\t[ failed ]'+input_file)
+                self._logging.critical('Input file argument\t\t\t[ failed ]'+input_file)
                 raise Exception('invalid input-file argument')
 
             if ( job_local_dir != None ):
                 if ( os.path.isdir(job_local_dir) ):
-                    logging.debug('setting job_local_dir to [ %s ]',job_local_dir)
+                    self._logging.debug('setting job_local_dir to [ %s ]',job_local_dir)
                     default_job_folder_location = job_local_dir
 
-            logging.info('Parsing arguments\t\t[ ok ]')
+            self._logging.info('Parsing arguments\t\t[ ok ]')
 
-            logging.debug('submitting request with %s cores, %sGB memory and %s hours walltime',cores,memory,walltime)
+            self._logging.debug('submitting request with %s cores, %sGB memory and %s hours walltime',cores,memory,walltime)
 
             # Initialize LRMSs
             _lrms_list = []
 
             if ( selected_resource != None ):
                 if ( selected_resource in self.resource_list ):
-                    logging.debug('Found match for user defined resource: %s',selected_resource)
+                    self._logging.debug('Found match for user defined resource: %s',selected_resource)
                     candidate_resource = [self.resource_list[selected_resource]]
                 else:
-                    logging.critical('failed matching user defined resource: %s ',selected_resource)
+                    self._logging.critical('failed matching user defined resource: %s ',selected_resource)
                     raise Exception('failed matching user defined resource')
 
-                logging.info('Check user defined resources\t\t\t[ ok ]')
+                self._logging.info('Check user defined resources\t\t\t[ ok ]')
 
             else:
                 candidate_resource = self.resource_list.values()
-                logging.debug('Creating list of lrms instances')
+                self._logging.debug('Creating list of lrms instances')
                 
             # start candidate_resource loop
             for resource in candidate_resource:
@@ -158,30 +159,30 @@ class Gcli:
                 # Checking whether the imposed limits could be sustained by the candicate lrms
                 if ( cores != None ):
                     if ( ( "ncores" in resource ) & ( int(resource['ncores']) < int(cores) ) ):
-                        logging.error('Rejecting lrms for cores limits')
+                        self._logging.error('Rejecting lrms for cores limits')
                         continue
                     resource['ncores'] = cores
 
                 if ( memory != None ):
                     if ( ( "memory_per_core" in resource ) & ( int(resource['memory_per_core']) < int(memory) ) ):
-                        logging.error('Rejecting lrms for memory limits')
+                        self._logging.error('Rejecting lrms for memory limits')
                         continue
                     resource['memory_per_core'] = memory
 
                 if ( walltime != None ):
                     if ( ( "walltime" in resource ) & ( float(resource['walltime']) < float(walltime) ) & (float(resource['walltime']) >= 0 )):
-                        logging.error('Rejecting lrms for walltime limits')
+                        self._logging.error('Rejecting lrms for walltime limits')
                         continue
                     resource['walltime'] = walltime
 
-                logging.debug('Creating instance of type %s for %s',resource['type'],resource['frontend'])
+                self._logging.debug('Creating instance of type %s for %s',resource['type'],resource['frontend'])
                 
                 if ( resource['type'] == "arc" ):
                     lrms = ArcLrms(resource)
                 elif ( resource['type'] == "ssh"):
                     lrms = SshLrms(resource)
                 else:
-                    logging.error('Unknown resource type %s',resource['type'])
+                    self._logging.error('Unknown resource type %s',resource['type'])
                     continue
 
                 if (lrms.isValid == 1):
@@ -192,36 +193,36 @@ class Gcli:
                         # todo : make this a function
                         if ( resource['type'] == "arc" ):
                             if ( self.defaults['email_contact'] != "" ):
-                                logging.debug('Sending notification email to [ %s ]',self.defaults['email_contact'])
+                                self._logging.debug('Sending notification email to [ %s ]',self.defaults['email_contact'])
                                 send_email(self.defaults['email_contact'],"info@gc3.uzh.ch","GC3 Warning: Renew Grid credential","Please renew your credential")
                 else:
-                    logging.error('Failed validating lrms instance for resource %s',resource['resource_name'])
+                    self._logging.error('Failed validating lrms instance for resource %s',resource['resource_name'])
 
             # end of candidate_resource loop
 
             if ( len(_lrms_list) == 0 ):
-                logging.critical('Could not initialize ANY lrms resource')
+                self._logging.critical('Could not initialize ANY lrms resource')
                 raise Exception('no available LRMS found')
 
-            logging.info('Init pool of LRMS resources \t\t\t[ ok ]')
+            self._logging.info('Init pool of LRMS resources \t\t\t[ ok ]')
 
             # check that qgms is a good version
             minimum_version = 0.1
             if ( not check_qgms_version(minimum_version) ):
-                logging.warning('Application version mismatch')
+                self._logging.warning('Application version mismatch')
 
             # decide which resource to use
             # select_lrms returns an index
             _selected_lrms = self.__select_lrms(_lrms_list)
 
-            logging.debug('Selected LRMS: %s',_selected_lrms)
+            self._logging.debug('Selected LRMS: %s',_selected_lrms)
 
             # we trust select_lrms method to return a valid index
             # shall we cross check ?
             lrms = _lrms_list[_selected_lrms]
 
-            logging.debug('LRMS selected %s %s',lrms.resource['frontend'],lrms.resource['resource_name'])
-            logging.info('Select LRMS\t\t\t\t\t[ ok ]')
+            self._logging.debug('LRMS selected %s %s',lrms.resource['frontend'],lrms.resource['resource_name'])
+            self._logging.info('Select LRMS\t\t\t\t\t[ ok ]')
 
             # _dirname is basedir of inputfile
             # _inputname is the input name of te inputfile (e.g. exam01 from exam01.inp)
@@ -233,40 +234,40 @@ class Gcli:
             # create_unique_token
             unique_token = create_unique_token(input_file,lrms.resource['resource_name'])
 
-            logging.debug('Generate Unique token: %s',unique_token)
-            logging.info('Generate Unique token\t\t\t[ ok ]')
+            self._logging.debug('Generate Unique token: %s',unique_token)
+            self._logging.info('Generate Unique token\t\t\t[ ok ]')
 
             # creating folder for job's session
             default_job_folder_location = os.path.expandvars(default_job_folder_location)
 
-            logging.debug('creating folder for job session: %s/%s',default_job_folder_location,unique_token)
+            self._logging.debug('creating folder for job session: %s/%s',default_job_folder_location,unique_token)
             os.mkdir(default_job_folder_location+'/'+unique_token)
 
-            logging.info('Create job folder\t\t\t[ ok ]')
+            self._logging.info('Create job folder\t\t\t[ ok ]')
                                                                                           
             lrms_log = None
             lrms_jobid = None
 
             # resource_name.SubmitJob(input, unique_token, application, lrms_log) -> returns [lrms_jobid,lrms_log]
-            logging.debug('Submitting job with %s %s %s %s',unique_token, application_to_run, input_file, self.defaults['lrms_log'])
+            self._logging.debug('Submitting job with %s %s %s %s',unique_token, application_to_run, input_file, self.defaults['lrms_log'])
             (lrms_jobid,lrms_log) = lrms.SubmitJob(unique_token, application_to_run, input_file)
 
-            logging.info('Submission process to LRMS backend\t\t\t[ ok ]')
+            self._logging.info('Submission process to LRMS backend\t\t\t[ ok ]')
 
             # dump lrms_log
             try:
-                logging.debug('Dumping lrms_log and lrms_jobid')
+                self._logging.debug('Dumping lrms_log and lrms_jobid')
                 _fileHandle = open(default_job_folder_location+'/'+unique_token+'/'+self.defaults['lrms_log'],'a')
                 _fileHandle.write(lrms_log+'\n')
                 _fileHandle.close()
             except:
-                logging.error('Failed dumping lrms_log [ %s ]',sys.exc_info()[1])
+                self._logging.error('Failed dumping lrms_log [ %s ]',sys.exc_info()[1])
 
             if ( lrms_jobid == None ):
-                logging.critical('Submit to LRMS\t\t\t[ failed ]')
+                self._logging.critical('Submit to LRMS\t\t\t[ failed ]')
                 raise Exception('submission to LRMS failed')
             else:
-                logging.info('Submit to LRMS\t\t\t\t[ ok ]')
+                self._logging.info('Submit to LRMS\t\t\t\t[ ok ]')
 
             # dumping lrms_jobid
             # not catching the exception as this is suppoed to be a fatal failure;
@@ -289,12 +290,12 @@ class Gcli:
             # if joblist_location does not exist, create it
             if not os.path.exists(joblist_location):
                 open(joblist_location, 'w').close()
-                logging.debug(joblist_location + ' did not exist.  created it.')
+                self._logging.debug(joblist_location + ' did not exist.  created it.')
 
-            logging.debug('appending jobid to .jobs file as specified in defaults')
+            self._logging.debug('appending jobid to .jobs file as specified in defaults')
             try:
                 # appending jobid to .jobs file as specified in defaults
-                logging.debug('obtaining lock')
+                self._logging.debug('obtaining lock')
                 if ( obtain_file_lock(joblist_location,joblist_lock) ):
                     _fileHandle = open(joblist_location,'a')
                     _fileHandle.write(default_job_folder_location+'/'+unique_token+'\n')
@@ -303,19 +304,19 @@ class Gcli:
                     raise Exception('Failed obtain lock')
 
             except:
-                logging.error('Failed in appending current jobid to list of jobs in %s',joblist_location)
-                logging.debug('Exception %s',sys.exc_info()[1])
+                self._logging.error('Failed in appending current jobid to list of jobs in %s',joblist_location)
+                self._logging.debug('Exception %s',sys.exc_info()[1])
 
             # release lock
             if ( (not release_file_lock(joblist_lock)) & (os.path.isfile(joblist_lock)) ):
-                logging.error('Failed removing lock file')
+                self._logging.error('Failed removing lock file')
 
             """
             # database section
             # todo: right now the db doesn't do anything.  this can be improved later.
 
             dbfile_location = rcdir + "/" + application_to_run + ".db"
-            logging.debug('dbfile_locatioon: ' + dbfile_location)
+            self._logging.debug('dbfile_locatioon: ' + dbfile_location)
 
             # if database does not exist, create it 
             if not os.path.exists(dbfile_location):
@@ -331,7 +332,7 @@ class Gcli:
                     raise 
             """             
             
-            logging.info('Dumping lrms log information\t\t\t[ ok ]')
+            self._logging.info('Dumping lrms log information\t\t\t[ ok ]')
 
             return [0,default_job_folder_location+'/'+unique_token]
 
@@ -352,10 +353,10 @@ class Gcli:
         global default_joblist_lock
 
         if ( (os.path.exists(unique_token) == False ) | (os.path.isdir(unique_token) == False) | ( not check_inputfile(unique_token+'/'+self.defaults['lrms_jobid']) ) ):
-            logging.critical('Jobid Not valid')
+            self._logging.critical('Jobid Not valid')
             raise Exception('invalid jobid')
 
-        logging.info('unique_token file check\t\t\t[ ok ]')
+        self._logging.info('unique_token file check\t\t\t[ ok ]')
 
         # If the "finished" file exists, return 0 immediately.
         if ( not check_inputfile(unique_token+'/'+self.defaults['lrms_finished']) ):
@@ -368,12 +369,12 @@ class Gcli:
 
             _list_resource_info = re.split('\t',_raw_resource_info)
 
-            logging.debug('lrms_jobid file returned %s elements',len(_list_resource_info))
+            self._logging.debug('lrms_jobid file returned %s elements',len(_list_resource_info))
 
             if ( len(_list_resource_info) != 2 ):
                 raise Exception('failed retieving jobid')
 
-            logging.debug('frontend: [ %s ] jobid: [ %s ]',_list_resource_info[0],_list_resource_info[1])
+            self._logging.debug('frontend: [ %s ] jobid: [ %s ]',_list_resource_info[0],_list_resource_info[1])
             logging.info('reading lrms_jobid info\t\t\t[ ok ]')
 
             if ( _list_resource_info[0] in self.resource_list ):
@@ -392,41 +393,41 @@ class Gcli:
         lrms = GetLRMSFromUniqueToken(unique_token)
 
         if ( (lrms.isValid != 1) | (lrms.CheckAuthentication() == False) ):
-            logging.error('Failed validating lrms instance for resource %s',resource['resource_name'])
+            self._logging.error('Failed validating lrms instance for resource %s',resource['resource_name'])
             raise Exception('failed authenticating to LRMS')
 
-        logging.info('Init LRMS\t\t\t[ ok ]')
+        self._logging.info('Init LRMS\t\t\t[ ok ]')
         _lrms_jobid = _list_resource_info[1]
-        logging.debug('_list_resource_info : ' + _list_resource_info[1])
+        self._logging.debug('_list_resource_info : ' + _list_resource_info[1])
         
         #_lrms_dirfolder = dirname(unique_token)
         (retval,lrms_log) = lrms.GetResults(_lrms_jobid,unique_token)
 
         # dump lrms_log
         try:
-            logging.debug('Dumping lrms_log')
+            self._logging.debug('Dumping lrms_log')
             _fileHandle = open(unique_token+'/'+self.defaults['lrms_log'],'a')
             _fileHandle.write('=== gget ===\n')
             _fileHandle.write(lrms_log+'\n')
             _fileHandle.close()
         except:
-            logging.error('Failed dumping lrms_log [ %s ]',sys.exc_info()[1])
+            self._logging.error('Failed dumping lrms_log [ %s ]',sys.exc_info()[1])
             
         if ( retval == False ):
-            logging.error('Failed getting results')
+            self._logging.error('Failed getting results')
             raise Exception('failed getting results from LRMS')
         
-        logging.debug('CheckStatus\t\t\t[ ok ]')
+        self._logging.debug('CheckStatus\t\t\t[ ok ]')
 
         # Job finished; results retrieved; writing .finished file
         try:
-            logging.debug('Creating finished file')
+            self._logging.debug('Creating finished file')
             open(unique_token+"/"+self.defaults['lrms_finished'],'w').close()
         except:
-            logging.error('Failed creating finished file [ %s ]',sys.exc_info()[1])
+            self._logging.error('Failed creating finished file [ %s ]',sys.exc_info()[1])
             # Should handle the exception differently ?      
 
-        logging.debug('Removing jobid from joblist file')
+        self._logging.debug('Removing jobid from joblist file')
         # Removing jobid from joblist file
         try:
             default_joblist_location = os.path.expandvars(default_joblist_location)
@@ -438,9 +439,9 @@ class Gcli:
                 _oldFileHandle  = open(default_joblist_location)
                 _oldFileHandle.seek(0)
                 for line in _oldFileHandle:
-                    logging.debug('checking %s with %s',line,unique_token)
+                    self._logging.debug('checking %s with %s',line,unique_token)
                     if ( not unique_token in line ):
-                        logging.debug('writing line')
+                        self._logging.debug('writing line')
                         _newFileHandle.write(line)
 
                 _oldFileHandle.close()
@@ -449,7 +450,7 @@ class Gcli:
 
                 _newFileHandle.seek(0)
 
-                logging.debug('replacing joblist file with %s',_newFileHandle.name)
+                self._logging.debug('replacing joblist file with %s',_newFileHandle.name)
                 os.system("cp "+_newFileHandle.name+" "+default_joblist_location)
 
                 _newFileHandle.close()
@@ -457,12 +458,12 @@ class Gcli:
             else:
                 raise Exception('Failed obtain lock')
         except:
-            logging.error('Failed updating joblist file in %s',default_joblist_location)
-            logging.debug('Exception %s',sys.exc_info()[1])
+            self._logging.error('Failed updating joblist file in %s',default_joblist_location)
+            self._logging.debug('Exception %s',sys.exc_info()[1])
 
         # release lock
         if ( (not release_file_lock(default_joblist_lock)) & (os.path.isfile(default_joblist_lock)) ):
-            logging.error('Failed removing lock file')
+            self._logging.error('Failed removing lock file')
 
         return
     
@@ -493,9 +494,9 @@ class Gcli:
             if ( len(lrmsjobid_list) > 0 ):
                 for _lrmsjobid in lrmsjobid_list:
                     if ( _lrmsjobid != "" ):
-                        logging.debug('Checking status of jobid [ %s ]',_lrmsjobid)
+                        self._logging.debug('Checking status of jobid [ %s ]',_lrmsjobid)
                         status_list.append(self.__gstat(_lrmsjobid))
-            logging.debug('status_list contains [ %d ] elelemnts',len(status_list))
+            self._logging.debug('status_list contains [ %d ] elelemnts',len(status_list))
             return [0,status_list]
 
     def __gstat(self, unique_token):
@@ -507,10 +508,10 @@ class Gcli:
         # Perform checks on the lrms_jobid file
         _file = unique_token+'/'+self.defaults['lrms_jobid']
         if not check_inputfile(_file):
-            logging.critical('check_inputfile failed for ' + _file )
+            self._logging.critical('check_inputfile failed for ' + _file )
             raise Exception('check_inputfile failed for ' + _file )
             
-        logging.info('lrms_jobid file check\t\t\t[ ok ]')
+        self._logging.info('lrms_jobid file check\t\t\t[ ok ]')
 
         # check finished file
         if ( not check_inputfile(unique_token+'/'+self.defaults['lrms_finished']) ):
@@ -520,42 +521,42 @@ class Gcli:
 
             _list_resource_info = re.split('\t',_raw_resource_info)
             
-            logging.debug('frontend: [ %s ] jobid: [ %s ]',_list_resource_info[0],_list_resource_info[1])
-            logging.info('reading lrms_jobid info\t\t\t[ ok ]')
+            self._logging.debug('frontend: [ %s ] jobid: [ %s ]',_list_resource_info[0],_list_resource_info[1])
+            self._logging.info('reading lrms_jobid info\t\t\t[ ok ]')
             
             if ( _list_resource_info[0] in self.resource_list ):
-                logging.debug('Found match for resource [ %s ]',_list_resource_info[0])
-                logging.debug('Creating lrms instance')
+                self._logging.debug('Found match for resource [ %s ]',_list_resource_info[0])
+                self._logging.debug('Creating lrms instance')
                 resource = self.resource_list[_list_resource_info[0]]
                 if ( resource['type'] == "arc" ):
                     lrms = ArcLrms(resource)
                 elif ( resource['type'] == "ssh"):
                     lrms = SshLrms(resource)
                 else:
-                    logging.error('Unknown resource type %s',resource['type'])
+                    self._logging.error('Unknown resource type %s',resource['type'])
                     raise Exception('unknown resource type')
 
                 # check authentication
                 if ( (lrms.isValid != 1) | (lrms.CheckAuthentication() == False) ):
-                    logging.error('Failed validating lrms instance for resource %s',resource['resource_name'])
+                    self._logging.error('Failed validating lrms instance for resource %s',resource['resource_name'])
                     raise Exception('failed authenticating to LRMS')
 
-                logging.info('Init LRMS\t\t\t[ ok ]')
+                self._logging.info('Init LRMS\t\t\t[ ok ]')
                 _lrms_jobid = _list_resource_info[1]
                 _lrms_dirfolder = dirname(unique_token)
 
                 # check job status
                 (retval,lrms_log) = lrms.CheckStatus(_lrms_jobid)
 
-                logging.info('check status\t\t\t[ ok ]')
+                self._logging.info('check status\t\t\t[ ok ]')
             else:
-                logging.critical('Failed finding matching resource name [ %s ]',_list_resource_info[0])
+                self._logging.critical('Failed finding matching resource name [ %s ]',_list_resource_info[0])
                 raise Exception('failed finding matching resource')
 
         else:
             retval = "Status: FINISHED"
 
-        logging.debug('Returning [ %s ] [ %s ]',unique_token,retval)
+        self._logging.debug('Returning [ %s ] [ %s ]',unique_token,retval)
 
         return [unique_token,retval]
 
@@ -576,7 +577,7 @@ class Gcli:
 
         # If the "finished" file exists, return immediately.
         if ( check_inputfile(unique_token+'/'+self.defaults['lrms_finished']) ):
-            logging.error('Job is already finished.')
+            self._logging.error('Job is already finished.')
             return
         
         _fileHandle = open(unique_token+'/'+self.defaults['lrms_jobid'],'r')
@@ -585,7 +586,7 @@ class Gcli:
 
         _list_resource_info = re.split('\t',_raw_resource_info)
 
-        logging.debug('lrms_jobid file returned %s elements',len(_list_resource_info))
+        self._logging.debug('lrms_jobid file returned %s elements',len(_list_resource_info))
 
         if ( len(_list_resource_info) != 2 ):
             raise Exception('failed retieving jobid')
@@ -595,19 +596,19 @@ class Gcli:
         elif ( resource['type'] == "ssh"):
             lrms = SshLrms(resource)
         else:
-            logging.error('Unknown resource type %s',resource['type'])
+            self._logging.error('Unknown resource type %s',resource['type'])
             
 
         try:
            
             if os.path.exists(unique_token + "/.finished"):
-                logging.critical('Job ' + unique_token + ' is already finished.')
+                self._logging.critical('Job ' + unique_token + ' is already finished.')
             else:
                 (retval,lrms_log) = lrms.KillJob(unique_token,keeplocal)
-                logging.critical('Sent request to kill job ' + unique_token + '.  It may take a few moments for the job to finish.')
+                self._logging.critical('Sent request to kill job ' + unique_token + '.  It may take a few moments for the job to finish.')
 
         except Exception, e:
-            logging.critical('Failed to kill job: ' + unique_token)
+            self._logging.critical('Failed to kill job: ' + unique_token)
             raise e
 
         return
@@ -754,14 +755,13 @@ def main():
     # Configure logging service
     #print options.verbosity
     
-    global logging
-    logprefix = 'mpackard'
-    logging = CreateLogger(logprefix, options.verbosity)
     
+    logger_name = options.program_name
+    logger = CreateFileLogger(logger_name,logging_level) 
 
     try:
-
-        gcli = Gcli(default_config_file_location)
+        
+        gcli = Gcli(default_config_file_location,logger_level)
 
         if ( os.path.basename(program_name) == "gsub" ):
             # gsub prototype: application_to_run, input_file, selected_resource, job_local_dir, cores, memory, walltime

@@ -197,7 +197,7 @@ def configure_logging(verbosity):
     return logger
 
 
-def CreateFileLogger(name, file_prefix, verbosity):
+def CreateFileLogger(name, verbosity,file_prefix = 'gc3utils'):
     '''
     Create a file logger object.
      * Requires logger name, file_prefix, verbosity
