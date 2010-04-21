@@ -2,14 +2,12 @@ import sys
 import os
 import commands
 import logging
-import logging.handlers
 import tempfile
 import getpass
 import re
-import hashlib
+import md5
 import time
 import ConfigParser
-from optparse import OptionParser
 import shutil
 import getpass
 import smtplib
@@ -27,7 +25,7 @@ from email.mime.text import MIMEText
 def sumfile(fobj):
     """Returns an md5 hash for an object with read() method."""
     """Stolen from http://code.activestate.com/recipes/266486/"""
-    m = hashlib.md5()
+    m = md5.new()
     while True:
         d = fobj.read(8096)
         if not d:
@@ -150,122 +148,40 @@ def check_jobdir(jobdir):
         
     return True
 
-
-
-   
-class Logger:
-    """
-    Configure logging service.
-    """
-
-    LOG_FILENAME = 'gc3utils_log'
-
-    def __init__(self, verbosity):   
-        if ( verbosity > 5):
-            logging_level = 10
-        else:
-            logging_level = (( 6 - verbosity) * 10)
- 
-        self.logging_level = logging_level
-    
-    def get_logger(self,name):
-        logger = logging.getLogger(name)
-        logger.setLevel(logging_level)
-        file_handler = logging.handlers.RotatingFileHandler(
-                  LOG_FILENAME, maxBytes=100000, backupCount=5)
-        formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
-        file_handler.setFormatter(formatter)
-        logger.addHandler(file_handler)    
-        return logger
-
 def configure_logging(verbosity):
-    """
-    Configure logging service.
-    
-     - Takes as input: verbosity variable
-     - Returns: nothing
-     
-    """
-    
-    if ( verbosity > 5):
-        logging_level = 10
-    else:
-        logging_level = (( 6 - verbosity) * 10)
-
-    logger = logging.basicConfig(level=logging_level, format='%(asctime)s %(levelname)-8s %(message)s')
-
-    return logger
-
-
-def CreateFileLogger(name, verbosity,file_prefix = 'gc3utils'):
-    '''
-    Create a file logger object.
-     * Requires logger name, file_prefix, verbosity
-     * Returns logger object.
-     
-    '''
-    import logging
-    import logging.handlers
+    """Configure logging service."""
 
     if ( verbosity > 5):
         logging_level = 10
     else:
         logging_level = (( 6 - verbosity) * 10)
 
-    LOG_FILENAME = file_prefix + '_log'
-    logger = logging.getLogger(name)
-    logger.setLevel(logging_level)
-    file_handler = logging.handlers.RotatingFileHandler(
-              LOG_FILENAME, maxBytes=100000, backupCount=5)
-    formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
-    file_handler.setFormatter(formatter)
-    logger.addHandler(file_handler)
-    return logger
+    logging.basicConfig(level=logging_level, format='%(asctime)s %(levelname)-8s %(message)s')
 
-def CreateBasicLogger(verbosity):
+    return
+
+
+# Not usefull
+def parse_commandline_jobdir_only(args):
     """
-    Configure basic logger object.
-    
-     - Takes as input: verbosity variable
-     - Returns: logger object
-     
+    Parse command line arguments.
+    In this case there is only 1: a valid job dir.
     """
-    
-    if ( verbosity > 5):
-        logging_level = 10
-    else:
-        logging_level = (( 6 - verbosity) * 10)
 
-    logger = logging.basicConfig(level=logging_level, format='%(asctime)s %(levelname)-8s %(message)s')
+    numargs = len(args) - 1
 
-    return logger
+    logging.debug('arguments: ' + str(args[1:]))
+    logging.debug('number of arguments: ' + str(numargs))
 
+    # Check number of arguments
+    if numargs != 1 :
+        logging.critical('Usage: gstat job_dir')
+        logging.critical('Incorrect # of arguments. Exiting.')
+        sys.exit(1)
 
-#def CreateFileLogger(verbosity):
-#    """
-#    Configure file logger object.
-#    
-#     - Takes as input: verbosity variable
-#     - Returns: logger object
-#     
-#    """
-#    
-#    LOG_FILENAME = '/tmp/python_scheduler_logger.out'
-#
-#    import logging
-#    import logging.handlers
-#    logger = logging.getLogger("restart_main")
-#    logger.setLevel(self.logging_level)
-#    file_handler = logging.handlers.RotatingFileHandler(
-#              self.LOG_FILENAME, maxBytes=100000, backupCount=5)
-#    formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
-#    file_handler.setFormatter(formatter)
-#    logger.addHandler(file_handler)
-#    
-#
-#    configure_logging(verbosity)
-#    
-#    return logger
+    jobdir = str(args[1])
+
+    return jobdir
 
 
 def check_qgms_version(minimum_version):
@@ -375,39 +291,3 @@ def send_email(_to,_from,_subject,_msg):
         
     except:
         logging.error('Failed sending email [ %s ]',sys.exc_info()[1])
-        
-def GetLRMSFromUniqueToken(unique_token):
-    """
-    Get a resource 
-    
-     - Takes as input a unique_token directory path.
-     - Returns a lrms object.
-    """
-   
-    _fileHandle = open(unique_token+'/'+self.defaults['lrms_jobid'],'r')
-    _raw_resource_info = _fileHandle.read()
-    _fileHandle.close()
-
-    _list_resource_info = re.split('\t',_raw_resource_info)
-
-    logging.debug('lrms_jobid file returned %s elements',len(_list_resource_info))
-
-    if ( len(_list_resource_info) != 2 ):
-        raise Exception('failed retieving jobid')
-
-    logging.debug('frontend: [ %s ] jobid: [ %s ]',_list_resource_info[0],_list_resource_info[1])
-    logging.info('reading lrms_jobid info\t\t\t[ ok ]')
-
-    if ( _list_resource_info[0] in self.resource_list ):
-        logging.debug('Found match for resource [ %s ]',_list_resource_info[0])
-        logging.debug('Creating lrms instance')
-        resource = self.resource_list[_list_resource_info[0]]
-        if ( resource['type'] == "arc" ):
-            return ArcLrms(resource)
-        elif ( resource['type'] == "ssh"):
-            return SshLrms(resource)
-        else:
-            logging.error('Unknown resource type %s',resource['type'])
-            raise Exception('unknown resource type')
-            return None
-        

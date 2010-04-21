@@ -32,7 +32,7 @@ class LRMS:
     def KillJob(self,lrms_jobid,job_dir): 
         """
         Kill a single job at the LRMS level.
-        Return nothing.
+        Return output of delete command.
         """
         abstract
 
