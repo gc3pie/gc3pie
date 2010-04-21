@@ -7,8 +7,15 @@ from InformationContainer import *
 
 class Job(InformationContainer):
 
-    def isValid(self):
-        return True
+    FINISHED = 1
+    RUNNING = 2
+    FAILED = 3
+    SUBMITTED = 4
+    COMPLETED = 5
+
+    def is_valid(self):
+        if self.__dict__.has_key('status') and self.__dict__.has_key('resource_name') and self.__dict__.has_key('lrms_jobid') and self.__dict__.has_key('unique_token'):
+            return True
 
 
 

@@ -7,5 +7,12 @@ from InformationContainer import *
 
 class Default(InformationContainer):
 
-    def isValid(self):
+    HOMEDIR = os.path.expandvars('$HOME')
+    RCDIR = homedir + "/.gc3"
+    CONFIG_FILE_LOCATION = rcdir + "/config"
+    JOBLIST_FILE = rcdir + "/.joblist"
+    JOBLIST_LOCK = rcdir + "/.joblist_lock"
+    JOB_FOLDER_LOCATION="$PWD"
+
+    def is_valid(self):
         return True

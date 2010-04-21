@@ -7,7 +7,6 @@ from InformationContainer import *
 
 class Application(InformationContainer):
 
-    def isValid(self
-                ):
+    def is_valid(self):
         return True
 

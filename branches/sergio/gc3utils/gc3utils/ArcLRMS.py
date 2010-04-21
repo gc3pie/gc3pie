@@ -13,6 +13,8 @@ import subprocess
 from utils import *
 from LRMS import LRMS
 from Resource import Resource
+import Job
+import Application
 
 # -----------------------------------------------------
 # ARC lrms
@@ -21,130 +23,25 @@ from Resource import Resource
 class ArcLrms(LRMS):
 
     isValid = 0
-    VOMSPROXYINFO = "grid-proxy-info -exists -valid 1:10"
-#    VOMSPROXYINIT = "voms-proxy-init -q -voms smscg"
-    VOMSPROXYINIT = ['voms-proxy-init','-valid','24:00','-voms','smscg','-q','-pwstdin']
-    SLCSINFO = "openssl x509 -noout -checkend 3600 -in ~/.globus/usercert.pem"
-    SLCSINIT = "slcs-init --idp uzh.ch"
     GAMESS_XRSL_TEMPLATE = "$HOME/.gc3/gamess_template.xrsl"
-    AAI_CREDENTIAL_REPO = "$HOME/.gc3/aai_credential"
     resource = []
 
     def __init__(self, resource):
         # check first that manadtory fields are defined
         # if resource['frontend'] == "" means access to the entire arc based infrastructure
         if (resource['type'] == "arc"):
-            self.resource = resource
+            self._resource = resource
             self.isValid = 1
 
-            self.resource['ncores'] = int(self.resource['ncores'])
-            self.resource['memory_per_core'] = int(self.resource['memory_per_core']) * 1000
-            self.resource['walltime'] = int(self.resource['walltime'])
-            if (self.resource['walltime'] > 0 ):
+            self._resource['ncores'] = int(self._resource['ncores'])
+            self._resource['memory_per_core'] = int(self._resource['memory_per_core']) * 1000
+            self._resource['walltime'] = int(self._resource['walltime'])
+            if (self._resource['walltime'] > 0 ):
                 # convert from hours to minutes
-                self.resource['walltime'] = self.resource['walltime'] * 60
+                self._resource['walltime'] = self._resource['walltime'] * 60
 
-            logging.debug('Init resource %s with %d cores, %d walltime, %d memory',self.resource['resource_name'],self.resource['ncores'],self.resource['walltime'],self.resource['memory_per_core'])
+            logging.debug('Init resource %s with %d cores, %d walltime, %d memory',self._resource['resource_name'],self._resource['ncores'],self._resource['walltime'],self._resource['memory_per_core'])
 
-    @staticmethod
-    def renewGridCredential(_aaiUserName):
-        AAI_CREDENTIAL_REPO = os.path.expandvars("$HOME/.gc3/aai_credential")
-        try:
-            logging.debug('checking AAI credential file [ %s ]',AAI_CREDENTIAL_REPO)
-            if ( os.path.exists(AAI_CREDENTIAL_REPO) & os.path.isfile(AAI_CREDENTIAL_REPO) ):
-                logging.debug('Opening AAI credential file in %s',AAI_CREDENTIAL_REPO)
-                _fileHandle = open(AAI_CREDENTIAL_REPO,'r')
-                _aaiUserName = _fileHandle.read()
-                _aaiUserName = _aaiUserName.rstrip("\n")
-                logging.debug('_aaiUserName: %s',_aaiUserName)
-                RenewGridCredential(_aaiUserName)
-            else:
-                logging.critical('AAI_Credential information file not found')
-                raise Exception('AAI_Credential information file not found')
-        except:
-            logging.critical('Failed renewing grid credential [%s]',sys.exc_info()[1])
-            return False
-
-    def check_authentication(self):
-        return True
-    
-        try:
-            logging.debug('Checking Grid Credential')
-            if ( (not utils.CheckGridAuthentication()) | (not utils.checkUserCertificate()) ):
-                logging.error('Credential Expired')
-                raise Exception("Credential Expired")
-            return True
-            
-            logging.debug('Checking voms-proxy status')
-            retval = commands.getstatusoutput(self.VOMSPROXYINFO)
-            if ( retval[0] != 0 ):
-                # Probably failed because of expired credential
-                # Checking slcs first
-
-                logging.debug('Checking voms-proxy status\t\t[ failed ]:\n\t%s',retval[1])
-
-                # Getting AAI username
-                _aaiUserName = None
-
-                self.AAI_CREDENTIAL_REPO = os.path.expandvars(self.AAI_CREDENTIAL_REPO)
-                logging.debug('checking AAI credential file [ %s ]',self.AAI_CREDENTIAL_REPO)
-                if ( os.path.exists(self.AAI_CREDENTIAL_REPO) & os.path.isfile(self.AAI_CREDENTIAL_REPO) ):
-                    logging.debug('Opening AAI credential file in %s',self.AAI_CREDENTIAL_REPO)
-                    _fileHandle = open(self.AAI_CREDENTIAL_REPO,'r')
-                    _aaiUserName = _fileHandle.read()
-                    logging.debug('_aaiUserName: %s',_aaiUserName)
-                    _aaiUserName = _aaiUserName.rstrip("\n")
-                    logging.debug('_aaiUserName: %s',_aaiUserName)
-
-                if ( _aaiUserName is None ):
-                    _aaiUserName = raw_input('Insert AAI/Switch username for user '+getpass.getuser()+': ')
-
-                input_passwd = getpass.getpass('Insert AAI/Switch password for user '+_aaiUserName+' : ')
-
-                logging.debug('Checking slcs status')
-                retval = commands.getstatusoutput(self.SLCSINFO)
-                if ( retval[0] != 0 ):
-                    # Failed because slcs credential expired
-                    # trying renew slcs 
-                    # this should be an interactiave command
-                    logging.debug('Checking slcs status\t\t[ failed ]\n\t%s',retval[1])
-                    logging.debug('Initializing slcs')
-                    retval = commands.getstatusoutput(self.SLCSINIT+" -u "+_aaiUserName+" -p "+input_passwd+" -k "+input_passwd)
-                    if ( retval[0] != 0 ):
-                        # Failed renewing slcs
-                        logging.critical("failed renewing slcs: %s",retval[1])
-                        raise Exception('failed slcs-init')
-
-                    logging.info('Initializing slcs\t\t\t[ ok ]')
-                    
-                # Try renew voms credential
-                # Another interactive command
-
-                logging.debug('Initializing voms-proxy')
-
-                p1 = subprocess.Popen(['echo',input_passwd],stdout=subprocess.PIPE)
-                p2 = subprocess.Popen(self.VOMSPROXYINIT,stdin=p1.stdout,stdout=subprocess.PIPE)
-                if ( p2.wait() != 0 ):
-                    # Failed renewing voms credential
-                    # FATAL ERROR
-                    logging.critical("Initializing voms-proxy\t\t[ failed ]\n\t%s",retval[1])
-                    raise Exception('failed voms-proxy-init')
-
-#                retval = commands.getstatusoutput("echo \'"+input_passwd+"\' | "+self.VOMSPROXYINIT+" -pwstdin")
-#                if ( retval[0] != 0 ):
-                    # Failed renewing voms credential
-                    # FATAL ERROR
-#                    logging.critical("Initializing voms-proxy\t\t[ failed]\n\t%s",retval[1])
-#                    return False
-                logging.info('Initializing voms-proxy\t\t[ ok ]')
-            logging.info('check_authentication\t\t\t\t[ ok ]')
-
-            # disposing content of passord variable
-            input_passwd = None
-
-            return True
-        except:
-            raise Exception('failed in check_authentication')
 
 
     def submit_job(self, unique_token, application, input_file):
@@ -182,17 +79,17 @@ class ArcLrms(LRMS):
 
                 _command = ""
 
-                if ( self.resource['walltime'] > 0 ):
+                if ( self._resource['walltime'] > 0 ):
                     logging.debug('setting walltime...')
-                    _command = "(cputime=\""+str(self.resource['walltime'])+"\")\n"
+                    _command = "(cputime=\""+str(self._resource['walltime'])+"\")\n"
 
-                if ( self.resource['ncores'] > 0 ):
+                if ( self._resource['ncores'] > 0 ):
                     logging.debug('setting cores...')
-                    _command = _command+"(count=\""+str(self.resource['ncores'])+"\")\n"
+                    _command = _command+"(count=\""+str(self._resource['ncores'])+"\")\n"
 
-                if ( self.resource['memory_per_core'] > 0 ):
+                if ( self._resource['memory_per_core'] > 0 ):
                     logging.debug('setting memory')
-                    _command = _command+"(memory=\""+str(self.resource['memory_per_core'])+"\")"
+                    _command = _command+"(memory=\""+str(self._resource['memory_per_core'])+"\")"
 
                 if ( _command != "" ):
                     _command = "echo '"+_command+"' >> "+_file_handle.name
@@ -202,13 +99,13 @@ class ArcLrms(LRMS):
                         logging.error("Create XRSL\t\t[ failed ]")
                         raise Exception('failed creating submission file')
 
-                logging.debug('checking resource [ %s ]',self.resource['frontend'])
+                logging.debug('checking resource [ %s ]',self._resource['frontend'])
                 # Ready for real submission
-                if ( self.resource['frontend'] == "" ):
+                if ( self._resource['frontend'] == "" ):
                     # frontend not defined; use the entire arc-based infrastructure
                     _command = "ngsub -d2 -f "+_file_handle.name
                 else:
-                    _command = "ngsub -d2 -c "+self.resource['frontend']+" -f "+_file_handle.name
+                    _command = "ngsub -d2 -c "+self._resource['frontend']+" -f "+_file_handle.name
 
                 logging.debug('Running ARC command [ %s ]',_command)
             
@@ -335,4 +232,4 @@ class ArcLrms(LRMS):
 
     def GetResourceStatus(self):
         logging.debug("Returning information of local resoruce")
-        return Resource(resource_name=self.resource['resource_name'],total_cores=self.resource['ncores'],memory_per_core=self.resource['memory_per_core'])
+        return Resource(resource_name=self._resource['resource_name'],total_cores=self._resource['ncores'],memory_per_core=self._resource['memory_per_core'])

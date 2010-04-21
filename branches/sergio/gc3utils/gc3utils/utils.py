@@ -224,7 +224,7 @@ def read_config(config_file_location):
                 _resource_options = {}
                 for _option in _option_list:
                     _resource_options[_option] = config.get(_resource,_option)
-                _resource_options['resource_name'] = _resource
+                _resource_options['name'] = _resource
                 resource_list.append(_resource_options)
 #                resource_list[_resource] = _resource_options
 
@@ -364,3 +364,40 @@ def renew_grid_credential(_aaiUserName):
         # Return False or raise exception ?
         raise
     
+def get_job_from_filesystem(unique_token,job_file):
+    # get from the filesystem the unique_token is pointing to the job info
+    if (not os.path.exists(_unique_token)) or (not os.path.isdir(_unique_token)) or (not check_inputfile(unique_token+'/'+job_file)):
+        logging.critical('unique_token not valid')
+        raise Exception('invalid unique_token')
+                    
+    try:
+        _fileHandle = open(unique_token+'/'+job_file,'r')
+        _job_information_list = re.split('\n',_fileHandle.read())
+        _fileHandle.close()
+        _job = Job()
+        for _job_information_duplet in _job_information_list:
+            _job_information_duplet = re.split('\t',_job_information_duplet)
+            # There should a list with just two elements: key and value
+            if len(_job_information_duplet) != 2:
+                logging.critical('Failed reducing job information from job_file %s. Found %d elements',job_file,len(_job_information_duplet))
+                raise Exception('PROGRAMMING_ERROR: expected two elements')
+ 
+            _job.insert(_job_information_duplet[0],_job_information_duplet[1])
+
+        if _job.isValid():
+            _job_list.append(_job)
+
+    except:
+        logging.error('Failed reading lrms_jobid_file %s/%s : %s',unique_token,job_file,sys.exc_info()[1])
+        raise
+
+    # Shall we check whether the list is empty or not ?
+    return _job
+
+def display_job_status(job_list):
+    if len(job_list) > 0:
+        sys.stdout.write("==========================================================================")
+        for _job in job_list: 
+            sys.stdout.write(_job.unique_token+'\t'+_job.status+'\t'+_job.submitted+'\t'+_job.resource_name)
+            sys.stdout.write('\n')
+            sys.stdout.flush()
