@@ -52,9 +52,6 @@ class BaseroleModel(sch.Document):
     # This works like a dictionary, but allows you to go a_job.test.application_to_run='a app' as well as a_job.test['application_to_run']='a app'
     #test=sch.DictField(Schema.build(application_to_run=sch.TextField(default='gamess')))
     
-    def add_child(self, child):
-        assert False,  'Must implement a add_child methos'
-    
     def create(self, author, title):
         self.id = BaseroleModel.generate_new_docid()
         self.author = author
@@ -62,7 +59,7 @@ class BaseroleModel(sch.Document):
         return self
 
     def commit(self, db):
-        pass
+        raise NotImplementedError('Must implement a commit(self, db) method')
     
     @staticmethod
     def view_all(db, **options):
@@ -77,11 +74,11 @@ class BaseroleModel(sch.Document):
         from uuid import uuid4
         return uuid4().hex
     
-    def copy(self):
+    def __copy__(self):
         import copy
         '''We want to make a copy of this job, so we can use the same setting to 
         create another job.'''
-        new_record=copy.deepcopy(self)
+        new_record=copy.copy(self)
         del new_record['_id']
         del new_record['_rev']
         return new_record
@@ -90,7 +87,8 @@ class BaseroleModel(sch.Document):
     def my_view(cls, db, viewname, **options):
         from couchdb.design import ViewDefinition
         viewnames = cls.sync_views(db, only_names=True)
-        assert viewname in viewnames, 'View not in view name list.'
+        if viewname not in viewnames:
+            CriticalError('View not in view name list.')
         a_view = super(cls, cls).view(db, '%s/%s'%(cls.VIEW_PREFIX, viewname), **options)
         #a_view=.view(db, 'all/%s'%viewname, **options)
         return a_view
@@ -137,8 +135,8 @@ class BaseroleInterface(object):
         self.db = db
         self.controlled = None
     
-    def create(self):
-        assert False, 'Must implement me.'
+    def create(*args, **kwargs):
+        raise NotImplementedError('Must implement a create(*args, **kwargs) method')
     
     def __repr__(self):
         return self.controlled.__repr__()
@@ -231,7 +229,8 @@ class BaseroleInterface(object):
         for key in self.attachments:
            if key.rfind(ext) >= 0:
                 f_dict[key] = self.attachments[key]
-        assert len(f_dict) <= 1,  'More that one file matches your attachment request.'
+        if len(f_dict) != 1:
+            raise ViewWarning('More than one file matches your attachment request.')
         if len(f_dict) == 1:
             return f_dict.values()[0]
         elif len(f_dict) > 1:
@@ -253,20 +252,21 @@ class BaseroleInterface(object):
 
     def delete_attachment(self, filename):
         return self.db.delete_attachment(self.controlled, filename)
-    
-    def _attachments_to_files(self, f_names=[]):
+
+    def attachments_to_files(self, db, f_names=[]):
         '''We often want to save all of the attachments on the local computer.'''
-        import tempfile
-        temp_file = tempfile.NamedTemporaryFile()
-        temp_file.close()
+        tempdir,  prefix = generate_tempfile_prefix()
         f_attachments = dict()
-        if not f_names and '_attachments' in self.controlled:
+        if not f_names and '_attachments' in self:
             f_names = self.controlled['_attachments']
         # Loop through each attachment and save it
         for attachment in f_names:
-            attached_data = self._get_attachment(attachment)
-            myfile = open( '%s.%s'%(temp_file.name, attachment), 'wb')
-            myfile.write(attached_data)
-            myfile.close()
-            f_attachments[attachment]=open(myfile.name, 'rb') 
+            attached_data = self.get_attachment(db, attachment)
+            try:
+                myfile = open( '%s/%s_%s'%(tempdir, prefix, attachment), 'wb')
+                myfile.write(attached_data)
+                f_attachments[attachment]=open(myfile.name, 'rb') 
+            except IOError:
+                myfile.close()
+                raise
         return f_attachments

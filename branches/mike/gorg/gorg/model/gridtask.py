@@ -96,7 +96,8 @@ class GridtaskModel(BaseroleModel):
     def my_view(cls, db, viewname, **options):
         from couchdb.design import ViewDefinition
         viewnames = cls.sync_views(db, only_names=True)
-        assert viewname in viewnames, 'View not in view name list.'
+        if viewname not in viewnames:
+            CriticalError('View not in view name list.')
         a_view = super(cls, cls).view(db, '%s/%s'%(cls.VIEW_PREFIX, viewname), **options)
         #a_view=.view(db, 'all/%s'%viewname, **options)
         return a_view

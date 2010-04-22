@@ -49,3 +49,20 @@ def formatExceptionInfo(maxTBlevel=5):
     excTb = traceback.format_tb(trbk, maxTBlevel)
     #(excName, excArgs, excTb)
     return '%s %s\n%s'%(excName, excArgs, ''.join(excTb))
+
+def generate_new_docid():
+    from uuid import uuid4
+    return uuid4().hex
+
+def generate_tempfile_prefix():
+    import glob
+    import temp
+    dir = tempfile.gettempdir()
+    len = 5
+    while True:
+        prefix = generate_new_docid()[0:len]
+        f_list = glob.glob('%s/%s*'%(dir, prefix))
+        if len(f_list) == 0:
+            break
+        return (dir, prefix)
+    

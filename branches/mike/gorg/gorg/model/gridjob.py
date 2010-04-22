@@ -26,9 +26,14 @@ def mapfun(doc):
     if 'base_type' in doc:
         if doc['base_type'] == 'BaseroleModel':
             if doc['sub_type'] == 'GridjobModel':
-                for job_id in doc['children']:
-                    yield job_id, doc
+                if doc['children']:
+                    for job_id in doc['children']:
+                        yield job_id, doc
+                    else:
+                        yield [],doc
     '''
+
+
 map_func_author_status = '''
 def mapfun(doc):
     if 'base_type' in doc:
@@ -66,7 +71,8 @@ class GridjobModel(BaseroleModel):
     def load_job(db, job_id):
         a_job = GridjobModel.load(db, job_id)
         view = GridrunModel.view_by_job(db, key=job_id)
-        assert len(view) == 1,  'Job %s does not have a run associated with it.'%(a_job.id)
+        if len(view) == 0:
+            DocumentError('Job %s does not have a run associated with it.'%(a_job.id))
         a_job._run_id = view.view.wrapper(view.rows[0]).id
         return a_job
     
@@ -92,7 +98,8 @@ class GridjobModel(BaseroleModel):
     def my_view(cls, db, viewname, **options):
         from couchdb.design import ViewDefinition
         viewnames = cls.sync_views(db, only_names=True)
-        assert viewname in viewnames, 'View not in view name list.'
+        if viewname not in viewnames:
+            CriticalError('View not in view name list.')
         a_view = super(cls, cls).view(db, '%s/%s'%(cls.VIEW_PREFIX, viewname), **options)
         #a_view=.view(db, 'all/%s'%viewname, **options)
         return a_view

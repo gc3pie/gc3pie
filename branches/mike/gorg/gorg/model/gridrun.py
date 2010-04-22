@@ -4,6 +4,8 @@ from couchdb import client as client
 import os
 from datetime import datetime
 import copy
+import tempfile
+from gorg.utils import generate_new_docid, generate_tempfile_prefix
 
 map_func_all = '''
 def mapfun(doc):
@@ -100,11 +102,11 @@ class GridrunModel(sch.Document):
         self.subtype = self.SUB_TYPE
         self._hold_file_pointers = list()
         
-    def __setattr__(self, name, value):
-        if name == 'status':
-            assert value in PossibleStates.values(), 'Invalid status. \
-            Only the following are valid, %s'%(' ,'.join(PossibleStates.values()))
-        super(GridrunModel, self).__setattr__(name, value)
+#    def __setattr__(self, name, value):
+#        if name == 'status':
+#            assert value in PossibleStates.values(), 'Invalid status. \
+#            Only the following are valid, %s'%(' ,'.join(PossibleStates.values()))
+#        super(GridrunModel, self).__setattr__(name, value)
     
     def get_jobs(self, db):
         job_list = list()
@@ -127,18 +129,18 @@ class GridrunModel(sch.Document):
         for a_file in files_to_run:
             base_name = os.path.basename(a_file.name)
             self.files_to_run[base_name] = GridrunModel.md5_for_file(a_file)
-        
         # We now need to build a new run record
         self.author = a_job.author
         self.owned_by.append(a_job.id)
         self.run_params=dict(application_to_run=application_to_run, \
                               selected_resource=selected_resource,  cores=cores, memory=memory, walltime=walltime)
-        self.id = GridrunModel.generate_new_docid()
+        self.id = generate_new_docid()
         self = self._commit_new(db, a_job, files_to_run)
         return self
     
     def _commit_new(self, db, a_job, files_to_run):
-        assert len(files_to_run) > 0,  'No files associated with run %s'%self.id
+        if len(files_to_run) > 0:
+            raise DocumentError('No files associated with run %s'%self.id)
         # The run has never been store in the database
         # Can we use a run that is already in the database?
         a_run_already_in_db = self._check_for_previous_run(db)
@@ -159,12 +161,11 @@ class GridrunModel(sch.Document):
 
     def _check_for_previous_run(self, db):
         a_view = GridrunModel.view_by_hash(db, key=self.files_to_run.values())
-        if len(a_view) == 0:
-            return None
+        result = None
         for a_run in a_view:
-            if a_run.status == 'DONE':
-                return a_run
-        return None
+            if a_run.status == PossibleStates['DONE']:
+                result = a_run
+        return result
     
     def commit(self, db):
         self.store(db)
@@ -186,19 +187,20 @@ class GridrunModel(sch.Document):
     
     def attachments_to_files(self, db, f_names=[]):
         '''We often want to save all of the attachments on the local computer.'''
-        import tempfile
-        temp_file = tempfile.NamedTemporaryFile()
-        temp_file.close()
+        tempdir,  prefix = generate_tempfile_prefix()
         f_attachments = dict()
         if not f_names and '_attachments' in self:
             f_names = self['_attachments']
         # Loop through each attachment and save it
         for attachment in f_names:
             attached_data = self.get_attachment(db, attachment)
-            myfile = open( '%s.%s'%(temp_file.name, attachment), 'wb')
-            myfile.write(attached_data)
-            myfile.close()
-            f_attachments[attachment]=open(myfile.name, 'rb') 
+            try:
+                myfile = open( '%s/%s_%s'%(tempdir, prefix, attachment), 'wb')
+                myfile.write(attached_data)
+                f_attachments[attachment]=open(myfile.name, 'rb') 
+            except IOError:
+                myfile.close()
+                raise
         return f_attachments
     
     @staticmethod
@@ -230,7 +232,8 @@ class GridrunModel(sch.Document):
     def my_view(cls, db, viewname, **options):
         from couchdb.design import ViewDefinition
         viewnames = cls.sync_views(db, only_names=True)
-        assert viewname in viewnames, 'View not in view name list.'
+        if viewname not in viewnames:
+            CriticalError('View not in view name list.')
         a_view = super(cls, cls).view(db, '%s/%s'%(cls.VIEW_PREFIX, viewname), **options)
         #a_view=.view(db, 'all/%s'%viewname, **options)
         return a_view
@@ -278,10 +281,6 @@ class GridrunModel(sch.Document):
             md5.update(data)
         f.seek(0)
         #TODO: When mike runs this, it doesn't work
-        return u'%s'%(GridrunModel.generate_new_docid())
+        return u'%s'%(generate_new_docid())
         #return u'%s'%md5.digest()
     
-    @staticmethod
-    def generate_new_docid():
-        from uuid import uuid4
-        return uuid4().hex
