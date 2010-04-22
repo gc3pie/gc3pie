@@ -1,12 +1,20 @@
+import sys
+
 class Scheduler:
     @staticmethod
     def do_brokering(lrms_list,application):
         try:
+            _selected_lrms_list = []
             for lrms in lrms_list:
-                if (application.cores > lrms.max_cores_per_job) | (application.memory > lrms.max_memory_per_core) | (application.walltime > lrms.max_walltime) :
+                if (application.cores > lrms.max_cores_per_job) | (application.memory > lrms.max_memory_per_core) | (application.walltime > lrms.max_walltime):
                     continue
                 else:
-                    return lrms
-            raise Exception('Failed finding lrms that could fullfill the application requirements')
+                    # lrms is a good candidate
+                    _selected_lrms_list.append(lrms)
+            return _selected_lrms_list
+
+        except AttributeError:
+            # either lrms or application are not valid objects
+            raise BrokerExeption(sys.exc_info()[1])
         except:
-            raise
+            raise BrokerExeption(sys.exc_info()[1])

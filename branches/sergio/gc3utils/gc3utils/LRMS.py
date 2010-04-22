@@ -26,3 +26,5 @@ class LRMS:
         # containing a dictionary with resource information
         
     def tail(self, std_type): abstract
+
+    def is_valid(): abstract

@@ -150,6 +150,19 @@ def check_jobdir(jobdir):
         return False
 
 
+def configure_logger(verbosity, logger_tag, log_file_name):
+    if ( verbosity > 5):
+        logging_level = 10
+    else:
+        logging_level = (( 6 - verbosity) * 10)
+
+        log = logging.getLogger(loger_tag)
+        log.setLevel(logging_level)
+        handler = logging.handlers.RotatingFileHandler(log_file_name, maxBytes=200, backupCount=5)
+        log.addHandler(handler)
+
+    return log
+
 def configure_logging(verbosity):
     """Configure logging service."""
 

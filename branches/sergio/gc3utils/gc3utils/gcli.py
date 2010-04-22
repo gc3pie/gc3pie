@@ -145,9 +145,6 @@ class Gcli:
             logging.critical('Could not initialize ANY lrms resource')
             raise Exception('no available LRMS found')
 
-        # Stop here - debugging
-        raise Exception('bye bye')
-
         logging.debug('Performing brokering')
         # decide which resource to use
         # (Job) = (Scheduler).PerformBrokering((Resource)[],(Application))
@@ -162,6 +159,9 @@ class Gcli:
         except:
             logging.critical('Failed in scheduling')
             raise
+
+        # Stop here - debugging
+        raise Exception('bye bye')
 
         # This method also takes care of crating the unique_token's folder
         try:
