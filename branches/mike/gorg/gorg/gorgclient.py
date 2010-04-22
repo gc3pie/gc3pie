@@ -1,17 +1,17 @@
 import os
 import sys
-sys.path.append('/home/mmonroe/apps/gorg')
-from gorg_site.gorg_site.model.gridjob import GridjobModel, JobInterface
-from gorg_site.gorg_site.model.baserole import BaseroleModel
-from gorg_site.gorg_site.model.gridtask import GridtaskModel, TaskInterface
-from gorg_site.gorg_site.model.gridrun import GridrunModel
 
-from gorg_site.gorg_site.lib.mydb import Mydb
+from gorg.model.gridjob import GridjobModel, JobInterface
+from gorg.model.baserole import BaseroleModel
+from gorg.model.gridtask import GridtaskModel, TaskInterface
+from gorg.model.gridrun import GridrunModel
+
+from gorg.lib.utils import Mydb
 
 def main():
     # We add a job to our database lke this
-    db=Mydb('mark','gorg_site','http://127.0.0.1:5984').createdatabase()
-    db=Mydb('mark','gorg_site','http://127.0.0.1:5984').cdb()
+    db=Mydb('mark','gorg_site','http://130.60.144.211:5984').createdatabase()
+    db=Mydb('mark','gorg_site','http://130.60.144.211:5984').cdb()
     GridjobModel.sync_views(db)
     GridrunModel.sync_views(db)
     GridtaskModel.sync_views(db)

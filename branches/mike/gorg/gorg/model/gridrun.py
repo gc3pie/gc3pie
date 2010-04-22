@@ -57,11 +57,26 @@ reduce_func_author_status ='''
 def reducefun(keys, values, rereduce):
     return sum(values)
     '''
+    
+#class States(object):
+#    hold = 'HOLD'
+#    ready = 'READY'
+#    waiting = 'WAITING'
+#    running = 'RUNNING'
+#    finished = 'FINISHED'
+#    retrieving = 'RETRIEVING'
+#    done = 'DONE'
+#    error = 'ERROR'
+#    unreachable = 'UNREACHABLE'
+#    notified = 'NOTIFIED'
+
+PossibleStates = dict(HOLD='HOLD', READY='READY', WAITING='WAITING',RUNNING='RUNNING', 
+                                        FINISHED='FINISHED', RETRIEVING='RETRIEVING', DONE='DONE',
+                                        ERROR='ERROR',unreachable = 'UNREACHABLE',  notified = 'NOTIFIED')
+
+TerminalStates = dict(HOLD='HOLD', ERROR='ERROR', DONE='DONE')
 
 class GridrunModel(sch.Document):
-    POSSIBLE_STATUS = dict(HOLD='HOLD', READY='READY', WAITING='WAITING',RUNNING='RUNNING', 
-                                           RETRIEVING='RETRIEVING',FINISHED='FINISHED', DONE='DONE',
-                                            ERROR='ERROR')
     VIEW_PREFIX = 'GridrunModel'
     SUB_TYPE = 'GridrunModel'
     
@@ -87,8 +102,8 @@ class GridrunModel(sch.Document):
         
     def __setattr__(self, name, value):
         if name == 'status':
-            assert value in self.POSSIBLE_STATUS.values(), 'Invalid status. \
-            Only the following are valid, %s'%(' ,'.join(self.POSSIBLE_STATUS.values()))
+            assert value in PossibleStates.values(), 'Invalid status. \
+            Only the following are valid, %s'%(' ,'.join(PossibleStates.values()))
         super(GridrunModel, self).__setattr__(name, value)
     
     def get_jobs(self, db):
