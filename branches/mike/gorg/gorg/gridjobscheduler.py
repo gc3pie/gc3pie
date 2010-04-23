@@ -57,9 +57,8 @@ class GridjobScheduler(object):
             try:
                 a_file = open(f_name, 'rb')
                 a_run = a_run.put_attachment(self.db, a_file, os.path.basename(a_file.name)) #os.path.splitext(a_file.name)[-1].lstrip('.')
-            except IOError:
+            finally:
                 a_file.close()
-                raise
         a_run.status=PossibleStates['DONE']
         return a_run
 
