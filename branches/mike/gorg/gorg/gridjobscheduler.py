@@ -15,7 +15,7 @@ class GridjobScheduler(object):
     def __init__(self, db_name='gorg_site', db_url='http://127.0.0.1:5984', 
                  gcli_location='/home/mmonroe/.gc3/config'):
         self.db=Mydb('mark', db_name,db_url).cdb()
-        self.view_status_runs = GridrunModel.view_by_status(self.db)
+        self.view_status_runs = GridrunModel.view_status(self.db)
         self.gcli = Gcli(gcli_location)
     
     def handle_ready_jobs(self, a_run):

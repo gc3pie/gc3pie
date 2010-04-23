@@ -366,6 +366,12 @@ class GridrunModel(Document):
             if doc['base_type'] == 'GridrunModel':
                 for owner in doc['owned_by']:
                     yield doc['status'], {'_id':owner}
+    
+    @ViewField.define('GridrunModel')
+    def view_status(doc):    
+        if 'base_type' in doc:
+            if doc['base_type'] == 'GridrunModel':                
+                yield doc['status'], doc
 
     @ViewField.define('GridrunModel')
     def view_hash(doc):    
