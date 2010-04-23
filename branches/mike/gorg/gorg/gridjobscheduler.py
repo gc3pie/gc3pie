@@ -4,7 +4,7 @@ import tempfile
 import glob
 import logging
 
-from gorg.model.gridrun import GridrunModel, PossibleStates, TerminalStates
+from gorg.model.gridjob import GridrunModel, PossibleStates, TerminalStates
 from gorg.lib.exceptions import *
 from gorg.lib.utils import Mydb, create_file_logger, formatExceptionInfo
 from gc3utils.gcli import Gcli
