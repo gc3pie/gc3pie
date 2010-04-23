@@ -54,15 +54,27 @@ def generate_new_docid():
     from uuid import uuid4
     return uuid4().hex
 
-def generate_tempfile_prefix():
-    import glob
-    import temp
-    dir = tempfile.gettempdir()
-    len = 5
-    while True:
-        prefix = generate_new_docid()[0:len]
-        f_list = glob.glob('%s/%s*'%(dir, prefix))
-        if len(f_list) == 0:
-            break
-        return (dir, prefix)
-    
+def generate_temp_dir(uid):
+    import tempfile
+    import os
+    dir = '%s/%s'%(tempfile.gettempdir(), uid)
+    try:
+        os.mkdir(dir)
+    except OSError:
+        if not os.path.isdir(dir):
+            raise
+    return dir
+
+def write_to_file(tempdir, filename, response_body, chunk = 1000):
+    try:
+        myfile = open( '%s/%s'%(tempdir, filename), 'wb')
+        input = 'Start'
+        while input:
+            input = response_body.read(chunk)
+            myfile.write(input)
+        myfile.close()
+        myfile = open(myfile.name, 'rb') 
+    except IOError:
+        myfile.close()
+        raise
+    return myfile

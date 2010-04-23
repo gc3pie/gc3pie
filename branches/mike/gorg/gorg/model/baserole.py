@@ -1,7 +1,8 @@
-from couchdb import schema as sch
-from couchdb.schema import  Schema
+from couchdb.mapping import *
 from couchdb import client as client
 from datetime import datetime
+from gorg.lib.utils import generate_new_docid, generate_temp_dir, write_to_file
+import logging
 '''When you need to query for a key like this ('sad','saq') do this:
 self.view(db,'who_task_owns',startkey=[self.id],endkey=[self.id,{}])
 when you want to match a key ('sad','sad') do this:
@@ -9,51 +10,26 @@ a_job.view(db,'by_task_ownership',keys=[[a_task.id,a_task.id]])
 '''
 #GridrunModel.my_view(db, 'by_job_and_status', startkey=[job_id],endkey=[job_id,status])
 
-map_func_all = '''
-def mapfun(doc):
-    if 'base_type' in doc:
-        if doc['base_type'] == 'BaseroleModel':
-            yield doc['_id'], doc
-    '''
-map_func_author = '''
-def mapfun(doc):
-     if 'base_type' in doc:
-        if doc['base_type'] == 'BaseroleModel':
-            yield doc['author'], doc
-    '''
-map_func_title = '''
-def mapfun(doc):
-    if 'base_type' in doc:
-        if doc['base_type'] == 'BaseroleModel':
-            yield doc['title'], doc
-    '''
+_log = logging.getLogger('gorg')
 
-map_func_children = '''
-def mapfun(doc):
-    if 'base_type' in doc:
-        if doc['base_type'] == 'BaseroleModel':
-                for job_id in doc['children']:
-                    yield job_id, doc
-    '''
-
-class BaseroleModel(sch.Document):
+class BaseroleModel(Document):
     VIEW_PREFIX = 'BaseroleModel'
     
-    author = sch.TextField()
-    title = sch.TextField()
-    dat = sch.DateTimeField(default=datetime.today())
-    base_type = sch.TextField(default='BaseroleModel')
-    sub_type = sch.TextField()
-    user_data_dict = sch.DictField()
-    result_data_dict = sch.DictField()
+    author = TextField()
+    title = TextField()
+    dat = DateTimeField(default=datetime.today())
+    base_type = TextField(default='BaseroleModel')
+    sub_type = TextField()
+    user_data_dict = DictField()
+    result_data_dict = DictField()
     
-    children = sch.ListField(sch.TextField())
+    children = ListField(TextField())
     
     # This works like a dictionary, but allows you to go a_job.test.application_to_run='a app' as well as a_job.test['application_to_run']='a app'
-    #test=sch.DictField(Schema.build(application_to_run=sch.TextField(default='gamess')))
+    #test=DictField(Schema.build(application_to_run=TextField(default='gamess')))
     
     def create(self, author, title):
-        self.id = BaseroleModel.generate_new_docid()
+        self.id = generate_new_docid()
         self.author = author
         self.title = title
         return self
@@ -61,18 +37,30 @@ class BaseroleModel(sch.Document):
     def commit(self, db):
         raise NotImplementedError('Must implement a commit(self, db) method')
     
-    @staticmethod
-    def view_all(db, **options):
-        return BaseroleModel.my_view(db, 'all', **options)
+    @ViewField.define('BaseroleModel')
+    def view_all(doc):
+        if 'base_type' in doc:
+            if doc['base_type'] == 'BaseroleModel':
+                yield doc['_id'], doc
     
-    @staticmethod
-    def view_by_children(db, **options):
-        return BaseroleModel.my_view(db, 'by_children', **options)
+    @ViewField.define('BaseroleModel')
+    def view_author(doc):
+        if 'base_type' in doc:
+            if doc['base_type'] == 'BaseroleModel':
+                yield doc['author'], doc
     
-    @staticmethod
-    def generate_new_docid():
-        from uuid import uuid4
-        return uuid4().hex
+    @ViewField.define('BaseroleModel')
+    def view_title(doc):
+        if 'base_type' in doc:
+            if doc['base_type'] == 'BaseroleModel':
+                yield doc['title'], doc
+
+    @ViewField.define('BaseroleModel')
+    def view_children(doc):
+        if 'base_type' in doc:
+            if doc['base_type'] == 'BaseroleModel':
+                    for job_id in doc['children']:
+                        yield job_id, doc
     
     def __copy__(self):
         import copy
@@ -82,30 +70,15 @@ class BaseroleModel(sch.Document):
         del new_record['_id']
         del new_record['_rev']
         return new_record
-
-    @classmethod
-    def my_view(cls, db, viewname, **options):
-        from couchdb.design import ViewDefinition
-        viewnames = cls.sync_views(db, only_names=True)
-        if viewname not in viewnames:
-            CriticalError('View not in view name list.')
-        a_view = super(cls, cls).view(db, '%s/%s'%(cls.VIEW_PREFIX, viewname), **options)
-        #a_view=.view(db, 'all/%s'%viewname, **options)
-        return a_view
     
     @classmethod
     def sync_views(cls, db,  only_names=False):
         from couchdb.design import ViewDefinition
-        if only_names:
-            viewnames=('all', 'by_author', 'by_title')
-            return viewnames
-        else:
-            all = ViewDefinition(cls.VIEW_PREFIX, 'all', map_func_all, wrapper=cls, language='python')
-            by_author = ViewDefinition(cls.VIEW_PREFIX, 'by_author', map_func_author, wrapper=cls, language='python')
-            by_title = ViewDefinition(cls.VIEW_PREFIX, 'by_title', map_func_title, wrapper=cls, language='python')
-            views=[all, by_author, by_title]
-            ViewDefinition.sync_many( db,  views)
-        return views
+        definition_list = list()
+        for key, value in cls.__dict__.items():
+            if isinstance(value, ViewField):
+                definition_list.append(eval('cls.%s'%(key)))
+        ViewDefinition.sync_many( db,  definition_list)
 
 class ObservableDict( object ):
     def __init__( self, interface, a_dict ):
@@ -253,20 +226,14 @@ class BaseroleInterface(object):
     def delete_attachment(self, filename):
         return self.db.delete_attachment(self.controlled, filename)
 
-    def attachments_to_files(self, db, f_names=[]):
+    def _attachments_to_files(self, f_names=[]):
         '''We often want to save all of the attachments on the local computer.'''
-        tempdir,  prefix = generate_tempfile_prefix()
+        tempdir = generate_temp_dir(self.id)
         f_attachments = dict()
-        if not f_names and '_attachments' in self:
+        if not f_names and '_attachments' in self.controlled:
             f_names = self.controlled['_attachments']
         # Loop through each attachment and save it
         for attachment in f_names:
-            attached_data = self.get_attachment(db, attachment)
-            try:
-                myfile = open( '%s/%s_%s'%(tempdir, prefix, attachment), 'wb')
-                myfile.write(attached_data)
-                f_attachments[attachment]=open(myfile.name, 'rb') 
-            except IOError:
-                myfile.close()
-                raise
+            attached_data = self.get_attachment(self.db, attachment)
+            f_attachments[attachment] = write_to_file(tempdir, attachment, attached_data)
         return f_attachments

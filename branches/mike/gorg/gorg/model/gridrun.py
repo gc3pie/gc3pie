@@ -1,53 +1,12 @@
-from couchdb import schema as sch
+from couchdb.mapping import *
 from couchdb import client as client
+from gorg.model.gridjob import GridjobModel
 
 import os
 from datetime import datetime
 import copy
 import tempfile
-from gorg.utils import generate_new_docid, generate_tempfile_prefix
-
-map_func_all = '''
-def mapfun(doc):
-    if 'base_type' in doc:
-        if doc['base_type'] == 'GridrunModel':
-            yield doc['_id'], doc
-    '''
-map_func_author = '''
-def mapfun(doc):
-    if 'base_type' in doc:
-        if doc['base_type'] == 'GridrunModel':
-            yield doc['author'], doc
-    '''
-
-map_func_by_job = '''
-def mapfun(doc):
-    if 'base_type' in doc:
-        if doc['base_type'] == 'GridrunModel':
-            for owner in doc['owned_by']:
-                yield owner, doc
-    '''
-map_func_by_job_status = '''
-def mapfun(doc):
-    if 'base_type' in doc:
-        if doc['base_type'] == 'GridrunModel':
-            for owner in doc['owned_by']:
-                yield owner, doc['status']
-    '''
-
-map_func_by_status = '''
-def mapfun(doc):
-    if 'base_type' in doc:
-        if doc['base_type'] == 'GridrunModel':
-            yield doc['status'], doc
-    '''
-
-map_func_hash = '''
-def mapfun(doc):
-    if 'base_type' in doc:
-        if doc['base_type'] == 'GridrunModel':
-            yield doc['files_to_run'].values(), doc
-    '''
+from gorg.lib.utils import generate_new_docid, generate_tempfile_prefix
 
 map_func_author_status = '''
 def mapfun(doc):
@@ -78,24 +37,24 @@ PossibleStates = dict(HOLD='HOLD', READY='READY', WAITING='WAITING',RUNNING='RUN
 
 TerminalStates = dict(HOLD='HOLD', ERROR='ERROR', DONE='DONE')
 
-class GridrunModel(sch.Document):
+class GridrunModel(Document):
     VIEW_PREFIX = 'GridrunModel'
     SUB_TYPE = 'GridrunModel'
     
     # Attributes to store in the database
-    author = sch.TextField()
-    dat = sch.DateTimeField(default=datetime.today())
-    base_type = sch.TextField(default='GridrunModel')
-    sub_type = sch.TextField(default='GridrunModel')
+    author = TextField()
+    dat = DateTimeField(default=datetime.today())
+    base_type = TextField(default='GridrunModel')
+    sub_type = TextField(default='GridrunModel')
 
-    owned_by = sch.ListField(sch.TextField())
+    owned_by = ListField(TextField())
     # This holds the files we wish to run as well as their hashes
-    files_to_run = sch.DictField()
+    files_to_run = DictField()
     
-    status = sch.TextField(default = 'HOLD')
-    run_params = sch.DictField()
-    gsub_message = sch.TextField()
-    gsub_unique_token = sch.TextField()
+    status = TextField(default = 'HOLD')
+    run_params = DictField()
+    gsub_message = TextField()
+    gsub_unique_token = TextField()
     
     def __init__(self, *args):
         super(GridrunModel, self).__init__(*args)
@@ -202,64 +161,64 @@ class GridrunModel(sch.Document):
                 myfile.close()
                 raise
         return f_attachments
-    
-    @staticmethod
-    def view_by_job(db, **options):
-        return GridrunModel.my_view(db, 'by_job', **options)
-    
-    @staticmethod
-    def view_by_hash(db, **options):
-        return GridrunModel.my_view(db, 'by_hash', **options)
-    
-    @staticmethod
-    def view_by_status(db, **options):
-            return GridrunModel.my_view(db, 'by_status', **options)
-    
-    @staticmethod
-    def view_all(db, **options):
-        return GridrunModel.my_view(db, 'all', **options)
-    
-    @staticmethod
-    def view_author_status(db, **options):
-        options['group']=True
-        return GridrunModel.my_view(db,'by_author_status', **options)
-    
-    @staticmethod
-    def view_by_job_status(db, **options):
-        return GridrunModel.my_view(db,'by_job_status', **options)
 
-    @classmethod
-    def my_view(cls, db, viewname, **options):
-        from couchdb.design import ViewDefinition
-        viewnames = cls.sync_views(db, only_names=True)
-        if viewname not in viewnames:
-            CriticalError('View not in view name list.')
-        a_view = super(cls, cls).view(db, '%s/%s'%(cls.VIEW_PREFIX, viewname), **options)
-        #a_view=.view(db, 'all/%s'%viewname, **options)
-        return a_view
+    @ViewField.define('GridrunModel')
+    def view_all(doc):    
+        if 'base_type' in doc:
+            if doc['base_type'] == 'GridrunModel':
+                yield doc['_id'], doc
+
+    @ViewField.define('GridrunModel')
+    def view_author(doc):    
+        if 'base_type' in doc:
+            if doc['base_type'] == 'GridrunModel':
+                yield doc['author'], doc
+
+    @ViewField.define('GridrunModel', wrapper=GridjobModel)
+    def view_job(doc):    
+        if 'base_type' in doc:
+            if doc['base_type'] == 'GridrunModel':
+                for owner in doc['owned_by']:
+                    yield owner, {'_id':owner}
+
+#    @ViewField.define('GridrunModel', wrapper=GridjobModel)
+#    def view_job_status(doc):    
+#        if 'base_type' in doc:
+#            if doc['base_type'] == 'GridrunModel':
+#                for owner in doc['owned_by']:
+#                    yield doc['status'], {'_id':owner}
+
+    @ViewField.define('GridrunModel', wrapper=None)
+    def view_job_status(doc):    
+        if 'base_type' in doc:
+            if doc['base_type'] == 'GridrunModel':
+                for owner in doc['owned_by']:
+                    yield owner, doc['status']
+    
+    @ViewField.define('GridrunModel')
+    def view_hash(doc):    
+        if 'base_type' in doc:
+            if doc['base_type'] == 'GridrunModel':
+                yield doc['files_to_run'].values(), doc
+    
+    @staticmethod
+    def _reduce_author_status(keys, values, rereduce):
+        return sum(values)
+    
+    @ViewField.define('GridrunModel', reduce_fun=_reduce_author_status, wrapper=None,  defaults={'group':True})
+    def view_author_status(doc):
+        if 'base_type' in doc:
+            if doc['base_type'] == 'GridrunModel':
+                yield (doc['author'], doc['status']), 1
     
     @classmethod
     def sync_views(cls, db,  only_names=False):
         from couchdb.design import ViewDefinition
-        if only_names:
-            viewnames=('all', 'by_author', 'by_author_status', 'by_hash', 'by_job', 'by_status', 'by_job_status')
-            return viewnames
-        else:
-            all = ViewDefinition(cls.VIEW_PREFIX, 'all', map_func_all, wrapper=cls, language='python')
-            by_author = ViewDefinition(cls.VIEW_PREFIX, 'by_author', map_func_author, wrapper=cls, language='python')
-            by_author_status = ViewDefinition(cls.VIEW_PREFIX, 'by_author_status', map_func_author_status, wrapper=cls, \
-                                                  reduce_fun=reduce_func_author_status, language='python')
-            by_hash = ViewDefinition(cls.VIEW_PREFIX, 'by_hash', map_func_hash, wrapper=cls, language='python')
-            by_job = ViewDefinition(cls.VIEW_PREFIX, 'by_job', map_func_by_job, \
-                                             wrapper=cls, language='python') 
-            by_status = ViewDefinition(cls.VIEW_PREFIX, 'by_status', map_func_by_status, \
-                                             wrapper=cls, language='python') 
-            by_job_status = ViewDefinition(cls.VIEW_PREFIX, 'by_job_status', map_func_by_job_status, \
-                                             language='python') 
-
-            views=[all, by_author, by_author_status, by_hash, by_job, by_status, by_job_status]
-            ViewDefinition.sync_many( db,  views)
-        return views
+        definition_list = list()
+        for key, value in cls.__dict__.items():
+            if isinstance(value, ViewField):
+                definition_list.append(eval('cls.%s'%(key)))
+        ViewDefinition.sync_many( db,  definition_list)
     
     @staticmethod
     def md5_for_file(f, block_size=2**20):
