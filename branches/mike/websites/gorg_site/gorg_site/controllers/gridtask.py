@@ -4,8 +4,7 @@ from pylons import request, response, session, tmpl_context as c
 from pylons.controllers.util import abort, redirect_to
 
 from gorg_site.lib.base import BaseController, render
-from gorg.model.gridjob import GridjobModel
-from gorg.model.gridrun import GridrunModel
+from gorg.model.gridjob import *
 from gorg.model.gridtask import GridtaskModel, TaskInterface
 import webhelpers.paginate as paginate
 
@@ -30,10 +29,10 @@ class GridtaskController(BaseController):
         # Here we query the database and get the number of records for that
         # author in the given state
         counts = dict()
-        view = GridtaskModel.view_by_author(db, key = author)
+        view = GridtaskModel.view_author(db, key = author)
         task_interface = TaskInterface(db)
         status_dict = dict()
-        for a_status in GridrunModel().POSSIBLE_STATUS:
+        for a_status in PossibleStates:
             status_dict[a_status]=0
         for a_task in view:
             task_interface.task = a_task
@@ -52,7 +51,7 @@ class GridtaskController(BaseController):
         c.heading = 'Sample Page'
         c.content = "This is page %s"%author
         db=Mydb().cdb()
-        view = GridtaskModel.view_by_author(db, key = author)
+        view = GridtaskModel.view_author(db, key = author)
         records = list()
         for a_task in view:
             task_interface = TaskInterface(db)

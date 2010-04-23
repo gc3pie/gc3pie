@@ -6,8 +6,8 @@ from gorg_site.lib.base import BaseController, render
 import webhelpers.paginate as paginate
 from pylons.decorators import jsonify
 import os
-from gorg.model.gridrun import GridrunModel
-from gorg.model.gridjob import GridjobModel, JobInterface
+
+from gorg.model.gridjob import *
 from gorg_site.lib.mydb import Mydb
 
 log = logging.getLogger(__name__)
@@ -30,7 +30,7 @@ class GridjobController(BaseController):
         # Here we query the database and get the number of records for that
         # author in the given state
         counts = dict()
-        for a_status in GridrunModel().POSSIBLE_STATUS:
+        for a_status in PossibleStates:
             view = GridrunModel.view_author_status(db)
             # When a status does not match, a None is returned.
             # We therefore have to convert the None into a 0
@@ -53,7 +53,7 @@ class GridjobController(BaseController):
         c.heading = 'Sample Page'
         c.content = "This is page %s"%author
         db=Mydb().cdb()
-        view = GridjobModel.view_by_author_status(db, key=(author, status))
+        view = GridjobModel.view_author_status(db, key=(author, status))
         records = list()
         for a_job in view:
             records.append(a_job)
