@@ -1,18 +1,28 @@
 import types
+import os
 from InformationContainer import *
 
 # -----------------------------------------------------
 # Default
 #
 
-class Default(InformationContainer):
+HOMEDIR = os.path.expandvars('$HOME')
+RCDIR = HOMEDIR + "/.gc3"
+CONFIG_FILE_LOCATION = RCDIR + "/config"
+JOBLIST_FILE = RCDIR + "/.joblist"
+JOBLIST_LOCK = RCDIR + "/.joblist_lock"
+JOB_FOLDER_LOCATION="$PWD"
+AAI_CREDENTIAL_REPO = RCDIR + "/aai_credential"
+GAMESS_XRSL_TEMPLATE = "$HOME/.gc3/gamess_template.xrsl"
+    
+ARC_LRMS = 1
+SGE_LRMS = 2
 
-    HOMEDIR = os.path.expandvars('$HOME')
-    RCDIR = homedir + "/.gc3"
-    CONFIG_FILE_LOCATION = rcdir + "/config"
-    JOBLIST_FILE = rcdir + "/.joblist"
-    JOBLIST_LOCK = rcdir + "/.joblist_lock"
-    JOB_FOLDER_LOCATION="$PWD"
+SMSCG_AUTHENTICATION = 1
+SSH_AUTHENTICATION = 2
+
+
+class Default(InformationContainer):
 
     def is_valid(self):
         return True

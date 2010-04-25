@@ -14,7 +14,7 @@ class Job(InformationContainer):
     COMPLETED = 5
 
     def is_valid(self):
-        if self.__dict__.has_key('status') and self.__dict__.has_key('resource_name') and self.__dict__.has_key('lrms_jobid') and self.__dict__.has_key('unique_token'):
+        if self.__dict__.has_key('status') and self.__dict__.has_key('resource_name') and self.__dict__.has_key('lrms_jobid'):
             return True
 
 

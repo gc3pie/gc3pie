@@ -2,6 +2,7 @@ import sys
 import os
 import commands
 import logging
+import logging.handlers
 import tempfile
 import getpass
 import re
@@ -13,7 +14,7 @@ import getpass
 import smtplib
 import subprocess
 from email.mime.text import MIMEText
-sys.path.append('/opt/nordugrid/lib/python2.3/site-packages')
+sys.path.append('/opt/nordugrid/lib/python2.4/site-packages')
 import warnings
 warnings.simplefilter("ignore")
 from arclib import *
@@ -156,11 +157,10 @@ def configure_logger(verbosity, logger_tag, log_file_name):
     else:
         logging_level = (( 6 - verbosity) * 10)
 
-        log = logging.getLogger(loger_tag)
-        log.setLevel(logging_level)
-        handler = logging.handlers.RotatingFileHandler(log_file_name, maxBytes=200, backupCount=5)
-        log.addHandler(handler)
-
+    log = logging.getLogger(logger_tag)
+    log.setLevel(logging_level)
+    handler = logging.handlers.RotatingFileHandler(log_file_name, maxBytes=200, backupCount=5)
+    log.addHandler(handler)
     return log
 
 def configure_logging(verbosity):
@@ -409,8 +409,8 @@ def get_job_from_filesystem(unique_token,job_file):
 
 def display_job_status(job_list):
     if len(job_list) > 0:
-        sys.stdout.write("==========================================================================")
+        sys.stdout.write("======================================================================================================\n")
         for _job in job_list: 
-            sys.stdout.write(_job.unique_token+'\t'+_job.status+'\t'+_job.submitted+'\t'+_job.resource_name)
+            sys.stdout.write(_job.unique_token+'\t'+_job.status+'\t'+_job.resource_name)
             sys.stdout.write('\n')
             sys.stdout.flush()

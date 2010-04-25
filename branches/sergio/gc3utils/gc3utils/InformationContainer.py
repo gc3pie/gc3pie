@@ -1,4 +1,4 @@
-class InformationContainer():
+class InformationContainer(object):
 
     def __init__(self, **resource_info):
         self.__dict__.update(resource_info)
