@@ -10,15 +10,19 @@ def format_exception_info(maxTBlevel=5):
         excArgs = "<no args>"
     excTb = traceback.format_tb(trbk, maxTBlevel)
     return '%s %s\n%s'%(excName, excArgs, ''.join(excTb))
-    
-def create_logger( logging_level):
+
+def create_file_logger(verbosity,file_prefix = 'gc3utils'):
+    '''
+    Create a file logger object.
+     * Requires logger name, file_prefix, verbosity
+     * Returns logger object.
+     
+    '''
     import logging
-    import logging.handlers
-    logger = logging.getLogger(self.__class__.__name__)
-    logger.setLevel(logging_level)
-    file_handler = logging.handlers.RotatingFileHandler(
-              self.LOG_FILENAME, maxBytes=100000, backupCount=5)
-    formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
-    file_handler.setFormatter(formatter)
-    logger.addHandler(file_handler)
-    return logger
+    import os
+    if ( verbosity > 5):
+        logging_level = 10
+    else:
+        logging_level = (( 6 - verbosity) * 10)
+    log_filename = ('%s/%s_log'%(os.path.abspath(''), file_prefix))
+    logger = logging.basicConfig(filename = log_filename, level = logging_level, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')

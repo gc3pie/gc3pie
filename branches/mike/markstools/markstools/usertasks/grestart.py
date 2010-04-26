@@ -1,4 +1,4 @@
-from statemachine import *
+from markstools.lib.statemachine import *
 
 from optparse import OptionParser
 import logging
@@ -13,7 +13,7 @@ from gorg.model.gridtask import TaskInterface
 from gorg.lib.utils import Mydb
 from gorg.gridjobscheduler import GridjobScheduler
 
-
+_log = logging.getLogger('markstools')
 
 class Cargo(object):
     def __init__(self, a_task, calculator):
@@ -26,8 +26,8 @@ class GRestart(StateMachine):
     PROCESS = State()
     POSTPROCESS = State()
     
-    def __init__(self, logging_level=1):
-        super(GRestart, self).__init__(logging_level)
+    def __init__(self):
+        super(GRestart, self).__init__()
         self.cargo = None
     
     def start(self, db, calculator, atoms, params, application_to_run='gamess', selected_resource='ocikbpra',  cores=2, memory=1, walltime=-1):
@@ -52,20 +52,20 @@ class GRestart(StateMachine):
     def execute(self):
         job_list = self.cargo.calculator.calculate(self.cargo.a_task.children[-1])
         for a_job in job_list:
-            self.logger.info('Submited job %s to batch system.'%(a_job.id))
+            _log.info('Submited job %s to batch system.'%(a_job.id))
         return self.WAIT
     
     @on_main(WAIT)
     def wait(self):
-        job_scheduler = GridjobScheduler()
+        job_scheduler = GridjobScheduler(db_url='http://130.60.144.211:5984')
         job_list = [self.cargo.a_task.children[-1]]
         new_state=self.PROCESS
         for a_job in job_list:
             job_done = False
             job_scheduler.run()
-            self.logger.info('Restart waiting for job %s.'%(a_job.id))
             job_done = a_job.wait(timeout=0)
             if not job_done:
+                _log.info('Restart waiting for job %s.'%(a_job.id))
                 new_state=self.WAIT
                 break
         return new_state
@@ -91,10 +91,10 @@ class GRestart(StateMachine):
                 new_state = self.EXECUTE
             else:
                 new_state = self.POSTPROCESS
-                self.logger.info('Restart sequence task id %s has finished successfully.'%(self.cargo.a_task.id))
+                _log.info('Restart sequence task id %s has finished successfully.'%(self.cargo.a_task.id))
         else:
             msg = 'GAMESS returned an error while running job %s.'%(a_job.id)
-            self.logger.critical(msg)
+            _log.critical(msg)
             new_state = self.ERROR
         return new_state
     
@@ -104,7 +104,7 @@ class GRestart(StateMachine):
 
 def main(options):
     # Connect to the database
-    db=Mydb('mark',options.db_name,options.db_loc).cdb()
+    db=Mydb('mark',options.db_name,options.db_url).cdb()
     
     # Parse the gamess inp file
     myfile = open(options.file, 'rb')
@@ -113,7 +113,7 @@ def main(options):
     params = reader.params
     atoms = reader.atoms
     
-    fsm = GRestart(options.logging_level)
+    fsm = GRestart()
     gamess_calc = GamessGridCalc(db)
     fsm.start(db, gamess_calc, atoms, params)
     for i in range(10):
@@ -132,7 +132,7 @@ if __name__ == '__main__':
                       help="add more v's to increase log output.")
     parser.add_option("-n", "--db_name", dest="db_name", default='gorg_site', 
                       help="add more v's to increase log output.")
-    parser.add_option("-l", "--db_loc", dest="db_loc", default='http://127.0.0.1:5984', 
+    parser.add_option("-l", "--db_url", dest="db_url", default='http://127.0.0.1:5984', 
                       help="add more v's to increase log output.")
     (options, args) = parser.parse_args()
     
@@ -140,7 +140,7 @@ if __name__ == '__main__':
     LOGGING_LEVELS = (logging.CRITICAL, logging.ERROR, 
                                     logging.WARNING, logging.INFO, logging.DEBUG)
     options.logging_level = len(LOGGING_LEVELS) if len(options.verbose) > len(LOGGING_LEVELS) else len(options.verbose)
-
+    create_file_logger(options.logging_level)
     main(options)
 
     sys.exit()

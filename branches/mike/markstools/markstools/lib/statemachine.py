@@ -1,4 +1,7 @@
-from markstools.lib.utils import format_exception_info
+from markstools.lib.utils import format_exception_info, create_file_logger
+import logging
+
+_log = logging.getLogger('markstools')
 
 #from string import upper
 #
@@ -115,13 +118,11 @@ def on_leave(state):
     return wrapper
 
 class StateMachine(object):
-    LOG_FILENAME = '/tmp/python_scheduler_logger.out'
     STOP_STATE_NAME = 'WAIT'
     ERROR = State()
     DONE = State()
     
-    def __init__(self, logging_level=1):
-        self.logger = self._create_logger(logging_level)
+    def __init__(self):
         self._cur_state = self.ERROR
         self.on_enter_triggered = False
     
@@ -189,20 +190,7 @@ class StateMachine(object):
     
     @staticmethod
     def done_state():
-        return 'DONE'
-
-    def _create_logger(self, logging_level):
-        import logging
-        import logging.handlers
-        logger = logging.getLogger(self.__class__.__name__)
-        logger.setLevel(logging_level)
-        file_handler = logging.handlers.RotatingFileHandler(
-                  self.LOG_FILENAME, maxBytes=100000, backupCount=5)
-        formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
-        file_handler.setFormatter(formatter)
-        logger.addHandler(file_handler)
-        return logger
-    
+        return 'DONE'    
 
 class Oven(StateMachine):
     FIRE = State()

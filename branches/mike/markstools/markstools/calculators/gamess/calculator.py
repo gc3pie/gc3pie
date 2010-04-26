@@ -1,5 +1,6 @@
 import StringIO as StringIO
 import os
+import logging
 
 from gorg.model.gridjob import JobInterface, PossibleStates
 from gorg.model.gridtask import TaskInterface
