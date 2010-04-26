@@ -1,7 +1,8 @@
+import logging
 _log = logging.getLogger('markstools')
 
-class MarksToolsException(Exception):
-    def __init__(self, value):
-        self.value = value
-    def __str__(self):
-        return repr(self.value)
+class UnhandledStateError(Exception):
+    def __init__(msg, report=True):
+       super(Exception).__init__(msg)
+       if report:
+           _log.critical(msg)
