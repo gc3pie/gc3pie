@@ -3,6 +3,7 @@ import logging
 import utils
 import sys
 import os
+import Exceptions
 
 class Auth(object):
     def __init__(self,auto_enable=True):
@@ -12,11 +13,11 @@ class Auth(object):
 
     def get(self,auth_type):
         if not self.__auths.has_key(auth_type):
-            if auth_type == Default.ARC_LRMS:
+            if auth_type is Default.SMSCG_AUTHENTICATION:
                 a = ArcAuth()
-            elif auth_type==Default.SSH_LRMS:
+            elif auth_type is Default.SSH_AUTHENTICATION:
                 a = SshAuth()
-            elif auth_type=='none':
+            elif auth_type is NONE_AUTHENTICATION:
                 a = NoneAuth()
             else:
                 raise Exception("Invalid auth_type in Auth()")
@@ -42,11 +43,14 @@ class ArcAuth(object):
                 
     def check(self):
         self.log.debug('Checking authentication: GRID')
-        if ( (not utils.check_grid_authentication()) | (not utils.check_user_certificate()) ):
-            self.log.error('Check authentication failed')
-            return False
-        return True
-
+        try:
+            if (utils.check_grid_authentication()) and (utils.check_user_certificate()):
+                return True
+        except:
+            self.log.error('Authentication Error: %s', sys.exc_info()[1])
+        
+        return False
+     
     def enable(self):
         try:
             # Get AAI username
@@ -54,33 +58,21 @@ class ArcAuth(object):
                 
             Default.AAI_CREDENTIAL_REPO = os.path.expandvars(Default.AAI_CREDENTIAL_REPO)
             self.log.debug('checking AAI credential file [ %s ]',Default.AAI_CREDENTIAL_REPO)
-            if ( os.path.exists(Default.AAI_CREDENTIAL_REPO) & os.path.isfile(Default.AAI_CREDENTIAL_REPO) ):
+            try: 
                 _fileHandle = open(Default.AAI_CREDENTIAL_REPO,'r')
                 _aaiUserName = _fileHandle.read()
                 _fileHandle.close()
                 _aaiUserName = _aaiUserName.rstrip("\n")
                 self.log.debug('_aaiUserName: %s',_aaiUserName)
+            except IOError:
+                self.log.error('Failed opening AAI credential file') 
 
             # Renew credential
-            utils.renew_grid_credential(_aaiUserName)
+            return utils.renew_grid_credential(_aaiUserName)
 
-
-#            self.AAI_CREDENTIAL_REPO = os.path.expandvars(self.AAI_CREDENTIAL_REPO)
-#            self.log.debug('checking AAI credential file [ %s ]',self.AAI_CREDENTIAL_REPO)
-#            if ( os.path.exists(self.AAI_CREDENTIAL_REPO) & os.path.isfile(self.AAI_CREDENTIAL_REPO) ):
-#                self.log.debug('Opening AAI credential file in %s',self.AAI_CREDENTIAL_REPO)
-#                _fileHandle = open(self.AAI_CREDENTIAL_REPO,'r')
-#                _aaiUserName = _fileHandle.read()
-#                _aaiUserName = _aaiUserName.rstrip("\n")
-#                self.log.debug('_aaiUserName: %s',_aaiUserName)
-#            
-#            # Renew credential 
-#            utils.renew_grid_credential(_aaiUserName)
         except:
             self.log.critical('Failed renewing grid credential [%s]',sys.exc_info()[1])
             return False
-        return True
-
 
 
 class SshAuth(object):
@@ -93,6 +85,7 @@ class SshAuth(object):
 class NoneAuth(object):
     def check(self):
         return True
+
     def enable(self):
         return True
 

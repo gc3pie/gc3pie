@@ -20,6 +20,7 @@ SGE_LRMS = 2
 
 SMSCG_AUTHENTICATION = 1
 SSH_AUTHENTICATION = 2
+NONE_AUTHENTICATION = 3
 
 
 class Default(InformationContainer):

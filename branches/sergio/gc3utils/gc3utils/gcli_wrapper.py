@@ -61,9 +61,9 @@ def __get_resources(options, resources_list, log):
 
             log.debug('Checking resource type %s',resource['type'])
             if resource['type'] == 'arc':
-                tmpres.insert("type",gcli.ARC_LRMS)
+                tmpres.insert("type",Default.ARC_LRMS)
             elif resource['type'] == 'ssh_sge':
-                tmpres.insert("type",gcli.SGE_LRMS)
+                tmpres.insert("type",Default.SGE_LRMS)
             else:
                 log.error('No valid resource type %s',resource['type'])
                 continue
@@ -253,15 +253,10 @@ def main():
         # grid-credential-renew
         if ( os.path.basename(program_name) == "grid-credential-renew" ):
             log.debug('Checking grid credential')
-            if not _gcli.check_authentication(gcli.SMSCG_AUTHENTICATION):
-                return _gcli.enable_authentication(gcli.SMSCG_AUTHENTICATION)
+            if not _gcli.check_authentication(Default.SMSCG_AUTHENTICATION):
+                return _gcli.enable_authentication(Default.SMSCG_AUTHENTICATION)
             else:
                 return True
-
-#        # if there's at least 1 resource of type ARC, check grid access
-#        log.debug('Checking grid credential')
-#        if not _gcli.check_authentication(gcli.SMSCG_AUTHENTICATION):
-#            _gcli.enable_authentication(gcli.SMSCG_AUTHENTICATION) 
 
         log.debug('interpreting command %s',os.path.basename(program_name))
         # gsub

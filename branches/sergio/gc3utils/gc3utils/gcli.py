@@ -49,7 +49,14 @@ class Gcli:
 
 #========== Start check_authentication ===========
     def check_authentication(self,authentication_type):
-        if (authentication_type is SMSCG_AUTHENTICATION):
+
+        #=======================================================================
+        # a = Authorization.Auth()
+        # a.get(authentication_type)
+        #=======================================================================
+
+
+        if (authentication_type is Default.SMSCG_AUTHENTICATION):
             # Check grid access
             try:
                 self.log.debug('check_authentication for SMSCG')
@@ -60,7 +67,7 @@ class Gcli:
             except:
                 return False
 
-        if (authentication_type is SSH_AUTHENTICATION):
+        if (authentication_type is Default.SSH_AUTHENTICATION):
             # Check ssh access
             try:
                 self.log.debug('check_authentication for SSH')
@@ -76,7 +83,7 @@ class Gcli:
 
 #========== Start enable_authentication ===========
     def enable_authentication(self,authentication_type):
-        if (authentication_type is SMSCG_AUTHENTICATION):
+        if (authentication_type is Default.SMSCG_AUTHENTICATION):
             # Getting AAI username
             #        _aaiUserName = None
             try:
@@ -95,7 +102,7 @@ class Gcli:
                 self.log.critical('Failed renewing grid credential [%s]',sys.exc_info()[1])
                 return False
             return True
-        if (authentication_type is SSH_AUTHENTICATION):
+        if (authentication_type is Default.SSH_AUTHENTICATION):
             return True
 
         self.log.error("Unknown requested authentication type [%d]",authentication_type)
