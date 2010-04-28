@@ -1,28 +1,20 @@
 import numpy as np
 import copy
-import logging
-
-_log = logging.getLogger('markstools')
-
-
-class Result(object):
-    def __init__(self, atoms, params):
-        import copy
-        self.atoms = atoms.copy()
-        self.params = copy.deepcopy(params)
+import markstools
+import ResultBase
 
 def queryable(func):
     func.queryable=True
     return func
 
-class GamessResult(Result):
+class GamessResult(ResultBase):
     
     def __init__(self,  atoms, params, parsed_dat, parsed_out):
         super(GamessResult, self).__init__( atoms, params)
         self.parsed_dat  = parsed_dat
         self.parsed_out = parsed_out
     
-    def get_coords(self):
+    def get_positions(self):
         raw_coords=self.parsed_dat.get_coords()
         coords = np.array(raw_coords[1::2], dtype=float)
         return coords

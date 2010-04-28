@@ -2,15 +2,14 @@ from markstools.lib.statemachine import StateMachine
 from markstools.lib.utils import create_file_logger
 from grestart import GRestart
 from ghessian import GHessian
+import markstools
 
 from optparse import OptionParser
-import logging
 import sys
 from gorg.model.gridtask import GridtaskModel, TaskInterface
 from gorg.lib.utils import Mydb
 from gc3utils.gcli import Gcli
 
-_log = logging.getLogger('markstools')
 
 class GridtaskScheduler(object):
     
@@ -20,7 +19,7 @@ class GridtaskScheduler(object):
         
     def handle_waiting_tasks(self):
         task_list = self.view_state_tasks[StateMachine.stop_state()]
-        _log.debug('%d tasks are going to be processed'%(len(task_list)))
+        log.debug('%d tasks are going to be processed'%(len(task_list)))
         for raw_task in task_list:
             a_task = TaskInterface(self.db)
             a_task.task = raw_task
@@ -28,7 +27,7 @@ class GridtaskScheduler(object):
             fsm.restart(self.db, a_task)
             state = fsm.run()
             a_task = fsm.save_state()
-            _log.debug('Task %s has been processed and is now in state %s'%(a_task.id, state))
+            log.debug('Task %s has been processed and is now in state %s'%(a_task.id, state))
     
     def run(self):
         self.handle_waiting_tasks()

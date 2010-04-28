@@ -1,37 +1,13 @@
 import StringIO as StringIO
 import os
-import logging
+
+import markstools
+import CalculatorBase
 
 from gorg.model.gridjob import JobInterface, PossibleStates
 from gorg.model.gridtask import TaskInterface
 
 from ase.atoms import Atoms 
-
-_log = logging.getLogger('markstools')
-
-class MyCalculator(object):
-    """Base class for calculators. 
-    
-    We might want a calculator that uses the grid and another one that
-    runs the applicationon the local computer. Both calculators need to implement 
-    the same functions, only how the application is run, and where the result files
-   are located would be different.
-   """
-    def __init__(self):
-        pass
-
-    def preexisting_result(self, location):
-        assert False, 'Must implement a preexisting_result method'
-    
-    def get_files(self):
-        assert False,  'Must implement a get_files method'
-    
-    def wait(self, job_id, status='DONE', timeout=60, check_freq=10):
-        assert False,  'Must implement a wait method'
-    
-    def save_queryable(self, job_id, key, value):
-        assert False,  'Must implement a push method'
-
 
 class GamessParams:
     '''Holds the GAMESS run parameters'''
@@ -64,7 +40,7 @@ class GamessAtoms(Atoms):
         new_atoms.symmetry= copy.deepcopy(self.symmetry)
         return new_atoms
 
-class GamessGridCalc(MyCalculator):
+class GamessGridCalc(CalculatorBase):
     """Calculator class that interfaces with GAMESS-US using
     a database. The jobs in the database are executed on a grid.
     """
@@ -89,6 +65,7 @@ class GamessGridCalc(MyCalculator):
         # Convert the python dictionary to one that uses the couchdb schema
         a_job.user_data_dict = params.job_user_data_dict
         a_task.add_child(a_job)
+        log.info('Generated Job %s and it was added to Task %s'%(a_job.id, a_task.id))
         return a_job
     
     def get_file(self, a_job, type):
@@ -107,6 +84,7 @@ class GamessGridCalc(MyCalculator):
         for a_job in job_list:
             if a_job.status == PossibleStates['HOLD']:
                 a_job.status = PossibleStates['READY']
+                log.info('Job %s was in state %s and is now in state %s'%(PossibleStates['HOLD'], PossibleStates['READY']))
         return job_list
 
     def parse(self, a_job, force_a_reparse=False):
@@ -116,20 +94,26 @@ class GamessGridCalc(MyCalculator):
         parser = None
         if not force_a_reparse:            
             parser = a_job.parser 
-            assert parser == self.__class__.__name__, 'Can not reparse, parse results are of type %s'%(parser)
+            if parser != self.__class__.__name__:
+                raise MyTypeError('Can not reparse, parsed results are from %s, expecting %s'%(parser, self.__class__.__name_))
             a_result = a_job.parsed
             if a_result:
-                assert isinstance(a_result, GamessResult), 'Incorrect parsed result type of %s.'%(type(a_result))
+                if isinstance(a_result, GamessResult):
+                    raise MyTypeError('Unpickled parse results are of type %s, expecting %s'%(type(a_result)), GamessResult)
+                log.info('Using previously parsed results for Job %s'%(a_job.id))
         if a_result is None:
-            f_inp = a_job.get_attachment('inp')
-            reader = ReadGamessInp(f_inp)
-            f_inp.close()
-            f_dat = a_job.get_attachment('dat')
-            self.parsed_dat.parse_file(f_dat)
-            f_dat.close()            
-            f_stdout = a_job.get_attachment('stdout')
-            self.parsed_out.parse_file(f_stdout)
-            f_stdout.close()
+            log.info('Starting to parse Job %s results'%(a_job.id))
+            try:
+                f_inp = a_job.get_attachment('inp')
+                reader = ReadGamessInp(f_inp)
+                f_dat = a_job.get_attachment('dat')
+                self.parsed_dat.parse_file(f_dat)
+                f_stdout = a_job.get_attachment('stdout')
+                self.parsed_out.parse_file(f_stdout)
+            finally:
+                f_inp.close()
+                f_dat.close()
+                f_stdout.close()
             a_result = GamessResult(reader.atoms, reader.params, self.parsed_dat.group, self.parsed_out.group)
             self._save_parsed_result(a_job, a_result)
         return a_result
@@ -139,7 +123,7 @@ class GamessGridCalc(MyCalculator):
         a_job.result_data_dict.update(queryable)
         a_job.parsed = a_result
 
-class GamessLocalCalc(MyCalculator):
+class GamessLocalCalc(CalculatorBase):
     EXT_INPUT_FILE = 'inp'
     EXT_STDOUT_FILE = 'stdout'
     EXT_STDERR_FILE = 'stderr'
