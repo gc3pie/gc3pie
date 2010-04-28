@@ -5,15 +5,13 @@ from datetime import datetime
 from gorg.lib.utils import generate_new_docid, generate_temp_dir, write_to_file
 from gorg.lib.exceptions import *
 import os
-import logging
+import gorg
 
 PossibleStates = dict(HOLD='HOLD', READY='READY', WAITING='WAITING',RUNNING='RUNNING', 
                                         FINISHED='FINISHED', RETRIEVING='RETRIEVING', DONE='DONE',
                                         ERROR='ERROR',unreachable = 'UNREACHABLE',  notified = 'NOTIFIED')
 
 TerminalStates = dict(HOLD='HOLD', ERROR='ERROR', DONE='DONE')
-
-_log = logging.getLogger('gorg')
 
 class GridjobModel(BaseroleModel):
     SUB_TYPE = 'GridjobModel'
@@ -97,6 +95,7 @@ class JobInterface(BaseroleInterface):
     def create(self, title,  parser_name, files_to_run, application_to_run='gamess', 
                         selected_resource='ocikbpra',  cores=2, memory=1, walltime=-1):
         self.controlled = GridjobModel().create(self.db.username, title)
+        log.debug('Job %s has been created'%(self.id))        
         a_run = GridrunModel()
         a_run = a_run.create( self.db, files_to_run, self.controlled, application_to_run, 
                         selected_resource,  cores, memory, walltime)

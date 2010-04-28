@@ -1,3 +1,4 @@
+import gorg
 from couchdb.mapping import *
 from couchdb import client as client
 from gorg.model.gridjob import GridjobModel
@@ -95,6 +96,7 @@ class GridrunModel(Document):
                               selected_resource=selected_resource,  cores=cores, memory=memory, walltime=walltime)
         self.id = generate_new_docid()
         self = self._commit_new(db, a_job, files_to_run)
+        log.debug('Run %s has been created'%(self.id))
         return self
     
     def _commit_new(self, db, a_job, files_to_run):
@@ -124,6 +126,7 @@ class GridrunModel(Document):
         for a_run in a_view:
             if a_run.status == PossibleStates['DONE']:
                 result = a_run
+                log.debug('Input file matches run %s that was already in the database'%(self.id))
         return result
     
     def commit(self, db):

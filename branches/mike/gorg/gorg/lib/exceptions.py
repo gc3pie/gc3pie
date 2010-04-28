@@ -1,17 +1,16 @@
-import logging
-_log = logging.getLogger('gorg')
+import gorg
 
 class UnhandledStateError(Exception):
     def __init__(msg, report=True):
        super(Exception).__init__(msg)
        if report:
-           _log.critical(msg)
+           log.critical(msg)
 
 class CriticalError(Exception):
     def __init__(msg, report=True):
        super(Exception).__init__(msg)
        if report:
-           _log.critical(msg)
+           log.critical(msg)
 
 class DocumentError(Exception):
     '''Raised when a couchdb document is inconsistant
@@ -19,7 +18,7 @@ class DocumentError(Exception):
     def __init__(self, msg, report=True):
        super(Exception, self).__init__(msg)
        if report:
-           _log.critical(msg)
+           log.critical(msg)
 
 class ViewWarning(UserWarning):
     '''Raised when a user requests a query that does not return the expected result
@@ -27,4 +26,4 @@ class ViewWarning(UserWarning):
     def __init__(msg, report=True):
        super(Exception).__init__(msg)
        if report:
-           _log.critical(msg)
+           log.critical(msg)

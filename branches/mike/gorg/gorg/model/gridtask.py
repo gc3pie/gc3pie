@@ -3,6 +3,7 @@ from baserole import BaseroleModel, BaseroleInterface
 from gridjob import *
 from couchdb import client as client
 import time
+import gorg
 
 #reduce_func_author_status ='''
 #def reducefun(keys, values, rereduce):
@@ -26,7 +27,6 @@ def mapfun(doc):
                 yield (doc['owned_by_task'], doc['_id']) , doc
     '''
 
-_log = logging.getLogger('gorg')
 
 class GridtaskModel(BaseroleModel):
     
@@ -92,6 +92,7 @@ class TaskInterface(BaseroleInterface):
     def create(self, title):
         self.controlled = GridtaskModel().create(self.db.username, title)
         self.controlled.commit(self.db)
+        log.debug('Task %s has been created'%(self.id))
         return self
 
     def load(self, id):

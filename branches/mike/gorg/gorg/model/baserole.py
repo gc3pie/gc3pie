@@ -1,3 +1,4 @@
+import gorg
 from couchdb.mapping import *
 from couchdb import client as client
 from datetime import datetime
@@ -9,8 +10,6 @@ when you want to match a key ('sad','sad') do this:
 a_job.view(db,'by_task_ownership',keys=[[a_task.id,a_task.id]])
 '''
 #GridrunModel.my_view(db, 'by_job_and_status', startkey=[job_id],endkey=[job_id,status])
-
-_log = logging.getLogger('gorg')
 
 class BaseroleModel(Document):
     VIEW_PREFIX = 'BaseroleModel'

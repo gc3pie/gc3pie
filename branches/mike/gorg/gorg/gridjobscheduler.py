@@ -2,14 +2,12 @@ import os
 import sys
 import tempfile
 import glob
-import logging
+import gorg
 
 from gorg.model.gridjob import GridrunModel, PossibleStates, TerminalStates
 from gorg.lib.exceptions import *
-from gorg.lib.utils import Mydb, create_file_logger, formatExceptionInfo
+from gorg.lib.utils import Mydb, create_filelogger, formatExceptionInfo
 from gc3utils.gcli import Gcli
-
-_log  = logging.getLogger('GridjobScheduler')
 
 class GridjobScheduler(object):
     def __init__(self, db_name='gorg_site', db_url='http://127.0.0.1:5984', 
@@ -101,7 +99,7 @@ class GridjobScheduler(object):
                     except:
                         a_run.gsub_message=formatExceptionInfo()
                         a_run.status=PossibleStates['ERROR']
-                        _log.critical('GridjobScheduler Errored while processing run id %s \n%s'%(a_run.id, a_run.gsub_message))
+                        log.critical('GridjobScheduler Errored while processing run id %s \n%s'%(a_run.id, a_run.gsub_message))
                     a_run.commit(self.db)
 
 def main():
@@ -111,6 +109,6 @@ def main():
 
 
 if __name__ == "__main__":
-    create_file_logger(1)
+    create_filelogger(1)
     main()
     sys.exit()
