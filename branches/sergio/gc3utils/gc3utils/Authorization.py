@@ -17,7 +17,7 @@ class Auth(object):
                 a = ArcAuth()
             elif auth_type is Default.SSH_AUTHENTICATION:
                 a = SshAuth()
-            elif auth_type is NONE_AUTHENTICATION:
+            elif auth_type is Default.NONE_AUTHENTICATION:
                 a = NoneAuth()
             else:
                 raise Exception("Invalid auth_type in Auth()")
@@ -29,7 +29,7 @@ class Auth(object):
                     except Exception, x:
                         a = x
                 else:
-                    a = AuthenticationException()
+                    a = Exceptions.AuthenticationException()
             self.__auths[auth_type] = a
 
         a = self.__auths[auth_type]
@@ -72,7 +72,8 @@ class ArcAuth(object):
 
         except:
             self.log.critical('Failed renewing grid credential [%s]',sys.exc_info()[1])
-            return False
+            # return False
+            raise Exceptions.AuthenticationException('failed renewing GRID credential')
 
 
 class SshAuth(object):

@@ -5,7 +5,7 @@ __date__="01 May 2010"
 __copyright__="Copyright 2009 2011 Grid Computing Competence Center - UZH/GC3"
 __version__="0.3"
 
-from utils import *
+from gc3utils.utils import *
 import sys
 import os
 import logging

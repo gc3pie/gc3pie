@@ -8,9 +8,9 @@ __version__="0.3"
 from utils import *
 import sys
 import os
-import logging
-import ConfigParser
-from optparse import OptionParser
+#import logging
+#import ConfigParser
+#from optparse import OptionParser
 from ArcLRMS import *
 from SshLRMS import *
 import Resource
@@ -21,19 +21,19 @@ import Application
 from Exceptions import *
 import Authorization
 
-homedir = os.path.expandvars('$HOME')
-rcdir = homedir + "/.gc3"
-default_config_file_location = rcdir + "/config"
-default_joblist_file = rcdir + "/.joblist"
-default_joblist_lock = rcdir + "/.joblist_lock"
-default_job_folder_location="$PWD"
-default_wait_time = 3
+#homedir = os.path.expandvars('$HOME')
+#rcdir = homedir + "/.gc3"
+#default_config_file_location = rcdir + "/config"
+#default_joblist_file = rcdir + "/.joblist"
+#default_joblist_lock = rcdir + "/.joblist_lock"
+#default_job_folder_location="$PWD"
+#default_wait_time = 3
 
-ARC_LRMS = 1
-SGE_LRMS = 2
+#ARC_LRMS = 1
+#SGE_LRMS = 2
 
-SMSCG_AUTHENTICATION = 1
-SSH_AUTHENTICATION = 2
+#SMSCG_AUTHENTICATION = 1
+#SSH_AUTHENTICATION = 2
         
 class Gcli:
 
@@ -43,7 +43,7 @@ class Gcli:
                 raise Exception('could not read any valid resource configuration from config file')
             self._resources = resource_list
             self._defaults = defaults
-            self.log = logging.getLogger('gc3utils')
+#            gc3utils.log = logging.getLogger('gc3utils')
         except:
             raise
 
@@ -59,9 +59,9 @@ class Gcli:
         if (authentication_type is Default.SMSCG_AUTHENTICATION):
             # Check grid access
             try:
-                self.log.debug('check_authentication for SMSCG')
+                gc3utils.log.debug('check_authentication for SMSCG')
                 if ( (not utils.check_grid_authentication()) | (not utils.check_user_certificate()) ):
-                    self.log.error('grid credential expired')
+                    gc3utils.log.error('grid credential expired')
                     return False
                 return True
             except:
@@ -70,15 +70,15 @@ class Gcli:
         if (authentication_type is Default.SSH_AUTHENTICATION):
             # Check ssh access
             try:
-                self.log.debug('check_authentication for SSH')
+                gc3utils.log.debug('check_authentication for SSH')
                 if (not utils.check_ssh_authentication()):
-                    self.log.error('ssh-agent not active')
+                    gc3utils.log.error('ssh-agent not active')
                     return False
                 return True
             except:
                 return False
 
-        self.log.error("Unknown requested authentication type [%d]",authentication_type)
+        gc3utils.log.error("Unknown requested authentication type [%d]",authentication_type)
         raise Exception('Unknown requested authentication type')
 
 #========== Start enable_authentication ===========
@@ -90,22 +90,22 @@ class Gcli:
                 _aaiUserName = None
                 
                 Default.AAI_CREDENTIAL_REPO = os.path.expandvars(Default.AAI_CREDENTIAL_REPO)
-                self.log.debug('checking AAI credential file [ %s ]',Default.AAI_CREDENTIAL_REPO)
+                gc3utils.log.debug('checking AAI credential file [ %s ]',Default.AAI_CREDENTIAL_REPO)
                 if ( os.path.exists(Default.AAI_CREDENTIAL_REPO) & os.path.isfile(Default.AAI_CREDENTIAL_REPO) ):
                     _fileHandle = open(Default.AAI_CREDENTIAL_REPO,'r')
                     _aaiUserName = _fileHandle.read()
                     _fileHandle.close()
                     _aaiUserName = _aaiUserName.rstrip("\n")
-                    self.log.debug('_aaiUserName: %s',_aaiUserName)
+                    gc3utils.log.debug('_aaiUserName: %s',_aaiUserName)
                 utils.renew_grid_credential(_aaiUserName)
             except:
-                self.log.critical('Failed renewing grid credential [%s]',sys.exc_info()[1])
+                gc3utils.log.critical('Failed renewing grid credential [%s]',sys.exc_info()[1])
                 return False
             return True
         if (authentication_type is Default.SSH_AUTHENTICATION):
             return True
 
-        self.log.error("Unknown requested authentication type [%d]",authentication_type)
+        gc3utils.log.error("Unknown requested authentication type [%d]",authentication_type)
         raise Exception('Unknown requested authentication type')
 
 
@@ -126,20 +126,20 @@ class Gcli:
         # Parsing passed arguments
         # RFR: this should be application responsibility ?
         if (not check_inputfile(application_obj.input_file_name)):
-            self.log.critical('Input file argument\t\t\t[ failed ]'+application_obj.input_file_name)
+            gc3utils.log.critical('Input file argument\t\t\t[ failed ]'+application_obj.input_file_name)
             raise Exception('invalid input-file argument')
             
-        self.log.debug('checked inputfile')
-        self.log.debug('input_file: %s',application_obj.input_file_name)
-        self.log.debug('application tag: %s',application_obj.application_tag)
-        self.log.debug('application arguments: %s',application_obj.application_arguments)
-        self.log.debug('default_job_folder_location: %s',self._defaults.job_folder_location)
-        self.log.debug('requested cores: %s',str(application_obj.requested_cores))
-        self.log.debug('requested memory: %s GB',str(application_obj.requested_memory))
-        self.log.debug('requested walltime: %s hours',str(application_obj.requested_walltime))
-        self.log.info('Parsing arguments\t\t[ ok ]')
+        gc3utils.log.debug('checked inputfile')
+        gc3utils.log.debug('input_file: %s',application_obj.input_file_name)
+        gc3utils.log.debug('application tag: %s',application_obj.application_tag)
+        gc3utils.log.debug('application arguments: %s',application_obj.application_arguments)
+        gc3utils.log.debug('default_job_folder_location: %s',self._defaults.job_folder_location)
+        gc3utils.log.debug('requested cores: %s',str(application_obj.requested_cores))
+        gc3utils.log.debug('requested memory: %s GB',str(application_obj.requested_memory))
+        gc3utils.log.debug('requested walltime: %s hours',str(application_obj.requested_walltime))
+        gc3utils.log.info('Parsing arguments\t\t[ ok ]')
 
-        self.log.debug('Performing brokering')
+        gc3utils.log.debug('Performing brokering')
         # decide which resource to use
         # (Job) = (Scheduler).PerformBrokering((Resource)[],(Application))
         try:
@@ -147,12 +147,12 @@ class Gcli:
             #            _selected_lrms_list = Scheduler.Scheduler.do_brokering(_lrms_list,application_obj)
             _selected_resource_list = Scheduler.Scheduler.do_brokering(self._resources,application_obj)
             if len(_selected_resource_list) > 0:
-                self.log.debug('Scheduler returned %d matched resources',len(_selected_resource_list))
-                self.log.info('do_brokering\t\t\t\t\t[ ok ]')
+                gc3utils.log.debug('Scheduler returned %d matched resources',len(_selected_resource_list))
+                gc3utils.log.info('do_brokering\t\t\t\t\t[ ok ]')
             else:
                 raise BrokerException('Broker did not returned any valid LRMS')
         except:
-            self.log.critical('Failed in scheduling')
+            gc3utils.log.critical('Failed in scheduling')
             raise
 
         # At this point self._resources contains either a list or a single LRMS reference
@@ -164,22 +164,22 @@ class Gcli:
             try:
                 _lrms_list.append(self.__get_LRMS(_resource.name))
             except:
-                self.log.error('Exception creating LRMS instance %s',_resource.type)
+                gc3utils.log.error('Exception creating LRMS instance %s',_resource.type)
                 continue
             
         if ( len(_lrms_list) == 0 ):
-            self.log.critical('Could not initialize ANY lrms resource')
+            gc3utils.log.critical('Could not initialize ANY lrms resource')
             raise Exception('no available LRMS found')
 
         # This method also takes care of crating the unique_token's folder
         try:
             unique_token = self.__create_job_unique_token(os.path.expandvars(application_obj.job_local_dir),application_obj.input_file_name,application_obj.application_tag)
         except:
-            self.log.critical('Failed creating unique_token')
+            gc3utils.log.critical('Failed creating unique_token')
             raise
 
         # resource_name.submit_job(input, unique_token, application, lrms_log) -> returns [lrms_jobid,lrms_log]
-#        self.log.debug('Submitting job with %s %s %s %s',unique_token, application_to_run, input_file, self.defaults['lrms_log'])
+#        gc3utils.log.debug('Submitting job with %s %s %s %s',unique_token, application_to_run, input_file, self.defaults['lrms_log'])
 
         # Scheduler.do_brokering should return a sorted list of valid lrms
         job = None
@@ -191,11 +191,11 @@ class Gcli:
                 job = lrms.submit_job(application_obj)
                 if job.is_valid():
                     job.insert('unique_token',unique_token)
-                    self.log.info('Submission process to LRMS backend\t\t\t[ ok ]')
-            except AuthenticationException:
+                    gc3utils.log.info('Submission process to LRMS backend\t\t\t[ ok ]')
+            except Exceptions.AuthenticationException:
                 continue
             except LRMSException:
-                self.log.critical('Failed Submitting job: %s',sys.exc_info()[1])
+                gc3utils.log.critical('Failed Submitting job: %s',sys.exc_info()[1])
                 continue
 
         if job is None:
@@ -205,18 +205,18 @@ class Gcli:
 # 
 # 
 #        # resource_name.submit_job(input, unique_token, application, lrms_log) -> returns [lrms_jobid,lrms_log]
-#        self.log.debug('Submitting job with %s %s %s %s',unique_token, application_to_run, input_file, self.defaults['lrms_log'])
+#        gc3utils.log.debug('Submitting job with %s %s %s %s',unique_token, application_to_run, input_file, self.defaults['lrms_log'])
 #        try:
 #            job_obj = _selected_lrms.submit_job(application_obj)
 #            job_obj.insert('unique_token',unique_token)
-#            self.log.info('Submission process to LRMS backend\t\t\t[ ok ]')
+#            gc3utils.log.info('Submission process to LRMS backend\t\t\t[ ok ]')
 #        except:
-#            self.log.critical('Failed Submitting job: %s',sys.exc_info()[1])
+#            gc3utils.log.critical('Failed Submitting job: %s',sys.exc_info()[1])
 #            raise
 #===============================================================================
 
         if self.__log_job(job):
-            self.log.info('Dumping lrms log information\t\t\t[ ok ]')
+            gc3utils.log.info('Dumping lrms log information\t\t\t[ ok ]')
 
         # return an object of type Job which contains also the unique_token
         return job
@@ -233,14 +233,14 @@ class Gcli:
         try:
             _list_of_runnign_jobs = __get_list_running_jobs()
         except:
-            self.log.debug('Failed obtaining list of running jobs %s',str(sys.exc_info()[1]))
+            gc3utils.log.debug('Failed obtaining list of running jobs %s',str(sys.exc_info()[1]))
             raise
             
         for _running_job in _list_of_runnign_jobs:
             try:
                 job_return_list.append(gstat(_running_job))
             except:
-                self.log.debug('Exception when trying getting status of job %s: %s',_running_job.unique_token,str(sys.exc_info()[1]))
+                gc3utils.log.debug('Exception when trying getting status of job %s: %s',_running_job.unique_token,str(sys.exc_info()[1]))
                 continue                                
 
         return job_return_li    
@@ -277,19 +277,19 @@ class Gcli:
 
             unique_token = job_folder_location+'/'+unique_id
             
-            self.log.debug('Generate Unique token: %s',unique_token)
-            self.log.info('Generate Unique token\t\t\t[ ok ]')
+            gc3utils.log.debug('Generate Unique token: %s',unique_token)
+            gc3utils.log.info('Generate Unique token\t\t\t[ ok ]')
             
             # creating folder for job's session
 #            self._defaults.job_folder_location = os.path.expandvars(self._defaults.job_folder_location)
             
-            self.log.debug('creating folder for job session: %s',unique_token)
+            gc3utils.log.debug('creating folder for job session: %s',unique_token)
             os.makedirs(unique_token)
 
-            self.log.info('Create job folder\t\t\t[ ok ]')
+            gc3utils.log.info('Create job folder\t\t\t[ ok ]')
             return unique_token
         except:
-            self.log.error('Failed creating job unique_token')
+            gc3utils.log.error('Failed creating job unique_token')
             raise
 
 
@@ -302,14 +302,14 @@ class Gcli:
             _fileHandle.write(job_obj.resource_name+'\t'+job_obj.lrms_jobid)
             _fileHandle.close()
         except:
-            self.log.error('failed updating job lrms_id')
+            gc3utils.log.error('failed updating job lrms_id')
 
         try:
             _fileHandle = open(job_obj.unique_token+'/'+self._defaults.job_log,'w')
             _fileHandle.write(job_obj.log)
             _fileHandle.close()
         except:
-            self.log.error('failed updating job log')
+            gc3utils.log.error('failed updating job log')
                         
         # if joblist_file & joblist_lock are not defined, use default
         #RFR: WHY DO I NEED THIS ?
@@ -327,31 +327,31 @@ class Gcli:
         if not os.path.exists(joblist_file):
             try:
                 open(joblist_file, 'w').close()
-                self.log.debug(joblist_file + ' did not exist... created successfully.')
+                gc3utils.log.debug(joblist_file + ' did not exist... created successfully.')
             except:
-                self.log.error('Failed opening joblist_file')
+                gc3utils.log.error('Failed opening joblist_file')
                 return False
 
-        self.log.debug('appending jobid to joblist file as specified in defaults')
+        gc3utils.log.debug('appending jobid to joblist file as specified in defaults')
         try:
             # appending jobid to .jobs file as specified in defaults
-            self.log.debug('obtaining lock')
+            gc3utils.log.debug('obtaining lock')
             if ( obtain_file_lock(joblist_file,joblist_lock) ):
                 _fileHandle = open(joblist_file,'a')
                 _fileHandle.write(job_obj.unique_token+'\n')
                 _fileHandle.close()
             else:
-                self.log.error('Failed obtain lock')
+                gc3utils.log.error('Failed obtain lock')
                 return False
 
         except:
-            self.log.error('Failed in appending current jobid to list of jobs in %s',self._defaults.joblist_file)
-            self.log.debug('Exception %s',sys.exc_info()[1])
+            gc3utils.log.error('Failed in appending current jobid to list of jobs in %s',self._defaults.joblist_file)
+            gc3utils.log.debug('Exception %s',sys.exc_info()[1])
             return False
 
         # release lock
         if ( (not release_file_lock(joblist_lock)) & (os.path.isfile(joblist_lock)) ):
-            self.log.error('Failed removing lock file')
+            gc3utils.log.error('Failed removing lock file')
             return False
 
         return True
@@ -376,7 +376,7 @@ class Gcli:
             _unique_tokens_list = re.split('\n',_joblist.read())
             _joblist.close()
         except:
-            self.log.debug('Failed reading joblist file in %s',self._defaults.joblist_file)
+            gc3utils.log.debug('Failed reading joblist file in %s',self._defaults.joblist_file)
             raise
             
         # for each unique_token retrieve job information and create instance of Job obj
@@ -396,17 +396,17 @@ class Gcli:
         for _resource in self._resources:
             if _resource.name is resource_name:
                 # there's a matching resource
-                self.log.debug('Creating instance of type %s for %s',_resource.type,_resource.frontend)
+                gc3utils.log.debug('Creating instance of type %s for %s',_resource.type,_resource.frontend)
                 try:
-                    if _resource.type is ARC_LRMS:
+                    if _resource.type is Default.ARC_LRMS:
                         _lrms = ArcLrms(_resource)
-                    elif _resource.type is SGE_LRMS:
+                    elif _resource.type is Default.SGE_LRMS:
                         _lrms = SshLrms(_resource)
                     else:
-                        self.log.error('Unknown resource type %s',_resource.type)
+                        gc3utils.log.error('Unknown resource type %s',_resource.type)
                         raise Exception('Unknown resource type')
                 except:
-                    self.log.error('Exception creating LRMS instance %s',_resource.type)
+                    gc3utils.log.error('Exception creating LRMS instance %s',_resource.type)
                     raise
         
         if _lrms is None:

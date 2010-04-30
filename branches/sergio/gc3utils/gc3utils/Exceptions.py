@@ -1,24 +1,32 @@
-class BrokerException(Exception):
-    #    def __init__(self,msg):
-    pass
-#        logging.error(msg)
+import gc3utils
 
-class LRMSException(Exception):
-    #    def __init__(self,msg):
+class Error(Exception):
+    """A non-fatal error."""
+    def __init__(self, msg, do_log=True):
+        if do_log: gc3utils.log.error(msg)
+        
+class Critical(Exception):
+    """
+    A fatal error;
+    execution cannot continue and program should report to user and then stop.
+    """
+    def __init__(self, msg, do_log=True):
+        if do_log: gc3utils.log.critical(msg)
+        
+class BrokerException(Error):
+    pass
+
+class LRMSException(Error):
     pass    
-#    def __init__(self,msg):
-#        logging.error(msg)
 
-class TransportException(Exception):
-    #    def __init__(self,msg):
+class TransportException(Error):
     pass
-#    def __init__(self,msg):
-#        logging.error(msg)
 
-class AuthenticationException(Exception):
-    #    def __init__(self,msg):
+class AuthenticationException(Error):
     pass
-#    def __init__(self,msg):
-#        logging.error(msg)
 
-    
+class SLCSException(Error):
+    pass
+
+class VOMSException(Error):
+    pass

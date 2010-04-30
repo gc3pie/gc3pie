@@ -18,7 +18,7 @@ sys.path.append('/opt/nordugrid/lib/python2.4/site-packages')
 import warnings
 warnings.simplefilter("ignore")
 from arclib import *
-
+import Exceptions
 
 # __all__ = ["configure_logging","check_inputfile","readConfig","check_qgms_version","dirname","inputname","inputfilename","create_unique_token"]
 
@@ -30,8 +30,10 @@ from arclib import *
 
 
 def sumfile(fobj):
-    """Returns an md5 hash for an object with read() method."""
-    """Stolen from http://code.activestate.com/recipes/266486/"""
+    """
+    Returns an md5 hash for an object with read() method.
+    Stolen from http://code.activestate.com/recipes/266486/
+    """
     m = md5.new()
     while True:
         d = fobj.read(8096)
@@ -51,8 +53,8 @@ def md5sum(fname):
             f = file(fname, 'rb')
         except:
             logging.critical('Failed to open [ %s ]')
-            sys.exit(1)
-#            return 'Failed to open file'
+            f.close()
+            raise
         ret = sumfile(f)
         f.close()
     return ret
@@ -174,30 +176,6 @@ def configure_logging(verbosity):
     logging.basicConfig(level=logging_level, format='%(asctime)s %(levelname)-8s %(message)s')
 
     return
-
-
-# Not usefull
-def parse_commandline_jobdir_only(args):
-    """
-    Parse command line arguments.
-    In this case there is only 1: a valid job dir.
-    """
-
-    numargs = len(args) - 1
-
-    logging.debug('arguments: ' + str(args[1:]))
-    logging.debug('number of arguments: ' + str(numargs))
-
-    # Check number of arguments
-    if numargs != 1 :
-        logging.critical('Usage: gstat job_dir')
-        logging.critical('Incorrect # of arguments. Exiting.')
-        sys.exit(1)
-
-    jobdir = str(args[1])
-
-    return jobdir
-
 
 def check_qgms_version(minimum_version):
     """
@@ -348,7 +326,7 @@ def renew_grid_credential(_aaiUserName):
             retval = commands.getstatusoutput(SLCSINIT+" -u "+_aaiUserName+" -p "+input_passwd+" -k "+input_passwd)
             if ( retval[0] != 0 ):
                 logging.critical("failed renewing slcs: %s",retval[1])
-                raise Exception('failed slcs-init')
+                raise Exceptions.SLCSException('failed slcs-init')
                 
         logging.info('Initializing slcs\t\t\t[ ok ]')
                 
@@ -364,7 +342,7 @@ def renew_grid_credential(_aaiUserName):
             # Failed renewing voms credential
             # FATAL ERROR
             logging.critical("Initializing voms-proxy\t\t[ failed ]")
-            raise Exception('failed voms-proxy-init')
+            raise Exceptions.VOMSException('failed voms-proxy-init')
 
         logging.info('Initializing voms-proxy\t\t[ ok ]')
         logging.info('check_authentication\t\t\t\t[ ok ]')
