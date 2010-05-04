@@ -50,7 +50,8 @@ def __get_resources(options, resources_list):
 
     try:
         for resource in resources_list:
-            if (options.resource_name):
+            # RFR: options.resource_name is NOT a key that is set by all command line commands
+            if hasattr(options,'resource_name') and options.resource_name :
                 if (not options.resource_name is resource['name']):
                     gc3utils.log.debug('Rejecting resource because of not matching with %s',options.resource_name)
                     continue
@@ -94,6 +95,9 @@ def main():
     default_job_folder_location="$PWD"
     default_wait_time = 3
 
+    logging.basicConfig(verbosity=10,format='%(asctime)s: %(levelname)s [%(name)s_%(module)s_%(funcName)s_%(lineno)d]:  %(message)s')
+#    gc3utils.utils.configure_logger(options.verbosity,'gc3utils','/tmp/gc3utils.log')
+            
 #    global default_job_folder_location
 #    global default_joblist_file
 #    global default_joblist_lock
@@ -116,7 +120,6 @@ def main():
             (options, args) = parser.parse_args()
 
             # Configure logging service
-            logging.basicConfig(verbosity=10,format='%(asctime)s: %(levelname)s [%(name)s_%(module)s_%(funcName)s_%(lineno)d]:  %(message)s')
             gc3utils.utils.configure_logger(options.verbosity,'gc3utils','/tmp/gc3utils.log')
             
             if len(args) != 2:
@@ -145,10 +148,7 @@ def main():
             (options, args) = parser.parse_args()
 
             # Configure logging service
-            gc3utils.log.basicConfig(format='%(asctime)s: %(levelname)s [%(name)s_%(module)s_%(funcName)s]:  %(message)s')
-            log = configure_logger(options.verbosity,'gc3utils','/tmp/gc3utils.log')
-            
-            #            configure_logging(options.verbosity)
+            gc3utils.utils.configure_logger(options.verbosity,'gc3utils','/tmp/gc3utils.log')
 
             _aai_username = None
             if len(args) == 1:
@@ -164,9 +164,7 @@ def main():
             (options, args) = parser.parse_args()
             
             # Configure logging service
-            gc3utils.log.basicConfig(format='%(asctime)s: %(levelname)s [%(name)s_%(module)s_%(funcName)s]:  %(message)s')
-            log = configure_logger(options.verbosity,'gc3utils','/tmp/gc3utils.log')
-                        
+            gc3utils.utils.configure_logger(options.verbosity,'gc3utils','/tmp/gc3utils.log')
 
             gc3utils.log.debug('Command lines argument length: [ %d ]',len(args))
 
@@ -185,8 +183,9 @@ def main():
             (options, args) = parser.parse_args()
             
             # Configure logging service
-            gc3utils.log.basicConfig(format='%(asctime)s: %(levelname)s [%(name)s_%(module)s_%(funcName)s]:  %(message)s')
-            log = configure_logger(options.verbosity,'gc3utils','/tmp/gc3utils.log')
+            # gc3utils.log.basicConfig(format='%(asctime)s: %(levelname)s [%(name)s_%(module)s_%(funcName)s]:  %(message)s')
+            gc3utils.utils.configure_logger(options.verbosity,'gc3utils','/tmp/gc3utils.log')
+            
                         
 
             if len(args) != 1:
@@ -211,8 +210,9 @@ def main():
             (options, args) = parser.parse_args()
             
             # Configure logging service
-            gc3utils.log.basicConfig(format='%(asctime)s: %(levelname)s [%(name)s_%(module)s_%(funcName)s]:  %(message)s')
-            log = configure_logger(options.verbosity,'gc3utils','/tmp/gc3utils.log')
+            # gc3utils.log.basicConfig(format='%(asctime)s: %(levelname)s [%(name)s_%(module)s_%(funcName)s]:  %(message)s')
+            gc3utils.utils.configure_logger(options.verbosity,'gc3utils','/tmp/gc3utils.log')
+            
                         
             
             gc3utils.log.debug('Command lines argument length: [ %d ]',len(args))

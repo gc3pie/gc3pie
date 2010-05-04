@@ -8,9 +8,6 @@ __version__="0.3"
 from utils import *
 import sys
 import os
-#import logging
-#import ConfigParser
-#from optparse import OptionParser
 from ArcLRMS import *
 from SshLRMS import *
 import Resource
@@ -21,34 +18,19 @@ import Application
 from Exceptions import *
 import Authorization
 
-#homedir = os.path.expandvars('$HOME')
-#rcdir = homedir + "/.gc3"
-#default_config_file_location = rcdir + "/config"
-#default_joblist_file = rcdir + "/.joblist"
-#default_joblist_lock = rcdir + "/.joblist_lock"
-#default_job_folder_location="$PWD"
-#default_wait_time = 3
-
-#ARC_LRMS = 1
-#SGE_LRMS = 2
-
-#SMSCG_AUTHENTICATION = 1
-#SSH_AUTHENTICATION = 2
-        
 class Gcli:
 
     def __init__(self, defaults, resource_list):
         try:
             if ( len(resource_list) == 0 ):
-                raise Exception('could not read any valid resource configuration from config file')
+                raise Exception('0 lenght resource list')
             self._resources = resource_list
             self._defaults = defaults
-#            gc3utils.log = logging.getLogger('gc3utils')
         except:
             raise
 
 #========== Start check_authentication ===========
-    def check_authentication(self,authentication_type):
+#    def check_authentication(self,authentication_type):
 
         #=======================================================================
         # a = Authorization.Auth()
@@ -56,57 +38,59 @@ class Gcli:
         #=======================================================================
 
 
-        if (authentication_type is Default.SMSCG_AUTHENTICATION):
-            # Check grid access
-            try:
-                gc3utils.log.debug('check_authentication for SMSCG')
-                if ( (not utils.check_grid_authentication()) | (not utils.check_user_certificate()) ):
-                    gc3utils.log.error('grid credential expired')
-                    return False
-                return True
-            except:
-                return False
-
-        if (authentication_type is Default.SSH_AUTHENTICATION):
-            # Check ssh access
-            try:
-                gc3utils.log.debug('check_authentication for SSH')
-                if (not utils.check_ssh_authentication()):
-                    gc3utils.log.error('ssh-agent not active')
-                    return False
-                return True
-            except:
-                return False
-
-        gc3utils.log.error("Unknown requested authentication type [%d]",authentication_type)
-        raise Exception('Unknown requested authentication type')
+#        if (authentication_type is Default.SMSCG_AUTHENTICATION):
+#            # Check grid access
+#            try:
+#                gc3utils.log.debug('check_authentication for SMSCG')
+#                if ( (not utils.check_grid_authentication()) | (not utils.check_user_certificate()) ):
+#                    gc3utils.log.error('grid credential expired')
+#                    return False
+#                return True
+#            except:
+#                return False
+#
+#        if (authentication_type is Default.SSH_AUTHENTICATION):
+#            # Check ssh access
+#            try:
+#                gc3utils.log.debug('check_authentication for SSH')
+#                if (not utils.check_ssh_authentication()):
+#                    gc3utils.log.error('ssh-agent not active')
+#                    return False
+#                return True
+#            except:
+#                return False
+#
+#
+#        gc3utils.log.error("Unknown requested authentication type [%d]",authentication_type)
+#        raise Exception('Unknown requested authentication type')
 
 #========== Start enable_authentication ===========
-    def enable_authentication(self,authentication_type):
-        if (authentication_type is Default.SMSCG_AUTHENTICATION):
-            # Getting AAI username
-            #        _aaiUserName = None
-            try:
-                _aaiUserName = None
-                
-                Default.AAI_CREDENTIAL_REPO = os.path.expandvars(Default.AAI_CREDENTIAL_REPO)
-                gc3utils.log.debug('checking AAI credential file [ %s ]',Default.AAI_CREDENTIAL_REPO)
-                if ( os.path.exists(Default.AAI_CREDENTIAL_REPO) & os.path.isfile(Default.AAI_CREDENTIAL_REPO) ):
-                    _fileHandle = open(Default.AAI_CREDENTIAL_REPO,'r')
-                    _aaiUserName = _fileHandle.read()
-                    _fileHandle.close()
-                    _aaiUserName = _aaiUserName.rstrip("\n")
-                    gc3utils.log.debug('_aaiUserName: %s',_aaiUserName)
-                utils.renew_grid_credential(_aaiUserName)
-            except:
-                gc3utils.log.critical('Failed renewing grid credential [%s]',sys.exc_info()[1])
-                return False
-            return True
-        if (authentication_type is Default.SSH_AUTHENTICATION):
-            return True
-
-        gc3utils.log.error("Unknown requested authentication type [%d]",authentication_type)
-        raise Exception('Unknown requested authentication type')
+#    def enable_authentication(self,authentication_type):
+#        if (authentication_type is Default.SMSCG_AUTHENTICATION):
+#            # Getting AAI username
+#            #        _aaiUserName = None
+#            try:
+#                _aaiUserName = None
+#                
+#                Default.AAI_CREDENTIAL_REPO = os.path.expandvars(Default.AAI_CREDENTIAL_REPO)
+#                gc3utils.log.debug('checking AAI credential file [ %s ]',Default.AAI_CREDENTIAL_REPO)
+#                if ( os.path.exists(Default.AAI_CREDENTIAL_REPO) & os.path.isfile(Default.AAI_CREDENTIAL_REPO) ):
+#                    _fileHandle = open(Default.AAI_CREDENTIAL_REPO,'r')
+#                    _aaiUserName = _fileHandle.read()
+#                    _fileHandle.close()
+#
+#                    _aaiUserName = _aaiUserName.rstrip("\n")
+#                    gc3utils.log.debug('_aaiUserName: %s',_aaiUserName)
+#                utils.renew_grid_credential(_aaiUserName)
+#            except:
+#                gc3utils.log.critical('Failed renewing grid credential [%s]',sys.exc_info()[1])
+#                return False
+#            return True
+#        if (authentication_type is Default.SSH_AUTHENTICATION):
+#            return True
+#
+#        gc3utils.log.error("Unknown requested authentication type [%d]",authentication_type)
+#        raise Exception('Unknown requested authentication type')
 
 
 #========== Start gsub ===========
@@ -141,10 +125,8 @@ class Gcli:
 
         gc3utils.log.debug('Performing brokering')
         # decide which resource to use
-        # (Job) = (Scheduler).PerformBrokering((Resource)[],(Application))
+        # (Resource)[] = (Scheduler).PerformBrokering((Resource)[],(Application))
         try:
-            #            _selected_lrms = Scheduler.do_brokering(_lrms_list,application_obj)
-            #            _selected_lrms_list = Scheduler.Scheduler.do_brokering(_lrms_list,application_obj)
             _selected_resource_list = Scheduler.Scheduler.do_brokering(self._resources,application_obj)
             if len(_selected_resource_list) > 0:
                 gc3utils.log.debug('Scheduler returned %d matched resources',len(_selected_resource_list))
@@ -164,7 +146,8 @@ class Gcli:
             try:
                 _lrms_list.append(self.__get_LRMS(_resource.name))
             except:
-                gc3utils.log.error('Exception creating LRMS instance %s',_resource.type)
+                gc3utils.log.error('Failed creating LRMS %s',_resource.type)
+                gc3utils.log.debug('%s',sys.exc_info()[1])
                 continue
             
         if ( len(_lrms_list) == 0 ):
