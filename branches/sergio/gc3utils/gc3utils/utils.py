@@ -19,6 +19,9 @@ import warnings
 warnings.simplefilter("ignore")
 from arclib import *
 import Exceptions
+import Job
+import Default
+import gc3utils
 
 # __all__ = ["configure_logging","check_inputfile","readConfig","check_qgms_version","dirname","inputname","inputfilename","create_unique_token"]
 
@@ -355,36 +358,6 @@ def renew_grid_credential(_aaiUserName):
         # Return False or raise exception ?
         raise
     
-def get_job_from_filesystem(unique_token,job_file):
-    # get from the filesystem the unique_token is pointing to the job info
-    if (not os.path.exists(_unique_token)) or (not os.path.isdir(_unique_token)) or (not check_inputfile(unique_token+'/'+job_file)):
-        logging.critical('unique_token not valid')
-        raise Exception('invalid unique_token')
-                    
-    try:
-        _fileHandle = open(unique_token+'/'+job_file,'r')
-        _job_information_list = re.split('\n',_fileHandle.read())
-        _fileHandle.close()
-        _job = Job()
-        for _job_information_duplet in _job_information_list:
-            _job_information_duplet = re.split('\t',_job_information_duplet)
-            # There should a list with just two elements: key and value
-            if len(_job_information_duplet) != 2:
-                logging.critical('Failed reducing job information from job_file %s. Found %d elements',job_file,len(_job_information_duplet))
-                raise Exception('PROGRAMMING_ERROR: expected two elements')
- 
-            _job.insert(_job_information_duplet[0],_job_information_duplet[1])
-
-        if _job.isValid():
-            _job_list.append(_job)
-
-    except:
-        logging.error('Failed reading lrms_jobid_file %s/%s : %s',unique_token,job_file,sys.exc_info()[1])
-        raise
-
-    # Shall we check whether the list is empty or not ?
-    return _job
-
 def display_job_status(job_list):
     if len(job_list) > 0:
         sys.stdout.write("======================================================================================================\n")
@@ -392,3 +365,28 @@ def display_job_status(job_list):
             sys.stdout.write(_job.unique_token+'\t'+_job.status+'\t'+_job.resource_name)
             sys.stdout.write('\n')
             sys.stdout.flush()
+
+def get_job(unique_token):
+    return get_job_filesystem(unique_token)
+
+def get_job_filesystem(unique_token):
+
+    if not os.path.isdir(unique_token):
+        raise Exceptions.UniqueTokenError('unique_token not valid')
+
+    # initialize Job object
+    _job = Job.Job()
+
+    # get lrms_jobid
+    try:
+        _fileHandle = open(unique_token+'/'+Default.JOB_FILE)
+        _job_info = re.split('\t',_fileHandle.read())
+        _job.insert('resource_name',_job_info[0])
+        _job.insert('lrms_jobid',_job_info[1])
+
+        gc3utils.log.debug('Job: %s resource_name: %s lrms_jobid: %s',unique_token,_job.resource_name,_job.lrms_jobid)
+        gc3utils.log.info('Created Job instance\t[ok]')
+
+        return _job
+    except:
+        raise Exceptions.JobRetrieveError(sys.exc_info()[1])

@@ -29,70 +29,6 @@ class Gcli:
         except:
             raise
 
-#========== Start check_authentication ===========
-#    def check_authentication(self,authentication_type):
-
-        #=======================================================================
-        # a = Authorization.Auth()
-        # a.get(authentication_type)
-        #=======================================================================
-
-
-#        if (authentication_type is Default.SMSCG_AUTHENTICATION):
-#            # Check grid access
-#            try:
-#                gc3utils.log.debug('check_authentication for SMSCG')
-#                if ( (not utils.check_grid_authentication()) | (not utils.check_user_certificate()) ):
-#                    gc3utils.log.error('grid credential expired')
-#                    return False
-#                return True
-#            except:
-#                return False
-#
-#        if (authentication_type is Default.SSH_AUTHENTICATION):
-#            # Check ssh access
-#            try:
-#                gc3utils.log.debug('check_authentication for SSH')
-#                if (not utils.check_ssh_authentication()):
-#                    gc3utils.log.error('ssh-agent not active')
-#                    return False
-#                return True
-#            except:
-#                return False
-#
-#
-#        gc3utils.log.error("Unknown requested authentication type [%d]",authentication_type)
-#        raise Exception('Unknown requested authentication type')
-
-#========== Start enable_authentication ===========
-#    def enable_authentication(self,authentication_type):
-#        if (authentication_type is Default.SMSCG_AUTHENTICATION):
-#            # Getting AAI username
-#            #        _aaiUserName = None
-#            try:
-#                _aaiUserName = None
-#                
-#                Default.AAI_CREDENTIAL_REPO = os.path.expandvars(Default.AAI_CREDENTIAL_REPO)
-#                gc3utils.log.debug('checking AAI credential file [ %s ]',Default.AAI_CREDENTIAL_REPO)
-#                if ( os.path.exists(Default.AAI_CREDENTIAL_REPO) & os.path.isfile(Default.AAI_CREDENTIAL_REPO) ):
-#                    _fileHandle = open(Default.AAI_CREDENTIAL_REPO,'r')
-#                    _aaiUserName = _fileHandle.read()
-#                    _fileHandle.close()
-#
-#                    _aaiUserName = _aaiUserName.rstrip("\n")
-#                    gc3utils.log.debug('_aaiUserName: %s',_aaiUserName)
-#                utils.renew_grid_credential(_aaiUserName)
-#            except:
-#                gc3utils.log.critical('Failed renewing grid credential [%s]',sys.exc_info()[1])
-#                return False
-#            return True
-#        if (authentication_type is Default.SSH_AUTHENTICATION):
-#            return True
-#
-#        gc3utils.log.error("Unknown requested authentication type [%d]",authentication_type)
-#        raise Exception('Unknown requested authentication type')
-
-
 #========== Start gsub ===========
     def gsub(self, application_obj):
         # Obsolete: def gsub(self, application_to_run, input_file, selected_resource, job_local_dir, cores, memory, walltime):
@@ -183,20 +119,6 @@ class Gcli:
 
         if job is None:
             raise LRMSException('Failed submitting application to any LRMS')
-#===============================================================================
-# 
-# 
-# 
-#        # resource_name.submit_job(input, unique_token, application, lrms_log) -> returns [lrms_jobid,lrms_log]
-#        gc3utils.log.debug('Submitting job with %s %s %s %s',unique_token, application_to_run, input_file, self.defaults['lrms_log'])
-#        try:
-#            job_obj = _selected_lrms.submit_job(application_obj)
-#            job_obj.insert('unique_token',unique_token)
-#            gc3utils.log.info('Submission process to LRMS backend\t\t\t[ ok ]')
-#        except:
-#            gc3utils.log.critical('Failed Submitting job: %s',sys.exc_info()[1])
-#            raise
-#===============================================================================
 
         if self.__log_job(job):
             gc3utils.log.info('Dumping lrms log information\t\t\t[ ok ]')
@@ -377,7 +299,7 @@ class Gcli:
         _lrms = None
         
         for _resource in self._resources:
-            if _resource.name is resource_name:
+            if _resource.name == resource_name:
                 # there's a matching resource
                 gc3utils.log.debug('Creating instance of type %s for %s',_resource.type,_resource.frontend)
                 try:

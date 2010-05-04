@@ -81,7 +81,6 @@ def __get_resources(options, resources_list, log):
 
     return resources
 
-
 #====== Main ========
 def main():
     homedir = os.path.expandvars('$HOME')

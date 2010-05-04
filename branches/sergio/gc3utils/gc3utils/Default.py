@@ -14,7 +14,9 @@ JOBLIST_LOCK = RCDIR + "/.joblist_lock"
 JOB_FOLDER_LOCATION="$PWD"
 AAI_CREDENTIAL_REPO = RCDIR + "/aai_credential"
 GAMESS_XRSL_TEMPLATE = "$HOME/.gc3/gamess_template.xrsl"
-    
+JOB_FILE = ".lrms_id"    
+JOB_LOG = ".log"
+
 ARC_LRMS = 1
 SGE_LRMS = 2
 

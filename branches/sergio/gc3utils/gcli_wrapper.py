@@ -5,20 +5,18 @@ __date__="01 May 2010"
 __copyright__="Copyright 2009 2011 Grid Computing Competence Center - UZH/GC3"
 __version__="0.3"
 
-import gc3utils.utils
 import sys
 import os
 import logging
 import ConfigParser
 from optparse import OptionParser
-#from gc3utils import *
+from gc3utils import *
 import gc3utils
-
+import gc3utils.utils
 import gc3utils.ArcLRMS
 import gc3utils.SshLRMS
 import gc3utils.Resource
 import gc3utils.Default
-#import Scheduler
 import gc3utils.Job
 import gc3utils.Application
 import gc3utils.gcli
@@ -173,6 +171,8 @@ def main():
                 parser.print_help()
                 raise Exception('wrong number on arguments')
 
+            unique_token = args[0]
+
         elif ( os.path.basename(program_name) == "gget" ):
             # Gget
             # Parse command line arguments
@@ -283,7 +283,7 @@ def main():
         elif (os.path.basename(program_name) == "gstat" ):
             try:
                 if (unique_token):
-                    job_list = _gcli.gstat(gc3utils.utils.get_job_from_filesystem(unique_token,default.job_file))
+                    job_list = [_gcli.gstat(gc3utils.utils.get_job(unique_token))]
                 else:
                     job_list = _gcli.gstat()
             except:
@@ -294,15 +294,15 @@ def main():
             for _job in job_list:
                 if not _job.is_valid():
                     gc3utils.log.error('Returned job not valid. Removing from list')
-                    #job_list.
-                    #### SERGIO: STOPPED WORKING HERE
+
             try:
                 # Print result
                 gc3utils.utils.display_job_status(job_list)
             except:
                 gc3utils.log.error('Failed displaying job status results')
                 raise
-
+            #### SERGIO: STOPPED WORKING HERE
+            
             return 0
 
         # ggest
