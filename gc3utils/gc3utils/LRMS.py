@@ -14,49 +14,49 @@ class LRMS:
             raise LRMSException('Invalid resource description: missing transport')
     
     def submit_job(self, application): abstract
-        """
-        Submit a single job.
-        Return a Job object.
-        """
+    """
+      Submit a single job.
+      Return a Job object.
+    """
         
     def check_status(self, job):  abstract
-        """
-        Check the status of a single job.
-        Return a Job object.
-        """
+    """
+      Check the status of a single job.
+      Return a Job object.
+    """
         
     def get_results(self, job): abstract
-        """
-        Retrieve results from a single job.
-        Return a Job object.
-        """
+    """
+      Retrieve results from a single job.
+      Return a Job object.
+    """
         
     def cancel_job(self, job): abstract
-        """
-        Cancel a single running job.
-        Return a Job object.
-        """
+    """
+      Cancel a single running job.
+      Return a Job object.
+    """
     
     def get_resource_status(self): abstract
-        """
-        Get the status of a single resource.
-        Return a Resource object.
-        """
+    """
+      Get the status of a single resource.
+      Return a Resource object.
+    """
         
     def tail(self, std_type): abstract
-        """
-        todo : not permanent yet
-        Gets the output of a running job, similar to ngcat.
-        Return Job object.
+    """
+      todo : not permanent yet
+      Gets the output of a running job, similar to ngcat.
+      Return Job object.
         
-        examples:
-        print Job.stdout
-        print Job.stderr
+      examples:
+      print Job.stdout
+      print Job.stderr
         
-        """
+    """
         
     def is_valid(): abstract
-        """
-        Determine if a provided LRMS instance is valid.
-        Returns True or False.
-        """
+    """
+     Determine if a provided LRMS instance is valid.
+     Returns True or False.
+    """
