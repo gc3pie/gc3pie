@@ -140,7 +140,7 @@ class Gcli:
             job_return_list = []
 
             try:
-                _list_of_runnign_jobs = __get_list_running_jobs()
+                _list_of_runnign_jobs = self.__get_list_running_jobs()
             except:
                 gc3utils.log.debug('Failed obtaining list of running jobs %s',str(sys.exc_info()[1]))
                 raise
