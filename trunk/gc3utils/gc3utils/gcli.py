@@ -149,7 +149,7 @@ class Gcli:
 
         for _running_job in _list_of_runnign_jobs:
             try:
-                job_return_list.append(__gstat(_running_job))
+                job_return_list.append(self.__gstat(_running_job))
             except:
                 gc3utils.log.debug('Exception when trying getting status of job %s: %s',_running_job.unique_token,str(sys.exc_info()[1]))
                 continue                                
@@ -377,7 +377,7 @@ class Gcli:
         # group them in a list
         # return such a list
 
-        return __get_list_running_jobs_filesystem()
+        return self.__get_list_running_jobs_filesystem()
     
     def __get_list_running_jobs_filesystem(self):
         # This implementation is based on persistent information on the filesystem 
