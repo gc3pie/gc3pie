@@ -134,25 +134,29 @@ class Gcli:
 # How to get the list of jobids ?
 # We need an internal method for this
 # This method returns a list of job objs 
-    def gstat(self):
-        job_return_list = []
+    def gstat(self, job_obj):
+        
+        if job_obj is None:
+            job_return_list = []
 
-        try:
-            _list_of_runnign_jobs = __get_list_running_jobs()
-        except:
-            gc3utils.log.debug('Failed obtaining list of running jobs %s',str(sys.exc_info()[1]))
-            raise
-            
+            try:
+                _list_of_runnign_jobs = __get_list_running_jobs()
+            except:
+                gc3utils.log.debug('Failed obtaining list of running jobs %s',str(sys.exc_info()[1]))
+                raise
+        else:
+            _list_of_runnign_jobs = job_obj
+
         for _running_job in _list_of_runnign_jobs:
             try:
-                job_return_list.append(gstat(_running_job))
+                job_return_list.append(__gstat(_running_job))
             except:
                 gc3utils.log.debug('Exception when trying getting status of job %s: %s',_running_job.unique_token,str(sys.exc_info()[1]))
                 continue                                
 
         return job_return_li    
 
-    def gstat(self, job_obj):
+    def __gstat(self, job_obj):
         # returns an updated job object
         # create instance of LRMS depending on resource type associated to job
         
