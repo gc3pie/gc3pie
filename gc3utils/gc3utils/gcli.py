@@ -387,7 +387,7 @@ class Gcli:
             # Read joblist_file get a list of unique_tokens and resource_names
             _joblist  = open(Default.JOBLIST_FILE,'r')
             _joblist.seek(0)
-            _unique_tokens_list = re.split('\n',_joblist.read())
+            _unique_tokens_list = re.split('\n',_joblist.read().split())
             _joblist.close()
         except:
             gc3utils.log.debug('Failed reading joblist file in %s',Default.JOBLIST_FILE)
