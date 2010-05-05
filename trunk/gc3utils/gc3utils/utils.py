@@ -375,7 +375,7 @@ def display_job_status(job_list):
             elif _job.status is Job.JOB_STATE_COMPLETED:
                 _status_string = 'COMPLETED'
             else:
-                gc3utiols.log.error('job status [ %d ] setting to Unknown',_job.status)
+                gc3utils.log.error('job status [ %d ] setting to Unknown',_job.status)
                 _status_string = 'UNKNOWN'
  
             sys.stdout.write(_job.unique_token+'\t'+_status_string)
