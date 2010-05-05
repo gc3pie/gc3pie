@@ -172,6 +172,10 @@ def main():
                 raise Exception('wrong number on arguments')
 
             unique_token = args[0]
+            if not os.path.isdir(unique_token):
+                raise gc3utils.Exceptions.UniqueTokenError('unique_token not valid')
+            
+            gc3utils.log.debug('Using unique_token %s',unique_token)
 
         elif ( os.path.basename(program_name) == "gget" ):
             # Gget
