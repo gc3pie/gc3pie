@@ -154,7 +154,7 @@ class Gcli:
                 gc3utils.log.debug('Exception when trying getting status of job %s: %s',_running_job.unique_token,str(sys.exc_info()[1]))
                 continue                                
 
-        return job_return_li    
+        return job_return_list
 
     def __gstat(self, job_obj):
         # returns an updated job object
