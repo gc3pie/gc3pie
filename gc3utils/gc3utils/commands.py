@@ -203,11 +203,11 @@ def gstat(*args, **kw):
 
     try:
         if len(args) == 0:
-	    job_list = _gcli.gstat(None)
+            job_list = _gcli.gstat(None)
         if len(args) == 1:
             unique_token = args[0]
-	    if not os.path.isdir(unique_token):
-	       raise UniqueTokenError("Invalid JOBID: '%s' is not a job status directory." % unique_token)
+            if not os.path.isdir(unique_token):
+                raise UniqueTokenError("Invalid JOBID: '%s' is not a job status directory." % unique_token)
             job_list = _gcli.gstat(gc3utils.utils.get_job_from_filesystem(unique_token,default.job_file))
         else:
             raise InvalidUsage("This command requires either one argument or no arguments at all.")
@@ -224,6 +224,7 @@ def gstat(*args, **kw):
         if not _job.is_valid():
             gc3utils.log.error('Returned job not valid. Removing from list')
             job_list.remove(_job)
+
     try:
         # Print result
         gc3utils.utils.display_job_status(job_list)
@@ -275,6 +276,8 @@ def gkill(*args, **kw):
 def glist(*args, **kw):
     """The `glist` command."""
     parser = OptionParser(usage="Usage: %prog [options] resource_name")
+    parser.add_option("-s", "--short", action="store_true", dest="shortview", help="Short view.")
+    parser.add_option("-l", "--long", action="store_false", dest="shortview", help="Long view.")
     parser.add_option("-v", action="count", dest="verbosity", default=0, help="Set verbosity level")
     parser.add_option("-s", "--short", action="store_true", dest="shortview", help="Short view.")
     parser.add_option("-l", "--long", action="store_false", dest="shortview", help="Long view.")
