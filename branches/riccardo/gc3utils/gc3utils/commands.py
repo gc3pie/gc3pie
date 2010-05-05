@@ -221,8 +221,7 @@ def gstat(*args, **kw):
     for _job in job_list:
         if not _job.is_valid():
             gc3utils.log.error('Returned job not valid. Removing from list')
-            #job_list.
-            #### SERGIO: STOPPED WORKING HERE
+
     try:
         # Print result
         gc3utils.utils.display_job_status(job_list)
