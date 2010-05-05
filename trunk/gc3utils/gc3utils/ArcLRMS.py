@@ -16,6 +16,11 @@ from Resource import Resource
 import Job
 import Application
 import Default
+import Exceptions
+sys.path.append('/opt/nordugrid/lib/python2.4/site-packages')
+import warnings
+warnings.simplefilter("ignore")
+import arclib
 
 # -----------------------------------------------------
 # ARC lrms
@@ -155,61 +160,98 @@ class ArcLrms(LRMS):
             self.log.critical('Failure in submitting')
             raise
 
-    def check_status(self, lrms_jobid):
-#        submitted_list = ['ACCEPTING','SUBMITTING','PREPARING']
-        running_list = ['INLRMS:Q','INLRMS:R','EXECUTED', 'ACCEPTING','SUBMITTING','PREPARING']
-        finished_list = ['FINISHED', 'FAILED']
-#        failed_list = ['FAILED']
+    def check_status(self, job_obj):
+        
+        submitted_list = ['ACCEPTED','SUBMITTING','PREPARING']
+        running_list = ['INLRMS','FINISHING','CANCELING','EXECUTED']
+        finished_list = ['FINISHED']
+        failed_list = ['FAILED','DELETED']
+
         try:
-            # Ready for real submission
-            _command = "ngstat "+lrms_jobid
+            
+            # Prototype from arclib
+            arc_job = arclib.GetJobInfo(job_obj.lrms_jobid)
 
-            self.log.debug('Running ARC command [ %s ]',_command)
+            job_obj.insert('cluster',arc_job.cluster)
+            job_obj.insert('completion_time',arc_job.completion_time)
+            job_obj.insert('cpu_count',arc_job.cpu_count)
+            job_obj.insert('exitcode',arc_job.exitcode)
+            job_obj.insert('job_name',arc_job.job_name)
+            job_obj.insert('queue',arc_job.queue)
+            job_obj.insert('queue_rank',arc_job.queue_rank)
+            job_obj.insert('requested_cpu_time',arc_job.requested_cpu_time)
+            job_obj.insert('requested_wall_time',arc_job.requested_wall_time)
+            job_obj.insert('sstderr',arc_job.sstderr)
+            job_obj.insert('sstdout',arc_job.sstdout)
+            job_obj.insert('sstdin',arc_job.sstdin)
+            job_obj.insert('used_cpu_time',arc_job.used_cpu_time)
+            job_obj.insert('used_wall_time',arc_job.used_wall_time)
+            job_obj.insert('used_memory',arc_job.used_memory)
 
-            retval = commands.getstatusoutput(_command)
-            # jobstatusunknown_pattern = "This job was only very recently"
-            jobstatusunknown_pattern = "Job information not found"
-            jobstatusremoved_pattern = "Job information not found"
-            jobstatusok_pattern = "Status: "
-            jobexitcode_pattern = "Exit Code: "
-            if ( retval[0] != 0 ):
-                # | ( jobstatus_pattern not in retval[1] ) ):
-                # Failed somehow
-                self.log.error("ngstat command\t\t[ failed ]")
-                self.log.debug(retval[1])
-                raise Exception('failed checking status to LRMS')
+            if arc_job.status in running_list:
+                gc3utils.log.debug('job status: %s setting to RUNNING',arc_job.status)
+                job_obj.status = Job.RUNNING
+            elif arc_job.status in submitted_list:
+                gc3utils.log.debug('job status: %s setting to SUBMITTED',arc_job.status)
+                job_obj.status = Job.SUBMITTED
+            elif arc_job.status in finished_list:
+                gc3utils.log.debug('job status: %s setting to FINISHED',arc_job.status)
+                job_obj.status = Job.FINISHED
+            elif arc_job.status in failed_list:
+                gc3utils.log.debug('job status: %s setting to FAILED',arc_job.status)
+                job_obj.status = Job.FAILED
+                
+            return job_obj
 
-            if ( jobstatusunknown_pattern in retval[1] ):
-                jobstatus = "Status: RUNNING"
-#            elif ( jobstatusremoved_pattern in retval[1] ):
-#                jobstatus = "Status: FINISHED"
-            elif ( jobstatusok_pattern in retval[1] ):
-
-                # Extracting ARC job status
-                lrms_jobstatus = re.split(jobstatusok_pattern,retval[1])[1]
-                lrms_jobstatus = re.split("\n",lrms_jobstatus)[0]
-
-                self.log.debug('lrms_jobstatus\t\t\t[ %s ]',lrms_jobstatus)
-
-                if ( lrms_jobstatus in running_list ):
-                    jobstatus = "Status: RUNNING"
-                elif ( lrms_jobstatus in finished_list ):
-                    jobstatus = "Status: FINISHED"
-#                if ( lrms_jobstatus in submitted_list ):
-#                    jobstatus = "Status: SUBMITTED"
-#                elif ( lrms_jobstatus in running_list ):
+#===============================================================================
+#            # Ready for real submission
+#            _command = "ngstat "+job_obj.lrms_jobid
+# 
+#            self.log.debug('Running ARC command [ %s ]',_command)
+# 
+#            retval = commands.getstatusoutput(_command)
+#            # jobstatusunknown_pattern = "This job was only very recently"
+#            jobstatusunknown_pattern = "Job information not found"
+#            jobstatusremoved_pattern = "Job information not found"
+#            jobstatusok_pattern = "Status: "
+#            jobexitcode_pattern = "Exit Code: "
+#            if not retval[0] :
+#                self.log.error("ngstat command\t\t[ failed ]")
+#                self.log.debug(retval[1])
+#                raise Exceptions.CheckStarusError('failed checking status to LRMS')
+# 
+#            if ( jobstatusunknown_pattern in retval[1] ):
+#                gc3utils.log.debug('job status: RUNNING')
+#                job_obj.insert('status',Job.RUNNING)
+# 
+#            elif ( jobstatusok_pattern in retval[1] ):
+# 
+#                # Extracting ARC job status
+#                lrms_jobstatus = re.split(jobstatusok_pattern,retval[1])[1]
+#                lrms_jobstatus = re.split("\n",lrms_jobstatus)[0]
+# 
+#                self.log.debug('lrms_jobstatus\t\t\t[ %s ]',lrms_jobstatus)
+# 
+#                if ( lrms_jobstatus in running_list ):
 #                    jobstatus = "Status: RUNNING"
-#                elif ( ( lrms_jobstatus in finished_list ) | ( lrms_jobstatus in failed_list )):
-#                    lrms_exitcode = re.split(jobexitcode_pattern,retval[1])[1]
-#                    lrms_exitcode = re.split("\n",lrms_exitcode)[0]
-#                    jobstatus = "Status: FINISHED\nExit Code: "+lrms_exitcode
-                else:
-                    jobstatus = "Status: [ "+lrms_jobstatus+" ]"
-
-            return [jobstatus,retval[1]]
+#                elif ( lrms_jobstatus in finished_list ):
+#                    jobstatus = "Status: FINISHED"
+# #                if ( lrms_jobstatus in submitted_list ):
+# #                    jobstatus = "Status: SUBMITTED"
+# #                elif ( lrms_jobstatus in running_list ):
+# #                    jobstatus = "Status: RUNNING"
+# #                elif ( ( lrms_jobstatus in finished_list ) | ( lrms_jobstatus in failed_list )):
+# #                    lrms_exitcode = re.split(jobexitcode_pattern,retval[1])[1]
+# #                    lrms_exitcode = re.split("\n",lrms_exitcode)[0]
+# #                    jobstatus = "Status: FINISHED\nExit Code: "+lrms_exitcode
+#                else:
+#                    jobstatus = "Status: [ "+lrms_jobstatus+" ]"
+# 
+#            return [jobstatus,retval[1]]
+#===============================================================================
 
         except:
-            self.log.critical('Failure in checking status')
+            gc3utils.log.critical('Failure in checking status [%s]',sys.exc_info()[1])
             raise
 
     def get_results(self,lrms_jobid,job_dir):
