@@ -360,8 +360,8 @@ def renew_grid_credential(_aaiUserName):
     
 def display_job_status(job_list):
     if len(job_list) > 0:
-        sys.stdout.write("Job id\t\t\t Status \t Resource\n")
-        sys.stdout.write("======================================================================================================\n")
+        #sys.stdout.write("Job id\t\t\t\t\t\t Status \t Resource\n")
+        #sys.stdout.write("======================================================================================================\n")
         for _job in job_list:
             _status_string = ""
             if _job.status is Job.JOB_STATE_FINISHED:
@@ -378,7 +378,7 @@ def display_job_status(job_list):
                 gc3utiols.log.error('job status [ %d ] setting to Unknown',_job.status)
                 _status_string = 'UNKNOWN'
  
-            sys.stdout.write(_job.unique_token+'\t'+_status_string+'\t'+_job.resource_name)
+            sys.stdout.write(_job.unique_token+'\t'+_status_string)
             sys.stdout.write('\n')
             sys.stdout.flush()
 
