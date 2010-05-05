@@ -64,7 +64,7 @@ class SLCSException(Error):
 class VOMSException(Error):
     pass
 
-class UniqueTokenError(FatalError)
+class UniqueTokenError(FatalError):
     pass
 
 class JobRetrieveError(Error):
