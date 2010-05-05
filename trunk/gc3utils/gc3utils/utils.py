@@ -372,7 +372,7 @@ def get_job(unique_token):
 def get_job_filesystem(unique_token):
 
     # initialize Job object
-    _job = Job.Job()
+    _job = Job.Job(status=Job.JOB_STATE_UNKNOWN)
 
     # get lrms_jobid
     try:
