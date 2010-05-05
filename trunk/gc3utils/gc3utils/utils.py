@@ -380,6 +380,7 @@ def get_job_filesystem(unique_token):
         _job_info = re.split('\t',_fileHandle.read())
         _job.insert('resource_name',_job_info[0])
         _job.insert('lrms_jobid',_job_info[1])
+        _job.insert('unique_token',unique_token)
 
         gc3utils.log.debug('Job: %s resource_name: %s lrms_jobid: %s',unique_token,_job.resource_name,_job.lrms_jobid)
         gc3utils.log.info('Created Job instance\t[ok]')
