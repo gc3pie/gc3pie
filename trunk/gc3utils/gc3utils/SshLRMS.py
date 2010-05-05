@@ -11,6 +11,7 @@ import ConfigParser
 import shutil
 import getpass
 import utils
+import paramiko
 from utils import *
 from LRMS import LRMS
 
@@ -21,130 +22,165 @@ from LRMS import LRMS
 
 class SshLrms(LRMS):
 
-    ssh_location = "/usr/bin/ssh"
-    scp_location = "/usr/bin/scp"
-    rsync_location = "/usr/bin/rsync"
-    ssh_options = "-o ConnectTimeout=30"
-    rsync_options= '-e "ssh ' + ssh_options + '"'
     resource = []
     
     isValid = 0
     def __init__(self, resource):
         if (resource['type'] == "ssh"):
             self.resource = resource
+            # should we really set hardcoded defaults ?
+            if ( 'cores' not in self.resource ):
+                self.resource['cores'] = "1"
+            if ( 'memory' not in self.resource ):
+                self.resource['memory'] = "1000"
+            if ( 'walltime' not in self.resource ):
+                self.resource['walltime'] = "12"
             self.isValid = 1
-            
-            self.resource['ncores'] = int(self.resource['ncores'])
-            self.resource['memory_per_core'] = int(self.resource['memory_per_core']) * 1000
-            self.resource['walltime'] = int(self.resource['walltime'])
-            if (self.resource['walltime'] > 0 ):
-                # convert from hours to minutes
-                self.resource['walltime'] = self.resource['walltime'] * 60
-                
-            logging.debug('Init resource %s with %d cores, %d walltime, %d memory',self.resource['resource_name'],self.resource['ncores'],self.resource['walltime'],self.resource['memory_per_core'])
-            
+
+
     """Here are the common functions needed in every Resource Class."""
     
-    def check_authentication(self):
-        """Make sure ssh to server works."""
-        # We can make the assumption the local username is the same on the remote host, whatever it is
-        # We can also assume local username has passwordless ssh access to resources (or ssh-agent running)
-        
+    def CheckAuthentication(self):
+        """
+        Make sure ssh to server works.
+        We assume the user has already set up passwordless ssh access to the resource. 
+        """
+
+        ssh, sftp = self.connect_ssh(self.resource['frontend'])
+        _command = "uname -a"
+        logging.debug('CheckAuthentication command: ' + _command)
+
         try:
-            # ssh username@frontend date 
-            # ssh -o ConnectTimeout=1 idesl2.uzh.ch uname -a
-            testcommand = "uname -a"
-            _command = self.ssh_location + " " + self.ssh_options + " " + self.resource['username'] + "@" + self.resource['frontend'] + " " + testcommand
-            logging.debug('check_authentication _command: ' + _command)
-
-            retval = commands.getstatusoutput(_command)
-            if ( retval[0] != 0 ):
-                raise Exception('failed [ %d ]',retval[0])
-
-            return True
+            stdin, stdout, stderr = ssh.exec_command(_command)
+            out = stdout.read()
+            err = stderr.read()
+            logging.debug('CheckAuthentication command stdout: ' + out)
+            logging.debug('CheckAuthentication command stderr: ' + err)
+            ssh.close()
 
         except:
-            raise Exception('failed in check_authentication')
+            ssh.close()
+            raise
+            logging.critical('CheckAuthentication failed')
+            return False
 
+        return True
 
-
-    def submit_job(self, unique_token, application, input_file):
-        """Submit a job.
+    def SubmitJob(self, unique_token, application, input_file):
+        """
+        Submit a job.
 
         On the backend, the command will look something like this:
         # ssh user@remote_frontend 'cd unique_token ; $gamess_location -n cores input_file'
         """
 
-# todo : fix this:
-#    def submit_job(self,application,inputfile,outputfile,cores,memory):
+	    # Homogenize the input.
+        _inputfilename = inputfilename(input_file)
 
-
-        # example: ssh mpackard@ocikbpra.uzh.ch 'cd unique_token ; $gamess_location -n cores input_file 
-
-        # dump stdout+stderr to unique_token/lrms_log
-	
-	# homogenize the input
-	_inputfilename = inputfilename(input_file)
-
+        # Establish an ssh connection.
         try:
-
-            # copy input first
-            try:
-                self.copy_input(input_file, unique_token, self.resource['username'], self.resource['frontend'])
-            except:
-                raise
-
-            # then try to submit it to the local queueing system 
-            _submit_command = "%s %s@%s 'cd ~/%s; %s/qgms -n %s %s'" % (self.ssh_location, self.resource['username'], self.resource['frontend'], unique_token, self.resource['gamess_location'], self.resource['ncores'], _inputfilename)
-	
-            logging.debug('submit _submit_command: ' + _submit_command)
-
-            retval = commands.getstatusoutput(_submit_command)
-
-            if ( retval[0] != 0 ):
-                logging.critical("_submit_command failed")
-                raise 
-
-            lrms_jobid = self.get_qsub_jobid(retval[1])
-
-            logging.debug('Job submitted with jobid: %s',lrms_jobid)
-            return [lrms_jobid,retval[1]]
+            ssh, sftp = self.connect_ssh(self.resource['frontend'])
 
         except:
-            logging.critical('Failure in submitting')
+            ssh.close()
+            raise
+
+        # Create the remote unique_token directory. 
+        _remotepath = unique_token
+        try:
+            sftp.mkdir(_remotepath)
+        except Exception, e:
+            ssh.close()
+            logging.critical(e)
+            logging.critical('copy_input mkdir failed')
+            raise
+
+        # Copy the input file to remote unique_token directory.
+        _localpath = input_file
+        _remotepath = unique_token + '/' + inputfilename(input_file)
+        try:
+            sftp.put(_localpath, _remotepath)
+        except:
+            ssh.close()
+            logging.critical('copy_input put failed')
             raise
 
 
-    def check_status(self, lrms_jobid):
+        # Build up the SGE submit command.
+        _submit_command = 'cd ~/\'%s\' && %s/qgms -n %s' % (unique_token, self.resource['gamess_location'], self.resource['ncores'])
+
+        # If walltime is provided, convert to seconds and add to the SGE submit command.
+        _walltime_in_seconds = int(self.resource['walltime'])*3600
+        if ( _walltime_in_seconds > 0 ):
+            _submit_command = _submit_command + ' -t %i ' % _walltime_in_seconds
+
+        logging.debug('submit _walltime_in_seconds: ' + str(_walltime_in_seconds))
+#        logging.debug('submit _walltime_in_seconds: ' + str(self.resource['walltime']))
+
+        # Add the input file name to the SGE submit command.
+        _submit_command = _submit_command + ' \'%s\'' % _inputfilename
+        
+        logging.debug('submit _submit_command: ' + _submit_command)
+
+        # Try to submit it to the local queueing system.
+        try:
+            stdin, stdout, stderr = ssh.exec_command(_submit_command)
+            out = stdout.read()
+            err = stderr.read()
+
+            logging.debug("_submit_command stdout:" + out)
+            logging.debug("_submit_command stderr:" + err)
+
+        except:
+            ssh.close()
+            logging.critical("_submit_command failed")
+            raise
+            return False
+
+        lrms_jobid = self.get_qsub_jobid(out)
+        logging.debug('Job submitted with jobid: %s',lrms_jobid)
+
+        ssh.close()
+
+        return (lrms_jobid,out)
+
+
+    def CheckStatus(self, lrms_jobid):
         """Check status of a job."""
 
         try:
+            # open ssh connection
+            ssh, sftp = self.connect_ssh(self.resource['frontend'])
+
             # then check the lrms_jobid with qstat
-            _testcommand = 'qstat -j %s' % lrms_jobid
+            testcommand = 'qstat -j %s' % lrms_jobid
 
-            _command = self.ssh_location + " " + self.ssh_options + " " + self.resource['username'] + "@" + self.resource['frontend'] + " '" + _testcommand + "'"
-            logging.debug('check_status _command: ' + _command)
-
-            retval = (commands.getstatusoutput(_command))
-
-            # for some reason we have to use os.WEXITSTATUS to get the real exit code here
-            _realretval = str(os.WEXITSTATUS(retval[0]))
+            stdin, stdout, stderr = ssh.exec_command(testcommand)
+            out = stdout.read()
+            err = stderr.read()
             
-            logging.debug('check_status _real_retval: ' + _realretval)
+            logging.debug('CheckStatus command stdout:' + out)
+            logging.debug('CheckStatus command stderr:' + err)
 
-            if ( _realretval == '1' ):
+            # todo : this test could be much better; fix if statement between possible qstat outputs
+
+            teststring = "Following jobs do not exist:"
+
+            if teststring in err:
                 jobstatus = "Status: FINISHED"
             else: 
                 jobstatus = "Status: RUNNING"
         
-            return [jobstatus,retval[1]]
     
-        except:
+        except Exception, e:
+            ssh.close()
             logging.critical('Failure in checking status')
-            raise
+            raise e
 
+        ssh.close()
+        return (jobstatus,err)
 
-    def get_results(self,lrms_jobid,unique_token):
+    def GetResults(self,lrms_jobid,unique_token):
         """Retrieve results of a job."""
 
         # todo: - parse settings to figure out what output files should be copied back (assume gamess for now)
@@ -153,26 +189,42 @@ class SshLrms(LRMS):
 
 
         try:
-            jobname = _unique_token.split('-')[0]
-
-            # todo: this expandvars $home is not going to work on clusters where home is different.  fix.
-            full_path_to_remote_unique_id = os.path.expandvars('$HOME'+'/'+_unique_token)
-            full_path_to_local_unique_id = _unique_token
-
-            # create a list of lists 
-            # each element in the outer list is itself a list
-            # each inner list has 2 elements, a remote file location and a local file location
+            ''' Make sure we handle the situation when there is a '-' in the file name
+            We know the job name will be three '-' from the back of the unique_token
+            Example:
+            G-P-G.rst.restart_0-1268147228.33-fa72c57af2bbe092a0b9d95ee95aad22-schrodinger
+            '''
+            jobname =  '-'.join( _unique_token.split('-')[0:-3])
+           
+            # Create a list of lists.
+            # Each element in the outer list is itself a list.
+            # Each inner list has 2 elements, a remote file location and a local file location.
             # i.e. [copy_from, copy_to]
              
+            ssh, sftp = self.connect_ssh(self.resource['frontend'])
+            
+            # Get the paths to the files on the remote and local machines.
+            stdin, stdout, stderr = ssh.exec_command('echo $HOME')
+            remote_home = stdout.read().strip()
+            full_path_to_remote_unique_id = remote_home+'/'+_unique_token
+            full_path_to_local_unique_id = unique_token
+            
             copyfiles_list = []
 
-	        # first add the output file
+	        # First add the output file.
             remote_file = '%s/%s.o%s' % (full_path_to_remote_unique_id, jobname, lrms_jobid)
-            local_file = '%s/%s.out' % (full_path_to_local_unique_id, jobname)
+            local_file = '%s/%s.stdout' % (full_path_to_local_unique_id, jobname)
             remote2local_list = [remote_file, local_file]
             copyfiles_list.append(remote2local_list)
 
-            # then add the rest of the special output files
+	        # .po file
+            remote_file = '%s/%s.po%s' % (full_path_to_remote_unique_id, jobname, lrms_jobid)
+            # The arc gget uses stderr not po for the suffix. We therefore need to rename the file
+            local_file = '%s/%s.stderr' % (full_path_to_local_unique_id, jobname)
+            remote2local_list = [remote_file, local_file]
+            copyfiles_list.append(remote2local_list)
+
+            # Then add the rest of the special output files.
             cp_suffixes = ('.dat', \
                 '.cosmo', \
                 '.irc')
@@ -184,6 +236,10 @@ class SshLrms(LRMS):
 
             logging.debug('copyfiles_list: ' + str(copyfiles_list))
 
+            # todo : add checksums to make sure the files are the same.  raise exception if not
+            # todo : combine copy & remove steps
+
+            # try to copy back files
             for elem in copyfiles_list:
                 remote_file = elem[0]
                 local_file = elem[1] 
@@ -194,18 +250,15 @@ class SshLrms(LRMS):
                     continue
                 else:
 	                # todo : check options
-                    retval = self.copyback_file(remote_file, local_file)
-                    if ( retval[0] != 0 ):
-                        logging.critical('could not retrieve gamess output: ' + local_file)
-                    else:
+                    try:
+                        sftp.get(remote_file, local_file)
                         logging.debug('retrieved: ' + local_file)
-	
+                    except Exception, e:
+                        # todo : figure out how to check for existance of file before trying to copy
+                        logging.debug('could not retrieve gamess output: ' + local_file)
 
-            # now try to clean up the remote files 
+            # Now try to clean up the remote files.
 
-            purgefiles_list = []
-
-            # now try to clean up 
             rm_suffixes = ('.inp', 
                 '.o'+lrms_jobid, 
                 '.o'+lrms_jobid+'.dat', 
@@ -213,201 +266,149 @@ class SshLrms(LRMS):
                 '.po'+lrms_jobid, 
                 '.qsub')
 
-            # create list of remote files to remove
+            # Create a list of remote files to remove.
             for suffix in rm_suffixes:
                 logging.debug('rm_suffix: ' + suffix)
                 remote_file = '%s/%s%s' % (full_path_to_remote_unique_id, jobname, suffix)
 		        # todo : check options
-                if ( self.purge_remotefile(remote_file) != 0 ):
-                    logging.critical('did not purge remote file: ' + remote_file)
-                else:
+                # try to remove them
+                try:
+                    sftp.remove(remote_file)
                     logging.debug('purged remote file: ' + remote_file)
+                except Exception, e:
+                    # todo : figure out how to check for existance of file before trying to remove
+                    logging.debug('did not purge remote file: ' + remote_file)
 
-            # create list of remote files to remove
-            for suffix in rm_suffixes:
-                logging.debug('rm_suffix: ' + suffix)
-                remote_file = "%s/%s%s" % (full_path_to_remote_unique_id, jobname, suffix)
-                purgefiles_list.append(remote_file)
-		        # todo : check options 
-
-            purgefiles_string = " ".join(purgefiles_list)
-
-            logging.debug('remote_files to remove: ' + purgefiles_string)
+                
+            # Now try to remove the directory itself.
+            # todo : add checks for directory sanity
+            # i.e. that it's not just /home
+            # i.e. that it is empty first
             try:
-                self.purge_remotefile(purgefiles_string)
-                logging.debug('purged remote file(s): ' + purgefiles_string)
-            except:
-                raise
+                sftp.rmdir(full_path_to_remote_unique_id)
+                logging.debug('purged remote directory: ' + full_path_to_remote_unique_id)
+            except Exception, e:
+                ssh.close()
+                logging.critical('did not purge remote directory: ' + full_path_to_remote_unique_id)
+                raise e
 
-
-            # remove full_path_to_remote_unique_id
-            if ( self.purge_remotedir(full_path_to_remote_unique_id) != 0 ):
-                logging.critical('did not purge remote dir: ' + full_path_to_remote_unique_id)
-            else:
-                logging.debug('purged remote dir: ' + full_path_to_remote_unique_id)
-            
             # todo : check clean up  
 
-        except:
+        except Exception, e:
+            ssh.close()
             logging.critical('Failure in retrieving results')
-            raise
+            raise e
 
-        return [True, retval[1]]
+        ssh.close()
+
+        # We don't have a return code or lrms_log for this situation, but we need to return them, so just make something fake.
+        dummy_output = 'nothing'
+        return [True,dummy_output]
+
+    def list_jobs(self, shortview):
+        """List status of jobs."""
+
+        try:
+
+            # print the header
+            if shortview == False:
+                # long view
+                print "%-50s %-20s %-10s" % ("[unique_token]","[name]","[status]")
+            else:
+                # short view
+                print "%-20s %-10s" % ("[name]","[status]")
+            
+            # look in current directory for jobdirs
+            jobdirs = []
+            dirlist = os.listdir("./")
+            for dir in dirlist:
+                if os.path.isdir(dir) == True:
+                    if os.path.exists(dir + "/.lrms_jobid") and os.path.exists(dir + "/.lrms_log"):
+                        logging.debug(dir + "is a jobdir")
+                        jobdirs.append(dir)
+
+            # Break down unique_token into separate variables.
+            for dir in jobdirs:
+                unique_token = dir
+                name =  '-'.join( _unique_token.split('-')[0:-3])
+                status = CheckStatus(unique_toke)
+
+                if shortview == False:
+                    # long view
+                    sys.stdout.write('%-20s %-10s' % (name, status))
+                else:
+                    # short view
+                    sys.stdout.write('%-50s %-20s %-10s' % (unique_token, filename, size))
+
+            sys.stdout.write('Jobs listed.\n')
+            sys.stdout.flush
+            
+        except Exception, e:
+            logging.critical('Failed to list jobs.')
+            raise e
+
+        return 
             
 
+    def KillJob(self, lrms_jobid):
+        """Kill job."""
+
+        ssh, sftp = self.connect_ssh(self.resource['frontend'])
+
+        # Kill the job on the remote queueing system.
+        
+        try:
+            stdin, stdout, stderr = ssh.exec_command('qdel ' + lrms_jobid)
+            out = stdout.read()
+            err = stderr.read()
+
+            logging.debug("_submit_command stdout:" + out)
+            logging.debug("_submit_command stderr:" + err)
+            
+        except Exception, e:
+            ssh.close()
+            logging.critical('Failed to kill job: ' + unique_token)
+            raise e
+        
+        ssh.close()
+
+        return (0,out)
+            
     """Below are the functions needed only for the SshLrms class."""
 
-    def get_qsub_jobid(self, _output):
+    def get_qsub_jobid(self, output):
         """Parse the qsub output for the local jobid."""
-        # cd unique_token
-        # lrms_jobid = grep something from output
         # todo : something with _output
         # todo : make this actually do something
-        # lrms_jobid = _output.pull_out_the_number
-        lrms_jobid = re.split(" ",_output)[2]
+
+        logging.debug('get_qsub_jobid raw output: ' + output)
+        try:
+            lrms_jobid = re.split(" ",output)[2]
+        except Exception, e:
+            logging.critical('could not get jobid from output')
+            raise e
+            lrms_jobid = False
 
         logging.debug('get_qsub_jobid jobid: ' + lrms_jobid)
-
         return lrms_jobid
 
 
+    def connect_ssh(self,host):
+        """Create an ssh connection."""
+        # todo : add fancier key handling and password asking stuff
+        try:
+            ssh = paramiko.SSHClient()
+            ssh.load_system_host_keys()
+            ssh.connect(host,timeout=30,username=self.resource['username'])
+            sftp = ssh.open_sftp()
+            return ssh, sftp
 
-    def copy_input(self, input_file, unique_token, username, frontend):
-        """Try to create remote directory named unique_token, then copy input_file there."""
-        
-        # todo: change the name of this method (so it is less confusing with copy out vs copy back?
-        # todo: add a switch that tries rsync first, then falls back to ssh.
-        # todo: generalize the rsync vs scp and have both copy_input and copyback_file use 1 method
-
-        # first mkdir 
-        _mkdir_command = "%s %s@%s mkdir ~/%s" % ( self.ssh_location, username, frontend, unique_token )
-        logging.debug('copy_input _mkdir_command: ' + _mkdir_command)
-
-        retval = commands.getstatusoutput(_mkdir_command)
-
-        if ( retval[0] != 0 ):
-            logging.critical('Failed to mkdir ~/%s on %s' % unique_token, frontend)
-            raise retval[1]
-
-        # then copy the input file
-
-        _copyinput_command = "%s %s %s@%s:~/%s" % ( self.scp_location, input_file, username, frontend, unique_token )
-        logging.debug('copy_input _copyinput_command: ' + _copyinput_command)
-
-        retval = commands.getstatusoutput(_copyinput_command)
-
-        if ( retval[0] != 0 ):
-            logging.critical('Failed to copy %s to %s' % input_file, frontend)
-            raise retval[1]
-
-        # todo: add a check here that compares the md5 of the copied file to the md5 in the unique_token
-
-        return True
+        except SSHException:
+            ssh.close()
+            logging.critical('Could not create ssh connection.')
+            raise
 
 
-    def copyback_file(self, remote_file, local_file):
-        """Copy a file back via rsync or scp.  Prefer rsync."""
-
-        # if rsync is available, use it 
-        # if not, use scp
-        # if not, fail
-
-
-        # try rsync, then scp
-        if os.path.isfile(self.rsync_location):
-            _method = self.rsync_location
-            _method_options = self.rsync_options
-        elif os.path.isfile(self.scp_location):
-            _method = self.scp_location
-            _method_options = self.ssh_options
-        else:
-            logging.critical('could not locate a suitable copy executable.')
-            return False
-
-        # define command
-        _command = '%s %s %s@%s:%s %s' % ( \
-                _method, \
-                _method_options, \
-                self.resource['username'], \
-                self.resource['frontend'], \
-                remote_file, \
-                local_file)
-
-        logging.debug('copyback_file _command: ' + _command)
-
-        # do the copy
-        retval = (commands.getstatusoutput(_command))
-                                
-        # for some reason we have to use os.WEXITSTATUS to get the real exit code here
-        _realretval = str(os.WEXITSTATUS(retval[0]))
-        logging.debug('copyback_file _real_retval: ' + _realretval)
-        logging.debug(retval[1])
-
-        # check exit status and return
-        if ( _realretval != 0 ):
-            logging.critical('command failed: %s ' % (_command))
-
-        return retval
-
-    def purge_remotefile(self, remote_files):
-        """Remove a remote file."""
-
-        logging.debug("remote_files: " + remote_files)
-
-        _method = self.ssh_location
-        _method_options = self.ssh_options
-
-        # define command
-        _command = '%s %s %s@%s rm %s' % ( \
-                _method, \
-                _method_options, \
-                self.resource['username'], \
-                self.resource['frontend'], \
-                remote_files)
-
-        logging.debug('purge_remotefile _command: ' + _command)
-
-        # do the remove
-        retval = (commands.getstatusoutput(_command))
-
-        # for some reason we have to use os.WEXITSTATUS to get the real exit code here
-        _realretval = str(os.WEXITSTATUS(retval[0]))
-        logging.debug('purge_remotefile _real_retval: ' + _realretval)
-        logging.debug(retval[1])
-
-        # check exit status and return
-        if ( _realretval != 0 ):
-            logging.critical('command failed: %s ' % (_command))
-
-        return retval
-
-    def purge_remotedir(self, remote_dir):
-        """Remove a remote directory."""
-
-        _method = self.ssh_location
-        _method_options = self.ssh_options
-
-        # define command
-        _command = '%s %s %s@%s rmdir %s' % ( \
-                _method, \
-                _method_options, \
-                self.resource['username'], \
-                self.resource['frontend'], \
-                remote_dir)
-
-        logging.debug('purge_remotedir _command: ' + _command)
-
-        # do the remove
-        retval = (commands.getstatusoutput(_command))
-
-        # for some reason we have to use os.WEXITSTATUS to get the real exit code here
-        _realretval = str(os.WEXITSTATUS(retval[0]))
-        logging.debug('purge_remotedir _real_retval: ' + _realretval)
-        logging.debug(retval[1])
-
-        # check exit status and return
-        if ( _realretval != 0 ):
-            logging.critical('command failed: %s ' % (_command))
-
-        return retval
-
+    def GetResourceStatus(self):
+            logging.debug("Returning information of local resoruce")
+            return Resource(resource_name=self.resource['resource_name'],total_cores=self.resource['ncores'],memory_per_core=self.resource['memory_per_core'])
