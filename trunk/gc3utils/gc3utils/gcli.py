@@ -2,7 +2,7 @@
 
 __author__="Sergio Maffioletti (sergio.maffioletti@gc3.uzh.ch)"
 __date__="01 May 2010"
-__copyright__="Copyright 2009 2010 Grid Computing Competence Center - UZH/GC3"
+__copyright__="Copyright 2009, 2010 Grid Computing Competence Center - UZH/GC3"
 __version__="0.3"
 
 from utils import *
