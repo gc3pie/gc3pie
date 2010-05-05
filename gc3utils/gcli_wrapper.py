@@ -198,7 +198,28 @@ def main():
             unique_token = args[0]
 
         elif ( os.path.basename(program_name) == "gkill" ):
-            gc3utils.log.info('gkill is not implemented yet')
+            # Gkill
+            shortview = True
+
+            _usage = "%prog [options] unique_token"
+            parser = OptionParser(usage=_usage)
+            parser.add_option("-v", action="count", dest="verbosity", default=0, help="Set verbosity level")
+
+            (options, args) = parser.parse_args()
+
+            # Configure logging service
+            configure_logging(options.verbosity)
+
+            logging.debug('Command lines argument length: [ %d ]',len(args))
+
+            if len(args) != 1:
+                logging.critical('Command line argument parsing\t\t\t[ failed ]\n\tIncorrect number of arguments; expected 1, got %d ',len(args))
+                parser.print_help()
+                print 'Usage: ' + _usage
+                raise Exception('wrong number on arguments')
+
+            unique_token = args[0]
+
 
         elif ( os.path.basename(program_name) == "glist" ):
             # Glist
@@ -207,6 +228,8 @@ def main():
             _usage = "Usage: %prog [options] resource_name"
             parser = OptionParser(usage=_usage)
             parser.add_option("-v", action="count", dest="verbosity", default=0, help="Set verbosity level")
+            parser.add_option("-s", "--short", action="store_true", dest="shortview", help="Short view.")
+            parser.add_option("-l", "--long", action="store_false", dest="shortview", help="Long view.")
             (options, args) = parser.parse_args()
             
             # Configure logging service
@@ -305,7 +328,7 @@ def main():
             
             return 0
 
-        # ggest
+        # gget
         elif (os.path.basename(program_name) == "gget"):
             retval = _gcli.gget(unique_token)
             if (not retval):
@@ -331,6 +354,15 @@ def main():
                 sys.stdout.flush()
             else:
                 raise Exception("glist terminated")
+        elif (os.path.basename(program_name) == "gkill"):
+            retval = gcli.gkill(unique_token)
+            if (not retval):
+                sys.stdout.write('Sent request to kill job ' + unique_token)
+                sys.stdout.write('It may take a few moments for the job to finish.')
+                sys.stdout.flush()
+            else:
+                raise Exception("gkill terminated")
+            
     except SystemExit:
         return 0
     except:

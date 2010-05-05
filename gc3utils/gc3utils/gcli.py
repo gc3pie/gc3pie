@@ -174,6 +174,109 @@ class Gcli:
 
 
 #=========     INTERNAL METHODS ============
+    def glist(self, shortview):
+        """List status of jobs."""
+        global default_joblist_location
+
+        try:
+
+            # print the header
+            if shortview == False:
+                # long view
+                print "%-100s %-20s %-10s" % ("[unique_token]","[name]","[status]")
+            else:
+                # short view
+                print "%-20s %-10s" % ("[name]","[status]")
+
+            # look in current directory for jobdirs
+            jobdirs = []
+            dirlist = os.listdir("./")
+            for dir in dirlist:
+                if os.path.isdir(dir) == True:
+                    if os.path.exists(dir + "/.lrms_jobid") and os.path.exists(dir + "/.lrms_log"):
+                        logging.debug(dir + "is a jobdir")
+                        jobdirs.append(dir)
+
+            # break down unique_token into vars
+            for dir in jobdirs:
+                unique_token = dir
+                name =  '-'.join( unique_token.split('-')[0:-3])
+                if os.path.exists(dir + "/.finished"):
+                    status = "FINISHED"
+                else:
+                    retval,job_status_list = self.gstat(unique_token)
+                    first = job_status_list[0]
+                    status = first[1].split(' ')[1]
+
+                if shortview == False:
+                    # long view
+                    print '%-100s %-20s %-10s' % (unique_token, name, status)
+                else:
+                    # short view
+                    print '%-20s %-10s' % (name, status)
+
+            logging.debug('Jobs listed.')
+
+        except Exception, e:
+            logging.critical('Failure in listing jobs')
+            raise e
+
+        return
+    def gkill(self, unique_token):
+        """Kill a job, and optionally remove the local job directory."""
+
+        # todo : may be some redundancy to remove here
+        
+        global default_job_folder_location
+        global default_joblist_lock
+        global default_joblist_location
+        
+        if not check_jobdir(unique_token):
+            raise Exception('invalid jobid')
+        
+        # check .finished file
+        if check_inputfile(unique_token+'/'+self.defaults['lrms_finished']):
+            logging.error('Job already finished.')
+            return 
+
+        # todo : may be some redundancy to remove here
+            
+        _fileHandle = open(unique_token+'/'+self.defaults['lrms_jobid'],'r')
+        _raw_resource_info = _fileHandle.read()
+        _fileHandle.close()
+
+        _list_resource_info = re.split('\t',_raw_resource_info)
+
+        logging.debug('lrms_jobid file returned %s elements',len(_list_resource_info))
+
+        if ( len(_list_resource_info) != 2 ):
+            raise Exception('failed to retrieve jobid')
+        
+        _resource = _list_resource_info[0]
+        _lrms_jobid = _list_resource_info[1]
+        
+        logging.debug('frontend: [ %s ] jobid: [ %s ]',_resource,_lrms_jobid)
+        logging.info('reading lrms_jobid info\t\t\t[ ok ]')
+
+        if ( _resource in self.resource_list ):
+            logging.debug('Found match for resource [ %s ]',_resource)
+            logging.debug('Creating lrms instance')
+            resource = self.resource_list[_resource]
+
+        if ( resource['type'] == "arc" ):
+            lrms = ArcLrms(resource)
+        elif ( resource['type'] == "ssh"):
+            lrms = SshLrms(resource)
+        else:
+            logging.error('Unknown resource type %s',resource['type'])
+            
+        (retval,lrms_log) = lrms.KillJob(_lrms_jobid)
+
+#        except Exception, e:
+#            logging.error('Failed to send qdel request to job: ' + unique_token)
+#            raise e
+
+        return
 
     def __create_job_unique_token(self,job_folder_location,input_file_name,resource_name):
         try:
