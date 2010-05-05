@@ -190,16 +190,16 @@ class ArcLrms(LRMS):
 
             if arc_job.status in running_list:
                 gc3utils.log.debug('job status: %s setting to RUNNING',arc_job.status)
-                job_obj.status = Job.RUNNING
+                job_obj.status = Job.JOB_STATE_RUNNING
             elif arc_job.status in submitted_list:
                 gc3utils.log.debug('job status: %s setting to SUBMITTED',arc_job.status)
-                job_obj.status = Job.SUBMITTED
+                job_obj.status = Job.JOB_STATE_SUBMITTED
             elif arc_job.status in finished_list:
                 gc3utils.log.debug('job status: %s setting to FINISHED',arc_job.status)
-                job_obj.status = Job.FINISHED
+                job_obj.status = Job.JOB_STATE_FINISHED
             elif arc_job.status in failed_list:
                 gc3utils.log.debug('job status: %s setting to FAILED',arc_job.status)
-                job_obj.status = Job.FAILED
+                job_obj.status = Job.JOB_STATE_FAILED
                 
             return job_obj
 
