@@ -18,14 +18,14 @@ from optparse import OptionParser
 
 import gc3utils
 import gc3utils.Application
-#import gc3utils.ArcLRMS
+import gc3utils.ArcLRMS
 import gc3utils.Default
 from gc3utils.Exceptions import *
 import gc3utils.Job
 import gc3utils.Resource
-#import gc3utils.SshLRMS
-#import gc3utils.gcli
-#import gc3utils.utils
+import gc3utils.SshLRMS
+import gc3utils.gcli
+import gc3utils.utils
 
 
 # defaults - XXX: do they belong in ../gcli.py instead?

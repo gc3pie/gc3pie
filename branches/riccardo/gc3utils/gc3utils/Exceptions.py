@@ -64,6 +64,12 @@ class SLCSException(Error):
 class VOMSException(Error):
     pass
 
+class UniqueTokenError(Critical):
+    pass
+
+class JobRetrieveError(Error):
+    pass
+
 
 class InvalidUsage(FatalError):
     """
