@@ -1,45 +1,30 @@
 class LRMS:
 
     def __init__(self, resource): 
-        abstract 
+        if resource.has_key('transport'):
+            if resource.transport is 'local':
+                transport = LocalTransport()
+            elif resource.transport is 'ssh':
+                transport = SshTransport()
+            elif resource.transport is 'globus':
+                transport = GlobusTransport()
+            else:
+                raise TransportException('Could not initialize transport')
+        else:
+            raise LRMSException('Invalid resource description: missing transport')
     
-    def CheckAuthentication(self): 
-        abstract
+    def submit_job(self, application): abstract
+
+    def check_status(self, job):  abstract
+
+    def get_results(self, job): abstract
     
-    def SubmitJob(self, unique_token, application, input_file): 
-        """
-        return LRMS specific lrms_jobid
-        stages input files if necessary
-        dumps submission stdout to lrms_log string
-        """
-        abstract
-
-    def CheckStatus(self,lrms_jobid): 
-        """
-        Check the status of a single job.
-        Return either 'FINISHED' or 'RUNNING'.
-        """
-        # todo : also return ERROR?
-        abstract
-
-    def GetResults(self,lrms_jobid,job_dir): 
-        """
-        Retrieve results from a single job.
-        Return a list containing 2 elements: True/False, output
-        """
-        abstract
-
-    def KillJob(self,lrms_jobid,job_dir): 
-        """
-        Kill a single job at the LRMS level.
-        Return output of delete command.
-        """
-        abstract
-
-    def GetResourceStatus(self): 
-        """
-        This method should return an object of type Resource
-        containing a dictionary with resource information.
-        """
-        abstract
+    def cancel_job(self, job): abstract
     
+    def get_resource_status(self): abstract
+        # this method should return an object of type Resource
+        # containing a dictionary with resource information
+        
+    def tail(self, std_type): abstract
+
+    def is_valid(): abstract
