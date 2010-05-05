@@ -359,7 +359,8 @@ def renew_grid_credential(_aaiUserName):
         raise
     
 def display_job_status(job_list):
-    if len(job_list) > 0:        
+    if len(job_list) > 0:
+        sys.stdout.write("Job id\t\t\t Status \t Resource\n")
         sys.stdout.write("======================================================================================================\n")
         for _job in job_list:
             _status_string = ""
