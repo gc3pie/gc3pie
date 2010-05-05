@@ -314,7 +314,7 @@ def main():
                 if (unique_token):
                     job_list = [_gcli.gstat(gc3utils.utils.get_job(unique_token))]
                 else:
-                    job_list = _gcli.gstat()
+                    job_list = _gcli.gstat(None)
             except:
                 gc3utils.log.critical('Failed retrieving job status')
                 raise
