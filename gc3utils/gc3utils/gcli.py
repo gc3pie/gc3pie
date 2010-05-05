@@ -397,7 +397,7 @@ class Gcli:
         _job_list = []
 
         for _unique_token in _unique_tokens_list:
-            _job_list.append(utils.get_job(unique_token,Default.JOB_FILE))
+            _job_list.append(utils.get_job(_unique_token,Default.JOB_FILE))
 
         # Shall we check whether the list is empty or not ?
         return _job_list
