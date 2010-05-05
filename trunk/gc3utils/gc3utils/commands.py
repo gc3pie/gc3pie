@@ -203,9 +203,11 @@ def gstat(*args, **kw):
 
     try:
         if len(args) == 0:
-            job_list = _gcli.gstat()
+	    job_list = _gcli.gstat(None)
         if len(args) == 1:
-            unique_token = args[1]
+            unique_token = args[0]
+	    if not os.path.isdir(unique_token):
+	       raise UniqueTokenError("Invalid JOBID: '%s' is not a job status directory." % unique_token)
             job_list = _gcli.gstat(gc3utils.utils.get_job_from_filesystem(unique_token,default.job_file))
         else:
             raise InvalidUsage("This command requires either one argument or no arguments at all.")
@@ -221,7 +223,7 @@ def gstat(*args, **kw):
     for _job in job_list:
         if not _job.is_valid():
             gc3utils.log.error('Returned job not valid. Removing from list')
-
+            job_list.remove(_job)
     try:
         # Print result
         gc3utils.utils.display_job_status(job_list)
@@ -250,14 +252,32 @@ def gget(*args, **kw):
 
 
 def gkill(*args, **kw):
-    raise NotImplementedError("Command 'gkill' has not been implemented yet.")
+    """The `gkill` command."""
+    parser = OptionParser(usage="%prog [options] unique_token")
+    parser.add_option("-v", action="count", dest="verbosity", default=0, help="Set verbosity level")
+    (options, args) = parser.parse_args(*args)
 
+    shortview = True
+
+    if len(args) != 1:
+        raise InvalidUsage("This command expects exactly one argument.")
+    unique_token = args[0]
+
+    retval = gcli.gkill(unique_token)
+    if (not retval):
+        sys.stdout.write('Sent request to kill job ' + unique_token)
+        sys.stdout.write('It may take a few moments for the job to finish.')
+        sys.stdout.flush()
+    else:
+        raise Exception("gkill terminated")
 
 
 def glist(*args, **kw):
     """The `glist` command."""
     parser = OptionParser(usage="Usage: %prog [options] resource_name")
     parser.add_option("-v", action="count", dest="verbosity", default=0, help="Set verbosity level")
+    parser.add_option("-s", "--short", action="store_true", dest="shortview", help="Short view.")
+    parser.add_option("-l", "--long", action="store_false", dest="shortview", help="Long view.")
     (options, args) = parser.parse_args()
 
     # FIXME: should take possibly a list of JOBIDs and get files for all of them
