@@ -2,6 +2,7 @@ import sys
 import os
 import commands
 import logging
+import logging.handlers
 import tempfile
 import getpass
 import re
@@ -11,7 +12,16 @@ import ConfigParser
 import shutil
 import getpass
 import smtplib
+import subprocess
 from email.mime.text import MIMEText
+sys.path.append('/opt/nordugrid/lib/python2.4/site-packages')
+import warnings
+warnings.simplefilter("ignore")
+from arclib import *
+import Exceptions
+import Job
+import Default
+import gc3utils
 
 # __all__ = ["configure_logging","check_inputfile","readConfig","check_qgms_version","dirname","inputname","inputfilename","create_unique_token"]
 
@@ -23,8 +33,10 @@ from email.mime.text import MIMEText
 
 
 def sumfile(fobj):
-    """Returns an md5 hash for an object with read() method."""
-    """Stolen from http://code.activestate.com/recipes/266486/"""
+    """
+    Returns an md5 hash for an object with read() method.
+    Stolen from http://code.activestate.com/recipes/266486/
+    """
     m = md5.new()
     while True:
         d = fobj.read(8096)
@@ -44,8 +56,8 @@ def md5sum(fname):
             f = file(fname, 'rb')
         except:
             logging.critical('Failed to open [ %s ]')
-            sys.exit(1)
-#            return 'Failed to open file'
+            f.close()
+            raise
         ret = sumfile(f)
         f.close()
     return ret
@@ -128,25 +140,33 @@ def check_inputfile(inputfile_fullpath):
         return True
     else:
         return False
-    
+
 def check_jobdir(jobdir):
     """
     Perform various checks on the jobdir.
     Right now we just make sure it exists.  In the future it could include checks for:
 
-     - are the files inside valid
-     - etc.
+    - are the files inside valid
+    - etc.
     """
 
-    if not os.path.exists(jobdir):
-        logging.critical(jobdir + 'does not exist.')
+    if os.path.isdir(jobdir):
+        return True
+    else:
         return False
 
-    if not os.path.isdir(jobdir):
-        logging.critical(jobdir + 'is not a directory.')
-        return False
-        
-    return True
+
+def configure_logger(verbosity, logger_tag, log_file_name):
+    if ( verbosity > 5):
+        logging_level = 10
+    else:
+        logging_level = (( 6 - verbosity) * 10)
+
+    log = logging.getLogger(logger_tag)
+    log.setLevel(logging_level)
+    handler = logging.handlers.RotatingFileHandler(log_file_name, maxBytes=200, backupCount=5)
+    log.addHandler(handler)
+    return log
 
 def configure_logging(verbosity):
     """Configure logging service."""
@@ -159,30 +179,6 @@ def configure_logging(verbosity):
     logging.basicConfig(level=logging_level, format='%(asctime)s %(levelname)-8s %(message)s')
 
     return
-
-
-# Not usefull
-def parse_commandline_jobdir_only(args):
-    """
-    Parse command line arguments.
-    In this case there is only 1: a valid job dir.
-    """
-
-    numargs = len(args) - 1
-
-    logging.debug('arguments: ' + str(args[1:]))
-    logging.debug('number of arguments: ' + str(numargs))
-
-    # Check number of arguments
-    if numargs != 1 :
-        logging.critical('Usage: gstat job_dir')
-        logging.critical('Incorrect # of arguments. Exiting.')
-        sys.exit(1)
-
-    jobdir = str(args[1])
-
-    return jobdir
-
 
 def check_qgms_version(minimum_version):
     """
@@ -203,9 +199,9 @@ def check_qgms_version(minimum_version):
     return True
 
 
-def readConfig(config_file_location):
+def read_config(config_file_location):
 
-    resource_list = {}
+    resource_list = []
     defaults = {}
 
     try:
@@ -222,8 +218,9 @@ def readConfig(config_file_location):
                 _resource_options = {}
                 for _option in _option_list:
                     _resource_options[_option] = config.get(_resource,_option)
-                _resource_options['resource_name'] = _resource
-                resource_list[_resource] = _resource_options
+                _resource_options['name'] = _resource
+                resource_list.append(_resource_options)
+#                resource_list[_resource] = _resource_options
 
             logging.debug('readConfig resource_list lenght of [ %d ]',len(resource_list))
             return [defaults,resource_list]
@@ -291,3 +288,105 @@ def send_email(_to,_from,_subject,_msg):
         
     except:
         logging.error('Failed sending email [ %s ]',sys.exc_info()[1])
+
+def check_grid_authentication():
+    try:
+        c = Certificate(PROXY)
+        if ( c.IsExpired() ):
+            raise
+        return True
+    except:
+        return False
+
+def check_user_certificate():
+    try:
+        c = Certificate(USERCERT)
+        if ( c.IsExpired() ):
+            raise
+        return True
+    except:
+        return False
+
+def renew_grid_credential(_aaiUserName):
+    VOMSPROXYINIT = ['voms-proxy-init','-valid','24:00','-voms','smscg','-q','-pwstdin']
+    SLCSINFO = "openssl x509 -noout -checkend 3600 -in ~/.globus/usercert.pem"
+    SLCSINIT = "slcs-init --idp uzh.ch"
+#    AAI_CREDENTIAL_REPO = "$HOME/.gc3/aai_credential"
+                            
+    try:
+        if ( _aaiUserName is None ):
+            # Go interactive
+            _aaiUserName = raw_input('Insert AAI/Switch username for user '+getpass.getuser()+': ')
+        # UserName set, go interactive asking password
+        input_passwd = getpass.getpass('Insert AAI/Switch password for user '+_aaiUserName+' : ')
+        logging.debug('Checking slcs status')
+        if ( check_user_certificate() != True ):
+            # Failed because slcs credential expired
+            # trying renew slcs
+            # this should be an interactiave command
+            logging.debug('Checking slcs status\t\t[ failed ]')
+            logging.debug('Initializing slcs')
+            retval = commands.getstatusoutput(SLCSINIT+" -u "+_aaiUserName+" -p "+input_passwd+" -k "+input_passwd)
+            if ( retval[0] != 0 ):
+                logging.critical("failed renewing slcs: %s",retval[1])
+                raise Exceptions.SLCSException('failed slcs-init')
+                
+        logging.info('Initializing slcs\t\t\t[ ok ]')
+                
+        # Try renew voms credential
+        # Another interactive command
+        
+        logging.debug('Initializing voms-proxy')
+        
+        p1 = subprocess.Popen(['echo',input_passwd],stdout=subprocess.PIPE)
+        p2 = subprocess.Popen(VOMSPROXYINIT,stdin=p1.stdout,stdout=subprocess.PIPE)
+        p2.communicate()
+        if ( p2.returncode != 0 ):
+            # Failed renewing voms credential
+            # FATAL ERROR
+            logging.critical("Initializing voms-proxy\t\t[ failed ]")
+            raise Exceptions.VOMSException('failed voms-proxy-init')
+
+        logging.info('Initializing voms-proxy\t\t[ ok ]')
+        logging.info('check_authentication\t\t\t\t[ ok ]')
+        
+        # disposing content of passord variable
+        input_passwd = None
+        return True
+    except:
+        logging.error('Check grid credential failed  [ %s ]',sys.exc_info()[1])
+        # Return False or raise exception ?
+        raise
+    
+def display_job_status(job_list):
+    if len(job_list) > 0:
+        sys.stdout.write("======================================================================================================\n")
+        for _job in job_list: 
+            sys.stdout.write(_job.unique_token+'\t'+_job.status+'\t'+_job.resource_name)
+            sys.stdout.write('\n')
+            sys.stdout.flush()
+
+def get_job(unique_token):
+    return get_job_filesystem(unique_token)
+
+def get_job_filesystem(unique_token):
+
+    if not os.path.isdir(unique_token):
+        raise Exceptions.UniqueTokenError('unique_token not valid')
+
+    # initialize Job object
+    _job = Job.Job()
+
+    # get lrms_jobid
+    try:
+        _fileHandle = open(unique_token+'/'+Default.JOB_FILE)
+        _job_info = re.split('\t',_fileHandle.read())
+        _job.insert('resource_name',_job_info[0])
+        _job.insert('lrms_jobid',_job_info[1])
+
+        gc3utils.log.debug('Job: %s resource_name: %s lrms_jobid: %s',unique_token,_job.resource_name,_job.lrms_jobid)
+        gc3utils.log.info('Created Job instance\t[ok]')
+
+        return _job
+    except:
+        raise Exceptions.JobRetrieveError(sys.exc_info()[1])
