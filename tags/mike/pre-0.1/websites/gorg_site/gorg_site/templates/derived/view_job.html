@@ -1,0 +1,25 @@
+<%inherit file="/base/index.html"/>
+<%def name="title()">${c.title}</%def>
+<%def name="heading()"><h1>${c.heading or c.title}</h1></%def>
+
+##<p>Title: ${c.a_job.title}</p>
+<p>Author: ${c.a_job.author}</p>
+<p>Attachments: </p>
+<table>
+        % for attachment in c.a_job.attachments:
+                <tr>
+                <td>${attachment}</td>
+		<td>${h.link_to(
+	                attachment,
+	                h.url_for(
+	                    controller=u'gridjob',
+	                    action='view_job_attachment',
+	                    id=unicode(c.a_job.id))+
+			"?attachment="+attachment	                
+	            )}
+		</td>
+                </tr>
+        % endfor
+
+</table>
+
