@@ -111,6 +111,8 @@ class Gcli:
                 if job.is_valid():
                     job.insert('unique_token',unique_token)
                     gc3utils.log.info('Submission process to LRMS backend\t\t\t[ ok ]')
+                    # job submitted; leave loop
+                    break
             except Exceptions.AuthenticationException:
                 continue
             except LRMSException:
@@ -306,14 +308,14 @@ class Gcli:
         # not catching the exception as this is supposed to be a fatal failure;
         # thus propagated to gsub's main try
         try:
-            _fileHandle = open(job_obj.unique_token+'/'+self._defaults.job_file,'w')
+            _fileHandle = open(job_obj.unique_token+'/'+Default.JOB_FILE,'w')
             _fileHandle.write(job_obj.resource_name+'\t'+job_obj.lrms_jobid)
             _fileHandle.close()
         except:
             gc3utils.log.error('failed updating job lrms_id')
 
         try:
-            _fileHandle = open(job_obj.unique_token+'/'+self._defaults.job_log,'w')
+            _fileHandle = open(job_obj.unique_token+'/'+Default.JOB_LOG,'w')
             _fileHandle.write(job_obj.log)
             _fileHandle.close()
         except:
@@ -353,7 +355,7 @@ class Gcli:
                 return False
 
         except:
-            gc3utils.log.error('Failed in appending current jobid to list of jobs in %s',self._defaults.joblist_file)
+            gc3utils.log.error('Failed in appending current jobid to list of jobs in %s',Default.JOBLIST_FILE)
             gc3utils.log.debug('Exception %s',sys.exc_info()[1])
             return False
 
@@ -379,19 +381,19 @@ class Gcli:
         
         try:
             # Read joblist_file get a list of unique_tokens and resource_names
-            _joblist  = open(self._defaults.joblist_file,'r')
+            _joblist  = open(Default.JOBLIST_FILE,'r')
             _joblist.seek(0)
             _unique_tokens_list = re.split('\n',_joblist.read())
             _joblist.close()
         except:
-            gc3utils.log.debug('Failed reading joblist file in %s',self._defaults.joblist_file)
+            gc3utils.log.debug('Failed reading joblist file in %s',Default.JOBLIST_FILE)
             raise
             
         # for each unique_token retrieve job information and create instance of Job obj
         _job_list = []
 
         for _unique_token in _unique_tokens_list:
-            _job_list.append(utils.get_job_from_filesystem(unique_token,self._defaults.job_file))
+            _job_list.append(utils.get_job_from_filesystem(unique_token,Default.JOB_FILE))
 
         # Shall we check whether the list is empty or not ?
         return _job_list
