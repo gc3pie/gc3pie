@@ -1,0 +1,182 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE Project SYSTEM "Project-4.6.dtd">
+<!-- eric4 project file for project gorg -->
+<!-- Saved: 2010-03-04, 08:31:38 -->
+<!-- Copyright (C) 2010 monroe@oci.uzh.ch,  -->
+<Project version="4.6">
+  <Language></Language>
+  <ProgLanguage mixed="0">Python</ProgLanguage>
+  <ProjectType>Pylons</ProjectType>
+  <Description></Description>
+  <Version></Version>
+  <Author>monroe@oci.uzh.ch</Author>
+  <Email></Email>
+  <TranslationPattern>gorg_site/gorg_site/i18n/%language%/LC_MESSAGES/gorg_site.po</TranslationPattern>
+  <Sources>
+    <Source>gorg/__init__.py</Source>
+    <Source>gorg_site/__init__.py</Source>
+    <Source>gorg_site/ez_setup.py</Source>
+    <Source>gorg_site/debug_script.py</Source>
+    <Source>gorg_site/setup.py</Source>
+    <Source>gorg_site/gorg_site/__init__.py</Source>
+    <Source>gorg_site/gorg_site/websetup.py</Source>
+    <Source>gorg_site/gorg_site/lib/__init__.py</Source>
+    <Source>gorg_site/gorg_site/lib/helpers.py</Source>
+    <Source>gorg_site/gorg_site/lib/app_globals.py</Source>
+    <Source>gorg_site/gorg_site/lib/base.py</Source>
+    <Source>gorg_site/gorg_site/config/__init__.py</Source>
+    <Source>gorg_site/gorg_site/config/environment.py</Source>
+    <Source>gorg_site/gorg_site/config/middleware.py</Source>
+    <Source>gorg_site/gorg_site/config/routing.py</Source>
+    <Source>gorg_site/gorg_site/tests/__init__.py</Source>
+    <Source>gorg_site/gorg_site/tests/test_models.py</Source>
+    <Source>gorg_site/gorg_site/tests/functional/__init__.py</Source>
+    <Source>gorg_site/gorg_site/model/__init__.py</Source>
+    <Source>gorg_site/gorg_site/controllers/__init__.py</Source>
+    <Source>gorg_site/gorg_site/controllers/error.py</Source>
+    <Source>gorg_site/gorg_site/controllers/gridjob.py</Source>
+    <Source>gorg/gorgclient.py</Source>
+    <Source>gorg_site/gorg_site/controllers/xmlgridtask.py</Source>
+    <Source>gorg_site/gorg_site/controllers/xmlgridjob.py</Source>
+    <Source>gorg_site/gorg_site/controllers/gridtask.py</Source>
+    <Source>gorg_site/gorg_site/model/gridtask.py</Source>
+    <Source>gorg_site/gorg_site/model/gridjob.py</Source>
+    <Source>gorg_site/gorg_site/lib/mydb.py</Source>
+  </Sources>
+  <Forms>
+  </Forms>
+  <Translations>
+  </Translations>
+  <Resources>
+  </Resources>
+  <Interfaces>
+  </Interfaces>
+  <Others>
+  </Others>
+  <Vcs>
+    <VcsType>Subversion</VcsType>
+    <VcsOptions>
+      <dict>
+        <key>
+          <string>add</string>
+        </key>
+        <value>
+          <list>
+            <string></string>
+          </list>
+        </value>
+        <key>
+          <string>checkout</string>
+        </key>
+        <value>
+          <list>
+            <string></string>
+          </list>
+        </value>
+        <key>
+          <string>commit</string>
+        </key>
+        <value>
+          <list>
+            <string></string>
+          </list>
+        </value>
+        <key>
+          <string>diff</string>
+        </key>
+        <value>
+          <list>
+            <string></string>
+          </list>
+        </value>
+        <key>
+          <string>export</string>
+        </key>
+        <value>
+          <list>
+            <string></string>
+          </list>
+        </value>
+        <key>
+          <string>global</string>
+        </key>
+        <value>
+          <list>
+            <string></string>
+          </list>
+        </value>
+        <key>
+          <string>history</string>
+        </key>
+        <value>
+          <list>
+            <string></string>
+          </list>
+        </value>
+        <key>
+          <string>log</string>
+        </key>
+        <value>
+          <list>
+            <string></string>
+          </list>
+        </value>
+        <key>
+          <string>remove</string>
+        </key>
+        <value>
+          <list>
+            <string></string>
+          </list>
+        </value>
+        <key>
+          <string>status</string>
+        </key>
+        <value>
+          <list>
+            <string></string>
+          </list>
+        </value>
+        <key>
+          <string>tag</string>
+        </key>
+        <value>
+          <list>
+            <string></string>
+          </list>
+        </value>
+        <key>
+          <string>update</string>
+        </key>
+        <value>
+          <list>
+            <string></string>
+          </list>
+        </value>
+      </dict>
+    </VcsOptions>
+    <VcsOtherData>
+      <dict>
+        <key>
+          <string>standardLayout</string>
+        </key>
+        <value>
+          <bool>False</bool>
+        </value>
+      </dict>
+    </VcsOtherData>
+  </Vcs>
+  <FiletypeAssociations>
+    <FiletypeAssociation pattern="*.html" type="FORMS" />
+    <FiletypeAssociation pattern="*.idl" type="INTERFACES" />
+    <FiletypeAssociation pattern="*.mo" type="TRANSLATIONS" />
+    <FiletypeAssociation pattern="*.htm" type="FORMS" />
+    <FiletypeAssociation pattern="*.po" type="TRANSLATIONS" />
+    <FiletypeAssociation pattern="*.mako" type="FORMS" />
+    <FiletypeAssociation pattern="*.ptl" type="SOURCES" />
+    <FiletypeAssociation pattern="*.pyw" type="SOURCES" />
+    <FiletypeAssociation pattern="*.js" type="FORMS" />
+    <FiletypeAssociation pattern="*.pot" type="TRANSLATIONS" />
+    <FiletypeAssociation pattern="*.py" type="SOURCES" />
+  </FiletypeAssociations>
+</Project>
