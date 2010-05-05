@@ -1,0 +1,19 @@
+<%inherit file="/base/index.html"/>
+<%def name="title()">${c.title}</%def>
+<%def name="heading()"><h1>${c.heading or c.title}</h1></%def>
+
+
+${h.link_to(
+	'View your tasks',
+	h.url_for(
+	    controller=u'gridtask',
+	    action='view_user_task_overview',
+	)
+)}<br>
+${h.link_to(
+	'View your jobs',
+	h.url_for(
+	    controller=u'gridjob',
+	    action='view_user_job_overview',
+	)
+)}
