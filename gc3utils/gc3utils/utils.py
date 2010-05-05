@@ -371,9 +371,6 @@ def get_job(unique_token):
 
 def get_job_filesystem(unique_token):
 
-    if not os.path.isdir(unique_token):
-        raise Exceptions.UniqueTokenError('unique_token not valid')
-
     # initialize Job object
     _job = Job.Job()
 
