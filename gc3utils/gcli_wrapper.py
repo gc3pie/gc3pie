@@ -171,11 +171,13 @@ def main():
                 parser.print_help()
                 raise Exception('wrong number on arguments')
 
-            unique_token = args[0]
-            if not os.path.isdir(unique_token):
-                raise gc3utils.Exceptions.UniqueTokenError('unique_token not valid')
-            
-            gc3utils.log.debug('Using unique_token %s',unique_token)
+            unique_token = None
+
+            if len(args) == 1:
+                unique_token = args[0]
+                if not os.path.isdir(unique_token):
+                    raise gc3utils.Exceptions.UniqueTokenError('unique_token not valid')
+                gc3utils.log.debug('Using unique_token %s',unique_token)
 
         elif ( os.path.basename(program_name) == "gget" ):
             # Gget
@@ -321,6 +323,7 @@ def main():
             for _job in job_list:
                 if not _job.is_valid():
                     gc3utils.log.error('Returned job not valid. Removing from list')
+                    job_list.remove(_job)
 
             try:
                 # Print result
