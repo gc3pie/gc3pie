@@ -312,7 +312,7 @@ def main():
         elif (os.path.basename(program_name) == "gstat" ):
             try:
                 if (unique_token):
-                    job_list = [_gcli.gstat(gc3utils.utils.get_job(unique_token))]
+                    job_list = _gcli.gstat(gc3utils.utils.get_job(unique_token))
                 else:
                     job_list = _gcli.gstat(None)
             except:

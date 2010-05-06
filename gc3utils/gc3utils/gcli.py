@@ -5,7 +5,7 @@ __date__="01 May 2010"
 __copyright__="Copyright 2009, 2010 Grid Computing Competence Center - UZH/GC3"
 __version__="0.3"
 
-from utils import *
+import utils
 import sys
 import os
 from ArcLRMS import *
@@ -45,7 +45,7 @@ class Gcli:
                 
         # Parsing passed arguments
         # RFR: this should be application responsibility ?
-        if (not check_inputfile(application_obj.input_file_name)):
+        if (not utils.check_inputfile(application_obj.input_file_name)):
             gc3utils.log.critical('Input file argument\t\t\t[ failed ]'+application_obj.input_file_name)
             raise Exception('invalid input-file argument')
             
@@ -135,9 +135,9 @@ class Gcli:
 # We need an internal method for this
 # This method returns a list of job objs 
     def gstat(self, job_obj):
-        
+       
+        job_return_list = [] 
         if job_obj is None:
-            job_return_list = []
 
             try:
                 _list_of_runnign_jobs = self.__get_list_running_jobs()
@@ -145,7 +145,7 @@ class Gcli:
                 gc3utils.log.debug('Failed obtaining list of running jobs %s',str(sys.exc_info()[1]))
                 raise
         else:
-            _list_of_runnign_jobs = job_obj
+            _list_of_runnign_jobs = [job_obj]
 
         for _running_job in _list_of_runnign_jobs:
             try:
@@ -241,7 +241,7 @@ class Gcli:
             raise Exception('invalid jobid')
         
         # check .finished file
-        if check_inputfile(unique_token+'/'+self.defaults['lrms_finished']):
+        if utils.check_inputfile(unique_token+'/'+self.defaults['lrms_finished']):
             logging.error('Job already finished.')
             return 
 
@@ -287,7 +287,7 @@ class Gcli:
     def __create_job_unique_token(self,job_folder_location,input_file_name,resource_name):
         try:
             # create_unique_token
-            unique_id = create_unique_token(input_file_name,resource_name)
+            unique_id = utils.create_unique_token(input_file_name,resource_name)
 
             unique_token = job_folder_location+'/'+unique_id
             
