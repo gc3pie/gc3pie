@@ -108,7 +108,7 @@ if __name__ == '__main__':
                         format=(PROG + ': %(asctime)s: %(levelname)-8s: %(message)s'))
 
     import gc3utils
-    import gc3utils.commands
+    import gc3utils.gcommands
 
     # build OptionParser with common options
     from optparse import OptionParser
@@ -137,13 +137,13 @@ You can get more help on a specific sub-command by typing::
 where command is one of these:
 """)
             # XXX: crude hack to get list of commands
-            for cmd in [ sym for sym in dir(gc3utils.commands) if sym.startswith("g") ]:
+            for cmd in [ sym for sym in dir(gc3utils.gcommands) if sym.startswith("g") ]:
                 sys.stderr.write('  ' + cmd + '\n')
             sys.exit(1)
     
     PROG.replace('-', '_')
     try:
-        cmd = getattr(gc3utils.commands, PROG)
+        cmd = getattr(gc3utils.gcommands, PROG)
         rc = cmd(*sys.argv[1:], opts=parser)
         sys.exit(rc)
     except AttributeError:
