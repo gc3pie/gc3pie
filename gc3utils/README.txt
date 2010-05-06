@@ -37,8 +37,11 @@ Then run:
 # wget -q http://download.nordugrid.org/DEB-GPG-KEY-nordugrid.asc -O- | sudo apt-key add -
 # gpg --search-keys "mattias ellert"
 # aptitude update
-# aptitude install nordugrid-arc-nox-python
+# aptitude install nordugrid-arc-python 
 
+Be sure to add it to your PYTHONPATH:
+
+# export PYTHONPATH=$PYTHONPATH:/opt/nordugrid/lib/python2.5/site-packages
 
 
 
