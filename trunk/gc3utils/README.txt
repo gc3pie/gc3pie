@@ -16,6 +16,32 @@ export PYTHONPATH=$HOME/gc3utils:$PYTHONPATH
 export PATH=$HOME/gc3utils/tools:$PATH
 
 
+To install Nordugrid Python libs in Debian 5 (Lenny):
+
+(Adapted from here: http://download.nordugrid.org/repos.html)
+
+Add to /etc/apt/sources.list:
+deb http://download.nordugrid.org/repos/debian/ lenny main
+deb-src http://download.nordugrid.org/repos/debian/ lenny main
+
+Modify /etc/apt/preferences:
+Package: *
+Pin: release a=stable
+Pin-Priority: 900
+
+Package: *
+Pin: release o="NorduGrid"
+Pin-Priority: 100
+
+Then run:
+# wget -q http://download.nordugrid.org/DEB-GPG-KEY-nordugrid.asc -O- | sudo apt-key add -
+# gpg --search-keys "mattias ellert"
+# aptitude update
+# aptitude install nordugrid-arc-nox-python
+
+
+
+
 Require configuration
 ======================
 
