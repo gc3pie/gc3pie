@@ -23,7 +23,7 @@ class Gcli:
     def __init__(self, defaults, resource_list):
         try:
             if ( len(resource_list) == 0 ):
-                raise Exception('0 lenght resource list')
+                raise Exception('0 length resource list')
             self._resources = resource_list
             self._defaults = defaults
         except:
