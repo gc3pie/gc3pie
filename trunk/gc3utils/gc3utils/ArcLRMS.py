@@ -10,6 +10,7 @@ import time
 import ConfigParser
 import shutil
 import subprocess
+import gc3utils
 from utils import *
 from LRMS import LRMS
 from Resource import Resource
