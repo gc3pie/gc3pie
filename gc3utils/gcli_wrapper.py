@@ -49,9 +49,9 @@ def __get_resources(options, resources_list):
     try:
         for resource in resources_list:
             # RFR: options.resource_name is NOT a key that is set by all command line commands
-            if hasattr(options,'resource_name') and options.resource_name :
-                if (not options.resource_name is resource['name']):
-                    gc3utils.log.debug('Rejecting resource because of not matching with %s',options.resource_name)
+            if hasattr(options,'resource_name') and options.resource_name:
+                if (not options.resource_name == resource['name']):
+                    gc3utils.log.debug('Rejecting resource %s because of not matching with %s' % (resource['name'], options.resource_name))
                     continue
             gc3utils.log.debug('creating instance of Resource object... ')
             tmpres = gc3utils.Resource.Resource()
@@ -75,7 +75,7 @@ def __get_resources(options, resources_list):
                 resources.append(tmpres)
             else:
                 gc3utils.log.warning('Failed adding resource %s',resource['name'])
-                    
+
     except:
         gc3utils.log.critical('failed creating Resource list')
         raise
