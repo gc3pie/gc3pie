@@ -91,7 +91,7 @@ def _get_resources(options, resources_list):
     try:
         for resource in resources_list:
             if (options.resource_name):
-                if (not options.resource_name is resource['name']):
+                if (not options.resource_name == resource['name']):
                     gc3utils.log.debug("Ignoring resource '%s', because resource '%s' was explicitly requested.",
                                        resource['name'], options.resource_name)
                     continue
