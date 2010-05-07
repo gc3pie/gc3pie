@@ -22,24 +22,29 @@ from LRMS import LRMS
 
 class SshLrms(LRMS):
 
-    resource = []
-    
+    # todo : say why
     isValid = 0
-    def __init__(self, resource):
-        if (resource['type'] == "ssh"):
-            self.resource = resource
-            # should we really set hardcoded defaults ?
-            if ( 'cores' not in self.resource ):
-                self.resource['cores'] = "1"
-            if ( 'memory' not in self.resource ):
-                self.resource['memory'] = "1000"
-            if ( 'walltime' not in self.resource ):
-                self.resource['walltime'] = "12"
-            self.isValid = 1
+    _resource = None
 
+    def __init__(self, resource):
+
+        self.log = logging.getLogger('gc3utils')
+
+        print 'mike_debug 200 %s' % resource.type
+        print dir(Default)
+        if resource.type == Default.SGE_LRMS:
+            self._resource = resource
+            self.isValid = 1
+            
+            self._resource.ncores = int(self._resource.ncores)
+            self._resource.max_memory_per_core = int(self._resource.max_memory_per_core) * 1000
+            self._resource.walltime = int(self._resource.walltime)
+            if self._resource.walltime > 0:
+                # Convert from hours to minutes
+                self._resource.walltime = self._resource.walltime * 60
 
     """Here are the common functions needed in every Resource Class."""
-    
+
     def CheckAuthentication(self):
         """
         Make sure ssh to server works.
@@ -66,7 +71,7 @@ class SshLrms(LRMS):
 
         return True
 
-    def SubmitJob(self, unique_token, application, input_file):
+    def submit_job(self, unique_token, application, input_file):
         """
         Submit a job.
 
@@ -145,7 +150,7 @@ class SshLrms(LRMS):
         return (lrms_jobid,out)
 
 
-    def CheckStatus(self, lrms_jobid):
+    def check_status(self, lrms_jobid):
         """Check status of a job."""
 
         try:
@@ -180,7 +185,7 @@ class SshLrms(LRMS):
         ssh.close()
         return (jobstatus,err)
 
-    def GetResults(self,lrms_jobid,unique_token):
+    def get_results(self,lrms_jobid,unique_token):
         """Retrieve results of a job."""
 
         # todo: - parse settings to figure out what output files should be copied back (assume gamess for now)
