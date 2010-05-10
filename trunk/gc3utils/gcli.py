@@ -144,7 +144,7 @@ where command is one of these:
     PROG.replace('-', '_')
     try:
         cmd = getattr(gc3utils.gcommands, PROG)
-        rc = cmd(*sys.argv[1:], opts=parser)
+        rc = cmd(*sys.argv[1:], **{'opts':parser})
         sys.exit(rc)
     except AttributeError:
         sys.stderr.write("Cannot find command '%s' in gc3utils; aborting now.\n" % PROG)
