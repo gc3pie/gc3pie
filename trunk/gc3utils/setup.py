@@ -15,7 +15,7 @@ setup(
     version = "0.5.10", # format: 0.MONTH.DAY (for now ...)
 
     packages = find_packages(exclude=['ez_setup']),
-    scripts = ['gcmd.py'],
+    #scripts = ['gcmd.py'],
 
     # metadata for upload to PyPI
     description = "A Python library and simple command-line frontend for computational job submission to multiple resources.",
@@ -25,18 +25,18 @@ setup(
     keywords = "grid arc globus ssh games batch job",
     url = "https://ocikbfs.uzh.ch/trac/gc3utils",   # project home page, if any
 
-    #entry_points = {
-    #    'cli': [
-    #        # the generic, catch-all script:
-    #        'gcmd = gc3utils.main.main',
-    #       # symlinks to specific subcommands:
-    #       'gsub = gc3utils.main.main',
-    #       'gstat = gc3utils.main.main',
-    #       'glist = gc3utils.main.main',
-    #       'gkill = gc3utils.main.main',
-    #       'gget = gc3utils.main.main',
-    #       ],
-    #   },
+    entry_points = {
+        'console_scripts': [
+            # the generic, catch-all script:
+            'gcmd = gc3utils.gcmd:main',
+            # symlinks to specific subcommands:
+            'gsub = gc3utils.gcmd:main',
+            'gstat = gc3utils.gcmd:main',
+            'glist = gc3utils.gcmd:main',
+            'gkill = gc3utils.gcmd:main',
+            'gget = gc3utils.gcmd:main',
+            ],
+       },
 
     # run-time dependencies ("pycrypto" is a dependency of Paramiko;
     # setuptools apparently does not process dependencies recursively)
