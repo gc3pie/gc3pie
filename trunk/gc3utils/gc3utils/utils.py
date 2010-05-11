@@ -23,7 +23,6 @@ import Job
 import Default
 import gc3utils
 
-# __all__ = ["configure_logging","check_inputfile","readConfig","check_qgms_version","dirname","inputname","inputfilename","create_unique_token"]
 
 # ================================================================
 #
@@ -55,7 +54,7 @@ def md5sum(fname):
         try:
             f = file(fname, 'rb')
         except:
-            logging.critical('Failed to open [ %s ]')
+            gc3utils.log.critical('Failed to open [ %s ]')
             f.close()
             raise
         ret = sumfile(f)
@@ -72,12 +71,12 @@ def create_unique_token(inputfile, clustername):
         unique_token = inname + "-" + timestamp + "-" + inputmd5 + "-" + clustername
         return unique_token
     except:
-        logging.debug('Failed crating unique token')
+        gc3utils.log.debug('Failed crating unique token')
         raise Exception('failed crating unique token')
 
 def dirname(rawinput):
     """Return the dirname of the input file."""
-    logging.debug('Checking dirname from [ %s ]',rawinput)
+    gc3utils.log.debug('Checking dirname from [ %s ]',rawinput)
 
     dirname = os.path.dirname(rawinput)
 
@@ -99,7 +98,7 @@ def inputname(rawinput):
 
     Return the name of the input.
     """
-    logging.debug('Checking inputname from [ %s ]',rawinput)
+    gc3utils.log.debug('Checking inputname from [ %s ]',rawinput)
 
     basename = os.path.basename(rawinput)
     pattern = re.compile('.inp$')
@@ -113,7 +112,7 @@ def inputfilename(rawinput):
 
     Return the name of the input file.
     """
-    logging.debug('Checking inputfilename from [ %s ]',rawinput)
+    gc3utils.log.debug('Checking inputfilename from [ %s ]',rawinput)
 
     inputfilename = os.path.basename(rawinput)
     return inputfilename
@@ -134,7 +133,7 @@ def check_inputfile(inputfile_fullpath):
     - estimate runtime
     - etc.
     """
-    logging.debug('checking\t\t\t[ %s ]',inputfile_fullpath)
+    gc3utils.log.debug('checking\t\t\t[ %s ]',inputfile_fullpath)
 
     if os.path.isfile(inputfile_fullpath):
         return True
@@ -162,23 +161,12 @@ def configure_logger(verbosity, logger_tag, log_file_name):
     else:
         logging_level = (( 6 - verbosity) * 10)
 
-    log = logging.getLogger(logger_tag)
+    log = gc3utils.log.getLogger(logger_tag)
     log.setLevel(logging_level)
-    handler = logging.handlers.RotatingFileHandler(log_file_name, maxBytes=200, backupCount=5)
+    handler = gc3utils.log.handlers.RotatingFileHandler(log_file_name, maxBytes=200, backupCount=5)
     log.addHandler(handler)
     return log
 
-def configure_logging(verbosity):
-    """Configure logging service."""
-
-    if ( verbosity > 5):
-        logging_level = 10
-    else:
-        logging_level = (( 6 - verbosity) * 10)
-
-    logging.basicConfig(level=logging_level, format='%(asctime)s %(levelname)-8s %(message)s')
-
-    return
 
 def check_qgms_version(minimum_version):
     """
@@ -193,7 +181,7 @@ def check_qgms_version(minimum_version):
     # todo: write some function that goes out and determines version
 
     if minimum_version < current_version:
-        logging.error('qgms script version is too old.  Please update it and resubmit.')
+        gc3utils.log.error('qgms script version is too old.  Please update it and resubmit.')
         return False
 
     return True
@@ -222,13 +210,13 @@ def read_config(config_file_location):
                 resource_list.append(_resource_options)
 #                resource_list[_resource] = _resource_options
 
-            logging.debug('readConfig resource_list lenght of [ %d ]',len(resource_list))
+            gc3utils.log.debug('readConfig resource_list lenght of [ %d ]',len(resource_list))
             return [defaults,resource_list]
         else:
-            logging.error('config file [%s] not found or not readable ',_configFileLocation)
+            gc3utils.log.error('config file [%s] not found or not readable ',_configFileLocation)
             raise Exception('config file not found')
     except:
-        logging.error('Exception in readConfig')
+        gc3utils.log.error('Exception in readConfig')
         raise
 
 def obtain_file_lock(joblist_location, joblist_lock):
@@ -241,10 +229,10 @@ def obtain_file_lock(joblist_location, joblist_lock):
     # if joblist_location does not exist, create it
     if not os.path.exists(joblist_location):
         open(joblist_location, 'w').close()
-        logging.debug(joblist_location + ' did not exist.  created it.')
+        gc3utils.log.debug(joblist_location + ' did not exist.  created it.')
 
 
-    logging.debug('trying creating lock for %s in %s',joblist_location,joblist_lock)    
+    gc3utils.log.debug('trying creating lock for %s in %s',joblist_location,joblist_lock)    
 
     while lock_obtained == False:
         if ( retries > 0 ):
@@ -254,14 +242,14 @@ def obtain_file_lock(joblist_location, joblist_lock):
                 break
             except OSError:
                 # lock already created; wait
-                logging.debug('Lock already created; retry later [ %d ]',retries)
+                gc3utils.log.debug('Lock already created; retry later [ %d ]',retries)
                 time.sleep(default_wait_time)
                 retries = retries - 1
             except:
-                logging.error('failed obtaining lock due to %s',sys.exc_info()[1])
+                gc3utils.log.error('failed obtaining lock due to %s',sys.exc_info()[1])
                 raise
         else:
-            logging.error('could not obtain lock for updating list of jobs')
+            gc3utils.log.error('could not obtain lock for updating list of jobs')
             break
 
     return lock_obtained
@@ -271,7 +259,7 @@ def release_file_lock(joblist_lock):
         os.remove(joblist_lock)
         return True
     except:
-        logging.debug('Failed removing lock due to %s',sys.exc_info()[1])
+        gc3utils.log.debug('Failed removing lock due to %s',sys.exc_info()[1])
         return False
 
 def send_email(_to,_from,_subject,_msg):
@@ -287,7 +275,7 @@ def send_email(_to,_from,_subject,_msg):
         s.quit()
         
     except:
-        logging.error('Failed sending email [ %s ]',sys.exc_info()[1])
+        gc3utils.log.error('Failed sending email [ %s ]',sys.exc_info()[1])
 
 def check_grid_authentication():
     try:
@@ -319,24 +307,24 @@ def renew_grid_credential(_aaiUserName):
             _aaiUserName = raw_input('Insert AAI/Switch username for user '+getpass.getuser()+': ')
         # UserName set, go interactive asking password
         input_passwd = getpass.getpass('Insert AAI/Switch password for user '+_aaiUserName+' : ')
-        logging.debug('Checking slcs status')
+        gc3utils.log.debug('Checking slcs status')
         if ( check_user_certificate() != True ):
             # Failed because slcs credential expired
             # trying renew slcs
             # this should be an interactiave command
-            logging.debug('Checking slcs status\t\t[ failed ]')
-            logging.debug('Initializing slcs')
+            gc3utils.log.debug('Checking slcs status\t\t[ failed ]')
+            gc3utils.log.debug('Initializing slcs')
             retval = commands.getstatusoutput(SLCSINIT+" -u "+_aaiUserName+" -p "+input_passwd+" -k "+input_passwd)
             if ( retval[0] != 0 ):
-                logging.critical("failed renewing slcs: %s",retval[1])
+                gc3utils.log.critical("failed renewing slcs: %s",retval[1])
                 raise Exceptions.SLCSException('failed slcs-init')
                 
-        logging.info('Initializing slcs\t\t\t[ ok ]')
+        gc3utils.log.info('Initializing slcs\t\t\t[ ok ]')
                 
         # Try renew voms credential
         # Another interactive command
         
-        logging.debug('Initializing voms-proxy')
+        gc3utils.log.debug('Initializing voms-proxy')
         
         p1 = subprocess.Popen(['echo',input_passwd],stdout=subprocess.PIPE)
         p2 = subprocess.Popen(VOMSPROXYINIT,stdin=p1.stdout,stdout=subprocess.PIPE)
@@ -344,17 +332,17 @@ def renew_grid_credential(_aaiUserName):
         if ( p2.returncode != 0 ):
             # Failed renewing voms credential
             # FATAL ERROR
-            logging.critical("Initializing voms-proxy\t\t[ failed ]")
+            gc3utils.log.critical("Initializing voms-proxy\t\t[ failed ]")
             raise Exceptions.VOMSException('failed voms-proxy-init')
 
-        logging.info('Initializing voms-proxy\t\t[ ok ]')
-        logging.info('check_authentication\t\t\t\t[ ok ]')
+        gc3utils.log.info('Initializing voms-proxy\t\t[ ok ]')
+        gc3utils.log.info('check_authentication\t\t\t\t[ ok ]')
         
         # disposing content of passord variable
         input_passwd = None
         return True
     except:
-        logging.error('Check grid credential failed  [ %s ]',sys.exc_info()[1])
+        gc3utils.log.error('Check grid credential failed  [ %s ]',sys.exc_info()[1])
         # Return False or raise exception ?
         raise
     
