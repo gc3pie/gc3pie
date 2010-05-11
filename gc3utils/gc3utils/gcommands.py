@@ -38,7 +38,7 @@ _default_job_folder_location = os.getcwd()
 _default_wait_time = 3 # XXX: does it really make sense to have a default wall-clock time??
 
 
-def _get_gcli(config_file_path = _default_config_file_location):
+def _get_gcli(options, config_file_path = _default_config_file_location):
     """
     Return a `gc3utils.gcli.Gcli` instance configured by parsing
     the configuration file located at `config_file_path`.
@@ -168,6 +168,7 @@ def gsub(*args, **kw):
     if not application.is_valid():
         raise Exception('Failed creating application object')
 
+    _gcli = _get_gcli(options)
     job = _gcli.gsub(application)
 
     if job.is_valid():
@@ -188,6 +189,7 @@ def grid_credential_renew(*args, **kw):
         raise InvalidUsage("Missing required argument USERNAME; this command requires your AAI/SWITCH username.")
         
     gc3utils.log.debug('Checking grid credential')
+    _gcli = _get_gcli(options)
     if not _gcli.check_authentication(gc3utils.Default.SMSCG_AUTHENTICATION):
         return _gcli.enable_authentication(gc3utils.Default.SMSCG_AUTHENTICATION)
     else:
@@ -202,6 +204,7 @@ def gstat(*args, **kw):
     (options, args) = parser.parse_args(list(args))
 
     try:
+        _gcli = _get_gcli(options)
         if len(args) == 0:
             job_list = _gcli.gstat(None)
         if len(args) == 1:
@@ -246,6 +249,7 @@ def gget(*args, **kw):
         raise InvalidUsage("This command requires either one argument (the JOBID) or none.")
     unique_token = args[0]
 
+    _gcli = _get_gcli(options)
     # FIXME: gget should raise exception when something goes wrong; does it indeed?
     retval = _gcli.gget(unique_token)
     sys.stdout.write('Job results successfully retrieved in directory: '+unique_token+'\n')
@@ -288,6 +292,7 @@ def glist(*args, **kw):
         raise InvalidUsage("This command requires either one argument (the JOBID) or none.")
     resource_name = args[0]
 
+    _gcli = _get_gcli(options)
     # FIXME: gcli.glist should throw exception, we should not check return value here
     (retval,resource_object) = _gcli.glist(resource_name)
     if (not retval):
