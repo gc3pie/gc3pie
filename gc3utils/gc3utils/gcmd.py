@@ -49,7 +49,7 @@ def main():
         sys.exit(2)
 
     # ensure we run on a supported Python version
-    NEED_VERS = (2, 5)
+    NEED_VERS = (2, 4)
     try:
         version_info = sys.version_info
     except AttributeError:

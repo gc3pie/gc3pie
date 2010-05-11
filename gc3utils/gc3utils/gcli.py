@@ -171,11 +171,11 @@ class Gcli:
         # Create LRMS associated to job_obj
         # return LRMS.get_status(job_obj)
         
-        # RFR: Do we really need something like this ?
-        if job_obj.status is Job.FINISHED:
-            return job_obj
-
         _lrms = self.__get_LRMS(job_obj.resource_name)
+
+        # update job status to make sure job.status is up to date
+        job_obj = _lrms.check_status(job_obj)
+
         return _lrms.get_results(job_obj)  
 
 

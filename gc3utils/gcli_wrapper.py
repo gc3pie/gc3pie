@@ -191,17 +191,19 @@ def main():
             # Configure logging service
             # gc3utils.log.basicConfig(format='%(asctime)s: %(levelname)s [%(name)s_%(module)s_%(funcName)s]:  %(message)s')
             gc3utils.utils.configure_logger(options.verbosity,'gc3utils','/tmp/gc3utils.log')
-            
-                        
 
             if len(args) != 1:
                 gc3utils.log.critical('Command line argument parsing\t\t\t[ failed ]\n\tIncorrect number of arguments; expected 1 got %d ',len(args))
                 parser.print_help()
                 raise Exception('wrong number on arguments')
 
+            if len(args) == 1:
+                unique_token = args[0]
+                if not os.path.isdir(unique_token):
+                    raise gc3utils.Exceptions.UniqueTokenError('unique_token not valid')
+                gc3utils.log.debug('Using unique_token %s',unique_token)
+                
             gc3utils.log.info('Parsing command line arguments\t\t[ ok ]')
-
-            unique_token = args[0]
 
         elif ( os.path.basename(program_name) == "gkill" ):
             # Gkill
@@ -337,8 +339,8 @@ def main():
 
         # gget
         elif (os.path.basename(program_name) == "gget"):
-            retval = _gcli.gget(unique_token)
-            if (not retval):
+            job_obj = _gcli.gget(gc3utils.utils.get_job(unique_token))
+            if job_obj.status == gc3utils.Job.JOB_STATE_COMPLETED:
                 sys.stdout.write('Job results successfully retrieved in [ '+unique_token+' ]\n')
                 sys.stdout.flush
             else:

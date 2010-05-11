@@ -3,17 +3,21 @@ lrms_jobid = .lrms_jobid
 lrms_log = .lrms_log
 lrms_finished = .finished
 debug = 0
+job_file = .lrms_id
+job_log = .log
 
 [gc3]
 type = arc
 frontend = idgc3grid01.uzh.ch
-ncores = 32
+ncores = 80
 gamess_location = /share/apps/gamess-2009R4-ethernet-gfortran
-walltime = 12
-memory_per_core = 3
+walltime = 2
+memory_per_core = 2
 applications = gamess
 max_cores_per_node = 8
-max_walltime = 12
-max_memory_per_node = 3
+max_walltime = 2
+max_memory_per_node = 16
 name = gc3
-total_cores = 32
+total_cores = 80
+max_cores_per_job = 72
+max_memory_per_core = 2
