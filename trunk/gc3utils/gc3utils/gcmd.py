@@ -154,3 +154,5 @@ where command is one of these:
         return ("%s: FATAL ERROR: %s\n"
                 "Type '%s --help' to get usage help.\n" 
                 % (PROG, x.message, PROG))
+    except Exception, x:
+        return ("%s: ERROR: %s\n" % (PROG, x.message))
