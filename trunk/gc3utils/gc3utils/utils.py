@@ -11,9 +11,9 @@ import time
 import ConfigParser
 import shutil
 import getpass
-import smtplib
+#import smtplib
 import subprocess
-from email.mime.text import MIMEText
+#from email.mime.text import MIMEText
 sys.path.append('/opt/nordugrid/lib/python2.4/site-packages')
 import warnings
 warnings.simplefilter("ignore")
@@ -161,11 +161,12 @@ def configure_logger(verbosity, logger_tag, log_file_name):
     else:
         logging_level = (( 6 - verbosity) * 10)
 
-    log = gc3utils.log.getLogger(logger_tag)
-    log.setLevel(logging_level)
-    handler = gc3utils.log.handlers.RotatingFileHandler(log_file_name, maxBytes=200, backupCount=5)
-    log.addHandler(handler)
-    return log
+#    log = gc3utils.log.getLogger(logger_tag)
+    gc3utils.log.setLevel(logging_level)
+    handler = logging.handlers.RotatingFileHandler(log_file_name, maxBytes=200, backupCount=5)
+#    handler = gc3utils.log.handlers.RotatingFileHandler(log_file_name, maxBytes=200, backupCount=5)
+    gc3utils.log.addHandler(handler)
+#    return log
 
 
 def check_qgms_version(minimum_version):
@@ -262,20 +263,20 @@ def release_file_lock(joblist_lock):
         gc3utils.log.debug('Failed removing lock due to %s',sys.exc_info()[1])
         return False
 
-def send_email(_to,_from,_subject,_msg):
-    try:
-        _message = MIMEText(_msg)
-        _message['Subject'] = _subject
-        _message['From'] = _from
-        _message['To'] = _to
+#def send_email(_to,_from,_subject,_msg):
+#    try:
+#        _message = MIMEText(_msg)
+#        _message['Subject'] = _subject
+#        _message['From'] = _from
+#        _message['To'] = _to
         
-        s = smtplib.SMTP()
-        s.connect()
-        s.sendmail(_from,[_to],_message.as_string())
-        s.quit()
+#        s = smtplib.SMTP()
+#        s.connect()
+#        s.sendmail(_from,[_to],_message.as_string())
+#        s.quit()
         
-    except:
-        gc3utils.log.error('Failed sending email [ %s ]',sys.exc_info()[1])
+#    except:
+#        logging.error('Failed sending email [ %s ]',sys.exc_info()[1])
 
 def check_grid_authentication():
     try:

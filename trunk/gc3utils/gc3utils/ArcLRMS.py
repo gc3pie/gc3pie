@@ -110,7 +110,7 @@ class ArcLrms(LRMS):
                     if int(application.requested_memory) > 0:
                         requested_memory = int(application.requested_memory) * 1000
                     else:
-                        requested_memory = self._resource.memory_per_core
+                        requested_memory = int(self._resource.memory_per_core) * 1000
                         
                     _command = _command+"(memory=\""+str(requested_memory)+"\")"
 
@@ -255,42 +255,62 @@ class ArcLrms(LRMS):
             gc3utils.log.critical('Failure in checking status [%s]',sys.exc_info()[1])
             raise
 
-    def get_results(self,lrms_jobid,job_dir):
+    def get_results(self, job_obj):
         try:
-            result_location_pattern="Results stored at "
+            # get FTP control
+            jftpc = arclib.JobFTPControl()
+
+            arclib.JobFTPControl.DownloadDirectory(jftpc,job_obj.lrms_jobid,job_obj.unique_token)
+
+            # Clean remote job sessiondir
+            retval = arclib.JobFTPControl.Clean(jftpc,job_obj.lrms_jobid)
+
+            # set job status to COMPLETED
+            job_obj.status = Job.JOB_STATE_COMPLETED
             
-            _command = "ngget -keep -s FINISHED -d 2 -dir "+job_dir+" "+lrms_jobid
-
-            self.log.debug('Running ARC command [ %s ]',_command)
-
-            job_results_retrieved_pattern = "successfuly downloaded: 0"
-
-            retval = commands.getstatusoutput(_command)
-            if ( ( retval[0] != 0 ) ):
-                # Failed somehow
-                self.log.error("ngget command\t\t[ failed ]")
-                self.log.debug(retval[1])
-                raise Exception('failed getting results from LRMS')
-
-            if ( result_location_pattern in retval[1] ):
-                _result_location_folder = re.split(result_location_pattern,retval[1])[1]
-                _result_location_folder = re.split("\n",_result_location_folder)[0]
-                self.log.debug('Moving result data from [ %s ]',_result_location_folder)
-                if ( os.path.isdir(_result_location_folder) ):
-                    retval = commands.getstatusoutput("cp -ap "+_result_location_folder+"/* "+job_dir)
-                    if ( retval[0] != 0 ):
-                        self.log.error('Failed copying results data from [ %s ] to [ %s ]',_result_location_folder,job_dir)
-                    else:
-                        self.log.info('Copying results\t\t[ ok ]')
-                        self.log.debug('Removing [ %s ]',_result_location_folder)
-                        shutil.rmtree(_result_location_folder)
-                self.log.info('get_results\t\t\t[ ok ]')
-                return [True,retval[1]]
-            else:
-                return [False,retval[1]]
-        except:
-            self.log.critical('Failure in retrieving results')
+            return job_obj
+        except JobFTPControlError:
             raise
+        except FTPControlError:
+            raise
+        except:
+            gc3utils.log.error('Failure in retrieving job results [%s]',sys.exc_info()[1])
+
+#                  try:
+#            result_location_pattern="Results stored at "
+#            
+#            _command = "ngget -keep -s FINISHED -d 2 -dir "+job_dir+" "+lrms_jobid
+
+#            self.log.debug('Running ARC command [ %s ]',_command)
+
+#            job_results_retrieved_pattern = "successfuly downloaded: 0"
+
+#            retval = commands.getstatusoutput(_command)
+#            if ( ( retval[0] != 0 ) ):
+#                # Failed somehow
+#                self.log.error("ngget command\t\t[ failed ]")
+#                self.log.debug(retval[1])
+#                raise Exception('failed getting results from LRMS')
+
+#            if ( result_location_pattern in retval[1] ):
+#                _result_location_folder = re.split(result_location_pattern,retval[1])[1]
+#                _result_location_folder = re.split("\n",_result_location_folder)[0]
+#                self.log.debug('Moving result data from [ %s ]',_result_location_folder)
+#                if ( os.path.isdir(_result_location_folder) ):
+#                    retval = commands.getstatusoutput("cp -ap "+_result_location_folder+"/* "+job_dir)
+#                    if ( retval[0] != 0 ):
+#                        self.log.error('Failed copying results data from [ %s ] to [ %s ]',_result_location_folder,job_dir)
+#                    else:
+#                        self.log.info('Copying results\t\t[ ok ]')
+#                        self.log.debug('Removing [ %s ]',_result_location_folder)
+#                        shutil.rmtree(_result_location_folder)
+#                self.log.info('get_results\t\t\t[ ok ]')
+#                return [True,retval[1]]
+#            else:
+#                return [False,retval[1]]
+#        except:
+#            self.log.critical('Failure in retrieving results')
+#            raise
 
     def GetResourceStatus(self):
         self.log.debug("Returning information of local resoruce")
