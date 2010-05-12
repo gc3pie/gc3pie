@@ -152,9 +152,7 @@ where command is one of these:
     try:
         cmd = getattr(gc3utils.gcommands, PROG)
     except AttributeError:
-        sys.stderr.write("Cannot find command '%s' in gc3utils; aborting now.\n" % PROG)
-        return 1
-    # invoke command and report exceptions as error messages to user
+        return ("Cannot find command '%s' in gc3utils; aborting now." % PROG)
     try:
         rc = cmd(*sys.argv[1:], **{'opts':parser})
         return rc
@@ -164,5 +162,4 @@ where command is one of these:
                          % (PROG, x, PROG))
         return 1
     except Exception, x:
-        sys.stderr.write("%s: ERROR: %s\n" % (PROG, x))
-        return 1
+        return ("%s: ERROR: %s\n" % (PROG, str(x)))

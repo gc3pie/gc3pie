@@ -118,7 +118,7 @@ def main():
             (options, args) = parser.parse_args()
 
             # Configure logging service
-            gc3utils.utils.configure_logger(options.verbosity,'gc3utils','/tmp/gc3utils.log')
+            gc3utils.utils.configure_logger(options.verbosity,'/tmp/gc3utils.log')
             
             if len(args) != 2:
                 gc3utils.log.info('Command line argument parsing\t[ failed ]')
@@ -146,7 +146,7 @@ def main():
             (options, args) = parser.parse_args()
 
             # Configure logging service
-            gc3utils.utils.configure_logger(options.verbosity,'gc3utils','/tmp/gc3utils.log')
+            gc3utils.utils.configure_logger(options.verbosity,'/tmp/gc3utils.log')
 
             _aai_username = None
             if len(args) == 1:
@@ -162,7 +162,7 @@ def main():
             (options, args) = parser.parse_args()
             
             # Configure logging service
-            gc3utils.utils.configure_logger(options.verbosity,'gc3utils','/tmp/gc3utils.log')
+            gc3utils.utils.configure_logger(options.verbosity,'/tmp/gc3utils.log')
 
             gc3utils.log.debug('Command lines argument length: [ %d ]',len(args))
 
@@ -190,7 +190,7 @@ def main():
             
             # Configure logging service
             # gc3utils.log.basicConfig(format='%(asctime)s: %(levelname)s [%(name)s_%(module)s_%(funcName)s]:  %(message)s')
-            gc3utils.utils.configure_logger(options.verbosity,'gc3utils','/tmp/gc3utils.log')
+            gc3utils.utils.configure_logger(options.verbosity,'/tmp/gc3utils.log')
 
             if len(args) != 1:
                 gc3utils.log.critical('Command line argument parsing\t\t\t[ failed ]\n\tIncorrect number of arguments; expected 1 got %d ',len(args))
@@ -242,7 +242,7 @@ def main():
             
             # Configure logging service
             # gc3utils.log.basicConfig(format='%(asctime)s: %(levelname)s [%(name)s_%(module)s_%(funcName)s]:  %(message)s')
-            gc3utils.utils.configure_logger(options.verbosity,'gc3utils','/tmp/gc3utils.log')
+            gc3utils.utils.configure_logger(options.verbosity,'/tmp/gc3utils.log')
             
                         
             
