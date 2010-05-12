@@ -156,10 +156,13 @@ where command is one of these:
     try:
         rc = cmd(*sys.argv[1:], **{'opts':parser})
         return rc
+    except SystemExit, x:
+        return x.code
     except InvalidUsage, x:
         sys.stderr.write("%s: FATAL ERROR: %s\n"
                          "Type '%s --help' to get usage help.\n" 
                          % (PROG, x, PROG))
         return 1
     except Exception, x:
-        return ("%s: ERROR: %s\n" % (PROG, str(x)))
+        sys.stderr.write("%s: ERROR: %s\n" % (PROG, str(x)))
+        return 1
