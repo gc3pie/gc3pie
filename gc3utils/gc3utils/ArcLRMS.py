@@ -149,7 +149,7 @@ class ArcLrms(LRMS):
                 lrms_jobid = re.split(jobid_pattern,retval[1])[1]
                 self.log.debug('Job submitted with jobid: %s',lrms_jobid)
 
-                job = Job.Job(lrms_jobid=lrms_jobid,status='SUBMITTED',resource_name=self._resource.name,log=retval[1])
+                job = Job.Job(lrms_jobid=lrms_jobid,status=Job.JOB_STATE_SUBMITTED,resource_name=self._resource.name,log=retval[1])
                 return job
 
                 #return [lrms_jobid,retval[1]]
