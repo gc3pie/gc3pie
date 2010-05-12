@@ -91,7 +91,8 @@ def _get_resources(options, resources_list):
 
     try:
         for resource in resources_list:
-            if (options.resource_name):
+            # RFR: options.resource_name is NOT a key that is set by all command line commands
+            if hasattr(options,'resource_name') and options.resource_name:
                 if (not options.resource_name == resource['name']):
                     gc3utils.log.debug("Ignoring resource '%s', because resource '%s' was explicitly requested.",
                                        resource['name'], options.resource_name)
@@ -142,8 +143,6 @@ def gsub(*args, **kw):
     parser.add_option("-a", "--args", action="store", dest="application_arguments", metavar="STRING", default=None, help='Application arguments')
 
     (options, args) = parser.parse_args(list(args))
-    gc3utils.utils.configure_logger(options.verbosity, _default_log_file)
-
     if len(args) != 2:
         raise InvalidUsage('Wrong number of arguments: this commands expects exactly two.')
 
@@ -211,11 +210,12 @@ def gstat(*args, **kw):
         _gcli = _get_gcli(options)
         if len(args) == 0:
             job_list = _gcli.gstat(None)
-        if len(args) == 1:
+        elif len(args) == 1:
             unique_token = args[0]
             if not os.path.isdir(unique_token):
                 raise UniqueTokenError("Invalid JOBID: '%s' is not a job status directory." % unique_token)
-            job_list = _gcli.gstat(gc3utils.utils.get_job_from_filesystem(unique_token,default.job_file))
+            # job_list = _gcli.gstat(gc3utils.utils.get_job_from_filesystem(unique_token,default.job_file))
+            job_list = _gcli.gstat(gc3utils.utils.get_job(unique_token))
         else:
             raise InvalidUsage("This command requires either one argument or no arguments at all.")
     except Exception, x:
