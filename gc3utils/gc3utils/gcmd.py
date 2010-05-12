@@ -55,7 +55,7 @@ def main():
     except AttributeError:
         version_info = 1, 5 # 1.5 or older
     REINVOKE = "__GC3UTILS_REINVOKE"
-    KNOWN_PYTHONS = ('python2.5', 'python2.6')
+    KNOWN_PYTHONS = ('python2.6', 'python2.5', 'python2.4')
     if version_info < NEED_VERS:
         if not os.environ.has_key(REINVOKE):
             # mutating os.environ doesn't work in old Pythons
@@ -65,8 +65,9 @@ def main():
                     os.execvp(python, [python] + sys.argv)
                 except OSError:
                     pass
-        return ("%s: error: cannot find a suitable python interpreter"
-                " (need %d.%d or later)" % (PROG, NEED_VERS))
+        sys.stderr.write("%s: error: cannot find a suitable python interpreter"
+                         " (need %d.%d or later)" % (PROG, NEED_VERS))
+        return 1
     if hasattr(os, "unsetenv"):
         os.unsetenv(REINVOKE)
 
@@ -106,8 +107,11 @@ def main():
 
     # configure logging
     import logging
-    logging.basicConfig(level=logging.WARNING, 
-                        format=(PROG + ': %(asctime)s: %(levelname)-8s: %(message)s'))
+    logging.basicConfig(
+        level=logging.INFO, 
+        format=(PROG + ': [%(asctime)s] %(levelname)-8s: %(message)s'),
+        datefmt='%Y-%m-%d %H:%M:%S'
+        )
 
     import gc3utils
     import gc3utils.gcommands
@@ -141,18 +145,24 @@ where command is one of these:
             # XXX: crude hack to get list of commands
             for cmd in [ sym for sym in dir(gc3utils.gcommands) if sym.startswith("g") ]:
                 sys.stderr.write('  ' + cmd + '\n')
-            sys.exit(1)
+            return 1
 
+    # find command as function in the `gcommands.py` module
     PROG.replace('-', '_')
     try:
         cmd = getattr(gc3utils.gcommands, PROG)
+    except AttributeError:
+        sys.stderr.write("Cannot find command '%s' in gc3utils; aborting now.\n" % PROG)
+        return 1
+    # invoke command and report exceptions as error messages to user
+    try:
         rc = cmd(*sys.argv[1:], **{'opts':parser})
         return rc
-    except AttributeError:
-        return ("Cannot find command '%s' in gc3utils; aborting now." % PROG)
     except InvalidUsage, x:
-        return ("%s: FATAL ERROR: %s\n"
-                "Type '%s --help' to get usage help.\n" 
-                % (PROG, x.message, PROG))
+        sys.stderr.write("%s: FATAL ERROR: %s\n"
+                         "Type '%s --help' to get usage help.\n" 
+                         % (PROG, x, PROG))
+        return 1
     except Exception, x:
-        return ("%s: ERROR: %s\n" % (PROG, x.message))
+        sys.stderr.write("%s: ERROR: %s\n" % (PROG, x))
+        return 1

@@ -36,6 +36,7 @@ _default_joblist_file = _rcdir + "/.joblist"
 _default_joblist_lock = _rcdir + "/.joblist_lock"
 _default_job_folder_location = os.getcwd()
 _default_wait_time = 3 # XXX: does it really make sense to have a default wall-clock time??
+_default_log_file = _homedir + "/.gc3utils.log"
 
 
 def _get_gcli(options, config_file_path = _default_config_file_location):
@@ -141,6 +142,7 @@ def gsub(*args, **kw):
     parser.add_option("-a", "--args", action="store", dest="application_arguments", metavar="STRING", default=None, help='Application arguments')
 
     (options, args) = parser.parse_args(list(args))
+    gc3utils.utils.configure_logger(options.verbosity, _default_log_file)
 
     if len(args) != 2:
         raise InvalidUsage('Wrong number of arguments: this commands expects exactly two.')
@@ -182,6 +184,7 @@ def grid_credential_renew(*args, **kw):
     parser = OptionParser(usage="Usage: %prog [options] USERNAME")
     parser.add_option("-v", action="count", dest="verbosity", default=0, help="Set verbosity level")
     (options, args) = parser.parse_args(list(args))
+    gc3utils.utils.configure_logger(options.verbosity, _default_log_file)
     
     try:
         _aai_username = args[0]
@@ -202,6 +205,7 @@ def gstat(*args, **kw):
     parser = OptionParser(usage="Usage: %prog [options] JOBID")
     parser.add_option("-v", action="count", dest="verbosity", default=0, help="Set verbosity level")
     (options, args) = parser.parse_args(list(args))
+    gc3utils.utils.configure_logger(options.verbosity, _default_log_file)
 
     try:
         _gcli = _get_gcli(options)
@@ -243,6 +247,7 @@ def gget(*args, **kw):
     parser = OptionParser(usage="Usage: %prog [options] JOBID")
     parser.add_option("-v", action="count", dest="verbosity", default=0, help="Set verbosity level")
     (options, args) = parser.parse_args(list(args))
+    gc3utils.utils.configure_logger(options.verbosity, _default_log_file)
     
     # FIXME: should take possibly a list of JOBIDs and get files for all of them
     if len(args) != 1:
@@ -260,7 +265,8 @@ def gkill(*args, **kw):
     """The `gkill` command."""
     parser = OptionParser(usage="%prog [options] unique_token")
     parser.add_option("-v", action="count", dest="verbosity", default=0, help="Set verbosity level")
-    (options, args) = parser.parse_args(*args)
+    (options, args) = parser.parse_args(list(args))
+    gc3utils.utils.configure_logger(options.verbosity, _default_log_file)
 
     shortview = True
 
@@ -285,7 +291,8 @@ def glist(*args, **kw):
     parser.add_option("-v", action="count", dest="verbosity", default=0, help="Set verbosity level")
     parser.add_option("-s", "--short", action="store_true", dest="shortview", help="Short view.")
     parser.add_option("-l", "--long", action="store_false", dest="shortview", help="Long view.")
-    (options, args) = parser.parse_args()
+    (options, args) = parser.parse_args(list(args))
+    gc3utils.utils.configure_logger(options.verbosity, _default_log_file)
 
     # FIXME: should take possibly a list of JOBIDs and get files for all of them
     if len(args) != 1:
