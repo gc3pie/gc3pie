@@ -114,7 +114,7 @@ def main():
 
             # Configure logging service
             logging.basicConfig(verbosity=10,format='%(asctime)s: %(levelname)s [%(name)s_%(module)s_%(funcName)s_%(lineno)d]:  %(message)s')
-            log = configure_logger(options.verbosity,'gc3utils','/tmp/gc3utils.log')
+            log = configure_logger(options.verbosity,'/tmp/gc3utils.log')
             
             if len(args) != 2:
                 log.info('Command line argument parsing\t[ failed ]')
@@ -143,7 +143,7 @@ def main():
 
             # Configure logging service
             log.basicConfig(format='%(asctime)s: %(levelname)s [%(name)s_%(module)s_%(funcName)s]:  %(message)s')
-            log = configure_logger(options.verbosity,'gc3utils','/tmp/gc3utils.log')
+            log = configure_logger(options.verbosity,'/tmp/gc3utils.log')
             
             #            configure_logging(options.verbosity)
 
@@ -162,7 +162,7 @@ def main():
             
             # Configure logging service
             log.basicConfig(format='%(asctime)s: %(levelname)s [%(name)s_%(module)s_%(funcName)s]:  %(message)s')
-            log = configure_logger(options.verbosity,'gc3utils','/tmp/gc3utils.log')
+            log = configure_logger(options.verbosity,'/tmp/gc3utils.log')
                         
 
             log.debug('Command lines argument length: [ %d ]',len(args))
@@ -183,7 +183,7 @@ def main():
             
             # Configure logging service
             log.basicConfig(format='%(asctime)s: %(levelname)s [%(name)s_%(module)s_%(funcName)s]:  %(message)s')
-            log = configure_logger(options.verbosity,'gc3utils','/tmp/gc3utils.log')
+            log = configure_logger(options.verbosity,'/tmp/gc3utils.log')
                         
 
             if len(args) != 1:
@@ -209,7 +209,7 @@ def main():
             
             # Configure logging service
             log.basicConfig(format='%(asctime)s: %(levelname)s [%(name)s_%(module)s_%(funcName)s]:  %(message)s')
-            log = configure_logger(options.verbosity,'gc3utils','/tmp/gc3utils.log')
+            log = configure_logger(options.verbosity,'/tmp/gc3utils.log')
                         
             
             log.debug('Command lines argument length: [ %d ]',len(args))

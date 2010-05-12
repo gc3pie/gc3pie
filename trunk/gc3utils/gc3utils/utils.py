@@ -154,19 +154,15 @@ def check_jobdir(jobdir):
     else:
         return False
 
-
-def configure_logger(verbosity, logger_tag, log_file_name):
+def configure_logger(verbosity, log_file_name):
     if ( verbosity > 5):
         logging_level = 10
     else:
         logging_level = (( 6 - verbosity) * 10)
 
-#    log = gc3utils.log.getLogger(logger_tag)
     gc3utils.log.setLevel(logging_level)
     handler = logging.handlers.RotatingFileHandler(log_file_name, maxBytes=200, backupCount=5)
-#    handler = gc3utils.log.handlers.RotatingFileHandler(log_file_name, maxBytes=200, backupCount=5)
     gc3utils.log.addHandler(handler)
-#    return log
 
 
 def check_qgms_version(minimum_version):
