@@ -106,18 +106,6 @@ def inputname(rawinput):
     return inputname
 
 
-def inputfilename(rawinput):
-    """
-    Attach the .inp suffix to the inputname so we have a complete filename again.
-
-    Return the name of the input file.
-    """
-    gc3utils.log.debug('Checking inputfilename from [ %s ]',rawinput)
-
-    inputfilename = os.path.basename(rawinput)
-    return inputfilename
-
-
 def same_input_already_run(input_object):
     """Check the database to see if this input file is run already."""
 #    todo: create this function

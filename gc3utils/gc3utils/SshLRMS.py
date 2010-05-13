@@ -30,8 +30,6 @@ class SshLrms(LRMS):
 
         self.log = logging.getLogger('gc3utils')
 
-        print 'mike_debug 200 %s' % resource.type
-        print dir(Default)
         if resource.type == Default.SGE_LRMS:
             self._resource = resource
             self.isValid = 1
@@ -51,7 +49,7 @@ class SshLrms(LRMS):
         We assume the user has already set up passwordless ssh access to the resource. 
         """
 
-        ssh, sftp = self.connect_ssh(self.resource['frontend'])
+        ssh, sftp = self.connect_ssh(self._resource.frontend)
         _command = "uname -a"
         logging.debug('CheckAuthentication command: ' + _command)
 
@@ -71,7 +69,8 @@ class SshLrms(LRMS):
 
         return True
 
-    def submit_job(self, unique_token, application, input_file):
+#    def submit_job(self, unique_token, application, input_file):
+    def submit_job(self, application):
         """
         Submit a job.
 
@@ -79,12 +78,17 @@ class SshLrms(LRMS):
         # ssh user@remote_frontend 'cd unique_token ; $gamess_location -n cores input_file'
         """
 
-	    # Homogenize the input.
-        _inputfilename = inputfilename(input_file)
+	# getting information from input_file
+        _file_name = os.path.basename(application.input_file_name)
+        _file_name_path = os.path.dirname(application.input_file_name)
+        _file_name = _file_name.split(".inp")[0]
+	self.log.debug('Input file path %s dirpath %s from %s',_file_name,_file_name_path,application.input_file_name)
 
+	ssh = None
+	sftp = None
         # Establish an ssh connection.
         try:
-            ssh, sftp = self.connect_ssh(self.resource['frontend'])
+            ssh, sftp = self.connect_ssh(self._resource.frontend)
 
         except:
             ssh.close()
@@ -102,7 +106,7 @@ class SshLrms(LRMS):
 
         # Copy the input file to remote unique_token directory.
         _localpath = input_file
-        _remotepath = unique_token + '/' + inputfilename(input_file)
+        _remotepath = unique_token + '/' + _file_name
         try:
             sftp.put(_localpath, _remotepath)
         except:
@@ -112,18 +116,18 @@ class SshLrms(LRMS):
 
 
         # Build up the SGE submit command.
-        _submit_command = 'cd ~/\'%s\' && %s/qgms -n %s' % (unique_token, self.resource['gamess_location'], self.resource['ncores'])
+        _submit_command = 'cd ~/\'%s\' && %s/qgms -n %s' % (unique_token, self._resource.gamess_location, self._resource.ncores)
 
         # If walltime is provided, convert to seconds and add to the SGE submit command.
-        _walltime_in_seconds = int(self.resource['walltime'])*3600
+        _walltime_in_seconds = int(self._resource.walltime)*3600
         if ( _walltime_in_seconds > 0 ):
             _submit_command = _submit_command + ' -t %i ' % _walltime_in_seconds
 
         logging.debug('submit _walltime_in_seconds: ' + str(_walltime_in_seconds))
-#        logging.debug('submit _walltime_in_seconds: ' + str(self.resource['walltime']))
+#        logging.debug('submit _walltime_in_seconds: ' + str(self._resource.walltime))
 
         # Add the input file name to the SGE submit command.
-        _submit_command = _submit_command + ' \'%s\'' % _inputfilename
+        _submit_command = _submit_command + ' \'%s\'' % _file_name
         
         logging.debug('submit _submit_command: ' + _submit_command)
 
@@ -155,7 +159,7 @@ class SshLrms(LRMS):
 
         try:
             # open ssh connection
-            ssh, sftp = self.connect_ssh(self.resource['frontend'])
+            ssh, sftp = self.connect_ssh(self._resource.frontend)
 
             # then check the lrms_jobid with qstat
             testcommand = 'qstat -j %s' % lrms_jobid
@@ -206,7 +210,7 @@ class SshLrms(LRMS):
             # Each inner list has 2 elements, a remote file location and a local file location.
             # i.e. [copy_from, copy_to]
              
-            ssh, sftp = self.connect_ssh(self.resource['frontend'])
+            ssh, sftp = self.connect_ssh(self._resource.frontend)
             
             # Get the paths to the files on the remote and local machines.
             stdin, stdout, stderr = ssh.exec_command('echo $HOME')
@@ -358,7 +362,7 @@ class SshLrms(LRMS):
     def KillJob(self, lrms_jobid):
         """Kill job."""
 
-        ssh, sftp = self.connect_ssh(self.resource['frontend'])
+        ssh, sftp = self.connect_ssh(self._resource.frontend)
 
         # Kill the job on the remote queueing system.
         
@@ -401,19 +405,22 @@ class SshLrms(LRMS):
     def connect_ssh(self,host):
         """Create an ssh connection."""
         # todo : add fancier key handling and password asking stuff
+
         try:
             ssh = paramiko.SSHClient()
             ssh.load_system_host_keys()
-            ssh.connect(host,timeout=30,username=self.resource['username'])
+            ssh.connect(host,timeout=30,username=self._resource.username)
             sftp = ssh.open_sftp()
+            print dir(ssh)
+            print dir(sftp)
             return ssh, sftp
 
         except SSHException:
             ssh.close()
-            logging.critical('Could not create ssh connection.')
+            logging.critical('Could not create ssh connection to ', host, '.')
             raise
 
 
     def GetResourceStatus(self):
             logging.debug("Returning information of local resoruce")
-            return Resource(resource_name=self.resource['resource_name'],total_cores=self.resource['ncores'],memory_per_core=self.resource['memory_per_core'])
+            return Resource(resource_name=self._resource.resource_name,total_cores=self._resource.ncores,memory_per_core=self._resource.memory_per_core)
