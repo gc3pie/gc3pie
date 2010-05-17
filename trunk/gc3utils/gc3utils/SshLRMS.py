@@ -80,9 +80,9 @@ class SshLrms(LRMS):
 
 	# getting information from input_file
         _file_name = os.path.basename(application.input_file_name)
-        _file_name_path = os.path.dirname(application.input_file_name)
-        _file_name = _file_name.split(".inp")[0]
-    	gc3utils.log.debug('Input file path %s dirpath %s from %s',_file_name,_file_name_path,application.input_file_name)
+        _file_name_dir = os.path.dirname(application.input_file_name)
+        _input_name = _file_name.split(".inp")[0]
+    	gc3utils.log.debug('Input file %s, dirpath %s, from %s, input name %s', _file_name, _file_name_dir, application.input_file_name, _input_name)
 
         # Establish an ssh connection.
         try:
@@ -91,7 +91,7 @@ class SshLrms(LRMS):
             raise
 
         # Create the remote unique_token directory. 
-        _remotepath = unique_token
+        _remotepath = application.unique_token_relativepath
         try:
             sftp.mkdir(_remotepath)
         except Exception, e:
@@ -101,8 +101,8 @@ class SshLrms(LRMS):
             raise
 
         # Copy the input file to remote unique_token directory.
-        _localpath = input_file
-        _remotepath = unique_token + '/' + _file_name
+        _localpath = application.input_file_name
+        _remotepath = application.unique_token_relativepath + '/' + _file_name
         try:
             sftp.put(_localpath, _remotepath)
         except:
@@ -112,7 +112,7 @@ class SshLrms(LRMS):
 
 
         # Build up the SGE submit command.
-        _submit_command = 'cd ~/\'%s\' && %s/qgms -n %s' % (unique_token, self._resource.gamess_location, self._resource.ncores)
+        _submit_command = 'cd ~/\'%s\' && %s/qgms -n %s' % (application.unique_token_relativepath, self._resource.gamess_location, self._resource.ncores)
 
         # If walltime is provided, convert to seconds and add to the SGE submit command.
         _walltime_in_seconds = int(self._resource.walltime)*3600
@@ -132,22 +132,22 @@ class SshLrms(LRMS):
             stdin, stdout, stderr = ssh.exec_command(_submit_command)
             out = stdout.read()
             err = stderr.read()
+            ssh.close()
 
             gc3utils.log.debug("_submit_command stdout:" + out)
             gc3utils.log.debug("_submit_command stderr:" + err)
 
+            lrms_jobid = self.get_qsub_jobid(out)
+            gc3utils.log.debug('Job submitted with jobid: %s',lrms_jobid)
+
+            job = Job.Job(lrms_jobid=lrms_jobid,status=Job.JOB_STATE_SUBMITTED,resource_name=self._resource.name,log=out)
+
+            return job
+
         except:
             ssh.close()
-            gc3utils.log.critical("_submit_command failed")
+            gc3utils.log.critical('Failure in submitting')
             raise
-            return False
-
-        lrms_jobid = self.get_qsub_jobid(out)
-        gc3utils.log.debug('Job submitted with jobid: %s',lrms_jobid)
-
-        ssh.close()
-
-        return (lrms_jobid,out)
 
 
     def check_status(self, lrms_jobid):

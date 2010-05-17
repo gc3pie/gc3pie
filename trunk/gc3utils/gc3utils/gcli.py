@@ -90,12 +90,15 @@ class Gcli:
             gc3utils.log.critical('Could not initialize ANY lrms resource')
             raise Exception('no available LRMS found')
 
-        # This method also takes care of crating the unique_token's folder
+        # This method also takes care of creating the unique_token's folder
         try:
             unique_token = self.__create_job_unique_token(os.path.expandvars(application_obj.job_local_dir),application_obj.input_file_name,application_obj.application_tag)
         except:
             gc3utils.log.critical('Failed creating unique_token')
             raise
+        
+        application_obj.insert('unique_token_relativepath',os.path.basename(unique_token))
+        application_obj.insert('unique_token_fullpath',unique_token)
 
         # resource_name.submit_job(input, unique_token, application, lrms_log) -> returns [lrms_jobid,lrms_log]
 #        gc3utils.log.debug('Submitting job with %s %s %s %s',unique_token, application_to_run, input_file, self.defaults['lrms_log'])
