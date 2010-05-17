@@ -256,6 +256,14 @@ def gget(*args, **kw):
 
     _gcli = _get_gcli(options)
     # FIXME: gget should raise exception when something goes wrong; does it indeed?
+    job_obj = _gcli.gget(gc3utils.utils.get_job(unique_token))
+    if job_obj.status == gc3utils.Job.JOB_STATE_COMPLETED:
+        sys.stdout.write('Job results successfully retrieved in [ '+unique_token+' ]\n')
+        sys.stdout.flush
+    else:
+        raise Exception("gget terminated")
+                    
+
     retval = _gcli.gget(unique_token)
     sys.stdout.write('Job results successfully retrieved in directory: '+unique_token+'\n')
     sys.stdout.flush()
