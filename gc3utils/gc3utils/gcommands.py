@@ -143,6 +143,8 @@ def gsub(*args, **kw):
     parser.add_option("-a", "--args", action="store", dest="application_arguments", metavar="STRING", default=None, help='Application arguments')
 
     (options, args) = parser.parse_args(list(args))
+    gc3utils.utils.configure_logger(options.verbosity, _default_log_file)
+
     if len(args) != 2:
         raise InvalidUsage('Wrong number of arguments: this commands expects exactly two.')
 
@@ -153,6 +155,9 @@ def gsub(*args, **kw):
         gc3utils.log.critical('Cannot find input file: '+args[1])
         raise Exception('invalid input-file argument')
     input_file_name = args[1]
+
+    if not os.path.isabs(input_file_name):
+        input_file_name = os.path.realpath(input_file_name)
 
     # Create Application obj
     application = gc3utils.Application.Application(
