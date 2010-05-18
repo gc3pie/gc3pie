@@ -150,7 +150,7 @@ class SshLrms(LRMS):
             raise
 
 
-    def check_status(self, lrms_jobid):
+    def check_status(self, job):
         """Check status of a job."""
 
         try:
@@ -158,7 +158,7 @@ class SshLrms(LRMS):
             ssh, sftp = self.connect_ssh(self._resource.frontend)
 
             # then check the lrms_jobid with qstat
-            testcommand = 'qstat -j %s' % lrms_jobid
+            testcommand = 'qstat -j %s' % job.lrms_jobid
 
             stdin, stdout, stderr = ssh.exec_command(testcommand)
             out = stdout.read()
@@ -167,30 +167,29 @@ class SshLrms(LRMS):
             gc3utils.log.debug('CheckStatus command stdout:' + out)
             gc3utils.log.debug('CheckStatus command stderr:' + err)
 
+            ssh.close()
+
             # todo : this test could be much better; fix if statement between possible qstat outputs
-
             teststring = "Following jobs do not exist:"
-
             if teststring in err:
-                jobstatus = "Status: FINISHED"
+                gc3utils.log.debug('job status: %s setting to FINISHED')
+                job.status = Job.JOB_STATE_FINISHED
             else: 
-                jobstatus = "Status: RUNNING"
+                gc3utils.log.debug('job status: %s setting to RUNNING')
+                job.status = Job.JOB_STATE_RUNNING
+            
+            return job
         
         except Exception, e:
             ssh.close()
             gc3utils.log.critical('Failure in checking status')
             raise e
 
-        ssh.close()
-        return (jobstatus,err)
 
-    def get_results(self,lrms_jobid,unique_token):
+    def get_results(self,job):
         """Retrieve results of a job."""
 
         # todo: - parse settings to figure out what output files should be copied back (assume gamess for now)
-
-        _unique_token = os.path.basename(unique_token)
-
 
         try:
             ''' Make sure we handle the situation when there is a '-' in the file name
@@ -198,7 +197,7 @@ class SshLrms(LRMS):
             Example:
             G-P-G.rst.restart_0-1268147228.33-fa72c57af2bbe092a0b9d95ee95aad22-schrodinger
             '''
-            jobname =  '-'.join( _unique_token.split('-')[0:-3])
+            jobname =  '-'.join( job.unique_token.split('-')[0:-3])
            
             # Create a list of lists.
             # Each element in the outer list is itself a list.
@@ -207,22 +206,74 @@ class SshLrms(LRMS):
              
             ssh, sftp = self.connect_ssh(self._resource.frontend)
             
+            # todo : test that this copying works for both full and relative paths.
+
             # Get the paths to the files on the remote and local machines.
             stdin, stdout, stderr = ssh.exec_command('echo $HOME')
-            remote_home = stdout.read().strip()
-            full_path_to_remote_unique_id = remote_home+'/'+_unique_token
-            full_path_to_local_unique_id = unique_token
-            
-            copyfiles_list = []
+            _remote_home = stdout.read().strip()
+            _full_path_to_remote_unique_id = _remote_home+'/'+job.unique_token
+            _full_path_to_local_unique_id = job.unique_token
 
+            # If the dir no longer exists, exit.
+            # todo : maybe change the status to something else
+            try:
+                sftp.listdir(_full_path_to_remote_unique_id)
+            except:
+                gc3utils.log.info('Could not read remote dir.')
+                ssh.close()
+                job.status = Job.JOB_STATE_COMPLETED
+                return job
+
+            files_list = sftp.listdir(_full_path_to_remote_unique_id)
+            
+            # copy back all files
+            for file in files_list:
+                _remote_file = _full_path_to_remote_unique_id + '/' + file
+                _local_file = _full_path_to_local_unique_id + '/' + file
+                try:
+                    sftp.get(_remote_file, _local_file)
+                    gc3utils.log.debug('copied remote: ' + _remote_file + ' to local: ' + _local_file)
+
+                    try:
+                        sftp.remove(_remote_file)
+                        gc3utils.log.debug('removed remote file: ' + _remote_file)
+                    except:
+                        gc3utils.log.debug('could not remove remote file: ' + _remote_file)
+                        raise
+
+                except:
+                    # todo : figure out how to check for existance of file before trying to copy
+                    gc3utils.log.debug('could not copy remote file: ' + _remote_file)
+                    raise
+
+            # If the remote dir is empty, remove it.
+            try:
+                sftp.rmdir(_full_path_to_remote_unique_id)
+            except:
+                gc3utils.log.debug('could not remove remote dir: ' + _full_path_to_remote_unique_id)
+                raise
+                
+            # set job status to COMPLETED
+            job.status = Job.JOB_STATE_COMPLETED
+
+            ssh.close()
+            return job
+
+        except: 
+            ssh.close()
+            gc3utils.log.critical('Failure in retrieving results')
+            raise 
+
+                
+            '''            
 	        # First add the output file.
-            remote_file = '%s/%s.o%s' % (full_path_to_remote_unique_id, jobname, lrms_jobid)
+            remote_file = '%s/%s.o%s' % (full_path_to_remote_unique_id, jobname, job.lrms_jobid)
             local_file = '%s/%s.stdout' % (full_path_to_local_unique_id, jobname)
             remote2local_list = [remote_file, local_file]
             copyfiles_list.append(remote2local_list)
 
 	        # .po file
-            remote_file = '%s/%s.po%s' % (full_path_to_remote_unique_id, jobname, lrms_jobid)
+            remote_file = '%s/%s.po%s' % (full_path_to_remote_unique_id, jobname, job.lrms_jobid)
             # The arc gget uses stderr not po for the suffix. We therefore need to rename the file
             local_file = '%s/%s.stderr' % (full_path_to_local_unique_id, jobname)
             remote2local_list = [remote_file, local_file]
@@ -233,7 +284,7 @@ class SshLrms(LRMS):
                 '.cosmo', \
                 '.irc')
             for suffix in cp_suffixes:
-                remote_file = '%s/%s.o%s%s' % (full_path_to_remote_unique_id, jobname, lrms_jobid, suffix) 
+                remote_file = '%s/%s.o%s%s' % (full_path_to_remote_unique_id, jobname, job.lrms_jobid, suffix) 
                 local_file = '%s/%s%s' % (full_path_to_local_unique_id, jobname, suffix)
                 remote2local_list = [remote_file, local_file]
                 copyfiles_list.append(remote2local_list)
@@ -249,7 +300,7 @@ class SshLrms(LRMS):
                 local_file = elem[1] 
                 
                 # if we already have the file, don't copy again
-                if ( os.path.exists(local_file) & os.path.isfile(local_file) ):
+                if ( os.path.exists(local_file) and os.path.isfile(local_file) ):
                     gc3utils.log.debug(local_file + " already copied.  skipping.")
                     continue
                 else:
@@ -257,17 +308,17 @@ class SshLrms(LRMS):
                     try:
                         sftp.get(remote_file, local_file)
                         gc3utils.log.debug('retrieved: ' + local_file)
-                    except Exception, e:
+                    except:
                         # todo : figure out how to check for existance of file before trying to copy
                         gc3utils.log.debug('could not retrieve gamess output: ' + local_file)
 
             # Now try to clean up the remote files.
 
             rm_suffixes = ('.inp', 
-                '.o'+lrms_jobid, 
-                '.o'+lrms_jobid+'.dat', 
-                '.o'+lrms_jobid+'.inp', 
-                '.po'+lrms_jobid, 
+                '.o'+job.lrms_jobid, 
+                '.o'+job.lrms_jobid+'.dat', 
+                '.o'+job.lrms_jobid+'.inp', 
+                '.po'+job.lrms_jobid, 
                 '.qsub')
 
             # Create a list of remote files to remove.
@@ -279,7 +330,7 @@ class SshLrms(LRMS):
                 try:
                     sftp.remove(remote_file)
                     gc3utils.log.debug('purged remote file: ' + remote_file)
-                except Exception, e:
+                except:
                     # todo : figure out how to check for existance of file before trying to remove
                     gc3utils.log.debug('did not purge remote file: ' + remote_file)
 
@@ -291,23 +342,12 @@ class SshLrms(LRMS):
             try:
                 sftp.rmdir(full_path_to_remote_unique_id)
                 gc3utils.log.debug('purged remote directory: ' + full_path_to_remote_unique_id)
-            except Exception, e:
+            except:
                 ssh.close()
                 gc3utils.log.critical('did not purge remote directory: ' + full_path_to_remote_unique_id)
-                raise e
+                raise 
+            '''
 
-            # todo : check clean up  
-
-        except Exception, e:
-            ssh.close()
-            gc3utils.log.critical('Failure in retrieving results')
-            raise e
-
-        ssh.close()
-
-        # We don't have a return code or lrms_log for this situation, but we need to return them, so just make something fake.
-        dummy_output = 'nothing'
-        return [True,dummy_output]
 
     def list_jobs(self, shortview):
         """List status of jobs."""
