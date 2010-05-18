@@ -176,7 +176,6 @@ class SshLrms(LRMS):
             else: 
                 jobstatus = "Status: RUNNING"
         
-    
         except Exception, e:
             ssh.close()
             gc3utils.log.critical('Failure in checking status')
