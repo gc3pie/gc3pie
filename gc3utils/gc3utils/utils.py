@@ -22,7 +22,8 @@ import Exceptions
 import Job
 import Default
 import gc3utils
-
+import shelve
+    
 
 # ================================================================
 #
@@ -62,17 +63,23 @@ def md5sum(fname):
     return ret
 
 
-def create_unique_token(inputfile, clustername):
-    """create a unique job token based on md5sum, timestamp, clustername, and jobname"""
-    try:
-        inputmd5 = md5sum(inputfile)
-        inname = inputname(inputfile)
-        timestamp = str(time.time())
-        unique_token = inname + "-" + timestamp + "-" + inputmd5 + "-" + clustername
-        return unique_token
-    except:
-        gc3utils.log.debug('Failed crating unique token')
-        raise Exception('failed crating unique token')
+def create_unique_token():
+    (exitcode, unique_token) = commands.getstatusoutput('uuidgen')
+    if exitcode:
+        gc3utils.log.debug('Failed crating unique token %d',exitcode)
+        raise Exceptions.UniqueTokenError('failed creating unique token')
+    return unique_token
+
+#    """create a unique job token based on md5sum, timestamp, clustername, and jobname"""
+#    try:
+#        inputmd5 = md5sum(inputfile)
+#        inname = inputname(inputfile)
+#        timestamp = str(time.time())
+#        unique_token = inname + "-" + timestamp + "-" + inputmd5 + "-" + clustername
+#        return unique_token
+#    except:
+#        gc3utils.log.debug('Failed crating unique token')
+#        raise Exception('failed crating unique token')
 
 def dirname(rawinput):
     """Return the dirname of the input file."""
@@ -360,20 +367,94 @@ def get_job(unique_token):
 
 def get_job_filesystem(unique_token):
 
-    # initialize Job object
-    _job = Job.Job(status=Job.JOB_STATE_UNKNOWN)
+    handler = None
+    gc3utils.log.debug('retrieving job %s',unique_token)
 
-    # get lrms_jobid
     try:
-        _fileHandle = open(unique_token+'/'+Default.JOB_FILE)
-        _job_info = re.split('\t',_fileHandle.read())
-        _job.insert('resource_name',_job_info[0])
-        _job.insert('lrms_jobid',_job_info[1])
-        _job.insert('unique_token',unique_token)
-
-        gc3utils.log.debug('Job: %s resource_name: %s lrms_jobid: %s',unique_token,_job.resource_name,_job.lrms_jobid)
-        gc3utils.log.info('Created Job instance\t[ok]')
-
-        return _job
+        handler = shelve.open(Default.JOBS_DIR+'/'+unique_token)
+        job = Job.Job(unique_token)
+        job.update(handler)
+        handler.close()
+        if job.is_valid():
+            return job
+        else:
+            raise Exceptions.JobRetrieveError('Failed retrieving job from filesystem')
     except:
-        raise Exceptions.JobRetrieveError(sys.exc_info()[1])
+        if handler:
+            handler.close()
+            raise
+
+def create_job_folder_filesystem(job_folder_location,unique_token):
+    try:
+        # create_unique_token
+        unique_id = job_folder_location + '/' + unique_token
+        while os.path.exists(unique_id):
+            unique_id = unique_id + '_' + os.getgid()
+
+        gc3utils.log.debug('creating folder for job session: %s',unique_id)
+        os.makedirs(unique_id)
+    except:
+        gc3utils.log.error('Failed creating job on filesystem')
+        raise
+
+def persist_job_filesystem(job_obj):
+
+    handler = None
+    gc3utils.log.debug('dumping job in %s',Default.JOBS_DIR+'/'+job_obj.unique_token)
+
+    try:
+        handler = shelve.open(Default.JOBS_DIR+'/'+job_obj.unique_token)
+        handler.update(job_obj)
+        handler.close()
+    except:
+        if handler:
+            handler.close()
+        raise
+
+#def mark_completed_job(job_obj):
+    #                # Job finished; results retrieved; writing .finished file
+#    try:
+#        gc3utils.log.debug('Creating finished file')
+#        open(unique_token+"/"+self.defaults['lrms_finished'],'w').close()
+#    except:
+#        gc3utils.log.error('Failed creating finished file [ %s ]',sys.exc_info()[1])
+#        # Should handle the exception differently ?
+#    
+#    gc3utils.log.debug('Removing jobid from joblist file')
+#    # Removing jobid from joblist file
+#    try:
+#        default_joblist_location = os.path.expandvars(default_joblist_location)
+#        default_joblist_lock = os.path.expandvars(default_joblist_lock)
+#        
+#        if ( obtain_file_lock(default_joblist_location,default_joblist_lock) ):
+#            _newFileHandle = tempfile.NamedTemporaryFile(suffix=".xrsl",prefix="gridgames_arc_")
+#            
+#            _oldFileHandle  = open(default_joblist_location)
+#            _oldFileHandle.seek(0)
+#            for line in _oldFileHandle:
+#    598#                            gc3utils.log.debug('checking %s with %s',line,unique_token)
+#    599#                            if ( not unique_token in line ):
+#    600#                                gc3utils.log.debug('writing line')
+#    601#                                _newFileHandle.write(line)
+#    602#
+#    603#                        _oldFileHandle.close()
+#    604#
+#    605#                        os.remove(default_joblist_location)
+#    606#
+#    607#                        _newFileHandle.seek(0)
+#    608#
+#    609#                        gc3utils.log.debug('replacing joblist file with %s',_newFileHandle.name)
+#    610#                        os.system("cp "+_newFileHandle.name+" "+default_joblist_location)
+#    611#
+#    612#                        _newFileHandle.close()
+#    613#
+#    614#                    else:
+#    615#                        raise Exception('Failed obtain lock')
+#    616#                except:
+#    617#                    gc3utils.log.error('Failed updating joblist file in %s',default_joblist_location)
+#    618#                    gc3utils.log.debug('Exception %s',sys.exc_info()[1])
+#    619#
+#    620#                # release lock
+#    621#                if ( (not release_file_lock(default_joblist_lock)) & (os.path.isfile(default_joblist_lock)) ):
+#    622#                    gc3utils.log.error('Failed removing lock file')
+    

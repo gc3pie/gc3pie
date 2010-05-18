@@ -71,6 +71,9 @@ class JobRetrieveError(Error):
     pass
 
 
+class UniqueTokenError(Error):
+    pass
+
 class InvalidUsage(FatalError):
     """
     Raised when a command is not provided all required arguments on

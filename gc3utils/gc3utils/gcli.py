@@ -37,7 +37,7 @@ class Gcli:
         
         # gsub workflow:
         #    check input files from application
-        #    create list of LRMSs
+       #    create list of LRMSs
         #    create unique_token
         #    do Brokering
         #    submit job
@@ -90,15 +90,15 @@ class Gcli:
             gc3utils.log.critical('Could not initialize ANY lrms resource')
             raise Exception('no available LRMS found')
 
-        # This method also takes care of creating the unique_token's folder
-        try:
-            unique_token = self.__create_job_unique_token(os.path.expandvars(application_obj.job_local_dir),application_obj.input_file_name,application_obj.application_tag)
-        except:
-            gc3utils.log.critical('Failed creating unique_token')
-            raise
+#        # This method also takes care of creating the unique_token's folder
+#        try:
+#            unique_token = self.__create_job_unique_token(os.path.expandvars(application_obj.job_local_dir),application_obj.input_file_name,application_obj.application_tag)
+#        except:
+#            gc3utils.log.critical('Failed creating unique_token')
+#            raise
         
-        application_obj.insert('unique_token_relativepath',os.path.basename(unique_token))
-        application_obj.insert('unique_token_fullpath',unique_token)
+#        application_obj.insert('unique_token_relativepath',os.path.basename(unique_token))
+#        application_obj.insert('unique_token_fullpath',unique_token)
 
         # resource_name.submit_job(input, unique_token, application, lrms_log) -> returns [lrms_jobid,lrms_log]
 #        gc3utils.log.debug('Submitting job with %s %s %s %s',unique_token, application_to_run, input_file, self.defaults['lrms_log'])
@@ -112,7 +112,7 @@ class Gcli:
                 a.get(lrms._resource.type)
                 job = lrms.submit_job(application_obj)
                 if job.is_valid():
-                    job.insert('unique_token',unique_token)
+#                    job.insert('unique_token',unique_token)
                     gc3utils.log.info('Submission process to LRMS backend\t\t\t[ ok ]')
                     # job submitted; leave loop
                     break
@@ -125,8 +125,8 @@ class Gcli:
         if job is None:
             raise LRMSException('Failed submitting application to any LRMS')
 
-        if self.__log_job(job):
-            gc3utils.log.info('Dumping lrms log information\t\t\t[ ok ]')
+#        if self.__log_job(job):
+#            gc3utils.log.info('Dumping lrms log information\t\t\t[ ok ]')
 
         # return an object of type Job which contains also the unique_token
         return job
@@ -171,16 +171,19 @@ class Gcli:
 
 #====== Gget =======
     def gget(self, job_obj):
-        # Create LRMS associated to job_obj
-        # return LRMS.get_status(job_obj)
-        
         _lrms = self.__get_LRMS(job_obj.resource_name)
 
-        # update job status to make sure job.status is up to date
-        job_obj = _lrms.check_status(job_obj)
-
-        return _lrms.get_results(job_obj)  
-
+        #        # update job status to make sure job.status is up to date
+        #        job_obj = _lrms.check_status(job_obj)
+        job_obj = _lrms.get_results(job_obj)
+        
+        if job_obj.is_valid():
+            # create persistanc of filesystem
+            job.status = gc3utils.Job.JOB_STATE_COMPLETED
+            gc3utils.utils.persist_job_filesystem(job)
+            return job_obj  
+        else:
+            raise JobRetrieveError('non valid job object')
 
 #=========     INTERNAL METHODS ============
     def glist(self, shortview):
@@ -385,25 +388,29 @@ class Gcli:
     def __get_list_running_jobs_filesystem(self):
         # This implementation is based on persistent information on the filesystem 
         # Read content of .joblist and return gstat for each of them
-        
+
         try:
-            # Read joblist_file get a list of unique_tokens and resource_names
-            _joblist  = open(Default.JOBLIST_FILE,'r')
-            _joblist.seek(0)
-            _unique_tokens_list = re.split('\n',_joblist.read().strip())
-            _joblist.close()
+            if not os.path.isdir(Default.JOBS_DIR):
+                raise Exceptions.RetrieveJobsFilesystemError('JOBS_DIR %s Not found',Default.JOBS_DIR)
+
+            _jobs_list = os.listdir(Default.JOBS_DIR)
+
+            # for each unique_token retrieve job information and create instance of Job obj
+            _job_list = []
+
+            for _job in _jobs_list:
+                try:
+                    _job_list.append(utils.get_job(_job))
+                except:
+                    gc3utils.log.error('Failed retrieving job information for %s',_job)
+                    gc3utils.log.debug('%s',sys.exc_info()[1])
+                    continue
+
+            return _job_list
+
         except:
-            gc3utils.log.debug('Failed reading joblist file in %s',Default.JOBLIST_FILE)
             raise
-            
-        # for each unique_token retrieve job information and create instance of Job obj
-        _job_list = []
 
-        for _unique_token in _unique_tokens_list:
-            _job_list.append(utils.get_job(_unique_token))
-
-        # Shall we check whether the list is empty or not ?
-        return _job_list
 
 #======= Static methods =======
 

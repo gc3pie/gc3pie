@@ -1,5 +1,7 @@
 import types
 from InformationContainer import *
+import utils
+import Exceptions
 
 # -----------------------------------------------------
 # Job
@@ -37,8 +39,15 @@ JOB_STATE_UNKNOWN = 6
 
 class Job(InformationContainer):
 
+    def __init__(self, unique_token):
+        super(InformationContainer)
+        # create_unique_token
+        if not unique_token:
+            unique_token = utils.create_unique_token()
+        self.unique_token = unique_token
+        
     def is_valid(self):
-        if self.__dict__.has_key('status') and self.__dict__.has_key('resource_name') and self.__dict__.has_key('lrms_jobid'):
+        if self.has_key('status') and self.has_key('resource_name') and self.has_key('lrms_jobid') and self.has_key('unique_token'):
             return True
 
 
