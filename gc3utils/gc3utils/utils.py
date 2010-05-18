@@ -195,7 +195,7 @@ def read_config(config_file_location):
                 resource_list.append(_resource_options)
 #                resource_list[_resource] = _resource_options
 
-            gc3utils.log.debug('readConfig resource_list lenght of [ %d ]',len(resource_list))
+            gc3utils.log.debug('readConfig resource_list length of [ %d ]',len(resource_list))
             return [defaults,resource_list]
         else:
             gc3utils.log.error('config file [%s] not found or not readable ',_configFileLocation)
