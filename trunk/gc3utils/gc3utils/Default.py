@@ -14,7 +14,9 @@ JOBLIST_LOCK = RCDIR + "/.joblist_lock"
 JOB_FOLDER_LOCATION= os.path.expandvars("$PWD")
 AAI_CREDENTIAL_REPO = RCDIR + "/aai_credential"
 GAMESS_XRSL_TEMPLATE = os.path.expandvars("$HOME/.gc3/gamess_template.xrsl")
-JOB_FILE = ".lrms_id"    
+JOBS_DIR = RCDIR + "/jobs"
+JOB_FILE = ".lrms_id"
+JOB_FINISHED_FILE = ".finished"
 JOB_LOG = ".log"
 
 ARC_LRMS = 1

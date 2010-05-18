@@ -150,7 +150,13 @@ class ArcLrms(LRMS):
                 lrms_jobid = re.split(jobid_pattern,retval[1])[1]
                 gc3utils.log.debug('Job submitted with jobid: %s',lrms_jobid)
 
-                job = Job.Job(lrms_jobid=lrms_jobid,status=Job.JOB_STATE_SUBMITTED,resource_name=self._resource.name,log=retval[1])
+                job = Job.Job(None)
+                job.lrms_jobid = lrms_jobid
+                job.status = Job.JOB_STATE_SUBMITTED
+                job.resource_name = self._resource.name
+                job.log = retval[1]
+
+#                job = Job.Job(lrms_jobid=lrms_jobid,status=Job.JOB_STATE_SUBMITTED,resource_name=self._resource.name,log=retval[1])
                 return job
 
                 #return [lrms_jobid,retval[1]]
@@ -174,21 +180,21 @@ class ArcLrms(LRMS):
             # Prototype from arclib
             arc_job = arclib.GetJobInfo(job_obj.lrms_jobid)
 
-            job_obj.insert('cluster',arc_job.cluster)
-            job_obj.insert('completion_time',arc_job.completion_time)
-            job_obj.insert('cpu_count',arc_job.cpu_count)
-            job_obj.insert('exitcode',arc_job.exitcode)
-            job_obj.insert('job_name',arc_job.job_name)
-            job_obj.insert('queue',arc_job.queue)
-            job_obj.insert('queue_rank',arc_job.queue_rank)
-            job_obj.insert('requested_cpu_time',arc_job.requested_cpu_time)
-            job_obj.insert('requested_wall_time',arc_job.requested_wall_time)
-            job_obj.insert('sstderr',arc_job.sstderr)
-            job_obj.insert('sstdout',arc_job.sstdout)
-            job_obj.insert('sstdin',arc_job.sstdin)
-            job_obj.insert('used_cpu_time',arc_job.used_cpu_time)
-            job_obj.insert('used_wall_time',arc_job.used_wall_time)
-            job_obj.insert('used_memory',arc_job.used_memory)
+            job_obj.cluster = arc_job.cluster
+#            job_obj.completion_time = arc_job.completion_time
+            job_obj.cpu_count = arc_job.cpu_count
+            job_obj.exitcode = arc_job.exitcode
+            job_obj.job_name = arc_job.job_name
+            job_obj.queue = arc_job.queue
+            job_obj.queue_rank = arc_job.queue_rank
+            job_obj.requested_cpu_time = arc_job.requested_cpu_time
+            job_obj.requested_wall_time = arc_job.requested_wall_time
+            job_obj.sstderr = arc_job.sstderr
+            job_obj.sstdout = arc_job.sstdout
+            job_obj.sstdin = arc_job.sstdin
+            job_obj.used_cpu_time = arc_job.used_cpu_time
+            job_obj.used_wall_time = arc_job.used_wall_time
+            job_obj.used_memory = arc_job.used_memory
 
             if arc_job.status in running_list:
                 gc3utils.log.debug('job status: %s setting to RUNNING',arc_job.status)
@@ -260,8 +266,14 @@ class ArcLrms(LRMS):
         try:
             # get FTP control
             jftpc = arclib.JobFTPControl()
+            if job_obj.has_key('job_folder'):
+                _download_dir = job_obj.job_folder + '/' + job_obj.unique_token
+            else:
+                _download_dir = Default.JOB_FOLDER_LOCATION + '/' + job_obj.unique_token
 
-            arclib.JobFTPControl.DownloadDirectory(jftpc,job_obj.lrms_jobid,job_obj.unique_token)
+            gc3utils.log.debug('downloading job into %s',_download_dir)
+            arclib.JobFTPControl.DownloadDirectory(jftpc,job_obj.lrms_jobid,_download_dir)
+            # Default.JOB_FOLDER_LOCATION+'/'+job_obj.unique_token)
 
             # Clean remote job sessiondir
             retval = arclib.JobFTPControl.Clean(jftpc,job_obj.lrms_jobid)

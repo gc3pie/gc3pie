@@ -72,14 +72,18 @@ def _get_defaults(defaults):
             )
         
         # Overwrite with what has been read from config 
-        for default_values in defaults:
-            default.insert(default_values,defaults[default_values])
-            if not default.is_valid():
-                raise Exception('defaults not valid')
+        default.update(defaults)
+        #        for default_values in defaults:
+        #            default.insert(default_values,defaults[default_values])
+        #            if not default.is_valid():
+        #                raise Exception('defaults not valid')
+
+        if not default.is_valid():
+            raise Exception('defaults not valid')
     except:
         gc3utils.log.critical('Failed loading default values')
         raise
-
+        
     return default
 
 
@@ -100,15 +104,16 @@ def _get_resources(options, resources_list):
             gc3utils.log.debug('creating instance of Resource object... ')
             tmpres = gc3utils.Resource.Resource()
 
-            for items in resource:
-                gc3utils.log.debug('Updating with %s %s',items,resource[items])
-                tmpres.insert(items,resource[items])
+            tmpres.update(resource)
+#            for items in resource:
+#                gc3utils.log.debug('Updating with %s %s',items,resource[items])
+#                tmpres.insert(items,resource[items])
 
             gc3utils.log.debug('Checking resource type %s',resource['type'])
             if resource['type'] == 'arc':
-                tmpres.insert("type",gc3utils.Default.ARC_LRMS)
+                tmpres.type = gc3utils.Default.ARC_LRMS
             elif resource['type'] == 'ssh_sge':
-                tmpres.insert("type",gc3utils.Default.SGE_LRMS)
+                tmpres.type = gc3utils.Default.SGE_LRMS
             else:
                 gc3utils.log.error('No valid resource type %s',resource['type'])
                 continue
@@ -178,6 +183,9 @@ def gsub(*args, **kw):
     job = _gcli.gsub(application)
 
     if job.is_valid():
+        # create persistanc of filesystem
+        # gc3utils.utils.create_job_on_filesystem(application_obj.job_local_dir,job.unique_token)
+        gc3utils.utils.persist_job_filesystem(job)
         gc3utils.utils.display_job_status([job])
         return 0
     else:
@@ -236,7 +244,9 @@ def gstat(*args, **kw):
         if not _job.is_valid():
             gc3utils.log.error('Returned job not valid. Removing from list')
             job_list.remove(_job)
-
+        else:
+            gc3utils.utils.persist_job_filesystem(_job)
+                                        
     try:
         # Print result
         gc3utils.utils.display_job_status(job_list)
@@ -261,7 +271,11 @@ def gget(*args, **kw):
 
     _gcli = _get_gcli(options)
     # FIXME: gget should raise exception when something goes wrong; does it indeed?
-    job_obj = _gcli.gget(gc3utils.utils.get_job(unique_token))
+    job_obj = gc3utils.utils.get_job(unique_token)
+    if not job_obj.status == gc3utils.Job.JOB_STATE_COMPLETED and job_obj.status == gc3utils.Job.JOB_STATE_FINISHED:
+        job_obj = _gcli.gget(job_obj)
+        utils.mark_completed_job(job_obj)
+
     if job_obj.status == gc3utils.Job.JOB_STATE_COMPLETED:
         sys.stdout.write('Job results successfully retrieved in [ '+unique_token+' ]\n')
         sys.stdout.flush
@@ -269,9 +283,9 @@ def gget(*args, **kw):
         raise Exception("gget terminated")
                     
 
-    retval = _gcli.gget(unique_token)
-    sys.stdout.write('Job results successfully retrieved in directory: '+unique_token+'\n')
-    sys.stdout.flush()
+#    retval = _gcli.gget(unique_token)
+#    sys.stdout.write('Job results successfully retrieved in directory: '+unique_token+'\n')
+#    sys.stdout.flush()
 
 
 def gkill(*args, **kw):
