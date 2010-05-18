@@ -35,7 +35,7 @@ class ArcLrms(LRMS):
     _resource = None
 
     def __init__(self,resource):
-        self.log = logging.getLogger('gc3utils')
+        gc3utils.log = logging.getLogger('gc3utils')
         
         if resource.type is Default.ARC_LRMS:
             self._resource = resource
@@ -60,35 +60,36 @@ class ArcLrms(LRMS):
             if ( os.path.exists(GAMESS_XRSL_TEMPLATE) & os.path.isfile(GAMESS_XRSL_TEMPLATE) ):
 
                 _file_handle = tempfile.NamedTemporaryFile(suffix=".xrsl",prefix="gridgames_arc_")
-                self.log.debug('tmp file %s',_file_handle.name)
+                gc3utils.log.debug('tmp file %s',_file_handle.name)
 
                 # getting information from input_file
                 _file_name = os.path.basename(application.input_file_name)
-                _file_name_path = os.path.dirname(application.input_file_name)
-                _file_name = _file_name.split(".inp")[0]
-                self.log.debug('Input file path %s dirpath %s from %s',_file_name,_file_name_path,application.input_file_name)
+                _file_name_dir = os.path.dirname(application.input_file_name)
+                _input_name = _file_name.split(".inp")[0]
+                gc3utils.log.debug('Input file %s, dirpath %s, from %s, input name %s', _file_name, _file_name_dir, application.input_file_name, _input_name)
+
 
                 # Modify xrsl template
                 # step one: set inputfile references
-                _command = "sed -e 's|INPUT_FILE_NAME|"+_file_name+"|g' -e 's|INPUT_FILE_PATH|"+_file_name_path+"|g' < "+GAMESS_XRSL_TEMPLATE+" > "+_file_handle.name
+                _command = "sed -e 's|INPUT_FILE_NAME|"+_input_name+"|g' -e 's|INPUT_FILE_PATH|"+_file_name_dir+"|g' < "+GAMESS_XRSL_TEMPLATE+" > "+_file_handle.name
 
                 # Cleaning up
                 _file_handle.close()
 
-                self.log.debug('preparing SED command: %s',_command)
+                gc3utils.log.debug('preparing SED command: %s',_command)
                 retval = commands.getstatusoutput(_command)
 
                 if ( retval[0] != 0 ):
                     # Failed somehow
-                    self.log.error("Create XRSL\t\t[ failed ]")
-                    self.log.debug(retval[1])
+                    gc3utils.log.error("Create XRSL\t\t[ failed ]")
+                    gc3utils.log.debug(retval[1])
                     # Shall we dump anyway into lrms_log befor raising ?
                     raise Exception('failed creating submission file')
 
                 _command = ""
 
                 if ( self._resource.walltime > 0 ):
-                    self.log.debug('setting walltime...')
+                    gc3utils.log.debug('setting walltime...')
                     if int(application.requested_walltime) > 0:
                         requested_walltime = int(application.requested_walltime) * 60
                     else:
@@ -97,7 +98,7 @@ class ArcLrms(LRMS):
                     _command = "(cputime=\""+str(requested_walltime)+"\")\n"
 
                 if ( self._resource.ncores > 0 ):
-                    self.log.debug('setting cores...')
+                    gc3utils.log.debug('setting cores...')
                     if int(application.requested_cores) > 0:
                         requested_cores = int(application.requested_cores)
                     else:
@@ -106,7 +107,7 @@ class ArcLrms(LRMS):
                     _command = _command+"(count=\""+str(requested_cores)+"\")\n"
 
                 if ( self._resource.memory_per_core > 0 ):
-                    self.log.debug('setting memory')
+                    gc3utils.log.debug('setting memory')
                     if int(application.requested_memory) > 0:
                         requested_memory = int(application.requested_memory) * 1000
                     else:
@@ -116,13 +117,13 @@ class ArcLrms(LRMS):
 
                 if ( _command != "" ):
                     _command = "echo '"+_command+"' >> "+_file_handle.name
-                    self.log.debug('preparing echo command: %s',_command)
+                    gc3utils.log.debug('preparing echo command: %s',_command)
                     retval = commands.getstatusoutput(_command)
                     if ( retval[0] != 0 ):
-                        self.log.error("Create XRSL\t\t[ failed ]")
+                        gc3utils.log.error("Create XRSL\t\t[ failed ]")
                         raise Exception('failed creating submission file')
 
-                self.log.debug('checking resource [ %s ]',self._resource.frontend)
+                gc3utils.log.debug('checking resource [ %s ]',self._resource.frontend)
                 # Ready for real submission
                 if ( self._resource.frontend == "" ):
                     # frontend not defined; use the entire arc-based infrastructure
@@ -130,7 +131,7 @@ class ArcLrms(LRMS):
                 else:
                     _command = "ngsub -d2 -c "+self._resource.frontend+" -f "+_file_handle.name
 
-                self.log.debug('Running ARC command [ %s ]',_command)
+                gc3utils.log.debug('Running ARC command [ %s ]',_command)
             
                 retval = commands.getstatusoutput(_command)
 
@@ -138,16 +139,16 @@ class ArcLrms(LRMS):
 
                 if ( ( retval[0] != 0 ) | ( jobid_pattern not in retval[1] ) ):
                     # Failed somehow
-                    self.log.error("ngsub command\t\t[ failed ]")
-                    self.log.debug(retval[1])
+                    gc3utils.log.error("ngsub command\t\t[ failed ]")
+                    gc3utils.log.debug(retval[1])
                     raise Exception('failed submitting to LRMS')
 
                 # assuming submit successfull
-                self.log.debug("ngsub command\t\t[ ok ]")
+                gc3utils.log.debug("ngsub command\t\t[ ok ]")
 
                 # Extracting ARC jobid
                 lrms_jobid = re.split(jobid_pattern,retval[1])[1]
-                self.log.debug('Job submitted with jobid: %s',lrms_jobid)
+                gc3utils.log.debug('Job submitted with jobid: %s',lrms_jobid)
 
                 job = Job.Job(lrms_jobid=lrms_jobid,status=Job.JOB_STATE_SUBMITTED,resource_name=self._resource.name,log=retval[1])
                 return job
@@ -155,10 +156,10 @@ class ArcLrms(LRMS):
                 #return [lrms_jobid,retval[1]]
 
             else:
-                self.log.critical('XRSL file not found %s',GAMESS_XRSL_TEMPLATE)
+                gc3utils.log.critical('XRSL file not found %s',GAMESS_XRSL_TEMPLATE)
                 raise Exception('template file for submission scritp not found')
         except:
-            self.log.critical('Failure in submitting')
+            gc3utils.log.critical('Failure in submitting')
             raise
 
     def check_status(self, job_obj):
@@ -208,7 +209,7 @@ class ArcLrms(LRMS):
 #            # Ready for real submission
 #            _command = "ngstat "+job_obj.lrms_jobid
 # 
-#            self.log.debug('Running ARC command [ %s ]',_command)
+#            gc3utils.log.debug('Running ARC command [ %s ]',_command)
 # 
 #            retval = commands.getstatusoutput(_command)
 #            # jobstatusunknown_pattern = "This job was only very recently"
@@ -217,8 +218,8 @@ class ArcLrms(LRMS):
 #            jobstatusok_pattern = "Status: "
 #            jobexitcode_pattern = "Exit Code: "
 #            if not retval[0] :
-#                self.log.error("ngstat command\t\t[ failed ]")
-#                self.log.debug(retval[1])
+#                gc3utils.log.error("ngstat command\t\t[ failed ]")
+#                gc3utils.log.debug(retval[1])
 #                raise Exceptions.CheckStarusError('failed checking status to LRMS')
 # 
 #            if ( jobstatusunknown_pattern in retval[1] ):
@@ -231,7 +232,7 @@ class ArcLrms(LRMS):
 #                lrms_jobstatus = re.split(jobstatusok_pattern,retval[1])[1]
 #                lrms_jobstatus = re.split("\n",lrms_jobstatus)[0]
 # 
-#                self.log.debug('lrms_jobstatus\t\t\t[ %s ]',lrms_jobstatus)
+#                gc3utils.log.debug('lrms_jobstatus\t\t\t[ %s ]',lrms_jobstatus)
 # 
 #                if ( lrms_jobstatus in running_list ):
 #                    jobstatus = "Status: RUNNING"
@@ -281,37 +282,37 @@ class ArcLrms(LRMS):
 #            
 #            _command = "ngget -keep -s FINISHED -d 2 -dir "+job_dir+" "+lrms_jobid
 
-#            self.log.debug('Running ARC command [ %s ]',_command)
+#            gc3utils.log.debug('Running ARC command [ %s ]',_command)
 
 #            job_results_retrieved_pattern = "successfuly downloaded: 0"
 
 #            retval = commands.getstatusoutput(_command)
 #            if ( ( retval[0] != 0 ) ):
 #                # Failed somehow
-#                self.log.error("ngget command\t\t[ failed ]")
-#                self.log.debug(retval[1])
+#                gc3utils.log.error("ngget command\t\t[ failed ]")
+#                gc3utils.log.debug(retval[1])
 #                raise Exception('failed getting results from LRMS')
 
 #            if ( result_location_pattern in retval[1] ):
 #                _result_location_folder = re.split(result_location_pattern,retval[1])[1]
 #                _result_location_folder = re.split("\n",_result_location_folder)[0]
-#                self.log.debug('Moving result data from [ %s ]',_result_location_folder)
+#                gc3utils.log.debug('Moving result data from [ %s ]',_result_location_folder)
 #                if ( os.path.isdir(_result_location_folder) ):
 #                    retval = commands.getstatusoutput("cp -ap "+_result_location_folder+"/* "+job_dir)
 #                    if ( retval[0] != 0 ):
-#                        self.log.error('Failed copying results data from [ %s ] to [ %s ]',_result_location_folder,job_dir)
+#                        gc3utils.log.error('Failed copying results data from [ %s ] to [ %s ]',_result_location_folder,job_dir)
 #                    else:
-#                        self.log.info('Copying results\t\t[ ok ]')
-#                        self.log.debug('Removing [ %s ]',_result_location_folder)
+#                        gc3utils.log.info('Copying results\t\t[ ok ]')
+#                        gc3utils.log.debug('Removing [ %s ]',_result_location_folder)
 #                        shutil.rmtree(_result_location_folder)
-#                self.log.info('get_results\t\t\t[ ok ]')
+#                gc3utils.log.info('get_results\t\t\t[ ok ]')
 #                return [True,retval[1]]
 #            else:
 #                return [False,retval[1]]
 #        except:
-#            self.log.critical('Failure in retrieving results')
+#            gc3utils.log.critical('Failure in retrieving results')
 #            raise
 
     def GetResourceStatus(self):
-        self.log.debug("Returning information of local resoruce")
+        gc3utils.log.debug("Returning information of local resoruce")
         return Resource(resource_name=self._resource['resource_name'],total_cores=self._resource['ncores'],memory_per_core=self._resource['memory_per_core'])
