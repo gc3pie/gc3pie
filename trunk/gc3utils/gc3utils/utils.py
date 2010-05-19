@@ -47,7 +47,9 @@ def sumfile(fobj):
 
 
 def md5sum(fname):
-    # Returns an md5 hash for file fname, or stdin if fname is \"-\"."""
+    """
+    Returns an md5 hash for file fname, or stdin if fname is \"-\".
+    """
 
     if ( fname == "-" ):
         ret = sumfile(sys.stdin)
@@ -64,6 +66,11 @@ def md5sum(fname):
 
 
 def create_unique_token():
+    """
+    Create a unique job identifier (token) based on a combination of job name, 
+    timestamp, md5sum of the input file, and application name.
+    """
+
     (exitcode, unique_token) = commands.getstatusoutput('uuidgen')
     if exitcode:
         gc3utils.log.debug('Failed crating unique token %d',exitcode)
@@ -82,7 +89,10 @@ def create_unique_token():
 #        raise Exception('failed crating unique token')
 
 def dirname(rawinput):
-    """Return the dirname of the input file."""
+    """
+    Return the dirname of the input file.
+    """
+
     gc3utils.log.debug('Checking dirname from [ %s ]',rawinput)
 
     dirname = os.path.dirname(rawinput)
@@ -150,6 +160,13 @@ def check_jobdir(jobdir):
         return False
 
 def configure_logger(verbosity, log_file_name):
+    """
+    Configure the gc3utils logger.
+
+    - Input is the logging level and a filename to use.
+    - Returns nothing.
+    """
+
     if ( verbosity > 5):
         logging_level = 10
     else:
@@ -180,6 +197,9 @@ def check_qgms_version(minimum_version):
 
 
 def read_config(config_file_location):
+    """
+    Read configuration file.
+    """
 
     resource_list = []
     defaults = {}
@@ -212,6 +232,10 @@ def read_config(config_file_location):
         raise
 
 def obtain_file_lock(joblist_location, joblist_lock):
+    """
+    Lock a file.
+    """
+
     # Obtain lock
     lock_obtained = False
     retries = 3
@@ -247,6 +271,10 @@ def obtain_file_lock(joblist_location, joblist_lock):
     return lock_obtained
 
 def release_file_lock(joblist_lock):
+    """
+    Release locked file.
+    """
+
     try:
         os.remove(joblist_lock)
         return True
