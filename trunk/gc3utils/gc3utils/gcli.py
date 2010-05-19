@@ -393,7 +393,7 @@ class Gcli:
 
         try:
             if not os.path.isdir(Default.JOBS_DIR):
-                raise RetrieveJobsFilesystemError('JOBS_DIR %s Not found',Default.JOBS_DIR)
+                raise RetrieveJobsFilesystemError('JOBS_DIR %s Not found' % Default.JOBS_DIR)
 
             _jobs_list = os.listdir(Default.JOBS_DIR)
 
