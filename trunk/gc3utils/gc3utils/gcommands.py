@@ -186,7 +186,7 @@ def gsub(*args, **kw):
         # create persistanc of filesystem
         # gc3utils.utils.create_job_on_filesystem(application_obj.job_local_dir,job.unique_token)
         gc3utils.utils.persist_job_filesystem(job)
-        gc3utils.utils.display_job_status([job])
+        gc3utils.utils.display_job_status([job],0)
         return 0
     else:
         raise Exception('Job object not valid')
@@ -216,6 +216,7 @@ def gstat(*args, **kw):
     # FIXME: should accept list of JOBIDs and return status of all of them!
     parser = OptionParser(usage="Usage: %prog [options] JOBID")
     parser.add_option("-v", action="count", dest="verbosity", default=0, help="Set verbosity level")
+    parser.add_option("-s", action="store", dest="job_status_filter", metavar="INT", default=0, help="only select jobs whose status is INT")
     (options, args) = parser.parse_args(list(args))
     gc3utils.utils.configure_logger(options.verbosity, _default_log_file)
 
@@ -249,7 +250,7 @@ def gstat(*args, **kw):
                                         
     try:
         # Print result
-        gc3utils.utils.display_job_status(job_list)
+        gc3utils.utils.display_job_status(job_list,int(options.job_status_filter))
     except:
         gc3utils.log.error('Failed displaying job status results')
         raise

@@ -167,6 +167,8 @@ class Gcli:
 
         if not job_obj.status == gc3utils.Job.JOB_STATE_COMPLETED:
             # check job status
+            a = Authorization.Auth()
+            a.get(_lrms._resource.type)                                
             job_obj = _lrms.check_status(job_obj)
 
         return job_obj
@@ -177,6 +179,9 @@ class Gcli:
 
         #        # update job status to make sure job.status is up to date
         #        job_obj = _lrms.check_status(job_obj)
+        
+        a = Authorization.Auth()
+        a.get(_lrms._resource.type)
         job_obj = _lrms.get_results(job_obj)
         
         if job_obj.is_valid():
@@ -393,7 +398,13 @@ class Gcli:
 
         try:
             if not os.path.isdir(Default.JOBS_DIR):
-                raise RetrieveJobsFilesystemError('JOBS_DIR %s Not found' % Default.JOBS_DIR)
+                # try to create it first
+                gc3utils.log.error('JOBS_DIR %s Not found. creating it' % Default.JOBS_DIR)
+                try:
+                    os.makedirs(Default.JOBS_DIR)
+                except:
+                    gc3utils.log.critical('%s',sys.exc_info()[1])
+                    raise RetrieveJobsFilesystemError('Failed accessing job dir %s' % Default.JOBS_DIR)
 
             _jobs_list = os.listdir(Default.JOBS_DIR)
 

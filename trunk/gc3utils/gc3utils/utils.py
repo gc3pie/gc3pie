@@ -398,7 +398,7 @@ def job_status_to_string(job_status):
     return _status_string
 
 
-def display_job_status(job_list):
+def display_job_status(job_list,job_status_filter):
     if len(job_list) > 0:
         sys.stdout.write("Job id\t\t\t\t\t Status\n")
         sys.stdout.write("-------------------------------------------------\n")
@@ -406,7 +406,11 @@ def display_job_status(job_list):
 
             gc3utils.log.debug('displaying job status %d',_job.status)
 
+            if job_status_filter > 0:
+                if not _job.status == job_status_filter:
+                    continue
             _status_string = job_status_to_string(_job.status)
+
  
             sys.stdout.write(_job.unique_token+'\t'+_status_string)
             sys.stdout.write('\n')
