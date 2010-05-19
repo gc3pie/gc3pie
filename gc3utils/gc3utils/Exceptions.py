@@ -70,14 +70,6 @@ class UniqueTokenError(FatalError):
 class JobRetrieveError(Error):
     pass
 
-class RetrieveJobsFilesystemError(Error):
-    """
-    Raised when persistent job storage cannot be accessed.
-    In particular, this happens when the jobs list directory
-    does not exist.
-    """
-    pass
-
 class UniqueTokenError(Error):
     pass
 
