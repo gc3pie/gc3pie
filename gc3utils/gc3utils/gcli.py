@@ -116,7 +116,7 @@ class Gcli:
                     gc3utils.log.info('Submission process to LRMS backend\t\t\t[ ok ]')
                     # job submitted; leave loop
                     break
-            except Exceptions.AuthenticationException:
+            except AuthenticationException:
                 continue
             except LRMSException:
                 gc3utils.log.critical('Failed Submitting job: %s',sys.exc_info()[1])
@@ -393,7 +393,7 @@ class Gcli:
 
         try:
             if not os.path.isdir(Default.JOBS_DIR):
-                raise Exceptions.RetrieveJobsFilesystemError('JOBS_DIR %s Not found',Default.JOBS_DIR)
+                raise RetrieveJobsFilesystemError('JOBS_DIR %s Not found',Default.JOBS_DIR)
 
             _jobs_list = os.listdir(Default.JOBS_DIR)
 
