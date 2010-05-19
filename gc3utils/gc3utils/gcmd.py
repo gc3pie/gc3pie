@@ -165,4 +165,6 @@ where command is one of these:
         return 1
     except Exception, x:
         sys.stderr.write("%s: ERROR: %s\n" % (PROG, str(x)))
+        if __debug__:
+            sys.stderr.write(sys.exc_info()[2])
         return 1
