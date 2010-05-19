@@ -365,26 +365,48 @@ def renew_grid_credential(_aaiUserName):
         gc3utils.log.error('Check grid credential failed  [ %s ]',sys.exc_info()[1])
         # Return False or raise exception ?
         raise
-    
+
+def job_status_to_string(job_status):
+    _status_string = ""
+    if job_status is Job.JOB_STATE_FINISHED:
+        _status_string = 'FINISHED'
+    elif job_status is Job.JOB_STATE_RUNNING:
+        _status_string = 'RUNNING'
+    elif job_status is Job.JOB_STATE_FAILED:
+        _status_string = 'FAILED'
+    elif job_status is Job.JOB_STATE_SUBMITTED:
+        _status_string = 'SUBMITTED'
+    elif job_status is Job.JOB_STATE_COMPLETED:
+        _status_string = 'COMPLETED'
+    elif job_status is Job.JOB_STATE_HOLD:
+        _status_string = 'HOLD'
+    elif job_status is Job.JOB_STATE_READY:
+        _status_string = 'READY'
+    elif job_status is Job.JOB_STATE_WAIT:
+        _status_string = 'WAIT'
+    elif job_status is Job.JOB_STATE_OUTPUT:
+        _status_string = 'OUTPUT'
+    elif job_status is Job.JOB_STATE_UNREACHABLE:
+        _status_string = 'UNREACHABLE'
+    elif job_status is Job.JOB_STATE_NOTIFIED:
+        _status_string = 'NOTIFIED'
+    elif job_status is Job.JOB_STATE_ERROR:
+        _status_string = 'ERROR'
+    else:
+        gc3utils.log.error('job status [ %s ] setting to Unknown',job_status)
+        _status_string = 'UNKNOWN'
+    return _status_string
+
+
 def display_job_status(job_list):
     if len(job_list) > 0:
-        #sys.stdout.write("Job id\t\t\t\t\t\t Status \t Resource\n")
-        #sys.stdout.write("======================================================================================================\n")
+        sys.stdout.write("Job id\t\t\t\t\t Status\n")
+        sys.stdout.write("-------------------------------------------------\n")
         for _job in job_list:
-            _status_string = ""
-            if _job.status is Job.JOB_STATE_FINISHED:
-                _status_string = 'FINISHED'
-            elif _job.status is Job.JOB_STATE_RUNNING:
-                _status_string = 'RUNNING'
-            elif _job.status is Job.JOB_STATE_FAILED:
-                _status_string = 'FAILED'
-            elif _job.status is Job.JOB_STATE_SUBMITTED:
-                _status_string = 'SUBMITTED'
-            elif _job.status is Job.JOB_STATE_COMPLETED:
-                _status_string = 'COMPLETED'
-            else:
-                gc3utils.log.error('job status [ %s ] setting to Unknown',_job.status)
-                _status_string = 'UNKNOWN'
+
+            gc3utils.log.debug('displaying job status %d',_job.status)
+
+            _status_string = job_status_to_string(_job.status)
  
             sys.stdout.write(_job.unique_token+'\t'+_status_string)
             sys.stdout.write('\n')
@@ -396,7 +418,7 @@ def get_job(unique_token):
 def get_job_filesystem(unique_token):
 
     handler = None
-    gc3utils.log.debug('retrieving job %s',unique_token)
+    gc3utils.log.debug('retrieving job from %s',Default.JOBS_DIR+'/'+unique_token)
 
     try:
         handler = shelve.open(Default.JOBS_DIR+'/'+unique_token)
@@ -410,7 +432,7 @@ def get_job_filesystem(unique_token):
     except:
         if handler:
             handler.close()
-            raise
+        raise
 
 def create_job_folder_filesystem(job_folder_location,unique_token):
     try:
@@ -438,6 +460,13 @@ def persist_job_filesystem(job_obj):
         if handler:
             handler.close()
         raise
+
+def prepare_job_dir(_download_dir):
+    if os.path.isdir(_download_dir):
+        # directory exists; move it to .1
+        os.rename(_download_dir,_download_dir + "_" + create_unique_token())
+
+    os.makedirs(_download_dir)
 
 #def mark_completed_job(job_obj):
     #                # Job finished; results retrieved; writing .finished file

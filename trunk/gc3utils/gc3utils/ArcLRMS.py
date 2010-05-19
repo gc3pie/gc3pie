@@ -271,14 +271,18 @@ class ArcLrms(LRMS):
             else:
                 _download_dir = Default.JOB_FOLDER_LOCATION + '/' + job_obj.unique_token
 
+            # Prepare/Clean download dir
+            gc3utils.utils.prepare_job_dir(_download_dir)
+
             gc3utils.log.debug('downloading job into %s',_download_dir)
             arclib.JobFTPControl.DownloadDirectory(jftpc,job_obj.lrms_jobid,_download_dir)
             # Default.JOB_FOLDER_LOCATION+'/'+job_obj.unique_token)
 
             # Clean remote job sessiondir
-            retval = arclib.JobFTPControl.Clean(jftpc,job_obj.lrms_jobid)
+            #            retval = arclib.JobFTPControl.Clean(jftpc,job_obj.lrms_jobid)
 
             # set job status to COMPLETED
+            job_obj.download_dir = _download_dir
             job_obj.status = Job.JOB_STATE_COMPLETED
             
             return job_obj
