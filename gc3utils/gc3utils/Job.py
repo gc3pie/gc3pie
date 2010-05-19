@@ -36,6 +36,14 @@ JOB_STATE_COMPLETED = 5
 # No action required; the state will be set to something else as the code executes.
 JOB_STATE_UNKNOWN = 6
 
+JOB_STATE_HOLD = 7 # Initial state
+JOB_STATE_READY = 8 # Ready for gsub
+JOB_STATE_WAIT = 9 # equivalent to SUBMITTED
+JOB_STATE_OUTPUT = 10 # equivalent to FINISHED
+JOB_STATE_UNREACHABLE = 11 # AuthError
+JOB_STATE_NOTIFIED = 12 # User Notified of AuthError
+JOB_STATE_ERROR = 13 # Equivalent to FAILED
+
 
 class Job(InformationContainer):
 

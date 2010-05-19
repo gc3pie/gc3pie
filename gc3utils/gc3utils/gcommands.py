@@ -225,8 +225,8 @@ def gstat(*args, **kw):
             job_list = _gcli.gstat(None)
         elif len(args) == 1:
             unique_token = args[0]
-            if not os.path.isdir(unique_token):
-                raise UniqueTokenError("Invalid JOBID: '%s' is not a job status directory." % unique_token)
+#            if not os.path.isdir(unique_token):
+#                raise UniqueTokenError("Invalid JOBID: '%s' is not a job status directory." % unique_token)
             # job_list = _gcli.gstat(gc3utils.utils.get_job_from_filesystem(unique_token,default.job_file))
             job_list = _gcli.gstat(gc3utils.utils.get_job(unique_token))
         else:
@@ -272,15 +272,20 @@ def gget(*args, **kw):
     _gcli = _get_gcli(options)
     # FIXME: gget should raise exception when something goes wrong; does it indeed?
     job_obj = gc3utils.utils.get_job(unique_token)
-    if not job_obj.status == gc3utils.Job.JOB_STATE_COMPLETED and job_obj.status == gc3utils.Job.JOB_STATE_FINISHED:
+
+    gc3utils.log.debug('job status [%d]',job_obj.status)
+    
+    if not job_obj.status == gc3utils.Job.JOB_STATE_COMPLETED and (job_obj.status == gc3utils.Job.JOB_STATE_FINISHED or job_obj.status == gc3utils.Job.JOB_STATE_FAILED):
+        gc3utils.log.debug('running gcli.gget')
         job_obj = _gcli.gget(job_obj)
-        utils.mark_completed_job(job_obj)
+        #utils.mark_completed_job(job_obj)
 
     if job_obj.status == gc3utils.Job.JOB_STATE_COMPLETED:
-        sys.stdout.write('Job results successfully retrieved in [ '+unique_token+' ]\n')
+        sys.stdout.write('Job results successfully retrieved in [ '+job_obj.download_dir+' ]\n')
         sys.stdout.flush
     else:
-        raise Exception("gget terminated")
+        raise Exception("job status not COMPLETED")
+        #raise
                     
 
 #    retval = _gcli.gget(unique_token)

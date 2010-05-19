@@ -165,9 +165,11 @@ class Gcli:
         
         _lrms = self.__get_LRMS(job_obj.resource_name)
 
-        # check job status
-        return _lrms.check_status(job_obj)
+        if not job_obj.status == gc3utils.Job.JOB_STATE_COMPLETED:
+            # check job status
+            job_obj = _lrms.check_status(job_obj)
 
+        return job_obj
 
 #====== Gget =======
     def gget(self, job_obj):
@@ -179,8 +181,8 @@ class Gcli:
         
         if job_obj.is_valid():
             # create persistanc of filesystem
-            job.status = gc3utils.Job.JOB_STATE_COMPLETED
-            gc3utils.utils.persist_job_filesystem(job)
+            job_obj.status = gc3utils.Job.JOB_STATE_COMPLETED
+            gc3utils.utils.persist_job_filesystem(job_obj)
             return job_obj  
         else:
             raise JobRetrieveError('non valid job object')
