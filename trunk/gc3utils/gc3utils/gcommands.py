@@ -318,8 +318,6 @@ def gkill(*args, **kw):
 def glist(*args, **kw):
     """The `glist` command."""
     parser = OptionParser(usage="Usage: %prog [options] resource_name")
-    parser.add_option("-s", "--short", action="store_true", dest="shortview", help="Short view.")
-    parser.add_option("-l", "--long", action="store_false", dest="shortview", help="Long view.")
     parser.add_option("-v", action="count", dest="verbosity", default=0, help="Set verbosity level")
     parser.add_option("-s", "--short", action="store_true", dest="shortview", help="Short view.")
     parser.add_option("-l", "--long", action="store_false", dest="shortview", help="Long view.")
