@@ -1,4 +1,4 @@
-#! /usr/bin/env python
+#! /usr/bin/env python 
 #
 """
 gc3utils - A simple command-line frontend to distributed resources
@@ -39,6 +39,7 @@ def main():
     """
     Generic front-end function to invoke the commands in `gc3utils/gcommands.py`
     """
+
     # program name
     PROG = os.path.basename(sys.argv[0])
 
@@ -166,5 +167,5 @@ where command is one of these:
     except Exception, x:
         sys.stderr.write("%s: ERROR: %s\n" % (PROG, str(x)))
         if __debug__:
-            sys.stderr.write(sys.exc_info()[2])
+            sys.excepthook(type(x), x, sys.exc_info()[2])
         return 1
