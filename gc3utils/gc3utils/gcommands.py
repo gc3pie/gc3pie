@@ -324,9 +324,9 @@ def glist(*args, **kw):
     (options, args) = parser.parse_args(list(args))
     gc3utils.utils.configure_logger(options.verbosity, _default_log_file)
 
-    # FIXME: should take possibly a list of JOBIDs and get files for all of them
+    # FIXME: should take possibly a list of resource IDs and get files for all of them
     if len(args) != 1:
-        raise InvalidUsage("This command requires either one argument (the JOBID) or none.")
+        raise InvalidUsage("This command requires exactly one argument: the resource name.")
     resource_name = args[0]
 
     _gcli = _get_gcli(options)
