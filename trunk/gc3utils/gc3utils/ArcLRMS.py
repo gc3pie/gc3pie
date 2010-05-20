@@ -52,7 +52,6 @@ class ArcLrms(LRMS):
 
 
     def submit_job(self, application):
-#    def submit_job(self, unique_token, application, input_file):
         try:
             # Initialize xrsl from template
             GAMESS_XRSL_TEMPLATE = os.path.expandvars(Default.GAMESS_XRSL_TEMPLATE)
@@ -158,8 +157,6 @@ class ArcLrms(LRMS):
 
 #                job = Job.Job(lrms_jobid=lrms_jobid,status=Job.JOB_STATE_SUBMITTED,resource_name=self._resource.name,log=retval[1])
                 return job
-
-                #return [lrms_jobid,retval[1]]
 
             else:
                 gc3utils.log.critical('XRSL file not found %s',GAMESS_XRSL_TEMPLATE)
