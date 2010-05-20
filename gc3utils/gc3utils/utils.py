@@ -22,7 +22,10 @@ import Exceptions
 import Job
 import Default
 import gc3utils
+from lockfile import FileLock
 import shelve
+
+
     
 
 # ================================================================
@@ -30,7 +33,6 @@ import shelve
 #                     Generic functions
 #
 # ================================================================
-
 
 def sumfile(fobj):
     """
@@ -65,28 +67,53 @@ def md5sum(fname):
     return ret
 
 
+def progressive_number():
+    """
+    Return a positive integer, whose value is guaranteed to
+    be monotonically increasing across different invocations
+    of this function, and also across separate instances of the
+    calling program.
+
+    After every invocation of this function, the returned number
+    is stored into the file ``~/.gc3/next_id.txt``.
+
+    *Note:* as file-level locking is used to serialize access to the
+    counter file, this function may block (default timeout: 30
+    seconds) while trying to acquire the lock, or throw an exception
+    if this fails.
+    """
+    # FIXME: should use global config value for directory
+    id_filename = "~/.gc3/next_id.txt"
+    # ``FileLock`` requires that the to-be-locked file exists; if it
+    # does not, we create an empty one (and avoid overwriting any
+    # content, in case another process is also writing to it).  There
+    # is thus no race condition here, as we attempt to lock the file
+    # anyway, and this will stop concurrent processes.
+    if not os.path.exists(id_filename):
+        open(id_filename, "a").close()
+    lock = FileLock(id_filename, threaded=False) 
+    lock.acquire(timeout=30) # XXX: can raise 'LockTimeout'
+    id_file = open(id_filename, 'r+')
+    id = int(id_file.read(8) or "0", 16)
+    id +=1 
+    id_file.seek(0)
+    id_file.write("%08x\n" % id)
+    id_file.close()
+    lock.release()
+    return id
+
+
 def create_unique_token():
     """
-    Create a unique job identifier (token) based on a combination of job name, 
-    timestamp, md5sum of the input file, and application name.
+    Return a "unique job identifier" (a string).  Job identifiers are 
+    temporally unique: no job identifier will (ever) be re-used,
+    even in different invocations of the program.
+
+    Currently, the unique job identifier has the form "job.XXX" where
+    "XXX" is a decimal number.  
     """
+    return "job.%d" % progressive_number()
 
-    (exitcode, unique_token) = commands.getstatusoutput('uuidgen')
-    if exitcode:
-        gc3utils.log.debug('Failed crating unique token %d',exitcode)
-        raise Exceptions.UniqueTokenError('failed creating unique token')
-    return unique_token
-
-#    """create a unique job token based on md5sum, timestamp, clustername, and jobname"""
-#    try:
-#        inputmd5 = md5sum(inputfile)
-#        inname = inputname(inputfile)
-#        timestamp = str(time.time())
-#        unique_token = inname + "-" + timestamp + "-" + inputmd5 + "-" + clustername
-#        return unique_token
-#    except:
-#        gc3utils.log.debug('Failed crating unique token')
-#        raise Exception('failed crating unique token')
 
 def dirname(rawinput):
     """

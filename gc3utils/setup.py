@@ -12,7 +12,7 @@ ez_setup.use_setuptools()
 from setuptools import setup, find_packages
 setup( 
     name = "gc3utils",
-    version = "0.5.10", # format: 0.MONTH.DAY (for now ...)
+    version = "0.5.20", # format: 0.MONTH.DAY (for now ...)
 
     packages = find_packages(exclude=['ez_setup']),
     #scripts = ['gcmd.py'],
@@ -40,7 +40,7 @@ setup(
 
     # run-time dependencies ("pycrypto" is a dependency of Paramiko;
     # setuptools apparently does not process dependencies recursively)
-    install_requires = ['paramiko', 'pycrypto>=1.9'], 
+    install_requires = ['paramiko', 'pycrypto>=1.9', 'lockfile'], 
 
     # which non-Python files to install?
     package_data = {
