@@ -436,8 +436,8 @@ def job_status_to_string(job_status):
 
 def display_job_status(job_list,job_status_filter):
     if len(job_list) > 0:
-        sys.stdout.write("Job id\t\t\t\t\t Status\n")
-        sys.stdout.write("-------------------------------------------------\n")
+        sys.stdout.write("Job id\t\t Status\n")
+        sys.stdout.write("-------------------------\n")
         for _job in job_list:
 
             gc3utils.log.debug('displaying job status %d',_job.status)
@@ -448,7 +448,7 @@ def display_job_status(job_list,job_status_filter):
             _status_string = job_status_to_string(_job.status)
 
  
-            sys.stdout.write(_job.unique_token+'\t'+_status_string)
+            sys.stdout.write(_job.unique_token+'\t\t'+_status_string)
             sys.stdout.write('\n')
             sys.stdout.flush()
 
