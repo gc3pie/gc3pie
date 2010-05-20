@@ -111,6 +111,17 @@ class Gcli:
                 a = Authorization.Auth()
                 a.get(lrms._resource.type)
                 job = lrms.submit_job(application_obj)
+                # Proposal for change:
+                # create job at gcli level
+                # assign unique_token
+                # attache application into job
+                # submit job
+                # Example:
+                # job = Job()
+                # job.unique_token = utils.create_unique_token()
+                # job.application = application_obj
+                # lrms.submit(job)
+                # 
                 if job.is_valid():
 #                    job.insert('unique_token',unique_token)
                     gc3utils.log.info('Submission process to LRMS backend\t\t\t[ ok ]')

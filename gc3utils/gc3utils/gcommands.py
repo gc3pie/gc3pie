@@ -45,93 +45,13 @@ def _get_gcli(options, config_file_path = _default_config_file_location):
     the configuration file located at `config_file_path`.
     """
     try:
-        # Read configuration file to create Resource lists and default values
-        # resources_list is a list of resource dictionaries
-        (defaults,resources_list) = gc3utils.utils.read_config(config_file_path)
+        (default,resources) = gc3utils.utils.import_config(config_file_path,options)
+
+        gc3utils.log.debug('Creating instance of Gcli')
+        return gc3utils.gcli.Gcli(default, resources)
     except:
         gc3utils.log.debug("Failed loading config file from '%s'", config_file_path)
         raise
-    # build Gcli object
-    resources = _get_resources(options, resources_list)
-    default = _get_defaults(defaults)
-    gc3utils.log.debug('Creating instance of Gcli')
-    return gc3utils.gcli.Gcli(default, resources)
-
-
-def _get_defaults(defaults):
-    # Create an default object for the defaults
-    # defaults is a list[] of values
-    try:
-        # Create default values
-        default = gc3utils.Default.Default(
-            homedir=gc3utils.Default.HOMEDIR,
-            config_file_location=gc3utils.Default.CONFIG_FILE_LOCATION,
-            joblist_location=gc3utils.Default.JOBLIST_FILE,
-            joblist_lock=gc3utils.Default.JOBLIST_LOCK,
-            job_folder_location=gc3utils.Default.JOB_FOLDER_LOCATION
-            )
-        
-        # Overwrite with what has been read from config 
-        default.update(defaults)
-        #        for default_values in defaults:
-        #            default.insert(default_values,defaults[default_values])
-        #            if not default.is_valid():
-        #                raise Exception('defaults not valid')
-
-        if not default.is_valid():
-            raise Exception('defaults not valid')
-    except:
-        gc3utils.log.critical('Failed loading default values')
-        raise
-        
-    return default
-
-
-def _get_resources(options, resources_list):
-    # build Resource objects from the list returned from read_config
-    #        and match with selectd_resource from comand line
-    #        (optional) if not options.resource_name is None:
-    resources = []
-
-    try:
-        for resource in resources_list:
-            # RFR: options.resource_name is NOT a key that is set by all command line commands
-            if hasattr(options,'resource_name') and options.resource_name:
-                if (not options.resource_name == resource['name']):
-                    gc3utils.log.debug("Ignoring resource '%s', because resource '%s' was explicitly requested.",
-                                       resource['name'], options.resource_name)
-                    continue
-            gc3utils.log.debug('creating instance of Resource object... ')
-            tmpres = gc3utils.Resource.Resource()
-
-            tmpres.update(resource)
-#            for items in resource:
-#                gc3utils.log.debug('Updating with %s %s',items,resource[items])
-#                tmpres.insert(items,resource[items])
-
-            gc3utils.log.debug('Checking resource type %s',resource['type'])
-            if resource['type'] == 'arc':
-                tmpres.type = gc3utils.Default.ARC_LRMS
-            elif resource['type'] == 'ssh_sge':
-                tmpres.type = gc3utils.Default.SGE_LRMS
-            else:
-                gc3utils.log.error('No valid resource type %s',resource['type'])
-                continue
-
-            gc3utils.log.debug('checking validity with %s',str(tmpres.is_valid()))
-            
-            if tmpres.is_valid():
-                resources.append(tmpres)
-            else:
-                gc3utils.log.warning("Resource '%s' failed validity test - rejecting it.",
-                                     resource['name'])
-                    
-    except:
-        gc3utils.log.critical('failed creating Resource list')
-        raise
-
-    return resources
-
 
 #====== Main ========
 

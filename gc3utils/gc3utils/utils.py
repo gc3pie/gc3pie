@@ -231,7 +231,79 @@ def check_qgms_version(minimum_version):
 
     return True
 
+# === Configuration File
+def import_config(config_file_location, options):
+    (default_val,resources_vals) = read_config(config_file_location)
+    return (get_defaults(default_val),get_resources(options,resources_vals))
 
+def get_defaults(defaults):
+    # Create an default object for the defaults
+    # defaults is a list[] of values
+    try:
+        # Create default values
+        default = gc3utils.Default.Default(
+            homedir=gc3utils.Default.HOMEDIR,
+            config_file_location=gc3utils.Default.CONFIG_FILE_LOCATION,
+            joblist_location=gc3utils.Default.JOBLIST_FILE,
+            joblist_lock=gc3utils.Default.JOBLIST_LOCK,
+            job_folder_location=gc3utils.Default.JOB_FOLDER_LOCATION
+            )
+        # Overwrite with what has been read from config
+        default.update(defaults)
+        if not default.is_valid():
+            raise Exception('defaults not valid')
+    except:
+        gc3utils.log.critical('Failed loading default values')
+        raise
+        
+    return default
+    
+
+def get_resources(options, resources_list):
+    # build Resource objects from the list returned from read_config
+    #        and match with selectd_resource from comand line
+    #        (optional) if not options.resource_name is None:
+    resources = []
+    
+    try:
+        for resource in resources_list:
+            # RFR: options.resource_name is NOT a key that is set by all command line commands
+            if hasattr(options,'resource_name') and options.resource_name:
+                if (not options.resource_name == resource['name']):
+                    gc3utils.log.debug("Ignoring resource '%s', because resource '%s' was explicitly requested.",
+                                       resource['name'], options.resource_name)
+                    continue
+            gc3utils.log.debug('creating instance of Resource object... ')
+            tmpres = gc3utils.Resource.Resource()
+                
+            tmpres.update(resource)
+            #            for items in resource:
+            #                gc3utils.log.debug('Updating with %s %s',items,resource[items])
+            #                tmpres.insert(items,resource[items])
+            
+            gc3utils.log.debug('Checking resource type %s',resource['type'])
+            if resource['type'] == 'arc':
+                tmpres.type = gc3utils.Default.ARC_LRMS
+            elif resource['type'] == 'ssh_sge':
+                tmpres.type = gc3utils.Default.SGE_LRMS
+            else:
+                gc3utils.log.error('No valid resource type %s',resource['type'])
+                continue
+            
+            gc3utils.log.debug('checking validity with %s',str(tmpres.is_valid()))
+            
+            if tmpres.is_valid():
+                resources.append(tmpres)
+            else:
+                gc3utils.log.warning("Resource '%s' failed validity test - rejecting it.",
+                                     resource['name'])
+    except:
+        gc3utils.log.critical('failed creating Resource list')
+        raise
+    
+    return resources
+
+                                
 def read_config(config_file_location):
     """
     Read configuration file.
@@ -508,53 +580,6 @@ def prepare_job_dir(_download_dir):
 
     os.makedirs(_download_dir)
 
-#def mark_completed_job(job_obj):
-    #                # Job finished; results retrieved; writing .finished file
-#    try:
-#        gc3utils.log.debug('Creating finished file')
-#        open(unique_token+"/"+self.defaults['lrms_finished'],'w').close()
-#    except:
-#        gc3utils.log.error('Failed creating finished file [ %s ]',sys.exc_info()[1])
-#        # Should handle the exception differently ?
-#    
-#    gc3utils.log.debug('Removing jobid from joblist file')
-#    # Removing jobid from joblist file
-#    try:
-#        default_joblist_location = os.path.expandvars(default_joblist_location)
-#        default_joblist_lock = os.path.expandvars(default_joblist_lock)
-#        
-#        if ( obtain_file_lock(default_joblist_location,default_joblist_lock) ):
-#            _newFileHandle = tempfile.NamedTemporaryFile(suffix=".xrsl",prefix="gridgames_arc_")
-#            
-#            _oldFileHandle  = open(default_joblist_location)
-#            _oldFileHandle.seek(0)
-#            for line in _oldFileHandle:
-#    598#                            gc3utils.log.debug('checking %s with %s',line,unique_token)
-#    599#                            if ( not unique_token in line ):
-#    600#                                gc3utils.log.debug('writing line')
-#    601#                                _newFileHandle.write(line)
-#    602#
-#    603#                        _oldFileHandle.close()
-#    604#
-#    605#                        os.remove(default_joblist_location)
-#    606#
-#    607#                        _newFileHandle.seek(0)
-#    608#
-#    609#                        gc3utils.log.debug('replacing joblist file with %s',_newFileHandle.name)
-#    610#                        os.system("cp "+_newFileHandle.name+" "+default_joblist_location)
-#    611#
-#    612#                        _newFileHandle.close()
-#    613#
-#    614#                    else:
-#    615#                        raise Exception('Failed obtain lock')
-#    616#                except:
-#    617#                    gc3utils.log.error('Failed updating joblist file in %s',default_joblist_location)
-#    618#                    gc3utils.log.debug('Exception %s',sys.exc_info()[1])
-#    619#
-#    620#                # release lock
-#    621#                if ( (not release_file_lock(default_joblist_lock)) & (os.path.isfile(default_joblist_lock)) ):
-#    622#                    gc3utils.log.error('Failed removing lock file')
-    
 if __name__ == '__main__':
     import doctest
     doctest.testmod()
