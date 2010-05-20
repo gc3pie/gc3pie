@@ -1,5 +1,6 @@
 import sys
 import os
+import os.path
 import commands
 import logging
 import logging.handlers
@@ -74,16 +75,24 @@ def progressive_number():
     of this function, and also across separate instances of the
     calling program.
 
+    Example::
+
+      >>> n = progressive_number()
+      >>> m = progressive_number()
+      >>> m > n
+      True
+
     After every invocation of this function, the returned number
     is stored into the file ``~/.gc3/next_id.txt``.
 
     *Note:* as file-level locking is used to serialize access to the
     counter file, this function may block (default timeout: 30
-    seconds) while trying to acquire the lock, or throw an exception
+    seconds) while trying to acquire the lock, or raise an exception
     if this fails.
+
     """
     # FIXME: should use global config value for directory
-    id_filename = "~/.gc3/next_id.txt"
+    id_filename = os.path.expanduser("~/.gc3/next_id.txt")
     # ``FileLock`` requires that the to-be-locked file exists; if it
     # does not, we create an empty one (and avoid overwriting any
     # content, in case another process is also writing to it).  There
@@ -97,7 +106,7 @@ def progressive_number():
     id = int(id_file.read(8) or "0", 16)
     id +=1 
     id_file.seek(0)
-    id_file.write("%08x\n" % id)
+    id_file.write("%08x -- DO NOT REMOVE OR ALTER THIS FILE: it is used internally by the gc3utils\n" % id)
     id_file.close()
     lock.release()
     return id
@@ -546,3 +555,6 @@ def prepare_job_dir(_download_dir):
 #    621#                if ( (not release_file_lock(default_joblist_lock)) & (os.path.isfile(default_joblist_lock)) ):
 #    622#                    gc3utils.log.error('Failed removing lock file')
     
+if __name__ == '__main__':
+    import doctest
+    doctest.testmod()
