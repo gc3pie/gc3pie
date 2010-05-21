@@ -1,0 +1,31 @@
+# ~/.gc3/config
+#
+# THIS IS JUST AN EXAMPLE CONFIGURATION FILE.  No computing resources
+# are currently defined; please edit the file and define resources
+# available into your environment, using the supplied ones as guides.
+#
+
+[DEFAULT]
+lrms_jobid = .lrms_jobid
+lrms_log = .lrms_log
+lrms_finished = .finished
+debug = 0
+job_file = .lrms_id
+job_log = .log
+
+
+# [gc3]
+# name = gc3
+# type = arc
+# frontend = idgc3grid01.uzh.ch
+# applications = gamess
+# gamess_location = /share/apps/gamess-2009R4-ethernet-gfortran
+# max_cores_per_job = 32
+# max_cores_per_node = 8
+# max_memory_per_core = 2
+# max_memory_per_node = 16
+# max_walltime = 12
+# memory_per_core = 2
+# ncores = 80
+# total_cores = 80
+# walltime = 12

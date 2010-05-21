@@ -31,7 +31,7 @@ import gc3utils.utils
 # defaults - XXX: do they belong in ../gcli.py instead?
 _homedir = os.path.expandvars('$HOME')
 _rcdir = _homedir + "/.gc3"
-_default_config_file_location = _rcdir + "/config"
+_default_config_file_location = _rcdir + "/gc3utils.conf"
 _default_joblist_file = _rcdir + "/.joblist"
 _default_joblist_lock = _rcdir + "/.joblist_lock"
 _default_job_folder_location = os.getcwd()
@@ -49,6 +49,9 @@ def _get_gcli(options, config_file_path = _default_config_file_location):
 
         gc3utils.log.debug('Creating instance of Gcli')
         return gc3utils.gcli.Gcli(default, resources)
+    except NoResources:
+        raise FatalError("No computational resources defined.  Please edit the configuration file '%s'." 
+                         % config_file_path)
     except:
         gc3utils.log.debug("Failed loading config file from '%s'", config_file_path)
         raise

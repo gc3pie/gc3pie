@@ -67,6 +67,22 @@ class JobRetrieveError(Error):
 class LRMSException(Error):
     pass    
 
+class NoConfigurationFile(FatalError):
+    """
+    Raised when the configuration file cannot be read (e.g., does not
+    exist or has wrong permissions), or cannot be parsed (e.g., is
+    malformed).
+    """
+    pass
+
+class NoResources(Error):
+    """
+    Raised to signal that no resources are defined, or that none are
+    compatible with the request.
+    """
+    # FIXME: should we have a separate `NoCompatibleResources` exception?
+    pass
+
 class SLCSException(Error):
     pass
 
