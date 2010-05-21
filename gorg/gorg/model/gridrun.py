@@ -81,7 +81,7 @@ class GridrunModel(Document):
             task_list.append(a_job.get_task(db))
         return tuple(task_list)
 
-    def create(self, db, files_to_run, a_job, application_to_run='gamess', selected_resource='ocikbpra',  cores=2, memory=1, walltime=-1):       
+    def create(self, db, files_to_run, a_job, application_tag='gamess', requested_resource='ocikbpra',  requested_memory=2, requested_cores=1, requested_walltime=-1):       
         if not isinstance(files_to_run, list) and not isinstance(files_to_run, tuple):
             files_to_run = [files_to_run]
         # Generate the input file hashes
@@ -92,8 +92,11 @@ class GridrunModel(Document):
         # We now need to build a new run record
         self.author = a_job.author
         self.owned_by.append(a_job.id)
-        self.run_params=dict(application_to_run=application_to_run, \
-                              selected_resource=selected_resource,  cores=cores, memory=memory, walltime=walltime)
+        self.run_params=dict(application_tag=application_tag,
+                                           requested_resource=requested_resource,  
+                                           requested_memory=requested_memory, 
+                                           requested_cores=requested_cores, 
+                                           requested_walltime=requested_walltime)
         self.id = generate_new_docid()
         self = self._commit_new(db, a_job, files_to_run)
         log.debug('Run %s has been created'%(self.id))

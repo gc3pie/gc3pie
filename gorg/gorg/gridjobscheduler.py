@@ -7,14 +7,13 @@ import gorg
 from gorg.model.gridjob import GridrunModel, PossibleStates, TerminalStates
 from gorg.lib.exceptions import *
 from gorg.lib.utils import Mydb, create_filelogger, formatExceptionInfo
-from gc3utils.gcli import Gcli
+import gc3utils
 
 class GridjobScheduler(object):
-    def __init__(self, db_name='gorg_site', db_url='http://127.0.0.1:5984', 
-                 gcli_location='/home/mmonroe/.gc3/config'):
+    def __init__(self, db_name='gorg_site', db_url='http://127.0.0.1:5984'):
         self.db=Mydb('mark', db_name,db_url).cdb()
         self.view_status_runs = GridrunModel.view_status(self.db)
-        self.gcli = Gcli(gcli_location)
+        self._gcli = _get_gcli()
     
     def handle_ready_jobs(self, a_run):
         #Handle jobs that are ready to be submitted to the grid
@@ -24,40 +23,38 @@ class GridjobScheduler(object):
     #TODO: We handle multiple input files here, but gcli can not handle them
             if len(f_list)!=1:
                 raise ValueError('gcli.gsub does not handle multiple input files.')
-            run_params = a_run.run_params
-            f_dir=os.path.dirname( f_list.values()[0].name)
-            result = self.gcli.gsub(job_local_dir=f_dir, input_file=f_list.values()[0].name, **run_params)
-            a_run.gsub_unique_token = result[1]
-            # TODO: Get the real status, the run may be waiting in the queue, not running
-            a_run.status=PossibleStates['WAITING']
+            application = _get_application(a_run.run_params, input_file_name=f_list.values()[0].name)
+            gjob = self._gcli.gsub(application)
+            a_run.gsub_unique_token = gjob.unique_token
+            a_run.status=gjob.status
         finally:
             map(file.close, f_list.values())
         return a_run
 
     def handle_waiting_jobs(self, a_run):
-        result = self.gcli.gstat(a_run.gsub_unique_token)
-        a_run.status = result[1][0][1].split()[-1]
+        gjob = self._gcli.gstat(gc3utils.utils.get_job(a_run.unique_token))
+        a_run.status = gjob.status
         return a_run
  
     def handle_running_jobs(self, a_run):
-        result = self.gcli.gstat(a_run.gsub_unique_token)
-        a_run.status = result[1][0][1].split()[-1]
+        gjob = self._gcli.gstat(gc3utils.utils.get_job(a_run.unique_token))
+        a_run.status = gjob.status
         return a_run
 
     def handle_finished_jobs(self, a_run):
         # TODO: gget returns 0 when it works, what do I do when it doesn't work? Cann't it return DONE or something?
         token = a_run.gsub_unique_token
-        a_run.status=PossibleStates['RETRIEVING']
-        a_run.commit(self.db)
-        result = self.gcli.gget(token)
-        output_files=glob.glob('%s/*.*'%a_run.gsub_unique_token)
+        #a_run.status=PossibleStates['RETRIEVING']
+        #a_run.commit(self.db)
+        gjob = self._gcli.gget(gc3utils.utils.get_job(a_run.unique_token))        
+        output_files = glob.glob('%s/*.*'%a_run.gsub_unique_token)
         for f_name in output_files:
             try:
                 a_file = open(f_name, 'rb')
                 a_run = a_run.put_attachment(self.db, a_file, os.path.basename(a_file.name)) #os.path.splitext(a_file.name)[-1].lstrip('.')
             finally:
                 a_file.close()
-        a_run.status=PossibleStates['DONE']
+        a_run.status = gjob.status
         return a_run
 
     def handle_unreachable_jobs(self, a_run):
@@ -102,11 +99,31 @@ class GridjobScheduler(object):
                         log.critical('GridjobScheduler Errored while processing run id %s \n%s'%(a_run.id, a_run.gsub_message))
                     a_run.commit(self.db)
 
+def _get_gcli():
+    options = None
+    return gc3utils.gcommands._get_gcli(options)
+
+def _get_application(run_params, input_file_name):
+    application = gc3utils.Application.Application(job_local_dir='/tmp', input_file_name=input_file_name, **run_params)
+    if not application.is_valid():
+        raise Exception('Failed creating application object')
+    return application
+    
+    
+
+
+
+
+
+
+
+
+
+
 def main():
     job_scheduler = GridjobScheduler()
     job_scheduler.run()
     print 'Done running gridjobscheduler.py'
-
 
 if __name__ == "__main__":
     create_filelogger(1)
