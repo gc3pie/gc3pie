@@ -502,12 +502,21 @@ def persist_job_filesystem(job_obj):
 
     handler = None
     gc3utils.log.debug('dumping job in %s',Default.JOBS_DIR+'/'+job_obj.unique_token)
-
+    if not os.path.exists(Default.JOBS_DIR):
+        try:
+            os.makedirs(Default.JOBS_DIR)
+        except Exception, x:
+            # raise same exception but add context message
+            gc3utils.log.error("Could not create jobs directory '%s': %s" 
+                               % (Default.JOBS_DIR, x))
+            raise
     try:
         handler = shelve.open(Default.JOBS_DIR+'/'+job_obj.unique_token)
         handler.update(job_obj)
         handler.close()
-    except:
+    except Exception, x:
+        gc3utils.log.error("Could not persist job %s to '%s': %s" 
+                           % (job_obj.unique_token, Default.JOBS_DIR, x))
         if handler:
             handler.close()
         raise
