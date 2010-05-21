@@ -19,7 +19,7 @@ sys.path.append('/opt/nordugrid/lib/python2.4/site-packages')
 import warnings
 warnings.simplefilter("ignore")
 from arclib import *
-import Exceptions
+from Exceptions import *
 import Job
 import Default
 import gc3utils
@@ -124,39 +124,29 @@ def create_unique_token():
     return "job.%d" % progressive_number()
 
 
-def dirname(rawinput):
+def dirname(pathname):
     """
-    Return the dirname of the input file.
+    Same as `os.path.dirname` but return `.` in case of path names with no directory component.
     """
-
-    gc3utils.log.debug('Checking dirname from [ %s ]',rawinput)
-
-    dirname = os.path.dirname(rawinput)
-
+    dirname = os.path.dirname(pathname)
     if not dirname:
         dirname = '.'
-
-#    todo: figure out if this is a desirable outcome.  i.e. do we want dirname to be empty, or do a pwd and find out what the current dir is, or keep the "./".  I suppose this could make a difference to some of the behavior of the scripts, such as copying files around and such.
-
+    # FIXME: figure out if this is a desirable outcome.  i.e. do we want dirname to be empty, or do a pwd and find out what the current dir is, or keep the "./".  I suppose this could make a difference to some of the behavior of the scripts, such as copying files around and such.
     return dirname
 
 
-def inputname(rawinput):
+def inputname(pathname):
     """
-    Remove the .inp & full path from the input file and set variables to indicate the difference.
+    Return the file name, with `.inp` extension and the directory name stripped out.
 
     There are 2 reasons for this:
     - Users can submit a job using the syntax "gsub exam01.inp" or "gsub exam01" and both will work.
     - Sometimes it is useful to differentiate between the the job name "exam01" and the input file "exam01.inp"
-
-    Return the name of the input.
     """
-    gc3utils.log.debug('Checking inputname from [ %s ]',rawinput)
-
-    basename = os.path.basename(rawinput)
-    pattern = re.compile('.inp$')
-    inputname = re.sub(pattern, '', basename)
-    return inputname
+    basename = os.path.basename(pathname)
+    filename, ext = os.path.splitext(basename)
+    # FIXME: should raise exception if `ext` is not ".inp"
+    return filename
 
 
 def same_input_already_run(input_object):
@@ -312,32 +302,46 @@ def read_config(config_file_location):
     resource_list = []
     defaults = {}
 
+    _configFileLocation = os.path.expandvars(config_file_location)
+    if not os.path.exists(_configFileLocation):
+        try:
+            # copy sample config file 
+            if not os.path.exists(dirname(_configFileLocation)):
+                os.makedirs(dirname(_configFileLocation))
+            from pkg_resources import Requirement, resource_filename
+            sample_config = resource_filename(Requirement.parse("gc3utils"), "gc3utils/etc/gc3utils.conf.example")
+            import shutil
+            shutil.copyfile(sample_config, _configFileLocation)
+        except IOError, x:
+            gc3utils.log.critical("CRITICAL ERROR: Failed copying configuration file: %s" % x)
+            raise NoConfigurationFile("No configuration file '%s' was found, and an attempt to create it failed. Aborting." % _configFileLocation)
+        except ImportError:
+            raise NoConfigurationFile("No configuration file '%s' was found. Aborting." % _configFileLocation)
+        # warn user
+        raise NoConfigurationFile("No configuration file '%s' was found; a sample one has been copied in that location; please edit it and define resources before you try running gc3utils commands again." % _configFileLocation)
+
+    # Config File exists; read it
+    config = ConfigParser.ConfigParser()
     try:
-        _configFileLocation = os.path.expandvars(config_file_location)
-        if ( os.path.exists(_configFileLocation) & os.path.isfile(_configFileLocation) ):
-            # Config File exists; read it
-            config = ConfigParser.ConfigParser()
-            config.readfp(open(_configFileLocation))
-            defaults = config.defaults()
-
-            _resources = config.sections()
-            for _resource in _resources:
-                _option_list = config.options(_resource)
-                _resource_options = {}
-                for _option in _option_list:
-                    _resource_options[_option] = config.get(_resource,_option)
-                _resource_options['name'] = _resource
-                resource_list.append(_resource_options)
-#                resource_list[_resource] = _resource_options
-
-            gc3utils.log.debug('readConfig resource_list length of [ %d ]',len(resource_list))
-            return [defaults,resource_list]
-        else:
-            gc3utils.log.error('config file [%s] not found or not readable ',_configFileLocation)
-            raise Exception('config file not found')
+        config_file = open(_configFileLocation)
+        config.readfp(config_file)
     except:
-        gc3utils.log.error('Exception in readConfig')
-        raise
+        raise NoConfigurationFile("Configuration file '%s' is unreadable or malformed. Aborting." 
+                                  % _configFileLocation)
+
+    defaults = config.defaults()
+
+    _resources = config.sections()
+    for _resource in _resources:
+        _option_list = config.options(_resource)
+        _resource_options = {}
+        for _option in _option_list:
+            _resource_options[_option] = config.get(_resource,_option)
+        _resource_options['name'] = _resource
+        resource_list.append(_resource_options)
+
+    gc3utils.log.debug('readConfig resource_list length of [ %d ]',len(resource_list))
+    return [defaults,resource_list]
 
 def obtain_file_lock(joblist_location, joblist_lock):
     """
@@ -445,7 +449,7 @@ def renew_grid_credential(_aaiUserName):
             retval = commands.getstatusoutput(SLCSINIT+" -u "+_aaiUserName+" -p "+input_passwd+" -k "+input_passwd)
             if ( retval[0] != 0 ):
                 gc3utils.log.critical("failed renewing slcs: %s",retval[1])
-                raise Exceptions.SLCSException('failed slcs-init')
+                raise SLCSException('failed slcs-init')
                 
         gc3utils.log.info('Initializing slcs\t\t\t[ ok ]')
                 
@@ -461,7 +465,7 @@ def renew_grid_credential(_aaiUserName):
             # Failed renewing voms credential
             # FATAL ERROR
             gc3utils.log.critical("Initializing voms-proxy\t\t[ failed ]")
-            raise Exceptions.VOMSException('failed voms-proxy-init')
+            raise VOMSException('failed voms-proxy-init')
 
         gc3utils.log.info('Initializing voms-proxy\t\t[ ok ]')
         gc3utils.log.info('check_authentication\t\t\t\t[ ok ]')
@@ -540,7 +544,7 @@ def get_job_filesystem(unique_token):
         if job.is_valid():
             return job
         else:
-            raise Exceptions.JobRetrieveError('Failed retrieving job from filesystem')
+            raise JobRetrieveError('Failed retrieving job from filesystem')
     except:
         if handler:
             handler.close()
