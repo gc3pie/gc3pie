@@ -7,7 +7,6 @@ import logging.handlers
 import tempfile
 import getpass
 import re
-import md5
 import time
 import ConfigParser
 import shutil
@@ -34,39 +33,6 @@ import shelve
 #                     Generic functions
 #
 # ================================================================
-
-def sumfile(fobj):
-    """
-    Returns an md5 hash for an object with read() method.
-    Stolen from http://code.activestate.com/recipes/266486/
-    """
-    m = md5.new()
-    while True:
-        d = fobj.read(8096)
-        if not d:
-            break
-        m.update(d)
-    return m.hexdigest()
-
-
-def md5sum(fname):
-    """
-    Returns an md5 hash for file fname, or stdin if fname is \"-\".
-    """
-
-    if ( fname == "-" ):
-        ret = sumfile(sys.stdin)
-    else:
-        try:
-            f = file(fname, 'rb')
-        except:
-            gc3utils.log.critical('Failed to open [ %s ]')
-            f.close()
-            raise
-        ret = sumfile(f)
-        f.close()
-    return ret
-
 
 def progressive_number():
     """
