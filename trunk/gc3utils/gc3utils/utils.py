@@ -445,54 +445,23 @@ def renew_grid_credential(_aaiUserName):
         raise
 
 def job_status_to_string(job_status):
-    _status_string = ""
-    if job_status is Job.JOB_STATE_FINISHED:
-        _status_string = 'FINISHED'
-    elif job_status is Job.JOB_STATE_RUNNING:
-        _status_string = 'RUNNING'
-    elif job_status is Job.JOB_STATE_FAILED:
-        _status_string = 'FAILED'
-    elif job_status is Job.JOB_STATE_SUBMITTED:
-        _status_string = 'SUBMITTED'
-    elif job_status is Job.JOB_STATE_COMPLETED:
-        _status_string = 'COMPLETED'
-    elif job_status is Job.JOB_STATE_HOLD:
-        _status_string = 'HOLD'
-    elif job_status is Job.JOB_STATE_READY:
-        _status_string = 'READY'
-    elif job_status is Job.JOB_STATE_WAIT:
-        _status_string = 'WAIT'
-    elif job_status is Job.JOB_STATE_OUTPUT:
-        _status_string = 'OUTPUT'
-    elif job_status is Job.JOB_STATE_UNREACHABLE:
-        _status_string = 'UNREACHABLE'
-    elif job_status is Job.JOB_STATE_NOTIFIED:
-        _status_string = 'NOTIFIED'
-    elif job_status is Job.JOB_STATE_ERROR:
-        _status_string = 'ERROR'
-    else:
-        gc3utils.log.error('job status [ %s ] setting to Unknown',job_status)
-        _status_string = 'UNKNOWN'
-    return _status_string
+    try:
+        return {
+            Job.JOB_STATE_HOLD:    'HOLD',
+            Job.JOB_STATE_WAIT:    'WAITING',
+            Job.JOB_STATE_READY:   'READY',
+            Job.JOB_STATE_ERROR:   'ERROR',
+            Job.JOB_STATE_FAILED:  'FAILED',
+            Job.JOB_STATE_OUTPUT:  'OUTPUTTING',
+            Job.JOB_STATE_RUNNING: 'RUNNING',
+            Job.JOB_STATE_FINISHED:'FINISHED',
+            Job.JOB_STATE_NOTIFIED:'NOTIFIED',
+            Job.JOB_STATE_SUBMITTED:'SUBMITTED',
+            }[job_status]
+    except KeyError:
+        gc3utils.log.error('job status code %s unknown', job_status)
+        return 'UNKNOWN'
 
-
-def display_job_status(job_list,job_status_filter):
-    if len(job_list) > 0:
-        sys.stdout.write("Job id\t\t Status\n")
-        sys.stdout.write("-------------------------\n")
-        for _job in job_list:
-
-            gc3utils.log.debug('displaying job status %d',_job.status)
-
-            if job_status_filter > 0:
-                if not _job.status == job_status_filter:
-                    continue
-            _status_string = job_status_to_string(_job.status)
-
- 
-            sys.stdout.write(_job.unique_token+'\t\t'+_status_string)
-            sys.stdout.write('\n')
-            sys.stdout.flush()
 
 def get_job(unique_token):
     return get_job_filesystem(unique_token)
