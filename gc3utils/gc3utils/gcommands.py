@@ -56,6 +56,33 @@ def _get_gcli(options, config_file_path = _default_config_file_location):
         gc3utils.log.debug("Failed loading config file from '%s'", config_file_path)
         raise
 
+
+def _print_job_status(job_list,job_status_filter):
+    if len(job_list) > 0:
+        print("%-16s  %-10s" % ("Job ID", "Status"))
+        print("===========================")
+        # FIXME: this is FRAGILE as it makes an assumption about how the
+        # job.unique_token is formed; it would be *much* better if the
+        # JobId was made into an object, and this becomes its __cmp__
+        # method; that way all the code manipulating a job ID would be
+        # in the `JobId` class...
+        def cmp_job_ids(a,b):
+            """
+            Compare two job IDs `job.XXX` and `job.YYY`
+            by numerical comparison of XXX and YYY.
+            """
+            return cmp(int(a.unique_token[4:]), 
+                       int(b.unique_token[4:]))
+        for _job in sorted(job_list, cmp=cmp_job_ids):
+            gc3utils.log.debug('displaying job status %d',_job.status)
+            if job_status_filter > 0:
+                if not _job.status == job_status_filter:
+                    continue
+            print("%-16s  %-10s" 
+                  % (_job.unique_token, 
+                     gc3utils.utils.job_status_to_string(_job.status)))
+
+
 #====== Main ========
 
 def gsub(*args, **kw):
@@ -109,7 +136,7 @@ def gsub(*args, **kw):
         # create persistanc of filesystem
         # gc3utils.utils.create_job_on_filesystem(application_obj.job_local_dir,job.unique_token)
         gc3utils.utils.persist_job_filesystem(job)
-        gc3utils.utils.display_job_status([job],0)
+        _print_job_status([job],0)
         return 0
     else:
         raise Exception('Job object not valid')
@@ -148,11 +175,7 @@ def gstat(*args, **kw):
         if len(args) == 0:
             job_list = _gcli.gstat(None)
         elif len(args) == 1:
-            unique_token = args[0]
-#            if not os.path.isdir(unique_token):
-#                raise UniqueTokenError("Invalid JOBID: '%s' is not a job status directory." % unique_token)
-            # job_list = _gcli.gstat(gc3utils.utils.get_job_from_filesystem(unique_token,default.job_file))
-            job_list = _gcli.gstat(gc3utils.utils.get_job(unique_token))
+            job_list = _gcli.gstat(gc3utils.utils.get_job(args[0]))
         else:
             raise InvalidUsage("This command requires either one argument or no arguments at all.")
     except Exception, x:
@@ -166,6 +189,10 @@ def gstat(*args, **kw):
     # Check validity of returned list
     for _job in job_list:
         if not _job.is_valid():
+            # FIXME: under what conditions a returned job can be
+            # invalid? My first guess is that this should not happen,
+            # i.e., it is a bug in Gcli.gstat() if returned jobs are
+            # invalid...
             gc3utils.log.error('Returned job not valid. Removing from list')
             job_list.remove(_job)
         else:
@@ -173,7 +200,7 @@ def gstat(*args, **kw):
                                         
     try:
         # Print result
-        gc3utils.utils.display_job_status(job_list,int(options.job_status_filter))
+        _print_job_status(job_list,int(options.job_status_filter))
     except:
         gc3utils.log.error('Failed displaying job status results')
         raise
