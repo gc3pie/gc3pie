@@ -5,7 +5,6 @@ import logging
 import tempfile
 import getpass
 import re
-import md5
 import time
 import ConfigParser
 import shutil
@@ -78,11 +77,11 @@ class SshLrms(LRMS):
         # ssh user@remote_frontend 'cd unique_token ; $gamess_location -n cores input_file'
         """
 
-	# getting information from input_file
+        # getting information from input_file
         _file_name = os.path.basename(application.input_file_name)
         _file_name_dir = os.path.dirname(application.input_file_name)
         _input_name = _file_name.split(".inp")[0]
-    	gc3utils.log.debug('Input file %s, dirpath %s, from %s, input name %s', _file_name, _file_name_dir, application.input_file_name, _input_name)
+        gc3utils.log.debug('Input file %s, dirpath %s, from %s, input name %s', _file_name, _file_name_dir, application.input_file_name, _input_name)
 
         # Establish an ssh connection.
         try:
@@ -266,13 +265,13 @@ class SshLrms(LRMS):
 
                 
             '''            
-	        # First add the output file.
+                # First add the output file.
             remote_file = '%s/%s.o%s' % (full_path_to_remote_unique_id, jobname, job.lrms_jobid)
             local_file = '%s/%s.stdout' % (full_path_to_local_unique_id, jobname)
             remote2local_list = [remote_file, local_file]
             copyfiles_list.append(remote2local_list)
 
-	        # .po file
+                # .po file
             remote_file = '%s/%s.po%s' % (full_path_to_remote_unique_id, jobname, job.lrms_jobid)
             # The arc gget uses stderr not po for the suffix. We therefore need to rename the file
             local_file = '%s/%s.stderr' % (full_path_to_local_unique_id, jobname)
@@ -304,7 +303,7 @@ class SshLrms(LRMS):
                     gc3utils.log.debug(local_file + " already copied.  skipping.")
                     continue
                 else:
-	                # todo : check options
+                        # todo : check options
                     try:
                         sftp.get(remote_file, local_file)
                         gc3utils.log.debug('retrieved: ' + local_file)
@@ -325,7 +324,7 @@ class SshLrms(LRMS):
             for suffix in rm_suffixes:
                 gc3utils.log.debug('rm_suffix: ' + suffix)
                 remote_file = '%s/%s%s' % (full_path_to_remote_unique_id, jobname, suffix)
-		        # todo : check options
+                        # todo : check options
                 # try to remove them
                 try:
                     sftp.remove(remote_file)

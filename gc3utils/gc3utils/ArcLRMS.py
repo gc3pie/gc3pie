@@ -5,7 +5,6 @@ import logging
 import tempfile
 import getpass
 import re
-import md5
 import time
 import ConfigParser
 import shutil
