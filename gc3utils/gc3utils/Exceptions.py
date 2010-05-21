@@ -41,36 +41,13 @@ class Error(Exception):
         Exception.__init__(self, msg)
         
 
-class BrokerException(Error):
-    pass
-
-
-class LRMSException(Error):
-    pass    
-
-
-class TransportException(Error):
-    pass
-
-
 class AuthenticationException(Error):
     pass
 
-
-class SLCSException(Error):
+class BrokerException(Error):
     pass
 
-
-class VOMSException(Error):
-    pass
-
-class UniqueTokenError(FatalError):
-    pass
-
-class JobRetrieveError(Error):
-    pass
-
-class UniqueTokenError(Error):
+class InvalidJobid(FatalError):
     pass
 
 class InvalidUsage(FatalError):
@@ -82,6 +59,21 @@ class InvalidUsage(FatalError):
     Since the exception message is the last thing a user will see,
     try to be specific about what is wrong on the command line.
     """
+    pass
+
+class JobRetrieveError(Error):
+    pass
+
+class LRMSException(Error):
+    pass    
+
+class SLCSException(Error):
+    pass
+
+class TransportException(Error):
+    pass
+
+class VOMSException(Error):
     pass
 
 
