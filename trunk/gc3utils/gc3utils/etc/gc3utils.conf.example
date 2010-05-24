@@ -29,3 +29,20 @@ job_log = .log
 # ncores = 80
 # total_cores = 80
 # walltime = 12
+
+
+# [ocikbpra]
+# total_cores = 80
+# max_cores_per_node = 8
+# max_walltime = 2
+# max_memory_per_node = 16
+# type = ssh_sge
+# frontend = ocikbpra.uzh.ch
+# ncores = 8
+# gamess_location = /share/apps/gamess
+# walltime = 2
+# memory_per_core = 2
+# applications = gamess
+# max_cores_per_job = 20
+# max_memory_per_core = 2
+# username = mpackard
