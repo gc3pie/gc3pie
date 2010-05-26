@@ -473,7 +473,7 @@ def get_job_filesystem(unique_token):
 
     try:
         handler = shelve.open(Default.JOBS_DIR+'/'+unique_token)
-        job = Job.Job(unique_token)
+        job = Job.Job(unique_token=unique_token)
         job.update(handler)
         handler.close()
         if job.is_valid():

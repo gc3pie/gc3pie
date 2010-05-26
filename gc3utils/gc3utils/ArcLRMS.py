@@ -148,7 +148,7 @@ class ArcLrms(LRMS):
                 lrms_jobid = re.split(jobid_pattern,retval[1])[1]
                 gc3utils.log.debug('Job submitted with jobid: %s',lrms_jobid)
 
-                job = Job.Job(None)
+                job = Job.Job()
                 job.lrms_jobid = lrms_jobid
                 job.status = Job.JOB_STATE_SUBMITTED
                 job.resource_name = self._resource.name

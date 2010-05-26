@@ -47,15 +47,17 @@ JOB_STATE_ERROR = 13 # Equivalent to FAILED
 
 class Job(InformationContainer):
 
-    def __init__(self, unique_token):
-        super(InformationContainer)
+    def __init__(self, **kwargs):
         # create_unique_token
-        if not unique_token:
-            unique_token = utils.create_unique_token()
-        self.unique_token = unique_token
+        if not kwargs.has_key('unique_token'):
+            kwargs['unique_token'] = utils.create_unique_token()
+        InformationContainer.__init__(self, **kwargs)
         
     def is_valid(self):
-        if self.has_key('status') and self.has_key('resource_name') and self.has_key('lrms_jobid') and self.has_key('unique_token'):
+        if (self.has_key('status') 
+            and self.has_key('resource_name') 
+            and self.has_key('lrms_jobid') 
+            and self.has_key('unique_token')):
             return True
 
 
