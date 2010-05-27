@@ -188,9 +188,9 @@ def check_qgms_version(minimum_version):
     return True
 
 # === Configuration File
-def import_config(config_file_location, options):
+def import_config(config_file_location):
     (default_val,resources_vals) = read_config(config_file_location)
-    return (get_defaults(default_val),get_resources(options,resources_vals))
+    return (get_defaults(default_val),get_resources(resources_vals))
 
 def get_defaults(defaults):
     # Create an default object for the defaults
@@ -215,7 +215,7 @@ def get_defaults(defaults):
     return default
     
 
-def get_resources(options, resources_list):
+def get_resources(resources_list):
     # build Resource objects from the list returned from read_config
     #        and match with selectd_resource from comand line
     #        (optional) if not options.resource_name is None:
@@ -223,12 +223,6 @@ def get_resources(options, resources_list):
     
     try:
         for resource in resources_list:
-            # RFR: options.resource_name is NOT a key that is set by all command line commands
-            if hasattr(options,'resource_name') and options.resource_name:
-                if (not options.resource_name == resource['name']):
-                    gc3utils.log.debug("Ignoring resource '%s', because resource '%s' was explicitly requested.",
-                                       resource['name'], options.resource_name)
-                    continue
             gc3utils.log.debug('creating instance of Resource object... ')
             tmpres = gc3utils.Resource.Resource()
                 

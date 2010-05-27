@@ -39,14 +39,14 @@ _default_wait_time = 3 # XXX: does it really make sense to have a default wall-c
 _default_log_file = _homedir + "/.gc3utils.log"
 
 
-def _get_gcli(options, config_file_path = _default_config_file_location):
+def _get_gcli(config_file_path = _default_config_file_location):
     """
     Return a `gc3utils.gcli.Gcli` instance configured by parsing
     the configuration file located at `config_file_path`.
+    (Which defaults to `Defaults.config_file`.)
     """
     try:
-        (default,resources) = gc3utils.utils.import_config(config_file_path,options)
-
+        (default, resources) = gc3utils.utils.import_config(config_file_path)
         gc3utils.log.debug('Creating instance of Gcli')
         return gc3utils.gcli.Gcli(default, resources)
     except NoResources:
@@ -130,6 +130,12 @@ def gsub(*args, **kw):
         raise Exception('Failed creating application object')
 
     _gcli = _get_gcli(options)
+    if options.resource_name:
+        _gcli.select_resource(options.resource_name)
+        gc3utils.log.info("Retained only resources: %s (restricted by command-line option '-r %s')",
+                          str.join(",", [res['name'] for res in _gcli._resources]), 
+                          options.resource_name)
+
     job = _gcli.gsub(application)
 
     if job.is_valid():
@@ -229,7 +235,7 @@ def gget(*args, **kw):
     if not job_obj.status == gc3utils.Job.JOB_STATE_COMPLETED and (job_obj.status == gc3utils.Job.JOB_STATE_FINISHED or job_obj.status == gc3utils.Job.JOB_STATE_FAILED):
         gc3utils.log.debug('running gcli.gget')
         job_obj = _gcli.gget(job_obj)
-        #utils.mark_completed_job(job_obj)
+        gc3utils.utils.persist_job_filesystem(job_obj)
 
     if job_obj.status == gc3utils.Job.JOB_STATE_COMPLETED:
         sys.stdout.write('Job results successfully retrieved in [ '+job_obj.download_dir+' ]\n')
