@@ -65,12 +65,6 @@ class Gcli:
         #    return job_obj
                 
         # Parsing passed arguments
-        # RFR: this should be application responsibility ?
-        if (not utils.check_inputfile(application_obj.input_file_name)):
-            gc3utils.log.critical('Input file argument\t\t\t[ failed ]'+application_obj.input_file_name)
-            raise Exception('invalid input-file argument')
-            
-        gc3utils.log.debug('checked inputfile')
         gc3utils.log.debug('input_file: %s',application_obj.input_file_name)
         gc3utils.log.debug('application tag: %s',application_obj.application_tag)
         gc3utils.log.debug('application arguments: %s',application_obj.application_arguments)

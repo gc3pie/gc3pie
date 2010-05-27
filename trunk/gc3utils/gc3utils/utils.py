@@ -115,28 +115,6 @@ def inputname(pathname):
     return filename
 
 
-def same_input_already_run(input_object):
-    """Check the database to see if this input file is run already."""
-#    todo: create this function
-    pass
-
-
-def check_inputfile(inputfile_fullpath):
-    """
-    Perform various checks on the inputfile.
-    Right now we just make sure it exists.  In the future it could include checks for:
-
-    - is this a valid gamess input
-    - estimate runtime
-    - etc.
-    """
-    gc3utils.log.debug('checking\t\t\t[ %s ]',inputfile_fullpath)
-
-    if os.path.isfile(inputfile_fullpath):
-        return True
-    else:
-        return False
-
 def check_jobdir(jobdir):
     """
     Perform various checks on the jobdir.
@@ -150,6 +128,7 @@ def check_jobdir(jobdir):
         return True
     else:
         return False
+
 
 def configure_logger(verbosity, log_file_name):
     """
