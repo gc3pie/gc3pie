@@ -106,9 +106,6 @@ def gsub(*args, **kw):
     application_tag = args[0]
 
     # check input file
-    if ( not gc3utils.utils.check_inputfile(args[1]) ):
-        gc3utils.log.critical('Cannot find input file: '+args[1])
-        raise Exception('invalid input-file argument')
     input_file_name = args[1]
 
     if not os.path.isabs(input_file_name):
@@ -129,7 +126,7 @@ def gsub(*args, **kw):
     if not application.is_valid():
         raise Exception('Failed creating application object')
 
-    _gcli = _get_gcli(options)
+    _gcli = _get_gcli(_default_config_file_location)
     if options.resource_name:
         _gcli.select_resource(options.resource_name)
         gc3utils.log.info("Retained only resources: %s (restricted by command-line option '-r %s')",
@@ -160,7 +157,7 @@ def grid_credential_renew(*args, **kw):
         raise InvalidUsage("Missing required argument USERNAME; this command requires your AAI/SWITCH username.")
         
     gc3utils.log.debug('Checking grid credential')
-    _gcli = _get_gcli(options)
+    _gcli = _get_gcli(_default_config_file_location)
     if not _gcli.check_authentication(gc3utils.Default.SMSCG_AUTHENTICATION):
         return _gcli.enable_authentication(gc3utils.Default.SMSCG_AUTHENTICATION)
     else:
@@ -177,7 +174,7 @@ def gstat(*args, **kw):
     gc3utils.utils.configure_logger(options.verbosity, _default_log_file)
 
     try:
-        _gcli = _get_gcli(options)
+        _gcli = _get_gcli(_default_config_file_location)
         if len(args) == 0:
             job_list = _gcli.gstat(None)
         elif len(args) == 1:
@@ -226,7 +223,7 @@ def gget(*args, **kw):
         raise InvalidUsage("This command requires either one argument (the JOBID) or none.")
     unique_token = args[0]
 
-    _gcli = _get_gcli(options)
+    _gcli = _get_gcli(_default_config_file_location)
     # FIXME: gget should raise exception when something goes wrong; does it indeed?
     job_obj = gc3utils.utils.get_job(unique_token)
 
@@ -286,7 +283,7 @@ def glist(*args, **kw):
         raise InvalidUsage("This command requires exactly one argument: the resource name.")
     resource_name = args[0]
 
-    _gcli = _get_gcli(options)
+    _gcli = _get_gcli(_default_config_file_location)
     # FIXME: gcli.glist should throw exception, we should not check return value here
     (retval,resource_object) = _gcli.glist(resource_name)
     if (not retval):
