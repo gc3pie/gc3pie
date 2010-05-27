@@ -50,6 +50,13 @@ class BrokerException(Error):
 class InvalidJobid(FatalError):
     pass
 
+class InputFileError(FatalError):
+    """
+    Raised when an input file is specified, which does not exist or
+    cannot be read.
+    """
+    pass
+
 class InvalidUsage(FatalError):
     """
     Raised when a command is not provided all required arguments on
