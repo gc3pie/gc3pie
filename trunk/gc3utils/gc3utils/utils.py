@@ -166,6 +166,32 @@ def check_qgms_version(minimum_version):
 
     return True
 
+
+def from_template(template, **kw):
+    """
+    Return the contents of `template`, substituting all occurrences
+    of Python formatting directives '%(key)s' with the corresponding values 
+    taken from dictionary `kw`.
+
+    If `template` is an object providing a `read()` method, that is
+    used to gather the template contents; else, if a file named
+    `template` exists, the template contents are read from it;
+    otherwise, `template` is treated like a string providing the
+    template contents itself.
+    """
+    if hasattr(template, 'read') and callable(template.read):
+        template_contents = template.read()
+    elif os.path.exists(template):
+        template_file = file(template, 'r')
+        template_contents = template_file.read()
+        template_file.close()
+    else:
+        # treat `template` as a string
+        template_contents = template
+    # substitute `kw` into `t` and return it
+    return (template_contents % kw)
+
+
 # === Configuration File
 def import_config(config_file_location):
     (default_val,resources_vals) = read_config(config_file_location)

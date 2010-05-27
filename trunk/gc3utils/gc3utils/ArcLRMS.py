@@ -87,10 +87,6 @@ class ArcLrms(LRMS):
                         requested_memory = int(self._resource.memory_per_core) * 1000
                     xrsl += '(memory="%s")\n' % requested_memory
 
-                # Python apparently does aggressive caching on tempory file objects,
-                # keeping content in memory unless we flush it to disk
-                xrsl_file.flush()
-
                 # Ready for real submission
                 if ( self._resource.frontend == "" ):
                     # frontend not defined; use the entire arc-based infrastructure
