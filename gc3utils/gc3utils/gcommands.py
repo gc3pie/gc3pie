@@ -114,7 +114,7 @@ def gsub(*args, **kw):
     # Create Application obj
     application = gc3utils.Application.Application(
         application_tag=application_tag,
-        input_file_name=input_file_name,
+        inputs=[input_file_name],
         job_local_dir=options.job_local_dir,
         requested_memory=options.memory_per_core,
         requested_cores=options.ncores,

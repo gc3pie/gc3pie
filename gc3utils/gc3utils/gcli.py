@@ -65,7 +65,7 @@ class Gcli:
         #    return job_obj
                 
         # Parsing passed arguments
-        gc3utils.log.debug('input_file: %s',application_obj.input_file_name)
+        gc3utils.log.debug('input_file(s): %s',application_obj.inputs)
         gc3utils.log.debug('application tag: %s',application_obj.application_tag)
         gc3utils.log.debug('application arguments: %s',application_obj.application_arguments)
         gc3utils.log.debug('default_job_folder_location: %s',self._defaults.job_folder_location)
@@ -105,13 +105,6 @@ class Gcli:
             gc3utils.log.critical('Could not initialize ANY lrms resource')
             raise Exception('no available LRMS found')
 
-#        # This method also takes care of creating the unique_token's folder
-#        try:
-#            unique_token = self.__create_job_unique_token(os.path.expandvars(application_obj.job_local_dir),application_obj.input_file_name,application_obj.application_tag)
-#        except:
-#            gc3utils.log.critical('Failed creating unique_token')
-#            raise
-        
 #        application_obj.insert('unique_token_relativepath',os.path.basename(unique_token))
 #        application_obj.insert('unique_token_fullpath',unique_token)
 
@@ -321,29 +314,6 @@ class Gcli:
 #            raise e
 
         return
-
-    def __create_job_unique_token(self,job_folder_location,input_file_name,resource_name):
-        try:
-            # create_unique_token
-            unique_id = utils.create_unique_token(input_file_name,resource_name)
-
-            unique_token = job_folder_location+'/'+unique_id
-            
-            gc3utils.log.debug('Generate Unique token: %s',unique_token)
-            gc3utils.log.info('Generate Unique token\t\t\t[ ok ]')
-            
-            # creating folder for job's session
-#            self._defaults.job_folder_location = os.path.expandvars(self._defaults.job_folder_location)
-            
-            gc3utils.log.debug('creating folder for job session: %s',unique_token)
-            os.makedirs(unique_token)
-
-            gc3utils.log.info('Create job folder\t\t\t[ ok ]')
-            return unique_token
-        except:
-            gc3utils.log.error('Failed creating job unique_token')
-            raise
-
 
     def __log_job(self, job_obj):
         # dumping lrms_jobid
