@@ -55,45 +55,21 @@ class ArcLrms(LRMS):
             # Initialize xrsl from template
             GAMESS_XRSL_TEMPLATE = os.path.expandvars(Default.GAMESS_XRSL_TEMPLATE)
                 
-            if ( os.path.exists(GAMESS_XRSL_TEMPLATE) & os.path.isfile(GAMESS_XRSL_TEMPLATE) ):
-
-                _file_handle = tempfile.NamedTemporaryFile(suffix=".xrsl",prefix="gridgames_arc_")
-                gc3utils.log.debug('tmp file %s',_file_handle.name)
-
-                # getting information from input_file
-                _file_name = os.path.basename(application.input_file_name)
-                _file_name_dir = os.path.dirname(application.input_file_name)
-                _input_name = _file_name.split(".inp")[0]
-                gc3utils.log.debug('Input file %s, dirpath %s, from %s, input name %s', _file_name, _file_name_dir, application.input_file_name, _input_name)
-
-
-                # Modify xrsl template
-                # step one: set inputfile references
-                _command = "sed -e 's|INPUT_FILE_NAME|"+_input_name+"|g' -e 's|INPUT_FILE_PATH|"+_file_name_dir+"|g' < "+GAMESS_XRSL_TEMPLATE+" > "+_file_handle.name
-
-                # Cleaning up
-                _file_handle.close()
-
-                gc3utils.log.debug('preparing SED command: %s',_command)
-                retval = commands.getstatusoutput(_command)
-
-                if ( retval[0] != 0 ):
-                    # Failed somehow
-                    gc3utils.log.error("Create XRSL\t\t[ failed ]")
-                    gc3utils.log.debug(retval[1])
-                    # Shall we dump anyway into lrms_log befor raising ?
-                    raise Exception('failed creating submission file')
-
-                _command = ""
-
+            if os.path.exists(GAMESS_XRSL_TEMPLATE):
+                # GAMESS only needs 1 input file
+                input_file_path = application.inputs[0]
+                xrsl = from_template(GAMESS_XRSL_TEMPLATE, 
+                                     INPUT_FILE_NAME = os.path.splitext(os.path.basename(input_file_path))[0],
+                                     INPUT_FILE_DIR = os.path.dirname(input_file_path))
+                
+                # append requirements to XRSL file
                 if ( self._resource.walltime > 0 ):
                     gc3utils.log.debug('setting walltime...')
                     if int(application.requested_walltime) > 0:
                         requested_walltime = int(application.requested_walltime) * 60
                     else:
                         requested_walltime = self._resource.walltime
-                        
-                    _command = "(cputime=\""+str(requested_walltime)+"\")\n"
+                    xrsl += '(cputime="%s")\n' % requested_walltime
 
                 if ( self._resource.ncores > 0 ):
                     gc3utils.log.debug('setting cores...')
@@ -101,8 +77,7 @@ class ArcLrms(LRMS):
                         requested_cores = int(application.requested_cores)
                     else:
                         requested_cores = self._resource.ncores
-                        
-                    _command = _command+"(count=\""+str(requested_cores)+"\")\n"
+                    xrsl += '(count="%s")\n' % requested_cores
 
                 if ( self._resource.memory_per_core > 0 ):
                     gc3utils.log.debug('setting memory')
@@ -110,55 +85,46 @@ class ArcLrms(LRMS):
                         requested_memory = int(application.requested_memory) * 1000
                     else:
                         requested_memory = int(self._resource.memory_per_core) * 1000
-                        
-                    _command = _command+"(memory=\""+str(requested_memory)+"\")"
+                    xrsl += '(memory="%s")\n' % requested_memory
 
-                if ( _command != "" ):
-                    _command = "echo '"+_command+"' >> "+_file_handle.name
-                    gc3utils.log.debug('preparing echo command: %s',_command)
-                    retval = commands.getstatusoutput(_command)
-                    if ( retval[0] != 0 ):
-                        gc3utils.log.error("Create XRSL\t\t[ failed ]")
-                        raise Exception('failed creating submission file')
+                # Python apparently does aggressive caching on tempory file objects,
+                # keeping content in memory unless we flush it to disk
+                xrsl_file.flush()
 
-                gc3utils.log.debug('checking resource [ %s ]',self._resource.frontend)
                 # Ready for real submission
                 if ( self._resource.frontend == "" ):
                     # frontend not defined; use the entire arc-based infrastructure
-                    _command = "ngsub -d2 -f "+_file_handle.name
+                    _command = "ngsub -d2 -e '%s'" % xrsl
                 else:
-                    _command = "ngsub -d2 -c "+self._resource.frontend+" -f "+_file_handle.name
-
-                gc3utils.log.debug('Running ARC command [ %s ]',_command)
+                    _command = "ngsub -d2 -c %s -e '%s'" % (self._resource.frontend, xrsl)
+                gc3utils.log.debug('Running ARC command: %s',_command)
             
-                retval = commands.getstatusoutput(_command)
+                (exitcode, output) = commands.getstatusoutput(_command)
 
                 jobid_pattern = "Job submitted with jobid: "
-
-                if ( ( retval[0] != 0 ) | ( jobid_pattern not in retval[1] ) ):
+                if exitcode != 0 or jobid_pattern not in output:
                     # Failed somehow
-                    gc3utils.log.error("ngsub command\t\t[ failed ]")
-                    gc3utils.log.debug(retval[1])
+                    gc3utils.log.error("Command '%s' failed with exitcode %d and error: %s" 
+                                       % (_command, exitcode,  output))
                     raise Exception('failed submitting to LRMS')
 
                 # assuming submit successfull
                 gc3utils.log.debug("ngsub command\t\t[ ok ]")
 
                 # Extracting ARC jobid
-                lrms_jobid = re.split(jobid_pattern,retval[1])[1]
+                lrms_jobid = output.split(jobid_pattern)[1]
                 gc3utils.log.debug('Job submitted with jobid: %s',lrms_jobid)
 
                 job = Job.Job()
                 job.lrms_jobid = lrms_jobid
                 job.status = Job.JOB_STATE_SUBMITTED
                 job.resource_name = self._resource.name
-                job.log = retval[1]
+                job.log = output
 
-#                job = Job.Job(lrms_jobid=lrms_jobid,status=Job.JOB_STATE_SUBMITTED,resource_name=self._resource.name,log=retval[1])
                 return job
 
             else:
-                gc3utils.log.critical('XRSL file not found %s',GAMESS_XRSL_TEMPLATE)
+                gc3utils.log.critical('XRSL file not found %s', GAMESS_XRSL_TEMPLATE)
                 raise Exception('template file for submission scritp not found')
         except:
             gc3utils.log.critical('Failure in submitting')
