@@ -78,10 +78,6 @@ class SshLrms(LRMS):
         """
 
         # getting information from input_file
-        _file_name = os.path.basename(application.input_file_name)
-        _file_name_dir = os.path.dirname(application.input_file_name)
-        _input_name = _file_name.split(".inp")[0]
-        gc3utils.log.debug('Input file %s, dirpath %s, from %s, input name %s', _file_name, _file_name_dir, application.input_file_name, _input_name)
 
         # Establish an ssh connection.
         try:
@@ -99,19 +95,22 @@ class SshLrms(LRMS):
             gc3utils.log.critical('copy_input mkdir failed')
             raise
 
-        # Copy the input file to remote unique_token directory.
-        _localpath = application.input_file_name
-        _remotepath = application.unique_token_relativepath + '/' + _file_name
-        try:
-            sftp.put(_localpath, _remotepath)
-        except:
-            ssh.close()
-            gc3utils.log.critical('copy_input put failed')
-            raise
+        # Copy the input file(s) to remote unique_token directory.
+        for localpath in application.inputs:
+            file_name = os.path.basename(localpath)
+            remotepath = os.path.join(application.unique_token_relativepath, file_name)
+            gc3utils.log.debug("Copying '%s' to '%s:%s' via SFTP PUT ..." 
+                               % (localpath, self._resource.frontend, remotepath))
+            try:
+                sftp.put(localpath, remotepath)
+            except:
+                ssh.close()
+                gc3utils.log.critical('SFTP PUT failed, aborting.')
+                raise
 
 
         # Build up the SGE submit command.
-        _submit_command = 'cd ~/\'%s\' && %s/qgms -n %s' % (application.unique_token_relativepath, self._resource.gamess_location, self._resource.ncores)
+        _submit_command = "cd ~/'%s' && %s/qgms -n %s" % (application.unique_token_relativepath, self._resource.gamess_location, self._resource.ncores)
 
         # If walltime is provided, convert to seconds and add to the SGE submit command.
         _walltime_in_seconds = int(self._resource.walltime)*3600
@@ -121,8 +120,8 @@ class SshLrms(LRMS):
         gc3utils.log.debug('submit _walltime_in_seconds: ' + str(_walltime_in_seconds))
 #        gc3utils.log.debug('submit _walltime_in_seconds: ' + str(self._resource.walltime))
 
-        # Add the input file name to the SGE submit command.
-        _submit_command = _submit_command + ' \'%s\'' % _file_name
+        # Add the input file name to the SGE submit command. FIXME: GAMESS-specific
+        _submit_command += " '%s'" % os.path.basename(application.inputs[0])
         
         gc3utils.log.debug('submit _submit_command: ' + _submit_command)
 
