@@ -22,13 +22,10 @@ import Authorization
 class Gcli:
 
     def __init__(self, defaults, resource_list):
-        try:
-            if ( len(resource_list) == 0 ):
-                raise NoResources('Resource list has length 0')
-            self._resources = resource_list
-            self._defaults = defaults
-        except:
-            raise
+        if ( len(resource_list) == 0 ):
+            raise NoResources('Resource list has length 0')
+        self._resources = resource_list
+        self._defaults = defaults
 
     def select_resource(self, match):
         """
