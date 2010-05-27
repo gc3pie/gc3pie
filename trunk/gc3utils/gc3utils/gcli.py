@@ -16,6 +16,7 @@ import Scheduler
 import Job
 import Application
 from Exceptions import *
+from fnmatch import fnmatch
 import Authorization
 
 class Gcli:
@@ -28,6 +29,29 @@ class Gcli:
             self._defaults = defaults
         except:
             raise
+
+    def select_resource(self, match):
+        """
+        Alter the configured list of resources, and retain only those
+        that satisfy predicate `match`.
+
+        Argument `match` can be:
+
+          - either a function (or a generic callable) that is passed
+            each `Resource` object in turn, and should return a
+            boolean indicating whether the resources should be kept
+            (`True`) or not (`False`);
+
+          - or it can be a string: only resources whose name matches
+            (wildcards "*" and "?" are allowed) are retained.
+        """
+        try:
+            self._resources = [ res for res in self._resources if match(res) ]
+        except:
+            # `match` is not callable, then assume it's a 
+            # glob pattern and select resources whose name matches
+            self._resources = [ res for res in self._resources
+                                if fnmatch(res.name, match) ]
 
 #========== Start gsub ===========
     def gsub(self, application_obj):
@@ -198,7 +222,6 @@ class Gcli:
         if job_obj.is_valid():
             # create persistanc of filesystem
             job_obj.status = gc3utils.Job.JOB_STATE_COMPLETED
-            gc3utils.utils.persist_job_filesystem(job_obj)
             return job_obj  
         else:
             raise JobRetrieveError('non valid job object')
