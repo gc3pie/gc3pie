@@ -7,7 +7,7 @@ import copy
 import sys
 
 from markstools.io.gamess import ReadGamessInp
-from markstools.calculators.gamess import GamessGridCalc
+from markstools.calculators.gamess.calculator import GamessGridCalc
 
 from gorg.model.gridtask import TaskInterface
 from gorg.lib.utils import Mydb

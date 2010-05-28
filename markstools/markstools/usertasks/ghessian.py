@@ -4,21 +4,18 @@ Created on Dec 28, 2009
 @author: mmonroe
 '''
 from markstools.lib.statemachine import *
-
 from optparse import OptionParser
-import logging
+import markstools
 import os
 import copy
 import sys
 import numpy as np
 
 from markstools.io.gamess import ReadGamessInp, WriteGamessInp
-from markstools.calculators.gamess import GamessGridCalc
+from markstools.calculators.gamess.calculator import GamessGridCalc
 
 from gorg.lib.utils import Mydb
 from gorg.model.gridtask import TaskInterface
-
-_log = logging.getLogger('markstools')
 
 class Cargo(object):
     def __init__(self, a_task, calculator):
@@ -49,7 +46,7 @@ class GHessian(StateMachine):
             atoms.set_positions(a_position)
             sec_job = calculator.generate(atoms, params, a_task, application_to_run, selected_resource, cores, memory, walltime)
         calculator.calculate(a_task)
-        _log.info('Submitted task %s for execution.'%(a_task.id))
+        markstools.log.info('Submitted task %s for execution.'%(a_task.id))
         self.cargo = Cargo(a_task, calculator)
 
     def restart(self, db,  a_task):
@@ -65,7 +62,7 @@ class GHessian(StateMachine):
     @on_main(WAIT)
     def wait(self):
         from gorg.gridjobscheduler import GridjobScheduler
-        job_scheduler = GridjobScheduler(db_url='http://130.60.144.211:5984')
+        job_scheduler = GridjobScheduler('mark','gorg_site','http://130.60.144.211:5984')
         job_list = self.cargo.a_task.children
         new_state=self.PROCESS
         for a_job in job_list:
@@ -74,7 +71,7 @@ class GHessian(StateMachine):
             job_done = a_job.wait(timeout=0)
             if not job_done:
                 new_state=self.WAIT
-                _log.info('Restart waiting for job %s.'%(a_job.id))
+                markstools.log.info('Restart waiting for job %s.'%(a_job.id))
                 break
         return new_state
     
@@ -86,7 +83,7 @@ class GHessian(StateMachine):
             a_result = self.cargo.calculator.parse(a_job)
             if not a_result.exit_successful():
                 msg = 'GAMESS returned an error while running job %s.'%(a_job.id)
-                _log.critical(msg)
+                markstools.log.critical(msg)
                 raise Exception, msg
         done = True
         return self.DONE
@@ -109,6 +106,7 @@ class GHessian(StateMachine):
         postprocess_result = mat/self.GRADIENT_CONVERSION
         
         f_hess = open('%s_ghessian.mjm'%(self.cargo.a_task.id), 'w')
+        print f_hess
         WriteGamessInp.build_gamess_matrix(postprocess_result, f_hess)
         f_hess.close()
 
@@ -136,7 +134,6 @@ class GHessian(StateMachine):
 def main(options):
     # Connect to the database
     db=Mydb('mark',options.db_name,options.db_url).cdb()
-    
     # Parse the gamess inp file
     myfile = open(options.file, 'rb')
     reader = ReadGamessInp(myfile)
@@ -158,19 +155,23 @@ if __name__ == '__main__':
     parser = OptionParser(usage)
     parser.add_option("-f", "--file", dest="file",default='markstools/examples/hess.test2.gamess.inp', 
                       help="gamess inp to restart from.")
-    parser.add_option("-v", "--verbose", dest="verbose", default='', 
+    parser.add_option("-v", "--verbose", action='count', dest="verbose", default=0, 
                       help="add more v's to increase log output.")
     parser.add_option("-n", "--db_name", dest="db_name", default='gorg_site', 
                       help="add more v's to increase log output.")
-    parser.add_option("-l", "--db_url", dest="db_url", default='http://127.0.0.1:5984', 
+    parser.add_option("-l", "--db_url", dest="db_url", default='http://130.60.144.211:5984', 
                       help="add more v's to increase log output.")
     (options, args) = parser.parse_args()
     
-    #Setup logger
-    LOGGING_LEVELS = (logging.CRITICAL, logging.ERROR, 
-                                    logging.WARNING, logging.INFO, logging.DEBUG)
-    options.logging_level = len(LOGGING_LEVELS) if len(options.verbose) > len(LOGGING_LEVELS) else len(options.verbose)
-    create_file_logger(options.logging_level)
+    import logging
+    from markstools.lib.utils import configure_logger
+    logging.basicConfig(
+        level=logging.ERROR, 
+        format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+        datefmt='%Y-%m-%d %H:%M:%S')
+        
+    configure_logger(options.verbose)
+    
     main(options)
 
     sys.exit()
