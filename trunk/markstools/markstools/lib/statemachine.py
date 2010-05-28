@@ -1,4 +1,4 @@
-from markstools.lib.utils import format_exception_info, create_file_logger
+from markstools.lib.utils import format_exception_info
 import logging
 
 _log = logging.getLogger('markstools')
