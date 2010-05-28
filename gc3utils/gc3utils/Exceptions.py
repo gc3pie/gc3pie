@@ -93,6 +93,9 @@ class NoResources(Error):
 class SLCSException(Error):
     pass
 
+class SshSubmitException(Error):
+    pass
+
 class TransportException(Error):
     pass
 

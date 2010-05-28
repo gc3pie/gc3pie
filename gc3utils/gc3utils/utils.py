@@ -267,6 +267,9 @@ def read_config(config_file_location):
     resource_list = []
     defaults = {}
 
+    print 'mike_debug 100'
+    print config_file_location
+
     _configFileLocation = os.path.expandvars(config_file_location)
     if not os.path.exists(_configFileLocation):
         try:
