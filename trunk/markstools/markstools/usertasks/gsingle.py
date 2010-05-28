@@ -26,10 +26,8 @@ class State(object):
     pause = [WAIT]
     terminal = [ERROR,  COMPLETED]
 
-class GHessian(object):
-    H_TO_PERTURB = 0.0052918
-    GRADIENT_CONVERSION=1.8897161646320724
-
+class GSingle(object):
+ 
     def __init__(self):
         self.status = State.ERROR
         self.status_mapping = {State.WAIT: self.handle_wait_state, 
@@ -44,16 +42,9 @@ class GHessian(object):
     def initialize(self, db, calculator, atoms, params, application_to_run='gamess', selected_resource='gc3',  cores=8, memory=2, walltime=-1):
         self.calculator = calculator
         self.a_task = TaskInterface(db).create(self.__class__.__name__)
-        self.a_task.user_data_dict['total_jobs'] = 0
         
-        perturbed_postions = self.repackage(atoms.get_positions())
-        params.title = 'job_number_%d'%self.a_task.user_data_dict['total_jobs']
-        first_job = self.calculator.generate(atoms, params, self.a_task, application_to_run, selected_resource, cores, memory, walltime)
-        for a_position in perturbed_postions[1:]:
-            self.a_task.user_data_dict['total_jobs'] += 1
-            params.title = 'job_number_%d'%self.a_task.user_data_dict['total_jobs']
-            atoms.set_positions(a_position)
-            sec_job = calculator.generate(atoms, params, self.a_task, application_to_run, selected_resource, cores, memory, walltime)
+        params.title = 'single job'
+        a_job = self.calculator.generate(atoms, params, self.a_task, application_to_run, selected_resource, cores, memory, walltime)
         self.calculator.calculate(self.a_task)
         markstools.log.info('Submitted task %s for execution.'%(self.a_task.id))
         self.status = State.WAIT
@@ -94,52 +85,14 @@ class GHessian(object):
         self.status = State.POSTPROCESS
 
     def handle_postprocess_state(self):
-        result_list  = list()
-        for a_job in self.a_task.children:
-            result_list.append(self.calculator.parse(a_job))
-        num_atoms = len(result_list[-1].atoms.get_positions())
-        gradMat = np.zeros((num_atoms*len(result_list), 3), dtype=np.longfloat)
-        count = 0
-        for a_result in result_list:
-            grad = a_result.get_forces()
-            for j in range(0, len(grad)):
-                gradMat[count]=grad[j]
-                count +=1
-        mat = self.calculateNumericalHessian(num_atoms, gradMat)
-        postprocess_result = mat/self.GRADIENT_CONVERSION
-        
-        f_hess = open('%s_ghessian.mjm'%(self.a_task.id), 'w')
-        print f_hess
-        WriteGamessInp.build_gamess_matrix(postprocess_result, f_hess)
-        f_hess.close()
         self.status = State.COMPLETED
 
     def handle_terminal_state(self):
         print 'I do nothing!!'
+
     def handle_missing_state(self):
         print 'Do something when the state is not in our map.'
-
-    def perturb(self, npCoords):
-        stCoords= np.reshape(np.squeeze(npCoords), len(npCoords)*3, 'C')
-        E =  np.vstack([np.zeros((1, len(stCoords))), np.eye((len(stCoords)),(len(stCoords)))])
-        return self.H_TO_PERTURB*E+stCoords
-
-    def repackage(self, org_coords):
-        stCoords = self.perturb(org_coords)
-        newCoords = list()
-        for i in stCoords:
-            i=i.reshape((len(i)/3, 3))
-            newCoords.append(i)
-        return newCoords
-        
-    def calculateNumericalHessian(self, sz, gradient):
-        gradient= np.reshape(gradient,(len(gradient)/sz,sz*3),'C').T    
-        hessian = np.zeros((3*sz, 3*sz), dtype=np.longfloat)
-        for i in range(0, 3*sz):
-            for j in range(0, 3*sz):
-                hessian[i, j] = (1.0/(2.0*self.H_TO_PERTURB))*((gradient[i, j+1]-gradient[i, 0])+(gradient[j, i+1]-gradient[j, 0]))
-        return hessian
-    
+   
     def step(self):
         try:
             self.status_mapping.get(self.status, self.handle_missing_state)()
@@ -166,17 +119,17 @@ def main(options):
     params = reader.params
     atoms = reader.atoms
     
-    ghessian = GHessian()
+    gsingle = GSingle()
     gamess_calc = GamessGridCalc(db)
-    ghessian.initialize(db, gamess_calc, atoms, params)
+    gsingle.initialize(db, gamess_calc, atoms, params)
     
-    ghessian.run()
+    gsingle.run()
     import time
-    while ghessian.status not in State.terminal:
+    while gsingle.status not in State.terminal:
         time.sleep(10)
-        ghessian.run()
+        gsingle.run()
 
-    print 'ghessian done. Create task %s'%(ghessian.a_task.id)
+    print 'gsingle done. Create task %s'%(ghessian.a_task.id)
 
 if __name__ == '__main__':
     #Set up command line options
