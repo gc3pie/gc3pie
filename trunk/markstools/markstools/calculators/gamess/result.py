@@ -1,7 +1,7 @@
 import numpy as np
 import copy
 import markstools
-import ResultBase
+from markstools.calculators.gamess import ResultBase
 
 def queryable(func):
     func.queryable=True

@@ -7,6 +7,7 @@ import re
 
 from ase import Atom
 from markstools.lib.parsekernel import ParseKernel
+from markstools.lib.utils import split_seq
 from markstools.calculators.gamess.calculator import GamessParams, GamessAtoms
 
 class WriteGamessInp:
@@ -88,7 +89,7 @@ class WriteGamessInp:
         else:
             format = '%15s'
         for row in mat:
-            split_rows=tuple(MyUtilities.split_seq(row, numCol))
+            split_rows=tuple(split_seq(row, numCol))
             for row_to_print in split_rows:
                 output = '\n%2s%3s'% (outRow, outCol % maxCol)
                 file_like.write(output)
