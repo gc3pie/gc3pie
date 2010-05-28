@@ -14,6 +14,8 @@ from markstools.io.gamess import ReadGamessInp, WriteGamessInp
 from markstools.calculators.gamess.calculator import GamessGridCalc
 from markstools.lib import utils
 from gorg.model.gridtask import TaskInterface
+from gorg.lib.utils import Mydb
+
 
 class State(object):
     WAIT = 'WAIT'
@@ -158,7 +160,7 @@ class GHessian(object):
 
 def main(options):
     # Connect to the database
-    db = utils.Mydb('mark',options.db_name,options.db_url).cdb()
+    db = Mydb('mark',options.db_name,options.db_url).cdb()
 
     myfile = open(options.file, 'rb')
     reader = ReadGamessInp(myfile)

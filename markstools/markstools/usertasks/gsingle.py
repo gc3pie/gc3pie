@@ -14,6 +14,7 @@ from markstools.io.gamess import ReadGamessInp, WriteGamessInp
 from markstools.calculators.gamess.calculator import GamessGridCalc
 from markstools.lib import utils
 from gorg.model.gridtask import TaskInterface
+from gorg.lib.utils import Mydb
 
 class State(object):
     WAIT = 'WAIT'
@@ -43,7 +44,7 @@ class GSingle(object):
         self.calculator = calculator
         self.a_task = TaskInterface(db).create(self.__class__.__name__)
         
-        params.title = 'single job'
+        params.title = 'singlejob'
         a_job = self.calculator.generate(atoms, params, self.a_task, application_to_run, selected_resource, cores, memory, walltime)
         self.calculator.calculate(self.a_task)
         markstools.log.info('Submitted task %s for execution.'%(self.a_task.id))
@@ -111,7 +112,7 @@ class GSingle(object):
 
 def main(options):
     # Connect to the database
-    db = utils.Mydb('mark',options.db_name,options.db_url).cdb()
+    db = Mydb('mark',options.db_name,options.db_url).cdb()
 
     myfile = open(options.file, 'rb')
     reader = ReadGamessInp(myfile)
@@ -129,7 +130,9 @@ def main(options):
         time.sleep(10)
         gsingle.run()
 
-    print 'gsingle done. Create task %s'%(ghessian.a_task.id)
+    print 'gsingle done. Create task %s'%(gsingle.a_task.id)
+    for a_job in gsingle.a_task.children:
+        print 'Job %s has Run %s'%(a_job.id, a_job.run_id)
 
 if __name__ == '__main__':
     #Set up command line options
