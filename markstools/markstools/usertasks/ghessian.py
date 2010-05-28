@@ -3,7 +3,6 @@ Created on Dec 28, 2009
 
 @author: mmonroe
 '''
-from markstools.lib.statemachine import *
 from optparse import OptionParser
 import markstools
 import os
@@ -13,87 +12,91 @@ import numpy as np
 
 from markstools.io.gamess import ReadGamessInp, WriteGamessInp
 from markstools.calculators.gamess.calculator import GamessGridCalc
-
-from gorg.lib.utils import Mydb
+from markstools.lib import utils
 from gorg.model.gridtask import TaskInterface
 
-class Cargo(object):
-    def __init__(self, a_task, calculator):
-        self.a_task = a_task
-        self.calculator = calculator
-        
-class GHessian(StateMachine):
+class State(object):
+    WAIT = 'WAIT'
+    PROCESS = 'PROCESS'
+    POSTPROCESS = 'POSTPROCESS'
+    ERROR = 'ERROR'
+    COMPLETED = 'COMPLETED'
+    
+    all = [WAIT, PROCESS, ERROR, COMPLETED, POSTPROCESS]
+    pause = [WAIT]
+    terminal = [ERROR,  COMPLETED]
+
+class GHessian(object):
     H_TO_PERTURB = 0.0052918
     GRADIENT_CONVERSION=1.8897161646320724
-    WAIT = State()
-    PROCESS = State()
-    
-    def __init__(self):
-        super(GHessian, self).__init__()
-        self.cargo = None
 
-    def start(self, db, calculator, atoms, params, application_to_run='gamess', selected_resource='ocikbpra',  cores=2, memory=1, walltime=-1):
-        super(GHessian, self).start(self.WAIT )
-        a_task = TaskInterface(db).create(self.__class__.__name__)
-        a_task.user_data_dict['total_jobs'] = 0
+    def __init__(self):
+        self.status = State.ERROR
+        self.status_mapping = {State.WAIT: self.handle_wait_state, 
+                                             State.PROCESS: self.handle_process_state, 
+                                             State.POSTPROCESS: self.handle_postprocess_state, 
+                                             State.ERROR: self.handle_terminal_state, 
+                                             State.COMPLETED: self.handle_terminal_state}
+        
+        self.a_task = None
+        self.calculator = None
+
+    def initialize(self, db, calculator, atoms, params, application_to_run='gamess', selected_resource='gc3',  cores=8, memory=2, walltime=-1):
+        self.calculator = calculator
+        self.a_task = TaskInterface(db).create(self.__class__.__name__)
+        self.a_task.user_data_dict['total_jobs'] = 0
         
         perturbed_postions = self.repackage(atoms.get_positions())
-        params.title = 'job_number_%d'%a_task.user_data_dict['total_jobs']
-        first_job = calculator.generate(atoms, params, a_task, application_to_run, selected_resource, cores, memory, walltime)
+        params.title = 'job_number_%d'%self.a_task.user_data_dict['total_jobs']
+        first_job = self.calculator.generate(atoms, params, self.a_task, application_to_run, selected_resource, cores, memory, walltime)
         for a_position in perturbed_postions[1:]:
-            a_task.user_data_dict['total_jobs'] += 1
-            params.title = 'job_number_%d'%a_task.user_data_dict['total_jobs']
+            self.a_task.user_data_dict['total_jobs'] += 1
+            params.title = 'job_number_%d'%self.a_task.user_data_dict['total_jobs']
             atoms.set_positions(a_position)
-            sec_job = calculator.generate(atoms, params, a_task, application_to_run, selected_resource, cores, memory, walltime)
-        calculator.calculate(a_task)
-        markstools.log.info('Submitted task %s for execution.'%(a_task.id))
-        self.cargo = Cargo(a_task, calculator)
-
-    def restart(self, db,  a_task):
-        super(GHessian, self).start(eval('self.%s'%(a_task.state)))
-        str_calc = a_task.user_data_dict['calculator']
-        self.cargo = Cargo(a_task, eval(str_calc + '(db)'))
+            sec_job = calculator.generate(atoms, params, self.a_task, application_to_run, selected_resource, cores, memory, walltime)
+        self.calculator.calculate(self.a_task)
+        markstools.log.info('Submitted task %s for execution.'%(self.a_task.id))
+        self.status = State.WAIT
+        
+    def load(self, db,  a_task):
+        self.a_task = a_task
+        self.status = self.a_task.status
+        str_calc = self.a_task.user_data_dict['calculator']
+        self.calculator = eval(str_calc + '(db)')
     
-    def save_state(self):
-        self.cargo.a_task.state = super(GHessian, self).save_state()
-        self.cargo.a_task.user_data_dict['calculator'] = self.cargo.calculator.__class__.__name__
-        return self.cargo.a_task
+    def save(self):
+        self.a_task.status = self.status
+        self.a_task.user_data_dict['calculator'] = self.calculator.__class__.__name__
     
-    @on_main(WAIT)
-    def wait(self):
+    def handle_wait_state(self):
         from gorg.gridjobscheduler import GridjobScheduler
         job_scheduler = GridjobScheduler('mark','gorg_site','http://130.60.144.211:5984')
-        job_list = self.cargo.a_task.children
-        new_state=self.PROCESS
+        job_list = self.a_task.children
+        new_status = State.PROCESS
         for a_job in job_list:
             job_done = False
             job_scheduler.run()
             job_done = a_job.wait(timeout=0)
             if not job_done:
-                new_state=self.WAIT
+                new_status=State.WAIT
                 markstools.log.info('Restart waiting for job %s.'%(a_job.id))
                 break
-        return new_state
+        self.status = new_status
     
-    @on_main(PROCESS)
-    def process_loop(self):
-        done = False
-        job_list = self.cargo.a_task.children
+    def handle_process_state(self):
+        job_list = self.a_task.children
         for a_job in job_list:
-            a_result = self.cargo.calculator.parse(a_job)
+            a_result = self.calculator.parse(a_job)
             if not a_result.exit_successful():
                 msg = 'GAMESS returned an error while running job %s.'%(a_job.id)
                 markstools.log.critical(msg)
                 raise Exception, msg
-        done = True
-        return self.DONE
+        self.status = State.POSTPROCESS
 
-#TODO: Wouldn't if be nice if on_enter on_main and on_leave could share variables with each other?
-    @on_leave(PROCESS)
-    def postprocess(self):
+    def handle_postprocess_state(self):
         result_list  = list()
-        for a_job in self.cargo.a_task.children:
-            result_list.append(self.cargo.calculator.parse(a_job))
+        for a_job in self.a_task.children:
+            result_list.append(self.calculator.parse(a_job))
         num_atoms = len(result_list[-1].atoms.get_positions())
         gradMat = np.zeros((num_atoms*len(result_list), 3), dtype=np.longfloat)
         count = 0
@@ -105,10 +108,16 @@ class GHessian(StateMachine):
         mat = self.calculateNumericalHessian(num_atoms, gradMat)
         postprocess_result = mat/self.GRADIENT_CONVERSION
         
-        f_hess = open('%s_ghessian.mjm'%(self.cargo.a_task.id), 'w')
+        f_hess = open('%s_ghessian.mjm'%(self.a_task.id), 'w')
         print f_hess
         WriteGamessInp.build_gamess_matrix(postprocess_result, f_hess)
         f_hess.close()
+        self.status = State.COMPLETED
+
+    def handle_terminal_state(self):
+        print 'I do nothing!!'
+    def handle_missing_state(self):
+        print 'Do something when the state is not in our map.'
 
     def perturb(self, npCoords):
         stCoords= np.reshape(np.squeeze(npCoords), len(npCoords)*3, 'C')
@@ -130,24 +139,44 @@ class GHessian(StateMachine):
             for j in range(0, 3*sz):
                 hessian[i, j] = (1.0/(2.0*self.H_TO_PERTURB))*((gradient[i, j+1]-gradient[i, 0])+(gradient[j, i+1]-gradient[j, 0]))
         return hessian
+    
+    def step(self):
+        try:
+            self.status_mapping.get(self.status, self.handle_missing_state)()
+        except:
+            self.status=State.ERROR
+            markstools.log.critical('GHessian Errored while processing task %s \n%s'%(self.a_task.id, utils.format_exception_info()))
+        self.save()
+    
+    def run(self):
+        if self.status not in State.terminal:
+            self.step()
+        else:
+            assert false,  'You are trying to step a terminated status.'
+        while self.status not in State.pause and self.status not in State.terminal:
+            self.step()
 
 def main(options):
     # Connect to the database
-    db=Mydb('mark',options.db_name,options.db_url).cdb()
-    # Parse the gamess inp file
+    db = utils.Mydb('mark',options.db_name,options.db_url).cdb()
+
     myfile = open(options.file, 'rb')
     reader = ReadGamessInp(myfile)
     myfile.close()
     params = reader.params
     atoms = reader.atoms
     
-    fsm = GHessian()
+    ghessian = GHessian()
     gamess_calc = GamessGridCalc(db)
-    fsm.start(db, gamess_calc, atoms, params)
-    fsm.run()
-    a_task = fsm.save_state()
-    print a_task.id
+    ghessian.initialize(db, gamess_calc, atoms, params)
     
+    ghessian.run()
+    import time
+    while ghessian.status not in State.terminal:
+        time.sleep(10)
+        ghessian.run()
+
+    print 'ghessian done. Create task %s'%(ghessian.a_task.id)
 
 if __name__ == '__main__':
     #Set up command line options

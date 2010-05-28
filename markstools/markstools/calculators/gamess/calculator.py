@@ -7,8 +7,9 @@ from markstools.calculators.gamess import *
 from gorg.model.gridjob import JobInterface, States
 from gorg.model.gridtask import TaskInterface
 from parser import ParseGamessDat, ParseGamessOut
-
+from result import GamessResult 
 from ase.atoms import Atoms 
+from markstools.lib.exceptions import *
 
 class GamessParams:
     '''Holds the GAMESS run parameters'''
@@ -51,7 +52,7 @@ class GamessGridCalc(CalculatorBase):
         self.parsed_dat = ParseGamessDat()
         self.parsed_out = ParseGamessOut()
     
-    def generate(self, atoms, params, a_task, application_to_run='gamess', selected_resource='ocikbpra',  cores=2, memory=1, walltime=-1):
+    def generate(self, atoms, params, a_task, application_to_run, selected_resource,  cores, memory, walltime):
         """We run GAMESS in here."""
         from markstools.io.gamess import WriteGamessInp
         #Generate the input file
@@ -99,7 +100,7 @@ class GamessGridCalc(CalculatorBase):
                 raise MyTypeError('Can not reparse, parsed results are from %s, expecting %s'%(parser, self.__class__.__name_))
             a_result = a_job.parsed
             if a_result:
-                if isinstance(a_result, GamessResult):
+                if not isinstance(a_result, GamessResult):
                     raise MyTypeError('Unpickled parse results are of type %s, expecting %s'%(type(a_result)), GamessResult)
                 markstools.log.info('Using previously parsed results for Job %s'%(a_job.id))
         if a_result is None:

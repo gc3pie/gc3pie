@@ -31,3 +31,16 @@ def configure_logger(verbosity, log_file_name='gc3utils_log'):
     markstools.log.setLevel(logging_level)
     handler = logging.handlers.RotatingFileHandler(log_file_name, maxBytes=200, backupCount=5)
     markstools.log.addHandler(handler)
+
+def split_seq(iterable, size):
+    """ Split a interable into chunks of the given size
+        tuple(split_seq([1,2,3,4], size=2)
+                        returns ([1,2],[3,4])
+        
+    """
+    import itertools
+    it = iter(iterable)
+    item = list(itertools.islice(it, size))
+    while item:
+        yield item
+        item = list(itertools.islice(it, size))
