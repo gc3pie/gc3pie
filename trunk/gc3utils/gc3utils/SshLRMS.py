@@ -13,6 +13,7 @@ import utils
 import paramiko
 from utils import *
 from LRMS import LRMS
+import Exceptions 
 
 
 # -----------------------------------------------------
@@ -48,7 +49,7 @@ class SshLrms(LRMS):
         We assume the user has already set up passwordless ssh access to the resource. 
         """
 
-        ssh, sftp = self.connect_ssh(self._resource.frontend)
+        ssh, sftp = self.__connect_ssh(self._resource.frontend)
         _command = "uname -a"
         log.debug('CheckAuthentication command: ' + _command)
 
@@ -77,16 +78,27 @@ class SshLrms(LRMS):
         # ssh user@remote_frontend 'cd unique_token ; $gamess_location -n cores input_file'
         """
 
+
+
         # getting information from input_file
+        #_file_name = os.path.basename(application.input_file_name)
+        #_file_name_dir = os.path.dirname(application.input_file_name)
+        #_input_name = _file_name.split(".inp")[0]
+        #gc3utils.log.debug('Input file %s, dirpath %s, from %s, input name %s', _file_name, _file_name_dir, application.input_file_name, _input_name)
 
         # Establish an ssh connection.
         try:
-            (ssh, sftp) = self.connect_ssh(self._resource.frontend)
+            (ssh, sftp) = self.__connect_ssh(self._resource.frontend)
         except:
             raise
 
         # Create the remote unique_token directory. 
+        # mktemp -p ~ -d gc3utils_job.XXXXXXXXXX
+        print 'mike_debug 200'
+        print 'do something here'
         _remotepath = application.unique_token_relativepath
+        remotedir = tempfile.mkstemp(prefix='gc3utils_job.', dir='/home/mpackard')
+
         try:
             sftp.mkdir(_remotepath)
         except Exception, e:
@@ -95,22 +107,19 @@ class SshLrms(LRMS):
             gc3utils.log.critical('copy_input mkdir failed')
             raise
 
-        # Copy the input file(s) to remote unique_token directory.
-        for localpath in application.inputs:
-            file_name = os.path.basename(localpath)
-            remotepath = os.path.join(application.unique_token_relativepath, file_name)
-            gc3utils.log.debug("Copying '%s' to '%s:%s' via SFTP PUT ..." 
-                               % (localpath, self._resource.frontend, remotepath))
-            try:
-                sftp.put(localpath, remotepath)
-            except:
-                ssh.close()
-                gc3utils.log.critical('SFTP PUT failed, aborting.')
-                raise
+        # Copy the input file to remote unique_token directory.
+        _localpath = application.input_file_name
+        _remotepath = application.unique_token_relativepath + '/' + _file_name
+        try:
+            sftp.put(_localpath, _remotepath)
+        except:
+            ssh.close()
+            gc3utils.log.critical('copy_input put failed')
+            raise
 
 
         # Build up the SGE submit command.
-        _submit_command = "cd ~/'%s' && %s/qgms -n %s" % (application.unique_token_relativepath, self._resource.gamess_location, self._resource.ncores)
+        _submit_command = 'cd ~/\'%s\' && %s/qgms -n %s' % (application.unique_token_relativepath, self._resource.gamess_location, self._resource.ncores)
 
         # If walltime is provided, convert to seconds and add to the SGE submit command.
         _walltime_in_seconds = int(self._resource.walltime)*3600
@@ -120,8 +129,8 @@ class SshLrms(LRMS):
         gc3utils.log.debug('submit _walltime_in_seconds: ' + str(_walltime_in_seconds))
 #        gc3utils.log.debug('submit _walltime_in_seconds: ' + str(self._resource.walltime))
 
-        # Add the input file name to the SGE submit command. FIXME: GAMESS-specific
-        _submit_command += " '%s'" % os.path.basename(application.inputs[0])
+        # Add the input file name to the SGE submit command.
+        _submit_command = _submit_command + ' \'%s\'' % _file_name
         
         gc3utils.log.debug('submit _submit_command: ' + _submit_command)
 
@@ -135,10 +144,15 @@ class SshLrms(LRMS):
             gc3utils.log.debug("_submit_command stdout:" + out)
             gc3utils.log.debug("_submit_command stderr:" + err)
 
-            lrms_jobid = self.get_qsub_jobid(out)
+            lrms_jobid = self.__get_qsub_jobid(out)
             gc3utils.log.debug('Job submitted with jobid: %s',lrms_jobid)
 
-            job = Job.Job(lrms_jobid=lrms_jobid,status=Job.JOB_STATE_SUBMITTED,resource_name=self._resource.name,log=out)
+            job = Job.Job()
+            job.lrms_jobid = lrms_jobid
+            job.status = Job.JOB_STATE_SUBMITTED
+            job.resource_name = self._resource.name
+            job.log = "\nstdout:\n" + out 
+            job.log = job.log + "\nstderr:\n" + err
 
             return job
 
@@ -153,7 +167,7 @@ class SshLrms(LRMS):
 
         try:
             # open ssh connection
-            ssh, sftp = self.connect_ssh(self._resource.frontend)
+            ssh, sftp = self.__connect_ssh(self._resource.frontend)
 
             # then check the lrms_jobid with qstat
             testcommand = 'qstat -j %s' % job.lrms_jobid
@@ -202,7 +216,7 @@ class SshLrms(LRMS):
             # Each inner list has 2 elements, a remote file location and a local file location.
             # i.e. [copy_from, copy_to]
              
-            ssh, sftp = self.connect_ssh(self._resource.frontend)
+            ssh, sftp = self.__connect_ssh(self._resource.frontend)
             
             # todo : test that this copying works for both full and relative paths.
 
@@ -395,7 +409,7 @@ class SshLrms(LRMS):
     def KillJob(self, lrms_jobid):
         """Kill job."""
 
-        ssh, sftp = self.connect_ssh(self._resource.frontend)
+        ssh, sftp = self.__connect_ssh(self._resource.frontend)
 
         # Kill the job on the remote queueing system.
         
@@ -416,9 +430,13 @@ class SshLrms(LRMS):
 
         return (0,out)
             
+    def get_resource_status(self):
+            gc3utils.log.debug("Returning information of local resoruce")
+            return Resource(resource_name=self._resource.resource_name,total_cores=self._resource.ncores,memory_per_core=self._resource.memory_per_core)
+
     """Below are the functions needed only for the SshLrms class."""
 
-    def get_qsub_jobid(self, output):
+    def __get_qsub_jobid(self, output):
         """Parse the qsub output for the local jobid."""
         # todo : something with _output
         # todo : make this actually do something
@@ -426,16 +444,17 @@ class SshLrms(LRMS):
         gc3utils.log.debug('get_qsub_jobid raw output: ' + output)
         try:
             lrms_jobid = re.split(" ",output)[2]
-        except Exception, e:
+            gc3utils.log.debug('get_qsub_jobid jobid: ' + lrms_jobid)
+            return lrms_jobid
+
+        except:
             gc3utils.log.critical('could not get jobid from output')
-            raise e
             lrms_jobid = False
-
-        gc3utils.log.debug('get_qsub_jobid jobid: ' + lrms_jobid)
-        return lrms_jobid
+            raise Exceptions.SshSubmitException
 
 
-    def connect_ssh(self,host):
+
+    def __connect_ssh(self,host):
         """Create an ssh connection."""
         # todo : add fancier key handling and password asking stuff
 
@@ -452,6 +471,3 @@ class SshLrms(LRMS):
             raise
 
 
-    def GetResourceStatus(self):
-            gc3utils.log.debug("Returning information of local resoruce")
-            return Resource(resource_name=self._resource.resource_name,total_cores=self._resource.ncores,memory_per_core=self._resource.memory_per_core)

@@ -101,7 +101,7 @@ def gsub(*args, **kw):
     gc3utils.utils.configure_logger(options.verbosity, _default_log_file)
 
     if len(args) != 2:
-        raise InvalidUsage('Wrong number of arguments: this commands expects exactly two.')
+        raise InvalidUsage('Wrong number of arguments: this commands expects exactly two arguments.')
 
     application_tag = args[0]
 
