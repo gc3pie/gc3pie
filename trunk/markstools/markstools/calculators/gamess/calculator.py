@@ -2,10 +2,11 @@ import StringIO as StringIO
 import os
 
 import markstools
-import CalculatorBase
+from markstools.calculators.gamess import *
 
-from gorg.model.gridjob import JobInterface, PossibleStates
+from gorg.model.gridjob import JobInterface, States
 from gorg.model.gridtask import TaskInterface
+from parser import ParseGamessDat, ParseGamessOut
 
 from ase.atoms import Atoms 
 
@@ -65,7 +66,7 @@ class GamessGridCalc(CalculatorBase):
         # Convert the python dictionary to one that uses the couchdb schema
         a_job.user_data_dict = params.job_user_data_dict
         a_task.add_child(a_job)
-        log.info('Generated Job %s and it was added to Task %s'%(a_job.id, a_task.id))
+        markstools.log.info('Generated Job %s and it was added to Task %s'%(a_job.id, a_task.id))
         return a_job
     
     def get_file(self, a_job, type):
@@ -82,9 +83,9 @@ class GamessGridCalc(CalculatorBase):
         else:
             assert False, 'Can not handle objects of type: %s'%(type(a_thing))
         for a_job in job_list:
-            if a_job.status == PossibleStates['HOLD']:
-                a_job.status = PossibleStates['READY']
-                log.info('Job %s was in state %s and is now in state %s'%(PossibleStates['HOLD'], PossibleStates['READY']))
+            if a_job.status == States.HOLD:
+                a_job.status = States.READY
+                markstools.log.info('Job %s was in state %s and is now in state %s'%(a_job.id, States.display(States.HOLD), States.display(States.READY)))
         return job_list
 
     def parse(self, a_job, force_a_reparse=False):
@@ -100,9 +101,9 @@ class GamessGridCalc(CalculatorBase):
             if a_result:
                 if isinstance(a_result, GamessResult):
                     raise MyTypeError('Unpickled parse results are of type %s, expecting %s'%(type(a_result)), GamessResult)
-                log.info('Using previously parsed results for Job %s'%(a_job.id))
+                markstools.log.info('Using previously parsed results for Job %s'%(a_job.id))
         if a_result is None:
-            log.info('Starting to parse Job %s results'%(a_job.id))
+            markstools.log.info('Starting to parse Job %s results'%(a_job.id))
             try:
                 f_inp = a_job.get_attachment('inp')
                 reader = ReadGamessInp(f_inp)
