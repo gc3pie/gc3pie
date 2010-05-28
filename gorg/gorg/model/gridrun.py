@@ -9,6 +9,8 @@ import copy
 import tempfile
 from gorg.lib.utils import generate_new_docid, generate_tempfile_prefix
 
+import gc3utils
+
 map_func_author_status = '''
 def mapfun(doc):
     if 'base_type' in doc:
@@ -20,23 +22,7 @@ def reducefun(keys, values, rereduce):
     return sum(values)
     '''
     
-#class States(object):
-#    hold = 'HOLD'
-#    ready = 'READY'
-#    waiting = 'WAITING'
-#    running = 'RUNNING'
-#    finished = 'FINISHED'
-#    retrieving = 'RETRIEVING'
-#    done = 'DONE'
-#    error = 'ERROR'
-#    unreachable = 'UNREACHABLE'
-#    notified = 'NOTIFIED'
 
-PossibleStates = dict(HOLD='HOLD', READY='READY', WAITING='WAITING',RUNNING='RUNNING', 
-                                        FINISHED='FINISHED', RETRIEVING='RETRIEVING', DONE='DONE',
-                                        ERROR='ERROR',unreachable = 'UNREACHABLE',  notified = 'NOTIFIED')
-
-TerminalStates = dict(HOLD='HOLD', ERROR='ERROR', DONE='DONE')
 
 class GridrunModel(Document):
     VIEW_PREFIX = 'GridrunModel'
@@ -52,10 +38,10 @@ class GridrunModel(Document):
     # This holds the files we wish to run as well as their hashes
     files_to_run = DictField()
     
-    status = TextField(default = 'HOLD')
+    status = NumberField(default = States.HOLD)
     run_params = DictField()
+    gjob = DictField()
     gsub_message = TextField()
-    gsub_unique_token = TextField()
     
     def __init__(self, *args):
         super(GridrunModel, self).__init__(*args)
@@ -92,11 +78,13 @@ class GridrunModel(Document):
         # We now need to build a new run record
         self.author = a_job.author
         self.owned_by.append(a_job.id)
-        self.run_params=dict(application_tag=application_tag,
-                                           requested_resource=requested_resource,  
-                                           requested_memory=requested_memory, 
-                                           requested_cores=requested_cores, 
-                                           requested_walltime=requested_walltime)
+        self.run_params= gc3utils.Application.Application(application_tag,
+                                                                                       requested_resource,  
+                                                                                       requested_memory, 
+                                                                                       requested_cores, 
+                                                                                       requested_walltime, 
+                                                                                       job_local_dir='/tmp', 
+                                                                                       input_file_name=None)
         self.id = generate_new_docid()
         self = self._commit_new(db, a_job, files_to_run)
         log.debug('Run %s has been created'%(self.id))
@@ -127,7 +115,7 @@ class GridrunModel(Document):
         a_view = GridrunModel.view_by_hash(db, key=self.files_to_run.values())
         result = None
         for a_run in a_view:
-            if a_run.status == PossibleStates['DONE']:
+            if a_run.status == States.COMPLETED:
                 result = a_run
                 log.debug('Input file matches run %s that was already in the database'%(self.id))
         return result

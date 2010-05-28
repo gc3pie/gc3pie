@@ -33,7 +33,7 @@ class GridtaskModel(BaseroleModel):
     SUB_TYPE = 'GridtaskModel'
     VIEW_PREFIX = 'GridtaskModel'
     sub_type = TextField(default=SUB_TYPE)
-    state = TextField()
+    status = TextField()
     
     def __init__(self, *args):
         super(GridtaskModel, self).__init__(*args)
@@ -72,11 +72,11 @@ class GridtaskModel(BaseroleModel):
                         yield job_id, {'_id':job_id}
     
     @ViewField.define('GridtaskModel')
-    def view_state(doc):
+    def view_status(doc):
         if 'base_type' in doc:
             if doc['base_type'] == 'BaseroleModel':
                 if doc['sub_type'] == 'GridtaskModel':
-                    yield doc['state'], doc
+                    yield doc['status'], doc
 
     @classmethod
     def sync_views(cls, db,  only_names=False):
@@ -92,7 +92,7 @@ class TaskInterface(BaseroleInterface):
     def create(self, title):
         self.controlled = GridtaskModel().create(self.db.username, title)
         self.controlled.commit(self.db)
-        log.debug('Task %s has been created'%(self.id))
+        gorg.log.debug('Task %s has been created'%(self.id))
         return self
 
     def load(self, id):
@@ -111,7 +111,7 @@ class TaskInterface(BaseroleInterface):
         def fget(self):
             status_list = self._status()
             status_dict = dict()
-            for a_status in PossibleStates:
+            for a_status in States.all:
                 status_dict[a_status]  = 0
             for a_status in status_list:
                 status_dict[a_status] += 1
@@ -124,14 +124,14 @@ class TaskInterface(BaseroleInterface):
             status_dict = self.status
             job_count = sum(status_dict.values())
             if job_count == 0:
-                return PossibleStates['HOLD']
+                return States.HOLD
             for a_status in status_dict:
                 if status_dict[a_status] == job_count:
                     return a_status
-            if status_dict[PossibleStates['ERROR']] != 0:
-                return PossibleStates['ERROR']
+            if status_dict[States.ERROR] != 0:
+                return States.ERROR
             else:
-                return PossibleStates['RUNNING']
+                return States.WAITING
         return locals()
     status_overall = property(**status_overall())
 
@@ -143,7 +143,7 @@ class TaskInterface(BaseroleInterface):
         return locals()
     status_percent_done = property(**status_percent_done())
     
-    def wait(self, target_status=PossibleStates['DONE'], timeout=60, check_freq=10):
+    def wait(self, target_status=States.COMPLETED, timeout=60, check_freq=10):
         from time import sleep
         if timeout == 'INFINITE':
             timeout = sys.maxint
@@ -152,7 +152,7 @@ class TaskInterface(BaseroleInterface):
         starting_time = time.time()
         while True:
             my_status = self.controlled.status_overall
-            assert my_status != PossibleStates['ERROR'], 'Task %s returned an error.'%self.id
+            assert my_status != States.ERROR, 'Task %s returned an error.'%self.id
             if starting_time + timeout < time.time() or my_status == target_status:
                 break
             else:
@@ -172,11 +172,11 @@ class TaskInterface(BaseroleInterface):
         return locals()
     task = property(**task())
     
-    def state():
+    def status():
         def fget(self):
-            return self.controlled.state
-        def fset(self, state):
-            self.controlled.state = state
+            return self.controlled.status
+        def fset(self, status):
+            self.controlled.status = status
             self.controlled.commit(self.db)
         return locals()
-    state = property(**state())
+    status = property(**status())
