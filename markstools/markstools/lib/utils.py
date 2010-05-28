@@ -1,3 +1,7 @@
+import markstools
+import logging
+import logging.handlers
+
 def format_exception_info(maxTBlevel=5):
     '''Make the exception output pretty'''
     import traceback
@@ -11,18 +15,19 @@ def format_exception_info(maxTBlevel=5):
     excTb = traceback.format_tb(trbk, maxTBlevel)
     return '%s %s\n%s'%(excName, excArgs, ''.join(excTb))
 
-def create_file_logger(verbosity,file_prefix = 'gc3utils'):
-    '''
-    Create a file logger object.
-     * Requires logger name, file_prefix, verbosity
-     * Returns logger object.
-     
-    '''
-    import logging
-    import os
+def configure_logger(verbosity, log_file_name='gc3utils_log'):
+    """
+    Configure the logger.
+
+    - Input is the logging level and a filename to use.
+    - Returns nothing.
+    """
+    
     if ( verbosity > 5):
         logging_level = 10
     else:
         logging_level = (( 6 - verbosity) * 10)
-    log_filename = ('%s/%s_log'%(os.path.abspath(''), file_prefix))
-    logger = logging.basicConfig(filename = log_filename, level = logging_level, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+
+    markstools.log.setLevel(logging_level)
+    handler = logging.handlers.RotatingFileHandler(log_file_name, maxBytes=200, backupCount=5)
+    markstools.log.addHandler(handler)

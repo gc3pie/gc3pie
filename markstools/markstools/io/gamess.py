@@ -6,7 +6,8 @@ from pyparsing import *
 import re
 
 from ase import Atom
-from markstools.calculators.gamess import ParseKernal, GamessParams, GamessAtoms, MyUtilities
+from markstools.lib.parsekernel import ParseKernel
+from markstools.calculators.gamess.calculator import GamessParams, GamessAtoms
 
 class WriteGamessInp:
     """Create the file that specifies the GAMESS job
@@ -117,7 +118,7 @@ class ReadGamessInp:
         '''
         Constructor
         '''        
-        self.parse_kernal = ParseKernal()
+        self.parse_kernal = ParseKernel()
         start,  end = self.read_coords(returnRule=True)
         self.parse_kernal.addRule(start, end, self.read_coords)
         start,  end = self.read_params(returnRule=True)
