@@ -3,7 +3,8 @@ from couchdb.mapping import *
 from couchdb import client as client
 from datetime import datetime
 from gorg.lib.utils import generate_new_docid, generate_temp_dir, write_to_file
-import logging
+import gorg
+from gorg.lib.exceptions import *
 '''When you need to query for a key like this ('sad','saq') do this:
 self.view(db,'who_task_owns',startkey=[self.id],endkey=[self.id,{}])
 when you want to match a key ('sad','sad') do this:
@@ -201,7 +202,7 @@ class BaseroleInterface(object):
         for key in self.attachments:
            if key.rfind(ext) >= 0:
                 f_dict[key] = self.attachments[key]
-        if len(f_dict) != 1:
+        if len(f_dict) > 1:
             raise ViewWarning('More than one file matches your attachment request.')
         if len(f_dict) == 1:
             return f_dict.values()[0]
@@ -233,6 +234,6 @@ class BaseroleInterface(object):
             f_names = self.controlled['_attachments']
         # Loop through each attachment and save it
         for attachment in f_names:
-            attached_data = self.get_attachment(self.db, attachment)
+            attached_data = self._get_attachment(attachment)
             f_attachments[attachment] = write_to_file(tempdir, attachment, attached_data)
         return f_attachments

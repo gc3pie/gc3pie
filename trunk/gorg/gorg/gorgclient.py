@@ -4,12 +4,17 @@ import sys
 from gorg.model.gridjob import *
 from gorg.model.baserole import BaseroleModel
 from gorg.model.gridtask import GridtaskModel, TaskInterface
-
-from gorg.lib.utils import Mydb, create_file_logger, write_to_file
+from gorg.lib.utils import Mydb, configure_logger, write_to_file
 
 def main():
     # We add a job to our database lke this
-    create_file_logger(10)
+    import logging
+    logging.basicConfig(
+        level=logging.ERROR, 
+        format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+        datefmt='%Y-%m-%d %H:%M:%S')
+        
+    configure_logger(10)
 
     db=Mydb('mark','gorg_site','http://130.60.144.211:5984').createdatabase()
     db=Mydb('mark','gorg_site','http://130.60.144.211:5984').cdb()
@@ -18,14 +23,13 @@ def main():
     GridrunModel.sync_views(db)
     GridtaskModel.sync_views(db)
 
-#    a_task = TaskInterface(db)
-#    a_task = a_task.create('a title')
-#    a_task.user_data_dict['me']=12
-#    a_task.user_data_dict['me']
-#    myfile =  open('./gorg/examples/exam01.inp', 'rb')
-#    for i in range(5):
-#        a_job = JobInterface(db)
-#        a_job = a_job.create('a title', 'myparser', myfile)
+    a_task = TaskInterface(db)
+    a_task = a_task.create('a title')
+    a_task.user_data_dict['me']=12
+    a_task.user_data_dict['me']
+    myfile =  open('./gorg/examples/exam01.inp', 'rb')
+    a_job = JobInterface(db)
+    a_job = a_job.create('a title', 'myparser', myfile, requested_resource='ocikbnor')
 #        myfile.seek(0)
 #        a_task.add_child(a_job)
 #    a_task.status_overall

@@ -6,12 +6,31 @@ from gorg.lib.utils import generate_new_docid, generate_temp_dir, write_to_file
 from gorg.lib.exceptions import *
 import os
 import gorg
+from gc3utils import Application,  Job
+import time
 
-PossibleStates = dict(HOLD='HOLD', READY='READY', WAITING='WAITING',RUNNING='RUNNING', 
-                                        FINISHED='FINISHED', RETRIEVING='RETRIEVING', DONE='DONE',
-                                        ERROR='ERROR',unreachable = 'UNREACHABLE',  notified = 'NOTIFIED')
-
-TerminalStates = dict(HOLD='HOLD', ERROR='ERROR', DONE='DONE')
+class States(object):
+    _starting_num = 0
+    HOLD = str(_starting_num + 10)
+    READY = str(_starting_num + 20)
+    WAITING = str(_starting_num + 30)
+    RETRIEVING = str(_starting_num + 40)
+    COMPLETED = str(_starting_num + 50)
+    ERROR = str(_starting_num + 60)
+    UNREACHABLE = str(_starting_num + 70)
+    NOTIFIED = str(_starting_num + 80)
+    
+    all = [HOLD, WAITING, RETRIEVING,  READY, COMPLETED, ERROR, UNREACHABLE, NOTIFIED]
+    terminal = [HOLD, ERROR, COMPLETED]
+    
+    @staticmethod
+    def display(state):
+        if States.HOLD == state:
+            return 'hold'
+        elif States.READY == state:
+            return 'ready'
+        else:
+            return 'Do not know the state'
 
 class GridjobModel(BaseroleModel):
     SUB_TYPE = 'GridjobModel'
@@ -92,17 +111,19 @@ class GridjobModel(BaseroleModel):
 
 class JobInterface(BaseroleInterface):
     
-    def create(self, title,  parser_name, files_to_run, application_to_run='gamess', 
-                        selected_resource='ocikbpra',  cores=2, memory=1, walltime=-1):
+    def create(self, title,  parser_name, files_to_run, application_tag='gamess', 
+                        requested_resource='ocikbpra',  requested_cores=2, requested_memory=1, requested_walltime=-1):
         self.controlled = GridjobModel().create(self.db.username, title)
-        log.debug('Job %s has been created'%(self.id))        
+        gorg.log.debug('Job %s has been created'%(self.id))        
         a_run = GridrunModel()
-        a_run = a_run.create( self.db, files_to_run, self.controlled, application_to_run, 
-                        selected_resource,  cores, memory, walltime)
+        a_run = a_run.create( self.db, files_to_run, self.controlled, 
+                                            application_tag, requested_resource, 
+                                            requested_cores, requested_memory, 
+                                            requested_walltime)
         self.controlled._run_id = a_run.id
         self.parser = parser_name
         self.controlled.commit(self.db)
-        return self
+        return self    
     
     def load(self, id):
         self.controlled=GridjobModel.load_job(self.db, id)
@@ -149,7 +170,7 @@ class JobInterface(BaseroleInterface):
         return locals()
     status = property(**status())
 
-    def wait(self, target_status=PossibleStates['DONE'], timeout=60, check_freq=10):
+    def wait(self, target_status=States.COMPLETED, timeout=60, check_freq=10):
         from time import sleep
         if timeout == 'INFINITE':
             timeout = sys.maxint
@@ -158,7 +179,8 @@ class JobInterface(BaseroleInterface):
         starting_time = time.time()
         while True:
             my_status = self.status
-            assert my_status != PossibleStates['ERROR'], 'Job %s returned an error.'%self.id
+            if my_status == States.ERROR:
+                raise JobWarning('Job %s errored when running on the grid'%self.id)
             if starting_time + timeout < time.time() or my_status == target_status:
                 break
             else:
@@ -184,11 +206,11 @@ class JobInterface(BaseroleInterface):
         return locals()
     run_id = property(**run_id())
     
-    def run_params():        
+    def application():        
         def fget(self):
-            return self.run.run_params
+            return self.run.raw_application
         return locals()
-    run_params = property(**run_params())
+    application = property(**application())
     
     def job():        
         def fget(self):
@@ -241,10 +263,10 @@ class GridrunModel(Document):
     # This holds the files we wish to run as well as their hashes
     files_to_run = DictField()
     
-    status = TextField(default = 'HOLD')
-    run_params = DictField()
+    status = TextField(default = States.HOLD)
+    raw_application = DictField()
+    raw_job = DictField()
     gsub_message = TextField()
-    gsub_unique_token = TextField()
     
     def __init__(self, *args):
         super(GridrunModel, self).__init__(*args)
@@ -264,7 +286,9 @@ class GridrunModel(Document):
             task_list.append(a_job.get_task(db))
         return tuple(task_list)
 
-    def create(self, db, files_to_run, a_job, application_to_run='gamess', selected_resource='ocikbpra',  cores=2, memory=1, walltime=-1):       
+    def create(self, db, files_to_run, a_job, application_tag, 
+                        requested_resource,  requested_cores, 
+                        requested_memory, requested_walltime):       
         if not isinstance(files_to_run, list) and not isinstance(files_to_run, tuple):
             files_to_run = [files_to_run]
         # Generate the input file hashes
@@ -275,8 +299,14 @@ class GridrunModel(Document):
         # We now need to build a new run record
         self.author = a_job.author
         self.owned_by.append(a_job.id)
-        self.run_params=dict(application_to_run=application_to_run, \
-                              selected_resource=selected_resource,  cores=cores, memory=memory, walltime=walltime)
+        self.application = Application.Application(application_tag = application_tag,
+                                                                       requested_resource = requested_resource,  
+                                                                       requested_memory = requested_memory, 
+                                                                       requested_cores = requested_cores, 
+                                                                       requested_walltime = requested_walltime, 
+                                                                       job_local_dir = '/tmp', 
+                                                                       inputs = [], 
+                                                                       application_arguments = None)
         self.id = generate_new_docid()
         self = self._commit_new(db, a_job, files_to_run)
         return self
@@ -306,10 +336,32 @@ class GridrunModel(Document):
         a_view = GridrunModel.view_hash(db, key=self.files_to_run.values())
         result = None
         for a_run in a_view:
-            if a_run.status == PossibleStates['DONE']:
+            if a_run.status == States.COMPLETED:
                 result = a_run
         return result
     
+    def application():        
+        def fget(self):
+            if not isinstance(self.raw_application, Application.Application):
+                self.raw_application = Application.Application(self.raw_application)
+            return self.raw_application
+        def fset(self, application):
+            self.raw_application = application
+        return locals()
+    application = property(**application())
+    
+    def job():        
+        def fget(self):
+            if not isinstance(self.raw_job, Job.Job):
+                job = Job.Job()
+                job.update(self.raw_job)
+                self.raw_job = job
+            return self.raw_job
+        def fset(self, job):
+            self.raw_job = job
+        return locals()
+    job = property(**job())
+
     def commit(self, db):
         self.store(db)
     
@@ -370,7 +422,7 @@ class GridrunModel(Document):
     def view_status(doc):    
         if 'base_type' in doc:
             if doc['base_type'] == 'GridrunModel':                
-                yield doc['status'], doc
+                yield str(doc['status']), doc
 
     @ViewField.define('GridrunModel')
     def view_hash(doc):    
@@ -413,5 +465,5 @@ class GridrunModel(Document):
             md5.update(data)
         f.seek(0)
         #TODO: When mike runs this, it doesn't work
-        return u'%s'%(generate_new_docid())
-        #return u'%s'%md5.digest()
+        #return u'%s'%(generate_new_docid())
+        return u'%s'%md5.digest()

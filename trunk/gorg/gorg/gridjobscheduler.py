@@ -4,128 +4,121 @@ import tempfile
 import glob
 import gorg
 
-from gorg.model.gridjob import GridrunModel, PossibleStates, TerminalStates
+from gorg.model.gridjob import GridrunModel, States
 from gorg.lib.exceptions import *
-from gorg.lib.utils import Mydb, create_filelogger, formatExceptionInfo
-import gc3utils
+from gorg.lib.utils import Mydb, configure_logger, formatExceptionInfo
+
+from gc3utils import Job, Application, gcommands, utils, Exceptions
+import gc3utils.Exceptions
+
+TerminalStates = [Job.JOB_STATE_HOLD, Job.JOB_STATE_ERROR, Job.JOB_STATE_COMPLETED]
 
 class GridjobScheduler(object):
-    def __init__(self, db_name='gorg_site', db_url='http://127.0.0.1:5984'):
-        self.db=Mydb('mark', db_name,db_url).cdb()
+    def __init__(self, couchdb_user = 'mark',  couchdb_database='gorg_site', couchdb_url='http://127.0.0.1:5984'):
+        self.db=Mydb(couchdb_user, couchdb_database, couchdb_url).cdb()
         self.view_status_runs = GridrunModel.view_status(self.db)
-        self._gcli = _get_gcli()
+        self._gcli = gcommands._get_gcli()
     
-    def handle_ready_jobs(self, a_run):
-        #Handle jobs that are ready to be submitted to the grid
-        # Get the files that we need to generatea grid run
+    def handle_ready_run(self, a_run):
         try:
             f_list = a_run.attachments_to_files(self.db, a_run.files_to_run.keys())
     #TODO: We handle multiple input files here, but gcli can not handle them
             if len(f_list)!=1:
                 raise ValueError('gcli.gsub does not handle multiple input files.')
-            application = _get_application(a_run.run_params, input_file_name=f_list.values()[0].name)
-            gjob = self._gcli.gsub(application)
-            a_run.gsub_unique_token = gjob.unique_token
-            a_run.status=gjob.status
+            for a_file in f_list.values():
+                a_run.application['inputs'].append(a_file.name)
+            a_run.job = self._gcli.gsub(a_run.application)
+            utils.persist_job_filesystem(a_run.job)
+            
+            a_run.status = States.WAITING
         finally:
             map(file.close, f_list.values())
         return a_run
 
-    def handle_waiting_jobs(self, a_run):
-        gjob = self._gcli.gstat(gc3utils.utils.get_job(a_run.unique_token))
-        a_run.status = gjob.status
+    def handle_waiting_run(self, a_run):
+        a_run.job = self._gcli.gstat(a_run.job)[0]
+        
+        if a_run.job.status == Job.JOB_STATE_WAIT:
+            pass
+        elif a_run.job.status == Job.JOB_STATE_RUNNING:
+            pass
+        elif a_run.job.status == Job.JOB_STATE_FINISHED:            
+            a_run.status = States.RETRIEVING
+        elif a_run.job.status == Job.JOB_STATE_FAILED:
+            a_run.status = States.ERROR
+        
+        utils.persist_job_filesystem(a_run.job)
+        
         return a_run
  
-    def handle_running_jobs(self, a_run):
-        gjob = self._gcli.gstat(gc3utils.utils.get_job(a_run.unique_token))
-        a_run.status = gjob.status
-        return a_run
-
-    def handle_finished_jobs(self, a_run):
-        # TODO: gget returns 0 when it works, what do I do when it doesn't work? Cann't it return DONE or something?
-        token = a_run.gsub_unique_token
-        #a_run.status=PossibleStates['RETRIEVING']
-        #a_run.commit(self.db)
-        gjob = self._gcli.gget(gc3utils.utils.get_job(a_run.unique_token))        
-        output_files = glob.glob('%s/*.*'%a_run.gsub_unique_token)
+    def handle_retrieving_run(self, a_run):        
+        a_run.job = self._gcli.gget(a_run.job)
+        utils.persist_job_filesystem(a_run.job)
+        #TODO: fix me a bug
+        #output_files = glob.glob('%s/%s/*.*'%(a_run.application.job_local_dir, a_run.job.unique_token))
+        output_files = glob.glob('/home/mmonroe/%s/*.*'%(a_run.job.unique_token))
         for f_name in output_files:
             try:
                 a_file = open(f_name, 'rb')
                 a_run = a_run.put_attachment(self.db, a_file, os.path.basename(a_file.name)) #os.path.splitext(a_file.name)[-1].lstrip('.')
             finally:
                 a_file.close()
-        a_run.status = gjob.status
+        a_run.status = States.COMPLETED
         return a_run
 
-    def handle_unreachable_jobs(self, a_run):
+    def handle_unreachable_run(self, a_run):
         #TODO: Notify the user that they need to log into the clusters again, maybe using email?
-        a_run.status = PossibleStates['NOTIFIED']
+        a_run.status = States.NOTIFIED
         return a_run
     
-    def handle_notified_jobs(self, a_run):
+    def handle_notified_run(self, a_run):
         try:
-            result = self.gcli.gstat(a_run.gsub_unique_token)
-            a_run.status = result[1][0][1].split()[-1]
-        except AuthenticationError:
-            a_run.status = PossibleStates['NOTIFIED']
+            a_run.job = self._gcli.gstat(a_run.job)[0]
+            utils.persist_job_filesystem(a_run.job)
+            a_run.status = States.WAITING
+            
+        except gc3utils.Exceptions.AuthenticationException:
+            a_run.status = States.NOTIFIED
         return a_run
     
     def run(self):
-        view_runs = self.view_status_runs
-        for a_state in PossibleStates:
-            if a_state not in TerminalStates:
+        for a_state in States.all:
+            if a_state not in States.terminal:
                 view_runs = self.view_status_runs[a_state]
                 for a_run in view_runs:
                     try:
-                        if PossibleStates['READY'] == a_state:
-                            a_run = self.handle_ready_jobs(a_run)
-                        elif PossibleStates['WAITING'] == a_state:
-                            a_run = self.handle_waiting_jobs(a_run)
-                        elif PossibleStates['RUNNING'] == a_state:
-                            a_run = self.handle_running_jobs(a_run)
-                        elif PossibleStates['FINISHED'] == a_state:
-                            a_run = self.handle_finished_jobs(a_run)
-                        elif PossibleStates['UNREACHABLE'] == a_state:
-                            a_run = self.handle_unreachable_jobs(a_run)
-                        elif PossibleStates['NOTIFIED'] == a_state:
-                            a_run = self.handle_notified_jobs(a_run)
+                        if States.READY == a_state:
+                            a_run = self.handle_ready_run(a_run)
+                        elif States.WAITING == a_state:
+                            a_run = self.handle_waiting_run(a_run)
+                        elif States.RETRIEVING == a_state:
+                            a_run = self.handle_retrieving_run(a_run)
+                        elif States.UNREACHABLE == a_state:
+                            a_run = self.handle_unreachable_run(a_run)
+                        elif States.NOTIFIED == a_state:
+                            a_run = self.handle_notified_run(a_run)
                         else:
                             raise UnhandledStateError('Run id %s is in unhandled state %s'%(a_run.id, a_run.status))
-                    except AuthenticationError:
-                        a_run.status = PossibleStates['UNREACHABLE']
+                    except gc3utils.Exceptions.AuthenticationException:
+                        a_run.status = States.UNREACHABLE
                     except:
                         a_run.gsub_message=formatExceptionInfo()
-                        a_run.status=PossibleStates['ERROR']
-                        log.critical('GridjobScheduler Errored while processing run id %s \n%s'%(a_run.id, a_run.gsub_message))
+                        a_run.status=States.ERROR
+                        gorg.log.critical('GridjobScheduler Errored while processing run id %s \n%s'%(a_run.id, a_run.gsub_message))
                     a_run.commit(self.db)
 
-def _get_gcli():
-    options = None
-    return gc3utils.gcommands._get_gcli(options)
-
-def _get_application(run_params, input_file_name):
-    application = gc3utils.Application.Application(job_local_dir='/tmp', input_file_name=input_file_name, **run_params)
-    if not application.is_valid():
-        raise Exception('Failed creating application object')
-    return application
-    
-    
-
-
-
-
-
-
-
-
-
-
 def main():
-    job_scheduler = GridjobScheduler()
+    import logging
+    logging.basicConfig(
+        level=logging.ERROR, 
+        format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+        datefmt='%Y-%m-%d %H:%M:%S')
+        
+    configure_logger(10)
+    job_scheduler = GridjobScheduler('mark','gorg_site','http://130.60.144.211:5984')
     job_scheduler.run()
     print 'Done running gridjobscheduler.py'
 
 if __name__ == "__main__":
-    create_filelogger(1)
     main()
     sys.exit()
