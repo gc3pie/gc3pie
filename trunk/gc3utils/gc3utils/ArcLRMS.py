@@ -29,13 +29,12 @@ import arclib
 class ArcLrms(LRMS):
 
     isValid = 0
-#    GAMESS_XRSL_TEMPLATE = "$HOME/.gc3/gamess_template.xrsl"
-    #    resource = []
     _resource = None
 
     def __init__(self,resource):
         gc3utils.log = logging.getLogger('gc3utils')
         
+        # Normalize resource types
         if resource.type is Default.ARC_LRMS:
             self._resource = resource
             self.isValid = 1
@@ -46,9 +45,6 @@ class ArcLrms(LRMS):
             if self._resource.walltime > 0:
                 # Convert from hours to minutes
                 self._resource.walltime = self._resource.walltime * 60
-
-                #            log.info('created valid instance of LRMS type %s with %d cores, %d walltime, %d memory',self._resource.name,self._resource.total_cores,self._resource.max_walltime,self._resource.max_memory_per_node)
-
 
     def submit_job(self, application):
         try:
@@ -111,11 +107,11 @@ class ArcLrms(LRMS):
                 lrms_jobid = output.split(jobid_pattern)[1]
                 gc3utils.log.debug('Job submitted with jobid: %s',lrms_jobid)
 
-                job = Job.Job()
-                job.lrms_jobid = lrms_jobid
-                job.status = Job.JOB_STATE_SUBMITTED
-                job.resource_name = self._resource.name
-                job.log = output
+                job = Job.Job(lrms_jobid=lrms_jobid,status=Job.JOB_STATE_SUBMITTED,resource_name=self._resource.name,log=output)
+#                job.lrms_jobid = lrms_jobid
+#                job.status = Job.JOB_STATE_SUBMITTED
+#                job.resource_name = self._resource.name
+#                job.log = output
 
                 return job
 
@@ -139,7 +135,6 @@ class ArcLrms(LRMS):
             arc_job = arclib.GetJobInfo(job_obj.lrms_jobid)
 
             job_obj.cluster = arc_job.cluster
-#            job_obj.completion_time = arc_job.completion_time
             job_obj.cpu_count = arc_job.cpu_count
             job_obj.exitcode = arc_job.exitcode
             job_obj.job_name = arc_job.job_name
@@ -168,53 +163,6 @@ class ArcLrms(LRMS):
                 job_obj.status = Job.JOB_STATE_FAILED
                 
             return job_obj
-
-#===============================================================================
-#            # Ready for real submission
-#            _command = "ngstat "+job_obj.lrms_jobid
-# 
-#            gc3utils.log.debug('Running ARC command [ %s ]',_command)
-# 
-#            retval = commands.getstatusoutput(_command)
-#            # jobstatusunknown_pattern = "This job was only very recently"
-#            jobstatusunknown_pattern = "Job information not found"
-#            jobstatusremoved_pattern = "Job information not found"
-#            jobstatusok_pattern = "Status: "
-#            jobexitcode_pattern = "Exit Code: "
-#            if not retval[0] :
-#                gc3utils.log.error("ngstat command\t\t[ failed ]")
-#                gc3utils.log.debug(retval[1])
-#                raise Exceptions.CheckStarusError('failed checking status to LRMS')
-# 
-#            if ( jobstatusunknown_pattern in retval[1] ):
-#                gc3utils.log.debug('job status: RUNNING')
-#                job_obj.insert('status',Job.RUNNING)
-# 
-#            elif ( jobstatusok_pattern in retval[1] ):
-# 
-#                # Extracting ARC job status
-#                lrms_jobstatus = re.split(jobstatusok_pattern,retval[1])[1]
-#                lrms_jobstatus = re.split("\n",lrms_jobstatus)[0]
-# 
-#                gc3utils.log.debug('lrms_jobstatus\t\t\t[ %s ]',lrms_jobstatus)
-# 
-#                if ( lrms_jobstatus in running_list ):
-#                    jobstatus = "Status: RUNNING"
-#                elif ( lrms_jobstatus in finished_list ):
-#                    jobstatus = "Status: FINISHED"
-# #                if ( lrms_jobstatus in submitted_list ):
-# #                    jobstatus = "Status: SUBMITTED"
-# #                elif ( lrms_jobstatus in running_list ):
-# #                    jobstatus = "Status: RUNNING"
-# #                elif ( ( lrms_jobstatus in finished_list ) | ( lrms_jobstatus in failed_list )):
-# #                    lrms_exitcode = re.split(jobexitcode_pattern,retval[1])[1]
-# #                    lrms_exitcode = re.split("\n",lrms_exitcode)[0]
-# #                    jobstatus = "Status: FINISHED\nExit Code: "+lrms_exitcode
-#                else:
-#                    jobstatus = "Status: [ "+lrms_jobstatus+" ]"
-# 
-#            return [jobstatus,retval[1]]
-#===============================================================================
 
         except:
             gc3utils.log.critical('Failure in checking status [%s]',sys.exc_info()[1])
@@ -251,42 +199,44 @@ class ArcLrms(LRMS):
         except:
             gc3utils.log.error('Failure in retrieving job results [%s]',sys.exc_info()[1])
 
-#                  try:
-#            result_location_pattern="Results stored at "
-#            
-#            _command = "ngget -keep -s FINISHED -d 2 -dir "+job_dir+" "+lrms_jobid
+            #                  try:
+            #            result_location_pattern="Results stored at "
+            #            
+            #            _command = "ngget -keep -s FINISHED -d 2 -dir "+job_dir+" "+lrms_jobid
+            
+            #            gc3utils.log.debug('Running ARC command [ %s ]',_command)
+            
+            #            job_results_retrieved_pattern = "successfuly downloaded: 0"
 
-#            gc3utils.log.debug('Running ARC command [ %s ]',_command)
-
-#            job_results_retrieved_pattern = "successfuly downloaded: 0"
-
-#            retval = commands.getstatusoutput(_command)
-#            if ( ( retval[0] != 0 ) ):
-#                # Failed somehow
-#                gc3utils.log.error("ngget command\t\t[ failed ]")
-#                gc3utils.log.debug(retval[1])
-#                raise Exception('failed getting results from LRMS')
-
-#            if ( result_location_pattern in retval[1] ):
-#                _result_location_folder = re.split(result_location_pattern,retval[1])[1]
-#                _result_location_folder = re.split("\n",_result_location_folder)[0]
-#                gc3utils.log.debug('Moving result data from [ %s ]',_result_location_folder)
-#                if ( os.path.isdir(_result_location_folder) ):
-#                    retval = commands.getstatusoutput("cp -ap "+_result_location_folder+"/* "+job_dir)
-#                    if ( retval[0] != 0 ):
-#                        gc3utils.log.error('Failed copying results data from [ %s ] to [ %s ]',_result_location_folder,job_dir)
-#                    else:
-#                        gc3utils.log.info('Copying results\t\t[ ok ]')
-#                        gc3utils.log.debug('Removing [ %s ]',_result_location_folder)
-#                        shutil.rmtree(_result_location_folder)
-#                gc3utils.log.info('get_results\t\t\t[ ok ]')
-#                return [True,retval[1]]
-#            else:
-#                return [False,retval[1]]
-#        except:
-#            gc3utils.log.critical('Failure in retrieving results')
-#            raise
-
+            #            retval = commands.getstatusoutput(_command)
+            #            if ( ( retval[0] != 0 ) ):
+            #                # Failed somehow
+            #                gc3utils.log.error("ngget command\t\t[ failed ]")
+            #                gc3utils.log.debug(retval[1])
+            #                raise Exception('failed getting results from LRMS')
+            
+            #            if ( result_location_pattern in retval[1] ):
+            #                _result_location_folder = re.split(result_location_pattern,retval[1])[1]
+            #                _result_location_folder = re.split("\n",_result_location_folder)[0]
+            #                gc3utils.log.debug('Moving result data from [ %s ]',_result_location_folder)
+            #                if ( os.path.isdir(_result_location_folder) ):
+            #                    retval = commands.getstatusoutput("cp -ap "+_result_location_folder+"/* "+job_dir)
+            #                    if ( retval[0] != 0 ):
+            #                        gc3utils.log.error('Failed copying results data from [ %s ] to [ %s ]',_result_location_folder,job_dir)
+            #                    else:
+            #                        gc3utils.log.info('Copying results\t\t[ ok ]')
+            #                        gc3utils.log.debug('Removing [ %s ]',_result_location_folder)
+            #                        shutil.rmtree(_result_location_folder)
+            #                gc3utils.log.info('get_results\t\t\t[ ok ]')
+            #                return [True,retval[1]]
+            #            else:
+            #                return [False,retval[1]]
+            #        except:
+            #            gc3utils.log.critical('Failure in retrieving results')
+            #            raise
+            
     def GetResourceStatus(self):
         gc3utils.log.debug("Returning information of local resoruce")
+        
+        # SERGIO TBCK: check whether it works by Resource(self._resource) instead
         return Resource(resource_name=self._resource['resource_name'],total_cores=self._resource['ncores'],memory_per_core=self._resource['memory_per_core'])

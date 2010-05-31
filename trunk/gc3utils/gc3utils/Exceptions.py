@@ -102,6 +102,8 @@ class TransportException(Error):
 class VOMSException(Error):
     pass
 
+class InvalidInformationContainerError(Error):
+    pass
 
 
 ## main: run tests

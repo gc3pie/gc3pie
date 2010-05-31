@@ -202,17 +202,7 @@ def get_defaults(defaults):
     # defaults is a list[] of values
     try:
         # Create default values
-        default = gc3utils.Default.Default(
-            homedir=gc3utils.Default.HOMEDIR,
-            config_file_location=gc3utils.Default.CONFIG_FILE_LOCATION,
-            joblist_location=gc3utils.Default.JOBLIST_FILE,
-            joblist_lock=gc3utils.Default.JOBLIST_LOCK,
-            job_folder_location=gc3utils.Default.JOB_FOLDER_LOCATION
-            )
-        # Overwrite with what has been read from config
-        default.update(defaults)
-        if not default.is_valid():
-            raise Exception('defaults not valid')
+        default = gc3utils.Default.Default(defaults)
     except:
         gc3utils.log.critical('Failed loading default values')
         raise
@@ -229,9 +219,18 @@ def get_resources(resources_list):
     try:
         for resource in resources_list:
             gc3utils.log.debug('creating instance of Resource object... ')
-            tmpres = gc3utils.Resource.Resource()
+
+            try:
+                tmpres = gc3utils.Resource.Resource(resource)
+            except:
+                gc3utils.log.error("rejecting resource '%s'",resource['name'])
+                #                gc3utils.log.warning("Resource '%s' failed validity test - rejecting it.",
+                #                                     resource['name'])
+
+                continue
+#            tmpres = gc3utils.Resource.Resource()
                 
-            tmpres.update(resource)
+#            tmpres.update(resource)
             #            for items in resource:
             #                gc3utils.log.debug('Updating with %s %s',items,resource[items])
             #                tmpres.insert(items,resource[items])
@@ -247,11 +246,7 @@ def get_resources(resources_list):
             
             gc3utils.log.debug('checking validity with %s',str(tmpres.is_valid()))
             
-            if tmpres.is_valid():
-                resources.append(tmpres)
-            else:
-                gc3utils.log.warning("Resource '%s' failed validity test - rejecting it.",
-                                     resource['name'])
+            resources.append(tmpres)
     except:
         gc3utils.log.critical('failed creating Resource list')
         raise
@@ -267,8 +262,8 @@ def read_config(config_file_location):
     resource_list = []
     defaults = {}
 
-    print 'mike_debug 100'
-    print config_file_location
+#    print 'mike_debug 100'
+#    print config_file_location
 
     _configFileLocation = os.path.expandvars(config_file_location)
     if not os.path.exists(_configFileLocation):
@@ -449,16 +444,17 @@ def renew_grid_credential(_aaiUserName):
 def job_status_to_string(job_status):
     try:
         return {
-            Job.JOB_STATE_HOLD:    'HOLD',
-            Job.JOB_STATE_WAIT:    'WAITING',
-            Job.JOB_STATE_READY:   'READY',
-            Job.JOB_STATE_ERROR:   'ERROR',
+#            Job.JOB_STATE_HOLD:    'HOLD',
+#            Job.JOB_STATE_WAIT:    'WAITING',
+#            Job.JOB_STATE_READY:   'READY',
+#            Job.JOB_STATE_ERROR:   'ERROR',
             Job.JOB_STATE_FAILED:  'FAILED',
-            Job.JOB_STATE_OUTPUT:  'OUTPUTTING',
+#            Job.JOB_STATE_OUTPUT:  'OUTPUTTING',
             Job.JOB_STATE_RUNNING: 'RUNNING',
             Job.JOB_STATE_FINISHED:'FINISHED',
-            Job.JOB_STATE_NOTIFIED:'NOTIFIED',
+#            Job.JOB_STATE_NOTIFIED:'NOTIFIED',
             Job.JOB_STATE_SUBMITTED:'SUBMITTED',
+            Job.JOB_STATE_COMPLETED:'COMPLETED'
             }[job_status]
     except KeyError:
         gc3utils.log.error('job status code %s unknown', job_status)
@@ -475,8 +471,7 @@ def get_job_filesystem(unique_token):
 
     try:
         handler = shelve.open(Default.JOBS_DIR+'/'+unique_token)
-        job = Job.Job(unique_token=unique_token)
-        job.update(handler)
+        job = Job.Job(handler) 
         handler.close()
         if job.is_valid():
             return job
