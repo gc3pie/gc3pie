@@ -105,12 +105,6 @@ class Gcli:
             gc3utils.log.critical('Could not initialize ANY lrms resource')
             raise Exception('no available LRMS found')
 
-#        application_obj.insert('unique_token_relativepath',os.path.basename(unique_token))
-#        application_obj.insert('unique_token_fullpath',unique_token)
-
-        # resource_name.submit_job(input, unique_token, application, lrms_log) -> returns [lrms_jobid,lrms_log]
-#        gc3utils.log.debug('Submitting job with %s %s %s %s',unique_token, application_to_run, input_file, self.defaults['lrms_log'])
-
         # Scheduler.do_brokering should return a sorted list of valid lrms
         job = None
         
@@ -134,6 +128,7 @@ class Gcli:
 #                    job.insert('unique_token',unique_token)
                     gc3utils.log.info('Submission process to LRMS backend\t\t\t[ ok ]')
                     # job submitted; leave loop
+                    job.job_local_dir = application_obj.job_local_dir
                     break
             except AuthenticationException:
                 continue
