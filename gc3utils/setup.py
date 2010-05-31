@@ -35,6 +35,7 @@ setup(
             'glist = gc3utils.gcmd:main',
             'gkill = gc3utils.gcmd:main',
             'gget = gc3utils.gcmd:main',
+	    'ginfo = gc3utils.gcmd:main',
             ],
        },
 

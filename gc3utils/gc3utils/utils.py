@@ -495,6 +495,10 @@ def create_job_folder_filesystem(job_folder_location,unique_token):
         gc3utils.log.error('Failed creating job on filesystem')
         raise
 
+
+def persist_job(job_obj):
+    return persist_job_filesystem(job_obj)
+
 def persist_job_filesystem(job_obj):
 
     handler = None

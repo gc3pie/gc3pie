@@ -125,7 +125,6 @@ class Gcli:
                 # lrms.submit(job)
                 # 
                 if job.is_valid():
-#                    job.insert('unique_token',unique_token)
                     gc3utils.log.info('Submission process to LRMS backend\t\t\t[ ok ]')
                     # job submitted; leave loop
                     job.job_local_dir = application_obj.job_local_dir
@@ -138,9 +137,6 @@ class Gcli:
 
         if job is None:
             raise LRMSException('Failed submitting application to any LRMS')
-
-#        if self.__log_job(job):
-#            gc3utils.log.info('Dumping lrms log information\t\t\t[ ok ]')
 
         # return an object of type Job which contains also the unique_token
         return job
@@ -191,9 +187,6 @@ class Gcli:
     def gget(self, job_obj):
         _lrms = self.__get_LRMS(job_obj.resource_name)
 
-        #        # update job status to make sure job.status is up to date
-        #        job_obj = _lrms.check_status(job_obj)
-        
         a = Authorization.Auth()
         a.get(_lrms._resource.type)
         job_obj = _lrms.get_results(job_obj)
