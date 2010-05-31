@@ -172,8 +172,8 @@ class ArcLrms(LRMS):
         try:
             # get FTP control
             jftpc = arclib.JobFTPControl()
-            if job_obj.has_key('job_folder'):
-                _download_dir = job_obj.job_folder + '/' + job_obj.unique_token
+            if job_obj.has_key('job_local_dir'):
+                _download_dir = job_obj.job_local_dir + '/' + job_obj.unique_token
             else:
                 _download_dir = Default.JOB_FOLDER_LOCATION + '/' + job_obj.unique_token
 
