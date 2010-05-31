@@ -2,6 +2,7 @@ import types
 from InformationContainer import *
 import utils
 import Exceptions
+import gc3utils
 
 # -----------------------------------------------------
 # Job
@@ -36,29 +37,34 @@ JOB_STATE_COMPLETED = 5
 # No action required; the state will be set to something else as the code executes.
 JOB_STATE_UNKNOWN = 6
 
-JOB_STATE_HOLD = 7 # Initial state
-JOB_STATE_READY = 8 # Ready for gsub
-JOB_STATE_WAIT = 9 # equivalent to SUBMITTED
-JOB_STATE_OUTPUT = 10 # equivalent to FINISHED
-JOB_STATE_UNREACHABLE = 11 # AuthError
-JOB_STATE_NOTIFIED = 12 # User Notified of AuthError
-JOB_STATE_ERROR = 13 # Equivalent to FAILED
+#JOB_STATE_HOLD = 7 # Initial state
+#JOB_STATE_READY = 8 # Ready for gsub
+#JOB_STATE_WAIT = 9 # equivalent to SUBMITTED
+#JOB_STATE_OUTPUT = 10 # equivalent to FINISHED
+#JOB_STATE_UNREACHABLE = 11 # AuthError
+#JOB_STATE_NOTIFIED = 12 # User Notified of AuthError
+#JOB_STATE_ERROR = 13 # Equivalent to FAILED
 
 
 class Job(InformationContainer):
 
-    def __init__(self, **kwargs):
-        # create_unique_token
-        if not kwargs.has_key('unique_token'):
-            kwargs['unique_token'] = utils.create_unique_token()
-        InformationContainer.__init__(self, **kwargs)
+    def __init__(self,initializer=None,**keywd):
+        """
+        Create a new Job object.
         
+        Examples::
+        
+        >>> df = Job()
+        """
+        # create_unique_token
+        if (not keywd.has_key('unique_token')) and not (initializer is not None and hasattr(initializer, 'has_key') and initializer.has_key('unique_token')):
+            gc3utils.log.debug('creating new unique_token')
+            keywd['unique_token'] = utils.create_unique_token()
+        InformationContainer.__init__(self,initializer,**keywd)
+
     def is_valid(self):
         if (self.has_key('status') 
             and self.has_key('resource_name') 
             and self.has_key('lrms_jobid') 
             and self.has_key('unique_token')):
             return True
-
-
-
