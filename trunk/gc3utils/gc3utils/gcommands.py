@@ -56,7 +56,12 @@ def _get_gcli(config_file_path = _default_config_file_location):
         gc3utils.log.debug("Failed loading config file from '%s'", config_file_path)
         raise
 
-
+def _print_job_info(job_obj):
+    for key in job_obj.keys():
+        if not key == 'log' and not str(job_obj[key]) == '-1':
+            print("%-16s %-10s" % (key,job_obj[key]))
+    return 0
+        
 def _print_job_status(job_list,job_status_filter):
     if len(job_list) > 0:
         print("%-16s  %-10s" % ("Job ID", "Status"))
@@ -84,6 +89,22 @@ def _print_job_status(job_list,job_status_filter):
 
 
 #====== Main ========
+
+def ginfo(*args, **kw):
+    """The 'ginfo' command."""
+    parser = OptionParser(usage="Usage: %prog [options] JOBID")
+    parser.add_option("-v", action="count", dest="verbosity", default=0, help="Set verbosity level")
+    (options, args) = parser.parse_args(list(args))
+    gc3utils.utils.configure_logger(options.verbosity, _default_log_file)
+
+    if len(args) != 1:
+        raise InvalidUsage('Wrong number of arguments: this commands expects exactly one  arguments.')
+
+    try:
+        _print_job_info(gc3utils.utils.get_job(args[0]))
+        return 0
+    except:
+        raise
 
 def gsub(*args, **kw):
     """The `gsub` command."""
@@ -136,9 +157,10 @@ def gsub(*args, **kw):
     job = _gcli.gsub(application)
 
     if job.is_valid():
-        # create persistanc of filesystem
+        # create persistance of filesystem
         # gc3utils.utils.create_job_on_filesystem(application_obj.job_local_dir,job.unique_token)
-        gc3utils.utils.persist_job_filesystem(job)
+        gc3utils.utils.persist_job(job)
+        # gc3utils.utils.persist_job_filesystem(job)
         _print_job_status([job],0)
         return 0
     else:
@@ -199,7 +221,8 @@ def gstat(*args, **kw):
             gc3utils.log.error('Returned job not valid. Removing from list')
             job_list.remove(_job)
         else:
-            gc3utils.utils.persist_job_filesystem(_job)
+            gc3utils.utils.persist_job(_job)
+            # gc3utils.utils.persist_job_filesystem(_job)
                                         
     try:
         # Print result
@@ -232,7 +255,8 @@ def gget(*args, **kw):
     if not job_obj.status == gc3utils.Job.JOB_STATE_COMPLETED and (job_obj.status == gc3utils.Job.JOB_STATE_FINISHED or job_obj.status == gc3utils.Job.JOB_STATE_FAILED):
         gc3utils.log.debug('running gcli.gget')
         job_obj = _gcli.gget(job_obj)
-        gc3utils.utils.persist_job_filesystem(job_obj)
+        gc3utils.utils.persist_job(job_obj)
+        # gc3utils.utils.persist_job_filesystem(job_obj)
 
     if job_obj.status == gc3utils.Job.JOB_STATE_COMPLETED:
         sys.stdout.write('Job results successfully retrieved in [ '+job_obj.download_dir+' ]\n')

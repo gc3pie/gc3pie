@@ -182,10 +182,9 @@ class ArcLrms(LRMS):
 
             gc3utils.log.debug('downloading job into %s',_download_dir)
             arclib.JobFTPControl.DownloadDirectory(jftpc,job_obj.lrms_jobid,_download_dir)
-            # Default.JOB_FOLDER_LOCATION+'/'+job_obj.unique_token)
 
             # Clean remote job sessiondir
-            #            retval = arclib.JobFTPControl.Clean(jftpc,job_obj.lrms_jobid)
+            retval = arclib.JobFTPControl.Clean(jftpc,job_obj.lrms_jobid)
 
             # set job status to COMPLETED
             job_obj.download_dir = _download_dir
@@ -198,6 +197,7 @@ class ArcLrms(LRMS):
             raise
         except:
             gc3utils.log.error('Failure in retrieving job results [%s]',sys.exc_info()[1])
+            raise
 
             #                  try:
             #            result_location_pattern="Results stored at "
