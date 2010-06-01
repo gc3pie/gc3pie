@@ -522,6 +522,14 @@ def persist_job_filesystem(job_obj):
             handler.close()
         raise
 
+def clean_job(unique_token):
+    return clean_job_filesystem(unique_token)
+
+def clean_job_filesystem(unique_token):
+    if os.path.isfile(Default.JOBS_DIR+'/'+unique_token):
+        os.remove(Default.JOBS_DIR+'/'+unique_token)
+    return 0
+
 def prepare_job_dir(_download_dir):
     if os.path.isdir(_download_dir):
         # directory exists; move it to .1
