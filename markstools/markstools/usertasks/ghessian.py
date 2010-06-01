@@ -13,33 +13,31 @@ import numpy as np
 from markstools.io.gamess import ReadGamessInp, WriteGamessInp
 from markstools.calculators.gamess.calculator import GamessGridCalc
 from markstools.lib import utils
+from markstools.lib.status import State,  Status
+
 from gorg.model.gridtask import TaskInterface
 from gorg.lib.utils import Mydb
 
+STATE_WAIT = State('WAIT', 'WAIT desc', True)
+STATE_PROCESS = State('PROCESS', 'PROCESS desc')
+STATE_POSTPROCESS = State('POSTPROCESS', 'POSTPROCESS desc')
+STATE_ERROR = State('ERROR', 'ERROR desc', terminal = True)
+STATE_COMPLETED = State('COMPLETED', 'COMPLETED desc', terminal = True)
 
-class State(object):
-    WAIT = 'WAIT'
-    PROCESS = 'PROCESS'
-    POSTPROCESS = 'POSTPROCESS'
-    ERROR = 'ERROR'
-    COMPLETED = 'COMPLETED'
-    
-    all = [WAIT, PROCESS, ERROR, COMPLETED, POSTPROCESS]
-    pause = [WAIT]
-    terminal = [ERROR,  COMPLETED]
+STATES = Status([STATE_WAIT, STATE_PROCESS, STATE_POSTPROCESS, 
+                            STATE_ERROR, STATE_COMPLETED])
 
 class GHessian(object):
     H_TO_PERTURB = 0.0052918
     GRADIENT_CONVERSION=1.8897161646320724
-
+       
     def __init__(self):
-        self.status = State.ERROR
-        self.status_mapping = {State.WAIT: self.handle_wait_state, 
-                                             State.PROCESS: self.handle_process_state, 
-                                             State.POSTPROCESS: self.handle_postprocess_state, 
-                                             State.ERROR: self.handle_terminal_state, 
-                                             State.COMPLETED: self.handle_terminal_state}
-        
+        self.status = STATES.ERROR
+        self.status_mapping = {STATES.WAIT: self.handle_wait_state, 
+                                             STATES.PROCESS: self.handle_process_state, 
+                                             STATES.POSTPROCESS: self.handle_postprocess_state, 
+                                             STATES.ERROR: self.handle_terminal_state, 
+                                             STATES.COMPLETED: self.handle_terminal_state}
         self.a_task = None
         self.calculator = None
 
@@ -58,29 +56,29 @@ class GHessian(object):
             sec_job = calculator.generate(atoms, params, self.a_task, application_to_run, selected_resource, cores, memory, walltime)
         self.calculator.calculate(self.a_task)
         markstools.log.info('Submitted task %s for execution.'%(self.a_task.id))
-        self.status = State.WAIT
+        self.status = STATES.WAIT
         
     def load(self, db,  a_task):
         self.a_task = a_task
-        self.status = self.a_task.status
+        self.status = STATES.match(self.a_task.status)
         str_calc = self.a_task.user_data_dict['calculator']
         self.calculator = eval(str_calc + '(db)')
     
     def save(self):
-        self.a_task.status = self.status
+        self.a_task.status = self.status.name
         self.a_task.user_data_dict['calculator'] = self.calculator.__class__.__name__
     
     def handle_wait_state(self):
         from gorg.gridjobscheduler import GridjobScheduler
         job_scheduler = GridjobScheduler('mark','gorg_site','http://130.60.144.211:5984')
         job_list = self.a_task.children
-        new_status = State.PROCESS
+        new_status = STATES.PROCESS
         for a_job in job_list:
             job_done = False
             job_scheduler.run()
             job_done = a_job.wait(timeout=0)
             if not job_done:
-                new_status=State.WAIT
+                new_status=STATES.WAIT
                 markstools.log.info('Restart waiting for job %s.'%(a_job.id))
                 break
         self.status = new_status
@@ -93,7 +91,7 @@ class GHessian(object):
                 msg = 'GAMESS returned an error while running job %s.'%(a_job.id)
                 markstools.log.critical(msg)
                 raise Exception, msg
-        self.status = State.POSTPROCESS
+        self.status = STATES.POSTPROCESS
 
     def handle_postprocess_state(self):
         result_list  = list()
@@ -114,7 +112,7 @@ class GHessian(object):
         print f_hess
         WriteGamessInp.build_gamess_matrix(postprocess_result, f_hess)
         f_hess.close()
-        self.status = State.COMPLETED
+        self.status = STATES.COMPLETED
 
     def handle_terminal_state(self):
         print 'I do nothing!!'
@@ -146,16 +144,16 @@ class GHessian(object):
         try:
             self.status_mapping.get(self.status, self.handle_missing_state)()
         except:
-            self.status=State.ERROR
+            self.status=STATES.ERROR
             markstools.log.critical('GHessian Errored while processing task %s \n%s'%(self.a_task.id, utils.format_exception_info()))
         self.save()
     
     def run(self):
-        if self.status not in State.terminal:
+        if not self.status.terminal:
             self.step()
         else:
             assert false,  'You are trying to step a terminated status.'
-        while self.status not in State.pause and self.status not in State.terminal:
+        while not self.status.pause and not self.status.terminal:
             self.step()
 
 def main(options):
@@ -174,7 +172,7 @@ def main(options):
     
     ghessian.run()
     import time
-    while ghessian.status not in State.terminal:
+    while not ghessian.status.terminal:
         time.sleep(10)
         ghessian.run()
 

@@ -1,6 +1,3 @@
-from markstools.lib.statemachine import StateMachine
-from grestart import GRestart
-from ghessian import GHessian
 import markstools
 
 from optparse import OptionParser
@@ -9,30 +6,35 @@ from gorg.model.gridtask import GridtaskModel, TaskInterface
 from gorg.lib.utils import Mydb
 from gc3utils.gcli import Gcli
 
+# The key is the name of the class where the usetask is programmed, and the value is the module location
+module_names = {'GHessian':'markstools.usertasks.ghessian', 'GSingle':'markstools.usertasks.gsingle'}
+usertask_modules = dict()
+for usertask_name, usertask_module in module_names.items():
+    __import__(usertask_module)
+    usertask_modules[usertask_name] = sys.modules[usertask_module]
 
-class GridtaskScheduler(object):
+class TaskScheduler(object):
     
     def __init__(self, db_username, db_name, db_url):
         self.db=Mydb(db_username, db_name,db_url).cdb()
-        self.view_state_tasks = GridtaskModel.view_state(self.db)
         
     def handle_waiting_tasks(self):
-        task_list = self.view_state_tasks[StateMachine.stop_state()]
-        markstools.log.debug('%d tasks are going to be processed'%(len(task_list)))
-        for raw_task in task_list:
-            a_task = TaskInterface(self.db)
-            a_task.task = raw_task
-            fsm = eval(a_task.title + '()')
-            fsm.restart(self.db, a_task)
-            state = fsm.run()
-            a_task = fsm.save_state()
-            markstools.log.debug('Task %s has been processed and is now in state %s'%(a_task.id, state))
-    
+        for usertask_name, usertask_module in usertask_modules:
+            task_list = GridtaskModel.view_status(self.db, keys = [usertask_name,  usertask_module.Status.pause])
+            markstools.log.debug('%d %s task(s) are going to be processed'%(len(task_list), usertask_name))
+            for raw_task in task_list:
+                a_task = TaskInterface(self.db)
+                a_task.task = raw_task
+                exec('usertask = usertask_module.%s()'%(usertask_name))
+                usertask.load(self.db, a_task)
+                usertask.step()
+                markstools.log.debug('Task %s has been processed and is now in state %s'%(a_task.id, state))
+        
     def run(self):
         self.handle_waiting_tasks()
 
 def main(options):
-    task_scheduler = GridtaskScheduler('mark',options.db_name,options.db_loc)
+    task_scheduler = TaskScheduler('mark',options.db_name,options.db_loc)
     task_scheduler.run()
     print 'Done running gridtaskscheduler.py'
     
