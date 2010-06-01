@@ -58,8 +58,11 @@ def _get_gcli(config_file_path = _default_config_file_location):
 
 def _print_job_info(job_obj):
     for key in job_obj.keys():
-        if not key == 'log' and not str(job_obj[key]) == '-1':
-            print("%-16s %-10s" % (key,job_obj[key]))
+        if not key == 'log' and not ( str(job_obj[key]) == '-1' or  str(job_obj[key]) == '' ):
+            if key == 'status':
+                print("%-20s  %-10s " % (key, gc3utils.utils.job_status_to_string(job_obj[key])))
+            else:
+                print("%-20s  %-10s " % (key,job_obj[key]))
     return 0
         
 def _print_job_status(job_list,job_status_filter):
@@ -89,6 +92,18 @@ def _print_job_status(job_list,job_status_filter):
 
 
 #====== Main ========
+
+def gclean(*args, **kw):
+    """The 'glean' command."""
+    parser = OptionParser(usage="Usage: %prog [options] JOBID")
+    parser.add_option("-v", action="count", dest="verbosity", default=0, help="Set verbosity level")
+    (options, args) = parser.parse_args(list(args))
+    gc3utils.utils.configure_logger(options.verbosity, _default_log_file)
+
+    if len(args) != 1:
+        raise InvalidUsage('Wrong number of arguments: this commands expects exactly one  arguments.')
+    
+    return gc3utils.utils.clean_job(args[0])
 
 def ginfo(*args, **kw):
     """The 'ginfo' command."""
