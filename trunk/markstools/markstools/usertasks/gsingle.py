@@ -16,7 +16,7 @@ from markstools.lib import utils
 from gorg.model.gridtask import TaskInterface
 from gorg.lib.utils import Mydb
 
-class State(object):
+class Status(object):
     WAIT = 'WAIT'
     PROCESS = 'PROCESS'
     POSTPROCESS = 'POSTPROCESS'
@@ -30,12 +30,12 @@ class State(object):
 class GSingle(object):
  
     def __init__(self):
-        self.status = State.ERROR
-        self.status_mapping = {State.WAIT: self.handle_wait_state, 
-                                             State.PROCESS: self.handle_process_state, 
-                                             State.POSTPROCESS: self.handle_postprocess_state, 
-                                             State.ERROR: self.handle_terminal_state, 
-                                             State.COMPLETED: self.handle_terminal_state}
+        self.status = Status.ERROR
+        self.status_mapping = {Status.WAIT: self.handle_wait_state, 
+                                             Status.PROCESS: self.handle_process_state, 
+                                             Status.POSTPROCESS: self.handle_postprocess_state, 
+                                             Status.ERROR: self.handle_terminal_state, 
+                                             Status.COMPLETED: self.handle_terminal_state}
         
         self.a_task = None
         self.calculator = None
@@ -48,7 +48,7 @@ class GSingle(object):
         a_job = self.calculator.generate(atoms, params, self.a_task, application_to_run, selected_resource, cores, memory, walltime)
         self.calculator.calculate(self.a_task)
         markstools.log.info('Submitted task %s for execution.'%(self.a_task.id))
-        self.status = State.WAIT
+        self.status = Status.WAIT
         
     def load(self, db,  a_task):
         self.a_task = a_task
@@ -64,13 +64,13 @@ class GSingle(object):
         from gorg.gridjobscheduler import GridjobScheduler
         job_scheduler = GridjobScheduler('mark','gorg_site','http://130.60.144.211:5984')
         job_list = self.a_task.children
-        new_status = State.PROCESS
+        new_status = Status.PROCESS
         for a_job in job_list:
             job_done = False
             job_scheduler.run()
             job_done = a_job.wait(timeout=0)
             if not job_done:
-                new_status=State.WAIT
+                new_status=Status.WAIT
                 markstools.log.info('Restart waiting for job %s.'%(a_job.id))
                 break
         self.status = new_status
@@ -83,10 +83,10 @@ class GSingle(object):
                 msg = 'GAMESS returned an error while running job %s.'%(a_job.id)
                 markstools.log.critical(msg)
                 raise Exception, msg
-        self.status = State.POSTPROCESS
+        self.status = Status.POSTPROCESS
 
     def handle_postprocess_state(self):
-        self.status = State.COMPLETED
+        self.status = Status.COMPLETED
 
     def handle_terminal_state(self):
         print 'I do nothing!!'
@@ -98,16 +98,16 @@ class GSingle(object):
         try:
             self.status_mapping.get(self.status, self.handle_missing_state)()
         except:
-            self.status=State.ERROR
+            self.status=Status.ERROR
             markstools.log.critical('GHessian Errored while processing task %s \n%s'%(self.a_task.id, utils.format_exception_info()))
         self.save()
     
     def run(self):
-        if self.status not in State.terminal:
+        if self.status not in Status.terminal:
             self.step()
         else:
             assert false,  'You are trying to step a terminated status.'
-        while self.status not in State.pause and self.status not in State.terminal:
+        while self.status not in Status.pause and self.status not in Status.terminal:
             self.step()
 
 def main(options):
@@ -126,7 +126,7 @@ def main(options):
     
     gsingle.run()
     import time
-    while gsingle.status not in State.terminal:
+    while gsingle.status not in Status.terminal:
         time.sleep(10)
         gsingle.run()
 
