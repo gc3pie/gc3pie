@@ -5,6 +5,7 @@ from couchdb import client as client
 import time
 import gorg
 
+from gorg.gridjobscheduler import STATES
 #reduce_func_author_status ='''
 #def reducefun(keys, values, rereduce):
 #    status_list = list()
@@ -76,7 +77,7 @@ class GridtaskModel(BaseroleModel):
         if 'base_type' in doc:
             if doc['base_type'] == 'BaseroleModel':
                 if doc['sub_type'] == 'GridtaskModel':
-                    yield doc['status'], doc
+                    yield [doc['title'],  doc['status']], doc
 
     @classmethod
     def sync_views(cls, db,  only_names=False):
@@ -99,39 +100,48 @@ class TaskInterface(BaseroleInterface):
         self.controlled=GridtaskModel.load(self.db, id)
         return self
 
-    def _status(self):
+    def _status_children(self):
         status_list = list()
         self.controlled.refresh(self.db)
         view = GridrunModel.view_job_status(self.db, keys = self.controlled.children)
-        for a_row in view.rows:
-            status_list.append(a_row.value)
+        for a_row in view:
+            status_list.append(a_row)
         return tuple(status_list)
     
     def status():
         def fget(self):
-            status_list = self._status()
-            status_dict = dict()
-            for a_status in States.all:
-                status_dict[a_status]  = 0
-            for a_status in status_list:
-                status_dict[a_status] += 1
-            return status_dict
+            return self.controlled.status
+        def fset(self, status):
+            self.controlled.status = status
+            self.controlled.commit(self.db)
         return locals()
     status = property(**status())
+    
+    def status_counts():
+        def fget(self):
+            status_list = self._status_children()
+            status_dict = dict()
+            for a_status in STATES.all:
+                status_dict[a_status.description]  = 0
+            for a_status in status_list:
+                status_dict[a_status.description] += 1
+            return status_dict
+        return locals()
+    status_counts = property(**status_counts())
 
     def status_overall():
         def fget(self):
-            status_dict = self.status
+            status_dict = self.status_counts
             job_count = sum(status_dict.values())
             if job_count == 0:
-                return States.HOLD
+                return {}
             for a_status in status_dict:
                 if status_dict[a_status] == job_count:
                     return a_status
-            if status_dict[States.ERROR] != 0:
-                return States.ERROR
+            if status_dict[STATES.ERROR] != 0:
+                return STATES.ERROR
             else:
-                return States.WAITING
+                return STATES.WAITING
         return locals()
     status_overall = property(**status_overall())
 
@@ -143,7 +153,7 @@ class TaskInterface(BaseroleInterface):
         return locals()
     status_percent_done = property(**status_percent_done())
     
-    def wait(self, target_status=States.COMPLETED, timeout=60, check_freq=10):
+    def wait(self, timeout=60, check_freq=10):
         from time import sleep
         if timeout == 'INFINITE':
             timeout = sys.maxint
@@ -152,16 +162,15 @@ class TaskInterface(BaseroleInterface):
         starting_time = time.time()
         while True:
             my_status = self.controlled.status_overall
-            assert my_status != States.ERROR, 'Task %s returned an error.'%self.id
-            if starting_time + timeout < time.time() or my_status == target_status:
+            if starting_time + timeout < time.time() or my_status.terminal:
                 break
             else:
                 time.sleep(check_freq)
-        if my_status == target_status:
+        if my_status.terminal:
             # We did not timeout 
             return True
         else:
-            # Timed or errored out
+            # Timed out
             return False
     
     def task():
@@ -171,12 +180,3 @@ class TaskInterface(BaseroleInterface):
             self.controlled = a_task
         return locals()
     task = property(**task())
-    
-    def status():
-        def fget(self):
-            return self.controlled.status
-        def fset(self, status):
-            self.controlled.status = status
-            self.controlled.commit(self.db)
-        return locals()
-    status = property(**status())

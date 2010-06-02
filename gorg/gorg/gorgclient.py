@@ -30,6 +30,12 @@ def main():
     myfile =  open('./gorg/examples/exam01.inp', 'rb')
     a_job = JobInterface(db)
     a_job = a_job.create('a title', 'myparser', myfile, requested_resource='ocikbnor')
+    a_task.add_child(a_job)
+    from gorg.gridjobscheduler import STATE_READY
+    a_job.status = STATE_READY
+    a_task.status
+    a_task.status_overall
+
 #        myfile.seek(0)
 #        a_task.add_child(a_job)
 #    a_task.status_overall
