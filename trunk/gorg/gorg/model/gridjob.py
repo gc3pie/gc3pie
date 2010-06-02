@@ -3,34 +3,16 @@ from baserole import BaseroleModel, BaseroleInterface
 from couchdb import client as client
 from datetime import datetime
 from gorg.lib.utils import generate_new_docid, generate_temp_dir, write_to_file
+
+from gorg.lib import state
+
 from gorg.lib.exceptions import *
 import os
 import gorg
 from gc3utils import Application,  Job
 import time
 
-class States(object):
-    _starting_num = 0
-    HOLD = str(_starting_num + 10)
-    READY = str(_starting_num + 20)
-    WAITING = str(_starting_num + 30)
-    RETRIEVING = str(_starting_num + 40)
-    COMPLETED = str(_starting_num + 50)
-    ERROR = str(_starting_num + 60)
-    UNREACHABLE = str(_starting_num + 70)
-    NOTIFIED = str(_starting_num + 80)
-    
-    all = [HOLD, WAITING, RETRIEVING,  READY, COMPLETED, ERROR, UNREACHABLE, NOTIFIED]
-    terminal = [HOLD, ERROR, COMPLETED]
-    
-    @staticmethod
-    def display(state):
-        if States.HOLD == state:
-            return 'hold'
-        elif States.READY == state:
-            return 'ready'
-        else:
-            return 'Do not know the state'
+STATE_HOLD = state.State.create('HOLD', 'HOLD desc')
 
 class GridjobModel(BaseroleModel):
     SUB_TYPE = 'GridjobModel'
@@ -79,7 +61,7 @@ class GridjobModel(BaseroleModel):
         if 'base_type' in doc:
             if doc['base_type'] == 'GridrunModel':
                 for job_id in doc['owned_by']:
-                    yield (doc['author'], doc['status']), {'_id':job_id}
+                    yield (doc['author'], doc['raw_status']), {'_id':job_id}
     
 
     @ViewField.define('GridjobModel', include_docs=True)   
@@ -170,7 +152,7 @@ class JobInterface(BaseroleInterface):
         return locals()
     status = property(**status())
 
-    def wait(self, target_status=States.COMPLETED, timeout=60, check_freq=10):
+    def wait(self, timeout=60, check_freq=10):
         from time import sleep
         if timeout == 'INFINITE':
             timeout = sys.maxint
@@ -178,18 +160,15 @@ class JobInterface(BaseroleInterface):
             check_freq = timeout
         starting_time = time.time()
         while True:
-            my_status = self.status
-            if my_status == States.ERROR:
-                raise JobWarning('Job %s errored when running on the grid'%self.id)
-            if starting_time + timeout < time.time() or my_status == target_status:
+            if starting_time + timeout < time.time() or self.status.terminal:
                 break
             else:
                 time.sleep(check_freq)
-        if my_status == target_status:
+        if self.terminal:
             # We did not timeout 
             return True
         else:
-            # Timed or errored out
+            # Timed out
             return False
 
     def attachments():
@@ -263,7 +242,7 @@ class GridrunModel(Document):
     # This holds the files we wish to run as well as their hashes
     files_to_run = DictField()
     
-    status = TextField(default = States.HOLD)
+    raw_status = DictField(default = STATE_HOLD)
     raw_application = DictField()
     raw_job = DictField()
     gsub_message = TextField()
@@ -311,6 +290,7 @@ class GridrunModel(Document):
         self = self._commit_new(db, a_job, files_to_run)
         return self
     
+
     def _commit_new(self, db, a_job, files_to_run):
         if len(files_to_run) == 0:
             raise DocumentError('No files associated with run %s'%self.id)
@@ -333,13 +313,22 @@ class GridrunModel(Document):
         return self
 
     def _check_for_previous_run(self, db):
+        from gorg.gridjobscheduler import STATE_COMPLETED
         a_view = GridrunModel.view_hash(db, key=self.files_to_run.values())
         result = None
         for a_run in a_view:
-            if a_run.status == States.COMPLETED:
+            if a_run.status == STATE_COMPLETED:
                 result = a_run
         return result
     
+    def status():        
+        def fget(self):
+            return state.State(**self.raw_status)
+        def fset(self, state):
+            self.raw_status = state
+        return locals()
+    status = property(**status())
+
     def application():        
         def fget(self):
             if not isinstance(self.raw_application, Application.Application):
@@ -411,18 +400,18 @@ class GridrunModel(Document):
                 for owner in doc['owned_by']:
                     yield owner, {'_id':owner}
 
-    @ViewField.define('GridrunModel', wrapper=GridjobModel)
+    @ViewField.define('GridrunModel', wrapper=state.State)
     def view_job_status(doc):    
         if 'base_type' in doc:
             if doc['base_type'] == 'GridrunModel':
                 for owner in doc['owned_by']:
-                    yield doc['status'], {'_id':owner}
+                    yield owner, doc['raw_status']
     
     @ViewField.define('GridrunModel')
     def view_status(doc):    
         if 'base_type' in doc:
             if doc['base_type'] == 'GridrunModel':                
-                yield str(doc['status']), doc
+                yield str(doc['raw_status']), doc
 
     @ViewField.define('GridrunModel')
     def view_hash(doc):    
@@ -434,7 +423,7 @@ class GridrunModel(Document):
     def view_author_status(doc):
         if 'base_type' in doc:
             if doc['base_type'] == 'GridrunModel':
-                yield (doc['author'], doc['status']), 1
+                yield (doc['author'], doc['raw_status']), 1
     
     @classmethod
     def sync_views(cls, db,  only_names=False):
@@ -444,7 +433,7 @@ class GridrunModel(Document):
             if isinstance(value, ViewField):
                 definition_list.append(eval('cls.%s'%(key)))
         ViewDefinition.sync_many( db,  definition_list)
-    
+        
     @staticmethod
     def md5_for_file(f, block_size=2**20):
         """This function takes a file like object and feeds it to
@@ -456,7 +445,7 @@ class GridrunModel(Document):
         # Remove all the white space from a string
         #re.sub(r'\s', '', myString)
         reg_remove_white = re.compile(r'\s')
-        md5 = hashlib.md5()
+        md5 = hashlib.sha224()
         while True:
             data = f.read(block_size)
             data = reg_remove_white.sub('', data)
