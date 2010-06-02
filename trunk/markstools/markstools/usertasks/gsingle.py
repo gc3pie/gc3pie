@@ -13,29 +13,29 @@ import numpy as np
 from markstools.io.gamess import ReadGamessInp, WriteGamessInp
 from markstools.calculators.gamess.calculator import GamessGridCalc
 from markstools.lib import utils
+from markstools.lib.status import State,  Status
+
 from gorg.model.gridtask import TaskInterface
 from gorg.lib.utils import Mydb
 
-class Status(object):
-    WAIT = 'WAIT'
-    PROCESS = 'PROCESS'
-    POSTPROCESS = 'POSTPROCESS'
-    ERROR = 'ERROR'
-    COMPLETED = 'COMPLETED'
-    
-    all = [WAIT, PROCESS, ERROR, COMPLETED, POSTPROCESS]
-    pause = [WAIT]
-    terminal = [ERROR,  COMPLETED]
+STATE_WAIT = State('WAIT', 'WAIT desc', True)
+STATE_PROCESS = State('PROCESS', 'PROCESS desc')
+STATE_POSTPROCESS = State('POSTPROCESS', 'POSTPROCESS desc')
+STATE_ERROR = State('ERROR', 'ERROR desc', terminal = True)
+STATE_COMPLETED = State('COMPLETED', 'COMPLETED desc', terminal = True)
+
+STATES = Status([STATE_WAIT, STATE_PROCESS, STATE_POSTPROCESS, 
+                            STATE_ERROR, STATE_COMPLETED])
 
 class GSingle(object):
  
     def __init__(self):
-        self.status = Status.ERROR
-        self.status_mapping = {Status.WAIT: self.handle_wait_state, 
-                                             Status.PROCESS: self.handle_process_state, 
-                                             Status.POSTPROCESS: self.handle_postprocess_state, 
-                                             Status.ERROR: self.handle_terminal_state, 
-                                             Status.COMPLETED: self.handle_terminal_state}
+        self.status = STATES.ERROR
+        self.status_mapping = {STATES.WAIT: self.handle_wait_state, 
+                                             STATES.PROCESS: self.handle_process_state, 
+                                             STATES.POSTPROCESS: self.handle_postprocess_state, 
+                                             STATES.ERROR: self.handle_terminal_state, 
+                                             STATES.COMPLETED: self.handle_terminal_state}
         
         self.a_task = None
         self.calculator = None
@@ -48,7 +48,7 @@ class GSingle(object):
         a_job = self.calculator.generate(atoms, params, self.a_task, application_to_run, selected_resource, cores, memory, walltime)
         self.calculator.calculate(self.a_task)
         markstools.log.info('Submitted task %s for execution.'%(self.a_task.id))
-        self.status = Status.WAIT
+        self.status = STATES.WAIT
         
     def load(self, db,  a_task):
         self.a_task = a_task
@@ -64,13 +64,13 @@ class GSingle(object):
         from gorg.gridjobscheduler import GridjobScheduler
         job_scheduler = GridjobScheduler('mark','gorg_site','http://130.60.144.211:5984')
         job_list = self.a_task.children
-        new_status = Status.PROCESS
+        new_status = STATES.PROCESS
         for a_job in job_list:
             job_done = False
             job_scheduler.run()
             job_done = a_job.wait(timeout=0)
             if not job_done:
-                new_status=Status.WAIT
+                new_status=STATES.WAIT
                 markstools.log.info('Restart waiting for job %s.'%(a_job.id))
                 break
         self.status = new_status
@@ -83,10 +83,10 @@ class GSingle(object):
                 msg = 'GAMESS returned an error while running job %s.'%(a_job.id)
                 markstools.log.critical(msg)
                 raise Exception, msg
-        self.status = Status.POSTPROCESS
+        self.status = STATES.POSTPROCESS
 
     def handle_postprocess_state(self):
-        self.status = Status.COMPLETED
+        self.status = STATES.COMPLETED
 
     def handle_terminal_state(self):
         print 'I do nothing!!'
@@ -98,17 +98,18 @@ class GSingle(object):
         try:
             self.status_mapping.get(self.status, self.handle_missing_state)()
         except:
-            self.status=Status.ERROR
+            self.status=STATES.ERROR
             markstools.log.critical('GHessian Errored while processing task %s \n%s'%(self.a_task.id, utils.format_exception_info()))
         self.save()
     
     def run(self):
-        if self.status not in Status.terminal:
+        if not self.status.terminal:
             self.step()
         else:
             assert false,  'You are trying to step a terminated status.'
-        while self.status not in Status.pause and self.status not in Status.terminal:
+        while not self.status.pause and not self.status.terminal:
             self.step()
+
 
 def main(options):
     # Connect to the database
@@ -126,7 +127,7 @@ def main(options):
     
     gsingle.run()
     import time
-    while gsingle.status not in Status.terminal:
+    while not gsingle.status.terminal:
         time.sleep(10)
         gsingle.run()
 
