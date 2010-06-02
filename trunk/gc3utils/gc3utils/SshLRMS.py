@@ -30,10 +30,11 @@ class SshLrms(LRMS):
 
         gc3utils.log = logging.getLogger('gc3utils')
 
-        if resource.type == Default.SGE_LRMS:
+        if resource.has_key('type') and resource.type == Default.SGE_LRMS and resource.has_key('ssh_username'):
             self._resource = resource
             self.isValid = 1
-            
+
+            # TBCK: does Ssh really needs this ?
             self._resource.ncores = int(self._resource.ncores)
             self._resource.max_memory_per_core = int(self._resource.max_memory_per_core) * 1000
             self._resource.walltime = int(self._resource.walltime)
@@ -41,35 +42,6 @@ class SshLrms(LRMS):
                 # Convert from hours to minutes
                 self._resource.walltime = self._resource.walltime * 60
 
-    """Here are the common functions needed in every Resource Class."""
-
-    def CheckAuthentication(self):
-        """
-        Make sure ssh to server works.
-        We assume the user has already set up passwordless ssh access to the resource. 
-        """
-
-        ssh, sftp = self.__connect_ssh(self._resource.frontend)
-        _command = "uname -a"
-        log.debug('CheckAuthentication command: ' + _command)
-
-        try:
-            stdin, stdout, stderr = ssh.exec_command(_command)
-            out = stdout.read()
-            err = stderr.read()
-            gc3utils.log.debug('CheckAuthentication command stdout: ' + out)
-            gc3utils.log.debug('CheckAuthentication command stderr: ' + err)
-            ssh.close()
-
-        except:
-            ssh.close()
-            raise
-            gc3utils.log.critical('CheckAuthentication failed')
-            return False
-
-        return True
-
-#    def submit_job(self, unique_token, application, input_file):
     def submit_job(self, application):
         """
         Submit a job.
@@ -77,9 +49,6 @@ class SshLrms(LRMS):
         On the backend, the command will look something like this:
         # ssh user@remote_frontend 'cd unique_token ; $gamess_location -n cores input_file'
         """
-
-
-
         # getting information from input_file
         #_file_name = os.path.basename(application.input_file_name)
         #_file_name_dir = os.path.dirname(application.input_file_name)
@@ -88,76 +57,89 @@ class SshLrms(LRMS):
 
         # Establish an ssh connection.
         try:
-            (ssh, sftp) = self.__connect_ssh(self._resource.frontend)
+            (self.ssh, self.sftp) = self._connect_ssh(self._resource.frontend,self._resource.ssh_username)
         except:
             raise
 
         # Create the remote unique_token directory. 
-        # mktemp -p ~ -d gc3utils_job.XXXXXXXXXX
-        print 'mike_debug 200'
-        print 'do something here'
-        _remotepath = application.unique_token_relativepath
-        remotedir = tempfile.mkstemp(prefix='gc3utils_job.', dir='/home/mpackard')
-
         try:
-            sftp.mkdir(_remotepath)
-        except Exception, e:
-            ssh.close()
-            gc3utils.log.critical(e)
-            gc3utils.log.critical('copy_input mkdir failed')
+            _command = 'mkdir -p $HOME/.gc3utils_jobs; mktemp -p $HOME/.gc3utils_jobs -d lrms_job.XXXXXXXXXX'
+            exit_code, stdout, stderr = self._execute_command(_command)
+            #            stdin, stdout, stderr = ssh.exec_command(_command)
+            if exit_code == 0:
+                ssh_remote_folder = re.split('\n',stdout)[0]
+            else:
+                gc3utils.log.critical('Failed while executing remote command: %s. Exit status %d' % (_command,exit_code))
+                raise paramiko.SSHException('Failed while executing remote command')
+        except:
+            self.ssh.close()
+            gc3utils.log.critical('Failed creating remote temporary folder')
             raise
 
-        # Copy the input file to remote unique_token directory.
-        _localpath = application.input_file_name
-        _remotepath = application.unique_token_relativepath + '/' + _file_name
+        # Copy the input file to remote directory.
+
+        _localpath = application.inputs[0]
+        _input_file_name = gc3utils.utils.input_file_name(_localpath)
+        _remotepath = ssh_remote_folder + '/' + _input_file_name
+
+        gc3utils.log.debug('Transferring file %s to %s' % (_localpath,_remotepath))
         try:
-            sftp.put(_localpath, _remotepath)
+            self.sftp.put(_localpath, _remotepath)
         except:
-            ssh.close()
+            self.ssh.close()
             gc3utils.log.critical('copy_input put failed')
             raise
 
+        # compute number of cores request
+        if application.has_key('requested_cores') and application.requested_cores > 0:
+            _requested_cores = int(application.requested_cores)
+        else:
+            _requested_cores = int(self._resource.defaut_job_total_cores)
 
         # Build up the SGE submit command.
-        _submit_command = 'cd ~/\'%s\' && %s/qgms -n %s' % (application.unique_token_relativepath, self._resource.gamess_location, self._resource.ncores)
+        _submit_command = 'cd %s; %s/qgms -n %s' % (ssh_remote_folder, self._resource.gamess_location, _requested_cores)
 
         # If walltime is provided, convert to seconds and add to the SGE submit command.
-        _walltime_in_seconds = int(self._resource.walltime)*3600
-        if ( _walltime_in_seconds > 0 ):
-            _submit_command = _submit_command + ' -t %i ' % _walltime_in_seconds
+        if application.has_key('requested_walltime') and application.requested_walltime > 0:
+            _requested_walltime = int(application.requested_walltime)*3600
+        else:
+            _requested_walltime = int(self._resource.defaut_job_total_walltime)*3600
 
-        gc3utils.log.debug('submit _walltime_in_seconds: ' + str(_walltime_in_seconds))
-#        gc3utils.log.debug('submit _walltime_in_seconds: ' + str(self._resource.walltime))
-
-        # Add the input file name to the SGE submit command.
-        _submit_command = _submit_command + ' \'%s\'' % _file_name
+        _submit_command = _submit_command + ' -t %i ' % _requested_walltime
         
-        gc3utils.log.debug('submit _submit_command: ' + _submit_command)
+        # Add the input file name to the SGE submit command.
+        _submit_command = _submit_command + ' %s' % _input_file_name
+        
+        gc3utils.log.debug('submiting _submit_command: ' + _submit_command)
 
         # Try to submit it to the local queueing system.
         try:
-            stdin, stdout, stderr = ssh.exec_command(_submit_command)
-            out = stdout.read()
-            err = stderr.read()
-            ssh.close()
 
-            gc3utils.log.debug("_submit_command stdout:" + out)
-            gc3utils.log.debug("_submit_command stderr:" + err)
+            exit_code, stdout, stderr = self._execute_command(_submit_command)
+            self.ssh.close()
+            if exit_code != 0:
+                gc3utils.log.critical('Failed executong remote command: %s. exit status %d' % (_submit_command,exit_code))
+                gc3utils.log.debug('remote command returned stdout: %s' % stdout)
+                gc3utils.log.debug('remote command returned stderr: %s' % stderr)
+                raise paramiko.SSHException('Failed executing remote command')
 
-            lrms_jobid = self.__get_qsub_jobid(out)
+            #gc3utils.log.debug("_submit_command stdout:" + stdout)
+            #gc3utils.log.debug("_submit_command stderr:" + stderr)
+            
+            lrms_jobid = self._get_qsub_jobid(stdout)
             gc3utils.log.debug('Job submitted with jobid: %s',lrms_jobid)
 
-            job = Job.Job()
-            job.lrms_jobid = lrms_jobid
-            job.status = Job.JOB_STATE_SUBMITTED
-            job.resource_name = self._resource.name
-            job.log = "\nstdout:\n" + out 
-            job.log = job.log + "\nstderr:\n" + err
+            job_log = "\nstdout:\n" + stdout + "\nstderr:\n" + stderr
+
+            job = Job.Job(lrms_jobid=lrms_jobid,status=Job.JOB_STATE_SUBMITTED,resource_name=self._resource.name,log=job_log)
+
+            job.remote_ssh_folder = ssh_remote_folder
+#            job.application = application
 
             return job
 
         except:
-            ssh.close()
+            self.ssh.close()
             gc3utils.log.critical('Failure in submitting')
             raise
 
@@ -165,37 +147,108 @@ class SshLrms(LRMS):
     def check_status(self, job):
         """Check status of a job."""
 
+        mapping = {'qname':'queue','jobname':'job_name','slots':'cpu_count','exit_status':'exit_code','failed':'system_failed','cpu':'used_cpu_time','ru_wallclock':'used_walltime','maxvmem':'used_memory'}
         try:
             # open ssh connection
-            ssh, sftp = self.__connect_ssh(self._resource.frontend)
+            self.ssh, self.sftp = self._connect_ssh(self._resource.frontend,self._resource.ssh_username)
 
             # then check the lrms_jobid with qstat
-            testcommand = 'qstat -j %s' % job.lrms_jobid
+            #           testcommand = 'qstat -j %s' % job.lrms_jobid
+            _command = 'qstat | grep -i %s' % job.lrms_jobid
+            #            _command = 'qstat -j %s' % job.lrms_jobid
 
-            stdin, stdout, stderr = ssh.exec_command(testcommand)
-            out = stdout.read()
-            err = stderr.read()
-            
-            gc3utils.log.debug('CheckStatus command stdout:' + out)
-            gc3utils.log.debug('CheckStatus command stderr:' + err)
+            gc3utils.log.debug('checking remote job status with %s' % _command)
 
-            ssh.close()
+            exit_code, stdout, stderr = self._execute_command(_command)
+            if exit_code != 0:
+                #            finished_job_patter = 'Following jobs do not exist'
+                #            if finished_job_patter in stderr:
 
-            # todo : this test could be much better; fix if statement between possible qstat outputs
-            teststring = "Following jobs do not exist:"
-            if teststring in err:
-                gc3utils.log.debug('job status: %s setting to FINISHED')
-                job.status = Job.JOB_STATE_FINISHED
-            else: 
-                gc3utils.log.debug('job status: %s setting to RUNNING')
-                job.status = Job.JOB_STATE_RUNNING
+                # maybe the job is finished
+                
+                # collect accounting information
+                #job.status = Job.JOB_STATE_FINISHED
+
+                _command = 'qacct -j %s | grep -v ===' % job.lrms_jobid
+
+                gc3utils.log.debug('no job information found. trying with %s' % _command)
+                
+                exit_code, stdout, stderr = self._execute_command(_command)
+                if exit_code != 0:
+                    gc3utils.log.critical('Failed executing remote command: %s. exit status %d' % (_command,exit_code))
+                    gc3utils.log.debug('remote command returned stdout: %s' % stdout)
+                    gc3utils.log.debug('remote command returned stderr: %s' % stderr)
+                    raise paramiko.SSHException('Failed executing remote command')
+                else:
+                    # parse stdout and update job obect with detailed accounting information
+
+                    gc3utils.log.debug('parsgin stdout to get job accounting infromation')
+                    #gc3utils.log.debug('stdout: %s' % stdout)
+
+                    for line in stdout.split('\n'):
+                        if line != '':
+                            key, value = line.split(' ', 1)
+                            value = value.strip()
+
+                            if mapping.has_key(key):
+                                job_key = mapping[key]
+                                job[job_key] = str(value)
+                            else:
+                                gc3utils.log.debug('Dropping Job information %s of value %s ' % (str(key),str(value)))
+
+                    job.status = Job.JOB_STATE_FINISHED
+
+                    """
+                    job_obj.cluster = arc_job.cluster
+                    job_obj.cpu_count = arc_job.cpu_count
+                    job_obj.exitcode = arc_job.exitcode
+                    job_obj.job_name = arc_job.job_name
+                    job_obj.queue = arc_job.queue
+                    job_obj.queue_rank = arc_job.queue_rank
+                    job_obj.requested_cpu_time = arc_job.requested_cpu_time
+                    job_obj.requested_wall_time = arc_job.requested_wall_time
+                    job_obj.sstderr = arc_job.sstderr
+                    job_obj.sstdout = arc_job.sstdout
+                    job_obj.sstdin = arc_job.sstdin
+                    job_obj.used_cpu_time = arc_job.used_cpu_time
+                    job_obj.used_wall_time = arc_job.used_wall_time
+                    job_obj.used_memory = arc_job.used_memory
+                    
+                    """
+                        
+            else:
+                # this is extremely fragile
+                #gc3utils.log.debug('parsing %s' % stdout)
+                # stdout_results = re.split('\n',stdout)
+                #gc3utils.log.debug('parsing %s' % stdout_results)
+
+                job_status = stdout.split('\n')[0].split()[4]
+                    
+                #                stdout_results = [ value for value in stdout_results if value != '' ]
+                #                gc3utils.log.debug('parsing %s' % stdout_results)
+                #job_status = stdout_results[4]
+
+                gc3utils.log.debug('inspecting lrms job status %s' % job_status)
+                if 'r' in job_status or 'R' in job_status or 't' in job_status or 'q' in job_status:
+                    job.status = Job.JOB_STATE_RUNNING
+                elif job_status == 'd' or job_status == 'E':
+                    job.status = Job.JOB_STATE_FAILED
+                elif job.status == 's' or job.status == 'S' or job.status == 'T' or job.status == 'w':
+                    # use JOB_STATE_UNKNOWN for the time being
+                    # we need to introduce an additional stated that clarifies a sysadmin internvention is needed
+                    job.status = Job.JOB_STATE_UNKNOWN
+
+                # need to set detailed job status information
+                #gc3utils.log.debug('marked job status: %s' % job.status)
+
+            self.ssh.close()
             
             return job
         
-        except Exception, e:
-            ssh.close()
+        except:
+            self.ssh.close()
             gc3utils.log.critical('Failure in checking status')
-            raise e
+            raise
 
 
     def get_results(self,job):
@@ -209,234 +262,83 @@ class SshLrms(LRMS):
             Example:
             G-P-G.rst.restart_0-1268147228.33-fa72c57af2bbe092a0b9d95ee95aad22-schrodinger
             '''
-            jobname =  '-'.join( job.unique_token.split('-')[0:-3])
-           
+            #jobname =  '-'.join( job.unique_token.split('-')[0:-3])
+
             # Create a list of lists.
             # Each element in the outer list is itself a list.
             # Each inner list has 2 elements, a remote file location and a local file location.
             # i.e. [copy_from, copy_to]
              
-            ssh, sftp = self.__connect_ssh(self._resource.frontend)
+            self.ssh, self.sftp = self._connect_ssh(self._resource.frontend,self._resource.ssh_username)
             
             # todo : test that this copying works for both full and relative paths.
 
             # Get the paths to the files on the remote and local machines.
-            stdin, stdout, stderr = ssh.exec_command('echo $HOME')
-            _remote_home = stdout.read().strip()
-            _full_path_to_remote_unique_id = _remote_home+'/'+job.unique_token
-            _full_path_to_local_unique_id = job.unique_token
+            #stdin, stdout, stderr = ssh.exec_command('echo $HOME')
+            #_remote_home = stdout.read().strip()
+            #_full_path_to_remote_unique_id = _remote_home+'/'+job.unique_token
+            #_full_path_to_local_unique_id = job.unique_token
 
             # If the dir no longer exists, exit.
             # todo : maybe change the status to something else
             try:
-                sftp.listdir(_full_path_to_remote_unique_id)
+                files_list = self.sftp.listdir(job.remote_ssh_folder)
             except:
-                gc3utils.log.info('Could not read remote dir.')
-                ssh.close()
-                job.status = Job.JOB_STATE_COMPLETED
-                return job
+                gc3utils.log.error('Could not read remote dir %s' % job.remote_ssh_folder)
+                self.ssh.close()
+                raise
+                #job.status = Job.JOB_STATE_COMPLETED
+                #return job
+                
 
-            files_list = sftp.listdir(_full_path_to_remote_unique_id)
+            #            files_list = sftp.listdir(_full_path_to_remote_unique_id)
+            if job.has_key('job_local_dir'):
+                _download_dir = job.job_local_dir + '/' + job.unique_token
+            else:
+                _download_dir = Default.JOB_FOLDER_LOCATION + '/' + job.unique_token
+                
+            # Prepare/Clean download dir
+            gc3utils.utils.prepare_job_dir(_download_dir)
             
+            gc3utils.log.debug('downloading job into %s',_download_dir)
+
             # copy back all files
             for file in files_list:
-                _remote_file = _full_path_to_remote_unique_id + '/' + file
-                _local_file = _full_path_to_local_unique_id + '/' + file
+                _remote_file =  job.remote_ssh_folder +'/' + file
+                _local_file = _download_dir +'/' + file
                 try:
-                    sftp.get(_remote_file, _local_file)
+                    self.sftp.get(_remote_file, _local_file)
                     gc3utils.log.debug('copied remote: ' + _remote_file + ' to local: ' + _local_file)
-
-                    try:
-                        sftp.remove(_remote_file)
-                        gc3utils.log.debug('removed remote file: ' + _remote_file)
-                    except:
-                        gc3utils.log.debug('could not remove remote file: ' + _remote_file)
-                        raise
-
                 except:
                     # todo : figure out how to check for existance of file before trying to copy
                     gc3utils.log.debug('could not copy remote file: ' + _remote_file)
                     raise
 
-            # If the remote dir is empty, remove it.
-            try:
-                sftp.rmdir(_full_path_to_remote_unique_id)
-            except:
-                gc3utils.log.debug('could not remove remote dir: ' + _full_path_to_remote_unique_id)
-                raise
-                
+            # cleanup remote folder
+            _command = 'rm -rf %s ' % job.remote_ssh_folder
+            exit_code, stdout, stderr = self._execute_command(_command)
+            if exit_code != 0:
+                gc3utils.log.error('Failed while removing remote folder %s' % job.remote_ssh_folder)
+                gc3utils.log.debug('error: %s' % stderr)
+            
             # set job status to COMPLETED
+            job.download_dir = _download_dir
             job.status = Job.JOB_STATE_COMPLETED
 
-            ssh.close()
+            self.ssh.close()
             return job
 
         except: 
-            ssh.close()
+            self.ssh.close()
             gc3utils.log.critical('Failure in retrieving results')
+            gc3utils.log.debug('%s %s',sys.exc_info()[0], sys.exc_info()[1])
             raise 
 
-                
-            '''            
-                # First add the output file.
-            remote_file = '%s/%s.o%s' % (full_path_to_remote_unique_id, jobname, job.lrms_jobid)
-            local_file = '%s/%s.stdout' % (full_path_to_local_unique_id, jobname)
-            remote2local_list = [remote_file, local_file]
-            copyfiles_list.append(remote2local_list)
 
-                # .po file
-            remote_file = '%s/%s.po%s' % (full_path_to_remote_unique_id, jobname, job.lrms_jobid)
-            # The arc gget uses stderr not po for the suffix. We therefore need to rename the file
-            local_file = '%s/%s.stderr' % (full_path_to_local_unique_id, jobname)
-            remote2local_list = [remote_file, local_file]
-            copyfiles_list.append(remote2local_list)
-
-            # Then add the rest of the special output files.
-            cp_suffixes = ('.dat', \
-                '.cosmo', \
-                '.irc')
-            for suffix in cp_suffixes:
-                remote_file = '%s/%s.o%s%s' % (full_path_to_remote_unique_id, jobname, job.lrms_jobid, suffix) 
-                local_file = '%s/%s%s' % (full_path_to_local_unique_id, jobname, suffix)
-                remote2local_list = [remote_file, local_file]
-                copyfiles_list.append(remote2local_list)
-
-            gc3utils.log.debug('copyfiles_list: ' + str(copyfiles_list))
-
-            # todo : add checksums to make sure the files are the same.  raise exception if not
-            # todo : combine copy & remove steps
-
-            # try to copy back files
-            for elem in copyfiles_list:
-                remote_file = elem[0]
-                local_file = elem[1] 
-                
-                # if we already have the file, don't copy again
-                if ( os.path.exists(local_file) and os.path.isfile(local_file) ):
-                    gc3utils.log.debug(local_file + " already copied.  skipping.")
-                    continue
-                else:
-                        # todo : check options
-                    try:
-                        sftp.get(remote_file, local_file)
-                        gc3utils.log.debug('retrieved: ' + local_file)
-                    except:
-                        # todo : figure out how to check for existance of file before trying to copy
-                        gc3utils.log.debug('could not retrieve gamess output: ' + local_file)
-
-            # Now try to clean up the remote files.
-
-            rm_suffixes = ('.inp', 
-                '.o'+job.lrms_jobid, 
-                '.o'+job.lrms_jobid+'.dat', 
-                '.o'+job.lrms_jobid+'.inp', 
-                '.po'+job.lrms_jobid, 
-                '.qsub')
-
-            # Create a list of remote files to remove.
-            for suffix in rm_suffixes:
-                gc3utils.log.debug('rm_suffix: ' + suffix)
-                remote_file = '%s/%s%s' % (full_path_to_remote_unique_id, jobname, suffix)
-                        # todo : check options
-                # try to remove them
-                try:
-                    sftp.remove(remote_file)
-                    gc3utils.log.debug('purged remote file: ' + remote_file)
-                except:
-                    # todo : figure out how to check for existance of file before trying to remove
-                    gc3utils.log.debug('did not purge remote file: ' + remote_file)
-
-                
-            # Now try to remove the directory itself.
-            # todo : add checks for directory sanity
-            # i.e. that it's not just /home
-            # i.e. that it is empty first
-            try:
-                sftp.rmdir(full_path_to_remote_unique_id)
-                gc3utils.log.debug('purged remote directory: ' + full_path_to_remote_unique_id)
-            except:
-                ssh.close()
-                gc3utils.log.critical('did not purge remote directory: ' + full_path_to_remote_unique_id)
-                raise 
-            '''
+    """Below are the functions needed only for the SshLrms -class."""
 
 
-    def list_jobs(self, shortview):
-        """List status of jobs."""
-
-        try:
-
-            # print the header
-            if shortview == False:
-                # long view
-                print "%-50s %-20s %-10s" % ("[unique_token]","[name]","[status]")
-            else:
-                # short view
-                print "%-20s %-10s" % ("[name]","[status]")
-            
-            # look in current directory for jobdirs
-            jobdirs = []
-            dirlist = os.listdir("./")
-            for dir in dirlist:
-                if os.path.isdir(dir) == True:
-                    if os.path.exists(dir + "/.lrms_jobid") and os.path.exists(dir + "/.lrms_log"):
-                        gc3utils.log.debug(dir + "is a jobdir")
-                        jobdirs.append(dir)
-
-            # Break down unique_token into separate variables.
-            for dir in jobdirs:
-                unique_token = dir
-                name =  '-'.join( _unique_token.split('-')[0:-3])
-                status = CheckStatus(unique_toke)
-
-                if shortview == False:
-                    # long view
-                    sys.stdout.write('%-20s %-10s' % (name, status))
-                else:
-                    # short view
-                    sys.stdout.write('%-50s %-20s %-10s' % (unique_token, filename, size))
-
-            sys.stdout.write('Jobs listed.\n')
-            sys.stdout.flush
-            
-        except Exception, e:
-            gc3utils.log.critical('Failed to list jobs.')
-            raise e
-
-        return 
-            
-
-    def KillJob(self, lrms_jobid):
-        """Kill job."""
-
-        ssh, sftp = self.__connect_ssh(self._resource.frontend)
-
-        # Kill the job on the remote queueing system.
-        
-        try:
-            stdin, stdout, stderr = ssh.exec_command('qdel ' + lrms_jobid)
-            out = stdout.read()
-            err = stderr.read()
-
-            gc3utils.log.debug("_submit_command stdout:" + out)
-            gc3utils.log.debug("_submit_command stderr:" + err)
-            
-        except Exception, e:
-            ssh.close()
-            gc3utils.log.critical('Failed to kill job: ' + unique_token)
-            raise e
-        
-        ssh.close()
-
-        return (0,out)
-            
-    def get_resource_status(self):
-            gc3utils.log.debug("Returning information of local resoruce")
-            return Resource(resource_name=self._resource.resource_name,total_cores=self._resource.ncores,memory_per_core=self._resource.memory_per_core)
-
-    """Below are the functions needed only for the SshLrms class."""
-
-    def __get_qsub_jobid(self, output):
+    def _get_qsub_jobid(self, output):
         """Parse the qsub output for the local jobid."""
         # todo : something with _output
         # todo : make this actually do something
@@ -452,16 +354,38 @@ class SshLrms(LRMS):
             lrms_jobid = False
             raise Exceptions.SshSubmitException
 
+    def _execute_command(self, command):
+        """
+        Returns touple: exit_status, stdout, stderr
+        """
 
+        stdout = ''
+        stderr = ''
 
-    def __connect_ssh(self,host):
+        try:
+            transport = self.ssh.get_transport()
+            session = transport.open_session()
+            session.exec_command(command)
+            exit_status = session.recv_exit_status()
+            if session.recv_ready():
+                # ready to receive stdout
+                stdout = session.in_buffer.empty()
+            if session.recv_stderr_ready():
+                # ready to receive sterr
+                stderr = session.in_stderr_buffer.empty()
+            return exit_status, stdout, stderr
+        except:
+            gc3utils.log.error('Failed while executing remote command: %s' % command)
+            raise
+                
+    def _connect_ssh(self,host,username):
         """Create an ssh connection."""
         # todo : add fancier key handling and password asking stuff
 
         try:
             ssh = paramiko.SSHClient()
             ssh.load_system_host_keys()
-            ssh.connect(host,timeout=30,username=self._resource.username)
+            ssh.connect(host,timeout=30,username=username)
             sftp = ssh.open_sftp()
             return ssh, sftp
 

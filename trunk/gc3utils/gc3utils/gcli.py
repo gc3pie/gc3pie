@@ -175,7 +175,7 @@ class Gcli:
         
         _lrms = self.__get_LRMS(job_obj.resource_name)
 
-        if not job_obj.status == gc3utils.Job.JOB_STATE_COMPLETED:
+        if not ( job_obj.status == gc3utils.Job.JOB_STATE_COMPLETED or job_obj.status == gc3utils.Job.JOB_STATE_FINISHED or job_obj.status == gc3utils.Job.JOB_STATE_FAILED or job_obj.status == gc3utils.Job.JOB_STATE_DELETED ):
             # check job status
             a = Authorization.Auth()
             a.get(_lrms._resource.type)                                

@@ -33,9 +33,13 @@ JOB_STATE_SUBMITTED = 4
 # User or Application can do whatever it wants with the results.
 JOB_STATE_COMPLETED = 5
 
+# Job has been deleted with gkill
+JOB_STATE_DELETED = 6
+
 # This is the default initial state of a job instance before it has been updated by a gsub/gstat/gget/etc.
 # No action required; the state will be set to something else as the code executes.
-JOB_STATE_UNKNOWN = 6
+JOB_STATE_UNKNOWN = 7
+
 
 #JOB_STATE_HOLD = 7 # Initial state
 #JOB_STATE_READY = 8 # Ready for gsub
