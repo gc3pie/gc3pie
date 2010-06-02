@@ -4,7 +4,8 @@ import os
 import markstools
 from markstools.calculators.gamess import *
 
-from gorg.model.gridjob import JobInterface, States
+from gorg.model.gridjob import JobInterface
+from gorg.model.gridjob import STATES as RUN_STATES
 from gorg.model.gridtask import TaskInterface
 from parser import ParseGamessDat, ParseGamessOut
 from result import GamessResult 
@@ -84,9 +85,9 @@ class GamessGridCalc(CalculatorBase):
         else:
             assert False, 'Can not handle objects of type: %s'%(type(a_thing))
         for a_job in job_list:
-            if a_job.status == States.HOLD:
-                a_job.status = States.READY
-                markstools.log.info('Job %s was in state %s and is now in state %s'%(a_job.id, States.display(States.HOLD), States.display(States.READY)))
+            if a_job.status == RUN_STATES.HOLD:
+                a_job.status = RUN_STATES.READY
+                markstools.log.info('Job %s was in state %s and is now in state %s'%(a_job.id, RUN_STATES.HOLD, RUN_STATES.READY))
         return job_list
 
     def parse(self, a_job, force_a_reparse=False):

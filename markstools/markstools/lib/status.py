@@ -1,4 +1,3 @@
-
 class State(object):
     def __init__(self, name, desc, pause = False, terminal = False):
         self.name = name
