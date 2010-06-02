@@ -109,11 +109,14 @@ def inputname(pathname):
     - Users can submit a job using the syntax "gsub exam01.inp" or "gsub exam01" and both will work.
     - Sometimes it is useful to differentiate between the the job name "exam01" and the input file "exam01.inp"
     """
-    basename = os.path.basename(pathname)
-    filename, ext = os.path.splitext(basename)
+    return os.path.splitext(input_file_name(pathname))[0]
+#    basename = os.path.basename(pathname)
+#    filename, ext = os.path.splitext(basename)
     # FIXME: should raise exception if `ext` is not ".inp"
-    return filename
+#    return filename
 
+def input_file_name(pathname):
+    return  os.path.basename(pathname)
 
 def check_jobdir(jobdir):
     """

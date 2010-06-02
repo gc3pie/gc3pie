@@ -172,11 +172,11 @@ def gsub(*args, **kw):
     job = _gcli.gsub(application)
 
     if job.is_valid():
-        # create persistance of filesystem
-        # gc3utils.utils.create_job_on_filesystem(application_obj.job_local_dir,job.unique_token)
-        gc3utils.utils.persist_job(job)
-        # gc3utils.utils.persist_job_filesystem(job)
+        # print job statuts
         _print_job_status([job],0)
+        # create persistance of filesystem
+        gc3utils.utils.persist_job(job)
+                
         return 0
     else:
         raise Exception('Job object not valid')
@@ -235,9 +235,9 @@ def gstat(*args, **kw):
             # invalid...
             gc3utils.log.error('Returned job not valid. Removing from list')
             job_list.remove(_job)
-        else:
-            gc3utils.utils.persist_job(_job)
-            # gc3utils.utils.persist_job_filesystem(_job)
+        #else:
+        #    gc3utils.utils.persist_job(_job)
+        #    # gc3utils.utils.persist_job_filesystem(_job)
                                         
     try:
         # Print result
@@ -245,6 +245,9 @@ def gstat(*args, **kw):
     except:
         gc3utils.log.error('Failed displaying job status results')
         raise
+
+    for _job in job_list:
+        gc3utils.utils.persist_job(_job)         
 
     return 0
 
@@ -268,14 +271,23 @@ def gget(*args, **kw):
     gc3utils.log.debug('job status [%d]',job_obj.status)
     
     if not job_obj.status == gc3utils.Job.JOB_STATE_COMPLETED and (job_obj.status == gc3utils.Job.JOB_STATE_FINISHED or job_obj.status == gc3utils.Job.JOB_STATE_FAILED):
-        gc3utils.log.debug('running gcli.gget')
-        job_obj = _gcli.gget(job_obj)
-        gc3utils.utils.persist_job(job_obj)
+        try:
+            gc3utils.log.debug('running gcli.gget')
+            job_obj = _gcli.gget(job_obj)
+        except:
+            #raise
+            gc3utils.log.error('gget failed ')
+        #gc3utils.utils.persist_job(job_obj)
         # gc3utils.utils.persist_job_filesystem(job_obj)
 
     if job_obj.status == gc3utils.Job.JOB_STATE_COMPLETED:
-        sys.stdout.write('Job results successfully retrieved in [ '+job_obj.download_dir+' ]\n')
-        sys.stdout.flush
+        if job_obj.has_key('download_dir'):
+            sys.stdout.write('Job results successfully retrieved in [ '+job_obj.download_dir+' ]\n')
+            sys.stdout.flush
+        else:
+#            sys.stdout.write('Job marked as completed but no results fetched\n')
+            raise Exception('Job marked as completed but no results fetched')
+        gc3utils.utils.persist_job(job_obj)
     else:
         raise Exception("job status not COMPLETED")
         #raise
