@@ -473,6 +473,8 @@ def get_job_filesystem(unique_token):
     gc3utils.log.debug('retrieving job from %s',Default.JOBS_DIR+'/'+unique_token)
 
     try:
+        if not os.path.exists(Default.JOBS_DIR+'/'+unique_token):
+            raise JobRetrieveError('Job not found')
         handler = shelve.open(Default.JOBS_DIR+'/'+unique_token)
         job = Job.Job(handler) 
         handler.close()
@@ -534,11 +536,18 @@ def clean_job_filesystem(unique_token):
     return 0
 
 def prepare_job_dir(_download_dir):
-    if os.path.isdir(_download_dir):
-        # directory exists; move it to .1
-        os.rename(_download_dir,_download_dir + "_" + create_unique_token())
+    try:
+        if os.path.isdir(_download_dir):
+            # directory exists; move it to .1
+            os.rename(_download_dir,_download_dir + "_" + create_unique_token())
 
-    os.makedirs(_download_dir)
+        os.makedirs(_download_dir)
+        return True
+
+    except:
+        gc3utils.log.error('Failed creating folder %s ' % _download_dir)
+        gc3utils.log.debug('%s %s',sys.exc_info()[0], sys.exc_info()[1])
+        return False
 
 if __name__ == '__main__':
     import doctest

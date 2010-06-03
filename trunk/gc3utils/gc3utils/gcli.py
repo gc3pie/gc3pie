@@ -189,14 +189,16 @@ class Gcli:
 
         a = Authorization.Auth()
         a.get(_lrms._resource.type)
-        job_obj = _lrms.get_results(job_obj)
+        #job_obj = _lrms.get_results(job_obj)
+
+        return  _lrms.get_results(job_obj)
         
-        if job_obj.is_valid():
+        #if job_obj.is_valid():
             # create persistanc of filesystem
-            job_obj.status = gc3utils.Job.JOB_STATE_COMPLETED
-            return job_obj  
-        else:
-            raise JobRetrieveError('non valid job object')
+            #job_obj.status = gc3utils.Job.JOB_STATE_COMPLETED
+        #    return job_obj  
+        #else:
+        #    raise JobRetrieveError('non valid job object')
 
 #=========     INTERNAL METHODS ============
     def glist(self, shortview):
