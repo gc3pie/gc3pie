@@ -4,26 +4,13 @@ import tempfile
 import glob
 import gorg
 
-from gorg.model.gridjob import GridrunModel
+from gorg.model.gridjob import GridrunModel, STATES
 
 from gorg.lib.exceptions import *
 from gorg.lib.utils import Mydb, configure_logger, formatExceptionInfo
 from gorg.lib import state
 from gc3utils import Job, Application, gcommands, utils, Exceptions
 import gc3utils.Exceptions
-
-STATE_READY = state.State.create('READY', 'READY desc')
-STATE_WAITING = state.State.create('WAITING', 'WAITING desc')
-STATE_RETRIEVING = state.State.create('RETRIEVING', 'RETRIEVING desc')
-STATE_UNREACHABLE = state.State.create('UNREACHABLE', 'UNREACHABLE desc')
-STATE_NOTIFIED = state.State.create('NOTIFIED', 'NOTIFIED desc')
-STATE_TOPARSE = state.State.create('TOPARSE', 'TOPARSE desc', terminal = True)
-STATE_ERROR = state.State.create('ERROR', 'ERROR desc', terminal = True)
-STATE_COMPLETED = state.State.create('COMPLETED', 'COMPLETED desc', terminal = True)
-
-STATES = state.StateContainer( [STATE_READY, STATE_WAITING, STATE_RETRIEVING,  
-                                                    STATE_UNREACHABLE, STATE_NOTIFIED, 
-                                                    STATE_ERROR, STATE_COMPLETED, STATE_TOPARSE])
 
 class GridjobScheduler(object):
     def __init__(self, couchdb_user = 'mark',  couchdb_database='gorg_site', couchdb_url='http://127.0.0.1:5984'):
@@ -46,7 +33,7 @@ class GridjobScheduler(object):
                 a_run.application['inputs'].append(a_file.name)
             a_run.job = self._gcli.gsub(a_run.application)
             utils.persist_job_filesystem(a_run.job)
-            
+            gorg.log.info('Submitted run %s to the grid'%(a_run.id))
             a_run.status = STATES.WAITING
         finally:
             map(file.close, f_list.values())
@@ -54,26 +41,27 @@ class GridjobScheduler(object):
 
     def handle_waiting_run(self, a_run):
         a_run.job = self._gcli.gstat(a_run.job)[0]
+        gorg.log.info('Run %s gstat returned status %d'%(a_run.id, a_run.job.status))
         
-        if a_run.job.status == Job.JOB_STATE_WAIT:
-            pass
+        if a_run.job.status == Job.JOB_STATE_SUBMITTED:
+            a_run.status = STATES.WAITING
         elif a_run.job.status == Job.JOB_STATE_RUNNING:
-            pass
+            a_run.status = STATES.WAITING
         elif a_run.job.status == Job.JOB_STATE_FINISHED:            
             a_run.status = STATES.RETRIEVING
-        elif a_run.job.status == Job.JOB_STATE_FAILED:
+        elif a_run.job.status == Job.JOB_STATE_FAILED or \
+              a_run.job.status == Job.JOB_STATE_DELETED or \
+              a_run.job.status == Job.JOB_STATE_UNKNOWN:
             a_run.status = STATES.ERROR
         
         utils.persist_job_filesystem(a_run.job)
-        
+        gorg.log.debug('Run %s status is now %s'%(a_run.id, a_run.status))
         return a_run
  
     def handle_retrieving_run(self, a_run):        
         a_run.job = self._gcli.gget(a_run.job)
         utils.persist_job_filesystem(a_run.job)
-        #TODO: fix me a bug
-        #output_files = glob.glob('%s/%s/*.*'%(a_run.application.job_local_dir, a_run.job.unique_token))
-        output_files = glob.glob('/home/mmonroe/%s/*.*'%(a_run.job.unique_token))
+        output_files = glob.glob('%s/%s/*.*'%(a_run.application.job_local_dir, a_run.job.unique_token))
         for f_name in output_files:
             try:
                 a_file = open(f_name, 'rb')
@@ -103,7 +91,7 @@ class GridjobScheduler(object):
     
     def step(self, a_run):
         try:
-            self.status_mapping.get(self.status, self.handle_missing_state)(a_run)
+            a_run = self.status_mapping.get(a_run.status, self.handle_missing_state)(a_run)
         except gc3utils.Exceptions.AuthenticationException:
             a_run.status = STATES.UNREACHABLE
         except:
@@ -111,14 +99,17 @@ class GridjobScheduler(object):
             a_run.status=STATES.ERROR
             gorg.log.critical('GridjobScheduler Errored while processing run id %s \n%s'%(a_run.id, a_run.gsub_message))
         a_run.commit(self.db)
+        return a_run
     
     def run(self):
         for a_state in STATES.all:
             if not a_state.terminal:
-                view_runs = self.view_status_runs[a_state.name]
+                view_runs = self.view_status_runs[a_state.view_key]
                 for a_run in view_runs:
-                    while not self.status.pause and not self.status.terminal:
-                        self.step(a_run)
+                    while not a_run.status.terminal:
+                        a_run = self.step(a_run)
+                        if a_run.status.pause:
+                            break
 
 def main():
     import logging

@@ -13,6 +13,18 @@ from gc3utils import Application,  Job
 import time
 
 STATE_HOLD = state.State.create('HOLD', 'HOLD desc')
+STATE_READY = state.State.create('READY', 'READY desc')
+STATE_WAITING = state.State.create('WAITING', 'WAITING desc', pause = True)
+STATE_RETRIEVING = state.State.create('RETRIEVING', 'RETRIEVING desc')
+STATE_UNREACHABLE = state.State.create('UNREACHABLE', 'UNREACHABLE desc')
+STATE_NOTIFIED = state.State.create('NOTIFIED', 'NOTIFIED desc')
+STATE_TOPARSE = state.State.create('TOPARSE', 'TOPARSE desc', terminal = True)
+STATE_ERROR = state.State.create('ERROR', 'ERROR desc', terminal = True)
+STATE_COMPLETED = state.State.create('COMPLETED', 'COMPLETED desc', terminal = True)
+
+STATES = state.StateContainer( [STATE_HOLD, STATE_READY, STATE_WAITING, STATE_RETRIEVING,  
+                                                    STATE_UNREACHABLE, STATE_NOTIFIED, 
+                                                    STATE_ERROR, STATE_COMPLETED, STATE_TOPARSE])
 
 class GridjobModel(BaseroleModel):
     SUB_TYPE = 'GridjobModel'
@@ -164,7 +176,7 @@ class JobInterface(BaseroleInterface):
                 break
             else:
                 time.sleep(check_freq)
-        if self.terminal:
+        if self.status.terminal:
             # We did not timeout 
             return True
         else:
@@ -242,7 +254,7 @@ class GridrunModel(Document):
     # This holds the files we wish to run as well as their hashes
     files_to_run = DictField()
     
-    raw_status = DictField(default = STATE_HOLD)
+    raw_status = DictField(default = STATES.HOLD)
     raw_application = DictField()
     raw_job = DictField()
     gsub_message = TextField()
@@ -313,11 +325,10 @@ class GridrunModel(Document):
         return self
 
     def _check_for_previous_run(self, db):
-        from gorg.gridjobscheduler import STATE_COMPLETED
         a_view = GridrunModel.view_hash(db, key=self.files_to_run.values())
         result = None
         for a_run in a_view:
-            if a_run.status == STATE_COMPLETED:
+            if a_run.status == STATES.COMPLETED:
                 result = a_run
         return result
     
@@ -342,8 +353,7 @@ class GridrunModel(Document):
     def job():        
         def fget(self):
             if not isinstance(self.raw_job, Job.Job):
-                job = Job.Job()
-                job.update(self.raw_job)
+                job = Job.Job(self.raw_job)
                 self.raw_job = job
             return self.raw_job
         def fset(self, job):
@@ -455,4 +465,4 @@ class GridrunModel(Document):
         f.seek(0)
         #TODO: When mike runs this, it doesn't work
         #return u'%s'%(generate_new_docid())
-        return u'%s'%md5.digest()
+        return u'%s'%md5.hexdigest()

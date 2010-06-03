@@ -5,7 +5,8 @@ from couchdb import client as client
 import time
 import gorg
 
-from gorg.gridjobscheduler import STATES
+from gorg.lib import state
+
 #reduce_func_author_status ='''
 #def reducefun(keys, values, rereduce):
 #    status_list = list()
@@ -14,6 +15,7 @@ from gorg.gridjobscheduler import STATES
 #    return status_list
 #    '''    
 
+STATE_HOLD = state.State.create('HOLD', 'HOLD desc')
 
 oldddd = '''
 def mapfun(doc):
@@ -34,7 +36,7 @@ class GridtaskModel(BaseroleModel):
     SUB_TYPE = 'GridtaskModel'
     VIEW_PREFIX = 'GridtaskModel'
     sub_type = TextField(default=SUB_TYPE)
-    status = TextField()
+    status = DictField(default=STATE_HOLD)
     
     def __init__(self, *args):
         super(GridtaskModel, self).__init__(*args)
@@ -110,7 +112,7 @@ class TaskInterface(BaseroleInterface):
     
     def status():
         def fget(self):
-            return self.controlled.status
+            return state.State(**self.controlled.status)
         def fset(self, status):
             self.controlled.status = status
             self.controlled.commit(self.db)
