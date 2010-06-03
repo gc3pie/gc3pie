@@ -47,10 +47,13 @@ class ArcLrms(LRMS):
                 self._resource.walltime = self._resource.walltime * 60
 
     def submit_job(self, application):
+        return self._submit_job_arclib(application)
+
+    def _submit_job_arclib(self, application):
         try:
             # Initialize xrsl from template
             GAMESS_XRSL_TEMPLATE = os.path.expandvars(Default.GAMESS_XRSL_TEMPLATE)
-                
+            
             if os.path.exists(GAMESS_XRSL_TEMPLATE):
                 # GAMESS only needs 1 input file
                 input_file_path = application.inputs[0]
@@ -83,6 +86,80 @@ class ArcLrms(LRMS):
                         requested_memory = int(self._resource.memory_per_core) * 1000
                     xrsl += '(memory="%s")\n' % requested_memory
 
+
+                # Aternative using arclib
+                try:
+                    _xrsl = arclib.Xrsl(xrsl)
+                except:
+                    raise LRMSSubmitError('Failed while building Xrsl: %s' % sys.exc_info()[1])
+
+                try:
+                    if self._resource.has_key('arc_ldap'):
+                        cls = arclib.GetClusterResources(arclib.URL(self._resource.arc_ldap),True,'',2)
+                        queues = arclib.GetQueueInfo(cls,arclib.MDS_FILTER_CLUSTERINFO,True,"",2)
+                    else:
+                        queues = arclib.GetQueueInfo(arclib.GetClusterResources())
+                    
+                    if len(queues) == 0:
+                        raise LRMSSubmitError('No ARC queus found')
+                    
+                except:
+                    raise
+
+                targets = arclib.PerformStandardBrokering(arclib.ConstructTargets(queues, _xrsl))
+                if len(targets) == 0:
+                    raise LRMSSubmitError('No ARC targets found')
+
+                try:
+                    lrms_jobid = arclib.SubmitJob(_xrsl,targets)
+                except arclib.JobSubmissionError:
+                    raise LRMSSubmitError('%s' % sys.exc_info()[1])
+
+                job = Job.Job(lrms_jobid=lrms_jobid,status=Job.JOB_STATE_SUBMITTED,resource_name=self._resource.name)
+                return job
+
+        except:
+            gc3utils.log.critical('Failure in submitting')
+            raise
+                                
+    def _submit_job_exec(self, application):
+        try:
+            # Initialize xrsl from template
+            GAMESS_XRSL_TEMPLATE = os.path.expandvars(Default.GAMESS_XRSL_TEMPLATE)
+            
+            if os.path.exists(GAMESS_XRSL_TEMPLATE):
+                # GAMESS only needs 1 input file
+                input_file_path = application.inputs[0]
+                xrsl = from_template(GAMESS_XRSL_TEMPLATE,
+                                     INPUT_FILE_NAME = os.path.splitext(os.path.basename(input_file_path))[0],
+                                     INPUT_FILE_DIR = os.path.dirname(input_file_path))
+                
+                # append requirements to XRSL file
+                if ( self._resource.walltime > 0 ):
+                    gc3utils.log.debug('setting walltime...')
+                    if int(application.requested_walltime) > 0:
+                        requested_walltime = int(application.requested_walltime) * 60
+                    else:
+                        requested_walltime = self._resource.walltime
+                        xrsl += '(cputime="%s")\n' % requested_walltime
+
+                if ( self._resource.ncores > 0 ):
+                    gc3utils.log.debug('setting cores...')
+                    if int(application.requested_cores) > 0:
+                        requested_cores = int(application.requested_cores)
+                    else:
+                        requested_cores = self._resource.ncores
+                        xrsl += '(count="%s")\n' % requested_cores
+                            
+                if ( self._resource.memory_per_core > 0 ):
+                    gc3utils.log.debug('setting memory')
+                    if int(application.requested_memory) > 0:
+                        requested_memory = int(application.requested_memory) * 1000
+                    else:
+                        requested_memory = int(self._resource.memory_per_core) * 1000
+                        xrsl += '(memory="%s")\n' % requested_memory
+
+
                 # Ready for real submission
                 if ( self._resource.frontend == "" ):
                     # frontend not defined; use the entire arc-based infrastructure
@@ -108,11 +185,11 @@ class ArcLrms(LRMS):
                 gc3utils.log.debug('Job submitted with jobid: %s',lrms_jobid)
 
                 job = Job.Job(lrms_jobid=lrms_jobid,status=Job.JOB_STATE_SUBMITTED,resource_name=self._resource.name,log=output)
-#                job.lrms_jobid = lrms_jobid
-#                job.status = Job.JOB_STATE_SUBMITTED
-#                job.resource_name = self._resource.name
-#                job.log = output
-
+                #                job.lrms_jobid = lrms_jobid
+                #                job.status = Job.JOB_STATE_SUBMITTED
+                #                job.resource_name = self._resource.name
+                #                job.log = output
+                
                 return job
 
             else:
@@ -121,7 +198,7 @@ class ArcLrms(LRMS):
         except:
             gc3utils.log.critical('Failure in submitting')
             raise
-
+        
     def check_status(self, job_obj):
         
         submitted_list = ['ACCEPTED','SUBMITTING','PREPARING']
@@ -160,7 +237,9 @@ class ArcLrms(LRMS):
                 job_obj.status = Job.JOB_STATE_FINISHED
             elif arc_job.status in failed_list:
                 gc3utils.log.debug('job status: %s setting to FAILED',arc_job.status)
-                job_obj.status = Job.JOB_STATE_FAILED
+                job_obj.status = Job.JOB_STATE_FINISHED
+                #if job_obj.exitcode == -1:
+                #    job_obj.exitcode = 1
                 
             return job_obj
 
@@ -178,22 +257,33 @@ class ArcLrms(LRMS):
                 _download_dir = Default.JOB_FOLDER_LOCATION + '/' + job_obj.unique_token
 
             # Prepare/Clean download dir
-            gc3utils.utils.prepare_job_dir(_download_dir)
+            if gc3utils.utils.prepare_job_dir(_download_dir) is False:
+                gc3utils.log.error('failed creating local folder %s' % _download_dir)
+                raise IOError('Failed while creating local folder %s' % _download_dir)
 
             gc3utils.log.debug('downloading job into %s',_download_dir)
-            arclib.JobFTPControl.DownloadDirectory(jftpc,job_obj.lrms_jobid,_download_dir)
+            try:
+                arclib.JobFTPControl.DownloadDirectory(jftpc,job_obj.lrms_jobid,_download_dir)
+            except arclib.FTPControlError:
+                # critical error. consider job remote data as lost
+                gc3utils.log.error('failed downloading remote folder %s' % job_obj.lrms_jobid)
+                raise LRMSUnrecoverableError('failed downloading remote folder %s' % job_obj.lrms_jobid)
 
             # Clean remote job sessiondir
-            retval = arclib.JobFTPControl.Clean(jftpc,job_obj.lrms_jobid)
+            try:
+                retval = arclib.JobFTPControl.Clean(jftpc,job_obj.lrms_jobid)
+            except arclib.FTPControlError:
+                gc3utils.log.error('Failed wile removing remote folder %s' % job_obj.lrms_jobid)
+                job_obj.warning_flag = 1
 
             # set job status to COMPLETED
             job_obj.download_dir = _download_dir
             job_obj.status = Job.JOB_STATE_COMPLETED
             
             return job_obj
-        except JobFTPControlError:
+        except arclib.JobFTPControlError:
             raise
-        except FTPControlError:
+        except arclib.FTPControlError:
             raise
         except:
             gc3utils.log.error('Failure in retrieving job results [%s]',sys.exc_info()[1])

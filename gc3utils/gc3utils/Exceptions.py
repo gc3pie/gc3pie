@@ -105,6 +105,8 @@ class VOMSException(Error):
 class InvalidInformationContainerError(Error):
     pass
 
+class LRMSUnrecoverableError(Error):
+    pass
 
 ## main: run tests
 

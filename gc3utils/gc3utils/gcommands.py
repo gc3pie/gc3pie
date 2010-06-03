@@ -102,8 +102,13 @@ def gclean(*args, **kw):
 
     if len(args) != 1:
         raise InvalidUsage('Wrong number of arguments: this commands expects exactly one  arguments.')
-    
-    return gc3utils.utils.clean_job(args[0])
+
+
+    job = gc3utils.utils.get_job(args[0])
+    if job.status == gc3utils.Job.JOB_STATE_COMPLETED or job.status == gc3utils.Job.JOB_STATE_FAILED or job.status == gc3utils.Job.JOB_STATE_DELETED:
+        return gc3utils.utils.clean_job(args[0])
+    else:
+        raise Exception('Job is not in terminal state')
 
 def ginfo(*args, **kw):
     """The 'ginfo' command."""
@@ -270,32 +275,31 @@ def gget(*args, **kw):
 
     gc3utils.log.debug('job status [%d]',job_obj.status)
     
-    if not job_obj.status == gc3utils.Job.JOB_STATE_COMPLETED and (job_obj.status == gc3utils.Job.JOB_STATE_FINISHED or job_obj.status == gc3utils.Job.JOB_STATE_FAILED):
-        try:
-            gc3utils.log.debug('running gcli.gget')
-            job_obj = _gcli.gget(job_obj)
-        except:
-            #raise
-            gc3utils.log.error('gget failed ')
-        #gc3utils.utils.persist_job(job_obj)
-        # gc3utils.utils.persist_job_filesystem(job_obj)
-
-    if job_obj.status == gc3utils.Job.JOB_STATE_COMPLETED:
+    if job_obj.status == gc3utils.Job.JOB_STATE_COMPLETED or job_obj.status == gc3utils.Job.JOB_STATE_FAILED:
         if job_obj.has_key('download_dir'):
-            sys.stdout.write('Job results successfully retrieved in [ '+job_obj.download_dir+' ]\n')
-            sys.stdout.flush
+            sys.stdout.write('Job already retrieved in [ '+job_obj.download_dir+' ]\n')
         else:
-#            sys.stdout.write('Job marked as completed but no results fetched\n')
-            raise Exception('Job marked as completed but no results fetched')
-        gc3utils.utils.persist_job(job_obj)
+            # when this happen ?
+            sys.stdout.write('Job cold not be retirieved any furhter\n')
+        sys.stdout.flush
     else:
-        raise Exception("job status not COMPLETED")
-        #raise
-                    
-
-#    retval = _gcli.gget(unique_token)
-#    sys.stdout.write('Job results successfully retrieved in directory: '+unique_token+'\n')
-#    sys.stdout.flush()
+        if  job_obj.status == gc3utils.Job.JOB_STATE_FINISHED or job_obj.status == gc3utils.Job.JOB_STATE_DELETED:
+            try:
+                gc3utils.log.debug('running gcli.gget')
+                job_obj = _gcli.gget(job_obj)
+            except:
+                gc3utils.log.error('gget failed ')
+                raise
+            
+            if job_obj.status == gc3utils.Job.JOB_STATE_COMPLETED or job_obj.status == gc3utils.Job.JOB_STATE_FAILED:
+                gc3utils.utils.persist_job(job_obj)
+                if job_obj.has_key('download_dir'):
+                    sys.stdout.write('Job results successfully retrieved in [ '+job_obj.download_dir+' ]\n')
+                    sys.stdout.flush
+                else:
+                    raise Exception('Job marked as completed but no results fetched')
+        else:
+            raise Exception("job status not ready for retrieving results")
 
 
 def gkill(*args, **kw):

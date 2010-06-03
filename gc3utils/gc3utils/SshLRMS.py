@@ -286,9 +286,9 @@ class SshLrms(LRMS):
             except:
                 gc3utils.log.error('Could not read remote dir %s' % job.remote_ssh_folder)
                 self.ssh.close()
-                raise
-                #job.status = Job.JOB_STATE_COMPLETED
-                #return job
+                #raise
+                job.status = Job.JOB_STATE_FAILED
+                return job
                 
 
             #            files_list = sftp.listdir(_full_path_to_remote_unique_id)
@@ -298,8 +298,10 @@ class SshLrms(LRMS):
                 _download_dir = Default.JOB_FOLDER_LOCATION + '/' + job.unique_token
                 
             # Prepare/Clean download dir
-            gc3utils.utils.prepare_job_dir(_download_dir)
-            
+            if gc3utils.utils.prepare_job_dir(_download_dir) is False:
+                # failed creating local folder
+                raise Exception('failed creating local folder')
+
             gc3utils.log.debug('downloading job into %s',_download_dir)
 
             # copy back all files
