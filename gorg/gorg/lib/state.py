@@ -21,7 +21,14 @@ class State(dotdict):
         else:
             self = super(State, self).__init__(**kwarg)
     def __repr__(self):
+        return super(State, self).__repr__()
+    
+    def __str__(self):
         return self.description
+    
+    @property
+    def view_key(self):
+        return super(State, self).__str__()
     
     @staticmethod
     def enum(obj):
@@ -58,3 +65,10 @@ class StateContainer(dotdict):
             if self[index].terminal:
                 states.append(self[index])
         return states
+
+class What(object):
+    def __repr__(self):
+        return 're'
+    def __str__(self):
+        return 'st'
+
