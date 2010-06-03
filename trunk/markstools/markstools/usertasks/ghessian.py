@@ -13,18 +13,20 @@ import numpy as np
 from markstools.io.gamess import ReadGamessInp, WriteGamessInp
 from markstools.calculators.gamess.calculator import GamessGridCalc
 from markstools.lib import utils
-from markstools.lib.status import State,  Status
 
 from gorg.model.gridtask import TaskInterface
 from gorg.lib.utils import Mydb
+from gorg.lib import state
+from gorg.model.gridjob import STATE_COMPLETED as RUN_COMPLETED
+from gorg.model.gridjob import STATE_ERROR as RUN_ERROR
 
-STATE_WAIT = State('WAIT', 'WAIT desc', True)
-STATE_PROCESS = State('PROCESS', 'PROCESS desc')
-STATE_POSTPROCESS = State('POSTPROCESS', 'POSTPROCESS desc')
-STATE_ERROR = State('ERROR', 'ERROR desc', terminal = True)
-STATE_COMPLETED = State('COMPLETED', 'COMPLETED desc', terminal = True)
+STATE_WAIT = state.State.create('WAIT', 'WAIT desc', True)
+STATE_PROCESS = state.State.create('PROCESS', 'PROCESS desc')
+STATE_POSTPROCESS = state.State.create('POSTPROCESS', 'POSTPROCESS desc')
+STATE_ERROR = state.State.create('ERROR', 'ERROR desc', terminal = True)
+STATE_COMPLETED = state.State.create('COMPLETED', 'COMPLETED desc', terminal = True)
 
-STATES = Status([STATE_WAIT, STATE_PROCESS, STATE_POSTPROCESS, 
+STATES = state.StateContainer([STATE_WAIT, STATE_PROCESS, STATE_POSTPROCESS, 
                             STATE_ERROR, STATE_COMPLETED])
 
 class GHessian(object):
@@ -88,9 +90,11 @@ class GHessian(object):
         for a_job in job_list:
             a_result = self.calculator.parse(a_job)
             if not a_result.exit_successful():
+                a_job.status = RUN_ERROR
                 msg = 'GAMESS returned an error while running job %s.'%(a_job.id)
                 markstools.log.critical(msg)
                 raise Exception, msg
+            a_job.status = RUN_COMPLETED
         self.status = STATES.POSTPROCESS
 
     def handle_postprocess_state(self):
@@ -199,7 +203,10 @@ if __name__ == '__main__':
         format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
         datefmt='%Y-%m-%d %H:%M:%S')
         
-    configure_logger(options.verbose)
+    #configure_logger(options.verbose)
+    configure_logger(10)
+    import gorg.lib.utils
+    gorg.lib.utils.configure_logger(10)
     
     main(options)
 
