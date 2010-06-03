@@ -20,7 +20,7 @@ class TaskScheduler(object):
         
     def handle_waiting_tasks(self):
         for usertask_name, usertask_module in usertask_modules:
-            task_list = GridtaskModel.view_status(self.db, keys = [usertask_name,  usertask_module.Status.pause])
+            task_list = GridtaskModel.view_status(self.db, keys = [usertask_name,  map(str, usertask_module.STATES.pause)])
             markstools.log.debug('%d %s task(s) are going to be processed'%(len(task_list), usertask_name))
             for raw_task in task_list:
                 a_task = TaskInterface(self.db)

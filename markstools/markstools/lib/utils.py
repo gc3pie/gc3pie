@@ -29,7 +29,7 @@ def configure_logger(verbosity, log_file_name='gc3utils_log'):
         logging_level = (( 6 - verbosity) * 10)
 
     markstools.log.setLevel(logging_level)
-    handler = logging.handlers.RotatingFileHandler(log_file_name, maxBytes=200, backupCount=5)
+    handler = logging.handlers.RotatingFileHandler(log_file_name, maxBytes=20000, backupCount=5)
     markstools.log.addHandler(handler)
 
 def split_seq(iterable, size):
