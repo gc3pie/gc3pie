@@ -17,8 +17,8 @@ from markstools.lib import utils
 from gorg.model.gridtask import TaskInterface
 from gorg.lib.utils import Mydb
 from gorg.lib import state
-from gorg.model.gridjob import STATE_COMPLETED as RUN_COMPLETED
-from gorg.model.gridjob import STATE_ERROR as RUN_ERROR
+from gorg.gridjobscheduler import STATE_COMPLETED as RUN_COMPLETED
+from gorg.gridjobscheduler import STATE_ERROR as RUN_ERROR
 
 STATE_WAIT = state.State.create('WAIT', 'WAIT desc', True)
 STATE_PROCESS = state.State.create('PROCESS', 'PROCESS desc')
