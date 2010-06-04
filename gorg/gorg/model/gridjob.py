@@ -4,27 +4,15 @@ from couchdb import client as client
 from datetime import datetime
 from gorg.lib.utils import generate_new_docid, generate_temp_dir, write_to_file
 
-from gorg.lib import state
-
 from gorg.lib.exceptions import *
 import os
 import gorg
 from gc3utils import Application,  Job
 import time
 
-STATE_HOLD = state.State.create('HOLD', 'HOLD desc')
-STATE_READY = state.State.create('READY', 'READY desc')
-STATE_WAITING = state.State.create('WAITING', 'WAITING desc', pause = True)
-STATE_RETRIEVING = state.State.create('RETRIEVING', 'RETRIEVING desc')
-STATE_UNREACHABLE = state.State.create('UNREACHABLE', 'UNREACHABLE desc')
-STATE_NOTIFIED = state.State.create('NOTIFIED', 'NOTIFIED desc')
-STATE_TOPARSE = state.State.create('TOPARSE', 'TOPARSE desc', terminal = True)
-STATE_ERROR = state.State.create('ERROR', 'ERROR desc', terminal = True)
-STATE_COMPLETED = state.State.create('COMPLETED', 'COMPLETED desc', terminal = True)
+from gorg.lib import state
+from gorg.gridjobscheduler import STATES
 
-STATES = state.StateContainer( [STATE_HOLD, STATE_READY, STATE_WAITING, STATE_RETRIEVING,  
-                                                    STATE_UNREACHABLE, STATE_NOTIFIED, 
-                                                    STATE_ERROR, STATE_COMPLETED, STATE_TOPARSE])
 
 class GridjobModel(BaseroleModel):
     SUB_TYPE = 'GridjobModel'
@@ -236,7 +224,6 @@ class JobInterface(BaseroleInterface):
         return locals()
     parsed = property(**parsed())
 
-
 def _reduce_author_status(keys, values, rereduce):
     return sum(values)
         
@@ -258,6 +245,7 @@ class GridrunModel(Document):
     raw_application = DictField()
     raw_job = DictField()
     gsub_message = TextField()
+    locked_by = TextField()
     
     def __init__(self, *args):
         super(GridrunModel, self).__init__(*args)
@@ -332,6 +320,34 @@ class GridrunModel(Document):
                 result = a_run
         return result
     
+#    def lock(self, locker, timeout='INFINITE'):
+#        from time import sleep
+#        if timeout == 'INFINITE':
+#            timeout = sys.maxint
+#        if check_freq > timeout:
+#            check_freq = timeout
+#        starting_time = time.time()
+#        while True:
+#            if starting_time + timeout < time.time() or self.locked_by is None:
+#                break
+#            else:
+#                time.sleep(check_freq)
+#        if self.locked_by is None:
+#            # We did not timeout 
+#            self.locked_by = locker
+#            return True
+#        else:
+#            # Timed out
+#            return False
+#
+#    def unlock(self, locker):
+#        if self.locked_by == locker:
+#            self.locked_by = None
+#        if not self.locked_by:
+#            return True
+#        else:
+#            return False
+            
     def status():        
         def fget(self):
             return state.State(**self.raw_status)

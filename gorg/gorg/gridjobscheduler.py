@@ -4,16 +4,31 @@ import tempfile
 import glob
 import gorg
 
-from gorg.model.gridjob import GridrunModel, STATES
-
 from gorg.lib.exceptions import *
 from gorg.lib.utils import Mydb, configure_logger, formatExceptionInfo
 from gorg.lib import state
 from gc3utils import Job, Application, gcommands, utils, Exceptions
 import gc3utils.Exceptions
+from gorg.lib import state
+
+STATE_HOLD = state.State.create('HOLD', 'HOLD desc')
+STATE_READY = state.State.create('READY', 'READY desc')
+STATE_WAITING = state.State.create('WAITING', 'WAITING desc', pause = True)
+STATE_RETRIEVING = state.State.create('RETRIEVING', 'RETRIEVING desc')
+STATE_UNREACHABLE = state.State.create('UNREACHABLE', 'UNREACHABLE desc')
+STATE_NOTIFIED = state.State.create('NOTIFIED', 'NOTIFIED desc')
+STATE_TOPARSE = state.State.create('TOPARSE', 'TOPARSE desc', terminal = True)
+STATE_ERROR = state.State.create('ERROR', 'ERROR desc', terminal = True)
+STATE_COMPLETED = state.State.create('COMPLETED', 'COMPLETED desc', terminal = True)
+
+STATES = state.StateContainer( [STATE_HOLD, STATE_READY, STATE_WAITING, STATE_RETRIEVING,  
+                                                    STATE_UNREACHABLE, STATE_NOTIFIED, 
+                                                    STATE_ERROR, STATE_COMPLETED, STATE_TOPARSE])
+
 
 class GridjobScheduler(object):
     def __init__(self, couchdb_user = 'mark',  couchdb_database='gorg_site', couchdb_url='http://127.0.0.1:5984'):
+        from gorg.model.gridjob import GridrunModel
         self.db=Mydb(couchdb_user, couchdb_database, couchdb_url).cdb()
         self.view_status_runs = GridrunModel.view_status(self.db)
         self._gcli = gcommands._get_gcli()
