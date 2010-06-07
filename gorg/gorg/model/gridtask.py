@@ -45,7 +45,7 @@ class GridtaskModel(BaseroleModel):
         def fget(self):
             return state.State(**self.raw_status)
         def fset(self, status):
-            self.raw_status = raw_status
+            self.raw_status = status
         return locals()
     status = property(**status())
     

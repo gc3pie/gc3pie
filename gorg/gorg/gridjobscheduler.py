@@ -96,7 +96,6 @@ class GridjobScheduler(object):
             a_run.job = self._gcli.gstat(a_run.job)[0]
             utils.persist_job_filesystem(a_run.job)
             a_run.status = STATES.WAITING
-            
         except gc3utils.Exceptions.AuthenticationException:
             a_run.status = STATES.NOTIFIED
         return a_run
@@ -112,7 +111,7 @@ class GridjobScheduler(object):
         except http.ResourceConflict:
             #The document in the database does not match the one we are trying to save.
             # Lets just ignore the error and let the state machine run
-            gorg.log.warning('GridjobScheduler could not save run %s due to a document revision conflict'%(a_run.id))
+            gorg.log.critical('GridjobScheduler could not save run %s due to a document revision conflict'%(a_run.id))
         except:
             a_run.gsub_message=formatExceptionInfo()
             a_run.status=STATES.ERROR
