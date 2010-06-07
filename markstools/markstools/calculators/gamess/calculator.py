@@ -5,7 +5,7 @@ import markstools
 from markstools.calculators.gamess import *
 
 from gorg.model.gridjob import JobInterface
-from gorg.model.gridjob import STATES as RUN_STATES
+from gorg.gridjobscheduler import STATES as RUN_STATES
 from gorg.model.gridtask import TaskInterface
 from parser import ParseGamessDat, ParseGamessOut
 from result import GamessResult 
@@ -62,7 +62,7 @@ class GamessGridCalc(CalculatorBase):
         writer = WriteGamessInp()
         writer.write(f_inp, atoms, params)
         f_inp.seek(0)
-        a_job = JobInterface(self.db).create(params.title,  self.__class__.__name__, f_inp, application_to_run, 
+        a_job = JobInterface(self.db).create(params.title,  self.__class__.__name__, [f_inp], application_to_run, 
                            selected_resource,  cores, memory, walltime)
         f_inp.close()
         # Convert the python dictionary to one that uses the couchdb schema
@@ -88,6 +88,7 @@ class GamessGridCalc(CalculatorBase):
             if a_job.status == RUN_STATES.HOLD:
                 a_job.status = RUN_STATES.READY
                 markstools.log.info('Job %s was in state %s and is now in state %s'%(a_job.id, RUN_STATES.HOLD, RUN_STATES.READY))
+                a_job.store()
         return job_list
 
     def parse(self, a_job, force_a_reparse=False):
@@ -106,6 +107,7 @@ class GamessGridCalc(CalculatorBase):
                 markstools.log.info('Using previously parsed results for Job %s'%(a_job.id))
         if a_result is None:
             markstools.log.info('Starting to parse Job %s results'%(a_job.id))
+            markstools.log.debug('Starting to parse Run %s results'%(a_job.run.id))
             try:
                 f_inp = a_job.get_attachment('inp')
                 reader = ReadGamessInp(f_inp)
