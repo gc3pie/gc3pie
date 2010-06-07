@@ -47,7 +47,7 @@ class GHessian(object):
         self.calculator = calculator
         self.a_task = TaskInterface(db).create(self.__class__.__name__)
         self.a_task.user_data_dict['total_jobs'] = 0
-        
+        self.a_task.store()
         perturbed_postions = self.repackage(atoms.get_positions())
         params.title = 'job_number_%d'%self.a_task.user_data_dict['total_jobs']
         first_job = self.calculator.generate(atoms, params, self.a_task, application_to_run, selected_resource, cores, memory, walltime)
@@ -67,8 +67,9 @@ class GHessian(object):
         self.calculator = eval(str_calc + '(db)')
     
     def save(self):
-        self.a_task.status = self.status.name
+        self.a_task.status = self.status
         self.a_task.user_data_dict['calculator'] = self.calculator.__class__.__name__
+        self.a_task.store()
     
     def handle_wait_state(self):
         from gorg.gridjobscheduler import GridjobScheduler
@@ -153,12 +154,11 @@ class GHessian(object):
         self.save()
     
     def run(self):
-        if not self.status.terminal:
+        while not self.status.terminal:
             self.step()
-        else:
-            assert false,  'You are trying to step a terminated status.'
-        while not self.status.pause and not self.status.terminal:
-            self.step()
+            if self.status.pause:
+                break
+
 
 def main(options):
     # Connect to the database
