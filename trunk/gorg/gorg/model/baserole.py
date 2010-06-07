@@ -194,7 +194,7 @@ class BaseInterface(ObjectWrapper):
         return f_attachments
     
     def wait(self, timeout=60):
-        from time import sleep
+        import time
         check_freq = 10
         if timeout == 'INFINITE':
             timeout = sys.maxint
