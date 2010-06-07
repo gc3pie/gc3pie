@@ -5,6 +5,8 @@ from datetime import datetime
 from gorg.lib.utils import generate_new_docid, generate_temp_dir, write_to_file
 import gorg
 from gorg.lib.exceptions import *
+import inspect
+
 '''When you need to query for a key like this ('sad','saq') do this:
 self.view(db,'who_task_owns',startkey=[self.id],endkey=[self.id,{}])
 when you want to match a key ('sad','sad') do this:
@@ -33,9 +35,6 @@ class BaseroleModel(Document):
         self.author = author
         self.title = title
         return self
-
-    def commit(self, db):
-        raise NotImplementedError('Must implement a commit(self, db) method')
     
     @ViewField.define('BaseroleModel')
     def view_all(doc):
@@ -80,122 +79,78 @@ class BaseroleModel(Document):
                 definition_list.append(eval('cls.%s'%(key)))
         ViewDefinition.sync_many( db,  definition_list)
 
-class ObservableDict( object ):
-    def __init__( self, interface, a_dict ):
-        self.interface=interface
-        self.a_dict = a_dict
-    def __setitem__( self, key, value ):
-        self.a_dict[key]=value
-        self.interface.controlled.user_data_dict[key]=value
-        self.interface.controlled.commit(self.interface.db)
-    def __repr__(self):
-        return self.a_dict.__repr__()
-    def __str__(self):
-        return self.a_dict.__str__()
-    def __delitem__(self, key):
-        result = self.a_dict.__delitem__(key)
-        self.interface.controlled.commit(self.interface.db)
-        return result
-    def __getitem__(self, key):
-        return self.a_dict.__getitem__(key)
-    def update(self, a_dict):
-        result = self.a_dict.update(a_dict)
-        self.interface.controlled.commit(self.interface.db)
-        return result
-
-class BaseroleInterface(object):
-    def __init__(self, db):
-        self.db = db
-        self.controlled = None
+class ObjectWrapper(object):
+    """ObjectWrapper class redirects unhandled calls to wrapped object.
+ 
+    Intended as an alternative when inheritance from the wrapped object is not
+    possible.  This is the case for some python objects implemented in c.
+ 
+    """
+    def __init__(self, obj):
+        self.wrap(obj)
     
+    def wrap(self, obj):
+        """Set the wrapped object."""
+        super(ObjectWrapper, self).__setattr__('_obj', obj)
+
+        # __methods__ and __members__ are deprecated but still used by
+        # dir so we need to set them correctly here
+        methods = []
+        for nameValue in inspect.getmembers(obj, inspect.ismethod):
+            methods.append(nameValue[0])
+        super(ObjectWrapper, self).__setattr__('__methods__', methods)
+ 
+        def isnotmethod(object_):
+            return not inspect.ismethod(object_)
+        members = []
+        for nameValue in inspect.getmembers(obj, isnotmethod):
+            members.append(nameValue[0])        
+        super(ObjectWrapper, self).__setattr__('__members__', members)
+    
+    def __getattr__(self, name):
+        """Redirect unhandled get attribute to self._obj."""
+        if not hasattr(self._obj, name):
+            raise AttributeError, ("'%s' has no attribute %s" %
+                                   (self.__class__.__name__, name))
+        else:
+            return getattr(self._obj, name)
+ 
+    def __setattr__(self, name, value):
+        """Redirect set attribute to self._obj if necessary."""
+        # note that we don't want to call hasattr(self, name) or dir(self)
+        # we need to check if it is actually an attr on self directly
+        selfHasAttr = True
+        try:
+            super(ObjectWrapper, self).__getattribute__(name)
+        except AttributeError:
+            selfHasAttr = False
+ 
+        if (name == "_obj" or not hasattr(self, "_obj") or
+            not hasattr(self._obj, name) or selfHasAttr):
+            return super(ObjectWrapper, self).__setattr__(name, value)
+        else:
+            return setattr(self._obj, name, value)
+
+class BaseInterface(ObjectWrapper):
+    def __init__(self, db):
+        super(BaseInterface, self).__init__(object)
+        self.db = db
+
     def create(*args, **kwargs):
         raise NotImplementedError('Must implement a create(*args, **kwargs) method')
+
+    def load(self, id=None):
+        raise NotImplementedError('Must implement a load method')
+    
+    def store(self):
+        self._obj.store(self.db)
     
     def __repr__(self):
-        return self.controlled.__repr__()
+        return self._obj.__repr__()
+    
     def __str__(self):
-        return self.controlled.__str__()
-    
-    def add_child(self, child):
-        from gridjob import GridjobModel
-        child_job = child.controlled
-        assert isinstance(child_job, GridjobModel),'Only jobs can be chilren.'
-        self.controlled.refresh(self.db)
-        if child_job.id not in self.controlled.children:
-            self.controlled.children.append(child_job.id)
-        self.controlled.commit(self.db)
+        return self._obj.__str__()
 
-    def children():            
-        def fget(self):
-            from gridjob import JobInterface
-            self.controlled.refresh(self.db)
-            job_list=list()
-            for job_id in self.controlled.children:
-                a_job = JobInterface(self.db).load(job_id)
-                job_list.append(a_job)
-            return tuple(job_list)
-        return locals()
-    children = property(**children())
-
-    def user_data_dict():        
-#TODO: Not sure how to handle the dictionaries. When a user changes the dict
-# we will only know to update the database if we put something in the __setitem__
-# dict function. But that might get wierd if the user uses the dict for something else,
-# and forgets that everything that goes into the dict is sent to the database.
-        def fget(self):
-            self.controlled.refresh(self.db)
-            obs_dict = ObservableDict(self, self.controlled.user_data_dict)
-            return obs_dict
-        def fset(self, user_dict):
-            self.controlled.user_data_dict = user_dict
-            self.controlled.commit(self.db)
-        return locals()
-    user_data_dict = property(**user_data_dict())
-    
-    def result_data_dict():        
-        def fget(self):
-            self.controlled.refresh(self.db)
-            obs_dict = ObservableDict(self, self.controlled.result_data_dict)
-            return obs_dict
-        def fset(self, result_dict):
-            self.controlled.result_data_dict = result_dict
-            self.controlled.commit(self.db)
-        return locals()
-    result_data_dict = property(**result_data_dict())
-
-    def id():        
-        def fget(self):
-            return self.controlled.id
-        return locals()
-    id = property(**id())
-    
-    def title():        
-        def fget(self):
-            return self.controlled.title
-        def fset(self, title):
-            self.controlled.title = title
-            self.controlled.commit(db)
-        return locals()
-    title = property(**title())
-    
-    def author():
-        def fget(self):
-            return self.controlled.author
-        def fset(self, author):
-            self.controlled.author = author
-            self.controlled.commit(db)
-        return locals()
-    author= property(**author())
-    
-    def dat():
-        def fget(self):
-            return self.controlled.dat
-        def fset(self, dat):
-            self.controlled.dat = dat
-            self.controlled.commit(db)
-        return locals()
-    dat= property(**dat())
-    
     def get_attachment(self, ext):
         import os
         f_dict = dict()
@@ -216,24 +171,66 @@ class BaseroleInterface(object):
     attachments = property(**attachments())
     
     def _get_attachment(self, filename, when_not_found=None):
-        return self.db.get_attachment(self.controlled, filename, when_not_found)
+        return self.db.get_attachment(self.id, filename, when_not_found)
     
     def put_attachment(self, content, filename, content_type='text/plain'):
         content.seek(0)
-        self.db.put_attachment(self.controlled, content, filename, content_type)
-        self.controlled = self.controlled.refresh(self.db)
+        self.db.put_attachment(self._obj, content, filename, content_type)
+        self.load()
 
     def delete_attachment(self, filename):
-        return self.db.delete_attachment(self.controlled, filename)
+        return self.db.delete_attachment(self.id, filename)
 
     def _attachments_to_files(self, f_names=[]):
         '''We often want to save all of the attachments on the local computer.'''
         tempdir = generate_temp_dir(self.id)
         f_attachments = dict()
-        if not f_names and '_attachments' in self.controlled:
-            f_names = self.controlled['_attachments']
+        if not f_names and '_attachments' in self._obj:
+            f_names = self._obj['_attachments']
         # Loop through each attachment and save it
         for attachment in f_names:
             attached_data = self._get_attachment(attachment)
             f_attachments[attachment] = write_to_file(tempdir, attachment, attached_data)
         return f_attachments
+    
+    def wait(self, timeout=60):
+        from time import sleep
+        check_freq = 10
+        if timeout == 'INFINITE':
+            timeout = sys.maxint
+        if check_freq > timeout:
+            check_freq = timeout
+        starting_time = time.time()
+        while True:
+            if starting_time + timeout < time.time() or self.status.terminal:
+                break
+            else:
+                time.sleep(check_freq)
+        if self.status.terminal:
+            # We did not timeout 
+            return True
+        else:
+            # Timed out
+            return False
+    
+class BaseGraphInterface(BaseInterface):
+        
+    def add_child(self, child):
+        from gridjob import JobInterface
+        assert isinstance(child, JobInterface),'Only jobs can be chilren.'
+        self.load()
+        if child.id not in self.children:
+            self._obj.children.append(child.id)
+        self.store()
+
+    def children():            
+        def fget(self):
+            from gridjob import JobInterface
+            self.load()
+            job_list=list()
+            for job_id in self._obj.children:
+                a_job = JobInterface(self.db).load(job_id)
+                job_list.append(a_job)
+            return tuple(job_list)
+        return locals()
+    children = property(**children())

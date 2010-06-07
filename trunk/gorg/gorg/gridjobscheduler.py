@@ -10,8 +10,9 @@ from gorg.lib import state
 from gc3utils import Job, Application, gcommands, utils, Exceptions
 import gc3utils.Exceptions
 from gorg.lib import state
+from couchdb import http
 
-STATE_HOLD = state.State.create('HOLD', 'HOLD desc')
+STATE_HOLD = state.State.create('HOLD', 'HOLD desc', terminal = True)
 STATE_READY = state.State.create('READY', 'READY desc')
 STATE_WAITING = state.State.create('WAITING', 'WAITING desc', pause = True)
 STATE_RETRIEVING = state.State.create('RETRIEVING', 'RETRIEVING desc')
@@ -39,19 +40,18 @@ class GridjobScheduler(object):
                                                 STATES.NOTIFIED: self.handle_notified_run}
     
     def handle_ready_run(self, a_run):
-        try:
-            f_list = a_run.attachments_to_files(self.db, a_run.files_to_run.keys())
-    #TODO: We handle multiple input files here, but gcli can not handle them
-            if len(f_list)!=1:
-                raise ValueError('gcli.gsub does not handle multiple input files.')
-            for a_file in f_list.values():
-                a_run.application['inputs'].append(a_file.name)
-            a_run.job = self._gcli.gsub(a_run.application)
-            utils.persist_job_filesystem(a_run.job)
-            gorg.log.info('Submitted run %s to the grid'%(a_run.id))
-            a_run.status = STATES.WAITING
-        finally:
-            map(file.close, f_list.values())
+#TODO: If we get an error storing the run, we will have submitted it to the grid
+# but that info will not have been stored in the database
+        for a_file in a_run.files_to_run:
+            try:
+                f_open = a_run.get_attachment(a_file)
+                a_run.application['inputs'].append(f_open.name)
+            finally:
+                f_open.close()
+        a_run.job = self._gcli.gsub(a_run.application)
+        utils.persist_job_filesystem(a_run.job)
+        gorg.log.info('Submitted run %s to the grid'%(a_run.id))
+        a_run.status = STATES.WAITING
         return a_run
 
     def handle_waiting_run(self, a_run):
@@ -80,7 +80,7 @@ class GridjobScheduler(object):
         for f_name in output_files:
             try:
                 a_file = open(f_name, 'rb')
-                a_run = a_run.put_attachment(self.db, a_file, os.path.basename(a_file.name)) #os.path.splitext(a_file.name)[-1].lstrip('.')
+                a_run.put_attachment(a_file, os.path.basename(a_file.name)) #os.path.splitext(a_file.name)[-1].lstrip('.')
             finally:
                 a_file.close()
         a_run.status = STATES.TOPARSE
@@ -109,18 +109,24 @@ class GridjobScheduler(object):
             a_run = self.status_mapping.get(a_run.status, self.handle_missing_state)(a_run)
         except gc3utils.Exceptions.AuthenticationException:
             a_run.status = STATES.UNREACHABLE
+        except http.ResourceConflict:
+            #The document in the database does not match the one we are trying to save.
+            # Lets just ignore the error and let the state machine run
+            gorg.log.warning('GridjobScheduler could not save run %s due to a document revision conflict'%(a_run.id))
         except:
             a_run.gsub_message=formatExceptionInfo()
             a_run.status=STATES.ERROR
             gorg.log.critical('GridjobScheduler Errored while processing run id %s \n%s'%(a_run.id, a_run.gsub_message))
-        a_run.commit(self.db)
+        a_run.store()
         return a_run
     
     def run(self):
+        from gorg.model.gridjob import RunInterface
         for a_state in STATES.all:
             if not a_state.terminal:
                 view_runs = self.view_status_runs[a_state.view_key]
-                for a_run in view_runs:
+                for raw_run in view_runs:
+                    a_run = RunInterface(self.db).load(raw_run.id)
                     while not a_run.status.terminal:
                         a_run = self.step(a_run)
                         if a_run.status.pause:

@@ -1,5 +1,5 @@
 from couchdb.mapping import *
-from baserole import BaseroleModel, BaseroleInterface
+from baserole import *
 from couchdb import client as client
 from datetime import datetime
 from gorg.lib.utils import generate_new_docid, generate_temp_dir, write_to_file
@@ -19,18 +19,7 @@ class GridjobModel(BaseroleModel):
     VIEW_PREFIX = 'GridjobModel'
     sub_type = TextField(default=SUB_TYPE)    
     parser_name = TextField()
-    
-    def __init__(self, *args):
-        super(GridjobModel, self).__init__(*args)
-        self._run_id = None
-    
-    def commit(self, db):
-        self.store(db)
-    
-    def refresh(self, db):
-        self = GridjobModel.load_job(db, self.id)
-        return self
-    
+
     @ViewField.define('GridjobModel')    
     def view_all(doc):
         if 'base_type' in doc:
@@ -70,17 +59,6 @@ class GridjobModel(BaseroleModel):
             if doc['base_type'] == 'BaseroleModel':
                 if doc['sub_type'] == 'GridtaskModel':
                     yield doc['author'], {'_id':doc['children']}
-
-    @staticmethod
-    def load_job(db, job_id):
-        a_job = GridjobModel.load(db, job_id)
-        view = GridrunModel.view_job(db, key=job_id)
-        if len(view) == 0:
-            DocumentError('Job %s does not have a run associated with it.'%(a_job.id))
-        if len(view) > 1:
-            DocumentError('Job %s has more than one run associated with it.'%(a_job.id))
-        a_job._run_id = view.rows[0].id
-        return a_job
     
     @classmethod
     def sync_views(cls, db,  only_names=False):
@@ -91,24 +69,30 @@ class GridjobModel(BaseroleModel):
                 definition_list.append(eval('cls.%s'%(key)))
         ViewDefinition.sync_many( db,  definition_list)
 
-class JobInterface(BaseroleInterface):
+class JobInterface(BaseGraphInterface):
     
     def create(self, title,  parser_name, files_to_run, application_tag='gamess', 
                         requested_resource='ocikbpra',  requested_cores=2, requested_memory=1, requested_walltime=-1):
-        self.controlled = GridjobModel().create(self.db.username, title)
+        self.wrap(GridjobModel().create(self.db.username, title))
         gorg.log.debug('Job %s has been created'%(self.id))        
-        a_run = GridrunModel()
-        a_run = a_run.create( self.db, files_to_run, self.controlled, 
-                                            application_tag, requested_resource, 
-                                            requested_cores, requested_memory, 
-                                            requested_walltime)
-        self.controlled._run_id = a_run.id
+        self.run = RunInterface(self.db).create(files_to_run, self, 
+                                                                    application_tag, requested_resource, 
+                                                                    requested_cores, requested_memory, 
+                                                                    requested_walltime)
         self.parser = parser_name
-        self.controlled.commit(self.db)
+        self.store()
         return self    
     
-    def load(self, id):
-        self.controlled=GridjobModel.load_job(self.db, id)
+    def load(self, id=None):
+        if not id:
+            id = self.id
+        self.wrap(GridjobModel.load(self.db, id))
+        view = GridrunModel.view_job(self.db, key = id)
+        if len(view) == 0:
+            DocumentError('Job %s does not have a run associated with it.'%(id))
+        if len(view) > 1:
+            DocumentError('Job %s has more than one run associated with it.'%(id))
+        self.run = RunInterface(self.db).load(view.rows[0].id)
         return self
     
     def add_parent(self, parent):
@@ -117,9 +101,9 @@ class JobInterface(BaseroleInterface):
     def task():
         def fget(self):
             from gridtask import GridtaskModel, TaskInterface
-            self.controlled.refresh(self.db)
+            self.load()
             view = GridtaskModel.view_children(self.db)
-            task_id = view[self.controlled.id].rows[0].id
+            task_id = view[self.id].rows[0].id
             a_task=TaskInterface(self.db).load(task_id)
             return a_task
         return locals()
@@ -129,82 +113,42 @@ class JobInterface(BaseroleInterface):
         def fget(self):
             job_list = list()
             view = GridjobModel.view_children(self.db)
-            for a_parent in view[self.controlled.id]:
+            for a_parent in view[self.id]:
                 job_list.append(a_parent)
             return tuple(job_list)
         return locals()
     parents = property(**parents())
     
-    def run():
-        def fget(self):
-            return GridrunModel.load(self.db, self.controlled._run_id)
-        return locals()
-    run = property(**run())
+    def store(self):
+        super(JobInterface, self).store()
+        self.run.store()
 
     def status():
+        """Here we need to check to see what kind of status we have. If more than one job is pointing to the same
+        run, then changing its status might mess up the other jobs pointing to it."""
         def fget(self):
-            a_run = self.run
-            return a_run.status
+            return self.run.status
         def fset(self, status):
-            a_run = self.run
-            a_run.status = status
-            a_run.commit(self.db)
+            if self.status.terminal:
+                self.run.status = status
+            else:
+                raise DocumentError('Job %s is not in a terminal status, and therefore its status can not be changed'%(self.id))
         return locals()
     status = property(**status())
-
-    def wait(self, timeout=60, check_freq=10):
-        from time import sleep
-        if timeout == 'INFINITE':
-            timeout = sys.maxint
-        if check_freq > timeout:
-            check_freq = timeout
-        starting_time = time.time()
-        while True:
-            if starting_time + timeout < time.time() or self.status.terminal:
-                break
-            else:
-                time.sleep(check_freq)
-        if self.status.terminal:
-            # We did not timeout 
-            return True
-        else:
-            # Timed out
-            return False
 
     def attachments():
         def fget(self):
             f_dict = super(JobInterface, self).attachments
-            f_dict.update(self.run.attachments_to_files(self.db))
+            f_dict.update(self.run.attachments)
             return f_dict
         return locals()
     attachments = property(**attachments())
-
-    def run_id():        
-        def fget(self):
-            return self.controlled._run_id
-        return locals()
-    run_id = property(**run_id())
     
-    def application():        
-        def fget(self):
-            return self.run.raw_application
-        return locals()
-    application = property(**application())
-    
-    def job():        
-        def fget(self):
-            return self.controlled
-        def fset(self, a_job):
-            self.controlled = a_job
-        return locals()
-    job = property(**job())
-
     def parser():        
         def fget(self):
-            return self.controlled.parser_name
+            return self.parser_name
         def fset(self, parser_name):
-            self.controlled.parser_name = parser_name
-            self.controlled.commit(self.db)
+            self.parser_name = parser_name
         return locals()
     parser = property(**parser())
 
@@ -220,9 +164,122 @@ class JobInterface(BaseroleInterface):
             import cPickle as pickle
             import cStringIO as StringIO
             pkl = StringIO.StringIO(pickle.dumps(parsed))
+            self.status = STATES.COMPLETED
             self.put_attachment(pkl,'parsed')
         return locals()
     parsed = property(**parsed())
+
+class RunInterface(BaseInterface):
+    
+    def create(self, files_to_run, a_job, application_tag, 
+                        requested_resource,  requested_cores, 
+                        requested_memory, requested_walltime):       
+        self.wrap(GridrunModel())
+        # Generate the input file hashes
+        for a_file in files_to_run:
+            base_name = os.path.basename(a_file.name)
+            self.files_to_run[base_name] = self.md5_for_file(a_file)
+        # We now need to build a new run record
+        self.author = a_job.author
+        self.owned_by.append(a_job.id)
+        self.application = Application.Application(application_tag = application_tag,
+                                                                       requested_resource = requested_resource,  
+                                                                       requested_memory = requested_memory, 
+                                                                       requested_cores = requested_cores, 
+                                                                       requested_walltime = requested_walltime, 
+                                                                       job_local_dir = '/tmp', 
+                                                                       inputs = [], 
+                                                                       application_arguments = None)
+        self.id = generate_new_docid()
+        self = self._commit_new(a_job, files_to_run)
+        return self
+    
+    def load(self, id=None):
+        if not id:
+            id = self.id
+        self.wrap(GridrunModel.load(self.db, id))
+        return self
+
+    def _commit_new(self, a_job, files_to_run):
+        if len(files_to_run) == 0:
+            raise DocumentError('No files associated with run %s'%self.id)
+        # The run has never been store in the database
+        # Can we use a run that is already in the database?
+        a_run_already_in_db = self._check_for_previous_run()
+        if a_run_already_in_db:
+            self = a_run_already_in_db
+            if a_job.id not in self.owned_by:
+                self.owned_by.append(a_job.id)
+                self.store()
+        else:
+            # We need to attach the input files to the run,
+            # to do that we have to first store the run in the db
+            self.store()
+            for a_file in files_to_run:
+                base_name = os.path.basename(a_file.name)
+                self.put_attachment(a_file, base_name)
+            self.load()
+        return self
+
+    def _check_for_previous_run(self):
+        a_view = GridrunModel.view_hash(self.db, key=self.files_to_run.values())
+        result = None
+        for a_run in a_view:
+            if a_run.status == STATES.COMPLETED:
+                result = a_run
+        return result
+    
+    def activity():
+        def fget(self):
+            jactivity_list = list()
+            for a_activity_id in self.owned_by:
+                activity_list.append(JobInterface(self.db).load(a_activity_id))
+            return tuple(activity_list)
+        return locals()
+    activity = property(**activity())
+    
+    def task():
+        def fget(self):
+            task_list = list()
+            job_list = self.job
+            for a_job in job_list:
+                task_list.append(a_job.task)
+            return tuple(task_list)
+        return locals()
+    task = property(**task())
+    
+    def status():
+        """Here we need to check to see what kind of status we have. If more than one job is pointing to the same
+        run, then changing its status might mess up the other jobs pointing to it."""
+        def fget(self):
+            return self._obj.status
+        def fset(self, status):
+            self._obj.status = status
+        return locals()
+    status = property(**status())
+    
+    @staticmethod
+    def md5_for_file(f, block_size=2**20):
+        """This function takes a file like object and feeds it to
+        the md5 hash function a block_size at a time. That
+        allows large files to be hashed without requiring the entire 
+        file to be in memory."""
+        import re
+        import hashlib
+        # Remove all the white space from a string
+        #re.sub(r'\s', '', myString)
+        reg_remove_white = re.compile(r'\s')
+        md5 = hashlib.sha224()
+        while True:
+            data = f.read(block_size)
+            data = reg_remove_white.sub('', data)
+            if not data:
+                break
+            md5.update(data)
+        f.seek(0)
+        #TODO: When mike runs this, it doesn't work
+        #return u'%s'%(generate_new_docid())
+        return u'%s'%md5.hexdigest()
 
 def _reduce_author_status(keys, values, rereduce):
     return sum(values)
@@ -251,103 +308,7 @@ class GridrunModel(Document):
         super(GridrunModel, self).__init__(*args)
         self.subtype = self.SUB_TYPE
         self._hold_file_pointers = list()
-    
-    def get_jobs(self, db):
-        job_list = list()
-        for a_job_id in self.owned_by:
-            job_list.append(GridjobModel.load_job(db, a_job_id))
-        return tuple(job_list)
-    
-    def get_tasks(self, db):
-        task_list = list()
-        job_list = self.get_jobs(db)
-        for a_job in job_list:
-            task_list.append(a_job.get_task(db))
-        return tuple(task_list)
 
-    def create(self, db, files_to_run, a_job, application_tag, 
-                        requested_resource,  requested_cores, 
-                        requested_memory, requested_walltime):       
-        if not isinstance(files_to_run, list) and not isinstance(files_to_run, tuple):
-            files_to_run = [files_to_run]
-        # Generate the input file hashes
-        hash_dict = dict()
-        for a_file in files_to_run:
-            base_name = os.path.basename(a_file.name)
-            self.files_to_run[base_name] = GridrunModel.md5_for_file(a_file)
-        # We now need to build a new run record
-        self.author = a_job.author
-        self.owned_by.append(a_job.id)
-        self.application = Application.Application(application_tag = application_tag,
-                                                                       requested_resource = requested_resource,  
-                                                                       requested_memory = requested_memory, 
-                                                                       requested_cores = requested_cores, 
-                                                                       requested_walltime = requested_walltime, 
-                                                                       job_local_dir = '/tmp', 
-                                                                       inputs = [], 
-                                                                       application_arguments = None)
-        self.id = generate_new_docid()
-        self = self._commit_new(db, a_job, files_to_run)
-        return self
-    
-
-    def _commit_new(self, db, a_job, files_to_run):
-        if len(files_to_run) == 0:
-            raise DocumentError('No files associated with run %s'%self.id)
-        # The run has never been store in the database
-        # Can we use a run that is already in the database?
-        a_run_already_in_db = self._check_for_previous_run(db)
-        if a_run_already_in_db:
-            self = a_run_already_in_db
-            if a_job.id not in self.owned_by:
-                self.owned_by.append(a_job.id)
-                self.store(db)
-        else:
-            # We need to attach the input files to the run,
-            # to do that we have to first store the run in the db
-            self.store(db)
-            for a_file in files_to_run:
-                base_name = os.path.basename(a_file.name)
-                self.put_attachment(db, a_file, base_name)
-            self = self.refresh(db)
-        return self
-
-    def _check_for_previous_run(self, db):
-        a_view = GridrunModel.view_hash(db, key=self.files_to_run.values())
-        result = None
-        for a_run in a_view:
-            if a_run.status == STATES.COMPLETED:
-                result = a_run
-        return result
-    
-#    def lock(self, locker, timeout='INFINITE'):
-#        from time import sleep
-#        if timeout == 'INFINITE':
-#            timeout = sys.maxint
-#        if check_freq > timeout:
-#            check_freq = timeout
-#        starting_time = time.time()
-#        while True:
-#            if starting_time + timeout < time.time() or self.locked_by is None:
-#                break
-#            else:
-#                time.sleep(check_freq)
-#        if self.locked_by is None:
-#            # We did not timeout 
-#            self.locked_by = locker
-#            return True
-#        else:
-#            # Timed out
-#            return False
-#
-#    def unlock(self, locker):
-#        if self.locked_by == locker:
-#            self.locked_by = None
-#        if not self.locked_by:
-#            return True
-#        else:
-#            return False
-            
     def status():        
         def fget(self):
             return state.State(**self.raw_status)
@@ -358,7 +319,7 @@ class GridrunModel(Document):
 
     def application():        
         def fget(self):
-            if not isinstance(self.raw_application, Application.Application):
+            if not isinstance(self.raw_application, Application.Application) and self.raw_application:
                 self.raw_application = Application.Application(self.raw_application)
             return self.raw_application
         def fset(self, application):
@@ -368,7 +329,7 @@ class GridrunModel(Document):
     
     def job():        
         def fget(self):
-            if not isinstance(self.raw_job, Job.Job):
+            if not isinstance(self.raw_job, Job.Job) and self.raw_job:
                 job = Job.Job(self.raw_job)
                 self.raw_job = job
             return self.raw_job
@@ -376,36 +337,6 @@ class GridrunModel(Document):
             self.raw_job = job
         return locals()
     job = property(**job())
-
-    def commit(self, db):
-        self.store(db)
-    
-    def refresh(self, db):
-        self = GridrunModel.load(db, self.id)
-        return self
-        
-    def get_attachment(self, db, filename, when_not_found=None):
-        return db.get_attachment(self, filename, when_not_found)
-    
-    def put_attachment(self, db, content, filename, content_type='text/plain'):
-        content.seek(0)
-        db.put_attachment(self, content, filename, content_type)
-        return self.refresh(db)
-            
-    def delete_attachment(self, db, filename):
-        return db.delete_attachment(self, filename)
-    
-    def attachments_to_files(self, db, f_names=[]):
-        '''We often want to save all of the attachments on the local computer.'''
-        tempdir = generate_temp_dir(self.id)
-        f_attachments = dict()
-        if not f_names and '_attachments' in self:
-            f_names = self['_attachments']
-        # Loop through each attachment and save it
-        for attachment in f_names:
-            attached_data = self.get_attachment(db, attachment)
-            f_attachments[attachment] = write_to_file(tempdir, attachment, attached_data)
-        return f_attachments
 
     @ViewField.define('GridrunModel')
     def view_all(doc):    
@@ -459,26 +390,3 @@ class GridrunModel(Document):
             if isinstance(value, ViewField):
                 definition_list.append(eval('cls.%s'%(key)))
         ViewDefinition.sync_many( db,  definition_list)
-        
-    @staticmethod
-    def md5_for_file(f, block_size=2**20):
-        """This function takes a file like object and feeds it to
-        the md5 hash function a block_size at a time. That
-        allows large files to be hashed without requiring the entire 
-        file to be in memory."""
-        import re
-        import hashlib
-        # Remove all the white space from a string
-        #re.sub(r'\s', '', myString)
-        reg_remove_white = re.compile(r'\s')
-        md5 = hashlib.sha224()
-        while True:
-            data = f.read(block_size)
-            data = reg_remove_white.sub('', data)
-            if not data:
-                break
-            md5.update(data)
-        f.seek(0)
-        #TODO: When mike runs this, it doesn't work
-        #return u'%s'%(generate_new_docid())
-        return u'%s'%md5.hexdigest()
