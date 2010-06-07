@@ -2,13 +2,13 @@ import gorg
 
 class UnhandledStateError(Exception):
     def __init__(msg, report=True):
-       super(Exception).__init__(msg)
+       super(Exception, self).__init__(msg)
        if report:
            gorg.log.critical(msg)
 
 class CriticalError(Exception):
     def __init__(msg, report=True):
-       super(Exception).__init__(msg)
+       super(Exception, self).__init__(msg)
        if report:
            gorg.log.critical(msg)
 

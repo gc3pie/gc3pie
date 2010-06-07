@@ -1,5 +1,5 @@
 from couchdb.mapping import *
-from baserole import BaseroleModel, BaseroleInterface
+from baserole import *
 from gridjob import *
 from couchdb import client as client
 import time
@@ -36,20 +36,18 @@ class GridtaskModel(BaseroleModel):
     SUB_TYPE = 'GridtaskModel'
     VIEW_PREFIX = 'GridtaskModel'
     sub_type = TextField(default=SUB_TYPE)
-    status = DictField(default=STATE_HOLD)
+    raw_status = DictField(default=STATE_HOLD)
     
     def __init__(self, *args):
         super(GridtaskModel, self).__init__(*args)
-
-    def commit(self, db):
-        self.store(db)
     
-    def refresh(self, db):
-        self = GridtaskModel.load(db, self.id)
-        return self
-        
-    def delete(self, db):
-        pass
+    def status():
+        def fget(self):
+            return state.State(**self.raw_status)
+        def fset(self, status):
+            self.raw_status = raw_status
+        return locals()
+    status = property(**status())
     
     @ViewField.define('GridtaskModel')
     def view_author(doc):
@@ -90,34 +88,27 @@ class GridtaskModel(BaseroleModel):
                 definition_list.append(eval('cls.%s'%(key)))
         ViewDefinition.sync_many( db,  definition_list)
     
-class TaskInterface(BaseroleInterface):
+class TaskInterface(BaseGraphInterface):
     
     def create(self, title):
-        self.controlled = GridtaskModel().create(self.db.username, title)
-        self.controlled.commit(self.db)
+        self.wrap(GridtaskModel().create(self.db.username, title))
+        self.store()
         gorg.log.debug('Task %s has been created'%(self.id))
         return self
-
-    def load(self, id):
-        self.controlled=GridtaskModel.load(self.db, id)
+    
+    def load(self, id=None):
+        if not id:
+            id = self.id
+        self.wrap(GridtaskModel.load(self.db, id))
         return self
 
     def _status_children(self):
         status_list = list()
-        self.controlled.refresh(self.db)
-        view = GridrunModel.view_job_status(self.db, keys = self.controlled.children)
+        self.load()
+        view = GridrunModel.view_job_status(self.db, keys = self._obj.children)
         for a_row in view:
             status_list.append(a_row)
         return tuple(status_list)
-    
-    def status():
-        def fget(self):
-            return state.State(**self.controlled.status)
-        def fset(self, status):
-            self.controlled.status = status
-            self.controlled.commit(self.db)
-        return locals()
-    status = property(**status())
     
     def status_counts():
         def fget(self):
@@ -149,21 +140,22 @@ class TaskInterface(BaseroleInterface):
 
     def status_percent_done():
         def fget(self):
-            status_dict = self._status()
+            status_dict = self.status_counts()
             # We treat a no status just like any other status value
-            return (status_dict['DONE'] / len(status_dict)) * 100
+            return (status_dict[STATES.COMPLETED.description] / len(status_dict)) * 100
         return locals()
     status_percent_done = property(**status_percent_done())
     
-    def wait(self, timeout=60, check_freq=10):
+    def wait(self, timeout=60):
         from time import sleep
+        check_freq=10
         if timeout == 'INFINITE':
             timeout = sys.maxint
         if check_freq > timeout:
             check_freq = timeout
         starting_time = time.time()
         while True:
-            my_status = self.controlled.status_overall
+            my_status = self.status_overall
             if starting_time + timeout < time.time() or my_status.terminal:
                 break
             else:
@@ -174,11 +166,3 @@ class TaskInterface(BaseroleInterface):
         else:
             # Timed out
             return False
-    
-    def task():
-        def fget(self):
-            return self.controlled
-        def fset(self, a_task):
-            self.controlled = a_task
-        return locals()
-    task = property(**task())

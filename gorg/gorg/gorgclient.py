@@ -27,13 +27,16 @@ def main():
     a_task = a_task.create('a title')
     a_task.user_data_dict['me']=12
     a_task.user_data_dict['me']
+    a_task.status_overall
     myfile =  open('./gorg/examples/exam01.inp', 'rb')
     a_job = JobInterface(db)
-    a_job = a_job.create('a title', 'myparser', myfile, requested_resource='ocikbnor')
+    a_job = a_job.create('a title', 'myparser', [myfile], requested_resource='ocikbnor')
     a_task.add_child(a_job)
     a_job.status = STATES.READY
     a_task.status
     a_task.status_overall
+    a_job.store()
+    a_task.store()
 
 #        myfile.seek(0)
 #        a_task.add_child(a_job)
