@@ -218,15 +218,13 @@ class BaseGraphInterface(BaseInterface):
     def add_child(self, child):
         from gridjob import JobInterface
         assert isinstance(child, JobInterface),'Only jobs can be chilren.'
-        self.load()
         if child.id not in self.children:
             self._obj.children.append(child.id)
-        self.store()
+
 
     def children():            
         def fget(self):
             from gridjob import JobInterface
-            self.load()
             job_list=list()
             for job_id in self._obj.children:
                 a_job = JobInterface(self.db).load(job_id)
