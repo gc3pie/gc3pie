@@ -68,6 +68,7 @@ class GamessGridCalc(CalculatorBase):
         # Convert the python dictionary to one that uses the couchdb schema
         a_job.user_data_dict = params.job_user_data_dict
         a_task.add_child(a_job)
+        a_task.store()
         markstools.log.info('Generated Job %s and it was added to Task %s'%(a_job.id, a_task.id))
         return a_job
     
@@ -127,6 +128,7 @@ class GamessGridCalc(CalculatorBase):
         queryable = a_result._get_queryable()
         a_job.result_data_dict.update(queryable)
         a_job.parsed = a_result
+        a_job.store()
 
 class GamessLocalCalc(CalculatorBase):
     EXT_INPUT_FILE = 'inp'

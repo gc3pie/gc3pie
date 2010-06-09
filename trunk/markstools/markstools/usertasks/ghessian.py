@@ -96,6 +96,7 @@ class GHessian(object):
                 markstools.log.critical(msg)
                 raise Exception, msg
             a_job.status = RUN_COMPLETED
+        a_job.store()
         self.status = STATES.POSTPROCESS
 
     def handle_postprocess_state(self):
