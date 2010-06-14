@@ -114,8 +114,15 @@ def main():
         datefmt='%Y-%m-%d %H:%M:%S'
         )
 
+    import logging.config
     import gc3utils
-    import gc3utils.gcommands
+    import gc3utils.Default
+    import gc3utils.utils
+    gc3utils.utils.configuration_file_exists(gc3utils.Default.LOG_FILE_LOCATION,
+                                             "logging.conf.example")
+    logging.config.fileConfig(gc3utils.Default.LOG_FILE_LOCATION, 
+                              { 'RCDIR':gc3utils.Default.RCDIR })
+
 
     # build OptionParser with common options
     from optparse import OptionParser
@@ -150,6 +157,7 @@ where command is one of these:
 
     # find command as function in the `gcommands.py` module
     PROG.replace('-', '_')
+    import gc3utils.gcommands
     try:
         cmd = getattr(gc3utils.gcommands, PROG)
     except AttributeError:

@@ -1,0 +1,43 @@
+# ~/.gc3/logging.conf
+#
+# Configuration file for gc3utils logging
+#
+# See http://docs.python.org/release/2.4/lib/logging-config-fileformat.html
+# for the syntax of the configuration directives.
+#
+
+[loggers]
+keys=root,gc3utils
+
+[logger_root]
+level=NOTSET
+handlers=logfile,stderr
+
+[logger_gc3utils]
+qualname=gc3utils
+level=NOTSET
+handlers=logfile,stderr
+propagate=1
+
+[handlers]
+keys=logfile,stderr
+
+[handler_logfile]
+# verbose output to logfile located in ~/.gc3/gc3utils.log
+# rotate logfile on monday every week
+level=DEBUG
+class=FileHandler
+args=('%(RCDIR)s/gc3utils.log','w',0,5)
+
+[handler_stderr]
+# only output warning and error messages to the console
+level=WARNING
+class=StreamHandler
+args=(sys.stderr,)
+
+[formatters]
+keys=standard
+
+[formatter_standard]
+format=%(name)s [%(asctime)s] %(levelname)-8s: %(message)s
+datefmt=%Y-%m-%d %H:%M:%S

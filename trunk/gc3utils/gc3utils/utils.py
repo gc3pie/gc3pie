@@ -170,6 +170,41 @@ def check_qgms_version(minimum_version):
     return True
 
 
+def configuration_file_exists(filename, template_filename=None):
+    """
+    Return `True` if a file with the specified name exists in the 
+    configuration directory.  If not, try to copy the template file
+    over and then return `False`; in case the copy operations fails, 
+    a `NoConfigurationFile` exception is raised.
+
+    If parameter `filename` is not an absolute path, it is interpreted
+    as relative to `gc3utils.Default.RCDIR`; if `template_filename` is
+    `None`, then it is assumed to be the same as `filename`.
+    """
+    if template_filename is None:
+        template_filename = os.path.basename(filename)
+    if not os.path.isabs(filename):
+        filename = os.path.join(Default.RCDIR, filename)
+    if os.path.exists(filename):
+        return True
+    else:
+        try:
+            # copy sample config file 
+            if not os.path.exists(dirname(filename)):
+                os.makedirs(dirname(filename))
+            from pkg_resources import Requirement, resource_filename
+            sample_config = resource_filename(Requirement.parse("gc3utils"), 
+                                              "gc3utils/etc/" + template_filename)
+            import shutil
+            shutil.copyfile(sample_config, filename)
+            return False
+        except IOError, x:
+            gc3utils.log.critical("CRITICAL ERROR: Failed copying configuration file: %s" % x)
+            raise NoConfigurationFile("No configuration file '%s' was found, and an attempt to create it failed. Aborting." % filename)
+        except ImportError:
+            raise NoConfigurationFile("No configuration file '%s' was found. Aborting." % filename)
+    
+
 def from_template(template, **kw):
     """
     Return the contents of `template`, substituting all occurrences
@@ -269,20 +304,7 @@ def read_config(config_file_location):
 #    print config_file_location
 
     _configFileLocation = os.path.expandvars(config_file_location)
-    if not os.path.exists(_configFileLocation):
-        try:
-            # copy sample config file 
-            if not os.path.exists(dirname(_configFileLocation)):
-                os.makedirs(dirname(_configFileLocation))
-            from pkg_resources import Requirement, resource_filename
-            sample_config = resource_filename(Requirement.parse("gc3utils"), "gc3utils/etc/gc3utils.conf.example")
-            import shutil
-            shutil.copyfile(sample_config, _configFileLocation)
-        except IOError, x:
-            gc3utils.log.critical("CRITICAL ERROR: Failed copying configuration file: %s" % x)
-            raise NoConfigurationFile("No configuration file '%s' was found, and an attempt to create it failed. Aborting." % _configFileLocation)
-        except ImportError:
-            raise NoConfigurationFile("No configuration file '%s' was found. Aborting." % _configFileLocation)
+    if not configuration_file_exists(_configFileLocation, "gc3utils.conf.example"):
         # warn user
         raise NoConfigurationFile("No configuration file '%s' was found; a sample one has been copied in that location; please edit it and define resources before you try running gc3utils commands again." % _configFileLocation)
 
