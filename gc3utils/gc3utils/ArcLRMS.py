@@ -51,72 +51,78 @@ class ArcLrms(LRMS):
 
     def _submit_job_arclib(self, application):
         try:
-            # Initialize xrsl from template
-            GAMESS_XRSL_TEMPLATE = os.path.expandvars(Default.GAMESS_XRSL_TEMPLATE)
+
+            # Initialize xrsl from template   
+            if application.application_tag == 'gamess':
+                XRSL_TEMPLATE = os.path.expandvars(Default.GAMESS_XRSL_TEMPLATE)
+                # Initialize xrsl from template
+                # GAMESS_XRSL_TEMPLATE = os.path.expandvars(Default.GAMESS_XRSL_TEMPLATE)
             
-            if os.path.exists(GAMESS_XRSL_TEMPLATE):
+                if not os.path.exists(XRSL_TEMPLATE):
+                    raise XRSLNotFoundError('XRSL %s not found' % XRSL_TEMPLATE)
+
                 # GAMESS only needs 1 input file
                 input_file_path = application.inputs[0]
-                xrsl = from_template(GAMESS_XRSL_TEMPLATE, 
+                xrsl = from_template(XRSL_TEMPLATE, 
                                      INPUT_FILE_NAME = os.path.splitext(os.path.basename(input_file_path))[0],
                                      INPUT_FILE_DIR = os.path.dirname(input_file_path))
-                
-                # append requirements to XRSL file
-                if ( self._resource.walltime > 0 ):
-                    gc3utils.log.debug('setting walltime...')
-                    if int(application.requested_walltime) > 0:
-                        requested_walltime = int(application.requested_walltime) * 60
-                    else:
-                        requested_walltime = self._resource.walltime
-                    xrsl += '(cputime="%s")\n' % requested_walltime
 
-                if ( self._resource.ncores > 0 ):
-                    gc3utils.log.debug('setting cores...')
-                    if int(application.requested_cores) > 0:
-                        requested_cores = int(application.requested_cores)
-                    else:
-                        requested_cores = self._resource.ncores
-                    xrsl += '(count="%s")\n' % requested_cores
+            elif application.application_tag == 'rosetta':
+                xrsl = application.xrsl()
+            else:
+                raise UnsupportedApplicationError('Application %s not supported' % application.application_tag)
 
-                if ( self._resource.memory_per_core > 0 ):
-                    gc3utils.log.debug('setting memory')
-                    if int(application.requested_memory) > 0:
-                        requested_memory = int(application.requested_memory) * 1000
-                    else:
-                        requested_memory = int(self._resource.memory_per_core) * 1000
-                    xrsl += '(memory="%s")\n' % requested_memory
+            # append requirements to XRSL file
+            if application.has_key('requested_cores') and application.requested_cores > 0:
+                _requested_cores = int(application.requested_cores)
+            else:
+                _requested_cores = int(self._resource.defaut_job_total_cores)
+            xrsl += '(count="%s")' % _requested_cores
 
+# Temporarly we disable the memory request as we cannot figure out how SGE (and also the other LRMSs) handle mem requirements for parallel jobs
+#            if application.has_key('requested_memory') and application.requested_memory > 0:
+#                _requested_memory = int(application.requested_memory)
+#            else:
+#                _requested_memory = (int(self._resource.memory_per_core)*1000) * _requested_cores
+#            xrsl += '(memory="%s")' % _requested_memory
 
-                # Aternative using arclib
-                try:
-                    _xrsl = arclib.Xrsl(xrsl)
-                except:
-                    raise LRMSSubmitError('Failed while building Xrsl: %s' % sys.exc_info()[1])
+            if application.has_key('requested_walltime') and application.requested_walltime > 0:
+                _requested_walltime = int(application.requested_walltime)
+            else:
+                _requested_walltime = int(self._resource.defaut_job_total_walltime) * 60
+            xrsl += '(cputime="%s")' % _requested_walltime
 
-                try:
-                    if self._resource.has_key('arc_ldap'):
-                        cls = arclib.GetClusterResources(arclib.URL(self._resource.arc_ldap),True,'',2)
-                        queues = arclib.GetQueueInfo(cls,arclib.MDS_FILTER_CLUSTERINFO,True,"",2)
-                    else:
-                        queues = arclib.GetQueueInfo(arclib.GetClusterResources())
+            gc3utils.log.debug('prepared xrsl: %s' % xrsl)
+            # Aternative using arclib
+            try:
+                _xrsl = arclib.Xrsl(xrsl)
+            except:
+                raise LRMSSubmitError('Failed while building Xrsl: %s' % sys.exc_info()[1])
+
+            try:
+                if self._resource.has_key('arc_ldap'):
+                    cls = arclib.GetClusterResources(arclib.URL(self._resource.arc_ldap),True,'',2)
+                    queues = arclib.GetQueueInfo(cls,arclib.MDS_FILTER_CLUSTERINFO,True,"",2)
+                else:
+                    queues = arclib.GetQueueInfo(arclib.GetClusterResources())
                     
-                    if len(queues) == 0:
-                        raise LRMSSubmitError('No ARC queus found')
+                if len(queues) == 0:
+                    raise LRMSSubmitError('No ARC queus found')
                     
-                except:
-                    raise
+            except:
+                raise
 
-                targets = arclib.PerformStandardBrokering(arclib.ConstructTargets(queues, _xrsl))
-                if len(targets) == 0:
-                    raise LRMSSubmitError('No ARC targets found')
+            targets = arclib.PerformStandardBrokering(arclib.ConstructTargets(queues, _xrsl))
+            if len(targets) == 0:
+                raise LRMSSubmitError('No ARC targets found')
 
-                try:
-                    lrms_jobid = arclib.SubmitJob(_xrsl,targets)
-                except arclib.JobSubmissionError:
-                    raise LRMSSubmitError('%s' % sys.exc_info()[1])
+            try:
+                lrms_jobid = arclib.SubmitJob(_xrsl,targets)
+            except arclib.JobSubmissionError:
+                raise LRMSSubmitError('%s' % sys.exc_info()[1])
 
-                job = Job.Job(lrms_jobid=lrms_jobid,status=Job.JOB_STATE_SUBMITTED,resource_name=self._resource.name)
-                return job
+            job = Job.Job(lrms_jobid=lrms_jobid,status=Job.JOB_STATE_SUBMITTED,resource_name=self._resource.name)
+            return job
 
         except:
             gc3utils.log.critical('Failure in submitting')
@@ -141,7 +147,7 @@ class ArcLrms(LRMS):
                         requested_walltime = int(application.requested_walltime) * 60
                     else:
                         requested_walltime = self._resource.walltime
-                        xrsl += '(cputime="%s")\n' % requested_walltime
+                    xrsl += '(cputime="%s")\n' % requested_walltime
 
                 if ( self._resource.ncores > 0 ):
                     gc3utils.log.debug('setting cores...')
@@ -149,7 +155,7 @@ class ArcLrms(LRMS):
                         requested_cores = int(application.requested_cores)
                     else:
                         requested_cores = self._resource.ncores
-                        xrsl += '(count="%s")\n' % requested_cores
+                    xrsl += '(count="%s")\n' % requested_cores
                             
                 if ( self._resource.memory_per_core > 0 ):
                     gc3utils.log.debug('setting memory')
@@ -203,7 +209,7 @@ class ArcLrms(LRMS):
         
         submitted_list = ['ACCEPTED','SUBMITTING','PREPARING']
         running_list = ['INLRMS:R','INLRMS:Q','INLRMS:O','INLRMS:S','INLRMS:E','INLRMS:X','FINISHING','CANCELING','EXECUTED']
-        finished_list = ['FINISHED']
+        finished_list = ['FINISHED','KILLED']
         failed_list = ['FAILED','DELETED']
 
         try:
@@ -237,9 +243,7 @@ class ArcLrms(LRMS):
                 job_obj.status = Job.JOB_STATE_FINISHED
             elif arc_job.status in failed_list:
                 gc3utils.log.debug('job status: %s setting to FAILED',arc_job.status)
-                job_obj.status = Job.JOB_STATE_FINISHED
-                #if job_obj.exitcode == -1:
-                #    job_obj.exitcode = 1
+                job_obj.status = Job.JOB_STATE_FAILED
                 
             return job_obj
 
@@ -267,7 +271,7 @@ class ArcLrms(LRMS):
             except arclib.FTPControlError:
                 # critical error. consider job remote data as lost
                 gc3utils.log.error('failed downloading remote folder %s' % job_obj.lrms_jobid)
-                raise LRMSUnrecoverableError('failed downloading remote folder %s' % job_obj.lrms_jobid)
+                raise LRMSUnrecoverableError('failed downloading remote folder')
 
             # Clean remote job sessiondir
             try:
@@ -289,42 +293,134 @@ class ArcLrms(LRMS):
             gc3utils.log.error('Failure in retrieving job results [%s]',sys.exc_info()[1])
             raise
 
-            #                  try:
-            #            result_location_pattern="Results stored at "
-            #            
-            #            _command = "ngget -keep -s FINISHED -d 2 -dir "+job_dir+" "+lrms_jobid
-            
-            #            gc3utils.log.debug('Running ARC command [ %s ]',_command)
-            
-            #            job_results_retrieved_pattern = "successfuly downloaded: 0"
+    def get_resource_status(self):
+        """
+        Get the status of a single resource.
+        Return a Resource object.
+        """
+        # Get dynamic information out of the attached ARC subsystem (being it a single resource or a grid)
+        # Fill self._resource object with dynamic information
+        # return self._resource
 
-            #            retval = commands.getstatusoutput(_command)
-            #            if ( ( retval[0] != 0 ) ):
-            #                # Failed somehow
-            #                gc3utils.log.error("ngget command\t\t[ failed ]")
-            #                gc3utils.log.debug(retval[1])
-            #                raise Exception('failed getting results from LRMS')
+        # dynamic information required (at least those):
+        # total_queued
+        # free_slots
+        # user_running
+        # user_queued
+
+        try:
+            if self._resource.has_key('arc_ldap'):
+                cls = arclib.GetClusterResources(arclib.URL(self._resource.arc_ldap),True,'',2)
+            else:
+                cls = arclib.GetClusterResources()
+
+            queues = arclib.GetQueueInfo(cls,arclib.MDS_FILTER_CLUSTERINFO,True,"",2)
+            if len(queues) == 0:
+                raise LRMSSubmitError('No ARC queus found')
+
+            total_queued = 0
+            free_slots = 0
+            user_running = 0
+            user_queued = 0
             
-            #            if ( result_location_pattern in retval[1] ):
-            #                _result_location_folder = re.split(result_location_pattern,retval[1])[1]
-            #                _result_location_folder = re.split("\n",_result_location_folder)[0]
-            #                gc3utils.log.debug('Moving result data from [ %s ]',_result_location_folder)
-            #                if ( os.path.isdir(_result_location_folder) ):
-            #                    retval = commands.getstatusoutput("cp -ap "+_result_location_folder+"/* "+job_dir)
-            #                    if ( retval[0] != 0 ):
-            #                        gc3utils.log.error('Failed copying results data from [ %s ] to [ %s ]',_result_location_folder,job_dir)
-            #                    else:
-            #                        gc3utils.log.info('Copying results\t\t[ ok ]')
-            #                        gc3utils.log.debug('Removing [ %s ]',_result_location_folder)
-            #                        shutil.rmtree(_result_location_folder)
-            #                gc3utils.log.info('get_results\t\t\t[ ok ]')
-            #                return [True,retval[1]]
-            #            else:
-            #                return [False,retval[1]]
-            #        except:
-            #            gc3utils.log.critical('Failure in retrieving results')
-            #            raise
+            for cluster in cls:
+                list_of_jobs = arclib.GetAllJobs(cluster)
+                queues =  arclib.GetQueueInfo(cluster,arclib.MDS_FILTER_CLUSTERINFO,True,"",2)
+
+                if len(queues) == 0:
+                    raise LRMSSubmitError('No ARC queus found')              
+                
+                for q in queues:
+                    q.grid_queued = self._normalize_value(q.grid_queued)
+                    q.local_queued = self._normalize_value(q.local_queued)
+                    q.prelrms_queued = self._normalize_value(q.prelrms_queued)
+                    q.queued = self._normalize_value(q.queued)
+
+                    q.cluster.used_cpus = self._normalize_value(q.cluster.used_cpus)
+                    q.cluster.total_cpus = self._normalize_value(q.cluster.total_cpus)
+
+                    # total_queued
+                    total_queued = total_queued +  q.grid_queued + q.local_queued + q.prelrms_queued + q.queued
+
+                    # free_slots
+                    free_slots = free_slots + q.cluster.total_cpus - q.cluster.used_cpus
+
+                # user_running and user_queued
+                for job in list_of_jobs:
+                    if 'INLRMS:R' in job.status:
+                        user_running = user_running + 1
+                    elif 'INLRMS:Q' in job.status:
+                        user_queued = user_queued + 1
+
+
+            # update self._resource with:
+            # int queued
+            # int running
+            # int user_queued
+            # int user_run
+            # int used_quota = -1
+
+            self._resource.queued = total_queued
+            self._resource.free_slots = free_slots
+            self._resource.user_queued = user_queued
+            self._resource.user_run = user_running
+            self._resource.used_quota = -1
+
+            return self._resource
+
+        except:
+            # TBCK: how to handle
+            raise
+
+    def cancel_job(self, job_obj):
+        arclib.CancelJob(job_obj.lrms_jobid)
+        return job_obj
+
+# ========== Internal methods =============
+
+    def _normalize_value(self, val):
+        # an ARC value may contains -1 when the subsystem cannot get/resolve it
+        # we treat then these values as 0
+        if val < 0:
+            return 0
+        else:
+            return val
+
+    def _get_xrsl(self, application):
+
+        xrsl = application.xrsl()
+
+        # append requirements to XRSL file
+        if ( self._resource.walltime > 0 ):
+            gc3utils.log.debug('setting walltime...')
+            if int(application.requested_walltime) > 0:
+                requested_walltime = int(application.requested_walltime) * 60
+            else:
+                requested_walltime = self._resource.walltime
+            xrsl += '(cputime="%s")\n' % requested_walltime
             
+        if ( self._resource.ncores > 0 ):
+            gc3utils.log.debug('setting cores...')
+            if int(application.requested_cores) > 0:
+                requested_cores = int(application.requested_cores)
+            else:
+                requested_cores = self._resource.ncores
+            xrsl += '(count="%s")\n' % requested_cores
+
+        if ( self._resource.memory_per_core > 0 ):
+            gc3utils.log.debug('setting memory')
+            if int(application.requested_memory) > 0:
+                requested_memory = int(application.requested_memory) * 1000
+            else:
+                requested_memory = int(self._resource.memory_per_core) * 1000
+            xrsl += '(memory="%s")\n' % requested_memory
+
+        try:
+            _xrsl = arclib.Xrsl(xrsl)
+            return _xrsl
+        except:
+            raise LRMSSubmitError('Failed while building Xrsl: %s' % sys.exc_info()[1])
+
     def GetResourceStatus(self):
         gc3utils.log.debug("Returning information of local resoruce")
         

@@ -108,6 +108,17 @@ class InvalidInformationContainerError(Error):
 class LRMSUnrecoverableError(Error):
     pass
 
+class ResourceNotFoundError(Error):
+    pass
+
+class XRSLNotFoundError(Error):
+    pass
+
+class LRMSSubmitError(Error):
+    pass
+
+class LRMSSshError(Error):
+    pass
 ## main: run tests
 
 if "__main__" == __name__:

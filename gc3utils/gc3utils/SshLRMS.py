@@ -251,6 +251,29 @@ class SshLrms(LRMS):
             raise
 
 
+    def cancel_job(self, job_obj):
+        try:
+            self.ssh, self.sftp = self._connect_ssh(self._resource.frontend,self._resource.ssh_username)
+            _command = 'qdel '+job_obj.lrms_jobid
+
+            exit_code, stdout, stderr = self._execute_command(_command)
+
+            if exit_code != 0:
+                gc3utils.log.critical('Failed executing remote command: %s. exit status %d' % (_command,exit_code))
+                gc3utils.log.debug('remote command returned stdout: %s' % stdout)
+                gc3utils.log.debug('remote command returned stderr: %s' % stderr)
+                raise paramiko.SSHException('Failed executing remote command')
+
+            self.ssh.close()
+            return job_obj
+
+        except:
+            self.ssh.close()
+            gc3utils.log.critical('Failure in checking status')
+            raise
+        
+
+
     def get_results(self,job):
         """Retrieve results of a job."""
 
@@ -336,6 +359,73 @@ class SshLrms(LRMS):
             gc3utils.log.debug('%s %s',sys.exc_info()[0], sys.exc_info()[1])
             raise 
 
+
+
+    def get_resource_status(self):
+        try:
+            self.ssh, self.sftp = self._connect_ssh(self._resource.frontend,self._resource.ssh_username)
+
+            # get total number of slots [ TBCK: do we need this ? ]
+            _command = "qconf -sep | grep -i SUM | awk '{print $2}'"
+            exit_code, stdout, stderr = self._execute_command(_command)
+            if exit_code != 0:
+                gc3utils.log.critical('Failed executing remote command: %s. exit status %d' % (_command,exit_code))
+                gc3utils.log.debug('remote command returned stdout: %s' % stdout)
+                gc3utils.log.debug('remote command returned stderr: %s' % stderr)
+                raise paramiko.SSHException('Failed executing remote command')
+            _total_slots = int(stdout)
+
+            _command = "qstat -g c | grep -v CLUSTER | grep -v '\-\-\-'"
+            exit_code, stdout, stderr = self._execute_command(_command)
+            if exit_code != 0:
+                gc3utils.log.critical('Failed executing remote command: %s. exit status %d' % (_command,exit_code))
+                gc3utils.log.debug('remote command returned stdout: %s' % stdout)
+                gc3utils.log.debug('remote command returned stderr: %s' % stderr)
+                raise paramiko.SSHException('Failed executing remote command')
+
+            (_qname, _cqload, _used, _res, _avail, _total, _aoACDS, _cdsuE) = stdout.split()
+
+            # get own jobs
+            #_command = "qstat | grep -v job-ID | grep -v '\-\-\-'"
+            _command = "qstat"
+            exit_code, stdout, stderr = self._execute_command(_command)
+            if exit_code != 0:
+                gc3utils.log.critical('Failed executing remote command: %s. exit status %d' % (_command,exit_code))
+                gc3utils.log.debug('remote command returned stdout: %s' % stdout)
+                gc3utils.log.debug('remote command returned stderr: %s' % stderr)
+                raise paramiko.SSHException('Failed executing remote command')
+
+            user_queued = 0
+            user_running = 0
+
+            job_list = stdout.strip().split('\n')
+            for job_str in job_list:
+                gc3utils.log.debug('parsing jbo string: %s' % job_str)
+                if 'job-ID' in job_str or '------' in job_str or job_str == '':
+                    continue
+                job_info = job_str.split()
+                if len(job_info) < 5:
+                    gc3utils.log.critical('qstat parsing failed on string %s' % job_str)
+                    raise LRMSSshError('Failed while parsing qstat')
+                if job_info[4] in 'rtsST':
+                    user_running = user_running + 1
+                elif job_info[4] in 'hw':
+                    user_queued = user_queued + 1
+
+            self._resource.queued = _used
+            self._resource.free_slots = _avail
+            self._resource.user_queued = user_queued
+            self._resource.user_run = user_running
+            self._resource.used_quota = -1
+
+            self.ssh.close()
+
+            return self._resource
+        
+        except:
+            self.ssh.close()
+            gc3utils.log.critical('Failure in checking status')
+            raise
 
     """Below are the functions needed only for the SshLrms -class."""
 

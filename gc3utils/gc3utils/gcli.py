@@ -74,26 +74,12 @@ class Gcli:
         gc3utils.log.debug('requested walltime: %s hours',str(application_obj.requested_walltime))
         gc3utils.log.info('Parsing arguments\t\t[ ok ]')
 
-        gc3utils.log.debug('Performing brokering')
-        # decide which resource to use
-        # (Resource)[] = (Scheduler).PerformBrokering((Resource)[],(Application))
-        try:
-            _selected_resource_list = Scheduler.Scheduler.do_brokering(self._resources,application_obj)
-            if len(_selected_resource_list) > 0:
-                gc3utils.log.debug('Scheduler returned %d matched resources',len(_selected_resource_list))
-                gc3utils.log.info('do_brokering\t\t\t\t\t[ ok ]')
-            else:
-                raise BrokerException('Broker did not returned any valid LRMS')
-        except:
-            gc3utils.log.critical('Failed in scheduling')
-            raise
 
-        # At this point self._resources contains either a list or a single LRMS reference
-        # Initialize LRMSs
+        gc3utils.log.debug('Instantiating LRMSs')
 
         _lrms_list = []
         
-        for _resource in _selected_resource_list:
+        for _resource in self._resources:
             try:
                 _lrms_list.append(self.__get_LRMS(_resource.name))
             except:
@@ -105,10 +91,24 @@ class Gcli:
             gc3utils.log.critical('Could not initialize ANY lrms resource')
             raise Exception('no available LRMS found')
 
+        gc3utils.log.debug('Performing brokering')
+        # decide which resource to use
+        # (Resource)[] = (Scheduler).PerformBrokering((Resource)[],(Application))
+        try:
+            _selected_lrms_list = Scheduler.Scheduler.do_brokering(_lrms_list,application_obj)
+            if len(_selected_lrms_list) > 0:
+                gc3utils.log.debug('Scheduler returned %d matched resources',len(_selected_lrms_list))
+                gc3utils.log.info('do_brokering\t\t\t\t\t[ ok ]')
+            else:
+                raise BrokerException('Broker did not returned any valid LRMS')
+        except:
+            gc3utils.log.critical('Failed in scheduling')
+            raise
+
         # Scheduler.do_brokering should return a sorted list of valid lrms
         job = None
         
-        for lrms in _lrms_list:
+        for lrms in _selected_lrms_list:
             try:
                 a = Authorization.Auth()
                 a.get(lrms._resource.type)
@@ -175,8 +175,11 @@ class Gcli:
         
         _lrms = self.__get_LRMS(job_obj.resource_name)
 
+        # gc3utils.log.debug('current job status is %d' % job_obj.status)
+
         if not ( job_obj.status == gc3utils.Job.JOB_STATE_COMPLETED or job_obj.status == gc3utils.Job.JOB_STATE_FINISHED or job_obj.status == gc3utils.Job.JOB_STATE_FAILED or job_obj.status == gc3utils.Job.JOB_STATE_DELETED ):
             # check job status
+            # gc3utils.log.debug('checking job status')
             a = Authorization.Auth()
             a.get(_lrms._resource.type)                                
             job_obj = _lrms.check_status(job_obj)
@@ -191,17 +194,36 @@ class Gcli:
         a.get(_lrms._resource.type)
         #job_obj = _lrms.get_results(job_obj)
 
-        return  _lrms.get_results(job_obj)
+        try:
+            return  _lrms.get_results(job_obj)
+        except LRMSUnrecoverableError:
+            job_obj.status = gc3utils.Job.JOB_STATE_FAILED
+            return job_obj
         
-        #if job_obj.is_valid():
-            # create persistanc of filesystem
-            #job_obj.status = gc3utils.Job.JOB_STATE_COMPLETED
-        #    return job_obj  
-        #else:
-        #    raise JobRetrieveError('non valid job object')
+#====== Glist =======
+    def glist(self,resource_name):
+        """ List status of a give resource."""
+
+#        resource = self.__get_Resource(resource_name)
+#        if resource is None:
+#            raise Exceptions.ResourceNotFoundError('Resource not found')
+        
+        _lrms = self.__get_LRMS(resource_name)
+
+        a = Authorization.Auth()
+        a.get(_lrms._resource.type)
+
+        return  _lrms.get_resource_status()
 
 #=========     INTERNAL METHODS ============
-    def glist(self, shortview):
+#    def __get_Resource(self,resource_name):
+#        for index in range(0,len(self._resource)):
+#            if self._resource[index].name == resource_name
+#            return self._resource[index]
+#        return None
+
+
+    def _glist(self, shortview):
         """List status of jobs."""
         global default_joblist_location
 
@@ -249,61 +271,71 @@ class Gcli:
             raise e
 
         return
-    def gkill(self, unique_token):
+    def gkill(self, job_obj):
         """Kill a job, and optionally remove the local job directory."""
 
+        _lrms = self.__get_LRMS(job_obj.resource_name)
+
+        a = Authorization.Auth()
+        a.get(_lrms._resource.type)
+
+        job_obj = _lrms.cancel_job(job_obj)
+        gc3utils.log.debug('setting job status to DELETED')
+        job_obj.status =  gc3utils.Job.JOB_STATE_DELETED
+        return job_obj
+
         # todo : may be some redundancy to remove here
         
-        global default_job_folder_location
-        global default_joblist_lock
-        global default_joblist_location
+        #global default_job_folder_location
+        #global default_joblist_lock
+        #global default_joblist_location
         
-        if not check_jobdir(unique_token):
-            raise Exception('invalid jobid')
+        #if not check_jobdir(unique_token):
+        #    raise Exception('invalid jobid')
         
         # check .finished file
-        if utils.check_inputfile(unique_token+'/'+self.defaults['lrms_finished']):
-            logging.error('Job already finished.')
-            return 
+        #if utils.check_inputfile(unique_token+'/'+self.defaults['lrms_finished']):
+        #    logging.error('Job already finished.')
+        #    return 
 
         # todo : may be some redundancy to remove here
             
-        _fileHandle = open(unique_token+'/'+self.defaults['lrms_jobid'],'r')
-        _raw_resource_info = _fileHandle.read()
-        _fileHandle.close()
+        #_fileHandle = open(unique_token+'/'+self.defaults['lrms_jobid'],'r')
+        #_raw_resource_info = _fileHandle.read()
+        #_fileHandle.close()
 
-        _list_resource_info = re.split('\t',_raw_resource_info)
+        #_list_resource_info = re.split('\t',_raw_resource_info)
 
-        logging.debug('lrms_jobid file returned %s elements',len(_list_resource_info))
+        #logging.debug('lrms_jobid file returned %s elements',len(_list_resource_info))
 
-        if ( len(_list_resource_info) != 2 ):
-            raise Exception('failed to retrieve jobid')
+        #if ( len(_list_resource_info) != 2 ):
+        #    raise Exception('failed to retrieve jobid')
         
-        _resource = _list_resource_info[0]
-        _lrms_jobid = _list_resource_info[1]
+        #_resource = _list_resource_info[0]
+        #_lrms_jobid = _list_resource_info[1]
         
-        logging.debug('frontend: [ %s ] jobid: [ %s ]',_resource,_lrms_jobid)
-        logging.info('reading lrms_jobid info\t\t\t[ ok ]')
+        #logging.debug('frontend: [ %s ] jobid: [ %s ]',_resource,_lrms_jobid)
+        #logging.info('reading lrms_jobid info\t\t\t[ ok ]')
 
-        if ( _resource in self.resource_list ):
-            logging.debug('Found match for resource [ %s ]',_resource)
-            logging.debug('Creating lrms instance')
-            resource = self.resource_list[_resource]
+        #if ( _resource in self.resource_list ):
+        #    logging.debug('Found match for resource [ %s ]',_resource)
+        #    logging.debug('Creating lrms instance')
+        #    resource = self.resource_list[_resource]
 
-        if ( resource['type'] == "arc" ):
-            lrms = ArcLrms(resource)
-        elif ( resource['type'] == "ssh"):
-            lrms = SshLrms(resource)
-        else:
-            logging.error('Unknown resource type %s',resource['type'])
+        #if ( resource['type'] == "arc" ):
+        #    lrms = ArcLrms(resource)
+        #elif ( resource['type'] == "ssh"):
+        #    lrms = SshLrms(resource)
+        #else:
+        #    logging.error('Unknown resource type %s',resource['type'])
             
-        (retval,lrms_log) = lrms.KillJob(_lrms_jobid)
+        #(retval,lrms_log) = lrms.KillJob(_lrms_jobid)
 
 #        except Exception, e:
 #            logging.error('Failed to send qdel request to job: ' + unique_token)
 #            raise e
 
-        return
+        #return
 
     def __log_job(self, job_obj):
         # dumping lrms_jobid
