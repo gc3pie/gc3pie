@@ -141,31 +141,66 @@ def gsub(*args, **kw):
     (options, args) = parser.parse_args(list(args))
     gc3utils.utils.configure_logger(options.verbosity, _default_log_file)
 
-    if len(args) != 2:
-        raise InvalidUsage('Wrong number of arguments: this commands expects exactly two arguments.')
+    if len(args) < 1:
+        raise InvalidUsage('Wrong number of arguments: this commands expects at least 1 arguments: application_tag')
 
     application_tag = args[0]
 
-    # check input file
-    input_file_name = args[1]
+    if application_tag == 'gamess':
+        if len(args) != 2:
+            raise InvalidUsage('Wrong number of arguments: this commands expects exactly two arguments.')
 
-    if not os.path.isabs(input_file_name):
-        input_file_name = os.path.realpath(input_file_name)
+        # Init GAMESS application
+        # application = gc3utils.applications.gamess(
+        application = gc3utils.Application.Application(
+            application_tag=application_tag,
+            inputs=[args[1]],
+            job_local_dir=options.job_local_dir,
+            requested_memory=options.memory_per_core,
+            requested_cores=options.ncores,
+            requestd_resource=options.resource_name,
+            requested_walltime=options.walltime,
+            application_arguments=options.application_arguments
+            )
+    elif application_tag == 'rosetta':
+        if len(args) != 4:
+            raise InvalidUsage('Wrong number of arguments: this commands expects exactly three arguments.')
+
+# (arguments="1brs.pdb" "1brs.pdb" " " "1" "docking_flags")
+# (inputfiles=("docking_flags" "./docking_flags")("1brs.pdb" "./1brs.pdb"))
+# (outputFiles=(1brs.tgz "")(1brs.fasc ""))
+        # Init GAMESS application
+        application = gc3utils.Application.Rosetta(
+            application_tag=application_tag,
+            executable=args[1],
+            inputs=[args[2],args[3]],
+            outputs=[os.path.splitext(os.path.basename(args[2]))[0]],
+            job_local_dir=options.job_local_dir,
+            requested_memory=options.memory_per_core,
+            requested_cores=options.ncores,
+            requestd_resource=options.resource_name,
+            requested_walltime=options.walltime,
+            application_arguments=options.application_arguments
+            )
+
+#   TBCK: this should be pushed to Application __init__
+#    if not os.path.isabs(input_file_name):
+#        input_file_name = os.path.realpath(input_file_name)
 
     # Create Application obj
-    application = gc3utils.Application.Application(
-        application_tag=application_tag,
-        inputs=[input_file_name],
-        job_local_dir=options.job_local_dir,
-        requested_memory=options.memory_per_core,
-        requested_cores=options.ncores,
-        requestd_resource=options.resource_name,
-        requested_walltime=options.walltime,
-        application_arguments=options.application_arguments
-        )
+#    application = gc3utils.Application.Application(
+#        application_tag=application_tag,
+#        inputs=[input_file_name],
+#        job_local_dir=options.job_local_dir,
+#        requested_memory=options.memory_per_core,
+#        requested_cores=options.ncores,
+#        requestd_resource=options.resource_name,
+#        requested_walltime=options.walltime,
+#        application_arguments=options.application_arguments
+#        )
 
-    if not application.is_valid():
-        raise Exception('Failed creating application object')
+#    if not application.is_valid():
+#        raise Exception('Failed creating application object')
 
     _gcli = _get_gcli(_default_config_file_location)
     if options.resource_name:
@@ -315,12 +350,23 @@ def gkill(*args, **kw):
         raise InvalidUsage("This command expects exactly one argument.")
     unique_token = args[0]
 
-    retval = gcli.gkill(unique_token)
-    if (not retval):
-        sys.stdout.write('Sent request to kill job ' + unique_token)
-        sys.stdout.write('It may take a few moments for the job to finish.')
+    try:
+        _gcli = _get_gcli(_default_config_file_location)
+        # FIXME: gget should raise exception when something goes wrong; does it indeed?
+        job_obj = gc3utils.utils.get_job(unique_token)
+
+        if not (job_obj.status == gc3utils.Job.JOB_STATE_COMPLETED or job_obj.status == gc3utils.Job.JOB_STATE_FAILED or job_obj.status == gc3utils.Job.JOB_STATE_DELETED):
+            job_obj = _gcli.gkill(job_obj)
+            gc3utils.utils.persist_job(job_obj)
+
+        # or shall we simply return an ack message ?
+        sys.stdout.write('Sent request to kill job ' + unique_token +'\n')
+        sys.stdout.write('It may take a few moments for the job to finish.\n\n')
         sys.stdout.flush()
-    else:
+        # raise Exception('cannot cancel a finished job')
+        
+    except:
+        gc3utils.log.critical('program terminated due to:  %s',sys.exc_info()[1])
         raise Exception("gkill terminated")
 
 
@@ -339,19 +385,14 @@ def glist(*args, **kw):
     resource_name = args[0]
 
     _gcli = _get_gcli(_default_config_file_location)
-    # FIXME: gcli.glist should throw exception, we should not check return value here
-    (retval,resource_object) = _gcli.glist(resource_name)
-    if (not retval):
-        if resource_object.__dict__.has_key("resource_name"):
-            sys.stdout.write('Resource Name: '+resource_object.__dict__["resource_name"]+'\n')
-        if resource_object.__dict__.has_key("total_slots"):
-            sys.stdout.write('Total cores: '+str(resource_object.__dict__["total_slots"])+'\n')
-        if resource_object.__dict__.has_key("total_runnings"):
-            sys.stdout.write('Total runnings: '+str(resource_object.__dict__["total_runnings"])+'\n')
-        if resource_object.__dict__.has_key("total_queued"):
-            sys.stdout.write('Total queued: '+str(resource_object.__dict__["total_queued"])+'\n')
-        if resource_object.__dict__.has_key("memory_per_core"):
-            sys.stdout.write('Memory per core: '+str(resource_object.__dict__["memory_per_core"])+'\n')
+    resource_object = _gcli.glist(resource_name)
+    if not resource_object is None:
+        if resource_object.has_key("name"):
+            sys.stdout.write('Resource Name: '+resource_object.name+'\n')
+        if resource_object.has_key("total_cores") and resource_object.has_key("free_slots"):
+            sys.stdout.write('Cores Total/Free: '+str(resource_object.total_cores)+'/'+str(resource_object.free_slots)+'\n')
+        if resource_object.has_key("user_run") and resource_object.has_key("user_queued"):
+            sys.stdout.write('User Jobs Running/Queued: '+str(resource_object.user_run)+'/'+str(resource_object.user_queued)+'\n')
         sys.stdout.flush()
     else:
         raise Exception("glist terminated")

@@ -114,3 +114,49 @@ class GamessApplication(Application):
     sge = qgms
     #pbs = qgms
     #lsf = qgms
+
+
+class Rosetta(Application):
+    def is_valid(self):
+        if self.has_key('inputs') and self.has_key('outputs'):
+            for input in self.inputs:
+                if not os.path.exists(input):
+                    raise InputFileError("Input file '%s' does not exist" % input)
+        else:
+            raise InputFileError("No input or output files specified")
+        return True
+
+    def xrsl(self):
+        xrsl = '&'
+        
+        # build executable
+        if self.has_key('executable'):
+            xrsl = xrsl +'(executable="'+os.path.basename(self.executable)+'")'
+        if self.has_key('application_arguments'):
+            # TBCK: arguments should be a list
+            # this depends on how we want to allow to build arguments in application
+            arguments_list = self.application_arguments.split()
+            xrsl = xrsl +'(arguments='
+            for arg in arguments_list:
+                xrsl = xrsl +'"'+arg+'" '
+            xrsl = xrsl +')'
+        # define stdout and stderr
+        # TBCK: should this go in here ?
+        xrsl = xrsl + '(stdout="std.out")(stderr="std.err")(jobname="SMSCG_ROSETTA")(gmlog="gmlog")'
+        if self.has_key('inputs'):
+            xrsl = xrsl +'(inputFiles='
+            for input in self.inputs:
+                xrsl = xrsl + '("'+os.path.basename(input)+'" '+input+')'
+            # append reference to executable script
+            # this is ok in here because this is application specific
+            xrsl = xrsl + '("'+os.path.basename(self.executable)+'" '+self.executable+')'
+            xrsl = xrsl +')'
+        if self.has_key('outputs'):
+            xrsl = xrsl +'(outputFiles='
+            for output in self.outputs:
+                # (outputFiles=(1brs.tgz "")(1brs.fasc ""))
+                xrsl = xrsl + '('+output+'.tgz "")('+output+'.fasc "")'
+            xrsl = xrsl +')'
+        # append ROSETTA RTE 
+        xrsl = xrsl + '(runtimeenvironment="APPS/BIO/ROSETTA-3.1")'
+        return xrsl

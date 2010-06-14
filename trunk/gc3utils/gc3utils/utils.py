@@ -457,7 +457,8 @@ def job_status_to_string(job_status):
             Job.JOB_STATE_FINISHED:'FINISHED',
 #            Job.JOB_STATE_NOTIFIED:'NOTIFIED',
             Job.JOB_STATE_SUBMITTED:'SUBMITTED',
-            Job.JOB_STATE_COMPLETED:'COMPLETED'
+            Job.JOB_STATE_COMPLETED:'COMPLETED',
+            Job.JOB_STATE_DELETED: 'DELETED'
             }[job_status]
     except KeyError:
         gc3utils.log.error('job status code %s unknown', job_status)

@@ -7,7 +7,7 @@ class Scheduler(object):
         try:
             _selected_lrms_list = []
             for lrms in lrms_list:
-                if (int(application.requested_cores) > int(lrms.max_cores_per_job)) | (int(application.requested_memory) > int(lrms.max_memory_per_core)) | (int(application.requested_walltime) > int(lrms.max_walltime)):
+                if (int(application.requested_cores) > int(lrms._resource.max_cores_per_job)) | (int(application.requested_memory) > int(lrms._resource.max_memory_per_core)) | (int(application.requested_walltime) > int(lrms._resource.max_walltime)):
                     continue
                 else:
                     # lrms is a good candidate
