@@ -121,7 +121,12 @@ def main():
     gc3utils.utils.configuration_file_exists(gc3utils.Default.LOG_FILE_LOCATION,
                                              "logging.conf.example")
     logging.config.fileConfig(gc3utils.Default.LOG_FILE_LOCATION, 
-                              { 'RCDIR':gc3utils.Default.RCDIR })
+                              { 'RCDIR':gc3utils.Default.RCDIR,
+                                'HOMEDIR':gc3utils.Default.HOMEDIR })
+    # due to a bug in Python 2.4.x (see 
+    # https://bugzilla.redhat.com/show_bug.cgi?id=573782 )
+    # we need to disable `logging` reporting of exceptions.
+    logging.raiseExceptions = False
 
 
     # build OptionParser with common options
@@ -174,6 +179,6 @@ where command is one of these:
         return 1
     except Exception, x:
         sys.stderr.write("%s: ERROR: %s\n" % (PROG, str(x)))
-        if __debug__:
-            sys.excepthook(type(x), x, sys.exc_info()[2])
+        gc3utils.log.debug("%s: %s" % (x.__class__.__name__, str(x)), 
+                           exc_info=sys.exc_info())
         return 1
