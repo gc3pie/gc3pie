@@ -10,6 +10,7 @@ from InformationContainer import *
 HOMEDIR = os.path.expandvars('$HOME')
 RCDIR = HOMEDIR + "/.gc3"
 CONFIG_FILE_LOCATION = RCDIR + "/gc3utils.conf"
+LOG_FILE_LOCATION = RCDIR + '/logging.conf'
 JOBLIST_FILE = RCDIR + "/.joblist"
 JOBLIST_LOCK = RCDIR + "/.joblist_lock"
 JOB_FOLDER_LOCATION= os.path.expandvars("$PWD")
