@@ -133,24 +133,6 @@ def check_jobdir(jobdir):
         return False
 
 
-def configure_logger(verbosity, log_file_name):
-    """
-    Configure the gc3utils logger.
-
-    - Input is the logging level and a filename to use.
-    - Returns nothing.
-    """
-
-    if ( verbosity > 5):
-        logging_level = 10
-    else:
-        logging_level = (( 6 - verbosity) * 10)
-
-    gc3utils.log.setLevel(logging_level)
-    handler = logging.handlers.RotatingFileHandler(log_file_name, maxBytes=200, backupCount=5)
-    gc3utils.log.addHandler(handler)
-
-
 def check_qgms_version(minimum_version):
     """
     This will check that the qgms script is an acceptably new version.

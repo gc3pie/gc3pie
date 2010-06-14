@@ -12,7 +12,7 @@ ez_setup.use_setuptools()
 from setuptools import setup, find_packages
 setup( 
     name = "gc3utils",
-    version = "0.5.21", # format: 0.MONTH.DAY (for now ...)
+    version = "0.6.14", # format: 0.MONTH.DAY (for now ...)
 
     packages = find_packages(exclude=['ez_setup']),
     #scripts = ['gcmd.py'],

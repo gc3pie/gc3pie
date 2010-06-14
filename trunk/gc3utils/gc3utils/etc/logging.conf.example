@@ -4,6 +4,14 @@
 #
 # See http://docs.python.org/release/2.4/lib/logging-config-fileformat.html
 # for the syntax of the configuration directives.
+# In addition to the standard syntax, the following strings will be given
+# special treatment:
+#
+#   %(HOMEDIR)s   is substituted with the full path to the home directory
+#                  of the running user
+#
+#   %(RCDIR)s     is substituted with the full path to the directory where
+#                 the gc3utils configuration file resides
 #
 
 [loggers]
@@ -26,18 +34,23 @@ keys=logfile,stderr
 # verbose output to logfile located in ~/.gc3/gc3utils.log
 # rotate logfile on monday every week
 level=DEBUG
-class=FileHandler
-args=('%(RCDIR)s/gc3utils.log','w',0,5)
+class=handlers.TimedRotatingFileHandler
+args=('%(HOMEDIR)s/.gc3utils.log','w0',1,5)
+formatter=logfile
 
 [handler_stderr]
 # only output warning and error messages to the console
 level=WARNING
 class=StreamHandler
 args=(sys.stderr,)
+formatter=console
 
 [formatters]
-keys=standard
+keys=logfile,console
 
-[formatter_standard]
-format=%(name)s [%(asctime)s] %(levelname)-8s: %(message)s
+[formatter_logfile]
+format=[%(asctime)s] %(levelname)-8s: %(message)s
 datefmt=%Y-%m-%d %H:%M:%S
+
+[formatter_console]
+format=%(name)s: %(levelname)s: %(message)s
