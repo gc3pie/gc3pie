@@ -35,7 +35,7 @@ setup(
             'glist = gc3utils.gcmd:main',
             'gkill = gc3utils.gcmd:main',
             'gget = gc3utils.gcmd:main',
-	    'ginfo = gc3utils.gcmd:main',
+            'ginfo = gc3utils.gcmd:main',
             'gclean = gc3utils.gcmd:main',
             ],
        },
@@ -46,7 +46,8 @@ setup(
 
     # additional non-Python files to be bundled in the package
     package_data = {
-        'gc3utils': ['etc/gc3utils.conf.example'],
+        'gc3utils': ['etc/gc3utils.conf.example',
+                     'etc/logging.conf.example'],
         },
 
     # `zip_safe` can ease deployment, but is only allowed if the package
