@@ -8,6 +8,7 @@ import markstools
 import os
 import sys
 import shutil
+import time
 
 from markstools.io.gamess import ReadGamessInp, WriteGamessInp
 from markstools.calculators.gamess.calculator import GamessGridCalc
@@ -16,21 +17,25 @@ from markstools.lib.status import State,  Status
 
 from gorg.model.gridtask import TaskInterface
 from gorg.lib.utils import Mydb
+from gorg.gridjobscheduler import STATE_KILL as JOB_KILL
+from gorg.gridjobscheduler import STATE_READY as JOB_READY
+from gorg.gridjobscheduler import STATE_ERROR as JOB_ERROR
 
 
-STATE_INFO = State('INFO', 'INFO desc')
-STATE_GET_FILES = State('GET_FILES', 'GET_FILES desc')
+
+STATE_KILL = State('KILL', 'KILL desc')
+STATE_RETRY = State('RETRY', 'RETRY desc')
 STATE_ERROR = State('ERROR', 'ERROR desc', terminal = True)
 STATE_COMPLETED = State('COMPLETED', 'CCOMPLETED desc', terminal = True)
 
-STATES = Status([STATE_INFO, STATE_GET_FILES, STATE_ERROR, STATE_COMPLETED])
+STATES = Status([STATE_RETRY, STATE_KILL, STATE_ERROR, STATE_COMPLETED])
 
-class GInfo(object):
+class GControl(object):
  
-    def __init__(self, init_status = STATES.INFO):
+    def __init__(self, init_status = STATES.RETRY):
         self.status = init_status
-        self.status_mapping = {STATES.INFO: self.handle_info_state, 
-                                              STATES.GET_FILES: self.handle_get_files_state, 
+        self.status_mapping = {STATES.KILL: self.handle_kill_state, 
+                                              STATES.RETRY: self.handle_retry_state, 
                                               STATES.ERROR: self.handle_terminal_state, 
                                               STATES.COMPLETED: self.handle_terminal_state}
         
@@ -48,44 +53,28 @@ class GInfo(object):
     def save(self):
         pass
        
-    def handle_info_state(self):
-        sys.stdout.write('Info on Task %s\n'%(self.a_task.id))
-        sys.stdout.write('---------------\n')
+    def handle_kill_state(self):
         job_list = self.a_task.children
-        sys.stdout.write('Total number of jobs    %d\n'%(len(job_list)))
-        sys.stdout.write('Overall Task status %s\n'%(self.a_task.status_overall))
         for a_job in job_list:
-            job_done = False
-            sys.stdout.write('---------------\n')
-            sys.stdout.write('Job %s status %s\n'%(a_job.id, a_job.status))
-            sys.stdout.write('Run %s\n'%(a_job.run_id))
-            sys.stdout.write('gc3utils application obj\n')
-            sys.stdout.write('%s\n'%(a_job.run.application))
-            sys.stdout.write('gc3utils job obj\n')
-            sys.stdout.write('%s\n'%(a_job.run.job))
-            
-            job_done = a_job.wait(timeout=0)
-            if job_done:
-                a_result = self.calculator.parse(a_job)
-                sys.stdout.write('Exit status %s\n'%(a_result.exit_successful()))       
+            if not a_job.status.terminal:
+                while not a_job.status.pause:
+                    time.sleep(5)
+                    markstools.log.info('Waiting for Job %s to go into killable state.'%(a_job.id))
+                    markstools.log.debug('In state %s'%(a_job.status))
+                a_job.status = JOB_KILL
+                a_job.store()
         self.status = STATES.COMPLETED
     
-    def handle_get_files_state(self):
+    def handle_retry_state(self):
         job_list = self.a_task.children
-        root_dir = 'tmp'
-        task_dir = '/%s/%s'%(root_dir, self.a_task.id)
-        os.mkdir(task_dir)
         for a_job in job_list:
-            f_list = a_job.attachments
-            job_dir = '%s/%s'%(task_dir, a_job.id)
-            os.mkdir(job_dir)
-            sys.stdout.write('Job %s\n'%(a_job.id))
-            for a_file in f_list.values():
-                a_file.close()
-                shutil.copy2(a_file.name, job_dir)
-                sys.stdout.write('Files in directory %s\n'%(job_dir))
+            if a_job.status.terminal == JOB_ERROR:
+                markstools.log.info('Retrying Job %s.'%(a_job.id))
+                markstools.log.debug('Was in state %s now in state %s'%(a_job.status, JOB_READY))
+                a_job.status = JOB_READY
+                a_job.store()
         self.status = STATES.COMPLETED
-        
+    
     def handle_terminal_state(self):
         print 'I do nothing!!'
 
@@ -106,14 +95,15 @@ class GInfo(object):
             if self.status.pause:
                 break
 
+
 def main(options):
     # Connect to the database
     db = Mydb('mark',options.db_name,options.db_url).cdb()
 
-    ginfo = GInfo(STATES.GET_FILES)
+    gcontrol = GControl()
     gamess_calc = GamessGridCalc(db)
-    ginfo.load(db, options.task_id)
-    ginfo.run()
+    gcontrol.load(db, options.task_id)
+    gcontrol.run()
 
     print 'ginfo is done'
 
