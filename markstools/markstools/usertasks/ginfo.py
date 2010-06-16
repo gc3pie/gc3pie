@@ -40,8 +40,8 @@ class GInfo(object):
     def initialize(self):
         pass
         
-    def load(self, db,  a_task):
-        self.a_task = a_task
+    def load(self, db,  task_id):
+        self.a_task = TaskInterface(db).load(task_id)
         str_calc = self.a_task.user_data_dict['calculator']
         self.calculator = eval(str_calc + '(db)')
     
@@ -67,18 +67,17 @@ class GInfo(object):
             job_done = a_job.wait(timeout=0)
             if job_done:
                 a_result = self.calculator.parse(a_job)
-                sys.stdout.write('Exit status %s\n'%(a_result.exit_successful()))
-        sys.stdout.flush()
+                sys.stdout.write('Exit status %s\n'%(a_result.exit_successful()))       
         self.status = STATES.COMPLETED
     
     def handle_get_files_state(self):
         job_list = self.a_task.children
         for a_job in job_list:
             f_list = a_job.attachments
-            map(file.close, f_list)
-            sys.stdout('Job %s\n'%(a_job.id))
-            for a_file in f_list:
-                sys.stdout('Files %s\n'%(a_file.name ))
+            map(file.close, f_list.values())
+            sys.stdout.write('Job %s\n'%(a_job.id))
+            for a_file in f_list.values():
+                sys.stdout.write('Files %s\n'%(a_file.name ))
         self.status = STATES.COMPLETED
         
     def handle_terminal_state(self):
@@ -93,6 +92,7 @@ class GInfo(object):
         except:
             self.status=STATES.ERROR
             markstools.log.critical('GHessian Errored while processing task %s \n%s'%(self.a_task.id, utils.format_exception_info()))
+        sys.stdout.flush()
         self.save()
     
     def run(self):
@@ -108,10 +108,9 @@ def main(options):
     # Connect to the database
     db = Mydb('mark',options.db_name,options.db_url).cdb()
 
-    ginfo = GInfo()
+    ginfo = GInfo(STATES.GET_FILES)
     gamess_calc = GamessGridCalc(db)
-    a_task = TaskInterface(db).load(options.task_id)
-    ginfo.load(db, a_task)
+    ginfo.load(db, options.task_id)
     ginfo.run()
 
     print 'ginfo is done'
@@ -131,15 +130,21 @@ if __name__ == '__main__':
                       help="add more v's to increase log output.")
     (options, args) = parser.parse_args()
     
+    if options.task_id is None:
+        print "A mandatory option is missing\n"
+        parser.print_help()
+        sys.exit(0)
+
     import logging
     from markstools.lib.utils import configure_logger
     logging.basicConfig(
         level=logging.ERROR, 
         format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
         datefmt='%Y-%m-%d %H:%M:%S')
-        
-    configure_logger(options.verbose)
+    
+    configure_logger(10)
+    #configure_logger(options.verbose)
     
     main(options)
 
-    sys.exit()
+    sys.exit(0)

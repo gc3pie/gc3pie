@@ -60,9 +60,9 @@ class GHessian(object):
         markstools.log.info('Submitted task %s for execution.'%(self.a_task.id))
         self.status = STATES.WAIT
         
-    def load(self, db,  a_task):
-        self.a_task = a_task
-        self.status = STATES.match(self.a_task.status)
+    def load(self, db,  task_id):
+        self.a_task = TaskInterface(db).load(task_id)
+        self.status = self.a_task.status
         str_calc = self.a_task.user_data_dict['calculator']
         self.calculator = eval(str_calc + '(db)')
     
@@ -76,13 +76,13 @@ class GHessian(object):
         job_scheduler = GridjobScheduler('mark','gorg_site','http://130.60.144.211:5984')
         job_list = self.a_task.children
         new_status = STATES.PROCESS
+        job_scheduler.run()
         for a_job in job_list:
             job_done = False
-            job_scheduler.run()
             job_done = a_job.wait(timeout=0)
             if not job_done:
                 new_status=STATES.WAIT
-                markstools.log.info('Restart waiting for job %s.'%(a_job.id))
+                markstools.log.info('Waiting for job %s.'%(a_job.id))
                 break
         self.status = new_status
     
@@ -96,7 +96,7 @@ class GHessian(object):
                 markstools.log.critical(msg)
                 raise Exception, msg
             a_job.status = RUN_COMPLETED
-        a_job.store()
+            a_job.store()
         self.status = STATES.POSTPROCESS
 
     def handle_postprocess_state(self):
@@ -150,7 +150,7 @@ class GHessian(object):
         try:
             self.status_mapping.get(self.status, self.handle_missing_state)()
         except:
-            self.status=STATES.ERROR
+            self.status = STATES.ERROR
             markstools.log.critical('GHessian Errored while processing task %s \n%s'%(self.a_task.id, utils.format_exception_info()))
         self.save()
     
