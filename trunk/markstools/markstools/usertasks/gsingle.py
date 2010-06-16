@@ -14,9 +14,11 @@ from markstools.io.gamess import ReadGamessInp, WriteGamessInp
 from markstools.calculators.gamess.calculator import GamessGridCalc
 from markstools.lib import utils
 
-from gorg.lib import state
 from gorg.model.gridtask import TaskInterface
 from gorg.lib.utils import Mydb
+from gorg.lib import state
+from gorg.gridjobscheduler import STATE_COMPLETED as RUN_COMPLETED
+from gorg.gridjobscheduler import STATE_ERROR as RUN_ERROR
 
 STATE_WAIT =  state.State.create('WAIT', 'WAIT desc', True)
 STATE_PROCESS =  state.State.create('PROCESS', 'PROCESS desc')
@@ -50,8 +52,8 @@ class GSingle(object):
         markstools.log.info('Submitted task %s for execution.'%(self.a_task.id))
         self.status = STATES.WAIT
         
-    def load(self, db,  a_task):
-        self.a_task = a_task
+    def load(self, db,  task_id):
+        self.a_task = TaskInterface(db).load(task_id)
         self.status = self.a_task.status
         str_calc = self.a_task.user_data_dict['calculator']
         self.calculator = eval(str_calc + '(db)')
@@ -98,18 +100,15 @@ class GSingle(object):
         try:
             self.status_mapping.get(self.status, self.handle_missing_state)()
         except:
-            self.status=STATES.ERROR
-            markstools.log.critical('GHessian Errored while processing task %s \n%s'%(self.a_task.id, utils.format_exception_info()))
+            self.status = STATES.ERROR
+            markstools.log.critical('GSingle Errored while processing task %s \n%s'%(self.a_task.id, utils.format_exception_info()))
         self.save()
     
     def run(self):
-        if not self.status.terminal:
+        while not self.status.terminal:
             self.step()
-        else:
-            assert false,  'You are trying to step a terminated status.'
-        while not self.status.pause and not self.status.terminal:
-            self.step()
-
+            if self.status.pause:
+                break
 
 def main(options):
     # Connect to the database

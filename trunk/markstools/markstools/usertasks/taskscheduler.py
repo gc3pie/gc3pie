@@ -23,13 +23,11 @@ class TaskScheduler(object):
             task_list = GridtaskModel.view_status(self.db, keys = [usertask_name,  map(str, usertask_module.STATES.pause)])
             markstools.log.debug('%d %s task(s) are going to be processed'%(len(task_list), usertask_name))
             for raw_task in task_list:
-                a_task = TaskInterface(self.db)
-                a_task.task = raw_task
+                markstools.log.debug('TaskScheduler is processing task %s'%(raw_task.id))
                 exec('usertask = usertask_module.%s()'%(usertask_name))
-                usertask.load(self.db, a_task)
+                usertask.load(self.db, raw_task.id)
                 usertask.step()
-                markstools.log.debug('Task %s has been processed and is now in state %s'%(a_task.id, state))
-        
+
     def run(self):
         self.handle_waiting_tasks()
 

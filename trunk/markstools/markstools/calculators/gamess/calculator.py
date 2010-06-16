@@ -53,7 +53,7 @@ class GamessGridCalc(CalculatorBase):
         self.parsed_dat = ParseGamessDat()
         self.parsed_out = ParseGamessOut()
     
-    def generate(self, atoms, params, a_task, application_to_run, selected_resource,  cores, memory, walltime):
+    def generate(self, atoms, params, a_task, application_tag, requested_resource,  requested_cores, requested_memory, requested_walltime):
         """We run GAMESS in here."""
         from markstools.io.gamess import WriteGamessInp
         #Generate the input file
@@ -62,13 +62,14 @@ class GamessGridCalc(CalculatorBase):
         writer = WriteGamessInp()
         writer.write(f_inp, atoms, params)
         f_inp.seek(0)
-        a_job = JobInterface(self.db).create(params.title,  self.__class__.__name__, [f_inp], application_to_run, 
-                           selected_resource,  cores, memory, walltime)
+        a_job = JobInterface(self.db).create(params.title,  self.__class__.__name__, [f_inp], application_tag, 
+                           requested_resource,  requested_cores, requested_memory, requested_walltime)
         f_inp.close()
         # Convert the python dictionary to one that uses the couchdb schema
         a_job.user_data_dict = params.job_user_data_dict
         a_task.add_child(a_job)
         a_task.store()
+        a_job.store()
         markstools.log.info('Generated Job %s and it was added to Task %s'%(a_job.id, a_task.id))
         return a_job
     
