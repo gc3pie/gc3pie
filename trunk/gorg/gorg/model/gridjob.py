@@ -19,7 +19,8 @@ class GridjobModel(BaseroleModel):
     VIEW_PREFIX = 'GridjobModel'
     sub_type = TextField(default=SUB_TYPE)    
     parser_name = TextField()
-
+    run_id = TextField()
+    
     @ViewField.define('GridjobModel')    
     def view_all(doc):
         if 'base_type' in doc:
@@ -72,13 +73,14 @@ class GridjobModel(BaseroleModel):
 class JobInterface(BaseGraphInterface):
     
     def create(self, title,  parser_name, files_to_run, application_tag='gamess', 
-                        requested_resource='ocikbpra',  requested_cores=2, requested_memory=1, requested_walltime=-1):
+                        requested_resource='ocikbpra',  requested_cores=2, requested_memory=1, requested_walltime=None):
         self.wrap(GridjobModel().create(self.db.username, title))
         gorg.log.debug('Job %s has been created'%(self.id))        
         self.run = RunInterface(self.db).create(files_to_run, self, 
                                                                     application_tag, requested_resource, 
                                                                     requested_cores, requested_memory, 
                                                                     requested_walltime)
+        self.run_id = self.run.id
         self.parser = parser_name
         self.store()
         return self    
@@ -207,7 +209,7 @@ class RunInterface(BaseInterface):
         # Can we use a run that is already in the database?
         a_run_already_in_db = self._check_for_previous_run()
         if a_run_already_in_db:
-            self = a_run_already_in_db
+            self.wrap(a_run_already_in_db)
             if a_job.id not in self.owned_by:
                 self.owned_by.append(a_job.id)
                 self.store()
@@ -302,7 +304,6 @@ class GridrunModel(Document):
     raw_application = DictField()
     raw_job = DictField()
     gsub_message = TextField()
-    locked_by = TextField()
     
     def __init__(self, *args):
         super(GridrunModel, self).__init__(*args)

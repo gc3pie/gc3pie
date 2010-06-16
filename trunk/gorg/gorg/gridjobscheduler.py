@@ -13,9 +13,11 @@ from gorg.lib import state
 from couchdb import http
 
 STATE_HOLD = state.State.create('HOLD', 'HOLD desc', terminal = True)
+STATE_KILLED = state.State.create('KILLED', 'KILLED desc', terminal = True)
 STATE_READY = state.State.create('READY', 'READY desc')
 STATE_WAITING = state.State.create('WAITING', 'WAITING desc', pause = True)
 STATE_RETRIEVING = state.State.create('RETRIEVING', 'RETRIEVING desc')
+STATE_KILLING = state.State.create('KILLING', 'KILLING desc')
 STATE_UNREACHABLE = state.State.create('UNREACHABLE', 'UNREACHABLE desc')
 STATE_NOTIFIED = state.State.create('NOTIFIED', 'NOTIFIED desc')
 STATE_TOPARSE = state.State.create('TOPARSE', 'TOPARSE desc', terminal = True)
@@ -24,7 +26,7 @@ STATE_COMPLETED = state.State.create('COMPLETED', 'COMPLETED desc', terminal = T
 
 STATES = state.StateContainer( [STATE_HOLD, STATE_READY, STATE_WAITING, STATE_RETRIEVING,  
                                                     STATE_UNREACHABLE, STATE_NOTIFIED, 
-                                                    STATE_ERROR, STATE_COMPLETED, STATE_TOPARSE])
+                                                    STATE_ERROR, STATE_COMPLETED, STATE_TOPARSE, STATE_KILLING])
 
 
 class GridjobScheduler(object):
@@ -33,13 +35,14 @@ class GridjobScheduler(object):
         self.db=Mydb(couchdb_user, couchdb_database, couchdb_url).cdb()
         self.view_status_runs = GridrunModel.view_status(self.db)
         self._gcli = gcommands._get_gcli()
-        self.status_mapping =   {STATES.READY: self.handle_ready_run, 
-                                                STATES.WAITING: self.handle_waiting_run, 
-                                                STATES.RETRIEVING: self.handle_retrieving_run, 
-                                                STATES.UNREACHABLE: self.handle_unreachable_run, 
-                                                STATES.NOTIFIED: self.handle_notified_run}
+        self.status_mapping =   {STATES.READY: self.handle_ready_state, 
+                                                STATES.WAITING: self.handle_waiting_state, 
+                                                STATES.RETRIEVING: self.handle_retrieving_state, 
+                                                STATES.UNREACHABLE: self.handle_unreachable_state, 
+                                                STATES.NOTIFIED: self.handle_notified_state, 
+                                                STATES.KILLING: self.handle_killing_state}
     
-    def handle_ready_run(self, a_run):
+    def handle_ready_state(self, a_run):
 #TODO: If we get an error storing the run, we will have submitted it to the grid
 # but that info will not have been stored in the database
         for a_file in a_run.files_to_run:
@@ -54,9 +57,8 @@ class GridjobScheduler(object):
         a_run.status = STATES.WAITING
         return a_run
 
-    def handle_waiting_run(self, a_run):
+    def handle_waiting_state(self, a_run):
         a_run.job = self._gcli.gstat(a_run.job)[0]
-        gorg.log.info('Run %s gstat returned status %d'%(a_run.id, a_run.job.status))
         
         if a_run.job.status == Job.JOB_STATE_SUBMITTED:
             a_run.status = STATES.WAITING
@@ -73,7 +75,7 @@ class GridjobScheduler(object):
         gorg.log.debug('Run %s status is now %s'%(a_run.id, a_run.status))
         return a_run
  
-    def handle_retrieving_run(self, a_run):        
+    def handle_retrieving_state(self, a_run):        
         a_run.job = self._gcli.gget(a_run.job)
         utils.persist_job_filesystem(a_run.job)
         output_files = glob.glob('%s/%s/*.*'%(a_run.application.job_local_dir, a_run.job.unique_token))
@@ -86,12 +88,12 @@ class GridjobScheduler(object):
         a_run.status = STATES.TOPARSE
         return a_run
 
-    def handle_unreachable_run(self, a_run):
+    def handle_unreachable_state(self, a_run):
         #TODO: Notify the user that they need to log into the clusters again, maybe using email?
         a_run.status = STATES.NOTIFIED
         return a_run
     
-    def handle_notified_run(self, a_run):
+    def handle_notified_state(self, a_run):
         try:
             a_run.job = self._gcli.gstat(a_run.job)[0]
             utils.persist_job_filesystem(a_run.job)
@@ -99,6 +101,11 @@ class GridjobScheduler(object):
         except gc3utils.Exceptions.AuthenticationException:
             a_run.status = STATES.NOTIFIED
         return a_run
+    
+    def handle_killing_state(self, a_run):
+        a_run.job = self._gcli.gkill(a_run.job)
+        utils.persist_job_filesystem(a_run.job)
+        a_run.status = STATES.KILLED
     
     def handle_missing_state(self, a_run):
         raise UnhandledStateError('Run id %s is in unhandled state %s'%(a_run.id, a_run.status))
