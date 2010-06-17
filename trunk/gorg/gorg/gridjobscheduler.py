@@ -6,28 +6,24 @@ import gorg
 
 from gorg.lib.exceptions import *
 from gorg.lib.utils import Mydb, configure_logger, formatExceptionInfo
-from gorg.lib import state
+from gorg.lib import *
 from gc3utils import Job, Application, gcommands, utils, Exceptions
 import gc3utils.Exceptions
 from gorg.lib import state
 from couchdb import http
 
-STATE_HOLD = state.State.create('HOLD', 'HOLD desc', terminal = True)
-STATE_KILLED = state.State.create('KILLED', 'KILLED desc', terminal = True)
-STATE_READY = state.State.create('READY', 'READY desc')
+
 STATE_WAITING = state.State.create('WAITING', 'WAITING desc', pause = True)
 STATE_RETRIEVING = state.State.create('RETRIEVING', 'RETRIEVING desc')
-STATE_KILLING = state.State.create('KILLING', 'KILLING desc')
 STATE_UNREACHABLE = state.State.create('UNREACHABLE', 'UNREACHABLE desc')
 STATE_NOTIFIED = state.State.create('NOTIFIED', 'NOTIFIED desc')
 STATE_TOPARSE = state.State.create('TOPARSE', 'TOPARSE desc', terminal = True)
-STATE_ERROR = state.State.create('ERROR', 'ERROR desc', terminal = True)
-STATE_COMPLETED = state.State.create('COMPLETED', 'COMPLETED desc', terminal = True)
 
-STATES = state.StateContainer( [STATE_HOLD, STATE_READY, STATE_WAITING, STATE_RETRIEVING,  
+STATES = state.StateContainer( [state.DEFAULT_HOLD, state.DEFAULT_READY, 
+                                                    STATE_WAITING, STATE_RETRIEVING,  
                                                     STATE_UNREACHABLE, STATE_NOTIFIED, 
-                                                    STATE_ERROR, STATE_COMPLETED, STATE_TOPARSE, STATE_KILLING])
-
+                                                    state.DEFAULT_ERROR, state.DEFAULT_COMPLETED, 
+                                                    STATE_TOPARSE, state.DEFAULT_KILL])
 
 class GridjobScheduler(object):
     def __init__(self, couchdb_user = 'mark',  couchdb_database='gorg_site', couchdb_url='http://127.0.0.1:5984'):
@@ -40,7 +36,7 @@ class GridjobScheduler(object):
                                                 STATES.RETRIEVING: self.handle_retrieving_state, 
                                                 STATES.UNREACHABLE: self.handle_unreachable_state, 
                                                 STATES.NOTIFIED: self.handle_notified_state, 
-                                                STATES.KILLING: self.handle_killing_state}
+                                                STATES.KILL: self.handle_kill_state}
     
     def handle_ready_state(self, a_run):
 #TODO: If we get an error storing the run, we will have submitted it to the grid
@@ -102,7 +98,7 @@ class GridjobScheduler(object):
             a_run.status = STATES.NOTIFIED
         return a_run
     
-    def handle_killing_state(self, a_run):
+    def handle_kill_state(self, a_run):
         a_run.job = self._gcli.gkill(a_run.job)
         utils.persist_job_filesystem(a_run.job)
         a_run.status = STATES.KILLED

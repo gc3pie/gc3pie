@@ -1,4 +1,3 @@
-
 class dotdict(dict):
     '''Used to make a dictionary in to a dot dictionary.'''
     def __getattr__(self, attr):
@@ -66,9 +65,12 @@ class StateContainer(dotdict):
                 states.append(self[index])
         return states
 
-class What(object):
-    def __repr__(self):
-        return 're'
-    def __str__(self):
-        return 'st'
+'''Here are the default states that are used throughout the system.'''
+
+DEFAULT_READY = State.create('READY', 'READY desc')
+DEFAULT_KILL = State.create('KILL', 'KILL desc')
+DEFAULT_HOLD = State.create('HOLD', 'HOLD desc', terminal = True)
+DEFAULT_KILLED = State.create('KILLED', 'KILLED desc', terminal = True)
+DEFAULT_ERROR = State.create('ERROR', 'ERROR desc', terminal = True)
+DEFAULT_COMPLETED = State.create('COMPLETED', 'COMPLETED desc', terminal = True)
 
