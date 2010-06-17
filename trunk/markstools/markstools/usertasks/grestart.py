@@ -11,19 +11,14 @@ from markstools.lib import utils
 
 from gorg.model.gridtask import TaskInterface
 from gorg.lib.utils import Mydb
-from gorg.lib import state
-from gorg.gridjobscheduler import STATE_COMPLETED as RUN_COMPLETED
-from gorg.gridjobscheduler import STATE_ERROR as RUN_ERROR
+from gorg.lib import *
 
 STATE_WAIT = state.State.create('WAIT', 'WAIT desc', True)
 STATE_PROCESS = state.State.create('PROCESS', 'PROCESS desc')
 STATE_POSTPROCESS = state.State.create('POSTPROCESS', 'POSTPROCESS desc')
-STATE_ERROR = state.State.create('ERROR', 'ERROR desc', terminal = True)
-STATE_COMPLETED = state.State.create('COMPLETED', 'COMPLETED desc', terminal = True)
 
 STATES = state.StateContainer([STATE_WAIT, STATE_PROCESS, STATE_POSTPROCESS, 
-                            STATE_ERROR, STATE_COMPLETED])
-
+                            state.DEFAULT_ERROR, state.DEFAULT_COMPLETED])
 
 class GRestart(object):
 
@@ -79,10 +74,10 @@ class GRestart(object):
         atoms = a_result.atoms.copy()
         
         if a_result.exit_successful():
-            a_job.status = RUN_COMPLETED
+            a_job.status = state.DEFAULT_COMPLETED
             a_job.store()
         else:
-            a_job.status = RUN_ERROR
+            a_job.status = state.DEFAULT_ERROR
             a_job.store()
             markstools.log.critical('GAMESS returned an error while running job %s.'%(a_job.id))
             new_state = STATES.ERROR
@@ -181,4 +176,4 @@ if __name__ == '__main__':
     
     main(options)
 
-    sys.exit()
+    sys.exit(0)
