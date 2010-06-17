@@ -36,18 +36,11 @@ class GridtaskModel(BaseroleModel):
     SUB_TYPE = 'GridtaskModel'
     VIEW_PREFIX = 'GridtaskModel'
     sub_type = TextField(default=SUB_TYPE)
-    raw_status = DictField(default=STATE_HOLD)
+    status = DictField(default=STATE_HOLD)
     
     def __init__(self, *args):
         super(GridtaskModel, self).__init__(*args)
     
-    def status():
-        def fget(self):
-            return state.State(**self.raw_status)
-        def fset(self, status):
-            self.raw_status = status
-        return locals()
-    status = property(**status())
     
     @ViewField.define('GridtaskModel')
     def view_author(doc):
@@ -101,6 +94,27 @@ class TaskInterface(BaseGraphInterface):
             id = self.id
         self.wrap(GridtaskModel.load(self.db, id))
         return self
+    
+    def status():
+        def fget(self):
+            return state.State(**self._obj.status)
+        def fset(self, status):
+            if isinstance(status, tuple):
+                value = status[0]
+                key = status[1]
+            else:
+                value = status
+                key = 'I have no key'            
+
+            if self.status.locked is not None:
+                if self.status.locked == key:
+                    self._obj.status = value
+                else:
+                    raise DocumentError('Run %s is locked, and you provided the wrong key.'%(self.id))
+            else:
+                self._obj.status = value
+        return locals()
+    status = property(**status())
 
     def _status_children(self):
         status_list = list()
