@@ -1,6 +1,7 @@
 import sys
 import numpy as np
 import markstools
+import cPickle as pickle
 
 class LBFGS(object):
     """Limited memory BFGS optimizer.

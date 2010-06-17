@@ -8,27 +8,28 @@ import numpy as np
 from markstools.io.gamess import ReadGamessInp, WriteGamessInp
 from markstools.calculators.gamess.calculator import GamessGridCalc
 from markstools.lib import utils
+from markstools.lib import usertask
 
 from gorg.model.gridtask import TaskInterface
 from gorg.lib.utils import Mydb
-from gorg.lib import *
+from gorg.gridjobscheduler import STATES as JOB_SCHEDULER_STATES
 
-STATE_WAIT = state.State.create('WAIT', 'WAIT desc', True)
+STATE_WAIT = state.State.create('WAIT', 'WAIT desc')
 STATE_PROCESS = state.State.create('PROCESS', 'PROCESS desc')
 STATE_POSTPROCESS = state.State.create('POSTPROCESS', 'POSTPROCESS desc')
 
-STATES = state.StateContainer([STATE_WAIT, STATE_PROCESS, STATE_POSTPROCESS, 
-                            state.DEFAULT_ERROR, state.DEFAULT_COMPLETED])
+class GRestart(usertask.UserTask):
 
-class GRestart(object):
-
+    STATES = state.StateContainer([STATE_WAIT, STATE_PROCESS, STATE_POSTPROCESS, 
+                            usertask.STATE_ERROR, usertask.STATE_COMPLETED])
+    
     def __init__(self):
-        self.status = STATES.ERROR
-        self.status_mapping = {STATES.WAIT: self.handle_wait_state, 
-                                             STATES.PROCESS: self.handle_process_state, 
-                                             STATES.POSTPROCESS: self.handle_postprocess_state, 
-                                             STATES.ERROR: self.handle_terminal_state, 
-                                             STATES.COMPLETED: self.handle_terminal_state}
+        self.status = self.STATES.ERROR
+        self.status_mapping = {self.STATES.WAIT: self.handle_wait_state, 
+                                             self.STATES.PROCESS: self.handle_process_state, 
+                                             self.STATES.POSTPROCESS: self.handle_postprocess_state, 
+                                             self.STATES.ERROR: self.handle_terminal_state, 
+                                             self.STATES.COMPLETED: self.handle_terminal_state}
         self.a_task = None
         self.calculator = None
     
@@ -40,29 +41,19 @@ class GRestart(object):
         params.title = 'restart_number_%d'%self.a_task.user_data_dict['restart_number']
         a_job = self.calculator.generate(atoms, params, self.a_task, application_to_run, selected_resource, cores, memory, walltime)
         self.calculator.calculate(a_job)
-        self.status = STATES.WAIT
+        self.status = self.STATES.WAIT
 
-    def load(self, db,  task_id):
-        self.a_task = TaskInterface(db).load(task_id)
-        str_calc = a_task.user_data_dict['calculator']
-        self.calculator = eval(str_calc + '(db)')
-    
-    def save(self):
-        self.a_task.status = self.status
-        self.a_task.user_data_dict['calculator'] = self.calculator.__class__.__name__
-        self.a_task.store()
-    
     def handle_wait_state(self):
         from gorg.gridjobscheduler import GridjobScheduler
         job_scheduler = GridjobScheduler('mark','gorg_site','http://130.60.144.211:5984')
         job_list = self.a_task.children
-        new_status = STATES.PROCESS
+        new_status = self.STATES.PROCESS
         job_scheduler.run()
         for a_job in job_list:
             job_done = False
             job_done = a_job.wait(timeout=0)
             if not job_done:
-                new_status=STATES.WAIT
+                new_status=self.STATES.WAIT
                 markstools.log.info('Waiting for job %s.'%(a_job.id))
                 break
         self.status = new_status
@@ -74,13 +65,13 @@ class GRestart(object):
         atoms = a_result.atoms.copy()
         
         if a_result.exit_successful():
-            a_job.status = state.DEFAULT_COMPLETED
+            a_job.status = JOB_SCHEDULER_STATES.COMPLETED
             a_job.store()
         else:
-            a_job.status = state.DEFAULT_ERROR
+            a_job.status = JOB_SCHEDULER_STATES.ERROR
             a_job.store()
             markstools.log.critical('GAMESS returned an error while running job %s.'%(a_job.id))
-            new_state = STATES.ERROR
+            new_state = self.STATES.ERROR
             return
 
         if not a_result.geom_located():                
@@ -97,34 +88,19 @@ class GRestart(object):
                                                  a_job.run.application.requested_cores, a_job.run.application.requested_memory, a_job.run.application.requested_walltime)
             a_new_job.add_parent(a_job)
             self.calculator.calculate(a_new_job)
-            self.status = STATES.WAIT
+            self.status = self.STATES.WAIT
         else:
-            self.status = STATES.POSTPROCESS
+            self.status = self.STATES.POSTPROCESS
             markstools.log.info('Restart sequence task id %s has finished successfully.'%(self.a_task.id))
     
     def handle_postprocess_state(self):
-        self.status = STATES.COMPLETED
+        self.status = self.STATES.COMPLETED
         pass
     
     def handle_terminal_state(self):
         print 'I do nothing!!'
     
-    def handle_missing_state(self):
-        print 'Do something when the state is not in our map.'
-    
-    def step(self):
-        try:
-            self.status_mapping.get(self.status, self.handle_missing_state)()
-        except:
-            self.status = STATES.ERROR
-            markstools.log.critical('GRestart Errored while processing task %s \n%s'%(self.a_task.id, utils.format_exception_info()))
-        self.save()
-    
-    def run(self):
-        while not self.status.terminal:
-            self.step()
-            if self.status.pause:
-                break
+
 
 def main(options):
     # Connect to the database
