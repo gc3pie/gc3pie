@@ -10,67 +10,55 @@ import numpy as np
 from markstools.io.gamess import ReadGamessInp, WriteGamessInp
 from markstools.calculators.gamess.calculator import GamessGridCalc
 from markstools.lib import utils
+from markstools.lib import usertask
+from markstools.optimize import lbfgs
 
 from gorg.model.gridtask import TaskInterface
 from gorg.lib.utils import Mydb
 from gorg.lib import state
-from gorg.gridjobscheduler import STATE_COMPLETED as RUN_COMPLETED
-from gorg.gridjobscheduler import STATE_ERROR as RUN_ERROR
+from gorg.gridjobscheduler import STATES as JOB_SCHEDULER_STATES
 
-class State(object):
-    WAIT = 'WAIT'
-    STEP='STEP'
-    EXECUTE = 'EXECUTE'
-    ERROR='ERROR'
-    DONE='DONE'
-    pause = [WAIT]
-    terminal = [ERROR,  DONE]
+STATE_WAIT = state.State.create('WAIT', 'WAIT desc')
+STATE_STEP = state.State.create('STEP', 'STEP desc')
+STATE_POSTPROCESS = state.State.create('POSTPROCESS', 'POSTPROCESS desc')
 
-class GOptimize_lbfgs(object):
-
+class GOptimize_lbfgs(usertask.UserTask):
+    STATES = state.StateContainer([STATE_WAIT, STATE_STEP, STATE_POSTPROCESS, 
+                            usertask.STATE_ERROR, usertask.STATE_COMPLETED])
+                            
     def __init__(self):
-        self.state = State.ERROR
-        self.state_mapping = {State.WAIT: self.handle_wait_state, 
-                                             State.STEP: self.handle_step_state, 
-                                             State.EXECUTE: self.handle_execute_state, 
-                                             State.ERROR: self.handle_terminal_state, 
-                                             State.DONE: self.handle_terminal_state}
+        self.status = self.STATES.ERROR
+        self.status_mapping = {self.STATES.WAIT: self.handle_wait_state, 
+                                             self.STATES.STEP: self.handle_step_state, 
+                                             self.STATES.ERROR: self.handle_terminal_state, 
+                                             self.STATES.COMPLETED: self.handle_terminal_state}
         
         self.a_task = None
         self.calculator = None
 
-    def initialize(self, db, calculator, atoms, params, application_to_run='gamess', selected_resource='ocikbpra',  cores=2, memory=1, walltime=-1):
+    def initialize(self, db, calculator, atoms, params, application_to_run='gamess', selected_resource='gc3',  cores=8, memory=2, walltime=3):
         self.calculator = calculator
         self.a_task = TaskInterface(db).create(self.__class__.__name__)
         self.a_task.user_data_dict['total_jobs'] = 0
-        params.title = 'job_number_%d'%a_task.user_data_dict['total_jobs']
+        params.title = 'job_number_%d'%self.a_task.user_data_dict['total_jobs']
         a_job = self.calculator.generate(atoms, params, self.a_task, application_to_run, selected_resource, cores, memory, walltime)
         self.calculator.calculate(self.a_task)
-        self.state = STATES.WAITING
-
-    def load(self, db,  a_task):
-        self.a_task = a_task
-        self.state = self.a_task.state
-        str_calc = self.a_task.user_data_dict['calculator']
-        self.calculator = eval(str_calc + '(db)')
-    
-    def save(self):
-        self.a_task.state = self.state
-        self.a_task.user_data_dict['calculator'] = self.calculator.__class__.__name__
+        self.status = self.STATES.WAIT
     
     def handle_wait_state(self):
-        job_scheduler = GridjobScheduler()
+        from gorg.gridjobscheduler import GridjobScheduler
+        job_scheduler = GridjobScheduler('mark','gorg_site','http://130.60.144.211:5984')
         job_list = [self.a_task.children[-1]]
-        new_state=State.STEP
+        new_status = self.STATES.STEP
+        job_scheduler.run()
         for a_job in job_list:
             job_done = False
-            job_scheduler.run()            
             job_done = a_job.wait(timeout=0)
             if not job_done:
-                log.info('Restart waiting for job %s.'%(a_job.id))
-                new_state=State.WAITING
+                new_status=self.STATES.WAIT
+                markstools.log.info('Waiting for job %s.'%(a_job.id))
                 break
-        self.state = new_state
+        self.status = new_status
     
     def handle_step_state(self):
         a_job = self.a_task.children[-1]
@@ -79,81 +67,73 @@ class GOptimize_lbfgs(object):
         reader = ReadGamessInp(myfile)
         myfile.close()
         params = reader.params
+        params.title ='a_title'
         atoms = reader.atoms
-        opt = LBFGS(atoms)
+        opt = lbfgs.LBFGS(atoms)
         opt.initialize()
         # If we have a file, load it, otherwise this is the first iteration step
-        if os.path.isfile(a_task.id):
+        if os.path.isfile(self.a_task.id):
             opt.load(a_task.id)
         #restart if we need to
-        new_positions = opt.step(result.get_positions(), result.get_forces())
-        opt.dump(a_task.id)
+        new_positions = opt.step(a_result.atoms.get_positions(), a_result.get_forces())
+        opt.dump(self.a_task.id)
         atoms.set_positions(new_positions)
-        new_job = self.cargo.calculator.generate(atoms, params, self.a_task, **a_job.run_params)
-        self.state = State.EXECUTE
-    
-    def handle_missing_state(self):
-        raise UnhandledStateError('State %s is not implemented.'%(self.state))
+        new_job = self.calculator.generate(atoms, params, self.a_task, 
+                                                                a_job.run.application.application_tag, a_job.run.application.requested_resource,  
+                                                                a_job.run.application.requested_cores, a_job.run.application.requested_memory, 
+                                                                a_job.run.application.requested_walltime)
+        self.calculator.calculate(new_job)
+        self.status = self.STATES.WAIT
     
     def handle_terminal_state(self):
         pass
-    
-    def step(self):
-        try:
-            self.status_mapping.get(self.status, self.handle_missing_state)()
-        except:
-            self.status = STATES.ERROR
-            markstools.log.critical('Errored while processing task %s \n%s'%(self.a_task.id, utils.format_exception_info()))
-        self.save()
-    
-    def run(self):
-        while not self.status.terminal:
-            self.step()
-            if self.status.pause:
-                break
 
 def main(options):
     # Connect to the database
-    db=Mydb('mark',options.db_name,options.db_url).cdb()
-    
-    # Parse the gamess inp file
+    db = Mydb('mark',options.db_name,options.db_url).cdb()
+
     myfile = open(options.file, 'rb')
     reader = ReadGamessInp(myfile)
     myfile.close()
     params = reader.params
     atoms = reader.atoms
     
-    fsm = GOptimize()
+    goptimize = GOptimize_lbfgs()
     gamess_calc = GamessGridCalc(db)
-    fsm.create(db, gamess_calc, atoms, params)
+    goptimize.initialize(db, gamess_calc, atoms, params)
     
-    while fsm.state not in TerminalState:
-        fsm.run()
+    goptimize.run()
 
-    print 'GOptimize_lbfgs is done'
-
+    print 'goptimize done. Create task %s'%(goptimize.a_task.id)
 
 if __name__ == '__main__':
     #Set up command line options
     usage = "usage: %prog [options] arg"
     parser = OptionParser(usage)
-    parser.add_option("-f", "--file", dest="file",default='markstools/examples/exam01.inp', 
+    parser.add_option("-f", "--file", dest="file",default='markstools/examples/water_UHF_gradient.inp', 
                       help="gamess inp to restart from.")
-    parser.add_option("-v", "--verbose", dest="verbose", default='', 
+    parser.add_option("-v", "--verbose", action='count', dest="verbose", default=0, 
                       help="add more v's to increase log output.")
     parser.add_option("-n", "--db_name", dest="db_name", default='gorg_site', 
                       help="add more v's to increase log output.")
-    parser.add_option("-l", "--db_url", dest="db_url", default='http://127.0.0.1:5984', 
+    parser.add_option("-l", "--db_url", dest="db_url", default='http://130.60.144.211:5984', 
                       help="add more v's to increase log output.")
     (options, args) = parser.parse_args()
     
-    #Setup logger
-    LOGGING_LEVELS = (logging.CRITICAL, logging.ERROR, 
-                                    logging.WARNING, logging.INFO, logging.DEBUG)
-    options.logging_level = len(LOGGING_LEVELS) if len(options.verbose) > len(LOGGING_LEVELS) else len(options.verbose)
-    create_file_logger(options.logging_level)
+    import logging
+    from markstools.lib.utils import configure_logger
+    logging.basicConfig(
+        level=logging.ERROR, 
+        format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+        datefmt='%Y-%m-%d %H:%M:%S')
+        
+    #configure_logger(options.verbose)
+    configure_logger(10)
+    import gorg.lib.utils
+    gorg.lib.utils.configure_logger(10)
+    
     main(options)
 
-    sys.exit()
+    sys.exit(0)
 
 
