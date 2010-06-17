@@ -72,11 +72,12 @@ class GOptimize_lbfgs(usertask.UserTask):
         opt = lbfgs.LBFGS(atoms)
         opt.initialize()
         # If we have a file, load it, otherwise this is the first iteration step
-        if os.path.isfile(self.a_task.id):
-            opt.load(a_task.id)
+        filename = '/tmp/%s'%(self.a_task.id)
+        if os.path.isfile(filename):
+            opt.load(filename)
         #restart if we need to
         new_positions = opt.step(a_result.atoms.get_positions(), a_result.get_forces())
-        opt.dump(self.a_task.id)
+        opt.dump(filename)
         atoms.set_positions(new_positions)
         new_job = self.calculator.generate(atoms, params, self.a_task, 
                                                                 a_job.run.application.application_tag, a_job.run.application.requested_resource,  

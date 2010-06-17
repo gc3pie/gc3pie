@@ -118,7 +118,7 @@ class LBFGS(object):
     def load(self, filename):
         """Load saved arrays to reconstruct the Hessian"""
         try:
-            myfile = open(filename, 'wb')
+            myfile = open(filename, 'rb')
             self.iteration, self.s, self.y, self.rho, self.r0, self.f0 = pickle.load(myfile)
         finally:
             myfile.close()
