@@ -5,6 +5,7 @@ from gorg.model.gridjob import *
 from gorg.model.baserole import BaseroleModel
 from gorg.model.gridtask import GridtaskModel, TaskInterface
 from gorg.lib.utils import Mydb, configure_logger, write_to_file
+from gorg.gridjobscheduler import STATES as JOB_SCHEDULER_STATES
 
 def main():
     # We add a job to our database lke this
@@ -32,7 +33,7 @@ def main():
     a_job = JobInterface(db)
     a_job = a_job.create('a title', 'myparser', [myfile], requested_resource='ocikbnor')
     a_task.add_child(a_job)
-    a_job.status = STATES.READY
+    a_job.status = JOB_SCHEDULER_STATES.READY
     a_task.status
     a_task.status_overall
     a_job.store()

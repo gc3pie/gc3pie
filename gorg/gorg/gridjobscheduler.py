@@ -12,18 +12,25 @@ import gc3utils.Exceptions
 from gorg.lib import state
 from couchdb import http
 
+_LOCKED_STATE_KEY = 'GridjobScheduler'
 
-STATE_WAITING = state.State.create('WAITING', 'WAITING desc', pause = True)
+STATE_WAITING = state.State.create('WAITING', 'WAITING desc')
 STATE_RETRIEVING = state.State.create('RETRIEVING', 'RETRIEVING desc')
 STATE_UNREACHABLE = state.State.create('UNREACHABLE', 'UNREACHABLE desc')
 STATE_NOTIFIED = state.State.create('NOTIFIED', 'NOTIFIED desc')
 STATE_TOPARSE = state.State.create('TOPARSE', 'TOPARSE desc', terminal = True)
+STATE_HOLD = state.State.create('HOLD', 'HOLD desc', terminal = True)
+STATE_READY = state.State.create('READY', 'READY desc',  _LOCKED_STATE_KEY)
+STATE_KILL = state.State.create('KILL', 'KILL desc')
+STATE_KILLED = state.State.create('KILLED', 'KILLED desc', terminal = True)
+STATE_ERROR = state.State.create('ERROR', 'ERROR desc', terminal = True)
+STATE_COMPLETED = state.State.create('COMPLETED', 'COMPLETED desc', terminal = True)
 
-STATES = state.StateContainer( [state.DEFAULT_HOLD, state.DEFAULT_READY, 
+STATES = state.StateContainer( [STATE_HOLD, STATE_READY, 
                                                     STATE_WAITING, STATE_RETRIEVING,  
                                                     STATE_UNREACHABLE, STATE_NOTIFIED, 
-                                                    state.DEFAULT_ERROR, state.DEFAULT_COMPLETED, 
-                                                    STATE_TOPARSE, state.DEFAULT_KILL])
+                                                    STATE_ERROR, STATE_COMPLETED, 
+                                                    STATE_TOPARSE, STATE_KILL, STATE_KILLED])
 
 class GridjobScheduler(object):
     def __init__(self, couchdb_user = 'mark',  couchdb_database='gorg_site', couchdb_url='http://127.0.0.1:5984'):
@@ -50,7 +57,7 @@ class GridjobScheduler(object):
         a_run.job = self._gcli.gsub(a_run.application)
         utils.persist_job_filesystem(a_run.job)
         gorg.log.info('Submitted run %s to the grid'%(a_run.id))
-        a_run.status = STATES.WAITING
+        a_run.status = (STATES.WAITING, _LOCKED_STATE_KEY)
         return a_run
 
     def handle_waiting_state(self, a_run):
@@ -117,7 +124,7 @@ class GridjobScheduler(object):
             gorg.log.critical('GridjobScheduler could not save run %s due to a document revision conflict'%(a_run.id))
         except:
             a_run.gsub_message=formatExceptionInfo()
-            a_run.status=STATES.ERROR
+            a_run.status=(STATES.ERROR, _LOCKED_STATE_KEY)
             gorg.log.critical('GridjobScheduler Errored while processing run id %s \n%s'%(a_run.id, a_run.gsub_message))
         a_run.store()
         return a_run
@@ -129,10 +136,7 @@ class GridjobScheduler(object):
                 view_runs = self.view_status_runs[a_state.view_key]
                 for raw_run in view_runs:
                     a_run = RunInterface(self.db).load(raw_run.id)
-                    while not a_run.status.terminal:
-                        a_run = self.step(a_run)
-                        if a_run.status.pause:
-                            break
+                    a_run = self.step(a_run)
 
 def main():
     import logging

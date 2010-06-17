@@ -131,10 +131,7 @@ class JobInterface(BaseGraphInterface):
         def fget(self):
             return self.run.status
         def fset(self, status):
-            if self.status.terminal or self.status.pause:
-                self.run.status = status
-            else:
-                raise DocumentError('Job %s is not in a terminal status, and therefore its status can not be changed'%(self.id))
+            self.run.status = status
         return locals()
     status = property(**status())
 
@@ -251,12 +248,23 @@ class RunInterface(BaseInterface):
     task = property(**task())
     
     def status():
-        """Here we need to check to see what kind of status we have. If more than one job is pointing to the same
-        run, then changing its status might mess up the other jobs pointing to it."""
         def fget(self):
-            return self._obj.status
+            return state.State(**self._obj.status)
         def fset(self, status):
-            self._obj.status = status
+            if isinstance(status, tuple):
+                value = status[0]
+                key = status[1]
+            else:
+                value = status
+                key = 'I have no key'            
+
+            if self.status.locked is not None:
+                if self.status.locked == key:
+                    self._obj.status = value
+                else:
+                    raise DocumentError('Run %s is locked, and you provided the wrong key.'%(self.id))
+            else:
+                self._obj.status = value
         return locals()
     status = property(**status())
     
