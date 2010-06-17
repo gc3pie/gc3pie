@@ -13,22 +13,16 @@ import time
 from markstools.io.gamess import ReadGamessInp, WriteGamessInp
 from markstools.calculators.gamess.calculator import GamessGridCalc
 from markstools.lib import utils
-from markstools.lib.status import State,  Status
+
 
 from gorg.model.gridtask import TaskInterface
 from gorg.lib.utils import Mydb
-from gorg.gridjobscheduler import STATE_KILL as JOB_KILL
-from gorg.gridjobscheduler import STATE_READY as JOB_READY
-from gorg.gridjobscheduler import STATE_ERROR as JOB_ERROR
+from gorg.lib.state import *
 
 
-
-STATE_KILL = State('KILL', 'KILL desc')
 STATE_RETRY = State('RETRY', 'RETRY desc')
-STATE_ERROR = State('ERROR', 'ERROR desc', terminal = True)
-STATE_COMPLETED = State('COMPLETED', 'CCOMPLETED desc', terminal = True)
 
-STATES = Status([STATE_RETRY, STATE_KILL, STATE_ERROR, STATE_COMPLETED])
+STATES = Status([STATE_RETRY, state.DEFAULT_KILL, state.DEFAULT_ERROR, state.DEFAULT_COMPLETED])
 
 class GControl(object):
  
@@ -54,25 +48,31 @@ class GControl(object):
         pass
        
     def handle_kill_state(self):
-        job_list = self.a_task.children
-        for a_job in job_list:
-            if not a_job.status.terminal:
-                while not a_job.status.pause:
-                    time.sleep(5)
-                    markstools.log.info('Waiting for Job %s to go into killable state.'%(a_job.id))
-                    markstools.log.debug('In state %s'%(a_job.status))
-                a_job.status = JOB_KILL
-                a_job.store()
+        if not self.a_task.terminal:
+            job_list = self.a_task.children
+            for a_job in job_list:
+                if not a_job.status.terminal:
+                    while not a_job.status.pause:
+                        time.sleep(5)
+                        markstools.log.info('Waiting for Job %s to go into killable state.'%(a_job.id))
+                        markstools.log.debug('In state %s'%(a_job.status))
+                    a_job.status = state.DEFAULT_KILL
+                    a_job.store()
+            self.a_task.terminal = state.DEFAULT_KILL
+            self.a_task.store()
         self.status = STATES.COMPLETED
     
     def handle_retry_state(self):
-        job_list = self.a_task.children
-        for a_job in job_list:
-            if a_job.status.terminal == JOB_ERROR:
-                markstools.log.info('Retrying Job %s.'%(a_job.id))
-                markstools.log.debug('Was in state %s now in state %s'%(a_job.status, JOB_READY))
-                a_job.status = JOB_READY
-                a_job.store()
+        if self.a_task.terminal:
+            job_list = self.a_task.children
+            for a_job in job_list:
+                if a_job.status.terminal == state.DEFAULT_ERROR:
+                    markstools.log.info('Retrying Job %s.'%(a_job.id))
+                    markstools.log.debug('Was in state %s now in state %s'%(a_job.status, JOB_READY))
+                    a_job.status = state.DEFAULT_READY
+                    a_job.store()
+            self.a_task.terminal = state.DEFAULT_READY
+            self.a_task.store()
         self.status = STATES.COMPLETED
     
     def handle_terminal_state(self):
