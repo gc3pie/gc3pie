@@ -131,7 +131,7 @@ class JobInterface(BaseGraphInterface):
         def fget(self):
             return self.run.status
         def fset(self, status):
-            if self.status.terminal:
+            if self.status.terminal or self.status.pause:
                 self.run.status = status
             else:
                 raise DocumentError('Job %s is not in a terminal status, and therefore its status can not be changed'%(self.id))
