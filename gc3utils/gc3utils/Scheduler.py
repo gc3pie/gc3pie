@@ -40,10 +40,10 @@ def _cmp_resources(a,b):
     `a` is preferred over `b` if it has less running jobs from the
     same user.
     """
-    a_ = (a._resource.free_slots, -a._resource.queued, 
-          -a._resource.user_queued, a._resource.user_run)
-    b_ = (b._resource.free_slots, -b._resource.queued, 
-          -b._resource.user_queued, b._resource.user_run)
+    a_ = (-a._resource.free_slots, a._resource.queued, 
+           a._resource.user_queued, -a._resource.user_run)
+    b_ = (-b._resource.free_slots, b._resource.queued, 
+           b._resource.user_queued, -b._resource.user_run)
     return cmp(a_, b_)
 
 
@@ -52,7 +52,18 @@ def do_brokering(lrms_list, application):
         "Scheduler.do_brokering(): expected valid `Application` object, got `None` instead."
     rs = _compatible_resources(lrms_list, application)
     # get up-to-date resource status
+    updated_resources = []
     for r in rs:
-        # in-place update of resource status
-        r.get_resource_status()
-    return sorted(rs, cmp=_cmp_resources)
+        try:
+            # in-place update of resource status
+            r.get_resource_status()
+            updated_resources.append(r)
+        except Exception, x:
+            # ignore errors in update, assume resource has a problem
+            # and just drop it
+            gc3utils.log.error("Cannot update status of resource '%s', dropping it."
+                               " See log file for details.",
+                               r._resource.name)
+            gc3utils.log.debug("Got error from get_resource_status(): %s: %s",
+                               x.__class__.__name__, x.args, exc_info=True)
+    return sorted(updated_resources, cmp=_cmp_resources)
