@@ -2,6 +2,7 @@ import sys
 import numpy as np
 import markstools
 import cPickle as pickle
+import cStringIO as StringIO
 
 class LBFGS(object):
     """Limited memory BFGS optimizer.
@@ -106,22 +107,16 @@ class LBFGS(object):
         self.f0 = f.copy()
         return new_positions
     
-    def dump(self, filename):
+    def dump(self):
         to_dump = (self.iteration, self.s, self.y, 
                self.rho, self.r0, self.f0)
-        try:
-            myfile = open(filename, 'wb')
-            pickle.dump(to_dump, myfile, protocol=2)
-        finally:
-            myfile.close()
+        f_like = StringIO.StringIO()
+        pickle.dump(to_dump, f_like, protocol=2)
+        return f_like
 
-    def load(self, filename):
+    def load(self, f_like):
         """Load saved arrays to reconstruct the Hessian"""
-        try:
-            myfile = open(filename, 'rb')
-            self.iteration, self.s, self.y, self.rho, self.r0, self.f0 = pickle.load(myfile)
-        finally:
-            myfile.close()
+        self.iteration, self.s, self.y, self.rho, self.r0, self.f0 = pickle.load(f_like)
 
     def determine_step(self, dr):
         """Determine step to take according to maxstep
