@@ -60,7 +60,7 @@ class GHessian(usertask.UserTask):
     
     def handle_wait_state(self):
         from gorg.gridjobscheduler import GridjobScheduler
-        job_scheduler = GridjobScheduler('mark','gorg_site','http://130.60.144.211:5984')
+        job_scheduler = GridjobScheduler('mark','gorg_site','http://localhost:5984')
         job_list = self.a_task.children
         new_status = self.STATES.PROCESS
         job_scheduler.run()
@@ -131,7 +131,31 @@ class GHessian(usertask.UserTask):
                 hessian[i, j] = (1.0/(2.0*self.H_TO_PERTURB))*((gradient[i, j+1]-gradient[i, 0])+(gradient[j, i+1]-gradient[j, 0]))
         return hessian
 
-def main(options):
+def main():
+    #Set up command line options
+    usage = "usage: %prog [options] arg"
+    parser = OptionParser(usage)
+    parser.add_option("-f", "--file", dest="file",default='water_UHF_gradient.inp', 
+                      help="gamess inp to restart from.")
+    parser.add_option("-v", "--verbose", action='count', dest="verbose", default=0, 
+                      help="add more v's to increase log output.")
+    parser.add_option("-n", "--db_name", dest="db_name", default='gorg_site', 
+                      help="add more v's to increase log output.")
+    parser.add_option("-l", "--db_url", dest="db_url", default='http://localhost:5984', 
+                      help="add more v's to increase log output.")
+    (options, args) = parser.parse_args()
+    
+    import logging
+    from markstools.lib.utils import configure_logger
+    logging.basicConfig(
+        level=logging.ERROR, 
+        format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+        datefmt='%Y-%m-%d %H:%M:%S')
+        
+    #configure_logger(options.verbose)
+    configure_logger(10)
+    import gorg.lib.utils
+    gorg.lib.utils.configure_logger(10)
     # Connect to the database
     db = Mydb('mark',options.db_name,options.db_url).cdb()
 
@@ -150,31 +174,7 @@ def main(options):
     print 'ghessian done. Create task %s'%(ghessian.a_task.id)
 
 if __name__ == '__main__':
-    #Set up command line options
-    usage = "usage: %prog [options] arg"
-    parser = OptionParser(usage)
-    parser.add_option("-f", "--file", dest="file",default='markstools/examples/water_UHF_gradient.inp', 
-                      help="gamess inp to restart from.")
-    parser.add_option("-v", "--verbose", action='count', dest="verbose", default=0, 
-                      help="add more v's to increase log output.")
-    parser.add_option("-n", "--db_name", dest="db_name", default='gorg_site', 
-                      help="add more v's to increase log output.")
-    parser.add_option("-l", "--db_url", dest="db_url", default='http://130.60.144.211:5984', 
-                      help="add more v's to increase log output.")
-    (options, args) = parser.parse_args()
     
-    import logging
-    from markstools.lib.utils import configure_logger
-    logging.basicConfig(
-        level=logging.ERROR, 
-        format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-        datefmt='%Y-%m-%d %H:%M:%S')
-        
-    #configure_logger(options.verbose)
-    configure_logger(10)
-    import gorg.lib.utils
-    gorg.lib.utils.configure_logger(10)
-    
-    main(options)
+    main()
 
     sys.exit(0)
