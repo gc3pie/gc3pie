@@ -123,6 +123,7 @@ def main():
     logging.config.fileConfig(gc3utils.Default.LOG_FILE_LOCATION, 
                               { 'RCDIR':gc3utils.Default.RCDIR,
                                 'HOMEDIR':gc3utils.Default.HOMEDIR })
+    gc3utils.log.setLevel(logging.ERROR)
     # due to a bug in Python 2.4.x (see 
     # https://bugzilla.redhat.com/show_bug.cgi?id=573782 )
     # we need to disable `logging` reporting of exceptions.
