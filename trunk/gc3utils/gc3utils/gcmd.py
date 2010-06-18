@@ -167,7 +167,8 @@ where command is one of these:
     try:
         cmd = getattr(gc3utils.gcommands, PROG)
     except AttributeError:
-        return ("Cannot find command '%s' in gc3utils; aborting now." % PROG)
+        sys.stderr.write("Cannot find command '%s' in gc3utils; aborting now.\n" % PROG)
+        return 1
     try:
         rc = cmd(*sys.argv[1:], **{'opts':parser})
         return rc
@@ -178,8 +179,16 @@ where command is one of these:
                          "Type '%s --help' to get usage help.\n" 
                          % (PROG, x, PROG))
         return 1
+    except AssertionError:
+        sys.stderr.write("%s: BUG: %s\n"
+                         "Please send an email to gc3utils-dev@gc3.uzh.ch copying this\n"
+                         "output and and attach file '~/.gc3utils.log'.  Many thanks for\n"
+                         "your cooperation.\n"
+                         % (PROG, x))
+        return 1
     except Exception, x:
         sys.stderr.write("%s: ERROR: %s\n" % (PROG, str(x)))
         gc3utils.log.debug("%s: %s" % (x.__class__.__name__, str(x)), 
-                           exc_info=sys.exc_info())
+                           exc_info=True)
+        sys.excepthook(*sys.exc_info())
         return 1

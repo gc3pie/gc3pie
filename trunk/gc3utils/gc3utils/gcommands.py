@@ -117,6 +117,7 @@ def gclean(*args, **kw):
     else:
         raise Exception('Job is not in terminal state')
 
+
 def ginfo(*args, **kw):
     """The 'ginfo' command."""
     parser = OptionParser(usage="Usage: %prog [options] JOBID")
@@ -132,6 +133,7 @@ def ginfo(*args, **kw):
         return 0
     except:
         raise
+
 
 def gsub(*args, **kw):
     """The `gsub` command."""
