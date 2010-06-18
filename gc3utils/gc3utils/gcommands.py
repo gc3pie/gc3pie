@@ -42,7 +42,7 @@ def _configure_logger(verbosity):
     """
     Configure the logger verbosity.
     """
-    logging_level = 10 * min(1, 6-verbosity)
+    logging_level = 10 * max(0, 5-verbosity)
     gc3utils.log.setLevel(logging_level)
 
 

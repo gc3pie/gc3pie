@@ -39,8 +39,10 @@ args=('%(HOMEDIR)s/.gc3utils.log','w0',1,5)
 formatter=logfile
 
 [handler_stderr]
-# only output warning and error messages to the console
-level=WARNING
+# console output level should not be set here, as it
+# will limit the effectiveness of option "-v" 
+# (see ticket #77)
+#level=WARNING
 class=StreamHandler
 args=(sys.stderr,)
 formatter=console
