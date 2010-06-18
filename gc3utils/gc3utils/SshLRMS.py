@@ -42,6 +42,9 @@ class SshLrms(LRMS):
                 # Convert from hours to minutes
                 self._resource.walltime = self._resource.walltime * 60
 
+    def is_valid(self):
+        return self.isValid
+
     def submit_job(self, application):
         """
         Submit a job.
@@ -49,31 +52,21 @@ class SshLrms(LRMS):
         On the backend, the command will look something like this:
         # ssh user@remote_frontend 'cd unique_token ; $gamess_location -n cores input_file'
         """
-        # getting information from input_file
-        #_file_name = os.path.basename(application.input_file_name)
-        #_file_name_dir = os.path.dirname(application.input_file_name)
-        #_input_name = _file_name.split(".inp")[0]
-        #gc3utils.log.debug('Input file %s, dirpath %s, from %s, input name %s', _file_name, _file_name_dir, application.input_file_name, _input_name)
-
         # Establish an ssh connection.
-        try:
-            (self.ssh, self.sftp) = self._connect_ssh(self._resource.frontend,self._resource.ssh_username)
-        except:
-            raise
+        (self.ssh, self.sftp) = self._connect_ssh(self._resource.frontend,self._resource.ssh_username)
 
         # Create the remote unique_token directory. 
         try:
             _command = 'mkdir -p $HOME/.gc3utils_jobs; mktemp -p $HOME/.gc3utils_jobs -d lrms_job.XXXXXXXXXX'
             exit_code, stdout, stderr = self._execute_command(_command)
-            #            stdin, stdout, stderr = ssh.exec_command(_command)
             if exit_code == 0:
                 ssh_remote_folder = re.split('\n',stdout)[0]
             else:
-                gc3utils.log.critical('Failed while executing remote command: %s. Exit status %d' % (_command,exit_code))
                 raise paramiko.SSHException('Failed while executing remote command')
         except:
+            gc3utils.log.critical("Failed creating remote temporary folder: command '%s' returned exit code %d)"
+                                  % (_command, exit_code))
             self.ssh.close()
-            gc3utils.log.critical('Failed creating remote temporary folder')
             raise
 
         # Copy the input file to remote directory.
@@ -86,31 +79,31 @@ class SshLrms(LRMS):
         try:
             self.sftp.put(_localpath, _remotepath)
         except:
+            gc3utils.log.critical("Copying input file '%s' to remote cluster '%s' failed",
+                                  _input_file_name, self._resource.frontend)
             self.ssh.close()
-            gc3utils.log.critical('copy_input put failed')
             raise
 
         # compute number of cores request
-        if application.has_key('requested_cores') and application.requested_cores > 0:
+        if application.has_key('requested_cores'):
             _requested_cores = int(application.requested_cores)
         else:
-            _requested_cores = int(self._resource.defaut_job_total_cores)
+            _requested_cores = int(self._resource.default_job_total_cores)
 
         # Build up the SGE submit command.
         _submit_command = 'cd %s; %s/qgms -n %s' % (ssh_remote_folder, self._resource.gamess_location, _requested_cores)
 
         # If walltime is provided, convert to seconds and add to the SGE submit command.
-        if application.has_key('requested_walltime') and application.requested_walltime > 0:
+        if application.has_key('requested_walltime'):
             _requested_walltime = int(application.requested_walltime)*3600
         else:
-            _requested_walltime = int(self._resource.defaut_job_total_walltime)*3600
-
+            _requested_walltime = int(self._resource.default_job_total_walltime)*3600
         _submit_command = _submit_command + ' -t %i ' % _requested_walltime
         
         # Add the input file name to the SGE submit command.
         _submit_command = _submit_command + ' %s' % _input_file_name
         
-        gc3utils.log.debug('submiting _submit_command: ' + _submit_command)
+        gc3utils.log.debug('Running submit command: ' + _submit_command)
 
         # Try to submit it to the local queueing system.
         try:
@@ -131,11 +124,11 @@ class SshLrms(LRMS):
 
             job_log = "\nstdout:\n" + stdout + "\nstderr:\n" + stderr
 
-            job = Job.Job(lrms_jobid=lrms_jobid,status=Job.JOB_STATE_SUBMITTED,resource_name=self._resource.name,log=job_log)
-
+            job = Job.Job(lrms_jobid=lrms_jobid,
+                          status=Job.JOB_STATE_SUBMITTED,
+                          resource_name=self._resource.name,
+                          log=job_log)
             job.remote_ssh_folder = ssh_remote_folder
-#            job.application = application
-
             return job
 
         except:
@@ -400,7 +393,7 @@ class SshLrms(LRMS):
 
             job_list = stdout.strip().split('\n')
             for job_str in job_list:
-                gc3utils.log.debug('parsing jbo string: %s' % job_str)
+                gc3utils.log.debug('parsing job string: %s' % job_str)
                 if 'job-ID' in job_str or '------' in job_str or job_str == '':
                     continue
                 job_info = job_str.split()
@@ -412,14 +405,25 @@ class SshLrms(LRMS):
                 elif job_info[4] in 'hw':
                     user_queued = user_queued + 1
 
-            self._resource.queued = _used
-            self._resource.free_slots = _avail
+            self._resource.queued = int(_used)
+            self._resource.free_slots = int(_avail)
             self._resource.user_queued = user_queued
             self._resource.user_run = user_running
             self._resource.used_quota = -1
 
             self.ssh.close()
 
+            gc3utils.log.info("Updated resource '%s' status:"
+                              " free slots: %d,"
+                              " own running jobs: %d,"
+                              " own queued jobs: %d,"
+                              " total queued jobs: %d",
+                              self._resource.name,
+                              self._resource.free_slots,
+                              self._resource.user_run,
+                              self._resource.user_queued,
+                              self._resource.queued,
+                              )
             return self._resource
         
         except:

@@ -72,70 +72,53 @@ class Gcli:
         gc3utils.log.debug('requested cores: %s',str(application_obj.requested_cores))
         gc3utils.log.debug('requested memory: %s GB',str(application_obj.requested_memory))
         gc3utils.log.debug('requested walltime: %s hours',str(application_obj.requested_walltime))
-        gc3utils.log.info('Parsing arguments\t\t[ ok ]')
-
 
         gc3utils.log.debug('Instantiating LRMSs')
-
         _lrms_list = []
-        
         for _resource in self._resources:
             try:
                 _lrms_list.append(self.__get_LRMS(_resource.name))
             except:
-                gc3utils.log.error('Failed creating LRMS %s',_resource.type)
-                gc3utils.log.debug('%s',sys.exc_info()[1])
+                # log exceptions but ignore them
+                gc3utils.log.warning("Failed creating LRMS for resource '%s' of type '%s'",
+                                     _resource.name, h_resource.type)
+                gc3utils.log.debug('gcli.py:gsub() got exception:', exc_info=True)
                 continue
             
         if ( len(_lrms_list) == 0 ):
-            gc3utils.log.critical('Could not initialize ANY lrms resource')
-            raise Exception('no available LRMS found')
+            raise NoResources("Could not initialize any computational resource - please check log and configuration file.")
 
         gc3utils.log.debug('Performing brokering')
         # decide which resource to use
         # (Resource)[] = (Scheduler).PerformBrokering((Resource)[],(Application))
-        try:
-            _selected_lrms_list = Scheduler.Scheduler.do_brokering(_lrms_list,application_obj)
-            if len(_selected_lrms_list) > 0:
-                gc3utils.log.debug('Scheduler returned %d matched resources',len(_selected_lrms_list))
-                gc3utils.log.info('do_brokering\t\t\t\t\t[ ok ]')
-            else:
-                raise BrokerException('Broker did not returned any valid LRMS')
-        except:
-            gc3utils.log.critical('Failed in scheduling')
-            raise
+        _selected_lrms_list = Scheduler.do_brokering(_lrms_list,application_obj)
+        gc3utils.log.debug('Scheduler returned %d matching resources',
+                           len(_selected_lrms_list))
+        if 0 == len(_selected_lrms_list):
+            raise NoResources("Could not select any compatible computational resource - please check log and configuration file.")
 
         # Scheduler.do_brokering should return a sorted list of valid lrms
         job = None
-        
         for lrms in _selected_lrms_list:
             try:
                 a = Authorization.Auth()
                 a.get(lrms._resource.type)
                 job = lrms.submit_job(application_obj)
-                # Proposal for change:
-                # create job at gcli level
-                # assign unique_token
-                # attache application into job
-                # submit job
-                # Example:
-                # job = Job()
-                # job.unique_token = utils.create_unique_token()
-                # job.application = application_obj
-                # lrms.submit(job)
-                # 
                 if job.is_valid():
-                    gc3utils.log.info('Submission process to LRMS backend\t\t\t[ ok ]')
+                    gc3utils.log.info('Successfully submitted process to LRMS backend')
                     # job submitted; leave loop
                     job.job_local_dir = application_obj.job_local_dir
                     break
             except AuthenticationException:
+                # ignore authentication errors: e.g., we may fail some SSH connections but succeed in others
+                gc3utils.log.debug("Authentication error in submitting to resource '%s'" 
+                                   % lrms._resource.name)
                 continue
             except LRMSException:
-                gc3utils.log.critical('Failed Submitting job: %s',sys.exc_info()[1])
+                gc3utils.log.critical("Error in submitting job to resource '%s'", 
+                                      lrms._resource.name, exc_info=True)
                 continue
-
-        if job is None:
+        if job is None or not job.is_valid():
             raise LRMSException('Failed submitting application to any LRMS')
 
         # return an object of type Job which contains also the unique_token

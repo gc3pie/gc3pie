@@ -61,7 +61,7 @@ class LRMS:
         """
         raise NotImplementedError("Abstract method `LRMS.tail()` called - this should have been defined in a derived class.")
     
-    def is_valid():
+    def is_valid(self):
         """
         Determine if a provided LRMS instance is valid.
         Returns True or False.

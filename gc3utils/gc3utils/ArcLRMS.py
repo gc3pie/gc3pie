@@ -17,9 +17,14 @@ import Job
 import Application
 import Default
 import Exceptions
-sys.path.append('/opt/nordugrid/lib/python2.4/site-packages')
+
 import warnings
 warnings.simplefilter("ignore")
+
+# NG's default packages install arclib into /opt/nordugrid/lib/pythonX.Y/site-packages;
+# add this anyway in case users did not set their PYTHONPATH correctly
+sys.path.append('/opt/nordugrid/lib/python%d.%d/site-packages' 
+                % sys.version_info[:2])
 import arclib
 
 # -----------------------------------------------------
@@ -46,89 +51,90 @@ class ArcLrms(LRMS):
                 # Convert from hours to minutes
                 self._resource.walltime = self._resource.walltime * 60
 
+    def is_valid(self):
+        return self.isValid
+
     def submit_job(self, application):
         return self._submit_job_arclib(application)
 
     def _submit_job_arclib(self, application):
+
+        # Initialize xrsl from template   
+        if application.application_tag == 'gamess':
+            XRSL_TEMPLATE = os.path.expandvars(Default.GAMESS_XRSL_TEMPLATE)
+            # Initialize xrsl from template
+            # GAMESS_XRSL_TEMPLATE = os.path.expandvars(Default.GAMESS_XRSL_TEMPLATE)
+
+            if not os.path.exists(XRSL_TEMPLATE):
+                raise XRSLNotFoundError('XRSL %s not found' % XRSL_TEMPLATE)
+
+            # GAMESS only needs 1 input file
+            input_file_path = application.inputs[0]
+            if not os.path.isabs(input_file_path):
+                input_file_path = os.path.join(os.getcwd(), input_file_path)
+            xrsl = from_template(XRSL_TEMPLATE, 
+                                 INPUT_FILE_NAME = os.path.splitext(os.path.basename(input_file_path))[0],
+                                 INPUT_FILE_DIR = os.path.dirname(input_file_path))
+
+        elif application.application_tag == 'rosetta':
+            xrsl = application.xrsl()
+        else:
+            raise UnsupportedApplicationError('Application %s not supported' % application.application_tag)
+
+        # append requirements to XRSL file
+        if application.has_key('requested_cores') and application.requested_cores > 0:
+            _requested_cores = int(application.requested_cores)
+        else:
+            _requested_cores = int(self._resource.default_job_total_cores)
+        xrsl += '(count="%s")' % _requested_cores
+
+        # Temporarly we disable the memory request as we cannot figure out how SGE (and also the other LRMSs) handle mem requirements for parallel jobs
+        #            if application.has_key('requested_memory') and application.requested_memory > 0:
+        #                _requested_memory = int(application.requested_memory)
+        #            else:
+        #                _requested_memory = (int(self._resource.memory_per_core)*1000) * _requested_cores
+        #            xrsl += '(memory="%s")' % _requested_memory
+
+        if application.has_key('requested_walltime') and application.requested_walltime > 0:
+            _requested_walltime = int(application.requested_walltime)
+        else:
+            _requested_walltime = int(self._resource.default_job_total_walltime) * 60
+        xrsl += '(cputime="%s")' % _requested_walltime
+
+        gc3utils.log.debug('prepared xrsl: %s' % xrsl)
+        # Aternative using arclib
         try:
-
-            # Initialize xrsl from template   
-            if application.application_tag == 'gamess':
-                XRSL_TEMPLATE = os.path.expandvars(Default.GAMESS_XRSL_TEMPLATE)
-                # Initialize xrsl from template
-                # GAMESS_XRSL_TEMPLATE = os.path.expandvars(Default.GAMESS_XRSL_TEMPLATE)
-            
-                if not os.path.exists(XRSL_TEMPLATE):
-                    raise XRSLNotFoundError('XRSL %s not found' % XRSL_TEMPLATE)
-
-                # GAMESS only needs 1 input file
-                input_file_path = application.inputs[0]
-                xrsl = from_template(XRSL_TEMPLATE, 
-                                     INPUT_FILE_NAME = os.path.splitext(os.path.basename(input_file_path))[0],
-                                     INPUT_FILE_DIR = os.path.dirname(input_file_path))
-
-            elif application.application_tag == 'rosetta':
-                xrsl = application.xrsl()
-            else:
-                raise UnsupportedApplicationError('Application %s not supported' % application.application_tag)
-
-            # append requirements to XRSL file
-            if application.has_key('requested_cores') and application.requested_cores > 0:
-                _requested_cores = int(application.requested_cores)
-            else:
-                _requested_cores = int(self._resource.defaut_job_total_cores)
-            xrsl += '(count="%s")' % _requested_cores
-
-# Temporarly we disable the memory request as we cannot figure out how SGE (and also the other LRMSs) handle mem requirements for parallel jobs
-#            if application.has_key('requested_memory') and application.requested_memory > 0:
-#                _requested_memory = int(application.requested_memory)
-#            else:
-#                _requested_memory = (int(self._resource.memory_per_core)*1000) * _requested_cores
-#            xrsl += '(memory="%s")' % _requested_memory
-
-            if application.has_key('requested_walltime') and application.requested_walltime > 0:
-                _requested_walltime = int(application.requested_walltime)
-            else:
-                _requested_walltime = int(self._resource.defaut_job_total_walltime) * 60
-            xrsl += '(cputime="%s")' % _requested_walltime
-
-            gc3utils.log.debug('prepared xrsl: %s' % xrsl)
-            # Aternative using arclib
-            try:
-                _xrsl = arclib.Xrsl(xrsl)
-            except:
-                raise LRMSSubmitError('Failed while building Xrsl: %s' % sys.exc_info()[1])
-
-            try:
-                if self._resource.has_key('arc_ldap'):
-                    cls = arclib.GetClusterResources(arclib.URL(self._resource.arc_ldap),True,'',2)
-                    queues = arclib.GetQueueInfo(cls,arclib.MDS_FILTER_CLUSTERINFO,True,"",2)
-                else:
-                    queues = arclib.GetQueueInfo(arclib.GetClusterResources())
-                    
-                if len(queues) == 0:
-                    raise LRMSSubmitError('No ARC queus found')
-                    
-            except:
-                raise
-
-            targets = arclib.PerformStandardBrokering(arclib.ConstructTargets(queues, _xrsl))
-            if len(targets) == 0:
-                raise LRMSSubmitError('No ARC targets found')
-
-            try:
-                lrms_jobid = arclib.SubmitJob(_xrsl,targets)
-            except arclib.JobSubmissionError:
-                raise LRMSSubmitError('%s' % sys.exc_info()[1])
-
-            job = Job.Job(lrms_jobid=lrms_jobid,status=Job.JOB_STATE_SUBMITTED,resource_name=self._resource.name)
-            return job
-
+            _xrsl = arclib.Xrsl(xrsl)
         except:
-            gc3utils.log.critical('Failure in submitting')
-            raise
+            raise LRMSSubmitError('Failed in getting `Xrsl` object from arclib:', exc_info=True)
+
+        if self._resource.has_key('arc_ldap'):
+            cls = arclib.GetClusterResources(arclib.URL(self._resource.arc_ldap),True,'',2)
+            queues = arclib.GetQueueInfo(cls,arclib.MDS_FILTER_CLUSTERINFO,True,"",2)
+        else:
+            queues = arclib.GetQueueInfo(arclib.GetClusterResources())
+        if len(queues) == 0:
+            raise LRMSSubmitError('No ARC queues found')
+
+        targets = arclib.PerformStandardBrokering(arclib.ConstructTargets(queues, _xrsl))
+        if len(targets) == 0:
+            raise LRMSSubmitError('No ARC targets found')
+
+        try:
+            lrms_jobid = arclib.SubmitJob(_xrsl,targets)
+        except arclib.JobSubmissionError:
+            raise LRMSSubmitError('Got error from arclib.SubmitJob():', exc_info=True)
+
+        job = Job.Job(lrms_jobid=lrms_jobid,
+                      status=Job.JOB_STATE_SUBMITTED,
+                      resource_name=self._resource.name)
+        return job
+
                                 
     def _submit_job_exec(self, application):
+        """
+        Submit job by calling the 'ngsub' command.
+        """
         try:
             # Initialize xrsl from template
             GAMESS_XRSL_TEMPLATE = os.path.expandvars(Default.GAMESS_XRSL_TEMPLATE)
@@ -317,7 +323,7 @@ class ArcLrms(LRMS):
 
             queues = arclib.GetQueueInfo(cls,arclib.MDS_FILTER_CLUSTERINFO,True,"",2)
             if len(queues) == 0:
-                raise LRMSSubmitError('No ARC queus found')
+                raise LRMSSubmitError('No ARC queues found')
 
             total_queued = 0
             free_slots = 0
@@ -329,7 +335,7 @@ class ArcLrms(LRMS):
                 queues =  arclib.GetQueueInfo(cluster,arclib.MDS_FILTER_CLUSTERINFO,True,"",2)
 
                 if len(queues) == 0:
-                    raise LRMSSubmitError('No ARC queus found')              
+                    raise LRMSSubmitError('No ARC queues found')              
                 
                 for q in queues:
                     q.grid_queued = self._normalize_value(q.grid_queued)
@@ -367,6 +373,17 @@ class ArcLrms(LRMS):
             self._resource.user_run = user_running
             self._resource.used_quota = -1
 
+            gc3utils.log.info("Updated resource '%s' status:"
+                              " free slots: %d,"
+                              " own running jobs: %d,"
+                              " own queued jobs: %d,"
+                              " total queued jobs: %d",
+                              self._resource.name,
+                              self._resource.free_slots,
+                              self._resource.user_run,
+                              self._resource.user_queued,
+                              self._resource.queued,
+                              )
             return self._resource
 
         except:
