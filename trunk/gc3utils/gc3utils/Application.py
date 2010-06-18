@@ -12,11 +12,16 @@ import types
 class Application(InformationContainer):
 
     def is_valid(self):
-        if self.has_key('inputs'):
-            for input in self.inputs:
-                if not os.path.exists(input):
-                    raise InputFileError("Input file '%s' does not exist" % input)
+        # Sergio: changing specs:
+        # Gorg can create Application objects with inputs with non-valid references
+        if not self.has_key('inputs'):
+            raise InputFileError("Missing application inputs")
         return True
+        #if self.has_key('inputs'):
+        #    for input in self.inputs:
+        #        if not os.path.exists(input):
+        #            raise InputFileError("Input file '%s' does not exist" % input)
+        #return True
 
     def xrsl(self, resource):
         """
