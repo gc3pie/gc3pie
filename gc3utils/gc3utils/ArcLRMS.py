@@ -310,6 +310,7 @@ class ArcLrms(LRMS):
 
         try:
             if self._resource.has_key('arc_ldap'):
+                gc3utils.log.debug('using information index: %s' % self._resource.arc_ldap)
                 cls = arclib.GetClusterResources(arclib.URL(self._resource.arc_ldap),True,'',2)
             else:
                 cls = arclib.GetClusterResources()
