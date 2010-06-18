@@ -17,8 +17,8 @@ def main():
         
     configure_logger(10)
 
-    db=Mydb('mark','gorg_site','http://130.60.144.211:5984').createdatabase()
-    db=Mydb('mark','gorg_site','http://130.60.144.211:5984').cdb()
+    db=Mydb('mark','gorg_site','http://localhost:5984').createdatabase()
+    db=Mydb('mark','gorg_site','http://localhost:5984').cdb()
     BaseroleModel.sync_views(db)
     GridjobModel.sync_views(db)
     GridrunModel.sync_views(db)

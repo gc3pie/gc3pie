@@ -320,7 +320,10 @@ class GridrunModel(Document):
 
     def status():        
         def fget(self):
-            return state.State(**self.raw_status)
+	    new_dict = {}
+            for a_key in self.raw_status:
+	        new_dict[str(a_key)] = self.raw_status[a_key]
+            return state.State(**new_dict)
         def fset(self, state):
             self.raw_status = state
         return locals()
