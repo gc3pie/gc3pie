@@ -41,7 +41,7 @@ class GHessian(usertask.UserTask):
         self.a_task = None
         self.calculator = None
 
-    def initialize(self, db, calculator, atoms, params, application_to_run='gamess', selected_resource='gc3',  cores=8, memory=2, walltime=None):
+    def initialize(self, db, calculator, atoms, params, application_to_run='gamess', selected_resource='gc3',  cores=8, memory=2, walltime=1):
         self.calculator = calculator
         self.a_task = TaskInterface(db).create(self.__class__.__name__)
         self.a_task.user_data_dict['total_jobs'] = 0

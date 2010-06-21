@@ -35,11 +35,18 @@ class GOptimize_lbfgs(usertask.UserTask):
         
         self.a_task = None
         self.calculator = None
+        self.optimizer = None
 
-    def initialize(self, db, calculator, atoms, params, application_to_run='gamess', selected_resource='gc3',  cores=8, memory=2, walltime=3):
+    def initialize(self, db, calculator, optimizer, atoms, params, application_to_run='gamess', selected_resource='gc3',  cores=8, memory=2, walltime=3):
         self.calculator = calculator
         self.a_task = TaskInterface(db).create(self.__class__.__name__)
-        self.a_task.user_data_dict['total_jobs'] = 0
+        self.optimizer = optimizer
+        self.optimizer.initialize()
+        try:
+            myfile = self.optimizer.dump()
+            self.a_task.put_attachment(myfile, 'optimizer')
+        finally:
+            myfile.close()
         params.title = 'job_number_%d'%self.a_task.user_data_dict['total_jobs']
         a_job = self.calculator.generate(atoms, params, self.a_task, application_to_run, selected_resource, cores, memory, walltime)
         self.calculator.calculate(self.a_task)
@@ -47,7 +54,7 @@ class GOptimize_lbfgs(usertask.UserTask):
     
     def handle_wait_state(self):
         from gorg.gridjobscheduler import GridjobScheduler
-        job_scheduler = GridjobScheduler('mark','gorg_site','http://130.60.144.211:5984')
+        job_scheduler = GridjobScheduler('mark','gorg_site','http://localhost:5984')
         job_list = [self.a_task.children[-1]]
         new_status = self.STATES.STEP
         job_scheduler.run()
@@ -69,17 +76,18 @@ class GOptimize_lbfgs(usertask.UserTask):
         params = reader.params
         params.title ='a_title'
         atoms = reader.atoms
-        opt = lbfgs.LBFGS(atoms)
-        opt.initialize()
-        myfile = self.a_task.get_attachment('lbfsg_matrix')
-        if myfile is not None:
-            opt.load(myfile)
+        try:
+            myfile = self.a_task.get_attachment('optimizer')
+            self.optimizer.load(myfile)
+        finally:
             myfile.close()
         #restart if we need to
-        new_positions = opt.step(a_result.atoms.get_positions(), a_result.get_forces())
-        myfile = opt.dump()
-        self.a_task.put_attachment(myfile, 'lbfsg_matrix')
-        myfile.close()
+        new_positions = self.optimizer.step(a_result.atoms.get_positions(), a_result.get_forces())
+        try:
+            myfile = self.optimizer.dump()
+            self.a_task.put_attachment(myfile, 'optimizer')
+        finally:
+            myfile.close()
         atoms.set_positions(new_positions)
         new_job = self.calculator.generate(atoms, params, self.a_task, 
                                                                 a_job.run.application.application_tag, a_job.run.application.requested_resource,  
@@ -91,38 +99,8 @@ class GOptimize_lbfgs(usertask.UserTask):
     def handle_terminal_state(self):
         pass
 
-def main(options):
-    # Connect to the database
-    db = Mydb('mark',options.db_name,options.db_url).cdb()
 
-    myfile = open(options.file, 'rb')
-    reader = ReadGamessInp(myfile)
-    myfile.close()
-    params = reader.params
-    atoms = reader.atoms
-    
-    goptimize = GOptimize_lbfgs()
-    gamess_calc = GamessGridCalc(db)
-    goptimize.initialize(db, gamess_calc, atoms, params)
-    
-    goptimize.run()
-
-    print 'goptimize done. Create task %s'%(goptimize.a_task.id)
-
-if __name__ == '__main__':
-    #Set up command line options
-    usage = "usage: %prog [options] arg"
-    parser = OptionParser(usage)
-    parser.add_option("-f", "--file", dest="file",default='markstools/examples/water_UHF_gradient.inp', 
-                      help="gamess inp to restart from.")
-    parser.add_option("-v", "--verbose", action='count', dest="verbose", default=0, 
-                      help="add more v's to increase log output.")
-    parser.add_option("-n", "--db_name", dest="db_name", default='gorg_site', 
-                      help="add more v's to increase log output.")
-    parser.add_option("-l", "--db_url", dest="db_url", default='http://130.60.144.211:5984', 
-                      help="add more v's to increase log output.")
-    (options, args) = parser.parse_args()
-    
+def logging(options):    
     import logging
     from markstools.lib.utils import configure_logger
     logging.basicConfig(
@@ -134,9 +112,58 @@ if __name__ == '__main__':
     configure_logger(10)
     import gorg.lib.utils
     gorg.lib.utils.configure_logger(10)
-    
-    main(options)
 
+def parse_options():
+    #Set up command line options
+    usage = "usage: %prog [options] arg"
+    parser = OptionParser(usage)
+    parser.add_option("-f", "--file", dest="file",default='markstools/examples/water_UHF_gradient.inp', 
+                      help="gamess inp to restart from.")
+    parser.add_option("-o", "--optimizer", dest="optimizer",default='lbfgs', 
+                      help="select the optimizer to use.")
+    parser.add_option("-v", "--verbose", action='count', dest="verbose", default=0, 
+                      help="add more v's to increase log output.")
+    parser.add_option("-n", "--db_name", dest="db_name", default='gorg_site', 
+                      help="add more v's to increase log output.")
+    parser.add_option("-l", "--db_url", dest="db_url", default='http://localhost:5984', 
+                      help="add more v's to increase log output.")
+    (options, args) = parser.parse_args()
+    return options
+
+
+def select_optimizer(options):
+    from markstools.optimize import lbfgs
+    from markstools.optimize import fire
+    mapping = dict(lbfgs=lbfgs.LBFGS, fire=fire.FIRE)
+    optimizer = mapping.get(options.optimizer, None)()
+    if optimizer is None:
+        raise 'Incorrect OPT', 'Your optimizer selection is not valid'
+    return optimizer
+    
+    
+def main():
+    options = parse_options()
+    logging(options)
+    optimizer = select_optimizer(options)
+    # Connect to the database
+    db = Mydb('mark',options.db_name,options.db_url).cdb()
+
+    myfile = open(options.file, 'rb')
+    reader = ReadGamessInp(myfile)
+    myfile.close()
+    params = reader.params
+    atoms = reader.atoms
+    
+    goptimize = GOptimize_lbfgs()
+    gamess_calc = GamessGridCalc(db)
+    goptimize.initialize(db, gamess_calc, optimizer, atoms, params)
+    
+    goptimize.run()
+
+    print 'goptimize done. Create task %s'%(goptimize.a_task.id)
+
+if __name__ == '__main__':
+    main()
     sys.exit(0)
 
 

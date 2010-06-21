@@ -1,10 +1,9 @@
 import sys
 import numpy as np
 import markstools
-import cPickle as pickle
-import cStringIO as StringIO
+from markstools import optimize
 
-class LBFGS(object):
+class LBFGS(Optimize):
     """Limited memory BFGS optimizer.
     
     A limited memory version of the bfgs algorithm. Unlike the bfgs algorithm
@@ -12,7 +11,7 @@ class LBFGS(object):
     Hessian is represented only as a diagonal matrix to save memory
 
     """
-    def __init__(self, atoms, maxstep=None, memory=100, damping = 1.0, alpha = 70.0):
+    def __init__(self, maxstep=None, memory=100, damping = 1.0, alpha = 70.0):
         """
         Parameters:
 
@@ -66,7 +65,7 @@ class LBFGS(object):
 
         self.r0 = None
         self.f0 = None
-
+    
     def step(self, positions,  f):
         """Take a single step
         
@@ -106,17 +105,6 @@ class LBFGS(object):
         self.r0 = r.copy() 
         self.f0 = f.copy()
         return new_positions
-    
-    def dump(self):
-        to_dump = (self.iteration, self.s, self.y, 
-               self.rho, self.r0, self.f0)
-        f_like = StringIO.StringIO()
-        pickle.dump(to_dump, f_like, protocol=2)
-        return f_like
-
-    def load(self, f_like):
-        """Load saved arrays to reconstruct the Hessian"""
-        self.iteration, self.s, self.y, self.rho, self.r0, self.f0 = pickle.load(f_like)
 
     def determine_step(self, dr):
         """Determine step to take according to maxstep
@@ -152,77 +140,77 @@ class LBFGS(object):
             self.y.pop(0)
             self.rho.pop(0)
 
-class LineSearchLBFGS(LBFGS):
-    """Modified version of LBFGS.
-
-    This optimizer uses the LBFGS algorithm, but does a line search for the
-    minimum along the search direction. This is done by issuing an additional
-    force call for each step, thus doubling the number of calculations.
-
-    Additionally the Hessian is reset if the new guess is not sufficiently
-    better than the old one.
-    """
-    def __init__(self, *args, **kwargs):
-        self.dR = kwargs.pop('dR', 0.1)         
-        LBFGS.__init__(self, *args, **kwargs)
-
-    def update(self, r, f, r0, f0):
-        """Update everything that is kept in memory
-
-        This function is mostly here to allow for replay_trajectory.
-        """
-        if self.iteration > 0:
-            a1 = abs(np.dot(f.reshape(-1), f0.reshape(-1)))
-            a2 = np.dot(f0.reshape(-1), f0.reshape(-1))
-            if not (a1 <= 0.5 * a2 and a2 != 0):
-                # Reset optimization
-                self.initialize()
-
-        # Note that the reset above will set self.iteration to 0 again
-        # which is why we should check again
-        if self.iteration > 0:
-            s0 = r.reshape(-1) - r0.reshape(-1)
-            self.s.append(s0)
-
-            # We use the gradient which is minus the force!
-            y0 = f0.reshape(-1) - f.reshape(-1)
-            self.y.append(y0)
-            
-            rho0 = 1.0 / np.dot(y0, s0)
-            self.rho.append(rho0)
-
-        if self.iteration > self.memory:
-            self.s.pop(0)
-            self.y.pop(0)
-            self.rho.pop(0)
-
-    def determine_step(self, dr):
-        f = self.atoms.get_forces()
-        
-        # Unit-vector along the search direction
-        du = dr / np.sqrt(np.dot(dr.reshape(-1), dr.reshape(-1)))
-
-        # We keep the old step determination before we figure 
-        # out what is the best to do.
-        maxstep = self.maxstep * np.sqrt(3 * len(self.atoms))
-
-        # Finite difference step using temporary point
-        self.atoms.positions += (du * self.dR)
-        # Decide how much to move along the line du
-        Fp1 = np.dot(f.reshape(-1), du.reshape(-1))
-        Fp2 = np.dot(self.atoms.get_forces().reshape(-1), du.reshape(-1))
-        CR = (Fp1 - Fp2) / self.dR
-        #RdR = Fp1*0.1
-        if CR < 0.0:
-            #print "negcurve"
-            RdR = maxstep
-            #if(abs(RdR) > maxstep):
-            #    RdR = self.sign(RdR) * maxstep
-        else:
-            Fp = (Fp1 + Fp2) * 0.5
-            RdR = Fp / CR 
-            if abs(RdR) > maxstep:
-                RdR = np.sign(RdR) * maxstep
-            else:
-                RdR += self.dR * 0.5
-        return du * RdR
+#class LineSearchLBFGS(LBFGS):
+#    """Modified version of LBFGS.
+#
+#    This optimizer uses the LBFGS algorithm, but does a line search for the
+#    minimum along the search direction. This is done by issuing an additional
+#    force call for each step, thus doubling the number of calculations.
+#
+#    Additionally the Hessian is reset if the new guess is not sufficiently
+#    better than the old one.
+#    """
+#    def __init__(self, *args, **kwargs):
+#        self.dR = kwargs.pop('dR', 0.1)         
+#        LBFGS.__init__(self, *args, **kwargs)
+#
+#    def update(self, r, f, r0, f0):
+#        """Update everything that is kept in memory
+#
+#        This function is mostly here to allow for replay_trajectory.
+#        """
+#        if self.iteration > 0:
+#            a1 = abs(np.dot(f.reshape(-1), f0.reshape(-1)))
+#            a2 = np.dot(f0.reshape(-1), f0.reshape(-1))
+#            if not (a1 <= 0.5 * a2 and a2 != 0):
+#                # Reset optimization
+#                self.initialize()
+#
+#        # Note that the reset above will set self.iteration to 0 again
+#        # which is why we should check again
+#        if self.iteration > 0:
+#            s0 = r.reshape(-1) - r0.reshape(-1)
+#            self.s.append(s0)
+#
+#            # We use the gradient which is minus the force!
+#            y0 = f0.reshape(-1) - f.reshape(-1)
+#            self.y.append(y0)
+#            
+#            rho0 = 1.0 / np.dot(y0, s0)
+#            self.rho.append(rho0)
+#
+#        if self.iteration > self.memory:
+#            self.s.pop(0)
+#            self.y.pop(0)
+#            self.rho.pop(0)
+#
+#    def determine_step(self, dr):
+#        f = self.atoms.get_forces()
+#        
+#        # Unit-vector along the search direction
+#        du = dr / np.sqrt(np.dot(dr.reshape(-1), dr.reshape(-1)))
+#
+#        # We keep the old step determination before we figure 
+#        # out what is the best to do.
+#        maxstep = self.maxstep * np.sqrt(3 * len(self.atoms))
+#
+#        # Finite difference step using temporary point
+#        self.atoms.positions += (du * self.dR)
+#        # Decide how much to move along the line du
+#        Fp1 = np.dot(f.reshape(-1), du.reshape(-1))
+#        Fp2 = np.dot(self.atoms.get_forces().reshape(-1), du.reshape(-1))
+#        CR = (Fp1 - Fp2) / self.dR
+#        #RdR = Fp1*0.1
+#        if CR < 0.0:
+#            #print "negcurve"
+#            RdR = maxstep
+#            #if(abs(RdR) > maxstep):
+#            #    RdR = self.sign(RdR) * maxstep
+#        else:
+#            Fp = (Fp1 + Fp2) * 0.5
+#            RdR = Fp / CR 
+#            if abs(RdR) > maxstep:
+#                RdR = np.sign(RdR) * maxstep
+#            else:
+#                RdR += self.dR * 0.5
+#        return du * RdR
