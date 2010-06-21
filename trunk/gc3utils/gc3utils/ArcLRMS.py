@@ -206,9 +206,10 @@ class ArcLrms(LRMS):
 
             else:
                 gc3utils.log.critical('XRSL file not found %s', GAMESS_XRSL_TEMPLATE)
-                raise Exception('template file for submission scritp not found')
+                raise Exception('template file for submission script not found')
         except:
-            gc3utils.log.critical('Failure in submitting')
+            gc3utils.log.critical("Failure submitting job to resource '%s'"
+                                  % self._resource.name)
             raise
         
     def check_status(self, job_obj):
