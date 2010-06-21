@@ -110,6 +110,7 @@ class ArcLrms(LRMS):
 
         if self._resource.has_key('arc_ldap'):
             cls = arclib.GetClusterResources(arclib.URL(self._resource.arc_ldap),True,'',2)
+	    gc3utils.log.debug('cluster list of lenght %d' % len(cls))
             queues = arclib.GetQueueInfo(cls,arclib.MDS_FILTER_CLUSTERINFO,True,"",2)
         else:
             queues = arclib.GetQueueInfo(arclib.GetClusterResources())
@@ -336,7 +337,9 @@ class ArcLrms(LRMS):
                 queues =  arclib.GetQueueInfo(cluster,arclib.MDS_FILTER_CLUSTERINFO,True,"",2)
 
                 if len(queues) == 0:
-                    raise LRMSSubmitError('No ARC queues found')              
+		    gc3utils.log.error('No ARC queues found for resource %s' % str(cluster))
+		    continue
+                    # raise LRMSSubmitError('No ARC queues found')              
                 
                 for q in queues:
                     q.grid_queued = self._normalize_value(q.grid_queued)

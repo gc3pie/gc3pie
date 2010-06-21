@@ -26,6 +26,9 @@ class SshLrms(LRMS):
     isValid = 0
     _resource = None
 
+    ssh = None
+    sftp = None 
+
     def __init__(self, resource):
 
         gc3utils.log = logging.getLogger('gc3utils')
@@ -66,7 +69,9 @@ class SshLrms(LRMS):
         except:
             gc3utils.log.critical("Failed creating remote temporary folder: command '%s' returned exit code %d)"
                                   % (_command, exit_code))
-            self.ssh.close()
+
+            if not self.ssh  is None:
+            	self.ssh.close()
             raise
 
         # Copy the input file to remote directory.
@@ -81,7 +86,8 @@ class SshLrms(LRMS):
         except:
             gc3utils.log.critical("Copying input file '%s' to remote cluster '%s' failed",
                                   _input_file_name, self._resource.frontend)
-            self.ssh.close()
+            if not self.ssh  is None:
+	        self.ssh.close()
             raise
 
         # compute number of cores request
@@ -129,7 +135,8 @@ class SshLrms(LRMS):
             return job
 
         except:
-            self.ssh.close()
+	    if not self.ssh  is None:
+            	self.ssh.close()
             gc3utils.log.critical("Failure submitting job to resource '%s' - see log file for errors"
                                   % self._resource.name)
             raise
@@ -237,7 +244,8 @@ class SshLrms(LRMS):
             return job
         
         except:
-            self.ssh.close()
+	    if not self.ssh  is None:
+            	self.ssh.close()
             gc3utils.log.critical('Failure in checking status')
             raise
 
@@ -259,7 +267,8 @@ class SshLrms(LRMS):
             return job_obj
 
         except:
-            self.ssh.close()
+	    if not self.ssh  is None:
+            	self.ssh.close()
             gc3utils.log.critical('Failure in checking status')
             raise
         
@@ -299,7 +308,8 @@ class SshLrms(LRMS):
                 files_list = self.sftp.listdir(job.remote_ssh_folder)
             except:
                 gc3utils.log.error('Could not read remote dir %s' % job.remote_ssh_folder)
-                self.ssh.close()
+		if not self.ssh  is None:
+                   self.ssh.close()
                 #raise
                 job.status = Job.JOB_STATE_FAILED
                 return job
@@ -345,7 +355,8 @@ class SshLrms(LRMS):
             return job
 
         except: 
-            self.ssh.close()
+            if not self.ssh  is None:
+		self.ssh.close()
             gc3utils.log.critical('Failure in retrieving results')
             gc3utils.log.debug('%s %s',sys.exc_info()[0], sys.exc_info()[1])
             raise 
@@ -425,7 +436,8 @@ class SshLrms(LRMS):
             return self._resource
         
         except:
-            self.ssh.close()
+            if not self.ssh  is None:
+		self.ssh.close()
             gc3utils.log.critical('Failure in checking status')
             raise
 
@@ -484,7 +496,8 @@ class SshLrms(LRMS):
             return ssh, sftp
 
         except paramiko.SSHException:
-            ssh.close()
+	    if not ssh  is None:
+               ssh.close()
             gc3utils.log.critical('Could not create ssh connection to ', host, '.')
             raise
 
