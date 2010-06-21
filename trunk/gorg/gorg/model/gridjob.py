@@ -377,7 +377,7 @@ class GridrunModel(Document):
     def view_status(doc):    
         if 'base_type' in doc:
             if doc['base_type'] == 'GridrunModel':                
-                yield str(doc['raw_status']), doc
+                yield doc['raw_status'], doc
 
     @ViewField.define('GridrunModel')
     def view_hash(doc):    

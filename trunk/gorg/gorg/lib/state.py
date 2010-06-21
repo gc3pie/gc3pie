@@ -28,10 +28,6 @@ class State(dotdict):
     def __str__(self):
         return self.description
     
-    @property
-    def view_key(self):
-        return super(State, self).__str__()
-    
     @staticmethod
     def enum(obj):
         return obj['index']
