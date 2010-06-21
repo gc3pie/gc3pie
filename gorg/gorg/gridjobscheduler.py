@@ -133,7 +133,7 @@ class GridjobScheduler(object):
         from gorg.model.gridjob import RunInterface
         for a_state in STATES.all:
             if not a_state.terminal:
-                view_runs = self.view_status_runs[a_state.view_key]
+                view_runs = self.view_status_runs[a_state]
                 for raw_run in view_runs:
                     a_run = RunInterface(self.db).load(raw_run.id)
                     a_run = self.step(a_run)
