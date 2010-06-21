@@ -12,7 +12,7 @@ ez_setup.use_setuptools()
 from setuptools import setup, find_packages
 setup( 
     name = "gc3utils",
-    version = "0.6.14", # format: 0.MONTH.DAY (for now ...)
+    version = "0.6.21", # format: 0.MONTH.DAY (for now ...)
 
     packages = find_packages(exclude=['ez_setup']),
     #scripts = ['gcmd.py'],
@@ -28,7 +28,7 @@ setup(
     entry_points = {
         'console_scripts': [
             # the generic, catch-all script:
-            'gcmd = gc3utils.gcmd:main',
+            'gc3utils = gc3utils.gcmd:main',
             # symlinks to specific subcommands:
             'gsub = gc3utils.gcmd:main',
             'gstat = gc3utils.gcmd:main',

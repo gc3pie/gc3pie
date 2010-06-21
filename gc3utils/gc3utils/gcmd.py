@@ -137,7 +137,7 @@ def main():
                       action="count", dest="verbosity", default=0, 
                       help="Set verbosity level")
 
-    if PROG == 'gcmd':
+    if PROG == 'gc3utils':
         # the real command name is the first non-option argument;
         # e.g., "gcli kill ..." is silently translated to "gkill ..."
         for arg in sys.argv[1:]:
@@ -147,13 +147,13 @@ def main():
                 else:
                     PROG = 'g' + arg
                 break
-        if PROG == 'gcmd':
+        if PROG == 'gc3utils':
             # no command name found, print usage text and exit
-            sys.stderr.write("""Usage: gcmd COMMAND [options]
+            sys.stderr.write("""Usage: gc3utils COMMAND [options]
 
-Command `gcmd` is a unified front-end to computing resources.
+Command `gc3utils` is a unified front-end to computing resources.
 You can get more help on a specific sub-command by typing::
-  gcmd COMMAND --help
+  gc3utils COMMAND --help
 where command is one of these:
 """)
             # XXX: crude hack to get list of commands
@@ -190,5 +190,4 @@ where command is one of these:
         sys.stderr.write("%s: ERROR: %s\n" % (PROG, str(x)))
         gc3utils.log.debug("%s: %s" % (x.__class__.__name__, str(x)), 
                            exc_info=True)
-        sys.excepthook(*sys.exc_info())
         return 1
