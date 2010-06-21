@@ -3,6 +3,7 @@ from InformationContainer import *
 import os
 import os.path
 import types
+import gc3utils
 
 
 # -----------------------------------------------------
@@ -10,6 +11,18 @@ import types
 #
 
 class Application(InformationContainer):
+
+    def __init__(self, initializer=None, **kw):
+        InformationContainer.__init__(self, initializer, **kw)
+        if self.requested_cores == 0:
+            self.requested_cores = 2
+            gc3utils.log.info("Using application-specific default cores=2")
+        if self.requested_memory == 0:
+            self.requested_memory = 1
+            gc3utils.log.info("Using application-specific default memory-per-core 1GB")
+        if self.requested_walltime == 0:
+            self.requested_walltime = 1
+            gc3utils.log.info("Using application-specific default walltime 1 hour")
 
     def is_valid(self):
         # Sergio: changing specs:
