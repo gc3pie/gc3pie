@@ -38,7 +38,7 @@ class GInfo(object):
         sys.stdout.write('---------------\n')
         job_list = self.a_task.children
         sys.stdout.write('Total number of jobs    %d\n'%(len(job_list)))
-        sys.stdout.write('Overall Task status %s\n'%(self.a_task.status_overall))
+        sys.stdout.write('Overall Task status %s\n'%(self.a_task.status_counts))
         for a_job in job_list:
             job_done = False
             sys.stdout.write('---------------\n')
@@ -52,7 +52,11 @@ class GInfo(object):
             job_done = a_job.wait(timeout=0)
             if job_done:
                 a_result = self.calculator.parse(a_job)
-                sys.stdout.write('Exit status %s\n'%(a_result.exit_successful()))       
+                if a_result.exit_successful():
+                    sys.stdout.write('Job exited successfully with energy %s\n'%(a_result.get_potential_energy()))
+                else:
+                    sys.stdout.write('Job did not exit successfully\n')
+
     
     def get_files(self):
         job_list = self.a_task.children
@@ -78,7 +82,7 @@ def main():
     ginfo = GInfo()
     gamess_calc = GamessGridCalc(db)
     ginfo.load(db, options.task_id)
-    ginfo.get_files()
+    ginfo.get_info()
     print 'ginfo is done'
 
 def logging(options):    
@@ -90,9 +94,9 @@ def logging(options):
         datefmt='%Y-%m-%d %H:%M:%S')
         
     #configure_logger(options.verbose)
-    configure_logger(10)
+    configure_logger(options.verbose)
     import gorg.lib.utils
-    gorg.lib.utils.configure_logger(10)
+    gorg.lib.utils.configure_logger(options.verbose)
 
 def parse_options():
     #Set up command line options
