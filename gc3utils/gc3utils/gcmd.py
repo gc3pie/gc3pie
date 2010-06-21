@@ -175,9 +175,8 @@ where command is one of these:
     except SystemExit, x:
         return x.code
     except InvalidUsage, x:
-        sys.stderr.write("%s: FATAL ERROR: %s\n"
-                         "Type '%s --help' to get usage help.\n" 
-                         % (PROG, x, PROG))
+        # Fatal errors do their own printing, we only add a short usage message
+        sys.stderr.write("Type '%s --help' to get usage help.\n")
         return 1
     except AssertionError:
         sys.stderr.write("%s: BUG: %s\n"
