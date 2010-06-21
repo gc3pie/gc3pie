@@ -131,7 +131,22 @@ class GHessian(usertask.UserTask):
                 hessian[i, j] = (1.0/(2.0*self.H_TO_PERTURB))*((gradient[i, j+1]-gradient[i, 0])+(gradient[j, i+1]-gradient[j, 0]))
         return hessian
 
-def main():
+
+
+def logging(options):    
+    import logging
+    from markstools.lib.utils import configure_logger
+    logging.basicConfig(
+        level=logging.ERROR, 
+        format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+        datefmt='%Y-%m-%d %H:%M:%S')
+        
+    #configure_logger(options.verbose)
+    configure_logger(10)
+    import gorg.lib.utils
+    gorg.lib.utils.configure_logger(10)
+
+def parse_options():
     #Set up command line options
     usage = "usage: %prog [options] arg"
     parser = OptionParser(usage)
@@ -144,18 +159,13 @@ def main():
     parser.add_option("-l", "--db_url", dest="db_url", default='http://localhost:5984', 
                       help="add more v's to increase log output.")
     (options, args) = parser.parse_args()
+    return options
     
-    import logging
-    from markstools.lib.utils import configure_logger
-    logging.basicConfig(
-        level=logging.ERROR, 
-        format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-        datefmt='%Y-%m-%d %H:%M:%S')
-        
-    #configure_logger(options.verbose)
-    configure_logger(10)
-    import gorg.lib.utils
-    gorg.lib.utils.configure_logger(10)
+    
+def main():
+    options = parse_options()
+    logging(options)
+    
     # Connect to the database
     db = Mydb('mark',options.db_name,options.db_url).cdb()
 
@@ -174,7 +184,5 @@ def main():
     print 'ghessian done. Create task %s'%(ghessian.a_task.id)
 
 if __name__ == '__main__':
-    
     main()
-
     sys.exit(0)
