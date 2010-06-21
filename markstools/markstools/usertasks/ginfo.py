@@ -12,28 +12,13 @@ import shutil
 from markstools.io.gamess import ReadGamessInp, WriteGamessInp
 from markstools.calculators.gamess.calculator import GamessGridCalc
 from markstools.lib import utils
-from markstools.lib.status import State,  Status
 
 from gorg.model.gridtask import TaskInterface
 from gorg.lib.utils import Mydb
 
-
-STATE_INFO = State('INFO', 'INFO desc')
-STATE_GET_FILES = State('GET_FILES', 'GET_FILES desc')
-STATE_ERROR = State('ERROR', 'ERROR desc', terminal = True)
-STATE_COMPLETED = State('COMPLETED', 'CCOMPLETED desc', terminal = True)
-
-STATES = Status([STATE_INFO, STATE_GET_FILES, STATE_ERROR, STATE_COMPLETED])
-
 class GInfo(object):
  
-    def __init__(self, init_status = STATES.INFO):
-        self.status = init_status
-        self.status_mapping = {STATES.INFO: self.handle_info_state, 
-                                              STATES.GET_FILES: self.handle_get_files_state, 
-                                              STATES.ERROR: self.handle_terminal_state, 
-                                              STATES.COMPLETED: self.handle_terminal_state}
-        
+    def __init__(self):
         self.a_task = None
         self.calculator = None
 
@@ -44,11 +29,11 @@ class GInfo(object):
         self.a_task = TaskInterface(db).load(task_id)
         str_calc = self.a_task.user_data_dict['calculator']
         self.calculator = eval(str_calc + '(db)')
-    
+
     def save(self):
         pass
-       
-    def handle_info_state(self):
+
+    def get_info(self):
         sys.stdout.write('Info on Task %s\n'%(self.a_task.id))
         sys.stdout.write('---------------\n')
         job_list = self.a_task.children
@@ -68,9 +53,8 @@ class GInfo(object):
             if job_done:
                 a_result = self.calculator.parse(a_job)
                 sys.stdout.write('Exit status %s\n'%(a_result.exit_successful()))       
-        self.status = STATES.COMPLETED
     
-    def handle_get_files_state(self):
+    def get_files(self):
         job_list = self.a_task.children
         root_dir = 'tmp'
         task_dir = '/%s/%s'%(root_dir, self.a_task.id)
@@ -83,42 +67,34 @@ class GInfo(object):
             for a_file in f_list.values():
                 a_file.close()
                 shutil.copy2(a_file.name, job_dir)
-                sys.stdout.write('Files in directory %s\n'%(job_dir))
-        self.status = STATES.COMPLETED
-        
-    def handle_terminal_state(self):
-        print 'I do nothing!!'
+        sys.stdout.write('Files in directory %s\n'%(task_dir))
 
-    def handle_missing_state(self):
-        print 'Do something when the state is not in our map.'
-   
-    def step(self):
-        try:
-            self.status_mapping.get(self.status, self.handle_missing_state)()
-        except:
-            self.status = STATES.ERROR
-            markstools.log.critical('Errored while processing task %s \n%s'%(self.a_task.id, utils.format_exception_info()))
-        self.save()
-    
-    def run(self):
-        while not self.status.terminal:
-            self.step()
-            if self.status.pause:
-                break
-
-def main(options):
+def main():
+    options = parse_options()
+    logging(options)
     # Connect to the database
     db = Mydb('mark',options.db_name,options.db_url).cdb()
 
-    ginfo = GInfo(STATES.GET_FILES)
+    ginfo = GInfo()
     gamess_calc = GamessGridCalc(db)
     ginfo.load(db, options.task_id)
-    ginfo.run()
-
+    ginfo.get_files()
     print 'ginfo is done'
 
+def logging(options):    
+    import logging
+    from markstools.lib.utils import configure_logger
+    logging.basicConfig(
+        level=logging.ERROR, 
+        format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+        datefmt='%Y-%m-%d %H:%M:%S')
+        
+    #configure_logger(options.verbose)
+    configure_logger(10)
+    import gorg.lib.utils
+    gorg.lib.utils.configure_logger(10)
 
-if __name__ == '__main__':
+def parse_options():
     #Set up command line options
     usage = "usage: %prog [options] arg"
     parser = OptionParser(usage)
@@ -128,25 +104,17 @@ if __name__ == '__main__':
                       help="add more v's to increase log output.")
     parser.add_option("-n", "--db_name", dest="db_name", default='gorg_site', 
                       help="add more v's to increase log output.")
-    parser.add_option("-l", "--db_url", dest="db_url", default='http://130.60.144.211:5984', 
+    parser.add_option("-l", "--db_url", dest="db_url", default='http://localhost:5984', 
                       help="add more v's to increase log output.")
     (options, args) = parser.parse_args()
-    
     if options.task_id is None:
         print "A mandatory option is missing\n"
         parser.print_help()
         sys.exit(0)
+    return options
 
-    import logging
-    from markstools.lib.utils import configure_logger
-    logging.basicConfig(
-        level=logging.ERROR, 
-        format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-        datefmt='%Y-%m-%d %H:%M:%S')
-    
-    configure_logger(10)
-    #configure_logger(options.verbose)
-    
-    main(options)
+if __name__ == '__main__':
 
+    
+    main()
     sys.exit(0)

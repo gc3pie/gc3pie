@@ -10,6 +10,7 @@ from markstools.calculators.gamess.calculator import GamessGridCalc
 from markstools.lib import utils
 from markstools.lib import usertask
 
+from gorg.lib import state
 from gorg.model.gridtask import TaskInterface
 from gorg.lib.utils import Mydb
 from gorg.gridjobscheduler import STATES as JOB_SCHEDULER_STATES
@@ -45,7 +46,7 @@ class GRestart(usertask.UserTask):
 
     def handle_wait_state(self):
         from gorg.gridjobscheduler import GridjobScheduler
-        job_scheduler = GridjobScheduler('mark','gorg_site','http://130.60.144.211:5984')
+        job_scheduler = GridjobScheduler('mark','gorg_site','http://localhost:5984')
         job_list = self.a_task.children
         new_status = self.STATES.PROCESS
         job_scheduler.run()
@@ -101,8 +102,38 @@ class GRestart(usertask.UserTask):
         print 'I do nothing!!'
     
 
+def logging(options):    
+    import logging
+    from markstools.lib.utils import configure_logger
+    logging.basicConfig(
+        level=logging.ERROR, 
+        format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+        datefmt='%Y-%m-%d %H:%M:%S')
+        
+    #configure_logger(options.verbose)
+    configure_logger(10)
+    import gorg.lib.utils
+    gorg.lib.utils.configure_logger(10)
 
-def main(options):
+def parse_options():
+    #Set up command line options
+    usage = "usage: %prog [options] arg"
+    parser = OptionParser(usage)
+    parser.add_option("-f", "--file", dest="file",default='markstools/examples/exam01.inp', 
+                      help="gamess inp to restart from.")
+    parser.add_option("-v", "--verbose", action='count', dest="verbose", default=0, 
+                      help="add more v's to increase log output.")
+    parser.add_option("-n", "--db_name", dest="db_name", default='gorg_site', 
+                      help="add more v's to increase log output.")
+    parser.add_option("-l", "--db_url", dest="db_url", default='http://localhost:5984', 
+                      help="add more v's to increase log output.")
+    (options, args) = parser.parse_args()
+    return options
+
+def main():
+    options = parse_options()
+    logging(options)
+    
     # Connect to the database
     db=Mydb('mark',options.db_name,options.db_url).cdb()
     
@@ -125,31 +156,5 @@ def main(options):
     
 
 if __name__ == '__main__':
-    #Set up command line options
-    usage = "usage: %prog [options] arg"
-    parser = OptionParser(usage)
-    parser.add_option("-f", "--file", dest="file",default='markstools/examples/exam01.inp', 
-                      help="gamess inp to restart from.")
-    parser.add_option("-v", "--verbose", action='count', dest="verbose", default=0, 
-                      help="add more v's to increase log output.")
-    parser.add_option("-n", "--db_name", dest="db_name", default='gorg_site', 
-                      help="add more v's to increase log output.")
-    parser.add_option("-l", "--db_url", dest="db_url", default='http://130.60.144.211:5984', 
-                      help="add more v's to increase log output.")
-    (options, args) = parser.parse_args()
-    
-    import logging
-    from markstools.lib.utils import configure_logger
-    logging.basicConfig(
-        level=logging.ERROR, 
-        format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-        datefmt='%Y-%m-%d %H:%M:%S')
-        
-    #configure_logger(options.verbose)
-    configure_logger(10)
-    import gorg.lib.utils
-    gorg.lib.utils.configure_logger(10)
-    
-    main(options)
-
+    main()
     sys.exit(0)
