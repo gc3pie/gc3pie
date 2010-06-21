@@ -221,11 +221,9 @@ def gsub(*args, **kw):
     job = _gcli.gsub(application)
 
     if job.is_valid():
-        # print job statuts
-        _print_job_status([job],0)
-        # create persistance of filesystem
+        print("Successfully submitted %s; use the 'gstat' command to monitor its progress." 
+              % job.unique_token)
         gc3utils.utils.persist_job(job)
-                
         return 0
     else:
         raise Exception('Job object not valid')
@@ -338,8 +336,7 @@ def gget(*args, **kw):
             if job_obj.status == gc3utils.Job.JOB_STATE_COMPLETED or job_obj.status == gc3utils.Job.JOB_STATE_FAILED:
                 gc3utils.utils.persist_job(job_obj)
                 if job_obj.has_key('download_dir'):
-                    sys.stdout.write('Job results successfully retrieved in [ '+job_obj.download_dir+' ]\n')
-                    sys.stdout.flush
+                    print("Job results successfully retrieved in '%s'\n" % job_obj.download_dir)
                 else:
                     raise Exception('Job marked as completed but no results fetched')
         else:
