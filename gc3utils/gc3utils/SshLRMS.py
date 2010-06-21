@@ -107,18 +107,15 @@ class SshLrms(LRMS):
 
         # Try to submit it to the local queueing system.
         try:
-
             exit_code, stdout, stderr = self._execute_command(_submit_command)
             self.ssh.close()
             if exit_code != 0:
-                gc3utils.log.critical('Failed executong remote command: %s. exit status %d' % (_submit_command,exit_code))
+                gc3utils.log.critical("Failed executing remote command '%s'; exit status %d"
+                                      % (_submit_command,exit_code))
                 gc3utils.log.debug('remote command returned stdout: %s' % stdout)
                 gc3utils.log.debug('remote command returned stderr: %s' % stderr)
                 raise paramiko.SSHException('Failed executing remote command')
 
-            #gc3utils.log.debug("_submit_command stdout:" + stdout)
-            #gc3utils.log.debug("_submit_command stderr:" + stderr)
-            
             lrms_jobid = self._get_qsub_jobid(stdout)
             gc3utils.log.debug('Job submitted with jobid: %s',lrms_jobid)
 
@@ -133,7 +130,8 @@ class SshLrms(LRMS):
 
         except:
             self.ssh.close()
-            gc3utils.log.critical('Failure in submitting')
+            gc3utils.log.critical("Failure submitting job to resource '%s' - see log file for errors"
+                                  % self._resource.name)
             raise
 
 
