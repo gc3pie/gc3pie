@@ -34,7 +34,7 @@ class GRestart(usertask.UserTask):
         self.a_task = None
         self.calculator = None
     
-    def initialize(self, db, calculator, atoms, params, application_to_run='gamess', selected_resource='ocikbpra',  cores=2, memory=1, walltime=-1):
+    def initialize(self, db, calculator, atoms, params, application_to_run='gamess', selected_resource='ocikbpra',  cores=2, memory=1, walltime=1):
         self.a_task = TaskInterface(db).create(self.__class__.__name__)
         self.calculator = calculator
         self.a_task.user_data_dict['restart_number'] = 0
@@ -43,6 +43,8 @@ class GRestart(usertask.UserTask):
         a_job = self.calculator.generate(atoms, params, self.a_task, application_to_run, selected_resource, cores, memory, walltime)
         self.calculator.calculate(a_job)
         self.status = self.STATES.WAIT
+        self.save()
+
 
     def handle_wait_state(self):
         from gorg.gridjobscheduler import GridjobScheduler
