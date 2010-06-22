@@ -83,7 +83,13 @@ def main():
     ginfo = GInfo()
     gamess_calc = GamessGridCalc(db)
     ginfo.load(db, options.task_id)
-    ginfo.get_files()
+    if options.to_do == 'get_info':
+        ginfo.get_info()
+    elif options.to_do == 'get_files':
+        ginfo.get_files()
+    else:
+        sys.stdout.write('I do not understand the command %s'%(options.to_do))
+    sys.stdout.flush()
     print 'ginfo is done'
 
 def logging(options):    
@@ -111,6 +117,8 @@ def parse_options():
                       help="add more v's to increase log output.")
     parser.add_option("-l", "--db_url", dest="db_url", default='http://localhost:5984', 
                       help="add more v's to increase log output.")
+    parser.add_option("-d", "--to_do", dest="to_do", default='get_info', 
+                      help="command to run, can be: get_info, get_files")
     (options, args) = parser.parse_args()
     if options.task_id is None:
         print "A mandatory option is missing\n"
