@@ -29,13 +29,15 @@ class GHessian(usertask.UserTask):
     GRADIENT_CONVERSION=1.8897161646320724
     
     STATES = state.StateContainer([STATE_WAIT, STATE_PROCESS, STATE_POSTPROCESS, 
-                            usertask.STATE_ERROR, usertask.STATE_COMPLETED])
+                            usertask.STATE_ERROR, usertask.STATE_COMPLETED, usertask.STATE_KILL, usertask.STATE_KILLED])
 
     def __init__(self):
         self.status = self.STATES.ERROR
         self.status_mapping = {self.STATES.WAIT: self.handle_wait_state, 
                                              self.STATES.PROCESS: self.handle_process_state, 
                                              self.STATES.POSTPROCESS: self.handle_postprocess_state, 
+                                             self.STATES.KILL: self.handle_kill_state, 
+                                             self.STATES.KILLED: self.handle_terminal_state, 
                                              self.STATES.ERROR: self.handle_terminal_state, 
                                              self.STATES.COMPLETED: self.handle_terminal_state}
         self.a_task = None
@@ -45,7 +47,6 @@ class GHessian(usertask.UserTask):
         self.calculator = calculator
         self.a_task = TaskInterface(db).create(self.__class__.__name__)
         self.a_task.user_data_dict['total_jobs'] = 0
-        self.a_task.store()
         perturbed_postions = self.repackage(atoms.get_positions())
         params.title = 'job_number_%d'%self.a_task.user_data_dict['total_jobs']
         first_job = self.calculator.generate(atoms, params, self.a_task, application_to_run, selected_resource, cores, memory, walltime)
@@ -57,6 +58,7 @@ class GHessian(usertask.UserTask):
         self.calculator.calculate(self.a_task)
         markstools.log.info('Submitted task %s for execution.'%(self.a_task.id))
         self.status = self.STATES.WAIT
+        self.save()
     
     def handle_wait_state(self):
         from gorg.gridjobscheduler import GridjobScheduler
@@ -150,7 +152,7 @@ def parse_options():
     #Set up command line options
     usage = "usage: %prog [options] arg"
     parser = OptionParser(usage)
-    parser.add_option("-f", "--file", dest="file",default='water_UHF_gradient.inp', 
+    parser.add_option("-f", "--file", dest="file",default='markstools/examples/water_UHF_gradient.inp', 
                       help="gamess inp to restart from.")
     parser.add_option("-v", "--verbose", action='count', dest="verbose", default=0, 
                       help="add more v's to increase log output.")
