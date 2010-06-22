@@ -32,7 +32,7 @@ setup(
 	    # todo: fix
             'gcontrol = markstools.usertasks.gcontrol:main',
             'ghessian = markstools.usertasks.ghessian:main',
-            'ginfo = markstools.usertasks.ginfo:main',
+            'gorginfo = markstools.usertasks.ginfo:main',
             'goptimize_lbfgs = markstools.usertasks.goptimize:main',
             'grestart = markstools.usertasks.grestart:main',
             'gsingle = markstools.usertasks.gsingle:main',
