@@ -12,7 +12,7 @@ ez_setup.use_setuptools()
 from setuptools import setup, find_packages
 setup( 
     name = "markstools",
-    version = "0.6.18", # format: 0.MONTH.DAY (for now ...)
+    version = "0.6.22", # format: 0.MONTH.DAY (for now ...)
 
     packages = find_packages(exclude=['ez_setup']),
     #scripts = ['gcmd.py'],
