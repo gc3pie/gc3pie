@@ -62,15 +62,16 @@ class GInfo(object):
         job_list = self.a_task.children
         root_dir = 'tmp'
         task_dir = '/%s/%s'%(root_dir, self.a_task.id)
-        os.mkdir(task_dir)
+        if not os.path.isdir(task_dir):
+            os.mkdir(task_dir)
         for a_job in job_list:
-            f_list = a_job.attachments
-            job_dir = '%s/%s'%(task_dir, a_job.id)
-            os.mkdir(job_dir)
-            sys.stdout.write('Job %s\n'%(a_job.id))
-            for a_file in f_list.values():
-                a_file.close()
-                shutil.copy2(a_file.name, job_dir)
+            try:
+                f_list = a_job.attachments
+                sys.stdout.write('Job %s\n'%(a_job.id))
+                for a_file in f_list.values():
+                    shutil.copy2(a_file.name, '%s/%s_%s'%(task_dir, a_job.id, os.path.basename(a_file.name)))
+            finally:
+                map(file.close, f_list.values())
         sys.stdout.write('Files in directory %s\n'%(task_dir))
 
 def main():
@@ -82,7 +83,7 @@ def main():
     ginfo = GInfo()
     gamess_calc = GamessGridCalc(db)
     ginfo.load(db, options.task_id)
-    ginfo.get_info()
+    ginfo.get_files()
     print 'ginfo is done'
 
 def logging(options):    

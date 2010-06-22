@@ -128,8 +128,8 @@ class GamessGridCalc(CalculatorBase):
     def _save_parsed_result(self, a_job, a_result):
         queryable = a_result._get_queryable()
         a_job.result_data_dict.update(queryable)
-        a_job.parsed = a_result
         a_job.store()
+        a_job.parsed = a_result
 
 class GamessLocalCalc(CalculatorBase):
     EXT_INPUT_FILE = 'inp'

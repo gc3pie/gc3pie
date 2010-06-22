@@ -25,38 +25,23 @@ for usertask_name, usertask_module in module_names.items():
 
 class GControl(object):
  
-    def __init__(self):
-        self.a_task = None
-        self.calculator = None
-
-    def initialize(self):
-        pass
-        
-    def load(self, db,  task_id):
+    def __init__(self, db,  task_id):
         self.a_task = TaskInterface(db).load(task_id)
-        str_calc = self.a_task.user_data_dict['calculator']
-        self.calculator = eval(str_calc + '(db)')
-    
-    def save(self):
-        pass
-       
+        self.cls_task = usertask_classes[self.a_task.title]
+
     def kill_task(self):
-        if not self.a_task.terminal:
-            job_list = self.a_task.children
-            for a_job in job_list:
-                counter = 0
-                sleep_amount = 5
-                max_sleep_amount = 30
-                while a_job.status.locked and counter < max_sleep_amount:
-                    time.sleep(sleep_amount)
-                    counter += sleep_amount
-                    markstools.log.info('Waiting for Job %s to go into killable state.'%(a_job.id))
-                    markstools.log.debug('In state %s'%(a_job.status))
-                if a_job.status.locked:
-                    raise DocumentError('Job %s can not be killed, it is in locked state %s'%(a_job.id, a_job.status))
-                a_job.status = JOB_SCHEDULER_STATES.KILL
-                a_job.store()
-            self.a_task.terminal = usertask_modules[self.a_task.title].KILL
+        if not self.a_task.status.terminal:
+            counter = 0
+            sleep_amount = 5
+            max_sleep_amount = 30
+            while self.a_task.status.locked and counter < max_sleep_amount:
+                time.sleep(sleep_amount)
+                counter += sleep_amount
+                markstools.log.info('Waiting for Task %s to go into killable state.'%(self.a_task.id))
+                markstools.log.debug('In state %s'%(self.a_task.status))
+            if self.a_task.status.locked:
+                raise DocumentError('Task %s can not be killed, it is in locked state %s'%(self.a_task.id, self.a_task.status))
+            self.a_task.status = self.cls_task.STATES.KILL
             self.a_task.store()
     
     def retry_task(self):
@@ -71,19 +56,21 @@ class GControl(object):
             self.a_task.terminal = usertask_modules[self.a_task.title].READY
             self.a_task.store()
 
-def main(options):
-    # Connect to the database
-    db = Mydb('mark',options.db_name,options.db_url).cdb()
 
-    gcontrol = GControl()
-    gamess_calc = GamessGridCalc(db)
-    gcontrol.load(db, options.task_id)
-    gcontrol.run()
+def logging(options):    
+    import logging
+    from markstools.lib.utils import configure_logger
+    logging.basicConfig(
+        level=logging.ERROR, 
+        format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+        datefmt='%Y-%m-%d %H:%M:%S')
+        
+    #configure_logger(options.verbose)
+    configure_logger(options.verbose)
+    import gorg.lib.utils
+    gorg.lib.utils.configure_logger(options.verbose)
 
-    print 'ginfo is done'
-
-
-if __name__ == '__main__':
+def parse_options():
     #Set up command line options
     usage = "usage: %prog [options] arg"
     parser = OptionParser(usage)
@@ -93,25 +80,29 @@ if __name__ == '__main__':
                       help="add more v's to increase log output.")
     parser.add_option("-n", "--db_name", dest="db_name", default='gorg_site', 
                       help="add more v's to increase log output.")
-    parser.add_option("-l", "--db_url", dest="db_url", default='http://130.60.144.211:5984', 
+    parser.add_option("-l", "--db_url", dest="db_url", default='http://localhost:5984', 
                       help="add more v's to increase log output.")
     (options, args) = parser.parse_args()
-    
     if options.task_id is None:
         print "A mandatory option is missing\n"
         parser.print_help()
         sys.exit(0)
+    return options
 
-    import logging
-    from markstools.lib.utils import configure_logger
-    logging.basicConfig(
-        level=logging.ERROR, 
-        format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-        datefmt='%Y-%m-%d %H:%M:%S')
-    
-    configure_logger(10)
-    #configure_logger(options.verbose)
-    
-    main(options)
 
+def main():
+    options = parse_options()
+    logging(options)
+    
+    # Connect to the database
+    db = Mydb('mark',options.db_name,options.db_url).cdb()
+
+    gcontrol = GControl(db, options.task_id)
+    gcontrol.kill_task()
+
+    print 'gcommand is done'
+
+
+if __name__ == '__main__':   
+    main()
     sys.exit(0)
