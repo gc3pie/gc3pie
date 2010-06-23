@@ -2,12 +2,14 @@
 
 import sys
 import os
+import getpass
 import ConfigParser
 from optparse import OptionParser
 
 import markstools
 from markstools.lib.exceptions import *
 from markstools.lib.utils import configure_logger, read_config
+from markstools.lib.flock import flock
 
 from gorg.lib.utils import Mydb
 
@@ -74,8 +76,17 @@ def gtaskscheduler(*args, **kw):
 
     configure_logger(options.verbosity, _default_log_file_location) 
 
-    task_scheduler = TaskScheduler(config.database_user,config.database_name,config.database_url)
-    task_scheduler.run()
+    # Check to see if a gtaskscheduler is already running for my user.
+    # If not, allow this one to run.
+    lockfile = _rcdir + '/gtaskscheduler.lock'
+    print lockfile
+    lock = flock(lockfile, True).acquire()
+    if lock:
+        task_scheduler = TaskScheduler(config.database_user,config.database_name,config.database_url)
+        task_scheduler.run()
+    else:
+        markstools.log.debug('An instance of gtaskscheduler is already running.  Not starting another one.')
+	pass
 
 def gtestcron(*args, **kw):
     import time
