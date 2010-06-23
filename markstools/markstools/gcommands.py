@@ -16,6 +16,7 @@ from gorg.lib.utils import Mydb
 _homedir = os.path.expandvars('$HOME')
 _rcdir = _homedir + "/.markstools"
 _default_config_file_location = _rcdir + "/markstools.conf"
+_default_log_file_location = _rcdir + "/gc3utils.log"
 _default_job_folder_location = os.getcwd()
 
 
@@ -40,7 +41,7 @@ def ghessian(*args, **kw):
                       help="add more v's to increase log output.")
     (options, args) = parser.parse_args()
 
-    configure_logger(options.verbosity) 
+    configure_logger(options.verbosity, _default_log_file_location) 
 
     # Connect to the database
     db = Mydb(config.database_user,config.database_name,config.database_url).cdb()
@@ -57,7 +58,7 @@ def ghessian(*args, **kw):
     ghessian = GHessian()
     gamess_calc = GamessGridCalc(db)
     ghessian.initialize(db, gamess_calc, atoms, params)
-    ghessian.run()
+    #ghessian.run()
 
 def gtaskscheduler(*args, **kw):
     from markstools.usertasks.taskscheduler import TaskScheduler
@@ -71,7 +72,7 @@ def gtaskscheduler(*args, **kw):
                       help="add more v's to increase log output.")
     (options, args) = parser.parse_args()
 
-    configure_logger(options.verbosity) 
+    configure_logger(options.verbosity, _default_log_file_location) 
 
     task_scheduler = TaskScheduler(config.database_user,config.database_name,config.database_url)
     task_scheduler.run()
@@ -88,7 +89,7 @@ def gtestcron(*args, **kw):
                       help="add more v's to increase log output.")
     (options, args) = parser.parse_args()
 
-    configure_logger(options.verbosity) 
+    configure_logger(options.verbosity, _default_log_file_location) 
     markstools.log.debug('The gtestcron function was ran at %s.'%(time.asctime()))
 
 def gorgsetup(*args, **kw):
@@ -105,6 +106,58 @@ def gorgsetup(*args, **kw):
     GridjobModel.sync_views(db)
     GridrunModel.sync_views(db)
     GridtaskModel.sync_views(db)
+
+def gridscheduler(*args, **kw):
+    from gorg.gridscheduler import GridScheduler
+    
+    config = _configure_system()
+    #Set up command line options
+    usage = "usage: %prog [options] arg"
+    parser = OptionParser(usage)
+    parser.add_option("-v", "--verbose", action='count',dest="verbosity", default=config.verbosity, 
+                      help="add more v's to increase log output.")
+    (options, args) = parser.parse_args()
+
+    configure_logger(options.verbosity, _default_log_file_location) 
+    
+    grid_scheduler = GridScheduler(config.database_user,config.database_name,config.database_url)
+    grid_scheduler.run()
+
+def gcontrol(*args, **kw):
+    from markstools.usertasks.gcontrol import GControl
+    
+    config = _configure_system()
+    #Set up command line options
+    usage = "usage: %prog [options] arg"
+    parser = OptionParser(usage)
+    parser.add_option("-p", "--program_command", dest="program_command",  default='retry', 
+                      help="command to run against task.")
+    parser.add_option("-t", "--task_id", dest="task_id",  
+                      help="task to be acted upon.")
+    parser.add_option("-v", "--verbose", action='count',dest="verbosity", default=config.verbosity, 
+                      help="add more v's to increase log output.")
+    
+    (options, args) = parser.parse_args()
+    
+    if options.task_id is None:
+        print "A mandatory option is missing\n"
+        parser.print_help()
+        sys.exit(0)
+    
+    configure_logger(options.verbosity, _default_log_file_location) 
+    
+    gcontrol = GControl(config.database_user,config.database_name,config.database_url, options.task_id)
+    
+    if options.program_command == 'retry':
+        gcontrol.retry_task()
+    elif options.program_command == 'kill':
+        gcontrol.kill_task()
+    elif options.program_command == 'info':
+        gcontrol.get_task_info()
+    elif options.program_command == 'files':
+        gcontrol.get_task_files()
+    else:
+        sys.stdout.write('Unknown program command %s'%s(options.program_command))
 
 if __name__ == '__main__':
     #This is needed because eric4 sends the following to the sys.argv variable

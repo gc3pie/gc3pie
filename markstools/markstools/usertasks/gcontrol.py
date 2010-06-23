@@ -14,95 +14,74 @@ from gorg.model.gridtask import TaskInterface
 from gorg.lib.utils import Mydb
 import gorg.lib.exceptions
 from gorg.gridjobscheduler import STATES as JOB_SCHEDULER_STATES
+from markstools.calculators.gamess.calculator import GamessGridCalc
 
 # The key is the name of the class where the usetask is programmed, and the value is the module location
-module_names = {'GHessian':'markstools.usertasks.ghessian', 'GSingle':'markstools.usertasks.gsingle'}
+module_names = {'GHessian':'markstools.usertasks.ghessian', 
+                              'GSingle':'markstools.usertasks.gsingle', 
+                              'GRestart':'markstools.usertasks.grestart'}
+
 usertask_classes = dict()
 for usertask_name, usertask_module in module_names.items():
     __import__(usertask_module)
     usertask_classes[usertask_name] = eval('sys.modules[usertask_module].%s'%(usertask_name))
 
-
 class GControl(object):
  
-    def __init__(self, db,  task_id):
+    def __init__(self, db_username, db_name, db_url,  task_id):
+        db=Mydb(db_username, db_name,db_url).cdb()
         self.a_task = TaskInterface(db).load(task_id)
         self.cls_task = usertask_classes[self.a_task.title]
+        str_calc = self.a_task.user_data_dict['calculator']
+        self.calculator = eval(str_calc + '(db)')
 
     def kill_task(self):
         if not self.a_task.status.terminal:
-            counter = 0
-            sleep_amount = 5
-            max_sleep_amount = 30
-            while self.a_task.status.locked and counter < max_sleep_amount:
-                time.sleep(sleep_amount)
-                counter += sleep_amount
-                markstools.log.info('Waiting for Task %s to go into killable state.'%(self.a_task.id))
-                markstools.log.debug('In state %s'%(self.a_task.status))
-            if self.a_task.status.locked:
-                raise DocumentError('Task %s can not be killed, it is in locked state %s'%(self.a_task.id, self.a_task.status))
             self.a_task.status = self.cls_task.STATES.KILL
             self.a_task.store()
     
     def retry_task(self):
-        if self.a_task.terminal:
-            job_list = self.a_task.children
-            for a_job in job_list:
-                if a_job.status == JOB_SCHEDULER_STATES.ERROR:
-                    markstools.log.info('Retrying Job %s.'%(a_job.id))
-                    markstools.log.debug('Was in state %s now in state %s'%(a_job.status,  JOB_SCHEDULER_STATES.READY))
-                    a_job.status = JOB_SCHEDULER_STATES.READY
-                    a_job.store()
-            self.a_task.terminal = usertask_modules[self.a_task.title].READY
+        if self.a_task.status.terminal:
+            self.a_task.status = self.cls_task.STATES.RETRY
             self.a_task.store()
-
-
-def logging(options):    
-    import logging
-    from markstools.lib.utils import configure_logger
-    logging.basicConfig(
-        level=logging.ERROR, 
-        format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-        datefmt='%Y-%m-%d %H:%M:%S')
-        
-    #configure_logger(options.verbose)
-    configure_logger(options.verbose)
-    import gorg.lib.utils
-    gorg.lib.utils.configure_logger(options.verbose)
-
-def parse_options():
-    #Set up command line options
-    usage = "usage: %prog [options] arg"
-    parser = OptionParser(usage)
-    parser.add_option("-t", "--task_id", dest="task_id",  
-                      help="Task ID to be queued.")
-    parser.add_option("-v", "--verbose", action='count', dest="verbose", default=0, 
-                      help="add more v's to increase log output.")
-    parser.add_option("-n", "--db_name", dest="db_name", default='gorg_site', 
-                      help="add more v's to increase log output.")
-    parser.add_option("-l", "--db_url", dest="db_url", default='http://localhost:5984', 
-                      help="add more v's to increase log output.")
-    (options, args) = parser.parse_args()
-    if options.task_id is None:
-        print "A mandatory option is missing\n"
-        parser.print_help()
-        sys.exit(0)
-    return options
-
-
-def main():
-    options = parse_options()
-    logging(options)
     
-    # Connect to the database
-    db = Mydb('mark',options.db_name,options.db_url).cdb()
+    def get_task_info(self):
+        sys.stdout.write('Info on Task %s\n'%(self.a_task.id))
+        sys.stdout.write('---------------\n')
+        job_list = self.a_task.children
+        sys.stdout.write('Total number of jobs    %d\n'%(len(job_list)))
+        sys.stdout.write('Overall Task status %s\n'%(self.a_task.status_counts))
+        for a_job in job_list:
+            job_done = False
+            sys.stdout.write('---------------\n')
+            sys.stdout.write('Job %s status %s\n'%(a_job.id, a_job.status))
+            sys.stdout.write('Run %s\n'%(a_job.run_id))
+            sys.stdout.write('gc3utils application obj\n')
+            sys.stdout.write('%s\n'%(a_job.run.application))
+            sys.stdout.write('gc3utils job obj\n')
+            sys.stdout.write('%s\n'%(a_job.run.job))
+            
+            job_done = a_job.wait(timeout=0)
+            if job_done:
+                a_result = self.calculator.parse(a_job)
+                if a_result.exit_successful():
+                    sys.stdout.write('Job exited successfully with energy %s\n'%(a_result.get_potential_energy()))
+                else:
+                    sys.stdout.write('Job did not exit successfully\n')
 
-    gcontrol = GControl(db, options.task_id)
-    gcontrol.kill_task()
-
-    print 'gcommand is done'
-
-
-if __name__ == '__main__':   
-    main()
-    sys.exit(0)
+    
+    def get_task_files(self):
+        job_list = self.a_task.children
+        root_dir = 'tmp'
+        task_dir = '/%s/%s'%(root_dir, self.a_task.id)
+        if not os.path.isdir(task_dir):
+            os.mkdir(task_dir)
+        for a_job in job_list:
+            try:
+                f_list = a_job.attachments
+                sys.stdout.write('Job %s\n'%(a_job.id))
+                for a_file in f_list.values():
+                    shutil.copy2(a_file.name, '%s/%s_%s'%(task_dir, a_job.id, os.path.basename(a_file.name)))
+            finally:
+                map(file.close, f_list.values())
+        sys.stdout.write('Files in directory %s\n'%(task_dir))
