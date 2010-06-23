@@ -17,7 +17,9 @@ from couchdb import http
 STATE_ERROR = state.State.create('ERROR', 'ERROR desc', terminal = True)
 STATE_COMPLETED = state.State.create('COMPLETED', 'COMPLETED desc', terminal = True)
 STATE_KILL = state.State.create('KILL', 'KILL desc')
+STATE_RETRY = state.State.create('RETRY', 'RETRY desc')
 STATE_KILLED = state.State.create('KILLED', 'KILLED desc', terminal = True)
+STATE_WAIT = state.State.create('WAIT', 'WAIT desc')
 
 class UserTask(object):
     
@@ -57,6 +59,15 @@ class UserTask(object):
             a_job.store()
         self.status = self.STATES.KILLED
    
+    def handle_retry_state(self):
+        job_list = self.a_task.children
+        for a_job in job_list:
+            if a_job.status == JOB_SCHEDULER_STATES.ERROR:
+                markstools.log.info('Job %s is in error, retrying.'%(a_job.id))
+                a_job.status = JOB_SCHEDULER_STATES.READY
+            a_job.store()
+        self.status = self.STATES.WAIT
+    
     def step(self):
         try:
             self.status_mapping.get(self.status, self.handle_missing_state)()

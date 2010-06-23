@@ -35,7 +35,7 @@ def configure_logger(verbosity, log_file_name='gc3utils_log'):
         logging_level = (( 6 - verbosity) * 10)
 
     markstools.log.setLevel(logging_level)
-    handler = logging.handlers.RotatingFileHandler(log_file_name, maxBytes=20000, backupCount=5)
+    handler = logging.handlers.RotatingFileHandler(os.path.expanduser(log_file_name), maxBytes=20000, backupCount=5)
     markstools.log.addHandler(handler)
     
     import gorg.lib.utils
@@ -80,4 +80,6 @@ def read_config(config_file_location):
     ret.database_name = config.get('SETTINGS','database_name')
     ret.database_url = config.get('SETTINGS','database_url')
     ret.verbosity = config.getint('SETTINGS','verbosity')
+    ret.temp_directory = os.path.expanduser(config.get('SETTINGS','temp_directory'))
+
     return ret
