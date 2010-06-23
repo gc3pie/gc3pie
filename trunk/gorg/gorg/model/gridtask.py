@@ -128,37 +128,37 @@ class TaskInterface(BaseGraphInterface):
         def fget(self):
             status_list = self._status_children()
             status_dict = dict()
-            for a_status in STATES.all:
-                status_dict[a_status.description]  = 0
             for a_status in status_list:
+                if a_status.description not in status_dict:
+                    status_dict[a_status.description] = 0
                 status_dict[a_status.description] += 1
             return status_dict
         return locals()
     status_counts = property(**status_counts())
 
-    def status_overall():
-        def fget(self):
-            status_dict = self.status_counts
-            job_count = sum(status_dict.values())
-            if job_count == 0:
-                return {}
-            for a_status in status_dict:
-                if status_dict[a_status] == job_count:
-                    return a_status
-            if status_dict[STATES.ERROR] != 0:
-                return STATES.ERROR
-            else:
-                return STATES.WAITING
-        return locals()
-    status_overall = property(**status_overall())
-
-    def status_percent_done():
-        def fget(self):
-            status_dict = self.status_counts()
-            # We treat a no status just like any other status value
-            return (status_dict[STATES.COMPLETED.description] / len(status_dict)) * 100
-        return locals()
-    status_percent_done = property(**status_percent_done())
+#    def status_overall():
+#        def fget(self):
+#            status_dict = self.status_counts
+#            job_count = sum(status_dict.values())
+#            if job_count == 0:
+#                return {}
+#            for a_status in status_dict:
+#                if status_dict[a_status] == job_count:
+#                    return a_status
+#            if status_dict[STATES.ERROR] != 0:
+#                return STATES.ERROR
+#            else:
+#                return STATES.WAITING
+#        return locals()
+#    status_overall = property(**status_overall())
+#
+#    def status_percent_done():
+#        def fget(self):
+#            status_dict = self.status_counts()
+#            # We treat a no status just like any other status value
+#            return (status_dict[STATES.COMPLETED.description] / len(status_dict)) * 100
+#        return locals()
+#    status_percent_done = property(**status_percent_done())
     
     def wait(self, timeout=60):
         from time import sleep

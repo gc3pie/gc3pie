@@ -75,7 +75,6 @@ class GridjobScheduler(object):
             a_run.status = STATES.ERROR
         
         utils.persist_job_filesystem(a_run.job)
-        gorg.log.debug('Run %s status is now %s'%(a_run.id, a_run.status))
         return a_run
  
     def handle_retrieving_state(self, a_run):        
@@ -106,9 +105,11 @@ class GridjobScheduler(object):
         return a_run
     
     def handle_kill_state(self, a_run):
-        a_run.job = self._gcli.gkill(a_run.job)
-        utils.persist_job_filesystem(a_run.job)
+        if a_run.job:
+            a_run.job = self._gcli.gkill(a_run.job)
+            utils.persist_job_filesystem(a_run.job)
         a_run.status = STATES.KILLED
+        return a_run
     
     def handle_missing_state(self, a_run):
         raise UnhandledStateError('Run id %s is in unhandled state %s'%(a_run.id, a_run.status))
@@ -136,7 +137,9 @@ class GridjobScheduler(object):
                 view_runs = self.view_status_runs[a_state]
                 for raw_run in view_runs:
                     a_run = RunInterface(self.db).load(raw_run.id)
+                    old_status = a_run.status
                     a_run = self.step(a_run)
+                    gorg.log.debug('Run %s had status %s before grid scheduler now has status %s'%(a_run.id, old_status, a_run.status))
 
 def main():
     import logging
