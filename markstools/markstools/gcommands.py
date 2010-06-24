@@ -86,7 +86,7 @@ def gtaskscheduler(*args, **kw):
         task_scheduler.run()
     else:
         markstools.log.debug('An instance of gtaskscheduler is already running.  Not starting another one.')
-	pass
+
 
 def gtestcron(*args, **kw):
     import time

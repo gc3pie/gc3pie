@@ -24,11 +24,7 @@ def configure_logger(verbosity, log_file_name='gc3utils_log'):
     - Input is the logging level and a filename to use.
     - Returns nothing.
     """
-    logging.basicConfig(
-        level=logging.ERROR, 
-        format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-        datefmt='%Y-%m-%d %H:%M:%S')
-    
+    formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
     if ( verbosity > 5):
         logging_level = 10
     else:
@@ -36,10 +32,11 @@ def configure_logger(verbosity, log_file_name='gc3utils_log'):
 
     markstools.log.setLevel(logging_level)
     handler = logging.handlers.RotatingFileHandler(os.path.expanduser(log_file_name), maxBytes=20000, backupCount=5)
+    handler.setFormatter(formatter)
     markstools.log.addHandler(handler)
     
     import gorg.lib.utils
-    gorg.lib.utils.configure_logger(verbosity)
+    gorg.lib.utils.configure_logger(verbosity, log_file_name)
 
 def split_seq(iterable, size):
     """ Split a interable into chunks of the given size
