@@ -45,12 +45,16 @@ def ghessian(*args, **kw):
 
     configure_logger(options.verbosity, _default_log_file_location) 
 
+    if not os.path.isfile(options.file):
+        sys.stdout.write('Can not locate file \'%s\'\n'%(options.file))
+        return
+    
     # Connect to the database
     db = Mydb(config.database_user,config.database_name,config.database_url).cdb()
 
     try:
         myfile = open(options.file, 'rb')
-        reader = ReadGamessInp(myfile)
+        reader = ReadGamessInp(myfile)        
     finally:
         myfile.close()
 
@@ -169,6 +173,45 @@ def gcontrol(*args, **kw):
         gcontrol.get_task_files()
     else:
         sys.stdout.write('Unknown program command %s'%s(options.program_command))
+
+def goptimize(*args, **kw):
+    
+    config = _configure_system()
+    #Set up command line options
+    
+    usage = "usage: %prog [options] arg"
+    parser = OptionParser(usage)
+    parser.add_option("-f", "--file", dest="file",default='markstools/examples/water_UHF_gradient.inp', 
+                      help="gamess inp to restart from.")
+    parser.add_option("-o", "--optimizer", dest="optimizer",default='lbfgs', 
+                      help="select the optimizer to use.")
+    parser.add_option("-v", "--verbose", action='count',dest="verbosity", default=config.verbosity, 
+                      help="add more v's to increase log output.")
+    (options, args) = parser.parse_args()
+    
+    configure_logger(options.verbosity, _default_log_file_location) 
+
+    # Connect to the database
+    db = Mydb(config.database_user,config.database_name,config.database_url).cdb()
+   # Connect to the database
+    db = Mydb(config.database_user,config.database_name,config.database_url).cdb()
+
+    try:
+        myfile = open(options.file, 'rb')
+        reader = ReadGamessInp(myfile)        
+    finally:
+        myfile.close()
+
+    params = reader.params
+    atoms = reader.atoms
+    
+    goptimize = GOptimize()
+    gamess_calc = GamessGridCalc(db)
+    
+    goptimize.initialize(db, gamess_calc, optimizer, atoms, params)
+    
+    goptimize.run()
+
 
 if __name__ == '__main__':
     #This is needed because eric4 sends the following to the sys.argv variable

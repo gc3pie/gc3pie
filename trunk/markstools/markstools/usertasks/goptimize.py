@@ -22,7 +22,7 @@ STATE_WAIT = state.State.create('WAIT', 'WAIT desc')
 STATE_STEP = state.State.create('STEP', 'STEP desc')
 STATE_POSTPROCESS = state.State.create('POSTPROCESS', 'POSTPROCESS desc')
 
-class GOptimize_lbfgs(usertask.UserTask):
+class GOptimize(usertask.UserTask):
     STATES = state.StateContainer([STATE_WAIT, STATE_STEP, STATE_POSTPROCESS, 
                             usertask.STATE_ERROR, usertask.STATE_COMPLETED])
                             
@@ -98,47 +98,17 @@ class GOptimize_lbfgs(usertask.UserTask):
     
     def handle_terminal_state(self):
         pass
-
-
-def logging(options):    
-    import logging
-    from markstools.lib.utils import configure_logger
-    logging.basicConfig(
-        level=logging.ERROR, 
-        format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-        datefmt='%Y-%m-%d %H:%M:%S')
         
-    #configure_logger(options.verbose)
-    configure_logger(10)
-    import gorg.lib.utils
-    gorg.lib.utils.configure_logger(10)
+    @staticmethod
+    def select_optimizer(options):
+        from markstools.optimize import lbfgs
+        from markstools.optimize import fire
+        mapping = dict(lbfgs=lbfgs.LBFGS, fire=fire.FIRE)
+        optimizer = mapping.get(options.optimizer, None)()
+        if optimizer is None:
+            raise 'Incorrect OPT', 'Your optimizer selection is not valid'
+        return optimizer
 
-def parse_options():
-    #Set up command line options
-    usage = "usage: %prog [options] arg"
-    parser = OptionParser(usage)
-    parser.add_option("-f", "--file", dest="file",default='markstools/examples/water_UHF_gradient.inp', 
-                      help="gamess inp to restart from.")
-    parser.add_option("-o", "--optimizer", dest="optimizer",default='lbfgs', 
-                      help="select the optimizer to use.")
-    parser.add_option("-v", "--verbose", action='count', dest="verbose", default=0, 
-                      help="add more v's to increase log output.")
-    parser.add_option("-n", "--db_name", dest="db_name", default='gorg_site', 
-                      help="add more v's to increase log output.")
-    parser.add_option("-l", "--db_url", dest="db_url", default='http://localhost:5984', 
-                      help="add more v's to increase log output.")
-    (options, args) = parser.parse_args()
-    return options
-
-
-def select_optimizer(options):
-    from markstools.optimize import lbfgs
-    from markstools.optimize import fire
-    mapping = dict(lbfgs=lbfgs.LBFGS, fire=fire.FIRE)
-    optimizer = mapping.get(options.optimizer, None)()
-    if optimizer is None:
-        raise 'Incorrect OPT', 'Your optimizer selection is not valid'
-    return optimizer
     
     
 def main():
