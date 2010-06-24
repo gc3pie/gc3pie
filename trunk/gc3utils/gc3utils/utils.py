@@ -212,6 +212,68 @@ def from_template(template, **kw):
     return (template_contents % kw)
 
 
+def to_bytes(s):
+    """
+    Convert string `s` to an integer number of bytes.  Suffixes like
+    'KB', 'MB', 'GB' (up to 'YB'), with or without the trailing 'B',
+    are allowed and properly accounted for.  Case is ignored in
+    suffixes.
+
+    Examples::
+
+      >>> to_bytes('12')
+      12
+      >>> to_bytes('12B')
+      12
+      >>> to_bytes('12KB')
+      12000
+      >>> to_bytes('1G')
+      1000000000
+
+    Binary units 'KiB', 'MiB' etc. are also accepted:
+
+      >>> to_bytes('1KiB')
+      1024
+      >>> to_bytes('1MiB')
+      1048576
+
+    """
+    last = -1
+    unit = s[last].lower()
+    if unit.isdigit():
+        # `s` is a integral number
+        return int(s)
+    if unit == 'b':
+        # ignore the the 'b' or 'B' suffix
+        last -= 1
+        unit = s[last].lower()
+    if unit == 'i':
+        k = 1024
+        last -= 1
+        unit = s[last].lower()
+    else:
+        k = 1000
+    # convert the substring of `s` that does not include the suffix
+    if unit.isdigit():
+        return int(s[0:(last+1)])
+    if unit == 'k':
+        return int(float(s[0:last])*k)
+    if unit == 'm':
+        return int(float(s[0:last])*k*k)
+    if unit == 'g':
+        return int(float(s[0:last])*k*k*k)
+    if unit == 't':
+        return int(float(s[0:last])*k*k*k*k)
+    if unit == 'p':
+        return int(float(s[0:last])*k*k*k*k*k)
+    if unit == 'e':
+        return int(float(s[0:last])*k*k*k*k*k*k)
+    if unit == 'z':
+        return int(float(s[0:last])*k*k*k*k*k*k*k)
+    if unit == 'y':
+        return int(float(s[0:last])*k*k*k*k*k*k*k*k)
+
+ 
 # === Configuration File
 def import_config(config_file_location):
     (default_val,resources_vals) = read_config(config_file_location)
