@@ -30,12 +30,8 @@ setup(
             # the generic, catch-all script:
             #'gcmd = gc3utils.gcmd:main',
 	    # todo: fix
-            'gcontrol = markstools.usertasks.gcontrol:main',
-            'ghessian = markstools.usertasks.ghessian:main',
-            'gorginfo = markstools.usertasks.ginfo:main',
-            'goptimize_lbfgs = markstools.usertasks.goptimize:main',
-            'grestart = markstools.usertasks.grestart:main',
-            'gsingle = markstools.usertasks.gsingle:main',
+            'ghessian = markstools.gcommands:ghessian',
+	    'gcontrol = markstools.gcommands:gcontrol'
             # symlinks to specific subcommands:
             #'gsub = gc3utils.gcmd:main',
             #'gstat = gc3utils.gcmd:main',
