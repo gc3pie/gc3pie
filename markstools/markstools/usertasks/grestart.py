@@ -34,7 +34,7 @@ class GRestart(usertask.UserTask):
         self.a_task = None
         self.calculator = None
     
-    def initialize(self, db, calculator, atoms, params, application_to_run='gamess', selected_resource='ocikbpra',  cores=2, memory=1, walltime=1):
+    def initialize(self, db, calculator, atoms, params, application_to_run='gamess', selected_resource='ocikbpra',  cores=8, memory=1, walltime=1):
         self.a_task = TaskInterface(db).create(self.__class__.__name__)
         self.calculator = calculator
         self.a_task.user_data_dict['restart_number'] = 0
