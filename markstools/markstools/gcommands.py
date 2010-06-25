@@ -83,7 +83,6 @@ def gtaskscheduler(*args, **kw):
     # Check to see if a gtaskscheduler is already running for my user.
     # If not, allow this one to run.
     lockfile = _rcdir + '/gtaskscheduler.lock'
-    print lockfile
     lock = flock(lockfile, True).acquire()
     if lock:
         task_scheduler = TaskScheduler(config.database_user,config.database_name,config.database_url)
@@ -135,6 +134,7 @@ def gridscheduler(*args, **kw):
 
     configure_logger(options.verbosity, _default_log_file_location) 
     
+    lockfile = _rcdir + '/gridscheduler.lock'
     lock = flock(lockfile, True).acquire()
     if lock:
         grid_scheduler = GridScheduler(config.database_user,config.database_name,config.database_url)
