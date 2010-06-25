@@ -18,7 +18,7 @@ from markstools.lib import usertask
 from gorg.model.gridtask import TaskInterface
 from gorg.lib.utils import Mydb
 from gorg.lib import state
-from gorg.gridjobscheduler import STATES as JOB_SCHEDULER_STATES
+from gorg.gridscheduler import STATES as JOB_SCHEDULER_STATES
 
 STATE_PROCESS = state.State.create('PROCESS', 'PROCESS desc')
 STATE_POSTPROCESS = state.State.create('POSTPROCESS', 'POSTPROCESS desc')

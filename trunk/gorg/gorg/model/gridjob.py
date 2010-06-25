@@ -11,7 +11,7 @@ from gc3utils import Application,  Job
 import time
 
 from gorg.lib import state
-from gorg.gridjobscheduler import STATES
+from gorg.gridscheduler import STATES
 
 
 class GridjobModel(BaseroleModel):

@@ -30,10 +30,11 @@ setup(
             # the generic, catch-all script:
             #'gcmd = gc3utils.gcmd:main',
 	    # todo: fix
-            'gcontrol = markstools.gcommands.gcontrol:main',
+            'gcontrol = markstools.gcommands:gcontrol',
             'ghessian = markstools.gcommands:ghessian',
             'gtestcron = markstools.gcommands:gtestcron',
             'gtaskscheduler = markstools.gcommands:gtaskscheduler',
+            'gridscheduler = markstools.gcommands:gridscheduler',
             'gorgsetup = markstools.gcommands:gorgsetup',
             'gorginfo = markstools.usertasks.ginfo:main',
             'goptimize_lbfgs = markstools.usertasks.goptimize:main',

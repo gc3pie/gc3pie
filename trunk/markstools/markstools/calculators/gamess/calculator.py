@@ -5,7 +5,7 @@ import markstools
 from markstools.calculators.gamess import *
 
 from gorg.model.gridjob import JobInterface
-from gorg.gridjobscheduler import STATES as RUN_STATES
+from gorg.gridscheduler import STATES as RUN_STATES
 from gorg.model.gridtask import TaskInterface
 from parser import ParseGamessDat, ParseGamessOut
 from result import GamessResult 
