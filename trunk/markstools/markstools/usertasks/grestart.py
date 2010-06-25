@@ -13,7 +13,7 @@ from markstools.lib import usertask
 from gorg.lib import state
 from gorg.model.gridtask import TaskInterface
 from gorg.lib.utils import Mydb
-from gorg.gridjobscheduler import STATES as JOB_SCHEDULER_STATES
+from gorg.gridscheduler import STATES as JOB_SCHEDULER_STATES
 
 STATE_WAIT = state.State.create('WAIT', 'WAIT desc')
 STATE_PROCESS = state.State.create('PROCESS', 'PROCESS desc')
