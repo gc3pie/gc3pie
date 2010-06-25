@@ -32,7 +32,7 @@ STATES = state.StateContainer( [STATE_HOLD, STATE_READY,
                                                     STATE_ERROR, STATE_COMPLETED, 
                                                     STATE_TOPARSE, STATE_KILL, STATE_KILLED])
 
-class GridjobScheduler(object):
+class GridScheduler(object):
     def __init__(self, couchdb_user = 'mark',  couchdb_database='gorg_site', couchdb_url='http://127.0.0.1:5984'):
         from gorg.model.gridjob import GridrunModel
         self.db=Mydb(couchdb_user, couchdb_database, couchdb_url).cdb()
@@ -56,7 +56,7 @@ class GridjobScheduler(object):
                 f_open.close()
         a_run.job = self._gcli.gsub(a_run.application)
         utils.persist_job_filesystem(a_run.job)
-        gorg.log.info('Submitted run %s to the grid'%(a_run.id))
+        gorg.log.debug('Submitted run %s to the grid'%(a_run.id))
         a_run.status = (STATES.WAITING, _LOCKED_STATE_KEY)
         return a_run
 
@@ -87,6 +87,7 @@ class GridjobScheduler(object):
                 a_run.put_attachment(a_file, os.path.basename(a_file.name)) #os.path.splitext(a_file.name)[-1].lstrip('.')
             finally:
                 a_file.close()
+        gorg.log.debug('Retrieved run %s data'%(a_run.id))
         a_run.status = STATES.TOPARSE
         return a_run
 
@@ -112,7 +113,7 @@ class GridjobScheduler(object):
         return a_run
     
     def handle_missing_state(self, a_run):
-        raise UnhandledStateError('Run id %s is in unhandled state %s'%(a_run.id, a_run.status))
+        raise UnhandledStateError('Run %s is in unhandled state %s'%(a_run.id, a_run.status))
     
     def step(self, a_run):
         try:
@@ -126,7 +127,7 @@ class GridjobScheduler(object):
         except:
             a_run.gsub_message=formatExceptionInfo()
             a_run.status=(STATES.ERROR, _LOCKED_STATE_KEY)
-            gorg.log.critical('GridjobScheduler Errored while processing run id %s \n%s'%(a_run.id, a_run.gsub_message))
+            gorg.log.critical('GridjobScheduler errored while processing run %s \n%s'%(a_run.id, a_run.gsub_message))
         a_run.store()
         return a_run
     
@@ -137,9 +138,9 @@ class GridjobScheduler(object):
                 view_runs = self.view_status_runs[a_state]
                 for raw_run in view_runs:
                     a_run = RunInterface(self.db).load(raw_run.id)
-                    old_status = a_run.status
+                    gorg.log.debug('GridScheduler processing run %s in state %s'%(a_run.id, a_run.status))
                     a_run = self.step(a_run)
-                    gorg.log.debug('Run %s had status %s before grid scheduler now has status %s'%(a_run.id, old_status, a_run.status))
+                    gorg.log.debug('Run %s in state %s'%(a_run.id, a_run.status))
 
 def main():
     import logging
