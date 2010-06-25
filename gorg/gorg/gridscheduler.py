@@ -133,6 +133,7 @@ class GridScheduler(object):
     
     def run(self):
         from gorg.model.gridjob import RunInterface
+        gorg.log.info('GridScheduler starting')
         for a_state in STATES.all:
             if not a_state.terminal:
                 view_runs = self.view_status_runs[a_state]
@@ -141,6 +142,7 @@ class GridScheduler(object):
                     gorg.log.debug('GridScheduler processing run %s in state %s'%(a_run.id, a_run.status))
                     a_run = self.step(a_run)
                     gorg.log.debug('Run %s in state %s'%(a_run.id, a_run.status))
+        gorg.log.info('GridScheduler finished')
 
 def main():
     import logging
