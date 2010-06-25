@@ -150,7 +150,7 @@ def gcontrol(*args, **kw):
     #Set up command line options
     usage = "usage: %prog [options] arg"
     parser = OptionParser(usage)
-    parser.add_option("-p", "--program_command", dest="program_command",  default='retry', 
+    parser.add_option("-p", "--program_command", dest="program_command",  default='info', 
                       help="command to run against task.")
     parser.add_option("-t", "--task_id", dest="task_id",  
                       help="task to be acted upon.")
