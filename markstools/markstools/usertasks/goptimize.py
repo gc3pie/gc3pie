@@ -11,7 +11,6 @@ from markstools.io.gamess import ReadGamessInp, WriteGamessInp
 from markstools.calculators.gamess.calculator import GamessGridCalc
 from markstools.lib import utils
 from markstools.lib import usertask
-from markstools.optimize import lbfgs
 
 from gorg.model.gridtask import TaskInterface
 from gorg.lib.utils import Mydb
@@ -53,11 +52,8 @@ class GOptimize(usertask.UserTask):
         self.status = self.STATES.WAIT
     
     def handle_wait_state(self):
-        from gorg.gridjobscheduler import GridjobScheduler
-        job_scheduler = GridjobScheduler('mark','gorg_site','http://localhost:5984')
         job_list = [self.a_task.children[-1]]
         new_status = self.STATES.STEP
-        job_scheduler.run()
         for a_job in job_list:
             job_done = False
             job_done = a_job.wait(timeout=0)
@@ -100,6 +96,11 @@ class GOptimize(usertask.UserTask):
         pass
         
     @staticmethod
+    def optimizer_list():
+        opt_list = ['fire', 'lbfgs']
+        return opt_list
+
+    @staticmethod
     def select_optimizer(options):
         from markstools.optimize import lbfgs
         from markstools.optimize import fire
@@ -108,32 +109,5 @@ class GOptimize(usertask.UserTask):
         if optimizer is None:
             raise 'Incorrect OPT', 'Your optimizer selection is not valid'
         return optimizer
-
-    
-    
-def main():
-    options = parse_options()
-    logging(options)
-    optimizer = select_optimizer(options)
-    # Connect to the database
-    db = Mydb('mark',options.db_name,options.db_url).cdb()
-
-    myfile = open(options.file, 'rb')
-    reader = ReadGamessInp(myfile)
-    myfile.close()
-    params = reader.params
-    atoms = reader.atoms
-    
-    goptimize = GOptimize_lbfgs()
-    gamess_calc = GamessGridCalc(db)
-    goptimize.initialize(db, gamess_calc, optimizer, atoms, params)
-    
-    goptimize.run()
-
-    print 'goptimize done. Create task %s'%(goptimize.a_task.id)
-
-if __name__ == '__main__':
-    main()
-    sys.exit(0)
 
 

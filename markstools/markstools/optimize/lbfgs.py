@@ -1,7 +1,7 @@
 import sys
 import numpy as np
 import markstools
-from markstools import optimize
+from markstools.optimize import Optimize
 
 class LBFGS(Optimize):
     """Limited memory BFGS optimizer.

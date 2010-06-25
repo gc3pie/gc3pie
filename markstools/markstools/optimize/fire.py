@@ -1,6 +1,6 @@
 import numpy as np
 import markstools
-from markstools import optimize
+from markstools.optimize import Optimize
 
 class FIRE(Optimize):
     def __init__(self, dt=0.1, maxmove=0.2, dtmax=1.0, Nmin=5, finc=1.1, fdec=0.5,
