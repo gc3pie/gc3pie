@@ -175,6 +175,7 @@ def gcontrol(*args, **kw):
         sys.stdout.write('Unknown program command %s'%s(options.program_command))
 
 def goptimize(*args, **kw):
+    from markstools.usertasks.goptimize import GOptimize
     
     config = _configure_system()
     #Set up command line options
@@ -183,8 +184,8 @@ def goptimize(*args, **kw):
     parser = OptionParser(usage)
     parser.add_option("-f", "--file", dest="file",default='markstools/examples/water_UHF_gradient.inp', 
                       help="gamess inp to restart from.")
-    parser.add_option("-o", "--optimizer", dest="optimizer",default='lbfgs', 
-                      help="select the optimizer to use.")
+    parser.add_option("-o", "--optimizer", dest="optimizer",default=GOptimize.optimizer_list()[0], 
+                      help="select the optimizer to use %s"%(GOptimize.optimizer_list()))
     parser.add_option("-v", "--verbose", action='count',dest="verbosity", default=config.verbosity, 
                       help="add more v's to increase log output.")
     (options, args) = parser.parse_args()
@@ -192,8 +193,6 @@ def goptimize(*args, **kw):
     configure_logger(options.verbosity, _default_log_file_location) 
 
     # Connect to the database
-    db = Mydb(config.database_user,config.database_name,config.database_url).cdb()
-   # Connect to the database
     db = Mydb(config.database_user,config.database_name,config.database_url).cdb()
 
     try:
