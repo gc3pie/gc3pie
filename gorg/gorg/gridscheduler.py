@@ -123,11 +123,11 @@ class GridScheduler(object):
         except http.ResourceConflict:
             #The document in the database does not match the one we are trying to save.
             # Lets just ignore the error and let the state machine run
-            gorg.log.critical('GridjobScheduler could not save run %s due to a document revision conflict'%(a_run.id))
+            gorg.log.critical('GridScheduler could not save run %s due to a document revision conflict'%(a_run.id))
         except:
             a_run.gsub_message=formatExceptionInfo()
             a_run.status=(STATES.ERROR, _LOCKED_STATE_KEY)
-            gorg.log.critical('GridjobScheduler errored while processing run %s \n%s'%(a_run.id, a_run.gsub_message))
+            gorg.log.critical('GridScheduler errored while processing run %s \n%s'%(a_run.id, a_run.gsub_message))
         a_run.store()
         return a_run
     
@@ -150,7 +150,7 @@ def main():
         datefmt='%Y-%m-%d %H:%M:%S')
         
     configure_logger(10)
-    job_scheduler = GridjobScheduler('mark','gorg_site','http://130.60.144.211:5984')
+    job_scheduler = GridScheduler('mark','gorg_site','http://130.60.144.211:5984')
     job_scheduler.run()
     print 'Done running gridjobscheduler.py'
 

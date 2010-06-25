@@ -135,8 +135,13 @@ def gridscheduler(*args, **kw):
 
     configure_logger(options.verbosity, _default_log_file_location) 
     
-    grid_scheduler = GridScheduler(config.database_user,config.database_name,config.database_url)
-    grid_scheduler.run()
+    lock = flock(lockfile, True).acquire()
+    if lock:
+        grid_scheduler = GridScheduler(config.database_user,config.database_name,config.database_url)
+        grid_scheduler.run()
+    else:
+        markstools.log.debug('An instance of gridscheduler is already running.  Not starting another one.')
+
 
 def gcontrol(*args, **kw):
     from markstools.usertasks.gcontrol import GControl

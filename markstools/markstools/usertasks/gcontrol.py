@@ -13,7 +13,7 @@ import time
 from gorg.model.gridtask import TaskInterface
 from gorg.lib.utils import Mydb
 import gorg.lib.exceptions
-from gorg.gridjobscheduler import STATES as JOB_SCHEDULER_STATES
+from gorg.gridscheduler import STATES as JOB_SCHEDULER_STATES
 from markstools.calculators.gamess.calculator import GamessGridCalc
 
 # The key is the name of the class where the usetask is programmed, and the value is the module location

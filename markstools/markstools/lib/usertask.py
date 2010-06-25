@@ -9,7 +9,7 @@ import markstools
 from markstools.lib import utils
 from markstools.lib.exceptions import *
 from gorg.lib import state
-from gorg.gridjobscheduler import STATES as JOB_SCHEDULER_STATES
+from gorg.gridscheduler import STATES as JOB_SCHEDULER_STATES
 from gorg.model.gridtask import TaskInterface
 from markstools.calculators.gamess.calculator import GamessGridCalc
 from couchdb import http

@@ -37,7 +37,7 @@ def configure_logger(verbosity, log_file_name='gc3utils_log'):
         logging_level = (( 6 - verbosity) * 10)
 
     gorg.log.setLevel(logging_level)
-    handler = logging.handlers.RotatingFileHandler(os.path.expanduser(log_file_name), maxBytes=20000, backupCount=5)
+    handler = logging.handlers.RotatingFileHandler(os.path.expanduser(log_file_name), maxBytes=2000000, backupCount=5)
     handler.setFormatter(formatter)
     gorg.log.addHandler(handler)
 
