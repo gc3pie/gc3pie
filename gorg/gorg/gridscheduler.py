@@ -12,7 +12,7 @@ import gc3utils.Exceptions
 from gorg.lib import state
 from couchdb import http
 
-_LOCKED_STATE_KEY = 'GridjobScheduler'
+_LOCKED_STATE_KEY = 'GridScheduler'
 
 STATE_WAITING = state.State.create('WAITING', 'WAITING desc')
 STATE_RETRIEVING = state.State.create('RETRIEVING', 'RETRIEVING desc')
