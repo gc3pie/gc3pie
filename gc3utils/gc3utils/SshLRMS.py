@@ -415,21 +415,12 @@ class SshLrms(LRMS):
         """
         Returns tuple: exit_status, stdout, stderr
         """
-
-        stdout = ''
-        stderr = ''
         try:
-            transport = self.ssh.get_transport()
-            session = transport.open_session()
-            session.exec_command(command)
-            exit_status = session.recv_exit_status()
-            if session.recv_ready():
-                # ready to receive stdout
-                stdout = session.in_buffer.empty()
-            if session.recv_stderr_ready():
-                # ready to receive sterr
-                stderr = session.in_stderr_buffer.empty()
-            return exit_status, stdout, stderr
+            stdin_stream, stdout_stream, stderr_stream = self.ssh.exec_command(command)
+            output = stdout_stream.read()
+            errors = stderr_stream.read()
+            exitcode = stdout_stream.channel.exit_status
+            return exitcode, output, errors
         except:
             gc3utils.log.error('Failed while executing remote command: %s' % command)
             raise
@@ -445,10 +436,11 @@ class SshLrms(LRMS):
             sftp = ssh.open_sftp()
             return ssh, sftp
 
-        except paramiko.SSHException:
+        except paramiko.SSHException, x:
             if not ssh  is None:
                ssh.close()
-            gc3utils.log.critical('Could not create ssh connection to ', host, '.')
+            gc3utils.log.critical("Could not create ssh connection to '%s': %s: %s", 
+                                  host, x.__class__.__name__, str(x))
             raise
 
 

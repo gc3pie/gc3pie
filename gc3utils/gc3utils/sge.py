@@ -1,5 +1,8 @@
 import re
 
+import gc3utils
+
+
 try:
     from collections import defaultdict
 except ImportError:
@@ -68,13 +71,15 @@ def parse_qstat_f(qstat_output):
     # a job report line starts with a numeric job ID
     _job_line_re = re.compile(r'^[0-9]+ \s+', re.X)
     # queue report header line starts with queuename@hostname 
-    _queue_header_re = re.compile(r'^([a-z0-9\._-]+)@([a-z0-9\.-]+) \s+ ([BIP]+) \s+ ([0-9]+)/([0-9]+)/([0-9]+)', 
+    _queue_header_re = re.compile(r'^([a-z0-9\._-]+)@([a-z0-9\.-]+) \s+ ([BIPCTN]+) \s+ ([0-9]+)/([0-9]+)/([0-9]+)', 
                                   re.I|re.X)
     # property lines always have the form 'xx:propname=value'
     _property_line_re = re.compile(r'^[a-z]{2}:([a-z_]+)=(.+)', re.I|re.X)
-    def ddict():
-        return defaultdict(dict)
-    result = defaultdict(ddict)
+    def dzdict():
+        def zdict():
+            return defaultdict(lambda: 0)
+        return defaultdict(zdict)
+    result = defaultdict(dzdict)
     qname = None
     for line in qstat_output.split('\n'):
         # strip leading and trailing whitespace
