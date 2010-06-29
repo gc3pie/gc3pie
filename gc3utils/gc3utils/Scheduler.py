@@ -15,6 +15,8 @@ def _compatible_resources(lrms_list, application):
         if not lrms.is_valid():
             gc3utils.log.debug("Ignoring invalid LRMS object '%s'" % lrms)
             continue
+        gc3utils.log.debug("Checking resource '%s' for compatibility with application requirements",
+                           lrms._resource.name)
         if not ( # check that Application requirements are within resource limits
             int(application.requested_cores) > int(lrms._resource.max_cores_per_job) 
             or int(application.requested_memory) > int(lrms._resource.max_memory_per_core) 
@@ -56,6 +58,7 @@ def do_brokering(lrms_list, application):
     for r in rs:
         try:
             # in-place update of resource status
+            gc3utils.log.debug("Trying to update status of resource '%s' ...", r._resource.name)
             r.get_resource_status()
             updated_resources.append(r)
         except Exception, x:

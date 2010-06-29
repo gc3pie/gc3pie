@@ -362,18 +362,21 @@ class SshLrms(LRMS):
     def get_resource_status(self):
 
         username = self._resource.ssh_username
+        gc3utils.log.debug("Establishing SSH connection to '%s' as user '%s' ...", 
+                           self._resource.frontend, username)
         self.ssh, self.sftp = self._connect_ssh(self._resource.frontend, username)
         # FIXME: should check `exit_code` and `stderr`
+        gc3utils.log.debug("Running `qstat -U %s`...", username)
         exit_code, qstat_stdout, stderr = self._execute_command("qstat -U %s" % username)
+        gc3utils.log.debug("Running `qstat -F -U %s`...", username)
         exit_code, qstat_F_stdout, stderr = self._execute_command("qstat -F -U %s" % username)
         self.ssh.close()
 
+        gc3utils.log.debug("Computing updated values for total/available slots ...")
         (total_running, self._resource.queued, 
          self._resource.user_run, self._resource.user_queued) = sge.count_jobs(qstat_stdout, username)
-
         slots = sge.compute_nr_of_slots(qstat_F_stdout)
         self._resource.free_slots = int(slots['global']['available'])
-
         self._resource.used_quota = -1
 
         gc3utils.log.info("Updated resource '%s' status:"
@@ -388,9 +391,9 @@ class SshLrms(LRMS):
                           self._resource.queued,
                           )
         return self._resource
-        
-    """Below are the functions needed only for the SshLrms -class."""
 
+        
+     ## Below are the functions needed only for the SshLrms -class.
 
     def _get_qsub_jobid(self, output):
         """Parse the qsub output for the local jobid."""
