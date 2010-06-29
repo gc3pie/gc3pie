@@ -115,8 +115,8 @@ class Gcli:
                                    % lrms._resource.name)
                 continue
             except LRMSException:
-                gc3utils.log.critical("Error in submitting job to resource '%s'", 
-                                      lrms._resource.name, exc_info=True)
+                gc3utils.log.error("Error in submitting job to resource '%s'", 
+                                   lrms._resource.name, exc_info=True)
                 continue
         if job is None or not job.is_valid():
             raise LRMSException('Failed submitting application to any LRMS')
