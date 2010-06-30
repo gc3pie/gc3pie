@@ -22,9 +22,6 @@ class SshLrms(LRMS):
     isValid = 0
     _resource = None
 
-    ssh = None
-    sftp = None 
-
     def __init__(self, resource):
 
         gc3utils.log = logging.getLogger('gc3utils')
@@ -52,12 +49,12 @@ class SshLrms(LRMS):
         # ssh user@remote_frontend 'cd unique_token ; $gamess_location -n cores input_file'
         """
         # Establish an ssh connection.
-        (self.ssh, self.sftp) = self._connect_ssh(self._resource.frontend,self._resource.ssh_username)
+        (ssh, sftp) = self._connect_ssh(self._resource.frontend,self._resource.ssh_username)
 
         # Create the remote unique_token directory. 
         try:
             _command = 'mkdir -p $HOME/.gc3utils_jobs; mktemp -p $HOME/.gc3utils_jobs -d lrms_job.XXXXXXXXXX'
-            exit_code, stdout, stderr = self._execute_command(_command)
+            exit_code, stdout, stderr = self._execute_command(ssh, _command)
             if exit_code == 0:
                 ssh_remote_folder = stdout.split('\n')[0]
             else:
@@ -66,8 +63,8 @@ class SshLrms(LRMS):
             gc3utils.log.critical("Failed creating remote temporary folder: command '%s' returned exit code %d)"
                                   % (_command, exit_code))
 
-            if not self.ssh  is None:
-                self.ssh.close()
+            if not ssh  is None:
+                ssh.close()
             raise
 
         # Copy the input file to remote directory.
@@ -78,12 +75,12 @@ class SshLrms(LRMS):
 
         gc3utils.log.debug('Transferring file %s to %s' % (_localpath,_remotepath))
         try:
-            self.sftp.put(_localpath, _remotepath)
+            sftp.put(_localpath, _remotepath)
         except:
             gc3utils.log.critical("Copying input file '%s' to remote cluster '%s' failed",
                                   _input_file_name, self._resource.frontend)
-            if not self.ssh  is None:
-                self.ssh.close()
+            if not ssh  is None:
+                ssh.close()
             raise
 
         # compute number of cores request
@@ -109,8 +106,8 @@ class SshLrms(LRMS):
 
         # Try to submit it to the local queueing system.
         try:
-            exit_code, stdout, stderr = self._execute_command(_submit_command)
-            self.ssh.close()
+            exit_code, stdout, stderr = self._execute_command(ssh, _submit_command)
+            ssh.close()
             if exit_code != 0:
                 gc3utils.log.critical("Failed executing remote command '%s'; exit status %d"
                                       % (_submit_command,exit_code))
@@ -131,8 +128,8 @@ class SshLrms(LRMS):
             return job
 
         except:
-            if not self.ssh  is None:
-                self.ssh.close()
+            if not ssh  is None:
+                ssh.close()
             gc3utils.log.critical("Failure submitting job to resource '%s' - see log file for errors"
                                   % self._resource.name)
             raise
@@ -144,7 +141,7 @@ class SshLrms(LRMS):
         mapping = {'qname':'queue','jobname':'job_name','slots':'cpu_count','exit_status':'exit_code','failed':'system_failed','cpu':'used_cpu_time','ru_wallclock':'used_walltime','maxvmem':'used_memory'}
         try:
             # open ssh connection
-            self.ssh, self.sftp = self._connect_ssh(self._resource.frontend,self._resource.ssh_username)
+            ssh, sftp = self._connect_ssh(self._resource.frontend,self._resource.ssh_username)
 
             # then check the lrms_jobid with qstat
             #           testcommand = 'qstat -j %s' % job.lrms_jobid
@@ -153,7 +150,7 @@ class SshLrms(LRMS):
 
             gc3utils.log.debug('checking remote job status with %s' % _command)
 
-            exit_code, stdout, stderr = self._execute_command(_command)
+            exit_code, stdout, stderr = self._execute_command(ssh, _command)
             if exit_code != 0:
                 #            finished_job_patter = 'Following jobs do not exist'
                 #            if finished_job_patter in stderr:
@@ -167,7 +164,7 @@ class SshLrms(LRMS):
 
                 gc3utils.log.debug('no job information found. trying with %s' % _command)
                 
-                exit_code, stdout, stderr = self._execute_command(_command)
+                exit_code, stdout, stderr = self._execute_command(ssh, _command)
                 if exit_code != 0:
                     gc3utils.log.critical('Failed executing remote command: %s. exit status %d' % (_command,exit_code))
                     gc3utils.log.debug('remote command returned stdout: %s' % stdout)
@@ -235,23 +232,23 @@ class SshLrms(LRMS):
                 # need to set detailed job status information
                 #gc3utils.log.debug('marked job status: %s' % job.status)
 
-            self.ssh.close()
+            ssh.close()
             
             return job
         
         except:
-            if not self.ssh  is None:
-                self.ssh.close()
+            if not ssh  is None:
+                ssh.close()
             gc3utils.log.critical('Failure in checking status')
             raise
 
 
     def cancel_job(self, job_obj):
         try:
-            self.ssh, self.sftp = self._connect_ssh(self._resource.frontend,self._resource.ssh_username)
+            ssh, sftp = self._connect_ssh(self._resource.frontend,self._resource.ssh_username)
             _command = 'qdel '+job_obj.lrms_jobid
 
-            exit_code, stdout, stderr = self._execute_command(_command)
+            exit_code, stdout, stderr = self._execute_command(ssh, _command)
 
             if exit_code != 0:
                 gc3utils.log.critical('Failed executing remote command: %s. exit status %d' % (_command,exit_code))
@@ -259,12 +256,12 @@ class SshLrms(LRMS):
                 gc3utils.log.debug('remote command returned stderr: %s' % stderr)
                 raise paramiko.SSHException('Failed executing remote command')
 
-            self.ssh.close()
+            ssh.close()
             return job_obj
 
         except:
-            if not self.ssh  is None:
-                self.ssh.close()
+            if not ssh  is None:
+                ssh.close()
             gc3utils.log.critical('Failure in checking status')
             raise
         
@@ -288,7 +285,7 @@ class SshLrms(LRMS):
             # Each inner list has 2 elements, a remote file location and a local file location.
             # i.e. [copy_from, copy_to]
              
-            self.ssh, self.sftp = self._connect_ssh(self._resource.frontend,self._resource.ssh_username)
+            ssh, sftp = self._connect_ssh(self._resource.frontend,self._resource.ssh_username)
             
             # todo : test that this copying works for both full and relative paths.
 
@@ -301,11 +298,11 @@ class SshLrms(LRMS):
             # If the dir no longer exists, exit.
             # todo : maybe change the status to something else
             try:
-                files_list = self.sftp.listdir(job.remote_ssh_folder)
+                files_list = sftp.listdir(job.remote_ssh_folder)
             except:
                 gc3utils.log.error('Could not read remote dir %s' % job.remote_ssh_folder)
-                if not self.ssh  is None:
-                   self.ssh.close()
+                if not ssh  is None:
+                   ssh.close()
                 #raise
                 job.status = Job.JOB_STATE_FAILED
                 return job
@@ -329,7 +326,7 @@ class SshLrms(LRMS):
                 _remote_file =  job.remote_ssh_folder +'/' + file
                 _local_file = _download_dir +'/' + file
                 try:
-                    self.sftp.get(_remote_file, _local_file)
+                    sftp.get(_remote_file, _local_file)
                     gc3utils.log.debug('copied remote: ' + _remote_file + ' to local: ' + _local_file)
                 except:
                     # todo : figure out how to check for existance of file before trying to copy
@@ -338,7 +335,7 @@ class SshLrms(LRMS):
 
             # cleanup remote folder
             _command = 'rm -rf %s ' % job.remote_ssh_folder
-            exit_code, stdout, stderr = self._execute_command(_command)
+            exit_code, stdout, stderr = self._execute_command(ssh, _command)
             if exit_code != 0:
                 gc3utils.log.error('Failed while removing remote folder %s' % job.remote_ssh_folder)
                 gc3utils.log.debug('error: %s' % stderr)
@@ -347,12 +344,12 @@ class SshLrms(LRMS):
             job.download_dir = _download_dir
             job.status = Job.JOB_STATE_COMPLETED
 
-            self.ssh.close()
+            ssh.close()
             return job
 
         except: 
-            if not self.ssh  is None:
-                self.ssh.close()
+            if not ssh  is None:
+                ssh.close()
             gc3utils.log.critical('Failure in retrieving results')
             gc3utils.log.debug('%s %s',sys.exc_info()[0], sys.exc_info()[1])
             raise 
@@ -364,13 +361,14 @@ class SshLrms(LRMS):
         username = self._resource.ssh_username
         gc3utils.log.debug("Establishing SSH connection to '%s' as user '%s' ...", 
                            self._resource.frontend, username)
-        self.ssh, self.sftp = self._connect_ssh(self._resource.frontend, username)
+        ssh, sftp = self._connect_ssh(self._resource.frontend, username)
         # FIXME: should check `exit_code` and `stderr`
         gc3utils.log.debug("Running `qstat -U %s`...", username)
-        exit_code, qstat_stdout, stderr = self._execute_command("qstat -U %s" % username)
+        exit_code, qstat_stdout, stderr = self._execute_command(ssh, "qstat -U %s" % username)
         gc3utils.log.debug("Running `qstat -F -U %s`...", username)
-        exit_code, qstat_F_stdout, stderr = self._execute_command("qstat -F -U %s" % username)
-        self.ssh.close()
+        exit_code, qstat_F_stdout, stderr = self._execute_command(ssh, "qstat -F -U %s" % username)
+        ssh.close()
+        sftp.close()
 
         gc3utils.log.debug("Computing updated values for total/available slots ...")
         (total_running, self._resource.queued, 
@@ -411,15 +409,15 @@ class SshLrms(LRMS):
             lrms_jobid = False
             raise Exceptions.SshSubmitException
 
-    def _execute_command(self, command):
+    def _execute_command(self, ssh, command):
         """
         Returns tuple: exit_status, stdout, stderr
         """
         try:
-            stdin_stream, stdout_stream, stderr_stream = self.ssh.exec_command(command)
+            stdin_stream, stdout_stream, stderr_stream = ssh.exec_command(command)
             output = stdout_stream.read()
             errors = stderr_stream.read()
-            exitcode = stdout_stream.channel.exit_status
+            exitcode = stdout_stream.channel.recv_exit_status()
             return exitcode, output, errors
         except:
             gc3utils.log.error('Failed while executing remote command: %s' % command)
@@ -432,7 +430,7 @@ class SshLrms(LRMS):
         try:
             ssh = paramiko.SSHClient()
             ssh.load_system_host_keys()
-            ssh.connect(host,timeout=30,username=username)
+            ssh.connect(host,timeout=30,username=username, allow_agent=True)
             sftp = ssh.open_sftp()
             return ssh, sftp
 
