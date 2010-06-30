@@ -1,6 +1,6 @@
 __all__ = ['lbfgs', 'fire']
 
-import cStringIO as cString
+import cStringIO as StringIO
 import pickle
 
 class Optimize(object):

@@ -110,17 +110,21 @@ class GamessGridCalc(CalculatorBase):
         if a_result is None:
             markstools.log.info('Starting to parse Job %s results'%(a_job.id))
             markstools.log.debug('Starting to parse Run %s results'%(a_job.run.id))
-            try:
-                f_inp = a_job.get_attachment('inp')
-                reader = ReadGamessInp(f_inp)
-                f_dat = a_job.get_attachment('dat')
-                self.parsed_dat.parse_file(f_dat)
-                f_stdout = a_job.get_attachment('stdout')
-                self.parsed_out.parse_file(f_stdout)
-            finally:
-                f_inp.close()
-                f_dat.close()
-                f_stdout.close()
+            f_inp = a_job.get_attachment('inp')
+            if f_inp is None:
+                raise DocumentError('Run %s does not contain a .inp file'%(a_job.run.id))
+            reader = ReadGamessInp(f_inp)
+            f_inp.close()
+            f_dat = a_job.get_attachment('dat')
+            if f_dat is None:
+                raise DocumentError('Run %s does not contain a .dat file'%(a_job.run.id))
+            self.parsed_dat.parse_file(f_dat)
+            f_dat.close()
+            f_stdout = a_job.get_attachment('stdout')
+            if f_stdout is None:
+                raise DocumentError('Run %s does not contain a .stdout file'%(a_job.run.id))
+            self.parsed_out.parse_file(f_stdout)
+            f_stdout.close()
             a_result = GamessResult(reader.atoms, reader.params, self.parsed_dat.group, self.parsed_out.group)
             self._save_parsed_result(a_job, a_result)
         return a_result

@@ -20,20 +20,21 @@ from gorg.lib.utils import Mydb
 from gorg.lib import state
 from gorg.gridscheduler import STATES as JOB_SCHEDULER_STATES
 
-STATE_WAIT =  state.State.create('WAIT', 'WAIT desc')
 STATE_PROCESS =  state.State.create('PROCESS', 'PROCESS desc')
 STATE_POSTPROCESS =  state.State.create('POSTPROCESS', 'POSTPROCESS desc')
 
 class GSingle(usertask.UserTask):
  
-    STATES = state.StateContainer([STATE_WAIT, STATE_PROCESS, STATE_POSTPROCESS, 
+    STATES = state.StateContainer([usertask.STATE_WAIT, STATE_PROCESS, STATE_POSTPROCESS, 
                             usertask.STATE_ERROR, usertask.STATE_COMPLETED])
                             
     def __init__(self):
         self.status = self.STATES.ERROR
         self.status_mapping = {self.STATES.WAIT: self.handle_wait_state, 
                                              self.STATES.PROCESS: self.handle_process_state, 
-                                             self.STATES.POSTPROCESS: self.handle_postprocess_state, 
+                                             self.STATES.POSTPROCESS: self.handle_postprocess_state,
+                                             self.STATES.usertask.STATE_KILL: self.handle_kill_state, 
+                                             self.STATES.usertask.STATE_KILLED: self.handle_terminal_state, 
                                              self.STATES.ERROR: self.handle_terminal_state, 
                                              self.STATES.COMPLETED: self.handle_terminal_state}
         self.a_task = None

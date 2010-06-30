@@ -22,7 +22,7 @@ STATE_KILLED = state.State.create('KILLED', 'KILLED desc', terminal = True)
 STATE_WAIT = state.State.create('WAIT', 'WAIT desc')
 
 class UserTask(object):
-    
+        
     def load(self, db,  task_id):
         self.a_task = TaskInterface(db).load(task_id)
         self.status = self.a_task.status
@@ -81,3 +81,7 @@ class UserTask(object):
             time.sleep(10)
             self.load(self.a_task.db, self.a_task.id)
             self.step()
+    
+    @property
+    def  myname(self):
+        return self.__class__.__name__
