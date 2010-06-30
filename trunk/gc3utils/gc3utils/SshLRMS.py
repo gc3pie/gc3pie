@@ -1,5 +1,7 @@
 import sys
 import os
+import re
+
 import Exceptions 
 import commands
 import getpass
@@ -10,6 +12,17 @@ import utils
 
 from LRMS import LRMS
 from utils import *
+
+
+def _qgms_job_name(filename):
+    """
+    Return the batch system job name used to submit GAMESS on input
+    file name `filename`.
+    """
+    if filename.endswith('.inp'):
+        return os.path.splitext(filename)[0]
+    else:
+        return filename
 
 
 # -----------------------------------------------------
@@ -70,7 +83,7 @@ class SshLrms(LRMS):
         # Copy the input file to remote directory.
 
         _localpath = application.inputs[0]
-        _input_file_name = gc3utils.utils.input_file_name(_localpath)
+        _input_file_name = os.path.basename(_localpath)
         _remotepath = ssh_remote_folder + '/' + _input_file_name
 
         gc3utils.log.debug('Transferring file %s to %s' % (_localpath,_remotepath))
@@ -125,6 +138,7 @@ class SshLrms(LRMS):
                           resource_name=self._resource.name,
                           log=job_log)
             job.remote_ssh_folder = ssh_remote_folder
+            job.lrms_job_name = _qgms_job_name(_input_file_name) # XXX: GAMESS-specific!
             return job
 
         except:
@@ -138,7 +152,15 @@ class SshLrms(LRMS):
     def check_status(self, job):
         """Check status of a job."""
 
-        mapping = {'qname':'queue','jobname':'job_name','slots':'cpu_count','exit_status':'exit_code','failed':'system_failed','cpu':'used_cpu_time','ru_wallclock':'used_walltime','maxvmem':'used_memory'}
+        mapping = {'qname':'queue',
+                   'jobname':'job_name',
+                   'slots':'cpu_count',
+                   'exit_status':'exit_code',
+                   'failed':'system_failed',
+                   'cpu':'used_cpu_time',
+                   'ru_wallclock':'used_walltime',
+                   'maxvmem':'used_memory'
+                   }
         try:
             # open ssh connection
             ssh, sftp = self._connect_ssh(self._resource.frontend,self._resource.ssh_username)
@@ -173,7 +195,7 @@ class SshLrms(LRMS):
                 else:
                     # parse stdout and update job obect with detailed accounting information
 
-                    gc3utils.log.debug('parsgin stdout to get job accounting infromation')
+                    gc3utils.log.debug('parsing stdout to get job accounting information')
                     #gc3utils.log.debug('stdout: %s' % stdout)
 
                     for line in stdout.split('\n'):
@@ -306,9 +328,7 @@ class SshLrms(LRMS):
                 #raise
                 job.status = Job.JOB_STATE_FAILED
                 return job
-                
 
-            #            files_list = sftp.listdir(_full_path_to_remote_unique_id)
             if job.has_key('job_local_dir'):
                 _download_dir = job.job_local_dir + '/' + job.unique_token
             else:
@@ -321,17 +341,42 @@ class SshLrms(LRMS):
 
             gc3utils.log.debug('downloading job into %s',_download_dir)
 
-            # copy back all files
+            # copy back all files, renaming them to adhere to the ArcLRMS convention
+            try: 
+                jobname = job.lrms_job_name
+            except KeyError:
+                # no job name was set, empty string should be safe for following code
+                jobname = ''
+            gc3utils.log.debug("Assuming job name is '%s'" % jobname)
+            filename_map = { 
+                # XXX: SGE-specific?
+                ('/%s.o%s' % (jobname, job.lrms_jobid)) : ('%s.stdout' % jobname),
+                ('/%s.e%s' % (jobname, job.lrms_jobid)) : ('%s.stderr' % jobname),
+                ('/%s.o%s.dat' % (jobname, job.lrms_jobid)) : ('%s.dat' % jobname),
+                ('/%s.o%s.inp' % (jobname, job.lrms_jobid)) : ('%s.inp' % jobname),
+                }
             for file in files_list:
                 _remote_file =  job.remote_ssh_folder +'/' + file
+                # default to keep same file name ...
                 _local_file = _download_dir +'/' + file
+                # ... but override if it's a known one
+                for r,l in filename_map.items():
+                    if _remote_file.endswith(r):
+                        _local_file = _download_dir + '/' + l
+                gc3utils.log.debug("Downloading remote file '%s' to local file '%s'", 
+                                   _remote_file, _local_file)
                 try:
                     sftp.get(_remote_file, _local_file)
-                    gc3utils.log.debug('copied remote: ' + _remote_file + ' to local: ' + _local_file)
                 except:
                     # todo : figure out how to check for existance of file before trying to copy
                     gc3utils.log.debug('could not copy remote file: ' + _remote_file)
                     raise
+            # `qgms` submits GAMESS jobs with join=yes, i.e., stdout and stderr are
+            # collected into the same file; make jobname.stderr exists a link to jobname.stdout
+            # in case some program relies on its existence
+            if not os.path.exists(_download_dir + '/' + jobname + '.stderr'):
+                os.symlink(_download_dir + '/' + jobname + '.stdout',
+                           _download_dir + '/' + jobname + '.stderr')
 
             # cleanup remote folder
             _command = 'rm -rf %s ' % job.remote_ssh_folder
