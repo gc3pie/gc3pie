@@ -56,13 +56,13 @@ class GridtaskModel(BaseroleModel):
                 if doc['sub_type'] == 'GridtaskModel':
                     yield doc['_id'],doc
     
-    #TODO: FIX
+    #TODO: FIX ME, issue here if we store tasks and jobs in the same list, we can not wrap them here
     @ViewField.define('GridtaskModel', wrapper=GridjobModel)
     def view_children(doc):
         if 'base_type' in doc:
             if doc['base_type'] == 'BaseroleModel':
                 if doc['sub_type'] == 'GridtaskModel':
-                    for job_id in doc['children']:
+                    for job_id in doc['children_ids']:
                         yield job_id, {'_id':job_id}
     
     @ViewField.define('GridtaskModel')
@@ -110,7 +110,7 @@ class TaskInterface(BaseGraphInterface):
                 if self.status.locked == key:
                     self._obj.status = value
                 else:
-                    raise DocumentError('Run %s is locked, and you provided the wrong key.'%(self.id))
+                    raise DocumentError('Task %s is locked, and you provided the wrong key.'%(self.id))
             else:
                 self._obj.status = value
         return locals()
@@ -160,23 +160,23 @@ class TaskInterface(BaseGraphInterface):
 #        return locals()
 #    status_percent_done = property(**status_percent_done())
     
-    def wait(self, timeout=60):
-        from time import sleep
-        check_freq=10
-        if timeout == 'INFINITE':
-            timeout = sys.maxint
-        if check_freq > timeout:
-            check_freq = timeout
-        starting_time = time.time()
-        while True:
-            my_status = self.status_overall
-            if starting_time + timeout < time.time() or my_status.terminal:
-                break
-            else:
-                time.sleep(check_freq)
-        if my_status.terminal:
-            # We did not timeout 
-            return True
-        else:
-            # Timed out
-            return False
+#    def wait(self, timeout=60):
+#        from time import sleep
+#        check_freq=10
+#        if timeout == 'INFINITE':
+#            timeout = sys.maxint
+#        if check_freq > timeout:
+#            check_freq = timeout
+#        starting_time = time.time()
+#        while True:
+#            my_status = self.status_overall
+#            if starting_time + timeout < time.time() or my_status.terminal:
+#                break
+#            else:
+#                time.sleep(check_freq)
+#        if my_status.terminal:
+#            # We did not timeout 
+#            return True
+#        else:
+#            # Timed out
+#            return False

@@ -76,15 +76,19 @@ class JobInterface(BaseGraphInterface):
                         requested_resource='ocikbpra',  requested_cores=2, requested_memory=1, requested_walltime=None):
         self.wrap(GridjobModel().create(self.db.username, title))
         gorg.log.debug('Job %s has been created'%(self.id))        
-        self.run = RunInterface(self.db).create(files_to_run, self, 
+        a_run = RunInterface(self.db).create(files_to_run, self, 
                                                                     application_tag, requested_resource, 
                                                                     requested_cores, requested_memory, 
                                                                     requested_walltime)
-        self.run_id = self.run.id
+        self.run_id = a_run.id
         self.parser = parser_name
         self.store()
         return self    
     
+    @property
+    def run(self):
+        return RunInterface(self.db).load(self.run_id)
+        
     def load(self, id=None):
         if not id:
             id = self.id
@@ -94,7 +98,6 @@ class JobInterface(BaseGraphInterface):
             DocumentError('Job %s does not have a run associated with it.'%(id))
         if len(view) > 1:
             DocumentError('Job %s has more than one run associated with it.'%(id))
-        self.run = RunInterface(self.db).load(view.rows[0].id)
         return self
     
     def add_parent(self, parent):
@@ -123,7 +126,6 @@ class JobInterface(BaseGraphInterface):
     
     def store(self):
         super(JobInterface, self).store()
-        self.run.store()
 
     def status():
         """Here we need to check to see what kind of status we have. If more than one job is pointing to the same
@@ -131,7 +133,9 @@ class JobInterface(BaseGraphInterface):
         def fget(self):
             return self.run.status
         def fset(self, status):
-            self.run.status = status
+            a_run = self.run
+            a_run.status = status
+            a_run.store()
         return locals()
     status = property(**status())
 
