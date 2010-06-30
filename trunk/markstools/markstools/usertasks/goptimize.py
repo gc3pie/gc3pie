@@ -15,7 +15,7 @@ from markstools.lib import usertask
 from gorg.model.gridtask import TaskInterface
 from gorg.lib.utils import Mydb
 from gorg.lib import state
-from gorg.gridjobscheduler import STATES as JOB_SCHEDULER_STATES
+from gorg.gridscheduler import STATES as JOB_SCHEDULER_STATES
 
 STATE_WAIT = state.State.create('WAIT', 'WAIT desc')
 STATE_STEP = state.State.create('STEP', 'STEP desc')
@@ -36,7 +36,7 @@ class GOptimize(usertask.UserTask):
         self.calculator = None
         self.optimizer = None
 
-    def initialize(self, db, calculator, optimizer, atoms, params, application_to_run='gamess', selected_resource='gc3',  cores=8, memory=2, walltime=3):
+    def initialize(self, db, calculator, optimizer, atoms, params, application_to_run='gamess', selected_resource='gc3',  cores=8, memory=2, walltime=1):
         self.calculator = calculator
         self.a_task = TaskInterface(db).create(self.__class__.__name__)
         self.optimizer = optimizer
@@ -46,10 +46,11 @@ class GOptimize(usertask.UserTask):
             self.a_task.put_attachment(myfile, 'optimizer')
         finally:
             myfile.close()
-        params.title = 'job_number_%d'%self.a_task.user_data_dict['total_jobs']
+        params.title = 'a_job'
         a_job = self.calculator.generate(atoms, params, self.a_task, application_to_run, selected_resource, cores, memory, walltime)
         self.calculator.calculate(self.a_task)
         self.status = self.STATES.WAIT
+        self.save()
     
     def handle_wait_state(self):
         job_list = [self.a_task.children[-1]]
@@ -101,11 +102,11 @@ class GOptimize(usertask.UserTask):
         return opt_list
 
     @staticmethod
-    def select_optimizer(options):
+    def select_optimizer(optimizer_str):
         from markstools.optimize import lbfgs
         from markstools.optimize import fire
         mapping = dict(lbfgs=lbfgs.LBFGS, fire=fire.FIRE)
-        optimizer = mapping.get(options.optimizer, None)()
+        optimizer = mapping.get(optimizer_str, None)()
         if optimizer is None:
             raise 'Incorrect OPT', 'Your optimizer selection is not valid'
         return optimizer

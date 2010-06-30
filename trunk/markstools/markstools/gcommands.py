@@ -64,7 +64,38 @@ def ghessian(*args, **kw):
     ghessian = GHessian()
     gamess_calc = GamessGridCalc(db)
     ghessian.initialize(db, gamess_calc, atoms, params)
+    print 'ghessian created task %s'%(ghessian.a_task.id)
     #ghessian.run()
+
+def gdirrun(*args, **kw):
+    from markstools.io.gamess import ReadGamessInp, WriteGamessInp
+    from markstools.calculators.gamess.calculator import GamessGridCalc
+    from markstools.usertasks.gdirrun import GDirRun
+
+    config = _configure_system()
+    #Set up command line options
+    usage = "usage: %prog [options] arg"
+    parser = OptionParser(usage)
+    parser.add_option("-d", "--directory", dest="dir",default='markstools/examples/water_UHF_gradient.inp', 
+                      help="directory to process gamess files")
+    parser.add_option("-m", "--max_running", dest="max_running",default=5, 
+                      help="maximum number of running jobs")
+    parser.add_option("-v", "--verbose", action='count', dest="verbosity", default=config.verbosity, 
+                      help="add more v's to increase log output.")
+    (options, args) = parser.parse_args()
+
+    configure_logger(options.verbosity, _default_log_file_location) 
+
+    if not os.path.isdir(options.dir):
+        sys.stdout.write('Can not locate directory \'%s\'\n'%(options.dir))
+        return
+    
+    # Connect to the database
+    db = Mydb(config.database_user,config.database_name,config.database_url).cdb()
+    
+    gdirrun = GDirRun()
+    gamess_calc = GamessGridCalc(db)
+    gdirrun.initialize(db, gamess_calc, atoms, params, options.dir, options.max_running)
 
 def gtaskscheduler(*args, **kw):
     from markstools.usertasks.taskscheduler import TaskScheduler
@@ -89,22 +120,6 @@ def gtaskscheduler(*args, **kw):
         task_scheduler.run()
     else:
         markstools.log.debug('An instance of gtaskscheduler is already running.  Not starting another one.')
-
-
-def gtestcron(*args, **kw):
-    import time
-    
-    config = _configure_system()
-    
-    #Set up command line options
-    usage = "usage: %prog [options] arg"
-    parser = OptionParser(usage)
-    parser.add_option("-v", "--verbose", action='count',dest="verbosity", default=config.verbosity, 
-                      help="add more v's to increase log output.")
-    (options, args) = parser.parse_args()
-
-    configure_logger(options.verbosity, _default_log_file_location) 
-    markstools.log.debug('The gtestcron function was ran at %s.'%(time.asctime()))
 
 def gorgsetup(*args, **kw):
     from gorg.model.gridjob import GridjobModel, GridrunModel
@@ -181,7 +196,9 @@ def gcontrol(*args, **kw):
 
 def goptimize(*args, **kw):
     from markstools.usertasks.goptimize import GOptimize
-    
+    from markstools.io.gamess import ReadGamessInp, WriteGamessInp
+    from markstools.calculators.gamess.calculator import GamessGridCalc
+
     config = _configure_system()
     #Set up command line options
     
@@ -210,7 +227,9 @@ def goptimize(*args, **kw):
     atoms = reader.atoms
     
     goptimize = GOptimize()
+    optimizer = GOptimize.select_optimizer(options.optimizer)
     gamess_calc = GamessGridCalc(db)
+    
     
     goptimize.initialize(db, gamess_calc, optimizer, atoms, params)
     

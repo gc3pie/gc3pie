@@ -8,7 +8,7 @@ from gc3utils.gcli import Gcli
 
 # The key is the name of the class where the usetask is programmed, and the value is the module location
 module_names = {'GHessian':'markstools.usertasks.ghessian', 
-                              'GSingle':'markstools.usertasks.gsingle', 
+                              'GDirRun':'markstools.usertasks.gdirrun', 
                               'GRestart':'markstools.usertasks.grestart'}
 
 usertask_classes = dict()

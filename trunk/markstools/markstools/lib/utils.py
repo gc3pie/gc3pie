@@ -25,18 +25,24 @@ def configure_logger(verbosity, log_file_name='gc3utils_log'):
     - Returns nothing.
     """
     formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-    if ( verbosity > 5):
-        logging_level = 10
-    else:
-        logging_level = (( 6 - verbosity) * 10)
+    logging_level = 10 * max(1, 5-verbosity)
 
     markstools.log.setLevel(logging_level)
-    handler = logging.handlers.RotatingFileHandler(os.path.expanduser(log_file_name), maxBytes=2000000, backupCount=5)
-    handler.setFormatter(formatter)
-    markstools.log.addHandler(handler)
+    file_handler = logging.handlers.RotatingFileHandler(os.path.expanduser(log_file_name), maxBytes=2000000, backupCount=5)
+    file_handler.setFormatter(formatter)
+    stream_handler = logging.StreamHandler()
+    stream_handler.setFormatter(formatter)
+    markstools.log.addHandler(file_handler)
+    markstools.log.addHandler(stream_handler)
     
     import gorg.lib.utils
     gorg.lib.utils.configure_logger(verbosity, log_file_name)
+    from gc3utils.gcommands import _configure_logger
+    import gc3utils
+    gc3utils.log.addHandler(file_handler)
+    gc3utils.log.addHandler(stream_handler)
+    #gc3utils.log.setLevel(logging_level)
+    _configure_logger(verbosity)
 
 def split_seq(iterable, size):
     """ Split a interable into chunks of the given size
