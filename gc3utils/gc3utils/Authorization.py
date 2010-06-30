@@ -23,16 +23,20 @@ class Auth(object):
             elif auth_type is Default.NONE_AUTHENTICATION:
                 a = NoneAuth()
             else:
-                raise Exception("Auth.get() called with invalid `auth_type` (%s)", auth_type)
+                raise AuthenticationException("Auth.get() called with invalid `auth_type` (%s)", auth_type)
 
             if not a.check():
                 if self.auto_enable:
                     try:
                         a.enable()
                     except Exception, x:
+                        gc3utils.log.debug("Got exception while enabling auth '%s',"
+                                           " will remember for next invocations:"
+                                           " %s: %s" % (auth_type, x.__class__.__name__, str(x)))
                         a = x
                 else:
-                    a = AuthenticationException()
+                    a = AuthenticationException("No valid credentials of type '%s'"
+                                                " and `auto_enable` not set." % auth_type)
             self.__auths[auth_type] = a
 
         a = self.__auths[auth_type]
