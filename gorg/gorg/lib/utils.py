@@ -37,9 +37,12 @@ def configure_logger(verbosity, log_file_name='gc3utils_log'):
         logging_level = (( 6 - verbosity) * 10)
 
     gorg.log.setLevel(logging_level)
-    handler = logging.handlers.RotatingFileHandler(os.path.expanduser(log_file_name), maxBytes=2000000, backupCount=5)
-    handler.setFormatter(formatter)
-    gorg.log.addHandler(handler)
+    file_handler = logging.handlers.RotatingFileHandler(os.path.expanduser(log_file_name), maxBytes=2000000, backupCount=5)
+    file_handler.setFormatter(formatter)
+    stream_handler = logging.StreamHandler()
+    stream_handler.setFormatter(formatter)
+    gorg.log.addHandler(file_handler)
+    gorg.log.addHandler(stream_handler)
 
 def formatExceptionInfo(maxTBlevel=5):
     '''Make the exception output pretty'''

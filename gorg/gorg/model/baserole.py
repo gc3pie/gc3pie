@@ -25,7 +25,7 @@ class BaseroleModel(Document):
     user_data_dict = DictField()
     result_data_dict = DictField()
     
-    children = ListField(TextField())
+    children_ids = ListField(TextField())
     
     # This works like a dictionary, but allows you to go a_job.test.application_to_run='a app' as well as a_job.test['application_to_run']='a app'
     #test=DictField(Schema.build(application_to_run=TextField(default='gamess')))
@@ -106,7 +106,7 @@ class ObjectWrapper(object):
         for nameValue in inspect.getmembers(obj, isnotmethod):
             members.append(nameValue[0])        
         super(ObjectWrapper, self).__setattr__('__members__', members)
-    
+
     def __getattr__(self, name):
         """Redirect unhandled get attribute to self._obj."""
         if not hasattr(self._obj, name):
@@ -193,7 +193,7 @@ class BaseInterface(ObjectWrapper):
             f_attachments[attachment] = write_to_file(tempdir, attachment, attached_data)
         return f_attachments
     
-    def wait(self, timeout=60):
+    def wait(self, wait_for_state = 'terminal', timeout=60):
         import time
         check_freq = 10
         if timeout == 'INFINITE':
@@ -201,34 +201,43 @@ class BaseInterface(ObjectWrapper):
         if check_freq > timeout:
             check_freq = timeout
         starting_time = time.time()
-        while True:
-            if starting_time + timeout < time.time() or self.status.terminal:
-                break
+        while starting_time + timeout > time.time():
+            if wait_for_state == 'terminal':
+                if self.status.terminal:
+                    break
             else:
-                time.sleep(check_freq)
-        if self.status.terminal:
-            # We did not timeout 
-            return True
+                if self.status == wait_for_state:
+                    break
+            time.sleep(check_freq)
+        if wait_for_state == 'terminal':
+            if self.status.terminal:
+                return True
         else:
-            # Timed out
-            return False
+            if self.status == wait_for_state:
+                return True
+        # Timed out
+        return False
     
 class BaseGraphInterface(BaseInterface):
         
     def add_child(self, child):
         from gridjob import JobInterface
         assert isinstance(child, JobInterface),'Only jobs can be chilren.'
-        if child.id not in self.children:
-            self._obj.children.append(child.id)
-
-
-    def children():            
+        if child.id not in self._obj.children_ids:
+            self._obj.children_ids.append(child.id)
+    
+    def children():
         def fget(self):
             from gridjob import JobInterface
-            job_list=list()
-            for job_id in self._obj.children:
-                a_job = JobInterface(self.db).load(job_id)
-                job_list.append(a_job)
-            return tuple(job_list)
+            from gridtask import TaskInterface
+            child_list=list()
+            for child_id in self._obj.children_ids:
+                child = self.db.get(child_id)
+                if child['sub_type'] == 'GridjobModel':
+                    wrapped_child = JobInterface(self.db).load(child_id)
+                else:
+                    wrapped_child = TaskInterface(self.db).load(child_id)
+                child_list.append(wrapped_child)
+            return tuple(child_list)
         return locals()
     children = property(**children())
