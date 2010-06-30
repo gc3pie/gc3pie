@@ -90,7 +90,7 @@ class NoResources(Error):
     # FIXME: should we have a separate `NoCompatibleResources` exception?
     pass
 
-class SLCSException(Error):
+class SLCSException(AuthenticationException):
     pass
 
 class SshSubmitException(Error):
@@ -99,7 +99,7 @@ class SshSubmitException(Error):
 class TransportException(Error):
     pass
 
-class VOMSException(Error):
+class VOMSException(AuthenticationException):
     pass
 
 class InvalidInformationContainerError(Error):

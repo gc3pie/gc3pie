@@ -1,11 +1,13 @@
-import Default
-import utils
 import sys
 import os
-import Exceptions
+import subprocess
+import getpass
 
 import gc3utils
+import Default
+from Exceptions import *
 
+import arclib
 
 class Auth(object):
     def __init__(self,auto_enable=True):
@@ -21,7 +23,7 @@ class Auth(object):
             elif auth_type is Default.NONE_AUTHENTICATION:
                 a = NoneAuth()
             else:
-                raise Exception("Invalid auth_type in Auth()")
+                raise Exception("Auth.get() called with invalid `auth_type` (%s)", auth_type)
 
             if not a.check():
                 if self.auto_enable:
@@ -30,7 +32,7 @@ class Auth(object):
                     except Exception, x:
                         a = x
                 else:
-                    a = Exceptions.AuthenticationException()
+                    a = AuthenticationException()
             self.__auths[auth_type] = a
 
         a = self.__auths[auth_type]
@@ -38,41 +40,78 @@ class Auth(object):
             raise a
         return a
 
+
 class ArcAuth(object):
-                
     def check(self):
         gc3utils.log.debug('Checking authentication: GRID')
         try:
-            if (utils.check_grid_authentication()) and (utils.check_user_certificate()):
+            if _user_certificate_is_valid() and _voms_proxy_is_valid(): 
                 return True
-        except:
-            gc3utils.log.error('Authentication Error: %s', sys.exc_info()[1])
-        
+        except Exception, x:
+            gc3utils.log.error('Error checking GRID authentication: %s', str(x), exc_info=True)
         return False
      
     def enable(self):
         try:
             # Get AAI username
+            gc3utils.log.debug("Reading AAI username from file '%s'", Default.AAI_CREDENTIAL_REPO)
             _aaiUserName = None
-                
-            Default.AAI_CREDENTIAL_REPO = os.path.expandvars(Default.AAI_CREDENTIAL_REPO)
-            gc3utils.log.debug('checking AAI credential file [ %s ]',Default.AAI_CREDENTIAL_REPO)
             try: 
-                _fileHandle = open(Default.AAI_CREDENTIAL_REPO,'r')
+                _fileHandle = open(Default.AAI_CREDENTIAL_REPO, 'r')
                 _aaiUserName = _fileHandle.read()
                 _fileHandle.close()
-                _aaiUserName = _aaiUserName.rstrip("\n")
-                gc3utils.log.debug('_aaiUserName: %s',_aaiUserName)
-            except IOError:
-                gc3utils.log.error('Failed opening AAI credential file') 
+                _aaiUserName = _aaiUserName.strip()
+                gc3utils.log.debug("Read aaiUserName: '%s'", _aaiUserName)
+            except IOError, x:
+                gc3utils.log.error("Cannot read AAI credential file '%s': %s",
+                                   Default.AAI_CREDENTIAL_REPO, str(x), exc_info=True) 
+                # do not raise, will ask for username interactively
 
-            # Renew credential
-            return utils.renew_grid_credential(_aaiUserName)
+            VOMSPROXYINIT = ['voms-proxy-init','-valid','24:00','-voms','smscg','-q','-pwstdin']
+            SLCSINFO = "openssl x509 -noout -checkend 3600 -in ~/.globus/usercert.pem"
 
-        except:
-            gc3utils.log.critical('Failed renewing grid credential [%s]',sys.exc_info()[1])
-            # return False
-            raise Exceptions.AuthenticationException('failed renewing GRID credential')
+            if _aaiUserName is None:
+                # Go interactive
+                _aaiUserName = raw_input('Insert AAI/Switch username for user '+getpass.getuser()+': ')
+            # UserName set, go interactive asking password
+            input_passwd = getpass.getpass('Insert AAI/Switch password for user '+_aaiUserName+' : ')
+
+            gc3utils.log.debug('Checking slcs status')
+            new_cert = False
+            if ( _user_certificate_is_valid() != True ):
+                # Failed because slcs credential expired
+                # trying renew slcs
+                # this should be an interctiave command
+                gc3utils.log.debug('No valid certificate found; trying to get new one by slcs-init ...')
+                # FIXME: hard-coded UZH stuff!
+                returncode = subprocess.call(["slcs-init", "--idp", "uzh.ch", "-u", _aaiUserName, 
+                                              "-p", input_passwd, "-k", input_passwd],
+                                             close_fds=True)
+                if returncode != 0:
+                    raise SLCSException("Got error trying to run 'slcs-init'")
+                new_cert = True
+                gc3utils.log.info('Successfully gotten new SLCS certificate.')
+
+            # if cert has changed, we need a new proxy as well
+            if new_cert or not _voms_proxy_is_valid():
+                # Try renew voms credential; another interactive command
+                gc3utils.log.debug("No valid proxy found; trying to get a new one by 'voms-proxy-init' ...")
+                p1 = subprocess.Popen(['echo',input_passwd], stdout=subprocess.PIPE)
+                p2 = subprocess.Popen(VOMSPROXYINIT, stdin=p1.stdout, stdout=subprocess.PIPE)
+                p2.communicate()
+                input_passwd = None # dispose content of passord variable
+                if p2.returncode != 0:
+                    # Failed renewing voms credential
+                    # FATAL ERROR
+                    raise VOMSException("Could not get new proxy by running 'voms-proxy-init':"
+                                        " got return code %s" % p2.returncode)
+                gc3utils.log.info("Successfully gotten new VOMS proxy.")
+
+            return True
+
+        except Exception, x:
+            raise AuthenticationException('Failed renewing GRID credential: %s: %s'
+                                          % (x.__class__.__name__, str(x)))
 
 
 class SshAuth(object):
@@ -90,6 +129,17 @@ class NoneAuth(object):
         return True
 
     
-    
-    
-        
+def _voms_proxy_is_valid():
+    try:
+        c = arclib.Certificate(arclib.PROXY)
+        return not c.IsExpired()
+    except:
+        return False
+
+
+def _user_certificate_is_valid():
+    try:
+        c = arclib.Certificate(arclib.USERCERT)
+        return not c.IsExpired()
+    except:
+        return False
