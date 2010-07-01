@@ -101,23 +101,6 @@ def dirname(pathname):
     return dirname
 
 
-def inputname(pathname):
-    """
-    Return the file name, with `.inp` extension and the directory name stripped out.
-
-    There are 2 reasons for this:
-    - Users can submit a job using the syntax "gsub exam01.inp" or "gsub exam01" and both will work.
-    - Sometimes it is useful to differentiate between the the job name "exam01" and the input file "exam01.inp"
-    """
-    return os.path.splitext(input_file_name(pathname))[0]
-#    basename = os.path.basename(pathname)
-#    filename, ext = os.path.splitext(basename)
-    # FIXME: should raise exception if `ext` is not ".inp"
-#    return filename
-
-def input_file_name(pathname):
-    return  os.path.basename(pathname)
-
 def check_jobdir(jobdir):
     """
     Perform various checks on the jobdir.
@@ -440,24 +423,6 @@ def release_file_lock(joblist_lock):
         
 #    except:
 #        logging.error('Failed sending email [ %s ]',sys.exc_info()[1])
-
-def check_grid_authentication():
-    try:
-        c = Certificate(PROXY)
-        if ( c.IsExpired() ):
-            raise
-        return True
-    except:
-        return False
-
-def check_user_certificate():
-    try:
-        c = Certificate(USERCERT)
-        if ( c.IsExpired() ):
-            raise
-        return True
-    except:
-        return False
 
 def job_status_to_string(job_status):
     try:

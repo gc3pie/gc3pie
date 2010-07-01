@@ -10,8 +10,8 @@ from Exceptions import *
 import arclib
 
 class Auth(object):
-    def __init__(self,auto_enable=True):
-        self.auto_enable=True
+    def __init__(self, auto_enable):
+        self.auto_enable = auto_enable
         self.__auths = { }
 
     def get(self,auth_type):
@@ -71,9 +71,6 @@ class ArcAuth(object):
                                    Default.AAI_CREDENTIAL_REPO, str(x), exc_info=True) 
                 # do not raise, will ask for username interactively
 
-            VOMSPROXYINIT = ['voms-proxy-init','-valid','24:00','-voms','smscg','-q','-pwstdin']
-            SLCSINFO = "openssl x509 -noout -checkend 3600 -in ~/.globus/usercert.pem"
-
             if _aaiUserName is None:
                 # Go interactive
                 _aaiUserName = raw_input('Insert AAI/Switch username for user '+getpass.getuser()+': ')
@@ -101,7 +98,13 @@ class ArcAuth(object):
                 # Try renew voms credential; another interactive command
                 gc3utils.log.debug("No valid proxy found; trying to get a new one by 'voms-proxy-init' ...")
                 p1 = subprocess.Popen(['echo',input_passwd], stdout=subprocess.PIPE)
-                p2 = subprocess.Popen(VOMSPROXYINIT, stdin=p1.stdout, stdout=subprocess.PIPE)
+                p2 = subprocess.Popen(['voms-proxy-init', 
+                                       '-valid', '24:00', 
+                                       # FIXME: hard-coded value!
+                                       '-voms', 'smscg', 
+                                       '-q','-pwstdin'], 
+                                      stdin=p1.stdout, 
+                                      stdout=subprocess.PIPE)
                 p2.communicate()
                 input_passwd = None # dispose content of passord variable
                 if p2.returncode != 0:

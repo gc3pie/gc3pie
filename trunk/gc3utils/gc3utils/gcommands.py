@@ -46,16 +46,20 @@ def _configure_logger(verbosity):
     gc3utils.log.setLevel(logging_level)
 
 
-def _get_gcli(config_file_path = _default_config_file_location):
+def _get_gcli(config_file_path = _default_config_file_location, auto_enable_auth=True):
     """
     Return a `gc3utils.gcli.Gcli` instance configured by parsing
     the configuration file located at `config_file_path`.
     (Which defaults to `Defaults.config_file`.)
+
+    If `auto_enable_auth` is `True` (default), then `Gcli` will try to renew
+    expired credentials; this requires interaction with the user and will
+    certainly fail unless stdin & stdout are not connected to a terminal.
     """
     try:
         (default, resources) = gc3utils.utils.import_config(config_file_path)
         gc3utils.log.debug('Creating instance of Gcli')
-        return gc3utils.gcli.Gcli(default, resources)
+        return gc3utils.gcli.Gcli(default, resources, auto_enable_auth)
     except NoResources:
         raise FatalError("No computational resources defined.  Please edit the configuration file '%s'." 
                          % config_file_path)
@@ -158,9 +162,6 @@ def gsub(*args, **kw):
     if application_tag == 'gamess':
         if len(args) != 2:
             raise InvalidUsage('Wrong number of arguments: this commands expects exactly two arguments.')
-
-        # Init GAMESS application
-        # application = gc3utils.applications.gamess(
         application = gc3utils.Application.Application(
             application_tag=application_tag,
             inputs=[args[1]],
@@ -174,11 +175,6 @@ def gsub(*args, **kw):
     elif application_tag == 'rosetta':
         if len(args) != 4:
             raise InvalidUsage('Wrong number of arguments: this commands expects exactly three arguments.')
-
-# (arguments="1brs.pdb" "1brs.pdb" " " "1" "docking_flags")
-# (inputfiles=("docking_flags" "./docking_flags")("1brs.pdb" "./1brs.pdb"))
-# (outputFiles=(1brs.tgz "")(1brs.fasc ""))
-        # Init GAMESS application
         application = gc3utils.Application.Rosetta(
             application_tag=application_tag,
             executable=args[1],
@@ -191,25 +187,6 @@ def gsub(*args, **kw):
             requested_walltime=options.walltime,
             application_arguments=options.application_arguments
             )
-
-#   TBCK: this should be pushed to Application __init__
-#    if not os.path.isabs(input_file_name):
-#        input_file_name = os.path.realpath(input_file_name)
-
-    # Create Application obj
-#    application = gc3utils.Application.Application(
-#        application_tag=application_tag,
-#        inputs=[input_file_name],
-#        job_local_dir=options.job_local_dir,
-#        requested_memory=options.memory_per_core,
-#        requested_cores=options.ncores,
-#        requestd_resource=options.resource_name,
-#        requested_walltime=options.walltime,
-#        application_arguments=options.application_arguments
-#        )
-
-#    if not application.is_valid():
-#        raise Exception('Failed creating application object')
 
     _gcli = _get_gcli(_default_config_file_location)
     if options.resource_name:
