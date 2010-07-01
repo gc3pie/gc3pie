@@ -344,14 +344,16 @@ class SshLrms(LRMS):
             # copy back all files, renaming them to adhere to the ArcLRMS convention
             try: 
                 jobname = job.lrms_job_name
+                gc3utils.log.debug("Recorded job name is '%s'" % jobname)
             except KeyError:
                 # no job name was set, empty string should be safe for following code
                 jobname = ''
-            gc3utils.log.debug("Assuming job name is '%s'" % jobname)
+                gc3utils.log.warning("No recorded job name; will not be able to rename files accordingly")
             filename_map = { 
                 # XXX: SGE-specific?
                 ('/%s.o%s' % (jobname, job.lrms_jobid)) : ('%s.stdout' % jobname),
                 ('/%s.e%s' % (jobname, job.lrms_jobid)) : ('%s.stderr' % jobname),
+                # the following is definitely GAMESS-specific
                 ('/%s.o%s.dat' % (jobname, job.lrms_jobid)) : ('%s.dat' % jobname),
                 ('/%s.o%s.inp' % (jobname, job.lrms_jobid)) : ('%s.inp' % jobname),
                 }
@@ -371,8 +373,8 @@ class SshLrms(LRMS):
                     # todo : figure out how to check for existance of file before trying to copy
                     gc3utils.log.debug('could not copy remote file: ' + _remote_file)
                     raise
-            # `qgms` submits GAMESS jobs with join=yes, i.e., stdout and stderr are
-            # collected into the same file; make jobname.stderr exists a link to jobname.stdout
+            # `qgms` submits GAMESS jobs with `-j y`, i.e., stdout and stderr are
+            # collected into the same file; make jobname.stderr a link to jobname.stdout
             # in case some program relies on its existence
             if not os.path.exists(_download_dir + '/' + jobname + '.stderr'):
                 os.symlink(_download_dir + '/' + jobname + '.stdout',
