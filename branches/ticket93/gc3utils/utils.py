@@ -101,23 +101,6 @@ def dirname(pathname):
     return dirname
 
 
-def inputname(pathname):
-    """
-    Return the file name, with `.inp` extension and the directory name stripped out.
-
-    There are 2 reasons for this:
-    - Users can submit a job using the syntax "gsub exam01.inp" or "gsub exam01" and both will work.
-    - Sometimes it is useful to differentiate between the the job name "exam01" and the input file "exam01.inp"
-    """
-    return os.path.splitext(input_file_name(pathname))[0]
-#    basename = os.path.basename(pathname)
-#    filename, ext = os.path.splitext(basename)
-    # FIXME: should raise exception if `ext` is not ".inp"
-#    return filename
-
-def input_file_name(pathname):
-    return  os.path.basename(pathname)
-
 def check_jobdir(jobdir):
     """
     Perform various checks on the jobdir.
@@ -443,75 +426,6 @@ def release_file_lock(joblist_lock):
         
 #    except:
 #        logging.error('Failed sending email [ %s ]',sys.exc_info()[1])
-
-def check_grid_authentication():
-    try:
-        c = Certificate(PROXY)
-        if ( c.IsExpired() ):
-            raise
-        return True
-    except:
-        return False
-
-def check_user_certificate():
-    try:
-        c = Certificate(USERCERT)
-        if ( c.IsExpired() ):
-            raise
-        return True
-    except:
-        return False
-
-def renew_grid_credential(_aaiUserName):
-    VOMSPROXYINIT = ['voms-proxy-init','-valid','24:00','-voms','smscg','-q','-pwstdin']
-    SLCSINFO = "openssl x509 -noout -checkend 3600 -in ~/.globus/usercert.pem"
-    SLCSINIT = "slcs-init --idp uzh.ch"
-#    AAI_CREDENTIAL_REPO = "$HOME/.gc3/aai_credential"
-                            
-    try:
-        if ( _aaiUserName is None ):
-            # Go interactive
-            _aaiUserName = raw_input('Insert AAI/Switch username for user '+getpass.getuser()+': ')
-        # UserName set, go interactive asking password
-        input_passwd = getpass.getpass('Insert AAI/Switch password for user '+_aaiUserName+' : ')
-        gc3utils.log.debug('Checking slcs status')
-        if ( check_user_certificate() != True ):
-            # Failed because slcs credential expired
-            # trying renew slcs
-            # this should be an interactiave command
-            gc3utils.log.debug('Checking slcs status\t\t[ failed ]')
-            gc3utils.log.debug('Initializing slcs')
-            retval = commands.getstatusoutput(SLCSINIT+" -u "+_aaiUserName+" -p "+input_passwd+" -k "+input_passwd)
-            if ( retval[0] != 0 ):
-                gc3utils.log.critical("failed renewing slcs: %s",retval[1])
-                raise SLCSException('failed slcs-init')
-                
-        gc3utils.log.info('Initializing slcs\t\t\t[ ok ]')
-                
-        # Try renew voms credential
-        # Another interactive command
-        
-        gc3utils.log.debug('Initializing voms-proxy')
-        
-        p1 = subprocess.Popen(['echo',input_passwd],stdout=subprocess.PIPE)
-        p2 = subprocess.Popen(VOMSPROXYINIT,stdin=p1.stdout,stdout=subprocess.PIPE)
-        p2.communicate()
-        if ( p2.returncode != 0 ):
-            # Failed renewing voms credential
-            # FATAL ERROR
-            gc3utils.log.critical("Initializing voms-proxy\t\t[ failed ]")
-            raise VOMSException('failed voms-proxy-init')
-
-        gc3utils.log.info('Initializing voms-proxy\t\t[ ok ]')
-        gc3utils.log.info('check_authentication\t\t\t\t[ ok ]')
-        
-        # disposing content of passord variable
-        input_passwd = None
-        return True
-    except:
-        gc3utils.log.error('Check grid credential failed  [ %s ]',sys.exc_info()[1])
-        # Return False or raise exception ?
-        raise
 
 def job_status_to_string(job_status):
     try:

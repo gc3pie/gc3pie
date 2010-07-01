@@ -21,11 +21,12 @@ import Authorization
 
 class Gcli:
 
-    def __init__(self, defaults, resource_list):
+    def __init__(self, defaults, resource_list, auto_enable_auth):
         if ( len(resource_list) == 0 ):
             raise NoResources('Resource list has length 0')
         self._resources = resource_list
         self._defaults = defaults
+        self.auto_enable_auth = auto_enable_auth
 
     def select_resource(self, match):
         """
@@ -51,11 +52,9 @@ class Gcli:
                                 if fnmatch(res.name, match) ]
 
 #========== Start gsub ===========
-    def gsub(self, application_obj):
-        # Obsolete: def gsub(self, application_to_run, input_file, selected_resource, job_local_dir, cores, memory, walltime):
-        # returns an object of type Job
-        # throw an exception if the method fails or if the Job object cannot be built successfully
-        
+    def gsub(self, application_obj, **kw):
+        auto_enable_auth = kw.get('auto_enable_auth', self.auto_enable_auth)
+
         # gsub workflow:
         #    check input files from application
        #    create list of LRMSs
@@ -63,7 +62,7 @@ class Gcli:
         #    do Brokering
         #    submit job
         #    return job_obj
-                
+        
         # Parsing passed arguments
         gc3utils.log.debug('input_file(s): %s',application_obj.inputs)
         gc3utils.log.debug('application tag: %s',application_obj.application_tag)
@@ -101,7 +100,7 @@ class Gcli:
         job = None
         for lrms in _selected_lrms_list:
             try:
-                a = Authorization.Auth()
+                a = Authorization.Auth(auto_enable_auth)
                 a.get(lrms._resource.type)
                 job = lrms.submit_job(application_obj)
                 if job.is_valid():
@@ -130,7 +129,8 @@ class Gcli:
 # How to get the list of jobids ?
 # We need an internal method for this
 # This method returns a list of job objs 
-    def gstat(self, job_obj):
+    def gstat(self, job_obj, **kw):
+        auto_enable_auth = kw.get('auto_enable_auth', self.auto_enable_auth)
        
         job_return_list = [] 
         if job_obj is None:
@@ -144,14 +144,14 @@ class Gcli:
 
         for _running_job in _list_of_runnign_jobs:
             try:
-                job_return_list.append(self.__gstat(_running_job))
+                job_return_list.append(self.__gstat(_running_job, auto_enable_auth))
             except:
                 gc3utils.log.debug('Exception when trying getting status of job %s: %s',_running_job.unique_token,str(sys.exc_info()[1]))
                 continue                                
 
         return job_return_list
 
-    def __gstat(self, job_obj):
+    def __gstat(self, job_obj, auto_enable_auth):
         # returns an updated job object
         # create instance of LRMS depending on resource type associated to job
         
@@ -162,17 +162,19 @@ class Gcli:
         if not ( job_obj.status == gc3utils.Job.JOB_STATE_COMPLETED or job_obj.status == gc3utils.Job.JOB_STATE_FINISHED or job_obj.status == gc3utils.Job.JOB_STATE_FAILED or job_obj.status == gc3utils.Job.JOB_STATE_DELETED ):
             # check job status
             # gc3utils.log.debug('checking job status')
-            a = Authorization.Auth()
+            a = Authorization.Auth(auto_enable_auth)
             a.get(_lrms._resource.type)                                
             job_obj = _lrms.check_status(job_obj)
 
         return job_obj
 
 #====== Gget =======
-    def gget(self, job_obj):
+    def gget(self, job_obj, **kw):
+        auto_enable_auth = kw.get('auto_enable_auth', self.auto_enable_auth)
+
         _lrms = self.__get_LRMS(job_obj.resource_name)
 
-        a = Authorization.Auth()
+        a = Authorization.Auth(auto_enable_auth)
         a.get(_lrms._resource.type)
         #job_obj = _lrms.get_results(job_obj)
 
@@ -183,8 +185,9 @@ class Gcli:
             return job_obj
         
 #====== Glist =======
-    def glist(self,resource_name):
+    def glist(self,resource_name, **kw):
         """ List status of a give resource."""
+        auto_enable_auth = kw.get('auto_enable_auth', self.auto_enable_auth)
 
 #        resource = self.__get_Resource(resource_name)
 #        if resource is None:
@@ -192,7 +195,7 @@ class Gcli:
         
         _lrms = self.__get_LRMS(resource_name)
 
-        a = Authorization.Auth()
+        a = Authorization.Auth(auto_enable_auth)
         a.get(_lrms._resource.type)
 
         return  _lrms.get_resource_status()
@@ -253,12 +256,14 @@ class Gcli:
             raise e
 
         return
-    def gkill(self, job_obj):
+    def gkill(self, job_obj, **kw):
         """Kill a job, and optionally remove the local job directory."""
+
+        auto_enable_auth = kw.get('auto_enable_auth', self.auto_enable_auth)
 
         _lrms = self.__get_LRMS(job_obj.resource_name)
 
-        a = Authorization.Auth()
+        a = Authorization.Auth(auto_enable_auth)
         a.get(_lrms._resource.type)
 
         job_obj = _lrms.cancel_job(job_obj)

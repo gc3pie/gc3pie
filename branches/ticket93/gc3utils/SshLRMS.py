@@ -1,5 +1,7 @@
 import sys
 import os
+import re
+
 import Exceptions 
 import commands
 import getpass
@@ -12,6 +14,17 @@ from LRMS import LRMS
 from utils import *
 
 
+def _qgms_job_name(filename):
+    """
+    Return the batch system job name used to submit GAMESS on input
+    file name `filename`.
+    """
+    if filename.endswith('.inp'):
+        return os.path.splitext(filename)[0]
+    else:
+        return filename
+
+
 # -----------------------------------------------------
 # SSH lrms
 #
@@ -21,10 +34,6 @@ class SshLrms(LRMS):
     # todo : say why
     isValid = 0
     _resource = None
-
-    # FIXME: this will make these class-wide attributes, i.e., shared by all instances!
-    ssh = None
-    sftp = None 
 
     def __init__(self, resource):
 
@@ -119,6 +128,7 @@ class SshLrms(LRMS):
 
             # remember outputs for later ref
             job.outputs = dict(application.outputs)
+            job.lrms_job_name = _qgms_job_name(_input_file_name) # XXX: GAMESS-specific!
             return job
 
         except:
@@ -176,7 +186,7 @@ class SshLrms(LRMS):
                 else:
                     # parse stdout and update job obect with detailed accounting information
 
-                    gc3utils.log.debug('parsgin stdout to get job accounting infromation')
+                    gc3utils.log.debug('parsing stdout to get job accounting information')
                     #gc3utils.log.debug('stdout: %s' % stdout)
 
                     for line in stdout.split('\n'):
@@ -307,9 +317,7 @@ class SshLrms(LRMS):
                 #raise
                 job.status = Job.JOB_STATE_FAILED
                 return job
-                
 
-            #            files_list = sftp.listdir(_full_path_to_remote_unique_id)
             if job.has_key('job_local_dir'):
                 _download_dir = job.job_local_dir + '/' + job.unique_token
             else:
@@ -320,11 +328,36 @@ class SshLrms(LRMS):
                 # failed creating local folder
                 raise Exception('failed creating local folder')
 
+            gc3utils.log.debug('downloading job into %s',_download_dir)
+
+            # copy back all files, renaming them to adhere to the ArcLRMS convention
+            try: 
+                jobname = job.lrms_job_name
+                gc3utils.log.debug("Recorded job name is '%s'" % jobname)
+            except KeyError:
+                # no job name was set, empty string should be safe for following code
+                jobname = ''
+                gc3utils.log.warning("No recorded job name; will not be able to rename files accordingly")
+            filename_map = { 
+                # XXX: SGE-specific?
+                ('/%s.o%s' % (jobname, job.lrms_jobid)) : ('%s.stdout' % jobname),
+                ('/%s.e%s' % (jobname, job.lrms_jobid)) : ('%s.stderr' % jobname),
+                # the following is definitely GAMESS-specific
+                ('/%s.o%s.dat' % (jobname, job.lrms_jobid)) : ('%s.dat' % jobname),
+                ('/%s.o%s.inp' % (jobname, job.lrms_jobid)) : ('%s.inp' % jobname),
+                }
             # copy back all files
             gc3utils.log.debug("Downloading job output into '%s' ...",_download_dir)
             for remote_path, local_path in job.outputs.items():
                 remote_path =  job.remote_ssh_folder +'/' + remote_path
+                # default to keep same file name ...
                 local_path = _download_dir +'/' + local_path
+                # ... but override if it's a known one
+                for r,l in filename_map.items():
+                    if remote_path.endswith(r):
+                        local_path = _download_dir + '/' + l
+                gc3utils.log.debug("Downloading remote file '%s' to local file '%s'", 
+                                   remote_path, local_path)
                 try:
                     if not os.path.exists(local_path):
                         gc3utils.log.debug("Copying remote '%s' to local '%s'", remote_path, local_path)
@@ -335,6 +368,12 @@ class SshLrms(LRMS):
                 except:
                     gc3utils.log.debug('Could not copy remote file: ' + remote_path)
                     raise
+            # `qgms` submits GAMESS jobs with `-j y`, i.e., stdout and stderr are
+            # collected into the same file; make jobname.stderr a link to jobname.stdout
+            # in case some program relies on its existence
+            if not os.path.exists(_download_dir + '/' + jobname + '.stderr'):
+                os.symlink(_download_dir + '/' + jobname + '.stdout',
+                           _download_dir + '/' + jobname + '.stderr')
 
             # cleanup remote folder
             _command = "rm -rf '%s'" % job.remote_ssh_folder
@@ -371,6 +410,7 @@ class SshLrms(LRMS):
         gc3utils.log.debug("Running `qstat -F -U %s`...", username)
         exit_code, qstat_F_stdout, stderr = self._execute_command(ssh, "qstat -F -U %s" % username)
         ssh.close()
+        sftp.close()
 
         gc3utils.log.debug("Computing updated values for total/available slots ...")
         (total_running, self._resource.queued, 
@@ -415,7 +455,6 @@ class SshLrms(LRMS):
         """
         Returns tuple: exit_status, stdout, stderr
         """
-
         try:
             stdin_stream, stdout_stream, stderr_stream = ssh.exec_command(command)
             output = stdout_stream.read()
@@ -433,14 +472,15 @@ class SshLrms(LRMS):
         try:
             ssh = paramiko.SSHClient()
             ssh.load_system_host_keys()
-            ssh.connect(host,timeout=30,username=username)
+            ssh.connect(host,timeout=30,username=username, allow_agent=True)
             sftp = ssh.open_sftp()
             return ssh, sftp
 
-        except paramiko.SSHException:
+        except paramiko.SSHException, x:
             if not ssh  is None:
                ssh.close()
-            gc3utils.log.critical('Could not create ssh connection to ', host, '.')
+            gc3utils.log.critical("Could not create ssh connection to '%s': %s: %s", 
+                                  host, x.__class__.__name__, str(x))
             raise
 
 

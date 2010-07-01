@@ -195,6 +195,8 @@ def count_jobs(qstat_output, whoami):
             continue
         # remove leading and trailing whitespace
         line = line.strip()
+	if len(line) == 0:
+	    continue
         jid, prio, name, user, state, rest = re.split(r'\s+', line, 5)
         # skip in error/hold/suspended/deleted state
         if (('E' in state) or ('h' in state) or ('T' in state) 
