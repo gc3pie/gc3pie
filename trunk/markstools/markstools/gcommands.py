@@ -76,7 +76,7 @@ def gdirrun(*args, **kw):
     #Set up command line options
     usage = "usage: %prog [options] arg"
     parser = OptionParser(usage)
-    parser.add_option("-d", "--directory", dest="dir",default='markstools/examples/water_UHF_gradient.inp', 
+    parser.add_option("-d", "--directory", dest="dir",default='~/apps/trunk/markstools/examples', 
                       help="directory to process gamess files")
     parser.add_option("-m", "--max_running", dest="max_running",default=5, 
                       help="maximum number of running jobs")
@@ -85,7 +85,7 @@ def gdirrun(*args, **kw):
     (options, args) = parser.parse_args()
 
     configure_logger(options.verbosity, _default_log_file_location) 
-
+    options.dir = os.path.expanduser(options.dir)
     if not os.path.isdir(options.dir):
         sys.stdout.write('Can not locate directory \'%s\'\n'%(options.dir))
         return
@@ -95,8 +95,45 @@ def gdirrun(*args, **kw):
     
     gdirrun = GDirRun()
     gamess_calc = GamessGridCalc(db)
-    gdirrun.initialize(db, gamess_calc, atoms, params, options.dir, options.max_running)
+    gdirrun.initialize(db, gamess_calc, options.dir, options.max_running)
+    gdirrun.run()
 
+def gsingle(*args, **kw):
+    from markstools.io.gamess import ReadGamessInp, WriteGamessInp
+    from markstools.calculators.gamess.calculator import GamessGridCalc
+    from markstools.usertasks.gsingle import GSingle
+
+    config = _configure_system()
+    #Set up command line options
+    usage = "usage: %prog [options] arg"
+    parser = OptionParser(usage)
+    parser.add_option("-f", "--file", dest="file",default='markstools/examples/water_UHF_gradient.inp', 
+                      help="gamess inp to restart from.")
+    parser.add_option("-v", "--verbose", action='count', dest="verbosity", default=config.verbosity, 
+                      help="add more v's to increase log output.")
+    (options, args) = parser.parse_args()
+
+    configure_logger(options.verbosity, _default_log_file_location) 
+
+    if not os.path.isfile(options.file):
+        sys.stdout.write('Can not locate file \'%s\'\n'%(options.file))
+        return
+    
+    # Connect to the database
+    db = Mydb(config.database_user,config.database_name,config.database_url).cdb()
+    try:
+        myfile = open(options.file, 'rb')
+        reader = ReadGamessInp(myfile)        
+    finally:
+        myfile.close()
+
+    params = reader.params
+    atoms = reader.atoms
+    
+    gsingle = GSingle()
+    gamess_calc = GamessGridCalc(db)
+    gsingle.initialize(db, gamess_calc, atoms, params)
+    
 def gtaskscheduler(*args, **kw):
     from markstools.usertasks.taskscheduler import TaskScheduler
 

@@ -4,9 +4,9 @@ import os
 import markstools
 from markstools.calculators.gamess import *
 
-from gorg.model.gridjob import JobInterface
+from gorg.model.gridjob import GridjobModel
+from gorg.model.gridtask import GridtaskModel
 from gorg.gridscheduler import STATES as RUN_STATES
-from gorg.model.gridtask import TaskInterface
 from parser import ParseGamessDat, ParseGamessOut
 from result import GamessResult 
 from ase.atoms import Atoms 
@@ -62,7 +62,7 @@ class GamessGridCalc(CalculatorBase):
         writer = WriteGamessInp()
         writer.write(f_inp, atoms, params)
         f_inp.seek(0)
-        a_job = JobInterface(self.db).create(params.title,  self.__class__.__name__, [f_inp], application_tag, 
+        a_job = GridjobModel(self.db).create(params.title,  self.__class__.__name__, [f_inp], application_tag, 
                            requested_resource,  requested_cores, requested_memory, requested_walltime)
         f_inp.close()
         # Convert the python dictionary to one that uses the couchdb schema
@@ -78,9 +78,9 @@ class GamessGridCalc(CalculatorBase):
 
     def calculate(self, a_thing):
         """We run GAMESS in here."""
-        if isinstance(a_thing, TaskInterface):
+        if isinstance(a_thing, GridtaskModel):
             job_list = tuple(a_thing.children)
-        elif isinstance(a_thing, JobInterface):
+        elif isinstance(a_thing, GridjobModel):
             job_list = tuple([a_thing])
         elif isinstance(a_thing, tuple) or isinstance(a_thing, list):
             job_list = a_thing
@@ -98,6 +98,7 @@ class GamessGridCalc(CalculatorBase):
         and parse the results already in the database."""
         from markstools.io.gamess import ReadGamessInp
         parser = None
+        print a_job.parsed
         if not force_a_reparse:            
             parser = a_job.parser 
             if parser != self.__class__.__name__:

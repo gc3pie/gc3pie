@@ -10,7 +10,7 @@ import sys
 import shutil
 import time
 
-from gorg.model.gridtask import TaskInterface
+from gorg.model.gridtask import GridtaskModel
 from gorg.lib.utils import Mydb
 import gorg.lib.exceptions
 from gorg.gridscheduler import STATES as JOB_SCHEDULER_STATES
@@ -18,8 +18,7 @@ from markstools.calculators.gamess.calculator import GamessGridCalc
 
 # The key is the name of the class where the usetask is programmed, and the value is the module location
 module_names = {'GHessian':'markstools.usertasks.ghessian', 
-                              'GSingle':'markstools.usertasks.gsingle', 
-                              'GRestart':'markstools.usertasks.grestart'}
+                              'GSingle':'markstools.usertasks.gsingle'}
 
 usertask_classes = dict()
 for usertask_name, usertask_module in module_names.items():
@@ -30,7 +29,7 @@ class GControl(object):
  
     def __init__(self, db_username, db_name, db_url,  task_id):
         db=Mydb(db_username, db_name,db_url).cdb()
-        self.a_task = TaskInterface(db).load(task_id)
+        self.a_task = GridtaskModel().load(db, task_id)
         self.cls_task = usertask_classes[self.a_task.title]
         str_calc = self.a_task.user_data_dict['calculator']
         self.calculator = eval(str_calc + '(db)')
@@ -69,7 +68,6 @@ class GControl(object):
                 else:
                     sys.stdout.write('Job did not exit successfully\n')
 
-    
     def get_task_files(self):
         job_list = self.a_task.children
         root_dir = 'tmp'
