@@ -26,16 +26,19 @@ class BaseroleModel(Document):
     result_data_dict = DictField()
     
     children_ids = ListField(TextField())
-    
     # This works like a dictionary, but allows you to go a_job.test.application_to_run='a app' as well as a_job.test['application_to_run']='a app'
     #test=DictField(Schema.build(application_to_run=TextField(default='gamess')))
     
-    def create(self, author, title):
+    def __init__(self, *args):
+        self.db = None
+        args = list(args)
+        for arg in args:
+            if isinstance(arg,  client.Database):
+                self.db=arg
+                args.remove(arg)
+        super(BaseroleModel, self).__init__(*args)
         self.id = generate_new_docid()
-        self.author = author
-        self.title = title
-        return self
-    
+
     @ViewField.define('BaseroleModel')
     def view_all(doc):
         if 'base_type' in doc:
@@ -78,92 +81,19 @@ class BaseroleModel(Document):
             if isinstance(value, ViewField):
                 definition_list.append(eval('cls.%s'%(key)))
         ViewDefinition.sync_many( db,  definition_list)
-
-class ObjectWrapper(object):
-    """ObjectWrapper class redirects unhandled calls to wrapped object.
- 
-    Intended as an alternative when inheritance from the wrapped object is not
-    possible.  This is the case for some python objects implemented in c.
- 
-    """
-    def __init__(self, obj):
-        self.wrap(obj)
-    
-    def wrap(self, obj):
-        """Set the wrapped object."""
-        super(ObjectWrapper, self).__setattr__('_obj', obj)
-
-        # __methods__ and __members__ are deprecated but still used by
-        # dir so we need to set them correctly here
-        methods = []
-        for nameValue in inspect.getmembers(obj, inspect.ismethod):
-            methods.append(nameValue[0])
-        super(ObjectWrapper, self).__setattr__('__methods__', methods)
- 
-        def isnotmethod(object_):
-            return not inspect.ismethod(object_)
-        members = []
-        for nameValue in inspect.getmembers(obj, isnotmethod):
-            members.append(nameValue[0])        
-        super(ObjectWrapper, self).__setattr__('__members__', members)
-
-    def __getattr__(self, name):
-        """Redirect unhandled get attribute to self._obj."""
-        if not hasattr(self._obj, name):
-            raise AttributeError, ("'%s' has no attribute %s" %
-                                   (self.__class__.__name__, name))
-        else:
-            return getattr(self._obj, name)
- 
-    def __setattr__(self, name, value):
-        """Redirect set attribute to self._obj if necessary."""
-        # note that we don't want to call hasattr(self, name) or dir(self)
-        # we need to check if it is actually an attr on self directly
-        selfHasAttr = True
-        try:
-            super(ObjectWrapper, self).__getattribute__(name)
-        except AttributeError:
-            selfHasAttr = False
- 
-        if (name == "_obj" or not hasattr(self, "_obj") or
-            not hasattr(self._obj, name) or selfHasAttr):
-            return super(ObjectWrapper, self).__setattr__(name, value)
-        else:
-            return setattr(self._obj, name, value)
-
-#class ObjectWrapper(object):
-#    def __init__(self):
-#        self._obj = None
-#
-#    def wrap(self, obj):
-#        self._obj = obj
-#        return self
-#
-#    def __getattr__(self,attr):
-#        return getattr(self._obj, attr)
-#    def __setattr__(self, item, value):
-#        return dict.__setattr__(self, item, value)
-
-class BaseInterface(ObjectWrapper):
-    def __init__(self, db):
-        super(BaseInterface, self).__init__(object)
-        self.db = db
-
-    def create(*args, **kwargs):
-        raise NotImplementedError('Must implement a create(*args, **kwargs) method')
-
-    def load(self, id=None):
-        raise NotImplementedError('Must implement a load method')
     
     def store(self):
-        self._obj.store(self.db)
+        super(BaseroleModel, self).store(self.db)
     
-    def __repr__(self):
-        return self._obj.__repr__()
-    
-    def __str__(self):
-        return self._obj.__str__()
-
+    def load(self, db=None, id=None):
+        if id is None:
+            id = self.id
+        if db is None:
+            db = self.db
+        self = super(BaseroleModel, self).load(db, id)
+        self.db = db
+        return self
+        
     def get_attachment(self, ext):
         import os
         f_dict = dict()
@@ -188,8 +118,8 @@ class BaseInterface(ObjectWrapper):
     
     def put_attachment(self, content, filename, content_type='text/plain'):
         content.seek(0)
-        self.db.put_attachment(self._obj, content, filename, content_type)
-        self.load()
+        self.db.put_attachment(self, content, filename, content_type)
+        return self.load()
 
     def delete_attachment(self, filename):
         return self.db.delete_attachment(self.id, filename)
@@ -198,8 +128,8 @@ class BaseInterface(ObjectWrapper):
         '''We often want to save all of the attachments on the local computer.'''
         tempdir = generate_temp_dir(self.id)
         f_attachments = dict()
-        if not f_names and '_attachments' in self._obj:
-            f_names = self._obj['_attachments']
+        if not f_names and '_attachments' in self:
+            f_names = self['_attachments']
         # Loop through each attachment and save it
         for attachment in f_names:
             attached_data = self._get_attachment(attachment)
@@ -231,38 +161,16 @@ class BaseInterface(ObjectWrapper):
         # Timed out
         return False
     
-class BaseGraphInterface(BaseInterface):
-        
     def add_child(self, child):
-        if child.id not in self._obj.children_ids:
-            self._obj.children_ids.append(child.id)
-    
-    def add_parent(self, parent):
-        parent.add_child(self)
-    
-    def parents():            
+        if child.id not in self.children_ids:
+            self.children_ids.append(child.id)
+
+    def children():
         def fget(self):
             from gridjob import GridjobModel
             from gridtask import GridtaskModel
-            tasks = list()
-            jobs = list()
-            view = GridtaskModel.view_children(self.db)
-            for raw in view[self.id]:
-                tasks.append(TaskInterface(self.db).wrap(raw))
-            view = GridjobModel.view_children(self.db)
-            for raw in view[self.id]:
-                jobs.append(JobInterface(self.db).wrap(raw))
             ret = list()
-            return tuple(tasks), tuple(jobs)
-        return locals()
-    parents = property(**parents())
-    
-    def children():
-        def fget(self):
-            from gridjob import JobInterface
-            from gridtask import TaskInterface
-            ret = list()
-            for child_id in self._obj.children_ids:
+            for child_id in self.children_ids:
                 wrapped = self._get_interface_from_id(child_id)
                 ret.append(wrapped)
             return tuple(ret)
@@ -270,11 +178,37 @@ class BaseGraphInterface(BaseInterface):
     children = property(**children())
     
     def _get_interface_from_id(self, id):
-        from gridjob import JobInterface, GridjobModel
-        from gridtask import TaskInterface, GridtaskModel
+        from gridjob import GridjobModel
+        from gridtask import GridtaskModel
         doc = self.db.get(id)
         if doc['sub_type'] == 'GridjobModel':
-            wrapped = JobInterface(self.db).wrap(GridjobModel.wrap(doc))
+            new = GridjobModel().wrap(doc)
+            new.db = self.db
         else:
-            wrapped = TaskInterface(self.db).wrap(GridtaskModel.wrap(doc))
-        return wrapped
+            new = GridtaskModel().wrap(doc)
+            new.db = self.db
+        return new
+    
+class BasenodeModel(BaseroleModel):
+    def add_parent(self, parent):
+        parent.add_child(self)
+        
+    def parents():            
+        def fget(self):
+            from gridjob import GridjobModel
+            from gridtask import GridtaskModel
+            tasks = list()
+            jobs = list()
+            view = GridtaskModel.view_children(self.db)
+            for doc in view[self.id]:
+                new = GridtaskModel().wrap(doc)
+                new.db = self.db
+                tasks.append(new)
+            view = GridjobModel.view_children(self.db)
+            for doc in view[self.id]:
+                new = GridtaskModel().wrap(doc)
+                new.db = self.db
+                jobs.append(new)
+            return tuple(tasks + jobs)
+        return locals()
+    parents = property(**parents())
