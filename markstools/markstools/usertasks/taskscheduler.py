@@ -2,14 +2,14 @@ import markstools
 
 from optparse import OptionParser
 import sys
-from gorg.model.gridtask import GridtaskModel, TaskInterface
+from gorg.model.gridtask import GridtaskModel
 from gorg.lib.utils import Mydb
 from gc3utils.gcli import Gcli
 
 # The key is the name of the class where the usetask is programmed, and the value is the module location
 module_names = {'GHessian':'markstools.usertasks.ghessian', 
                               'GDirRun':'markstools.usertasks.gdirrun', 
-                              'GRestart':'markstools.usertasks.grestart'}
+                              'GSingle':'markstools.usertasks.gsingle'}
 
 usertask_classes = dict()
 for usertask_name, usertask_module in module_names.items():

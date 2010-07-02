@@ -10,7 +10,7 @@ from markstools.lib import utils
 from markstools.lib.exceptions import *
 from gorg.lib import state
 from gorg.gridscheduler import STATES as JOB_SCHEDULER_STATES
-from gorg.model.gridtask import TaskInterface
+from gorg.model.gridtask import GridtaskModel
 from markstools.calculators.gamess.calculator import GamessGridCalc
 from couchdb import http
 
@@ -24,7 +24,7 @@ STATE_WAIT = state.State.create('WAIT', 'WAIT desc')
 class UserTask(object):
         
     def load(self, db,  task_id):
-        self.a_task = TaskInterface(db).load(task_id)
+        self.a_task = GridtaskModel(db).load(id=task_id)
         self.status = self.a_task.status
         str_calc = self.a_task.user_data_dict['calculator']
         self.calculator = eval(str_calc + '(db)')

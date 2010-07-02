@@ -32,13 +32,12 @@ setup(
 	    # todo: fix
             'gcontrol = markstools.gcommands:gcontrol',
             'ghessian = markstools.gcommands:ghessian',
-            'gtestcron = markstools.gcommands:gtestcron',
             'gtaskscheduler = markstools.gcommands:gtaskscheduler',
             'gridscheduler = markstools.gcommands:gridscheduler',
             'gorgsetup = markstools.gcommands:gorgsetup',
             'gorginfo = markstools.usertasks.ginfo:main',
-            'goptimize_lbfgs = markstools.usertasks.goptimize:main',
-            'grestart = markstools.usertasks.grestart:main',
+            'goptimize = markstools.usertasks.goptimize:main',
+            'gdirrun = markstools.usertasks.gdirrun:main',
             'gsingle = markstools.usertasks.gsingle:main',
             # symlinks to specific subcommands:
             #'gsub = gc3utils.gcmd:main',

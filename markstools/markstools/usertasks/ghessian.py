@@ -15,7 +15,7 @@ from markstools.calculators.gamess.calculator import GamessGridCalc
 from markstools.lib import utils
 from markstools.lib import usertask
 
-from gorg.model.gridtask import TaskInterface
+from gorg.model.gridtask import GridtaskModel
 from gorg.lib.utils import Mydb
 from gorg.lib import state
 from gorg.gridscheduler import STATES as JOB_SCHEDULER_STATES
@@ -45,7 +45,7 @@ class GHessian(usertask.UserTask):
 
     def initialize(self, db, calculator, atoms, params, application_to_run='gamess', selected_resource='pra',  cores=8, memory=2, walltime=1):
         self.calculator = calculator
-        self.a_task = TaskInterface(db).create(self.__class__.__name__)
+        self.a_task = GridtaskModel(db).create(self.__class__.__name__)
         self.a_task.user_data_dict['total_jobs'] = 0
         perturbed_postions = self.repackage(atoms.get_positions())
         params.title = 'job_number_%d'%self.a_task.user_data_dict['total_jobs']
@@ -55,6 +55,8 @@ class GHessian(usertask.UserTask):
             params.title = 'job_number_%d'%self.a_task.user_data_dict['total_jobs']
             atoms.set_positions(a_position)
             sec_job = calculator.generate(atoms, params, self.a_task, application_to_run, selected_resource, cores, memory, walltime)
+            first_job.add_child(sec_job)
+        first_job.store()
         self.calculator.calculate(self.a_task)
         markstools.log.info('Submitted task %s for execution.'%(self.a_task.id))
         self.status = self.STATES.WAIT
@@ -129,59 +131,3 @@ class GHessian(usertask.UserTask):
             for j in range(0, 3*sz):
                 hessian[i, j] = (1.0/(2.0*self.H_TO_PERTURB))*((gradient[i, j+1]-gradient[i, 0])+(gradient[j, i+1]-gradient[j, 0]))
         return hessian
-
-
-
-#def logging(options):    
-#    import logging
-#    from markstools.lib.utils import configure_logger
-#    logging.basicConfig(
-#        level=logging.ERROR, 
-#        format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-#        datefmt='%Y-%m-%d %H:%M:%S')
-#        
-#    #configure_logger(options.verbose)
-#    configure_logger(10)
-#    import gorg.lib.utils
-#    gorg.lib.utils.configure_logger(10)
-#
-#def parse_options():
-#    #Set up command line options
-#    usage = "usage: %prog [options] arg"
-#    parser = OptionParser(usage)
-#    parser.add_option("-f", "--file", dest="file",default='markstools/examples/water_UHF_gradient.inp', 
-#                      help="gamess inp to restart from.")
-#    parser.add_option("-v", "--verbose", action='count', dest="verbose", default=0, 
-#                      help="add more v's to increase log output.")
-#    parser.add_option("-n", "--db_name", dest="db_name", default='gorg_site', 
-#                      help="add more v's to increase log output.")
-#    parser.add_option("-l", "--db_url", dest="db_url", default='http://localhost:5984', 
-#                      help="add more v's to increase log output.")
-#    (options, args) = parser.parse_args()
-#    return options
-#    
-#    
-#def main():
-#    options = parse_options()
-#    logging(options)
-#    
-#    # Connect to the database
-#    db = Mydb('mark',options.db_name,options.db_url).cdb()
-#
-#    myfile = open(options.file, 'rb')
-#    reader = ReadGamessInp(myfile)
-#    myfile.close()
-#    params = reader.params
-#    atoms = reader.atoms
-#    
-#    ghessian = GHessian()
-#    gamess_calc = GamessGridCalc(db)
-#    ghessian.initialize(db, gamess_calc, atoms, params)
-#    
-#    ghessian.run()
-#
-#    print 'ghessian done. Create task %s'%(ghessian.a_task.id)
-#
-#if __name__ == '__main__':
-#    main()
-#    sys.exit(0)
