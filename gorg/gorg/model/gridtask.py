@@ -57,13 +57,21 @@ class GridtaskModel(BaseroleModel):
                     yield doc['_id'],doc
     
     #TODO: FIX ME, issue here if we store tasks and jobs in the same list, we can not wrap them here
-    @ViewField.define('GridtaskModel', wrapper=GridjobModel)
+#    @ViewField.define('GridtaskModel', wrapper=GridjobModel)
+#    def view_children(doc):
+#        if 'base_type' in doc:
+#            if doc['base_type'] == 'BaseroleModel':
+#                if doc['sub_type'] == 'GridtaskModel':
+#                    for job_id in doc['children_ids']:
+#                        yield job_id, {'_id':job_id}
+    
+    @ViewField.define('GridtaskModel')
     def view_children(doc):
         if 'base_type' in doc:
             if doc['base_type'] == 'BaseroleModel':
                 if doc['sub_type'] == 'GridtaskModel':
                     for job_id in doc['children_ids']:
-                        yield job_id, {'_id':job_id}
+                        yield job_id, doc
     
     @ViewField.define('GridtaskModel')
     def view_status(doc):
@@ -119,7 +127,7 @@ class TaskInterface(BaseGraphInterface):
     def _status_children(self):
         status_list = list()
         self.load()
-        view = GridrunModel.view_job_status(self.db, keys = self._obj.children)
+        view = GridrunModel.view_job_status(self.db, keys = self._obj.children_ids)
         for a_row in view:
             status_list.append(a_row)
         return tuple(status_list)
@@ -135,6 +143,28 @@ class TaskInterface(BaseGraphInterface):
             return status_dict
         return locals()
     status_counts = property(**status_counts())
+    
+    def jobs():
+        def fget(self):
+            child_list = self.children
+            ret = list()
+            for a_child in child_list:
+                if isinstance(a_child, JobInterface):
+                    ret.append(a_child)
+            return tuple(ret)
+        return locals()
+    jobs = property(**jobs())
+    
+    def tasks():
+        def fget(self):
+            child_list = self.children
+            ret = list()
+            for a_child in child_list:
+                if isinstance(a_child, TaskInterface):
+                    ret.append(a_child)
+            return tuple(ret)
+        return locals()
+    tasks = property(**tasks())
 
 #    def status_overall():
 #        def fget(self):
