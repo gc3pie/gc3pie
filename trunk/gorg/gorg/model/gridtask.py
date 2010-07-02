@@ -31,16 +31,12 @@ def mapfun(doc):
     '''
 
 
-class GridtaskModel(BaseroleModel):
+class GridtaskModel(BasenodeModel):
     
     SUB_TYPE = 'GridtaskModel'
     VIEW_PREFIX = 'GridtaskModel'
     sub_type = TextField(default=SUB_TYPE)
-    status = DictField(default=STATE_HOLD)
-    
-    def __init__(self, *args):
-        super(GridtaskModel, self).__init__(*args)
-    
+    raw_status = DictField(default=STATE_HOLD)
     
     @ViewField.define('GridtaskModel')
     def view_author(doc):
@@ -78,7 +74,7 @@ class GridtaskModel(BaseroleModel):
         if 'base_type' in doc:
             if doc['base_type'] == 'BaseroleModel':
                 if doc['sub_type'] == 'GridtaskModel':
-                    yield [doc['title'],  doc['status']], doc
+                    yield [doc['title'],  doc['raw_status']], doc
 
     @classmethod
     def sync_views(cls, db,  only_names=False):
@@ -88,24 +84,17 @@ class GridtaskModel(BaseroleModel):
             if isinstance(value, ViewField):
                 definition_list.append(eval('cls.%s'%(key)))
         ViewDefinition.sync_many( db,  definition_list)
-    
-class TaskInterface(BaseGraphInterface):
-    
+
     def create(self, title):
-        self.wrap(GridtaskModel().create(self.db.username, title))
+        self.title = title
+        self.author = self.db.username
         self.store()
         gorg.log.debug('Task %s has been created'%(self.id))
         return self
     
-    def load(self, id=None):
-        if not id:
-            id = self.id
-        self.wrap(GridtaskModel.load(self.db, id))
-        return self
-    
     def status():
         def fget(self):
-            return state.State(**self._obj.status)
+            return state.State(**self.raw_status)
         def fset(self, status):
             if isinstance(status, tuple):
                 value = status[0]
@@ -116,18 +105,18 @@ class TaskInterface(BaseGraphInterface):
 
             if self.status.locked is not None:
                 if self.status.locked == key:
-                    self._obj.status = value
+                    self.raw_status = value
                 else:
                     raise DocumentError('Task %s is locked, and you provided the wrong key.'%(self.id))
             else:
-                self._obj.status = value
+                self.raw_status = value
         return locals()
     status = property(**status())
 
     def _status_children(self):
         status_list = list()
         self.load()
-        view = GridrunModel.view_job_status(self.db, keys = self._obj.children_ids)
+        view = GridrunModel.view_job_status(self.db, keys = self.children_ids)
         for a_row in view:
             status_list.append(a_row)
         return tuple(status_list)
@@ -149,7 +138,7 @@ class TaskInterface(BaseGraphInterface):
             child_list = self.children
             ret = list()
             for a_child in child_list:
-                if isinstance(a_child, JobInterface):
+                if isinstance(a_child, GridjobModel):
                     ret.append(a_child)
             return tuple(ret)
         return locals()
@@ -160,7 +149,7 @@ class TaskInterface(BaseGraphInterface):
             child_list = self.children
             ret = list()
             for a_child in child_list:
-                if isinstance(a_child, TaskInterface):
+                if isinstance(a_child, GridtaskModel):
                     ret.append(a_child)
             return tuple(ret)
         return locals()

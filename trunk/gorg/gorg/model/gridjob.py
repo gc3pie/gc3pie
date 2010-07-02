@@ -2,7 +2,7 @@ from couchdb.mapping import *
 from baserole import *
 from couchdb import client as client
 from datetime import datetime
-from gorg.lib.utils import generate_new_docid, generate_temp_dir, write_to_file
+from gorg.lib.utils import generate_temp_dir, write_to_file
 
 from gorg.lib.exceptions import *
 import os
@@ -14,13 +14,14 @@ from gorg.lib import state
 from gorg.gridscheduler import STATES
 
 
-class GridjobModel(BaseroleModel):
+class GridjobModel(BasenodeModel):
     SUB_TYPE = 'GridjobModel'
     VIEW_PREFIX = 'GridjobModel'
     sub_type = TextField(default=SUB_TYPE)    
-    parser_name = TextField()
+    parser = TextField()
     run_id = TextField()
     
+
     @ViewField.define('GridjobModel')    
     def view_all(doc):
         if 'base_type' in doc:
@@ -78,30 +79,27 @@ class GridjobModel(BaseroleModel):
                 definition_list.append(eval('cls.%s'%(key)))
         ViewDefinition.sync_many( db,  definition_list)
 
-class JobInterface(BaseGraphInterface):
-    
     def create(self, title,  parser_name, files_to_run, application_tag='gamess', 
                         requested_resource='ocikbpra',  requested_cores=2, requested_memory=1, requested_walltime=None):
-        self.wrap(GridjobModel().create(self.db.username, title))
-        gorg.log.debug('Job %s has been created'%(self.id))        
-        a_run = RunInterface(self.db).create(files_to_run, self, 
+        self.author = self.db.username
+        self.title = title
+        a_run = GridrunModel(self.db).create(files_to_run, self, 
                                                                     application_tag, requested_resource, 
                                                                     requested_cores, requested_memory, 
                                                                     requested_walltime)
-        self._obj.run_id = a_run.id
+        self.run_id = a_run.id
         self.parser = parser_name
         self.store()
-        return self    
-    
+        gorg.log.debug('Job %s has been created'%(self.id))        
+        return self 
+#TODO: When this is called it always returns a new run obj.
     @property
     def run(self):
-        return RunInterface(self.db).load(self._obj.run_id)
-        
-    def load(self, id=None):
-        if not id:
-            id = self.id
-        self.wrap(GridjobModel.load(self.db, id))
-        view = GridrunModel.view_job(self.db, key = id)
+        return GridrunModel().load(self.db, self.run_id)
+
+    def load(self, db=None, id=None):
+        self = super(GridjobModel, self).load(db, id)
+        view = GridrunModel.view_job(self.db, key = self.id)
         if len(view) == 0:
             DocumentError('Job %s does not have a run associated with it.'%(id))
         if len(view) > 1:
@@ -110,17 +108,15 @@ class JobInterface(BaseGraphInterface):
     
     def task():
         def fget(self):
-            from gridtask import GridtaskModel, TaskInterface
-            self.load()
+            from gridtask import GridtaskModel
+            a_task = None
             view = GridtaskModel.view_children(self.db)
-            task_id = view[self.id].rows[0].id
-            a_task=TaskInterface(self.db).load(task_id)
+            if len(view) != 0:
+                task_id = view[self.id].rows[0].id
+                a_task = GridtaskModel().load(self.db, task_id)
             return a_task
         return locals()
     task = property(**task())
-    
-    def store(self):
-        super(JobInterface, self).store()
 
     def status():
         """Here we need to check to see what kind of status we have. If more than one job is pointing to the same
@@ -128,28 +124,20 @@ class JobInterface(BaseGraphInterface):
         def fget(self):
             return self.run.status
         def fset(self, status):
-            a_run = self.run
-            a_run.status = status
-            a_run.store()
+            temp = self.run
+            temp.status = status
+            temp.store()
         return locals()
     status = property(**status())
 
     def attachments():
         def fget(self):
-            f_dict = super(JobInterface, self).attachments
+            f_dict = super(GridjobModel, self).attachments
             f_dict.update(self.run.attachments)
             return f_dict
         return locals()
     attachments = property(**attachments())
     
-    def parser():        
-        def fget(self):
-            return self.parser_name
-        def fset(self, parser_name):
-            self.parser_name = parser_name
-        return locals()
-    parser = property(**parser())
-
     def parsed():
         def fget(self):
             import cPickle as pickle
@@ -167,20 +155,126 @@ class JobInterface(BaseGraphInterface):
         return locals()
     parsed = property(**parsed())
 
-class RunInterface(BaseInterface):
+def _reduce_author_status(keys, values, rereduce):
+    return sum(values)
+        
+class GridrunModel(BaseroleModel):
+    VIEW_PREFIX = 'GridrunModel'
+    SUB_TYPE = 'GridrunModel'
     
+    # Attributes to store in the database
+    sub_type = TextField(default=SUB_TYPE)
+    # This holds the files we wish to run as well as their hashes
+    files_to_run = DictField()
+    
+    raw_status = DictField(default = STATES.HOLD)
+    raw_application = DictField()
+    raw_job = DictField()
+    gsub_message = TextField()
+    
+    def __init__(self, *args):
+        super(GridrunModel, self).__init__(*args)
+
+    def application():        
+        def fget(self):
+            if not isinstance(self.raw_application, Application.Application) and self.raw_application:
+                self.raw_application = Application.Application(self.raw_application)
+            return self.raw_application
+        def fset(self, application):
+            self.raw_application = application
+        return locals()
+    application = property(**application())
+    
+    def job():        
+        def fget(self):
+            if not isinstance(self.raw_job, Job.Job) and self.raw_job:
+                job = Job.Job(self.raw_job)
+                self.raw_job = job
+            return self.raw_job
+        def fset(self, job):
+            self.raw_job = job
+        return locals()
+    job = property(**job())
+
+    @ViewField.define('GridrunModel')
+    def view_all(doc):    
+        if 'base_type' in doc:
+            if doc['base_type'] == 'BaseroleModel':
+                if doc['sub_type'] == 'GridrunModel':
+                    yield doc['_id'], doc
+
+    @ViewField.define('GridrunModel')
+    def view_author(doc):    
+        if 'base_type' in doc:
+            if doc['base_type'] == 'BaseroleModel':
+                if doc['sub_type'] == 'GridrunModel':
+                    yield doc['author'], doc
+
+    @ViewField.define('GridrunModel', wrapper=GridjobModel, include_docs=True)
+    def view_job(doc):    
+        if 'base_type' in doc:
+            if doc['base_type'] == 'BaseroleModel':
+                if doc['sub_type'] == 'GridrunModel':
+                    for owner in doc['children_ids']:
+                        yield owner, {'_id':owner}
+
+    @ViewField.define('GridrunModel')
+    def view_children(doc):
+        if 'base_type' in doc:
+            if doc['base_type'] == 'BaseroleModel':
+                if doc['sub_type'] == 'GridrunModel':
+                    for job_id in doc['children_ids']:
+                        yield job_id, doc
+
+    @ViewField.define('GridrunModel', wrapper=state.State)
+    def view_job_status(doc):    
+        if 'base_type' in doc:
+            if doc['base_type'] == 'BaseroleModel':
+                if doc['sub_type'] == 'GridrunModel':
+                    for owner in doc['children_ids']:
+                        yield owner, doc['raw_status']
+        
+    @ViewField.define('GridrunModel')
+    def view_status(doc):    
+        if 'base_type' in doc:
+            if doc['base_type'] == 'BaseroleModel':      
+                if doc['sub_type'] == 'GridrunModel':          
+                    yield doc['raw_status'], doc
+
+    @ViewField.define('GridrunModel')
+    def view_hash(doc):    
+        if 'base_type' in doc:
+            if doc['base_type'] == 'BaseroleModel':
+                if doc['sub_type'] == 'GridrunModel':          
+                    yield doc['files_to_run'].values(), doc
+    
+    @ViewField.define('GridrunModel', reduce_fun=_reduce_author_status, wrapper=None, group=True)
+    def view_author_status(doc):
+        if 'base_type' in doc:
+            if doc['base_type'] == 'BaseroleModel':
+                if doc['sub_type'] == 'GridrunModel':          
+                    yield (doc['author'], doc['raw_status']), 1
+    
+    @classmethod
+    def sync_views(cls, db,  only_names=False):
+        from couchdb.design import ViewDefinition
+        definition_list = list()
+        for key, value in cls.__dict__.items():
+            if isinstance(value, ViewField):
+                definition_list.append(eval('cls.%s'%(key)))
+        ViewDefinition.sync_many( db,  definition_list)
+
     def create(self, files_to_run, a_job, application_tag, 
                         requested_resource,  requested_cores, 
                         requested_memory, requested_walltime):       
-        self.wrap(GridrunModel())
         # Generate the input file hashes
         for a_file in files_to_run:
             base_name = os.path.basename(a_file.name)
-            self._obj.files_to_run[base_name] = self.md5_for_file(a_file)
+            self.files_to_run[base_name] = self.md5_for_file(a_file)
         # We now need to build a new run record
-        self._obj.author = a_job.author
-        self._obj.owned_by.append(a_job.id)
-        self._obj.application = Application.Application(application_tag = application_tag,
+        self.author = self.db.username
+        self.add_child(a_job)
+        self.application = Application.Application(application_tag = application_tag,
                                                                        requested_resource = requested_resource,  
                                                                        requested_memory = requested_memory, 
                                                                        requested_cores = requested_cores, 
@@ -188,14 +282,7 @@ class RunInterface(BaseInterface):
                                                                        job_local_dir = '/tmp', 
                                                                        inputs = [], 
                                                                        application_arguments = None)
-        self._obj.id = generate_new_docid()
         self = self._commit_new(a_job, files_to_run)
-        return self
-    
-    def load(self, id=None):
-        if not id:
-            id = self.id
-        self.wrap(GridrunModel.load(self.db, id))
         return self
 
     def _commit_new(self, a_job, files_to_run):
@@ -205,10 +292,8 @@ class RunInterface(BaseInterface):
         # Can we use a run that is already in the database?
         a_run_already_in_db = self._check_for_previous_run()
         if a_run_already_in_db:
-            self.wrap(a_run_already_in_db)
-            if a_job.id not in self._obj.owned_by:
-                self._obj.owned_by.append(a_job.id)
-                self.store()
+            self.add_child(a_job)
+            self.store()
         else:
             # We need to attach the input files to the run,
             # to do that we have to first store the run in the db
@@ -216,7 +301,7 @@ class RunInterface(BaseInterface):
             for a_file in files_to_run:
                 base_name = os.path.basename(a_file.name)
                 self.put_attachment(a_file, base_name)
-            self.load()
+            self.load(self.db)
         return self
 
     def _check_for_previous_run(self):
@@ -227,19 +312,10 @@ class RunInterface(BaseInterface):
                 result = a_run
         return result
     
-    def activity():
-        def fget(self):
-            jactivity_list = list()
-            for a_activity_id in self._obj.owned_by:
-                activity_list.append(JobInterface(self.db).load(a_activity_id))
-            return tuple(activity_list)
-        return locals()
-    activity = property(**activity())
-    
     def task():
         def fget(self):
             task_list = list()
-            job_list = self.job
+            job_list = self.children
             for a_job in job_list:
                 task_list.append(a_job.task)
             return tuple(task_list)
@@ -248,7 +324,7 @@ class RunInterface(BaseInterface):
     
     def status():
         def fget(self):
-            return self._obj.status
+            return state.State(**self.raw_status)
         def fset(self, status):
             if isinstance(status, tuple):
                 value = status[0]
@@ -259,14 +335,14 @@ class RunInterface(BaseInterface):
 
             if self.status.locked is not None:
                 if self.status.locked == key:
-                    self._obj.status = value
+                    self.raw_status = value
                 else:
                     raise DocumentError('Run %s is locked, and you provided the wrong key.'%(self.id))
             else:
-                self._obj.status = value
+                self.raw_status = value
         return locals()
     status = property(**status())
-    
+
     @staticmethod
     def md5_for_file(f, block_size=2**20):
         """This function takes a file like object and feeds it to
@@ -289,112 +365,3 @@ class RunInterface(BaseInterface):
         #TODO: When mike runs this, it doesn't work
         return u'%s'%(generate_new_docid())
         #return u'%s'%md5.hexdigest()
-
-def _reduce_author_status(keys, values, rereduce):
-    return sum(values)
-        
-class GridrunModel(Document):
-    VIEW_PREFIX = 'GridrunModel'
-    SUB_TYPE = 'GridrunModel'
-    
-    # Attributes to store in the database
-    author = TextField()
-    dat = DateTimeField(default=datetime.today())
-    base_type = TextField(default='GridrunModel')
-    sub_type = TextField(default='GridrunModel')
-
-    owned_by = ListField(TextField())
-    # This holds the files we wish to run as well as their hashes
-    files_to_run = DictField()
-    
-    raw_status = DictField(default = STATES.HOLD)
-    raw_application = DictField()
-    raw_job = DictField()
-    gsub_message = TextField()
-    
-    def __init__(self, *args):
-        super(GridrunModel, self).__init__(*args)
-        self.subtype = self.SUB_TYPE
-        self._hold_file_pointers = list()
-
-    def status():        
-        def fget(self):
-            return state.State(**self.raw_status)
-        def fset(self, state):
-            self.raw_status = state
-        return locals()
-    status = property(**status())
-
-    def application():        
-        def fget(self):
-            if not isinstance(self.raw_application, Application.Application) and self.raw_application:
-                self.raw_application = Application.Application(self.raw_application)
-            return self.raw_application
-        def fset(self, application):
-            self.raw_application = application
-        return locals()
-    application = property(**application())
-    
-    def job():        
-        def fget(self):
-            if not isinstance(self._obj.raw_job, Job.Job) and self._obj.raw_job:
-                job = Job.Job(self._obj.raw_job)
-                self._obj.raw_job = job
-            return self._obj.raw_job
-        def fset(self, job):
-            self._obj.raw_job = job
-        return locals()
-    job = property(**job())
-
-    @ViewField.define('GridrunModel')
-    def view_all(doc):    
-        if 'base_type' in doc:
-            if doc['base_type'] == 'GridrunModel':
-                yield doc['_id'], doc
-
-    @ViewField.define('GridrunModel')
-    def view_author(doc):    
-        if 'base_type' in doc:
-            if doc['base_type'] == 'GridrunModel':
-                yield doc['author'], doc
-
-    @ViewField.define('GridrunModel', wrapper=GridjobModel, include_docs=True)
-    def view_job(doc):    
-        if 'base_type' in doc:
-            if doc['base_type'] == 'GridrunModel':
-                for owner in doc['owned_by']:
-                    yield owner, {'_id':owner}
-
-    @ViewField.define('GridrunModel', wrapper=state.State)
-    def view_job_status(doc):    
-        if 'base_type' in doc:
-            if doc['base_type'] == 'GridrunModel':
-                for owner in doc['owned_by']:
-                    yield owner, doc['raw_status']
-    
-    @ViewField.define('GridrunModel')
-    def view_status(doc):    
-        if 'base_type' in doc:
-            if doc['base_type'] == 'GridrunModel':                
-                yield doc['raw_status'], doc
-
-    @ViewField.define('GridrunModel')
-    def view_hash(doc):    
-        if 'base_type' in doc:
-            if doc['base_type'] == 'GridrunModel':
-                yield doc['files_to_run'].values(), doc
-    
-    @ViewField.define('GridrunModel', reduce_fun=_reduce_author_status, wrapper=None, group=True)
-    def view_author_status(doc):
-        if 'base_type' in doc:
-            if doc['base_type'] == 'GridrunModel':
-                yield (doc['author'], doc['raw_status']), 1
-    
-    @classmethod
-    def sync_views(cls, db,  only_names=False):
-        from couchdb.design import ViewDefinition
-        definition_list = list()
-        for key, value in cls.__dict__.items():
-            if isinstance(value, ViewField):
-                definition_list.append(eval('cls.%s'%(key)))
-        ViewDefinition.sync_many( db,  definition_list)

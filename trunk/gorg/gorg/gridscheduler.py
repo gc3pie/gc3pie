@@ -84,7 +84,7 @@ class GridScheduler(object):
         for f_name in output_files:
             try:
                 a_file = open(f_name, 'rb')
-                a_run.put_attachment(a_file, os.path.basename(a_file.name)) #os.path.splitext(a_file.name)[-1].lstrip('.')
+                a_run = a_run.put_attachment(a_file, os.path.basename(a_file.name)) #os.path.splitext(a_file.name)[-1].lstrip('.')
             finally:
                 a_file.close()
         gorg.log.debug('Retrieved run %s data'%(a_run.id))
@@ -132,13 +132,13 @@ class GridScheduler(object):
         return a_run
     
     def run(self):
-        from gorg.model.gridjob import RunInterface
+        from gorg.model.gridjob import GridrunModel
         gorg.log.info('GridScheduler starting')
         for a_state in STATES.all:
             if not a_state.terminal:
                 view_runs = self.view_status_runs[a_state]
                 for raw_run in view_runs:
-                    a_run = RunInterface(self.db).load(raw_run.id)
+                    a_run = GridrunModel(self.db).load(id=raw_run.id)
                     gorg.log.debug('GridScheduler processing run %s in state %s'%(a_run.id, a_run.status))
                     a_run = self.step(a_run)
                     gorg.log.debug('Run %s in state %s'%(a_run.id, a_run.status))
