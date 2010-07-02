@@ -58,8 +58,8 @@ class BaseroleModel(Document):
     def view_children(doc):
         if 'base_type' in doc:
             if doc['base_type'] == 'BaseroleModel':
-                    for job_id in doc['children']:
-                        yield job_id, doc
+                for job_id in doc['children_ids']:
+                    yield job_id, doc
     
     def __copy__(self):
         import copy
@@ -130,6 +130,19 @@ class ObjectWrapper(object):
             return super(ObjectWrapper, self).__setattr__(name, value)
         else:
             return setattr(self._obj, name, value)
+
+#class ObjectWrapper(object):
+#    def __init__(self):
+#        self._obj = None
+#
+#    def wrap(self, obj):
+#        self._obj = obj
+#        return self
+#
+#    def __getattr__(self,attr):
+#        return getattr(self._obj, attr)
+#    def __setattr__(self, item, value):
+#        return dict.__setattr__(self, item, value)
 
 class BaseInterface(ObjectWrapper):
     def __init__(self, db):
@@ -221,23 +234,47 @@ class BaseInterface(ObjectWrapper):
 class BaseGraphInterface(BaseInterface):
         
     def add_child(self, child):
-        from gridjob import JobInterface
-        assert isinstance(child, JobInterface),'Only jobs can be chilren.'
         if child.id not in self._obj.children_ids:
             self._obj.children_ids.append(child.id)
+    
+    def add_parent(self, parent):
+        parent.add_child(self)
+    
+    def parents():            
+        def fget(self):
+            from gridjob import GridjobModel
+            from gridtask import GridtaskModel
+            tasks = list()
+            jobs = list()
+            view = GridtaskModel.view_children(self.db)
+            for raw in view[self.id]:
+                tasks.append(TaskInterface(self.db).wrap(raw))
+            view = GridjobModel.view_children(self.db)
+            for raw in view[self.id]:
+                jobs.append(JobInterface(self.db).wrap(raw))
+            ret = list()
+            return tuple(tasks), tuple(jobs)
+        return locals()
+    parents = property(**parents())
     
     def children():
         def fget(self):
             from gridjob import JobInterface
             from gridtask import TaskInterface
-            child_list=list()
+            ret = list()
             for child_id in self._obj.children_ids:
-                child = self.db.get(child_id)
-                if child['sub_type'] == 'GridjobModel':
-                    wrapped_child = JobInterface(self.db).load(child_id)
-                else:
-                    wrapped_child = TaskInterface(self.db).load(child_id)
-                child_list.append(wrapped_child)
-            return tuple(child_list)
+                wrapped = self._get_interface_from_id(child_id)
+                ret.append(wrapped)
+            return tuple(ret)
         return locals()
     children = property(**children())
+    
+    def _get_interface_from_id(self, id):
+        from gridjob import JobInterface, GridjobModel
+        from gridtask import TaskInterface, GridtaskModel
+        doc = self.db.get(id)
+        if doc['sub_type'] == 'GridjobModel':
+            wrapped = JobInterface(self.db).wrap(GridjobModel.wrap(doc))
+        else:
+            wrapped = TaskInterface(self.db).wrap(GridtaskModel.wrap(doc))
+        return wrapped

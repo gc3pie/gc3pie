@@ -34,17 +34,25 @@ class GridjobModel(BaseroleModel):
             if doc['base_type'] == 'BaseroleModel':
                 if doc['sub_type'] == 'GridjobModel':
                     yield doc['author'],doc
-
-    @ViewField.define('GridjobModel')    
+    
+    @ViewField.define('GridjobModel')
     def view_children(doc):
         if 'base_type' in doc:
             if doc['base_type'] == 'BaseroleModel':
                 if doc['sub_type'] == 'GridjobModel':
-                    if doc['children']:
-                        for job_id in doc['children']:
-                            yield job_id, doc
-                    else:
-                        yield [],doc
+                    for job_id in doc['children_ids']:
+                        yield job_id, doc
+
+#    @ViewField.define('GridjobModel')    
+#    def view_children(doc, ):
+#        if 'base_type' in doc:
+#            if doc['base_type'] == 'BaseroleModel':
+#                if doc['sub_type'] == 'GridjobModel':
+#                    if doc['children']:
+#                        for job_id in doc['children']:
+#                            yield job_id, doc
+#                    else:
+#                        yield [],doc
 
     @ViewField.define('GridjobModel', include_docs=True)    
     def view_author_status(doc):
@@ -59,7 +67,7 @@ class GridjobModel(BaseroleModel):
         if 'base_type' in doc:
             if doc['base_type'] == 'BaseroleModel':
                 if doc['sub_type'] == 'GridtaskModel':
-                    yield doc['author'], {'_id':doc['children']}
+                    yield doc['author'], {'_id':doc['children_ids']}
     
     @classmethod
     def sync_views(cls, db,  only_names=False):
@@ -80,14 +88,14 @@ class JobInterface(BaseGraphInterface):
                                                                     application_tag, requested_resource, 
                                                                     requested_cores, requested_memory, 
                                                                     requested_walltime)
-        self.run_id = a_run.id
+        self._obj.run_id = a_run.id
         self.parser = parser_name
         self.store()
         return self    
     
     @property
     def run(self):
-        return RunInterface(self.db).load(self.run_id)
+        return RunInterface(self.db).load(self._obj.run_id)
         
     def load(self, id=None):
         if not id:
@@ -100,9 +108,6 @@ class JobInterface(BaseGraphInterface):
             DocumentError('Job %s has more than one run associated with it.'%(id))
         return self
     
-    def add_parent(self, parent):
-        parent.add_child(self)
-    
     def task():
         def fget(self):
             from gridtask import GridtaskModel, TaskInterface
@@ -113,16 +118,6 @@ class JobInterface(BaseGraphInterface):
             return a_task
         return locals()
     task = property(**task())
-
-    def parents():            
-        def fget(self):
-            job_list = list()
-            view = GridjobModel.view_children(self.db)
-            for a_parent in view[self.id]:
-                job_list.append(a_parent)
-            return tuple(job_list)
-        return locals()
-    parents = property(**parents())
     
     def store(self):
         super(JobInterface, self).store()
@@ -181,11 +176,11 @@ class RunInterface(BaseInterface):
         # Generate the input file hashes
         for a_file in files_to_run:
             base_name = os.path.basename(a_file.name)
-            self.files_to_run[base_name] = self.md5_for_file(a_file)
+            self._obj.files_to_run[base_name] = self.md5_for_file(a_file)
         # We now need to build a new run record
-        self.author = a_job.author
-        self.owned_by.append(a_job.id)
-        self.application = Application.Application(application_tag = application_tag,
+        self._obj.author = a_job.author
+        self._obj.owned_by.append(a_job.id)
+        self._obj.application = Application.Application(application_tag = application_tag,
                                                                        requested_resource = requested_resource,  
                                                                        requested_memory = requested_memory, 
                                                                        requested_cores = requested_cores, 
@@ -193,7 +188,7 @@ class RunInterface(BaseInterface):
                                                                        job_local_dir = '/tmp', 
                                                                        inputs = [], 
                                                                        application_arguments = None)
-        self.id = generate_new_docid()
+        self._obj.id = generate_new_docid()
         self = self._commit_new(a_job, files_to_run)
         return self
     
@@ -211,8 +206,8 @@ class RunInterface(BaseInterface):
         a_run_already_in_db = self._check_for_previous_run()
         if a_run_already_in_db:
             self.wrap(a_run_already_in_db)
-            if a_job.id not in self.owned_by:
-                self.owned_by.append(a_job.id)
+            if a_job.id not in self._obj.owned_by:
+                self._obj.owned_by.append(a_job.id)
                 self.store()
         else:
             # We need to attach the input files to the run,
@@ -235,7 +230,7 @@ class RunInterface(BaseInterface):
     def activity():
         def fget(self):
             jactivity_list = list()
-            for a_activity_id in self.owned_by:
+            for a_activity_id in self._obj.owned_by:
                 activity_list.append(JobInterface(self.db).load(a_activity_id))
             return tuple(activity_list)
         return locals()
@@ -253,7 +248,7 @@ class RunInterface(BaseInterface):
     
     def status():
         def fget(self):
-            return state.State(**self._obj.status)
+            return self._obj.status
         def fset(self, status):
             if isinstance(status, tuple):
                 value = status[0]
@@ -342,12 +337,12 @@ class GridrunModel(Document):
     
     def job():        
         def fget(self):
-            if not isinstance(self.raw_job, Job.Job) and self.raw_job:
-                job = Job.Job(self.raw_job)
-                self.raw_job = job
-            return self.raw_job
+            if not isinstance(self._obj.raw_job, Job.Job) and self._obj.raw_job:
+                job = Job.Job(self._obj.raw_job)
+                self._obj.raw_job = job
+            return self._obj.raw_job
         def fset(self, job):
-            self.raw_job = job
+            self._obj.raw_job = job
         return locals()
     job = property(**job())
 
