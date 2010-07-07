@@ -72,6 +72,16 @@ class Struct(dict):
     """
     A `dict`-like object, whose keys can be accessed with the usual
     '[...]' lookup syntax, or with the '.' get attribute syntax.
+
+    Examples::
+
+      >>> a = Struct()
+      >>> a['x'] = 1
+      >>> a.x
+      1
+      >>> a.y = 2
+      >>> a['y']
+      2
     """
     def __init__(self, **kw):
         self.update(kw)
@@ -79,6 +89,9 @@ class Struct(dict):
         self[key] = val
     def __getattr__(self, key):
         return self[key]
+    def __hasattr__(self, key):
+        return self.has_key(key)
+
 
 def _get_state_from_gc3utils_job_status(status):
     """
@@ -86,7 +99,7 @@ def _get_state_from_gc3utils_job_status(status):
     """
     try:
         return {
-            1:'EXECUTED',
+            1:'FINISHING',
             2:'RUNNING',
             3:'FAILED',
             4:'SUBMITTED',
@@ -106,27 +119,42 @@ class Job(Struct):
     """
 
     def __init__(self, **kw):
+        kw.setdefault('log', list())
+        kw.setdefault('timestamp', gc3utils.utils.defaultdict(time.time))
         Struct.__init__(self, **kw)
         self.mw = gc3utils.gcli.Gcli(*gc3utils.utils.import_config(gc3utils.Default.CONFIG_FILE_LOCATION))
-        self.options = kw['options']
+        options = kw['options']
         self.app = RosettaDockingApplication(
             self.input,
             #arguments = self.options.application_arguments,
             #job_local_dir = self.options.output
-            requested_memory = self.options.memory_per_core,
-            requested_cores = self.options.ncores,
-            requested_walltime = self.options.walltime,
+            requested_memory = options.memory_per_core,
+            requested_cores = options.ncores,
+            requested_walltime = options.walltime,
             )
+
+    def set_info(self, msg):
+        self.info = msg
+        self.log.append(msg)
+
+    def set_state(self, state):
+        if state != self.state:
+            self.state = state
+            epoch = time.time()
+            self.timestamp[state] = epoch
+            if state == 'NEW':
+                self.created = epoch
+            self.set_info(state.capitalize() + ' at ' + time.asctime(time.localtime(epoch)))
         
     def submit(self):
         j = self.mw.gsub(self.app)
         gc3utils.utils.persist_job(j)
         self.jobid = j.unique_token
 
-    def get_state(self):
+    def update_state(self):
         j = self.mw.gstat(gc3utils.utils.get_job(self.jobid))[0] # `gstat` madness
         gc3utils.utils.persist_job(j)
-        self.state = _get_state_from_gc3utils_job_status(j.status)
+        self.set_state(_get_state_from_gc3utils_job_status(j.status))
         return self.state
 
     def get_output(self):
@@ -281,7 +309,7 @@ for input in inputs:
             input = input,
             instance = instance,
             state = 'NEW',
-            timestamp = time.time(),
+            created = time.time(),
             jobid = None,
             options = options,
             )
@@ -301,14 +329,32 @@ except IOError, x:
     sys.exit(1)
 
 for row in csv.DictReader(session,  # FIXME: field list must match `job` attributes!
-                          ['input', 'instance', 'jobid', 'state', 'reached_on']):
-    # convert 'reached_on'; back to UNIX epoch
-    row['timestamp'] = time.mktime(time.strptime(row['reached_on']))
-    if jobs.has_key((row['input'], row['instance'])):
+                          ['input', 'instance', 'jobid', 'state', 'info', 'history']):
+    if row['input'].strip() == '':
+        # invalid row, skip
+        continue 
+    id = (row['input'], row['instance'])
+    if jobs.has_key(id):
         # update state etc.
-        jobs[row['input'], row['instance']].update(row)
+        jobs[id].update(row)
     else:
-        jobs[row['input'], row['instance']] = Job(options=options, **row)
+        jobs[id] = Job(options=options, **row)
+    job = jobs[id]
+    # convert 'history' into a list
+    job.log = job.history.split("; ")
+    # get back timestamps of various events
+    for event in job.log:
+        if event.upper().startswith('CREATED'):
+            job.created = time.mktime(time.strptime(event.split(' ',2)[2]))
+        if event.upper().startswith('SUBMITTED'):
+            job.timestamp['SUBMITTED'] = time.mktime(time.strptime(event.split(' ',2)[2]))
+        if event.upper().startswith('RUNNING'):
+            job.timestamp['RUNNING'] = time.mktime(time.strptime(event.split(' ',2)[2]))
+        if event.upper().startswith('FINISHING'):
+            job.timestamp['FINISHING'] = time.mktime(time.strptime(event.split(' ',2)[2]))
+        if event.upper().startswith('DONE'):
+            job.timestamp['DONE'] = time.mktime(time.strptime(event.split(' ',2)[2]))
+session.close()
 
 
 ## iterate through job list, updating state and acting accordingly
@@ -322,11 +368,8 @@ def main(jobs):
         if job.state == 'SUBMITTED' or job.state == 'RUNNING':
             # update state 
             try:
-                old_state = job.state
-                state = job.get_state()
-                if state != old_state:
-                    job.state = state
-                    job.timestamp = time.time()
+                state = job.update_state()
+                sys.stderr.write("Updated %s: got state %s\n" % (job.jobid, job.state))
                 if state in [ 'SUBMITTED', 'RUNNING' ]:
                     in_flight_count += 1
             except Exception, x:
@@ -337,59 +380,63 @@ def main(jobs):
             # try to submit; go to 'SUBMITTED' if successful, 'FAILED' if not
             try:
                 job.submit()
-                job.state = 'SUBMITTED'
-                job.submit_timestamp = time.time()
-                job.timestamp = time.time()
+                job.set_state('SUBMITTED')
             except Exception, x:
                 logging.error("Error in submitting job '%s.%s': %s: %s"
                               % (job.input, job.instance, x.__class__.__name__, str(x)))
-                job.state = 'FAILED'
-        if job.state == 'EXECUTED':
+                job.set_state('FAILED')
+                job.set_info("Submission failed: %s" % str(x))
+        if job.state == 'FINISHING':
             # get output; go to 'DONE' if successful, 'FAILED' if not
             try:
                 # FIXME: temporary fix, should persist `submit_timestamp`!
-                if not job.has_key('submit_timestamp'):
-                    job.submit_timestamp = time.localtime(job.timestamp)
+                #if not job.has_key('submitted_at'):
+                #    job.created_at = time.localtime(job.timestamp)
                 # set job output directory
                 output_dir = (options.output
                               .replace('NAME', os.path.basename(job.input))
                               .replace('PATH', os.path.dirname(job.input) or '.')
                               .replace('INSTANCE', job.instance)
-                              .replace('DATE', time.strftime('%Y-%m-%d', job.submit_timestamp))
-                              .replace('TIME', time.strftime('%H:%M', job.submit_timestamp))
+                              .replace('DATE', time.strftime('%Y-%m-%d', job.created))
+                              .replace('TIME', time.strftime('%H:%M', job.created))
                               )
                 # `job_local_dir` is where gc3utils will retrieve the output
                 job.job_local_dir = output_dir
                 job.get_output()
-                job.state = 'DONE'
-                job.timestamp = time.time()
-                logging.info("Retrieved output of job %s.%s into directory '%s'" 
-                             % (job.input, job.instance, output_dir))
+                job.set_state('DONE')
+                job.set_info("Results retrieved into directory '%s'" % output_dir)
             except Exception, x:
                 logging.error("Got error in updating state of job '%s.%s': %s: %s"
                               % (job.input, job.instance, x.__class__.__name__, str(x)))
         if job.state == 'DONE':
             # nothing more to do - remove from job list if more than 1 day old
-            if (time.time() - job.timestamp) > 24*60*60:
+            if (time.time() - job.timestamp['DONE']) > 24*60*60:
                 del jobs[job.input, job.instance]
         if job.state == 'FAILED':
             # what should we do?
             # just keep the job around for a while and then remove it?
-            if (time.time() - job.timestamp) > 3*24*60*60:
+            if (time.time() - job.timestamp['FAILED']) > 3*24*60*60:
                 del jobs[job.input, job.instance]
-        job.reached_on = time.ctime(job.timestamp)
     if len(jobs) == 0:
         print ("There are no jobs in session file '%s'." % options.session)
     else:
         # write updated jobs to session file
-        csv.DictWriter(session, ['input', 'instance', 'jobid', 'state', 'reached_on'], 
-                       extrasaction='ignore').writerows(jobs.values())
+        try:
+            session = file(session_file_name, "wb")
+            for job in jobs.values():
+                job.history = str.join("; ", job.log)
+                csv.DictWriter(session, ['input', 'instance', 'jobid', 'state', 'info', 'history'], 
+                               extrasaction='ignore').writerow(job)
+            session.close()
+        except IOError, x:
+            logging.error("Cannot save job status to session file '%s': %s"
+                          % (session_file_name, str(x)))
         # pretty-print table of jobs
-        print ("%-15s  %-15s  %-18s  %-s" % ("Input file name", "Instance count", "State (JobID)", "Reached on"))
+        print ("%-15s  %-15s  %-18s  %-s" % ("Input file name", "Instance count", "State (JobID)", "Info"))
         print (80 * "=")
         for job in jobs.values():
             print ("%-15s  %-15s  %-18s  %-s" % 
-                   (job.input, job.instance, ('%s (%s)' % (job.state, job.jobid)), job.reached_on))
+                   (job.input, job.instance, ('%s (%s)' % (job.state, job.jobid)), job.info))
 
 
 main(jobs)
