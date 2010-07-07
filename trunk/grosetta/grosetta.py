@@ -130,7 +130,10 @@ class Job(Struct):
         return self.state
 
     def get_output(self):
-        self.mw.gget(gc3utils.utils.get_job(self.jobid))
+        j = gc3utils.utils.get_job(self.jobid)
+        if self.has_key('job_local_dir'):
+            j.job_local_dir = self.job_local_dir
+        self.mw.gget(j)
         gc3utils.utils.persist_job(j)
 
 
@@ -150,14 +153,14 @@ input files specified on the command line are recorded in the session,
 the status of all recorded jobs is updated, and finally a table of all
 known jobs is printed.
 """)
-cmdline.add_option("-w", "--wall-clock-time", dest="wctime", default=str(6*60*60), # 6 hrs
+cmdline.add_option("-w", "--wall-clock-time", dest="wctime", default=str(8*60*60), # 8 hrs
                    metavar="DURATION",
                    help="Each SMSCG job will run for at most DURATION time, after which it"
                    " will be killed and considered failed. DURATION can be a whole"
                    " number, expressing duration in seconds, or a string of the form HH:MM,"
                    " specifying that a job can last at most HH hours and MM minutes."
                    )
-cmdline.add_option("-m", "--memory-per-core", dest="memory_per_core", type="int", default=1, # 1 GB
+cmdline.add_option("-m", "--memory-per-core", dest="memory_per_core", type="int", default=2, # 2 GB
                    metavar="GIGABYTES",
                    help="Require that at least GIGABYTES (a whole number)"
                         " are available to each execution core.")
@@ -224,7 +227,7 @@ if options.passes_per_file < 1:
 if options.passes_per_job < 1:
     cmdline.error("Argument to option -p/--passes-per-job must be a positive integer.")
 if options.wait < 0: 
-    cmdline.error("Argument to option -c/--continuous must be a positive integer.")
+    cmdline.error("Argument to option -C/--continuous must be a positive integer.")
 
 n = options.wctime.count(":")
 if 0 == n: # wctime expressed in seconds
@@ -344,20 +347,24 @@ def main(jobs):
         if job.state == 'EXECUTED':
             # get output; go to 'DONE' if successful, 'FAILED' if not
             try:
+                # FIXME: temporary fix, should persist `submit_timestamp`!
+                if not job.has_key('submit_timestamp'):
+                    job.submit_timestamp = time.localtime(job.timestamp)
                 # set job output directory
                 output_dir = (options.output
-                              .replace(NAME, os.path.basename(job.input))
-                              .replace(PATH, os.path.dirname(job.input))
-                              .replace(INSTANCE, job.instance)
-                              .replace(DATE, time.strftime('%Y-%m-%d', job.submit_timestamp))
-                              .replace(TIME, time.strftime('%H:%M', job.submit_timestamp))
+                              .replace('NAME', os.path.basename(job.input))
+                              .replace('PATH', os.path.dirname(job.input) or '.')
+                              .replace('INSTANCE', job.instance)
+                              .replace('DATE', time.strftime('%Y-%m-%d', job.submit_timestamp))
+                              .replace('TIME', time.strftime('%H:%M', job.submit_timestamp))
                               )
                 # `job_local_dir` is where gc3utils will retrieve the output
                 job.job_local_dir = output_dir
                 job.get_output()
+                job.state = 'DONE'
                 job.timestamp = time.time()
                 logging.info("Retrieved output of job %s.%s into directory '%s'" 
-                             % (job.input, job.instance, job.download_dir))
+                             % (job.input, job.instance, output_dir))
             except Exception, x:
                 logging.error("Got error in updating state of job '%s.%s': %s: %s"
                               % (job.input, job.instance, x.__class__.__name__, str(x)))
@@ -378,10 +385,11 @@ def main(jobs):
         csv.DictWriter(session, ['input', 'instance', 'jobid', 'state', 'reached_on'], 
                        extrasaction='ignore').writerows(jobs.values())
         # pretty-print table of jobs
-        print ("%-15s  %-15s  %-15s  %-s" % ("Input file name", "Instance count", "State", "Reached on"))
+        print ("%-15s  %-15s  %-18s  %-s" % ("Input file name", "Instance count", "State (JobID)", "Reached on"))
         print (80 * "=")
         for job in jobs.values():
-            print ("%(input)-15s  %(instance)-15s  %(state)-15s %(reached_on)-s" % job)
+            print ("%-15s  %-15s  %-18s  %-s" % 
+                   (job.input, job.instance, ('%s (%s)' % (job.state, job.jobid)), job.reached_on))
 
 
 main(jobs)
