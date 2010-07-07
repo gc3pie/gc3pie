@@ -106,11 +106,22 @@ class ArcAuth(object):
                                       stdin=p1.stdout, 
                                       stdout=subprocess.PIPE)
                 p2.communicate()
-                input_passwd = None # dispose content of passord variable
-                if p2.returncode != 0:
+                input_passwd = None # dispose content of password
+                # variable `voms-proxy-init` may exit with status code
+                # 1 even if the proxy was successfully created (e.g.,
+                # "Error: verify failed. Cannot verify AC signature!")
+                # Therefore, the only realiable way to detect if we
+                # have a valid proxy seems to be a direct call to
+                # `voms-proxy-info`...
+                returncode = subprocess.call(['voms-proxy-info', 
+                                              '--exists', '--valid', '23:30', # XXX: matches 24:00 request above
+                                              # FIXME: hard-coded value!
+                                              '--acexists', 'smscg'],
+                                             close_fds=True)
+                if returncode != 0:
                     # Failed renewing voms credential
                     # FATAL ERROR
-                    raise VOMSException("Could not get new proxy by running 'voms-proxy-init':"
+                    raise VOMSException("Could not get a valid proxy by running 'voms-proxy-init':"
                                         " got return code %s" % p2.returncode)
                 gc3utils.log.info("Successfully gotten new VOMS proxy.")
 
