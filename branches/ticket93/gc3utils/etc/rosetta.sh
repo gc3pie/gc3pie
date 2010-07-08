@@ -69,6 +69,7 @@ get_argument_of_option () {
             # XXX: should we handle the case of missing argument? (e.g., next arg is another option)
             echo "$2"
         fi
+        shift
     done
 }
 
