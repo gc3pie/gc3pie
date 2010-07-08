@@ -80,7 +80,7 @@ class Gcli:
             except:
                 # log exceptions but ignore them
                 gc3utils.log.warning("Failed creating LRMS for resource '%s' of type '%s'",
-                                     _resource.name, h_resource.type)
+                                     _resource.name, _resource.type)
                 gc3utils.log.debug('gcli.py:gsub() got exception:', exc_info=True)
                 continue
             
@@ -437,7 +437,7 @@ class Gcli:
         for _resource in self._resources:
             if _resource.name == resource_name:
                 # there's a matching resource
-                gc3utils.log.debug('Creating instance of type %s for %s',_resource.type,_resource.frontend)
+                gc3utils.log.debug('Creating instance of type %s for %s', _resource.type, _resource.name)
                 try:
                     if _resource.type is Default.ARC_LRMS:
                         _lrms = ArcLrms(_resource)

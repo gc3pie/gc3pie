@@ -261,9 +261,11 @@ def to_bytes(s):
 
  
 # === Configuration File
-def import_config(config_file_location):
+def import_config(config_file_location, auto_enable_auth=True):
     (default_val,resources_vals) = read_config(config_file_location)
-    return (get_defaults(default_val),get_resources(resources_vals))
+    return (get_defaults(default_val),
+            get_resources(resources_vals),
+            auto_enable_auth)
 
 def get_defaults(defaults):
     # Create an default object for the defaults
