@@ -34,6 +34,26 @@ import shelve
 #
 # ================================================================
 
+class defaultdict(dict):
+    """
+    A backport of `defaultdict` to Python 2.4
+    See http://docs.python.org/library/collections.html
+    """
+    def __new__(cls, default_factory=None):
+        return dict.__new__(cls)
+    def __init__(self, default_factory):
+        self.default_factory = default_factory
+    def __missing__(self, key):
+        try:
+            return self.default_factory()
+        except:
+            raise KeyError("Key '%s' not in dictionary" % key)
+    def __getitem__(self, key):
+        if not dict.__contains__(self, key):
+            dict.__setitem__(self, key, self.__missing__(key))
+        return dict.__getitem__(self, key)
+
+
 def progressive_number():
     """
     Return a positive integer, whose value is guaranteed to
@@ -55,7 +75,6 @@ def progressive_number():
     counter file, this function may block (default timeout: 30
     seconds) while trying to acquire the lock, or raise an exception
     if this fails.
-
     """
     # FIXME: should use global config value for directory
     id_filename = os.path.expanduser("~/.gc3/next_id.txt")

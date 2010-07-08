@@ -1,29 +1,7 @@
 import re
 
 import gc3utils
-
-
-try:
-    from collections import defaultdict
-except ImportError:
-    class defaultdict(dict):
-        """
-        A backport of `defaultdict` to Python 2.4
-        See http://docs.python.org/library/collections.html
-        """
-        def __new__(cls, default_factory=None):
-            return dict.__new__(cls)
-        def __init__(self, default_factory):
-            self.default_factory = default_factory
-        def __missing__(self, key):
-            try:
-                return self.default_factory()
-            except:
-                raise KeyError("Key '%s' not in dictionary" % key)
-        def __getitem__(self, key):
-            if not dict.__contains__(self, key):
-                dict.__setitem__(self, key, self.__missing__(key))
-            return dict.__getitem__(self, key)
+from gc3utils.utils import defaultdict
 
 
 from utils import to_bytes
@@ -195,8 +173,8 @@ def count_jobs(qstat_output, whoami):
             continue
         # remove leading and trailing whitespace
         line = line.strip()
-	if len(line) == 0:
-	    continue
+        if len(line) == 0:
+            continue
         jid, prio, name, user, state, rest = re.split(r'\s+', line, 5)
         # skip in error/hold/suspended/deleted state
         if (('E' in state) or ('h' in state) or ('T' in state) 
