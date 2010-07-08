@@ -187,7 +187,8 @@ class Application(InformationContainer):
                 '(arguments=%s)' % str.join(' ', [('"%s"' % x) for x in self.arguments]),
                 '(gmlog="gmlog")', # FIXME: should check if conflicts with any input/output files
                 ])
-        if os.path.basename(self.executable) in self.inputs:
+        if (os.path.basename(self.executable) in self.inputs
+            or './'+os.path.basename(self.executable) in self.inputs):
             xrsl += '(executables="%s")' % os.path.basename(self.executable)
         if self.stdin:
             xrsl += '(stdin="%s")' % self.stdin
@@ -376,8 +377,11 @@ class RosettaApplication(Application):
         else:
             kw['rtes'] = [ "APPS/BIO/ROSETTA-3.1" ]
 
+        kw.setdefault('stdout', application+'.stdout.txt')
+        kw.setdefault('stderr', application+'.stderr.txt')
+
         Application.__init__(self,
-                             executable = "$ROSETTA_LOCATION/%s" % application,
+                             executable = "./%s" % rosetta_sh,
                              arguments = _arguments,
                              inputs = _inputs,
                              outputs = _outputs,
