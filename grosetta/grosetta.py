@@ -391,7 +391,7 @@ def main(jobs):
             try:
                 # FIXME: temporary fix, should persist `created`!
                 if not job.has_key('created'):
-                    job.created = time.localtime(job.timestamp)
+                    job.created = time.localtime(time.time())
                 # set job output directory
                 output_dir = (options.output
                               .replace('NAME', os.path.basename(job.input))
