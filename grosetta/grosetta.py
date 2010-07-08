@@ -389,9 +389,9 @@ def main(jobs):
         if job.state == 'FINISHING':
             # get output; go to 'DONE' if successful, 'FAILED' if not
             try:
-                # FIXME: temporary fix, should persist `submit_timestamp`!
-                #if not job.has_key('submitted_at'):
-                #    job.created_at = time.localtime(job.timestamp)
+                # FIXME: temporary fix, should persist `created`!
+                if not job.has_key('created'):
+                    job.created = time.localtime(job.timestamp)
                 # set job output directory
                 output_dir = (options.output
                               .replace('NAME', os.path.basename(job.input))
