@@ -216,6 +216,8 @@ class Application(InformationContainer):
             xrsl += '(wallTime="%d hours")' % self.requested_walltime
         if self.requested_memory:
             xrsl += '(memory="%d")' % self.requested_memory
+        if self.requested_cores:
+            xrsl += '(count="%d")' % self.requested_cores
 
         return xrsl
 
