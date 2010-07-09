@@ -364,6 +364,7 @@ class RosettaApplication(Application):
             gc3utils.log.info("Using flags file: %s", 
                               gc3utils.Default.RCDIR + '/' + application + '.flags')
             gc3utils.utils.deploy_configuration_file(application + '.flags')
+            _inputs.append(gc3utils.Default.RCDIR + '/' + application + '.flags')
 
         if database:
             _inputs.append(database)

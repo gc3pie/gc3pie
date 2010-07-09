@@ -80,13 +80,13 @@ is_absolute_path () {
 
 ## parse command-line 
 
-say="echo '$PROG: '"
+say="echo $PROG: "
 
 while [ $# -gt 0 ]; do
     case "$1" in
         --help) usage; exit 0 ;;
         --quiet) say=':' ;;
-        *) shift; break ;;
+        *) break ;;
     esac
     shift
 done
@@ -101,34 +101,30 @@ require_command tar
 require_command xargs
 require_command cut
 
-# if the -database option is specified on the command-line,
-# then skip any DB processing below
-if [ -n "$(get_argument_of_option -database "$@")" ]; then
-    skip_db_patching=yes
-fi
-
 # read additional options from the '${PROG}.flags' file, if present
 if [ -e "${PROG}.flags" ]; then
-    flags="@${PROG}.flags"
-    if [ -z "$skip_db_patching" ]; then
+    if grep -q -e '^-database' "${PROG}.flags"; then
         # correct database location
-        require_environment_variable ROSETTA_DB_LOCATION
-        sed -i -r -e "s/-database +.*/-database $ROSETTA_DB_LOCATION/g" "${PROG}.flags"
+        sed -i -r -e "s|-database +.*|-database $ROSETTA_DB_LOCATION|g" "${PROG}.flags"
+	database_specified_in_flags_file=yes
         $say Changed database location in ${PROG}.flags file to "$ROSETTA_DB_LOCATION"
     fi
-else
-    if [ -z "$skip_db_patching" ]; then
-        database="-database $ROSETTA_DB_LOCATION"
-    fi 
+    flags="`grep ^- ${PROG}.flags`"
+fi
+
+if [ -z "$database_specified_in_flags_file" ]; then
+    require_environment_variable ROSETTA_DB_LOCATION
+    database="-database $ROSETTA_DB_LOCATION"
+    $say "Database location not in flags file, using the one from RTE: '$ROSETTA_DB_LOCATION'"
 fi
 
 require_environment_variable ROSETTA_LOCATION
 
 $say Running: $ROSETTA_LOCATION/${PROG}.linuxgccrelease $database $flags "$@"
-${ROSETTA_LOCATION}/${PROG}.linuxgccrelease $database $flags "$@" | tee ${PROG}.log
+${ROSETTA_LOCATION}/${PROG}.linuxgccrelease $flags $database "$@" | tee ${PROG}.log
 
 $say Collecting computed decoys energy scores in file "${stem}${PROG}.tar.gz" ...
-tar $verbose -czf "${stem}${PROG}.tar.gz" ${stem}.pdb
+tar $verbose -czf "${PROG}.tar.gz" *.pdb *.fasc *.sc
 
 $say All done.
 
