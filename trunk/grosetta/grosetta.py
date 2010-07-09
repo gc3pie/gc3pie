@@ -39,7 +39,7 @@ class RosettaDockingApplication(RosettaApplication):
                  number_of_decoys_to_create=1, flag_file_path=None, **kw):
         pdb_file_name = os.path.basename(pdb_file_path)
         pdb_file_dir = os.path.dirname(pdb_file_path)
-        pbd_file_name_sans = os.path.splitext(pdb_file_name)[0]
+        pdb_file_name_sans = os.path.splitext(pdb_file_name)[0]
         if native_file_path is None:
             native_file_path = pdb_file_path
         def get_and_remove(D, k, d):
@@ -56,10 +56,13 @@ class RosettaDockingApplication(RosettaApplication):
                 "-in:file:s":pdb_file_path,
                 "-in:file:native":native_file_path,
                 },
-            outputs = [ pdb_file_name+'.fasc' ],
+            outputs = [
+                pdb_file_name_sans + '.fasc',
+                pdb_file_name_sans + '.sc',
+                ],
             flags_file = flag_file_path,
             arguments = [ 
-                "-out:file:o", pdb_file_name,
+                "-out:file:o", pdb_file_name_sans,
                 "-out:nstruct", number_of_decoys_to_create,
                 ] + get_and_remove(kw, 'arguments', []),
             job_local_dir = get_and_remove(kw, 'job_local_dir', pdb_file_dir),
@@ -126,6 +129,8 @@ class Job(Struct):
         options = kw['options']
         self.app = RosettaDockingApplication(
             self.input,
+            number_of_decoys_to_create=options.decoys_per_job,
+            flags_file_path=options.flags_file_path,
             #arguments = self.options.application_arguments,
             #job_local_dir = self.options.output
             requested_memory = options.memory_per_core,
@@ -170,34 +175,49 @@ class Job(Struct):
 
 cmdline = OptionParser("grosetta [options] [INPUT ...]",
                        description="""
-Submit a ROSETTA docking job on each of the INPUT files, and collect
-back output files when the jobs are done.  Each of the INPUT
+Compute decoys of specified '.pdb' files by running several
+Rosetta 'docking_protocol' instances in parallel.
+
+The `grosetta` command keeps a record of jobs (submitted, executed and
+pending) in a session file; at each invocation of the command, the
+status of all recorded jobs is updated, output from finished jobs is
+collected, and a summary table of all known jobs is printed.
+
+If any INPUT argument is specified on the command line, `grosetta`
+appends new jobs to the session file, up to the quantity needed
+to compute the requested number of decoys.  Each of the INPUT
 parameters can be either a single '.pdb' file, or a directory, which
 is recursively scanned for '.pdb' files.
 
-The `grosetta` command keeps a record of the subitted jobs in a
-session file; at each invocation of the command, jobs corresponding to
-input files specified on the command line are recorded in the session,
-the status of all recorded jobs is updated, and finally a table of all
-known jobs is printed.
+Options can specify a maximum number of jobs that should be in
+'SUBMITTED' or 'RUNNING' state; `grosetta` will delay submission
+of newly-created jobs so that this limit is never exceeded.
 """)
-cmdline.add_option("-w", "--wall-clock-time", dest="wctime", default=str(8*60*60), # 8 hrs
-                   metavar="DURATION",
-                   help="Each SMSCG job will run for at most DURATION time, after which it"
-                   " will be killed and considered failed. DURATION can be a whole"
-                   " number, expressing duration in seconds, or a string of the form HH:MM,"
-                   " specifying that a job can last at most HH hours and MM minutes."
+cmdline.add_option("-C", "--continuous", type="int", dest="wait", default=0,
+                   metavar="INTERVAL",
+                   help="Keep running, monitoring jobs and possibly submitting new ones or"
+                   " fetching results every INTERVAL seconds."
+                   )
+cmdline.add_option("-c", "--cpu-cores", dest="ncores", type="int", default=1, # 1 core
+                   metavar="NUM",
+                   help="Require the specified number of CPU cores (default: %default)"
+                   " for each Rosetta 'docking_protocol' job. NUM must be a whole number."
+                   )
+cmdline.add_option("-f", "--flags-file", dest="flags_file_path", default=None,
+                   metavar="PATH",
+                   help="Pass the specified flags file to Rosetta 'docking_protocol'"
+                   " Default: '~/.gc3/docking_protocol.flags'"
+                   )
+cmdline.add_option("-J", "--max-running", type="int", dest="max_running", default=50,
+                   metavar="NUM",
+                   help="Allow no more than NUM concurrent jobs (default: %default)"
+                   " to be in SUBMITTED or RUNNING state."
                    )
 cmdline.add_option("-m", "--memory-per-core", dest="memory_per_core", type="int", default=2, # 2 GB
                    metavar="GIGABYTES",
                    help="Require that at least GIGABYTES (a whole number)"
-                        " are available to each execution core.")
-cmdline.add_option("-c", "--cpu-cores", dest="ncores", type="int", default=1, # 1 core
-                   metavar="NUM",
-                   help="Require the specified number of CPU cores for each SMSCG job."
-                        " NUM must be a whole number."
-                   )
-cmdline.add_option("-o", "--output", dest="output", default='PATH/NAME.INSTANCE',
+                        " are available to each execution core. (Default: %default)")
+cmdline.add_option("-o", "--output", dest="output", default='PATH/',
                    metavar='DIRECTORY',
                    help="Output files from all jobs will be collected in the specified"
                    " DIRECTORY path; by default, output files are placed in the same"
@@ -211,55 +231,54 @@ cmdline.add_option("-o", "--output", dest="output", default='PATH/NAME.INSTANCE'
                    " DATE is replaced by the submission date in ISO format (YYYY-MM-DD);"
                    " TIME is replaced by the submission time formatted as HH:MM."
                    )
-cmdline.add_option("-J", "--max-running", type="int", dest="max_running", default=50,
-                   metavar="NUM",
-                   help="Allow no more than NUM concurrent jobs in the grid."
-                   )
-cmdline.add_option("-P", "--passes-per-file", type="int", dest="passes_per_file", 
+cmdline.add_option("-P", "--decoys-per-file", type="int", dest="decoys_per_file", 
                    default=10000,
                    metavar="NUM",
-                   help="Execute NUM passes of ROSETTA docking over each input file."
+                   help="Compute NUM decoys per input file (default: %default)."
                    )
-cmdline.add_option("-p", "--passes-per-job", type="int", dest="passes_per_job", 
+cmdline.add_option("-p", "--decoys-per-job", type="int", dest="decoys_per_job", 
                    default=15,
                    metavar="NUM",
-                   help="Execute NUM passes of ROSETTA docking in a single job."
+                   help="Compute NUM decoys in a single job (default: %default)."
                    " This parameter should be tuned so that the running time"
-                   " of a job does not exceed the maximum wall-clock time."
+                   " of a single job does not exceed the maximum wall-clock time."
                    )
 cmdline.add_option("-s", "--session", dest="session", 
                    default=os.path.join(rcdir, 'grosetta.csv'),
                    metavar="FILE",
-                   help="Use FILE to store the status of running jobs.  Any input files"
-                   " specified on the command line will be added to the existing"
+                   help="Use FILE to store the status of running jobs (default: '%default')."
+                   " Any input files specified on the command line will be added to the existing"
                    " session.  Any jobs already in the session will be monitored and"
                    " their output will be fetched if the jobs are done."
-                   )
-cmdline.add_option("-C", "--continuous", type="int", dest="wait", default=0,
-                   metavar="INTERVAL",
-                   help="Keep running, monitoring jobs and possibly submitting new ones or"
-                   " fetching results every INTERVAL seconds."
                    )
 cmdline.add_option("-v", "--verbose", type="int", dest="verbose", default=0,
                    metavar="LEVEL",
                    help="Increase program verbosity"
                    " (default is 0; any higher number may spoil screen output).",
                    )
+cmdline.add_option("-w", "--wall-clock-time", dest="wctime", default=str(8), # 8 hrs
+                   metavar="DURATION",
+                   help="Each Rosetta job will run for at most DURATION time"
+                   " (default: %default hours), after which it"
+                   " will be killed and considered failed. DURATION can be a whole"
+                   " number, expressing duration in hours, or a string of the form HH:MM,"
+                   " specifying that a job can last at most HH hours and MM minutes."
+                   )
 (options, args) = cmdline.parse_args()
 
 # consistency check
 if options.max_running < 1:
     cmdline.error("Argument to option -J/--max-running must be a positive integer.")
-if options.passes_per_file < 1:
-    cmdline.error("Argument to option -P/--passes-per-file must be a positive integer.")
-if options.passes_per_job < 1:
-    cmdline.error("Argument to option -p/--passes-per-job must be a positive integer.")
+if options.decoys_per_file < 1:
+    cmdline.error("Argument to option -P/--decoys-per-file must be a positive integer.")
+if options.decoys_per_job < 1:
+    cmdline.error("Argument to option -p/--decoys-per-job must be a positive integer.")
 if options.wait < 0: 
     cmdline.error("Argument to option -C/--continuous must be a positive integer.")
 
 n = options.wctime.count(":")
-if 0 == n: # wctime expressed in seconds
-    duration = int(options.wctime)
+if 0 == n: # wctime expressed in hours
+    duration = int(options.wctime)*60*60
     if duration < 1:
         cmdline.error("Argument to option -w/--wall-clock-time must be a positive integer.")
     options.wctime = duration
@@ -303,8 +322,8 @@ logging.debug("Gathered input file list %s" % inputs)
 
 jobs = dict() # use (NAME,INSTANCE) as primary key
 for input in inputs:
-    for nr in range(0, options.passes_per_file, options.passes_per_job):
-        instance = ("%d--%d" % (nr, nr + options.passes_per_job))
+    for nr in range(0, options.decoys_per_file, options.decoys_per_job):
+        instance = ("%d--%d" % (nr, nr + options.decoys_per_job - 1))
         jobs[input, instance] = Job(
             input = input,
             instance = instance,
@@ -369,7 +388,6 @@ def main(jobs):
             # update state 
             try:
                 state = job.update_state()
-                sys.stderr.write("Updated %s: got state %s\n" % (job.jobid, job.state))
                 if state in [ 'SUBMITTED', 'RUNNING' ]:
                     in_flight_count += 1
             except Exception, x:
