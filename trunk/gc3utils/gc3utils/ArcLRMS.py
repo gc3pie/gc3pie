@@ -21,10 +21,6 @@ import Exceptions
 import warnings
 warnings.simplefilter("ignore")
 
-# NG's default packages install arclib into /opt/nordugrid/lib/pythonX.Y/site-packages;
-# add this anyway in case users did not set their PYTHONPATH correctly
-sys.path.append('/opt/nordugrid/lib/python%d.%d/site-packages' 
-                % sys.version_info[:2])
 import arclib
 
 # -----------------------------------------------------
@@ -51,12 +47,28 @@ class ArcLrms(LRMS):
                 # Convert from hours to minutes
                 self._resource.walltime = self._resource.walltime * 60
 
+            self._queues_cache_time = Default.CACHE_TIME # XXX: should it be configurable?
+
     def is_valid(self):
         return self.isValid
 
     def submit_job(self, application):
         return self._submit_job_arclib(application)
 
+    def _get_queues(self):
+        if (not hasattr(self, '_queues')) or (not hasattr(self, '_queues_last_accessed')) \
+                or (time.time() - self._queues_last_updated > self._queues_cache_time):
+            if self._resource.has_key('arc_ldap'):
+                gc3utils.log.debug("Getting list of ARC resources from GIIS '%s' ...", 
+                                   self._resource.arc_ldap)
+                cls = arclib.GetClusterResources(arclib.URL(self._resource.arc_ldap),True,'',10)
+            else:
+                cls = arclib.GetClusterResources()
+            gc3utils.log.debug('Got cluster list of length %d', len(cls))
+            self._queues = arclib.GetQueueInfo(cls,arclib.MDS_FILTER_CLUSTERINFO, True, '', 5)
+            self._queues_last_updated = time.time()
+        return self._queues
+            
     def _submit_job_arclib(self, application):
 
         # Initialize xrsl from template   
@@ -108,15 +120,7 @@ class ArcLrms(LRMS):
         except:
             raise LRMSSubmitError('Failed in getting `Xrsl` object from arclib:', exc_info=True)
 
-        if self._resource.has_key('arc_ldap'):
-            cls = arclib.GetClusterResources(arclib.URL(self._resource.arc_ldap),True,'',2)
-	    gc3utils.log.debug('cluster list of lenght %d' % len(cls))
-            queues = arclib.GetQueueInfo(cls,arclib.MDS_FILTER_CLUSTERINFO,True,"",2)
-        else:
-            queues = arclib.GetQueueInfo(arclib.GetClusterResources())
-        if len(queues) == 0:
-            raise LRMSSubmitError('No ARC queues found')
-
+        queues = self._get_queues()
         targets = arclib.PerformStandardBrokering(arclib.ConstructTargets(queues, _xrsl))
         if len(targets) == 0:
             raise LRMSSubmitError('No ARC targets found')
@@ -337,8 +341,8 @@ class ArcLrms(LRMS):
                 queues =  arclib.GetQueueInfo(cluster,arclib.MDS_FILTER_CLUSTERINFO,True,"",2)
 
                 if len(queues) == 0:
-		    gc3utils.log.error('No ARC queues found for resource %s' % str(cluster))
-		    continue
+                    gc3utils.log.error('No ARC queues found for resource %s' % str(cluster))
+                    continue
                     # raise LRMSSubmitError('No ARC queues found')              
                 
                 for q in queues:
