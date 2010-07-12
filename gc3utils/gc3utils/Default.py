@@ -20,6 +20,7 @@ JOBS_DIR = RCDIR + "/jobs"
 JOB_FILE = ".lrms_id"
 JOB_FINISHED_FILE = ".finished"
 JOB_LOG = ".log"
+CACHE_TIME = 90 # only update ARC resources status every this seconds
 
 ARC_LRMS = 1
 SGE_LRMS = 2
