@@ -47,12 +47,28 @@ class ArcLrms(LRMS):
                 # Convert from hours to minutes
                 self._resource.walltime = self._resource.walltime * 60
 
+            self._queues_cache_time = Default.CACHE_TIME # XXX: should it be configurable?
+
     def is_valid(self):
         return self.isValid
 
     def submit_job(self, application):
         return self._submit_job_arclib(application)
 
+    def _get_queues(self):
+        if (not hasattr(self, '_queues')) or (not hasattr(self, '_queues_last_accessed')) \
+                or (time.time() - self._queues_last_updated > self._queues_cache_time):
+            if self._resource.has_key('arc_ldap'):
+                gc3utils.log.debug("Getting list of ARC resources from GIIS '%s' ...", 
+                                   self._resource.arc_ldap)
+                cls = arclib.GetClusterResources(arclib.URL(self._resource.arc_ldap),True,'',10)
+            else:
+                cls = arclib.GetClusterResources()
+            gc3utils.log.debug('Got cluster list of length %d', len(cls))
+            self._queues = arclib.GetQueueInfo(cls,arclib.MDS_FILTER_CLUSTERINFO, True, '', 5)
+            self._queues_last_updated = time.time()
+        return self._queues
+            
     def _submit_job_arclib(self, application):
 
         # Initialize xrsl
@@ -65,18 +81,9 @@ class ArcLrms(LRMS):
         except:
             raise LRMSSubmitError('Failed in getting `Xrsl` object from arclib:', exc_info=True)
 
-        if self._resource.has_key('arc_ldap'):
-            gc3utils.log.debug("Getting cluster list from %s ...", self._resource.arc_ldap)
-            cls = arclib.GetClusterResources(arclib.URL(self._resource.arc_ldap), True, '', 2)
-            gc3utils.log.debug('LDAP query returned cluster list of lenght %d' % len(cls))
-            gc3utils.log.debug("Extracting queue information from cluster list ...")
-            queues = arclib.GetQueueInfo(cls, arclib.MDS_FILTER_CLUSTERINFO, True, "", 2)
-        else:
-            gc3utils.log.debug("Getting cluster/queue list from ARC's default GIIS ...")
-            queues = arclib.GetQueueInfo(arclib.GetClusterResources())
+        queues = self._get_queues()
         if len(queues) == 0:
             raise LRMSSubmitError('No ARC queues found')
-
         targets = arclib.PerformStandardBrokering(arclib.ConstructTargets(queues, _xrsl))
         if len(targets) == 0:
             raise LRMSSubmitError('No ARC targets found')
