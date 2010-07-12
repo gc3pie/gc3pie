@@ -162,10 +162,10 @@ class Job(Struct):
         self.set_state(_get_state_from_gc3utils_job_status(j.status))
         return self.state
 
-    def get_output(self):
+    def get_output(self, output_dir):
         j = gc3utils.utils.get_job(self.jobid)
-        if self.has_key('job_local_dir'):
-            j.job_local_dir = self.job_local_dir
+        # `job_local_dir` is where gc3utils will retrieve the output
+        j.job_local_dir = output_dir
         self.mw.gget(j)
         gc3utils.utils.persist_job(j)
 
@@ -418,9 +418,7 @@ def main(jobs):
                               .replace('DATE', time.strftime('%Y-%m-%d', job.created))
                               .replace('TIME', time.strftime('%H:%M', job.created))
                               )
-                # `job_local_dir` is where gc3utils will retrieve the output
-                job.job_local_dir = output_dir
-                job.get_output()
+                job.get_output(output_dir)
                 job.set_state('DONE')
                 job.set_info("Results retrieved into directory '%s'" % output_dir)
             except Exception, x:
