@@ -391,6 +391,49 @@ class RosettaApplication(Application):
                              **kw)
 
 
+class RosettaDockingApplication(RosettaApplication):
+    """
+    Specialized `Application` class for executing a single run of the
+    Rosetta "docking_protocol" application.
+
+    Currently used in the `grosetta` app.
+    """
+    def __init__(self, pdb_file_path, native_file_path=None, 
+                 number_of_decoys_to_create=1, flag_file_path=None, **kw):
+        pdb_file_name = os.path.basename(pdb_file_path)
+        pdb_file_dir = os.path.dirname(pdb_file_path)
+        pdb_file_name_sans = os.path.splitext(pdb_file_name)[0]
+        if native_file_path is None:
+            native_file_path = pdb_file_path
+        def get_and_remove(D, k, d):
+            if D.has_key(k):
+                result = D[k]
+                del D[k]
+                return result
+            else:
+                return d
+        RosettaApplication.__init__(
+            self,
+            application = 'docking_protocol',
+            inputs = { 
+                "-in:file:s":pdb_file_path,
+                "-in:file:native":native_file_path,
+                },
+            outputs = [
+                pdb_file_name_sans + '.fasc',
+                pdb_file_name_sans + '.sc',
+                ],
+            flags_file = flag_file_path,
+            arguments = [ 
+                "-out:file:o", pdb_file_name_sans,
+                "-out:nstruct", number_of_decoys_to_create,
+                ] + get_and_remove(kw, 'arguments', []),
+            job_local_dir = get_and_remove(kw, 'job_local_dir', pdb_file_dir),
+            **kw)
+
+
+
+
 
 __registered_apps = {
     'gamess': GamessApplication,
