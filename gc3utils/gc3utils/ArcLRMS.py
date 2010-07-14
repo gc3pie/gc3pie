@@ -61,11 +61,11 @@ class ArcLrms(LRMS):
             if self._resource.has_key('arc_ldap'):
                 gc3utils.log.debug("Getting list of ARC resources from GIIS '%s' ...", 
                                    self._resource.arc_ldap)
-                cls = arclib.GetClusterResources(arclib.URL(self._resource.arc_ldap),True,'',10)
+                cls = arclib.GetClusterResources(arclib.URL(self._resource.arc_ldap),True,'',1)
             else:
                 cls = arclib.GetClusterResources()
             gc3utils.log.debug('Got cluster list of length %d', len(cls))
-            self._queues = arclib.GetQueueInfo(cls,arclib.MDS_FILTER_CLUSTERINFO, True, '', 5)
+            self._queues = arclib.GetQueueInfo(cls,arclib.MDS_FILTER_CLUSTERINFO, True, '', 1)
             self._queues_last_updated = time.time()
         return self._queues
             
@@ -121,6 +121,9 @@ class ArcLrms(LRMS):
             raise LRMSSubmitError('Failed in getting `Xrsl` object from arclib:', exc_info=True)
 
         queues = self._get_queues()
+        if len(queues) == 0:
+            raise LRMSSubmitError('No ARC queues found')
+
         targets = arclib.PerformStandardBrokering(arclib.ConstructTargets(queues, _xrsl))
         if len(targets) == 0:
             raise LRMSSubmitError('No ARC targets found')
@@ -327,9 +330,9 @@ class ArcLrms(LRMS):
             else:
                 cls = arclib.GetClusterResources()
 
-            queues = arclib.GetQueueInfo(cls,arclib.MDS_FILTER_CLUSTERINFO,True,"",2)
-            if len(queues) == 0:
-                raise LRMSSubmitError('No ARC queues found')
+#            queues = arclib.GetQueueInfo(cls,arclib.MDS_FILTER_CLUSTERINFO,True,"",2)
+#            if len(queues) == 0:
+#                raise LRMSSubmitError('No ARC queues found')
 
             total_queued = 0
             free_slots = 0
@@ -337,13 +340,13 @@ class ArcLrms(LRMS):
             user_queued = 0
             
             for cluster in cls:
-                list_of_jobs = arclib.GetAllJobs(cluster)
-                queues =  arclib.GetQueueInfo(cluster,arclib.MDS_FILTER_CLUSTERINFO,True,"",2)
-
+                queues =  arclib.GetQueueInfo(cluster,arclib.MDS_FILTER_CLUSTERINFO,True,"",1)
                 if len(queues) == 0:
                     gc3utils.log.error('No ARC queues found for resource %s' % str(cluster))
                     continue
                     # raise LRMSSubmitError('No ARC queues found')              
+
+                list_of_jobs = arclib.GetAllJobs(cluster,True,"",1)
                 
                 for q in queues:
                     q.grid_queued = self._normalize_value(q.grid_queued)
@@ -358,7 +361,10 @@ class ArcLrms(LRMS):
                     total_queued = total_queued +  q.grid_queued + q.local_queued + q.prelrms_queued + q.queued
 
                     # free_slots
-                    free_slots = free_slots + q.cluster.total_cpus - q.cluster.used_cpus
+                    # free_slots - free_slots + ( q.total_cpus - q.running )
+                    free_slots = free_slots + min((q.total_cpus - q.running),(q.cluster.total_cpus - q.cluster.used_cpus))
+                    # Obsolete this because free slots is a queue related concept and not a cluster one
+                    # free_slots = free_slots + q.cluster.total_cpus - q.cluster.used_cpus
 
                 # user_running and user_queued
                 for job in list_of_jobs:
