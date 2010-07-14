@@ -58,9 +58,11 @@ class SshLrms(LRMS):
     def is_valid(self):
         return self.isValid
 
-    def submit_job(self, application):
+    def submit_job(self, application, job=None):
         """
-        Submit a job.
+        Submit a job running an instance of the given `application`.
+        Return the `job` object, modified to refer to the submitted computational job,
+        or a new instance of the `Job` class if `job` is `None` (default).
 
         On the backend, the command will look something like this:
         # ssh user@remote_frontend 'cd unique_token ; $gamess_location -n cores input_file'
@@ -120,10 +122,12 @@ class SshLrms(LRMS):
 
             job_log = "\nstdout:\n" + stdout + "\nstderr:\n" + stderr
 
-            job = Job.Job(lrms_jobid=lrms_jobid,
-                          status=Job.JOB_STATE_SUBMITTED,
-                          resource_name=self._resource.name,
-                          log=job_log)
+            if job is None:
+                job = Job.Job()
+            job.lrms_jobid=lrms_jobid
+            job.status=Job.JOB_STATE_SUBMITTED
+            job.resource_name=self._resource.name
+            job.log = job_log
             job.remote_ssh_folder = ssh_remote_folder
 
             # remember outputs for later ref
@@ -324,7 +328,7 @@ class SshLrms(LRMS):
                 _download_dir = Default.JOB_FOLDER_LOCATION + '/' + job.unique_token
                 
             # Prepare/Clean download dir
-            if gc3utils.utils.prepare_job_dir(_download_dir) is False:
+            if gc3utils.Job.prepare_job_dir(_download_dir) is False:
                 # failed creating local folder
                 raise Exception('failed creating local folder')
 

@@ -19,7 +19,6 @@ import warnings
 warnings.simplefilter("ignore")
 from arclib import *
 from Exceptions import *
-import Job
 import Default
 import gc3utils
 from lockfile import FileLock
@@ -52,6 +51,46 @@ class defaultdict(dict):
         if not dict.__contains__(self, key):
             dict.__setitem__(self, key, self.__missing__(key))
         return dict.__getitem__(self, key)
+
+
+class Struct(dict):
+    """
+    A `dict`-like object, whose keys can be accessed with the usual
+    '[...]' lookup syntax, or with the '.' get attribute syntax.
+
+    Examples::
+
+      >>> a = Struct()
+      >>> a['x'] = 1
+      >>> a.x
+      1
+      >>> a.y = 2
+      >>> a['y']
+      2
+
+    Values can also be initially set by specifying them as keyword
+    arguments to the constructor::
+
+      >>> a = Struct(z=3)
+      >>> a['z']
+      3
+      >>> a.z
+      3
+    """
+    def __init__(self, initializer=None, **kw):
+        if initializer is None:
+            dict.__init__(self, **kw)
+        else:
+            dict.__init__(self, initializer, **kw)
+    def __setattr__(self, key, val):
+        self[key] = val
+    def __getattr__(self, key):
+        if self.has_key(key):
+            return self[key]
+        else:
+            raise AttributeError, "No attribute '%s' on object %s" % (key, self)
+    def __hasattr__(self, key):
+        return self.has_key(key)
 
 
 def progressive_number():
@@ -448,111 +487,6 @@ def release_file_lock(joblist_lock):
 #    except:
 #        logging.error('Failed sending email [ %s ]',sys.exc_info()[1])
 
-def job_status_to_string(job_status):
-    try:
-        return {
-#            Job.JOB_STATE_HOLD:    'HOLD',
-#            Job.JOB_STATE_WAIT:    'WAITING',
-#            Job.JOB_STATE_READY:   'READY',
-#            Job.JOB_STATE_ERROR:   'ERROR',
-            Job.JOB_STATE_FAILED:  'FAILED',
-#            Job.JOB_STATE_OUTPUT:  'OUTPUTTING',
-            Job.JOB_STATE_RUNNING: 'RUNNING',
-            Job.JOB_STATE_FINISHED:'FINISHED',
-#            Job.JOB_STATE_NOTIFIED:'NOTIFIED',
-            Job.JOB_STATE_SUBMITTED:'SUBMITTED',
-            Job.JOB_STATE_COMPLETED:'COMPLETED',
-            Job.JOB_STATE_DELETED: 'DELETED'
-            }[job_status]
-    except KeyError:
-        gc3utils.log.error('job status code %s unknown', job_status)
-        return 'UNKNOWN'
-
-
-def get_job(unique_token):
-    return get_job_filesystem(unique_token)
-
-def get_job_filesystem(unique_token):
-
-    handler = None
-    gc3utils.log.debug('retrieving job from %s',Default.JOBS_DIR+'/'+unique_token)
-
-    try:
-        if not os.path.exists(Default.JOBS_DIR+'/'+unique_token):
-            raise JobRetrieveError('Job not found')
-        handler = shelve.open(Default.JOBS_DIR+'/'+unique_token)
-        job = Job.Job(handler) 
-        handler.close()
-        if job.is_valid():
-            return job
-        else:
-            raise JobRetrieveError('Failed retrieving job from filesystem')
-    except:
-        if handler:
-            handler.close()
-        raise
-
-def create_job_folder_filesystem(job_folder_location,unique_token):
-    try:
-        # create_unique_token
-        unique_id = job_folder_location + '/' + unique_token
-        while os.path.exists(unique_id):
-            unique_id = unique_id + '_' + os.getgid()
-
-        gc3utils.log.debug('creating folder for job session: %s',unique_id)
-        os.makedirs(unique_id)
-    except:
-        gc3utils.log.error('Failed creating job on filesystem')
-        raise
-
-
-def persist_job(job_obj):
-    return persist_job_filesystem(job_obj)
-
-def persist_job_filesystem(job_obj):
-
-    handler = None
-    gc3utils.log.debug('dumping job in %s',Default.JOBS_DIR+'/'+job_obj.unique_token)
-    if not os.path.exists(Default.JOBS_DIR):
-        try:
-            os.makedirs(Default.JOBS_DIR)
-        except Exception, x:
-            # raise same exception but add context message
-            gc3utils.log.error("Could not create jobs directory '%s': %s" 
-                               % (Default.JOBS_DIR, x))
-            raise
-    try:
-        handler = shelve.open(Default.JOBS_DIR+'/'+job_obj.unique_token)
-        handler.update(job_obj)
-        handler.close()
-    except Exception, x:
-        gc3utils.log.error("Could not persist job %s to '%s': %s" 
-                           % (job_obj.unique_token, Default.JOBS_DIR, x))
-        if handler:
-            handler.close()
-        raise
-
-def clean_job(unique_token):
-    return clean_job_filesystem(unique_token)
-
-def clean_job_filesystem(unique_token):
-    if os.path.isfile(Default.JOBS_DIR+'/'+unique_token):
-        os.remove(Default.JOBS_DIR+'/'+unique_token)
-    return 0
-
-def prepare_job_dir(_download_dir):
-    try:
-        if os.path.isdir(_download_dir):
-            # directory exists; move it to .1
-            os.rename(_download_dir,_download_dir + "_" + create_unique_token())
-
-        os.makedirs(_download_dir)
-        return True
-
-    except:
-        gc3utils.log.error('Failed creating folder %s ' % _download_dir)
-        gc3utils.log.debug('%s %s',sys.exc_info()[0], sys.exc_info()[1])
-        return False
 
 if __name__ == '__main__':
     import doctest

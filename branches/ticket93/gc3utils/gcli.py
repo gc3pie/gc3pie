@@ -52,25 +52,30 @@ class Gcli:
                                 if fnmatch(res.name, match) ]
 
 #========== Start gsub ===========
-    def gsub(self, application_obj, **kw):
+    def gsub(self, application, job=None, **kw):
+        """
+        Submit a job running an instance of the given `application`.
+        Return the `job` object, modified to refer to the submitted computational job,
+        or a new instance of the `Job` class if `job` is `None` (default).
+        """
         auto_enable_auth = kw.get('auto_enable_auth', self.auto_enable_auth)
 
         # gsub workflow:
         #    check input files from application
-       #    create list of LRMSs
+        #    create list of LRMSs
         #    create unique_token
         #    do Brokering
         #    submit job
         #    return job_obj
         
         # Parsing passed arguments
-        gc3utils.log.debug('input_file(s): %s',application_obj.inputs)
-        gc3utils.log.debug('application tag: %s',application_obj.application_tag)
-        gc3utils.log.debug('application arguments: %s',application_obj.arguments)
+        gc3utils.log.debug('input_file(s): %s',application.inputs)
+        gc3utils.log.debug('application tag: %s',application.application_tag)
+        gc3utils.log.debug('application arguments: %s',application.arguments)
         gc3utils.log.debug('default_job_folder_location: %s',self._defaults.job_folder_location)
-        gc3utils.log.debug('requested cores: %s',str(application_obj.requested_cores))
-        gc3utils.log.debug('requested memory: %s GB',str(application_obj.requested_memory))
-        gc3utils.log.debug('requested walltime: %s hours',str(application_obj.requested_walltime))
+        gc3utils.log.debug('requested cores: %s',str(application.requested_cores))
+        gc3utils.log.debug('requested memory: %s GB',str(application.requested_memory))
+        gc3utils.log.debug('requested walltime: %s hours',str(application.requested_walltime))
 
         gc3utils.log.debug('Instantiating LRMSs')
         _lrms_list = []
@@ -90,23 +95,22 @@ class Gcli:
         gc3utils.log.debug('Performing brokering')
         # decide which resource to use
         # (Resource)[] = (Scheduler).PerformBrokering((Resource)[],(Application))
-        _selected_lrms_list = Scheduler.do_brokering(_lrms_list,application_obj)
+        _selected_lrms_list = Scheduler.do_brokering(_lrms_list,application)
         gc3utils.log.debug('Scheduler returned %d matching resources',
                            len(_selected_lrms_list))
         if 0 == len(_selected_lrms_list):
             raise NoResources("Could not select any compatible computational resource - please check log and configuration file.")
 
         # Scheduler.do_brokering should return a sorted list of valid lrms
-        job = None
         for lrms in _selected_lrms_list:
             try:
                 a = Authorization.Auth(auto_enable_auth)
                 a.get(lrms._resource.type)
-                job = lrms.submit_job(application_obj)
+                job = lrms.submit_job(application, job)
                 if job.is_valid():
                     gc3utils.log.info('Successfully submitted process to LRMS backend')
                     # job submitted; leave loop
-                    job.job_local_dir = application_obj.job_local_dir
+                    job.job_local_dir = application.job_local_dir
                     break
             except AuthenticationException:
                 # ignore authentication errors: e.g., we may fail some SSH connections but succeed in others
@@ -417,7 +421,7 @@ class Gcli:
 
             for _job in _jobs_list:
                 try:
-                    _job_list.append(utils.get_job(_job))
+                    _job_list.append(Job.get_job(_job))
                 except:
                     gc3utils.log.error('Failed retrieving job information for %s',_job)
                     gc3utils.log.debug('%s',sys.exc_info()[1])

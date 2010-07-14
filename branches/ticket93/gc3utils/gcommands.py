@@ -72,7 +72,7 @@ def _print_job_info(job_obj):
     for key in job_obj.keys():
         if not key == 'log' and not ( str(job_obj[key]) == '-1' or  str(job_obj[key]) == '' ):
             if key == 'status':
-                print("%-20s  %-10s " % (key, gc3utils.utils.job_status_to_string(job_obj[key])))
+                print("%-20s  %-10s " % (key, gc3utils.Job.job_status_to_string(job_obj[key])))
             else:
                 print("%-20s  %-10s " % (key,job_obj[key]))
     return 0
@@ -100,7 +100,7 @@ def _print_job_status(job_list,job_status_filter):
                     continue
             print("%-16s  %-10s" 
                   % (_job.unique_token, 
-                     gc3utils.utils.job_status_to_string(_job.status)))
+                     gc3utils.Job.job_status_to_string(_job.status)))
 
 
 #====== Main ========
@@ -116,9 +116,9 @@ def gclean(*args, **kw):
         raise InvalidUsage('Wrong number of arguments: this commands expects exactly one  arguments.')
 
 
-    job = gc3utils.utils.get_job(args[0])
+    job = gc3utils.Job.get_job(args[0])
     if job.status == gc3utils.Job.JOB_STATE_COMPLETED or job.status == gc3utils.Job.JOB_STATE_FAILED or job.status == gc3utils.Job.JOB_STATE_DELETED:
-        return gc3utils.utils.clean_job(args[0])
+        return gc3utils.Job.clean_job(args[0])
     else:
         raise Exception('Job is not in terminal state')
 
@@ -134,7 +134,7 @@ def ginfo(*args, **kw):
         raise InvalidUsage('Wrong number of arguments: this commands expects exactly one  arguments.')
 
     try:
-        _print_job_info(gc3utils.utils.get_job(args[0]))
+        _print_job_info(gc3utils.Job.get_job(args[0]))
         return 0
     except:
         raise
@@ -205,7 +205,7 @@ def gsub(*args, **kw):
     if job.is_valid():
         print("Successfully submitted %s; use the 'gstat' command to monitor its progress." 
               % job.unique_token)
-        gc3utils.utils.persist_job(job)
+        gc3utils.Job.persist_job(job)
         return 0
     else:
         raise Exception('Job object not valid')
@@ -244,7 +244,7 @@ def gstat(*args, **kw):
         if len(args) == 0:
             job_list = _gcli.gstat(None)
         elif len(args) == 1:
-            job_list = _gcli.gstat(gc3utils.utils.get_job(args[0]))
+            job_list = _gcli.gstat(gc3utils.Job.get_job(args[0]))
         else:
             raise InvalidUsage("This command requires either one argument or no arguments at all.")
     except Exception, x:
@@ -265,8 +265,8 @@ def gstat(*args, **kw):
             gc3utils.log.error('Returned job not valid. Removing from list')
             job_list.remove(_job)
         #else:
-        #    gc3utils.utils.persist_job(_job)
-        #    # gc3utils.utils.persist_job_filesystem(_job)
+        #    gc3utils.Job.persist_job(_job)
+        #    # gc3utils.Job.persist_job_filesystem(_job)
                                         
     try:
         # Print result
@@ -276,7 +276,7 @@ def gstat(*args, **kw):
         raise
 
     for _job in job_list:
-        gc3utils.utils.persist_job(_job)         
+        gc3utils.Job.persist_job(_job)         
 
     return 0
 
@@ -295,7 +295,7 @@ def gget(*args, **kw):
 
     _gcli = _get_gcli(_default_config_file_location)
     # FIXME: gget should raise exception when something goes wrong; does it indeed?
-    job_obj = gc3utils.utils.get_job(unique_token)
+    job_obj = gc3utils.Job.get_job(unique_token)
 
     gc3utils.log.debug('job status [%d]',job_obj.status)
     
@@ -316,7 +316,7 @@ def gget(*args, **kw):
                 raise
             
             if job_obj.status == gc3utils.Job.JOB_STATE_COMPLETED or job_obj.status == gc3utils.Job.JOB_STATE_FAILED:
-                gc3utils.utils.persist_job(job_obj)
+                gc3utils.Job.persist_job(job_obj)
                 if job_obj.has_key('download_dir'):
                     print("Job results successfully retrieved in '%s'\n" % job_obj.download_dir)
                 else:
@@ -341,11 +341,11 @@ def gkill(*args, **kw):
     try:
         _gcli = _get_gcli(_default_config_file_location)
         # FIXME: gget should raise exception when something goes wrong; does it indeed?
-        job_obj = gc3utils.utils.get_job(unique_token)
+        job_obj = gc3utils.Job.get_job(unique_token)
 
         if not (job_obj.status == gc3utils.Job.JOB_STATE_COMPLETED or job_obj.status == gc3utils.Job.JOB_STATE_FAILED or job_obj.status == gc3utils.Job.JOB_STATE_DELETED):
             job_obj = _gcli.gkill(job_obj)
-            gc3utils.utils.persist_job(job_obj)
+            gc3utils.Job.persist_job(job_obj)
 
         # or shall we simply return an ack message ?
         sys.stdout.write('Sent request to kill job ' + unique_token +'\n')

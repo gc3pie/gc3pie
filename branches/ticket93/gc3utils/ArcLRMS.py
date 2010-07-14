@@ -52,8 +52,8 @@ class ArcLrms(LRMS):
     def is_valid(self):
         return self.isValid
 
-    def submit_job(self, application):
-        return self._submit_job_arclib(application)
+    def submit_job(self, application, job=None):
+        return self._submit_job_arclib(application, job)
 
     def _get_queues(self):
         if (not hasattr(self, '_queues')) or (not hasattr(self, '_queues_last_accessed')) \
@@ -69,7 +69,7 @@ class ArcLrms(LRMS):
             self._queues_last_updated = time.time()
         return self._queues
             
-    def _submit_job_arclib(self, application):
+    def _submit_job_arclib(self, application, job=None):
 
         # Initialize xrsl
         xrsl = application.xrsl(self._resource)
@@ -93,13 +93,15 @@ class ArcLrms(LRMS):
         except arclib.JobSubmissionError:
             raise LRMSSubmitError('Got error from arclib.SubmitJob():', exc_info=True)
 
-        job = Job.Job(lrms_jobid=lrms_jobid,
-                      status=Job.JOB_STATE_SUBMITTED,
-                      resource_name=self._resource.name)
+        if job is None:
+            job = Job.Job()
+        job.lrms_jobid=lrms_jobid
+        job.status=Job.JOB_STATE_SUBMITTED
+        job.resource_name=self._resource.name
         return job
 
                                 
-    def _submit_job_exec(self, application):
+    def _submit_job_exec(self, application, job=None):
         """
         Submit job by calling the 'ngsub' command.
         """
@@ -164,7 +166,12 @@ class ArcLrms(LRMS):
                 lrms_jobid = output.split(jobid_pattern)[1]
                 gc3utils.log.debug('Job submitted with jobid: %s',lrms_jobid)
 
-                job = Job.Job(lrms_jobid=lrms_jobid,status=Job.JOB_STATE_SUBMITTED,resource_name=self._resource.name,log=output)
+                if job is None:
+                    job = Job.Job()
+                job.lrms_jobid=lrms_jobid
+                job.status=Job.JOB_STATE_SUBMITTED
+                job.resource_name=self._resource.name
+                job.log=output
                 #                job.lrms_jobid = lrms_jobid
                 #                job.status = Job.JOB_STATE_SUBMITTED
                 #                job.resource_name = self._resource.name
@@ -236,7 +243,7 @@ class ArcLrms(LRMS):
                 _download_dir = Default.JOB_FOLDER_LOCATION + '/' + job_obj.unique_token
 
             # Prepare/Clean download dir
-            if gc3utils.utils.prepare_job_dir(_download_dir) is False:
+            if gc3utils.Job.prepare_job_dir(_download_dir) is False:
                 gc3utils.log.error('failed creating local folder %s' % _download_dir)
                 raise IOError('Failed while creating local folder %s' % _download_dir)
 
