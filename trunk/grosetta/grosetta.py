@@ -5,7 +5,11 @@ Front-end script for submitting ROSETTA jobs to SMSCG.
 """
 __docformat__ = 'reStructuredText'
 __author__ = 'Riccardo Murri <riccardo.murri@uzh.ch>'
-
+#
+# ChangeLog:
+#   2010-07-14:
+#     * Default session file is now './grosetta.csv', so it's not hidden to users.
+#
 
 import sys
 import os
@@ -18,83 +22,43 @@ import time
 import gc3utils
 import gc3utils.Default
 import gc3utils.gcli
+from gc3utils.Job import Job as Gc3utilsJob
 import gc3utils.utils
-
-
-## defaults
-
-rcdir = os.path.expanduser('~/.gc3')
 
 
 ## interface to Gc3Utils
 
-from gc3utils.Application import RosettaApplication
-
-class RosettaDockingApplication(RosettaApplication):
-    """
-    Specialized `Application` class for executing a single run of the
-    Rosetta "docking_protocol" application.
-    """
-    def __init__(self, pdb_file_path, native_file_path=None, 
-                 number_of_decoys_to_create=1, flag_file_path=None, **kw):
-        pdb_file_name = os.path.basename(pdb_file_path)
-        pdb_file_dir = os.path.dirname(pdb_file_path)
-        pdb_file_name_sans = os.path.splitext(pdb_file_name)[0]
-        if native_file_path is None:
-            native_file_path = pdb_file_path
-        def get_and_remove(D, k, d):
-            if D.has_key(k):
-                result = D[k]
-                del D[k]
-                return result
-            else:
-                return d
-        RosettaApplication.__init__(
-            self,
-            application = 'docking_protocol',
-            inputs = { 
-                "-in:file:s":pdb_file_path,
-                "-in:file:native":native_file_path,
-                },
-            outputs = [
-                pdb_file_name_sans + '.fasc',
-                pdb_file_name_sans + '.sc',
-                ],
-            flags_file = flag_file_path,
-            arguments = [ 
-                "-out:file:o", pdb_file_name_sans,
-                "-out:nstruct", number_of_decoys_to_create,
-                ] + get_and_remove(kw, 'arguments', []),
-            job_local_dir = get_and_remove(kw, 'job_local_dir', pdb_file_dir),
-            **kw)
-
+from gc3utils.Application import RosettaDockingApplication
 
 ## job control
 
-class Struct(dict):
+class Job(Gc3utilsJob):
     """
-    A `dict`-like object, whose keys can be accessed with the usual
-    '[...]' lookup syntax, or with the '.' get attribute syntax.
-
-    Examples::
-
-      >>> a = Struct()
-      >>> a['x'] = 1
-      >>> a.x
-      1
-      >>> a.y = 2
-      >>> a['y']
-      2
+    A small extension to `gc3utils.Job.Job`, with a few convenience
+    extensions.
     """
     def __init__(self, **kw):
-        self.update(kw)
-    def __setattr__(self, key, val):
-        self[key] = val
-    def __getattr__(self, key):
-        return self[key]
-    def __hasattr__(self, key):
-        return self.has_key(key)
+        kw.setdefault('log', list())
+        kw.setdefault('timestamp', gc3utils.utils.defaultdict(time.time))
+        Gc3utilsJob.__init__(self, **kw)
+    def is_valid(self):
+        # override validity checks -- this will not be a valid `Gc3utilsJob`
+        # object until Grid.submit() is called on it ...
+        return True
 
+    def set_info(self, msg):
+        self.info = msg
+        self.log.append(msg)
+
+    def set_state(self, state):
+        if state != self.state:
+            self.state = state
+            epoch = time.time()
+            self.timestamp[state] = epoch
+            if state == 'NEW':
+                self.created = epoch
+            self.set_info(state.capitalize() + ' at ' + time.asctime(time.localtime(epoch)))
+        
 
 def _get_state_from_gc3utils_job_status(status):
     """
@@ -113,65 +77,177 @@ def _get_state_from_gc3utils_job_status(status):
     except KeyError:
         return 'UNKNOWN'
 
-class Job(Struct):
+class Grid(object):
     """
-    Instances of this class live a double life as (1) dictionary-like
-    records storing information about a particular computational job
-    instance; (2) interfaces to Grid middleware for managing the
-    life-cycle of a computational job.
+    An interface to job lifecycle management.
     """
+    def __init__(self, config_file=gc3utils.Default.CONFIG_FILE_LOCATION, default_output_dir=None):
+        self.mw = gc3utils.gcli.Gcli(*gc3utils.utils.import_config(config_file))
+        self.default_output_dir = default_output_dir
 
-    def __init__(self, **kw):
-        kw.setdefault('log', list())
-        kw.setdefault('timestamp', gc3utils.utils.defaultdict(time.time))
-        Struct.__init__(self, **kw)
-        self.mw = gc3utils.gcli.Gcli(*gc3utils.utils.import_config(gc3utils.Default.CONFIG_FILE_LOCATION))
-        options = kw['options']
-        self.app = RosettaDockingApplication(
-            self.input,
-            number_of_decoys_to_create=options.decoys_per_job,
-            flags_file_path=options.flags_file_path,
-            #arguments = self.options.application_arguments,
-            #job_local_dir = self.options.output
-            requested_memory = options.memory_per_core,
-            requested_cores = options.ncores,
-            requested_walltime = options.walltime,
-            )
+    def save(self, job):
+        """
+        Save a job using gc3utils' persistence mechanism.
+        """
+        # update state so that it is correctly saved, but do not use set_state()
+        # so the job history is not altered
+        job.state = _get_state_from_gc3utils_job_status(job.status)
+        job.jobid = job.unique_token # XXX
+        gc3utils.Job.persist_job(job)
 
-    def set_info(self, msg):
-        self.info = msg
-        self.log.append(msg)
+    def submit(self, application, job=None):
+        """
+        Submit an instance of the given `application`, and store it
+        into `job` (or a new instance of the `Job` class if `job` is
+        `None`).  After successful submission, persist job to
+        permanent storage.  Return (string) id of submitted job.
+        """
+        job = self.mw.gsub(application, job)
+        return job.unique_token
 
-    def set_state(self, state):
-        if state != self.state:
-            self.state = state
-            epoch = time.time()
-            self.timestamp[state] = epoch
-            if state == 'NEW':
-                self.created = epoch
-            self.set_info(state.capitalize() + ' at ' + time.asctime(time.localtime(epoch)))
-        
-    def submit(self):
-        j = self.mw.gsub(self.app)
-        gc3utils.utils.persist_job(j)
-        self.jobid = j.unique_token
+    def update_state(self, job):
+        """
+        Update running status of `job`.  In case update fails, state
+        is set to 'UNKNOWN'.  Return job state.
+        """
+        st = self.mw.gstat(job) # `gstat` returns list(!?)
+        if len(st) == 0:
+            job.set_state('UNKNOWN')
+            job.set_info("Could not update job status.")
+        else:
+            job.set_state(_get_state_from_gc3utils_job_status(job.status))
+        return job.state
 
-    def update_state(self):
-        j = self.mw.gstat(gc3utils.utils.get_job(self.jobid))[0] # `gstat` madness
-        gc3utils.utils.persist_job(j)
-        self.set_state(_get_state_from_gc3utils_job_status(j.status))
-        return self.state
-
-    def get_output(self, output_dir):
-        j = gc3utils.utils.get_job(self.jobid)
+    def get_output(self, job, output_dir=None):
+        """
+        Retrieve job's output files into `output_dir`.
+        If `output_dir` is `None` (default), then use
+        `self.output_dir`. 
+        """
         # `job_local_dir` is where gc3utils will retrieve the output
-        j.job_local_dir = output_dir
-        self.mw.gget(j)
-        gc3utils.utils.persist_job(j)
+        if output_dir is not None:
+            job.job_local_dir = output_dir
+        elif self.default_output_dir is not None:
+            job.job_local_dir = self.default_output_dir
+        else:
+            job.job_local_dir = os.getcwd()
+        self.mw.gget(job)
+
+
+    def progress(self, job, can_submit=True, can_retrieve=True):
+        """
+        Update the job's state and take appropriate action;
+        return the (possibly changed) job state.
+
+        If optional argument `can_submit` is `True` (default), will
+        try to submit jobs in state ``NEW``.  If optional argument
+        `can_retrieve` is `False` (default), will try to fetch job
+        results back.
+        """
+        # update status of SUBMITTED/RUNNING jobs before launching new ones, otherwise
+        # we would be checking the status of some jobs twice...
+        if job.state == 'SUBMITTED' or job.state == 'RUNNING':
+            # update state 
+            try:
+                self.update_state(job)
+            except Exception, x:
+                logging.error("Ignoring error in updating state of job '%s.%s': %s: %s"
+                              % (job.input, job.instance, x.__class__.__name__, str(x)),
+                              exc_info=True)
+        if job.state == 'NEW' and can_submit:
+            # try to submit; go to 'SUBMITTED' if successful, 'FAILED' if not
+            try:
+                self.submit(job.application, job)
+                job.set_state('SUBMITTED')
+            except Exception, x:
+                logging.error("Error in submitting job '%s.%s': %s: %s"
+                              % (job.input, job.instance, x.__class__.__name__, str(x)))
+                sys.excepthook(* sys.exc_info())
+                job.set_state('FAILED')
+                job.set_info("Submission failed: %s" % str(x))
+        if job.state == 'FINISHING' and can_retrieve:
+            # get output; go to 'DONE' if successful, 'FAILED' if not
+            try:
+                # FIXME: temporary fix, should persist `created`!
+                if not job.has_key('created'):
+                    job.created = time.localtime(time.time())
+                self.get_output(job, job.output_dir)
+                job.set_state('DONE')
+                job.set_info("Results retrieved into directory '%s'" % output_dir)
+            except Exception, x:
+                logging.error("Got error in updating state of job '%s.%s': %s: %s"
+                              % (job.input, job.instance, x.__class__.__name__, str(x)), 
+                              exc_info=True)
+        self.save(job)
+        return job.state
+
+
+class JobCollection(dict):
+    """
+    A collection of `Job` objects, indexed and accessible by `(input,
+    instance)` pair.
+    """
+    def __init__(self, **kw):
+        self.default_job_initializer = kw
+
+    def add(self, job):
+        """Add a `Job` instance to the collection."""
+        self[job.input, job.instance] = job
+    def __iadd__(self, job):
+        self.add(job)
+        return self
+
+    def remove(self, job):
+        """Remove a `Job` instance from the collection."""
+        del self[job.input, job.instance]
+
+    def load(self, session):
+        """
+        Load all jobs from a previously-saved session file.
+        The `session` argument can be any file-like object suitable
+        for passing to Python's stdlib `csv.DictReader`.
+        """
+        for row in csv.DictReader(session,  # FIXME: field list must match `job` attributes!
+                                  ['input', 'instance', 'jobid', 'state', 'info', 'history']):
+            if row['input'].strip() == '':
+                # invalid row, skip
+                continue 
+            id = (row['input'], row['instance'])
+            if not self.has_key(id):
+                self[id] = Job(unique_token=row['jobid'], ** self.default_job_initializer)
+            job = self[id]
+            # update state etc.
+            job.update(row)
+            # resurrect saved state
+            job.update(gc3utils.Job.get_job(job.jobid))
+            # convert 'history' into a list
+            job.log = job.history.split("; ")
+            # get back timestamps of various events
+            for event in job.log:
+                if event.upper().startswith('CREATED'):
+                    job.created = time.mktime(time.strptime(event.split(' ',2)[2]))
+                if event.upper().startswith('SUBMITTED'):
+                    job.timestamp['SUBMITTED'] = time.mktime(time.strptime(event.split(' ',2)[2]))
+                if event.upper().startswith('RUNNING'):
+                    job.timestamp['RUNNING'] = time.mktime(time.strptime(event.split(' ',2)[2]))
+                if event.upper().startswith('FINISHING'):
+                    job.timestamp['FINISHING'] = time.mktime(time.strptime(event.split(' ',2)[2]))
+                if event.upper().startswith('DONE'):
+                    job.timestamp['DONE'] = time.mktime(time.strptime(event.split(' ',2)[2]))
+
+    def save(self, session):
+        """
+        Save all jobs into a given session file.  The `session`
+        argument can be any file-like object suitable for passing to
+        Python's standard library `csv.DictWriter`.
+        """
+        for job in self.values():
+            job.history = str.join("; ", job.log)
+            csv.DictWriter(session, ['input', 'instance', 'jobid', 'state', 'info', 'history'], 
+                           extrasaction='ignore').writerow(job)
 
 
 ## parse command-line
-
 
 cmdline = OptionParser("grosetta [options] [INPUT ...]",
                        description="""
@@ -244,7 +320,7 @@ cmdline.add_option("-p", "--decoys-per-job", type="int", dest="decoys_per_job",
                    " of a single job does not exceed the maximum wall-clock time."
                    )
 cmdline.add_option("-s", "--session", dest="session", 
-                   default=os.path.join(rcdir, 'grosetta.csv'),
+                   default=os.path.join(os.getcwd(), 'grosetta.csv'),
                    metavar="FILE",
                    help="Use FILE to store the status of running jobs (default: '%default')."
                    " Any input files specified on the command line will be added to the existing"
@@ -319,18 +395,53 @@ logging.debug("Gathered input file list %s" % inputs)
 
 
 ## compute job list
+            
+# Application objects are templates for job submission
+template = dict()
+for input in inputs:
+    template[input] = RosettaDockingApplication(
+        input, 
+        # set computational requirements
+        requested_memory = options.memory_per_core,
+        requested_cores = options.ncores,
+        requested_walltime = options.walltime,
+        # Rosetta-specific data
+        number_of_decoys_to_create = options.decoys_per_job,
+        flags_file_path = options.flags_file_path,
+        )
 
-jobs = dict() # use (NAME,INSTANCE) as primary key
+jobs = JobCollection(
+    # FIXME: this is a way to ensure `Job` objects have attributes
+    # that are not currently persisted!
+
+    # set computational requirements
+    requested_memory = options.memory_per_core,
+    requested_cores = options.ncores,
+    requested_walltime = options.walltime,
+    # Rosetta-specific data
+    decoys_per_job = options.decoys_per_job,
+    flags_file_path = options.flags_file_path,
+    )
 for input in inputs:
     for nr in range(0, options.decoys_per_file, options.decoys_per_job):
-        instance = ("%d--%d" % (nr, nr + options.decoys_per_job - 1))
-        jobs[input, instance] = Job(
+        instance = ("%d--%d" 
+                    % (nr, min(options.decoys_per_file, 
+                               nr + options.decoys_per_job - 1)))
+        jobs += Job(
             input = input,
             instance = instance,
+            application = template[input],
             state = 'NEW',
             created = time.time(),
-            jobid = None,
-            options = options,
+            # set job output directory
+            output_dir = (
+                options.output
+                .replace('NAME', os.path.basename(input))
+                .replace('PATH', os.path.dirname(input) or os.getcwd())
+                .replace('INSTANCE', instance)
+                .replace('DATE', time.strftime('%Y-%m-%d', time.localtime(time.time())))
+                .replace('TIME', time.strftime('%H:%M', time.localtime(time.time())))
+                ),
             )
 
 
@@ -346,107 +457,46 @@ except IOError, x:
     logging.critical("Cannot open session file '%s' in read/write mode: %s. Aborting."
                      % (options.session, str(x)))
     sys.exit(1)
-
-for row in csv.DictReader(session,  # FIXME: field list must match `job` attributes!
-                          ['input', 'instance', 'jobid', 'state', 'info', 'history']):
-    if row['input'].strip() == '':
-        # invalid row, skip
-        continue 
-    id = (row['input'], row['instance'])
-    if jobs.has_key(id):
-        # update state etc.
-        jobs[id].update(row)
-    else:
-        jobs[id] = Job(options=options, **row)
-    job = jobs[id]
-    # convert 'history' into a list
-    job.log = job.history.split("; ")
-    # get back timestamps of various events
-    for event in job.log:
-        if event.upper().startswith('CREATED'):
-            job.created = time.mktime(time.strptime(event.split(' ',2)[2]))
-        if event.upper().startswith('SUBMITTED'):
-            job.timestamp['SUBMITTED'] = time.mktime(time.strptime(event.split(' ',2)[2]))
-        if event.upper().startswith('RUNNING'):
-            job.timestamp['RUNNING'] = time.mktime(time.strptime(event.split(' ',2)[2]))
-        if event.upper().startswith('FINISHING'):
-            job.timestamp['FINISHING'] = time.mktime(time.strptime(event.split(' ',2)[2]))
-        if event.upper().startswith('DONE'):
-            job.timestamp['DONE'] = time.mktime(time.strptime(event.split(' ',2)[2]))
+jobs.load(session)
 session.close()
 
 
 ## iterate through job list, updating state and acting accordingly
 
+grid = Grid(default_output_dir=options.output)
+
 def main(jobs):
-    # print table header
     # build table
     in_flight_count = 0
+    can_submit = True
+    can_retrieve = True
     for job in jobs.values():
-        # must update status of SUBMITTED/RUNNING jobs before launching new ones
-        if job.state == 'SUBMITTED' or job.state == 'RUNNING':
-            # update state 
-            try:
-                state = job.update_state()
-                if state in [ 'SUBMITTED', 'RUNNING' ]:
-                    in_flight_count += 1
-            except Exception, x:
-                logging.error("Ignoring error in updating state of job '%s.%s': %s: %s"
-                              % (job.input, job.instance, x.__class__.__name__, str(x)),
-                              exc_info=True)
-        if job.state == 'NEW' and in_flight_count < options.max_running:
-            # try to submit; go to 'SUBMITTED' if successful, 'FAILED' if not
-            try:
-                job.submit()
-                job.set_state('SUBMITTED')
-            except Exception, x:
-                logging.error("Error in submitting job '%s.%s': %s: %s"
-                              % (job.input, job.instance, x.__class__.__name__, str(x)))
-                job.set_state('FAILED')
-                job.set_info("Submission failed: %s" % str(x))
-        if job.state == 'FINISHING':
-            # get output; go to 'DONE' if successful, 'FAILED' if not
-            try:
-                # FIXME: temporary fix, should persist `created`!
-                if not job.has_key('created'):
-                    job.created = time.localtime(time.time())
-                # set job output directory
-                output_dir = (options.output
-                              .replace('NAME', os.path.basename(job.input))
-                              .replace('PATH', os.path.dirname(job.input) or '.')
-                              .replace('INSTANCE', job.instance)
-                              .replace('DATE', time.strftime('%Y-%m-%d', job.created))
-                              .replace('TIME', time.strftime('%H:%M', job.created))
-                              )
-                job.get_output(output_dir)
-                job.set_state('DONE')
-                job.set_info("Results retrieved into directory '%s'" % output_dir)
-            except Exception, x:
-                logging.error("Got error in updating state of job '%s.%s': %s: %s"
-                              % (job.input, job.instance, x.__class__.__name__, str(x)))
-        if job.state == 'DONE':
+        state = grid.progress(job, can_submit, can_retrieve)
+        if state in [ 'SUBMITTED', 'RUNNING' ]:
+            in_flight_count += 1
+            if in_flight_count > options.max_running:
+                can_submit = False
+        if state == 'DONE':
             # nothing more to do - remove from job list if more than 1 day old
             if (time.time() - job.timestamp['DONE']) > 24*60*60:
-                del jobs[job.input, job.instance]
+                jobs.remove(job)
         if job.state == 'FAILED':
             # what should we do?
             # just keep the job around for a while and then remove it?
             if (time.time() - job.timestamp['FAILED']) > 3*24*60*60:
-                del jobs[job.input, job.instance]
+                jobs.remove(job)
+    # write updated jobs to session file
+    try:
+        session = file(session_file_name, "wb")
+        jobs.save(session)
+        session.close()
+    except IOError, x:
+        logging.error("Cannot save job status to session file '%s': %s"
+                      % (session_file_name, str(x)))
+    # print results to user
     if len(jobs) == 0:
         print ("There are no jobs in session file '%s'." % options.session)
     else:
-        # write updated jobs to session file
-        try:
-            session = file(session_file_name, "wb")
-            for job in jobs.values():
-                job.history = str.join("; ", job.log)
-                csv.DictWriter(session, ['input', 'instance', 'jobid', 'state', 'info', 'history'], 
-                               extrasaction='ignore').writerow(job)
-            session.close()
-        except IOError, x:
-            logging.error("Cannot save job status to session file '%s': %s"
-                          % (session_file_name, str(x)))
         # pretty-print table of jobs
         print ("%-15s  %-15s  %-18s  %-s" % ("Input file name", "Instance count", "State (JobID)", "Info"))
         print (80 * "=")
