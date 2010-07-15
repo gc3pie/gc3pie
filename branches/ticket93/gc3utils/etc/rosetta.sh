@@ -106,7 +106,7 @@ if [ -e "${PROG}.flags" ]; then
     if grep -q -e '^-database' "${PROG}.flags"; then
         # correct database location
         sed -i -r -e "s|-database +.*|-database $ROSETTA_DB_LOCATION|g" "${PROG}.flags"
-	database_specified_in_flags_file=yes
+        database_specified_in_flags_file=yes
         $say Changed database location in ${PROG}.flags file to "$ROSETTA_DB_LOCATION"
     fi
     flags="`grep ^- ${PROG}.flags`"
@@ -124,7 +124,12 @@ $say Running: $ROSETTA_LOCATION/${PROG}.linuxgccrelease $database $flags "$@"
 ${ROSETTA_LOCATION}/${PROG}.linuxgccrelease $flags $database "$@" | tee ${PROG}.log
 
 $say Collecting computed decoys energy scores in file "${stem}${PROG}.tar.gz" ...
-tar $verbose -czf "${PROG}.tar.gz" *.pdb *.fasc *.sc
+# the fancy `$(ls ...)` constructs avoid tar complaining about '*.something not found'
+tar $verbose -cvzf "${PROG}.tar.gz" \
+    $(ls *.pdb 2>/dev/null) \
+    $(ls *.pdb.gz 2>/dev/null) \
+    $(ls *.sc 2>/dev/null) \
+    *.fasc
 
 $say All done.
 
