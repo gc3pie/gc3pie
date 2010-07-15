@@ -7,9 +7,15 @@ __docformat__ = 'reStructuredText'
 __author__ = 'Riccardo Murri <riccardo.murri@uzh.ch>'
 #
 # ChangeLog:
+#   2010-07-15:
+#     * Compress PDB files by default, and prefix them with a "source filename + N--M" prefix
+#     * Number of computed decoys can now be increased from the command line:
+#       if `grosetta` is called with different '-P' and '-p' options, it will
+#       add new jobs to the list so that the total number of decoys per input file
+#       (including already-submitted ones) is up to the new total.
 #   2010-07-14:
 #     * Default session file is now './grosetta.csv', so it's not hidden to users.
-#
+#   
 
 import sys
 import os
@@ -373,9 +379,51 @@ options.walltime = int(options.wctime / 3600)
 gc3utils.log.setLevel(max(1, (5-options.verbose)*10))
 
 
+## create/retrieve session
+
+jobs = JobCollection(
+    # FIXME: this is a way to ensure `Job` objects have attributes
+    # that are not currently persisted!
+
+    # set computational requirements
+    requested_memory = options.memory_per_core,
+    requested_cores = options.ncores,
+    requested_walltime = options.walltime,
+    # Rosetta-specific data
+    decoys_per_job = options.decoys_per_job,
+    flags_file_path = options.flags_file_path,
+    )
+try:
+    session_file_name = os.path.realpath(options.session)
+    if os.path.exists(session_file_name):
+        session = file(session_file_name, "r+b")
+    else:
+        session = file(session_file_name, "w+b")
+except IOError, x:
+    logging.critical("Cannot open session file '%s' in read/write mode: %s. Aborting."
+                     % (options.session, str(x)))
+    sys.exit(1)
+jobs.load(session)
+session.close()
+
+# compute number of decoys already entered for each input file
+def zerodict():
+    """
+    A dictionary that automatically creates keys 
+    with value 0 on first reference.
+    """
+    def zero(): 
+        return 0
+    return gc3utils.utils.defaultdict(zero)
+decoys = zerodict()
+for input, instance in jobs:
+    start, end = instance.split('--')
+    decoys[input] = max(decoys[input], int(end))
+
+
 ## build input file list
 
-inputs = []
+inputs = [ input for input,instance in jobs ]
 for path in args:
     if os.path.isdir(path):
         # recursively scan for .pdb files
@@ -396,41 +444,26 @@ logging.debug("Gathered input file list %s" % inputs)
 
 ## compute job list
             
-# Application objects are templates for job submission
-template = dict()
 for input in inputs:
-    template[input] = RosettaDockingApplication(
-        input, 
-        # set computational requirements
-        requested_memory = options.memory_per_core,
-        requested_cores = options.ncores,
-        requested_walltime = options.walltime,
-        # Rosetta-specific data
-        number_of_decoys_to_create = options.decoys_per_job,
-        flags_file_path = options.flags_file_path,
-        )
-
-jobs = JobCollection(
-    # FIXME: this is a way to ensure `Job` objects have attributes
-    # that are not currently persisted!
-
-    # set computational requirements
-    requested_memory = options.memory_per_core,
-    requested_cores = options.ncores,
-    requested_walltime = options.walltime,
-    # Rosetta-specific data
-    decoys_per_job = options.decoys_per_job,
-    flags_file_path = options.flags_file_path,
-    )
-for input in inputs:
-    for nr in range(0, options.decoys_per_file, options.decoys_per_job):
+    for nr in range(decoys[input], options.decoys_per_file, options.decoys_per_job):
         instance = ("%d--%d" 
-                    % (nr, min(options.decoys_per_file, 
+                    % (nr, min(options.decoys_per_file - 1, 
                                nr + options.decoys_per_job - 1)))
         jobs += Job(
             input = input,
             instance = instance,
-            application = template[input],
+            application = RosettaDockingApplication(
+                input, 
+                # set computational requirements
+                requested_memory = options.memory_per_core,
+                requested_cores = options.ncores,
+                requested_walltime = options.walltime,
+                # Rosetta-specific data
+                number_of_decoys_to_create = options.decoys_per_job,
+                flags_file_path = options.flags_file_path,
+                arguments = [ "-out:pdb_gz", # compress PDB output files
+                              "-out:prefix", ("%s.%s." % (input,instance)) ],
+                ),
             state = 'NEW',
             created = time.time(),
             # set job output directory
@@ -443,22 +476,6 @@ for input in inputs:
                 .replace('TIME', time.strftime('%H:%M', time.localtime(time.time())))
                 ),
             )
-
-
-## create/retrieve session
-
-try:
-    session_file_name = os.path.realpath(options.session)
-    if os.path.exists(session_file_name):
-        session = file(session_file_name, "r+b")
-    else:
-        session = file(session_file_name, "w+b")
-except IOError, x:
-    logging.critical("Cannot open session file '%s' in read/write mode: %s. Aborting."
-                     % (options.session, str(x)))
-    sys.exit(1)
-jobs.load(session)
-session.close()
 
 
 ## iterate through job list, updating state and acting accordingly
