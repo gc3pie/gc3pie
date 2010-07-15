@@ -342,12 +342,12 @@ cmdline.add_option("-o", "--output", dest="output", default='PATH/',
                    " TIME is replaced by the submission time formatted as HH:MM."
                    )
 cmdline.add_option("-P", "--decoys-per-file", type="int", dest="decoys_per_file", 
-                   default=10000,
+                   default=1,
                    metavar="NUM",
                    help="Compute NUM decoys per input file (default: %default)."
                    )
 cmdline.add_option("-p", "--decoys-per-job", type="int", dest="decoys_per_job", 
-                   default=15,
+                   default=1,
                    metavar="NUM",
                    help="Compute NUM decoys in a single job (default: %default)."
                    " This parameter should be tuned so that the running time"
@@ -530,7 +530,11 @@ def main(jobs):
             #   3. Anything else is left as-is
             output_tar = tarfile.open(os.path.join(job.output_retrieved_to, 
                                                    'docking_protocol.tar.gz'), 'r:gz')
-            pdbs = tarfile.open(os.path.splitext(job.input)[0] + '.decoys.tar', 'a')
+            pdbs_tarfile_path = os.path.splitext(job.input)[0] + '.decoys.tar'
+            if not os.path.exists(pdbs_tarfile_path):
+                pdbs = tarfile.open(pdbs_tarfile_path, 'w')
+            else:
+                pdbs = tarfile.open(pdbs_tarfile_path, 'a')
             for entry in output_tar:
                 if entry.name.endswith('.fasc'):
                     fasc_file_name = os.path.splitext(job.input)[0] + '.' + job.instance + '.fasc'
@@ -539,7 +543,7 @@ def main(jobs):
                     dst.write(src.read())
                     dst.close()
                     src.close()
-                elif entry.name.endswith('.pdb.gz') or entry.name.endswith('.pdb'):
+                elif entry.name.endswith('.pdb.gz'): #or entry.name.endswith('.pdb'):
                     src = output_tar.extractfile(entry)
                     dst = tarfile.TarInfo(entry.name)
                     dst.size = entry.size
@@ -555,6 +559,7 @@ def main(jobs):
                     pdbs.addfile(dst, src)
                     src.close()
             job.output_processing_done = True
+            pdbs.close()
         if state == 'DONE':
             # nothing more to do - remove from job list if more than 1 day old
             if (time.time() - job.timestamp['DONE']) > 24*60*60:
