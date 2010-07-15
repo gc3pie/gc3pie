@@ -445,37 +445,38 @@ logging.debug("Gathered input file list %s" % inputs)
 ## compute job list
             
 for input in inputs:
-    for nr in range(decoys[input], options.decoys_per_file, options.decoys_per_job):
-        instance = ("%d--%d" 
-                    % (nr, min(options.decoys_per_file - 1, 
-                               nr + options.decoys_per_job - 1)))
-        jobs += Job(
-            input = input,
-            instance = instance,
-            application = RosettaDockingApplication(
-                input, 
-                # set computational requirements
-                requested_memory = options.memory_per_core,
-                requested_cores = options.ncores,
-                requested_walltime = options.walltime,
-                # Rosetta-specific data
-                number_of_decoys_to_create = options.decoys_per_job,
-                flags_file_path = options.flags_file_path,
-                arguments = [ "-out:pdb_gz", # compress PDB output files
-                              "-out:prefix", ("%s.%s." % (input,instance)) ],
-                ),
-            state = 'NEW',
-            created = time.time(),
-            # set job output directory
-            output_dir = (
-                options.output
-                .replace('NAME', os.path.basename(input))
-                .replace('PATH', os.path.dirname(input) or os.getcwd())
-                .replace('INSTANCE', instance)
-                .replace('DATE', time.strftime('%Y-%m-%d', time.localtime(time.time())))
-                .replace('TIME', time.strftime('%H:%M', time.localtime(time.time())))
-                ),
-            )
+    if decoys[input] < options.decoys_per_file-1:
+        for nr in range(decoys[input], options.decoys_per_file, options.decoys_per_job):
+            instance = ("%d--%d" 
+                        % (nr, min(options.decoys_per_file - 1, 
+                                   nr + options.decoys_per_job - 1)))
+            jobs += Job(
+                input = input,
+                instance = instance,
+                application = RosettaDockingApplication(
+                    input, 
+                    # set computational requirements
+                    requested_memory = options.memory_per_core,
+                    requested_cores = options.ncores,
+                    requested_walltime = options.walltime,
+                    # Rosetta-specific data
+                    number_of_decoys_to_create = options.decoys_per_job,
+                    flags_file_path = options.flags_file_path,
+                    arguments = [ "-out:pdb_gz", # compress PDB output files
+                                  "-out:prefix", ("%s.%s." % (input,instance)) ],
+                    ),
+                state = 'NEW',
+                created = time.time(),
+                # set job output directory
+                output_dir = (
+                    options.output
+                    .replace('NAME', os.path.basename(input))
+                    .replace('PATH', os.path.dirname(input) or os.getcwd())
+                    .replace('INSTANCE', instance)
+                    .replace('DATE', time.strftime('%Y-%m-%d', time.localtime(time.time())))
+                    .replace('TIME', time.strftime('%H:%M', time.localtime(time.time())))
+                    ),
+                )
 
 
 ## iterate through job list, updating state and acting accordingly
