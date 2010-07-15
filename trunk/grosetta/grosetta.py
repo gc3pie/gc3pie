@@ -173,7 +173,7 @@ class Grid(object):
                     job.created = time.localtime(time.time())
                 self.get_output(job, job.output_dir)
                 job.set_state('DONE')
-                job.set_info("Results retrieved into directory '%s'" % output_dir)
+                job.set_info("Results retrieved into directory '%s'" % job.output_dir)
             except Exception, x:
                 logging.error("Got error in updating state of job '%s.%s': %s: %s"
                               % (job.input, job.instance, x.__class__.__name__, str(x)), 
