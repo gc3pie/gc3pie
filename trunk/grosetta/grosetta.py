@@ -1,28 +1,53 @@
 #! /usr/bin/env python
 #
+#   grosetta.py -- Front-end script for submitting ROSETTA jobs to SMSCG.
+#   Copyright (C) 2010 GC3, University of Zurich
+#
+#   This program is free software: you can redistribute it and/or modify
+#   it under the terms of the GNU General Public License as published by
+#   the Free Software Foundation, either version 3 of the License, or
+#   (at your option) any later version.
+#
+#   This program is distributed in the hope that it will be useful,
+#   but WITHOUT ANY WARRANTY; without even the implied warranty of
+#   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#   GNU General Public License for more details.
+#
+#   You should have received a copy of the GNU General Public License
+#   along with this program.  If not, see <http://www.gnu.org/licenses/>.
+#
 """
 Front-end script for submitting ROSETTA jobs to SMSCG.
 """
-__docformat__ = 'reStructuredText'
 __author__ = 'Riccardo Murri <riccardo.murri@uzh.ch>'
-#
-# ChangeLog:
-#   2010-07-15:
-#     * Compress PDB files by default, and prefix them with a "source filename + N--M" prefix
-#     * Number of computed decoys can now be increased from the command line:
-#       if `grosetta` is called with different '-P' and '-p' options, it will
-#       add new jobs to the list so that the total number of decoys per input file
-#       (including already-submitted ones) is up to the new total.
-#   2010-07-14:
-#     * Default session file is now './grosetta.csv', so it's not hidden to users.
-#   
+__changelog__ = '''
+  2010-07-15:
+    * After successful retrieval of job information, reorder output files so that:
+      - for each sumitted job, there is a corresponding ``input.N--M.fasc`` file,
+        in the same directory as the input ".pdb" file;
+      - all decoys belonging to the same input ".pdb" file are collected into 
+        a single ``input.decoys.tar`` file (in the same dir as the input ".pdb" file);
+      - output from grid jobs is kept untouched in the "job.XXX/" directories.
+    * Compress PDB files by default, and prefix them with a "source filename + N--M" prefix
+    * Number of computed decoys can now be increased from the command line:
+      if `grosetta` is called with different '-P' and '-p' options, it will
+      add new jobs to the list so that the total number of decoys per input file
+      (including already-submitted ones) is up to the new total.
+    * New '-N' command-line option to discard old session contents and start a new session afresh.
+  2010-07-14:
+    * Default session file is now './grosetta.csv', so it's not hidden to users.
+'''
+__docformat__ = 'reStructuredText'
 
-import sys
+import csv
+import grp
+import logging
 import os
 import os.path
 from optparse import OptionParser
-import logging
-import csv
+import pwd
+import sys
+import tarfile
 import time
 
 import gc3utils
@@ -138,7 +163,7 @@ class Grid(object):
         else:
             job.job_local_dir = os.getcwd()
         self.mw.gget(job)
-
+        job.output_retrieved_to = os.path.join(job.job_local_dir, job.jobid)
 
     def progress(self, job, can_submit=True, can_retrieve=True):
         """
@@ -177,7 +202,7 @@ class Grid(object):
                 # FIXME: temporary fix, should persist `created`!
                 if not job.has_key('created'):
                     job.created = time.localtime(time.time())
-                self.get_output(job, job.output_dir)
+                self.get_output(job, os.path.join(job.output_dir, 'jobs'))
                 job.set_state('DONE')
                 job.set_info("Results retrieved into directory '%s'" % job.output_dir)
             except Exception, x:
@@ -299,6 +324,9 @@ cmdline.add_option("-m", "--memory-per-core", dest="memory_per_core", type="int"
                    metavar="GIGABYTES",
                    help="Require that at least GIGABYTES (a whole number)"
                         " are available to each execution core. (Default: %default)")
+cmdline.add_option("-N", "--new-session", dest="new_session", action="store_true", default=False,
+                   help="Discard any information saved in the session file (see '--session' option)"
+                   " and start a new session afresh.  Any information about previous jobs is lost.")
 cmdline.add_option("-o", "--output", dest="output", default='PATH/',
                    metavar='DIRECTORY',
                    help="Output files from all jobs will be collected in the specified"
@@ -395,7 +423,7 @@ jobs = JobCollection(
     )
 try:
     session_file_name = os.path.realpath(options.session)
-    if os.path.exists(session_file_name):
+    if os.path.exists(session_file_name) and not options.new_session:
         session = file(session_file_name, "r+b")
     else:
         session = file(session_file_name, "w+b")
@@ -450,6 +478,7 @@ for input in inputs:
             instance = ("%d--%d" 
                         % (nr, min(options.decoys_per_file - 1, 
                                    nr + options.decoys_per_job - 1)))
+            prefix = os.path.splitext(os.path.basename(input))[0] + '.' + instance + '.'
             jobs += Job(
                 input = input,
                 instance = instance,
@@ -463,7 +492,7 @@ for input in inputs:
                     number_of_decoys_to_create = options.decoys_per_job,
                     flags_file_path = options.flags_file_path,
                     arguments = [ "-out:pdb_gz", # compress PDB output files
-                                  "-out:prefix", ("%s.%s." % (input,instance)) ],
+                                  "-out:prefix", prefix ],
                     ),
                 state = 'NEW',
                 created = time.time(),
@@ -481,9 +510,9 @@ for input in inputs:
 
 ## iterate through job list, updating state and acting accordingly
 
-grid = Grid(default_output_dir=options.output)
 
 def main(jobs):
+    grid = Grid(default_output_dir=options.output)
     # build table
     in_flight_count = 0
     can_submit = True
@@ -494,6 +523,38 @@ def main(jobs):
             in_flight_count += 1
             if in_flight_count > options.max_running:
                 can_submit = False
+        if job.get('output_retrieved_to', None) and not job.get('output_processing_done', False):
+            # move around output files so they're easier to preprocess:
+            #   1. All '.fasc' files land in the same directory as the input '.pdb' file
+            #   2. All generated '.pdb'/'.pdb.gz' files are collected in a '.decoys.tar'
+            #   3. Anything else is left as-is
+            output_tar = tarfile.open(os.path.join(job.output_retrieved_to, 
+                                                   'docking_protocol.tar.gz'), 'r:gz')
+            pdbs = tarfile.open(os.path.splitext(job.input)[0] + '.decoys.tar', 'a')
+            for entry in output_tar:
+                if entry.name.endswith('.fasc'):
+                    fasc_file_name = os.path.splitext(job.input)[0] + '.' + job.instance + '.fasc'
+                    src = output_tar.extractfile(entry)
+                    dst = open(fasc_file_name, 'wb')
+                    dst.write(src.read())
+                    dst.close()
+                    src.close()
+                elif entry.name.endswith('.pdb.gz') or entry.name.endswith('.pdb'):
+                    src = output_tar.extractfile(entry)
+                    dst = tarfile.TarInfo(entry.name)
+                    dst.size = entry.size
+                    dst.type = entry.type
+                    dst.mode = entry.mode
+                    dst.mtime = entry.mtime
+                    dst.uid = os.getuid()
+                    dst.gid = os.getgid()
+                    dst.uname = pwd.getpwuid(os.getuid()).pw_name
+                    dst.gname = grp.getgrgid(os.getgid()).gr_name
+                    if hasattr(entry, 'pax_headers'):
+                        dst.pax_headers = entry.pax_headers
+                    pdbs.addfile(dst, src)
+                    src.close()
+            job.output_processing_done = True
         if state == 'DONE':
             # nothing more to do - remove from job list if more than 1 day old
             if (time.time() - job.timestamp['DONE']) > 24*60*60:
