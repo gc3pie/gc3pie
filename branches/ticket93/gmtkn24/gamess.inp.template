@@ -1,0 +1,10 @@
+ $CONTRL SCFTYP=RHF DFTTYP=B2PLYP RUNTYP=ENERGY
+ UNITS=BOHR ISPHER=1 $END
+ $DFT NRAD=96 NLEB=302 $END 
+ $BASIS GBASIS=CCT $END              
+ $SYSTEM MWORDS=10 MEMDDI=100 $END
+ $DATA                                                 
+%(NAME)s
+C1
+%(ATOMS)s
+ $END                                                  
