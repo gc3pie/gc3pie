@@ -250,7 +250,8 @@ class GamessApplication(Application):
 
     The only required parameter for construction is the input file
     name; for a list of other optional construction parameters, see
-    `Application`.
+    `Application`.  Note that a GAMESS-US job is *always* submitted 
+    with `join = True`, therefore any `stderr` setting is ignored.
     """
     def __init__(self, input_file_path, **kw):
         input_file_name = os.path.basename(input_file_path)
@@ -260,23 +261,22 @@ class GamessApplication(Application):
         def set_if_unset(key, value):
             if not kw.has_key(key):
                 kw[key] = value
-        set_if_unset('stdout', input_file_name_sans + 'stdout')
-        set_if_unset('stderr', input_file_name_sans + 'stderr')
+        set_if_unset('stdout', input_file_name_sans + '.out')
         set_if_unset('application_tag', "gamess")
         if kw.has_key('rtes'):
             kw['rtes'].append("APPS/CHEM/GAMESS-2009")
         else:
             kw['rtes'] = [ "APPS/CHEM/GAMESS-2009" ]
+        arguments = [ input_file_name ] + (kw.get('arguments') or [ ])
         if kw.has_key('arguments'):
-            # FIXME: quick fix, should append to L263 below instead
-            gc3utils.log.info("Ignoring extra application arguments '%s'" % kw['arguments'])
             del kw['arguments']
         # build generic `Application` obj
         Application.__init__(self, 
                              executable = "$GAMESS_LOCATION/nggms",
-                             arguments = [input_file_name],
+                             arguments = arguments,
                              inputs = [ (input_file_path, input_file_name) ],
                              outputs = [ output_file_name ],
+                             join=True,
                              **kw)
                              
 
