@@ -1,30 +1,17 @@
-import sys
+import gc3utils
 import os
 import os.path
-import commands
-import logging
-import logging.handlers
-import tempfile
-import getpass
 import re
+import shelve
+import sys
 import time
-import ConfigParser
-import shutil
-import getpass
-#import smtplib
-import subprocess
-#from email.mime.text import MIMEText
-sys.path.append('/opt/nordugrid/lib/python2.4/site-packages')
+
 import warnings
 warnings.simplefilter("ignore")
-from arclib import *
+
 from Exceptions import *
-import Default
-import gc3utils
+from arclib import *
 from lockfile import FileLock
-import shelve
-
-
     
 
 # ================================================================
@@ -318,109 +305,6 @@ def to_bytes(s):
         return int(float(s[0:last])*k*k*k*k*k*k*k*k)
 
  
-# === Configuration File
-def import_config(config_file_location, auto_enable_auth=True):
-    (default_val,resources_vals) = read_config(config_file_location)
-    return (get_defaults(default_val),
-            get_resources(resources_vals),
-            auto_enable_auth)
-
-def get_defaults(defaults):
-    # Create an default object for the defaults
-    # defaults is a list[] of values
-    try:
-        # Create default values
-        default = gc3utils.Default.Default(defaults)
-    except:
-        gc3utils.log.critical('Failed loading default values')
-        raise
-        
-    return default
-    
-
-def get_resources(resources_list):
-    # build Resource objects from the list returned from read_config
-    #        and match with selectd_resource from comand line
-    #        (optional) if not options.resource_name is None:
-    resources = []
-    
-    try:
-        for resource in resources_list:
-            gc3utils.log.debug('creating instance of Resource object... ')
-
-            try:
-                tmpres = gc3utils.Resource.Resource(resource)
-            except:
-                gc3utils.log.error("rejecting resource '%s'",resource['name'])
-                #                gc3utils.log.warning("Resource '%s' failed validity test - rejecting it.",
-                #                                     resource['name'])
-
-                continue
-#            tmpres = gc3utils.Resource.Resource()
-                
-#            tmpres.update(resource)
-            #            for items in resource:
-            #                gc3utils.log.debug('Updating with %s %s',items,resource[items])
-            #                tmpres.insert(items,resource[items])
-            
-            gc3utils.log.debug('Checking resource type %s',resource['type'])
-            if resource['type'] == 'arc':
-                tmpres.type = gc3utils.Default.ARC_LRMS
-            elif resource['type'] == 'ssh_sge':
-                tmpres.type = gc3utils.Default.SGE_LRMS
-            else:
-                gc3utils.log.error('No valid resource type %s',resource['type'])
-                continue
-            
-            gc3utils.log.debug('checking validity with %s',str(tmpres.is_valid()))
-            
-            resources.append(tmpres)
-    except:
-        gc3utils.log.critical('failed creating Resource list')
-        raise
-    
-    return resources
-
-                                
-def read_config(config_file_location):
-    """
-    Read configuration file.
-    """
-
-    resource_list = []
-    defaults = {}
-
-#    print 'mike_debug 100'
-#    print config_file_location
-
-    _configFileLocation = os.path.expandvars(config_file_location)
-    if not deploy_configuration_file(_configFileLocation, "gc3utils.conf.example"):
-        # warn user
-        raise NoConfigurationFile("No configuration file '%s' was found; a sample one has been copied in that location; please edit it and define resources before you try running gc3utils commands again." % _configFileLocation)
-
-    # Config File exists; read it
-    config = ConfigParser.ConfigParser()
-    try:
-        config_file = open(_configFileLocation)
-        config.readfp(config_file)
-    except:
-        raise NoConfigurationFile("Configuration file '%s' is unreadable or malformed. Aborting." 
-                                  % _configFileLocation)
-
-    defaults = config.defaults()
-
-    _resources = config.sections()
-    for _resource in _resources:
-        _option_list = config.options(_resource)
-        _resource_options = {}
-        for _option in _option_list:
-            _resource_options[_option] = config.get(_resource,_option)
-        _resource_options['name'] = _resource
-        resource_list.append(_resource_options)
-
-    gc3utils.log.debug('readConfig resource_list length of [ %d ]',len(resource_list))
-    return [defaults,resource_list]
-
 def obtain_file_lock(joblist_location, joblist_lock):
     """
     Lock a file.
@@ -471,21 +355,6 @@ def release_file_lock(joblist_lock):
     except:
         gc3utils.log.debug('Failed removing lock due to %s',sys.exc_info()[1])
         return False
-
-#def send_email(_to,_from,_subject,_msg):
-#    try:
-#        _message = MIMEText(_msg)
-#        _message['Subject'] = _subject
-#        _message['From'] = _from
-#        _message['To'] = _to
-        
-#        s = smtplib.SMTP()
-#        s.connect()
-#        s.sendmail(_from,[_to],_message.as_string())
-#        s.quit()
-        
-#    except:
-#        logging.error('Failed sending email [ %s ]',sys.exc_info()[1])
 
 
 if __name__ == '__main__':

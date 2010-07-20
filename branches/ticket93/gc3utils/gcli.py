@@ -5,19 +5,21 @@ __date__="01 May 2010"
 __copyright__="Copyright 2009, 2010 Grid Computing Competence Center - UZH/GC3"
 __version__="0.3"
 
-import utils
-import sys
-import os
-from ArcLRMS import *
-from SshLRMS import *
-import Resource
-import Default
-import Scheduler
-import Job
 import Application
-from Exceptions import *
-from fnmatch import fnmatch
 import Authorization
+import ConfigParser
+import Default
+import Job
+import Resource
+import Scheduler
+import os
+import sys
+import utils
+
+from ArcLRMS import ArcLrms
+from Exceptions import *
+from SshLRMS import SshLrms
+from fnmatch import fnmatch
 
 class Gcli:
 
@@ -459,3 +461,109 @@ class Gcli:
 
         return _lrms
 #====== End
+
+
+# === Configuration File
+def import_config(config_file_location, auto_enable_auth=True):
+    (default_val,resources_vals) = read_config(config_file_location)
+    return (get_defaults(default_val),
+            get_resources(resources_vals),
+            auto_enable_auth)
+
+
+def get_defaults(defaults):
+    # Create an default object for the defaults
+    # defaults is a list[] of values
+    try:
+        # Create default values
+        default = gc3utils.Default.Default(defaults)
+    except:
+        gc3utils.log.critical('Failed loading default values')
+        raise
+        
+    return default
+    
+
+def get_resources(resources_list):
+    # build Resource objects from the list returned from read_config
+    #        and match with selectd_resource from comand line
+    #        (optional) if not options.resource_name is None:
+    resources = []
+    
+    try:
+        for resource in resources_list:
+            gc3utils.log.debug('creating instance of Resource object... ')
+
+            try:
+                tmpres = gc3utils.Resource.Resource(resource)
+            except:
+                gc3utils.log.error("rejecting resource '%s'",resource['name'])
+                #                gc3utils.log.warning("Resource '%s' failed validity test - rejecting it.",
+                #                                     resource['name'])
+
+                continue
+#            tmpres = gc3utils.Resource.Resource()
+                
+#            tmpres.update(resource)
+            #            for items in resource:
+            #                gc3utils.log.debug('Updating with %s %s',items,resource[items])
+            #                tmpres.insert(items,resource[items])
+            
+            gc3utils.log.debug('Checking resource type %s',resource['type'])
+            if resource['type'] == 'arc':
+                tmpres.type = gc3utils.Default.ARC_LRMS
+            elif resource['type'] == 'ssh_sge':
+                tmpres.type = gc3utils.Default.SGE_LRMS
+            else:
+                gc3utils.log.error('No valid resource type %s',resource['type'])
+                continue
+            
+            gc3utils.log.debug('checking validity with %s',str(tmpres.is_valid()))
+            
+            resources.append(tmpres)
+    except:
+        gc3utils.log.critical('failed creating Resource list')
+        raise
+    
+    return resources
+
+                                
+def read_config(config_file_location):
+    """
+    Read configuration file.
+    """
+
+    resource_list = []
+    defaults = {}
+
+#    print 'mike_debug 100'
+#    print config_file_location
+
+    _configFileLocation = os.path.expandvars(config_file_location)
+    if not utils.deploy_configuration_file(_configFileLocation, "gc3utils.conf.example"):
+        # warn user
+        raise NoConfigurationFile("No configuration file '%s' was found; a sample one has been copied in that location; please edit it and define resources before you try running gc3utils commands again." % _configFileLocation)
+
+    # Config File exists; read it
+    config = ConfigParser.ConfigParser()
+    try:
+        config_file = open(_configFileLocation)
+        config.readfp(config_file)
+    except:
+        raise NoConfigurationFile("Configuration file '%s' is unreadable or malformed. Aborting." 
+                                  % _configFileLocation)
+
+    defaults = config.defaults()
+
+    _resources = config.sections()
+    for _resource in _resources:
+        _option_list = config.options(_resource)
+        _resource_options = {}
+        for _option in _option_list:
+            _resource_options[_option] = config.get(_resource,_option)
+        _resource_options['name'] = _resource
+        resource_list.append(_resource_options)
+
+    gc3utils.log.debug('readConfig resource_list length of [ %d ]',len(resource_list))
+    return [defaults,resource_list]
+
