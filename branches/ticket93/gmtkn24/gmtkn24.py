@@ -563,7 +563,8 @@ def progress(session):
     jobs = _load_jobs(session_file_name)
     logger.info("Loaded %d jobs from session file '%s'", 
                 len(jobs), session_file_name)
-    final_energy_re = re.compile(r'FINAL +[A-Z0-9_-]+ +ENERGY IS +([+-]?[0-9]*(\.[0-9]*)?) *[A-Z0-9 ]*')
+    final_energy_re = re.compile(r'FINAL [-\s]+ [A-Z0-9_-]+ \s+ ENERGY \s* (IS|=) \s* '
+                                 r'([+-]?[0-9]*(\.[0-9]*)?) \s* [A-Z0-9\s]*', re.X)
     whitespace_re = re.compile(r'\s+', re.X)
     # build table
     in_flight_count = 0
@@ -584,10 +585,11 @@ def progress(session):
                     # prettify GAMESS' output line
                     job.set_info(whitespace_re.sub(' ', match.group(0).capitalize()))
                     # record energy in compute-ready form
-                    job.energy = float(match.group(1))
+                    job.energy = float(match.group(2))
                     break
             gamess_output.close()
             job.output_processing_done = True
+            grid.save(job)
         if job.state == 'FAILED':
             # what should we do?
             pass
