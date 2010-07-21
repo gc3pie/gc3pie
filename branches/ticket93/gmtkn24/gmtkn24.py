@@ -613,10 +613,10 @@ def progress(session):
         # map each molecule to its computed energy
         energy = dict([ (job.molecule, job.energy)
                         for job in jobs.values() ])
-        print ()
+        print ("")
         print ("STOICHIOMETRY DATA")
-        print ()
-        print ("%-40s  %-6.4f  (%-6.4f)" 
+        print ("")
+        print ("%-40s  %-12s  (%-12s)" 
                % ("Reaction", "Computed energy", "Ref. data"))                
         print (78 * "=")
         for subset in subsets:
