@@ -190,8 +190,8 @@ class ArcLrms(LRMS):
         
     def check_status(self, job_obj):
         
-        submitted_list = ['ACCEPTED','SUBMITTING','PREPARING']
-        running_list = ['INLRMS:R','INLRMS:Q','INLRMS:O','INLRMS:S','INLRMS:E','INLRMS:X','FINISHING','CANCELING','EXECUTED']
+        submitted_list = ['ACCEPTED','SUBMITTING','PREPARING','INLRMS:Q']
+        running_list = ['INLRMS:R','INLRMS:O','INLRMS:S','INLRMS:E','INLRMS:X','FINISHING','CANCELING','EXECUTED']
         finished_list = ['FINISHED','KILLED']
         failed_list = ['FAILED','DELETED']
 
