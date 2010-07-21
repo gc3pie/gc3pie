@@ -616,20 +616,21 @@ def progress(session):
         print ("")
         print ("STOICHIOMETRY DATA")
         print ("")
-        print ("%-40s  %-12s  (%-12s)" 
-               % ("Reaction", "Computed energy", "Ref. data"))                
+        print ("%-40s  %-12s  (%-s; %-s)" 
+               % ("Reaction", "Comp. energy", "Ref. data", "deviation"))                
         print (78 * "=")
         for subset in subsets:
             for reaction,refdata in Gmtkn24().get_reference_data(subset):
-                print ("%-40s  %-6.4f  (%-6.4f)" 
+                # compute corresponding energy
+                computed_energy = sum([ (627.509*qty*energy[sy]) for sy,qty in reaction.items() ])
+                deviation = computed_energy - refdata
+                print ("%-40s  %+6.2f  (%+6.2f; %+6.2f)" 
                        % (
                         # symbolic reaction
                         str.join(' + ', 
                                  [ ("%d*%s" % (qty, sy)) for sy,qty in reaction.items() ]), 
-                        # compute corresponding energy
-                        sum([ (qty*energy[sy]) for sy,qty in reaction.items() ]),
-                        # print ref. data from GMTKN24
-                        refdata)
+                        # numerical data
+                        computed_energy, refdata, deviation)
                        )
 
 
