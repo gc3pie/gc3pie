@@ -211,6 +211,57 @@ def gsub(*args, **kw):
         raise Exception('Job object not valid')
 
 
+def gresub(*args, **kw):
+    """The `gresub` command: resubmit an already-submitted job with different parameters."""
+    # Parse command line arguments
+    parser = OptionParser(usage="%prog [options] JOBID")
+    parser.add_option("-v", action="count", dest="verbosity", default=0, help="Set verbosity level")
+    parser.add_option("-r", "--resource", action="store", dest="resource_name", metavar="STRING", default=None, help='Select resource destination')
+    parser.add_option("-d", "--jobdir", action="store", dest="job_local_dir", metavar="STRING", default=gc3utils.Default.JOB_FOLDER_LOCATION, help='Select job local folder location')
+    parser.add_option("-c", "--cores", action="store", dest="ncores", metavar="INT", default=0, help='Set number of requested cores')
+    parser.add_option("-m", "--memory", action="store", dest="memory_per_core", metavar="INT", default=0, help='Set memory per core request (GB)')
+    parser.add_option("-w", "--walltime", action="store", dest="walltime", metavar="INT", default=0, help='Set requested walltime (hours)')
+
+    (options, args) = parser.parse_args(list(args))
+    _configure_logger(options.verbosity)
+
+    if len(args) < 1:
+        raise InvalidUsage('Wrong number of arguments: this commands expects at least 1 argument: JOBID')
+
+    _gcli = _get_gcli(_default_config_file_location)
+    if options.resource_name:
+        _gcli.select_resource(options.resource_name)
+        gc3utils.log.info("Retained only resources: %s (restricted by command-line option '-r %s')",
+                          str.join(",", [res['name'] for res in _gcli._resources]), 
+                          options.resource_name)
+
+    failed = 0
+    for jobid in args:
+        job = gc3utils.Job.get_job(jobid.strip())
+        try:
+            _gcli.gstat(job) # update status
+            if not ( 
+                job.status == gc3utils.Job.JOB_STATE_COMPLETED 
+                or job.status == gc3utils.Job.JOB_STATE_FINISHED 
+                or job.status == gc3utils.Job.JOB_STATE_FAILED 
+                or job.status == gc3utils.Job.JOB_STATE_DELETED 
+                ):
+                job = _gcli.gkill(job)
+        except Exception, ex:
+            # ignore errors, and proceed to resubmission anyway
+            gc3utils.log.warning("Could not update status of %s: %s: %s", 
+                                 jobid, ex.__class__.__name__, str(ex))
+        job = _gcli.gsub(job.application, job)
+        if job.is_valid():
+            print("Successfully re-submitted %s; use the 'gstat' command to monitor its progress." 
+                  % job.unique_token)
+            gc3utils.Job.persist_job(job)
+        else:
+            failed += 1
+            gc3utils.log.error("Failed resubmission of job '%s'", jobid)
+    return failed
+
+
 def grid_credential_renew(*args, **kw):                                        
     parser = OptionParser(usage="Usage: %prog [options] USERNAME")
     parser.add_option("-v", action="count", dest="verbosity", default=0, help="Set verbosity level")

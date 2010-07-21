@@ -112,7 +112,10 @@ class Gcli:
                 if job.is_valid():
                     gc3utils.log.info('Successfully submitted process to LRMS backend')
                     # job submitted; leave loop
-                    job.job_local_dir = application.job_local_dir
+                    if application.has_key('job_local_dir'):
+                        job.job_local_dir = application.job_local_dir
+                    else:
+                        job.job_local_dir = os.getcwd()
                     break
             except AuthenticationException:
                 # ignore authentication errors: e.g., we may fail some SSH connections but succeed in others
