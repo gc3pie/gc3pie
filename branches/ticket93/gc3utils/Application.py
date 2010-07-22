@@ -399,7 +399,7 @@ class RosettaDockingApplication(RosettaApplication):
     Currently used in the `grosetta` app.
     """
     def __init__(self, pdb_file_path, native_file_path=None, 
-                 number_of_decoys_to_create=1, flag_file_path=None, **kw):
+                 number_of_decoys_to_create=1, flags_file=None, **kw):
         pdb_file_name = os.path.basename(pdb_file_path)
         pdb_file_dir = os.path.dirname(pdb_file_path)
         pdb_file_name_sans = os.path.splitext(pdb_file_name)[0]
@@ -423,7 +423,7 @@ class RosettaDockingApplication(RosettaApplication):
                 pdb_file_name_sans + '.fasc',
                 pdb_file_name_sans + '.sc',
                 ],
-            flags_file = flag_file_path,
+            flags_file = flags_file,
             arguments = [ 
                 "-out:file:o", pdb_file_name_sans,
                 "-out:nstruct", number_of_decoys_to_create,
