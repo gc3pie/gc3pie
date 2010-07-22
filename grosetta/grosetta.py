@@ -113,7 +113,7 @@ class Grid(object):
     An interface to job lifecycle management.
     """
     def __init__(self, config_file=gc3utils.Default.CONFIG_FILE_LOCATION, default_output_dir=None):
-        self.mw = gc3utils.gcli.Gcli(*gc3utils.utils.import_config(config_file))
+        self.mw = gc3utils.gcli.Gcli(*gc3utils.gcli.import_config(config_file))
         self.default_output_dir = default_output_dir
 
     def save(self, job):
