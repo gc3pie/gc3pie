@@ -310,7 +310,7 @@ cmdline.add_option("-c", "--cpu-cores", dest="ncores", type="int", default=1, # 
                    help="Require the specified number of CPU cores (default: %default)"
                    " for each Rosetta 'docking_protocol' job. NUM must be a whole number."
                    )
-cmdline.add_option("-f", "--flags-file", dest="flags_file_path", default=None,
+cmdline.add_option("-f", "--flags-file", dest="flags_file", default=None,
                    metavar="PATH",
                    help="Pass the specified flags file to Rosetta 'docking_protocol'"
                    " Default: '~/.gc3/docking_protocol.flags'"
@@ -419,7 +419,7 @@ jobs = JobCollection(
     requested_walltime = options.walltime,
     # Rosetta-specific data
     decoys_per_job = options.decoys_per_job,
-    flags_file_path = options.flags_file_path,
+    flags_file = options.flags_file,
     )
 try:
     session_file_name = os.path.realpath(options.session)
@@ -484,13 +484,13 @@ for input in inputs:
                 instance = instance,
                 application = RosettaDockingApplication(
                     input, 
+                    flags_file = options.flags_file,
                     # set computational requirements
                     requested_memory = options.memory_per_core,
                     requested_cores = options.ncores,
                     requested_walltime = options.walltime,
                     # Rosetta-specific data
                     number_of_decoys_to_create = options.decoys_per_job,
-                    flags_file_path = options.flags_file_path,
                     arguments = [ "-out:pdb_gz", # compress PDB output files
                                   "-out:prefix", prefix ],
                     ),
