@@ -340,10 +340,10 @@ class Grid(object):
             try:
                 self.update_state(job)
             except Exception, x:
-                logger.error("Ignoring error in updating state of job '%s.%s': %s: %s"
-                              % (job.input, job.instance, x.__class__.__name__, str(x)),
+                logger.error("Ignoring error in updating state of job '%s': %s: %s"
+                              % (job.id, x.__class__.__name__, str(x)),
                               exc_info=True)
-        if job.state == 'NEW' and can_submit:
+        if can_submit and job.state == 'NEW':
             # try to submit; go to 'SUBMITTED' if successful, 'FAILED' if not
             try:
                 self.submit(job.application, job)
@@ -354,19 +354,26 @@ class Grid(object):
                 sys.excepthook(* sys.exc_info())
                 job.set_state('FAILED')
                 job.set_info("Submission failed: %s" % str(x))
-        if job.state == 'FINISHING' and can_retrieve:
-            # get output; go to 'DONE' if successful, 'FAILED' if not
+        if can_retrieve and job.state == 'FINISHING':
+            # get output; go to 'DONE' if successful, ignore errors so we retry next time
             try:
-                # FIXME: temporary fix, should persist `created`!
-                if not job.has_key('created'):
-                    job.created = time.localtime(time.time())
                 self.get_output(job, job.output_dir)
                 job.set_state('DONE')
                 job.set_info("Results retrieved into directory '%s'" % job.output_dir)
             except Exception, x:
-                logger.error("Got error in updating state of job '%s.%s': %s: %s"
-                              % (job.input, job.instance, x.__class__.__name__, str(x)), 
-                              exc_info=True)
+                logger.error("Got error in fetching output of job '%s': %s: %s" 
+                             % (job.id, x.__class__.__name__, str(x)), exc_info=True)
+        if can_retrieve and (job.state == 'FAILED') and not job.get('output_retrieved_to', None):
+            # try to get output, ignore errors as there might be no output
+            try:
+                self.get_output(job, job.output_dir)
+                job.status = gc3utils.Job.JOB_STATE_FAILED # patch
+                job.set_info("Output retrieved into directory '%s/%s'" 
+                             % (job.output_dir, job.jobid))
+            except Exception, x:
+                logger.error("Got error in fetching output of job '%s': %s: %s" 
+                             % (job.id, x.__class__.__name__, str(x)), exc_info=True)
+                job.set_info("No output could be retrieved.")
         self.save(job)
         return job.state
 
@@ -553,6 +560,26 @@ def new(subset, session, template):
     jobs.pprint(sys.stdout, session_file_name)
 
 
+def grep1(filename, re):
+    """
+    Return first line in `filename` that matches `re`.
+    Return `re.match` object, or `None` if no line matched.
+    """
+    file = open(filename, 'r')
+    for line in file:
+        match = re.search(line)
+        if match:
+            file.close()
+            return match
+    file.close()
+    return None
+            
+
+_whitespace_re = re.compile(r'\s+', re.X)
+def prettify(text):
+    return _whitespace_re.sub(' ', text.capitalize())
+
+
 def progress(session):
     """
     Update status of all jobs in session; submit new jobs; retrieve
@@ -564,8 +591,9 @@ def progress(session):
     logger.info("Loaded %d jobs from session file '%s'", 
                 len(jobs), session_file_name)
     final_energy_re = re.compile(r'FINAL [-\s]+ [A-Z0-9_-]+ \s+ ENERGY \s* (IS|=) \s* '
-                                 r'([+-]?[0-9]*(\.[0-9]*)?) \s* [A-Z0-9\s]*', re.X)
-    whitespace_re = re.compile(r'\s+', re.X)
+                                 r'(?P<energy>[+-]?[0-9]*(\.[0-9]*)?) \s* [A-Z0-9\s]*', re.X)
+    termination_re = re.compile(r'EXECUTION \s+ OF \s+ GAMESS \s+ TERMINATED \s+-?(?P<gamess_outcome>NORMALLY|ABNORMALLY)-?'
+                                r'|ddikick.x: .+ (exited|quit) \s+ (?P<ddikick_outcome>gracefully|unexpectedly)', re.X)
     # build table
     in_flight_count = 0
     can_submit = True
@@ -577,22 +605,31 @@ def progress(session):
             if in_flight_count > options.max_running:
                 can_submit = False
         if job.get('output_retrieved_to', None) and not job.get('output_processing_done', False):
+            gamess_output = os.path.join(job.output_retrieved_to, job.molecule + '.out')
+            # determine job exit status
+            termination = grep1(gamess_output, termination_re)
+            if termination:
+                outcome = termination.group('gamess_outcome') or termination.group('ddikick_outcome')
+                if outcome == 'ABNORMALLY':
+                    job.set_state('FAILED')
+                    job.set_info(prettify(termination.group(0)))
+                elif outcome == 'NORMALLY' and job.state != 'DONE':
+                    job.set_info('GAMESS terminated normally, but some error occurred in the Grid middleware; use the "ginfo" command to inspect.')
+                elif outcome == 'unexpectedly':
+                    job.set_state('FAILED')
+                    job.set_info(prettify(termination.group(0)))
+                else:
+                    job.set_info(prettify(termination.group(0)))
             # get 'FINAL ENERGY' from file
-            gamess_output = open(os.path.join(job.output_retrieved_to, job.molecule + '.out'), 'r')
-            for line in gamess_output:
-                match = final_energy_re.search(line)
-                if match:
+            if job.state == 'DONE':
+                final_energy_line = grep1(gamess_output, final_energy_re)
+                if final_energy_line:
                     # prettify GAMESS' output line
-                    job.set_info(whitespace_re.sub(' ', match.group(0).capitalize()))
+                    job.set_info(prettify(final_energy_line.group(0)))
                     # record energy in compute-ready form
-                    job.energy = float(match.group(2))
-                    break
-            gamess_output.close()
+                    job.energy = float(final_energy_line.group('energy'))
             job.output_processing_done = True
             grid.save(job)
-        if job.state == 'FAILED':
-            # what should we do?
-            pass
     # write updated jobs to session file
     try:
         session_file = file(session_file_name, "wb")
