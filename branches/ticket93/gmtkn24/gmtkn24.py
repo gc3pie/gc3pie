@@ -352,7 +352,7 @@ class Grid(object):
                 logger.error("Error in submitting job '%s': %s: %s"
                               % (job.id, x.__class__.__name__, str(x)))
                 sys.excepthook(* sys.exc_info())
-                job.set_state('FAILED')
+                job.set_state('NEW')
                 job.set_info("Submission failed: %s" % str(x))
         if can_retrieve and job.state == 'FINISHING':
             # get output; go to 'DONE' if successful, ignore errors so we retry next time
