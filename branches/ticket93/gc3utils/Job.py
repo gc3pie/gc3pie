@@ -1,5 +1,6 @@
 import os
 import shelve
+import sys
 import types
 
 from Exceptions import *
@@ -165,8 +166,19 @@ def clean_job_filesystem(unique_token):
 def prepare_job_dir(_download_dir):
     try:
         if os.path.isdir(_download_dir):
-            # directory exists; move it to .1
-            os.rename(_download_dir,_download_dir + "_" + create_unique_token())
+            # directory exists; find a suitable extension and rename
+            parent_dir = os.path.dirname(_download_dir)
+            prefix = os.path.dirname(_download_dir) + '.'
+            l = len(prefix)
+            suffix = 1
+            for name in [ x for x in os.listdir(parent_dir) if x.startswith(prefix) ]:
+                try:
+                    n = int(name[l:])
+                    suffix = max(suffix, n)
+                except:
+                    # ignore non-numeric suffixes
+                    pass
+            os.rename(_download_dir, "%s.%d" % (_download_dir, suffix))
 
         os.makedirs(_download_dir)
         return True
