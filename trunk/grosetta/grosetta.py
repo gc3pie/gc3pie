@@ -277,6 +277,19 @@ class JobCollection(dict):
             csv.DictWriter(session, ['input', 'instance', 'jobid', 'state', 'info', 'history'], 
                            extrasaction='ignore').writerow(job)
 
+    def pprint(self, output=sys.stdout, session=options.session):
+        """
+        Output a summary table to stream `output`.
+        """
+        if len(jobs) == 0:
+            print ("There are no jobs in session file '%s'." % session)
+        else:
+            output.write("%-15s  %-15s  %-18s  %-s\n" 
+                         % ("Input file name", "Instance count", "State (JobID)", "Info"))
+            output.write(80 * "=" + '\n')
+            for job in self.values():
+                output.write("%-15s  %-15s  %-18s  %-s\n" % 
+                             (job.input, job.instance, ('%s (%s)' % (job.state, job.jobid)), job.info))
 
 ## parse command-line
 
@@ -578,16 +591,7 @@ def main(jobs):
         logging.error("Cannot save job status to session file '%s': %s"
                       % (session_file_name, str(x)))
     # print results to user
-    if len(jobs) == 0:
-        print ("There are no jobs in session file '%s'." % options.session)
-    else:
-        # pretty-print table of jobs
-        print ("%-15s  %-15s  %-18s  %-s" % ("Input file name", "Instance count", "State (JobID)", "Info"))
-        print (80 * "=")
-        for job in jobs.values():
-            print ("%-15s  %-15s  %-18s  %-s" % 
-                   (job.input, job.instance, ('%s (%s)' % (job.state, job.jobid)), job.info))
-
+    jobs.pprint(sys.stdout)
 
 main(jobs)
 if options.wait > 0:
