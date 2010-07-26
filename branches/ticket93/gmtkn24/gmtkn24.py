@@ -1,5 +1,23 @@
 #! /usr/bin/env python
 #
+#   gmtkn24.py -- Front-end script for submitting GAMESS analyses of molecules
+#   in the online GMTKN24 database.
+#
+#   Copyright (C) 2010 GC3, University of Zurich
+#
+#   This program is free software: you can redistribute it and/or modify
+#   it under the terms of the GNU General Public License as published by
+#   the Free Software Foundation, either version 3 of the License, or
+#   (at your option) any later version.
+#
+#   This program is distributed in the hope that it will be useful,
+#   but WITHOUT ANY WARRANTY; without even the implied warranty of
+#   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#   GNU General Public License for more details.
+#
+#   You should have received a copy of the GNU General Public License
+#   along with this program.  If not, see <http://www.gnu.org/licenses/>.
+#
 """
 An interface for starting GAMESS analyses of molecules in the online
 GMTKN24 database (http://toc.uni-muenster.de/GMTKN/GMTKNmain.html).
@@ -207,7 +225,7 @@ class Gmtkn24(object):
             yield (reaction, refdata)
 
 
-## imported from grosetta
+## common code with grosetta -- will be migrated into gc3libs someday
 
 def zerodict():
     """
@@ -322,6 +340,14 @@ class Grid(object):
             job.job_local_dir = os.getcwd()
         self.mw.gget(job)
         job.output_retrieved_to = os.path.join(job.job_local_dir, job.jobid)
+        # XXX: Need to reset the `output_processing_done` attribute, 
+        # but the `persist_job` fn in gc3utils.Job will only do an update
+        # to the persisted file, so that deleting an attribute does not work.
+        # We work this around by setting the value to `None`, since this is 
+        # what we use as sentinel value later on, but gc3utils.Job.persist_job()
+        # definitely needs fixing
+        if job.has_key('output_processing_done'):
+            job.output_processing_done = None
 
     def progress(self, job, can_submit=True, can_retrieve=True):
         """
@@ -351,7 +377,6 @@ class Grid(object):
             except Exception, x:
                 logger.error("Error in submitting job '%s': %s: %s"
                               % (job.id, x.__class__.__name__, str(x)))
-                sys.excepthook(* sys.exc_info())
                 job.set_state('NEW')
                 job.set_info("Submission failed: %s" % str(x))
         if can_retrieve and job.state == 'FINISHING':
@@ -395,7 +420,7 @@ class JobCollection(dict):
 
     def remove(self, job):
         """Remove a `Job` instance from the collection."""
-        del self[job.id()]
+        del self[job.id]
 
     def load(self, session):
         """
