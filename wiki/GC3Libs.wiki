@@ -1,0 +1,92 @@
+= GC3Libs =
+
+
+== Introduction ==
+
+The gc3utils is a suite of Python classes to aid in submitting batch
+jobs to various cluster & grid resources seamlessly.
+
+Most of the time a user has lots of different accounts on lots of
+different resources.  The idea is that a user can their jobs from one
+place with a few simple commands.
+
+
+== Design points ==
+  * The user should be able to run everything out of their own home directory.  No admin interference needed.
+  * A "Resources" is a cluster, grid, or other entity that provides compute cycles.  These are defined in a config file.
+  * The user provides credentials and login information for each Resource.
+
+
+== Structure ==
+
+Outline of the current (as of 2010-07) code repository layout.
+
+_*Note:*_ This section is badly out-of-date... better delete it?
+
+=== Mark's Tools _(depends on gorg.model, ase)_ === 
+  * Mark's Tools
+  * IO
+  * calculator
+   * gamessparser.py
+   * gamess.py
+   * apbs.py ?
+   * Turbochem.py ?
+  * usertasks
+   * ghessian.py
+   * grestart.py
+   * gsingle.py
+  * lib
+   * utils.py
+    * CreateLogger(logging_level)
+  * examples
+  * doc
+  * tools
+ 
+=== gorg _(depends on gc3utils.lib)_ === 
+  * Model
+  * lib
+   * utils.py
+    * CreateLogger(logging_level)
+   * dummytasks.py 
+    * dummyclass (blah)
+  {{{
+  IF TASK SUPPLIED:
+  look for class with that name...
+  ELSE:
+  submit: (submit whatever input supplied)
+  get: (get whatever)
+  kill: (kill whatever)
+  status: (stat whatever)
+  tasklist: (list whatever)
+  }}}
+  * examples
+  * tools
+   * submittask → dummytasks.dummyclass
+   * gettask
+   * killtask
+   * taskstatus
+   * tasklist
+  * doc
+ 
+=== gorg_site _(depends on gorg.model)_ === 
+  * Control
+  * lib
+   * utils.py
+    * CreateLogger(logging_level)
+ 
+=== gc3utils _(depends on nothing)_ === 
+  * lib
+  * utils.py
+   * LRMS
+   * ArcLRMS
+   * SshLRMS
+   * etc
+  * tools?? (del?)
+  * doc
+  * examples
+
+
+
+== Index of relevant pages ==
+
+ * [Gc3utils/Authentication] : interface and intended usage of the authentication-related classes in the `gc3utils` module.
