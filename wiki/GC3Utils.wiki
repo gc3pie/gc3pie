@@ -13,12 +13,12 @@ is an advanced topic and will not be covered here.
 
 == Glossary ==
 
-* _Core_: A single computing unit; this was called a CPU until manufacturers started packing many processing units into a single package: now the term CPU is used for the package, and "core" is one of the several independent processing units within the package.
-* _Job_: A computational job is a single run of a non-interactive application.  The prototypical example is a run of GAMESS on a single input file.
-* _Resource_: Short for "computational resource": any cluster or Grid where a job can run.
-* _Status_: A one-word indication of a computational job execution status (e.g., `RUNNING` or `FAILED`).
-* _walltime_: Short for "wall-clock time": indicates the total running time of a job.
-
+  * _Core_: A single computing unit; this was called a CPU until manufacturers started packing many processing units into a single package: now the term CPU is used for the package, and "core" is one of the several independent processing units within the package.
+  * _Job_: A computational job is a single run of a non-interactive application.  The prototypical example is a run of GAMESS on a single input file.
+  * _Resource_: Short for "computational resource": any cluster or Grid where a job can run.
+  * _Status_: A one-word indication of a computational job execution status (e.g., `RUNNING` or `FAILED`).
+  * _walltime_: Short for "wall-clock time": indicates the total running time of a job.
+  
 
 
 == The supported computational job workflow ==
@@ -29,10 +29,10 @@ GAMESS on a single input file.
 
 The `gc3utils` commands support the following workflow:
 
-# Submit a GAMESS job (with a single input file).
-# Monitor the status of the submitted jobs.
-# Retrieve the output of a job once it's finished.
-
+  # Submit a GAMESS job (with a single input file).
+  # Monitor the status of the submitted jobs.
+  # Retrieve the output of a job once it's finished.
+  
 There are only three commands that you will likely use in day-to-day
 operations, corresponding to the above three steps of the workflow:
 _*gsub*_ (for submitting jobs), _*gstat*_ (for monitoring status),
@@ -130,12 +130,12 @@ job.17            RUNNING
 job.23            SUBMITTED
 </pre>
 A job can be in one and only one of the following states:
-* `COMPLETED`: The job has finished running and output has been retrieved; use the _*gclean*_ command to remove this job from the list.
-* `FINISHED`: The job has finished running but the output files have not yet been copied back from the execution cluster; use the _*gget*_ command to get the output back.
-* `RUNNING`: The job is currently running -- there's nothing to do but wait.
-* `SUBMITTED`: The job has been sent to a compute resource for execution -- it should change to `RUNNING` status eventually.
-* `FAILED`: Something went wrong during the execution of the job, so it did not complete its execution or -possibly- it did not even start. You can use the _*ginfo*_ command to try to debug the problem.
-
+  * `COMPLETED`: The job has finished running and output has been retrieved; use the _*gclean*_ command to remove this job from the list.
+  * `FINISHED`: The job has finished running but the output files have not yet been copied back from the execution cluster; use the _*gget*_ command to get the output back.
+  * `RUNNING`: The job is currently running -- there's nothing to do but wait.
+  * `SUBMITTED`: The job has been sent to a compute resource for execution -- it should change to `RUNNING` status eventually.
+  * `FAILED`: Something went wrong during the execution of the job, so it did not complete its execution or -possibly- it did not even start. You can use the _*ginfo*_ command to try to debug the problem.
+  
 The list of submitted jobs persists from one session to the other: you
 can log off, shut your computer down, then turn it on again next day
 and you will see the same list of jobs.
