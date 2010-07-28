@@ -1,9 +1,20 @@
-# ~/.gc3/config
+# ~/.gc3/gc3utils.conf
 #
-# THIS IS JUST AN EXAMPLE CONFIGURATION FILE.  No computing resources
-# are currently defined; please edit the file and define resources
-# available into your environment, using the supplied ones as guides.
+#  THIS IS JUST AN EXAMPLE CONFIGURATION FILE.  No computing resources
+#  are currently defined; please edit the file and define resources
+#  available into your environment, using the supplied ones as guides.
+
+#  The  gc3utils configuration file follows the standard format described
+#  in http://tools.ietf.org/html/rfc822.html.
+#  Gc3utils configuration file consists of several configuration blocks.
+#  Each configuration block is identified by a keyword  and  contains  the
+#  configuration options for a specific part.
 #
+#  The following sections are allowed:
+#	[DEFAULT]
+#	[authorization/<authorization_name>]
+#	[resource/<resource_name>]
+
 
 [DEFAULT]
 lrms_jobid = .lrms_jobid
@@ -13,8 +24,27 @@ debug = 0
 job_file = .lrms_id
 job_log = .log
 
+# Authorization section
+# [authorization/<auth_name>]
+#
+# Examples: 
+#
+# [authorization/smscg]
+# type = voms
+# aai_username= <aai_user_name>
+# idp= uzh.ch
+# vo = smscg
+#
+# [authorization/ssh1]
+# type = ssh
+# username = <ssh_user_name>
 
-# [gc3]
+# Resource section
+# [resource/<resource_name>]
+#
+# Example:
+#
+# [resource/gc3]
 # name = gc3
 # type = arc
 # frontend = idgc3grid01.uzh.ch
@@ -32,9 +62,9 @@ job_log = .log
 # walltime = 12
 # default_job_total_cores = 8
 # default_job_total_walltime = 8
-
-
-# [ocikbpra]
+#
+#
+# [resource/ocikbpra]
 # total_cores = 80
 # max_cores_per_node = 8
 # max_walltime = 2
