@@ -22,7 +22,7 @@ import warnings
 warnings.simplefilter("ignore")
 
 import arclib
-
+ 
 # -----------------------------------------------------
 # ARC lrms
 #
@@ -115,10 +115,12 @@ class ArcLrms(LRMS):
 
         gc3utils.log.debug('prepared xrsl: %s' % xrsl)
         # Aternative using arclib
+
         try:
             _xrsl = arclib.Xrsl(xrsl)
         except:
-            raise LRMSSubmitError('Failed in getting `Xrsl` object from arclib:', exc_info=True)
+            #raise LRMSSubmitError('Failed in getting `Xrsl` object from arclib:', exc_info=True)
+            raise LRMSSubmitError('Failed in getting `Xrsl` object from arclib:')
 
         queues = self._get_queues()
         if len(queues) == 0:
@@ -136,6 +138,9 @@ class ArcLrms(LRMS):
         job = Job.Job(lrms_jobid=lrms_jobid,
                       status=Job.JOB_STATE_SUBMITTED,
                       resource_name=self._resource.name)
+
+        # add submssion time reference
+        job.submission_time = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
         return job
 
                                 
@@ -246,6 +251,12 @@ class ArcLrms(LRMS):
             job_obj.used_cpu_time = arc_job.used_cpu_time
             job_obj.used_wall_time = arc_job.used_wall_time
             job_obj.used_memory = arc_job.used_memory
+            if arc_job.submission_time.GetTime() > -1:
+                job_obj.submission_time = str(arc_job.submission_time)
+            if arc_job.completion_time.GetTime() > -1:
+                job_obj.completion_time = str(arc_job.completion_time)
+            else:
+                job_obj.completion_time = ""
 
             if arc_job.status in running_list:
                 gc3utils.log.debug('job status: %s setting to RUNNING',arc_job.status)

@@ -22,6 +22,7 @@ from Exceptions import *
 import Job
 import Default
 import gc3utils
+import Authorization
 from lockfile import FileLock
 import shelve
 
@@ -259,8 +260,17 @@ def to_bytes(s):
  
 # === Configuration File
 def import_config(config_file_location, auto_enable_auth=True):
-    (default_val,resources_vals) = read_config(config_file_location)
-    return (get_defaults(default_val),get_resources(resources_vals), auto_enable_auth)
+    (default_val,resources_vals,authorizations) = read_config(config_file_location)
+    return (get_defaults(default_val),get_resources(resources_vals), get_authorization(authorizations,auto_enable_auth), auto_enable_auth)
+
+def get_authorization(authorizations,auto_enable_auth):
+    try:
+        auth = Authorization.Auth(authorizations, auto_enable_auth)
+    except:
+        gc3utils.log.critical('Failed initializing Authorization module')
+        raise
+
+    return auth
 
 def get_defaults(defaults):
     # Create an default object for the defaults
@@ -282,23 +292,18 @@ def get_resources(resources_list):
     resources = []
     
     try:
-        for resource in resources_list:
+
+        for key in resources_list.keys():
+            #        for resource in resources_list.values():
+            resource = resources_list[key]
+
             gc3utils.log.debug('creating instance of Resource object... ')
 
             try:
                 tmpres = gc3utils.Resource.Resource(resource)
             except:
-                gc3utils.log.error("rejecting resource '%s'",resource['name'])
-                #                gc3utils.log.warning("Resource '%s' failed validity test - rejecting it.",
-                #                                     resource['name'])
-
+                gc3utils.log.error("rejecting resource '%s'",key)
                 continue
-#            tmpres = gc3utils.Resource.Resource()
-                
-#            tmpres.update(resource)
-            #            for items in resource:
-            #                gc3utils.log.debug('Updating with %s %s',items,resource[items])
-            #                tmpres.insert(items,resource[items])
             
             gc3utils.log.debug('Checking resource type %s',resource['type'])
             if resource['type'] == 'arc':
@@ -310,7 +315,7 @@ def get_resources(resources_list):
                 continue
             
             gc3utils.log.debug('checking validity with %s',str(tmpres.is_valid()))
-            
+
             resources.append(tmpres)
     except:
         gc3utils.log.critical('failed creating Resource list')
@@ -324,11 +329,9 @@ def read_config(config_file_location):
     Read configuration file.
     """
 
-    resource_list = []
+    resource_list = {}
     defaults = {}
-
-#    print 'mike_debug 100'
-#    print config_file_location
+    authorization_list = {}
 
     _configFileLocation = os.path.expandvars(config_file_location)
     if not configuration_file_exists(_configFileLocation, "gc3utils.conf.example"):
@@ -348,15 +351,30 @@ def read_config(config_file_location):
 
     _resources = config.sections()
     for _resource in _resources:
-        _option_list = config.options(_resource)
-        _resource_options = {}
-        for _option in _option_list:
-            _resource_options[_option] = config.get(_resource,_option)
-        _resource_options['name'] = _resource
-        resource_list.append(_resource_options)
+        _option_list = config.options(_resource)           
+	if _resource.startswith('authorization/'):
+            # handle authorization section
+            gc3utils.log.debug("readConfig adding authorization '%s' ",_resource)
+
+            # extract authorization name and register authorization dictionary
+            auth_name = _resource.split('/')[1]
+            authorization_list[auth_name] = config._sections[_resource]
+            
+	elif  _resource.startswith('resource/'):
+            # handle resource section
+            gc3utils.log.debug("readConfig adding resource '%s' ",_resource)
+
+            # extract authorization name and register authorization dictionary
+            resource_name = _resource.split('/')[1]
+            resource_list[resource_name] = config._sections[_resource]
+            resource_list[resource_name]['name'] = resource_name
+
+        else:
+            # Unhandled section
+            gc3utils.log.error("readConfig unknown configuration section '%s' ", _resource)
 
     gc3utils.log.debug('readConfig resource_list length of [ %d ]',len(resource_list))
-    return [defaults,resource_list]
+    return [defaults,resource_list,authorization_list]
 
 def obtain_file_lock(joblist_location, joblist_lock):
     """

@@ -3,6 +3,7 @@ import os
 import subprocess
 import getpass
 
+from InformationContainer import *
 import gc3utils
 import Default
 from Exceptions import *
@@ -10,42 +11,54 @@ from Exceptions import *
 import arclib
 
 class Auth(object):
-    def __init__(self, auto_enable):
+    types = {}
+    # new proposal
+    def __init__(self, authorizations, auto_enable):
         self.auto_enable = auto_enable
         self.__auths = { }
+        self._auth_dict = authorizations
+        self._auth_type = { }
+        for auth_name, auth_params in self._auth_dict.items():
+            self._auth_type[auth_name] = Auth.types[auth_params['type']]
 
-    def get(self,auth_type):
-        if not self.__auths.has_key(auth_type):
-            if auth_type is Default.SMSCG_AUTHENTICATION:
-                a = ArcAuth()
-            elif auth_type is Default.SSH_AUTHENTICATION:
-                a = SshAuth()
-            elif auth_type is Default.NONE_AUTHENTICATION:
-                a = NoneAuth()
-            else:
-                raise AuthenticationException("Auth.get() called with invalid `auth_type` (%s)", auth_type)
+    def get(self, auth_name):
+        if not self.__auths.has_key(auth_name):
+            try:
+                a =  self._auth_type[auth_name](** self._auth_dict[auth_name])
 
-            if not a.check():
-                if self.auto_enable:
-                    try:
-                        a.enable()
-                    except Exception, x:
-                        gc3utils.log.debug("Got exception while enabling auth '%s',"
-                                           " will remember for next invocations:"
-                                           " %s: %s" % (auth_type, x.__class__.__name__, str(x)))
-                        a = x
-                else:
-                    a = AuthenticationException("No valid credentials of type '%s'"
-                                                " and `auto_enable` not set." % auth_type)
-            self.__auths[auth_type] = a
+                if not a.check():
+                    if self.auto_enable:
+                        try:
+                            a.enable()
+                        except Exception, x:
+                            gc3utils.log.debug("Got exception while enabling auth '%s',"
+                                               " will remember for next invocations:"
+                                               " %s: %s" % (auth_name, x.__class__.__name__, str(x)))
+                            a = x
+                    else:
+                        a = AuthenticationException("No valid credentials of type '%s'"
+                                                    " and `auto_enable` not set." % auth_name)
+            except KeyError:
+                a = ConfigurationError("Unknown auth '%s' - check configration file" % auth_name)
+            except Exception, x:
+                a = AuthenticationException("Got error while creating auth '%s': %s: %s"
+                                            % (auth_name, x.__class__.__name__, str(x)))
 
-        a = self.__auths[auth_type]
+            self.__auths[auth_name] = a
+
+        a = self.__auths[auth_name]
         if isinstance(a, Exception):
             raise a
         return a
 
+    @staticmethod
+    def register(auth_type, ctor):
+        Auth.types[auth_type] = ctor
 
 class ArcAuth(object):
+    def __init__(self, **authorization):
+        self.__dict__.update(authorization)
+
     def check(self):
         gc3utils.log.debug('Checking authentication: GRID')
         try:
@@ -57,25 +70,24 @@ class ArcAuth(object):
      
     def enable(self):
         try:
-            # Get AAI username
-            gc3utils.log.debug("Reading AAI username from file '%s'", Default.AAI_CREDENTIAL_REPO)
-            _aaiUserName = None
-            try: 
-                _fileHandle = open(Default.AAI_CREDENTIAL_REPO, 'r')
-                _aaiUserName = _fileHandle.read()
-                _fileHandle.close()
-                _aaiUserName = _aaiUserName.strip()
-                gc3utils.log.debug("Read aaiUserName: '%s'", _aaiUserName)
-            except IOError, x:
-                gc3utils.log.error("Cannot read AAI credential file '%s': %s",
-                                   Default.AAI_CREDENTIAL_REPO, str(x), exc_info=True) 
-                # do not raise, will ask for username interactively
-
-            if _aaiUserName is None:
+            try:
+                self.aai_username
+            except AttributeError:
                 # Go interactive
-                _aaiUserName = raw_input('Insert AAI/Switch username for user '+getpass.getuser()+': ')
+                self.aai_username = raw_input('Insert AAI/Switch username for user '+getpass.getuser()+': ')
+
+            try:
+                self.idp
+            except AttributeError:
+                self.idp = raw_input('Insert AAI/Switch idp for user '+getpass.getuser()+': ')
+
+            try:
+                self.vo
+            except AttributeError:
+                self.vo = raw_input('Insert VO name for user '+getpass.getuser()+': ')
+
             # UserName set, go interactive asking password
-            input_passwd = getpass.getpass('Insert AAI/Switch password for user '+_aaiUserName+' : ')
+            input_passwd = getpass.getpass('Insert AAI/Switch password for user '+self.aai_username+' : ')
 
             gc3utils.log.debug('Checking slcs status')
             new_cert = False
@@ -84,10 +96,10 @@ class ArcAuth(object):
                 # trying renew slcs
                 # this should be an interctiave command
                 gc3utils.log.debug('No valid certificate found; trying to get new one by slcs-init ...')
-                # FIXME: hard-coded UZH stuff!
-                returncode = subprocess.call(["slcs-init", "--idp", "uzh.ch", "-u", _aaiUserName, 
-                                              "-p", input_passwd, "-k", input_passwd],
-                                             close_fds=True)
+		returncode = subprocess.call(["slcs-init", "--idp", self.idp, "-u", self.aai_username,
+						"-p", input_passwd, "-k", input_passwd],
+						close_fds=True)
+
                 if returncode != 0:
                     raise SLCSException("Got error trying to run 'slcs-init'")
                 new_cert = True
@@ -98,13 +110,13 @@ class ArcAuth(object):
                 # Try renew voms credential; another interactive command
                 gc3utils.log.debug("No valid proxy found; trying to get a new one by 'voms-proxy-init' ...")
                 p1 = subprocess.Popen(['echo',input_passwd], stdout=subprocess.PIPE)
-                p2 = subprocess.Popen(['voms-proxy-init', 
-                                       '-valid', '24:00', 
-                                       # FIXME: hard-coded value!
-                                       '-voms', 'smscg', 
+                p2 = subprocess.Popen(['voms-proxy-init',
+                                       '-valid', '24:00',
+                                       '-voms', self.vo, 
                                        '-q','-pwstdin'], 
                                       stdin=p1.stdout, 
-                                      stdout=subprocess.PIPE)
+                                      stdout=subprocess.PIPE,
+                                      stderr=open('/dev/null', 'w'))
                 p2.communicate()
                 input_passwd = None # dispose content of password
                 # variable `voms-proxy-init` may exit with status code
@@ -116,7 +128,7 @@ class ArcAuth(object):
                 returncode = subprocess.call(['voms-proxy-info', 
                                               '--exists', '--valid', '23:30', # XXX: matches 24:00 request above
                                               # FIXME: hard-coded value!
-                                              '--acexists', 'smscg'],
+                                              '--acexists', self.vo],
                                              close_fds=True)
                 if returncode != 0:
                     # Failed renewing voms credential
@@ -133,6 +145,9 @@ class ArcAuth(object):
 
 
 class SshAuth(object):
+    def __init__(self, **authorization):
+        self.__dict__.update(authorization)
+
     def check(self):
         return True
     def enable(self):
@@ -140,6 +155,9 @@ class SshAuth(object):
 
 
 class NoneAuth(object):
+    def __init__(self, **authorization):
+        self.__dict__.update(authorization)
+
     def check(self):
         return True
 
@@ -161,3 +179,7 @@ def _user_certificate_is_valid():
         return not c.IsExpired()
     except:
         return False
+
+Auth.register('ssh', SshAuth)
+Auth.register('voms', ArcAuth)
+Auth.register('none', NoneAuth)

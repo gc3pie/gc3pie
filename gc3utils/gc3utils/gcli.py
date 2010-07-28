@@ -21,11 +21,12 @@ import Authorization
 
 class Gcli:
 
-    def __init__(self, defaults, resource_list, auto_enable_auth):
+    def __init__(self, defaults, resource_list, authorization, auto_enable_auth):
         if ( len(resource_list) == 0 ):
             raise NoResources('Resource list has length 0')
         self._resources = resource_list
         self._defaults = defaults
+        self.authorization = authorization
         self.auto_enable_auth = auto_enable_auth
 
     def select_resource(self, match):
@@ -57,7 +58,7 @@ class Gcli:
 
         # gsub workflow:
         #    check input files from application
-       #    create list of LRMSs
+        #    create list of LRMSs
         #    create unique_token
         #    do Brokering
         #    submit job
@@ -100,8 +101,8 @@ class Gcli:
         job = None
         for lrms in _selected_lrms_list:
             try:
-                a = Authorization.Auth(auto_enable_auth)
-                a.get(lrms._resource.type)
+                #a = Authorization.Auth(auto_enable_auth)
+                self.authorization.get(lrms._resource.authorization_type)
                 job = lrms.submit_job(application_obj)
                 if job.is_valid():
                     gc3utils.log.info('Successfully submitted process to LRMS backend')
@@ -163,8 +164,8 @@ class Gcli:
         if not ( job_obj.status == gc3utils.Job.JOB_STATE_COMPLETED or job_obj.status == gc3utils.Job.JOB_STATE_FINISHED or job_obj.status == gc3utils.Job.JOB_STATE_FAILED or job_obj.status == gc3utils.Job.JOB_STATE_DELETED ):
             # check job status
             # gc3utils.log.debug('checking job status')
-            a = Authorization.Auth(auto_enable_auth)
-            a.get(_lrms._resource.type)                                
+            #a = Authorization.Auth(auto_enable_auth)
+            self.authorization.get(_lrms._resource.authorization_type)
             job_obj = _lrms.check_status(job_obj)
 
         return job_obj
@@ -175,8 +176,8 @@ class Gcli:
 
         _lrms = self.__get_LRMS(job_obj.resource_name)
 
-        a = Authorization.Auth(auto_enable_auth)
-        a.get(_lrms._resource.type)
+        #a = Authorization.Auth(auto_enable_auth)
+        self.authorization.get(_lrms._resource.authorization_type)
         #job_obj = _lrms.get_results(job_obj)
 
         try:
@@ -196,8 +197,8 @@ class Gcli:
         
         _lrms = self.__get_LRMS(resource_name)
 
-        a = Authorization.Auth(auto_enable_auth)
-        a.get(_lrms._resource.type)
+        #a = Authorization.Auth(auto_enable_auth)
+        self.authorization.get(_lrms._resource.authorization_type)
 
         return  _lrms.get_resource_status()
 
@@ -264,8 +265,8 @@ class Gcli:
 
         _lrms = self.__get_LRMS(job_obj.resource_name)
 
-        a = Authorization.Auth(auto_enable_auth)
-        a.get(_lrms._resource.type)
+        #a = Authorization.Auth(auto_enable_auth)
+        self.authorization.get(_lrms._resource.authorization_type)
 
         job_obj = _lrms.cancel_job(job_obj)
         gc3utils.log.debug('setting job status to DELETED')

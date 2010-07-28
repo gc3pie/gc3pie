@@ -57,10 +57,10 @@ def _get_gcli(config_file_path = _default_config_file_location, auto_enable_auth
     certainly fail unless stdin & stdout are not connected to a terminal.
     """
     try:
-        (default, resources, auto_enable_auth) = gc3utils.utils.import_config(config_file_path,
+        (default, resources, authorizations, auto_enable_auth) = gc3utils.utils.import_config(config_file_path,
                                                                               auto_enable_auth)
         gc3utils.log.debug('Creating instance of Gcli')
-        return gc3utils.gcli.Gcli(default, resources, auto_enable_auth)
+        return gc3utils.gcli.Gcli(default, resources, authorizations, auto_enable_auth)
     except NoResources:
         raise FatalError("No computational resources defined.  Please edit the configuration file '%s'." 
                          % config_file_path)
