@@ -559,4 +559,4 @@ def read_config(config_file_location):
             gc3utils.log.error("readConfig unknown configuration section '%s' ", _resource)
 
     gc3utils.log.debug('readConfig resource_list length of [ %d ]',len(resource_list))
-    return [defaults,resource_list]
+    return (defaults, resource_list, authorization_list)
