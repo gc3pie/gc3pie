@@ -119,6 +119,10 @@ class LRMSSubmitError(Error):
 
 class LRMSSshError(Error):
     pass
+
+class ConfigurationError(Error):
+    pass
+
 ## main: run tests
 
 if "__main__" == __name__:
