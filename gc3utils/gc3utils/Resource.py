@@ -25,7 +25,14 @@ class Resource(InformationContainer):
     '''
 
     def is_valid(self):
-        if self.has_key('max_cores_per_node') and self.has_key('type') and self.has_key('frontend') and self.has_key('name') and self.has_key('max_walltime') and self.has_key('max_memory_per_node') and self.has_key('total_cores'):
+        if (self.has_key('max_cores_per_node') 
+            and self.has_key('type') 
+            #and self.has_key('frontend') 
+            and self.has_key('name') 
+            and self.has_key('max_walltime') 
+            and self.has_key('max_memory_per_node') 
+            and self.has_key('total_cores')
+            ):
             return True
         else:
             return False

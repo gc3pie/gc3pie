@@ -5,19 +5,21 @@ __date__="01 May 2010"
 __copyright__="Copyright 2009, 2010 Grid Computing Competence Center - UZH/GC3"
 __version__="0.3"
 
-import utils
-import sys
-import os
-from ArcLRMS import *
-from SshLRMS import *
-import Resource
-import Default
-import Scheduler
-import Job
 import Application
-from Exceptions import *
-from fnmatch import fnmatch
 import Authorization
+import ConfigParser
+import Default
+import Job
+import Resource
+import Scheduler
+import os
+import sys
+import utils
+
+from ArcLRMS import ArcLrms
+from Exceptions import *
+from SshLRMS import SshLrms
+from fnmatch import fnmatch
 
 class Gcli:
 
@@ -53,7 +55,12 @@ class Gcli:
                                 if fnmatch(res.name, match) ]
 
 #========== Start gsub ===========
-    def gsub(self, application_obj, **kw):
+    def gsub(self, application, job=None, **kw):
+        """
+        Submit a job running an instance of the given `application`.
+        Return the `job` object, modified to refer to the submitted computational job,
+        or a new instance of the `Job` class if `job` is `None` (default).
+        """
         auto_enable_auth = kw.get('auto_enable_auth', self.auto_enable_auth)
 
         # gsub workflow:
@@ -65,13 +72,13 @@ class Gcli:
         #    return job_obj
         
         # Parsing passed arguments
-        gc3utils.log.debug('input_file(s): %s',application_obj.inputs)
-        gc3utils.log.debug('application tag: %s',application_obj.application_tag)
-        gc3utils.log.debug('application arguments: %s',application_obj.application_arguments)
+        gc3utils.log.debug('input_file(s): %s',application.inputs)
+        gc3utils.log.debug('application tag: %s',application.application_tag)
+        gc3utils.log.debug('application arguments: %s',application.arguments)
         gc3utils.log.debug('default_job_folder_location: %s',self._defaults.job_folder_location)
-        gc3utils.log.debug('requested cores: %s',str(application_obj.requested_cores))
-        gc3utils.log.debug('requested memory: %s GB',str(application_obj.requested_memory))
-        gc3utils.log.debug('requested walltime: %s hours',str(application_obj.requested_walltime))
+        gc3utils.log.debug('requested cores: %s',str(application.requested_cores))
+        gc3utils.log.debug('requested memory: %s GB',str(application.requested_memory))
+        gc3utils.log.debug('requested walltime: %s hours',str(application.requested_walltime))
 
         gc3utils.log.debug('Instantiating LRMSs')
         _lrms_list = []
@@ -81,7 +88,7 @@ class Gcli:
             except:
                 # log exceptions but ignore them
                 gc3utils.log.warning("Failed creating LRMS for resource '%s' of type '%s'",
-                                     _resource.name, h_resource.type)
+                                     _resource.name, _resource.type)
                 gc3utils.log.debug('gcli.py:gsub() got exception:', exc_info=True)
                 continue
             
@@ -91,23 +98,24 @@ class Gcli:
         gc3utils.log.debug('Performing brokering')
         # decide which resource to use
         # (Resource)[] = (Scheduler).PerformBrokering((Resource)[],(Application))
-        _selected_lrms_list = Scheduler.do_brokering(_lrms_list,application_obj)
+        _selected_lrms_list = Scheduler.do_brokering(_lrms_list,application)
         gc3utils.log.debug('Scheduler returned %d matching resources',
                            len(_selected_lrms_list))
         if 0 == len(_selected_lrms_list):
             raise NoResources("Could not select any compatible computational resource - please check log and configuration file.")
 
         # Scheduler.do_brokering should return a sorted list of valid lrms
-        job = None
         for lrms in _selected_lrms_list:
             try:
-                #a = Authorization.Auth(auto_enable_auth)
                 self.authorization.get(lrms._resource.authorization_type)
-                job = lrms.submit_job(application_obj)
+                job = lrms.submit_job(application, job)
                 if job.is_valid():
                     gc3utils.log.info('Successfully submitted process to LRMS backend')
                     # job submitted; leave loop
-                    job.job_local_dir = application_obj.job_local_dir
+                    if application.has_key('job_local_dir'):
+                        job.job_local_dir = application.job_local_dir
+                    else:
+                        job.job_local_dir = os.getcwd()
                     break
             except AuthenticationException:
                 # ignore authentication errors: e.g., we may fail some SSH connections but succeed in others
@@ -135,7 +143,6 @@ class Gcli:
        
         job_return_list = [] 
         if job_obj is None:
-
             try:
                 _list_of_runnign_jobs = self.__get_list_running_jobs()
             except:
@@ -176,9 +183,7 @@ class Gcli:
 
         _lrms = self.__get_LRMS(job_obj.resource_name)
 
-        #a = Authorization.Auth(auto_enable_auth)
         self.authorization.get(_lrms._resource.authorization_type)
-        #job_obj = _lrms.get_results(job_obj)
 
         try:
             return  _lrms.get_results(job_obj)
@@ -190,25 +195,12 @@ class Gcli:
     def glist(self,resource_name, **kw):
         """ List status of a give resource."""
         auto_enable_auth = kw.get('auto_enable_auth', self.auto_enable_auth)
-
-#        resource = self.__get_Resource(resource_name)
-#        if resource is None:
-#            raise Exceptions.ResourceNotFoundError('Resource not found')
-        
         _lrms = self.__get_LRMS(resource_name)
-
-        #a = Authorization.Auth(auto_enable_auth)
         self.authorization.get(_lrms._resource.authorization_type)
-
         return  _lrms.get_resource_status()
 
-#=========     INTERNAL METHODS ============
-#    def __get_Resource(self,resource_name):
-#        for index in range(0,len(self._resource)):
-#            if self._resource[index].name == resource_name
-#            return self._resource[index]
-#        return None
 
+#=========     INTERNAL METHODS ============
 
     def _glist(self, shortview):
         """List status of jobs."""
@@ -265,7 +257,6 @@ class Gcli:
 
         _lrms = self.__get_LRMS(job_obj.resource_name)
 
-        #a = Authorization.Auth(auto_enable_auth)
         self.authorization.get(_lrms._resource.authorization_type)
 
         job_obj = _lrms.cancel_job(job_obj)
@@ -419,7 +410,7 @@ class Gcli:
 
             for _job in _jobs_list:
                 try:
-                    _job_list.append(utils.get_job(_job))
+                    _job_list.append(Job.get_job(_job))
                 except:
                     gc3utils.log.error('Failed retrieving job information for %s',_job)
                     gc3utils.log.debug('%s',sys.exc_info()[1])
@@ -439,7 +430,7 @@ class Gcli:
         for _resource in self._resources:
             if _resource.name == resource_name:
                 # there's a matching resource
-                gc3utils.log.debug('Creating instance of type %s for %s',_resource.type,_resource.frontend)
+                gc3utils.log.debug('Creating instance of type %s for %s', _resource.type, _resource.name)
                 try:
                     if _resource.type is Default.ARC_LRMS:
                         _lrms = ArcLrms(_resource)
@@ -457,3 +448,115 @@ class Gcli:
 
         return _lrms
 #====== End
+
+
+# === Configuration File
+
+def import_config(config_file_location, auto_enable_auth=True):
+    (default_val, resources_vals, authorizations) = read_config(config_file_location)
+    return (get_defaults(default_val),
+            get_resources(resources_vals), 
+            get_authorization(authorizations,auto_enable_auth), 
+            auto_enable_auth)
+
+
+def get_authorization(authorizations,auto_enable_auth):
+    try:
+        return Authorization.Auth(authorizations, auto_enable_auth)
+    except:
+        gc3utils.log.critical('Failed initializing Authorization module')
+        raise
+
+
+def get_defaults(defaults):
+    # Create an default object for the defaults
+    # defaults is a list[] of values
+    try:
+        # Create default values
+        return gc3utils.Default.Default(defaults)
+    except:
+        gc3utils.log.critical('Failed loading default values')
+        raise
+    
+
+def get_resources(resources_list):
+    # build Resource objects from the list returned from read_config
+    #        and match with selectd_resource from comand line
+    #        (optional) if not options.resource_name is None:
+    resources = [ ]
+    try:
+        for key in resources_list.keys():
+            resource = resources_list[key]
+            gc3utils.log.debug('creating instance of Resource object... ')
+            try:
+                tmpres = gc3utils.Resource.Resource(resource)
+            except Exception, x:
+                gc3utils.log.error("rejecting resource '%s': %s: %s",
+                                   key, x.__class__.__name__, str(x))
+                continue
+            gc3utils.log.debug('Checking resource type %s',resource['type'])
+            if resource['type'] == 'arc':
+                tmpres.type = gc3utils.Default.ARC_LRMS
+            elif resource['type'] == 'ssh_sge':
+                tmpres.type = gc3utils.Default.SGE_LRMS
+            else:
+                gc3utils.log.error('No valid resource type %s',resource['type'])
+                continue
+            gc3utils.log.debug('checking validity with %s',str(tmpres.is_valid()))
+            resources.append(tmpres)
+    except:
+        gc3utils.log.critical('failed creating Resource list')
+        raise
+    return resources
+
+                                
+def read_config(config_file_location):
+    """
+    Read configuration file.
+    """
+    resource_list = { }
+    defaults = { }
+    authorization_list = { }
+
+    _configFileLocation = os.path.expandvars(config_file_location)
+    if not utils.deploy_configuration_file(_configFileLocation, "gc3utils.conf.example"):
+        # warn user
+        raise NoConfigurationFile("No configuration file '%s' was found; a sample one has been copied in that location; please edit it and define resources before you try running gc3utils commands again." % _configFileLocation)
+
+    # Config File exists; read it
+    config = ConfigParser.ConfigParser()
+    try:
+        config_file = open(_configFileLocation)
+        config.readfp(config_file)
+    except:
+        raise NoConfigurationFile("Configuration file '%s' is unreadable or malformed. Aborting." 
+                                  % _configFileLocation)
+
+    defaults = config.defaults()
+
+    _resources = config.sections()
+    for _resource in _resources:
+        _option_list = config.options(_resource)           
+        if _resource.startswith('authorization/'):
+            # handle authorization section
+            gc3utils.log.debug("readConfig adding authorization '%s' ",_resource)
+
+            # extract authorization name and register authorization dictionary
+            auth_name = _resource.split('/')[1]
+            authorization_list[auth_name] = config._sections[_resource]
+            
+        elif  _resource.startswith('resource/'):
+            # handle resource section
+            gc3utils.log.debug("readConfig adding resource '%s' ",_resource)
+
+            # extract authorization name and register authorization dictionary
+            resource_name = _resource.split('/')[1]
+            resource_list[resource_name] = config._sections[_resource]
+            resource_list[resource_name]['name'] = resource_name
+
+        else:
+            # Unhandled section
+            gc3utils.log.error("readConfig unknown configuration section '%s' ", _resource)
+
+    gc3utils.log.debug('readConfig resource_list length of [ %d ]',len(resource_list))
+    return [defaults,resource_list]

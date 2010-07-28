@@ -96,9 +96,9 @@ class ArcAuth(object):
                 # trying renew slcs
                 # this should be an interctiave command
                 gc3utils.log.debug('No valid certificate found; trying to get new one by slcs-init ...')
-		returncode = subprocess.call(["slcs-init", "--idp", self.idp, "-u", self.aai_username,
-						"-p", input_passwd, "-k", input_passwd],
-						close_fds=True)
+                returncode = subprocess.call(["slcs-init", "--idp", self.idp, "-u", self.aai_username,
+                                              "-p", input_passwd, "-k", input_passwd],
+                                             close_fds=True)
 
                 if returncode != 0:
                     raise SLCSException("Got error trying to run 'slcs-init'")
@@ -109,6 +109,7 @@ class ArcAuth(object):
             if new_cert or not _voms_proxy_is_valid():
                 # Try renew voms credential; another interactive command
                 gc3utils.log.debug("No valid proxy found; trying to get a new one by 'voms-proxy-init' ...")
+                devnull = open('/dev/null', 'w')
                 p1 = subprocess.Popen(['echo',input_passwd], stdout=subprocess.PIPE)
                 p2 = subprocess.Popen(['voms-proxy-init',
                                        '-valid', '24:00',
@@ -116,8 +117,9 @@ class ArcAuth(object):
                                        '-q','-pwstdin'], 
                                       stdin=p1.stdout, 
                                       stdout=subprocess.PIPE,
-                                      stderr=open('/dev/null', 'w'))
+                                      stderr=devnull)
                 p2.communicate()
+                devnull.close()
                 input_passwd = None # dispose content of password
                 # variable `voms-proxy-init` may exit with status code
                 # 1 even if the proxy was successfully created (e.g.,

@@ -118,7 +118,7 @@ def main():
     import gc3utils
     import gc3utils.Default
     import gc3utils.utils
-    gc3utils.utils.configuration_file_exists(gc3utils.Default.LOG_FILE_LOCATION,
+    gc3utils.utils.deploy_configuration_file(gc3utils.Default.LOG_FILE_LOCATION,
                                              "logging.conf.example")
     logging.config.fileConfig(gc3utils.Default.LOG_FILE_LOCATION, 
                               { 'RCDIR':gc3utils.Default.RCDIR,
@@ -189,5 +189,4 @@ where command is one of these:
         sys.stderr.write("%s: ERROR: %s\n" % (PROG, str(x)))
         gc3utils.log.debug("%s: %s" % (x.__class__.__name__, str(x)), 
                            exc_info=True)
-        sys.excepthook(* sys.exc_info())
         return 1

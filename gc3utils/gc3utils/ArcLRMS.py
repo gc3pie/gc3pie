@@ -52,8 +52,8 @@ class ArcLrms(LRMS):
     def is_valid(self):
         return self.isValid
 
-    def submit_job(self, application):
-        return self._submit_job_arclib(application)
+    def submit_job(self, application, job=None):
+        return self._submit_job_arclib(application, job)
 
     def _get_queues(self):
         if (not hasattr(self, '_queues')) or (not hasattr(self, '_queues_last_accessed')) \
@@ -69,51 +69,12 @@ class ArcLrms(LRMS):
             self._queues_last_updated = time.time()
         return self._queues
             
-    def _submit_job_arclib(self, application):
+    def _submit_job_arclib(self, application, job=None):
 
-        # Initialize xrsl from template   
-        if application.application_tag == 'gamess':
-            XRSL_TEMPLATE = os.path.expandvars(Default.GAMESS_XRSL_TEMPLATE)
-            # Initialize xrsl from template
-            # GAMESS_XRSL_TEMPLATE = os.path.expandvars(Default.GAMESS_XRSL_TEMPLATE)
+        # Initialize xrsl
+        xrsl = application.xrsl(self._resource)
+        gc3utils.log.debug('Application provided XRSL: %s' % xrsl)
 
-            if not os.path.exists(XRSL_TEMPLATE):
-                raise XRSLNotFoundError('XRSL %s not found' % XRSL_TEMPLATE)
-
-            # GAMESS only needs 1 input file
-            input_file_path = application.inputs[0]
-            if not os.path.isabs(input_file_path):
-                input_file_path = os.path.join(os.getcwd(), input_file_path)
-            xrsl = from_template(XRSL_TEMPLATE, 
-                                 INPUT_FILE_NAME = os.path.splitext(os.path.basename(input_file_path))[0],
-                                 INPUT_FILE_DIR = os.path.dirname(input_file_path))
-
-        elif application.application_tag == 'rosetta':
-            xrsl = application.xrsl()
-        else:
-            raise UnsupportedApplicationError('Application %s not supported' % application.application_tag)
-
-        # append requirements to XRSL file
-        if application.has_key('requested_cores') and application.requested_cores > 0:
-            _requested_cores = int(application.requested_cores)
-        else:
-            _requested_cores = int(self._resource.default_job_total_cores)
-        xrsl += '(count="%s")' % _requested_cores
-
-        # Temporarly we disable the memory request as we cannot figure out how SGE (and also the other LRMSs) handle mem requirements for parallel jobs
-        #            if application.has_key('requested_memory') and application.requested_memory > 0:
-        #                _requested_memory = int(application.requested_memory)
-        #            else:
-        #                _requested_memory = (int(self._resource.memory_per_core)*1000) * _requested_cores
-        #            xrsl += '(memory="%s")' % _requested_memory
-
-        if application.has_key('requested_walltime') and application.requested_walltime > 0:
-            _requested_walltime = int(application.requested_walltime)
-        else:
-            _requested_walltime = int(self._resource.default_job_total_walltime) * 60
-        xrsl += '(cputime="%s")' % _requested_walltime
-
-        gc3utils.log.debug('prepared xrsl: %s' % xrsl)
         # Aternative using arclib
 
         try:
@@ -135,16 +96,15 @@ class ArcLrms(LRMS):
         except arclib.JobSubmissionError:
             raise LRMSSubmitError('Got error from arclib.SubmitJob():', exc_info=True)
 
-        job = Job.Job(lrms_jobid=lrms_jobid,
-                      status=Job.JOB_STATE_SUBMITTED,
-                      resource_name=self._resource.name)
-
-        # add submssion time reference
-        job.submission_time = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
+        if job is None:
+            job = Job.Job()
+        job.lrms_jobid=lrms_jobid
+        job.status=Job.JOB_STATE_SUBMITTED
+        job.resource_name=self._resource.name
         return job
 
                                 
-    def _submit_job_exec(self, application):
+    def _submit_job_exec(self, application, job=None):
         """
         Submit job by calling the 'ngsub' command.
         """
@@ -209,7 +169,12 @@ class ArcLrms(LRMS):
                 lrms_jobid = output.split(jobid_pattern)[1]
                 gc3utils.log.debug('Job submitted with jobid: %s',lrms_jobid)
 
-                job = Job.Job(lrms_jobid=lrms_jobid,status=Job.JOB_STATE_SUBMITTED,resource_name=self._resource.name,log=output)
+                if job is None:
+                    job = Job.Job()
+                job.lrms_jobid=lrms_jobid
+                job.status=Job.JOB_STATE_SUBMITTED
+                job.resource_name=self._resource.name
+                job.log=output
                 #                job.lrms_jobid = lrms_jobid
                 #                job.status = Job.JOB_STATE_SUBMITTED
                 #                job.resource_name = self._resource.name
@@ -227,8 +192,8 @@ class ArcLrms(LRMS):
         
     def check_status(self, job_obj):
         
-        submitted_list = ['ACCEPTED','SUBMITTING','PREPARING']
-        running_list = ['INLRMS:R','INLRMS:Q','INLRMS:O','INLRMS:S','INLRMS:E','INLRMS:X','FINISHING','CANCELING','EXECUTED']
+        submitted_list = ['ACCEPTED','SUBMITTING','PREPARING','INLRMS:Q']
+        running_list = ['INLRMS:R','INLRMS:O','INLRMS:S','INLRMS:E','INLRMS:X','FINISHING','CANCELING','EXECUTED']
         finished_list = ['FINISHED','KILLED']
         failed_list = ['FAILED','DELETED']
 
@@ -287,7 +252,7 @@ class ArcLrms(LRMS):
                 _download_dir = Default.JOB_FOLDER_LOCATION + '/' + job_obj.unique_token
 
             # Prepare/Clean download dir
-            if gc3utils.utils.prepare_job_dir(_download_dir) is False:
+            if gc3utils.Job.prepare_job_dir(_download_dir) is False:
                 gc3utils.log.error('failed creating local folder %s' % _download_dir)
                 raise IOError('Failed while creating local folder %s' % _download_dir)
 
@@ -319,6 +284,7 @@ class ArcLrms(LRMS):
             gc3utils.log.error('Failure in retrieving job results [%s]',sys.exc_info()[1])
             raise
 
+
     def get_resource_status(self):
         """
         Get the status of a single resource.
@@ -336,14 +302,11 @@ class ArcLrms(LRMS):
 
         try:
             if self._resource.has_key('arc_ldap'):
-                gc3utils.log.debug('using information index: %s' % self._resource.arc_ldap)
+                gc3utils.log.debug("Getting cluster list from %s ...", self._resource.arc_ldap)
                 cls = arclib.GetClusterResources(arclib.URL(self._resource.arc_ldap),True,'',2)
             else:
+                gc3utils.log.debug("Getting cluster list from ARC's default GIIS ...")
                 cls = arclib.GetClusterResources()
-
-#            queues = arclib.GetQueueInfo(cls,arclib.MDS_FILTER_CLUSTERINFO,True,"",2)
-#            if len(queues) == 0:
-#                raise LRMSSubmitError('No ARC queues found')
 
             total_queued = 0
             free_slots = 0

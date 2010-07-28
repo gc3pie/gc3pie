@@ -18,9 +18,9 @@ def _compatible_resources(lrms_list, application):
         gc3utils.log.debug("Checking resource '%s' for compatibility with application requirements",
                            lrms._resource.name)
         if not ( # check that Application requirements are within resource limits
-            int(application.requested_cores) > int(lrms._resource.max_cores_per_job) 
-            or int(application.requested_memory) > int(lrms._resource.max_memory_per_core) 
-            or int(application.requested_walltime) > int(lrms._resource.max_walltime)
+            int(application.requested_cores) > int(lrms._resource.max_cores_per_job or sys.maxint) 
+            or int(application.requested_memory) > int(lrms._resource.max_memory_per_core or sys.maxint) 
+            or int(application.requested_walltime) > int(lrms._resource.max_walltime or sys.maxint)
            ):
             _selected_lrms_list.append(lrms)
         else:
@@ -53,6 +53,9 @@ def do_brokering(lrms_list, application):
     assert (application is not None), \
         "Scheduler.do_brokering(): expected valid `Application` object, got `None` instead."
     rs = _compatible_resources(lrms_list, application)
+    if len(rs) <= 1:
+        # shortcut: no brokering to do, just use the only resource we've got
+        return rs
     # get up-to-date resource status
     updated_resources = []
     for r in rs:

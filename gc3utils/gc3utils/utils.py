@@ -1,32 +1,17 @@
-import sys
+import gc3utils
 import os
 import os.path
-import commands
-import logging
-import logging.handlers
-import tempfile
-import getpass
 import re
+import shelve
+import sys
 import time
-import ConfigParser
-import shutil
-import getpass
-#import smtplib
-import subprocess
-#from email.mime.text import MIMEText
-sys.path.append('/opt/nordugrid/lib/python2.4/site-packages')
+
 import warnings
 warnings.simplefilter("ignore")
-from arclib import *
+
 from Exceptions import *
-import Job
-import Default
-import gc3utils
-import Authorization
+from arclib import *
 from lockfile import FileLock
-import shelve
-
-
     
 
 # ================================================================
@@ -34,6 +19,66 @@ import shelve
 #                     Generic functions
 #
 # ================================================================
+
+class defaultdict(dict):
+    """
+    A backport of `defaultdict` to Python 2.4
+    See http://docs.python.org/library/collections.html
+    """
+    def __new__(cls, default_factory=None):
+        return dict.__new__(cls)
+    def __init__(self, default_factory):
+        self.default_factory = default_factory
+    def __missing__(self, key):
+        try:
+            return self.default_factory()
+        except:
+            raise KeyError("Key '%s' not in dictionary" % key)
+    def __getitem__(self, key):
+        if not dict.__contains__(self, key):
+            dict.__setitem__(self, key, self.__missing__(key))
+        return dict.__getitem__(self, key)
+
+
+class Struct(dict):
+    """
+    A `dict`-like object, whose keys can be accessed with the usual
+    '[...]' lookup syntax, or with the '.' get attribute syntax.
+
+    Examples::
+
+      >>> a = Struct()
+      >>> a['x'] = 1
+      >>> a.x
+      1
+      >>> a.y = 2
+      >>> a['y']
+      2
+
+    Values can also be initially set by specifying them as keyword
+    arguments to the constructor::
+
+      >>> a = Struct(z=3)
+      >>> a['z']
+      3
+      >>> a.z
+      3
+    """
+    def __init__(self, initializer=None, **kw):
+        if initializer is None:
+            dict.__init__(self, **kw)
+        else:
+            dict.__init__(self, initializer, **kw)
+    def __setattr__(self, key, val):
+        self[key] = val
+    def __getattr__(self, key):
+        if self.has_key(key):
+            return self[key]
+        else:
+            raise AttributeError, "No attribute '%s' on object %s" % (key, self)
+    def __hasattr__(self, key):
+        return self.has_key(key)
+
 
 def progressive_number():
     """
@@ -56,7 +101,6 @@ def progressive_number():
     counter file, this function may block (default timeout: 30
     seconds) while trying to acquire the lock, or raise an exception
     if this fails.
-
     """
     # FIXME: should use global config value for directory
     id_filename = os.path.expanduser("~/.gc3/next_id.txt")
@@ -136,8 +180,11 @@ def check_qgms_version(minimum_version):
     return True
 
 
-def configuration_file_exists(filename, template_filename=None):
+def deploy_configuration_file(filename, template_filename=None):
     """
+    Ensure that configuration file `filename` exists; possibly
+    copying it from the specified `template_filename`.
+
     Return `True` if a file with the specified name exists in the 
     configuration directory.  If not, try to copy the template file
     over and then return `False`; in case the copy operations fails, 
@@ -169,7 +216,7 @@ def configuration_file_exists(filename, template_filename=None):
             raise NoConfigurationFile("No configuration file '%s' was found, and an attempt to create it failed. Aborting." % filename)
         except ImportError:
             raise NoConfigurationFile("No configuration file '%s' was found. Aborting." % filename)
-    
+
 
 def from_template(template, **kw):
     """
@@ -258,124 +305,6 @@ def to_bytes(s):
         return int(float(s[0:last])*k*k*k*k*k*k*k*k)
 
  
-# === Configuration File
-def import_config(config_file_location, auto_enable_auth=True):
-    (default_val,resources_vals,authorizations) = read_config(config_file_location)
-    return (get_defaults(default_val),get_resources(resources_vals), get_authorization(authorizations,auto_enable_auth), auto_enable_auth)
-
-def get_authorization(authorizations,auto_enable_auth):
-    try:
-        auth = Authorization.Auth(authorizations, auto_enable_auth)
-    except:
-        gc3utils.log.critical('Failed initializing Authorization module')
-        raise
-
-    return auth
-
-def get_defaults(defaults):
-    # Create an default object for the defaults
-    # defaults is a list[] of values
-    try:
-        # Create default values
-        default = gc3utils.Default.Default(defaults)
-    except:
-        gc3utils.log.critical('Failed loading default values')
-        raise
-        
-    return default
-    
-
-def get_resources(resources_list):
-    # build Resource objects from the list returned from read_config
-    #        and match with selectd_resource from comand line
-    #        (optional) if not options.resource_name is None:
-    resources = []
-    
-    try:
-
-        for key in resources_list.keys():
-            #        for resource in resources_list.values():
-            resource = resources_list[key]
-
-            gc3utils.log.debug('creating instance of Resource object... ')
-
-            try:
-                tmpres = gc3utils.Resource.Resource(resource)
-            except:
-                gc3utils.log.error("rejecting resource '%s'",key)
-                continue
-            
-            gc3utils.log.debug('Checking resource type %s',resource['type'])
-            if resource['type'] == 'arc':
-                tmpres.type = gc3utils.Default.ARC_LRMS
-            elif resource['type'] == 'ssh_sge':
-                tmpres.type = gc3utils.Default.SGE_LRMS
-            else:
-                gc3utils.log.error('No valid resource type %s',resource['type'])
-                continue
-            
-            gc3utils.log.debug('checking validity with %s',str(tmpres.is_valid()))
-
-            resources.append(tmpres)
-    except:
-        gc3utils.log.critical('failed creating Resource list')
-        raise
-    
-    return resources
-
-                                
-def read_config(config_file_location):
-    """
-    Read configuration file.
-    """
-
-    resource_list = {}
-    defaults = {}
-    authorization_list = {}
-
-    _configFileLocation = os.path.expandvars(config_file_location)
-    if not configuration_file_exists(_configFileLocation, "gc3utils.conf.example"):
-        # warn user
-        raise NoConfigurationFile("No configuration file '%s' was found; a sample one has been copied in that location; please edit it and define resources before you try running gc3utils commands again." % _configFileLocation)
-
-    # Config File exists; read it
-    config = ConfigParser.ConfigParser()
-    try:
-        config_file = open(_configFileLocation)
-        config.readfp(config_file)
-    except:
-        raise NoConfigurationFile("Configuration file '%s' is unreadable or malformed. Aborting." 
-                                  % _configFileLocation)
-
-    defaults = config.defaults()
-
-    _resources = config.sections()
-    for _resource in _resources:
-        _option_list = config.options(_resource)           
-	if _resource.startswith('authorization/'):
-            # handle authorization section
-            gc3utils.log.debug("readConfig adding authorization '%s' ",_resource)
-
-            # extract authorization name and register authorization dictionary
-            auth_name = _resource.split('/')[1]
-            authorization_list[auth_name] = config._sections[_resource]
-            
-	elif  _resource.startswith('resource/'):
-            # handle resource section
-            gc3utils.log.debug("readConfig adding resource '%s' ",_resource)
-
-            # extract authorization name and register authorization dictionary
-            resource_name = _resource.split('/')[1]
-            resource_list[resource_name] = config._sections[_resource]
-            resource_list[resource_name]['name'] = resource_name
-
-        else:
-            # Unhandled section
-            gc3utils.log.error("readConfig unknown configuration section '%s' ", _resource)
-
-    gc3utils.log.debug('readConfig resource_list length of [ %d ]',len(resource_list))
-    return [defaults,resource_list,authorization_list]
-
 def obtain_file_lock(joblist_location, joblist_lock):
     """
     Lock a file.
@@ -427,126 +356,6 @@ def release_file_lock(joblist_lock):
         gc3utils.log.debug('Failed removing lock due to %s',sys.exc_info()[1])
         return False
 
-#def send_email(_to,_from,_subject,_msg):
-#    try:
-#        _message = MIMEText(_msg)
-#        _message['Subject'] = _subject
-#        _message['From'] = _from
-#        _message['To'] = _to
-        
-#        s = smtplib.SMTP()
-#        s.connect()
-#        s.sendmail(_from,[_to],_message.as_string())
-#        s.quit()
-        
-#    except:
-#        logging.error('Failed sending email [ %s ]',sys.exc_info()[1])
-
-def job_status_to_string(job_status):
-    try:
-        return {
-#            Job.JOB_STATE_HOLD:    'HOLD',
-#            Job.JOB_STATE_WAIT:    'WAITING',
-#            Job.JOB_STATE_READY:   'READY',
-#            Job.JOB_STATE_ERROR:   'ERROR',
-            Job.JOB_STATE_FAILED:  'FAILED',
-#            Job.JOB_STATE_OUTPUT:  'OUTPUTTING',
-            Job.JOB_STATE_RUNNING: 'RUNNING',
-            Job.JOB_STATE_FINISHED:'FINISHED',
-#            Job.JOB_STATE_NOTIFIED:'NOTIFIED',
-            Job.JOB_STATE_SUBMITTED:'SUBMITTED',
-            Job.JOB_STATE_COMPLETED:'COMPLETED',
-            Job.JOB_STATE_DELETED: 'DELETED'
-            }[job_status]
-    except KeyError:
-        gc3utils.log.error('job status code %s unknown', job_status)
-        return 'UNKNOWN'
-
-
-def get_job(unique_token):
-    return get_job_filesystem(unique_token)
-
-def get_job_filesystem(unique_token):
-
-    handler = None
-    gc3utils.log.debug('retrieving job from %s',Default.JOBS_DIR+'/'+unique_token)
-
-    try:
-        if not os.path.exists(Default.JOBS_DIR+'/'+unique_token):
-            raise JobRetrieveError('Job not found')
-        handler = shelve.open(Default.JOBS_DIR+'/'+unique_token)
-        job = Job.Job(handler) 
-        handler.close()
-        if job.is_valid():
-            return job
-        else:
-            raise JobRetrieveError('Failed retrieving job from filesystem')
-    except:
-        if handler:
-            handler.close()
-        raise
-
-def create_job_folder_filesystem(job_folder_location,unique_token):
-    try:
-        # create_unique_token
-        unique_id = job_folder_location + '/' + unique_token
-        while os.path.exists(unique_id):
-            unique_id = unique_id + '_' + os.getgid()
-
-        gc3utils.log.debug('creating folder for job session: %s',unique_id)
-        os.makedirs(unique_id)
-    except:
-        gc3utils.log.error('Failed creating job on filesystem')
-        raise
-
-
-def persist_job(job_obj):
-    return persist_job_filesystem(job_obj)
-
-def persist_job_filesystem(job_obj):
-
-    handler = None
-    gc3utils.log.debug('dumping job in %s',Default.JOBS_DIR+'/'+job_obj.unique_token)
-    if not os.path.exists(Default.JOBS_DIR):
-        try:
-            os.makedirs(Default.JOBS_DIR)
-        except Exception, x:
-            # raise same exception but add context message
-            gc3utils.log.error("Could not create jobs directory '%s': %s" 
-                               % (Default.JOBS_DIR, x))
-            raise
-    try:
-        handler = shelve.open(Default.JOBS_DIR+'/'+job_obj.unique_token)
-        handler.update(job_obj)
-        handler.close()
-    except Exception, x:
-        gc3utils.log.error("Could not persist job %s to '%s': %s" 
-                           % (job_obj.unique_token, Default.JOBS_DIR, x))
-        if handler:
-            handler.close()
-        raise
-
-def clean_job(unique_token):
-    return clean_job_filesystem(unique_token)
-
-def clean_job_filesystem(unique_token):
-    if os.path.isfile(Default.JOBS_DIR+'/'+unique_token):
-        os.remove(Default.JOBS_DIR+'/'+unique_token)
-    return 0
-
-def prepare_job_dir(_download_dir):
-    try:
-        if os.path.isdir(_download_dir):
-            # directory exists; move it to .1
-            os.rename(_download_dir,_download_dir + "_" + create_unique_token())
-
-        os.makedirs(_download_dir)
-        return True
-
-    except:
-        gc3utils.log.error('Failed creating folder %s ' % _download_dir)
-        gc3utils.log.debug('%s %s',sys.exc_info()[0], sys.exc_info()[1])
-        return False
 
 if __name__ == '__main__':
     import doctest
