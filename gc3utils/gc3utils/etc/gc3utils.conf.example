@@ -45,6 +45,7 @@ job_log = .log
 # Example:
 #
 # [resource/gc3]
+# authorization_type = <auth_name>
 # name = gc3
 # type = arc
 # frontend = idgc3grid01.uzh.ch
@@ -65,6 +66,7 @@ job_log = .log
 #
 #
 # [resource/ocikbpra]
+# authorization_type = <auth_name>
 # total_cores = 80
 # max_cores_per_node = 8
 # max_walltime = 2
