@@ -101,6 +101,10 @@ class ArcLrms(LRMS):
         job.lrms_jobid=lrms_jobid
         job.status=Job.JOB_STATE_SUBMITTED
         job.resource_name=self._resource.name
+
+        # add submssion time reference
+        job.submission_time = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
+
         return job
 
                                 

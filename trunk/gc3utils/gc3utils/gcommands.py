@@ -166,10 +166,10 @@ def gsub(*args, **kw):
         application = gc3utils.Application.GamessApplication(
             input_file_path=args[1],
             arguments=options.application_arguments,
-            requested_memory=options.memory_per_core,
-            requested_cores=options.ncores,
+            requested_memory=int(options.memory_per_core),
+            requested_cores=int(options.ncores),
             requestd_resource=options.resource_name,
-            requested_walltime=options.walltime,
+            requested_walltime=int(options.walltime),
             job_local_dir=options.job_local_dir,
             )
     elif application_tag == 'rosetta':
