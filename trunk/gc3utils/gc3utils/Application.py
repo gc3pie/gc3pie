@@ -165,6 +165,9 @@ class Application(InformationContainer):
 
         self.rtes = get_and_remove(kw, 'rtes')
 
+        # job name
+        self.job_name = get_and_remove(kw, 'job_name')
+
         # any additional param
         InformationContainer.__init__(self, **kw)
 
@@ -218,6 +221,8 @@ class Application(InformationContainer):
             xrsl += '(memory="%d")' % (1000 * self.requested_memory)
         if self.requested_cores:
             xrsl += '(count="%d")' % self.requested_cores
+        if self.job_name:
+            xrsl += '(jobname="%s")' % self.job_name
 
         return xrsl
 
@@ -271,6 +276,8 @@ class GamessApplication(Application):
         if kw.has_key('arguments'):
             del kw['arguments']
         # build generic `Application` obj
+        # set job name
+        kw['job_name'] = input_file_name_sans
         Application.__init__(self, 
                              executable = "$GAMESS_LOCATION/nggms",
                              arguments = arguments,
