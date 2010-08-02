@@ -1,0 +1,146 @@
+The [[GC3Utils]] configuration file resides in `~/.gc3/gc3utils.conf`.
+If you try to start any GC3Utils command without having a
+configuration file, a sample one (with all resources commented out)
+will be copied to that location and an error message will be
+displayed, directing users to edit the sample file.
+
+The  gc3utils configuration file follows the format understood
+by Python `ConfigParser` objects, which is very close to the syntax
+used in MS-Windows `.INI` files.
+See http://docs.python.org/library/configparser.html 
+for reference.
+
+The GC3Libs configuration file consists of several configuration
+blocks.  Each configuration block (section) starts with a keyword in
+square brackets and contains the configuration options for a specific
+part.
+
+The following sections are used by the GC3Libs/GC3Utils programs:
+    [DEFAULT]
+    [authorization/<authorization_name>]
+    [resource/<resource_name>]
+Section with a different name can be present but will be ignored.
+
+
+= The `DEFAULT` section =
+The `DEFAULT` section is entirely optional; if present, its values can
+be used to interpolate values in other sections, using the `%(name)s` syntax.
+See documentation of the `SafeConfigParser` object at: 
+  http://docs.python.org/library/configparser.html
+
+
+= Authorization sections format =
+ authorization section begins with a line of the form:
+    [authorization/<auth_name>]
+
+You can have as many `authorization/name` sections as you want;
+this allows you to define different auths for different resources.
+Each `resource/***` section will reference one (and one only) auth
+section.
+
+Currently, there are two supported authorization types:
+  * `ssh`: use for resources that will be accessed by opening an SSH connection to the front-end node
+  * `voms`: combines use of `slcs-init` and `voms-proxy-init`: use for resources that require a VOMS-enabled Grid proxy.
+
+For `ssh` type authorization, the following keys must be provided:
+  * `type`: must be `ssh`
+  * `username`: must be the username to log in as on the remote machine
+Any other key/value pair will be ignored.
+
+For `voms` type auth, the following keys must be provided:
+  * `type`: must be `voms`
+  * `aai_username`: passed directly to `slcs-init` as argument to the `--user` command-line switch
+  * `idp`: passed directly to `slcs-init` as argument to the `--idp` command-line switch
+  * `vo`: the VO to authenticate with (passed directly to `voms-proxy-init` as argument to the `--vo` command-line switch)
+Any other key/value pair will be ignored.
+
+Examples: 
+{{{
+[authorization/smscg]
+type = voms
+aai_username= <aai_user_name>
+idp= uzh.ch
+vo = smscg
+
+[authorization/ssh1]
+type = ssh
+username = murri # your username here
+
+[authorization/ssh2] # I use a different account name on some resources
+type = ssh
+username = rmurri 
+}}}
+
+
+= The resource sections =
+Each resource section must begin with a line of the form:
+    [resource/<resource_name>]
+
+You can have as many `resource/name` sections as you want; this
+allows you to define many different resources.  Each `resource/***`
+section must reference one (and one only) `authorization/name`
+section (in the `authorization_type` key).
+
+Resources currently come in two flavours, distinguished by the value
+of the `type` key:
+  * If `type` is `arc`, then the resource is accessed using the ARC grid middleware;
+  * If `type` is `ssh_sge`, then the resource is an SGE batch system, to be accessed by an SSH connection to its front-end node.
+#
+Every `resource/***` section must reference a valid
+`authorization/***` section. Resources of `arc` type can only
+reference `voms` type auth sections; resources of `ssh_sge` type can
+only reference `ssh` type sections.
+
+Some keys are commmon to all resource types:
+  *  authorization_type : must reference the name of a valid `authorization/***` section; only the name (after the `/` must be specified)
+  *  max_cores_per_job : Maximum number of CPU cores that a job can request; a resource will be dropped during the brokering process if a job requests more cores than this
+  *  max_memory_per_core : Max amount of memory (expressed in GBs) that a job can request
+  *  max_walltime : Maximum job running time (in hours)
+  *  name : Resource name
+  *  ncores : Total number of cores provided by the resource
+  *  type : Resource type, one of `arc` or `sge_ssh`
+  *  walltime : Maximum job running time (in hours)
+
+== `arc` resources ==
+The `arc_ldap` key should be defined to the LDAP URL of an ARC GIIS
+(if no `frontend` is defined) or GRIS (if a `frontend` is given).
+If, in addition, the `frontend` key is also defined, then only queues 
+belonging to the specified frontend will be considered for brokering.
+
+== `ssh_sge` resources ==
+The `frontend` key should contain the FQDN of the SGE front-end node.
+An SSH connection will be attempted to this node, in order to submit
+jobs and retrieve status info. 
+Since the installation path to supported applications is not known (there
+is no information system, differently from ARC), then the path must be
+specified here:
+  * `gamess_location`: UNIX path name of the directory containing a valid `qgms` script
+
+
+Example:
+{{{
+[resource/gc3]
+# A single cluster, accessed through the ARC middleware
+type = arc
+authorization_type = <auth_name> # pick a `voms` type auth
+frontend = idgc3grid01.uzh.ch
+name = gc3
+arc_ldap = ldap://idgc3grid01.uzh.ch:2135/mds-vo-name=resource,o=grid
+max_cores_per_job = 32
+max_memory_per_core = 2
+max_walltime = 12
+ncores = 80
+walltime = 12
+
+[resource/ocikbpra]
+# A single SGE cluster, accessed by SSH'ing to the front-end node
+type = ssh_sge
+authorization_type = <auth_name> # pick an `ssh` type auth, e.g., "ssh1"
+frontend = ocikbpra.uzh.ch
+gamess_location = /share/apps/gamess
+max_cores_per_job = 80
+max_memory_per_core = 2
+max_walltime = 2
+ncores = 80
+walltime = 2
+}}}
