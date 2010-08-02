@@ -1,17 +1,21 @@
-import sys
-import os
-import re
-
-import Exceptions 
 import commands
 import getpass
 import logging
+import os
 import paramiko
+import random
+import re
+import sys
+import tempfile
+
+import gc3utils
+import Application
+import Default
+import Exceptions 
+import Job
+from LRMS import LRMS
 import sge
 import utils
-
-from LRMS import LRMS
-from utils import *
 
 
 def _qgms_job_name(filename):
@@ -101,42 +105,63 @@ class SshLrms(LRMS):
                     ssh.close()
                 raise
 
-        # Build up the SGE submit command.
-        submit_command = ('cd %s && qsub -cwd -S /bin/sh %s' 
-                          % (ssh_remote_folder, application.cmdline(self._resource)))
-
-        # Try to submit it to the local queueing system.
-        try:
-            gc3utils.log.debug('Running submit command: ' + submit_command)
-            exit_code, stdout, stderr = self._execute_command(ssh, submit_command)
-            ssh.close()
+        def run_ssh_command(command, msg=None):
+            """Run the specified command and raise an exception if it failed."""
+            gc3utils.log.debug(msg or ("Running remote command '%s' ..." % command))
+            exit_code, stdout, stderr = self._execute_command(ssh, command)
             if exit_code != 0:
                 gc3utils.log.critical("Failed executing remote command '%s'; exit status %d"
-                                      % (submit_command,exit_code))
+                                      % (command, exit_code))
                 gc3utils.log.debug('remote command returned stdout: %s' % stdout)
                 gc3utils.log.debug('remote command returned stderr: %s' % stderr)
-                raise paramiko.SSHException('Failed executing remote command')
+                raise paramiko.SSHException("Failed executing remote command '%s'" % command)
+            return stdout, stderr
 
+        try:
+            # Try to submit it to the local queueing system.
+            qsub, script = application.qsub(self._resource)
+            if script is not None:
+                # save script to a temporary file and submit that one instead
+                local_script_file = tempfile.NamedTemporaryFile()
+                local_script_file.write(script)
+                local_script_file.flush()
+                if application.has_key('application_tag'):
+                    script_name = '%s.%x.sh' % (application.application_tag, 
+                                                random.randint(sys.maxint))
+                else:
+                    script_name = 'script.%x.sh' % (random.randint(sys.maxint))
+                # upload script to remote location
+                sftp.put(local_script_file.name, script_name)
+                # cleanup
+                local_script_file.close()
+                if os.path.exists(local_script_file.name):
+                    os.unlink(local_script_file.name)
+                # submit it
+                qsub += ' ' + script_name
+            stdout, stderr = run_ssh_command("/bin/sh -c 'cd %s && %s'" % (ssh_remote_folder, qsub))
             lrms_jobid = self._get_qsub_jobid(stdout)
             gc3utils.log.debug('Job submitted with jobid: %s',lrms_jobid)
+            ssh.close()
 
             job_log = "\nstdout:\n" + stdout + "\nstderr:\n" + stderr
 
             if job is None:
                 job = Job.Job()
-            job.lrms_jobid=lrms_jobid
-            job.status=Job.JOB_STATE_SUBMITTED
-            job.resource_name=self._resource.name
+            job.lrms_jobid = lrms_jobid
+            job.status = Job.JOB_STATE_SUBMITTED
+            job.resource_name = self._resource.name
             job.log = job_log
             job.remote_ssh_folder = ssh_remote_folder
 
             # remember outputs for later ref
             job.outputs = dict(application.outputs)
-            job.lrms_job_name = _qgms_job_name(_input_file_name) # XXX: GAMESS-specific!
+            if isinstance(application, Application.GamessApplication):
+                # XXX: very qgms/GAMESS-specific!
+                job.lrms_job_name = _qgms_job_name(utils.first(application.inputs.values()))
             return job
 
         except:
-            if not ssh  is None:
+            if ssh is not None:
                 ssh.close()
             gc3utils.log.critical("Failure submitting job to resource '%s' - see log file for errors"
                                   % self._resource.name)
