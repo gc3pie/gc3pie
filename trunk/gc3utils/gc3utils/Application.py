@@ -229,25 +229,67 @@ class Application(InformationContainer):
 
     def cmdline(self, resource):
         """
+        Return a string, suitable for invoking the application from a
+        UNIX shell command-line.
+
+        The default implementation just concatenates `executable` and
+        `arguments` separating them with whitespace; this is hardly
+        correct for any application, so you should override this
+        method in derived classes to provide appropriate invocation
+        templates.
+        """
+        return str.join(" ", [self.executable] + self.arguments)
+
+
+    def qsub(self, resource, _suppress_warning=False, **kw):
+        # XXX: the `_suppress_warning` switch is only provided for
+        # some applications to make use of this generic method without
+        # logging the user-level warning, because, e.g., it has already
+        # been taken care in some other way (cf. GAMESS' `qgms`).
+        # Use with care and don't depend on it!
+        """
         Get an SGE ``qsub`` command-line invocation for submitting an
         instance of this application.  Return a pair `(cmd, script)`,
         where `cmd` is the command to run to submit an instance of
-        this application to the SGE batch system, and `script` -if
-        it's not `None`- is written to a new file, whose name is then
-        substituted into `cmd` using Python's ``%`` operator.
+        this application to the SGE batch system, and `script` --if
+        it's not `None`-- is written to a new file, whose name is then
+        appended to `cmd`.
 
         In the construction of the command-line invocation, one should
         assume that all the input files (as named in `Application.inputs`)
         have been copied to the current working directory, and that output
         files should be created in this same directory.
 
-        As this is highly application-specific, the default
-        implementation just raises a `NotImplemented` exception; you
-        should override this method in derived classes to provide
-        appropriate invocation templates.
-        """
-        raise NotImplementedError("Abstract method `Application.cmdline()` called - this should have been defined in a derived class.")
+        The default implementation just prefixes any output from the
+        `cmdline` method with an SGE `qsub` invocation of the form
+        '`qsub -cwd -S /bin/sh' + resource limits.  Note that *there
+        is no generic way of requesting a certain number of cores* in
+        SGE: it all depends on the installed parallel environment, and
+        these are totally under control of the local sysadmin;
+        therefore, any request for cores is ignored and a warning is
+        logged.
 
+        You definitely want to override this method in
+        application-specific classes to provide appropriate invocation
+        templates.
+        """
+        qsub = 'qsub -cwd -S /bin/sh '
+        if self.requested_walltime:
+            # SGE uses `s_rt` for wall-clock time limit, expressed in seconds
+            qsub += ' -l s_rt=%d' % (3600 * self.requested_walltime)
+        if self.requested_memory:
+            # SGE uses `mem_free` for memory limits; 'G' suffix allowed for Gigabytes
+            qsub += ' -l mem_free=%dG' % self.requested_memory
+        if self.requested_cores and not _suppress_warning:
+            # XXX: should this be an error instead?
+            gc3utils.log.warning("Application requested %d cores,"
+                                 " but there is no generic way of expressing this requirement in SGE!"
+                                 " Ignoring request, but this will likely result in malfunctioning later on.", 
+                                 self.requested_cores)
+        if self.job_name:
+            qsub += " -N '%s'" % self.job_name
+        return (qsub, self.cmdline())
+        
 
 class GamessApplication(Application):
     """
@@ -286,40 +328,46 @@ class GamessApplication(Application):
                              join=True,
                              **kw)
                              
-
-    def qgms(self, resource):
+    def qgms(self, resource, **kw):
         """
         Return a `qgms` invocation to run GAMESS-US with the
         parameters embedded in this object.
         """
-        qgms = "%s/qgms" % resource.gamess_location
+        try:
+            qgms = os.path.join(resource.gamess_location, 'qgms')
+        except AttributeError:
+            raise ConfigurationError("Missing configuration parameter `gamess_location` on resource '%s'.",
+                                     resource.name)
 
-        cores = None
-        if self.requested_cores:
-            cores = self.requested_cores
-        elif resource.ncores > 0:
-            cores = resource.ncores
-        if cores:
-            qgms += ' -n %d' % cores
-
-        wctime_in_seconds = None
         if self.requested_walltime:
-            wctime_in_seconds = self.requested_walltime * 60 * 60
-        elif resource.walltime > 0:
-            wctime_in_seconds = resource.walltime * 60 * 60
-        if wctime_in_seconds:
-            qgms += ' -i %d' % wctime_in_seconds
+            # XXX: should this be an error instead?
+            gc3utils.log.warning("Requested %d hours of wall-clock time,"
+                                 " but setting running time limits is not supported by the `qgms` script."
+                                 " Ignoring request, GAMESS job will be submitted with unspecified running time.", 
+                                 self.requested_walltime)
+        if self.requested_memory:
+            # XXX: should this be an error instead?
+            gc3utils.log.warning("Requested %d Gigabytes of memory per core,"
+                                 " but setting memory limits is not supported by the `qgms` script."
+                                 " Ignoring request, GAMESS job will be submitted with unspecified memory requirements.", 
+                                 self.requested_memory)
+        if self.requested_cores:
+            qgms += ' -n %d' % self.requested_cores
+        # silently ignore `self.job_name`: `qgms` will set it to a default
 
         # finally, add the input files
-        qgms += str.join(" ", [ os.path.basename(r) for r in self.inputs.values() ])
+        qgms += ' ' + str.join(" ", [ os.path.basename(r) for r in self.inputs.values() ])
+        return (qgms, None)
 
-        return qgms
 
+    # XXX: Assumes `qgms` is the correct way to run GAMESS on *any* batch system...
+    qsub = qgms
 
-    # Assume `qgms` is the correct way to run GAMESS on *any* batch system.
-    cmdline = qgms
-    #pbs = qgms
-    #lsf = qgms
+    
+    def cmdline(self, resource, **kw):
+        raise NotImplementedError("There is currently no way of running GAMESS directly from the command-line."
+                                  " GAMESS invocation requires too many deployment-specific parameters"
+                                  " to make a generic invocation script possible.")
 
 
 class RosettaApplication(Application):

@@ -40,6 +40,33 @@ class defaultdict(dict):
         return dict.__getitem__(self, key)
 
 
+def first(seq):
+    """
+    Return the first element of sequence or iterator `seq`.
+    Raise `TypeError` if the argument does not implement
+    either of the tweo interfaces.
+
+    Examples::
+
+      >>> s = [0, 1, 2]
+      >>> first(s)
+      0
+
+      >>> s = {'a':1, 'b':2, 'c':3}
+      >>> first(sorted(s.keys()))
+      'a'
+    """
+    try: # try iterator interface
+        return seq.next()
+    except AttributeError:
+        pass
+    try: # seq is no iterator, try indexed lookup
+        return seq[0]
+    except IndexError:
+        pass
+    raise TypeError("Argument to `first()` method needs to be iterator or sequence.")
+
+
 class Struct(dict):
     """
     A `dict`-like object, whose keys can be accessed with the usual
