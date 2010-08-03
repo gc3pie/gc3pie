@@ -1,4 +1,4 @@
-The [[GC3Utils]] configuration file resides in `~/.gc3/gc3utils.conf`.
+The [GC3Utils] configuration file resides in `~/.gc3/gc3utils.conf`.
 If you try to start any GC3Utils command without having a
 configuration file, a sample one (with all resources commented out)
 will be copied to that location and an error message will be
@@ -16,10 +16,12 @@ square brackets and contains the configuration options for a specific
 part.
 
 The following sections are used by the GC3Libs/GC3Utils programs:
+{{{
     [DEFAULT]
     [authorization/<authorization_name>]
     [resource/<resource_name>]
-Section with a different name can be present but will be ignored.
+}}}
+Sections with a different name can be present but will be ignored.
 
 
 = The `DEFAULT` section =
