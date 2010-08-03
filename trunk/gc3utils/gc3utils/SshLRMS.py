@@ -287,32 +287,11 @@ class SshLrms(LRMS):
     def get_results(self,job):
         """Retrieve results of a job."""
 
+        gc3utils.log.debug("Connecting to cluster frontend '%s' as user '%s' via SSH ...", 
+                           self._resource.frontend, self._ssh_username)
         try:
-            ''' 
-            Make sure we handle the situation when there is a '-' in the file name
-            We know the job name will be three '-' from the back of the unique_token
-            Example:
-            G-P-G.rst.restart_0-1268147228.33-fa72c57af2bbe092a0b9d95ee95aad22-schrodinger
-            '''
-            #jobname =  '-'.join( job.unique_token.split('-')[0:-3])
-
-            # Create a list of lists.
-            # Each element in the outer list is itself a list.
-            # Each inner list has 2 elements, a remote file location and a local file location.
-            # i.e. [copy_from, copy_to]
-
-            gc3utils.log.debug("Connecting to cluster frontend '%s' as user '%s' via SSH ...", 
-                               self._resource.frontend, self._ssh_username)
             ssh, sftp = self._connect_ssh(self._resource.frontend,self._ssh_username)
             
-            # todo : test that this copying works for both full and relative paths.
-
-            # Get the paths to the files on the remote and local machines.
-            #stdin, stdout, stderr = ssh.exec_command('echo $HOME')
-            #_remote_home = stdout.read().strip()
-            #_full_path_to_remote_unique_id = _remote_home+'/'+job.unique_token
-            #_full_path_to_local_unique_id = job.unique_token
-
             # If the dir no longer exists, exit.
             # todo : maybe change the status to something else
             try:
@@ -334,9 +313,7 @@ class SshLrms(LRMS):
             # Prepare/Clean download dir
             if gc3utils.Job.prepare_job_dir(_download_dir) is False:
                 # failed creating local folder
-                raise Exception('failed creating local folder')
-
-            gc3utils.log.debug('downloading job into %s',_download_dir)
+                raise Exception("failed creating download folder '%s'" % _download_dir)
 
             # copy back all files, renaming them to adhere to the ArcLRMS convention
             try: 
@@ -348,22 +325,24 @@ class SshLrms(LRMS):
                 gc3utils.log.warning("No recorded job name; will not be able to rename files accordingly")
             filename_map = { 
                 # XXX: SGE-specific?
-                ('/%s.o%s' % (jobname, job.lrms_jobid)) : ('%s.stdout' % jobname),
-                ('/%s.e%s' % (jobname, job.lrms_jobid)) : ('%s.stderr' % jobname),
+                ('%s.out' % jobname) : ('%s.o%s' % (jobname, job.lrms_jobid)),
+                ('%s.err' % jobname) : ('%s.e%s' % (jobname, job.lrms_jobid)),
                 # the following is definitely GAMESS-specific
-                ('/%s.o%s.dat' % (jobname, job.lrms_jobid)) : ('%s.dat' % jobname),
-                ('/%s.o%s.inp' % (jobname, job.lrms_jobid)) : ('%s.inp' % jobname),
+                ('%s.cosmo' % jobname) : ('%s.o%s.cosmo' % (jobname, job.lrms_jobid)),
+                ('%s.dat'   % jobname) : ('%s.o%s.dat'   % (jobname, job.lrms_jobid)),
+                ('%s.inp'   % jobname) : ('%s.o%s.inp'   % (jobname, job.lrms_jobid)),
+                ('%s.irc'   % jobname) : ('%s.o%s.irc'   % (jobname, job.lrms_jobid)),
                 }
             # copy back all files
             gc3utils.log.debug("Downloading job output into '%s' ...",_download_dir)
             for remote_path, local_path in job.outputs.items():
-                remote_path =  job.remote_ssh_folder +'/' + remote_path
-                # default to keep same file name ...
-                local_path = _download_dir +'/' + local_path
-                # ... but override if it's a known one
-                for r,l in filename_map.items():
-                    if remote_path.endswith(r):
-                        local_path = _download_dir + '/' + l
+                try:
+                    # override the remote name if it's a known variable one...
+                    remote_path = os.path.join(job.remote_ssh_folder, filename_map[remote_path])
+                except KeyError:
+                    # ...but keep it if it's not a known one
+                    remote_path = os.path.join(job.remote_ssh_folder, remote_path)
+                local_path = os.path.join(_download_dir, local_path)
                 gc3utils.log.debug("Downloading remote file '%s' to local file '%s'", 
                                    remote_path, local_path)
                 try:
@@ -374,14 +353,14 @@ class SshLrms(LRMS):
                         gc3utils.log.info("Local file '%s' already exists; will not be overwritten!",
                                           local_path)
                 except:
-                    gc3utils.log.debug('Could not copy remote file: ' + remote_path)
+                    gc3utils.log.error('Could not copy remote file: ' + remote_path)
                     raise
             # `qgms` submits GAMESS jobs with `-j y`, i.e., stdout and stderr are
             # collected into the same file; make jobname.stderr a link to jobname.stdout
             # in case some program relies on its existence
-            if not os.path.exists(_download_dir + '/' + jobname + '.stderr'):
-                os.symlink(_download_dir + '/' + jobname + '.stdout',
-                           _download_dir + '/' + jobname + '.stderr')
+            if not os.path.exists(_download_dir + '/' + jobname + '.err'):
+                os.symlink(_download_dir + '/' + jobname + '.out',
+                           _download_dir + '/' + jobname + '.err')
 
             # cleanup remote folder
             _command = "rm -rf '%s'" % job.remote_ssh_folder
