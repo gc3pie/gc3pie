@@ -433,9 +433,9 @@ class Gcli:
                 gc3utils.log.debug('Creating instance of type %s for %s', _resource.type, _resource.name)
                 try:
                     if _resource.type is Default.ARC_LRMS:
-                        _lrms = ArcLrms(_resource)
+                        _lrms = ArcLrms(_resource, self.authorization)
                     elif _resource.type is Default.SGE_LRMS:
-                        _lrms = SshLrms(_resource)
+                        _lrms = SshLrms(_resource, self.authorization)
                     else:
                         gc3utils.log.error('Unknown resource type %s',_resource.type)
                         raise Exception('Unknown resource type')
@@ -521,7 +521,7 @@ def read_config(config_file_location):
 
     # Config File exists; read it
     config = ConfigParser.ConfigParser()
-    if config_file not in config.read(config_file):
+    if _configFileLocation not in config.read(_configFileLocation):
         raise NoConfigurationFile("Configuration file '%s' is unreadable or malformed. Aborting." 
                                   % _configFileLocation)
 
