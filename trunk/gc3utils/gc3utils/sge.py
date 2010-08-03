@@ -196,9 +196,10 @@ _qsub_jobid_re = re.compile(r"Your job (?P<jobid>\d+) .+ has been submitted", re
 
 def get_qsub_jobid(qsub_output):
     """Parse the qsub output for the local jobid."""
-    match = _qsub_jobid_re.match(qsub_output)
-    if match:
-        return match.group('jobid')
-    else:
-        raise InternalError("Could not extract jobid from qsub output '%s'" % output.rstrip())
+    for line in qsub_output.split('\n'):
+        match = _qsub_jobid_re.match(line)
+        if match:
+            return match.group('jobid')
+    raise InternalError("Could not extract jobid from qsub output '%s'" 
+                        % qsub_output.rstrip())
 
