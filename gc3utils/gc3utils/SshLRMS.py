@@ -35,31 +35,41 @@ def _qgms_job_name(filename):
 
 class SshLrms(LRMS):
 
-    # todo : say why
-    isValid = 0
-    _resource = None
+    def __init__(self, resource, auths):
+        """
+        Create an `SshLRMS` instance from a `Resource` object.
 
-    def __init__(self, resource):
+        For a `Resource` object `r` to be a valid `SshLRMS` construction
+        parameter, the following conditions must be met:
+          * `r.type` must have value `Default.SGE_LRMS`;
+          * `r.frontend` must be a string, containing the FQDN of an SGE cluster submit node;
+          * `r.auth_type` must be a valid key to pass to `Authorization.get()`.
+        """
+        # XXX: should these be `InternalError` instead?
+        assert (resource.has_key('type') and resource.type == Default.SGE_LRMS), \
+            "SshLRMS.__init__(): called with a resource parameter that does not have 'type' equal to 'ssh_sge'"
+        assert resource.has_key('name'), \
+            "SshLRMS.__init__(): passed a resource parameter without a 'name' attribute."
 
-        gc3utils.log = logging.getLogger('gc3utils')
+        if not resource.has_key('frontend'):
+            raise ConfigurationError("Resource '%s' has type 'ssh_sge' but no 'frontend' attribute." 
+                                     % resource.name)
 
-        if (resource.has_key('type') 
-            and resource.type == Default.SGE_LRMS 
-            and resource.has_key('ssh_username')):
-            self._resource = resource
-            self.isValid = 1
+        self._resource = resource
 
-            # TBCK: does Ssh really needs this ?
-            self._resource.ncores = int(self._resource.ncores)
-            self._resource.max_memory_per_core = int(self._resource.max_memory_per_core) * 1000
-            self._resource.walltime = int(self._resource.walltime)
-            if self._resource.walltime > 0:
-                # Convert from hours to minutes
-                self._resource.walltime = self._resource.walltime * 60
-        else:
-            gc3utils.log.warning("Cannot create LRMS instance for resource '%s':"
-                                 " either 'type' is not 'ssh_sge', or 'ssh_username' is missing.",
-                                 resource.name)
+        auth = auths.get(resource.authorization_type)
+        self._ssh_username = auth.username
+        
+        # XXX: does Ssh really needs this ?
+        self._resource.ncores = int(self._resource.ncores)
+        self._resource.max_memory_per_core = int(self._resource.max_memory_per_core) * 1000
+        self._resource.walltime = int(self._resource.walltime)
+        if self._resource.walltime > 0:
+            # Convert from hours to minutes
+            self._resource.walltime = self._resource.walltime * 60
+
+        self.isValid = 1
+
 
     def is_valid(self):
         return self.isValid
@@ -74,7 +84,7 @@ class SshLrms(LRMS):
         # ssh user@remote_frontend 'cd unique_token ; $gamess_location -n cores input_file'
         """
         # Establish an ssh connection.
-        (ssh, sftp) = self._connect_ssh(self._resource.frontend,self._resource.ssh_username)
+        (ssh, sftp) = self._connect_ssh(self._resource.frontend,self._ssh_username)
 
         # Create the remote unique_token directory. 
         try:
@@ -185,7 +195,7 @@ class SshLrms(LRMS):
             }
         try:
             # open ssh connection
-            ssh, sftp = self._connect_ssh(self._resource.frontend,self._resource.ssh_username)
+            ssh, sftp = self._connect_ssh(self._resource.frontend,self._ssh_username)
 
             # then check the lrms_jobid with qstat
             _command = "qstat | egrep  '^ +%s'" % job.lrms_jobid
@@ -252,7 +262,7 @@ class SshLrms(LRMS):
 
     def cancel_job(self, job_obj):
         try:
-            ssh, sftp = self._connect_ssh(self._resource.frontend,self._resource.ssh_username)
+            ssh, sftp = self._connect_ssh(self._resource.frontend,self._ssh_username)
             _command = 'qdel '+job_obj.lrms_jobid
 
             exit_code, stdout, stderr = self._execute_command(ssh, _command)
@@ -292,8 +302,8 @@ class SshLrms(LRMS):
             # i.e. [copy_from, copy_to]
 
             gc3utils.log.debug("Connecting to cluster frontend '%s' as user '%s' via SSH ...", 
-                               self._resource.frontend, self._resource.ssh_username)
-            ssh, sftp = self._connect_ssh(self._resource.frontend,self._resource.ssh_username)
+                               self._resource.frontend, self._ssh_username)
+            ssh, sftp = self._connect_ssh(self._resource.frontend,self._ssh_username)
             
             # todo : test that this copying works for both full and relative paths.
 
@@ -398,7 +408,7 @@ class SshLrms(LRMS):
 
     def get_resource_status(self):
 
-        username = self._resource.ssh_username
+        username = self._ssh_username
         gc3utils.log.debug("Establishing SSH connection to '%s' as user '%s' ...", 
                            self._resource.frontend, username)
         ssh, sftp = self._connect_ssh(self._resource.frontend, username)

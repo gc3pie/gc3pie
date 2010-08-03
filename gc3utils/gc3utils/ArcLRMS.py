@@ -32,7 +32,7 @@ class ArcLrms(LRMS):
     isValid = 0
     _resource = None
 
-    def __init__(self,resource):
+    def __init__(self,resource, auths):
         gc3utils.log = logging.getLogger('gc3utils')
         
         # Normalize resource types
@@ -435,4 +435,6 @@ class ArcLrms(LRMS):
         gc3utils.log.debug("Returning information of local resoruce")
         
         # SERGIO TBCK: check whether it works by Resource(self._resource) instead
-        return Resource(resource_name=self._resource['resource_name'],total_cores=self._resource['ncores'],memory_per_core=self._resource['memory_per_core'])
+        return Resource(resource_name=self._resource['resource_name'],
+                        total_cores=self._resource['ncores'],
+                        memory_per_core=self._resource['memory_per_core'])

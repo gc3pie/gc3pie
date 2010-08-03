@@ -33,16 +33,16 @@ class Auth(object):
                         except Exception, x:
                             gc3utils.log.debug("Got exception while enabling auth '%s',"
                                                " will remember for next invocations:"
-                                               " %s: %s" % (auth_name, x.__class__.__name__, str(x)))
+                                               " %s: %s" % (auth_name, x.__class__.__name__, x))
                             a = x
                     else:
                         a = AuthenticationException("No valid credentials of type '%s'"
                                                     " and `auto_enable` not set." % auth_name)
             except KeyError:
-                a = ConfigurationError("Unknown auth '%s' - check configration file" % auth_name)
+                a = ConfigurationError("Unknown auth '%s' - check configuration file" % auth_name)
             except Exception, x:
                 a = AuthenticationException("Got error while creating auth '%s': %s: %s"
-                                            % (auth_name, x.__class__.__name__, str(x)))
+                                            % (auth_name, x.__class__.__name__, x))
 
             self.__auths[auth_name] = a
 
@@ -54,6 +54,7 @@ class Auth(object):
     @staticmethod
     def register(auth_type, ctor):
         Auth.types[auth_type] = ctor
+
 
 class ArcAuth(object):
     def __init__(self, **authorization):
