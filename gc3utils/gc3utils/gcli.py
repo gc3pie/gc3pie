@@ -514,10 +514,6 @@ def read_config(config_file_location):
     """
     Read configuration file.
     """
-    resource_list = { }
-    defaults = { }
-    authorization_list = { }
-
     _configFileLocation = os.path.expandvars(config_file_location)
     if not utils.deploy_configuration_file(_configFileLocation, "gc3utils.conf.example"):
         # warn user
@@ -525,38 +521,34 @@ def read_config(config_file_location):
 
     # Config File exists; read it
     config = ConfigParser.ConfigParser()
-    try:
-        config_file = open(_configFileLocation)
-        config.readfp(config_file)
-    except:
+    if config_file not in config.read(config_file):
         raise NoConfigurationFile("Configuration file '%s' is unreadable or malformed. Aborting." 
                                   % _configFileLocation)
 
     defaults = config.defaults()
+    resources = { }
+    authorizations = { }
 
-    _resources = config.sections()
-    for _resource in _resources:
-        _option_list = config.options(_resource)           
-        if _resource.startswith('authorization/'):
+    for sectname in config.sections():
+        if sectname.startswith('authorization/'):
             # handle authorization section
-            gc3utils.log.debug("readConfig adding authorization '%s' ",_resource)
-
+            gc3utils.log.debug("readConfig adding authorization '%s' ", sectname)
             # extract authorization name and register authorization dictionary
-            auth_name = _resource.split('/')[1]
-            authorization_list[auth_name] = config._sections[_resource]
+            auth_name = sectname.split('/', 1)[1]
+            authorizations[auth_name] = dict(config.items(sectname))
             
-        elif  _resource.startswith('resource/'):
+        elif  sectname.startswith('resource/'):
             # handle resource section
-            gc3utils.log.debug("readConfig adding resource '%s' ",_resource)
-
+            gc3utils.log.debug("readConfig adding resource '%s' ", sectname)
             # extract authorization name and register authorization dictionary
-            resource_name = _resource.split('/')[1]
-            resource_list[resource_name] = config._sections[_resource]
-            resource_list[resource_name]['name'] = resource_name
+            resource_name = sectname.split('/', 1)[1]
+            resources[resource_name] = dict(config.items(sectname))
+            resources[resource_name]['name'] = resource_name
 
         else:
-            # Unhandled section
-            gc3utils.log.error("readConfig unknown configuration section '%s' ", _resource)
+            # Unhandled sectname
+            gc3utils.log.error("readConfig unknown configuration section '%s' ", sectname)
 
-    gc3utils.log.debug('readConfig resource_list length of [ %d ]',len(resource_list))
-    return (defaults, resource_list, authorization_list)
+    gc3utils.log.debug("readConfig: read %d resources from configuration file '%s'",
+                       len(resources), _configFileLocation)
+    return (defaults, resources, authorizations)
