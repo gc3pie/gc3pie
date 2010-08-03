@@ -57,6 +57,15 @@ class InputFileError(FatalError):
     """
     pass
 
+class InternalError(Error):
+    """
+    Raised when some function cannot fulfill its duties, for reasons
+    that do not depend on the library client code.  For instance, when
+    a response string gotten from an external command cannot be parsed
+    as expected.
+    """
+    pass
+
 class InvalidUsage(FatalError):
     """
     Raised when a command is not provided all required arguments on

@@ -57,7 +57,9 @@ class SshLrms(LRMS):
                 # Convert from hours to minutes
                 self._resource.walltime = self._resource.walltime * 60
         else:
-            gc3utils.log.warning("Cannot create LRMS instance for resource '%s': either 'type' is not 'ssh_sge', or 'ssh_username' is missing.")
+            gc3utils.log.warning("Cannot create LRMS instance for resource '%s':"
+                                 " either 'type' is not 'ssh_sge', or 'ssh_username' is missing.",
+                                 resource.name)
 
     def is_valid(self):
         return self.isValid
@@ -139,7 +141,7 @@ class SshLrms(LRMS):
                 # submit it
                 qsub += ' ' + script_name
             stdout, stderr = run_ssh_command("/bin/sh -c 'cd %s && %s'" % (ssh_remote_folder, qsub))
-            lrms_jobid = self._get_qsub_jobid(stdout)
+            lrms_jobid = sge.get_qsub_jobid(stdout)
             gc3utils.log.debug('Job submitted with jobid: %s',lrms_jobid)
             ssh.close()
 
@@ -186,90 +188,57 @@ class SshLrms(LRMS):
             ssh, sftp = self._connect_ssh(self._resource.frontend,self._resource.ssh_username)
 
             # then check the lrms_jobid with qstat
-            #           testcommand = 'qstat -j %s' % job.lrms_jobid
-            _command = 'qstat | grep -i %s' % job.lrms_jobid
-            #            _command = 'qstat -j %s' % job.lrms_jobid
-
-            gc3utils.log.debug('checking remote job status with %s' % _command)
-
+            _command = "qstat | egrep  '^ +%s'" % job.lrms_jobid
+            gc3utils.log.debug("checking remote job status with '%s'" % _command)
             exit_code, stdout, stderr = self._execute_command(ssh, _command)
-            if exit_code != 0:
-                #            finished_job_patter = 'Following jobs do not exist'
-                #            if finished_job_patter in stderr:
-
-                # maybe the job is finished
-                
-                # collect accounting information
-                #job.status = Job.JOB_STATE_FINISHED
-
-                _command = 'qacct -j %s | grep -v ===' % job.lrms_jobid
-
-                gc3utils.log.debug('no job information found. trying with %s' % _command)
-                
-                exit_code, stdout, stderr = self._execute_command(ssh, _command)
-                if exit_code != 0:
-                    gc3utils.log.critical('Failed executing remote command: %s. exit status %d' % (_command,exit_code))
-                    gc3utils.log.debug('remote command returned stdout: %s' % stdout)
-                    gc3utils.log.debug('remote command returned stderr: %s' % stderr)
-                    raise paramiko.SSHException('Failed executing remote command')
-                else:
-                    # parse stdout and update job obect with detailed accounting information
-
-                    gc3utils.log.debug('parsing stdout to get job accounting information')
-                    #gc3utils.log.debug('stdout: %s' % stdout)
-
-                    for line in stdout.split('\n'):
-                        if line != '':
-                            key, value = line.split(' ', 1)
-                            value = value.strip()
-
-                            if mapping.has_key(key):
-                                job_key = mapping[key]
-                                job[job_key] = str(value)
-                            else:
-                                gc3utils.log.debug('Dropping Job information %s of value %s ' % (str(key),str(value)))
-
-                    job.status = Job.JOB_STATE_FINISHED
-                    # job_obj.cluster = arc_job.cluster
-                    # job_obj.cpu_count = arc_job.cpu_count
-                    # job_obj.exitcode = arc_job.exitcode
-                    # job_obj.job_name = arc_job.job_name
-                    # job_obj.queue = arc_job.queue
-                    # job_obj.queue_rank = arc_job.queue_rank
-                    # job_obj.requested_cpu_time = arc_job.requested_cpu_time
-                    # job_obj.requested_wall_time = arc_job.requested_wall_time
-                    # job_obj.sstderr = arc_job.sstderr
-                    # job_obj.sstdout = arc_job.sstdout
-                    # job_obj.sstdin = arc_job.sstdin
-                    # job_obj.used_cpu_time = arc_job.used_cpu_time
-                    # job_obj.used_wall_time = arc_job.used_wall_time
-                    # job_obj.used_memory = arc_job.used_memory
-                    
-            else:
-                # this is extremely fragile
-                #gc3utils.log.debug('parsing %s' % stdout)
-                # stdout_results = re.split('\n',stdout)
-                #gc3utils.log.debug('parsing %s' % stdout_results)
-
+            if exit_code == 0:
+                # parse `qstat` output
                 job_status = stdout.split('\n')[0].split()[4]
-                    
-                #                stdout_results = [ value for value in stdout_results if value != '' ]
-                #                gc3utils.log.debug('parsing %s' % stdout_results)
-                #job_status = stdout_results[4]
-
-                gc3utils.log.debug('inspecting lrms job status %s' % job_status)
-                if 'r' in job_status or 'R' in job_status or 't' in job_status or 'q' in job_status:
+                gc3utils.log.debug("translating SGE's `qstat` code '%s' to gc3utils.Job status" % job_status)
+                if 'qw' in job_status:
+                    job.status = Job.JOB_STATE_SUBMITTED
+                elif 'r' in job_status or 'R' in job_status or 't' in job_status:
                     job.status = Job.JOB_STATE_RUNNING
-                elif job_status == 'd' or job_status == 'E':
+                elif job_status == 'd':
+                    job.status = Job.JOB_STATE_DELETED
+                elif job_status == 'E':
                     job.status = Job.JOB_STATE_FAILED
-                elif job.status == 's' or job.status == 'S' or job.status == 'T' or job.status == 'w':
+                elif job.status == 's' or job.status == 'S' or job.status == 'T' or 'qh' in job.status:
                     # use JOB_STATE_UNKNOWN for the time being
                     # we need to introduce an additional stated that clarifies a sysadmin internvention is needed
                     job.status = Job.JOB_STATE_UNKNOWN
-
-                # need to set detailed job status information
-                #gc3utils.log.debug('marked job status: %s' % job.status)
-
+            else:
+                # jobs disappear from `qstat` output as soon as they are finished;
+                # we rely on `qacct` to provide information on a finished job
+                _command = 'qacct -j %s' % job.lrms_jobid
+                gc3utils.log.debug("`qstat` returned no job information; trying with '%s'" % _command)
+                exit_code, stdout, stderr = self._execute_command(ssh, _command)
+                if exit_code == 0:
+                    # parse stdout and update job obect with detailed accounting information
+                    gc3utils.log.debug('parsing stdout to get job accounting information')
+                    for line in stdout.split('\n'):
+                        # skip empty and header lines
+                        line = line.strip()
+                        if line == '' or '===' in line:
+                            continue
+                        # extract key/value pairs from `qacct` output
+                        key, value = line.split(' ', 1)
+                        value = value.strip()
+                        try:
+                            job[mapping[key]] = value
+                        except KeyError:
+                            gc3utils.log.debug("Ignoring job information '%s=%s'"
+                                               " -- no mapping defined to gc3utils.Job attributes." 
+                                               % (key,value))
+                    job.status = Job.JOB_STATE_FINISHED
+                else:
+                    # `qacct` failed as well...
+                    gc3utils.log.critical("Failed executing remote command: '%s'; exit status %d" 
+                                          % (_command,exit_code))
+                    gc3utils.log.debug('remote command returned stdout: %s' % stdout)
+                    gc3utils.log.debug('remote command returned stderr: %s' % stderr)
+                    raise paramiko.SSHException('Failed executing remote command')
+                    
             ssh.close()
             
             return job
@@ -463,22 +432,6 @@ class SshLrms(LRMS):
 
         
      ## Below are the functions needed only for the SshLrms -class.
-
-    def _get_qsub_jobid(self, output):
-        """Parse the qsub output for the local jobid."""
-        # todo : something with _output
-        # todo : make this actually do something
-
-        gc3utils.log.debug('get_qsub_jobid raw output: ' + output)
-        try:
-            lrms_jobid = output.split(" ")[2]
-            gc3utils.log.debug('get_qsub_jobid jobid: ' + lrms_jobid)
-            return lrms_jobid
-
-        except:
-            gc3utils.log.critical('could not get jobid from output')
-            lrms_jobid = False
-            raise Exceptions.SshSubmitException
 
     def _execute_command(self, ssh, command):
         """

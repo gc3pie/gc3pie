@@ -1,6 +1,7 @@
 import re
 
 import gc3utils
+from gc3utils.Exceptions import InternalError
 from gc3utils.utils import defaultdict
 
 
@@ -190,3 +191,14 @@ def count_jobs(qstat_output, whoami):
                 own_running += 1
     return (total_running, total_queued, own_running, own_queued)
         
+
+_qsub_jobid_re = re.compile(r"Your job (?P<jobid>\d+) .+ has been submitted", re.I)
+
+def get_qsub_jobid(qsub_output):
+    """Parse the qsub output for the local jobid."""
+    match = _qsub_jobid_re.match(qsub_output)
+    if match:
+        return match.group('jobid')
+    else:
+        raise InternalError("Could not extract jobid from qsub output '%s'" % output.rstrip())
+
