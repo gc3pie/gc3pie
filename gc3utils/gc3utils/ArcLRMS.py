@@ -78,7 +78,9 @@ class ArcLrms(LRMS):
         # Aternative using arclib
 
         try:
-            _xrsl = arclib.Xrsl(xrsl)
+            # ARClib cannot handle unicode strings, so convert `xrsl` to ascii
+            # XXX: should this be done in Application.xrsl() instead?
+            _xrsl = arclib.Xrsl(str(xrsl))
         except:
             #raise LRMSSubmitError('Failed in getting `Xrsl` object from arclib:', exc_info=True)
             raise LRMSSubmitError('Failed in getting `Xrsl` object from arclib:')
