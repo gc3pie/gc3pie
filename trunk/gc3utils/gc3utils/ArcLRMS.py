@@ -196,57 +196,69 @@ class ArcLrms(LRMS):
                                   % self._resource.name)
             raise
         
-    def check_status(self, job_obj):
-        
-        submitted_list = ['ACCEPTED','SUBMITTING','PREPARING','INLRMS:Q']
-        running_list = ['INLRMS:R','INLRMS:O','INLRMS:S','INLRMS:E','INLRMS:X','FINISHING','CANCELING','EXECUTED']
-        finished_list = ['FINISHED','KILLED']
-        failed_list = ['FAILED','DELETED']
+    def check_status(self, job):
+        """
+        Update `job.status` in-place to reflect the status of the
+        corresponding ARC job.
+        """
 
-        try:
-            
-            # Prototype from arclib
-            arc_job = arclib.GetJobInfo(job_obj.lrms_jobid)
+        def map_arc_status_to_gc3job_status(status):
+            try:
+                return {
+                    'ACCEPTED':Job.JOB_STATE_SUBMITTED,
+                    'SUBMITTING':Job.JOB_STATE_SUBMITTED,
+                    'PREPARING':Job.JOB_STATE_SUBMITTED,
+                    'INLRMS:Q':Job.JOB_STATE_SUBMITTED,
+                    'INLRMS:R':Job.JOB_STATE_RUNNING,
+                    'INLRMS:O':Job.JOB_STATE_RUNNING,
+                    'INLRMS:S':Job.JOB_STATE_RUNNING,
+                    'INLRMS:E':Job.JOB_STATE_RUNNING,
+                    'INLRMS:X':Job.JOB_STATE_RUNNING,
+                    'FINISHING':Job.JOB_STATE_RUNNING,
+                    'CANCELING':Job.JOB_STATE_RUNNING,
+                    'EXECUTED':Job.JOB_STATE_RUNNING,
+                    'FINISHED':Job.JOB_STATE_FINISHED,
+                    'KILLED':Job.JOB_STATE_FINISHED,
+                    'FAILED':Job.JOB_STATE_FAILED,
+                    'DELETED':Job.JOB_STATE_FAILED,
+                    }[status]
+            except KeyError:
+                # any other status is mapped to 'UNKNOWN'
+                return Job.JOB_STATE_UNKNOWN
 
-            job_obj.cluster = arc_job.cluster
-            job_obj.cpu_count = arc_job.cpu_count
-            job_obj.exitcode = arc_job.exitcode
-            job_obj.job_name = arc_job.job_name
-            job_obj.queue = arc_job.queue
-            job_obj.queue_rank = arc_job.queue_rank
-            job_obj.requested_cpu_time = arc_job.requested_cpu_time
-            job_obj.requested_wall_time = arc_job.requested_wall_time
-            job_obj.sstderr = arc_job.sstderr
-            job_obj.sstdout = arc_job.sstdout
-            job_obj.sstdin = arc_job.sstdin
-            job_obj.used_cpu_time = arc_job.used_cpu_time
-            job_obj.used_wall_time = arc_job.used_wall_time
-            job_obj.used_memory = arc_job.used_memory
-            if arc_job.submission_time.GetTime() > -1:
-                job_obj.submission_time = str(arc_job.submission_time)
-            if arc_job.completion_time.GetTime() > -1:
-                job_obj.completion_time = str(arc_job.completion_time)
-            else:
-                job_obj.completion_time = ""
+        # Prototype from arclib
+        arc_job = arclib.GetJobInfo(job.lrms_jobid)
 
-            if arc_job.status in running_list:
-                gc3utils.log.debug('job status: %s setting to RUNNING',arc_job.status)
-                job_obj.status = Job.JOB_STATE_RUNNING
-            elif arc_job.status in submitted_list:
-                gc3utils.log.debug('job status: %s setting to SUBMITTED',arc_job.status)
-                job_obj.status = Job.JOB_STATE_SUBMITTED
-            elif arc_job.status in finished_list:
-                gc3utils.log.debug('job status: %s setting to FINISHED',arc_job.status)
-                job_obj.status = Job.JOB_STATE_FINISHED
-            elif arc_job.status in failed_list:
-                gc3utils.log.debug('job status: %s setting to FAILED',arc_job.status)
-                job_obj.status = Job.JOB_STATE_FAILED
-                
-            return job_obj
+        # update status
+        # XXX: should we keep status intact in case the status is 'UNKNOWN' and retry later?
+        job.status = map_arc_status_to_gc3job_status(arc_job.status)
 
-        except:
-            gc3utils.log.critical('Failure in checking status [%s]',sys.exc_info()[1])
-            raise
+        # set time stamps
+        # XXX: use Python's `datetime` types
+        if arc_job.submission_time.GetTime() > -1:
+            job.submission_time = str(arc_job.submission_time)
+        if arc_job.completion_time.GetTime() > -1:
+            job.completion_time = str(arc_job.completion_time)
+        else:
+            job.completion_time = ""
+
+        job.arc_cluster = arc_job.cluster
+        job.arc_cpu_count = arc_job.cpu_count
+        job.arc_exitcode = arc_job.exitcode
+        job.arc_job_name = arc_job.job_name
+        job.arc_queue = arc_job.queue
+        job.arc_queue_rank = arc_job.queue_rank
+        job.arc_requested_cpu_time = arc_job.requested_cpu_time
+        job.arc_requested_wall_time = arc_job.requested_wall_time
+        job.arc_sstderr = arc_job.sstderr
+        job.arc_sstdout = arc_job.sstdout
+        job.arc_sstdin = arc_job.sstdin
+        job.arc_used_cpu_time = arc_job.used_cpu_time
+        job.arc_used_wall_time = arc_job.used_wall_time
+        job.arc_used_memory = arc_job.used_memory
+
+        return job
+
 
     def get_results(self, job_obj):
         try:
