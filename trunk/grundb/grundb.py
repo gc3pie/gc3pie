@@ -169,7 +169,7 @@ class GamessDb(object):
             refdata = float(row['Ref.'][0])
             reaction = { }
             for n,sy in enumerate(reactants):
-                if qtys[n] == '':
+                if qtys[n].strip() == '':
                     continue # skip null fields
                 reaction[sy] = int(qtys[n])
             yield (reaction, refdata)
