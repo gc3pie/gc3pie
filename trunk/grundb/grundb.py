@@ -303,7 +303,7 @@ class Grid(object):
         """
         # update status of SUBMITTED/RUNNING jobs before launching new ones, otherwise
         # we would be checking the status of some jobs twice...
-        if job.state == 'SUBMITTED' or job.state == 'RUNNING':
+        if job.state == 'SUBMITTED' or job.state == 'RUNNING' or job.state == 'UNKNOWN':
             # update state 
             try:
                 self.update_state(job)
@@ -583,17 +583,19 @@ def progress(session):
         if job.get('output_retrieved_to', None) and not job.get('output_processing_done', False):
             gamess_output = os.path.join(job.output_retrieved_to, job.molecule + '.out')
             # determine job exit status
-            termination = grep1(gamess_output, termination_re)
+            try:
+                termination = grep1(gamess_output, termination_re)
+            except IOError, ex:
+                termination = None # skip next `if`
+                job.set_state('FAILED')
+                job.set_info('Could not read GAMESS output file: %s' % str(ex))
             if termination:
                 outcome = termination.group('gamess_outcome') or termination.group('ddikick_outcome')
-                if outcome == 'ABNORMALLY':
+                if outcome == 'ABNORMALLY' or outcome == 'unexpectedly':
                     job.set_state('FAILED')
                     job.set_info(prettify(termination.group(0)))
                 elif outcome == 'NORMALLY' and job.state != 'DONE':
                     job.set_info('GAMESS terminated normally, but some error occurred in the Grid middleware; use the "ginfo" command to inspect.')
-                elif outcome == 'unexpectedly':
-                    job.set_state('FAILED')
-                    job.set_info(prettify(termination.group(0)))
                 else:
                     job.set_info(prettify(termination.group(0)))
             # get 'FINAL ENERGY' from file
