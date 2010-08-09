@@ -21,7 +21,25 @@
 Front-end script for submitting ROSETTA jobs to SMSCG.
 """
 __author__ = 'Riccardo Murri <riccardo.murri@uzh.ch>'
-__changelog__ = '''
+# summary of user-visible changes
+__changelog__ = """
+  2010-08-09:
+    * Exitcode tracks job status; use the "-b" option to get the old behavior back.
+      The new exitcode is a bitfield; the 4 least-significant bits have the following
+      meaning:
+         Bit    Meaning
+         ===    ============================================================
+         0      Set if a fatal error occurred: `grosetta` could not complete
+         1      Set if there are jobs in `FAILED` state
+         2      Set if there are jobs in `RUNNING` or `SUBMITTED` state
+         3      Set if there are jobs in `NEW` state
+      This boils down to the following rules:
+         * exitcode == 0: all jobs are `DONE`, no further `grosetta` action
+         * exitcode == 1: an error interrupted `grosetta` execution
+         * exitcode == 2: all jobs finished, but some are in `FAILED` state
+         * exitcode > 3: run `grosetta` again to progress jobs
+    * when all jobs are finished, exit `grosetta` even if the "-C" option is given
+    * Print only summary of job statuses; use the "-l" option to get the long listing
   2010-07-26:
     * Default output directory is now './' (should be less surprising to users).
     * FASC and PDBs are now collected in the output directory.
@@ -40,7 +58,7 @@ __changelog__ = '''
     * New '-N' command-line option to discard old session contents and start a new session afresh.
   2010-07-14:
     * Default session file is now './grosetta.csv', so it's not hidden to users.
-'''
+"""
 __docformat__ = 'reStructuredText'
 
 import csv
@@ -322,9 +340,11 @@ class JobCollection(dict):
         result = zerodict()
         for job in self.values():
             result[job.state] += 1
-        result['total'] = len(self)
         return result
-        
+
+    # XXX: this is not part of the to-be gc3libs class `JobCollection`:
+    # this is UI-specific code, that shall go into a derived class, 
+    # owned by the `GRosetta` code.
     def pprint(self, output=sys.stdout, session=None):
         """
         Output a summary table to stream `output`.
@@ -368,6 +388,10 @@ Options can specify a maximum number of jobs that should be in
 'SUBMITTED' or 'RUNNING' state; `grosetta` will delay submission
 of newly-created jobs so that this limit is never exceeded.
 """)
+cmdline.add_option("-b", action="store_true", dest="boolean_exitcode", default=False,
+                   help="Set exitcode to 0 or 1, depending on whether this program"
+                   " executed correctly or not, regardless of the submitted jobs status."
+                   )
 cmdline.add_option("-C", "--continuous", type="int", dest="wait", default=0,
                    metavar="INTERVAL",
                    help="Keep running, monitoring jobs and possibly submitting new ones or"
@@ -388,6 +412,9 @@ cmdline.add_option("-J", "--max-running", type="int", dest="max_running", defaul
                    metavar="NUM",
                    help="Allow no more than NUM concurrent jobs (default: %default)"
                    " to be in SUBMITTED or RUNNING state."
+                   )
+cmdline.add_option("-l", "--list", action="store_true", dest="list", default=False,
+                   help="List all submitted jobs and their statuses."
                    )
 cmdline.add_option("-m", "--memory-per-core", dest="memory_per_core", type="int", default=2, # 2 GB
                    metavar="GIGABYTES",
@@ -642,16 +669,36 @@ def main(jobs):
     except IOError, x:
         logger.error("Cannot save job status to session file '%s': %s"
                      % (session_file_name, str(x)))
-    # print results to user
-    jobs.pprint(sys.stdout)
+    ## print results to user
+    if options.list:
+        jobs.pprint(sys.stdout)
+    else:
+        print ("Status of jobs in the '%s' session:" 
+               % os.path.basename(session_file_name))
+        stats = jobs.stats()
+        total = len(jobs)
+        for state in sorted(stats.keys()):
+            print ("  %-10s  %d/%d (%.1f%%)"
+                   % (state, stats[state], total, 
+                      (100.0 * stats[state] / total)))
+    ## compute exitcode based on the running status of jobs
+    stats = jobs.stats()
+    rc = 0
+    if stats['FAILED'] > 0:
+        rc |= 2
+    if in_flight_count > 0: # there are jobs in 'RUNNING' and 'SUBMITTED' state
+        rc |= 4
+    if stats['NEW'] > 0:
+        rc |= 8
+    return rc
 
-main(jobs)
+rc = main(jobs)
 if options.wait > 0:
     try:
-        while True:
+        while rc > 3:
             time.sleep(options.wait)
-            main(jobs)
+            rc = main(jobs)
     except KeyboardInterrupt: # gracefully intercept Ctrl+C
         pass
 
-sys.exit(0)
+sys.exit(rc)
