@@ -1,14 +1,9 @@
 import sys
 import os
-import commands
-import logging
-import tempfile
-import getpass
-import re
 import time
-import ConfigParser
-import shutil
-import subprocess
+import warnings
+warnings.simplefilter("ignore")
+
 import gc3utils
 from utils import *
 from LRMS import LRMS
@@ -18,23 +13,15 @@ import Application
 import Default
 import Exceptions
 
-import warnings
-warnings.simplefilter("ignore")
-
 import arclib
  
-# -----------------------------------------------------
-# ARC lrms
-#
 
 class ArcLrms(LRMS):
-
-    isValid = 0
-    _resource = None
+    """
+    Manage jobs through the ARC middleware.
+    """
 
     def __init__(self,resource, auths):
-        gc3utils.log = logging.getLogger('gc3utils')
-        
         # Normalize resource types
         if resource.type is Default.ARC_LRMS:
             self._resource = resource
@@ -52,9 +39,6 @@ class ArcLrms(LRMS):
     def is_valid(self):
         return self.isValid
 
-    def submit_job(self, application, job=None):
-        return self._submit_job_arclib(application, job)
-
     def _get_queues(self):
         if (not hasattr(self, '_queues')) or (not hasattr(self, '_queues_last_accessed')) \
                 or (time.time() - self._queues_last_updated > self._queues_cache_time):
@@ -69,13 +53,11 @@ class ArcLrms(LRMS):
             self._queues_last_updated = time.time()
         return self._queues
             
-    def _submit_job_arclib(self, application, job=None):
+    def submit_job(self, application, job=None):
 
         # Initialize xrsl
         xrsl = application.xrsl(self._resource)
         gc3utils.log.debug('Application provided XRSL: %s' % xrsl)
-
-        # Aternative using arclib
 
         try:
             # ARClib cannot handle unicode strings, so convert `xrsl` to ascii
@@ -110,92 +92,6 @@ class ArcLrms(LRMS):
         return job
 
                                 
-    def _submit_job_exec(self, application, job=None):
-        """
-        Submit job by calling the 'ngsub' command.
-        """
-        try:
-            # Initialize xrsl from template
-            GAMESS_XRSL_TEMPLATE = os.path.expandvars(Default.GAMESS_XRSL_TEMPLATE)
-            
-            if os.path.exists(GAMESS_XRSL_TEMPLATE):
-                # GAMESS only needs 1 input file
-                input_file_path = application.inputs[0]
-                xrsl = from_template(GAMESS_XRSL_TEMPLATE,
-                                     INPUT_FILE_NAME = os.path.splitext(os.path.basename(input_file_path))[0],
-                                     INPUT_FILE_DIR = os.path.dirname(input_file_path))
-                
-                # append requirements to XRSL file
-                if ( self._resource.walltime > 0 ):
-                    gc3utils.log.debug('setting walltime...')
-                    if int(application.requested_walltime) > 0:
-                        requested_walltime = int(application.requested_walltime) * 60
-                    else:
-                        requested_walltime = self._resource.walltime
-                    xrsl += '(cputime="%s")\n' % requested_walltime
-
-                if ( self._resource.ncores > 0 ):
-                    gc3utils.log.debug('setting cores...')
-                    if int(application.requested_cores) > 0:
-                        requested_cores = int(application.requested_cores)
-                    else:
-                        requested_cores = self._resource.ncores
-                    xrsl += '(count="%s")\n' % requested_cores
-                            
-                if ( self._resource.memory_per_core > 0 ):
-                    gc3utils.log.debug('setting memory')
-                    if int(application.requested_memory) > 0:
-                        requested_memory = int(application.requested_memory) * 1000
-                    else:
-                        requested_memory = int(self._resource.memory_per_core) * 1000
-                        xrsl += '(memory="%s")\n' % requested_memory
-
-
-                # Ready for real submission
-                if ( self._resource.frontend == "" ):
-                    # frontend not defined; use the entire arc-based infrastructure
-                    _command = "ngsub -d2 -e '%s'" % xrsl
-                else:
-                    _command = "ngsub -d2 -c %s -e '%s'" % (self._resource.frontend, xrsl)
-                gc3utils.log.debug('Running ARC command: %s',_command)
-            
-                (exitcode, output) = commands.getstatusoutput(_command)
-
-                jobid_pattern = "Job submitted with jobid: "
-                if exitcode != 0 or jobid_pattern not in output:
-                    # Failed somehow
-                    gc3utils.log.error("Command '%s' failed with exitcode %d and error: %s" 
-                                       % (_command, exitcode,  output))
-                    raise Exception('failed submitting to LRMS')
-
-                # assuming submit successfull
-                gc3utils.log.debug("ngsub command\t\t[ ok ]")
-
-                # Extracting ARC jobid
-                lrms_jobid = output.split(jobid_pattern)[1]
-                gc3utils.log.debug('Job submitted with jobid: %s',lrms_jobid)
-
-                if job is None:
-                    job = Job.Job()
-                job.lrms_jobid=lrms_jobid
-                job.status=Job.JOB_STATE_SUBMITTED
-                job.resource_name=self._resource.name
-                job.log=output
-                #                job.lrms_jobid = lrms_jobid
-                #                job.status = Job.JOB_STATE_SUBMITTED
-                #                job.resource_name = self._resource.name
-                #                job.log = output
-                
-                return job
-
-            else:
-                gc3utils.log.critical('XRSL file not found %s', GAMESS_XRSL_TEMPLATE)
-                raise Exception('template file for submission script not found')
-        except:
-            gc3utils.log.critical("Failure submitting job to resource '%s'"
-                                  % self._resource.name)
-            raise
-        
     def check_status(self, job):
         """
         Update `job.status` in-place to reflect the status of the
@@ -331,6 +227,14 @@ class ArcLrms(LRMS):
             user_running = 0
             user_queued = 0
             
+            def _normalize_value(val):
+                # an ARC value may contains -1 when the subsystem cannot get/resolve it
+                # we treat then these values as 0
+                if val < 0:
+                    return 0
+                else:
+                    return val
+
             for cluster in cls:
                 queues =  arclib.GetQueueInfo(cluster,arclib.MDS_FILTER_CLUSTERINFO,True,"",1)
                 if len(queues) == 0:
@@ -341,13 +245,13 @@ class ArcLrms(LRMS):
                 list_of_jobs = arclib.GetAllJobs(cluster,True,"",1)
                 
                 for q in queues:
-                    q.grid_queued = self._normalize_value(q.grid_queued)
-                    q.local_queued = self._normalize_value(q.local_queued)
-                    q.prelrms_queued = self._normalize_value(q.prelrms_queued)
-                    q.queued = self._normalize_value(q.queued)
+                    q.grid_queued = _normalize_value(q.grid_queued)
+                    q.local_queued = _normalize_value(q.local_queued)
+                    q.prelrms_queued = _normalize_value(q.prelrms_queued)
+                    q.queued = _normalize_value(q.queued)
 
-                    q.cluster.used_cpus = self._normalize_value(q.cluster.used_cpus)
-                    q.cluster.total_cpus = self._normalize_value(q.cluster.total_cpus)
+                    q.cluster.used_cpus = _normalize_value(q.cluster.used_cpus)
+                    q.cluster.total_cpus = _normalize_value(q.cluster.total_cpus)
 
                     # total_queued
                     total_queued = total_queued +  q.grid_queued + q.local_queued + q.prelrms_queued + q.queued
@@ -355,8 +259,6 @@ class ArcLrms(LRMS):
                     # free_slots
                     # free_slots - free_slots + ( q.total_cpus - q.running )
                     free_slots = free_slots + min((q.total_cpus - q.running),(q.cluster.total_cpus - q.cluster.used_cpus))
-                    # Obsolete this because free slots is a queue related concept and not a cluster one
-                    # free_slots = free_slots + q.cluster.total_cpus - q.cluster.used_cpus
 
                 # user_running and user_queued
                 for job in list_of_jobs:
@@ -400,55 +302,4 @@ class ArcLrms(LRMS):
         arclib.CancelJob(job_obj.lrms_jobid)
         return job_obj
 
-# ========== Internal methods =============
 
-    def _normalize_value(self, val):
-        # an ARC value may contains -1 when the subsystem cannot get/resolve it
-        # we treat then these values as 0
-        if val < 0:
-            return 0
-        else:
-            return val
-
-    def _get_xrsl(self, application):
-
-        xrsl = application.xrsl()
-
-        # append requirements to XRSL file
-        if ( self._resource.walltime > 0 ):
-            gc3utils.log.debug('setting walltime...')
-            if int(application.requested_walltime) > 0:
-                requested_walltime = int(application.requested_walltime) * 60
-            else:
-                requested_walltime = self._resource.walltime
-            xrsl += '(cputime="%s")\n' % requested_walltime
-            
-        if ( self._resource.ncores > 0 ):
-            gc3utils.log.debug('setting cores...')
-            if int(application.requested_cores) > 0:
-                requested_cores = int(application.requested_cores)
-            else:
-                requested_cores = self._resource.ncores
-            xrsl += '(count="%s")\n' % requested_cores
-
-        if ( self._resource.memory_per_core > 0 ):
-            gc3utils.log.debug('setting memory')
-            if int(application.requested_memory) > 0:
-                requested_memory = int(application.requested_memory) * 1000
-            else:
-                requested_memory = int(self._resource.memory_per_core) * 1000
-            xrsl += '(memory="%s")\n' % requested_memory
-
-        try:
-            _xrsl = arclib.Xrsl(xrsl)
-            return _xrsl
-        except:
-            raise LRMSSubmitError('Failed while building Xrsl: %s' % sys.exc_info()[1])
-
-    def GetResourceStatus(self):
-        gc3utils.log.debug("Returning information of local resoruce")
-        
-        # SERGIO TBCK: check whether it works by Resource(self._resource) instead
-        return Resource(resource_name=self._resource['resource_name'],
-                        total_cores=self._resource['ncores'],
-                        memory_per_core=self._resource['memory_per_core'])
