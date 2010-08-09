@@ -113,11 +113,22 @@ belonging to the specified frontend will be considered for brokering.
 The `frontend` key should contain the FQDN of the SGE front-end node.
 An SSH connection will be attempted to this node, in order to submit
 jobs and retrieve status info. 
+
 Since the installation path to supported applications is not known (there
 is no information system, differently from ARC), then the path must be
 specified here:
   * `gamess_location`: UNIX path name of the directory containing a valid `qgms` script
 
+When a job has finished, the SGE batch system does not (by default)
+immediately write its information into the accounting database.  This
+creates a time window during which no information is reported about
+the job by SGE, as if it never existed.  In order not to mistake this
+for a "job lost" error, GC3Libs allow a "grace time": `qacct` job
+information lookups are allowed to fail for a certain time span after
+the first time `qstat` failed. The duration of this time span is set
+with the `sge_accounting_delay` parameter, whose default is 15 seconds
+(matches the default in SGE, as of release 6.2): 
+  * `sge_accounting_delay`: Time (in seconds) a failure in `qacct` will not be considered critical
 
 Example:
 {{{
