@@ -43,8 +43,8 @@ from the GC3 svn repository into their own python environment.
      
        mkdir src
        cd src/
-       svn co https://ocikbfs.uzh.ch/svn/gc3utils/trunk/grosetta
-       svn co https://ocikbfs.uzh.ch/svn/gc3utils/branches/ticket93 gc3utils
+       svn co http://gc3pie.googlecode.com/svn/trunk/gc3utils
+       svn co http://gc3pie.googlecode.com/svn/trunk/grosetta
    
   
 4. Install the ``gc3utils`` in "develop" mode, so any modification
