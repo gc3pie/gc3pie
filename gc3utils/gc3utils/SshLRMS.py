@@ -1,5 +1,3 @@
-import commands
-import getpass
 import logging
 import os
 import paramiko
@@ -7,6 +5,7 @@ import random
 import re
 import sys
 import tempfile
+import time
 
 import gc3utils
 import Application
@@ -56,6 +55,8 @@ class SshLrms(LRMS):
                                      % resource.name)
 
         self._resource = resource
+        # set defaults
+        self._resource.setdefault('sge_accounting_delay', 15)
 
         auth = auths.get(resource.authorization_type)
         self._ssh_username = auth.username
@@ -203,7 +204,7 @@ class SshLrms(LRMS):
             exit_code, stdout, stderr = self._execute_command(ssh, _command)
             if exit_code == 0:
                 # parse `qstat` output
-                job_status = stdout.split('\n')[0].split()[4]
+                job_status = stdout.split()[4]
                 gc3utils.log.debug("translating SGE's `qstat` code '%s' to gc3utils.Job status" % job_status)
                 if 'qw' in job_status:
                     job.status = Job.JOB_STATE_SUBMITTED
@@ -243,11 +244,21 @@ class SshLrms(LRMS):
                     job.status = Job.JOB_STATE_FINISHED
                 else:
                     # `qacct` failed as well...
-                    gc3utils.log.critical("Failed executing remote command: '%s'; exit status %d" 
-                                          % (_command,exit_code))
-                    gc3utils.log.debug('remote command returned stdout: %s' % stdout)
-                    gc3utils.log.debug('remote command returned stderr: %s' % stderr)
-                    raise paramiko.SSHException('Failed executing remote command')
+                    try:
+                        if (time.time() - job.sge_qstat_failed_at) > self._resource.sge_accounting_delay:
+                            # accounting info should be there, if it's not then job is definitely lost
+                            gc3utils.log.critical("Failed executing remote command: '%s'; exit status %d" 
+                                                  % (_command,exit_code))
+                            gc3utils.log.debug('remote command returned stdout: %s' % stdout)
+                            gc3utils.log.debug('remote command returned stderr: %s' % stderr)
+                            raise paramiko.SSHException("Failed executing remote command: '%s'; exit status %d" 
+                                                        % (_command,exit_code))
+                        else:
+                            # do nothing, let's try later...
+                            pass
+                    except AttributeError:
+                        # this is the first time `qstat` fails, record a timestamp and retry later
+                        job.sge_qstat_failed_at = time.time()
                     
             ssh.close()
             

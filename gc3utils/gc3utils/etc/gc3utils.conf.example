@@ -73,4 +73,7 @@ debug = 0
 # max_memory_per_core = 2
 # max_walltime = 2
 # ncores = 80
+# # see http://gridengine.info/2005/11/04/immediate-accounting-data-flushing
+# # if you need to lower this
+# sge_accounting_delay = 15 
 # walltime = 2
