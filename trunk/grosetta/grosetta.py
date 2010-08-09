@@ -701,4 +701,6 @@ if options.wait > 0:
     except KeyboardInterrupt: # gracefully intercept Ctrl+C
         pass
 
+if options.boolean_exitcode:
+    rc &= 1
 sys.exit(rc)
