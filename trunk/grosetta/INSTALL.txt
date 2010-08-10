@@ -26,7 +26,27 @@ from the GC3 svn repository into their own python environment.
       wget http://bitbucket.org/ianb/virtualenv/get/tip.gz#egg=virtualenv-tip
       tar -xzf tip.gz && rm tip.gz 
       cd virtualenv/
+ 
+    If you are installing as `root`, the following command is all you
+    need:
+
       python setup.py install
+
+    If instead you are installing as a normal, unprivileged user,
+    things get more complicated:
+
+      export PYTHONPATH=$HOME/lib/python:$PYTHONPATH
+      export PATH=$PATH:$HOME/bin
+      mkdir -p $HOME/lib/python
+      python setup.py install --user
+
+    (You will also need to add the two `export` lines above to the
+    `$HOME/.bashrc` file -if using the `bash` shell- or to the
+    `$HOME/.cshrc` file -if using the `tcsh` shell.)
+
+    In any case, once `virtualenv` has been installed, you can exit
+    its directory and remove it:
+   
       cd ..
       rm -rf virtualenv
 
@@ -51,7 +71,7 @@ from the GC3 svn repository into their own python environment.
    pulled from subversion is immediately reflected in the running environment::
 
        cd gc3utils/
-       ./setup.py develop 
+       env CC=gcc ./setup.py develop 
        cd ..
 
 
