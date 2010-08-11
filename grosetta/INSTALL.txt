@@ -38,7 +38,7 @@ from the GC3 svn repository into their own python environment.
       export PYTHONPATH=$HOME/lib/python:$PYTHONPATH
       export PATH=$PATH:$HOME/bin
       mkdir -p $HOME/lib/python
-      python setup.py install --user
+      python setup.py install --home $HOME
 
     (You will also need to add the two `export` lines above to the
     `$HOME/.bashrc` file -if using the `bash` shell- or to the
@@ -72,13 +72,14 @@ from the GC3 svn repository into their own python environment.
 
        cd gc3utils/
        env CC=gcc ./setup.py develop 
-       cd ..
+       cd .. # back into the `src` directory
 
 
 5. Create a symlink to the ``grosetta`` script in the ``bin/``
    directory::
 
-       ln -s ../src/grosetta/grosetta.py ../bin/grosetta
+       cd .. # back into the `grosetta` directory
+       ln -s `pwd`/src/grosetta/grosetta.py bin/grosetta
 
    
 
