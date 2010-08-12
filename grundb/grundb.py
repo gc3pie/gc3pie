@@ -2,7 +2,7 @@
 #
 """
 An interface for starting GAMESS analyses of molecules in the online
-GMTKN24 database (http://toc.uni-muenster.de/GMTKN/GMTKNmain.html).
+GAMESS.UZH database (http://ocikbfcs.uzh.ch/...).
 """
 __author__ = 'Riccardo Murri <riccardo.murri@uzh.ch>'
 __changelog__ = '''
@@ -122,9 +122,9 @@ class GamessDb(object):
 
     def get_geometries(self, subset, output_dir='geometries'):
         """
-        Download geometry files for the specified GMTKN24 subset,
-        and save them into the 'geometries/' subdirectory of the
-        current working directory.
+        Download geometry files for the specified GAMESS.UZH subset,
+        and save them into a `output_dir` subdirectory of the current
+        working directory.
 
         Return list of extracted molecules/filenames.
         """
@@ -175,7 +175,9 @@ class GamessDb(object):
             yield (reaction, refdata)
 
 
-## imported from grosetta
+### THE FOLLOWING CODE IS COMMON WITH `grosetta` 
+### (AND SHOULD BE KEPT IN SYNC WITH IT)
+### It will be merged into `gc3utils` someday.
 
 def zerodict():
     """
@@ -413,13 +415,11 @@ class JobCollection(dict):
     def stats(self):
         """
         Return a dictionary mapping each state name into the count of
-        jobs in that state; an additional key 'total' maps to the
-        total number of jobs in this collection.
+        jobs in that state.
         """
         result = zerodict()
         for job in self.values():
             result[job.state] += 1
-        result['total'] = len(self)
         return result
         
     def pprint(self, output=sys.stdout, session=None):
@@ -438,6 +438,8 @@ class JobCollection(dict):
             for job in self.values():
                 output.write("%-15s  %-18s  %-s\n" % 
                              (os.path.basename(job.id), ('%s (%s)' % (job.state, job.jobid)), job.info))
+
+### END OF COMMON CODE PART
 
 
 ## GMTKN24's main routines
@@ -490,11 +492,14 @@ def new(subset, session, template_file_name):
         os.mkdir(session_out_dir)
     template = read_file_contents(template_file_name)
     # download geometries
-    logger.info("Downloading %s geometries into '%s' ...", subset, session_inp_dir)
-    molecules = GamessDb().get_geometries(subset, session_inp_dir)
+    subset_inp_dir = os.path.join(session_inp_dir, subset)
+    if not os.path.exists(subset_inp_dir):
+        os.mkdir(subset_inp_dir)
+    logger.info("Downloading %s geometries into '%s' ...", subset, subset_inp_dir)
+    molecules = GamessDb().get_geometries(subset, subset_inp_dir)
     # prefix them with the GAMESS file snippet
     for name in molecules:
-        dest_file_name = os.path.join(session_inp_dir, name + '.inp')
+        dest_file_name = os.path.join(subset_inp_dir, name + '.inp')
         geometry = read_file_contents(dest_file_name)
         inp = open(dest_file_name, 'w')
         inp.write(template)
@@ -506,7 +511,7 @@ def new(subset, session, template_file_name):
     logger.info("Loaded %d jobs from session file.", len(jobs))
     # append new jobs
     for name in molecules:
-        inp_file_name = os.path.join(session_inp_dir, name + '.inp')
+        inp_file_name = os.path.join(subset_inp_dir, name + '.inp')
         # XXX: order of the following statements *is* important!
         new_job = Job(
             id = name,
@@ -595,7 +600,8 @@ def progress(session):
                     job.set_state('FAILED')
                     job.set_info(prettify(termination.group(0)))
                 elif outcome == 'NORMALLY' and job.state != 'DONE':
-                    job.set_info('GAMESS terminated normally, but some error occurred in the Grid middleware; use the "ginfo" command to inspect.')
+                    job.set_info("GAMESS terminated normally, but some error occurred in the Grid middleware;"
+                                 " use the 'ginfo %s' command to inspect." % job.jobid)
                 else:
                     job.set_info(prettify(termination.group(0)))
             # get 'FINAL ENERGY' from file
