@@ -11,6 +11,9 @@
    http://docutils.sf.net/rst.html for more information
 
 
+Installation
+============
+
 These instructions show how to install the ``grosetta`` script
 from the GC3 svn repository into their own python environment.
 
@@ -81,7 +84,33 @@ from the GC3 svn repository into their own python environment.
        cd .. # back into the `grosetta` directory
        ln -s `pwd`/src/grosetta/grosetta.py bin/grosetta
 
+
    
+Upgrade
+=======
+
+These instructions show how to upgrade the ``grosetta`` script to the
+latest version found in the GC3 svn repository.
+
+1. `cd` to the directory containing the `grosetta` virtualenv;
+   assuming it's named ``grosetta`` as in the above installation
+   instructions, you can issue the commands::
+
+     cd grosetta/src
+
+2. Upgrade the `grosetta` source:
+
+     cd grosetta
+     svn up
+     cd ..
+
+3. Upgrade the `gc3utils` source and run the `setup.py` script again:
+
+     cd gc3utils
+     svn up
+     env CC=gcc ./setup.py develop
+     cd ..
+
 
 
 .. (for Emacs only)
