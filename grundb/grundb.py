@@ -92,7 +92,7 @@ class GamessDb(object):
     """
     Interact with the online web pages of the GAMESS.UZH DB.
     """
-    BASE_URL = 'http://ocikbfcs.uzh.ch/xxx'
+    BASE_URL = 'http://ocikbfcs.uzh.ch/gamess.uzh'
     def __init__(self):
         # initialization
         self._browser = Browser()
