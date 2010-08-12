@@ -110,32 +110,38 @@ def get_job(unique_token):
     return get_job_filesystem(unique_token)
 
 def get_job_filesystem(unique_token):
+    job_file = os.path.join(Default.JOBS_DIR, unique_token)
+    gc3utils.log.debug('retrieving job from %s', job_file)
 
+    if not os.path.exists(job_file):
+        raise JobRetrieveError("No '%s' file found in directory '%s'" 
+                               % (unique_token, Default.JOBS_DIR))
+    # XXX: this should become `with handler = ...:` as soon as we stop
+    # supporting Python 2.4
     handler = None
-    gc3utils.log.debug('retrieving job from %s',Default.JOBS_DIR+'/'+unique_token)
-
     try:
-        if not os.path.exists(Default.JOBS_DIR+'/'+unique_token):
-            raise JobRetrieveError('Job not found')
-        handler = shelve.open(Default.JOBS_DIR+'/'+unique_token)
+        handler = shelve.open(job_file)
         job = Job(handler) 
         handler.close()
-        if job.is_valid():
-            return job
-        else:
-            raise JobRetrieveError('Failed retrieving job from filesystem')
-    except:
-        if handler:
-            handler.close()
-        raise
+    except Exception, x:
+        if handler is not None:
+            try:
+                handler.close()
+            except:
+                pass # ignore errors
+        raise JobRetrieveError("Failed retrieving job from filesystem: %s: %s"
+                               % (x.__class__.__name__, str(x)))
+    if job.is_valid():
+        return job
+    else:
+        raise JobRetrieveError("Got invalid job from file '%s'" % job_file)
 
 def persist_job(job_obj):
     return persist_job_filesystem(job_obj)
 
 def persist_job_filesystem(job_obj):
-
-    handler = None
-    gc3utils.log.debug('dumping job in %s',Default.JOBS_DIR+'/'+job_obj.unique_token)
+    job_file = os.path.join(Default.JOBS_DIR, job_obj.unique_token)
+    gc3utils.log.debug("dumping job into file '%s'", job_file)
     if not os.path.exists(Default.JOBS_DIR):
         try:
             os.makedirs(Default.JOBS_DIR)
@@ -144,15 +150,19 @@ def persist_job_filesystem(job_obj):
             gc3utils.log.error("Could not create jobs directory '%s': %s" 
                                % (Default.JOBS_DIR, x))
             raise
+    handler = None
     try:
-        handler = shelve.open(Default.JOBS_DIR+'/'+job_obj.unique_token)
+        handler = shelve.open(job_file)
         handler.update(job_obj)
         handler.close()
     except Exception, x:
-        gc3utils.log.error("Could not persist job %s to '%s': %s" 
-                           % (job_obj.unique_token, Default.JOBS_DIR, x))
-        if handler:
-            handler.close()
+        gc3utils.log.error("Could not persist job %s to '%s': %s: %s" 
+                           % (job_obj.unique_token, Default.JOBS_DIR, x.__class__.__name__, x))
+        if handler is not None:
+            try:
+                handler.close()
+            except:
+                pass # ignore errors
         raise
 
 def clean_job(unique_token):
