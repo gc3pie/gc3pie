@@ -73,12 +73,41 @@ def gsingle(*args, **kw):
         sys.stdout.write('Can not locate file \'%s\'\n'%(options.file))
         return
  
-    gsingle = GSingle.create([options.file], options.app_tag)
-    if gsingle:
-        sys.stdout.write('Successfully create GSingle %s\n'%(gsingle.id))
+    task = GSingle.create([options.file], options.app_tag)
+    if task:
+        sys.stdout.write('Successfully create GSingle %s\n'%(task.id))
     else:
         sys.stdout.write('Error occured while creating a GSingle\n')
     sys.stdout.flush()
+
+def ghessian(*args, **kw):
+    from htpie.usertasks.ghessian import GHessian
+
+    config = _configure_system()
+    #Set up command line options
+    usage = "usage: %prog [options] arg"
+    parser = OptionParser(usage)
+    parser.add_option("-f", "--file", dest="file",default='examples/water_UHF_gradient.inp', 
+                      help="gamess inp to restart from.")
+    parser.add_option("-v", "--verbose", action='count', dest="verbosity", default=config.verbosity, 
+                      help="add more v's to increase log output.")
+    parser.add_option("-a", "--application", dest="app_tag", default='gamess', 
+                      help="add more v's to increase log output.")
+    (options, args) = parser.parse_args()
+
+    configure_logger(options.verbosity, _default_log_file_location) 
+
+    if not os.path.isfile(options.file):
+        sys.stdout.write('Can not locate file \'%s\'\n'%(options.file))
+        return
+ 
+    task = GHessian.create(options.file, options.app_tag)
+    if task:
+        sys.stdout.write('Successfully create GHessian %s\n'%(task.id))
+    else:
+        sys.stdout.write('Error occured while creating a GHessian\n')
+    sys.stdout.flush()
+    
 
 def gtaskscheduler(*args, **kw):
     from htpie.usertasks.taskscheduler import TaskScheduler
@@ -95,9 +124,9 @@ def gtaskscheduler(*args, **kw):
     configure_logger(options.verbosity, _default_log_file_location) 
 
     task_scheduler = TaskScheduler()
-    sys.stdout.write('Running')
+    sys.stdout.write('Running\n')
     task_scheduler.run()
-    sys.stdout.write('Done')
+    sys.stdout.write('Done\n')
     sys.stdout.flush()
 
 def gcontrol(*args, **kw):

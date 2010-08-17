@@ -25,7 +25,7 @@ class TaskScheduler(object):
             fsm_class = the_classes[1]
             fsm = fsm_class()
             task_name = fsm.name.replace('StateMachine', '')
-            to_process = node_class.doc().find({'transition':statemachine.Transitions.PAUSED, '_type': task_name, '_lock':''})
+            to_process = node_class.doc().find({'transition':statemachine.Transitions.PAUSED, '_type': task_name})
             htpie.log.debug('%d %s task(s) are going to be processed'%(to_process.count(),  task_name))
             for a_node in to_process:
                 counter += 1

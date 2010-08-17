@@ -122,7 +122,7 @@ class GHessianStateMachine(statemachine.StateMachine):
         self.task.result.hessian.matrix = postprocess_result
         
         dir = utils.generate_temp_dir()
-        f_list = self.task.attachment.mk_local_copy('input')
+        f_list = self.task.mk_local_copy('input')
         
         f_ghessian = '%s/ghessian_%s'%(dir, os.path.basename(f_list[0].name))
         atoms, params = app.parse_input(f_list[0])
