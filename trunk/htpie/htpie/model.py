@@ -167,7 +167,7 @@ class MongoMatrix(MongoAttachObj):
             if not hasattr(self, '_id'):
                 return self._l_matrix
             else:
-                self._get_attach('matrix')
+                np_matrix = self._get_attach('matrix')
             return np_matrix
         def fset(self, np_matrix):
             if not hasattr(self, '_id'):
@@ -255,7 +255,7 @@ class Task(MongoBase):
                     found = True
                     break
             if not found:
-                doc = Task.get_doc(dbref.id)
+                doc = Task.load(dbref.id)
                 self._l_children.append(doc)
         return tuple(self._l_children)
     

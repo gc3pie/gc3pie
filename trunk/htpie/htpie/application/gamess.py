@@ -572,7 +572,7 @@ class GamessApplication(application.Application):
     @staticmethod
     def write_input(f_container, atoms, params):
         try:
-            a_file = utils.verify_file_container(f_container)
+            a_file = utils.verify_file_container(f_container, 'w')
             writer = GamessWriteInp()
             writer.write(a_file, atoms, params)
         finally:
@@ -581,7 +581,7 @@ class GamessApplication(application.Application):
     @staticmethod
     def build_gamess_matrix(f_container, mat):
         try:
-            a_file = utils.verify_file_container(f_container)
+            a_file = utils.verify_file_container(f_container, 'w')
             writer = GamessWriteInp()
             writer.build_gamess_matrix(a_file, mat)
         finally:

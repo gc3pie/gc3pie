@@ -8,23 +8,23 @@ import ConfigParser
 def generate_temp_dir(uid=None, subdir=None):
     import tempfile
     import os
+    rootdir = tempfile.gettempdir()
     if uid:
-        rootdir = '%s/%s'%(tempfile.gettempdir(), uid)
-    else:
-        rootdir = tempfile.mkdtemp()
+        rootdir += '/' + uid
     if subdir:
-        rootdir += '/'+subdir
-    try:
-        os.makedirs(rootdir)
-    except OSError:
-        if not os.path.isdir(rootdir):
-            raise
+        rootdir += '/'+subdir    
+    if uid or subdir:
+        try:
+            os.makedirs(rootdir)
+        except OSError:
+            if not os.path.isdir(rootdir):
+                raise
     return rootdir
 
-def verify_file_container(f_container):
-    def open_str(a_file):
-        if isinstance(a_file,str):
-            return open(a_file, 'rw')
+def verify_file_container(f_container, mode='r'):
+    def open_str(a_file, mode):
+        if not hasattr(a_file,'read'):
+            return open(a_file, mode)
         else:
             return a_file
 
@@ -32,9 +32,9 @@ def verify_file_container(f_container):
        isinstance(f_container, tuple):
         f_open = []
         for a_file in f_container:
-            f_open.append(open_str(a_file))
+            f_open.append(open_str(a_file, mode))
     else:
-        f_open = open_str(f_container)
+        f_open = open_str(f_container, mode)
     
     return f_open
     
