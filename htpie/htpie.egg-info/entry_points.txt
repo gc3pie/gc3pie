@@ -1,7 +1,0 @@
-[console_scripts]
-gsingle = htpie.gcommands:gsingle
-gcontrol = htpie.gcommands:gcontrol
-ghessiantest = htpie.gcommands:ghessiantest
-ghessian = htpie.gcommands:ghessian
-gtaskscheduler = htpie.gcommands:gtaskscheduler
-
