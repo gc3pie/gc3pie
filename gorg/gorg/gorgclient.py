@@ -36,8 +36,8 @@ def main():
     a_task.status
     a_task.status_counts
     a_job.store()
-    a_job.task
     a_task.store()
+    a_job.task
 
 #        myfile.seek(0)
 #        a_task.add_child(a_job)

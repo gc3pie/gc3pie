@@ -117,7 +117,6 @@ class BaseroleModel(Document):
         return self.db.get_attachment(self.id, filename, when_not_found)
     
     def put_attachment(self, content, filename, content_type='text/plain'):
-        content.seek(0)
         self.db.put_attachment(self, content, filename, content_type)
         return self.load()
 
