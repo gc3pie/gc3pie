@@ -101,7 +101,8 @@ class GHessian(usertask.UserTask):
                 count +=1
         mat = self.calculateNumericalHessian(num_atoms, gradMat)
         postprocess_result = mat/self.GRADIENT_CONVERSION
-        
+        import pickle
+        self.a_task = self.a_task.put_attachment(pickle.dumps(postprocess_result), 'hessian')
         f_hess = open('%s_ghessian.mjm'%(self.a_task.id), 'w')
         print f_hess
         WriteGamessInp.build_gamess_matrix(postprocess_result, f_hess)

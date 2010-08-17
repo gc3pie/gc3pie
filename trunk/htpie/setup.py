@@ -11,7 +11,7 @@ ez_setup.use_setuptools()
 #
 from setuptools import setup, find_packages
 setup( 
-    name = "markstools",
+    name = "htpie",
     version = "0.6.22", # format: 0.MONTH.DAY (for now ...)
 
     packages = find_packages(exclude=['ez_setup']),
@@ -30,16 +30,11 @@ setup(
             # the generic, catch-all script:
             #'gcmd = gc3utils.gcmd:main',
 	    # todo: fix
-            'gcontrol = markstools.gcommands:gcontrol',
-            'ghessian = markstools.gcommands:ghessian',
-            'ghessiantest = markstools.gcommands:ghessiantest',
-            'taskscheduler = markstools.gcommands:gtaskscheduler',
-            'gridscheduler = markstools.gcommands:gridscheduler',
-            'gorgsetup = markstools.gcommands:gorgsetup',
-            'gorginfo = markstools.usertasks.ginfo:main',
-            'goptimize = markstools.usertasks.goptimize:main',
-            'gdirrun = markstools.usertasks.gdirrun:main',
-            'gsingle = markstools.gcommands:gsingle',
+            'gcontrol = htpie.gcommands:gcontrol',
+            'ghessian = htpie.gcommands:ghessian',
+            'gsingle = htpie.gcommands:gsingle',
+ 	    'gtaskscheduler = htpie.gcommands:gtaskscheduler',
+	    'ghessiantest = htpie.gcommands:ghessiantest',
             # symlinks to specific subcommands:
             #'gsub = gc3utils.gcmd:main',
             #'gstat = gc3utils.gcmd:main',

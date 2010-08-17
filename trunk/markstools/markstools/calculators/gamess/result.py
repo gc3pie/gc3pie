@@ -39,6 +39,9 @@ class GamessResult(ResultBase):
             mat[i] = grad[i][1]
         return mat
     
+    def get_normal_mode(self):    
+        return self.parsed_dat.get_normal_mode()
+    
     @queryable
     def get_potential_energy(self):
         return float(self.parsed_dat.get_energy())

@@ -18,7 +18,8 @@ from markstools.calculators.gamess.calculator import GamessGridCalc
 
 # The key is the name of the class where the usetask is programmed, and the value is the module location
 module_names = {'GHessian':'markstools.usertasks.ghessian', 
-                              'GSingle':'markstools.usertasks.gsingle'}
+                              'GSingle':'markstools.usertasks.gsingle', 
+                              'GHessianTest':'markstools.usertasks.ghessiantest'}
 
 usertask_classes = dict()
 for usertask_name, usertask_module in module_names.items():
@@ -31,8 +32,6 @@ class GControl(object):
         db=Mydb(db_username, db_name,db_url).cdb()
         self.a_task = GridtaskModel().load(db, task_id)
         self.cls_task = usertask_classes[self.a_task.title]
-        str_calc = self.a_task.user_data_dict['calculator']
-        self.calculator = eval(str_calc + '(db)')
 
     def kill_task(self):
         if not self.a_task.status.terminal:

@@ -98,6 +98,34 @@ def gdirrun(*args, **kw):
     gdirrun.initialize(db, gamess_calc, options.dir, options.max_running)
     gdirrun.run()
 
+def ghessiantest(*args, **kw):
+    from markstools.io.gamess import ReadGamessInp, WriteGamessInp
+    from markstools.calculators.gamess.calculator import GamessGridCalc
+    from markstools.usertasks.ghessiantest import GHessianTest
+
+    config = _configure_system()
+    #Set up command line options
+    usage = "usage: %prog [options] arg"
+    parser = OptionParser(usage)
+    parser.add_option("-d", "--directory", dest="dir",default='markstools/examples/hessiantest', 
+                      help="directory to process gamess files")
+    parser.add_option("-v", "--verbose", action='count', dest="verbosity", default=config.verbosity, 
+                      help="add more v's to increase log output.")
+    (options, args) = parser.parse_args()
+
+    configure_logger(options.verbosity, _default_log_file_location) 
+    options.dir = os.path.expanduser(options.dir)
+    if not os.path.isdir(options.dir):
+        sys.stdout.write('Can not locate directory \'%s\'\n'%(options.dir))
+        return
+    
+    # Connect to the database
+    db = Mydb(config.database_user,config.database_name,config.database_url).cdb()
+    
+    gh = GHessianTest()
+    gamess_calc = GamessGridCalc(db)
+    gh.initialize(db, gamess_calc, options.dir)
+
 def gsingle(*args, **kw):
     from markstools.io.gamess import ReadGamessInp, WriteGamessInp
     from markstools.calculators.gamess.calculator import GamessGridCalc

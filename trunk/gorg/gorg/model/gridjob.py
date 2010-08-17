@@ -110,7 +110,7 @@ class GridjobModel(BasenodeModel):
         def fget(self):
             from gridtask import GridtaskModel
             a_task = None
-            view = GridtaskModel.view_children(self.db)
+            view = GridtaskModel.view_children(self.db, key = self.id)
             if len(view) != 0:
                 task_id = view[self.id].rows[0].id
                 a_task = GridtaskModel().load(self.db, task_id)
@@ -363,5 +363,5 @@ class GridrunModel(BaseroleModel):
             md5.update(data)
         f.seek(0)
         #TODO: When mike runs this, it doesn't work
-        return u'%s'%(generate_new_docid())
-        #return u'%s'%md5.hexdigest()
+        #return u'%s'%(generate_new_docid())
+        return u'%s'%md5.hexdigest()

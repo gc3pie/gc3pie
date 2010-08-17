@@ -37,7 +37,7 @@ class GridScheduler(object):
         from gorg.model.gridjob import GridrunModel
         self.db=Mydb(couchdb_user, couchdb_database, couchdb_url).cdb()
         self.view_status_runs = GridrunModel.view_status(self.db)
-        self._gcli = gcommands._get_gcli()
+        self._gcli = gcommands._get_gcli(auto_enable_auth=True)
         self.status_mapping =   {STATES.READY: self.handle_ready_state, 
                                                 STATES.WAITING: self.handle_waiting_state, 
                                                 STATES.RETRIEVING: self.handle_retrieving_state, 
