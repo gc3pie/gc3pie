@@ -15,6 +15,7 @@ import Job
 from LRMS import LRMS
 import sge
 import utils
+import Default
 
 
 def _qgms_job_name(filename):
@@ -279,10 +280,14 @@ class SshLrms(LRMS):
             exit_code, stdout, stderr = self._execute_command(ssh, _command)
 
             if exit_code != 0:
-                gc3utils.log.critical('Failed executing remote command: %s. exit status %d' % (_command,exit_code))
+                # It is possible that 'qdel' fails because job has been already completed
+                # thus the cancel_job behaviour should be to 
+                gc3utils.log.error('Failed executing remote command: %s. exit status %d' % (_command,exit_code))
                 gc3utils.log.debug('remote command returned stdout: %s' % stdout)
                 gc3utils.log.debug('remote command returned stderr: %s' % stderr)
-                raise paramiko.SSHException('Failed executing remote command')
+                if exit_code == 127:
+                    # failed executing remote command
+                    raise paramiko.SSHException('Failed executing remote command')
 
             ssh.close()
             return job_obj

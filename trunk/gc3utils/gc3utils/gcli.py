@@ -199,6 +199,21 @@ class Gcli:
         self.authorization.get(_lrms._resource.authorization_type)
         return  _lrms.get_resource_status()
 
+#====== Gkill ========
+    def gkill(self, job_obj, **kw):
+        """Kill a job."""
+        
+        auto_enable_auth = kw.get('auto_enable_auth', self.auto_enable_auth)
+        
+        _lrms = self.__get_LRMS(job_obj.resource_name)
+        
+        self.authorization.get(_lrms._resource.authorization_type)
+        
+        job_obj = _lrms.cancel_job(job_obj)
+        gc3utils.log.debug('setting job status to DELETED')
+        job_obj.status =  gc3utils.Job.JOB_STATE_DELETED
+        return job_obj
+                                                                
 
 #=========     INTERNAL METHODS ============
 
@@ -250,72 +265,6 @@ class Gcli:
             raise e
 
         return
-    def gkill(self, job_obj, **kw):
-        """Kill a job, and optionally remove the local job directory."""
-
-        auto_enable_auth = kw.get('auto_enable_auth', self.auto_enable_auth)
-
-        _lrms = self.__get_LRMS(job_obj.resource_name)
-
-        self.authorization.get(_lrms._resource.authorization_type)
-
-        job_obj = _lrms.cancel_job(job_obj)
-        gc3utils.log.debug('setting job status to DELETED')
-        job_obj.status =  gc3utils.Job.JOB_STATE_DELETED
-        return job_obj
-
-        # todo : may be some redundancy to remove here
-        
-        #global default_job_folder_location
-        #global default_joblist_lock
-        #global default_joblist_location
-        
-        #if not check_jobdir(unique_token):
-        #    raise Exception('invalid jobid')
-        
-        # check .finished file
-        #if utils.check_inputfile(unique_token+'/'+self.defaults['lrms_finished']):
-        #    logging.error('Job already finished.')
-        #    return 
-
-        # todo : may be some redundancy to remove here
-            
-        #_fileHandle = open(unique_token+'/'+self.defaults['lrms_jobid'],'r')
-        #_raw_resource_info = _fileHandle.read()
-        #_fileHandle.close()
-
-        #_list_resource_info = re.split('\t',_raw_resource_info)
-
-        #logging.debug('lrms_jobid file returned %s elements',len(_list_resource_info))
-
-        #if ( len(_list_resource_info) != 2 ):
-        #    raise Exception('failed to retrieve jobid')
-        
-        #_resource = _list_resource_info[0]
-        #_lrms_jobid = _list_resource_info[1]
-        
-        #logging.debug('frontend: [ %s ] jobid: [ %s ]',_resource,_lrms_jobid)
-        #logging.info('reading lrms_jobid info\t\t\t[ ok ]')
-
-        #if ( _resource in self.resource_list ):
-        #    logging.debug('Found match for resource [ %s ]',_resource)
-        #    logging.debug('Creating lrms instance')
-        #    resource = self.resource_list[_resource]
-
-        #if ( resource['type'] == "arc" ):
-        #    lrms = ArcLrms(resource)
-        #elif ( resource['type'] == "ssh"):
-        #    lrms = SshLrms(resource)
-        #else:
-        #    logging.error('Unknown resource type %s',resource['type'])
-            
-        #(retval,lrms_log) = lrms.KillJob(_lrms_jobid)
-
-#        except Exception, e:
-#            logging.error('Failed to send qdel request to job: ' + unique_token)
-#            raise e
-
-        #return
 
     def __log_job(self, job_obj):
         # dumping lrms_jobid
