@@ -9,6 +9,7 @@ import struct
 from pyparsing import *
 import numpy as np
 import ase
+import os
 
 class GamessResult(model.MongoBase):
     collection_name = 'GamessResult'
@@ -594,6 +595,7 @@ class GamessApplication(application.Application):
                                                                        requested_memory = requested_memory, 
                                                                        requested_cores = requested_cores, 
                                                                        requested_walltime = requested_walltime, 
+                                                                       job_local_dir = os.path.expanduser('~/gc3_jobs')
                                                                     )
     
     @staticmethod

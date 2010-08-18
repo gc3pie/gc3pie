@@ -48,8 +48,23 @@ class GHessian(model.Task):
             else:
                 self.transition = Transitions.PAUSED
                 self.release()
+        for child in self.children:
+            child.retry()
+
+    def kill(self):
+        try:
+            self.acquire()
+        except:
+            raise
+        else:
+            self.state = States.KILL
+            self.release()
+            htpie.log.debug('GHessian %s will be killed'%(self.id))
             for child in self.children:
-                child.retry()
+                try:
+                    child.kill()
+                except:
+                    pass
 
     @classmethod
     def create(cls, f_input,  app_tag='gamess', requested_cores=2, requested_memory=2, requested_walltime=2):
@@ -88,6 +103,7 @@ class GHessianStateMachine(statemachine.StateMachine):
                                                       States.PROCESS: self.handle_process_state, 
                                                       States.PROCESS_WAIT: self.handle_process_wait_state, 
                                                       States.POSTPROCESS: self.handle_postprocess_state, 
+                                                      States.KILL: self.handle_kill_state, 
                                                     })
 
     def handle_waiting_state(self):
@@ -166,11 +182,6 @@ class GHessianStateMachine(statemachine.StateMachine):
         return True
     
     def handle_kill_state(self):
-        children = self.task.children
-        for child in children:
-            child.acquire()
-            child.state = States.KILL
-            child.release()
         return True
 
 _H_TO_PERTURB = 0.0052918

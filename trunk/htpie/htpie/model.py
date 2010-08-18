@@ -7,7 +7,7 @@ import sys
 import os
 
 from htpie.lib import utils
-from htpie.lib import exceptions
+from htpie.lib.exceptions import *
 
 import numpy as np
 import copy
@@ -79,13 +79,11 @@ class MongoBase(Document):
     def save(self):
         if self.authorize():
             super(MongoBase, self).save()
-        else:
-            raise utils.AuthorizationException()
     
     def acquire(self):
-#        if self.authorize():
-#            self._lock =  self._l_lock
-#            self.save()
+        if self.authorize():
+            self._lock =  self._l_lock
+            self.save()
         self._lock =  self._l_lock
         self.save()
     
@@ -106,7 +104,7 @@ class MongoBase(Document):
                 break
             time.sleep(poll_interval)
         if not done:
-            raise AuthorizationException( 'Mongodb record authorization timedout after %d seconds'%(timeout))
+            raise AuthorizationException( 'Mongodb record %s authorization timedout after %d seconds'%(self.id, timeout))
         return done
 
 class MongoAttachObj(MongoBase):
