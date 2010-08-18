@@ -391,7 +391,6 @@ def gkill(*args, **kw):
 
     try:
         _gcli = _get_gcli(_default_config_file_location)
-        # FIXME: gget should raise exception when something goes wrong; does it indeed?
         job_obj = gc3utils.Job.get_job(unique_token)
 
         if not (job_obj.status == gc3utils.Job.JOB_STATE_COMPLETED or job_obj.status == gc3utils.Job.JOB_STATE_FAILED or job_obj.status == gc3utils.Job.JOB_STATE_DELETED):
@@ -402,7 +401,6 @@ def gkill(*args, **kw):
         sys.stdout.write('Sent request to kill job ' + unique_token +'\n')
         sys.stdout.write('It may take a few moments for the job to finish.\n\n')
         sys.stdout.flush()
-        # raise Exception('cannot cancel a finished job')
         
     except:
         gc3utils.log.critical('program terminated due to:  %s',sys.exc_info()[1])
