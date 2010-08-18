@@ -1,10 +1,13 @@
-import time
-import datetime
+import htpie
 
 from htpie import model
 from htpie.lib.exceptions import *
 from htpie.lib import utils
+
 from pymongo.objectid import ObjectId
+
+import time
+import datetime
 
 class States(object):
     COMPLETE = u'STATE_COMPLETED'

@@ -9,6 +9,7 @@ from optparse import OptionParser
 import htpie
 from htpie.lib.exceptions import *
 from htpie.lib.utils import configure_logger, read_config
+from htpie.lib.flock import flock
 
 # defaults - XXX: do they belong in ../gcli.py instead?
 _homedir = os.path.expandvars('$HOME')
@@ -122,11 +123,18 @@ def gtaskscheduler(*args, **kw):
     (options, args) = parser.parse_args()
 
     configure_logger(options.verbosity, _default_log_file_location) 
-
-    task_scheduler = TaskScheduler()
-    sys.stdout.write('Running\n')
-    task_scheduler.run()
-    sys.stdout.write('Done\n')
+    
+    # Check to see if a gtaskscheduler is already running for my user.
+    # If not, allow this one to run.
+    lockfile = _rcdir + '/gtaskscheduler.lock'
+    lock = flock(lockfile, True).acquire()
+    if lock:
+        task_scheduler = TaskScheduler()
+        sys.stdout.write('Running\n')
+        task_scheduler.run()
+        sys.stdout.write('Done\n')
+    else:
+        htpie.log.debug('An instance of gtaskscheduler is already running.  Not starting another one.')
     sys.stdout.flush()
 
 def gcontrol(*args, **kw):
@@ -155,8 +163,8 @@ def gcontrol(*args, **kw):
     
     if options.program_command == 'retry':
         GControl.retry(options.id)
-#    elif options.program_command == 'kill':
-#        gcontrol.kill_task()
+    elif options.program_command == 'kill':
+        GControl.kill(options.id)
 #    elif options.program_command == 'info':
 #        gcontrol.get_task_info()
 #    elif options.program_command == 'files':

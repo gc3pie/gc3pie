@@ -130,6 +130,16 @@ class GSingle(model.Task):
             else:
                 self.transition = Transitions.PAUSED
                 self.release()
+    
+    def kill(self):
+        try:
+            self.acquire()
+        except:
+            raise
+        else:
+            self.state = States.KILL
+            self.release()
+            htpie.log.debug('GSingle %s will be killed'%(self.id))
 
     @classmethod
     def create(cls, f_list,  app_tag='gamess', requested_cores=2, requested_memory=2, requested_walltime=2):
@@ -138,9 +148,9 @@ class GSingle(model.Task):
         for f_name in f_list:
             task.attach_file(f_name, 'input')
     
-        task.gc3_temp = _app_tag_mapping[task.app_tag].temp_application(requested_memory, 
-                                                                                                                          requested_cores, 
-                                                                                                                          requested_walltime 
+        task.gc3_temp = _app_tag_mapping[task.app_tag].temp_application(requested_cores, 
+                                                                                                                      requested_memory, 
+                                                                                                                      requested_walltime 
                                                                                                                         ) 
         
         task.transition = Transitions.PAUSED
@@ -160,6 +170,7 @@ class GSingleStateMachine(statemachine.StateMachine):
                                                     States.UNREACHABLE: self.handle_unreachable_state, 
                                                     States.NOTIFIED: self.handle_notified_state,
                                                     States.POSTPROCESS: self.handle_postprocess_state, 
+                                                    States.KILL: self.handle_kill_state, 
                                                     })
         config_file = gc3utils.Default.CONFIG_FILE_LOCATION
         self._gcli = gc3utils.gcli.Gcli(*gc3utils.gcli.import_config(config_file))
@@ -181,6 +192,7 @@ class GSingleStateMachine(statemachine.StateMachine):
     def handle_waiting_state(self):
         temp = self._gcli.gstat(self.task.job)
         self.task.job = temp[0]
+        gc3utils.Job.persist_job(self.task.job)
         
         if self.task.job.status == gc3utils.Job.JOB_STATE_SUBMITTED:
             self.state = States.WAITING
@@ -193,8 +205,6 @@ class GSingleStateMachine(statemachine.StateMachine):
             self.state == gc3utils.Job.JOB_STATE_UNKNOWN:
                 pass
             #self.state = States.ERROR
-        
-        gc3utils.Job.persist_job(self.task.job)
     
     def handle_retrieving_state(self):        
         self.task.job = self._gcli.gget(self.task.job)
@@ -228,7 +238,12 @@ class GSingleStateMachine(statemachine.StateMachine):
         if self.task.job:
             self.task.job = self._gcli.gkill(self.task.job)
             gc3utils.Job.persist_job(self.task.job)
-        self.state = State.KILLED
+            if self.task.job.status == gc3utils.Job.JOB_STATE_COMPLETED or \
+                    self.task.job.status == gc3utils.Job.JOB_STATE_FAILED or \
+                    self.task.job.status == gc3utils.Job.JOB_STATE_DELETED:
+                print 'This is the job that will be cleaned next'
+                print self.task.job
+                gc3utils.Job.clean_job(self.task.job)
         return True
     
     def handle_missing_state(self, a_run):

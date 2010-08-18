@@ -35,7 +35,7 @@ class GHessianTest(model.Task):
     }
     
     @classmethod
-    def create(cls, dir,  app_tag='gamess', requested_cores=2, requested_memory=2, requested_walltime=2):
+    def create(cls, dir,  app_tag='gamess', requested_cores=16, requested_memory=2, requested_walltime=24):
         app = _app_tag_mapping[app_tag]
         task = super(GHessianTest, cls,).create()
         task.app_tag = u'%s'%(app_tag)
@@ -74,9 +74,26 @@ class GHessianTest(model.Task):
             else:
                 self.transition = Transitions.PAUSED
                 self.release()
+        for a_result in self.result:
+            a_result['gsingle'].retry()
+            a_result['ghessian'].retry()
+    
+    def kill(self):
+        try:
+            self.acquire()
+        except:
+            raise
+        else:
+            self.state = States.KILL
+            self.release()
+            htpie.log.debug('GHessianTest %s will be killed'%(self.id))
             for a_result in self.result:
-                a_result['gsingle'].retry()
-                a_result['ghessian'].retry()
+                try:
+                    a_result['gsingle'].kill()
+                    a_result['ghessian'].kill()
+                except:
+                    pass
+
 
 model.con.register([GHessianTest])
 
@@ -87,6 +104,7 @@ class GHessianTestStateMachine(statemachine.StateMachine):
         super(GHessianTestStateMachine, self).__init__()
         self.state_mapping.update({States.WAITING: self.handle_waiting_state, 
                                                     States.PROCESS: self.handle_process_state, 
+                                                    States.KILL: self.handle_kill_state, 
                                                     })
 
     def handle_waiting_state(self):
@@ -109,9 +127,4 @@ class GHessianTestStateMachine(statemachine.StateMachine):
         return True
     
     def handle_kill_state(self):
-        children = self.task.children
-        for child in children:
-            child.acquire()
-            child.state = States.KILL
-            child.release()
         return True
