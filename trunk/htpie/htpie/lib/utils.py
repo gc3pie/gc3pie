@@ -4,6 +4,64 @@ import logging.handlers
 import os
 import ConfigParser
 
+class Struct(dict):
+    """
+    A `dict`-like object, whose keys can be accessed with the usual
+    '[...]' lookup syntax, or with the '.' get attribute syntax.
+
+    Examples::
+
+      >>> a = Struct()
+      >>> a['x'] = 1
+      >>> a.x
+      1
+      >>> a.y = 2
+      >>> a['y']
+      2
+
+    Values can also be initially set by specifying them as keyword
+    arguments to the constructor::
+
+      >>> a = Struct(z=3)
+      >>> a['z']
+      3
+      >>> a.z
+      3
+    """
+    def __init__(self, initializer=None, **kw):
+        if initializer is None:
+            dict.__init__(self, **kw)
+        else:
+            dict.__init__(self, initializer, **kw)
+    def __setattr__(self, key, val):
+        self[key] = val
+    def __getattr__(self, key):
+        if self.has_key(key):
+            return self[key]
+        else:
+            raise AttributeError, "No attribute '%s' on object %s" % (key, self)
+    def __hasattr__(self, key):
+        return self.has_key(key)
+
+class InformationContainer(Struct):
+
+    def __init__(self, initializer=None, **keywd):
+        Struct.__init__(self, initializer, **keywd)
+        if not self.is_valid():
+            raise InvalidInformationContainerError('Object `%s` of class `%s` failed validity check.' % (self, self.__class__.__name__))
+
+    def is_valid(self):
+        raise NotImplementedError("Abstract method `is_valid()` called - this should have been defined in a derived class.")
+
+class GC3Param(InformationContainer):
+    def __init__(self,initializer=None,**keywd):
+        if not keywd.has_key('requested_cores'):
+            keywd['requested_cores'] = 2
+        if not keywd.has_key('requested_memory'):
+            keywd['requested_memory'] = 2
+        if not keywd.has_key('requested_walltime'):
+            keywd['requested_walltime'] = 2
+        InformationContainer.__init__(self,initializer,**keywd)
 
 def generate_temp_dir(uid=None, subdir=None):
     import tempfile

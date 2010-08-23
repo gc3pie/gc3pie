@@ -2,6 +2,7 @@
 The nudged elastic band (neb) module.
 """
 import htpie
+from htpie.lib import utils
 
 import numpy as np
 import copy
@@ -74,6 +75,21 @@ def interpolate(p1, p2, numImages=8):
     
     return path
 
+class NEBParam(utils.InformationContainer):
+    
+    def __init__(self,initializer=None,**keywd):
+        if not keywd.has_key('spring_constant'):
+            keywd['spring_constant'] = 5.0
+        if not keywd.has_key('tangent'):
+            keywd['tangent'] = 'new'
+        if not keywd.has_key('dneb'):
+            keywd['dneb'] = False
+        if not keywd.has_key('dnebOrg'):
+            keywd['dnebOrg'] = False
+        if not keywd.has_key('method'):
+            keywd['method'] = 'normal'
+        InformationContainer.__init__(self,initializer,**keywd)
+
 class NEB(object):
     """
     The nudged elastic band (neb) class.
@@ -118,7 +134,7 @@ class NEB(object):
         self.path = [Point() for i in xrange(self.numImages)]
         for i in xrange(self.numImages) :
             self.path[i].r = positions[i].copy()
-            self.path[i].u = energies[i].copy()
+            self.path[i].u = energies[i]
             self.path[i].f = forces[i].copy()
             self.path[i].free = np.ones(forces[i].shape)
         

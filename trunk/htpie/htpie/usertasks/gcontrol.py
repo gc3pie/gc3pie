@@ -10,6 +10,7 @@ import sys
 module_names = {'GSingle':'htpie.usertasks.gsingle',
                               'GHessian':'htpie.usertasks.ghessian',
                               'GHessianTest':'htpie.usertasks.ghessiantest',
+                              'GString':'htpie.usertasks.gstring',
                             }
 
 fsm_classes = dict()
@@ -29,6 +30,53 @@ class GControl(object):
         doc = model.Task.load(id)
         doc.retry()
         htpie.log.info('Task %s will be retried'%(id))
+    
+    @staticmethod
+    def info(id):
+        doc = model.Task.load(id)
+        sys.stdout.write('Info on %s %s\n'%(doc['_type'], doc.id))
+        sys.stdout.write('Child Ids:\n')
+        for child in doc.children:
+            sys.stdout.write('%s %s\n'%(child['_type'], child.id))
+        
+        sys.stdout.write('Input file Containers\n')
+        f_list = doc.open('input')
+        for f in f_list:
+            sys.stdout.write('File: %s\n'%(f.name))
+        [f.close() for f in f_list]
+        
+        f_list = doc.open('output')
+        for f in f_list:
+            sys.stdout.write('File: %s\n'%(f.name))
+        
+        [f.close() for f in f_list]
+    
+    @staticmethod
+    def hessiantest(id):
+        self.info(id)
+        
+        doc = model.Task.load(id)
+        for result in doc.result:
+            sys.stdout.write('Filename: %s'%(result['fname']))
+            sys.stdout.write('Gamess Hessian Run Time')
+            sys.stdout.write('Run time: %s\n') 
+            #last_exec_d - create_d
+            sys.stdout.write('Frequency delta:\n')
+            
+        for child in doc.children:
+            sys.stdout.write('%s %s\n'%(child['_type'], child.id))
+        
+        sys.stdout.write('Input file Containers\n')
+        f_list = doc.open('input')
+        for f in f_list:
+            sys.stdout.write('File: %s\n'%(f.name))
+        [f.close() for f in f_list]
+        
+        f_list = doc.open('output')
+        for f in f_list:
+            sys.stdout.write('File: %s\n'%(f.name))
+        
+        [f.close() for f in f_list]
     
 #    def get_task_info(self):
 #        sys.stdout.write('Info on Task %s\n'%(self.a_task.id))

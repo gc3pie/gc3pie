@@ -20,6 +20,7 @@ class GamessResult(model.MongoBase):
                          'hessian':[model.MongoMatrix],
                          'gradient':[model.MongoMatrix], 
                          'vec':[model.MongoMatrix],
+                         'num_orbitals':int,
                          'coord':[model.MongoMatrix], 
                          'energy':[float],
                          'normal_mode':{'atomic_mass':[float], 
@@ -37,10 +38,10 @@ model.con.register([GamessResult])
 class GamessParams(object):
     '''Holds the GAMESS run parameters'''
     groups = dict()
-    job_user_data_dict = dict()
     title = None
     r_orbitals = None
     r_hessian = None
+    r_orbitals_norb = None
     
     def get_group(self, group_key):
         return self.groups[group_key]
@@ -54,6 +55,10 @@ class GamessParams(object):
     def get_group_param(self, group_key, param_key):
         group_dict=self.groups[group_key]
         return group_dict[param_key]
+    
+    def __cmp__(self, other):
+        if isinstance(other, GamessParams):
+            return cmp(other.groups, self.groups)
 
 class GamessAtoms(ase.Atoms):
     # Shoenflies space group
@@ -71,6 +76,7 @@ class GamessParseDat(object):
     '''
     
     VEC = 'vec'
+    VEC_NORB = 'vec_norb'
     HESS = 'hessian'
     COORD = 'coord'
     ENERGY = 'energy'
@@ -284,6 +290,7 @@ class GamessParseOut(object):
     STATUS_EXIT = 'exit_successful'
     STATUS_GEOM_LOCATED='geom_located'
     STATUS_NO_CPU_TIMEOUT = 'no_cpu_timeout'
+    NUM_ORBITALS = 'num_orbitals'
     
     def __init__(self, group):
         '''
@@ -298,10 +305,26 @@ class GamessParseOut(object):
         self.parse_kernel.addRule(start, end, self.read_status_exit)
         start,  end = self.read_status_geom_located(returnRule=True)
         self.parse_kernel.addRule(start, end, self.read_status_geom_located)
+        start,  end = self.read_num_orbitals(returnRule=True)
+        self.parse_kernel.addRule(start, end, self.read_num_orbitals)
     
     def parse(self, f_out):        
         self.parse_kernel.parse(f_out)
     
+    def read_num_orbitals(self, text_block=None, returnRule=False):
+        if returnRule:
+            #Define parse rule
+            heading=r"""NUMBER OF CARTESIAN GAUSSIAN BASIS FUNCTIONS"""
+            trailing=r"""NUMBER OF CARTESIAN GAUSSIAN BASIS FUNCTIONS"""
+            return (heading, trailing)
+        else:
+            groupTitle = self.NUM_ORBITALS
+            num_ao = text_block.split('=')[-1]
+            num_ao = num_ao.strip()
+            num_ao = int(num_ao)
+            self.group[groupTitle]=num_ao
+        return         
+        
     def read_status_exit(self, text_block=None, returnRule=False):
         groupTitle = self.STATUS_EXIT
         self.group[groupTitle]=False
@@ -401,7 +424,7 @@ class GamessWriteInp(object):
         heading = ' $VEC'
         trailing = '\n $END\n'        
         f_like.write(heading)
-        self.build_gamess_matrix(f_like, vec)
+        self.build_gamess_matrix(f_like, vec, params.r_orbitals_norb)
         f_like.write(trailing)
         
     def write_hess(self, f_like, params):
@@ -415,10 +438,12 @@ class GamessWriteInp(object):
         f_like.write(trailing)
     
     @staticmethod
-    def build_gamess_matrix(f_like, mat):
+    def build_gamess_matrix(f_like, mat, norb=None):
+        #We can have up to 99 rows before starting over again with the numbering
+        #We need to Change this number based on NORB for the VEC group only!!
         numCol = 5
-        maxRow = 100 #We can have up to 99 rows before starting over again with the numbering
         maxCol = 1000
+        maxRow=100 
         outRow = 1
         outCol = 1
         if mat.__class__.__name__ == 'ndarray':
@@ -432,8 +457,12 @@ class GamessWriteInp(object):
                 f_like.write(output)
                 output=''.join(format%i for i in row_to_print)
                 f_like.write(output)
-                outCol += 1;                 
-            outRow = (outRow + 1) % maxRow
+                outCol += 1;
+            if norb:
+                outRow = (outRow) % (norb)
+                outRow += 1
+            else:
+                outRow = (outRow + 1) % maxRow
             outCol=1
         return output
 

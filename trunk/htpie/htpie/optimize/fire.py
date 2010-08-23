@@ -1,8 +1,32 @@
 import htpie
 
 from htpie.optimize import Optimize
+from htpie.lib import utils
 
 import numpy as np
+
+class FIREParam(utils.InformationContainer):
+    
+    def __init__(self,initializer=None,**keywd):
+        if not keywd.has_key(' dt'):
+            keywd[' dt'] = 0.1
+        if not keywd.has_key('maxmove'):
+            keywd['maxmove'] = 0.2
+        if not keywd.has_key('dtmax'):
+            keywd['dtmax'] = 1.0
+        if not keywd.has_key('Nmin'):
+            keywd['Nmin'] = 5
+        if not keywd.has_key('finc'):
+            keywd['finc'] = 1.1
+        if not keywd.has_key('fdec'):
+            keywd['fdec'] = 0.5
+        if not keywd.has_key('astart'):
+            keywd['astart'] = 0.1
+        if not keywd.has_key('fa'):
+            keywd['fa'] = 0.99
+        if not keywd.has_key('a'):
+            keywd['a'] = 0.1
+        InformationContainer.__init__(self,initializer,**keywd)
 
 class FIRE(Optimize):
     def __init__(self, dt=0.1, maxmove=0.2, dtmax=1.0, Nmin=5, finc=1.1, fdec=0.5,
