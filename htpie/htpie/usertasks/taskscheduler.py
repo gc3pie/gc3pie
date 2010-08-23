@@ -7,7 +7,8 @@ from htpie.lib import utils
 
 module_names = {'GSingle':'htpie.usertasks.gsingle',
                               'GHessian':'htpie.usertasks.ghessian',
-                              'GHessianTest':'htpie.usertasks.ghessiantest'
+                              'GHessianTest':'htpie.usertasks.ghessiantest', 
+                              'GString':'htpie.usertasks.gstring', 
                             }
 
 fsm_classes = dict()

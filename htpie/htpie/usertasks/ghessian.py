@@ -14,7 +14,9 @@ _app_tag_mapping = dict()
 _app_tag_mapping['gamess']=gamess.GamessApplication
 
 class States(statemachine.States):
-    WAITING = u'STATE_WAIT'
+    FIRST_WAIT = u'STATE_WAIT'
+    GEN_WAIT = u'STATE_GEN_WAIT'
+    GENERATE = u'STATE_GENERATE'
     PROCESS = u'STATE_PROCESS'
     PROCESS_WAIT = u'STATE_PROCESS_WAIT'
     POSTPROCESS = u'STATE_POSTPROCESS'
@@ -33,7 +35,6 @@ class GHessian(model.Task):
     }
     
     default_values = {
-        'state': States.WAITING, 
         '_type':u'GHessian', 
         'transition': Transitions.HOLD, 
         'total_jobs':0, 
@@ -72,23 +73,14 @@ class GHessian(model.Task):
         task.app_tag = u'%s'%(app_tag)
         task.result.hessian = model.MongoMatrix.create()
         
-        atoms, params = _app_tag_mapping[app_tag].parse_input(f_input)
         task.attach_file(f_input, 'input')
         
-        perturbed_postions = _repackage(atoms.get_positions())
+        fsm = gsingle.GSingle.create([f_input], app_tag, requested_cores, requested_memory, requested_walltime)
+        task.add_child(fsm)
+        task.total_jobs += 1
         
-        for a_position in perturbed_postions:
-            params.title = 'job_number_%d'%(task.total_jobs)
-            atoms.set_positions(a_position)
-            
-            dir = utils.generate_temp_dir()
-            f_name = '%s/%s.inp'%(dir, params.title)
-            _app_tag_mapping[app_tag].write_input(f_name, atoms, params)
-
-            fsm = gsingle.GSingle.create([f_name], app_tag, requested_cores, requested_memory, requested_walltime)
-            task.add_child(fsm)
-            task.total_jobs += 1
         task.transition = Transitions.PAUSED
+        task.state = States.FIRST_WAIT
         task.save()
         return task
 
@@ -99,23 +91,56 @@ class GHessianStateMachine(statemachine.StateMachine):
     
     def __init__(self):
         super(GHessianStateMachine, self).__init__()
-        self.state_mapping.update({States.WAITING: self.handle_waiting_state, 
+        self.state_mapping.update({States.FIRST_WAIT: self.handle_first_wait_state, 
+                                                      States.GEN_WAIT: self.handle_gen_wait_state, 
+                                                      States.GENERATE: self.handle_generate_state, 
                                                       States.PROCESS: self.handle_process_state, 
                                                       States.PROCESS_WAIT: self.handle_process_wait_state, 
                                                       States.POSTPROCESS: self.handle_postprocess_state, 
                                                       States.KILL: self.handle_kill_state, 
                                                     })
 
-    def handle_waiting_state(self):
-        children = self.task.children
-        count = 0
-        for gsingle in children:
-            if gsingle.transition == Transitions.COMPLETE:
-                count += 1
-            elif gsingle.transition == Transitions.ERROR:
-                raise ChildNodeException('Child task %s errored.'%(gsingle.id))
+    def handle_first_wait_state(self):
+        if self._wait_util_done():
+            self.state = States.GENERATE
+
+    def handle_generate_state(self):
+        task_vec = self.task.children[0]
+        app = _app_tag_mapping[self.task.app_tag]
         
-        if count == len(children):
+        f_input = task_vec.open('input')[0]
+        atoms, params = app.parse_input(f_input)
+
+        params.r_orbitals = task_vec.result.vec[-1].matrix
+        params.r_orbitals_norb = task_vec.result.num_orbitals
+        params.set_group_param('$GUESS', 'GUESS', 'MOREAD')
+        params.set_group_param('$GUESS', 'NORB', task_vec.result.num_orbitals)
+        
+        perturbed_postions = _repackage(atoms.get_positions())[1:]
+        
+        def str_dict(dic):
+            new_dic = {}
+            for k, v in dic.items():
+                new_dic[str(k)]=v
+            return new_dic
+        
+        gc3_temp = str_dict(task_vec.gc3_temp)
+        
+        for a_position in perturbed_postions:
+            params.title = 'job_number_%d'%(self.task.total_jobs)
+            atoms.set_positions(a_position)
+            
+            dir = utils.generate_temp_dir()
+            f_name = '%s/%s.inp'%(dir, params.title)
+            app.write_input(f_name, atoms, params)
+
+            fsm = gsingle.GSingle.create([f_name], self.task.app_tag, **gc3_temp)
+            self.task.add_child(fsm)
+            self.task.total_jobs += 1
+        self.state = States.GEN_WAIT
+    
+    def handle_gen_wait_state(self):
+        if self._wait_util_done():
             self.state = States.PROCESS
 
     def handle_process_state(self):
@@ -138,7 +163,7 @@ class GHessianStateMachine(statemachine.StateMachine):
         self.task.result.hessian.matrix = postprocess_result
         
         dir = utils.generate_temp_dir()
-        f_list = self.task.mk_local_copy('input')
+        f_list = self.task.open('input')
         
         f_ghessian = '%s/ghessian_%s'%(dir, os.path.basename(f_list[0].name))
         atoms, params = app.parse_input(f_list[0])
@@ -160,16 +185,8 @@ class GHessianStateMachine(statemachine.StateMachine):
         self.state = States.PROCESS_WAIT
     
     def handle_process_wait_state(self):
-        children = self.task.children
-        
-        state = States.PROCESS_WAIT
-        
-        if children[-1].transition == Transitions.COMPLETE:
-            state = States.POSTPROCESS
-        elif children[-1].transition == Transitions.ERROR:
-            raise ChildNodeException('Child task %s errored.'%(children[-1].id))
-
-        self.state = state
+        if self._wait_util_done():
+            self.state = States.POSTPROCESS
     
     def handle_postprocess_state(self):
         child = self.task.children[-1]
@@ -183,6 +200,21 @@ class GHessianStateMachine(statemachine.StateMachine):
     
     def handle_kill_state(self):
         return True
+
+    def _wait_util_done(self):
+        children = self.task.children
+        count = 0
+        for gsingle in children:
+            if gsingle.transition == Transitions.COMPLETE:
+                count += 1
+            elif gsingle.transition == Transitions.ERROR:
+                raise ChildNodeException('Child task %s errored.'%(gsingle.id))
+        
+        if count == len(children):
+            return True
+        else:
+            return False
+
 
 _H_TO_PERTURB = 0.0052918
 _GRADIENT_CONVERSION=1.8897161646320724

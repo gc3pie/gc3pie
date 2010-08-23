@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE Tasks SYSTEM "Tasks-4.2.dtd">
 <!-- eric4 tasks file for project htpie -->
-<!-- Saved: 2010-08-18, 16:06:32 -->
+<!-- Saved: 2010-08-20, 16:53:53 -->
 <Tasks version="4.2">
   <Task priority="1" completed="False" bugfix="False">
     <Summary>TODO: If we get an error storing the gsingle, we will have submitted it to the grid</Summary>
@@ -84,10 +84,19 @@
       <Linenumber>215</Linenumber>
     </Resource>
   </Task>
+  <Task priority="1" completed="False" bugfix="False">
+    <Summary>TODO: Notify the user that they need to log into the clusters again, maybe using email?</Summary>
+    <Description></Description>
+    <Created>2010-08-20, 16:35:12</Created>
+    <Resource>
+      <Filename>htpie/usertasks/gsingle.py</Filename>
+      <Linenumber>231</Linenumber>
+    </Resource>
+  </Task>
   <Task priority="1" completed="False" bugfix="True">
     <Summary>FIXME: gridfs name bugTrying to set the name attr doesn't work</Summary>
     <Description></Description>
-    <Created>2010-08-18, 14:09:42</Created>
+    <Created>2010-08-20, 16:38:01</Created>
     <Resource>
       <Filename>htpie/model.py</Filename>
       <Linenumber>310</Linenumber>
@@ -96,7 +105,7 @@
   <Task priority="1" completed="False" bugfix="True">
     <Summary>FIXME: gridfs doesn't suppore name, therefore we need to return a local</Summary>
     <Description></Description>
-    <Created>2010-08-18, 14:09:42</Created>
+    <Created>2010-08-20, 16:38:01</Created>
     <Resource>
       <Filename>htpie/model.py</Filename>
       <Linenumber>316</Linenumber>
@@ -105,19 +114,10 @@
   <Task priority="1" completed="False" bugfix="True">
     <Summary>FIXME: gridfs name bug</Summary>
     <Description></Description>
-    <Created>2010-08-18, 14:09:42</Created>
+    <Created>2010-08-20, 16:38:01</Created>
     <Resource>
       <Filename>htpie/model.py</Filename>
       <Linenumber>327</Linenumber>
-    </Resource>
-  </Task>
-  <Task priority="1" completed="False" bugfix="False">
-    <Summary>TODO: Notify the user that they need to log into the clusters again, maybe using email?</Summary>
-    <Description></Description>
-    <Created>2010-08-18, 16:06:12</Created>
-    <Resource>
-      <Filename>htpie/usertasks/gsingle.py</Filename>
-      <Linenumber>226</Linenumber>
     </Resource>
   </Task>
 </Tasks>

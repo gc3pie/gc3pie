@@ -87,6 +87,7 @@ class GSingle(model.Task):
         'gc3_job' : dict, 
         'gc3_temp': dict,
         'result': gamess.GamessResult, 
+        'coord':model.MongoMatrix, 
     }
     
     default_values = {
@@ -147,7 +148,11 @@ class GSingle(model.Task):
         task.app_tag = u'%s'%(app_tag)
         for f_name in f_list:
             task.attach_file(f_name, 'input')
-    
+        
+        atoms, params = _app_tag_mapping[task.app_tag].parse_input(f_list[0])
+        task.coord = model.MongoMatrix.create()
+        task.coord.matrix = atoms.get_positions()
+        
         task.gc3_temp = _app_tag_mapping[task.app_tag].temp_application(requested_cores, 
                                                                                                                       requested_memory, 
                                                                                                                       requested_walltime 

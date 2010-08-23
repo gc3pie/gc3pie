@@ -25,6 +25,47 @@ def _configure_system():
 
 #====== Main ========
 
+def gstring(*args, **kw):
+    from htpie.usertasks.gstring import GString
+    from htpie.optimize import fire
+    from htpie.optimize import neb
+
+
+    config = _configure_system()
+    #Set up command line options
+    usage = "usage: %prog [options] arg"
+    parser = OptionParser(usage)
+    parser.add_option("-s", "--start", dest="start", default='examples/opt_start.inp', 
+                      help="starting inp file for gstring method")
+    parser.add_option("-e", "--end", dest="end", default='examples/opt_end.inp', 
+                      help="ending inp file for gstring method")
+    parser.add_option("-a", "--application", dest="app_tag", default='gamess', 
+                      help="add more v's to increase log output")
+    parser.add_option("-v", "--verbose", action='count', dest="verbosity", default=config.verbosity, 
+                      help="add more v's to increase log output")
+
+    (options, args) = parser.parse_args()
+
+    configure_logger(options.verbosity, _default_log_file_location) 
+
+    if not os.path.isfile(options.start):
+        sys.stdout.write('Can not locate file \'%s\'\n'%(options.start))
+        return
+    
+    if not os.path.isfile(options.end):
+        sys.stdout.write('Can not locate file \'%s\'\n'%(options.end))
+        return
+
+    opt = fire.FIRE()
+    
+    gstring = GString.create([options.start, options.end],  opt, options.app_tag)
+    
+    if gstring:
+        sys.stdout.write('Successfully create GString %s\n'%(gstring.id))
+    else:
+        sys.stdout.write('Error occured while creating a GHessianTest\n')
+    sys.stdout.flush()
+
 def ghessiantest(*args, **kw):
     from htpie.usertasks.ghessiantest import GHessianTest
 
@@ -165,8 +206,8 @@ def gcontrol(*args, **kw):
         GControl.retry(options.id)
     elif options.program_command == 'kill':
         GControl.kill(options.id)
-#    elif options.program_command == 'info':
-#        gcontrol.get_task_info()
+    elif options.program_command == 'info':
+        GControl.info(options.id)
 #    elif options.program_command == 'files':
 #        gcontrol.get_task_files()
     else:

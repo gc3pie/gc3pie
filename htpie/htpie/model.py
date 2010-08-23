@@ -141,8 +141,8 @@ class MongoAttachObj(MongoBase):
                 else:
                     #Currently there is no readline on gridfs, therefore
                     #we fake it here
-                    a_file.readline = a_file.read
-                    obj = pickle.load(a_file)
+                    tempStr = a_file.read()
+                    obj = pickle.loads(tempStr)
             finally:
                 a_file.close()
         return obj
@@ -335,7 +335,7 @@ class Task(MongoBase):
             [f.close() for f in f_container]
         return f_list    
 
-con.register([Task, MongoBase, MongoMatrix, MongoAttachObj])
+con.register([Task, MongoBase, MongoMatrix, MongoPickle, MongoAttachObj])
 
 class CustomArray(CustomType):
     """ SET custom type to handle python set() type """
