@@ -106,21 +106,43 @@ def _print_job_status(job_list,job_status_filter):
 #====== Main ========
 
 def gclean(*args, **kw):
-    """The 'glean' command."""
-    parser = OptionParser(usage="Usage: %prog [options] JOBID")
+    """
+    The 'glean' command.
+    gclean takes a list of jobids and tries to clean each of them.
+    if any of the clean requests will fail, gclean will exit with exitcode 1
+    gclean will try anyway to process all requests
+    """
+    parser = OptionParser(usage="Usage: %prog [options] [JOBIDs]", version="GC3pie project version 1.0. %prog ")
     parser.add_option("-v", action="count", dest="verbosity", default=0, help="Set verbosity level")
+    parser.add_option("-f", "--force", action="store_true", dest="force", default=False, help="Force removing job")
     (options, args) = parser.parse_args(list(args))
     _configure_logger(options.verbosity)
 
-    if len(args) != 1:
-        raise InvalidUsage('Wrong number of arguments: this commands expects exactly one  arguments.')
+    warning = ""
 
+    # Assume args are all jobids
+    for jobid in args:
+        try:
+            job = gc3utils.Job.get_job(jobid)
+            if (
+                job.status == gc3utils.Job.JOB_STATE_COMPLETED
+                or job.status == gc3utils.Job.JOB_STATE_FAILED
+                or job.status == gc3utils.Job.JOB_STATE_DELETED
+                or  options.force == True
+                ):
+                gc3utils.Job.clean_job(jobid)
+            else:
+                raise Exception('Not in terminal state')
+        except:
+            # We allow to have non-valid jobids in the list
+            # gclean will continue anyway with the remainings
+            gc3utils.log.error('Failed while processing job %s' % jobid)
+            gc3utils.log.debug('Exception %s',sys.exc_info()[1])
+            warning = warning +jobid +": " +str(sys.exc_info()[1]) +"\t"
+            continue
 
-    job = gc3utils.Job.get_job(args[0])
-    if job.status == gc3utils.Job.JOB_STATE_COMPLETED or job.status == gc3utils.Job.JOB_STATE_FAILED or job.status == gc3utils.Job.JOB_STATE_DELETED:
-        return gc3utils.Job.clean_job(args[0])
-    else:
-        raise Exception('Job is not in terminal state')
+    if warning != "":
+        raise Exception(warning)
 
 
 def ginfo(*args, **kw):
@@ -377,34 +399,59 @@ def gget(*args, **kw):
 
 
 def gkill(*args, **kw):
-    """The `gkill` command."""
+    """
+    The `gkill` command.
+    gkill takes a list of jobids and tries to kill each of them.
+    if any of the clean requests will fail, gkill will exit with exitcode 1
+    gkill will try anyway to process all requests
+    """
     parser = OptionParser(usage="%prog [options] unique_token")
     parser.add_option("-v", action="count", dest="verbosity", default=0, help="Set verbosity level")
+    parser.add_option("-f", "--force", action="store_true", dest="force", default=False, help="Force removing job")
     (options, args) = parser.parse_args(list(args))
     _configure_logger(options.verbosity)
 
     shortview = True
 
-    if len(args) != 1:
-        raise InvalidUsage("This command expects exactly one argument.")
-    unique_token = args[0]
-
     try:
         _gcli = _get_gcli(_default_config_file_location)
-        job_obj = gc3utils.Job.get_job(unique_token)
 
-        if not (job_obj.status == gc3utils.Job.JOB_STATE_COMPLETED or job_obj.status == gc3utils.Job.JOB_STATE_FAILED or job_obj.status == gc3utils.Job.JOB_STATE_DELETED):
-            job_obj = _gcli.gkill(job_obj)
-            gc3utils.Job.persist_job(job_obj)
+        job_list = []
+        warning = ""
 
-        # or shall we simply return an ack message ?
-        sys.stdout.write('Sent request to kill job ' + unique_token +'\n')
-        sys.stdout.write('It may take a few moments for the job to finish.\n\n')
-        sys.stdout.flush()
-        
+        # Assume args are all jobids
+        for unique_token in args:
+            try:
+                job = gc3utils.Job.get_job(unique_token)
+
+                gc3utils.log.debug('%s in status %d' % (unique_token,job.status))
+
+                if not (
+                    job.status == gc3utils.Job.JOB_STATE_COMPLETED
+                    or job.status == gc3utils.Job.JOB_STATE_FAILED
+                    or job.status == gc3utils.Job.JOB_STATE_DELETED
+                    or options.force == True
+                    ):
+                    job = _gcli.gkill(job)
+                    gc3utils.Job.persist_job(job)
+
+                    # or shall we simply return an ack message ?
+                    sys.stdout.write('Sent request to kill job ' + unique_token +'\n')
+                    sys.stdout.write('It may take a few moments for the job to finish.\n\n')
+                    sys.stdout.flush()
+                else:
+                    raise Exception('Already in terminal state')
+            except:
+                gc3utils.log.error('Failed while processing %s due to %s',unique_token,sys.exc_info()[1])
+                warning = warning + str(unique_token) +": " +str(sys.exc_info()[1]) + "\t"
+                continue
+
+        if warning != "":
+            raise Exception(warning)
+
     except:
-        gc3utils.log.critical('program terminated due to:  %s',sys.exc_info()[1])
-        raise Exception("gkill terminated")
+        gc3utils.log.critical('program failed due to: %s' % sys.exc_info()[1])
+        raise Exception("gkill failed")
 
 
 def glist(*args, **kw):

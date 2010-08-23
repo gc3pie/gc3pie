@@ -211,7 +211,7 @@ class Application(InformationContainer):
                      % str.join(' ', [ ('("%s" "%s")' % rl) for rl in self.outputs.items() ]))
         if len(self.rtes) > 0:
             xrsl += str.join('\n', [
-                    ('(runTimeEnvironment="%s")' % rte) for rte in self.rtes ])
+                    ('(runTimeEnvironment>="%s")' % rte) for rte in self.rtes ])
         if len(self.environment) > 0:
             xrsl += ('(environment=%s)' % 
                      str.join(' ', [ ('("%s" "%s")' % kv) for kv in self.environment ]))
