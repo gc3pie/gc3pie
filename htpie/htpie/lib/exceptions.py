@@ -49,3 +49,5 @@ class UnhandledStateException(FatalError):
 class AuthorizationException(Error):
     pass
 
+class GC3Exception(Error):
+    pass

@@ -35,9 +35,9 @@ def gstring(*args, **kw):
     #Set up command line options
     usage = "usage: %prog [options] arg"
     parser = OptionParser(usage)
-    parser.add_option("-s", "--start", dest="start", default='examples/opt_start.inp', 
+    parser.add_option("-s", "--start", dest="start", default='examples/opt_start2.inp', 
                       help="starting inp file for gstring method")
-    parser.add_option("-e", "--end", dest="end", default='examples/opt_end.inp', 
+    parser.add_option("-e", "--end", dest="end", default='examples/opt_end2.inp', 
                       help="ending inp file for gstring method")
     parser.add_option("-a", "--application", dest="app_tag", default='gamess', 
                       help="add more v's to increase log output")
@@ -55,10 +55,8 @@ def gstring(*args, **kw):
     if not os.path.isfile(options.end):
         sys.stdout.write('Can not locate file \'%s\'\n'%(options.end))
         return
-
-    opt = fire.FIRE()
     
-    gstring = GString.create([options.start, options.end],  opt, options.app_tag)
+    gstring = GString.create([options.start, options.end],  options.app_tag)
     
     if gstring:
         sys.stdout.write('Successfully create GString %s\n'%(gstring.id))
@@ -219,9 +217,16 @@ if __name__ == '__main__':
     #While the command line sends:
     #['gcommands.py', u'gtestcron']
     #Therefore we must  deal with both inputs
-
+    import time
     for i in range(len(sys.argv)):
         if sys.argv[i].find('gcommands.py') == -1:
             break
-    eval('%s(sys.argv[%d:])'%(sys.argv[i], i))
+    if sys.argv[i] !='gtaskscheduler':
+        eval('%s(sys.argv[%d:])'%(sys.argv[i], i))
+    else:
+        while True:
+            print 'running'
+            eval('%s(sys.argv[%d:])'%(sys.argv[i], i))
+            print 'sleeping'
+            time.sleep(10)
     sys.exit(0)
