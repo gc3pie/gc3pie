@@ -132,11 +132,21 @@ class ArcLrms(LRMS):
         # set time stamps
         # XXX: use Python's `datetime` types
         if arc_job.submission_time.GetTime() > -1:
-            job.submission_time = str(arc_job.submission_time)
+            job.submission_time = self._date_normalize(str(arc_job.submission_time.GetTime()))
         if arc_job.completion_time.GetTime() > -1:
-            job.completion_time = str(arc_job.completion_time)
+            job.completion_time = self._date_normalize(str(arc_job.completion_time.GetTime()))
         else:
             job.completion_time = ""
+
+        job.job_name = arc_job.job_name
+        job.used_memory = arc_job.used_memory
+        job.cpu_count = arc_job.cpu_count
+        job.exit_code = arc_job.exitcode
+        job.used_cpu_time = arc_job.used_cpu_time
+        job.used_walltime = arc_job.used_wall_time
+        job.requested_cpu_time = arc_job.requested_cpu_time
+        job.requested_wall_time = arc_job.requested_wall_time
+        job.queue = arc_job.queue
 
         job.arc_cluster = arc_job.cluster
         job.arc_cpu_count = arc_job.cpu_count
@@ -302,4 +312,6 @@ class ArcLrms(LRMS):
         arclib.CancelJob(job_obj.lrms_jobid)
         return job_obj
 
+    def _date_normalize(self, date_string):
+        return time.localtime(int(date_string))
 

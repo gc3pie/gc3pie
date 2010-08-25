@@ -172,6 +172,11 @@ class SshLrms(LRMS):
             if isinstance(application, Application.GamessApplication):
                 # XXX: very qgms/GAMESS-specific!
                 job.lrms_job_name = _qgms_job_name(utils.first(application.inputs.values()))
+
+
+            # add submssion time reference
+            job.submission_time = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
+
             return job
 
         except:
@@ -193,6 +198,9 @@ class SshLrms(LRMS):
             'failed':'system_failed',
             'cpu':'used_cpu_time',
             'ru_wallclock':'used_walltime',
+            'maxvmem':'used_memory',
+            'end_time':'completion_time',
+            'qsub_time':'submission_time',
             'maxvmem':'used_memory'
             }
         try:
@@ -238,10 +246,21 @@ class SshLrms(LRMS):
                         value = value.strip()
                         try:
                             job[mapping[key]] = value
+
                         except KeyError:
                             gc3utils.log.debug("Ignoring job information '%s=%s'"
                                                " -- no mapping defined to gc3utils.Job attributes." 
                                                % (key,value))
+
+                    gc3utils.log.debug('Normalizing data')
+                    # Need to mormalize dates
+                    if job.has_key('submission_time'):
+                        gc3utils.log.debug('submission_time: %s',job.submission_time)
+                        job.submission_time = self._date_normalize(job.submission_time)
+                    if job.has_key('completion_time'):
+                        gc3utils.log.debug('completion_time: %s',job.completion_time)
+                        job.completion_time = self._date_normalize(job.completion_time)
+                                                                                                    
                     job.status = Job.JOB_STATE_FINISHED
                 else:
                     # `qacct` failed as well...
@@ -471,3 +490,5 @@ class SshLrms(LRMS):
             raise
 
 
+    def _date_normalize(self, date_string):
+        return time.strptime(date_string,"%a %b %d %H:%M:%S %Y")
