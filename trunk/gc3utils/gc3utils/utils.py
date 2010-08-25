@@ -383,6 +383,11 @@ def release_file_lock(joblist_lock):
         gc3utils.log.debug('Failed removing lock due to %s',sys.exc_info()[1])
         return False
 
+def date_normalize(date_string):
+    """
+    Normalizes date format from ARC and SGE sources to  common string
+    """
+    pass
 
 if __name__ == '__main__':
     import doctest

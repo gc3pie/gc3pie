@@ -15,6 +15,7 @@ import sys
 import os
 import ConfigParser
 from optparse import OptionParser
+import time
 
 import gc3utils
 import gc3utils.Application
@@ -73,6 +74,8 @@ def _print_job_info(job_obj):
         if not key == 'log' and not ( str(job_obj[key]) == '-1' or  str(job_obj[key]) == '' ):
             if key == 'status':
                 print("%-20s  %-10s " % (key, gc3utils.Job.job_status_to_string(job_obj[key])))
+            elif key == 'submission_time' or key == 'completion_time':
+                print("%-20s  %-10s " % (key,time.asctime(job_obj[key])))
             else:
                 print("%-20s  %-10s " % (key,job_obj[key]))
     return 0
