@@ -49,6 +49,13 @@ class GControl(object):
         for f in f_list:
             sys.stdout.write('File: %s\n'%(f.name))
         
+        if hasattr(doc, 'job'):
+            sys.stdout.write('\nGC3 Job: %s\n'%(doc.job))
+            sys.stdout.write('\nGC3 Application: %s\n'%(doc.application))
+        
+        if hasattr(doc, 'neb'):
+            print doc
+        
         [f.close() for f in f_list]
     
     @staticmethod

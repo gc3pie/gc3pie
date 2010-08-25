@@ -3,6 +3,7 @@ from htpie.lib import utils
 from htpie import model
 from htpie import statemachine
 from htpie.application import gamess
+from htpie.lib.exceptions import *
 
 import gc3utils.Application
 import gc3utils.Default
@@ -208,8 +209,7 @@ class GSingleStateMachine(statemachine.StateMachine):
         elif self.task.job.status == gc3utils.Job.JOB_STATE_FAILED or \
             self.state == gc3utils.Job.JOB_STATE_DELETED or \
             self.state == gc3utils.Job.JOB_STATE_UNKNOWN:
-                pass
-            #self.state = States.ERROR
+            raise GC3Exception('GC3 job errored: \n %s'%(self.task.job))
     
     def handle_retrieving_state(self):        
         self.task.job = self._gcli.gget(self.task.job)

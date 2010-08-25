@@ -5,6 +5,7 @@ import uuid
 import time
 import sys
 import os
+import htpie
 
 from htpie.lib import utils
 from htpie.lib.exceptions import *
@@ -82,17 +83,19 @@ class MongoBase(Document):
     
     def acquire(self):
         if self.authorize():
-            self._lock =  self._l_lock
-            self.save()
-        self._lock =  self._l_lock
-        self.save()
+            self.collection.update({'_id':self._id, '_lock':u''}, {'$set':{'_lock':self._l_lock}})
+            self.reload()
+            self.authorize()
+        #htpie.log.debug('Acquire %s'%(self._lock))
     
     def release(self):
         if self.authorize():
             self._lock= u''
             self.save()
+        #htpie.log.debug('Released %s to %s'%(self._l_lock,self._lock))
     
     def authorize(self, timeout=10):
+        #htpie.log.debug('Authorize %s to local %s'%(self._lock, self._l_lock))
         poll_interval = 1
         if poll_interval > timeout:
             poll_interval = timeout

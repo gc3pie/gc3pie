@@ -34,7 +34,7 @@ class StateMachine(object):
             self.task.acquire()
         except AuthorizationException,  e:
             #Do nothing but log the error and return
-            pass
+            raise
         else:
             try:
                 self.transition = Transitions.RUNNING

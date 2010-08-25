@@ -29,13 +29,22 @@ class GString(model.Task):
     structure = {'total_jobs': int,
                          'result': [{'gsingle':[gsingle.GSingle]}], 
                          'neb':model.MongoPickle, 
-                         'opt':model.MongoPickle, 
+                         'opt':[model.MongoPickle], 
     }
 
     default_values = {
         '_type':u'GString', 
         'transition': Transitions.HOLD, 
     }
+    
+    def __str__(self):
+        output = 'GString:\n'
+        for a_result in self.result:
+            for value in a_result.values():
+                output +='Path:\n'
+                for single in value:
+                    output += '%s %s \n %s\n lock: %s\n'%(single.id, single.state, single.job, single['_lock'])
+        return output
     
     def retry(self):
         if self.transition == Transitions.ERROR:
@@ -72,12 +81,13 @@ class GString(model.Task):
                             pass
 
     @classmethod
-    def create(cls, f_list,  a_opt,  app_tag='gamess', requested_cores=1, requested_memory=2, requested_walltime=2):
+    def create(cls, f_list,  app_tag='gamess', requested_cores=1, requested_memory=2, requested_walltime=2):
         task = super(GString, cls,).create()
         task.app_tag = u'%s'%(app_tag)
         app = _app_tag_mapping[task.app_tag]
         
-        a_neb = neb.NEB(method='ci')
+        a_neb = neb.NEB()
+        l_opt = list()
         
         for a_file in f_list:
             task.attach_file(a_file, 'input')
@@ -86,20 +96,18 @@ class GString(model.Task):
         atoms_end, params_end = app.parse_input(f_list[1])
         
         assert params_start == params_end,  'Start and finish need to have the same params.'
-        #path = neb.interpolate(atoms_start.get_positions(), atoms_end.get_positions())
-        def dup(obj, count):
-            l = list()
-            for i in xrange(count):
-                l.append(copy.deepcopy(obj))
-            return l
-        path = dup(atoms_start.get_positions(),6)
-        path.append(atoms_end.get_positions())
+        path = neb.interpolate(atoms_start.get_positions(), atoms_end.get_positions())
         
+        for i in xrange(len(path)):
+            mongo_pickle = model.MongoPickle.create()
+            task.opt.append(mongo_pickle)
+            task.opt[i].pickle = fire.FIRE()
+        
+        #path = path[0:3]
         task.result.append({'gsingle':_convert_pos_to_jobs(app_tag, atoms_start, params_start, path, requested_cores, requested_memory, requested_walltime)})
         task.neb = model.MongoPickle.create()
-        task.opt = model.MongoPickle.create()
         task.neb.pickle = a_neb
-        task.opt.pickle = a_opt
+        
         
         task.transition = Transitions.PAUSED
         task.state = States.WAIT
@@ -147,7 +155,6 @@ class GStringStateMachine(statemachine.StateMachine):
     def handle_process_state(self):
         children = self.task.result[-1]['gsingle']
         app = _app_tag_mapping[self.task.app_tag]
-        a_opt = self.task.opt.pickle
         a_neb = self.task.neb.pickle
         gc3_temp = _str_dict(children[0].gc3_temp)
         
@@ -167,22 +174,35 @@ class GStringStateMachine(statemachine.StateMachine):
         
         new_pos = list()
         #Initialize fire matrix
-        if a_opt.v is None:
-            a_opt.step(a_neb.path[0].r, a_neb.path[0].f)
+        l_opt = list()
+        for a_opt in self.task.opt:
+            l_opt.append(a_opt.pickle)
+            if l_opt[-1].v is None:
+                l_opt[-1].step(a_neb.path[0].r, a_neb.path[0].f)
         
         force_converge = .01
         fmax = neb.vmag(a_neb.path[0].f)
         for image in a_neb.path:
             if neb.vmag(image.f) > fmax:
                 fmax = neb.vmag(image.f)
+        htpie.log.debug('GString %s max force %f'%(self.task.id, fmax))
         
         if fmax > force_converge:
-            for image in a_neb.path:
-                new_pos.append(a_opt.step(image.r, image.f))
+            new_pos.append(a_neb.path[0].r)
+            for i in range(1, len(a_neb.path) - 1):
+                new_pos.append(l_opt[i].step(a_neb.path[i].r, a_neb.path[i].f))
+                self.task.opt[i].pickle = l_opt[i]
+                htpie.log.debug('Image force \n%s'%(a_neb.path[i].f))
+            new_pos.append(a_neb.path[-1].r)
+            
+            for i in xrange(len( a_neb.path)):
+                htpie.log.debug('GString %d position diff \n%s'%(i, a_neb.path[i].r - new_pos[i]))
+            
             path = _convert_pos_to_jobs(self.task.app_tag, atoms_start, params_start, new_pos, **gc3_temp)
+            
             self.task.result.append({'gsingle':path})
         
-            self.task.opt.pickle = a_opt
+            
             self.task.neb.pickle = a_neb
         
             self.state = States.WAIT

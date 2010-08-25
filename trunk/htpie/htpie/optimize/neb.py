@@ -96,7 +96,7 @@ class NEB(object):
     """
     
     def __init__(self, spring_constant = 5.0, tangent = "new",       \
-                 dneb = False, dnebOrg = False, method = 'normal'):
+                 dneb = True, dnebOrg = False, method = 'normal'):
         """
         The neb constructor.
         Parameters:
