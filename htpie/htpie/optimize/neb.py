@@ -95,7 +95,7 @@ class NEB(object):
     The nudged elastic band (neb) class.
     """
     
-    def __init__(self, spring_constant = 5.0, tangent = "new",       \
+    def __init__(self, spring_constant = 2.0, tangent = "new",       \
                  dneb = True, dnebOrg = False, method = 'normal'):
         """
         The neb constructor.

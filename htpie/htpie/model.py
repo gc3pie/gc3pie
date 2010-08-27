@@ -90,7 +90,8 @@ class MongoBase(Document):
     
     def release(self):
         if self.authorize():
-            self._lock= u''
+            self.collection.update({'_id':self._id, '_lock':self._l_lock}, {'$set':{'_lock':u''}})
+            self['_lock'] = u''
             self.save()
         #htpie.log.debug('Released %s to %s'%(self._l_lock,self._lock))
     

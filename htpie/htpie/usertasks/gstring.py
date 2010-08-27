@@ -55,6 +55,7 @@ class GString(model.Task):
             else:
                 self.transition = Transitions.PAUSED
                 self.release()
+                self.save()
         for path in self.result:
             for children in path.values():
                 for child in children:
@@ -81,7 +82,7 @@ class GString(model.Task):
                             pass
 
     @classmethod
-    def create(cls, f_list,  app_tag='gamess', requested_cores=1, requested_memory=2, requested_walltime=2):
+    def create(cls, f_list,  app_tag='gamess', requested_cores=8, requested_memory=2, requested_walltime=2):
         task = super(GString, cls,).create()
         task.app_tag = u'%s'%(app_tag)
         app = _app_tag_mapping[task.app_tag]
@@ -181,11 +182,9 @@ class GStringStateMachine(statemachine.StateMachine):
                 l_opt[-1].step(a_neb.path[0].r, a_neb.path[0].f)
         
         force_converge = .01
-        fmax = neb.vmag(a_neb.path[0].f)
-        for image in a_neb.path:
-            if neb.vmag(image.f) > fmax:
-                fmax = neb.vmag(image.f)
-        htpie.log.debug('GString %s max force %f'%(self.task.id, fmax))
+        for i in xrange(len(a_neb.path)):
+            fmax = neb.vmag(a_neb.path[i].f)
+            htpie.log.debug('GString %d %s max force %f'%(i, self.task.id, fmax))
         
         if fmax > force_converge:
             new_pos.append(a_neb.path[0].r)

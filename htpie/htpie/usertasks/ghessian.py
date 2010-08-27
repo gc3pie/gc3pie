@@ -60,6 +60,7 @@ class GHessian(model.Task):
         else:
             self.state = States.KILL
             self.release()
+            self.save()
             htpie.log.debug('GHessian %s will be killed'%(self.id))
             for child in self.children:
                 try:

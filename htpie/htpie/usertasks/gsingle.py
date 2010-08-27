@@ -132,6 +132,7 @@ class GSingle(model.Task):
             else:
                 self.transition = Transitions.PAUSED
                 self.release()
+                self.save()
     
     def kill(self):
         try:

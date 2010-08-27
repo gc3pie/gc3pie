@@ -74,6 +74,7 @@ class GHessianTest(model.Task):
             else:
                 self.transition = Transitions.PAUSED
                 self.release()
+                self.save()
         for a_result in self.result:
             a_result['gsingle'].retry()
             a_result['ghessian'].retry()

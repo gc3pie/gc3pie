@@ -29,7 +29,7 @@ class FIREParam(utils.InformationContainer):
         InformationContainer.__init__(self,initializer,**keywd)
 
 class FIRE(Optimize):
-    def __init__(self, dt=0.1, maxmove=0.2, dtmax=1.0, Nmin=5, finc=1.1, fdec=0.5,
+    def __init__(self, dt=0.1, maxmove=0.075, dtmax=1.0, Nmin=5, finc=1.1, fdec=0.2,
                  astart=0.1, fa=0.99, a=0.1):
 
         self.dt = dt
