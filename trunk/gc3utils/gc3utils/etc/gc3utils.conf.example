@@ -11,7 +11,7 @@
 [DEFAULT]
 # The `DEFAULT` section is entirely optional; if present, its values can
 # be used to interpolate values in other sections, using the `%(name)s` syntax.
-# See documentation of the `SafeConfigParser` object at: 
+# See documentation of the `SafeConfigParser` object at:
 #   http://docs.python.org/library/configparser.html
 debug = 0
 
@@ -22,21 +22,24 @@ debug = 0
 # Each `resource/***` section will reference one (and one only) auth
 # section.
 #
-# Examples: 
+# Examples:
 #
 # [authorization/smscg]
 # type = voms
-# aai_username= <aai_user_name>
-# idp= uzh.ch
+# aai_username = <your_aai_user_name>
+# idp = uzh.ch
 # vo = smscg
 #
 # [authorization/ssh1]
 # type = ssh
-# username = murri # your username here
+# username = <your_ssh_user_name>
 #
-# [authorization/ssh2] # I use a different account name on some resources
+# If you have a different account name on some resources, you can create
+# another authorization section with, e.g.
+#
+# [authorization/ssh2]
 # type = ssh
-# username = rmurri 
+# username = <your_other_ssh_user_name>
 
 
 # Resource section
@@ -52,7 +55,7 @@ debug = 0
 # [resource/gc3]
 # # A single cluster, accessed through the ARC middleware
 # type = arc
-# authorization_type = <auth_name> # pick a `voms` type auth
+# authorization_type = <voms_auth_type_name>
 # frontend = idgc3grid01.uzh.ch
 # name = gc3
 # arc_ldap = ldap://idgc3grid01.uzh.ch:2135/mds-vo-name=resource,o=grid
@@ -66,7 +69,7 @@ debug = 0
 # [resource/ocikbpra]
 # # A single SGE cluster, accessed by SSH'ing to the front-end node
 # type = ssh_sge
-# authorization_type = <auth_name> # pick an `ssh` type auth, e.g., "ssh1"
+# authorization_type = <ssh_auth_type_name>
 # frontend = ocikbpra.uzh.ch
 # gamess_location = /share/apps/gamess
 # max_cores_per_job = 80
@@ -75,5 +78,5 @@ debug = 0
 # ncores = 80
 # # see http://gridengine.info/2005/11/04/immediate-accounting-data-flushing
 # # if you need to lower this
-# sge_accounting_delay = 15 
+# sge_accounting_delay = 15
 # walltime = 2
