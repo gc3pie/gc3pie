@@ -50,7 +50,7 @@ def parse_qstat_f(qstat_output):
     # a job report line starts with a numeric job ID
     _job_line_re = re.compile(r'^[0-9]+ \s+', re.X)
     # queue report header line starts with queuename@hostname 
-    _queue_header_re = re.compile(r'^([a-z0-9\._-]+)@([a-z0-9\.-]+) \s+ ([BIPCTN]+) \s+ ([0-9]+)/([0-9]+)/([0-9]+)', 
+    _queue_header_re = re.compile(r'^([a-z0-9\._-]+)@([a-z0-9\.-]+) \s+ ([BIPCTN]+) \s+ ([0-9]+)?/?([0-9]+)/([0-9]+)', 
                                   re.I|re.X)
     # property lines always have the form 'xx:propname=value'
     _property_line_re = re.compile(r'^[a-z]{2}:([a-z_]+)=(.+)', re.I|re.X)
@@ -66,12 +66,16 @@ def parse_qstat_f(qstat_output):
         # is this a queue header?
         match = _queue_header_re.match(line)
         if match:
-            qname, hostname, kind, slots_used, slots_resv, slots_total = match.groups()
+            qname, hostname, kind, slots_resv, slots_used, slots_total = match.groups()
             if 'B' not in kind:
                 continue # ignore non-batch queues
+            # Some versions of SGE do not have a "reserved" digit in the slots column, so
+            # slots_resv will be set to None.  For our purposes it is better that it is 0.
+            if slots_resv == None:
+                slots_resv = 0
             # key names are taken from 'qstat -xml' output
-            result[qname][hostname]['slots_used'] = _parse_value('slots_used', slots_used)
             result[qname][hostname]['slots_resv'] = _parse_value('slots_resv', slots_resv)
+            result[qname][hostname]['slots_used'] = _parse_value('slots_used', slots_used)
             result[qname][hostname]['slots_total'] = _parse_value('slots_total', slots_total)
         # is this a property line?
         match = _property_line_re.match(line)
