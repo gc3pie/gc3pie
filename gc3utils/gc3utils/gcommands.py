@@ -74,16 +74,17 @@ def _print_job_info(job_obj):
         if not key == 'log' and not ( str(job_obj[key]) == '-1' or  str(job_obj[key]) == '' ):
             if key == 'status':
                 print("%-20s  %-10s " % (key, gc3utils.Job.job_status_to_string(job_obj[key])))
-            elif key == 'submission_time' or key == 'completion_time':
-                print("%-20s  %-10s " % (key,time.asctime(job_obj[key])))
+            #elif key == 'submission_time' or key == 'completion_time':
+            #    print("%-20s  %-10s " % (key,time.asctime(job_obj[key])))
             else:
                 print("%-20s  %-10s " % (key,job_obj[key]))
     return 0
         
-def _print_job_status(job_list,job_status_filter):
+def _print_job_status(job_list,job_status_filter,extended_view=False):
     if len(job_list) > 0:
-        print("%-16s  %-10s" % ("Job ID", "Status"))
-        print("===========================")
+        if not extended_view:
+            print("%-16s  %-10s" % ("Job ID", "Status"))
+            print("===========================")
         # FIXME: this is FRAGILE as it makes an assumption about how the
         # job.unique_token is formed; it would be *much* better if the
         # JobId was made into an object, and this becomes its __cmp__
@@ -101,9 +102,13 @@ def _print_job_status(job_list,job_status_filter):
             if job_status_filter > 0:
                 if not _job.status == job_status_filter:
                     continue
-            print("%-16s  %-10s" 
-                  % (_job.unique_token, 
-                     gc3utils.Job.job_status_to_string(_job.status)))
+            if extended_view:
+                print("\n===========================")
+                _print_job_info(_job)
+            else:
+                print("%-16s  %-10s" 
+                      % (_job.unique_token, 
+                         gc3utils.Job.job_status_to_string(_job.status)))
 
 
 #====== Main ========
@@ -312,6 +317,7 @@ def gstat(*args, **kw):
     parser = OptionParser(usage="Usage: %prog [options] JOBID")
     parser.add_option("-v", action="count", dest="verbosity", default=0, help="Set verbosity level")
     parser.add_option("-s", action="store", dest="job_status_filter", metavar="INT", default=0, help="only select jobs whose status is INT")
+    parser.add_option("-l", action="store_true", dest="long", default=False, help="long format (more information)")
     (options, args) = parser.parse_args(list(args))
     _configure_logger(options.verbosity)
 
@@ -340,13 +346,10 @@ def gstat(*args, **kw):
             # invalid...
             gc3utils.log.error('Returned job not valid. Removing from list')
             job_list.remove(_job)
-        #else:
-        #    gc3utils.Job.persist_job(_job)
-        #    # gc3utils.Job.persist_job_filesystem(_job)
                                         
     try:
         # Print result
-        _print_job_status(job_list,int(options.job_status_filter))
+        _print_job_status(job_list,int(options.job_status_filter),options.long)
     except:
         gc3utils.log.error('Failed displaying job status results')
         raise
@@ -370,12 +373,11 @@ def gget(*args, **kw):
     unique_token = args[0]
 
     _gcli = _get_gcli(_default_config_file_location)
-    # FIXME: gget should raise exception when something goes wrong; does it indeed?
     job_obj = gc3utils.Job.get_job(unique_token)
 
     gc3utils.log.debug('job status [%d]',job_obj.status)
     
-    if job_obj.status == gc3utils.Job.JOB_STATE_COMPLETED or job_obj.status == gc3utils.Job.JOB_STATE_FAILED:
+    if job_obj.status == gc3utils.Job.JOB_STATE_COMPLETED:
         if job_obj.has_key('download_dir'):
             sys.stdout.write('Job already retrieved in [ '+job_obj.download_dir+' ]\n')
         else:
@@ -383,7 +385,7 @@ def gget(*args, **kw):
             sys.stdout.write('Job cold not be retirieved any furhter\n')
         sys.stdout.flush
     else:
-        if  job_obj.status == gc3utils.Job.JOB_STATE_FINISHED or job_obj.status == gc3utils.Job.JOB_STATE_DELETED:
+        if  job_obj.status == gc3utils.Job.JOB_STATE_FINISHED or job_obj.status == gc3utils.Job.JOB_STATE_DELETED or job_obj.status == gc3utils.Job.JOB_STATE_FAILED:
             try:
                 gc3utils.log.debug('running gcli.gget')
                 job_obj = _gcli.gget(job_obj)
@@ -396,7 +398,7 @@ def gget(*args, **kw):
                 if job_obj.has_key('download_dir'):
                     print("Job results successfully retrieved in '%s'\n" % job_obj.download_dir)
                 else:
-                    raise Exception('Job marked as completed but no results fetched')
+                    raise Exception('Job marked completed but no results fetched')
         else:
             raise Exception("job status not ready for retrieving results")
 
@@ -451,6 +453,43 @@ def gkill(*args, **kw):
 
         if warning != "":
             raise Exception(warning)
+
+    except:
+        gc3utils.log.critical('program failed due to: %s' % sys.exc_info()[1])
+        raise Exception("gkill failed")
+
+def gtail(*args, **kw):
+    """The 'gtail' command."""
+    parser = OptionParser(usage="Usage: %prog [options] unique_token")
+    parser.add_option("-v", action="count", dest="verbosity", default=0, help="Set verbosity level")
+    parser.add_option("-e", action="store_true", dest="stderr", default=False, help="show stderr of the job")
+    parser.add_option("-o", action="store_true", dest="stdout", default=True, help="show stdout of the job (default)")
+    (options, args) = parser.parse_args(list(args))
+    _configure_logger(options.verbosity)
+
+    try:
+        if len(args) != 1:
+            raise InvalidUsage("This command requires exactly two argument: the job unique_token.")
+        
+        unique_token = args[0]
+    
+        if options.stderr:
+            std = 'stderr'
+        else:
+            std = 'stdout'
+            
+        _gcli = _get_gcli(_default_config_file_location)
+    
+        job = gc3utils.Job.get_job(unique_token)
+        
+        if not (
+            job.status == gc3utils.Job.JOB_STATE_COMPLETED
+            ):
+            job = _gcli.tail(job,std)
+        else:
+            raise Exception('Already in terminal state')
+
+        print job[std]
 
     except:
         gc3utils.log.critical('program failed due to: %s' % sys.exc_info()[1])

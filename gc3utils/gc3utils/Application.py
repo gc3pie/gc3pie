@@ -157,11 +157,11 @@ class Application(InformationContainer):
         if self.stdin and self.stdin not in self.inputs:
             self.input[self.stdin] = os.path.basename(self.stdin)
         self.stdout = get_and_remove(kw, 'stdout')
-        if self.stdout and self.stdout not in self.outputs:
-            self.outputs[self.stdout] = os.path.basename(self.stdout)
+#        if self.stdout and self.stdout not in self.outputs:
+#            self.outputs[self.stdout] = os.path.basename(self.stdout)
         self.stderr = get_and_remove(kw, 'stderr')
-        if self.stderr and self.stderr not in self.outputs:
-            self.outputs[self.stderr] = os.path.basename(self.stderr)
+#        if self.stderr and self.stderr not in self.outputs:
+#            self.outputs[self.stderr] = os.path.basename(self.stderr)
 
         self.rtes = get_and_remove(kw, 'rtes')
 

@@ -48,16 +48,23 @@ class LRMS:
         """
         raise NotImplementedError("Abstract method `LRMS.get_resource_status()` called - this should have been defined in a derived class.")
     
-    def tail(self, std_type):
+    def tail(self, job, remote_filename):
         """
-        todo : not permanent yet
         Gets the output of a running job, similar to ngcat.
         Return Job object.
         
         examples:
         print Job.stdout
         print Job.stderr
-        
+                                                
+        Copy a remote file belonging to the job sandbox and return the content of the file as a string.
+        Primarly conceived for stdout and stderr.
+        Any exception raised by operations will be passed through.
+        @param job: the job object
+        @type job: gc3utils.Job
+        @param remote_filename: the remote file to copy
+        @type remote_filename: string
+        @since: 0.2
         """
         raise NotImplementedError("Abstract method `LRMS.tail()` called - this should have been defined in a derived class.")
     

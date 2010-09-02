@@ -201,7 +201,7 @@ class SshLrms(LRMS):
             'maxvmem':'used_memory',
             'end_time':'completion_time',
             'qsub_time':'submission_time',
-            'maxvmem':'used_memory'
+            'maxvmem':'used_memory',
             }
         try:
             # open ssh connection
@@ -279,7 +279,12 @@ class SshLrms(LRMS):
                     except AttributeError:
                         # this is the first time `qstat` fails, record a timestamp and retry later
                         job.sge_qstat_failed_at = time.time()
-                    
+
+            # explicitly set stdout and stderr
+            # Note: stdout and stderr are always considered as merged
+            job.stdout_filename = job.lrms_job_name + '.o' + job.lrms_jobid
+            job.stderr_filename = job.lrms_job_name + '.o' + job.lrms_jobid
+            
             ssh.close()
             
             return job
@@ -419,7 +424,37 @@ class SshLrms(LRMS):
             raise 
 
 
+    def tail(self, job_obj, filename):
+        """
+        tail allows to get a snapshot of any valid file created by the job
+        """
 
+        # open ssh channel
+        ssh, sftp = self._connect_ssh(self._resource.frontend,self._ssh_username)
+
+        # reference to remote file
+        _remote_filename = job_obj.remote_ssh_folder + '/' + filename
+
+        # create temp file
+        _tmp_filehandle = tempfile.NamedTemporaryFile(mode='w', suffix='.tmp', prefix='gc3_')
+
+        sftp.get(_remote_filename, _tmp_filehandle.name)
+
+        # pass content of filename as part of job object dictionary
+        # assuming stdout/stderr are alqays limited in size
+        # We read the entire content in one step
+        # shall we foresee different strategies ?
+        _tmp_filehandle.file.seek(0)
+        _file_content = _tmp_filehandle.file.read()
+        
+        # cleanup: close and remove tmp file
+        _tmp_filehandle.close()
+
+        ssh.close()
+        sftp.close()
+        
+        return _file_content
+                
     def get_resource_status(self):
 
         username = self._ssh_username
@@ -491,4 +526,7 @@ class SshLrms(LRMS):
 
 
     def _date_normalize(self, date_string):
-        return time.strptime(date_string,"%a %b %d %H:%M:%S %Y")
+        # Example format: Wed Aug 25 15:41:30 2010
+        t = time.strptime(date_string,"%a %b %d %H:%M:%S %Y")
+        # Temporarly adapted to return a string representation
+        return time.strftime("%Y-%m-%d %H:%M:%S", t)
