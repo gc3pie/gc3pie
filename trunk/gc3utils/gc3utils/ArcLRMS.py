@@ -1,6 +1,8 @@
 import sys
 import os
 import time
+import tempfile
+
 import warnings
 warnings.simplefilter("ignore")
 
@@ -88,6 +90,7 @@ class ArcLrms(LRMS):
 
         # add submssion time reference
         job.submission_time = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
+        # job.submission_time = time.localtime()
 
         return job
 
@@ -132,9 +135,11 @@ class ArcLrms(LRMS):
         # set time stamps
         # XXX: use Python's `datetime` types
         if arc_job.submission_time.GetTime() > -1:
-            job.submission_time = self._date_normalize(str(arc_job.submission_time.GetTime()))
+            # job.submission_time = self._date_normalize(str(arc_job.submission_time.GetTime()))
+            job.submission_time = str(arc_job.submission_time)
         if arc_job.completion_time.GetTime() > -1:
-            job.completion_time = self._date_normalize(str(arc_job.completion_time.GetTime()))
+            # job.completion_time = self._date_normalize(str(arc_job.completion_time.GetTime()))
+            job.completion_time = str(arc_job.completion_time)
         else:
             job.completion_time = ""
 
@@ -148,6 +153,13 @@ class ArcLrms(LRMS):
         job.requested_wall_time = arc_job.requested_wall_time
         job.queue = arc_job.queue
 
+        # additional information. They should become part of mandatory Job information
+        # they are required for 'tail' function
+        job.stdout_filename = arc_job.sstdout
+        job.stderr_filename = arc_job.sstderr
+
+        # These should be removed. To check impact on additional services first
+        # see Issue 27
         job.arc_cluster = arc_job.cluster
         job.arc_cpu_count = arc_job.cpu_count
         job.arc_exitcode = arc_job.exitcode
@@ -311,6 +323,38 @@ class ArcLrms(LRMS):
     def cancel_job(self, job_obj):
         arclib.CancelJob(job_obj.lrms_jobid)
         return job_obj
+
+    def tail(self, job_obj, filename):
+        """
+        tail allows to get a snapshot of any valid file created by the job
+        """
+        try:
+            _remote_filename = job_obj.lrms_jobid + '/' + filename
+        
+            # create temp file
+            _tmp_filehandle = tempfile.NamedTemporaryFile(mode='w', suffix='.tmp', prefix='gc3_')
+        
+            # get JobFTPControl handle            
+            jftpc = arclib.JobFTPControl()
+
+            # download file
+            gc3utils.log.debug('Downloading remote file %s into local tmp file %s' % (filename,_tmp_filehandle.name))
+            arclib.JobFTPControl.Download(jftpc,_remote_filename,_tmp_filehandle.name)
+
+            # pass content of filename as part of job object dictionary
+            # assuming stdout/stderr are alqays limited in size
+            # We read the entire content in one step
+            # shall we foresee different strategies ?
+            _tmp_filehandle.file.seek(0)
+            _file_content = _tmp_filehandle.file.read()
+
+            # cleanup: close and remove tmp file
+            _tmp_filehandle.close()
+
+            return _file_content
+        except:
+            gc3utils.log.error('Failed while retrieving remote file %s', _remote_filename)
+            raise
 
     def _date_normalize(self, date_string):
         return time.localtime(int(date_string))

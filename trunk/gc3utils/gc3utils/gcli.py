@@ -178,18 +178,20 @@ class Gcli:
         return job_obj
 
 #====== Gget =======
-    def gget(self, job_obj, **kw):
+    def gget(self, job, **kw):
+
+        if job.status == gc3utils.Job.JOB_STATE_SUBMITTED or job.status == gc3utils.Job.JOB_STATE_UNKNOWN:
+            raise OutputNotAvailableError('Output Not avilable')
+
         auto_enable_auth = kw.get('auto_enable_auth', self.auto_enable_auth)
-
-        _lrms = self.__get_LRMS(job_obj.resource_name)
-
+        _lrms = self.__get_LRMS(job.resource_name)
         self.authorization.get(_lrms._resource.authorization_type)
 
         try:
-            return  _lrms.get_results(job_obj)
+            return  _lrms.get_results(job)
         except LRMSUnrecoverableError:
-            job_obj.status = gc3utils.Job.JOB_STATE_FAILED
-            return job_obj
+            job.status = gc3utils.Job.JOB_STATE_COMPLETED
+            return job
         
 #====== Glist =======
     def glist(self,resource_name, **kw):
@@ -213,7 +215,35 @@ class Gcli:
         gc3utils.log.debug('setting job status to DELETED')
         job_obj.status =  gc3utils.Job.JOB_STATE_DELETED
         return job_obj
-                                                                
+
+#====== Tail ========
+    def tail(self, job, std='stdout', **kw):
+        """
+        Tail returns job object with .stdout or .stderr containing content of stdout or stderr respectively
+        Note: For the time beind we allow only stdout or stderr as valid filenames
+        """
+
+        # Get authorization
+        auto_enable_auth = kw.get('auto_enable_auth', self.auto_enable_auth)
+        _lrms = self.__get_LRMS(job.resource_name)
+        self.authorization.get(_lrms._resource.authorization_type)
+
+        try:
+            if std == 'stdout':
+                filename = job.stdout_filename
+            elif std == 'stderr':
+                filename = job.stderr_filename
+            else:
+                raise Error('Invalid requested filename')
+            job[std] = _lrms.tail(job,filename)
+            
+            return job
+
+        except AttributeError:
+            gc3utils.log.critical('Missing attribute')
+            raise
+        except:
+            raise
 
 #=========     INTERNAL METHODS ============
 
