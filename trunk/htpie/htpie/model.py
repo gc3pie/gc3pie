@@ -19,12 +19,12 @@ MONGO_IP = "0.0.0.0"
 MONGO_PORT = 27017
 
 con = Connection(host=MONGO_IP, port=MONGO_PORT)
+db = con[MONGO_DB]
 
 class MongoBase(Document):
     collection_name = 'MongoBase'
     
-    structure = {'_lock':unicode,
-                         'create_d': datetime.datetime, 
+    structure = {'create_d': datetime.datetime, 
                          '_type':unicode, 
     }
     
@@ -33,8 +33,7 @@ class MongoBase(Document):
     #atomic_save = True
     
     default_values = {
-        'create_d': datetime.datetime.now(),
-        '_lock':u'', 
+        'create_d': datetime.datetime.now(), 
     }
     
     indexes = [
@@ -48,7 +47,6 @@ class MongoBase(Document):
     
     def __init__(self, *args, **kwargs):
         super(MongoBase, self).__init__(*args, **kwargs)
-        self._l_lock = u'%s'%(uuid.uuid1())
     
     @property
     def id(self):
@@ -69,50 +67,16 @@ class MongoBase(Document):
     
     @classmethod
     def collection(cls):
-        return con[MONGO_DB][cls.collection_name]
+        return db[cls.collection_name]
     
     @classmethod
     def create(cls):
         obj = cls.new()
         obj.save()
         return obj
-    
-    def save(self):
-        if self.authorize():
-            super(MongoBase, self).save()
-    
-    def acquire(self):
-        if self.authorize():
-            self.collection.update({'_id':self._id, '_lock':u''}, {'$set':{'_lock':self._l_lock}})
-            self.reload()
-            self.authorize()
-        #htpie.log.debug('Acquire %s'%(self._lock))
-    
-    def release(self):
-        if self.authorize():
-            self.collection.update({'_id':self._id, '_lock':self._l_lock}, {'$set':{'_lock':u''}})
-            self['_lock'] = u''
-            self.save()
-        #htpie.log.debug('Released %s to %s'%(self._l_lock,self._lock))
-    
-    def authorize(self, timeout=10):
-        #htpie.log.debug('Authorize %s to local %s'%(self._lock, self._l_lock))
-        poll_interval = 1
-        if poll_interval > timeout:
-            poll_interval = timeout
-        done = False
-        starting_time = time.time()
-        while starting_time + timeout > time.time():
-            if self._lock ==  self._l_lock or not self._lock:
-                done = True
-                break
-            time.sleep(poll_interval)
-        if not done:
-            raise AuthorizationException( 'Mongodb record %s authorization timedout after %d seconds'%(self.id, timeout))
-        return done
 
 class MongoAttachObj(MongoBase):
-    collection_name = 'MongoAttach'
+    collection_name = 'MongoAttachObj'
     structure = {}
     
     gridfs = {'containers':['attach']}
@@ -219,6 +183,7 @@ class Task(MongoBase):
         'children_dbref': [DBRef], 
         'last_exec_d': datetime.datetime, 
         'result': MongoBase,
+        '_lock':unicode,
     }
     
     gridfs = {
@@ -228,11 +193,14 @@ class Task(MongoBase):
     
     default_values = {
         '_type':u'Task',
+        '_lock':u'',
     }
     
     def __init__(self, *args, **kwargs):
         super(Task, self).__init__(*args, **kwargs)
         self._l_children = list()
+        #We set the lock id to the connection id
+        self._l_lock = u'%s'%(db.command( "whatsmyuri" ) [u'you'])
     
     def add_child(self, obj):
         dbref = DBRef(obj.collection_name, obj._id)
@@ -264,9 +232,9 @@ class Task(MongoBase):
     @staticmethod
     def load(id):
         collection = Task.collection_name
-        col = eval('con[MONGO_DB][\'%s\']'%(collection))
+        col = eval('db[\'%s\']'%(collection))
         raw = col.one({'_id':ObjectId(id)})
-        doc = eval('con[MONGO_DB][\'%s\'].%s'%(collection, raw['_type']))
+        doc = eval('db[\'%s\'].%s'%(collection, raw['_type']))
         assert not isinstance(doc,Collection),  'Doc can not be a collection. Did you import everything?'
         doc = doc.one({'_id':raw['_id']})
         return doc
@@ -337,7 +305,61 @@ class Task(MongoBase):
                     to_write.close()
         finally:
             [f.close() for f in f_container]
-        return f_list    
+        return f_list
+    
+    def save(self):
+        if self.authorize():
+            super(Task, self).save()
+    
+    def acquire(self):
+        if self.authorize():
+            #Update the lock and make sure that it was updated.
+            #We could check the last_error to make sure it worked, but 
+            #we hack it this way instead.
+            self.collection.update({'_id':self._id, '_lock':u''}, {'$set':{'_lock':self._l_lock}}, safe=True)
+            self['_lock'] = self._l_lock
+        #htpie.log.debug('Acquire %s'%(self._lock))
+    
+    def release(self):
+        if self.authorize():
+            self['_lock'] = u''
+            self.save()
+        #htpie.log.debug('Released %s to %s'%(self._l_lock,self._lock))
+    
+    def authorize(self, timeout=0):
+        #htpie.log.debug('Authorize %s to local %s'%(self._lock, self._l_lock))
+        poll_interval = 1
+        done = False
+        starting_time = time.time()
+        if self._lock ==  self._l_lock or not self._lock:
+            #We have the lock, so we are good
+            done = True
+        while starting_time + timeout - poll_interval > time.time():
+            time.sleep(poll_interval)
+            if self._lock ==  self._l_lock or not self._lock:
+                #We have the lock, so we are good
+                done = True
+                break
+        if not done:
+            raise AuthorizationException( 'Mongodb record %s authorization timedout after %d seconds'%(self.id, timeout))
+        return done
+
+    @classmethod
+    def implicit_release(cls):
+        '''If a thread crashs, it will not unlock the document. We unlock it here.'''
+        def get_con_ids():
+            #Get all of the connection ids to the database
+            con_ids = db.eval('db.$cmd.sys.inprog.findOne( {$all : 1 } )')
+            valid_locks = [id[u'client'] for id in con_ids[u'inprog']]
+            valid_locks.append(u'')
+            return valid_locks
+        to_unlock = cls.collection().find({'_lock': {'$nin':get_con_ids()}}, ['_id'])
+        obj_ids=[v['_id'] for v in to_unlock]
+        output = ['%s'%(v) for v in obj_ids]
+        if output:
+            htpie.log.debug('These tasks will be implicitly released : %s'%(output))
+            cls.collection().update({'_lock':{'$nin':get_con_ids()}}, {'$set':{'_lock':u''}}, safe=True, multi=True)
+    
 
 con.register([Task, MongoBase, MongoMatrix, MongoPickle, MongoAttachObj])
 
@@ -372,6 +394,8 @@ def _chunk_trans(to_write, to_read):
     while line:
         to_write.write(line)
         line = to_read.read(chunk)
+
+
 
 if __name__ == '__main__':
 #    Task.structure['state']=[Task]

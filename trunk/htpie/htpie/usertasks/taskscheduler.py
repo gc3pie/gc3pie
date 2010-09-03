@@ -15,18 +15,22 @@ fsm_classes = dict()
 for node_name, node_class in module_names.items():
     __import__(node_class)
     fsm_classes[node_name] = (eval('sys.modules[node_class].%s'%(node_name)), 
-                                                eval('sys.modules[node_class].%sStateMachine'%(node_name)))
+                                                eval('sys.modules[node_class].%sStateMachine'%(node_name)))   
 
 class TaskScheduler(object):
     
     def handle_waiting_tasks(self):
         counter = 0
+        model.Task.implicit_release()
         for node_name, the_classes in fsm_classes.items():
             node_class = the_classes[0]
             fsm_class = the_classes[1]
             fsm = fsm_class()
             task_name = fsm.name.replace('StateMachine', '')
-            to_process = node_class.doc().find({'transition':statemachine.Transitions.PAUSED, '_type': task_name, '_lock':u''})
+            #to_process = node_class.doc().find({'transition':statemachine.Transitions.PAUSED, '_type': task_name})
+            #If the task is not in a terminal state, then process it. We do this because a thread could crash before
+            #setting the transition to PAUSE.
+            to_process = node_class.doc().find({'transition':{'$nin':statemachine.Transitions.terminal()} , '_type': task_name, '_lock': u''})
             htpie.log.debug('%d %s task(s) are going to be processed'%(to_process.count(),  task_name))
             for a_node in to_process:
                 counter += 1

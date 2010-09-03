@@ -23,7 +23,7 @@ setup(
     author_email = "gc3utils-dev@gc3.lists.uzh.ch",
     license = "LGPL",
     keywords = "grid arc globus ssh games batch job",
-    url = "https://ocikbfs.uzh.ch/trac/gc3utils",   # project home page, if any
+    url = "http://code.google.com/p/gc3pie/",   # project home page, if any
 
     entry_points = {
         'console_scripts': [
