@@ -51,8 +51,14 @@ class ArcLrms(LRMS):
             else:
                 cls = arclib.GetClusterResources()
             gc3utils.log.debug('Got cluster list of length %d', len(cls))
-            self._queues = arclib.GetQueueInfo(cls,arclib.MDS_FILTER_CLUSTERINFO, True, '', 1)
+            # Temporarly disable this check
+            #if len(cls) > 0:
+            self._queues = arclib.GetQueueInfo(cls,arclib.MDS_FILTER_CLUSTERINFO, True, '', 5)
+            gc3utils.log.debug('returned valid queue information for %d queues', len(self._queues))
             self._queues_last_updated = time.time()
+            #else:
+            ## return empty queues list
+            # self._queues = [] 
         return self._queues
             
     def submit_job(self, application, job=None):
