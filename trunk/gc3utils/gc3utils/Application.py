@@ -157,11 +157,11 @@ class Application(InformationContainer):
         if self.stdin and self.stdin not in self.inputs:
             self.input[self.stdin] = os.path.basename(self.stdin)
         self.stdout = get_and_remove(kw, 'stdout')
-#        if self.stdout and self.stdout not in self.outputs:
-#            self.outputs[self.stdout] = os.path.basename(self.stdout)
+        if self.stdout and self.stdout not in self.outputs:
+            self.outputs[self.stdout] = os.path.basename(self.stdout)
         self.stderr = get_and_remove(kw, 'stderr')
-#        if self.stderr and self.stderr not in self.outputs:
-#            self.outputs[self.stderr] = os.path.basename(self.stderr)
+        if self.stderr and self.stderr not in self.outputs:
+            self.outputs[self.stderr] = os.path.basename(self.stderr)
 
         self.rtes = get_and_remove(kw, 'rtes')
 
@@ -207,8 +207,9 @@ class Application(InformationContainer):
             xrsl += ('(inputFiles=%s)' 
                      % str.join(' ', [ ('("%s" "%s")' % (r,l)) for (l,r) in self.inputs.items() ]))
         if len(self.outputs) > 0:
-            xrsl += ('(outputFiles=%s)' 
-                     % str.join(' ', [ ('("%s" "%s")' % rl) for rl in self.outputs.items() ]))
+            xrsl += ('(outputFiles=%s)'
+                     % str.join(' ', [ ('("%s" "%s")' % rl) for rl in [ _filtered for _filtered in self.outputs.items() if _filtered[0] != self.stdout and _filtered[0] != self.stderr ]]))
+#                     % str.join(' ', [ ('("%s" "%s")' % rl) for rl in self.outputs.items() if rl[0] != self.stdout and rl[0] != stderr ]))
         if len(self.rtes) > 0:
             xrsl += str.join('\n', [
                     ('(runTimeEnvironment>="%s")' % rte) for rte in self.rtes ])

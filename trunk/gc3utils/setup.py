@@ -38,6 +38,7 @@ setup(
             'gresub = gc3utils.gcmd:main',
             'gstat = gc3utils.gcmd:main',
             'gsub = gc3utils.gcmd:main',
+            'gtail = gc3utils.gcmd:main',
             ],
        },
 
