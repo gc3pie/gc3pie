@@ -19,6 +19,13 @@ class Transitions(object):
     RUNNING = u'ACTION_RUNNING'
     PAUSED = u'ACTION_PAUSED'
     HOLD = u'ACTION_HOLD'
+    
+    @classmethod
+    def terminal(cls):
+        term = [cls.ERROR, 
+                     cls.COMPLETE, 
+                     cls.HOLD]
+        return term
 
 class StateMachine(object):    
     _cls_task = model.Task
@@ -34,14 +41,11 @@ class StateMachine(object):
             self.task.acquire()
         except AuthorizationException,  e:
             #Do nothing but log the error and return
-            raise
+            pass
         else:
             try:
-                htpie.log.debug('before Transitions.RUNNING')
                 self.transition = Transitions.RUNNING
-                htpie.log.debug('after Transitions.RUNNING')
                 done = self.state_mapping.get(self.state, self.handle_missing_state)()
-                htpie.log.debug('after step')
                 if done:
                     self.transition = Transitions.COMPLETE
                 else:
@@ -50,12 +54,8 @@ class StateMachine(object):
                 self.transition = Transitions.ERROR
                 htpie.log.critical('%s errored while processing %s \n%s'%(self.__class__.__name__, self.task.id, utils.format_exception_info()))
             finally:
-                htpie.log.debug('finally')
                 self.task.last_exec_d = datetime.datetime.now()
-                htpie.log.debug('after date')
                 self.task.release()
-                self.save()
-                htpie.log.debug('after release()')
     
     def run(self):
         while self.transition == Transitions.PAUSED:

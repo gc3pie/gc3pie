@@ -127,8 +127,6 @@ def configure_logger(verbosity, log_file_name='gc3utils_log'):
     htpie.log.addHandler(file_handler)
     htpie.log.addHandler(stream_handler)
     
-    import gorg.lib.utils
-    gorg.lib.utils.configure_logger(verbosity, log_file_name)
     from gc3utils.gcommands import _configure_logger
     import gc3utils
     gc3utils.log.addHandler(file_handler)
