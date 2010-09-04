@@ -338,8 +338,8 @@ class ArcLrms(LRMS):
             _remote_filename = job_obj.lrms_jobid + '/' + filename
         
             # create temp file
-            _tmp_filehandle = tempfile.NamedTemporaryFile(mode='w', suffix='.tmp', prefix='gc3_')
-        
+            _tmp_filehandle = tempfile.NamedTemporaryFile(mode='w+b', suffix='.tmp', prefix='gc3_')
+            
             # get JobFTPControl handle            
             jftpc = arclib.JobFTPControl()
 
@@ -351,8 +351,15 @@ class ArcLrms(LRMS):
             # assuming stdout/stderr are alqays limited in size
             # We read the entire content in one step
             # shall we foresee different strategies ?
+            _tmp_filehandle.file.flush()
             _tmp_filehandle.file.seek(0)
-            _file_content = _tmp_filehandle.file.read()
+
+            _file_content = ""
+
+            for line in _tmp_filehandle.file:
+                _file_content += str(line)
+
+            #_file_content = _tmp_filehandle.file.read()
 
             # cleanup: close and remove tmp file
             _tmp_filehandle.close()
