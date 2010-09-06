@@ -42,15 +42,18 @@ class GHessian(model.Task):
     
     def display(self, long_format=False):
         output = '%s %s %s %s\n'%(self._type, self.id, self.state, self.transition)
+        output += 'Job submitted: %s\n'%(self.create_d)
+        output += 'Job completed: %s\n'%(self.last_exec_d)
+        output += 'Delta: %s\n'%(self.last_exec_d - self.create_d)
         if self.transition == Transitions.COMPLETE:
             output += 'Frequency:\n'
             output += '%s\n'%(np.array(self.result['normal_mode']['frequency']))
             output += 'Mode:\n'
             output += '%s\n'%(self.result['normal_mode']['mode'].matrix)
-        
-        for child in self.children:
-            output += '-' * 80 + '\n'
-            output += child.display()
+        if long_format:
+            for child in self.children:
+                output += '-' * 80 + '\n'
+                output += child.display()
         return output
     
     def retry(self):

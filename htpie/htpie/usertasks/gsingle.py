@@ -13,9 +13,20 @@ import gc3utils.Exceptions
 
 import glob
 from datetime import datetime
+
 _app_tag_mapping = dict()
 _app_tag_mapping['gamess']=gamess.GamessApplication
 
+
+def _print_job_info(job_obj):
+    output = ''
+    for key in job_obj.keys():
+        if not key == 'log' and not ( str(job_obj[key]) == '-1' or  str(job_obj[key]) == '' ):
+            if key == 'status':
+                output +="%-20s  %-10s \n" % (key, gc3utils.Job.job_status_to_string(job_obj[key]))
+            else:
+                output += "%-20s  %-10s \n" % (key,job_obj[key])
+    return output
 
 class Nested(object):
     
@@ -124,8 +135,9 @@ class GSingle(model.Task):
             output += '%s\n'%(f.name)
         
         if long_format:
-            output += '\nGC3 Job:\n%s\n'%(job)
-            output += '\nGC3 Application:\n%s\n'%(application)
+            output += 'GC3 job info:\n'
+            output += _print_job_info(job)
+            #output += '\nGC3 Application:\n%s\n'%(application)
         else:
             output += 'GC3 job number: %s\n'%(job.unique_token)
         
