@@ -12,7 +12,7 @@ import gc3utils.Job
 import gc3utils.Exceptions
 
 import glob
-
+from datetime import datetime
 _app_tag_mapping = dict()
 _app_tag_mapping['gamess']=gamess.GamessApplication
 
@@ -97,6 +97,40 @@ class GSingle(model.Task):
         'transition': Transitions.HOLD
     }
     
+    def display(self, long_format=False):
+        job = self.job
+        application = self.application
+        tm_format = '%Y-%m-%d %H:%M:%S'
+        output = '%s %s %s %s\n'%(self._type, self.id, self.state, self.transition)
+        
+        if job:
+            submission_time = datetime.strptime(job.submission_time, tm_format)
+            output += 'Job submitted: %s\n'%(submission_time)
+            if hasattr(job, 'completion_time'):
+                if job.completion_time:
+                    completion_time = datetime.strptime(job.completion_time, tm_format)
+                    output += 'Job completed: %s\n'%(completion_time)
+                    delta = completion_time - submission_time
+                    output += 'Delta: %s\n'%(delta)
+        
+        output += 'Input file(s):\n'
+        f_list = self.open('input')
+        for f in f_list:
+            output += '%s\n'%(f.name)
+        [f.close() for f in f_list]
+        output += 'Ouput file(s):\n'
+        f_list = self.open('output')
+        for f in f_list:
+            output += '%s\n'%(f.name)
+        
+        if long_format:
+            output += '\nGC3 Job:\n%s\n'%(job)
+            output += '\nGC3 Application:\n%s\n'%(application)
+        else:
+            output += 'GC3 job number: %s\n'%(job.unique_token)
+        
+        return output
+
     def application():        
         def fget(self):
             application = self.gc3_application

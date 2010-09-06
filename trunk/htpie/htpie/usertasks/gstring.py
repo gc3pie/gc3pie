@@ -82,7 +82,7 @@ class GString(model.Task):
                             pass
 
     @classmethod
-    def create(cls, f_list,  app_tag='gamess', requested_cores=8, requested_memory=2, requested_walltime=2):
+    def create(cls, f_list,  app_tag='gamess', requested_cores=16, requested_memory=2, requested_walltime=2):
         task = super(GString, cls,).create()
         task.app_tag = u'%s'%(app_tag)
         app = _app_tag_mapping[task.app_tag]

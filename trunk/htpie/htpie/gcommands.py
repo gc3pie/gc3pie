@@ -183,12 +183,14 @@ def gcontrol(*args, **kw):
     #Set up command line options
     usage = "usage: %prog [options] arg"
     parser = OptionParser(usage)
-    parser.add_option("-p", "--program_command", dest="program_command",  default='retry', 
-                      help="command to run against task.")
+    parser.add_option("-p", "--program_command", dest="program_command",  default='info', 
+                      help="command to run against task")
     parser.add_option("-i", "--id", dest="id",  
-                      help="task to be acted upon.")
+                      help="task id to be acted upon")
+    parser.add_option("-l", "--long_format",  action="store_true", dest="long_format",  default=False, 
+                      help="display more information")
     parser.add_option("-v", "--verbose", action='count',dest="verbosity", default=config.verbosity, 
-                      help="add more v's to increase log output.")
+                      help="add more v's to increase log output")
     
     (options, args) = parser.parse_args()
     
@@ -205,7 +207,7 @@ def gcontrol(*args, **kw):
     elif options.program_command == 'kill':
         GControl.kill(options.id)
     elif options.program_command == 'info':
-        GControl.info(options.id)
+        GControl.info(options.id, options.long_format)
 #    elif options.program_command == 'files':
 #        gcontrol.get_task_files()
     else:

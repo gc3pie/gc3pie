@@ -23,16 +23,43 @@ class Transitions(statemachine.Transitions):
 
 class GHessianTest(model.Task):
 
-    structure = {'total_jobs': int,
-                         'result': [{'fname': unicode,'gsingle': gsingle.GSingle, 'ghessian': ghessian.GHessian,}], 
+    structure = {'result': [{'fname': unicode,'gsingle': gsingle.GSingle, 'ghessian': ghessian.GHessian,}], 
                         } 
     
     default_values = {
         'state': States.WAITING, 
         '_type':u'GHessianTest', 
         'transition': Transitions.HOLD, 
-        'total_jobs':0, 
     }
+    
+    def display(self, long_format=False):
+        output = '%s %s %s %s\n'%(self._type, self.id, self.state, self.transition)
+        output += '-' * 80 + '\n'
+        for result in self.result:
+            output += 'Filename: %s\n'%(result['fname'])
+            if self.state in States.terminal():
+                if result['gsingle'].transition != Transitions.ERROR and \
+                    result['ghessian'].transition != Transitions.ERROR:
+                    output += 'Deltas are calculated as htpie - GAMESS\n'
+                    output += 'Frequency delta:\n'
+                    delta = np.array(result['ghessian'].result['normal_mode']['frequency']) - np.array(result['gsingle'].result['normal_mode']['frequency'])
+                    output += '%s\n'%(delta)
+                    output += 'Mode delta:\n'
+                    delta = result['ghessian'].result['normal_mode']['mode'].matrix - result['gsingle'].result['normal_mode']['mode'].matrix
+                    output += '%s\n'%(delta)
+            if long_format:
+                output += '-' * 80 + '\n'
+                output += 'GAMESS normal mode job\n'
+                output += result['gsingle'].display()
+                output += 'Frequency:\n'
+                output += '%s\n'%np.array(result['gsingle'].result['normal_mode']['frequency'])
+                output += 'Mode:\n'
+                output += '%s\n'%result['ghessian'].result['normal_mode']['mode'].matrix
+                output += '-' * 80 + '\n'
+                output += 'htpie calculated normal mode\n'
+                output += result['ghessian'].display()
+            output += '-' * 80 + '\n'
+        return output
     
     @classmethod
     def create(cls, dir,  app_tag='gamess', requested_cores=16, requested_memory=2, requested_walltime=24):

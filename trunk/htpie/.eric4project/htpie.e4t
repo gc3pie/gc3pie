@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE Tasks SYSTEM "Tasks-4.2.dtd">
 <!-- eric4 tasks file for project htpie -->
-<!-- Saved: 2010-09-03, 16:46:51 -->
+<!-- Saved: 2010-09-03, 17:58:43 -->
 <Tasks version="4.2">
   <Task priority="1" completed="False" bugfix="False">
     <Summary>TODO: If we get an error storing the gsingle, we will have submitted it to the grid</Summary>
@@ -96,7 +96,7 @@
   <Task priority="1" completed="False" bugfix="True">
     <Summary>FIXME: gridfs name bugTrying to set the name attr doesn't work</Summary>
     <Description></Description>
-    <Created>2010-09-03, 16:33:25</Created>
+    <Created>2010-09-03, 17:46:40</Created>
     <Resource>
       <Filename>htpie/model.py</Filename>
       <Linenumber>282</Linenumber>
@@ -105,7 +105,7 @@
   <Task priority="1" completed="False" bugfix="True">
     <Summary>FIXME: gridfs doesn't suppore name, therefore we need to return a local</Summary>
     <Description></Description>
-    <Created>2010-09-03, 16:33:25</Created>
+    <Created>2010-09-03, 17:46:40</Created>
     <Resource>
       <Filename>htpie/model.py</Filename>
       <Linenumber>288</Linenumber>
@@ -114,7 +114,7 @@
   <Task priority="1" completed="False" bugfix="True">
     <Summary>FIXME: gridfs name bug</Summary>
     <Description></Description>
-    <Created>2010-09-03, 16:33:25</Created>
+    <Created>2010-09-03, 17:46:40</Created>
     <Resource>
       <Filename>htpie/model.py</Filename>
       <Linenumber>299</Linenumber>
