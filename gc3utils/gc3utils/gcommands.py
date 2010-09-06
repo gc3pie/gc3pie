@@ -481,15 +481,17 @@ def gtail(*args, **kw):
         _gcli = _get_gcli(_default_config_file_location)
     
         job = gc3utils.Job.get_job(unique_token)
-        
-        if not (
-            job.status == gc3utils.Job.JOB_STATE_COMPLETED
-            ):
-            job = _gcli.tail(job,std)
-        else:
-            raise Exception('Already in terminal state')
 
-        print job[std]
+        if job.status == gc3utils.Job.JOB_STATE_COMPLETED:
+            raise Exception('Job results already retrieved')
+        if job.status == gc3utils.Job.JOB_STATE_UNKNOWN or job.status == gc3utils.Job.JOB_STATE_SUBMITTED:
+            raise Exception('Stdout/Stderr not ready yet')
+        job = _gcli.tail(job,std)
+
+        if job.has_key(std):
+            print job[std]
+        else:
+            raise Exception('gtail returned non-valid job result')
 
     except:
         gc3utils.log.critical('program failed due to: %s' % sys.exc_info()[1])
