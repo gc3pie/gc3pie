@@ -77,6 +77,8 @@ class GHessianTest(model.Task):
                 
                 atoms, params = app.parse_input(f_input)
                 params.set_group_param('$CONTRL', 'RUNTYP', 'HESSIAN')
+                params.set_group_param('$FORCE', 'METHOD', 'SEMINUM')
+                params.set_group_param('$FORCE', 'NVIB', '1')
                 app.write_input(f_gamess_hessian, atoms, params)
             finally:
                 f_gamess_hessian.close()
