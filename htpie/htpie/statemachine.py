@@ -12,6 +12,12 @@ import datetime
 class States(object):
     COMPLETE = u'STATE_COMPLETED'
     KILL = u'STATE_KILL'
+    
+    @classmethod
+    def terminal(cls):
+        term = [cls.COMPLETE, 
+                     cls.KILL]
+        return term
 
 class Transitions(object):
     ERROR = u'ACTION_ERROR'

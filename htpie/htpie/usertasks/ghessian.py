@@ -40,6 +40,19 @@ class GHessian(model.Task):
         'total_jobs':0, 
     }
     
+    def display(self, long_format=False):
+        output = '%s %s %s %s\n'%(self._type, self.id, self.state, self.transition)
+        if self.transition == Transitions.COMPLETE:
+            output += 'Frequency:\n'
+            output += '%s\n'%(np.array(self.result['normal_mode']['frequency']))
+            output += 'Mode:\n'
+            output += '%s\n'%(self.result['normal_mode']['mode'].matrix)
+        
+        for child in self.children:
+            output += '-' * 80 + '\n'
+            output += child.display()
+        return output
+    
     def retry(self):
         if self.transition == Transitions.ERROR:
             try:
@@ -72,7 +85,7 @@ class GHessian(model.Task):
     def create(cls, f_input,  app_tag='gamess', requested_cores=2, requested_memory=2, requested_walltime=2):
         task = super(GHessian, cls,).create()
         task.app_tag = u'%s'%(app_tag)
-        task.result.hessian = model.MongoMatrix.create()
+        task.result['hessian'] = model.MongoMatrix.create()
         
         task.attach_file(f_input, 'input')
         
@@ -161,7 +174,7 @@ class GHessianStateMachine(statemachine.StateMachine):
                 count +=1
         mat = _calculateNumericalHessian(num_atoms, gradMat)
         postprocess_result = mat/_GRADIENT_CONVERSION
-        self.task.result.hessian.matrix = postprocess_result
+        self.task.result['hessian'].matrix = postprocess_result
         
         dir = utils.generate_temp_dir()
         f_list = self.task.open('input')
@@ -171,7 +184,7 @@ class GHessianStateMachine(statemachine.StateMachine):
         
         params.set_group_param('$CONTRL', 'RUNTYP', 'HESSIAN')
         params.set_group_param('$FORCE',  'RDHESS', '.T.')
-        params.r_hessian = self.task.result.hessian.matrix
+        params.r_hessian = self.task.result['hessian'].matrix
         app.write_input(f_ghessian, atoms, params)
 
         def str_dict(dic):
@@ -194,7 +207,7 @@ class GHessianStateMachine(statemachine.StateMachine):
         #This will copy the two lists, but the MongoMatrix is a dbref,
         #therefore it will still point to the same doc as the original
         #child.result.normal_mode.mode
-        self.task.result.normal_mode = child.result.normal_mode
+        self.task.result['normal_mode'] = child.result['normal_mode']
         
         self.state = States.COMPLETE
         return True

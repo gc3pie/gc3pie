@@ -317,7 +317,8 @@ class Task(MongoBase):
             #We could check the last_error to make sure it worked, but 
             #we hack it this way instead.
             self.collection.update({'_id':self._id, '_lock':u''}, {'$set':{'_lock':self._l_lock}}, safe=True)
-            self['_lock'] = self._l_lock
+            self.reload()
+            self.authorize()
         #htpie.log.debug('Acquire %s'%(self._lock))
     
     def release(self):
