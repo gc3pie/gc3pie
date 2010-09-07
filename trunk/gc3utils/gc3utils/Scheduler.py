@@ -35,17 +35,16 @@ def _cmp_resources(a,b):
     Compare resources `a` and `b` and return -1,0,1 accordingly
     (see doc for the Python standard function `cmp`).
 
-    Computational resource `a` is preferred over `b` if it has
-    more free slots; failing that, if it has less queued jobs (in
-    total); failing that, if it has less queued jobs from the same
-    user; finally, should all preceding parameters compare equal,
-    `a` is preferred over `b` if it has less running jobs from the
-    same user.
+    Computational resource `a` is preferred over `b` if it has less
+    queued jobs from the same user; failing that, if it has more free
+    slots; failing that, if it has less queued jobs (in total);
+    finally, should all preceding parameters compare equal, `a` is
+    preferred over `b` if it has less running jobs from the same user.
     """
-    a_ = (-a._resource.free_slots, a._resource.queued, 
-           a._resource.user_queued, -a._resource.user_run)
-    b_ = (-b._resource.free_slots, b._resource.queued, 
-           b._resource.user_queued, -b._resource.user_run)
+    a_ = (a._resource.user_queued, -a._resource.free_slots, 
+          a._resource.queued, a._resource.user_run)
+    b_ = (b._resource.user_queued, -b._resource.free_slots, 
+          b._resource.queued, b._resource.user_run)
     return cmp(a_, b_)
 
 
