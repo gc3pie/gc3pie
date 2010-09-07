@@ -138,7 +138,7 @@ def gclean(*args, **kw):
                 or job.status == gc3utils.Job.JOB_STATE_DELETED
                 or  options.force == True
                 ):
-                gc3utils.Job.clean_job(jobid)
+                gc3utils.Job.clean_job(job)
             else:
                 raise Exception('Not in terminal state')
         except:
@@ -496,6 +496,22 @@ def gtail(*args, **kw):
     except:
         gc3utils.log.critical('program failed due to: %s' % sys.exc_info()[1])
         raise Exception("gkill failed")
+
+def gnotify(*args, **kw):
+    """The gnotify command"""
+    parser = OptionParser(usage="Usage: %prog [options] unique_token")
+    parser.add_option("-v", action="count", dest="verbosity", default=0, help="Set verbosity level")
+    parser.add_option("-i", "--include", action="store_true", dest="include_job_results", default=False, help="Include Job's results in notification package")
+    (options, args) = parser.parse_args(list(args))
+    _configure_logger(options.verbosity)
+
+    if len(args) != 1:
+        raise InvalidUsage("This command requires exactly one argument: the Job unique token.")
+    unique_token = args[0]
+
+    job = gc3utils.Job.get_job(unique_token)
+    return gc3utils.utils.notify(job,options.include_job_results)
+    
 
 
 def glist(*args, **kw):

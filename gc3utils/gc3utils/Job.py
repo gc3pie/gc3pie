@@ -165,13 +165,15 @@ def persist_job_filesystem(job_obj):
                 pass # ignore errors
         raise
 
-def clean_job(unique_token):
-    return clean_job_filesystem(unique_token)
+def clean_job(job):
+    return clean_job_filesystem(job.unique_token)
 
 def clean_job_filesystem(unique_token):
-    if os.path.isfile(Default.JOBS_DIR+'/'+unique_token):
-        os.remove(Default.JOBS_DIR+'/'+unique_token)
-    return 0
+    job_file_path = os.path.join(Default.JOBS_DIR,unique_token)
+    if os.path.isfile(job_file_path):
+        return os.remove(job_file_path)
+    else:
+        raise RetrieveJobsFilesystemError('Job file %s not found' % job_file_path)
 
 def prepare_job_dir(_download_dir):
     try:
