@@ -361,6 +361,20 @@ class Task(MongoBase):
             htpie.log.debug('These tasks will be implicitly released : %s'%(output))
             cls.collection().update({'_lock':{'$nin':get_con_ids()}}, {'$set':{'_lock':u''}}, safe=True, multi=True)
     
+    def done(self):
+        import htpie.statemachine
+        if self.transition in htpie.statemachine.Transitions.terminal():
+            return True
+        else:
+            return False
+    
+    def successful(self):
+        import htpie.statemachine
+        if self.done():
+            if self.state == htpie.statemachine.States.COMPLETE and \
+                self.transition == htpie.statemachine.Transitions.COMPLETE:
+                return True
+        return False
 
 con.register([Task, MongoBase, MongoMatrix, MongoPickle, MongoAttachObj])
 

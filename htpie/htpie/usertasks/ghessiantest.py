@@ -37,32 +37,31 @@ class GHessianTest(model.Task):
         output += '-' * 80 + '\n'
         for result in self.result:
             output += 'Filename: %s\n'%(result['fname'])
-            if self.state in States.terminal():
-                if result['gsingle'].transition != Transitions.ERROR and \
-                    result['ghessian'].transition != Transitions.ERROR:
-                    output += 'Deltas are calculated as htpie - GAMESS\n'
-                    output += 'Frequency delta:\n'
-                    delta = np.array(result['ghessian'].result['normal_mode']['frequency']) - np.array(result['gsingle'].result['normal_mode']['frequency'])
-                    output += '%s\n'%(delta)
-                    output += 'Mode delta:\n'
-                    delta = result['ghessian'].result['normal_mode']['mode'].matrix - result['gsingle'].result['normal_mode']['mode'].matrix
-                    output += '%s\n'%(delta)
+            if self.successful():
+                output += 'Deltas are calculated as htpie - GAMESS\n'
+                output += 'Frequency delta:\n'
+                delta = np.array(result['ghessian'].result['normal_mode']['frequency']) - np.array(result['gsingle'].result['normal_mode']['frequency'])
+                output += '%s\n'%(delta)
+                output += 'Mode delta:\n'
+                delta = result['ghessian'].result['normal_mode']['mode'].matrix - result['gsingle'].result['normal_mode']['mode'].matrix
+                output += '%s\n'%(delta)
             if long_format:
                 output += '-' * 80 + '\n'
                 output += 'GAMESS normal mode job\n'
                 output += result['gsingle'].display()
-                output += 'Frequency:\n'
-                output += '%s\n'%np.array(result['gsingle'].result['normal_mode']['frequency'])
-                output += 'Mode:\n'
-                output += '%s\n'%result['ghessian'].result['normal_mode']['mode'].matrix
-                output += '-' * 80 + '\n'
-                output += 'htpie calculated normal mode\n'
+                if result['gsingle'].successful():
+                    output += 'Frequency:\n'
+                    output += '%s\n'%np.array(result['gsingle'].result['normal_mode']['frequency'])
+                    output += 'Mode:\n'
+                    output += '%s\n'%result['gsingle'].result['normal_mode']['mode'].matrix
+                    output += '-' * 80 + '\n'
+                    output += 'htpie calculated normal mode\n'
                 output += result['ghessian'].display()
             output += '-' * 80 + '\n'
         return output
     
     @classmethod
-    def create(cls, dir,  app_tag='gamess', requested_cores=16, requested_memory=2, requested_walltime=24):
+    def create(cls, dir,  app_tag='gamess', requested_cores=24, requested_memory=2, requested_walltime=24):
         app = _app_tag_mapping[app_tag]
         task = super(GHessianTest, cls,).create()
         task.app_tag = u'%s'%(app_tag)
@@ -74,11 +73,12 @@ class GHessianTest(model.Task):
                 dir = utils.generate_temp_dir()
                 f_input = open(a_file, 'r')
                 f_gamess_hessian = open('%s/gamess_hessian_%s'%(dir, os.path.basename(a_file)), 'w')
-                
                 atoms, params = app.parse_input(f_input)
+                
                 params.set_group_param('$CONTRL', 'RUNTYP', 'HESSIAN')
                 params.set_group_param('$FORCE', 'METHOD', 'SEMINUM')
                 params.set_group_param('$FORCE', 'NVIB', '1')
+                
                 app.write_input(f_gamess_hessian, atoms, params)
             finally:
                 f_gamess_hessian.close()
@@ -141,12 +141,15 @@ class GHessianTestStateMachine(statemachine.StateMachine):
         
         count = 0
         for a_result in self.task.result:
-            if a_result['ghessian'].transition == Transitions.COMPLETE and \
-               a_result['gsingle'].transition == Transitions.COMPLETE:
-                count += 1
-            elif a_result['ghessian'].transition == Transitions.ERROR or \
-                   a_result['gsingle'].transition == Transitions.ERROR:
-                raise ChildNodeException('Child node %s errored.'%(a_result['gsingle'].id))
+            if a_result['ghessian'].done() and a_result['gsingle'].done():
+                if a_result['ghessian'].successful() and a_result['gsingle'].successful():
+                    count += 1
+                else:
+                    if not a_result['ghessian'].successful():
+                        problem_result = a_result['ghessian']
+                    else:
+                        problem_result = a_result['gsingle']
+                    raise ChildNodeException('Child task %s has been unsuccessful'%(problem_result.id))
         
         if count == len(self.task.result):
             self.state = States.PROCESS

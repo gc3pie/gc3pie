@@ -29,8 +29,7 @@ class Transitions(object):
     @classmethod
     def terminal(cls):
         term = [cls.ERROR, 
-                     cls.COMPLETE, 
-                     cls.HOLD]
+                     cls.COMPLETE]
         return term
 
 class StateMachine(object):    
