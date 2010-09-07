@@ -13,6 +13,7 @@ import gc3utils.Exceptions
 
 import glob
 from datetime import datetime
+import time
 
 _app_tag_mapping = dict()
 _app_tag_mapping['gamess']=gamess.GamessApplication
@@ -117,7 +118,7 @@ class GSingle(model.Task):
         if job:
             submission_time = datetime.strptime(job.submission_time, tm_format)
             output += 'Job submitted: %s\n'%(submission_time)
-            if hasattr(job, 'completion_time'):
+            if 'completion_time' in job:
                 if job.completion_time:
                     completion_time = datetime.strptime(job.completion_time, tm_format)
                     output += 'Job completed: %s\n'%(completion_time)
@@ -139,7 +140,8 @@ class GSingle(model.Task):
             output += _print_job_info(job)
             #output += '\nGC3 Application:\n%s\n'%(application)
         else:
-            output += 'GC3 job number: %s\n'%(job.unique_token)
+            if job:
+                output += 'GC3 job number: %s\n'%(job.unique_token)
         
         return output
 
@@ -189,7 +191,7 @@ class GSingle(model.Task):
             self.state = States.KILL
             self.release()
             htpie.log.debug('GSingle %s will be killed'%(self.id))
-
+    
     @classmethod
     def create(cls, f_list,  app_tag='gamess', requested_cores=2, requested_memory=2, requested_walltime=2):
         task = super(GSingle, cls,).create()
@@ -229,6 +231,9 @@ class GSingleStateMachine(statemachine.StateMachine):
         self._gcli = gc3utils.gcli.Gcli(*gc3utils.gcli.import_config(config_file))
     
     def handle_ready_state(self):
+        #Need to sleep to give the arc info system time to update itself
+        #with any jobs just submitted by me
+        time.sleep(90)
         f_to_run = self.task.mk_local_copy('input')
         map(file.close, f_to_run)
         f_name = f_to_run[0].name
@@ -295,7 +300,7 @@ class GSingleStateMachine(statemachine.StateMachine):
                     self.task.job.status == gc3utils.Job.JOB_STATE_DELETED:
                 print 'This is the job that will be cleaned next'
                 print self.task.job
-                gc3utils.Job.clean_job(self.task.job)
+                #gc3utils.Job.clean_job(self.task.job)
         return True
     
     def handle_missing_state(self, a_run):

@@ -37,11 +37,12 @@ model.con.register([GamessResult])
 
 class GamessParams(object):
     '''Holds the GAMESS run parameters'''
-    groups = dict()
-    title = None
-    r_orbitals = None
-    r_hessian = None
-    r_orbitals_norb = None
+    def __init__(self):
+        self.groups = dict()
+        self.title = None
+        self.r_orbitals = None
+        self.r_hessian = None
+        self.r_orbitals_norb = None
     
     def get_group(self, group_key):
         return self.groups[group_key]
@@ -404,7 +405,10 @@ class GamessWriteInp(object):
         for group_key, params_dict in groups.iteritems():
             output += ' %s '%(group_key)
             for param_key, param in params_dict.iteritems():
-                output += '%s=%s '%(param_key, param)
+                section = '%s=%s '%(param_key, param)
+                if len(output.rsplit('\n')[-1]) + len(section) >= 70:
+                    output += '\n'
+                output += section
             output += '%s\n'%('$END')
         return output
     
@@ -443,7 +447,7 @@ class GamessWriteInp(object):
         #We need to Change this number based on NORB for the VEC group only!!
         numCol = 5
         maxCol = 1000
-        maxRow=100 
+        maxRow= 100
         outRow = 1
         outCol = 1
         if mat.__class__.__name__ == 'ndarray':
@@ -459,10 +463,9 @@ class GamessWriteInp(object):
                 f_like.write(output)
                 outCol += 1;
             if norb:
-                outRow = (outRow) % (norb)
-                outRow += 1
-            else:
-                outRow = (outRow + 1) % maxRow
+                if outRow == norb:
+                    outRow = 0
+            outRow = (outRow + 1) % maxRow
             outCol=1
         return output
 
@@ -470,21 +473,22 @@ class GamessParseInp(object):
     '''
     classdocs
     '''   
-    # The DATA group in the INP file specifies atom positions.
-    coords = None
-    # The comment group in the INP file where users can write what they want
-    title = None
-    # The shoenflies space group
-    symmetry = None
-    # This holds all of the flags GAMESS uses to execute a job.
-    params = None
-    # This holds the GAMESS molecule
-    atoms = None
     
     def __init__(self):
         '''
         Constructor
-        '''        
+        '''
+        # The DATA group in the INP file specifies atom positions.
+        self.coords = None
+        # The comment group in the INP file where users can write what they want
+        self.title = None
+        # The shoenflies space group
+        self.symmetry = None
+        # This holds all of the flags GAMESS uses to execute a job.
+        self.params = None
+        # This holds the GAMESS molecule
+        self.atoms = None        
+
         self.parse_kernal = parsekernel.ParseKernel()
         start,  end = self.read_coords(returnRule=True)
         self.parse_kernal.addRule(start, end, self.read_coords)

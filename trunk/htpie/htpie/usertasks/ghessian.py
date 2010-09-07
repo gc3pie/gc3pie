@@ -42,8 +42,8 @@ class GHessian(model.Task):
     
     def display(self, long_format=False):
         output = '%s %s %s %s\n'%(self._type, self.id, self.state, self.transition)
-        output += 'Job submitted: %s\n'%(self.create_d)
-        output += 'Job completed: %s\n'%(self.last_exec_d)
+        output += 'Task submitted: %s\n'%(self.create_d)
+        output += 'Task last ran: %s\n'%(self.last_exec_d)
         output += 'Delta: %s\n'%(self.last_exec_d - self.create_d)
         if self.transition == Transitions.COMPLETE:
             output += 'Frequency:\n'
@@ -221,11 +221,12 @@ class GHessianStateMachine(statemachine.StateMachine):
     def _wait_util_done(self):
         children = self.task.children
         count = 0
-        for gsingle in children:
-            if gsingle.transition == Transitions.COMPLETE:
-                count += 1
-            elif gsingle.transition == Transitions.ERROR:
-                raise ChildNodeException('Child task %s errored.'%(gsingle.id))
+        for child in children:
+            if child.done():
+                if child.successful():
+                    count += 1
+                else:
+                    raise ChildNodeException('Child task %s has been unsuccessful'%(child.id))
         
         if count == len(children):
             return True
