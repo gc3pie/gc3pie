@@ -29,6 +29,14 @@ SMSCG_AUTHENTICATION = 1
 SSH_AUTHENTICATION = 2
 NONE_AUTHENTICATION = 3
 
+# email notification information
+NOTIFY_USER_EMAIL = "default_urename@gc3.uzh.ch"
+NOTIFY_USERNAME = "sergio"
+NOTIFY_GC3ADMIN = "sergio.maffioletti@gc3.uzh.ch"
+NOTIFY_SUBJECTS = "Job notification"
+NOTIFY_MSG = """This is an authomatic generated email."""
+NOTIFY_DESTINATIONFOLDER = os.path.join('/tmp',NOTIFY_USERNAME)
+
 class Default(InformationContainer):
 
     def __init__(self,initializer=None,**keywd):

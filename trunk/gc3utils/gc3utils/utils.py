@@ -9,6 +9,16 @@ import time
 import warnings
 warnings.simplefilter("ignore")
 
+# import for send_mail
+import tarfile
+import smtplib
+import os
+from email.MIMEMultipart import MIMEMultipart
+from email.MIMEBase import MIMEBase
+from email.MIMEText import MIMEText
+from email.Utils import COMMASPACE, formatdate
+from email import Encoders
+
 from Exceptions import *
 from arclib import *
 from lockfile import FileLock
@@ -388,6 +398,80 @@ def date_normalize(date_string):
     Normalizes date format from ARC and SGE sources to  common string
     """
     pass
+
+def notify(job, include_job_results):
+    try:
+        # create tgz with job information
+
+        job_tarname = gc3utils.Default.NOTIFY_DESTINATIONFOLDER + '/' + job.unique_token + '.tgz'
+        tar = tarfile.open(job_tarname, "w:gz")
+
+        if include_job_results:
+            try:
+                for file in os.listdir(job.job_local_dir):
+                    tar.add(os.path.join(job.job_local_dir,file))
+            except:
+                gc3utils.log.error('Failed while adding files from job_local_dir %s', job.job_local_dir)
+        
+        # add job object file
+        tar.add(os.path.join(gc3utils.Default.JOBS_DIR, job.unique_token))
+        
+        tar.close()
+
+        # send notification email to gc3admin
+        send_mail(gc3utils.Default.NOTIFY_USER_EMAIL,
+                   gc3utils.Default.NOTIFY_GC3ADMIN,
+                   gc3utils.Default.NOTIFY_SUBJECTS,
+                   gc3utils.Default.NOTIFY_MSG,
+                   [job_tarname])
+
+        return 0
+
+    except:
+        gc3utils.log.error('failed creating report')
+        # return 1
+        raise
+
+def send_mail(send_from, send_to, subject, text, files=[], server="localhost"):
+    #assert type(send_to)==list
+    #assert type(files)==list
+
+    msg = MIMEMultipart()
+    msg['From'] = send_from
+    msg['To'] = COMMASPACE.join(send_to)
+    msg['Date'] = formatdate(localtime=True)
+    msg['Subject'] = subject
+    
+    msg.attach( MIMEText(text) )
+    
+    for f in files:
+        part = MIMEBase('application', "octet-stream")
+        part.set_payload( open(f,"rb").read() )
+        Encoders.encode_base64(part)
+        part.add_header('Content-Disposition', 'attachment; filename="%s"' % os.path.basename(f))
+        msg.attach(part)
+        
+    smtp = smtplib.SMTP(server)
+    smtp.sendmail(send_from, send_to, msg.as_string())
+    smtp.close()
+
+def send_email(_to,_from,_subject,_msg):
+    try:
+        _message = email.MIMEText(_msg)
+        _message['Subject'] = _subject
+        _message['From'] = _from
+        _message['To'] = _to
+
+        s = smtplib.SMTP()
+        s.connect()
+        s.sendmail(_from,[_to],_message.as_string())
+        s.quit()
+
+        return 0
+
+    except:
+        gc3utils.log.error('Failed sending email [ %s ]',sys.exc_info()[1])
+        return 1
 
 if __name__ == '__main__':
     import doctest
