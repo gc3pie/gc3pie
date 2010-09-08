@@ -40,20 +40,27 @@ this allows you to define different auths for different resources.
 Each `resource/***` section will reference one (and one only) auth
 section.
 
-Currently, there are two supported authorization types:
+Currently, there are three supported authorization types:
   * `ssh`: use for resources that will be accessed by opening an SSH connection to the front-end node
-  * `voms`: combines use of `slcs-init` and `voms-proxy-init`: use for resources that require a VOMS-enabled Grid proxy.
+  * `voms-proxy`: combines use of `slcs-init` and `voms-proxy-init`: use for resources that require a VOMS-enabled Grid proxy.
+  * `grid-proxy`: combines use of `slcs-init` and `grid-proxy-init`: use for resources that require a Grid proxy (but no VOMS extensions)
 
 For `ssh` type authorization, the following keys must be provided:
   * `type`: must be `ssh`
   * `username`: must be the username to log in as on the remote machine
 Any other key/value pair will be ignored.
 
-For `voms` type auth, the following keys must be provided:
-  * `type`: must be `voms`
+For `voms-proxy` type auth, the following keys must be provided:
+  * `type`: must be `voms-proxy`
   * `aai_username`: passed directly to `slcs-init` as argument to the `--user` command-line switch
   * `idp`: passed directly to `slcs-init` as argument to the `--idp` command-line switch
   * `vo`: the VO to authenticate with (passed directly to `voms-proxy-init` as argument to the `--vo` command-line switch)
+Any other key/value pair will be ignored.
+
+For `grid-proxy` type auth, the following keys must be provided:
+  * `type`: must be `grid-proxy`
+  * `aai_username`: passed directly to `slcs-init` as argument to the `--user` command-line switch
+  * `idp`: passed directly to `slcs-init` as argument to the `--idp` command-line switch
 Any other key/value pair will be ignored.
 
 Examples: 
