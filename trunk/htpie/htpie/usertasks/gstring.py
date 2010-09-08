@@ -55,7 +55,6 @@ class GString(model.Task):
             else:
                 self.transition = Transitions.PAUSED
                 self.release()
-                self.save()
         for path in self.result:
             for children in path.values():
                 for child in children:
