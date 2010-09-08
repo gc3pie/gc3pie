@@ -103,7 +103,6 @@ class GHessianTest(model.Task):
             else:
                 self.transition = Transitions.PAUSED
                 self.release()
-                self.save()
         for a_result in self.result:
             a_result['gsingle'].retry()
             a_result['ghessian'].retry()
@@ -115,6 +114,7 @@ class GHessianTest(model.Task):
             raise
         else:
             self.state = States.KILL
+            self.transition = Transitions.PAUSED
             self.release()
             htpie.log.debug('GHessianTest %s will be killed'%(self.id))
             for a_result in self.result:

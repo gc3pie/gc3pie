@@ -180,7 +180,6 @@ class GSingle(model.Task):
             else:
                 self.transition = Transitions.PAUSED
                 self.release()
-                self.save()
     
     def kill(self):
         try:
@@ -189,6 +188,7 @@ class GSingle(model.Task):
             raise
         else:
             self.state = States.KILL
+            self.transition = Transitions.PAUSED
             self.release()
             htpie.log.debug('GSingle %s will be killed'%(self.id))
     
@@ -293,14 +293,13 @@ class GSingleStateMachine(statemachine.StateMachine):
     
     def handle_kill_state(self):
         if self.task.job:
-            self.task.job = self._gcli.gkill(self.task.job)
-            gc3utils.Job.persist_job(self.task.job)
+            if not self.task.job.status == gc3utils.Job.JOB_STATE_COMPLETED:
+                self.task.job = self._gcli.gkill(self.task.job)
+                gc3utils.Job.persist_job(self.task.job)
             if self.task.job.status == gc3utils.Job.JOB_STATE_COMPLETED or \
                     self.task.job.status == gc3utils.Job.JOB_STATE_FAILED or \
                     self.task.job.status == gc3utils.Job.JOB_STATE_DELETED:
-                print 'This is the job that will be cleaned next'
-                print self.task.job
-                #gc3utils.Job.clean_job(self.task.job)
+                gc3utils.Job.clean_job(self.task.job)
         return True
     
     def handle_missing_state(self, a_run):
