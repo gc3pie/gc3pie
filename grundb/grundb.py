@@ -20,6 +20,7 @@ import re
 import shutil
 import sys
 import time
+import urlparse 
 
 from optparse import OptionParser
 
@@ -92,7 +93,7 @@ class GamessDb(object):
     """
     Interact with the online web pages of the GAMESS.UZH DB.
     """
-    BASE_URL = 'http://ocikbfcs.uzh.ch/gamess.uzh'
+    BASE_URL = 'http://ocikbgtw.uzh.ch/gamess.uzh/'
     def __init__(self):
         # initialization
         self._browser = Browser()
@@ -108,7 +109,7 @@ class GamessDb(object):
         for a in links:
             if a.string is not None:
                 name = a.string
-                result[name] = GamessDb.BASE_URL + '/' + a['href']
+                result[name] = urlparse.urljoin(GamessDb.BASE_URL, a['href'])
         return result
 
 
@@ -142,7 +143,7 @@ class GamessDb(object):
                 if not GamessDb._inp_filename_re.search(name):
                     continue
                 # mechanize.retrieve always uses temp files
-                (filename, headers) = self._browser.retrieve(GamessDb.BASE_URL + '/' + a['href'])
+                (filename, headers) = self._browser.retrieve(urlparse.urljoin(subset_url, a['href']))
                 shutil.copy(filename, os.path.join(output_dir, name))
                 molecules.append(os.path.splitext(name)[0])
         logger.info("%s geometries downloaded into file '%s'", subset, output_dir)
@@ -772,54 +773,54 @@ if "__main__" == __name__:
                         % (PROG, PROG))
         sys.exit(1)
 
-    try:
-        if 'new' == args[0]:
-            subset = get_required_argument(args, 1, "SUBSET")
-            session = get_optional_argument(args, 2, "SESSION")
-            if subset == 'ALL':
-                subsets = GamessDb().list().keys()
-            else:
-                subsets = subset.split(',')
-            for subset in subsets:
-                new(subset, session, options.template)
-
-        elif 'progress' == args[0]:
-            session = get_required_argument(args, 1, "SESSION")
-            progress(session)
-
-        elif 'abort' == args[0]:
-            session = get_optional_argument(args, 1, "SESSION")
-            abort(session)
-
-        elif 'refdata' == args[0]:
-            subset = get_required_argument(args, 1, "SUBSET")
-            for r,d in GamessDb().get_reference_data(subset):
-                print ("%s = %.3f" 
-                       % (str.join(' + ', 
-                                   [ ("%d*%s" % (qty, sy)) for sy,qty in r.items() ]), 
-                          d))
-
-        elif 'download' == args[0]:
-            subset = get_required_argument(args, 1, "SUBSET")
-            GamessDb().get_geometries(subset)
-
-        elif 'list' == args[0]:
-            print ("Available subsets of GMTKN24:")
-            ls = GamessDb().list()
-            for name, url in ls.items():
-                print ("  %s --> %s" % (name, url))
-            
-        elif 'doctest' == args[0]:
-            import doctest
-            doctest.testmod(name="gmtkn24",
-                            optionflags=doctest.NORMALIZE_WHITESPACE)
-
+    #try:
+    if 'new' == args[0]:
+        subset = get_required_argument(args, 1, "SUBSET")
+        session = get_optional_argument(args, 2, "SESSION")
+        if subset == 'ALL':
+            subsets = GamessDb().list().keys()
         else:
-            logger.critical("Unknown ACTION word '%s'."
-                            " Type '%s --help' to get usage help."
-                            % (args[0], PROG))
-        sys.exit(1)
+            subsets = subset.split(',')
+        for subset in subsets:
+            new(subset, session, options.template)
 
-    except HTTPError, x:
-        logger.critical("HTTP error %d requesting page: %s" % (x.code, x.msg))
-        sys.exit(1)
+    elif 'progress' == args[0]:
+        session = get_required_argument(args, 1, "SESSION")
+        progress(session)
+
+    elif 'abort' == args[0]:
+        session = get_optional_argument(args, 1, "SESSION")
+        abort(session)
+
+    elif 'refdata' == args[0]:
+        subset = get_required_argument(args, 1, "SUBSET")
+        for r,d in GamessDb().get_reference_data(subset):
+            print ("%s = %.3f" 
+                   % (str.join(' + ', 
+                               [ ("%d*%s" % (qty, sy)) for sy,qty in r.items() ]), 
+                      d))
+
+    elif 'download' == args[0]:
+        subset = get_required_argument(args, 1, "SUBSET")
+        GamessDb().get_geometries(subset)
+
+    elif 'list' == args[0]:
+        print ("Available subsets of GMTKN24:")
+        ls = GamessDb().list()
+        for name, url in ls.items():
+            print ("  %s --> %s" % (name, url))
+
+    elif 'doctest' == args[0]:
+        import doctest
+        doctest.testmod(name="gmtkn24",
+                        optionflags=doctest.NORMALIZE_WHITESPACE)
+
+    else:
+        logger.critical("Unknown ACTION word '%s'."
+                        " Type '%s --help' to get usage help."
+                        % (args[0], PROG))
+    sys.exit(1)
+
+    #except HTTPError, x:
+    #    logger.critical("HTTP error %d requesting page: %s" % (x.code, x.msg))
+    #    sys.exit(1)
