@@ -2,10 +2,11 @@
 #
 """
 An interface for starting GAMESS analyses of molecules in the online
-GAMESS.UZH database (http://ocikbfcs.uzh.ch/...).
+GAMESS.UZH database (http://ocikbgtw.uzh.ch/gamess.uzh).
 """
 __author__ = 'Riccardo Murri <riccardo.murri@uzh.ch>'
 __changelog__ = '''
+   * 2010-09-08: Use new GAMESS.UZH location at http://ocikbgtw.uzh.ch/gamess.uzh
 '''
 __docformat__ = 'reStructuredText'
 
@@ -170,7 +171,7 @@ class GamessDb(object):
             refdata = float(row['Ref.'][0])
             reaction = { }
             for n,sy in enumerate(reactants):
-                if qtys[n].strip() == '':
+                if sy.strip() == '' or qtys[n].strip() == '':
                     continue # skip null fields
                 reaction[sy] = int(qtys[n])
             yield (reaction, refdata)
@@ -646,16 +647,20 @@ def progress(session):
         print ("%-40s  %-12s  (%-s; %-s)" 
                % ("Reaction", "Comp. energy", "Ref. data", "deviation"))                
         print (78 * "=")
-        for subset in subsets:
+        for subset in sorted(subsets):
+            # print subset name, centered
+            print ((78 - len(subset)) / 2) * ' ' + subset
+            print (78 * "-")
+            # print reaction data
             for reaction,refdata in GamessDb().get_reference_data(subset):
                 # compute corresponding energy
                 computed_energy = sum([ (627.509*qty*energy[sy]) for sy,qty in reaction.items() ])
                 deviation = computed_energy - refdata
-                print ("%-40s  %+6.2f  (%+6.2f; %+6.2f)" 
+                print ("%-40s  %+.2f  (%+.2f; %+.2f)" 
                        % (
                         # symbolic reaction
                         str.join(' + ', 
-                                 [ ("%d*%s" % (qty, sy)) for sy,qty in reaction.items() ]), 
+                             [ ("%d*%s" % (qty, sy)) for sy,qty in reaction.items() ]), 
                         # numerical data
                         computed_energy, refdata, deviation)
                        )
