@@ -208,7 +208,7 @@ class SshLrms(LRMS):
             ssh, sftp = self._connect_ssh(self._resource.frontend,self._ssh_username)
 
             # then check the lrms_jobid with qstat
-            _command = "qstat | egrep  '^ +%s'" % job.lrms_jobid
+            _command = "qstat | egrep  '^ *%s'" % job.lrms_jobid
             gc3utils.log.debug("checking remote job status with '%s'" % _command)
             exit_code, stdout, stderr = self._execute_command(ssh, _command)
             if exit_code == 0:
