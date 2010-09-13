@@ -30,7 +30,9 @@ class TaskScheduler(object):
             #to_process = node_class.doc().find({'transition':statemachine.Transitions.PAUSED, '_type': task_name})
             #If the task is not in a terminal state, then process it. We do this because a thread could crash before
             #setting the transition to PAUSE.
-            to_process = node_class.doc().find({'transition':{'$nin':statemachine.Transitions.terminal()} , '_type': task_name, '_lock': u''})
+            avoid = statemachine.Transitions.terminal()
+            avoid.append(statemachine.Transitions.HOLD)
+            to_process = node_class.doc().find({'transition':{'$nin':avoid} , '_type': task_name, '_lock': u''})
             htpie.log.debug('%d %s task(s) are going to be processed'%(to_process.count(),  task_name))
             for a_node in to_process:
                 counter += 1

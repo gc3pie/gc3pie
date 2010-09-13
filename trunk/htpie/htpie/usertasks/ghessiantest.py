@@ -97,7 +97,7 @@ class GHessianTest(model.Task):
     def retry(self):
         if self.transition == Transitions.ERROR:
             try:
-                self.acquire()
+                self.acquire(120)
             except:
                 raise
             else:
@@ -109,7 +109,7 @@ class GHessianTest(model.Task):
     
     def kill(self):
         try:
-            self.acquire()
+            self.acquire(120)
         except:
             raise
         else:

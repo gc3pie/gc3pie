@@ -20,7 +20,8 @@ class GamessResult(model.MongoBase):
                          'hessian':[model.MongoMatrix],
                          'gradient':[model.MongoMatrix], 
                          'vec':[model.MongoMatrix],
-                         'num_orbitals':int,
+                         'num_basis_functions':int,
+                         'num_mos_variation':int,
                          'coord':[model.MongoMatrix], 
                          'energy':[float],
                          'normal_mode':{'atomic_mass':[float], 
@@ -34,6 +35,12 @@ class GamessResult(model.MongoBase):
     }
 
 model.con.register([GamessResult])
+
+def select_norb(result):    
+    if result['num_mos_variation']:
+        return result['num_mos_variation']
+    else:
+        return result['num_basis_functions']
 
 class GamessParams(object):
     '''Holds the GAMESS run parameters'''
@@ -60,7 +67,7 @@ class GamessParams(object):
     def __cmp__(self, other):
         if isinstance(other, GamessParams):
             return cmp(other.groups, self.groups)
-
+    
 class GamessAtoms(ase.Atoms):
     # Shoenflies space group
     symmetry = None
@@ -77,7 +84,6 @@ class GamessParseDat(object):
     '''
     
     VEC = 'vec'
-    VEC_NORB = 'vec_norb'
     HESS = 'hessian'
     COORD = 'coord'
     ENERGY = 'energy'
@@ -291,7 +297,8 @@ class GamessParseOut(object):
     STATUS_EXIT = 'exit_successful'
     STATUS_GEOM_LOCATED='geom_located'
     STATUS_NO_CPU_TIMEOUT = 'no_cpu_timeout'
-    NUM_ORBITALS = 'num_orbitals'
+    NUM_BASIS_FUNCTIONS = 'num_basis_functions'
+    NUM_MOS_VARIATION = 'num_mos_variation'
     
     def __init__(self, group):
         '''
@@ -306,25 +313,41 @@ class GamessParseOut(object):
         self.parse_kernel.addRule(start, end, self.read_status_exit)
         start,  end = self.read_status_geom_located(returnRule=True)
         self.parse_kernel.addRule(start, end, self.read_status_geom_located)
-        start,  end = self.read_num_orbitals(returnRule=True)
-        self.parse_kernel.addRule(start, end, self.read_num_orbitals)
+        start,  end = self.read_num_basis_functions(returnRule=True)
+        self.parse_kernel.addRule(start, end, self.read_num_basis_functions)
+        start,  end = self.read_num_mos_variation(returnRule=True)
+        self.parse_kernel.addRule(start, end, self.read_num_mos_variation)
     
     def parse(self, f_out):        
         self.parse_kernel.parse(f_out)
     
-    def read_num_orbitals(self, text_block=None, returnRule=False):
+    def read_num_basis_functions(self, text_block=None, returnRule=False):
         if returnRule:
             #Define parse rule
             heading=r"""NUMBER OF CARTESIAN GAUSSIAN BASIS FUNCTIONS"""
             trailing=r"""NUMBER OF CARTESIAN GAUSSIAN BASIS FUNCTIONS"""
             return (heading, trailing)
         else:
-            groupTitle = self.NUM_ORBITALS
+            groupTitle = self.NUM_BASIS_FUNCTIONS
             num_ao = text_block.split('=')[-1]
             num_ao = num_ao.strip()
             num_ao = int(num_ao)
             self.group[groupTitle]=num_ao
         return         
+    
+    def read_num_mos_variation(self, text_block=None, returnRule=False):
+        if returnRule:
+            #Define parse rule
+            heading=r"""TOTAL NUMBER OF MOS IN VARIATION SPACE"""
+            trailing=r"""TOTAL NUMBER OF MOS IN VARIATION SPACE"""
+            return (heading, trailing)
+        else:
+            groupTitle = self.NUM_MOS_VARIATION
+            num_ao = text_block.split('=')[-1]
+            num_ao = num_ao.strip()
+            num_ao = int(num_ao)
+            self.group[groupTitle]=num_ao
+        return     
         
     def read_status_exit(self, text_block=None, returnRule=False):
         groupTitle = self.STATUS_EXIT
