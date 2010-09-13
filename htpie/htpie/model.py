@@ -15,7 +15,7 @@ import copy
 import cPickle as pickle
 
 MONGO_DB = "name"
-MONGO_IP = "0.0.0.0"
+MONGO_IP = "130.60.40.14"
 MONGO_PORT = 27017
 
 con = Connection(host=MONGO_IP, port=MONGO_PORT)
@@ -194,6 +194,7 @@ class Task(MongoBase):
     default_values = {
         '_type':u'Task',
         '_lock':u'',
+        'last_exec_d':datetime.datetime.now(), 
     }
     
     def __init__(self, *args, **kwargs):
@@ -311,8 +312,8 @@ class Task(MongoBase):
         if self.authorize():
             super(Task, self).save()
     
-    def acquire(self):
-        if self.authorize():
+    def acquire(self, timeout=0):
+        if self.authorize(timeout):
             #Update the lock and make sure that it was updated.
             #We could check the last_error to make sure it worked, but 
             #we hack it this way instead.

@@ -174,7 +174,7 @@ class GSingle(model.Task):
     def retry(self):
         if self.transition == Transitions.ERROR:
             try:
-                self.acquire()
+                self.acquire(120)
             except:
                 raise
             else:
@@ -183,7 +183,7 @@ class GSingle(model.Task):
     
     def kill(self):
         try:
-            self.acquire()
+            self.acquire(120)
         except:
             raise
         else:
@@ -233,7 +233,7 @@ class GSingleStateMachine(statemachine.StateMachine):
     def handle_ready_state(self):
         #Need to sleep to give the arc info system time to update itself
         #with any jobs just submitted by me
-        time.sleep(90)
+        time.sleep(30)
         f_to_run = self.task.mk_local_copy('input')
         map(file.close, f_to_run)
         f_name = f_to_run[0].name
@@ -274,7 +274,7 @@ class GSingleStateMachine(statemachine.StateMachine):
     
     def handle_postprocess_state(self):
         app = _app_tag_mapping[self.task.app_tag]
-        f_list = self.task.mk_local_copy('output')
+        f_list = self.task.open('output')
         self.task.result = app.parse_result(f_list)
         self.state = States.COMPLETE
         return True

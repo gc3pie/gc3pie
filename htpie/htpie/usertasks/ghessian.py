@@ -59,7 +59,7 @@ class GHessian(model.Task):
     def retry(self):
         if self.transition == Transitions.ERROR:
             try:
-                self.acquire()
+                self.acquire(120)
             except:
                 raise
             else:
@@ -70,7 +70,7 @@ class GHessian(model.Task):
 
     def kill(self):
         try:
-            self.acquire()
+            self.acquire(120)
         except:
             raise
         else:
@@ -129,9 +129,9 @@ class GHessianStateMachine(statemachine.StateMachine):
         atoms, params = app.parse_input(f_input)
 
         params.r_orbitals = task_vec.result.vec[-1].matrix
-        params.r_orbitals_norb = task_vec.result.num_orbitals
+        params.r_orbitals_norb = gamess.select_norb(task_vec.result)
         params.set_group_param('$GUESS', 'GUESS', 'MOREAD')
-        params.set_group_param('$GUESS', 'NORB', task_vec.result.num_orbitals)
+        params.set_group_param('$GUESS', 'NORB', params.r_orbitals_norb)
         
         perturbed_postions = _repackage(atoms.get_positions())[1:]
         
