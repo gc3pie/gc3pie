@@ -33,14 +33,14 @@ class TaskScheduler(object):
             avoid = statemachine.Transitions.terminal()
             avoid.append(statemachine.Transitions.HOLD)
             to_process = node_class.doc().find({'transition':{'$nin':avoid} , '_type': task_name, '_lock': u''})
-            htpie.log.debug('%d %s task(s) are going to be processed'%(to_process.count(),  task_name))
+            htpie.log.info('%d %s task(s) are going to be processed'%(to_process.count(),  task_name))
             for a_node in to_process:
                 counter += 1
                 htpie.log.debug('TaskScheduler is processing task %s'%(a_node.id))
                 htpie.log.debug('%s is in state %s'%(a_node['_type'], a_node.state))
                 fsm.load(a_node.id)
                 fsm.step()
-        htpie.log.info('TaskScheduler has processed %s task(s)'%(counter))
+        htpie.log.info('TaskScheduler has processed %s task(s)\n%s'%(counter, '-'*80))
 
     
     def run(self):

@@ -51,9 +51,11 @@ class GHessian(model.Task):
             output += 'Mode:\n'
             output += '%s\n'%(self.result['normal_mode']['mode'].matrix)
         if long_format:
+            output += 'Child Tasks:\n'
             for child in self.children:
-                output += '-' * 80 + '\n'
-                output += child.display()
+                output += '%s %s %s %s\n'%(child['_type'], child.id, child.state, child.transition)
+                #output += '-' * 80 + '\n'
+                #output += child.display()
         return output
     
     def retry(self):

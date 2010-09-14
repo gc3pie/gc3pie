@@ -56,6 +56,7 @@ class GHessianTest(model.Task):
                     output += '%s\n'%result['gsingle'].result['normal_mode']['mode'].matrix
                     output += '-' * 80 + '\n'
                     output += 'htpie calculated normal mode\n'
+                output += '#' * 80 + '\n'
                 output += result['ghessian'].display()
             output += '-' * 80 + '\n'
         return output
