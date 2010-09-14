@@ -86,8 +86,6 @@ class States(statemachine.States):
     READY = u'STATE_READY'
     WAITING = u'STATE_WAIT'
     RETRIEVING = u'STATE_RETRIEVING'
-    UNREACHABLE = u'STATE_UNREACHABLE'
-    NOTIFIED = u'STATE_NOTIFIED'
     POSTPROCESS = u'STATE_POSTPROCESS'
 
 class Transitions(statemachine.Transitions):
@@ -125,24 +123,30 @@ class GSingle(model.Task):
                     delta = completion_time - submission_time
                     output += 'Delta: %s\n'%(delta)
         
-        output += 'Input file(s):\n'
-        f_list = self.open('input')
-        for f in f_list:
-            output += '%s\n'%(f.name)
-        [f.close() for f in f_list]
-        output += 'Ouput file(s):\n'
-        f_list = self.open('output')
-        for f in f_list:
-            output += '%s\n'%(f.name)
         
-        if long_format:
+        f_list = self.open('input')
+        if f_list:
+            output += 'Input file(s):\n'
+            for f in f_list:
+                output += '%s\n'%(f.name)
+            [f.close() for f in f_list]
+        
+        f_list = self.open('output')
+        if f_list:
+            output += 'Output file(s):\n'
+            for f in f_list:
+                output += '%s\n'%(f.name)            
+            [f.close() for f in f_list]
+        
+        if job:
             output += 'GC3 job info:\n'
             output += _print_job_info(job)
             #output += '\nGC3 Application:\n%s\n'%(application)
-        else:
-            if job:
-                output += 'GC3 job number: %s\n'%(job.unique_token)
-        
+
+        if long_format:
+            if self.result:
+                output += 'Result:\n'
+                output += '%s'%(self.result.display())
         return output
 
     def application():        
@@ -222,8 +226,6 @@ class GSingleStateMachine(statemachine.StateMachine):
         self.state_mapping.update({States.READY: self.handle_ready_state, 
                                                     States.WAITING: self.handle_waiting_state, 
                                                     States.RETRIEVING: self.handle_retrieving_state, 
-                                                    States.UNREACHABLE: self.handle_unreachable_state, 
-                                                    States.NOTIFIED: self.handle_notified_state,
                                                     States.POSTPROCESS: self.handle_postprocess_state, 
                                                     States.KILL: self.handle_kill_state, 
                                                     })
@@ -279,17 +281,17 @@ class GSingleStateMachine(statemachine.StateMachine):
         self.state = States.COMPLETE
         return True
     
-    def handle_unreachable_state(self):
-        #TODO: Notify the user that they need to log into the clusters again, maybe using email?
-        self.state = States.NOTIFIED
-    
-    def handle_notified_state(self):
-        try:
-            self.task.job = self._gcli.gget(self.task.job)
-            gc3utils.Job.persist_job(self.task.job)
-            self.state = States.WAITING
-        except gc3utils.Exceptions.AuthenticationException:
-            self.state = States.NOTIFIED
+#    def handle_unreachable_state(self):
+#        #TODO: Notify the user that they need to log into the clusters again, maybe using email?
+#        self.state = States.NOTIFIED
+#    
+#    def handle_notified_state(self):
+#        try:
+#            self.task.job = self._gcli.gget(self.task.job)
+#            gc3utils.Job.persist_job(self.task.job)
+#            self.state = States.WAITING
+#        except gc3utils.Exceptions.AuthenticationException:
+#            self.state = States.NOTIFIED
     
     def handle_kill_state(self):
         if self.task.job:

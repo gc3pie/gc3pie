@@ -33,6 +33,27 @@ class GamessResult(model.MongoBase):
     default_values = {
         '_type':u'GamessResult', 
     }
+    
+    def display(self):
+        output = ''
+        hide = ['_type', '_id', 'create_d']
+        for key in self.keys():
+            if self[key] and not key in hide:
+                if key in ['hessian' , 'gradient', 'coord', 'vec']:                    
+                    output += "%s\n"%(key)
+                    output += "%s\n"%(self[key][-1].matrix)
+                elif key == 'normal_mode':
+                    for nkey in self[key].keys():
+                        if self[key][nkey]:
+                            if nkey == 'mode':
+                                output += "%s\n" % (nkey)
+                                output += "%s\n"%(self[key][nkey].matrix)
+                            else:
+                                output += "%s\n" % (nkey)
+                                output += "%s\n"%(self[key][nkey])
+                else:
+                    output += "%-20s  %-10s \n" % (key,self[key])
+        return output
 
 model.con.register([GamessResult])
 
