@@ -6,7 +6,7 @@ import pickle
 
 class Optimize(object):
     
-    def initialize(self):
+    def initialize(self, **kwargs):
         pass
 
     def step(self, positions,  f):
