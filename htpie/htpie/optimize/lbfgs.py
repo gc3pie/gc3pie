@@ -55,7 +55,7 @@ class LBFGS(Optimize):
                             # Note that this is never changed!
         self.damping = damping
 
-    def initialize(self):
+    def initialize(self, **kwargs):
         """Initalize everything so no checks have to be done in step"""
         self.iteration = 0
         self.s = []

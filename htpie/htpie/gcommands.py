@@ -28,7 +28,7 @@ def _configure_system():
 def gstring(*args, **kw):
     from htpie.usertasks.gstring import GString
     from htpie.optimize import fire
-    from htpie.optimize import neb
+    from htpie.optimize import lbfgs
 
 
     config = _configure_system()
@@ -56,7 +56,10 @@ def gstring(*args, **kw):
         sys.stdout.write('Can not locate file \'%s\'\n'%(options.end))
         return
     
-    gstring = GString.create([options.start, options.end],  options.app_tag)
+    #optimizer = fire.FIRE()
+    optimizer = lbfgs.LBFGS()
+    
+    gstring = GString.create([options.start, options.end],  options.app_tag, optimizer)
     
     if gstring:
         sys.stdout.write('Successfully create GString %s\n'%(gstring.id))

@@ -235,7 +235,7 @@ class GSingleStateMachine(statemachine.StateMachine):
     def handle_ready_state(self):
         #Need to sleep to give the arc info system time to update itself
         #with any jobs just submitted by me
-        time.sleep(30)
+        time.sleep(15)
         f_to_run = self.task.mk_local_copy('input')
         map(file.close, f_to_run)
         f_name = f_to_run[0].name
