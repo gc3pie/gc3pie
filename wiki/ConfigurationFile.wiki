@@ -63,16 +63,19 @@ Any other key/value pair will be ignored.
 
 For `voms-proxy` type auth, the following keys must be provided:
   * `type`: must be `voms-proxy`
-  * `aai_username`: passed directly to `slcs-init` as argument to the `--user` command-line switch
-  * `idp`: passed directly to `slcs-init` as argument to the `--idp` command-line switch
   * `vo`: the VO to authenticate with (passed directly to `voms-proxy-init` as argument to the `--vo` command-line switch)
 Any other key/value pair will be ignored.
 
 For `grid-proxy` type auth, the following keys must be provided:
   * `type`: must be `grid-proxy`
+Any other key/value pair will be ignored.
+
+For `slcs` usercert auth, the  following keys must be provided:
   * `aai_username`: passed directly to `slcs-init` as argument to the `--user` command-line switch
   * `idp`: passed directly to `slcs-init` as argument to the `--idp` command-line switch
-Any other key/value pair will be ignored.
+
+For `manual` usercert auth, no additional keys are required.
+
 
 Allowed combination:
 
