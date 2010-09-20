@@ -75,14 +75,13 @@ For `grid-proxy` type auth, the following keys must be provided:
 Any other key/value pair will be ignored.
 
 Allowed combination:
-
-  1. voms + slcs 
+ 1) voms + slcs 
 {{{
  type: voms-proxy
  usercert: slcs
 }}}
 
- 2. voms + manually generated usercert
+ 2) voms + manually generated usercert
 {{{
  type: voms-proxy
  usercert: manual
