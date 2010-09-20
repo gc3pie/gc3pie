@@ -437,7 +437,9 @@ class JobCollection(dict):
             output.write("%-15s  %-18s  %-s\n" 
                          % ("Input file name", "State (JobID)", "Info"))
             output.write(78 * "=" + '\n')
-            for job in self.values():
+            def cmp_by_molecule_name(x,y):
+                return cmp(os.path.basename(x.id), os.path.basename(y.id))
+            for job in sorted(self.values()):
                 output.write("%-15s  %-18s  %-s\n" % 
                              (os.path.basename(job.id), ('%s (%s)' % (job.state, job.jobid)), job.info))
 
