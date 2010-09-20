@@ -46,7 +46,7 @@ Rationale:
   * usercert: [slcs, manual]
 }}}
 
-Currently, there are three supported authorization types:
+type defines the authorization type that wil be used to access a resource. Currently, there are three supported authorization types:
   * `ssh`: use for resources that will be accessed by opening an SSH connection to the front-end node
   * `voms-proxy`: uses `voms-proxy-init`: use for resources that require a VOMS-enabled Grid proxy.
   * `grid-proxy`: uses `grid-proxy-init`: use for resources that require a Grid proxy (but no VOMS extensions)
