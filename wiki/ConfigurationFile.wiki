@@ -46,12 +46,12 @@ Rationale:
   * usercert: [slcs, manual]
 }}}
 
-type defines the authorization type that wil be used to access a resource. Currently, there are three supported authorization types:
+{{{ type }}} defines the authorization type that wil be used to access a resource. Currently, there are three supported authorization types:
   * `ssh`: use for resources that will be accessed by opening an SSH connection to the front-end node
   * `voms-proxy`: uses `voms-proxy-init`: use for resources that require a VOMS-enabled Grid proxy.
   * `grid-proxy`: uses `grid-proxy-init`: use for resources that require a Grid proxy (but no VOMS extensions)
 
-usercert defines how the user certificate is handled.
+{{{ usercert }}} defines how the user certificate is handled.
 Currently there are two supported usercert types:
   * `slcs`: user certificate is generated through `slcs-init` request. When `slcs` is selected, `slcs-init` is used to renew expired user certificate.
   * `manual`: user certificate is generated/renewed though an external process and has to be performed by the user outside of the scope of gc3pie. In this case, if user certificate is expired, gc3pie will fail the related authorization module.
