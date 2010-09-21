@@ -139,13 +139,11 @@ class SshLrms(LRMS):
                 local_script_file = tempfile.NamedTemporaryFile()
                 local_script_file.write(script)
                 local_script_file.flush()
-                if application.has_key('application_tag'):
-                    script_name = '%s.%x.sh' % (application.application_tag, 
-                                                random.randint(sys.maxint))
-                else:
-                    script_name = 'script.%x.sh' % (random.randint(sys.maxint))
+                script_name = '%s.%x.sh' % (application.get('application_tag', 'script'), 
+                                            random.randint(0, sys.maxint))
                 # upload script to remote location
-                sftp.put(local_script_file.name, script_name)
+                sftp.put(local_script_file.name, 
+                         os.path.join(ssh_remote_folder, script_name))
                 # cleanup
                 local_script_file.close()
                 if os.path.exists(local_script_file.name):
