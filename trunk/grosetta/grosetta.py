@@ -23,6 +23,11 @@ Front-end script for submitting ROSETTA jobs to SMSCG.
 __author__ = 'Riccardo Murri <riccardo.murri@uzh.ch>'
 # summary of user-visible changes
 __changelog__ = """
+  2010-09-21:
+    * Do not collect output FASC and PDB files into a single tar file. 
+      (Get old behavior back with the '-t' option)
+    * Do not compress PDB files in Rosetta output. 
+      (Get the old behavior back with the '-z' option)
   2010-08-09:
     * Exitcode tracks job status; use the "-b" option to get the old behavior back.
       The new exitcode is a bitfield; the 4 least-significant bits have the following
@@ -100,7 +105,7 @@ class Job(Gc3utilsJob):
     extensions.
     """
     def __init__(self, **kw):
-        kw.setdefault('log', list())
+        kw.setdefault('history', "")
         kw.setdefault('state', None) # user-visible status 
         kw.setdefault('status', -1)  # gc3utils status (internal use only)
         kw.setdefault('timestamp', gc3utils.utils.defaultdict(time.time))
@@ -112,7 +117,7 @@ class Job(Gc3utilsJob):
 
     def set_info(self, msg):
         self.info = msg
-        self.log.append(msg)
+        self.history += "; " + msg
 
     def set_state(self, state):
         if state != self.state:
@@ -305,10 +310,8 @@ class JobCollection(dict):
             job.update(row)
             # resurrect saved state
             job.update(gc3utils.Job.get_job(job.jobid))
-            # convert 'history' into a list
-            job.log = job.history.split("; ")
             # get back timestamps of various events
-            for event in job.log:
+            for event in job.history.split("; "):
                 if event.upper().startswith('CREATED'):
                     job.created = time.mktime(time.strptime(event.split(' ',2)[2]))
                 if event.upper().startswith('SUBMITTED'):
@@ -327,7 +330,6 @@ class JobCollection(dict):
         Python's standard library `csv.DictWriter`.
         """
         for job in self.values():
-            job.history = str.join("; ", job.log)
             csv.DictWriter(session, ['id', 'jobid', 'state', 'info', 'history'], 
                            extrasaction='ignore').writerow(job)
 
@@ -457,6 +459,10 @@ cmdline.add_option("-s", "--session", dest="session",
                    " session.  Any jobs already in the session will be monitored and"
                    " their output will be fetched if the jobs are done."
                    )
+cmdline.add_option("-t", "--tarfile", dest="tarfile", default=False, action="store_true",
+                   help="Collect all output PDB and FASC/SC files into a single '.tar' file,"
+                   " located in the output directory (see the '-o' option)."
+                   )
 cmdline.add_option("-v", "--verbose", type="int", dest="verbose", default=0,
                    metavar="LEVEL",
                    help="Increase program verbosity"
@@ -469,6 +475,9 @@ cmdline.add_option("-w", "--wall-clock-time", dest="wctime", default=str(8), # 8
                    " will be killed and considered failed. DURATION can be a whole"
                    " number, expressing duration in hours, or a string of the form HH:MM,"
                    " specifying that a job can last at most HH hours and MM minutes."
+                   )
+cmdline.add_option("-z", "--compress-pdb", dest="compress", default=False, action="store_true",
+                   help="Compress '.pdb' output files with `gzip`."
                    )
 (options, args) = cmdline.parse_args()
 
@@ -567,6 +576,9 @@ for input in inputs:
                         % (nr, min(options.decoys_per_file - 1, 
                                    nr + options.decoys_per_job - 1)))
             prefix = os.path.splitext(os.path.basename(input))[0] + '.' + instance + '.'
+            arguments = [ '-out:prefix', prefix ]
+            if options.compress:
+                arguments.append('-out:pdb_gz') # compress PDB output files
             jobs += Job(
                 id = prefix[:-1], # except the trailing '.'
                 input = input,
@@ -580,8 +592,7 @@ for input in inputs:
                     requested_walltime = options.walltime,
                     # Rosetta-specific data
                     number_of_decoys_to_create = options.decoys_per_job,
-                    arguments = [ "-out:pdb_gz", # compress PDB output files
-                                  "-out:prefix", prefix ],
+                    arguments = arguments,
                     ),
                 state = 'NEW',
                 created = time.time(),
@@ -612,45 +623,51 @@ def main(jobs):
             in_flight_count += 1
             if in_flight_count > options.max_running:
                 can_submit = False
-        if job.get('output_retrieved_to', None) and not job.get('output_processing_done', False):
+        if (job.get('output_retrieved_to', None) 
+            and not job.get('output_processing_done', False)
+            and options.tarfile):
             # move around output files so they're easier to preprocess:
             #   1. All '.fasc' files land in the same directory as the input '.pdb' file
             #   2. All generated '.pdb'/'.pdb.gz' files are collected in a '.decoys.tar'
             #   3. Anything else is left as-is
             input_name = os.path.basename(job.input)
             input_name_sans = os.path.splitext(input_name)[0]
-            output_tar = tarfile.open(os.path.join(job.output_retrieved_to, 
-                                                   'docking_protocol.tar.gz'), 'r:gz')
-            pdbs_tarfile_path = os.path.join(job.output_dir, input_name_sans) + '.decoys.tar'
-            if not os.path.exists(pdbs_tarfile_path):
-                pdbs = tarfile.open(pdbs_tarfile_path, 'w')
-            else:
-                pdbs = tarfile.open(pdbs_tarfile_path, 'a')
-            for entry in output_tar:
-                if entry.name.endswith('.fasc'):
-                    fasc_file_name = (os.path.join(job.output_dir, input_name_sans) 
-                                      + '.' + job.instance + '.fasc')
-                    src = output_tar.extractfile(entry)
-                    dst = open(fasc_file_name, 'wb')
-                    dst.write(src.read())
-                    dst.close()
-                    src.close()
-                elif entry.name.endswith('.pdb.gz'): #or entry.name.endswith('.pdb'):
-                    src = output_tar.extractfile(entry)
-                    dst = tarfile.TarInfo(entry.name)
-                    dst.size = entry.size
-                    dst.type = entry.type
-                    dst.mode = entry.mode
-                    dst.mtime = entry.mtime
-                    dst.uid = os.getuid()
-                    dst.gid = os.getgid()
-                    dst.uname = pwd.getpwuid(os.getuid()).pw_name
-                    dst.gname = grp.getgrgid(os.getgid()).gr_name
-                    if hasattr(entry, 'pax_headers'):
-                        dst.pax_headers = entry.pax_headers
-                    pdbs.addfile(dst, src)
-                    src.close()
-            pdbs.close()
+            output_tar_name = os.path.join(job.output_retrieved_to, 'docking_protocol.tar.gz')
+            if os.path.exists(output_tar_name):
+                output_tar = tarfile.open(output_tar_name, 'r:gz')
+                pdbs_tarfile_path = os.path.join(job.output_dir, input_name_sans) + '.decoys.tar'
+                if not os.path.exists(pdbs_tarfile_path):
+                    pdbs = tarfile.open(pdbs_tarfile_path, 'w')
+                else:
+                    pdbs = tarfile.open(pdbs_tarfile_path, 'a')
+                for entry in output_tar:
+                    if (entry.name.endswith('.fasc') or entry.name.endswith('.sc')):
+                        filename, extension = os.path.splitext(entry.name)
+                        scoring_file_name = (os.path.join(job.output_dir, input_name_sans) 
+                                          + '.' + job.instance + extension)
+                        src = output_tar.extractfile(entry)
+                        dst = open(scoring_file_name, 'wb')
+                        dst.write(src.read())
+                        dst.close()
+                        src.close()
+                    elif (entry.name.endswith('.pdb.gz') or entry.name.endswith('.pdb')):
+                        src = output_tar.extractfile(entry)
+                        dst = tarfile.TarInfo(entry.name)
+                        dst.size = entry.size
+                        dst.type = entry.type
+                        dst.mode = entry.mode
+                        dst.mtime = entry.mtime
+                        dst.uid = os.getuid()
+                        dst.gid = os.getgid()
+                        dst.uname = pwd.getpwuid(os.getuid()).pw_name
+                        dst.gname = grp.getgrgid(os.getgid()).gr_name
+                        if hasattr(entry, 'pax_headers'):
+                            dst.pax_headers = entry.pax_headers
+                        pdbs.addfile(dst, src)
+                        src.close()
+                pdbs.close()
+            else: # no `docking_protocol.tar.gz` file
+                job.set_info("No 'docking_protocol.tar.gz' file found.")
             job.output_processing_done = True
         if state == 'DONE':
             # nothing more to do - remove from job list if more than 1 day old
