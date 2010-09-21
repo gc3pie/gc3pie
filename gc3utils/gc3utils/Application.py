@@ -289,7 +289,7 @@ class Application(InformationContainer):
                                  self.requested_cores)
         if self.job_name:
             qsub += " -N '%s'" % self.job_name
-        return (qsub, self.cmdline())
+        return (qsub, self.cmdline(resource))
         
 
 class GamessApplication(Application):
