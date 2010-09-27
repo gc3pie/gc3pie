@@ -45,11 +45,12 @@ class GHessian(model.Task):
         output += 'Task submitted: %s\n'%(self.create_d)
         output += 'Task last ran: %s\n'%(self.last_exec_d)
         output += 'Delta: %s\n'%(self.last_exec_d - self.create_d)
-        if self.transition == Transitions.COMPLETE:
-            output += 'Frequency:\n'
-            output += '%s\n'%(np.array(self.result['normal_mode']['frequency']))
-            output += 'Mode:\n'
-            output += '%s\n'%(self.result['normal_mode']['mode'].matrix)
+        if self.done():
+            if self.successful():
+                output += 'Frequency:\n'
+                output += '%s\n'%(np.array(self.result['normal_mode']['frequency']))
+                output += 'Mode:\n'
+                output += '%s\n'%(self.result['normal_mode']['mode'].matrix)
         if long_format:
             output += 'Child Tasks:\n'
             for child in self.children:
