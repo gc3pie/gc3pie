@@ -3,7 +3,9 @@ import htpie
 from htpie import model
 from htpie import statemachine
 from htpie.lib import utils
+import time
 
+import pymongo
 
 module_names = {'GSingle':'htpie.usertasks.gsingle',
                               'GHessian':'htpie.usertasks.ghessian',
@@ -32,7 +34,9 @@ class TaskScheduler(object):
             #setting the transition to PAUSE.
             avoid = statemachine.Transitions.terminal()
             avoid.append(statemachine.Transitions.HOLD)
-            to_process = node_class.doc().find({'transition':{'$nin':avoid} , '_type': task_name, '_lock': u''})
+            #We sort because we want to avoid gcontrol running into the scheduler and getting stuck behind it. By
+            #reversing the sort, they should pass each other because they are moving through the tasks in different directions
+            to_process = node_class.doc().find({'transition':{'$nin':avoid} , '_type': task_name, '_lock': u''}).sort('_id', pymongo.DESCENDING)
             htpie.log.info('%d %s task(s) are going to be processed'%(to_process.count(),  task_name))
             for a_node in to_process:
                 counter += 1
