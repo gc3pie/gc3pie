@@ -318,6 +318,7 @@ class Task(MongoBase):
             #We could check the last_error to make sure it worked, but 
             #we hack it this way instead.
             self.collection.update({'_id':self._id, '_lock':u''}, {'$set':{'_lock':self._l_lock}}, safe=True)
+            #We want to make sure that we have the lock
             self.reload()
             self.authorize()
         #htpie.log.debug('Acquire %s'%(self._lock))
@@ -338,6 +339,8 @@ class Task(MongoBase):
             done = True
         while starting_time + timeout - poll_interval > time.time():
             time.sleep(poll_interval)
+            #We only want to query for the lock.
+            self._lock = self.collection.find_one({'_id':self._id}, ['_lock'])['_lock']
             if self._lock ==  self._l_lock or not self._lock:
                 #We have the lock, so we are good
                 done = True
