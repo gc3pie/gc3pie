@@ -1,0 +1,7 @@
+#!/bin/bash
+
+. $HOME/.bashrc
+. $HOME/.profile
+/usr/bin/python /home/mmonroe/apps/trunk/markstools/markstools/gcommands.py gtaskscheduler
+
+
