@@ -2,8 +2,6 @@
 
 . $HOME/.bashrc
 . $HOME/.profile
-echo 'hi'
-echo $PYTHONPATH
 /usr/bin/python /home/mmonroe/apps/trunk/markstools/markstools/gcommands.py gtaskscheduler
 
 
