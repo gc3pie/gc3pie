@@ -495,7 +495,7 @@ def gtail(*args, **kw):
 
     except:
         gc3utils.log.critical('program failed due to: %s' % sys.exc_info()[1])
-        raise Exception("gkill failed")
+        raise Exception("gtail failed")
 
 def gnotify(*args, **kw):
     """The gnotify command"""

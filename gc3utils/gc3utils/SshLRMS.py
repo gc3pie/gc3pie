@@ -434,20 +434,26 @@ class SshLrms(LRMS):
         _remote_filename = job_obj.remote_ssh_folder + '/' + filename
 
         # create temp file
-        _tmp_filehandle = tempfile.NamedTemporaryFile(mode='w', suffix='.tmp', prefix='gc3_')
+        _tmp_filehandle = tempfile.NamedTemporaryFile(mode='w+b', suffix='.tmp', prefix='gc3_')
 
         sftp.get(_remote_filename, _tmp_filehandle.name)
 
         # pass content of filename as part of job object dictionary
-        # assuming stdout/stderr are alqays limited in size
+        # assuming stdout/stderr are always limited in size
         # We read the entire content in one step
         # shall we foresee different strategies ?
+        _tmp_filehandle.file.flush()
         _tmp_filehandle.file.seek(0)
-        _file_content = _tmp_filehandle.file.read()
         
+        _file_content = ""
+        
+        for line in _tmp_filehandle.file:
+            _file_content += str(line)
+            
         # cleanup: close and remove tmp file
         _tmp_filehandle.close()
-
+        # os.unlink(_tmp_filehandle.name)
+        
         ssh.close()
         sftp.close()
         
