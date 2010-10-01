@@ -88,86 +88,148 @@ class NumpyArrayField(mongoengine.base.BaseField):
             assert not isinstance(value, np.ndmatrix)
             assert isinstance(value, np.ndarray)
 
+from mongoengine.fields import *
+import mongoengine
+import pymongo
+import numpy as np
+from htpie.lib.exceptions import *
 
-class MongoMatrixObj(mongoengine.Document.FileField):
-    
-    
+import pickle
 
-
-    def __set__(self, instance, value):
-       
-            super(MongoBase, self).__set__(instance, pickled_obj)
-            np.save(a_file, value)
-            
+class PickleProxy(mongoengine.fields.GridFSProxy):
+    """Proxy object to handle writing and reading of files to and from GridFS
+    """
     
+    def __init__(self, grid_id=None):
+        super(PickleProxy, self).__init__(grid_id)
+        if not self.grid_id:
+            self.new_file()
     
-    
-    meta = {'collection':'MongoAttachObj'}
-   
-    
-    gridfs = {'containers':['attach']}
-    
-    default_values = {
-        '_type':u'MongoAttach', 
-    }
-    
-    def _put_attach(self, name, obj, container='attach'):
-        try:
-            a_file = self.fs.__dict__[container].open(name, 'w')
-            if isinstance(obj, np.ndarray):
-                np.save(a_file, obj)
-            else:
-                #Must be protocol 2 for the .readline = .read to work
-                pickle.dump(obj, a_file, 2)
-        finally:
-            a_file.close()
-    
-    def _get_attach(self, name, container = 'attach'):
-        obj = None
-        if name in self.fs.__dict__[container].list():
-            try:
-                a_file = self.fs.__dict__[container].open(name, 'r')
-                tester = a_file.read(6)
-                a_file.seek(0)
-                if tester == '\x93NUMPY':
-                    #Numpy loads a martix as an ndarray
-                    obj = np.load(a_file)
-                else:
-                    #Currently there is no readline on gridfs, therefore
-                    #we fake it here
-                    tempStr = a_file.read()
-                    obj = pickle.loads(tempStr)
-            finally:
-                a_file.close()
-        return obj
-    
-class MongoMatrix(MongoAttachObj):
-    def __init__(self, *args, **kwargs):
-        super(MongoMatrix, self).__init__(*args, **kwargs)
-        self._l_matrix = None
-    
-    def save(self):
-        if not hasattr(self, '_id'):
-            super(MongoMatrix, self).save()
-            self.matrix = self._l_matrix
-            self._l_matrix = None
-        else:
-            super(MongoMatrix, self).save()
-    
-    def matrix():
+    def pickle():
         def fget(self):
-            if not hasattr(self, '_id'):
-                return self._l_matrix
-            else:
-                np_matrix = self._get_attach('matrix')
-            return np_matrix
-        def fset(self, np_matrix):
-            if not hasattr(self, '_id'):
-                self._l_matrix = copy.deepcopy(np_matrix)
-            else:
-                self._put_attach('matrix', np_matrix)
+            _temp = self.read()
+            return pickle.loads(_temp)
+        def fset(self, value):
+            self.delete()
+            self.new_file()
+            pickle.dump(value, self.newfile, pickle.HIGHEST_PROTOCOL)
+            self.close()
         return locals()
-    matrix = property(**matrix())
+    pickle = property(**pickle())
+
+
+class PickleField(mongoengine.base.BaseField):
+    """A Pickle field storage field.
+    """
+    
+    def __init__(self, **kwargs):
+        super(PickleField, self).__init__(**kwargs)
+    
+    def __get__(self, instance, owner):
+        if instance is None:
+            return self
+        
+        # Check if a file already exists for this model
+        grid_file = instance._data.get(self.name)
+        if grid_file:
+            return grid_file
+        return PickleProxy()
+    
+    def __set__(self, instance, value):
+        if isinstance(value, file) or isinstance(value, str):
+            # using "FileField() = file/string" notation
+            grid_file = instance._data.get(self.name)
+            # If a file already exists, delete it
+            if grid_file:
+                try:
+                    grid_file.delete()
+                except:
+                    pass
+                # Create a new file with the new data
+                grid_file.put(value)
+            else:
+                # Create a new proxy object as we don't already have one
+                instance._data[self.name] = PickleProxy()
+                instance._data[self.name].put(value)
+        else:
+            instance._data[self.name] = value
+    
+    def to_mongo(self, value):
+        # Store the GridFS file id in MongoDB
+        if isinstance(value, PickleProxy) and value.grid_id is not None:
+            return value.grid_id
+        return None
+    
+    def to_python(self, value):
+        if value is not None:
+            return PickleProxy(value)
+    
+    def validate(self, value):
+        return
+        if value.grid_id is not None:
+            assert isinstance(value, PickleProxy)
+            assert isinstance(value.grid_id, pymongo.objectid.ObjectId)
+
+
+
+
+
+
+
+
+class PickleField(mongoengine.base.BaseField):
+    """A python pickle storage field.
+    """
+    
+    def __init__(self, **kwargs):
+        super(PickleField, self).__init__(**kwargs)
+    
+    def __get__(self, instance, owner):
+        if instance is None:
+            return self
+        
+        # Check if a file already exists for this model
+        grid_file = instance._data.get(self.name)
+        if grid_file:
+            return pickle.load(grid_file)
+        return mongoengine.fields.GridFSProxy()
+    
+    def __set__(self, instance, value):
+        if isinstance(value, np.ndarray):                
+            # using "FileField() = file/string" notation
+            grid_file = instance._data.get(self.name)
+            # If a file already exists, delete it
+            if grid_file:
+                try:
+                    grid_file.delete()
+                except:
+                    pass
+                # Create a new file with the new data
+                pickle.dump(value, grid_file, pickle.HIGHEST_PROTOCOL)
+                grid_file.close()
+            else:
+                # Create a new proxy object as we don't already have one
+                instance._data[self.name] = mongoengine.fields.GridFSProxy()
+                pickle.dump(value, instance._data[self.name], pickle.HIGHEST_PROTOCOL)
+                instance._data[self.name].close()
+        else:
+            ValidationException('NumpyArrayField can only store numpy arrays and matrices')
+    
+    def to_mongo(self, value):
+        # Store the GridFS file id in MongoDB
+        if isinstance(value, mongoengine.fields.GridFSProxy) and value.grid_id is not None:
+            return value.grid_id
+        return None
+    
+    def to_python(self, value):
+        if value is not None:
+            return mongoengine.fields.GridFSProxy(value)
+    
+    def validate(self, value):
+        if value is not None:
+            pass
+
+    
 
 class MongoPickle(MongoAttachObj):
     

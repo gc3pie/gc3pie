@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE Tasks SYSTEM "Tasks-4.2.dtd">
 <!-- eric4 tasks file for project htpie -->
-<!-- Saved: 2010-10-01, 16:29:47 -->
+<!-- Saved: 2010-10-01, 22:32:54 -->
 <Tasks version="4.2">
   <Task priority="1" completed="False" bugfix="False">
     <Summary>TODO: If we get an error storing the gsingle, we will have submitted it to the grid</Summary>
@@ -165,33 +165,6 @@
       <Linenumber>215</Linenumber>
     </Resource>
   </Task>
-  <Task priority="1" completed="False" bugfix="True">
-    <Summary>FIXME: gridfs name bugTrying to set the name attr doesn't work</Summary>
-    <Description></Description>
-    <Created>2010-10-01, 13:45:52</Created>
-    <Resource>
-      <Filename>htpie/model.py</Filename>
-      <Linenumber>283</Linenumber>
-    </Resource>
-  </Task>
-  <Task priority="1" completed="False" bugfix="True">
-    <Summary>FIXME: gridfs doesn't suppore name, therefore we need to return a local</Summary>
-    <Description></Description>
-    <Created>2010-10-01, 13:45:52</Created>
-    <Resource>
-      <Filename>htpie/model.py</Filename>
-      <Linenumber>289</Linenumber>
-    </Resource>
-  </Task>
-  <Task priority="1" completed="False" bugfix="True">
-    <Summary>FIXME: gridfs name bug</Summary>
-    <Description></Description>
-    <Created>2010-10-01, 13:45:52</Created>
-    <Resource>
-      <Filename>htpie/model.py</Filename>
-      <Linenumber>300</Linenumber>
-    </Resource>
-  </Task>
   <Task priority="1" completed="False" bugfix="False">
     <Summary>TODO: Notify the user that they need to log into the clusters again, maybe using email?</Summary>
     <Description></Description>
@@ -204,28 +177,55 @@
   <Task priority="1" completed="False" bugfix="True">
     <Summary>FIXME: gridfs name bugTrying to set the name attr doesn't work</Summary>
     <Description></Description>
-    <Created>2010-10-01, 16:22:46</Created>
+    <Created>2010-10-01, 21:57:32</Created>
     <Resource>
-      <Filename>htpie/enginemodel.py</Filename>
-      <Linenumber>308</Linenumber>
+      <Filename>htpie/model.py</Filename>
+      <Linenumber>283</Linenumber>
     </Resource>
   </Task>
   <Task priority="1" completed="False" bugfix="True">
     <Summary>FIXME: gridfs doesn't suppore name, therefore we need to return a local</Summary>
     <Description></Description>
-    <Created>2010-10-01, 16:22:46</Created>
+    <Created>2010-10-01, 21:57:32</Created>
     <Resource>
-      <Filename>htpie/enginemodel.py</Filename>
-      <Linenumber>314</Linenumber>
+      <Filename>htpie/model.py</Filename>
+      <Linenumber>289</Linenumber>
     </Resource>
   </Task>
   <Task priority="1" completed="False" bugfix="True">
     <Summary>FIXME: gridfs name bug</Summary>
     <Description></Description>
-    <Created>2010-10-01, 16:22:46</Created>
+    <Created>2010-10-01, 21:57:32</Created>
+    <Resource>
+      <Filename>htpie/model.py</Filename>
+      <Linenumber>300</Linenumber>
+    </Resource>
+  </Task>
+  <Task priority="1" completed="False" bugfix="True">
+    <Summary>FIXME: gridfs name bugTrying to set the name attr doesn't work</Summary>
+    <Description></Description>
+    <Created>2010-10-01, 22:32:45</Created>
     <Resource>
       <Filename>htpie/enginemodel.py</Filename>
-      <Linenumber>325</Linenumber>
+      <Linenumber>371</Linenumber>
+    </Resource>
+  </Task>
+  <Task priority="1" completed="False" bugfix="True">
+    <Summary>FIXME: gridfs doesn't suppore name, therefore we need to return a local</Summary>
+    <Description></Description>
+    <Created>2010-10-01, 22:32:45</Created>
+    <Resource>
+      <Filename>htpie/enginemodel.py</Filename>
+      <Linenumber>377</Linenumber>
+    </Resource>
+  </Task>
+  <Task priority="1" completed="False" bugfix="True">
+    <Summary>FIXME: gridfs name bug</Summary>
+    <Description></Description>
+    <Created>2010-10-01, 22:32:45</Created>
+    <Resource>
+      <Filename>htpie/enginemodel.py</Filename>
+      <Linenumber>388</Linenumber>
     </Resource>
   </Task>
 </Tasks>
