@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE Project SYSTEM "Project-4.6.dtd">
 <!-- eric4 project file for project htpie -->
-<!-- Saved: 2010-08-20, 16:52:14 -->
+<!-- Saved: 2010-10-01, 15:43:07 -->
 <!-- Copyright (C) 2010 Mark Monroe,  -->
 <Project version="4.6">
   <Language></Language>
@@ -35,6 +35,7 @@
     <Source>htpie/usertasks/ghessiantest.py</Source>
     <Source>htpie/optimize/neb.py</Source>
     <Source>htpie/usertasks/gstring.py</Source>
+    <Source>htpie/enginemodel.py</Source>
   </Sources>
   <Forms>
   </Forms>

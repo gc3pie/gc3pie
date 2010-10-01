@@ -51,3 +51,6 @@ class AuthorizationException(Error):
 
 class GC3Exception(Error):
     pass
+
+class ValidationException(Error):
+    pass
