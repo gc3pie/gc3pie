@@ -16,6 +16,40 @@ export PYTHONPATH=$HOME/gc3utils:$PYTHONPATH
 export PATH=$HOME/gc3utils/tools:$PATH
 
 
+To install Nordugrid Python libs in Debian 5 (Lenny):
+
+(Adapted from here: http://download.nordugrid.org/repos.html)
+
+Add to /etc/apt/sources.list:
+deb http://download.nordugrid.org/repos/debian/ lenny main
+deb-src http://download.nordugrid.org/repos/debian/ lenny main
+
+Modify /etc/apt/preferences:
+Package: *
+Pin: release a=stable
+Pin-Priority: 900
+
+Package: *
+Pin: release o="NorduGrid"
+Pin-Priority: 100
+
+Then run:
+# wget -q http://download.nordugrid.org/DEB-GPG-KEY-nordugrid.asc -O- | sudo apt-key add -
+# gpg --search-keys "mattias ellert"
+# aptitude update
+# aptitude install nordugrid-arc-python nordugrid-arc-client voms-clients
+
+Be sure to add it to your PYTHONPATH:
+
+# export PYTHONPATH=$PYTHONPATH:/opt/nordugrid/lib/python2.5/site-packages
+
+And the Nordugrid clients to your PATH.
+
+# export PATH=$PATH:/opt/nordugrid/bin
+
+You also need slcs-init (https://slcs.switch.ch/download/) & a directory containing the x509 certificates for your organization & its root organizations..
+
+
 Require configuration
 ======================
 
