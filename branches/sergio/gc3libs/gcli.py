@@ -5,20 +5,20 @@ __date__="01 May 2010"
 __copyright__="Copyright 2009, 2010 Grid Computing Competence Center - UZH/GC3"
 __version__="0.3"
 
-import Application
-import Authorization
-import ConfigParser
+import Application.Application
+import Authentication.Authorization
 import Default
 import Job
 import Resource
-import Scheduler
-import os
-import sys
-import utils
-
+import Scheduler.Scheduler
+import utility.utils
 from ArcLRMS import ArcLrms
 from Exceptions import *
 from SshLRMS import SshLrms
+
+import ConfigParser
+import os
+import sys
 from fnmatch import fnmatch
 
 class Gcli:
