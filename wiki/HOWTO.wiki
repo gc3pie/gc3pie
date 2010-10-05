@@ -1,7 +1,8 @@
 #summary How To / FAQ
-= Introduction =
 
-Add your content here.
+= Submit to a specific frontend using ARC =
+
+adsf
 
 
 = Details =
