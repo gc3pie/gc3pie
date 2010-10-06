@@ -297,12 +297,17 @@ class GamessApplication(Application):
     Specialized `Application` object to submit computational jobs running GAMESS-US.
 
     The only required parameter for construction is the input file
-    name; for a list of other optional construction parameters, see
-    `Application`.  Note that a GAMESS-US job is *always* submitted 
-    with `join = True`, therefore any `stderr` setting is ignored.
+    name; any other argument names an additional input file, that
+    is added to the `Application.inputs` list, but not otherwise 
+    treated specially.
+
+    Any other kyword parameter that is valid in the `Application`
+    class can be used here as well, with the exception of `input` and
+    `output`.  Note that a GAMESS-US job is *always* submitted with
+    `join = True`, therefore any `stderr` setting is ignored.
     """
-    def __init__(self, input_file_path, **kw):
-        input_file_name = os.path.basename(input_file_path)
+    def __init__(self, inp_file_path, *other_input_files, **kw):
+        input_file_name = os.path.basename(inp_file_path)
         input_file_name_sans = os.path.splitext(input_file_name)[0]
         output_file_name = input_file_name_sans + '.dat'
         # add defaults to `kw` if not already present
@@ -324,7 +329,7 @@ class GamessApplication(Application):
         Application.__init__(self, 
                              executable = "$GAMESS_LOCATION/nggms",
                              arguments = arguments,
-                             inputs = [ (input_file_path, input_file_name) ],
+                             inputs = [ (inp_file_path, input_file_name) ] + list(other_input_files),
                              outputs = [ output_file_name ],
                              join=True,
                              **kw)
