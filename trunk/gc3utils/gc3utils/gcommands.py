@@ -183,7 +183,7 @@ def ginfo(*args, **kw):
 def gsub(*args, **kw):
     """The `gsub` command."""
     # Parse command line arguments
-    parser = OptionParser(usage="%prog [options] APPLICATION INPUTFILE")
+    parser = OptionParser(usage="%prog [options] APPLICATION INPUTFILE [OTHER INPUT FILES]")
     parser.add_option("-v", action="count", dest="verbosity", default=0, help="Set verbosity level")
     parser.add_option("-r", "--resource", action="store", dest="resource_name", metavar="STRING", default=None, help='Select resource destination')
     parser.add_option("-d", "--jobdir", action="store", dest="job_local_dir", metavar="STRING", default=gc3utils.Default.JOB_FOLDER_LOCATION, help='Select job local folder location')
@@ -201,16 +201,18 @@ def gsub(*args, **kw):
     application_tag = args[0]
 
     if application_tag == 'gamess':
-        if len(args) != 2:
-            raise InvalidUsage('Wrong number of arguments: this commands expects exactly two arguments.')
+        if len(args) < 2:
+            raise InvalidUsage('Wrong number of arguments: this commands expects at least two arguments.')
         application = gc3utils.Application.GamessApplication(
-            input_file_path=args[1],
-            arguments=options.application_arguments,
-            requested_memory=int(options.memory_per_core),
-            requested_cores=int(options.ncores),
-            requestd_resource=options.resource_name,
-            requested_walltime=int(options.walltime),
-            job_local_dir=options.job_local_dir,
+            *args[1:], # 1st arg is .INP file path, rest are (optional) additional inputs
+            **{ 
+                'arguments':options.application_arguments,
+                'requested_memory':int(options.memory_per_core),
+                'requested_cores':int(options.ncores),
+                'requestd_resource':options.resource_name,
+                'requested_walltime':int(options.walltime),
+                'job_local_dir':options.job_local_dir,
+                }
             )
     elif application_tag == 'rosetta':
         if len(args) != 4:
