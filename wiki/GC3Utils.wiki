@@ -116,6 +116,13 @@ run-time of 10 hours:
   gsub -w 10 -m 2 -c 8 gamess INPUT.inp
 </pre>
 
+If you need to pass additional input files to GAMESS (e.g., an
+external basis set), just list them on the command-line *after the
+`.inp` file:*
+<pre>
+  gsub gamess INPUT.inp basis.dat
+</pre>
+
 
 = _*gstat*_: monitor the status of submitted jobs =
 
