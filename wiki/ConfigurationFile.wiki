@@ -1,14 +1,24 @@
-The [GC3Utils] configuration file resides in `~/.gc3/gc3utils.conf`.
-If you try to start any GC3Utils command without having a
-configuration file, a sample one (with all resources commented out)
-will be copied to that location and an error message will be
-displayed, directing users to edit the sample file.
+The [GC3Utils] commands read two configuration files:
+  * system-wide one at `/etc/gc3/gc3utils.conf`, and
+  * a user-private one from `~/.gc3/gc3utils.conf`.
+
+Both files use the same format. The system-wide one is read first, so
+that users can override configuration in their private file.
+Configuration data from corresponding sections in the two
+configuration files is merged; the value in the user-private file
+overrides the one from the system-wide configuration.
 
 The  gc3utils configuration file follows the format understood
 by Python `ConfigParser` objects, which is very close to the syntax
 used in MS-Windows `.INI` files.
 See http://docs.python.org/library/configparser.html 
 for reference.
+
+If you try to start any GC3Utils command without having a
+configuration file, a sample one (with all resources commented out)
+will be copied to the user-private location `~/.gc3/gc3utils.conf` and
+an error message will be displayed, directing users to edit the sample
+file.
 
 The GC3Libs configuration file consists of several configuration
 blocks.  Each configuration block (section) starts with a keyword in
@@ -184,7 +194,29 @@ with the `sge_accounting_delay` parameter, whose default is 15 seconds
 (matches the default in SGE, as of release 6.2): 
   * `sge_accounting_delay`: Time (in seconds) a failure in `qacct` will not be considered critical
 
-Example:
+
+== enabling/disabling selected resources ==
+
+Any resource can be disabled by adding a line `enabled = false` to its
+configuration stanza.  Conversely, a line `enabled = true` will undo
+the effect of an `enabled = false` line (possibly found in a different
+configuration file).
+
+This way, resources can be temporarily disabled (e.g., the cluster is
+down for maintenance) without having to remove them from the
+configuration file.
+
+Users can selectively disable or enable resources that are defined in
+the system-wide configuration file.  Two main use cases are supported:
+the system-wide configuration file `/etc/gc3/gc3utils.conf` lists and
+enables all available resources, and users can turn them off in their
+private configuration file `~/.gc3/gc3utils.conf`; or the system-wide
+configuration can list all available resources but keep them disabled,
+and users can enable those they prefer in the private configuration
+file.
+
+
+= Example configuration file =
 {{{
 [resource/gc3]
 # A single cluster, accessed through the ARC middleware
@@ -211,3 +243,4 @@ max_walltime = 2
 ncores = 80
 walltime = 2
 }}}
+
