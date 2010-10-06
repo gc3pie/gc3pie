@@ -1,6 +1,10 @@
 from InformationContainer import InformationContainer
-#import sys
-#from utils import Struct
+
+# DEBUG-print of data members accesses...
+import sys
+from utils import Struct
+import gc3utils # for the logging mechanism
+
 
 # -----------------------------------------------------
 # Resource
@@ -43,9 +47,11 @@ class Resource(InformationContainer):
         else:
             return False
 
-    # def __getattr__(self, key):
-    #     sys.stderr.write("Resource: query for attribute '%s'\n" %key)
-    #     return Struct.__getattr__(self, key)
-    # def __getitem__(self, key):
-    #     sys.stderr.write("Resource: query for attribute '%s'\n" % key)
-    #     return dict.__getitem__(self, key)
+    def __getattr__(self, key):
+        name = Struct.__getattr__(self, 'name')
+        gc3utils.log.debug("Resource '%s': query for attribute '%s'" % (name, key))
+        return Struct.__getattr__(self, key)
+    def __getitem__(self, key):
+        name = Struct.__getitem__(self, 'name')
+        gc3utils.log.debug("Resource '%s': query for attribute '%s'" % (name, key))
+        return dict.__getitem__(self, key)
