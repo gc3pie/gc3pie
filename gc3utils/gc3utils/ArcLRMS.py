@@ -86,7 +86,7 @@ class ArcLrms(LRMS):
         try:
             lrms_jobid = arclib.SubmitJob(_xrsl,targets)
         except arclib.JobSubmissionError:
-            raise LRMSSubmitError('Got error from arclib.SubmitJob():', exc_info=True)
+            raise LRMSSubmitError('Got error from arclib.SubmitJob():')
 
         if job is None:
             job = Job.Job()
