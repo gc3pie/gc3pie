@@ -405,7 +405,7 @@ class Gcli:
 
     def __get_LRMS(self,resource_name):
         _lrms = None
-        
+
         for _resource in self._resources:
             if _resource.name == resource_name:
                 # there's a matching resource
@@ -421,9 +421,9 @@ class Gcli:
                 except:
                     gc3utils.log.error('Exception creating LRMS instance %s',_resource.type)
                     raise
-        
+
         if _lrms is None:
-            raise Exception('Failed finding resource associated to job')
+            raise ResourceNotFoundError("Cannot find computational resource '%s'" % resource_name)
 
         return _lrms
 #====== End
