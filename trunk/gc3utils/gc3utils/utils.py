@@ -30,6 +30,7 @@ from lockfile import FileLock
 #
 # ================================================================
 
+
 class defaultdict(dict):
     """
     A backport of `defaultdict` to Python 2.4
@@ -54,7 +55,7 @@ def first(seq):
     """
     Return the first element of sequence or iterator `seq`.
     Raise `TypeError` if the argument does not implement
-    either of the tweo interfaces.
+    either of the two interfaces.
 
     Examples::
 
@@ -278,6 +279,20 @@ def from_template(template, **kw):
         template_contents = template
     # substitute `kw` into `t` and return it
     return (template_contents % kw)
+
+
+def string_to_boolean(word):
+    """
+    Convert `word` to a Python boolean value and return it.
+    The strings `true`, `yes`, `on`, `1` (with any
+    capitalization and any amount of leading and trailing
+    spaces) are recognized as meaning Python `True`.
+    Any other word is considered as boolean `False`.
+    """
+    if word.strip().lower() in [ 'true', 'yes', 'on', '1' ]:
+        return True
+    else:
+        return False
 
 
 def to_bytes(s):

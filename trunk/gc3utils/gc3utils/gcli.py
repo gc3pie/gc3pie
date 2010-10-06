@@ -431,8 +431,8 @@ class Gcli:
 
 # === Configuration File
 
-def import_config(config_file_location, auto_enable_auth=True):
-    (default_val, resources_vals, authorizations) = read_config(config_file_location)
+def import_config(config_file_locations, auto_enable_auth=True):
+    (default_val, resources_vals, authorizations) = read_config(*config_file_locations)
     return (get_defaults(default_val),
             get_resources(resources_vals), 
             get_authorization(authorizations,auto_enable_auth), 
@@ -489,45 +489,77 @@ def get_resources(resources_list):
     return resources
 
                                 
-def read_config(config_file_location):
+def read_config(*locations):
     """
-    Read configuration file.
+    Read each of the configuration files listed in `locations`, and
+    return a `(defaults, resources, authorizations)` triple that can
+    be passed to the `Gcli` class constructor.
     """
-    _configFileLocation = os.path.expandvars(config_file_location)
-    if not utils.deploy_configuration_file(_configFileLocation, "gc3utils.conf.example"):
-        # warn user
-        raise NoConfigurationFile("No configuration file '%s' was found; a sample one has been copied in that location; please edit it and define resources before you try running gc3utils commands again." % _configFileLocation)
+    files_successfully_read = 0
+    defaults = { }
+    resources = gc3utils.utils.defaultdict(lambda: dict())
+    authorizations = gc3utils.utils.defaultdict(lambda: dict())
 
-    # Config File exists; read it
-    config = ConfigParser.ConfigParser()
-    if _configFileLocation not in config.read(_configFileLocation):
-        raise NoConfigurationFile("Configuration file '%s' is unreadable or malformed. Aborting." 
-                                  % _configFileLocation)
-
-    defaults = config.defaults()
-    resources = { }
-    authorizations = { }
-
-    for sectname in config.sections():
-        if sectname.startswith('authorization/'):
-            # handle authorization section
-            gc3utils.log.debug("readConfig adding authorization '%s' ", sectname)
-            # extract authorization name and register authorization dictionary
-            auth_name = sectname.split('/', 1)[1]
-            authorizations[auth_name] = dict(config.items(sectname))
-            
-        elif  sectname.startswith('resource/'):
-            # handle resource section
-            gc3utils.log.debug("readConfig adding resource '%s' ", sectname)
-            # extract authorization name and register authorization dictionary
-            resource_name = sectname.split('/', 1)[1]
-            resources[resource_name] = dict(config.items(sectname))
-            resources[resource_name]['name'] = resource_name
-
+    for location in locations:
+        location = os.path.expandvars(location)
+        if os.path.exists(location) and os.access(location, os.R_OK):
+            gc3utils.log.debug("gcli.read_config(): reading file '%s' ..." % location)
         else:
-            # Unhandled sectname
-            gc3utils.log.error("readConfig unknown configuration section '%s' ", sectname)
+            gc3utils.log.debug("gcli.read_config(): ignoring non-existent file '%s' ..." % location)
+            continue # with next `location`
 
-    gc3utils.log.debug("readConfig: read %d resources from configuration file '%s'",
-                       len(resources), _configFileLocation)
+        # Config File exists; read it
+        config = ConfigParser.ConfigParser()
+        if location not in config.read(location):
+            gc3utils.log.debug("Configuration file '%s' is unreadable or malformed: ignoring." 
+                               % location)
+            continue # with next `location`
+        files_successfully_read += 1
+
+        # update `defaults` with the contents of the `[DEFAULTS]` section
+        defaults.update(config.defaults())
+
+        for sectname in config.sections():
+            if sectname.startswith('authorization/'):
+                # handle authorization section
+                gc3utils.log.debug("gcli.read_config(): adding authorization '%s' ", sectname)
+                # extract authorization name and register authorization dictionary
+                auth_name = sectname.split('/', 1)[1]
+                authorizations[auth_name].update(dict(config.items(sectname)))
+
+            elif  sectname.startswith('resource/'):
+                # handle resource section
+                resource_name = sectname.split('/', 1)[1]
+                gc3utils.log.debug("gcli.read_config(): adding resource '%s' ", resource_name)
+                config_items = dict(config.items(sectname))
+                if config_items.has_key('enabled'):
+                    config_items['enabled'] = utils.string_to_boolean(config_items['enabled'])
+                    gc3utils.log.debug("Resource '%s': enabled=%s in file '%s'", 
+                                       resource_name, config_items['enabled'], location)
+                resources[resource_name].update(config_items)
+                resources[resource_name]['name'] = resource_name
+
+            else:
+                # Unhandled sectname
+                gc3utils.log.error("gcli.read_config(): unknown configuration section '%s' -- ignoring!", 
+                                   sectname)
+
+        gc3utils.log.debug("gcli.read_config(): read %d resources from configuration file '%s'",
+                           len(resources), location)
+
+        # remove disabled resources
+        disabled_resources = [ ]
+        for resource in resources.values():
+            if resource.has_key('enabled') and not resource['enabled']:
+                disabled_resources.append(resource['name'])
+        for resource_name in disabled_resources:
+            gc3utils.log.info("Ignoring computational resource '%s'"
+                              " because of 'enabled=False' setting.",
+                              resource_name)
+            del resources[resource_name]
+
+    if files_successfully_read == 0:
+        raise NoConfigurationFile("Could not read any configuration file; tried locations '%s'."
+                                  % str.join("', '", locations))
+
     return (defaults, resources, authorizations)

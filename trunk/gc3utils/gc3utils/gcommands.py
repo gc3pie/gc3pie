@@ -32,7 +32,7 @@ import gc3utils.utils
 # defaults - XXX: do they belong in ../gcli.py instead?
 _homedir = os.path.expandvars('$HOME')
 _rcdir = _homedir + "/.gc3"
-_default_config_file_location = _rcdir + "/gc3utils.conf"
+_default_config_file_locations = [ "/etc/gc3/gc3utils.conf", _rcdir + "/gc3utils.conf" ]
 _default_joblist_file = _rcdir + "/.joblist"
 _default_joblist_lock = _rcdir + "/.joblist_lock"
 _default_job_folder_location = os.getcwd()
@@ -47,26 +47,36 @@ def _configure_logger(verbosity):
     gc3utils.log.setLevel(logging_level)
 
 
-def _get_gcli(config_file_path = _default_config_file_location, auto_enable_auth=True):
+def _get_gcli(config_file_locations, auto_enable_auth=True):
     """
     Return a `gc3utils.gcli.Gcli` instance configured by parsing
-    the configuration file located at `config_file_path`.
-    (Which defaults to `Defaults.config_file`.)
+    the configuration file(s) located at `config_file_locations`.
+    Order of configuration files matters: files read last overwrite
+    settings from previously-read ones; list the most specific configuration
+    files last.
 
     If `auto_enable_auth` is `True` (default), then `Gcli` will try to renew
     expired credentials; this requires interaction with the user and will
-    certainly fail unless stdin & stdout are not connected to a terminal.
+    certainly fail unless stdin & stdout are connected to a terminal.
     """
+    # ensure a configuration file exists in the most specific location
+    for location in reversed(config_file_locations):
+        if os.access(os.path.dirname(location), os.W_OK|os.X_OK) \
+                and not gc3utils.utils.deploy_configuration_file(location, "gc3utils.conf.example"):
+            # warn user
+            gc3utils.log.warning("No configuration file '%s' was found;"
+                                 " a sample one has been copied in that location;"
+                                 " please edit it and define resources." % location)
     try:
-        (default, resources, authorizations, auto_enable_auth) = gc3utils.gcli.import_config(config_file_path,
-                                                                                             auto_enable_auth)
+        (default, resources, authorizations, auto_enable_auth) = gc3utils.gcli.import_config(config_file_locations, auto_enable_auth)
         gc3utils.log.debug('Creating instance of Gcli')
         return gc3utils.gcli.Gcli(default, resources, authorizations, auto_enable_auth)
     except NoResources:
         raise FatalError("No computational resources defined.  Please edit the configuration file '%s'." 
                          % config_file_path)
     except:
-        gc3utils.log.debug("Failed loading config file from '%s'", config_file_path)
+        gc3utils.log.debug("Failed loading config file from '%s'", 
+                           str.join("', '", config_file_locations))
         raise
 
 def _print_job_info(job_obj):
@@ -223,7 +233,7 @@ def gsub(*args, **kw):
     else:
         raise InvalidUsage("Unknown application '%s'" % application_tag)
 
-    _gcli = _get_gcli(_default_config_file_location)
+    _gcli = _get_gcli(_default_config_file_locations)
     if options.resource_name:
         _gcli.select_resource(options.resource_name)
         gc3utils.log.info("Retained only resources: %s (restricted by command-line option '-r %s')",
@@ -258,7 +268,7 @@ def gresub(*args, **kw):
     if len(args) < 1:
         raise InvalidUsage('Wrong number of arguments: this commands expects at least 1 argument: JOBID')
 
-    _gcli = _get_gcli(_default_config_file_location)
+    _gcli = _get_gcli(_default_config_file_locations)
     if options.resource_name:
         _gcli.select_resource(options.resource_name)
         gc3utils.log.info("Retained only resources: %s (restricted by command-line option '-r %s')",
@@ -304,7 +314,7 @@ def grid_credential_renew(*args, **kw):
         raise InvalidUsage("Missing required argument USERNAME; this command requires your AAI/SWITCH username.")
         
     gc3utils.log.debug('Checking grid credential')
-    _gcli = _get_gcli(_default_config_file_location)
+    _gcli = _get_gcli(_default_config_file_locations)
     if not _gcli.check_authentication(gc3utils.Default.SMSCG_AUTHENTICATION):
         return _gcli.enable_authentication(gc3utils.Default.SMSCG_AUTHENTICATION)
     else:
@@ -322,7 +332,7 @@ def gstat(*args, **kw):
     _configure_logger(options.verbosity)
 
     try:
-        _gcli = _get_gcli(_default_config_file_location)
+        _gcli = _get_gcli(_default_config_file_locations)
         if len(args) == 0:
             job_list = _gcli.gstat(None)
         elif len(args) == 1:
@@ -372,7 +382,7 @@ def gget(*args, **kw):
         raise InvalidUsage("This command requires either one argument (the JOBID) or none.")
     unique_token = args[0]
 
-    _gcli = _get_gcli(_default_config_file_location)
+    _gcli = _get_gcli(_default_config_file_locations)
     job_obj = gc3utils.Job.get_job(unique_token)
 
     gc3utils.log.debug('job status [%d]',job_obj.status)
@@ -419,7 +429,7 @@ def gkill(*args, **kw):
     shortview = True
 
     try:
-        _gcli = _get_gcli(_default_config_file_location)
+        _gcli = _get_gcli(_default_config_file_locations)
 
         job_list = []
         warning = ""
@@ -478,7 +488,7 @@ def gtail(*args, **kw):
         else:
             std = 'stdout'
             
-        _gcli = _get_gcli(_default_config_file_location)
+        _gcli = _get_gcli(_default_config_file_locations)
     
         job = gc3utils.Job.get_job(unique_token)
 
@@ -528,7 +538,7 @@ def glist(*args, **kw):
         raise InvalidUsage("This command requires exactly one argument: the resource name.")
     resource_name = args[0]
 
-    _gcli = _get_gcli(_default_config_file_location)
+    _gcli = _get_gcli(_default_config_file_locations)
     resource_object = _gcli.glist(resource_name)
     if not resource_object is None:
         if resource_object.has_key("name"):
