@@ -59,10 +59,10 @@ class Auth(object):
 
 
 class ArcAuth(object):
-    user_cert_valid = False
-    proxy_valid = False
 
     def __init__(self, **authorization):
+        self.user_cert_valid = False
+        self.proxy_valid = False
         self.__dict__.update(authorization)
 
     def is_valid(self):
