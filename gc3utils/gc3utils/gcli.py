@@ -228,6 +228,10 @@ class Gcli:
         _lrms = self.__get_LRMS(job.resource_name)
         self.authorization.get(_lrms._resource.authorization_type)
 
+        # Get offset and buffersize
+        _remote_file_offset = kw.get('offset',0)
+        _remote_file_buffer_size = kw.get('buffer_size',None)
+
         try:
             if std == 'stdout':
                 filename = job.stdout_filename
@@ -235,9 +239,12 @@ class Gcli:
                 filename = job.stderr_filename
             else:
                 raise Error('Invalid requested filename')
-            job[std] = _lrms.tail(job,filename)
-            
-            return job
+
+            file_handle = _lrms.tail(job,filename,_remote_file_offset,_remote_file_buffer_size)
+
+            if file_handle:
+                # return a file handle of the local copy
+                return file_handle
 
         except AttributeError:
             gc3utils.log.critical('Missing attribute')

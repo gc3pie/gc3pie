@@ -498,12 +498,15 @@ def gtail(*args, **kw):
             raise Exception('Job results already retrieved')
         if job.status == gc3utils.Job.JOB_STATE_UNKNOWN or job.status == gc3utils.Job.JOB_STATE_SUBMITTED:
             raise Exception('Stdout/Stderr not ready yet')
-        job = _gcli.tail(job,std)
 
-        if job.has_key(std):
-            print job[std]
-        else:
-            raise Exception('gtail returned non-valid job result')
+        # Obsolete: job = _gcli.tail(job,std)
+        # file_handle = _gcli.tail(job,std, **{'offset':2048,'buffer_size':4096})
+        file_handle = _gcli.tail(job,std)
+
+        for line in file_handle:
+            print line
+
+        file_handle.close()
 
     except:
         gc3utils.log.critical('program failed due to: %s' % sys.exc_info()[1])
