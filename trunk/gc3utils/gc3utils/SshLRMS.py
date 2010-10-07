@@ -422,10 +422,18 @@ class SshLrms(LRMS):
             raise 
 
 
-    def tail(self, job_obj, filename):
+    def tail(self, job_obj, filename, offset=0, buffer_size=None):
         """
         tail allows to get a snapshot of any valid file created by the job
         """
+
+        # Sanitize offset
+        if int(offset) < 1024:
+            offset = 0
+
+        # Sanitize buffer_size
+        if  not buffer_size:
+            buffer_size = -1
 
         # open ssh channel
         ssh, sftp = self._connect_ssh(self._resource.frontend,self._ssh_username)
@@ -436,7 +444,14 @@ class SshLrms(LRMS):
         # create temp file
         _tmp_filehandle = tempfile.NamedTemporaryFile(mode='w+b', suffix='.tmp', prefix='gc3_')
 
-        sftp.get(_remote_filename, _tmp_filehandle.name)
+        remote_handler = sftp.open(_remote_filename, mode='r', bufsize=-1)
+
+        remote_handler.seek(offset)
+        _tmp_filehandle.write(remote_handler.read(buffer_size))
+
+        gc3utils.log.debug('Done')
+
+        # sftp.get(_remote_filename, _tmp_filehandle.name)
 
         # pass content of filename as part of job object dictionary
         # assuming stdout/stderr are always limited in size
@@ -444,20 +459,20 @@ class SshLrms(LRMS):
         # shall we foresee different strategies ?
         _tmp_filehandle.file.flush()
         _tmp_filehandle.file.seek(0)
+
+        # _file_content = ""
         
-        _file_content = ""
-        
-        for line in _tmp_filehandle.file:
-            _file_content += str(line)
+        # for line in _tmp_filehandle.file:
+        #     _file_content += str(line)
             
         # cleanup: close and remove tmp file
-        _tmp_filehandle.close()
+        # _tmp_filehandle.close()
         # os.unlink(_tmp_filehandle.name)
         
         ssh.close()
         sftp.close()
         
-        return _file_content
+        return _tmp_filehandle
                 
     def get_resource_status(self):
 

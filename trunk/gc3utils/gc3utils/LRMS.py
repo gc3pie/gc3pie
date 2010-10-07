@@ -48,16 +48,23 @@ class LRMS:
         """
         raise NotImplementedError("Abstract method `LRMS.get_resource_status()` called - this should have been defined in a derived class.")
     
-    def tail(self, job, remote_filename):
+    def tail(self, job, remote_filename, **kw):
         """
         Gets the output of a running job, similar to ngcat.
-        Return Job object.
+        Return open File handler to local copy of the file
         
         examples:
-        print Job.stdout
-        print Job.stderr
-                                                
-        Copy a remote file belonging to the job sandbox and return the content of the file as a string.
+        h = gcli.tail(job,'stdout')
+        for line in h:
+            print line
+
+        h = gcli.tail(job,'stdout', {'offset':1024,'buffer_size':2048})
+        ...
+        
+        Copy a remote file belonging to the job sandbox and return a file handler to the local copy of the file.
+        Additional parameters could be:
+           offset: int
+           buffer_size: int
         Primarly conceived for stdout and stderr.
         Any exception raised by operations will be passed through.
         @param job: the job object

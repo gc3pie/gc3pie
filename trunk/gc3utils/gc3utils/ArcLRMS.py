@@ -100,7 +100,6 @@ class ArcLrms(LRMS):
 
         return job
 
-                                
     def check_status(self, job):
         """
         Update `job.status` in-place to reflect the status of the
@@ -330,22 +329,37 @@ class ArcLrms(LRMS):
         arclib.CancelJob(job_obj.lrms_jobid)
         return job_obj
 
-    def tail(self, job_obj, filename):
+    def tail(self, job_obj, filename, offset=0, buffer_size=None):
         """
         tail allows to get a snapshot of any valid file created by the job
         """
         try:
+
+            # Sanitize offset
+            if int(offset) < 1024:
+                offset = 0
+
+            # Sanitize buffer_size
+            if  not buffer_size:
+                buffer_size = sys.maxint
+
             _remote_filename = job_obj.lrms_jobid + '/' + filename
         
             # create temp file
             _tmp_filehandle = tempfile.NamedTemporaryFile(mode='w+b', suffix='.tmp', prefix='gc3_')
-            
+
             # get JobFTPControl handle            
             jftpc = arclib.JobFTPControl()
 
             # download file
             gc3utils.log.debug('Downloading remote file %s into local tmp file %s' % (filename,_tmp_filehandle.name))
-            arclib.JobFTPControl.Download(jftpc,_remote_filename,_tmp_filehandle.name)
+            # arclib.JobFTPControl.Download(jftpc,_remote_filename,_tmp_filehandle.name)
+            #  arclib.JobFTPControl.Download(jftpc, arclib.URL, offset, buffer_size, local_file)
+
+            gc3utils.log.debug('using %d %d ',offset,buffer_size)
+            arclib.JobFTPControl.Download(jftpc, arclib.URL(_remote_filename), int(offset), int(buffer_size), _tmp_filehandle.name)
+
+            gc3utils.log.debug('done')
 
             # pass content of filename as part of job object dictionary
             # assuming stdout/stderr are alqays limited in size
@@ -353,6 +367,8 @@ class ArcLrms(LRMS):
             # shall we foresee different strategies ?
             _tmp_filehandle.file.flush()
             _tmp_filehandle.file.seek(0)
+
+            return _tmp_filehandle
 
             _file_content = ""
 
