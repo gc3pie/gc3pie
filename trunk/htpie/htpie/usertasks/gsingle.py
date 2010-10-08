@@ -1,6 +1,6 @@
 import htpie
 from htpie.lib import utils
-from htpie import model
+from htpie import enginemodel as model
 from htpie import statemachine
 from htpie.application import gamess
 from htpie.lib.exceptions import *
@@ -93,25 +93,17 @@ class Transitions(statemachine.Transitions):
 
 class GSingle(model.Task):
     
-    structure = {
-        'gc3_application' : dict, 
-        'gc3_job' : dict, 
-        'gc3_temp': dict,
-        'result': gamess.GamessResult, 
-        'coord':model.MongoMatrix, 
-    }
-    
-    default_values = {
-        'state': States.READY,
-        '_type':u'GSingle',  
-        'transition': Transitions.HOLD
-    }
+    gc3_application = model.DictField()
+    gc3_job = model.DictField()
+    gc3_temp = model.DictField()
+    result  = model.GenericReferenceField()
+    coord = model.PickleField()
     
     def display(self, long_format=False):
         job = self.job
         application = self.application
         tm_format = '%Y-%m-%d %H:%M:%S'
-        output = '%s %s %s %s\n'%(self._type, self.id, self.state, self.transition)
+        output = '%s %s %s %s\n'%(self.cls_name, self.id, self.state, self.transition)
         
         if job:
             submission_time = datetime.strptime(job.submission_time, tm_format)
@@ -124,14 +116,14 @@ class GSingle(model.Task):
                     output += 'Delta: %s\n'%(delta)
         
         
-        f_list = self.open('input')
+        f_list = self.open('inputs')
         if f_list:
             output += 'Input file(s):\n'
             for f in f_list:
                 output += '%s\n'%(f.name)
             [f.close() for f in f_list]
         
-        f_list = self.open('output')
+        f_list = self.open('outputs')
         if f_list:
             output += 'Output file(s):\n'
             for f in f_list:
@@ -186,14 +178,24 @@ class GSingle(model.Task):
                 self.release()
     
     def kill(self):
+        import time
+
+        def print_timing(func):
+            def wrapper(*arg):
+                t1 = time.time()
+                res = func(*arg)
+                t2 = time.time()
+                htpie.log.debug( '%s took %0.3f ms' % (func.func_name, (t2-t1)*1000.0))
+                return res
+            return wrapper
         try:
-            self.acquire(120)
+            print_timing(self.acquire(120))
         except:
             raise
         else:
             self.state = States.KILL
             self.transition = Transitions.PAUSED
-            self.release()
+            print_timing(self.release())
             htpie.log.debug('GSingle %s will be killed'%(self.id))
     
     @classmethod
@@ -201,22 +203,21 @@ class GSingle(model.Task):
         task = super(GSingle, cls,).create()
         task.app_tag = u'%s'%(app_tag)
         for f_name in f_list:
-            task.attach_file(f_name, 'input')
+            task.attach_file(f_name, 'inputs')
         
         atoms, params = _app_tag_mapping[task.app_tag].parse_input(f_list[0])
-        task.coord = model.MongoMatrix.create()
-        task.coord.matrix = atoms.get_positions()
+        task.coord = model.PickleProxy()
+        task.coord.pickle = atoms.get_positions()
         
         task.gc3_temp = _app_tag_mapping[task.app_tag].temp_application(requested_cores, 
                                                                                                                       requested_memory, 
                                                                                                                       requested_walltime 
                                                                                                                         ) 
         
+        task.state = States.READY
         task.transition = Transitions.PAUSED
         task.save()        
         return task
-
-model.con.register([GSingle])
 
 class GSingleStateMachine(statemachine.StateMachine):
     _cls_task = GSingle
@@ -235,8 +236,8 @@ class GSingleStateMachine(statemachine.StateMachine):
     def handle_ready_state(self):
         #Need to sleep to give the arc info system time to update itself
         #with any jobs just submitted by me
-        time.sleep(15)
-        f_to_run = self.task.mk_local_copy('input')
+        #time.sleep(15)
+        f_to_run = self.task.mk_local_copy('inputs')
         map(file.close, f_to_run)
         f_name = f_to_run[0].name
         
@@ -246,7 +247,7 @@ class GSingleStateMachine(statemachine.StateMachine):
         # When I dump the application obj into mongodb it will change the dict because of mongokit limitation, so be careful
         self.task.application = l_application
         gc3utils.Job.persist_job(self.task.job)
-        htpie.log.debug('Submitted gsingle %s to the grid'%(self.task.id))
+        #htpie.log.debug('Submitted gsingle %s to the grid'%(self.task.id))
         self.state = States.WAITING
     
     def handle_waiting_state(self):
@@ -270,14 +271,15 @@ class GSingleStateMachine(statemachine.StateMachine):
         gc3utils.Job.persist_job(self.task.job)
         output_files = glob.glob('%s/*.*'%(self.task.job.download_dir))
         for f_name in output_files:
-            self.task.attach_file(f_name, 'output')
-        htpie.log.debug('Retrieved gsingle %s data'%(self.task.id))
+            self.task.attach_file(f_name, 'outputs')
+        #htpie.log.debug('Retrieved gsingle %s data'%(self.task.id))
         self.state = States.POSTPROCESS
     
     def handle_postprocess_state(self):
         app = _app_tag_mapping[self.task.app_tag]
-        f_list = self.task.open('output')
+        f_list = self.task.open('outputs')
         self.task.result = app.parse_result(f_list)
+        self.task.result.save()
         self.state = States.COMPLETE
         return True
     
@@ -310,9 +312,9 @@ class GSingleStateMachine(statemachine.StateMachine):
 if __name__ == '__main__':
     import sys
     utils.configure_logger(10)
-    a_run = GSingle.create(['/home/mmonroe/gtests/exam01.inp'])
+    a_run = GSingle.create(['examples/exam01.inp'])
     fsm = GSingleStateMachine()
-    fsm.load(GSingle, a_run.id)
+    fsm.load(a_run.id)
     fsm.run()
     print a_run.id
     sys.exit(1)

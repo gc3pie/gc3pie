@@ -1,6 +1,6 @@
 import sys
 import htpie
-from htpie import model
+from htpie import enginemodel as model
 from htpie import statemachine
 from htpie.lib import utils
 import time
@@ -36,12 +36,13 @@ class TaskScheduler(object):
             avoid.append(statemachine.Transitions.HOLD)
             #We sort because we want to avoid gcontrol running into the scheduler and getting stuck behind it. By
             #reversing the sort, they should pass each other because they are moving through the tasks in different directions
-            to_process = node_class.doc().find({'transition':{'$nin':avoid} , '_type': task_name, '_lock': u''}).sort('_id', pymongo.DESCENDING)
+            #q = model.Q(transition__nin = avoid, _lock='')
+            #to_process = node_class.objects.filter(q).order_by('-__id')
+            to_process = node_class.objects(transition__nin = avoid, _lock='').order_by('-__id').only('id')
+            #to_process = node_class.objects._collection.find({'transition':{'$nin':avoid} , '_lock': u''}).sort('_id', pymongo.DESCENDING)
             htpie.log.info('%d %s task(s) are going to be processed'%(to_process.count(),  task_name))
             for a_node in to_process:
                 counter += 1
-                htpie.log.debug('TaskScheduler is processing task %s'%(a_node.id))
-                htpie.log.debug('%s is in state %s'%(a_node['_type'], a_node.state))
                 fsm.load(a_node.id)
                 fsm.step()
         htpie.log.info('TaskScheduler has processed %s task(s)\n%s'%(counter, '-'*80))

@@ -2,7 +2,7 @@ import htpie
 
 from htpie.lib import utils
 from htpie.lib.exceptions import *
-from htpie import model
+from htpie import enginemodel as model
 from htpie import statemachine
 from htpie.application import gamess
 from htpie.usertasks import gsingle
@@ -24,24 +24,18 @@ class States(statemachine.States):
 class Transitions(statemachine.Transitions):
     pass
 
-class GHessian(model.Task):
+class GHessianResult(model.EmbeddedDocument):
+    hessian = model.PickleField()
+    normal_mode = model.EmbeddedDocumentField(gamess.NormalMode)
 
-    structure = {'total_jobs': int,
-                         'result': {'hessian':model.MongoMatrix,
-                                            'normal_mode':{'atomic_mass':[float], 
-                                                                       'frequency':[float], 
-                                                                       'mode':model.MongoMatrix, 
-                                                                    }} 
-    }
+class GHessian(model.Task):
+    total_jobs = model.IntField(default = 0)
+    children = model.ListField(model.ReferenceField(gsingle.GSingle))
+    result = model.EmbeddedDocumentField(GHessianResult)
     
-    default_values = {
-        '_type':u'GHessian', 
-        'transition': Transitions.HOLD, 
-        'total_jobs':0, 
-    }
     
     def display(self, long_format=False):
-        output = '%s %s %s %s\n'%(self._type, self.id, self.state, self.transition)
+        output = '%s %s %s %s\n'%(self.cls_name, self.id, self.state, self.transition)
         output += 'Task submitted: %s\n'%(self.create_d)
         output += 'Task last ran: %s\n'%(self.last_exec_d)
         output += 'Delta: %s\n'%(self.last_exec_d - self.create_d)
@@ -50,11 +44,11 @@ class GHessian(model.Task):
                 output += 'Frequency:\n'
                 output += '%s\n'%(np.array(self.result['normal_mode']['frequency']))
                 output += 'Mode:\n'
-                output += '%s\n'%(self.result['normal_mode']['mode'].matrix)
+                output += '%s\n'%(self.result['normal_mode']['mode'].pickle)
         if long_format:
             output += 'Child Tasks:\n'
             for child in self.children:
-                output += '%s %s %s %s\n'%(child['_type'], child.id, child.state, child.transition)
+                output += '%s %s %s %s\n'%(child.cls_name, child.id, child.state, child.transition)
                 #output += '-' * 80 + '\n'
                 #output += child.display()
         return output
@@ -91,20 +85,18 @@ class GHessian(model.Task):
     def create(cls, f_input,  app_tag='gamess', requested_cores=2, requested_memory=2, requested_walltime=2):
         task = super(GHessian, cls,).create()
         task.app_tag = u'%s'%(app_tag)
-        task.result['hessian'] = model.MongoMatrix.create()
+        task.result = GHessianResult()
         
-        task.attach_file(f_input, 'input')
+        task.attach_file(f_input, 'inputs')
         
         fsm = gsingle.GSingle.create([f_input], app_tag, requested_cores, requested_memory, requested_walltime)
-        task.add_child(fsm)
+        task.children.append(fsm)
         task.total_jobs += 1
         
         task.transition = Transitions.PAUSED
         task.state = States.FIRST_WAIT
         task.save()
         return task
-
-model.con.register([GHessian])
 
 class GHessianStateMachine(statemachine.StateMachine):
     _cls_task = GHessian
@@ -128,10 +120,10 @@ class GHessianStateMachine(statemachine.StateMachine):
         task_vec = self.task.children[0]
         app = _app_tag_mapping[self.task.app_tag]
         
-        f_input = task_vec.open('input')[0]
+        f_input = task_vec.open('inputs')[0]
         atoms, params = app.parse_input(f_input)
 
-        params.r_orbitals = task_vec.result.vec[-1].matrix
+        params.r_orbitals = task_vec.result.vec[-1].pickle
         params.r_orbitals_norb = gamess.select_norb(task_vec.result)
         params.set_group_param('$GUESS', 'GUESS', 'MOREAD')
         params.set_group_param('$GUESS', 'NORB', params.r_orbitals_norb)
@@ -155,7 +147,7 @@ class GHessianStateMachine(statemachine.StateMachine):
             app.write_input(f_name, atoms, params)
 
             fsm = gsingle.GSingle.create([f_name], self.task.app_tag, **gc3_temp)
-            self.task.add_child(fsm)
+            self.task.children.append(fsm)
             self.task.total_jobs += 1
         self.state = States.GEN_WAIT
     
@@ -170,27 +162,28 @@ class GHessianStateMachine(statemachine.StateMachine):
         result_list  = list()
         for a_node in children:
             result_list.append(a_node.result)
-        num_atoms = len(result_list[-1].gradient[-1].matrix)
+        num_atoms = len(result_list[-1].gradient[-1].pickle)
         gradMat = np.zeros((num_atoms*len(result_list), 3), dtype=np.longfloat)
         count = 0
         for a_result in result_list:
-            grad = a_result.gradient[-1].matrix
+            grad = a_result.gradient[-1].pickle
             for j in range(0, len(grad)):
                 gradMat[count]=grad[j]
                 count +=1
         mat = _calculateNumericalHessian(num_atoms, gradMat)
         postprocess_result = mat/_GRADIENT_CONVERSION
-        self.task.result['hessian'].matrix = postprocess_result
+        self.task.result['hessian'] = model.PickleProxy()
+        self.task.result['hessian'].pickle = postprocess_result
         
         dir = utils.generate_temp_dir()
-        f_list = self.task.open('input')
+        f_list = self.task.open('inputs')
         
         f_ghessian = '%s/ghessian_%s'%(dir, os.path.basename(f_list[0].name))
         atoms, params = app.parse_input(f_list[0])
         
         params.set_group_param('$CONTRL', 'RUNTYP', 'HESSIAN')
         params.set_group_param('$FORCE',  'RDHESS', '.T.')
-        params.r_hessian = self.task.result['hessian'].matrix
+        params.r_hessian = self.task.result['hessian'].pickle
         app.write_input(f_ghessian, atoms, params)
 
         def str_dict(dic):
@@ -201,7 +194,7 @@ class GHessianStateMachine(statemachine.StateMachine):
 
         gc3_temp = str_dict(self.task.children[0].gc3_temp)
         fsm = gsingle.GSingle.create([f_ghessian], self.task.app_tag, **gc3_temp)
-        self.task.add_child(fsm)
+        self.task.children.append(fsm)
         self.state = States.PROCESS_WAIT
     
     def handle_process_wait_state(self):
