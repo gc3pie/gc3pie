@@ -1,23 +1,8 @@
-import sys
 import htpie
 from htpie import enginemodel as model
 from htpie import statemachine
 from htpie.lib import utils
-import time
-
-import pymongo
-
-module_names = {'GSingle':'htpie.usertasks.gsingle',
-                              'GHessian':'htpie.usertasks.ghessian',
-                              'GHessianTest':'htpie.usertasks.ghessiantest', 
-                              'GString':'htpie.usertasks.gstring', 
-                            }
-
-fsm_classes = dict()
-for node_name, node_class in module_names.items():
-    __import__(node_class)
-    fsm_classes[node_name] = (eval('sys.modules[node_class].%s'%(node_name)), 
-                                                eval('sys.modules[node_class].%sStateMachine'%(node_name)))   
+from htpie.usertasks.usertasks import *
 
 class TaskScheduler(object):
     

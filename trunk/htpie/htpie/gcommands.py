@@ -216,6 +216,30 @@ def gcontrol(*args, **kw):
     else:
         sys.stdout.write('Unknown program command %s'%s(options.program_command))
 
+def gbig(*args, **kw):
+    from htpie.usertasks import gbig
+
+    config = _configure_system()
+    #Set up command line options
+    usage = "usage: %prog [options] arg"
+    parser = OptionParser(usage)
+    parser.add_option("-n", "--number", dest="num_little", type='int', default=10, 
+                      help="number of glittle's this gbig should spawn")
+    parser.add_option("-v", "--verbose", action='count', dest="verbosity", default=config.verbosity, 
+                      help="add more v's to increase log output")
+
+    (options, args) = parser.parse_args()
+
+    configure_logger(options.verbosity, _default_log_file_location) 
+    
+    big = gbig.GBig.create(options.num_little)
+    
+    if gstring:
+        sys.stdout.write('Successfully create GBig %s\n'%(big.id))
+    else:
+        sys.stdout.write('Error occured while creating a GBig\n')
+    sys.stdout.flush()
+
 if __name__ == '__main__':
     #This is needed because eric4 sends the following to the sys.argv variable
     #['gcommands.py', 'gcommands.py', u'gtestcron']
@@ -235,3 +259,4 @@ if __name__ == '__main__':
             print 'sleeping'
             time.sleep(10)
     sys.exit(0)
+
