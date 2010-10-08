@@ -3,7 +3,8 @@ from mongoengine.fields import *
 from mongoengine.fields import GridFSProxy
 from mongoengine.base import BaseField
 from mongoengine.document import *
-from mongoengine.queryset import Q
+
+from htpie import states
 
 import pymongo
 
@@ -230,7 +231,7 @@ class Task(MongoBase):
     
     name = StringField()
     state = StringField()
-    transition = StringField(default = u'ACTION_HOLD')
+    transition = StringField(default = states.Transitions.HOLD)
     app_tag = StringField()
     last_exec_d = DateTimeField(default=datetime.datetime.now())
     result = GenericReferenceField()
@@ -355,17 +356,15 @@ class Task(MongoBase):
             #assert not val['err'], 'implicit_release errored'
     
     def done(self):
-        import htpie.statemachine
-        if self.transition in htpie.statemachine.Transitions.terminal():
+        if self.transition in states.Transitions.terminal():
             return True
         else:
             return False
     
     def successful(self):
-        import htpie.statemachine
         if self.done():
-            if self.state == htpie.statemachine.States.COMPLETE and \
-                self.transition == htpie.statemachine.Transitions.COMPLETE:
+            if self.state == states.States.COMPLETE and \
+                self.transition == states.Transitions.COMPLETE:
                 return True
         return False
 

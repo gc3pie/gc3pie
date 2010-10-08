@@ -36,6 +36,7 @@ setup(
  	    'gtaskscheduler = htpie.gcommands:gtaskscheduler',
 	    'ghessiantest = htpie.gcommands:ghessiantest',
 	    'gstring = htpie.gcommands:gstring',
+            'gbig = htpie.gcommands:gbig',
             # symlinks to specific subcommands:
             #'gsub = gc3utils.gcmd:main',
             #'gstat = gc3utils.gcmd:main',

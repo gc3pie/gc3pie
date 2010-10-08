@@ -5,17 +5,7 @@ from htpie.lib.exceptions import *
 from htpie import enginemodel as model
 from htpie import statemachine
 
-import sys
-
-module_names = {'GSingle':'htpie.usertasks.gsingle',
-                              'GHessian':'htpie.usertasks.ghessian',
-                              'GHessianTest':'htpie.usertasks.ghessiantest',
-                              'GString':'htpie.usertasks.gstring',
-                            }
-
-fsm_classes = dict()
-for node_name, node_class in module_names.items():
-    __import__(node_class)
+from htpie.usertasks.usertasks import *
 
 class GControl(object):
     
