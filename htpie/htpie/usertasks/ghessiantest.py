@@ -2,7 +2,7 @@ import htpie
 
 from htpie.lib import utils
 from htpie.lib.exceptions import *
-from htpie import model
+from htpie import enginemodel as model
 from htpie import statemachine
 from htpie.application import gamess
 from htpie.usertasks import gsingle, ghessian
@@ -21,19 +21,16 @@ class States(statemachine.States):
 class Transitions(statemachine.Transitions):
     pass
 
-class GHessianTest(model.Task):
-
-    structure = {'result': [{'fname': unicode,'gsingle': gsingle.GSingle, 'ghessian': ghessian.GHessian,}], 
-                        } 
+class GHessianResult(model.EmbeddedDocument):
+    fname = model.StringField()
+    gsingle = model.ReferenceField(gsingle.GSingle)
+    ghessian = model.ReferenceField(ghessian.GHessian)
     
-    default_values = {
-        'state': States.WAITING, 
-        '_type':u'GHessianTest', 
-        'transition': Transitions.HOLD, 
-    }
+class GHessianTest(model.Task):
+    result = model.ListField(model.EmbeddedDocumentField(GHessianResult))
     
     def display(self, long_format=False):
-        output = '%s %s %s %s\n'%(self._type, self.id, self.state, self.transition)
+        output = '%s %s %s %s\n'%(self.cls_name, self.id, self.state, self.transition)
         output += '-' * 80 + '\n'
         for result in self.result:
             output += 'Filename: %s\n'%(result['fname'])
@@ -66,7 +63,7 @@ class GHessianTest(model.Task):
         app = _app_tag_mapping[app_tag]
         task = super(GHessianTest, cls,).create()
         task.app_tag = u'%s'%(app_tag)
-        
+
         for a_file in glob.glob('%s/*.inp'%(dir)):
             result = dict()
             
@@ -85,12 +82,14 @@ class GHessianTest(model.Task):
                 f_gamess_hessian.close()
                 f_input.close()
             
+            result = GHessianResult()
             result['fname'] = u'%s'%(os.path.basename(os.path.basename(f_input.name)))
             result['gsingle'] = gsingle.GSingle.create([f_gamess_hessian.name], app_tag, requested_cores, requested_memory, requested_walltime)
             result['ghessian'] = ghessian.GHessian.create(a_file, app_tag, requested_cores, requested_memory, requested_walltime)
-            
+
             task.result.append(result)
-            
+        
+        task.state = States.WAITING
         task.transition = Transitions.PAUSED
         task.save()
         return task
@@ -124,9 +123,6 @@ class GHessianTest(model.Task):
                     a_result['ghessian'].kill()
                 except:
                     pass
-
-
-model.con.register([GHessianTest])
 
 class GHessianTestStateMachine(statemachine.StateMachine):
     _cls_task = GHessianTest

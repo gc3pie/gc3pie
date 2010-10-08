@@ -2,7 +2,7 @@ import htpie
 
 from htpie.lib import utils
 from htpie.lib.exceptions import *
-from htpie import model
+from htpie import enginemodel as model
 from htpie import statemachine
 from htpie.application import gamess
 from htpie.usertasks import gsingle
@@ -24,17 +24,13 @@ class States(statemachine.States):
 class Transitions(statemachine.Transitions):
     pass
 
+class GStringResult(model.EmbeddedDocument):
+    gsingle = model.ListField(model.ReferenceField(gsingle.GSingle))
+    
 class GString(model.Task):
-
-    structure = {'result': [{'gsingle':[gsingle.GSingle]}], 
-                         'neb':model.MongoPickle, 
-                         'opt':[model.MongoPickle], 
-    }
-
-    default_values = {
-        '_type':u'GString', 
-        'transition': Transitions.HOLD, 
-    }
+    result = model.ListField(model.EmbeddedDocumentField(GStringResult))
+    neb = model.PickleField()
+    opt = model.ListField(model.PickleField())
     
     def __str__(self):
         output = 'GString:\n'
@@ -80,7 +76,7 @@ class GString(model.Task):
                     pass
     
     def display(self, long_format=False):
-        output = '%s %s %s %s\n'%(self._type, self.id, self.state, self.transition)
+        output = '%s %s %s %s\n'%(self.cls_name, self.id, self.state, self.transition)
         output += 'Task submitted: %s\n'%(self.create_d)
         output += 'Task last ran: %s\n'%(self.last_exec_d)
         output += 'Delta: %s\n'%(self.last_exec_d - self.create_d)
@@ -91,7 +87,7 @@ class GString(model.Task):
             output = ''
             path = path['gsingle']
             for child in path:
-                output += '%s %s %s %s\n'%(child['_type'], child.id, child.state, child.transition)
+                output += '%s %s %s %s\n'%(child.cls_name,  child.id, child.state, child.transition)
             return output
         
         if long_format:
@@ -117,7 +113,7 @@ class GString(model.Task):
         l_opt = list()
         
         for a_file in f_list:
-            task.attach_file(a_file, 'input')
+            task.attach_file(a_file, 'inputs')
         
         atoms_start, params_start = app.parse_input(f_list[0])
         atoms_end, params_end = app.parse_input(f_list[1])
@@ -129,20 +125,19 @@ class GString(model.Task):
         optimizer.initialize(shape=atoms_start.get_positions().shape)
         
         for i in xrange(len(path)):
-            mongo_pickle = model.MongoPickle.create()
+            mongo_pickle = model.PickleProxy()
             task.opt.append(mongo_pickle)
             task.opt[i].pickle = copy.deepcopy(optimizer)
         
-        task.result.append({'gsingle':_convert_pos_to_jobs(app_tag, atoms_start, params_start, path, requested_cores, requested_memory, requested_walltime)})
-        task.neb = model.MongoPickle.create()
+        l_gsingle = GStringResult(gsingle=_convert_pos_to_jobs(app_tag, atoms_start, params_start, path, requested_cores, requested_memory, requested_walltime))
+        task.result.append(l_gsingle)
+        task.neb = model.PickleProxy()
         task.neb.pickle = a_neb
         
         task.transition = Transitions.PAUSED
         task.state = States.WAIT
         task.save()
         return task
-
-model.con.register([GString])
 
 def _convert_pos_to_jobs(app_tag, atoms_start, params_start, path, requested_cores, requested_memory,  requested_walltime):
         count = 0
@@ -187,7 +182,7 @@ class GStringStateMachine(statemachine.StateMachine):
         gc3_temp = _str_dict(children[0].gc3_temp)
         force_converge = .01
         
-        f_list = self.task.open('input')
+        f_list = self.task.open('inputs')
         atoms_start, params_start = app.parse_input(f_list[0])
         [f.close() for f in f_list]
         
@@ -195,11 +190,11 @@ class GStringStateMachine(statemachine.StateMachine):
         path_energies = list()
         path_forces = list()
         for image in children:
-            path_positions.append(image.coord.matrix)
+            path_positions.append(image.coord.pickle)
             htpie.log.debug('id %s'%(image.id))
             htpie.log.debug('energy %s'%(image.result.energy))
             path_energies.append(image.result.energy[-1])
-            path_forces.append(image.result.gradient[-1].matrix)
+            path_forces.append(image.result.gradient[-1].pickle)
         
         a_neb.forces(path_positions, path_energies, path_forces)
         
@@ -207,7 +202,6 @@ class GStringStateMachine(statemachine.StateMachine):
         l_opt = list()
         for a_opt in self.task.opt:
             l_opt.append(a_opt.pickle)
-        
         
         for i in xrange(len(a_neb.path)):
             fmax = neb.vmag(a_neb.path[i].f)
@@ -230,7 +224,8 @@ class GStringStateMachine(statemachine.StateMachine):
             path.insert(0, children[0])
             path.append(children[-1])
             
-            self.task.result.append({'gsingle':path})
+            l_gsingle = GStringResult(gsingle=path)
+            self.task.result.append(l_gsingle)
             self.task.neb.pickle = a_neb
             self.state = States.WAIT
         else:

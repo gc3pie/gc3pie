@@ -1,5 +1,5 @@
 from htpie import application
-from htpie import model
+from htpie import enginemodel as model
 from htpie.lib import parsekernel
 from htpie.lib import utils
 
@@ -11,51 +11,58 @@ import numpy as np
 import ase
 import os
 
-class GamessResult(model.MongoBase):
-    collection_name = 'GamessResult'
-    
-    structure = {'exit_successful':bool,
-                         'geom_located':bool, 
-                         'no_cpu_timeout':bool,  
-                         'hessian':[model.MongoMatrix],
-                         'gradient':[model.MongoMatrix], 
-                         'vec':[model.MongoMatrix],
-                         'num_basis_functions':int,
-                         'num_mos_variation':int,
-                         'coord':[model.MongoMatrix], 
-                         'energy':[float],
-                         'normal_mode':{'atomic_mass':[float], 
-                                                   'frequency':[float], 
-                                                   'mode':model.MongoMatrix, 
-                                                   }
-                        }
-    
-    default_values = {
-        '_type':u'GamessResult', 
-    }
+
+class NormalMode(model.EmbeddedDocument):
+    atomic_mass = model.ListField(model.FloatField())
+    frequency = model.ListField(model.FloatField())
+    mode = model.PickleField()
     
     def display(self):
         output = ''
-        hide = ['_type', '_id', 'create_d']
-        for key in self.keys():
-            if self[key] and not key in hide:
+        temp = self.atomic_mass
+        if temp:
+            output += "Atomic Mass:\n" 
+            output += "%s\n"%(self.atomic_mass)
+        temp = self.frequency
+        if temp:
+            output += "Frequency:\n"
+            output += "%s\n"%(self.frequency)
+        temp = self.mode
+        if temp:
+            output += "Mode:\n"
+            output += "%s\n"%(self.mode.pickle)
+        return output
+
+class GamessResult(model.MongoBase):
+    meta = {'collection':'GamessResult'}
+    
+    exit_successful = model.BooleanField()
+    geom_located = model.BooleanField()
+    no_cpu_timeout = model.BooleanField()
+    hessian = model.ListField(model.PickleField())
+    gradient = model.ListField(model.PickleField())
+    vec =  model.ListField(model.PickleField())
+    num_basis_functions = model.IntField()
+    num_mos_variation = model.IntField()
+    coord = model.ListField(model.PickleField())
+    energy = model.ListField(model.FloatField())
+    normal_mode = model.EmbeddedDocumentField(NormalMode)
+    
+    def display(self):
+        output = ''
+        keys = ['exit_successful', 'geom_located', 'no_cpu_timeout',  \
+                     'hessian', 'gradient', 'vec', 'num_basis_functions',  \
+                      'num_mos_variation', 'energy', 'normal_mode']
+        for key in keys:
+            if self[key]:
                 if key in ['hessian' , 'gradient', 'coord', 'vec']:                    
                     output += "%s\n"%(key)
-                    output += "%s\n"%(self[key][-1].matrix)
+                    output += "%s\n"%(self[key][-1].pickle)
                 elif key == 'normal_mode':
-                    for nkey in self[key].keys():
-                        if self[key][nkey]:
-                            if nkey == 'mode':
-                                output += "%s\n" % (nkey)
-                                output += "%s\n"%(self[key][nkey].matrix)
-                            else:
-                                output += "%s\n" % (nkey)
-                                output += "%s\n"%(self[key][nkey])
+                    output += self[key].display()
                 else:
                     output += "%-20s  %-10s \n" % (key,self[key])
         return output
-
-model.con.register([GamessResult])
 
 def select_norb(result):    
     if result['num_mos_variation']:
@@ -114,12 +121,7 @@ class GamessParseDat(object):
     def __init__(self, group):
         '''
         Constructor
-        '''
-        
-#        keys = [self.VEC, self.HESS, self.COORD, self.ENERGY, self.GRAD, self.NORM_MODE]
-#        values = [[], [], [], [], [], []]
-#        
-#        self.group = dict(zip(keys, values))
+        '''        
         
         self.group = group
         
@@ -187,8 +189,8 @@ class GamessParseDat(object):
             #resultset = self.fix_gamess_matrix(resultset)
             map(tuple, resultset)
             
-            to_save = model.MongoMatrix.create()
-            to_save.matrix  = np.array(resultset, dtype=float)
+            to_save = model.PickleProxy()
+            to_save.pickle  = np.array(resultset, dtype=float)
             
             self.group[groupTitle].append(to_save)
     
@@ -219,8 +221,8 @@ class GamessParseDat(object):
             
             map(tuple, resultset)
             
-            to_save = model.MongoMatrix.create()
-            to_save.matrix  = np.array(resultset, dtype=float)
+            to_save = model.PickleProxy()
+            to_save.pickle  = np.array(resultset, dtype=float)
             
             self.group[groupTitle].append(to_save)
         
@@ -244,8 +246,8 @@ class GamessParseDat(object):
             for i in range(0, len(resultset)):
                 mat[i] = resultset[i][1]
             
-            to_save = model.MongoMatrix.create()
-            to_save.matrix  = mat
+            to_save = model.PickleProxy()
+            to_save.pickle  = mat
             
             self.group[groupTitle].append(to_save)
     
@@ -260,8 +262,8 @@ class GamessParseDat(object):
             rule = OneOrMore(Group(Word(alphas) + Word(nums+'.')) + Group(OneOrMore(Word(nums+'-.', min=12))))
             result = rule.searchString(text_block).asList()[0]
             
-            to_save = model.MongoMatrix.create()
-            to_save.matrix  = np.array(result[1::2], dtype=float)
+            to_save = model.PickleProxy()
+            to_save.pickle  = np.array(result[1::2], dtype=float)
             
             self.group[groupTitle].append(to_save)
         
@@ -306,10 +308,11 @@ class GamessParseDat(object):
 #            resultset['FREQUENCY']=list()
 #            for i in resultFreq: resultset['FREQUENCY'].append(i[0])
 #            resultset['MODE']=resultMode
+            self.group[groupTitle] = NormalMode()
             self.group[groupTitle]['atomic_mass']=map(float, resultMass[0])
             self.group[groupTitle]['frequency'] = [float(v[0]) for v in resultFreq]
-            self.group[groupTitle]['mode'] = model.MongoMatrix.create()
-            self.group[groupTitle]['mode'].matrix = np.array(resultMode,dtype=float)
+            self.group[groupTitle]['mode'] = model.PickleProxy()
+            self.group[groupTitle]['mode'].pickle = np.array(resultMode,dtype=float)
 
 class GamessParseOut(object):
     '''
@@ -629,7 +632,7 @@ class GamessApplication(application.Application):
     def parse_result(cls, f_container):
         try:
             f_list = utils.verify_file_container(f_container)
-            result = GamessResult.new()
+            result = GamessResult()
             for a_file in f_list:
                 parser = cls._result_file_mapping[(a_file.name).split('.')[-1]](result)
                 parser.parse(a_file)

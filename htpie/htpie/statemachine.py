@@ -1,6 +1,6 @@
 import htpie
 
-from htpie import model
+from htpie.enginemodel import Task
 from htpie.lib.exceptions import *
 from htpie.lib import utils
 
@@ -33,7 +33,7 @@ class Transitions(object):
         return term
 
 class StateMachine(object):    
-    _cls_task = model.Task
+    _cls_task = Task
     
     def __init__(self):
         self.task = None
@@ -42,6 +42,7 @@ class StateMachine(object):
                                             }
     
     def step(self):
+        htpie.log.debug('%s is processing %s %s'%(self.name, self.task.id, self.task.state))
         try:
             self.task.acquire()
         except AuthorizationException,  e:
@@ -64,7 +65,7 @@ class StateMachine(object):
     
     def run(self):
         while self.transition == Transitions.PAUSED:
-            self.load(self.task.__class__, self.task.id)
+            self.load(self.task.id)
             self.step()
             time.sleep(10)
     
@@ -72,11 +73,7 @@ class StateMachine(object):
         self.task.save()
     
     def load(self, id):
-        self.task = self._load(id)
-    
-    @classmethod
-    def _load(cls, id):
-        return cls._cls_task.load(id)
+        self.task = self._cls_task.objects.with_id(id)
     
     def transition():
         def fget(self):
