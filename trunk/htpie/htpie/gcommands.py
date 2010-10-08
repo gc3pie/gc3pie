@@ -233,7 +233,7 @@ def gbig(*args, **kw):
     configure_logger(options.verbosity, _default_log_file_location) 
     
     big = gbig.GBig.create(options.num_little)
-    
+
     if gstring:
         sys.stdout.write('Successfully create GBig %s\n'%(big.id))
     else:
