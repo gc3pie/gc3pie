@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE Project SYSTEM "Project-4.6.dtd">
 <!-- eric4 project file for project htpie -->
-<!-- Saved: 2010-10-01, 15:43:07 -->
+<!-- Saved: 2010-10-12, 15:38:58 -->
 <!-- Copyright (C) 2010 Mark Monroe,  -->
 <Project version="4.6">
   <Language></Language>
@@ -36,6 +36,11 @@
     <Source>htpie/optimize/neb.py</Source>
     <Source>htpie/usertasks/gstring.py</Source>
     <Source>htpie/enginemodel.py</Source>
+    <Source>htpie/usertasks/gbig.py</Source>
+    <Source>htpie/usertasks/glittle.py</Source>
+    <Source>htpie/states.py</Source>
+    <Source>htpie/usertasks/usertasks.py</Source>
+    <Source>htpie/lib/multiprocessinglog.py</Source>
   </Sources>
   <Forms>
   </Forms>

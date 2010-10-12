@@ -190,7 +190,7 @@ def gcontrol(*args, **kw):
                       help="command to run against task")
     parser.add_option("-i", "--id", dest="id",  
                       help="task id to be acted upon")
-    parser.add_option("-t", "--hours_ago",  type = "int", dest="hours_ago", default = None,  
+    parser.add_option("-t", "--hours_ago",  type = "float", dest="hours_ago", default = None,  
                       help="limit show function to tasks last ran -t hours ago")
     parser.add_option("-l", "--long_format",  action="store_true", dest="long_format",  default=False, 
                       help="display more information")

@@ -44,8 +44,8 @@ def configure_logger():
 def _thread_exec_fsm(fsm_class, id):
     from htpie import statemachine
     import multiprocessing
-
-    statemachine.configure_logger()
+    import htpie
+    #statemachine.configure_logger()
     fsm = fsm_class()
     
     time.sleep(.25)
