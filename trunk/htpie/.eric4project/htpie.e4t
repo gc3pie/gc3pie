@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE Tasks SYSTEM "Tasks-4.2.dtd">
 <!-- eric4 tasks file for project htpie -->
-<!-- Saved: 2010-10-08, 13:56:15 -->
+<!-- Saved: 2010-10-12, 09:25:40 -->
 <Tasks version="4.2">
   <Task priority="1" completed="False" bugfix="False">
     <Summary>TODO: If we get an error storing the gsingle, we will have submitted it to the grid</Summary>
@@ -166,9 +166,27 @@
     </Resource>
   </Task>
   <Task priority="1" completed="False" bugfix="True">
+    <Summary>FIXME: gridfs doesn't suppore name, therefore we need to return a local</Summary>
+    <Description></Description>
+    <Created>2010-10-08, 16:44:29</Created>
+    <Resource>
+      <Filename>htpie/enginemodel.py</Filename>
+      <Linenumber>269</Linenumber>
+    </Resource>
+  </Task>
+  <Task priority="1" completed="False" bugfix="False">
+    <Summary>TODO: Notify the user that they need to log into the clusters again, maybe using email?</Summary>
+    <Description></Description>
+    <Created>2010-10-08, 16:54:20</Created>
+    <Resource>
+      <Filename>htpie/usertasks/gsingle.py</Filename>
+      <Linenumber>277</Linenumber>
+    </Resource>
+  </Task>
+  <Task priority="1" completed="False" bugfix="True">
     <Summary>FIXME: gridfs name bugTrying to set the name attr doesn't work</Summary>
     <Description></Description>
-    <Created>2010-10-06, 10:24:12</Created>
+    <Created>2010-10-12, 09:25:05</Created>
     <Resource>
       <Filename>htpie/model.py</Filename>
       <Linenumber>283</Linenumber>
@@ -177,7 +195,7 @@
   <Task priority="1" completed="False" bugfix="True">
     <Summary>FIXME: gridfs doesn't suppore name, therefore we need to return a local</Summary>
     <Description></Description>
-    <Created>2010-10-06, 10:24:12</Created>
+    <Created>2010-10-12, 09:25:05</Created>
     <Resource>
       <Filename>htpie/model.py</Filename>
       <Linenumber>289</Linenumber>
@@ -186,28 +204,10 @@
   <Task priority="1" completed="False" bugfix="True">
     <Summary>FIXME: gridfs name bug</Summary>
     <Description></Description>
-    <Created>2010-10-06, 10:24:12</Created>
+    <Created>2010-10-12, 09:25:05</Created>
     <Resource>
       <Filename>htpie/model.py</Filename>
       <Linenumber>300</Linenumber>
-    </Resource>
-  </Task>
-  <Task priority="1" completed="False" bugfix="False">
-    <Summary>TODO: Notify the user that they need to log into the clusters again, maybe using email?</Summary>
-    <Description></Description>
-    <Created>2010-10-07, 15:11:08</Created>
-    <Resource>
-      <Filename>htpie/usertasks/gsingle.py</Filename>
-      <Linenumber>277</Linenumber>
-    </Resource>
-  </Task>
-  <Task priority="1" completed="False" bugfix="True">
-    <Summary>FIXME: gridfs doesn't suppore name, therefore we need to return a local</Summary>
-    <Description></Description>
-    <Created>2010-10-08, 09:41:49</Created>
-    <Resource>
-      <Filename>htpie/enginemodel.py</Filename>
-      <Linenumber>268</Linenumber>
     </Resource>
   </Task>
 </Tasks>

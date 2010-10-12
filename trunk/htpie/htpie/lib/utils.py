@@ -121,6 +121,35 @@ def format_exception_info(maxTBlevel=5):
     excTb = traceback.format_tb(trbk, maxTBlevel)
     return '%s %s\n%s'%(excName, excArgs, ''.join(excTb))
 
+#def configure_logger(verbosity, log_file_name='gc3utils_log'):
+#    """
+#    Configure the logger.
+#
+#    - Input is the logging level and a filename to use.
+#    - Returns nothing.
+#    """
+#    #PLEASE NOTE: basicConfig should be called from the main thread before other threads are started. 
+#    #In versions of Python prior to 2.7.1 and 3.2, if this function is called from multiple threads, 
+#    #it is possible (in rare circumstances) that a handler will be added to the root logger more than once, 
+#    #leading to unexpected results such as messages being duplicated in the log.
+#    formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+#    logging_level = 10 * max(1, 5-verbosity)
+#    htpie.log.setLevel(logging_level)
+#    file_handler = logging.handlers.RotatingFileHandler(os.path.expanduser(log_file_name), maxBytes=2000000, backupCount=5)
+#    file_handler.setFormatter(formatter)
+#    stream_handler = logging.StreamHandler()
+#    stream_handler.setFormatter(formatter)
+#    htpie.log.addHandler(file_handler)
+#    htpie.log.addHandler(stream_handler)
+#    
+#    from gc3utils.gcommands import _configure_logger
+#    import gc3utils
+#   # gc3utils.log.addHandler(file_handler)
+#    #gc3utils.log.addHandler(stream_handler)
+#    #gc3utils.log.setLevel(0)
+#    _configure_logger(0)
+
+_logger_proxy = None
 def configure_logger(verbosity, log_file_name='gc3utils_log'):
     """
     Configure the logger.
@@ -128,26 +157,16 @@ def configure_logger(verbosity, log_file_name='gc3utils_log'):
     - Input is the logging level and a filename to use.
     - Returns nothing.
     """
-    #PLEASE NOTE: basicConfig should be called from the main thread before other threads are started. 
-    #In versions of Python prior to 2.7.1 and 3.2, if this function is called from multiple threads, 
-    #it is possible (in rare circumstances) that a handler will be added to the root logger more than once, 
-    #leading to unexpected results such as messages being duplicated in the log.
-    formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-    logging_level = 10 * max(1, 5-verbosity)
-    htpie.log.setLevel(logging_level)
-    file_handler = logging.handlers.RotatingFileHandler(os.path.expanduser(log_file_name), maxBytes=2000000, backupCount=5)
-    file_handler.setFormatter(formatter)
-    stream_handler = logging.StreamHandler()
-    stream_handler.setFormatter(formatter)
-    htpie.log.addHandler(file_handler)
-    htpie.log.addHandler(stream_handler)
-    
-    from gc3utils.gcommands import _configure_logger
-    import gc3utils
-   # gc3utils.log.addHandler(file_handler)
-    #gc3utils.log.addHandler(stream_handler)
-    #gc3utils.log.setLevel(0)
-    _configure_logger(0)
+    from htpie.lib import multiprocessinglog
+    global _logger_proxy
+    manager = multiprocessinglog.LoggingManager()
+    manager.start()
+    LOG_FILENAME  = os.path.expanduser('~/.htpie/gc3utils.log')
+    LOGGING_LEVEL =  10 * max(1, 5-verbosity)
+    _logger_proxy = manager.setup_logger(LOGGING_LEVEL, LOG_FILENAME)
+
+def get_logger():
+    return _logger_proxy
 
 def split_seq(iterable, size):
     """ Split a interable into chunks of the given size

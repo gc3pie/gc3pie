@@ -40,7 +40,7 @@ class GHessianTest(model.Task):
                 delta = np.array(result['ghessian'].result['normal_mode']['frequency']) - np.array(result['gsingle'].result['normal_mode']['frequency'])
                 output += '%s\n'%(delta)
                 output += 'Mode delta:\n'
-                delta = result['ghessian'].result['normal_mode']['mode'].matrix - result['gsingle'].result['normal_mode']['mode'].matrix
+                delta = result['ghessian'].result['normal_mode']['mode'].pickle - result['gsingle'].result['normal_mode']['mode'].pickle
                 output += '%s\n'%(delta)
             if long_format:
                 output += '-' * 80 + '\n'
@@ -50,7 +50,7 @@ class GHessianTest(model.Task):
                     output += 'Frequency:\n'
                     output += '%s\n'%np.array(result['gsingle'].result['normal_mode']['frequency'])
                     output += 'Mode:\n'
-                    output += '%s\n'%result['gsingle'].result['normal_mode']['mode'].matrix
+                    output += '%s\n'%result['gsingle'].result['normal_mode']['mode'].pickle
                     output += '-' * 80 + '\n'
                     output += 'htpie calculated normal mode\n'
                 output += '#' * 80 + '\n'
