@@ -54,3 +54,7 @@ class GC3Exception(Error):
 
 class ValidationException(Error):
     pass
+
+class UnknownTaskException(Error):
+    pass
+

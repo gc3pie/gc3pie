@@ -10,6 +10,49 @@ from pymongo.objectid import ObjectId
 import time
 import datetime
 
+def configure_logger():
+    import htpie
+    import logging
+    import os
+    import multiprocessing
+    if not htpie.log.handlers:
+        formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+        fname = multiprocessing.current_process().name
+        fname = os.path.expanduser('~/.htpie/gc3utils_%s.log'%(fname))
+        logging_level = 10 * max(1, 5-100)
+        htpie.log.setLevel(logging_level)
+        file_handler = logging.handlers.RotatingFileHandler(fname, maxBytes=2000000, backupCount=5)
+        file_handler.setFormatter(formatter)
+        stream_handler = logging.StreamHandler()
+        stream_handler.setFormatter(formatter)
+        htpie.log.addHandler(file_handler)
+        htpie.log.addHandler(stream_handler)
+
+#    from multiprocessing import get_logger    
+#    log = get_logger()
+#    log.setLevel(logging.DEBUG)
+#    formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+#    file_handler = logging.handlers.RotatingFileHandler(os.path.expanduser('~/.htpie/gc3utils.log'), maxBytes=2000000, backupCount=5)
+#    file_handler.setFormatter(formatter)
+#
+#    stream_handler = logging.StreamHandler()
+#    stream_handler.setFormatter(formatter)
+#    
+#    log.addHandler(file_handler)
+#    log.addHandler(stream_handler)
+
+def _thread_exec_fsm(fsm_class, id):
+    from htpie import statemachine
+    import multiprocessing
+
+    statemachine.configure_logger()
+    fsm = fsm_class()
+    
+    time.sleep(.25)
+    #htpie.log.debug('Third Thread name: %s'%(multiprocessing.current_process().name))
+    fsm.load(id)
+    fsm.step()
+
 class StateMachine(object):    
     _cls_task = Task
     

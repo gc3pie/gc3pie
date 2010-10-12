@@ -22,7 +22,14 @@ MONGO_DB = "engine"
 MONGO_IP = "130.60.40.14"
 MONGO_PORT = 27017
 
-db = mongoengine.connect(MONGO_DB, host=MONGO_IP, port=MONGO_PORT)
+def _create_connection(db=MONGO_DB, ip=MONGO_IP , port=MONGO_PORT):
+    return mongoengine.connect(db, host=ip, port=port)
+
+db = _create_connection()
+
+# This is used as the doc _locking value. Since pymongo creates a pool of connections to the 
+# database, everything goes over one ip:port. We just need to run this command once
+_session_lock = u'%s'%(db.command( "whatsmyuri" ) [u'you'])
 
 class MongoBase(Document):
     meta = {'collection':'MongoBase'}
@@ -242,11 +249,13 @@ class Task(MongoBase):
         'indexes': [ 'id', ('transition', '_lock'), ('id', '_lock')]
     }
 
-    
     def __init__(self, *args, **kwargs):
         super(Task, self).__init__(*args, **kwargs)
-        #We set the lock id to the connection id
-        self._l_lock = u'%s'%(db.command( "whatsmyuri" ) [u'you'])
+        # We set the local lock value used for a particular multiprocess
+        # thread. Because pymongo uses pooling, we can not just use
+        # the ip:port number.
+        pid = os.getpid()
+        self._l_lock = u'%s:%d'%(_session_lock, pid)
     
     @classmethod
     def create(cls):

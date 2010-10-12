@@ -190,6 +190,8 @@ def gcontrol(*args, **kw):
                       help="command to run against task")
     parser.add_option("-i", "--id", dest="id",  
                       help="task id to be acted upon")
+    parser.add_option("-t", "--hours_ago",  type = "int", dest="hours_ago", default = None,  
+                      help="limit show function to tasks last ran -t hours ago")
     parser.add_option("-l", "--long_format",  action="store_true", dest="long_format",  default=False, 
                       help="display more information")
     parser.add_option("-v", "--verbose", action='count',dest="verbosity", default=config.verbosity, 
@@ -197,20 +199,27 @@ def gcontrol(*args, **kw):
     
     (options, args) = parser.parse_args()
     
-    if options.id is None:
-        print "A mandatory option is missing\n"
-        parser.print_help()
-        sys.exit(0)
+    def check():
+        if options.id is None:
+            print "A mandatory option is missing\n"
+            parser.print_help()
+            sys.exit(0)
     
     configure_logger(options.verbosity, _default_log_file_location) 
     
     
     if options.program_command == 'retry':
+        check()
         GControl.retry(options.id)
     elif options.program_command == 'kill':
+        check()
         GControl.kill(options.id)
     elif options.program_command == 'info':
+        check()
         GControl.info(options.id, options.long_format)
+    elif options.program_command == 'show':
+        check()
+        GControl.show(options.id, options.hours_ago)
 #    elif options.program_command == 'files':
 #        gcontrol.get_task_files()
     else:
