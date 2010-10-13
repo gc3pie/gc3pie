@@ -27,10 +27,6 @@ def _create_connection(db=MONGO_DB, ip=MONGO_IP , port=MONGO_PORT):
 
 db = _create_connection()
 
-# This is used as the doc _locking value. Since pymongo creates a pool of connections to the 
-# database, everything goes over one ip:port. We just need to run this command once
-_session_lock = u'%s'%(db.command( "whatsmyuri" ) [u'you'])
-
 class MongoBase(Document):
     meta = {'collection':'MongoBase'}
     
@@ -192,8 +188,9 @@ class PickleField(BaseField):
         if grid_file:
             return grid_file
         return PickleProxy()
-    
+    #FIXME: This should only except strings, as pickles are always strings
     def __set__(self, instance, value):
+        #htpie.log.debug('value: %s'%(type(value)))
         if isinstance(value, file) or isinstance(value, str):
             # using "FileField() = file/string" notation
             grid_file = instance._data.get(self.name)
@@ -254,8 +251,12 @@ class Task(MongoBase):
         # We set the local lock value used for a particular multiprocess
         # thread. Because pymongo uses pooling, we can not just use
         # the ip:port number.
+        
+        # This is used as the doc _locking value. Since pymongo creates a pool of connections to the 
+        # database, everything goes over one ip:port. We just need to run this command once
+        _session_lock = u'%s'%(db.command( "whatsmyuri" ) [u'you'])
         pid = os.getpid()
-        self._l_lock = u'%s:%d'%(_session_lock, pid)
+        self._l_lock = u'%s__%d'%(_session_lock, pid)
     
     @classmethod
     def create(cls):
@@ -312,8 +313,7 @@ class Task(MongoBase):
         if self._lock ==  self._l_lock:
             #We have the lock, so we are good
             return True
-        raise AuthorizationException( 'Mongodb record %s authorization timedout after %d seconds'%(self.id, timeout))
-        return False
+        raise AuthorizationException( 'Mongodb record %s _verify failed'%(self.id))
     
     def release(self):
         if self.authorize():
@@ -347,9 +347,19 @@ class Task(MongoBase):
     def implicit_release(cls):
         '''If a thread crashs, it will not unlock the document. We unlock it here.'''
         def get_con_ids():
+            import re
             #Get all of the connection ids to the database
             con_ids = db.eval('db.$cmd.sys.inprog.findOne( {$all : 1 } )')
             valid_locks = [id[u'client'] for id in con_ids[u'inprog']]
+            # We want to match only the first part of the lock, as
+            # the second part is the PID. Since only one
+            # taskscheduler will be running on the same machine we kill
+            # all locks from that machine. If multiple taskschedulers
+            # are on the same machine, we would need to check all the pids first on that machine.
+            # Otherwise we might unlock a task associated with another
+            # taskscheduler. We check only the first part of the _lock
+            # by using re.
+            valid_locks =  [re.compile(u'^%s'%i) for i in valid_locks]
             valid_locks.append(u'')
             return valid_locks
         to_unlock= cls.objects(_lock__nin=get_con_ids()).only('id')

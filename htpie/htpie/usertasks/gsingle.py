@@ -242,6 +242,9 @@ class GSingleStateMachine(statemachine.StateMachine):
     
     def handle_waiting_state(self):
         temp = self._gcli.gstat(self.task.job)
+        if not isinstance(temp, list):
+            htpie.log.warning('GC3utils did not return a job on gstat, it returned: %s'%(temp))
+            return None
         self.task.job = temp[0]
         gc3utils.Job.persist_job(self.task.job)
         

@@ -58,3 +58,6 @@ class ValidationException(Error):
 class UnknownTaskException(Error):
     pass
 
+class InvalidPickleException(Error):
+    pass
+

@@ -5,6 +5,8 @@ from htpie import statemachine
 from htpie.application import gamess
 from htpie.lib.exceptions import *
  
+import sys
+ 
 class States(statemachine.States):
     READY = u'STATE_READY'
     WAITING = u'STATE_WAIT'
@@ -23,7 +25,9 @@ class GLittle(model.Task):
         output += 'Task last ran: %s\n'%(self.last_exec_d)
         output += 'Delta: %s\n'%(self.last_exec_d - self.create_d)      
         output += 'WAIT State count: %d\n'%(self.count)
-        
+        obj_size = sys.getsizeof(self.obj.pickle)
+        obj_size = obj_size / 1048576.0
+        output += 'Fake obj size in MB: %f\n'%(obj_size)
         if long_format:
             pass
         return output
@@ -76,11 +80,11 @@ class GLittleStateMachine(statemachine.StateMachine):
     
     def handle_waiting_state(self):
         self.task.count += 1
-        obj = self.task.pickle
+        obj = self.task.obj.pickle
         # We will add 1 megabyte to obj each time we
         # run this state
         obj += 'T'*1048576
-        self.task.pickle = obj
+        self.task.obj.pickle = obj
         if self.task.count > 10:
             self.state = States.POSTPROCESS
     
