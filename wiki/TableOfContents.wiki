@@ -1,3 +1,3 @@
-* [GC3Utils GC3Utils]
-* [ConfigurationFile ConfigurationFile]
- * [HOWTO HOWTO]
+  * [GC3Utils GC3Utils]
+  * [ConfigurationFile ConfigurationFile]
+   * [HOWTO HOWTO]
