@@ -3,4 +3,4 @@
   * HTPie
   * HOWTO
    * [ConfigurationFile Configuration File]
-  * [Publicity Publications]
+  * [Publicity Citations]
