@@ -1,4 +1,4 @@
-  * Home
+  * [Home Home]
   * [GC3Utils GC3Utils]
   * HTPie
   * HOWTO
