@@ -1,4 +1,4 @@
   * [GC3Utils Home]
-  * [HOWTO]
+  * [Support]
    * [ConfigurationFile ConfigurationFile]
    * [HOWTO HOWTO]
