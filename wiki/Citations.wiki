@@ -2,4 +2,4 @@
 
 = Presentations =
 
-* Slides presented at [http://neptuno.unizar.es/events/qcdatabases2010/ Databases in Quantum Chemistry] workshop held September 22-25, 2010 in Zaragoza, Spain.
+* [https://gc3pie.googlecode.com/svn/wiki/ZCAM_workshop_20100923_final.pptm Slides] presented at [http://neptuno.unizar.es/events/qcdatabases2010/ Databases in Quantum Chemistry] workshop held September 22-25, 2010 in Zaragoza, Spain.
