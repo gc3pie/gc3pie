@@ -1,4 +1,5 @@
-  * [GC3Utils Home]
-  * [ Support]
-   * [ConfigurationFile ConfigurationFile]
-   * [HOWTO HOWTO]
+  * Home
+  * [GC3Utils GC3Utils]
+  * HTPie
+  * HOWTO
+   * [ConfigurationFile Configuration File]
