@@ -166,34 +166,35 @@ Once a job has reached `RUNNING` status (check with _*gstat*_), you
 can also monitor its progress by looking at the last lines in the job
 output and error stream.  
 
-An example might clarify this: assume you have submitted _job.16_ and
+An example might clarify this: assume you have submitted a
+long-running computation as _job.16_ and you know from _*gstat*_ that
 it got into `RUNNING` state; then to take a peek at what this job is
 doing, you issue the following command:
 <pre>
   gtail job.16
 </pre>
-This would produce the following output, from which you can see that the job 
-is already done so in a few moments you can retrieve its output:
+This would produce the following output, from which you can deduce how
+far GAMESS has progressed into the computation:
 <pre>
- CPU timing information for all processes
+ RECOMMEND NRAD ABOVE  50 FOR ZETA'S ABOVE 1E+4
 
- ========================================
+ RECOMMEND NRAD ABOVE  75 FOR ZETA'S ABOVE 1E+5
 
- 0: 0.59 + 0.21 = 0.81
+ RECOMMEND NRAD ABOVE 125 FOR ZETA'S ABOVE 1E+6
 
- ----------------------------------------
-
- ddikick.x: exited gracefully.
+ DFT IS SWITCHED OFF, PERFORMING PURE SCF UNTIL SWOFF THRESHOLD IS REACHED.
 
 
 
-real	0m3.210s
+ ITER EX DEM     TOTAL ENERGY        E CHANGE  DENSITY CHANGE    DIIS ERROR
 
-user	0m0.005s
+   1  0  0    -1079.0196780290 -1079.0196780290   0.343816910   1.529879639
 
-sys	0m0.001s
+          * * *   INITIATING DIIS PROCEDURE   * * *
 
-finish time: Mon Oct 18 12:02:54 CEST 2010
+   2  1  0    -1081.1910665431    -2.1713885141   0.056618918   0.105322104
+
+   3  2  0    -1081.2658345285    -0.0747679855   0.019565324   0.044813607
 </pre>
 
 By default, _*gtail*_ only outputs the last 10 lines of a job
