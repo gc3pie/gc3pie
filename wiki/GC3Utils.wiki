@@ -160,6 +160,68 @@ _Nota Bene 2:_ Completed jobs persist in the _*gstat*_ list until
 they are cleared off with the _*gclean*_ command.
 
 
+= _*gtail*_: peeking at the job output and error report =
+
+Once a job has reached `RUNNING` status (check with _*gstat*_), you
+can also monitor its progress by looking at the last lines in the job
+output and error stream.  
+
+An example might clarify this: assume you have submitted _job.16_ and
+it got into `RUNNING` state; then to take a peek at what this job is
+doing, you issue the following command:
+<pre>
+  gtail job.16
+</pre>
+This would produce the following output, from which you can see that the job 
+is already done so in a few moments you can retrieve its output:
+<pre>
+ CPU timing information for all processes
+
+ ========================================
+
+ 0: 0.59 + 0.21 = 0.81
+
+ ----------------------------------------
+
+ ddikick.x: exited gracefully.
+
+
+
+real	0m3.210s
+
+user	0m0.005s
+
+sys	0m0.001s
+
+finish time: Mon Oct 18 12:02:54 CEST 2010
+</pre>
+
+By default, _*gtail*_ only outputs the last 10 lines of a job
+output/error stream. To see more, use the command line option `-n`;
+for example, to see the last 25 lines of the output, issue the command: 
+<pre>
+  gtail -n 25 job.16
+</pre>
+
+The command _*gtail*_ is especially useful for long computations: you
+can see how far a job has gotten and, e.g., cancel it if it's gotten
+stuck into an endless/improductive loop.
+
+
+= _*gkill*_: cancel a running job =
+
+To cancel a running job, you can use the command _*gkill*_.  For
+instance, to cancel _job.16_, you would type the following command
+into the terminal:
+<pre>
+  gkill job.16
+</pre>
+
+_Nota Bene: There's no undo to a cancel operation!_ Once you have
+issued a _*gkill*_ command, the job is deleted and it cannot be
+resumed.
+
+
 = _*gget*_: retrieve the output of finished jobs =
 
 Once a job has reached `RUNNING` status (check with _*gstat*_),
@@ -194,12 +256,13 @@ _job.NNN_.  For example:
   gclean job.23
 </pre>
 
-You can only remove jobs that are in the `COMPLETED`, `FAILED` or
-`DELETED` status; trying to remove any other kind of job results in
-an error.
+In normal operation, you can only remove jobs that are in the
+`COMPLETED`, `FAILED` or `DELETED` status; if you want to force
+_*gclean*_ to remove a job that is not in any one of those states,
+just add `-f` to the command line.
 
 
-= _*gresub*_: re-submit a failed jobs =
+= _*gresub*_: re-submit a failed job =
 
 In case a job failed for accidental causes (e.g., the site where it
 was running went unexpectedly down), you can re-submit it with the
