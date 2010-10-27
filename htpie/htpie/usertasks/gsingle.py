@@ -1,7 +1,7 @@
 import htpie
 from htpie.lib import utils
 from htpie import enginemodel as model
-from htpie import statemachine
+from htpie.statemachine import *
 from htpie.application import gamess
 from htpie.lib.exceptions import *
 
@@ -18,6 +18,8 @@ import time
 _app_tag_mapping = dict()
 _app_tag_mapping['gamess']=gamess.GamessApplication
 
+_TASK_CLASS = 'GSingle'
+_STATEMACHINE_CLASS = 'GSingleStateMachine'
 
 def _print_job_info(job_obj):
     output = ''
@@ -80,16 +82,6 @@ class Nested(object):
     @staticmethod
     def place_period(data):
         return Nested._recur_map(Nested._place_period, data)
-    
-
-class States(statemachine.States):
-    READY = u'STATE_READY'
-    WAITING = u'STATE_WAIT'
-    RETRIEVING = u'STATE_RETRIEVING'
-    POSTPROCESS = u'STATE_POSTPROCESS'
-
-class Transitions(statemachine.Transitions):
-    pass
 
 class GSingle(model.Task):
     
@@ -103,7 +95,7 @@ class GSingle(model.Task):
         job = self.job
         application = self.application
         tm_format = '%Y-%m-%d %H:%M:%S'
-        output = '%s %s %s %s\n'%(self.cls_name, self.id, self.state, self.transition)
+        output = '%s %s %s %s\n'%(self.cls_name, self.id, self.state, self.status)
         
         if job:
             submission_time = datetime.strptime(job.submission_time, tm_format)
@@ -114,7 +106,6 @@ class GSingle(model.Task):
                     output += 'Job completed: %s\n'%(completion_time)
                     delta = completion_time - submission_time
                     output += 'Delta: %s\n'%(delta)
-        
         
         f_list = self.open('inputs')
         if f_list:
@@ -168,14 +159,7 @@ class GSingle(model.Task):
     job = property(**job())
     
     def retry(self):
-        if self.transition == Transitions.ERROR:
-            try:
-                self.acquire(120)
-            except:
-                raise
-            else:
-                self.transition = Transitions.PAUSED
-                self.release()
+        super(GSingle, self).retry()
     
     def kill(self):
         try:
@@ -183,8 +167,7 @@ class GSingle(model.Task):
         except:
             raise
         else:
-            self.state = States.KILL
-            self.transition = Transitions.PAUSED
+            self.setstate(States.KILL, 'kill')
             self.release()
             htpie.log.debug('GSingle %s will be killed'%(self.id))
     
@@ -204,25 +187,33 @@ class GSingle(model.Task):
                                                                                                                       requested_walltime 
                                                                                                                         ) 
         
-        task.state = States.READY
-        task.transition = Transitions.PAUSED
+        task.setstate(States.READY, 'init')
         task.save()        
         return task
+    
+    def successful(self):
+        if self.state == States.POSTPROCESS:
+            return True
+            
+    @staticmethod
+    def cls_fsm():
+        return eval(_STATEMACHINE_CLASS)
 
-class GSingleStateMachine(statemachine.StateMachine):
-    _cls_task = GSingle
+class States(object):
+    READY = u'STATE_READY'
+    WAITING = u'STATE_WAIT'
+    POSTPROCESS = u'STATE_POSTPROCESS'
+    RETRIEVING = u'STATE_RETRIEVING'
+    KILL = 'STATE_KILL'
+
+class GSingleStateMachine(StateMachine):
     
     def __init__(self):
         super(GSingleStateMachine, self).__init__()
-        self.state_mapping.update({States.READY: self.handle_ready_state, 
-                                                    States.WAITING: self.handle_waiting_state, 
-                                                    States.RETRIEVING: self.handle_retrieving_state, 
-                                                    States.POSTPROCESS: self.handle_postprocess_state, 
-                                                    States.KILL: self.handle_kill_state, 
-                                                    })
         config_file = gc3utils.Default.CONFIG_FILE_LOCATION
         self._gcli = gc3utils.gcli.Gcli(*gc3utils.gcli.import_config(config_file))
     
+    @state(States.READY)
     def handle_ready_state(self):
         #Need to sleep to give the arc info system time to update itself
         #with any jobs just submitted by me
@@ -238,27 +229,36 @@ class GSingleStateMachine(statemachine.StateMachine):
         self.task.application = l_application
         gc3utils.Job.persist_job(self.task.job)
         #htpie.log.debug('Submitted gsingle %s to the grid'%(self.task.id))
-        self.state = States.WAITING
     
+    @fromto(States.READY, States.WAITING)
+    def handle_tran_ready(self):
+        return True
+    
+    @state(States.WAITING)
     def handle_waiting_state(self):
         temp = self._gcli.gstat(self.task.job)
         if not isinstance(temp, list):
             htpie.log.warning('GC3utils did not return a job on gstat, it returned: %s'%(temp))
             return None
+        if not temp[0]:
+            htpie.log.warning('GC3utils did not return a job on gstat, it returned: %s'%(temp))
+            return None
         self.task.job = temp[0]
         gc3utils.Job.persist_job(self.task.job)
-        
-        if self.task.job.status == gc3utils.Job.JOB_STATE_SUBMITTED:
-            self.state = States.WAITING
-        elif self.task.job.status== gc3utils.Job.JOB_STATE_RUNNING:
-            self.state = States.WAITING
-        elif self.task.job.status == gc3utils.Job.JOB_STATE_FINISHED:            
-            self.state = States.RETRIEVING
-        elif self.task.job.status == gc3utils.Job.JOB_STATE_FAILED or \
-            self.state == gc3utils.Job.JOB_STATE_DELETED or \
-            self.state == gc3utils.Job.JOB_STATE_UNKNOWN:
+        if self.task.job.status == gc3utils.Job.JOB_STATE_FAILED or \
+            self.task.state == gc3utils.Job.JOB_STATE_DELETED or \
+            self.task.state == gc3utils.Job.JOB_STATE_UNKNOWN:
             raise GC3Exception('GC3 job errored: \n %s'%(self.task.job))
     
+    @fromto(States.WAITING, States.RETRIEVING)
+    def handle_tran_waiting(self):
+        # We continue to wait if
+        # status == gc3utils.Job.JOB_STATE_SUBMITTED
+        # status== gc3utils.Job.JOB_STATE_RUNNING
+        if self.task.job.status == gc3utils.Job.JOB_STATE_FINISHED:            
+           return True
+    
+    @state(States.RETRIEVING)
     def handle_retrieving_state(self):        
         self.task.job = self._gcli.gget(self.task.job)
         gc3utils.Job.persist_job(self.task.job)
@@ -266,15 +266,17 @@ class GSingleStateMachine(statemachine.StateMachine):
         for f_name in output_files:
             self.task.attach_file(f_name, 'outputs')
         #htpie.log.debug('Retrieved gsingle %s data'%(self.task.id))
-        self.state = States.POSTPROCESS
+
+    @fromto(States.RETRIEVING, States.POSTPROCESS)
+    def handle_tran_retrieving(self):
+        return True
     
+    @state(States.POSTPROCESS, StateTypes.ONCE)
     def handle_postprocess_state(self):
         app = _app_tag_mapping[self.task.app_tag]
         f_list = self.task.open('outputs')
         self.task.result = app.parse_result(f_list)
         self.task.result.save()
-        self.state = States.COMPLETE
-        return True
     
 #    def handle_unreachable_state(self):
 #        #TODO: Notify the user that they need to log into the clusters again, maybe using email?
@@ -288,6 +290,7 @@ class GSingleStateMachine(statemachine.StateMachine):
 #        except gc3utils.Exceptions.AuthenticationException:
 #            self.state = States.NOTIFIED
     
+    @state(States.KILL, StateTypes.ONCE)
     def handle_kill_state(self):
         if self.task.job:
             if not self.task.job.status == gc3utils.Job.JOB_STATE_COMPLETED:
@@ -297,24 +300,7 @@ class GSingleStateMachine(statemachine.StateMachine):
                     self.task.job.status == gc3utils.Job.JOB_STATE_FAILED or \
                     self.task.job.status == gc3utils.Job.JOB_STATE_DELETED:
                 gc3utils.Job.clean_job(self.task.job)
-        return True
     
-    def handle_missing_state(self, a_run):
-        raise UnhandledStateError('GSingle %s is in unhandled state %s'%(self.task.id, self.state))
-
-if __name__ == '__main__':
-    import sys
-    utils.configure_logger(10)
-    a_run = GSingle.create(['examples/exam01.inp'])
-    fsm = GSingleStateMachine()
-    fsm.load(a_run.id)
-    fsm.run()
-    print a_run.id
-    sys.exit(1)
-
-
-
-        
-            
-    
-    
+    @staticmethod
+    def cls_task():
+        return eval(_TASK_CLASS)

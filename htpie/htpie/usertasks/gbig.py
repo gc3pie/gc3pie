@@ -1,26 +1,22 @@
 import htpie
 from htpie.lib import utils
 from htpie import enginemodel as model
-from htpie import statemachine
+from htpie.statemachine import *
 from htpie.application import gamess
 from htpie.lib.exceptions import *
 
 from htpie.usertasks import glittle
  
-class States(statemachine.States):
-    READY = u'STATE_READY'
-    WAITING = u'STATE_WAIT'
-    POSTPROCESS = u'STATE_POSTPROCESS'
-
-class Transitions(statemachine.Transitions):
-    pass
-
+_TASK_CLASS = 'GBig'
+_STATEMACHINE_CLASS = 'GBigStateMachine'
+ 
 class GBig(model.Task):
     num_children = model.IntField()
+    count = model.IntField()
     children = model.ListField(model.ReferenceField(glittle.GLittle))
-    
+
     def display(self, long_format=False):
-        output = '%s %s %s %s\n'%(self.cls_name, self.id, self.state, self.transition)
+        output = '%s %s %s %s\n'%(self.cls_name, self.id, self.state, self.status)
         output += 'Task submitted: %s\n'%(self.create_d)
         output += 'Task last ran: %s\n'%(self.last_exec_d)
         output += 'Delta: %s\n'%(self.last_exec_d - self.create_d)      
@@ -29,23 +25,16 @@ class GBig(model.Task):
         
         if long_format:
             for child in self.children:
-                output += '%s %s %s %s\n'%(child.cls_name, child.id, child.state, child.transition)
+                output += '%s %s %s %s\n'%(child.cls_name, child.id, child.state, child.status)
         return output
     
     def retry(self):
-        if self.transition == Transitions.ERROR:
+        super(GBig, self).retry()
+        for child in self.children:
             try:
-                self.acquire(120)
+                child.retry()
             except:
-                raise
-            else:
-                self.transition = Transitions.PAUSED
-                self.release()
-                for child in self.children:
-                    try:
-                        child.retry()
-                    except:
-                        pass
+                pass
     
     def kill(self):
         try:
@@ -53,8 +42,7 @@ class GBig(model.Task):
         except:
             raise
         else:
-            self.state = States.KILL
-            self.transition = Transitions.PAUSED
+            self.setstate(States.KILL, 'kill')
             self.release()
             htpie.log.debug('GBig %s will be killed'%(self.id))
             for child in self.children:
@@ -63,45 +51,57 @@ class GBig(model.Task):
                 except:
                     pass
     
+    def successful(self):
+        if self.state == States.POSTPROCESS:
+            return True
+    
     @classmethod
     def create(cls, num_little,  app_tag='gamess', requested_cores=2, requested_memory=2, requested_walltime=2):
-        task = super(GBig, cls,).create()
+        task = super(GBig, cls).create()
         
         for i in xrange(num_little):
             task.children.append(glittle.GLittle.create())
         task.num_children = num_little
-        task.state = States.READY
-        task.transition = Transitions.PAUSED
+        task.setstate(States.READY, 'init')
         task.save()        
         return task
+    
+    @staticmethod
+    def cls_fsm():
+        return eval(_STATEMACHINE_CLASS)
 
-class GBigStateMachine(statemachine.StateMachine):
-    _cls_task = GBig
+class States(object):
+    READY = u'STATE_READY'
+    WAITING = u'STATE_WAIT'
+    POSTPROCESS = u'STATE_POSTPROCESS'
+    KILL = 'STATE_KILL'
+
+class GBigStateMachine(StateMachine):
     
-    def __init__(self):
-        super(GBigStateMachine, self).__init__()
-        self.state_mapping.update({States.READY: self.handle_ready_state, 
-                                                    States.WAITING: self.handle_waiting_state, 
-                                                    States.POSTPROCESS: self.handle_postprocess_state, 
-                                                    States.KILL: self.handle_kill_state, 
-                                                    })
-    
+    @state(States.READY)
     def handle_ready_state(self):
-        self.state = States.WAITING
+        pass
     
-    def handle_waiting_state(self):
-        if self._wait_util_done():
-            self.state = States.POSTPROCESS
-    
-    def handle_postprocess_state(self):
-        self.state = States.COMPLETE
+    @fromto(States.READY, States.WAITING)
+    def handle_tran_ready(self):
         return True
     
+    @state(States.WAITING)
+    def handle_waiting_state(self):
+        pass
+    
+    @fromto(States.WAITING, States.POSTPROCESS)
+    def handle_tran_waiting(self):
+        if self._wait_util_done():
+            return True
+    
+    @state(States.POSTPROCESS, StateTypes.ONCE)
+    def handle_postprocess_state(self):
+        pass
+    
+    @state(States.KILL, StateTypes.ONCE)
     def handle_kill_state(self):
         return True
-    
-    def handle_missing_state(self, a_run):
-        raise UnhandledStateError('GBig %s is in unhandled state %s'%(self.task.id, self.state))
 
     def _wait_util_done(self):
         children = self.task.children
@@ -117,9 +117,7 @@ class GBigStateMachine(statemachine.StateMachine):
             return True
         else:
             return False
-
-
-        
-            
     
-    
+    @staticmethod
+    def cls_task():
+        return eval(_TASK_CLASS)

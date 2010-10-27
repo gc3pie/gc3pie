@@ -5,20 +5,21 @@ from htpie.lib.exceptions import *
 from htpie import enginemodel as model
 from htpie import statemachine
 
-from htpie.usertasks.usertasks import *
+from htpie.usertasks import usertasks
 
 import datetime
+import sys
 
 class GControl(object):
     
     @staticmethod
-    def kill(id):
+    def kill(id, long_format):
         doc =  model.Task.objects.with_id(id)
         doc.kill()
         htpie.log.info('Task %s will be killed'%(id))
     
     @staticmethod
-    def retry(id):
+    def retry(id, long_format):
         doc =  model.Task.objects.with_id(id)
         doc.retry()
         htpie.log.info('Task %s will be retried'%(id))
@@ -31,23 +32,38 @@ class GControl(object):
         sys.stdout.flush()
     
     @staticmethod
-    def show(type, hours_ago):
+    def states(id, long_format):
+        doc = model.Task.objects.with_id(id)
+        output = 'States:\n%s\n'%(usertasks.get_fsm(doc.cls_name).states)
+        output += 'Transitions:\n%s\n'%(usertasks.get_fsm(doc.cls_name).transitions)
+        sys.stdout.write(output)
+        sys.stdout.flush()
+    
+    @staticmethod
+    def statediag(id, long_format):
+        #doc = model.Task.objects.with_id(id)
+        output = 'Generated state diagram: %s\n'%(usertasks.get_fsm_match_lower(id).states.display(id))
+        sys.stdout.write(output)
+        sys.stdout.flush()
+    
+    @staticmethod
+    def query(type, hours_ago, long_format):
         def match(type):
-            for key in fsm_classes.keys():
+            for key in usertasks.fsm_classes.keys():
                 if key.lower() == type.lower():
                     return key
             raise UnknownTaskException('Task %s is unknown'%(type))
-        node_class = fsm_classes[match(type)][0]
+        task_class = usertasks.fsm_classes[match(type)][0]
         if hours_ago:
             delta = datetime.timedelta(hours=hours_ago)
             delta = datetime.datetime.now() - delta 
-            docs = node_class.objects(last_exec_d__gte = delta)
+            docs = task_class.objects(last_exec_d__gte = delta)
         else:
-            docs = node_class.objects()
+            docs = task_class.objects()
         format_str = '{0:25} {1:25} {2:25} {3:25} {4}\n'
-        output = format_str.format('TASK NAME', 'ID', 'STATE', 'TRANSITION', 'LAST RAN')
+        output = format_str.format('TASK NAME', 'ID', 'STATE', 'STATUS', 'LAST RAN')
         output += '-' * 135 +'\n'
         for doc in docs:
-            output += format_str.format(doc.cls_name, doc.id, doc.state, doc.transition, doc.last_exec_d)
+            output += format_str.format(doc.cls_name, doc.id, doc.state, doc.status, doc.last_exec_d)
         sys.stdout.write(output)
         sys.stdout.flush()

@@ -3,7 +3,7 @@ import htpie
 from htpie.lib import utils
 from htpie.lib.exceptions import *
 from htpie import enginemodel as model
-from htpie import statemachine
+from htpie.statemachine import *
 from htpie.application import gamess
 from htpie.usertasks import gsingle
 
@@ -13,16 +13,8 @@ import os
 _app_tag_mapping = dict()
 _app_tag_mapping['gamess']=gamess.GamessApplication
 
-class States(statemachine.States):
-    FIRST_WAIT = u'STATE_WAIT'
-    GEN_WAIT = u'STATE_GEN_WAIT'
-    GENERATE = u'STATE_GENERATE'
-    PROCESS = u'STATE_PROCESS'
-    PROCESS_WAIT = u'STATE_PROCESS_WAIT'
-    POSTPROCESS = u'STATE_POSTPROCESS'
-
-class Transitions(statemachine.Transitions):
-    pass
+_TASK_CLASS = 'GHessian'
+_STATEMACHINE_CLASS = 'GHessianStateMachine'
 
 class GHessianResult(model.EmbeddedDocument):
     hessian = model.PickleField()
@@ -35,7 +27,7 @@ class GHessian(model.Task):
     
     
     def display(self, long_format=False):
-        output = '%s %s %s %s\n'%(self.cls_name, self.id, self.state, self.transition)
+        output = '%s %s %s %s\n'%(self.cls_name, self.id, self.state, self.status)
         output += 'Task submitted: %s\n'%(self.create_d)
         output += 'Task last ran: %s\n'%(self.last_exec_d)
         output += 'Delta: %s\n'%(self.last_exec_d - self.create_d)
@@ -48,20 +40,13 @@ class GHessian(model.Task):
         if long_format:
             output += 'Child Tasks:\n'
             for child in self.children:
-                output += '%s %s %s %s\n'%(child.cls_name, child.id, child.state, child.transition)
+                output += '%s %s %s %s\n'%(child.cls_name, child.id, child.state, child.status)
                 #output += '-' * 80 + '\n'
                 #output += child.display()
         return output
     
     def retry(self):
-        if self.transition == Transitions.ERROR:
-            try:
-                self.acquire(120)
-            except:
-                raise
-            else:
-                self.transition = Transitions.PAUSED
-                self.release()
+        super(GHessian, self).retry()
         for child in self.children:
             child.retry()
 
@@ -71,8 +56,7 @@ class GHessian(model.Task):
         except:
             raise
         else:
-            self.state = States.KILL
-            self.transition = Transitions.PAUSED
+            self.setstate(States.KILL, 'kill')
             self.release()
             htpie.log.debug('GHessian %s will be killed'%(self.id))
             for child in self.children:
@@ -93,29 +77,42 @@ class GHessian(model.Task):
         task.children.append(fsm)
         task.total_jobs += 1
         
-        task.transition = Transitions.PAUSED
-        task.state = States.FIRST_WAIT
+        task.setstate(States.FIRST_WAIT, 'init')
         task.save()
         return task
+    
+    def successful(self):
+        if self.state == States.POSTPROCESS:
+            return True
+    
+    @staticmethod
+    def cls_fsm():
+        return eval(_STATEMACHINE_CLASS)
 
-class GHessianStateMachine(statemachine.StateMachine):
-    _cls_task = GHessian
+class States(object):
+    FIRST_WAIT = u'STATE_WAIT'
+    GEN_WAIT = u'STATE_GEN_WAIT'
+    GENERATE = u'STATE_GENERATE'
+    PROCESS = u'STATE_PROCESS'
+    PROCESS_WAIT = u'STATE_PROCESS_WAIT'
+    POSTPROCESS = u'STATE_POSTPROCESS'
+    KILL = u'STATE_KILL'
+
+class GHessianStateMachine(StateMachine):
     
     def __init__(self):
         super(GHessianStateMachine, self).__init__()
-        self.state_mapping.update({States.FIRST_WAIT: self.handle_first_wait_state, 
-                                                      States.GEN_WAIT: self.handle_gen_wait_state, 
-                                                      States.GENERATE: self.handle_generate_state, 
-                                                      States.PROCESS: self.handle_process_state, 
-                                                      States.PROCESS_WAIT: self.handle_process_wait_state, 
-                                                      States.POSTPROCESS: self.handle_postprocess_state, 
-                                                      States.KILL: self.handle_kill_state, 
-                                                    })
-
+    
+    @state(States.FIRST_WAIT)
     def handle_first_wait_state(self):
+        pass
+    
+    @fromto(States.FIRST_WAIT, States.GENERATE)
+    def handle_first_wait_tran(self):
         if self._wait_util_done():
-            self.state = States.GENERATE
-
+            return True
+    
+    @state(States.GENERATE, StateTypes.ONCE)
     def handle_generate_state(self):
         task_vec = self.task.children[0]
         app = _app_tag_mapping[self.task.app_tag]
@@ -149,12 +146,21 @@ class GHessianStateMachine(statemachine.StateMachine):
             fsm = gsingle.GSingle.create([f_name], self.task.app_tag, **gc3_temp)
             self.task.children.append(fsm)
             self.task.total_jobs += 1
-        self.state = States.GEN_WAIT
     
-    def handle_gen_wait_state(self):
+    @fromto(States.GENERATE, States.GEN_WAIT)
+    def handle_generate_tran(self):
+        return True
+    
+    @state(States.GEN_WAIT)
+    def handle_generate_wait_state(self):
+        pass
+    
+    @fromto(States.GEN_WAIT, States.PROCESS)
+    def handle_generate_wait_tran(self):
         if self._wait_util_done():
-            self.state = States.PROCESS
-
+            return True
+    
+    @state(States.PROCESS, StateTypes.ONCE)
     def handle_process_state(self):
         children = self.task.children
         app = _app_tag_mapping[self.task.app_tag]
@@ -197,10 +203,20 @@ class GHessianStateMachine(statemachine.StateMachine):
         self.task.children.append(fsm)
         self.state = States.PROCESS_WAIT
     
-    def handle_process_wait_state(self):
-        if self._wait_util_done():
-            self.state = States.POSTPROCESS
+    @fromto(States.PROCESS, States.PROCESS_WAIT)
+    def handle_process_tran(self):
+        return True
     
+    @state(States.PROCESS_WAIT)
+    def handle_process_wait_state(self):
+        pass
+    
+    @fromto(States.PROCESS_WAIT, States.POSTPROCESS)
+    def handle_process_wait_tran(self):
+        if self._wait_util_done():
+            return True
+    
+    @state(States.POSTPROCESS, StateTypes.ONCE)
     def handle_postprocess_state(self):
         child = self.task.children[-1]
         #This will copy the two lists, but the MongoMatrix is a dbref,
@@ -211,6 +227,7 @@ class GHessianStateMachine(statemachine.StateMachine):
         self.state = States.COMPLETE
         return True
     
+    @state(States.KILL, StateTypes.ONCE)
     def handle_kill_state(self):
         return True
 
@@ -228,7 +245,10 @@ class GHessianStateMachine(statemachine.StateMachine):
             return True
         else:
             return False
-
+    
+    @staticmethod
+    def cls_task():
+        return eval(_TASK_CLASS)
 
 _H_TO_PERTURB = 0.0052918
 _GRADIENT_CONVERSION=1.8897161646320724
@@ -253,13 +273,3 @@ def _calculateNumericalHessian(sz, gradient):
         for j in range(0, 3*sz):
             hessian[i, j] = (1.0/(2.0*_H_TO_PERTURB))*((gradient[i, j+1]-gradient[i, 0])+(gradient[j, i+1]-gradient[j, 0]))
     return hessian
-
-
-if __name__ == '__main__':
-    import sys
-    a_run = GHessian.create('examples/water_UHF_gradient.inp')
-    fsm = GHessianStateMachine()
-    fsm.load(GHessian, a_run.id)
-    print a_run.id
-    sys.exit(1)
-    

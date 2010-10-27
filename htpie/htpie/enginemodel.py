@@ -15,6 +15,7 @@ import htpie
 
 from htpie.lib import utils
 from htpie.lib.exceptions import *
+from htpie import status
 
 import cPickle as pickle
 
@@ -26,10 +27,8 @@ def _create_connection(db=MONGO_DB, ip=MONGO_IP , port=MONGO_PORT):
     return mongoengine.connect(db, host=ip, port=port)
 
 db = _create_connection()
-# This is used as the doc _locking value. Since pymongo creates a pool of connections to the 
-# database, everything goes over one ip. The issue is that pymongo manages the ports
-# and they may change without our knowing it. Since this runs once, what happens
-# if pymongo opens up another port? This will not catch it.
+
+# Old way to get your uri, better to just as kthe socket you are using!!!
 #_session_lock = u'%s'%(db.command( "whatsmyuri" ) [u'you'])
         
 class MongoBase(Document):
@@ -50,111 +49,6 @@ class MongoBase(Document):
         obj.save()
         return obj
 
-#class NumpyArrayField(mongoengine.base.BaseField):
-#    """A numpy array storage field.
-#    """
-#    
-#    def __init__(self, **kwargs):
-#        super(NumpyArrayField, self).__init__(**kwargs)
-#    
-#    def __get__(self, instance, owner):
-#        if instance is None:
-#            return self
-#        
-#        # Check if a file already exists for this model
-#        grid_file = instance._data.get(self.name)
-#        if grid_file:
-#            return np.load(grid_file)
-#        return mongoengine.fields.GridFSProxy()
-#    
-#    def __set__(self, instance, value):
-#        if isinstance(value, np.ndarray):                
-#            # using "FileField() = file/string" notation
-#            grid_file = instance._data.get(self.name)
-#            # If a file already exists, delete it
-#            if grid_file:
-#                try:
-#                    grid_file.delete()
-#                except:
-#                    pass
-#                # Create a new file with the new data
-#                np.save(grid_file, value)
-#                grid_file.close()
-#            else:
-#                # Create a new proxy object as we don't already have one
-#                instance._data[self.name] = mongoengine.fields.GridFSProxy()
-#                np.save(instance._data[self.name], value)
-#                instance._data[self.name].close()
-#        else:
-#            ValidationException('NumpyArrayField can only store numpy arrays and matrices')
-#    
-#    def to_mongo(self, value):
-#        # Store the GridFS file id in MongoDB
-#        if isinstance(value, mongoengine.fields.GridFSProxy) and value.grid_id is not None:
-#            return value.grid_id
-#        return None
-#    
-#    def to_python(self, value):
-#        if value is not None:
-#            return mongoengine.fields.GridFSProxy(value)
-#    
-#    def validate(self, value):
-#        if value is not None:
-#            assert not isinstance(value, np.ndmatrix)
-#            assert isinstance(value, np.ndarray)
-
-#class PickleField(mongoengine.base.BaseField):
-#    """A python pickle storage field.
-#    """
-#    
-#    def __init__(self, **kwargs):
-#        super(PickleField, self).__init__(**kwargs)
-#    
-#    def __get__(self, instance, owner):
-#        if instance is None:
-#            return self
-#        
-#        # Check if a file already exists for this model
-#        grid_file = instance._data.get(self.name)
-#        if grid_file:
-#            return pickle.load(grid_file)
-#        return mongoengine.fields.GridFSProxy()
-#    
-#    def __set__(self, instance, value):
-#        if isinstance(value, np.ndarray):                
-#            # using "FileField() = file/string" notation
-#            grid_file = instance._data.get(self.name)
-#            # If a file already exists, delete it
-#            if grid_file:
-#                try:
-#                    grid_file.delete()
-#                except:
-#                    pass
-#                # Create a new file with the new data
-#                pickle.dump(value, grid_file, pickle.HIGHEST_PROTOCOL)
-#                grid_file.close()
-#            else:
-#                # Create a new proxy object as we don't already have one
-#                instance._data[self.name] = mongoengine.fields.GridFSProxy()
-#                pickle.dump(value, instance._data[self.name], pickle.HIGHEST_PROTOCOL)
-#                instance._data[self.name].close()
-#        else:
-#            ValidationException('NumpyArrayField can only store numpy arrays and matrices')
-#    
-#    def to_mongo(self, value):
-#        # Store the GridFS file id in MongoDB
-#        if isinstance(value, mongoengine.fields.GridFSProxy) and value.grid_id is not None:
-#            return value.grid_id
-#        return None
-#    
-#    def to_python(self, value):
-#        if value is not None:
-#            return mongoengine.fields.GridFSProxy(value)
-#    
-#    def validate(self, value):
-#        if value is not None:
-#            pass
-
 class PickleProxy(GridFSProxy):
     """Proxy object to handle writing and reading of files to and from GridFS
     """
@@ -171,6 +65,8 @@ class PickleProxy(GridFSProxy):
         def fset(self, value):
             if self.grid_id:
                 self.delete()
+            #FIXME: If you the program is killed here, the gridfsproxy has been deleted,
+            # and you still haven't created the new one. That means you lose the data!!!!
             self.new_file()
             pickle.dump(value, self.newfile, pickle.HIGHEST_PROTOCOL)
             self.close()
@@ -230,6 +126,39 @@ class PickleField(BaseField):
             assert isinstance(value, PickleProxy)
             assert isinstance(value.grid_id, pymongo.objectid.ObjectId)
 
+class TaskHistory(EmbeddedDocument):
+    last_update_d = DateTimeField(default=datetime.datetime.now())
+    start_state = StringField()
+    end_state = StringField()
+    reason = StringField()
+    count = IntField(default=1)
+
+    @classmethod
+    def create(cls, start_state, end_state, reason):
+        obj = cls()
+        obj.start_state = start_state
+        obj.end_state = end_state
+        obj.reason = reason
+        return obj
+    
+    def inc(self):
+        self.time = datetime.datetime.now()
+        self.count += 1
+    
+    def __repr__(self):
+        output = '< History %s %s %s at %s >'%(self.start_state,  self.end_state,  self.reason.__name__, hex(id(self)))
+        return output
+    
+    def __eq__(self, other):
+        if isinstance(other, History):
+            if self.start_state == other.start_state and \
+                self.end_state == other.end_state and \
+                self.reason == other.reason:
+                return True
+            else:
+                return False
+        else:
+            return False
 
 class Files(EmbeddedDocument):
     inputs = ListField(FileField())
@@ -239,35 +168,88 @@ class Task(MongoBase):
     meta = {'collection':'Task'}
     
     name = StringField()
-    state = StringField()
-    transition = StringField(default = states.Transitions.HOLD)
+    _state = StringField()
+    _status = StringField(default=status.Status.PAUSED)
     app_tag = StringField()
     last_exec_d = DateTimeField(default=datetime.datetime.now())
     result = GenericReferenceField()
     _lock = StringField(default=u'')
     files = EmbeddedDocumentField(Files)
+    history = ListField(EmbeddedDocumentField(TaskHistory))
     
     meta = {
-        'indexes': [ 'id', ('transition', '_lock'), ('id', '_lock')]
+        'indexes': [ ('_status', '_lock'), ('id', '_lock')]
     }
 
     def __init__(self, *args, **kwargs):
         super(Task, self).__init__(*args, **kwargs)
-        # We set the local lock value used for a particular multiprocess
-        # thread. Because pymongo uses pooling, we can not just use
-        # the ip:port number.
+        # Pymongo creates a pool of connections to the 
+        # database, everything goes over one ip, but different ports.
+        # Here we ask the socket we are using what port and ip it is on.
+        # Remember that two different threads might use the same port!
         _session_lock = db.connection._Connection__pool.socket().getsockname()
         _session_lock = u'%s:%d'%(_session_lock[0], _session_lock[1])
+        # We set the local lock value used for a particular multiprocess
+        # thread. Because pymongo uses pooling, we can not just use
+        # the ip:port number. Two threads may use the same port!
         pid = os.getpid()
         self._l_lock = u'%s__%d'%(_session_lock, pid)
-    
+        self._track_history = False
+
     @classmethod
-    def create(cls):
+    def create(cls,*args, **kwargs):
         obj = cls()
         obj.files = Files()
+        if 'track_history' in kwargs:
+            obj._track_history = kwargs['track_history']
         #obj.save()
         return obj
-       
+    
+    def setstate(self, new_state, reason=None, exec_state=True):
+        if self._track_history:
+            his = History(self._state, new_state, reason)
+            if not self.history:
+                self.history.append(his)
+            else:
+                if self.history[-1] == his:
+                    self.history[-1].inc()
+                else:
+                    self.history.append(his)
+        self._state = new_state
+        if exec_state:
+            self.status = status.Status.PAUSED
+    
+    @property
+    def state(self):        
+        return self._state
+
+    def retry(self):
+        if self.status in status.Status.terminal():
+            try:
+                self.acquire(120)
+            except:
+                raise
+            else:
+                self.status = status.Status.PAUSED
+                self.release()
+    
+    def done(self):
+        if self.status in status.Status.terminal():
+            return True
+
+    def status():
+        def fget(self):
+            return self._status
+        def fset(self, status):
+            self._status = status
+            self.save()
+        return locals()
+    status = property(**status())
+    
+    def display_fsm(self):
+        fsm = self.cls_fsm()
+        return fsm.states.display(self.cls_name)
+
     def attach_file(self, f_container, container):
         try:
             to_read = utils.verify_file_container(f_container)
@@ -279,7 +261,7 @@ class Task(MongoBase):
         self.save()
     
     def open(self, container):
-        #FIXME: gridfs doesn't suppore name, therefore we need to return a local
+        #FIXME: gridfs doesn't suport '.name', therefore we need to return a local
         #file copy.
         return self.mk_local_copy(container)
     
@@ -351,6 +333,8 @@ class Task(MongoBase):
         '''If a thread crashs, it will not unlock the document. We unlock it here.'''
         def get_con_ids():
             import re
+            #FIXME: Not sure it this returns all port numbers connected, or just the main port number.
+            # If it is only the main port number, we may unlock tasks that shold really be locked!
             #Get all of the connection ids to the database
             con_ids = db.eval('db.$cmd.sys.inprog.findOne( {$all : 1 } )')
             valid_locks = [id[u'client'] for id in con_ids[u'inprog']]
@@ -376,19 +360,6 @@ class Task(MongoBase):
             #When we do a update we get this back, {u'updatedExisting': True, u'ok': 1.0, u'err': None, u'n': 1L}
             #Lets check for an error
             #assert not val['err'], 'implicit_release errored'
-    
-    def done(self):
-        if self.transition in states.Transitions.terminal():
-            return True
-        else:
-            return False
-    
-    def successful(self):
-        if self.done():
-            if self.state == states.States.COMPLETE and \
-                self.transition == states.Transitions.COMPLETE:
-                return True
-        return False
 
 def _chunk_trans(to_write, to_read):
     chunk = 50000

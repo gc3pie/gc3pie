@@ -207,7 +207,6 @@ def gcontrol(*args, **kw):
     
     configure_logger(options.verbosity, _default_log_file_location) 
     
-    
     if options.program_command == 'retry':
         check()
         GControl.retry(options.id)
@@ -217,11 +216,15 @@ def gcontrol(*args, **kw):
     elif options.program_command == 'info':
         check()
         GControl.info(options.id, options.long_format)
-    elif options.program_command == 'show':
+    elif options.program_command == 'query':
         check()
-        GControl.show(options.id, options.hours_ago)
-#    elif options.program_command == 'files':
-#        gcontrol.get_task_files()
+        GControl.query(options.id, options.hours_ago)
+    elif options.program_command == 'states':
+        check()
+        GControl.states(options.id, options.long_format)
+    elif options.program_command == 'statediag':
+        check()
+        GControl.statediag(options.id, options.long_format)
     else:
         sys.stdout.write('Unknown program command %s'%s(options.program_command))
 

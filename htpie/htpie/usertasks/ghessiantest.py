@@ -3,7 +3,7 @@ import htpie
 from htpie.lib import utils
 from htpie.lib.exceptions import *
 from htpie import enginemodel as model
-from htpie import statemachine
+from htpie.statemachine import *
 from htpie.application import gamess
 from htpie.usertasks import gsingle, ghessian
 
@@ -14,12 +14,8 @@ import os
 _app_tag_mapping = dict()
 _app_tag_mapping['gamess']=gamess.GamessApplication
 
-class States(statemachine.States):
-    WAITING = u'STATE_WAIT'
-    PROCESS = u'STATE_PROCESS'
-
-class Transitions(statemachine.Transitions):
-    pass
+_TASK_CLASS = 'GHessianTest'
+_STATEMACHINE_CLASS = 'GHessianTestStateMachine'
 
 class GHessianResult(model.EmbeddedDocument):
     fname = model.StringField()
@@ -89,20 +85,12 @@ class GHessianTest(model.Task):
 
             task.result.append(result)
         
-        task.state = States.WAITING
-        task.transition = Transitions.PAUSED
+        task.setstate(States.WAITING, 'init')
         task.save()
         return task
     
     def retry(self):
-        if self.transition == Transitions.ERROR:
-            try:
-                self.acquire(120)
-            except:
-                raise
-            else:
-                self.transition = Transitions.PAUSED
-                self.release()
+        super(GHessianTest, self).retry()
         for a_result in self.result:
             a_result['gsingle'].retry()
             a_result['ghessian'].retry()
@@ -113,8 +101,7 @@ class GHessianTest(model.Task):
         except:
             raise
         else:
-            self.state = States.KILL
-            self.transition = Transitions.PAUSED
+            self.setstate(States.KILL, 'kill')
             self.release()
             htpie.log.debug('GHessianTest %s will be killed'%(self.id))
             for a_result in self.result:
@@ -123,19 +110,31 @@ class GHessianTest(model.Task):
                     a_result['ghessian'].kill()
                 except:
                     pass
+    
+    def successful(self):
+        if self.state == States.PROCESS:
+            return True
+    
+    @staticmethod
+    def cls_fsm():
+        return eval(_STATEMACHINE_CLASS)
 
-class GHessianTestStateMachine(statemachine.StateMachine):
-    _cls_task = GHessianTest
+class States(object):
+    WAITING = u'STATE_WAIT'
+    COMPLETE = u'STATE_COMPLETE'
+    KILL = u'STATE_KILL'
+
+class GHessianTestStateMachine(StateMachine):
     
     def __init__(self):
         super(GHessianTestStateMachine, self).__init__()
-        self.state_mapping.update({States.WAITING: self.handle_waiting_state, 
-                                                    States.PROCESS: self.handle_process_state, 
-                                                    States.KILL: self.handle_kill_state, 
-                                                    })
 
+    @state(States.WAITING)
     def handle_waiting_state(self):
-        
+        pass
+
+    @fromto(States.WAITING, States.COMPLETE)
+    def handle_waiting_tran(self):
         count = 0
         for a_result in self.task.result:
             if a_result['ghessian'].done() and a_result['gsingle'].done():
@@ -149,12 +148,16 @@ class GHessianTestStateMachine(statemachine.StateMachine):
                     raise ChildNodeException('Child task %s has been unsuccessful'%(problem_result.id))
         
         if count == len(self.task.result):
-            self.state = States.PROCESS
+            return True
 
-    def handle_process_state(self):
-
-        self.state = States.COMPLETE
-        return True
+    @state(States.COMPLETE, StateTypes.ONCE)
+    def handle_complete_state(self):
+        pass
     
+    @state(States.KILL, StateTypes.ONCE)
     def handle_kill_state(self):
         return True
+    
+    @staticmethod
+    def cls_task():
+        return eval(_TASK_CLASS)

@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE Project SYSTEM "Project-4.6.dtd">
 <!-- eric4 project file for project htpie -->
-<!-- Saved: 2010-10-12, 15:38:58 -->
+<!-- Saved: 2010-10-23, 20:57:37 -->
 <!-- Copyright (C) 2010 Mark Monroe,  -->
 <Project version="4.6">
   <Language></Language>
@@ -41,6 +41,10 @@
     <Source>htpie/states.py</Source>
     <Source>htpie/usertasks/usertasks.py</Source>
     <Source>htpie/lib/multiprocessinglog.py</Source>
+    <Source>play.py</Source>
+    <Source>state_play.py</Source>
+    <Source>htpie/new_statemachine.py</Source>
+    <Source>htpie/status.py</Source>
   </Sources>
   <Forms>
   </Forms>
