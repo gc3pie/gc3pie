@@ -8,7 +8,7 @@ export HTPIE=$HOME/htpie
 export PYTHONPATH=$ASE:$GC3UTILS:$HTPIE:$ARCLIB
 export PATH=$GC3UTILS:$SLCSHOME/bin:$HTPIE:$PATH
 
-$HOME/htpie/gtaskscheduler
+htpie gtaskscheduler
 
 # Put this in your crontab
 # Edit this file to introduce tasks to be run by cron.

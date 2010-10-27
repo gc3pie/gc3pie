@@ -93,9 +93,12 @@ def generate_temp_dir(uid=None, subdir=None):
 
 def verify_file_container(f_container, mode='r'):
     def open_str(a_file, mode):
-        if not hasattr(a_file,'read'):
+        if isinstance(a_file, str):
             return open(a_file, mode)
         else:
+            # We have a file like object
+            if a_file.closed:
+                return open(a_file.name, mode)
             return a_file
 
     if isinstance(f_container, list) or \
@@ -120,6 +123,36 @@ def format_exception_info(maxTBlevel=5):
         excArgs = "<no args>"
     excTb = traceback.format_tb(trbk, maxTBlevel)
     return '%s %s\n%s'%(excName, excArgs, ''.join(excTb))
+    
+def configure_logger(verbosity, log_file_name='~/.htpie/gc3utils_log.log'):
+    """
+    Configure the logger.
+
+    - Input is the logging level and a filename to use.
+    - Returns nothing.
+    """
+    # We have to check the logger in here, and not in __init__ to see if it is empty.
+    # when we check in __init__ it doesn't work. We want to execute this once per process
+    if not htpie.log.handlers:
+        from cloghandler import ConcurrentRotatingFileHandler
+        logfile = os.path.abspath(os.path.expanduser(log_file_name))
+        rotateHandler = ConcurrentRotatingFileHandler(logfile, "a", maxBytes=2000000, backupCount=5)
+        logging_level = 10 * max(1, 5-verbosity)
+        formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+        rotateHandler.setFormatter(formatter)
+        
+        htpie.log.setLevel(logging_level)
+        htpie.log.addHandler(rotateHandler)
+        
+        stream_handler = logging.StreamHandler()
+        stream_handler.setFormatter(formatter)
+        htpie.log.addHandler(stream_handler )
+        from gc3utils.gcommands import _configure_logger
+        import gc3utils
+       # gc3utils.log.addHandler(file_handler)
+        #gc3utils.log.addHandler(stream_handler)
+        #gc3utils.log.setLevel(0)
+        _configure_logger(0)
 
 #def configure_logger(verbosity, log_file_name='gc3utils_log'):
 #    """
@@ -128,45 +161,14 @@ def format_exception_info(maxTBlevel=5):
 #    - Input is the logging level and a filename to use.
 #    - Returns nothing.
 #    """
-#    #PLEASE NOTE: basicConfig should be called from the main thread before other threads are started. 
-#    #In versions of Python prior to 2.7.1 and 3.2, if this function is called from multiple threads, 
-#    #it is possible (in rare circumstances) that a handler will be added to the root logger more than once, 
-#    #leading to unexpected results such as messages being duplicated in the log.
-#    formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-#    logging_level = 10 * max(1, 5-verbosity)
-#    htpie.log.setLevel(logging_level)
-#    file_handler = logging.handlers.RotatingFileHandler(os.path.expanduser(log_file_name), maxBytes=2000000, backupCount=5)
-#    file_handler.setFormatter(formatter)
-#    stream_handler = logging.StreamHandler()
-#    stream_handler.setFormatter(formatter)
-#    htpie.log.addHandler(file_handler)
-#    htpie.log.addHandler(stream_handler)
-#    
-#    from gc3utils.gcommands import _configure_logger
-#    import gc3utils
-#   # gc3utils.log.addHandler(file_handler)
-#    #gc3utils.log.addHandler(stream_handler)
-#    #gc3utils.log.setLevel(0)
-#    _configure_logger(0)
+#    from htpie.lib import multiprocessinglog
+#    global _logger_proxy
+#    manager = multiprocessinglog.LoggingManager()
+#    manager.start()
+#    LOG_FILENAME  = os.path.expanduser('~/.htpie/gc3utils.log')
+#    LOGGING_LEVEL =  10 * max(1, 5-verbosity)
+#    _logger_proxy = manager.setup_logger(LOGGING_LEVEL, LOG_FILENAME)
 
-_logger_proxy = None
-def configure_logger(verbosity, log_file_name='gc3utils_log'):
-    """
-    Configure the logger.
-
-    - Input is the logging level and a filename to use.
-    - Returns nothing.
-    """
-    from htpie.lib import multiprocessinglog
-    global _logger_proxy
-    manager = multiprocessinglog.LoggingManager()
-    manager.start()
-    LOG_FILENAME  = os.path.expanduser('~/.htpie/gc3utils.log')
-    LOGGING_LEVEL =  10 * max(1, 5-verbosity)
-    _logger_proxy = manager.setup_logger(LOGGING_LEVEL, LOG_FILENAME)
-
-def get_logger():
-    return _logger_proxy
 
 def split_seq(iterable, size):
     """ Split a interable into chunks of the given size

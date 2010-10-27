@@ -3,7 +3,7 @@ import htpie
 from htpie.lib import utils
 from htpie.lib.exceptions import *
 from htpie import enginemodel as model
-from htpie import statemachine
+from htpie.statemachine import *
 from htpie.application import gamess
 from htpie.usertasks import gsingle
 
@@ -16,13 +16,8 @@ import copy
 _app_tag_mapping = dict()
 _app_tag_mapping['gamess']=gamess.GamessApplication
 
-class States(statemachine.States):
-    WAIT = u'STATE_WAIT'
-    PROCESS = u'STATE_PROCESS'
-    POSTPROCESS = u'STATE_POSTPROCESS'
-
-class Transitions(statemachine.Transitions):
-    pass
+_TASK_CLASS = 'GString'
+_STATEMACHINE_CLASS = 'GStringStateMachine'
 
 class GStringResult(model.EmbeddedDocument):
     gsingle = model.ListField(model.ReferenceField(gsingle.GSingle))
@@ -42,14 +37,7 @@ class GString(model.Task):
         return output
     
     def retry(self):
-        if self.transition == Transitions.ERROR:
-            try:
-                self.acquire(120)
-            except:
-                raise
-            else:
-                self.transition = Transitions.PAUSED
-                self.release()
+        super(GString, self).retry()
         path = self.result[-1]
         children = path['gsingle']
         for child in children:
@@ -64,7 +52,7 @@ class GString(model.Task):
         except:
             raise
         else:
-            self.state = States.KILL
+            self.setstate(States.KILL, 'kill')
             self.release()
             htpie.log.debug('GString %s will be killed'%(self.id))
             path = self.result[-1]
@@ -74,20 +62,22 @@ class GString(model.Task):
                     child.kill()
                 except:
                     pass
+        
+    def successful(self):
+        if self.state == States.COMPLETE:
+            return True
     
     def display(self, long_format=False):
-        output = '%s %s %s %s\n'%(self.cls_name, self.id, self.state, self.transition)
+        output = '%s %s %s %s\n'%(self.cls_name, self.id, self.state, self.status)
         output += 'Task submitted: %s\n'%(self.create_d)
         output += 'Task last ran: %s\n'%(self.last_exec_d)
         output += 'Delta: %s\n'%(self.last_exec_d - self.create_d)
-        if self.transition == Transitions.COMPLETE:
-            pass
 
         def print_path(path):
             output = ''
             path = path['gsingle']
             for child in path:
-                output += '%s %s %s %s\n'%(child.cls_name,  child.id, child.state, child.transition)
+                output += '%s %s %s %s\n'%(child.cls_name,  child.id, child.state, child.status)
             return output
         
         if long_format:
@@ -134,11 +124,14 @@ class GString(model.Task):
         task.neb = model.PickleProxy()
         task.neb.pickle = a_neb
         
-        task.transition = Transitions.PAUSED
-        task.state = States.WAIT
+        task.setstate(States.WAIT, 'init')
         task.save()
         return task
-
+    
+    @staticmethod
+    def cls_fsm():
+        return eval(_STATEMACHINE_CLASS)
+        
 def _convert_pos_to_jobs(app_tag, atoms_start, params_start, path, requested_cores, requested_memory,  requested_walltime):
         count = 0
         app = _app_tag_mapping[app_tag]
@@ -160,27 +153,32 @@ def _str_dict(dic):
             new_dic[str(k)]=v
         return new_dic
 
-class GStringStateMachine(statemachine.StateMachine):
-    _cls_task = GString
+class States(object):
+    WAIT = u'STATE_WAIT'
+    PROCESS = u'STATE_PROCESS'
+    COMPLETE = u'STATE_COMPLETE'
+    KILL = u'STATE_KILL'
+
+class GStringStateMachine(StateMachine):
     
     def __init__(self):
         super(GStringStateMachine, self).__init__()
-        self.state_mapping.update({States.WAIT: self.handle_wait_state,                                                       
-                                                      States.PROCESS: self.handle_process_state, 
-                                                      States.POSTPROCESS: self.handle_postprocess_state, 
-                                                      States.KILL: self.handle_kill_state, 
-                                                    })
-
+    
+    @state(States.WAIT)
     def handle_wait_state(self):
+        pass
+    
+    @fromto(States.WAIT, States.PROCESS)
+    def handle_wait_tran(self):
         if self._wait_util_done():
-            self.state = States.PROCESS
-
+            return True
+    
+    @state(States.PROCESS, StateTypes.ONCE)
     def handle_process_state(self):
         children = self.task.result[-1]['gsingle']
         app = _app_tag_mapping[self.task.app_tag]
         a_neb = self.task.neb.pickle
         gc3_temp = _str_dict(children[0].gc3_temp)
-        force_converge = .01
         
         f_list = self.task.open('inputs')
         atoms_start, params_start = app.parse_input(f_list[0])
@@ -204,10 +202,13 @@ class GStringStateMachine(statemachine.StateMachine):
             l_opt.append(a_opt.pickle)
         
         for i in xrange(len(a_neb.path)):
-            fmax = neb.vmag(a_neb.path[i].f)
+            self.fmax = neb.vmag(a_neb.path[i].f)
             htpie.log.debug('GString %d %s max force %f'%(i, self.task.id, fmax))
         
-        if fmax > force_converge:
+        if self.fmax > force_converge:
+            # FIXME: We are doing a forward look ahead here.
+            # We test what the transition will later test.
+            # We create new tasks to run, so we need to wait for them
             new_pos.append(a_neb.path[0].r)
             for i in xrange(1, len(a_neb.path) - 1):
                 new_pos.append(l_opt[i].step(a_neb.path[i].r, a_neb.path[i].f))
@@ -227,27 +228,45 @@ class GStringStateMachine(statemachine.StateMachine):
             l_gsingle = GStringResult(gsingle=path)
             self.task.result.append(l_gsingle)
             self.task.neb.pickle = a_neb
-            self.state = States.WAIT
         else:
-            self.state = States.POSTPROCESS
+            # We are done
+            pass
     
-    def handle_postprocess_state(self):
-        self.state = States.COMPLETE
-        return True
+    @fromto(States.PROCESS, States.WAIT)
+    def handle_process_wait_tran(self):
+        FORCE_CONVERGE = .01
+        if self.fmax >= FORCE_CONVERGE:
+            return True
+
+    @fromto(States.PROCESS, States.COMPLETE)
+    def handle_process_complete_tran(self):
+        FORCE_CONVERGE = .01
+        if self.fmax < FORCE_CONVERGE:
+            return True
     
+    @state(States.COMPLETE, StateTypes.ONCE)
+    def handle_complete_state(self):
+        pass
+    
+    @state(States.KILL, StateTypes.ONCE)
     def handle_kill_state(self):
-        return True
+        pass
 
     def _wait_util_done(self):
-        children =  self.task.result[-1]['gsingle']
+        children = children =  self.task.result[-1]['gsingle']
         count = 0
         for child in children:
-            if child.transition == Transitions.COMPLETE:
-                count += 1
-            elif child.transition == Transitions.ERROR:
-                raise ChildNodeException('Child task %s errored.'%(child.id))
+            if child.done():
+                if child.successful():
+                    count += 1
+                else:
+                    raise ChildNodeException('Child task %s has been unsuccessful'%(child.id))
         
         if count == len(children):
             return True
         else:
             return False
+
+    @staticmethod
+    def cls_task():
+        return eval(_TASK_CLASS)

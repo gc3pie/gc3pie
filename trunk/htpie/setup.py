@@ -12,15 +12,14 @@ ez_setup.use_setuptools()
 from setuptools import setup, find_packages
 setup( 
     name = "htpie",
-    version = "0.6.22", # format: 0.MONTH.DAY (for now ...)
+    version = "0.1.00", # format: 0.MONTH.DAY (for now ...)
 
     packages = find_packages(exclude=['ez_setup']),
-    #scripts = ['gcmd.py'],
 
     # metadata for upload to PyPI
-    description = "A Python library and simple command-line frontend for managing multiple jobs.",
+    description = "High throughput grid execution framework.",
     author = "Grid Computing Competence Centre, University of Zurich",
-    author_email = "gc3utils-dev@gc3.lists.uzh.ch",
+    author_email = "gc3pie@googlegroups.com",
     license = "LGPL",
     keywords = "grid arc globus ssh games batch job",
     url = "http://code.google.com/p/gc3pie/",   # project home page, if any
@@ -28,23 +27,7 @@ setup(
     entry_points = {
         'console_scripts': [
             # the generic, catch-all script:
-            #'gcmd = gc3utils.gcmd:main',
-	    # todo: fix
-            'gcontrol = htpie.gcommands:gcontrol',
-            'ghessian = htpie.gcommands:ghessian',
-            'gsingle = htpie.gcommands:gsingle',
- 	    'gtaskscheduler = htpie.gcommands:gtaskscheduler',
-	    'ghessiantest = htpie.gcommands:ghessiantest',
-	    'gstring = htpie.gcommands:gstring',
-            'gbig = htpie.gcommands:gbig',
-            # symlinks to specific subcommands:
-            #'gsub = gc3utils.gcmd:main',
-            #'gstat = gc3utils.gcmd:main',
-            #'glist = gc3utils.gcmd:main',
-            #'gkill = gc3utils.gcmd:main',
-            #'gget = gc3utils.gcmd:main',
-            #'ginfo = gc3utils.gcmd:main',
-            #'gclean = gc3utils.gcmd:main',
+            'htpie = htpie.gcmd:main'
             ],
        },
 

@@ -1,26 +1,27 @@
 import htpie
 from htpie.lib import utils
 from htpie import enginemodel as model
-from htpie import statemachine
+from htpie.statemachine import *
 from htpie.application import gamess
 from htpie.lib.exceptions import *
  
 import sys
- 
-class States(statemachine.States):
+
+_STATEMACHINE_CLASS = 'GLittleStateMachine'
+_TASK_CLASS = 'GLittle'
+
+class States(object):
     READY = u'STATE_READY'
     WAITING = u'STATE_WAIT'
     POSTPROCESS = u'STATE_POSTPROCESS'
-
-class Transitions(statemachine.Transitions):
-    pass
+    KILL = 'STATE_KILL'
 
 class GLittle(model.Task):
     count = model.IntField(default = 0)
     obj = model.PickleField()
-
+    
     def display(self, long_format=False):
-        output = '%s %s %s %s\n'%(self.cls_name, self.id, self.state, self.transition)
+        output = '%s %s %s %s\n'%(self.cls_name, self.id, self.state, self.status)
         output += 'Task submitted: %s\n'%(self.create_d)
         output += 'Task last ran: %s\n'%(self.last_exec_d)
         output += 'Delta: %s\n'%(self.last_exec_d - self.create_d)      
@@ -32,26 +33,18 @@ class GLittle(model.Task):
             pass
         return output
     
-    def retry(self):
-        if self.transition == Transitions.ERROR:
-            try:
-                self.acquire(120)
-            except:
-                raise
-            else:
-                self.transition = Transitions.PAUSED
-                self.release()
-    
     def kill(self):
         try:
             self.acquire(120)
         except:
             raise
         else:
-            self.state = States.KILL
-            self.transition = Transitions.PAUSED
+            self.setstate(States.KILL, 'kill')
             self.release()
-            #htpie.log.debug('GLittle %s will be killed'%(self.id))
+
+    def successful(self):
+        if self.state == States.POSTPROCESS:
+            return True
     
     @classmethod
     def create(cls, app_tag='gamess', requested_cores=2, requested_memory=2, requested_walltime=2):
@@ -59,25 +52,25 @@ class GLittle(model.Task):
         
         task.obj = model.PickleProxy()
         task.obj.pickle = ''
-        task.state = States.READY
-        task.transition = Transitions.PAUSED
+        task.setstate(States.READY, 'init')
         task.save()      
         return task
+    
+    @staticmethod
+    def cls_fsm():
+        return eval(_STATEMACHINE_CLASS)
 
-class GLittleStateMachine(statemachine.StateMachine):
-    _cls_task = GLittle
-    
-    def __init__(self):
-        super(GLittleStateMachine, self).__init__()
-        self.state_mapping.update({States.READY: self.handle_ready_state, 
-                                                    States.WAITING: self.handle_waiting_state, 
-                                                    States.POSTPROCESS: self.handle_postprocess_state, 
-                                                    States.KILL: self.handle_kill_state, 
-                                                    })
-    
+class GLittleStateMachine(StateMachine):
+
+    @state(States.READY)
     def handle_ready_state(self):
-        self.state = States.WAITING
+        pass
     
+    @fromto(States.READY, States.WAITING)
+    def handle_tran_ready(self):
+        return True
+    
+    @state(States.WAITING)
     def handle_waiting_state(self):
         self.task.count += 1
         obj = self.task.obj.pickle
@@ -85,15 +78,20 @@ class GLittleStateMachine(statemachine.StateMachine):
         # run this state
         obj += 'T'*1048576
         self.task.obj.pickle = obj
-        if self.task.count > 10:
-            self.state = States.POSTPROCESS
     
+    @fromto(States.WAITING, States.POSTPROCESS)
+    def handle_tran_waiting(self):
+        if self.task.count > 10:
+            return True
+    
+    @state(States.POSTPROCESS, StateTypes.ONCE)
     def handle_postprocess_state(self):
-        self.state = States.COMPLETE
         return True
     
+    @state(States.KILL, StateTypes.ONCE)
     def handle_kill_state(self):
         return True
     
-    def handle_missing_state(self, a_run):
-        raise UnhandledStateError('GLittle %s is in unhandled state %s'%(self.task.id, self.state))
+    @staticmethod
+    def cls_task():
+        return eval(_TASK_CLASS)

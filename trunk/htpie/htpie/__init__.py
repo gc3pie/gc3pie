@@ -1,6 +1,7 @@
-#import logging
-#log = logging.getLogger("htpie")
-from htpie.lib.utils import *
-if not get_logger():
-    configure_logger(1000)
-log = get_logger()
+from htpie.lib import utils
+import logging
+#import multiprocessing
+#log = multiprocessing.get_logger()
+log = logging.getLogger('htpie')
+    
+
