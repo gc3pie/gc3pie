@@ -240,7 +240,7 @@ class GSingleStateMachine(StateMachine):
         if not isinstance(temp, list):
             htpie.log.warning('GC3utils did not return a job on gstat, it returned: %s'%(temp))
             return None
-        if not temp[0]:
+        if not temp:
             htpie.log.warning('GC3utils did not return a job on gstat, it returned: %s'%(temp))
             return None
         self.task.job = temp[0]

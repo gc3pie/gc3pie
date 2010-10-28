@@ -1,0 +1,6 @@
+[SETTINGS]
+database_user=mark
+database_name=gorg_site
+database_url=http://localhost:5984
+verbosity=10
+temp_directory=~/tmp

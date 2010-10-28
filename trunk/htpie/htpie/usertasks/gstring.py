@@ -203,9 +203,9 @@ class GStringStateMachine(StateMachine):
         
         for i in xrange(len(a_neb.path)):
             self.fmax = neb.vmag(a_neb.path[i].f)
-            htpie.log.debug('GString %d %s max force %f'%(i, self.task.id, fmax))
+            htpie.log.debug('GString %d %s max force %f'%(i, self.task.id, self.fmax))
         
-        if self.fmax > force_converge:
+        if self.handle_process_wait_tran():
             # FIXME: We are doing a forward look ahead here.
             # We test what the transition will later test.
             # We create new tasks to run, so we need to wait for them
