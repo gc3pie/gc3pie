@@ -35,7 +35,7 @@ setuptools.setup(
     name = "htpie",
     version = "0.1.00", # format: 0.MONTH.DAY (for now ...)
 
-    packages = find_packages(exclude=['ez_setup']),
+    packages = setuptools.find_packages(exclude=['ez_setup']),
 
     # metadata for upload to PyPI
     description = "High throughput grid execution framework.",
@@ -43,7 +43,7 @@ setuptools.setup(
     author_email = "gc3pie@googlegroups.com",
     license = "LGPL",
     keywords = "framework workflow statemachine grid  batch job",
-    url = "http://code.google.com/p/gc3pie/",   # project home page, if any
+    url = "http://gc3pie.googlecode.com/",   # project home page, if any
 
     entry_points = {
         'console_scripts': [
@@ -54,9 +54,11 @@ setuptools.setup(
 
     # run-time dependencies ("pycrypto" is a dependency of Paramiko;
     # setuptools apparently does not process dependencies recursively)
-    install_requires = ['mongoengine==0.4', 'argparse', 'ConcurrentLogHandler', 
-                        'ase', 'pyparsing'], 
+    # we also need ase-3.3.1 (https://wiki.fysik.dtu.dk/ase), but it is not in pypi
+    install_requires = ['mongoengine==0.4', 'argparse', 'ConcurrentLogHandler', 'numpy', 'pygraphviz', 
+                        'pyparsing'], 
 
+    
     # additional non-Python files to be bundled in the package
     include_package_data = True, 
     #package_data = {
