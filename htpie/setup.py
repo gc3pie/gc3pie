@@ -1,16 +1,37 @@
 #!/usr/bin/env python
 
-# if `setuptools` are not installed, then use the simpler version
-# provided with this package.
-import ez_setup
-ez_setup.use_setuptools()
+# See http://packages.python.org/distribute/setuptools.html for details
+from distribute_setup import use_setuptools
+use_setuptools()
+
+
+# XXX: `./setup.py` fails with "error: invalid command 'develop'" when
+# package `distribute` is first downloaded by `distribute_setup`;
+# subsequent invocations of it (when the `distribute-*.egg` file is
+# already there run fine, apparently.  So, let us re-exec ourselves
+# to ensure that `distribute` is loaded properly.
+REINVOKE = "__SETUP_REINVOKE"
+import sys
+import os
+if not os.environ.has_key(REINVOKE):
+    # mutating os.environ doesn't work in old Pythons
+    os.putenv(REINVOKE, "1")
+    try:
+        os.execvp(sys.executable, [sys.executable] + sys.argv)
+    except OSError, x:
+        sys.stderr.write("Failed to re-exec '%s' (got error '%s');"
+                         " continuing anyway, keep fingers crossed.\n"
+                         % (str.join(' ', sys.argv), str(x)))
+if hasattr(os, "unsetenv"):
+    os.unsetenv(REINVOKE)
 
 
 # see http://peak.telecommunity.com/DevCenter/setuptools
 # for an explanation of the keywords and syntax of this file.
 #
-from setuptools import setup, find_packages
-setup( 
+import setuptools
+import setuptools.dist
+setuptools.setup( 
     name = "htpie",
     version = "0.1.00", # format: 0.MONTH.DAY (for now ...)
 
