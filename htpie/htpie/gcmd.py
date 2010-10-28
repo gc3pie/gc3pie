@@ -133,7 +133,7 @@ def main():
     parser_task_subcommand.set_defaults(func=ghessian)
     ## GHessianTest
     parser_task_subcommand = parser_task_command.add_parser('ghessiantest', description='run a hessiantest gamess-us task')
-    parser_task_subcommand.add_argument("-d", "--directory", dest="dir",default='examples/hessian', 
+    parser_task_subcommand.add_argument("-d", "--directory", dest="dir",default='examples/ghessiantest', 
                                                                 help="directory where the files to run the test are located")
     parser_task_subcommand.add_argument("-a", "--application", choices=choices, dest="app_tag", default='gamess', 
                                                                 help="application to use")

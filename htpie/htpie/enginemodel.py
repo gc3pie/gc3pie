@@ -30,7 +30,14 @@ db = _create_connection()
 
 # Old way to get your uri, better to just as kthe socket you are using!!!
 #_session_lock = u'%s'%(db.command( "whatsmyuri" ) [u'you'])
-        
+
+class MyGridFSProxy(GridFSProxy):
+    def read(self,size=-1):
+        try:
+            return self.get().read(size)
+        except:
+            return None
+
 class MongoBase(Document):
     meta = {'collection':'MongoBase'}
     
@@ -49,7 +56,7 @@ class MongoBase(Document):
         obj.save()
         return obj
 
-class PickleProxy(GridFSProxy):
+class PickleProxy(MyGridFSProxy):
     """Proxy object to handle writing and reading of files to and from GridFS
     """
     
@@ -253,7 +260,7 @@ class Task(MongoBase):
     def attach_file(self, f_container, container):
         try:
             to_read = utils.verify_file_container(f_container)
-            f = mongoengine.fields.GridFSProxy()
+            f = mongoengine.fields.MyGridFSProxy()
             f.put(to_read, filename=os.path.basename(to_read.name))
         finally:
             to_read.close()

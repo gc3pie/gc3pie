@@ -93,7 +93,7 @@ def generate_temp_dir(uid=None, subdir=None):
 
 def verify_file_container(f_container, mode='r'):
     def open_str(a_file, mode):
-        if isinstance(a_file, str):
+        if isinstance(a_file, str) or isinstance(a_file, unicode):
             return open(a_file, mode)
         else:
             # We have a file like object

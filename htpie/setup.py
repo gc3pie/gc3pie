@@ -21,7 +21,7 @@ setup(
     author = "Grid Computing Competence Centre, University of Zurich",
     author_email = "gc3pie@googlegroups.com",
     license = "LGPL",
-    keywords = "grid arc globus ssh games batch job",
+    keywords = "framework workflow statemachine grid  batch job",
     url = "http://code.google.com/p/gc3pie/",   # project home page, if any
 
     entry_points = {
@@ -33,12 +33,14 @@ setup(
 
     # run-time dependencies ("pycrypto" is a dependency of Paramiko;
     # setuptools apparently does not process dependencies recursively)
-    #install_requires = ['paramiko', 'pycrypto>=1.9', 'lockfile'], 
+    install_requires = ['mongoengine==0.4', 'argparse', 'ConcurrentLogHandler', 
+                        'ase', 'pyparsing'], 
 
     # additional non-Python files to be bundled in the package
+    include_package_data = True, 
     #package_data = {
-    #    'gc3utils': ['etc/gc3utils.conf.example',
-    #                 'etc/logging.conf.example'],
+    #    'htpie': ['etc/htpie.conf.example',
+    #                 'examples/*.*'],
     #    },
 
     # `zip_safe` can ease deployment, but is only allowed if the package
