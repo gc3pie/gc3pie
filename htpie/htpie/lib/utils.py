@@ -147,12 +147,13 @@ def configure_logger(verbosity, log_file_name='~/.htpie/gc3utils_log.log'):
         stream_handler = logging.StreamHandler()
         stream_handler.setFormatter(formatter)
         htpie.log.addHandler(stream_handler )
-        from gc3utils.gcommands import _configure_logger
-        import gc3utils
-       # gc3utils.log.addHandler(file_handler)
+        # This can be uncommented to turn on gc3utils logging
+        #from gc3utils.gcommands import _configure_logger
+        #import gc3utils
+        #gc3utils.log.addHandler(file_handler)
         #gc3utils.log.addHandler(stream_handler)
         #gc3utils.log.setLevel(0)
-        _configure_logger(0)
+        #_configure_logger(0)
 
 #def configure_logger(verbosity, log_file_name='gc3utils_log'):
 #    """
