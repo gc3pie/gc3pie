@@ -56,7 +56,7 @@ setuptools.setup(
     # setuptools apparently does not process dependencies recursively)
     # we also need ase-3.3.1 (https://wiki.fysik.dtu.dk/ase), but it is not in pypi
     install_requires = ['mongoengine==0.4', 'argparse', 'ConcurrentLogHandler', 'numpy', 'pygraphviz', 
-                        'pyparsing'], 
+                        'pyparsing', 'multiprocessing'], 
 
     
     # additional non-Python files to be bundled in the package
