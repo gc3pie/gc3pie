@@ -4,4 +4,5 @@
   * HOWTO
    * [ConfigurationFile Configuration File]
    * [installhtpie Install HTPie]
+   * [installgc3utils Install gc3utils]
   * [Citations Citations]
