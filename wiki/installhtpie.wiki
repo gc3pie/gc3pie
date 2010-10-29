@@ -1,5 +1,7 @@
 = HTPie installation instructions =
 
+It is recommended that you use python version 2.6, although it should work on 2.5 and 2.7 as well.
+
  * Download the code from the svn
  * Manually install the [http://www.graphviz.org/ Graphviz] library
  * Run 'setup.py install' to install the software globally
