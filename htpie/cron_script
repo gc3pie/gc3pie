@@ -1,12 +1,12 @@
 #!/bin/bash
 
-export SLCSHOME=$HOME/apps/slcs
-export GC3UTILS=$HOME/gc3utils
+#export ASE=$HOME/ase-3.3.1
 export ASE=$HOME/apps/ase-patched
 export ARCLIB=/opt/nordugrid/lib/python2.6/site-packages
-export HTPIE=$HOME/htpie
-export PYTHONPATH=$ASE:$GC3UTILS:$HTPIE:$ARCLIB
-export PATH=$GC3UTILS:$SLCSHOME/bin:$HTPIE:$PATH
+export GC3UTILS=$HOME/gc3utils
+export PYTHONPATH=/usr/lib/python2.6/dist-packages:$ASE:$ARCLIB:$GC3UTILS
+export HTPIE=$HOME/gc3pie/htpie/
+export PATH=$HTPIE:$PATH
 
 htpie gtaskscheduler
 
@@ -33,9 +33,9 @@ htpie gtaskscheduler
 # For more information see the manual pages of crontab(5) and cron(8)
 # 
 # m h  dom mon dow   command
-#*/1 * * * * /home/mmonroe/bin/cron_script
-#*/1 * * * * sleep 20 && /home/mmonroe/bin/cron_script
-#*/1 * * * * sleep 40 && /home/mmonroe/bin/cron_script
+#*/1 * * * * $HTPIE/htpie/cron_script >& /dev/null
+#*/1 * * * * sleep 20 && $HTPIE/htpie/cron_script >& /dev/null
+#*/1 * * * * sleep 40 && $HTPIE/htpie/cron_script >& /dev/null
 
 
 
