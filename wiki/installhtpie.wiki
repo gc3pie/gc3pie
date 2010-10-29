@@ -1,0 +1,17 @@
+= HTPie installation instructions =
+
+ * Download the code from the svn
+ * Manually install the [http://www.graphviz.org/ Graphviz] library
+ * Run 'setup.py install' to install the software globally
+
+== External Dependencies ==
+ * Required
+  * Must be installed by user
+   * [http://www.graphviz.org/ Graphviz] is used to render the state machine diagrams
+  * Automatically installed through pypi
+   * [http://networkx.lanl.gov/pygraphviz/ PyGraph] is used to generate the state machine diagrams
+   * [http://pyparsing.wikispaces.com/ Pyparsing] is an easy to use text parser
+   * [http://mongoengine.org/ MongoEngine] used to interface to the database
+   * [http://code.google.com/p/argparse/ argparse] command line paring library
+   * [http://pypi.python.org/pypi/ConcurrentLogHandler ConcurrentLogHandler] multi-thread safe filelogger
+   * [http://numpy.scipy.org/ numpy] is used for numerics
