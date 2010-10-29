@@ -3,4 +3,5 @@
   * HTPie
   * HOWTO
    * [ConfigurationFile Configuration File]
+   * [Installhtpie Install htpie]
   * [Citations Citations]
