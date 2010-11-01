@@ -4,6 +4,7 @@ It is recommended that you use python version 2.6, although it should work on 2.
 
  * Download the code from the svn
  * Manually install the [http://www.graphviz.org/ Graphviz] library
+ * mkdir ~/.htpie and cp etc/htpie.conf.example ~/.htpie
  * Run 'setup.py install' to install the software globally
 
 == External Dependencies ==
