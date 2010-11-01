@@ -12,7 +12,7 @@ It is recommended that you use python version 2.6, although it should work on 2.
   * Must be installed by user
    * [http://www.graphviz.org/ Graphviz] is used to render the state machine diagrams (sudo apt-get install libgraphviz-dev)
    * Python development files (sudo apt-get install python-dev)
-   * [svn co -r 1390 $ASE_TAGS/3.3.1 ase-3.3.1 ASE] Atomic simulation environment
+   * [https://wiki.fysik.dtu.dk/ase/download.html#download-and-install ASE] Atomic simulation environment
   * Automatically installed through pypi
    * [http://networkx.lanl.gov/pygraphviz/ PyGraph] is used to generate the state machine diagrams
    * [http://pyparsing.wikispaces.com/ Pyparsing] is an easy to use text parser
