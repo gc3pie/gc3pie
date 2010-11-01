@@ -9,11 +9,12 @@ It is recommended that you use python version 2.6, although it should work on 2.
 == External Dependencies ==
  * Required
   * Must be installed by user
-   * [http://www.graphviz.org/ Graphviz] is used to render the state machine diagrams
+   * [http://www.graphviz.org/ Graphviz] is used to render the state machine diagrams (sudo apt-get install libgraphviz-dev)
+   * Python development files (sudo apt-get install python-dev)
   * Automatically installed through pypi
    * [http://networkx.lanl.gov/pygraphviz/ PyGraph] is used to generate the state machine diagrams
    * [http://pyparsing.wikispaces.com/ Pyparsing] is an easy to use text parser
    * [http://mongoengine.org/ MongoEngine] used to interface to the database
    * [http://code.google.com/p/argparse/ argparse] command line paring library
    * [http://pypi.python.org/pypi/ConcurrentLogHandler ConcurrentLogHandler] multi-thread safe filelogger
-   * [http://numpy.scipy.org/ numpy] is used for numerics
+   * [http://numpy.scipy.org/ numpy] is used for numerics. It doesn't always install through pypi well, you might have to manually install it (sudo apt-get install python-numpy)
