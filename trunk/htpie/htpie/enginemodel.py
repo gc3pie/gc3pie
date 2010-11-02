@@ -19,14 +19,11 @@ from htpie import status
 
 import cPickle as pickle
 
-MONGO_DB = "engine"
-MONGO_IP = "130.60.40.14"
-MONGO_PORT = 27017
 
-def _create_connection(db=MONGO_DB, ip=MONGO_IP , port=MONGO_PORT):
-    return mongoengine.connect(db, host=ip, port=port)
+from htpie import gcmd
+_config = gcmd.read_config()
 
-db = _create_connection()
+db = mongoengine.connect(_config.database_name, host=_config.database_uri, port=_config.database_port)
 
 # Old way to get your uri, better to just as kthe socket you are using!!!
 #_session_lock = u'%s'%(db.command( "whatsmyuri" ) [u'you'])

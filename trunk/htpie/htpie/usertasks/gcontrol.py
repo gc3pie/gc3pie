@@ -42,7 +42,8 @@ class GControl(object):
     @staticmethod
     def statediag(id, long_format):
         #doc = model.Task.objects.with_id(id)
-        output = 'Generated state diagram: %s\n'%(usertasks.get_fsm_match_lower(id).states.display(id))
+        fsm = usertasks.get_fsm_match_lower(id)()
+        output = 'Generated state diagram: %s\n'%(fsm.states.display(fsm.name))
         sys.stdout.write(output)
         sys.stdout.flush()
     

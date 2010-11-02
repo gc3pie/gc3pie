@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 import htpie
 from htpie.lib.exceptions import *
-from htpie.lib.utils import configure_logger, read_config
+from htpie.lib import utils
 from htpie.lib.flock import flock
 
 import argparse
@@ -15,6 +15,9 @@ _default_config_file_location = _rcdir + "/htpie.conf"
 _default_log_file_location = _rcdir + "/gc3utils.log"
 _default_job_folder_location = os.getcwd()
 
+def read_config():
+    return utils.read_config(_default_config_file_location)
+    
 def gbig(options):
     from htpie.usertasks.gbig import GBig
     
@@ -99,7 +102,7 @@ def gstring(options):
 
 def main():
     # Read the system config file
-    _config = read_config(_default_config_file_location)
+    _config = read_config()
     
     parser = argparse.ArgumentParser(prog='PROG', add_help=True)
     parser.add_argument("-v", "--verbose", action='count', dest="verbosity", default=_config.verbosity, 
@@ -178,7 +181,7 @@ def main():
     else:
         options = parser.parse_args()
     
-    configure_logger(options.verbosity, _default_log_file_location) 
+    utils.configure_logger(options.verbosity, _default_log_file_location) 
     options.func(options)
 
 if __name__ == '__main__':

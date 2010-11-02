@@ -163,12 +163,8 @@ class GStringStateMachine(StateMachine):
     
     def __init__(self):
         super(GStringStateMachine, self).__init__()
-    
-    @state(States.WAIT)
-    def handle_wait_state(self):
-        pass
-    
-    @fromto(States.WAIT, States.PROCESS)
+
+    @transtate(States.WAIT, States.PROCESS, color=StatePrint.START)
     def handle_wait_tran(self):
         if self._wait_util_done():
             return True
@@ -248,7 +244,7 @@ class GStringStateMachine(StateMachine):
     def handle_complete_state(self):
         pass
     
-    @state(States.KILL, StateTypes.ONCE)
+    @state(States.KILL, StateTypes.ONCE, color=StatePrint.START)
     def handle_kill_state(self):
         pass
 

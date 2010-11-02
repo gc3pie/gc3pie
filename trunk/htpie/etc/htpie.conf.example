@@ -1,6 +1,6 @@
 [SETTINGS]
 database_user=mark
-database_name=gorg_site
-database_url=http://localhost:5984
+database_name=engine
+database_uri=127.0.0.1
+database_port=27017
 verbosity=10
-temp_directory=~/tmp

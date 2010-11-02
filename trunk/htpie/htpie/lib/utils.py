@@ -208,8 +208,8 @@ def read_config(config_file_location):
     ret = Configuration()
     ret.database_user = config.get('SETTINGS','database_user')
     ret.database_name = config.get('SETTINGS','database_name')
-    ret.database_url = config.get('SETTINGS','database_url')
+    ret.database_uri = config.get('SETTINGS','database_uri')
+    ret.database_port = config.getint('SETTINGS','database_port')
     ret.verbosity = config.getint('SETTINGS','verbosity')
-    ret.temp_directory = os.path.expanduser(config.get('SETTINGS','temp_directory'))
 
     return ret

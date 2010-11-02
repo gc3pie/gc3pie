@@ -11,10 +11,13 @@ from pymongo.objectid import ObjectId
 import time
 import datetime
 
-__all__ = ['StateTypes', 'state', 'fromto', 'StateMachine']
+__all__ = ['StateTypes', 'StatePrint','state', 'transtate','fromto', 'StateMachine']
 
-def _default_state_handler(self):
+def TRUE(self):
     return True
+
+def _default_tran_state(self):
+    pass
 
 def _thread_exec_fsm(fsm_class, id, log_verbosity):
     import htpie
@@ -23,14 +26,28 @@ def _thread_exec_fsm(fsm_class, id, log_verbosity):
     fsm.load(id)
     fsm.step()
 
-#State Types
 class StateTypes(object):
-    MULTI = 'MULTI'
-    ONCE = 'ONCE'
+    MULTI = 'MULTI' #Define a transition to itself
+    ONCE = 'ONCE'    #Run the State once
+    
+class StatePrint(object):
+    '''Define the colors and positions to use when diagramming the 
+    state machine'''
+    START = {'color':'red', 'shape':'box', 'group':'START'}
+    NORMAL = {'color':'black', 'group':'NEXT'}
+    COMPLETE = {'color':'black'}
 
-def state(state_name,  type=StateTypes.MULTI):
+def state(state_name,  type=StateTypes.MULTI, color=StatePrint.NORMAL):
     def decorator(f):
-        f.state = (state_name,  type)
+        f.state = (state_name,  type, color)
+        return f
+    return decorator
+
+def transtate(start_state,  end_state, type=StateTypes.MULTI, color=StatePrint.NORMAL):
+    '''This defines the state and transition at the same time. The state
+    just 'passes' and the function this is decorating becomes the transtion.'''
+    def decorator(f):
+        f.transtate = (start_state, end_state, type,  color)
         return f
     return decorator
 
@@ -46,9 +63,16 @@ class RegisteringType(type):
         for key, val in attrs.iteritems():
             properties = getattr(val, 'state', None)
             if properties is not None:
-                (state,  type) = properties
-                cls.states.addstate(state, val, type)
-        
+                (state,  type, color) = properties
+                cls.states.addstate(state, val, type, color)
+
+        for key, val in attrs.iteritems():
+            properties = getattr(val, 'transtate', None)
+            if properties is not None:
+                (start_state, end_state, type, color) = properties
+                cls.states.addstate(start_state, _default_tran_state, type, color)
+                cls.states.addtran(start_state, end_state, val)
+
         for key, val in attrs.iteritems():
             properties = getattr(val, 'transition', None)
             if properties is not None:
@@ -56,13 +80,13 @@ class RegisteringType(type):
                 cls.states.addtran(start_state, end_state, val)
         
         #Put a default loop state at the end of each transition.
-        for state, type in cls.states.types.iteritems():
-            if type == StateTypes.MULTI:
-                cls.states.addtran(state, state, _default_state_handler)
-            elif type == StateTypes.ONCE:
+        for _state, _type in cls.states.types.iteritems():
+            if _type == StateTypes.MULTI:
+                cls.states.addtran(_state, _state, TRUE)
+            elif _type == StateTypes.ONCE:
                 pass
-            else:
-                assert False,  'Unkown Statetype'
+            elif _type:
+                assert False,  'Unkown Statetype: %s'%(_type)
 
 class StateMachine(object):
 
