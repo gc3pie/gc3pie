@@ -78,12 +78,8 @@ class States(object):
 
 class GBigStateMachine(StateMachine):
     
-    @state(States.READY)
+    @transtate(States.READY,  States.WAITING, color=StatePrint.START)
     def handle_ready_state(self):
-        pass
-    
-    @fromto(States.READY, States.WAITING)
-    def handle_tran_ready(self):
         return True
     
     @state(States.WAITING)
@@ -99,7 +95,7 @@ class GBigStateMachine(StateMachine):
     def handle_postprocess_state(self):
         pass
     
-    @state(States.KILL, StateTypes.ONCE)
+    @state(States.KILL, StateTypes.ONCE, color=StatePrint.START)
     def handle_kill_state(self):
         return True
 

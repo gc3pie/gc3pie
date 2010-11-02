@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE Project SYSTEM "Project-4.6.dtd">
 <!-- eric4 project file for project htpie -->
-<!-- Saved: 2010-10-28, 08:25:41 -->
+<!-- Saved: 2010-11-02, 09:40:39 -->
 <!-- Copyright (C) 2010 Mark Monroe,  -->
 <Project version="4.6">
   <Language></Language>
@@ -16,7 +16,6 @@
     <Source>htpie/statemachine.py</Source>
     <Source>htpie/model.py</Source>
     <Source>htpie/usertasks/taskscheduler.py</Source>
-    <Source>htpie/gcommands.py</Source>
     <Source>htpie/gcmd.py</Source>
     <Source>htpie/lib/__init__.py</Source>
     <Source>htpie/lib/exceptions.py</Source>

@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE Tasks SYSTEM "Tasks-4.2.dtd">
 <!-- eric4 tasks file for project htpie -->
-<!-- Saved: 2010-10-28, 10:48:51 -->
+<!-- Saved: 2010-11-02, 09:50:17 -->
 <Tasks version="4.2">
   <Task priority="1" completed="False" bugfix="False">
     <Summary>TODO: If we get an error storing the gsingle, we will have submitted it to the grid</Summary>
@@ -213,37 +213,37 @@
   <Task priority="1" completed="False" bugfix="True">
     <Summary>FIXME: If you the program is killed here, the gridfsproxy has been deleted,</Summary>
     <Description></Description>
-    <Created>2010-10-28, 08:22:01</Created>
+    <Created>2010-11-01, 17:07:52</Created>
     <Resource>
       <Filename>htpie/enginemodel.py</Filename>
-      <Linenumber>75</Linenumber>
+      <Linenumber>72</Linenumber>
     </Resource>
   </Task>
   <Task priority="1" completed="False" bugfix="True">
     <Summary>FIXME: This should only except strings, as pickles are always strings</Summary>
     <Description></Description>
-    <Created>2010-10-28, 08:22:01</Created>
+    <Created>2010-11-01, 17:07:52</Created>
     <Resource>
       <Filename>htpie/enginemodel.py</Filename>
-      <Linenumber>99</Linenumber>
+      <Linenumber>96</Linenumber>
     </Resource>
   </Task>
   <Task priority="1" completed="False" bugfix="True">
     <Summary>FIXME: gridfs doesn't suport '.name', therefore we need to return a local</Summary>
     <Description></Description>
-    <Created>2010-10-28, 08:22:01</Created>
+    <Created>2010-11-01, 17:07:52</Created>
     <Resource>
       <Filename>htpie/enginemodel.py</Filename>
-      <Linenumber>271</Linenumber>
+      <Linenumber>268</Linenumber>
     </Resource>
   </Task>
   <Task priority="1" completed="False" bugfix="True">
     <Summary>FIXME: Not sure it this returns all port numbers connected, or just the main port number.</Summary>
     <Description></Description>
-    <Created>2010-10-28, 08:22:01</Created>
+    <Created>2010-11-01, 17:07:52</Created>
     <Resource>
       <Filename>htpie/enginemodel.py</Filename>
-      <Linenumber>343</Linenumber>
+      <Linenumber>340</Linenumber>
     </Resource>
   </Task>
 </Tasks>

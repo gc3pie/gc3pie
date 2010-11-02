@@ -1,7 +1,7 @@
 class States(dict):
     
-    def addstate(self, state, fun, type):
-        self[state] = ((fun, type), [])
+    def addstate(self, state, fun, type, color):
+        self[state] = ((fun, type, color), [])
     
     def addtran(self, start_state, end_state, fun):
         assert start_state in self,  'State State \'%s\' is not in the state dictionary.'%(start_state)
@@ -10,7 +10,10 @@ class States(dict):
     
     @property
     def states(self):
-        return self.keys()
+        just_states = {}
+        for key, value in self.iteritems():
+            just_states[key] = value[0]
+        return just_states
     
     @property
     def types(self):
@@ -39,10 +42,19 @@ class States(dict):
     def display(self, doc_name='', path='~'):
         import pygraphviz as pgv
         import os
-        G=pgv.AGraph(strict=False,directed=True)
-        G.graph_attr['label']=doc_name + ' State Machine Diagram'
+        from htpie.statemachine import StatePrint
+        G=pgv.AGraph(strict=False,directed=True, rankdir='TD')
+        G.graph_attr['label']=doc_name + ' Diagram'
         G.graph_attr['fontcolor']='blue'
-        G.add_nodes_from(self.states)
+        # By creating a subgraph we can rank the nodes
+        # nodes in this subgraph will be given the same hight.
+        subgraph = G.add_subgraph('samerank')
+        subgraph.graph_attr['rank']='same'
+        for state, val in self.states.iteritems():
+            if val[2] == StatePrint.START:
+                subgraph.add_node(state, **val[2])
+            else:
+                G.add_node(state, **val[2])
         for start_state, transition in self.transitions.iteritems():
             for pair in transition:
                 G.add_edge(start_state, pair[0], label=pair[1].__name__)
@@ -50,16 +62,3 @@ class States(dict):
         G.draw(fullpath, prog='dot')
         return fullpath
 
-
-if __name__ == '__main__':
-    def fun():
-        return True
-    me=States()
-    for i in xrange(10):
-        me.addstate('state%d'%(i),'fun','type')
-    for i in xrange(5):
-        me.addtran('state%d'%(i),'state%d'%(i+1), fun)
-    me.addtran('state9','state8', fun)
-    me.addtran('state9','state7', fun)
-    me.display()
-    
