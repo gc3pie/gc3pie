@@ -61,12 +61,13 @@ See documentation of the `SafeConfigParser` object at:
 
 There can be more than one `[authorization]` section.  
 
-They begin with a line of the form:
-    [authorization/<auth_name>]
+Each authorization section must begin with a line of the form:
+    [authorization/<authorization_name>]
 
-You can have as many `[authorization]` sections as you want;
-this allows you to define different auths for different resources.
-Each `resource/***` section will reference one (and one only) auth
+
+You can have as many `[authorization]` sections as you want, and can have any name.
+This allows you to define different authorization methods for different resources.
+Each `[resource/<name>]` section will reference one (and one only) authorization
 section.
 
 Rationale:
@@ -157,7 +158,8 @@ username = rmurri
 }}}
 
 
-= The resource sections =
+=== [resource] sections ===
+
 Each resource section must begin with a line of the form:
     [resource/<resource_name>]
 
