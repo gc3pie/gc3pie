@@ -17,7 +17,7 @@ is an advanced topic and will not be covered here.
   * _Job_: A computational job is a single run of a non-interactive application.  The prototypical example is a run of [http://www.msg.chem.iastate.edu/gamess/documentation.html GAMESS] on a single input file.
   * _Resource_: Short for "computational resource": any cluster or Grid where a job can run.
   * _Status_: A one-word indication of a computational job execution status (e.g., `RUNNING` or `FAILED`).
-  * _walltime_: Short for "wall-clock time": indicates the total running time of a job.
+  * _Walltime_: Short for "wall-clock time": indicates the total running time of a job.
   
 
 
@@ -30,15 +30,11 @@ on a single input file.
 
 The `gc3utils` commands support the following workflow:
 
-  # Submit a [http://www.msg.chem.iastate.edu/gamess/documentation.html GAMESS] job (with a single input file).
-  # Monitor the status of the submitted jobs.
-  # Retrieve the output of a job once it's finished.
+  # Submit a [http://www.msg.chem.iastate.edu/gamess/documentation.html GAMESS] job (with a single input file): _*gsub*_
+  # Monitor the status of the submitted job: _*gstat*_
+  # Retrieve the output of a job once it's finished: _*gget*_
   
-There are only three commands that you will likely use in day-to-day
-operations, corresponding to the above three steps of the workflow:
-_*gsub*_ (for submitting jobs), _*gstat*_ (for monitoring status),
-and _*gget*_ (for retrieving output).  Thir usage and some examples
-are provided in the next sections.
+Usage and some examples on how to use the mentioned commands are provided in the next sections.
 
 Some additional commands are provided to obtain the list and status of
 computational resources (_*glist*_); to clear the list of jobs from
@@ -94,7 +90,7 @@ will run [http://www.msg.chem.iastate.edu/gamess/documentation.html GAMESS]
 on the input file _INPUT.inp_ with 8 CPU cores and
 allocate 16GB of memory (2GB per CPU core).
 
-Similarly, you can specify an upper bound to the runing time of a job
+Similarly, you can specify an upper bound to the running time of a job
 with the _-w_ option followed by the number of hours that the job
 should be allowed to run (maximum).  For instance:
 <pre>
