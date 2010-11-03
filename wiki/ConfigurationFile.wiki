@@ -2,7 +2,7 @@
 
 <wiki:toc max_depth="3" />
 
-== Introduction ==
+= Introduction =
 
 The [GC3Utils] commands read two configuration files:
   * system-wide one at `/etc/gc3/gc3utils.conf`, and
@@ -40,7 +40,7 @@ The following sections are used by the GC3Libs/GC3Utils programs:
 Sections with a different name can be present but will be ignored.
 
 
-== 3 Types of Sections ==
+= 3 Types of Sections =
 
 There are 3 types of sections. 
 
@@ -49,7 +49,7 @@ There are 3 types of sections.
 * `[resource]` is for settings related to a specific computing resource (cluster, grid, etc.)
 
 
-=== [DEFAULT] section ===
+== DEFAULT Section ==
 
 The `[DEFAULT]` section is optional, but there should be no more than 1.  Its values can be used to insert values in other sections, using the `%(name)s` syntax.  See below for an example of this.
 
@@ -57,18 +57,20 @@ See documentation of the `SafeConfigParser` object at:
   http://docs.python.org/library/configparser.html
 
 
-=== [authorization] sections ===
+== Authorization Sections ==
 
 There can be more than one `[authorization]` section.  
 
 Each authorization section must begin with a line of the form:
     [authorization/<authorization_name>]
 
-
 You can have as many `[authorization]` sections as you want, and can have any name.
 This allows you to define different authorization methods for different resources.
 Each `[resource/<name>]` section will reference one (and one only) authorization
 section.
+
+
+===  Type of Authorization === 
 
 Rationale:
 {{{
@@ -158,7 +160,7 @@ username = rmurri
 }}}
 
 
-=== [resource] sections ===
+== Resource Sections ==
 
 Each resource section must begin with a line of the form:
     [resource/<resource_name>]
@@ -188,13 +190,13 @@ Some keys are commmon to all resource types:
   *  type : Resource type, one of `arc` or `sge_ssh`
   *  walltime : Maximum job running time (in hours)
 
-== `arc` resources ==
+=== `arc` resources ===
 The `arc_ldap` key should be defined to the LDAP URL of an ARC GIIS
 (if no `frontend` is defined) or GRIS (if a `frontend` is given).
 If, in addition, the `frontend` key is also defined, then only queues 
 belonging to the specified frontend will be considered for brokering.
 
-== `ssh_sge` resources ==
+=== `ssh_sge` resources ===
 The `frontend` key should contain the FQDN of the SGE front-end node.
 An SSH connection will be attempted to this node, in order to submit
 jobs and retrieve status info. 
@@ -216,7 +218,7 @@ with the `sge_accounting_delay` parameter, whose default is 15 seconds
   * `sge_accounting_delay`: Time (in seconds) a failure in `qacct` will not be considered critical
 
 
-== enabling/disabling selected resources ==
+= enabling/disabling selected resources =
 
 Any resource can be disabled by adding a line `enabled = false` to its
 configuration stanza.  Conversely, a line `enabled = true` will undo
