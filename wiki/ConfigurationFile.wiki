@@ -1,3 +1,9 @@
+= Configuration File = 
+
+<wiki:toc max_depth="2" />
+
+== Introduction ==
+
 The [GC3Utils] commands read two configuration files:
   * system-wide one at `/etc/gc3/gc3utils.conf`, and
   * a user-private one from `~/.gc3/gc3utils.conf`.
@@ -34,18 +40,31 @@ The following sections are used by the GC3Libs/GC3Utils programs:
 Sections with a different name can be present but will be ignored.
 
 
-= The `DEFAULT` section =
-The `DEFAULT` section is entirely optional; if present, its values can
-be used to interpolate values in other sections, using the `%(name)s` syntax.
+== 3 Types of Sections ==
+
+There are 3 types of sections. 
+
+* `[DEFAULT]` is for global settings.
+* `[authorization]` is for settings related to identity/authentication (identifying yourself to clusters & grids).
+* `[resource]` is for settings related to a specific computing resource (cluster, grid, etc.)
+
+
+=== [DEFAULT] section ===
+
+The `[DEFAULT]` section is optional, but there should be no more than 1.  Its values can be used to insert values in other sections, using the `%(name)s` syntax.  See below for an example of this.
+
 See documentation of the `SafeConfigParser` object at: 
   http://docs.python.org/library/configparser.html
 
 
-= Authorization sections format =
- authorization section begins with a line of the form:
+=== [authorization] sections ===
+
+There can be more than one `[authorization]` section.  
+
+They begin with a line of the form:
     [authorization/<auth_name>]
 
-You can have as many `authorization/name` sections as you want;
+You can have as many `[authorization]` sections as you want;
 this allows you to define different auths for different resources.
 Each `resource/***` section will reference one (and one only) auth
 section.
@@ -243,4 +262,3 @@ max_walltime = 2
 ncores = 80
 walltime = 2
 }}}
-
