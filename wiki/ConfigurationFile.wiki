@@ -186,7 +186,6 @@ Some keys are commmon to all resource types:
   *  name : Resource name
   *  ncores : Total number of cores provided by the resource
   *  type : Resource type, one of `arc` or `sge_ssh`
-  *  walltime : Maximum job running time (in hours)
 
 === `arc` resources ===
 The `arc_ldap` key should be defined to the LDAP URL of an ARC GIIS
@@ -250,7 +249,6 @@ max_cores_per_job = 32
 max_memory_per_core = 2
 max_walltime = 12
 ncores = 80
-walltime = 12
 
 [resource/ocikbpra]
 # A single SGE cluster, accessed by SSH'ing to the front-end node
@@ -262,5 +260,4 @@ max_cores_per_job = 80
 max_memory_per_core = 2
 max_walltime = 2
 ncores = 80
-walltime = 2
 }}}
