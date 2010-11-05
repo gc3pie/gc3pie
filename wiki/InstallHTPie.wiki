@@ -20,3 +20,8 @@ It is recommended that you use python version 2.6, although it should work on 2.
    * [http://code.google.com/p/argparse/ argparse] command line paring library
    * [http://pypi.python.org/pypi/ConcurrentLogHandler ConcurrentLogHandler] multi-thread safe filelogger
    * [http://numpy.scipy.org/ numpy] is used for numerics. It doesn't always install through pypi well, you might have to manually install it (sudo apt-get install python-numpy)
+
+= Notes =
+
+ * monbodb is bound to an ip, so in your config file you need specifiy the same IP that is in mongodb.conf (check later: is it possible to have multiple ips, wildcards, or non-ip hostnames)
+ * 
