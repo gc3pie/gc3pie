@@ -470,18 +470,20 @@ def gkill(*args, **kw):
         gc3utils.log.critical('program failed due to: %s' % sys.exc_info()[1])
         raise Exception("gkill failed")
 
+
 def gtail(*args, **kw):
     """The 'gtail' command."""
-    parser = OptionParser(usage="Usage: %prog [options] unique_token")
-    parser.add_option("-v", action="count", dest="verbosity", default=0, help="Set verbosity level")
-    parser.add_option("-e", action="store_true", dest="stderr", default=False, help="show stderr of the job")
-    parser.add_option("-o", action="store_true", dest="stdout", default=True, help="show stdout of the job (default)")
+    parser = OptionParser(usage="Usage: %prog [options] JOBID")
+    parser.add_option("-v", "--verbose", action="count", dest="verbosity", default=0, help="Set verbosity level")
+    parser.add_option("-e", "--stderr", action="store_true", dest="stderr", default=False, help="show stderr of the job")
+    parser.add_option("-o", "--stdout", action="store_true", dest="stdout", default=True, help="show stdout of the job (default)")
+    parser.add_option("-n", "--lines", dest="num_lines", type=int, default=10, help="output  the  last N lines, instead of the last 10")
     (options, args) = parser.parse_args(list(args))
     _configure_logger(options.verbosity)
 
     try:
         if len(args) != 1:
-            raise InvalidUsage("This command requires exactly two argument: the job unique_token.")
+            raise InvalidUsage("This command requires exactly two argument: the job ID.")
         
         unique_token = args[0]
     
@@ -497,13 +499,10 @@ def gtail(*args, **kw):
         if job.status == gc3utils.Job.JOB_STATE_COMPLETED:
             raise Exception('Job results already retrieved')
         if job.status == gc3utils.Job.JOB_STATE_UNKNOWN or job.status == gc3utils.Job.JOB_STATE_SUBMITTED:
-            raise Exception('Stdout/Stderr not ready yet')
+            raise Exception('Job output not yet available')
 
-        # Obsolete: job = _gcli.tail(job,std)
-        # file_handle = _gcli.tail(job,std, **{'offset':2048,'buffer_size':4096})
         file_handle = _gcli.tail(job,std)
-
-        for line in file_handle:
+        for line in file_handle.readlines()[-(options.num_lines):]:
             print line
 
         file_handle.close()
@@ -512,16 +511,17 @@ def gtail(*args, **kw):
         gc3utils.log.critical('program failed due to: %s' % sys.exc_info()[1])
         raise Exception("gtail failed")
 
+
 def gnotify(*args, **kw):
     """The gnotify command"""
-    parser = OptionParser(usage="Usage: %prog [options] unique_token")
+    parser = OptionParser(usage="Usage: %prog [options] JOBID")
     parser.add_option("-v", action="count", dest="verbosity", default=0, help="Set verbosity level")
     parser.add_option("-i", "--include", action="store_true", dest="include_job_results", default=False, help="Include Job's results in notification package")
     (options, args) = parser.parse_args(list(args))
     _configure_logger(options.verbosity)
 
     if len(args) != 1:
-        raise InvalidUsage("This command requires exactly one argument: the Job unique token.")
+        raise InvalidUsage("This command requires exactly one argument: the Job ID.")
     unique_token = args[0]
 
     job = gc3utils.Job.get_job(unique_token)
