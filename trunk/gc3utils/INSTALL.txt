@@ -78,7 +78,16 @@ repository into their own python environment.
 
    This will place all the GC3Utils command into the ``gc3utils/bin/``
    directory.
-   
+
+5. Before you can actually run the GC3Utils, you need to have a
+   working configuration file; `the ConfigurationFile Wiki page
+   <http://code.google.com/p/gc3pie/wiki/ConfigurationFile>` provides
+   an explanation of the syntax to use in configuration files.
+
+   In order to use the ARC backend, you need the NorduGrid/ARC
+   binaries installed on the same machine where GC3Utils are.
+   You can find instructions for installing ARC at:
+   http://www.nordugrid.org/documents/ng-client-install.html
 
 
    
