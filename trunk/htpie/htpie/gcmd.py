@@ -143,9 +143,9 @@ def main():
     parser_task_subcommand.set_defaults(func=ghessiantest)
     ## GString
     parser_task_subcommand = parser_task_command.add_parser('gstring', description='run a string gamess-us task')
-    parser_task_subcommand.add_argument("-s", "--start", dest="start", type=argparse.FileType('r'), default='examples/opt_start2.inp', 
+    parser_task_subcommand.add_argument("-s", "--start", dest="start", type=argparse.FileType('r'), default='examples/gstring_start.inp', 
                                          help="starting inp file for gstring method")
-    parser_task_subcommand.add_argument("-e", "--end", dest="end", type=argparse.FileType('r'), default='examples/opt_end2.inp', 
+    parser_task_subcommand.add_argument("-e", "--end", dest="end", type=argparse.FileType('r'), default='examples/gstring_end.inp', 
                                         help="ending inp file for gstring method")
     parser_task_subcommand.add_argument("-a", "--application", choices=choices, dest="app_tag", default='gamess', 
                                         help="application to use")
