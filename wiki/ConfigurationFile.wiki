@@ -44,9 +44,9 @@ Sections with a different name can be present but will be ignored.
 
 There are 3 types of sections. 
 
-* `[DEFAULT]` is for global settings.
-* `[authorization]` is for settings related to identity/authentication (identifying yourself to clusters & grids).
-* `[resource]` is for settings related to a specific computing resource (cluster, grid, etc.)
+  * `[DEFAULT]` is for global settings.
+  * `[authorization]` is for settings related to identity/authentication (identifying yourself to clusters & grids).
+  * `[resource]` is for settings related to a specific computing resource (cluster, grid, etc.)
 
 
 == DEFAULT Section ==
@@ -70,13 +70,11 @@ Each `[resource/<name>]` section will reference one (and one only) authorization
 section.
 
 
-===  Type of Authorization === 
+===  Types of Authorization === 
 
-Rationale:
-{{{
-  * type: [voms-proxy, grid-proxy, ssh]
-  * usercert: [slcs, manual]
-}}}
+Synopsis:
+  * type: one of `voms-proxy`, `grid-proxy`,  or `ssh`
+  * usercert: `slcs` or `manual`
 
 {{{ type }}} defines the authorization type that wil be used to access a resource. Currently, there are three supported authorization types:
   * `ssh`: use for resources that will be accessed by opening an SSH connection to the front-end node
