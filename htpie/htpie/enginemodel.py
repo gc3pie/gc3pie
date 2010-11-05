@@ -257,7 +257,7 @@ class Task(MongoBase):
     def attach_file(self, f_container, container):
         try:
             to_read = utils.verify_file_container(f_container)
-            f = mongoengine.fields.MyGridFSProxy()
+            f = MyGridFSProxy()
             f.put(to_read, filename=os.path.basename(to_read.name))
         finally:
             to_read.close()
