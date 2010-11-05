@@ -23,6 +23,7 @@ It is recommended that you use python version 2.6, although it should work on 2.
 
 = Notes =
 
+ * create instructions on how to create a virtualenv for your own personal testing environment.  no system-level anything should be needed.
  * monbodb is bound to an ip, so in your config file you need specifiy the same IP that is in mongodb.conf (check later: is it possible to have multiple ips, wildcards, or non-ip hostnames)
  * configfile: security is not really handled right now.  if you want different users to have access to the same mongodb instance, each should great their own database 
  * 
