@@ -3,6 +3,6 @@
   * HTPie
   * HOWTO
    * [ConfigurationFile Configuration File]
-   * [installhtpie Install HTPie]
-   * [installgc3utils Install gc3utils]
+   * [InstallHTPie Install HTPie]
+   * [InstallGC3Utils Install gc3utils]
   * [Citations Citations]
