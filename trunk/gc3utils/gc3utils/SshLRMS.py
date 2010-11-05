@@ -65,10 +65,10 @@ class SshLrms(LRMS):
         # XXX: does Ssh really needs this ?
         self._resource.ncores = int(self._resource.ncores)
         self._resource.max_memory_per_core = int(self._resource.max_memory_per_core) * 1000
-        self._resource.walltime = int(self._resource.walltime)
-        if self._resource.walltime > 0:
+        self._resource.max_walltime = int(self._resource.max_walltime)
+        if self._resource.max_walltime > 0:
             # Convert from hours to minutes
-            self._resource.walltime = self._resource.walltime * 60
+            self._resource.max_walltime = self._resource.max_walltime * 60
 
         self.isValid = 1
 
