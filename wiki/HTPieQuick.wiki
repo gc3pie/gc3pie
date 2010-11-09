@@ -92,6 +92,8 @@ KeyError: '4cd96443b14e72523f000002'
 
 {{{
 htpie gtaskscheduler 
+
+
 Acquired lock: </home/bob/.htpie/gtaskscheduler.lock 20972@ocikbgtw>
 2010-11-09 16:06:10,255 - htpie - INFO - 0 GHessian task(s) are going to be processed
 2010-11-09 16:06:10,258 - htpie - INFO - 3 GBig task(s) are going to be processed
