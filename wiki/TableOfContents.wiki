@@ -2,13 +2,13 @@
 
 [GC3Utils GC3Utils]
 
-[GC3UtilsQuick GC3Utils Quick Reference]
+[GC3UtilsQuick Quick Reference: GC3Utils]
 
 [HTPie HTPie]
 
-[HTPieQuick HTPie Quick Reference]
+[HTPieQuick Quick Reference: HTPie]
 
-[ConfigurationFile GC3Utils Configuration File]
+[ConfigurationFile Configuration: GC3Utils Configuration]
 
 [InstallHTPie Installation: HTPie]
 
