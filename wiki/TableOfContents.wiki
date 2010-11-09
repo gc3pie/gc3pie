@@ -10,8 +10,8 @@
 
 [ConfigurationFile GC3Utils Configuration File]
 
-[InstallHTPie HTPie Installation]
+[InstallHTPie Installation: HTPie]
 
-[InstallGC3Utils GC3Utils Installation]
+[InstallGC3Utils Installation: GC3Utils]
 
 [Citations Citations]
