@@ -23,6 +23,22 @@ It is recommended that you use python version 2.6, although it should work on 2.
    * [http://pypi.python.org/pypi/ConcurrentLogHandler ConcurrentLogHandler] multi-thread safe filelogger
    * [http://numpy.scipy.org/ numpy] is used for numerics. It doesn't always install through pypi well, you might have to manually install it (sudo apt-get install python-numpy)
 
+== Config file ==
+
+You must have a config file in ~/.htpie/htpie.conf which identifies your MongoDB username, database name, ip, and port.  For example:
+
+{{{
+cat ~/.htpie/htpie.conf
+
+[SETTINGS]
+database_user=bob
+database_name=bob
+database_uri=127.0.0.1
+database_port=27017
+verbosity=10
+}}}
+
+
 = Notes =
 
  * create instructions on how to create a virtualenv for your own personal testing environment.  no system-level anything should be needed.
