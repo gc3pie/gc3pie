@@ -2,7 +2,7 @@
 
 <wiki:toc max_depth="2" />
 
-== Submit Job ==
+== Submit Job: gsub ==
 
 {{{
 gsub gamess -c 8 -r example1 exam01.inp
@@ -10,7 +10,7 @@ Successfully submitted job.4; use the 'gstat' command to monitor its progress.
 }}}
 
 
-== Job Status ==
+== Job Status: gstat ==
 
 {{{
 gstat
@@ -49,9 +49,37 @@ used_cpu_time         0.290
 stderr_filename       exam01.o6474 
 }}}
 
-== Retrieve Results ==
+== Retrieve Results: gget ==
 
 {{{
 gget job.4
 Job results successfully retrieved in '/home/bob/tmp/job.4'
+}}}
+
+
+== Check Running Job Output: gtail ==
+
+{{{
+gtail job.4
+}}}
+
+
+== Kill a Running Job: gkill ==
+
+{{{
+gkill job.4
+Sent request to kill job job.4
+It may take a few moments for the job to finish.
+}}}
+
+== Remove Job from Status List: gclean ==
+
+{{{
+gclean job.1
+}}}
+
+== Resubmit Job: gresub ==
+
+{{{
+gresub job.1
 }}}
