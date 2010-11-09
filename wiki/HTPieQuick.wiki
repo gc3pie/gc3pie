@@ -2,6 +2,50 @@
 
 <wiki:toc max_depth="2" />
 
+== htpie task {command} ==
+
+=== htpie task ghessian ===
+
+{{{
+htpie task ghessian
+
+Successfully create GHessian 4cd965a5b14e7252cc000002
+}}}
+
+
+=== htpie task gstring ===
+
+{{{
+htpie task gstring
+
+Successfully create GString 4cd965e4b14e725309000002
+}}}
+
+=== htpie task ghessiantest ===
+
+{{{
+htpie task ghessiantest
+
+Successfully create GHessianTest 4cd969fab14e72549b000027
+}}}
+
+=== htpie task gsingle ===
+
+{{{
+htpie task gsingle
+
+Successfully create GSingle 4cd96a19b14e7254b6000002
+}}}
+
+
+=== htpie task gbig ===
+
+{{{
+htpie task gbig
+
+Successfully create GBig 4cd96a26b14e7254c500001e
+}}}
+
 == htpie gcontrol {command} ==
 
 === htpie gcontrol info ===
@@ -74,49 +118,7 @@ KeyError: '4cd96443b14e72523f000002'
 }}}
 
 
-== htpie task {command} ==
 
-=== htpie task ghessian ===
-
-{{{
-htpie task ghessian
-
-Successfully create GHessian 4cd965a5b14e7252cc000002
-}}}
-
-
-=== htpie task gstring ===
-
-{{{
-htpie task gstring
-
-Successfully create GString 4cd965e4b14e725309000002
-}}}
-
-=== htpie task ghessiantest ===
-
-{{{
-htpie task ghessiantest
-
-Successfully create GHessianTest 4cd969fab14e72549b000027
-}}}
-
-=== htpie task gsingle ===
-
-{{{
-htpie task gsingle
-
-Successfully create GSingle 4cd96a19b14e7254b6000002
-}}}
-
-
-=== htpie task gbig ===
-
-{{{
-htpie task gbig
-
-Successfully create GBig 4cd96a26b14e7254c500001e
-}}}
 
 == htpie gtaskscheduler ==
 
