@@ -87,6 +87,8 @@ class RegisteringType(type):
                 pass
             elif _type:
                 assert False,  'Unkown Statetype: %s'%(_type)
+        
+        cls.states.validate()
 
 class StateMachine(object):
 
