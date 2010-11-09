@@ -95,13 +95,28 @@ Successfully create GString 4cd965e4b14e725309000002
 
 === htpie task ghessiantest ===
 
+{{{
+htpie task ghessiantest
 
+Successfully create GHessianTest 4cd969fab14e72549b000027
+}}}
 
 === htpie task gsingle ===
 
+{{{
+htpie task gsingle
+
+Successfully create GSingle 4cd96a19b14e7254b6000002
+}}}
+
+
 === htpie task gbig ===
 
+{{{
+htpie task gbig
 
+Successfully create GBig 4cd96a26b14e7254c500001e
+}}}
 
 == htpie gtaskscheduler ==
 
