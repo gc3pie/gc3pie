@@ -1,8 +1,16 @@
-  * Home
-  * [GC3Utils GC3Utils]
-  * HTPie
-  * HOWTO
-   * [ConfigurationFile Configuration File]
-   * [InstallHTPie Install HTPie]
-   * [InstallGC3Utils Install gc3utils]
-  * [Citations Citations]
+Home
+
+[GC3Utils GC3Utils]
+
+[GC3UtilsQuick GC3Utils Quick Reference]
+
+[HTPie HTPie]
+
+[HTPieQuick HTPie Quick Reference]
+
+HOWTO:
+ * [ConfigurationFile Configuration File]
+ * [InstallHTPie Install HTPie]
+ * [InstallGC3Utils Install gc3utils]
+
+[Citations Citations]
