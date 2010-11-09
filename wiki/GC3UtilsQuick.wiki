@@ -6,6 +6,7 @@
 
 {{{
 gsub gamess -c 8 -r example1 exam01.inp
+
 Successfully submitted job.4; use the 'gstat' command to monitor its progress.
 }}}
 
@@ -14,6 +15,7 @@ Successfully submitted job.4; use the 'gstat' command to monitor its progress.
 
 {{{
 gstat
+
 Job ID            Status    
 ===========================
 job.1             COMPLETED 
@@ -25,6 +27,7 @@ More verbose:
 
 {{{
 gstat -l job.3
+
 
 ===========================
 status                FINISHED   
@@ -53,6 +56,7 @@ stderr_filename       exam01.o6474
 
 {{{
 gget job.4
+
 Job results successfully retrieved in '/home/bob/tmp/job.4'
 }}}
 
@@ -61,6 +65,7 @@ Job results successfully retrieved in '/home/bob/tmp/job.4'
 
 {{{
 gtail job.4
+
 }}}
 
 
@@ -68,6 +73,7 @@ gtail job.4
 
 {{{
 gkill job.4
+
 Sent request to kill job job.4
 It may take a few moments for the job to finish.
 }}}
@@ -76,10 +82,12 @@ It may take a few moments for the job to finish.
 
 {{{
 gclean job.1
+
 }}}
 
 == Resubmit Job: gresub ==
 
 {{{
 gresub job.1
+
 }}}
