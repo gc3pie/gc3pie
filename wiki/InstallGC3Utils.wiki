@@ -4,8 +4,6 @@
 
 == Installation ==
 
-It is recommended that you develop and run under a [http://pypi.python.org/pypi/virtualenv Python Virtualenv] environment.
-
 These instructions show how to install the GC3Utils from the GC3 svn
 repository into their own python environment.
 
@@ -16,7 +14,7 @@ These should be available in any decent Linux distribution.
 
 
 1. If it's not already installed, get the `virtualenv` Python package
-and install it:
+and install it (more info at http://pypi.python.org/pypi/virtualenv):
 {{{
    wget http://bitbucket.org/ianb/virtualenv/get/tip.gz#egg=virtualenv-tip
    tar -xzf tip.gz && rm tip.gz 
