@@ -7,7 +7,8 @@
 === htpie gcontrol info ===
 
 {{{
- htpie gcontrol info -i 4cd96443b14e72523f000002
+htpie gcontrol info -i 4cd96443b14e72523f000002
+
 GSingle 4cd96443b14e72523f000002 STATE_READY STATUS_PAUSED
 Input file(s):
 /tmp/4cd96443b14e72523f000002/inputs/water_UHF_gradient.inp
@@ -18,6 +19,7 @@ Input file(s):
 
 {{{
 htpie gcontrol query -i 4cd96443b14e72523f000002
+
 2010-11-09 16:10:44,160 - htpie - ERROR - Task 4cd96443b14e72523f000002 is unknown
 Traceback (most recent call last):
   File "/usr/local/bin/htpie", line 9, in <module>
