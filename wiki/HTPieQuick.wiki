@@ -78,16 +78,20 @@ KeyError: '4cd96443b14e72523f000002'
 
 === htpie task ghessian ===
 
+{{{
 htpie task ghessian
-Successfully create GHessian 4cd965a5b14e7252cc000002
 
+Successfully create GHessian 4cd965a5b14e7252cc000002
+}}}
 
 
 === htpie task gstring ===
 
+{{{
 htpie task gstring
-Successfully create GString 4cd965e4b14e725309000002
 
+Successfully create GString 4cd965e4b14e725309000002
+}}}
 
 === htpie task ghessiantest ===
 
