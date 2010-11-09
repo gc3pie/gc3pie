@@ -2,7 +2,7 @@
 
 <wiki:toc max_depth="2" />
 
-== htpie gcontrol ==
+== htpie gcontrol <command> ==
 
 === htpie gcontrol info ===
 
@@ -74,7 +74,7 @@ KeyError: '4cd96443b14e72523f000002'
 }}}
 
 
-== htpie task ==
+== htpie task <command> ==
 
 === htpie task ghessian ===
 
@@ -99,7 +99,7 @@ Successfully create GString 4cd965e4b14e725309000002
 
 
 
-== htpie gtaskscheduler ==
+== htpie gtaskscheduler <command> ==
 
 {{{
 htpie gtaskscheduler 
