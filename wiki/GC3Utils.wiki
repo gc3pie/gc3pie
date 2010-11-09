@@ -1,5 +1,8 @@
 = The `gc3utils` software =
 
+<wiki:toc max_depth="2" />
+
+
 The `gc3utils` software is a command line front-end to manage
 computational job submission to different batch processing systems.
 Indeed, `gc3utils` commands can submit [http://www.msg.chem.iastate.edu/gamess/documentation.html GAMESS] 
