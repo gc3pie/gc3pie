@@ -5,8 +5,14 @@ class States(dict):
     
     def addtran(self, start_state, end_state, fun):
         assert start_state in self,  'State State \'%s\' is not in the state dictionary.'%(start_state)
-        assert end_state in self,  'End State \'%s\' is not in the state dictionary.'%(end_state)
+#        assert end_state in self,  'End State \'%s\' is not in the state dictionary.'%(end_state)
         self[start_state][1].append((end_state, fun))
+    
+    def validate(self):
+        states = self.states
+        for state, trans in self.transitions.iteritems():
+            for tran in trans:
+                assert tran[0] in states, 'Transition End State \'%s\' is not in the state dictionary.'%(tran[0])
     
     @property
     def states(self):

@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE Project SYSTEM "Project-4.6.dtd">
 <!-- eric4 project file for project htpie -->
-<!-- Saved: 2010-11-02, 09:40:39 -->
+<!-- Saved: 2010-11-07, 21:36:37 -->
 <!-- Copyright (C) 2010 Mark Monroe,  -->
 <Project version="4.6">
   <Language></Language>
@@ -42,6 +42,7 @@
     <Source>htpie/lib/multiprocessinglog.py</Source>
     <Source>htpie/status.py</Source>
     <Source>setup.py</Source>
+    <Source>htpie/usertasks/grecursion.py</Source>
   </Sources>
   <Forms>
   </Forms>

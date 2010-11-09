@@ -1,7 +1,7 @@
 class Status(object):
     RUNNING = 'STATUS_RUNNING'
     PAUSED = 'STATUS_PAUSED'
-    ONCE = 'STATUS_IGNORE'
+    ONCE = 'STATUS_ONCE'
     ERROR = 'STATUS_ERROR'
     
     @staticmethod

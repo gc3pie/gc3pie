@@ -7,6 +7,7 @@ module_names = {'GSingle':'htpie.usertasks.gsingle',
                               'GString':'htpie.usertasks.gstring',
                               'GBig':'htpie.usertasks.gbig', 
                               'GLittle':'htpie.usertasks.glittle', 
+                              'GRecursion':'htpie.usertasks.grecursion', 
                             }
 
 fsm_classes = dict()

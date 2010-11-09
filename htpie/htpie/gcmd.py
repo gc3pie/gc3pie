@@ -29,6 +29,17 @@ def gbig(options):
         sys.stdout.write('Error occured while creating a GBig\n')
     sys.stdout.flush()
 
+def grecursion(options):
+    from htpie.usertasks.grecursion import GRecursion
+    
+    task = GRecursion.create(options.levels, options.num_children)
+
+    if task:
+        sys.stdout.write('Successfully create GRecursion %s\n'%(task.id))
+    else:
+        sys.stdout.write('Error occured while creating a GRecursion\n')
+    sys.stdout.flush()
+
 def gcontrol(options):
     from htpie.usertasks.gcontrol import GControl
     
@@ -120,6 +131,13 @@ def main():
     parser_task_subcommand.add_argument('-n', dest="num_little", type=int, default=10, 
                                                                     help="number of glittle's this gbig should spawn")
     parser_task_subcommand.set_defaults(func=gbig)
+    ## GRecursion
+    parser_task_subcommand = parser_task_command.add_parser('grecursion', description='creates a recursive state machine with l levels')
+    parser_task_subcommand.add_argument('-l', dest="levels", type=int, default=10, 
+                                                                    help="number of recursive levels to create")
+    parser_task_subcommand.add_argument('-n', dest="num_children", type=int, default=2, 
+                                                                    help="number of children each level should have")
+    parser_task_subcommand.set_defaults(func=grecursion)
     ## GSingle
     parser_task_subcommand = parser_task_command.add_parser('gsingle', description='run a single gamess-us batch job')
     parser_task_subcommand.add_argument("-f", "--file", dest="file",type=argparse.FileType('r'), default='examples/water_UHF_gradient.inp', 
