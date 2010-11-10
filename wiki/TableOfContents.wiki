@@ -1,17 +1,18 @@
 [Home]
 
 [GC3Utils GC3Utils]
-
-[GC3UtilsQuick Quick Reference: GC3Utils]
-
 [HTPie HTPie]
 
-[HTPieQuick Quick Reference: HTPie]
+Quick references:
+* [GC3UtilsQuick Quick Reference: GC3Utils]
+* [HTPieQuick Quick Reference: HTPie]
 
-[ConfigurationFile Configuration: GC3Utils Configuration]
+Installation and configuration:
+* [ConfigurationFile Configuration: GC3Utils Configuration]
+* [InstallGC3Utils Installation: GC3Utils]
+* [InstallHTPie Installation: HTPie]
 
-[InstallHTPie Installation: HTPie]
-
-[InstallGC3Utils Installation: GC3Utils]
+Programming reference:
+* [Job GC3Libs Job model]
 
 [Citations Citations]
