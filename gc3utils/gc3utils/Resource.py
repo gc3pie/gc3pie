@@ -25,7 +25,6 @@ class Resource(InformationContainer):
       name                 string  *
       ncores               int
       type                 int     *
-      walltime             int(?)
 
     Starred attributes are required for object construction.
      
