@@ -1,25 +1,48 @@
 #!/usr/bin/env python
+"""
+Top-level interface to Grid functionality.
+"""
+# Copyright (C) 2009-2010 GC3, University of Zurich. All rights reserved.
+#
+# Includes parts adapted from the ``bzr`` code, which is
+# copyright (C) 2005, 2006, 2007, 2008, 2009 Canonical Ltd
+#
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU Lesser General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU Lesser General Public License
+# along with this program; if not, write to the Free Software
+# Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
+#
+__docformat__ = 'reStructuredText'
+__version__ = '$Revision$'
+__date__ = '$Date$'
 
-__author__="Sergio Maffioletti (sergio.maffioletti@gc3.uzh.ch)"
-__date__="01 May 2010"
-__copyright__="Copyright 2009, 2010 Grid Computing Competence Center - UZH/GC3"
-__version__="0.3"
 
-import Application
-import Authorization
-import ConfigParser
-import Default
-import Job
-import Resource
-import Scheduler
+from fnmatch import fnmatch
 import os
 import sys
-import utils
+import ConfigParser
 
-from ArcLRMS import ArcLrms
-from Exceptions import *
-from SshLRMS import SshLrms
-from fnmatch import fnmatch
+import gc3libs
+from gc3libs.application import Application
+from gc3libs.backends.sge import SgeLrms
+from gc3libs.backends.arc import ArcLrms
+from gc3libs.authentication import Auth
+import gc3libs.Default as Default
+from gc3libs.Exceptions import *
+import gc3libs.Job as Job
+import gc3libs.Resource as Resource
+import gc3libs.scheduler as scheduler
+import gc3libs.utils as utils 
+
 
 class Gcli:
 
@@ -72,34 +95,34 @@ class Gcli:
         #    return job_obj
         
         # Parsing passed arguments
-        gc3utils.log.debug('input_file(s): %s',application.inputs)
-        gc3utils.log.debug('application tag: %s',application.application_tag)
-        gc3utils.log.debug('application arguments: %s',application.arguments)
-        gc3utils.log.debug('default_job_folder_location: %s',self._defaults.job_folder_location)
-        gc3utils.log.debug('requested cores: %s',str(application.requested_cores))
-        gc3utils.log.debug('requested memory: %s GB',str(application.requested_memory))
-        gc3utils.log.debug('requested walltime: %s hours',str(application.requested_walltime))
+        gc3libs.log.debug('input_file(s): %s',application.inputs)
+        gc3libs.log.debug('application tag: %s',application.application_tag)
+        gc3libs.log.debug('application arguments: %s',application.arguments)
+        gc3libs.log.debug('default_job_folder_location: %s',self._defaults.job_folder_location)
+        gc3libs.log.debug('requested cores: %s',str(application.requested_cores))
+        gc3libs.log.debug('requested memory: %s GB',str(application.requested_memory))
+        gc3libs.log.debug('requested walltime: %s hours',str(application.requested_walltime))
 
-        gc3utils.log.debug('Instantiating LRMSs')
+        gc3libs.log.debug('Instantiating LRMSs')
         _lrms_list = []
         for _resource in self._resources:
             try:
                 _lrms_list.append(self.__get_LRMS(_resource.name))
             except:
                 # log exceptions but ignore them
-                gc3utils.log.warning("Failed creating LRMS for resource '%s' of type '%s'",
+                gc3libs.log.warning("Failed creating LRMS for resource '%s' of type '%s'",
                                      _resource.name, _resource.type)
-                gc3utils.log.debug('gcli.py:gsub() got exception:', exc_info=True)
+                gc3libs.log.debug('gcli.py:gsub() got exception:', exc_info=True)
                 continue
             
         if ( len(_lrms_list) == 0 ):
             raise NoResources("Could not initialize any computational resource - please check log and configuration file.")
 
-        gc3utils.log.debug('Performing brokering')
+        gc3libs.log.debug('Performing brokering')
         # decide which resource to use
         # (Resource)[] = (Scheduler).PerformBrokering((Resource)[],(Application))
-        _selected_lrms_list = Scheduler.do_brokering(_lrms_list,application)
-        gc3utils.log.debug('Scheduler returned %d matching resources',
+        _selected_lrms_list = scheduler.do_brokering(_lrms_list,application)
+        gc3libs.log.debug('Scheduler returned %d matching resources',
                            len(_selected_lrms_list))
         if 0 == len(_selected_lrms_list):
             raise NoResources("Could not select any compatible computational resource - please check log and configuration file.")
@@ -110,7 +133,7 @@ class Gcli:
                 self.authorization.get(lrms._resource.authorization_type)
                 job = lrms.submit_job(application, job)
                 if job.is_valid():
-                    gc3utils.log.info('Successfully submitted process to LRMS backend')
+                    gc3libs.log.info('Successfully submitted process to LRMS backend')
                     # job submitted; leave loop
                     if application.has_key('job_local_dir'):
                         job.job_local_dir = application.job_local_dir
@@ -119,11 +142,11 @@ class Gcli:
                     break
             except AuthenticationException:
                 # ignore authentication errors: e.g., we may fail some SSH connections but succeed in others
-                gc3utils.log.debug("Authentication error in submitting to resource '%s'" 
+                gc3libs.log.debug("Authentication error in submitting to resource '%s'" 
                                    % lrms._resource.name)
                 continue
             except LRMSException:
-                gc3utils.log.error("Error in submitting job to resource '%s'", 
+                gc3libs.log.error("Error in submitting job to resource '%s'", 
                                    lrms._resource.name, exc_info=True)
                 continue
         if job is None or not job.is_valid():
@@ -146,7 +169,7 @@ class Gcli:
             try:
                 _list_of_runnign_jobs = self.__get_list_running_jobs()
             except:
-                gc3utils.log.debug('Failed obtaining list of running jobs %s',str(sys.exc_info()[1]))
+                gc3libs.log.debug('Failed obtaining list of running jobs %s',str(sys.exc_info()[1]))
                 raise
         else:
             _list_of_runnign_jobs = [job_obj]
@@ -155,7 +178,7 @@ class Gcli:
             try:
                 job_return_list.append(self.__gstat(_running_job, auto_enable_auth))
             except:
-                gc3utils.log.debug('Exception when trying getting status of job %s: %s',_running_job.unique_token,str(sys.exc_info()[1]))
+                gc3libs.log.debug('Exception when trying getting status of job %s: %s',_running_job.unique_token,str(sys.exc_info()[1]))
                 continue                                
 
         return job_return_list
@@ -166,12 +189,12 @@ class Gcli:
         
         _lrms = self.__get_LRMS(job_obj.resource_name)
 
-        # gc3utils.log.debug('current job status is %d' % job_obj.status)
+        # gc3libs.log.debug('current job status is %d' % job_obj.status)
 
-        if not ( job_obj.status == gc3utils.Job.JOB_STATE_COMPLETED or job_obj.status == gc3utils.Job.JOB_STATE_FINISHED or job_obj.status == gc3utils.Job.JOB_STATE_FAILED or job_obj.status == gc3utils.Job.JOB_STATE_DELETED ):
+        if not ( job_obj.status == gc3libs.Job.JOB_STATE_COMPLETED or job_obj.status == gc3libs.Job.JOB_STATE_FINISHED or job_obj.status == gc3libs.Job.JOB_STATE_FAILED or job_obj.status == gc3libs.Job.JOB_STATE_DELETED ):
             # check job status
-            # gc3utils.log.debug('checking job status')
-            #a = Authorization.Auth(auto_enable_auth)
+            # gc3libs.log.debug('checking job status')
+            #a = Auth(auto_enable_auth)
             self.authorization.get(_lrms._resource.authorization_type)
             job_obj = _lrms.check_status(job_obj)
 
@@ -180,7 +203,7 @@ class Gcli:
 #====== Gget =======
     def gget(self, job, **kw):
 
-        if job.status == gc3utils.Job.JOB_STATE_SUBMITTED or job.status == gc3utils.Job.JOB_STATE_UNKNOWN:
+        if job.status == gc3libs.Job.JOB_STATE_SUBMITTED or job.status == gc3libs.Job.JOB_STATE_UNKNOWN:
             raise OutputNotAvailableError('Output Not avilable')
 
         auto_enable_auth = kw.get('auto_enable_auth', self.auto_enable_auth)
@@ -190,7 +213,7 @@ class Gcli:
         try:
             return  _lrms.get_results(job)
         except LRMSUnrecoverableError:
-            job.status = gc3utils.Job.JOB_STATE_COMPLETED
+            job.status = gc3libs.Job.JOB_STATE_COMPLETED
             return job
         
 #====== Glist =======
@@ -212,8 +235,8 @@ class Gcli:
         self.authorization.get(_lrms._resource.authorization_type)
         
         job_obj = _lrms.cancel_job(job_obj)
-        gc3utils.log.debug('setting job status to DELETED')
-        job_obj.status =  gc3utils.Job.JOB_STATE_DELETED
+        gc3libs.log.debug('setting job status to DELETED')
+        job_obj.status =  gc3libs.Job.JOB_STATE_DELETED
         return job_obj
 
 #====== Tail ========
@@ -247,7 +270,7 @@ class Gcli:
                 return file_handle
 
         except AttributeError:
-            gc3utils.log.critical('Missing attribute')
+            gc3libs.log.critical('Missing attribute')
             raise
         except:
             raise
@@ -312,14 +335,14 @@ class Gcli:
             _fileHandle.write(job_obj.resource_name+'\t'+job_obj.lrms_jobid)
             _fileHandle.close()
         except:
-            gc3utils.log.error('failed updating job lrms_id')
+            gc3libs.log.error('failed updating job lrms_id')
 
         try:
             _fileHandle = open(job_obj.unique_token+'/'+Default.JOB_LOG,'w')
             _fileHandle.write(job_obj.log)
             _fileHandle.close()
         except:
-            gc3utils.log.error('failed updating job log')
+            gc3libs.log.error('failed updating job log')
                         
         # if joblist_file & joblist_lock are not defined, use default
         #RFR: WHY DO I NEED THIS ?
@@ -337,31 +360,31 @@ class Gcli:
         if not os.path.exists(joblist_file):
             try:
                 open(joblist_file, 'w').close()
-                gc3utils.log.debug(joblist_file + ' did not exist... created successfully.')
+                gc3libs.log.debug(joblist_file + ' did not exist... created successfully.')
             except:
-                gc3utils.log.error('Failed opening joblist_file')
+                gc3libs.log.error('Failed opening joblist_file')
                 return False
 
-        gc3utils.log.debug('appending jobid to joblist file as specified in defaults')
+        gc3libs.log.debug('appending jobid to joblist file as specified in defaults')
         try:
             # appending jobid to .jobs file as specified in defaults
-            gc3utils.log.debug('obtaining lock')
+            gc3libs.log.debug('obtaining lock')
             if ( obtain_file_lock(joblist_file,joblist_lock) ):
                 _fileHandle = open(joblist_file,'a')
                 _fileHandle.write(job_obj.unique_token+'\n')
                 _fileHandle.close()
             else:
-                gc3utils.log.error('Failed obtain lock')
+                gc3libs.log.error('Failed obtain lock')
                 return False
 
         except:
-            gc3utils.log.error('Failed in appending current jobid to list of jobs in %s',Default.JOBLIST_FILE)
-            gc3utils.log.debug('Exception %s',sys.exc_info()[1])
+            gc3libs.log.error('Failed in appending current jobid to list of jobs in %s',Default.JOBLIST_FILE)
+            gc3libs.log.debug('Exception %s',sys.exc_info()[1])
             return False
 
         # release lock
         if ( (not release_file_lock(joblist_lock)) & (os.path.isfile(joblist_lock)) ):
-            gc3utils.log.error('Failed removing lock file')
+            gc3libs.log.error('Failed removing lock file')
             return False
 
         return True
@@ -382,11 +405,11 @@ class Gcli:
         try:
             if not os.path.isdir(Default.JOBS_DIR):
                 # try to create it first
-                gc3utils.log.error('JOBS_DIR %s Not found. creating it' % Default.JOBS_DIR)
+                gc3libs.log.error('JOBS_DIR %s Not found. creating it' % Default.JOBS_DIR)
                 try:
                     os.makedirs(Default.JOBS_DIR)
                 except:
-                    gc3utils.log.critical('%s',sys.exc_info()[1])
+                    gc3libs.log.critical('%s',sys.exc_info()[1])
                     raise RetrieveJobsFilesystemError('Failed accessing job dir %s' % Default.JOBS_DIR)
 
             _jobs_list = os.listdir(Default.JOBS_DIR)
@@ -398,8 +421,8 @@ class Gcli:
                 try:
                     _job_list.append(Job.get_job(_job))
                 except:
-                    gc3utils.log.error('Failed retrieving job information for %s',_job)
-                    gc3utils.log.debug('%s',sys.exc_info()[1])
+                    gc3libs.log.error('Failed retrieving job information for %s',_job)
+                    gc3libs.log.debug('%s',sys.exc_info()[1])
                     continue
 
             return _job_list
@@ -416,17 +439,17 @@ class Gcli:
         for _resource in self._resources:
             if _resource.name == resource_name:
                 # there's a matching resource
-                gc3utils.log.debug('Creating instance of type %s for %s', _resource.type, _resource.name)
+                gc3libs.log.debug('Creating instance of type %s for %s', _resource.type, _resource.name)
                 try:
                     if _resource.type is Default.ARC_LRMS:
                         _lrms = ArcLrms(_resource, self.authorization)
                     elif _resource.type is Default.SGE_LRMS:
-                        _lrms = SshLrms(_resource, self.authorization)
+                        _lrms = SgeLrms(_resource, self.authorization)
                     else:
-                        gc3utils.log.error('Unknown resource type %s',_resource.type)
+                        gc3libs.log.error('Unknown resource type %s',_resource.type)
                         raise Exception('Unknown resource type')
                 except:
-                    gc3utils.log.error('Exception creating LRMS instance %s',_resource.type)
+                    gc3libs.log.error('Exception creating LRMS instance %s',_resource.type)
                     raise
 
         if _lrms is None:
@@ -448,9 +471,9 @@ def import_config(config_file_locations, auto_enable_auth=True):
 
 def get_authorization(authorizations,auto_enable_auth):
     try:
-        return Authorization.Auth(authorizations, auto_enable_auth)
+        return Auth(authorizations, auto_enable_auth)
     except:
-        gc3utils.log.critical('Failed initializing Authorization module')
+        gc3libs.log.critical('Failed initializing Authorization module')
         raise
 
 
@@ -459,9 +482,9 @@ def get_defaults(defaults):
     # defaults is a list[] of values
     try:
         # Create default values
-        return gc3utils.Default.Default(defaults)
+        return gc3libs.Default.Default(defaults)
     except:
-        gc3utils.log.critical('Failed loading default values')
+        gc3libs.log.critical('Failed loading default values')
         raise
     
 
@@ -473,25 +496,25 @@ def get_resources(resources_list):
     try:
         for key in resources_list.keys():
             resource = resources_list[key]
-            gc3utils.log.debug('creating instance of Resource object... ')
+            gc3libs.log.debug('creating instance of Resource object... ')
             try:
-                tmpres = gc3utils.Resource.Resource(resource)
+                tmpres = gc3libs.Resource.Resource(resource)
             except Exception, x:
-                gc3utils.log.error("rejecting resource '%s': %s: %s",
+                gc3libs.log.error("rejecting resource '%s': %s: %s",
                                    key, x.__class__.__name__, str(x))
                 continue
-            gc3utils.log.debug('Checking resource type %s',resource['type'])
+            gc3libs.log.debug('Checking resource type %s',resource['type'])
             if resource['type'] == 'arc':
-                tmpres.type = gc3utils.Default.ARC_LRMS
+                tmpres.type = gc3libs.Default.ARC_LRMS
             elif resource['type'] == 'ssh_sge':
-                tmpres.type = gc3utils.Default.SGE_LRMS
+                tmpres.type = gc3libs.Default.SGE_LRMS
             else:
-                gc3utils.log.error('No valid resource type %s',resource['type'])
+                gc3libs.log.error('No valid resource type %s',resource['type'])
                 continue
-            gc3utils.log.debug('checking validity with %s',str(tmpres.is_valid()))
+            gc3libs.log.debug('checking validity with %s',str(tmpres.is_valid()))
             resources.append(tmpres)
     except:
-        gc3utils.log.critical('failed creating Resource list')
+        gc3libs.log.critical('failed creating Resource list')
         raise
     return resources
 
@@ -504,21 +527,21 @@ def read_config(*locations):
     """
     files_successfully_read = 0
     defaults = { }
-    resources = gc3utils.utils.defaultdict(lambda: dict())
-    authorizations = gc3utils.utils.defaultdict(lambda: dict())
+    resources = gc3libs.utils.defaultdict(lambda: dict())
+    authorizations = gc3libs.utils.defaultdict(lambda: dict())
 
     for location in locations:
         location = os.path.expandvars(location)
         if os.path.exists(location) and os.access(location, os.R_OK):
-            gc3utils.log.debug("gcli.read_config(): reading file '%s' ..." % location)
+            gc3libs.log.debug("gcli.read_config(): reading file '%s' ..." % location)
         else:
-            gc3utils.log.debug("gcli.read_config(): ignoring non-existent file '%s' ..." % location)
+            gc3libs.log.debug("gcli.read_config(): ignoring non-existent file '%s' ..." % location)
             continue # with next `location`
 
         # Config File exists; read it
         config = ConfigParser.ConfigParser()
         if location not in config.read(location):
-            gc3utils.log.debug("Configuration file '%s' is unreadable or malformed: ignoring." 
+            gc3libs.log.debug("Configuration file '%s' is unreadable or malformed: ignoring." 
                                % location)
             continue # with next `location`
         files_successfully_read += 1
@@ -529,7 +552,7 @@ def read_config(*locations):
         for sectname in config.sections():
             if sectname.startswith('authorization/'):
                 # handle authorization section
-                gc3utils.log.debug("gcli.read_config(): adding authorization '%s' ", sectname)
+                gc3libs.log.debug("gcli.read_config(): adding authorization '%s' ", sectname)
                 # extract authorization name and register authorization dictionary
                 auth_name = sectname.split('/', 1)[1]
                 authorizations[auth_name].update(dict(config.items(sectname)))
@@ -537,21 +560,21 @@ def read_config(*locations):
             elif  sectname.startswith('resource/'):
                 # handle resource section
                 resource_name = sectname.split('/', 1)[1]
-                gc3utils.log.debug("gcli.read_config(): adding resource '%s' ", resource_name)
+                gc3libs.log.debug("gcli.read_config(): adding resource '%s' ", resource_name)
                 config_items = dict(config.items(sectname))
                 if config_items.has_key('enabled'):
                     config_items['enabled'] = utils.string_to_boolean(config_items['enabled'])
-                    gc3utils.log.debug("Resource '%s': enabled=%s in file '%s'", 
+                    gc3libs.log.debug("Resource '%s': enabled=%s in file '%s'", 
                                        resource_name, config_items['enabled'], location)
                 resources[resource_name].update(config_items)
                 resources[resource_name]['name'] = resource_name
 
             else:
                 # Unhandled sectname
-                gc3utils.log.error("gcli.read_config(): unknown configuration section '%s' -- ignoring!", 
+                gc3libs.log.error("gcli.read_config(): unknown configuration section '%s' -- ignoring!", 
                                    sectname)
 
-        gc3utils.log.debug("gcli.read_config(): read %d resources from configuration file '%s'",
+        gc3libs.log.debug("gcli.read_config(): read %d resources from configuration file '%s'",
                            len(resources), location)
 
         # remove disabled resources
@@ -560,7 +583,7 @@ def read_config(*locations):
             if resource.has_key('enabled') and not resource['enabled']:
                 disabled_resources.append(resource['name'])
         for resource_name in disabled_resources:
-            gc3utils.log.info("Ignoring computational resource '%s'"
+            gc3libs.log.info("Ignoring computational resource '%s'"
                               " because of 'enabled=False' setting.",
                               resource_name)
             del resources[resource_name]

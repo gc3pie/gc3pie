@@ -1,12 +1,31 @@
 #! /usr/bin/env python
+"""
+Exceptions specific to the `gc3libs` package.
+"""
+# Copyright (C) 2009-2010 GC3, University of Zurich. All rights reserved.
 #
-"""
-Exceptions specific to the `gc3utils` package.
-"""
+# Includes parts adapted from the ``bzr`` code, which is
+# copyright (C) 2005, 2006, 2007, 2008, 2009 Canonical Ltd
+#
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU Lesser General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU Lesser General Public License
+# along with this program; if not, write to the Free Software
+# Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
+#
 __docformat__ = 'reStructuredText'
+__version__ = '$Revision$'
 
 
-import gc3utils
+import gc3libs
 
 
 class FatalError(Exception):
@@ -21,7 +40,7 @@ class FatalError(Exception):
     """
     def __init__(self, msg, do_log=True):
         if do_log:
-            gc3utils.log.critical(msg)
+            gc3libs.log.critical(msg)
         Exception.__init__(self, msg)
 
 
@@ -37,7 +56,7 @@ class Error(Exception):
     """
     def __init__(self, msg, do_log=True):
         if do_log: 
-            gc3utils.log.error(msg)
+            gc3libs.log.error(msg)
         Exception.__init__(self, msg)
         
 

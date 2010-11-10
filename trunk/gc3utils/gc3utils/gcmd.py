@@ -32,7 +32,7 @@ import os.path
 import sys
 import warnings
 
-from gc3utils.Exceptions import *
+from gc3libs.Exceptions import *
 
 
 def main():
@@ -116,13 +116,14 @@ def main():
 
     import logging.config
     import gc3utils
-    import gc3utils.Default
-    import gc3utils.utils
-    gc3utils.utils.deploy_configuration_file(gc3utils.Default.LOG_FILE_LOCATION,
+    import gc3libs.Default
+    import gc3libs.utils
+    gc3libs.utils.deploy_configuration_file(gc3libs.Default.LOG_FILE_LOCATION,
                                              "logging.conf.example")
-    logging.config.fileConfig(gc3utils.Default.LOG_FILE_LOCATION, 
-                              { 'RCDIR':gc3utils.Default.RCDIR,
-                                'HOMEDIR':gc3utils.Default.HOMEDIR })
+    logging.config.fileConfig(gc3libs.Default.LOG_FILE_LOCATION, 
+                              { 'RCDIR':gc3libs.Default.RCDIR,
+                                'HOMEDIR':gc3libs.Default.HOMEDIR })
+    gc3libs.log.setLevel(logging.ERROR)
     gc3utils.log.setLevel(logging.ERROR)
     # due to a bug in Python 2.4.x (see 
     # https://bugzilla.redhat.com/show_bug.cgi?id=573782 )
@@ -157,15 +158,15 @@ You can get more help on a specific sub-command by typing::
 where command is one of these:
 """)
             # XXX: crude hack to get list of commands
-            for cmd in [ sym for sym in dir(gc3utils.gcommands) if sym.startswith("g") ]:
+            for cmd in [ sym for sym in dir(gc3utils.commands) if sym.startswith("g") ]:
                 sys.stderr.write('  ' + cmd + '\n')
             return 1
 
-    # find command as function in the `gcommands.py` module
+    # find command as function in the `commands.py` module
     PROG.replace('-', '_')
-    import gc3utils.gcommands
+    import gc3utils.commands
     try:
-        cmd = getattr(gc3utils.gcommands, PROG)
+        cmd = getattr(gc3utils.commands, PROG)
     except AttributeError:
         sys.stderr.write("Cannot find command '%s' in gc3utils; aborting now.\n" % PROG)
         return 1

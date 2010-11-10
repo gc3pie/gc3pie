@@ -1,7 +1,35 @@
+#! /usr/bin/env python
+"""
+Simple-minded scheduling for GC3Libs.
+"""
+# Copyright (C) 2009-2010 GC3, University of Zurich. All rights reserved.
+#
+# Includes parts adapted from the ``bzr`` code, which is
+# copyright (C) 2005, 2006, 2007, 2008, 2009 Canonical Ltd
+#
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU Lesser General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU Lesser General Public License
+# along with this program; if not, write to the Free Software
+# Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
+#
+__docformat__ = 'reStructuredText'
+__version__ = '$Revision$'
+
+
 import sys
 
-import gc3utils
-from Exceptions import *
+import gc3libs
+from gc3libs.Exceptions import *
+
 
 def _compatible_resources(lrms_list, application):
     """
@@ -13,9 +41,9 @@ def _compatible_resources(lrms_list, application):
         assert(lrms is not None), \
             "Scheduler._compatible_resources(): expected `LRMS` object, got `None` instead."
         if not lrms.is_valid():
-            gc3utils.log.debug("Ignoring invalid LRMS object '%s'" % lrms)
+            gc3libs.log.debug("Ignoring invalid LRMS object '%s'" % lrms)
             continue
-        gc3utils.log.debug("Checking resource '%s' for compatibility with application requirements",
+        gc3libs.log.debug("Checking resource '%s' for compatibility with application requirements",
                            lrms._resource.name)
         if not ( # check that Application requirements are within resource limits
             int(application.requested_cores) > int(lrms._resource.max_cores_per_job or sys.maxint) 
@@ -24,7 +52,7 @@ def _compatible_resources(lrms_list, application):
            ):
             _selected_lrms_list.append(lrms)
         else:
-            gc3utils.log.info("Rejecting resource '%s':"
+            gc3libs.log.info("Rejecting resource '%s':"
                               " no match with application requirements", 
                               lrms._resource.name)
     return _selected_lrms_list
@@ -60,15 +88,24 @@ def do_brokering(lrms_list, application):
     for r in rs:
         try:
             # in-place update of resource status
-            gc3utils.log.debug("Trying to update status of resource '%s' ...", r._resource.name)
+            gc3libs.log.debug("Trying to update status of resource '%s' ...", r._resource.name)
             r.get_resource_status()
             updated_resources.append(r)
         except Exception, x:
             # ignore errors in update, assume resource has a problem
             # and just drop it
-            gc3utils.log.error("Cannot update status of resource '%s', dropping it."
-                               " See log file for details.",
-                               r._resource.name)
-            gc3utils.log.debug("Got error from get_resource_status(): %s: %s",
-                               x.__class__.__name__, x.args, exc_info=True)
+            gc3libs.log.error("Cannot update status of resource '%s', dropping it."
+                              " See log file for details.",
+                              r._resource.name)
+            gc3libs.log.debug("Got error from get_resource_status(): %s: %s",
+                              x.__class__.__name__, x.args, exc_info=True)
     return sorted(updated_resources, cmp=_cmp_resources)
+
+
+
+## main: run tests
+
+if "__main__" == __name__:
+    import doctest
+    doctest.testmod(name="__init__",
+                    optionflags=doctest.NORMALIZE_WHITESPACE)

@@ -1,11 +1,37 @@
+#! /usr/bin/env python
+"""
+Object-oriented interface for computational job control.
+"""
+# Copyright (C) 2009-2010 GC3, University of Zurich. All rights reserved.
+#
+# Includes parts adapted from the ``bzr`` code, which is
+# copyright (C) 2005, 2006, 2007, 2008, 2009 Canonical Ltd
+#
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU Lesser General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU Lesser General Public License
+# along with this program; if not, write to the Free Software
+# Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
+#
+__docformat__ = 'reStructuredText'
+__version__ = '$Revision$'
+
 import os
 import shelve
 import sys
 import types
 
 from Exceptions import *
-import gc3utils
-import gc3utils.utils
+import gc3libs
+import gc3libs.utils
 from InformationContainer import InformationContainer
 import Default
 
@@ -19,7 +45,7 @@ import Default
 JOB_STATE_FINISHED = 1
 
 # Job is currently running on a grid or cluster.
-# Gc3utils must wait until it finishes to proceed.
+# Gc3libs must wait until it finishes to proceed.
 JOB_STATE_RUNNING = 2
 
 # Could mean several things:
@@ -73,7 +99,7 @@ def job_status_to_string(job_status):
             JOB_STATE_DELETED: 'DELETED'
             }[job_status]
     except KeyError:
-        gc3utils.log.error('job status code %s unknown', job_status)
+        gc3libs.log.error('job status code %s unknown', job_status)
         return 'UNKNOWN'
 
 
@@ -92,9 +118,9 @@ class Job(InformationContainer):
                 and not (initializer is not None 
                          and hasattr(initializer, 'has_key') 
                          and initializer.has_key('unique_token'))):
-            gc3utils.log.debug('Creating new unique_token ...')
-            keywd['unique_token'] = gc3utils.utils.create_unique_token()
-            gc3utils.log.debug('... got "%s"' % keywd['unique_token'])
+            gc3libs.log.debug('Creating new unique_token ...')
+            keywd['unique_token'] = gc3libs.utils.create_unique_token()
+            gc3libs.log.debug('... got "%s"' % keywd['unique_token'])
         InformationContainer.__init__(self,initializer,**keywd)
 
     def is_valid(self):
@@ -111,7 +137,7 @@ def get_job(unique_token):
 
 def get_job_filesystem(unique_token):
     job_file = os.path.join(Default.JOBS_DIR, unique_token)
-    gc3utils.log.debug('retrieving job from %s', job_file)
+    gc3libs.log.debug('retrieving job from %s', job_file)
 
     if not os.path.exists(job_file):
         raise JobRetrieveError("No '%s' file found in directory '%s'" 
@@ -141,13 +167,13 @@ def persist_job(job_obj):
 
 def persist_job_filesystem(job_obj):
     job_file = os.path.join(Default.JOBS_DIR, job_obj.unique_token)
-    gc3utils.log.debug("dumping job into file '%s'", job_file)
+    gc3libs.log.debug("dumping job into file '%s'", job_file)
     if not os.path.exists(Default.JOBS_DIR):
         try:
             os.makedirs(Default.JOBS_DIR)
         except Exception, x:
             # raise same exception but add context message
-            gc3utils.log.error("Could not create jobs directory '%s': %s" 
+            gc3libs.log.error("Could not create jobs directory '%s': %s" 
                                % (Default.JOBS_DIR, x))
             raise
     handler = None
@@ -156,7 +182,7 @@ def persist_job_filesystem(job_obj):
         handler.update(job_obj)
         handler.close()
     except Exception, x:
-        gc3utils.log.error("Could not persist job %s to '%s': %s: %s" 
+        gc3libs.log.error("Could not persist job %s to '%s': %s: %s" 
                            % (job_obj.unique_token, Default.JOBS_DIR, x.__class__.__name__, x))
         if handler is not None:
             try:
@@ -195,6 +221,6 @@ def prepare_job_dir(_download_dir):
         os.makedirs(_download_dir)
         return True
     except:
-        gc3utils.log.error('Failed creating folder %s ' % _download_dir)
-        gc3utils.log.debug('%s %s',sys.exc_info()[0], sys.exc_info()[1])
+        gc3libs.log.error('Failed creating folder %s ' % _download_dir)
+        gc3libs.log.debug('%s %s',sys.exc_info()[0], sys.exc_info()[1])
         return False
