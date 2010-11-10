@@ -2,13 +2,13 @@
 """
 Implementation of the `gcli` command-line front-ends.
 """
-__version__="0.4"
+__docformat__='reStructuredText'
+__version__ = '$Revision$'
 
 __author__="Sergio Maffioletti <sergio.maffioletti@gc3.uzh.ch>, Riccardo Murri <riccardo.murri@uzh.ch>"
-__date__="01 May 2010"
+__date__ = '$Date$'
 __copyright__="Copyright (c) 2009,2010 Grid Computing Competence Center, University of Zurich"
 
-__docformat__='reStructuredText'
 
 
 import sys
@@ -17,22 +17,22 @@ import ConfigParser
 from optparse import OptionParser
 import time
 
+import gc3libs
+import gc3libs.application.gamess as gamess
+import gc3libs.application.rosetta as rosetta
+import gc3libs.Default as Default
+from   gc3libs.Exceptions import *
+import gc3libs.Job as Job
+import gc3libs.gcli as gcli
+import gc3libs.utils as utils
+
 import gc3utils
-import gc3utils.Application
-import gc3utils.ArcLRMS
-import gc3utils.Default
-from gc3utils.Exceptions import *
-import gc3utils.Job
-import gc3utils.Resource
-import gc3utils.SshLRMS
-import gc3utils.gcli
-import gc3utils.utils
 
 
 # defaults - XXX: do they belong in ../gcli.py instead?
 _homedir = os.path.expandvars('$HOME')
 _rcdir = _homedir + "/.gc3"
-_default_config_file_locations = [ "/etc/gc3/gc3utils.conf", _rcdir + "/gc3utils.conf" ]
+_default_config_file_locations = [ "/etc/gc3/gc3pie.conf", _rcdir + "/gc3pie.conf" ]
 _default_joblist_file = _rcdir + "/.joblist"
 _default_joblist_lock = _rcdir + "/.joblist_lock"
 _default_job_folder_location = os.getcwd()
@@ -44,12 +44,13 @@ def _configure_logger(verbosity):
     Configure the logger verbosity.
     """
     logging_level = max(1, (5-verbosity)*10)
+    gc3libs.log.setLevel(logging_level)
     gc3utils.log.setLevel(logging_level)
 
 
 def _get_gcli(config_file_locations, auto_enable_auth=True):
     """
-    Return a `gc3utils.gcli.Gcli` instance configured by parsing
+    Return a `gc3libs.gcli.Gcli` instance configured by parsing
     the configuration file(s) located at `config_file_locations`.
     Order of configuration files matters: files read last overwrite
     settings from previously-read ones; list the most specific configuration
@@ -62,15 +63,15 @@ def _get_gcli(config_file_locations, auto_enable_auth=True):
     # ensure a configuration file exists in the most specific location
     for location in reversed(config_file_locations):
         if os.access(os.path.dirname(location), os.W_OK|os.X_OK) \
-                and not gc3utils.utils.deploy_configuration_file(location, "gc3utils.conf.example"):
+                and not gc3libs.utils.deploy_configuration_file(location, "gc3pie.conf.example"):
             # warn user
             gc3utils.log.warning("No configuration file '%s' was found;"
                                  " a sample one has been copied in that location;"
                                  " please edit it and define resources." % location)
     try:
-        (default, resources, authorizations, auto_enable_auth) = gc3utils.gcli.import_config(config_file_locations, auto_enable_auth)
+        (default, resources, authorizations, auto_enable_auth) = gc3libs.gcli.import_config(config_file_locations, auto_enable_auth)
         gc3utils.log.debug('Creating instance of Gcli')
-        return gc3utils.gcli.Gcli(default, resources, authorizations, auto_enable_auth)
+        return gc3libs.gcli.Gcli(default, resources, authorizations, auto_enable_auth)
     except NoResources:
         raise FatalError("No computational resources defined.  Please edit the configuration file '%s'." 
                          % config_file_path)
@@ -83,7 +84,7 @@ def _print_job_info(job_obj):
     for key in job_obj.keys():
         if not key == 'log' and not ( str(job_obj[key]) == '-1' or  str(job_obj[key]) == '' ):
             if key == 'status':
-                print("%-20s  %-10s " % (key, gc3utils.Job.job_status_to_string(job_obj[key])))
+                print("%-20s  %-10s " % (key, gc3libs.Job.job_status_to_string(job_obj[key])))
             #elif key == 'submission_time' or key == 'completion_time':
             #    print("%-20s  %-10s " % (key,time.asctime(job_obj[key])))
             else:
@@ -118,7 +119,7 @@ def _print_job_status(job_list,job_status_filter,extended_view=False):
             else:
                 print("%-16s  %-10s" 
                       % (_job.unique_token, 
-                         gc3utils.Job.job_status_to_string(_job.status)))
+                         gc3libs.Job.job_status_to_string(_job.status)))
 
 
 #====== Main ========
@@ -130,7 +131,8 @@ def gclean(*args, **kw):
     if any of the clean requests will fail, gclean will exit with exitcode 1
     gclean will try anyway to process all requests
     """
-    parser = OptionParser(usage="Usage: %prog [options] [JOBIDs]", version="GC3pie project version 1.0. %prog ")
+    parser = OptionParser(usage="Usage: %prog [options] [JOBIDs]", 
+                          version="GC3pie project version 1.0. %prog ")
     parser.add_option("-v", action="count", dest="verbosity", default=0, help="Set verbosity level")
     parser.add_option("-f", "--force", action="store_true", dest="force", default=False, help="Force removing job")
     (options, args) = parser.parse_args(list(args))
@@ -141,14 +143,13 @@ def gclean(*args, **kw):
     # Assume args are all jobids
     for jobid in args:
         try:
-            job = gc3utils.Job.get_job(jobid)
-            if (
-                job.status == gc3utils.Job.JOB_STATE_COMPLETED
-                or job.status == gc3utils.Job.JOB_STATE_FAILED
-                or job.status == gc3utils.Job.JOB_STATE_DELETED
-                or  options.force == True
+            job = gc3libs.Job.get_job(jobid)
+            if options.force == True or (
+                job.status == gc3libs.Job.JOB_STATE_COMPLETED
+                or job.status == gc3libs.Job.JOB_STATE_FAILED
+                or job.status == gc3libs.Job.JOB_STATE_DELETED
                 ):
-                gc3utils.Job.clean_job(job)
+                gc3libs.Job.clean_job(job)
             else:
                 raise Exception('Not in terminal state')
         except:
@@ -174,7 +175,7 @@ def ginfo(*args, **kw):
         raise InvalidUsage('Wrong number of arguments: this commands expects exactly one  arguments.')
 
     try:
-        _print_job_info(gc3utils.Job.get_job(args[0]))
+        _print_job_info(gc3libs.Job.get_job(args[0]))
         return 0
     except:
         raise
@@ -186,7 +187,7 @@ def gsub(*args, **kw):
     parser = OptionParser(usage="%prog [options] APPLICATION INPUTFILE [OTHER INPUT FILES]")
     parser.add_option("-v", action="count", dest="verbosity", default=0, help="Set verbosity level")
     parser.add_option("-r", "--resource", action="store", dest="resource_name", metavar="STRING", default=None, help='Select resource destination')
-    parser.add_option("-d", "--jobdir", action="store", dest="job_local_dir", metavar="STRING", default=gc3utils.Default.JOB_FOLDER_LOCATION, help='Select job local folder location')
+    parser.add_option("-d", "--jobdir", action="store", dest="job_local_dir", metavar="STRING", default=gc3libs.Default.JOB_FOLDER_LOCATION, help='Select job local folder location')
     parser.add_option("-c", "--cores", action="store", dest="ncores", metavar="INT", default=0, help='Set number of requested cores')
     parser.add_option("-m", "--memory", action="store", dest="memory_per_core", metavar="INT", default=0, help='Set memory per core request (GB)')
     parser.add_option("-w", "--walltime", action="store", dest="walltime", metavar="INT", default=0, help='Set requested walltime (hours)')
@@ -203,7 +204,7 @@ def gsub(*args, **kw):
     if application_tag == 'gamess':
         if len(args) < 2:
             raise InvalidUsage('Wrong number of arguments: this commands expects at least two arguments.')
-        application = gc3utils.Application.GamessApplication(
+        application = gamess.GamessApplication(
             *args[1:], # 1st arg is .INP file path, rest are (optional) additional inputs
             **{ 
                 'arguments':options.application_arguments,
@@ -217,7 +218,7 @@ def gsub(*args, **kw):
     elif application_tag == 'rosetta':
         if len(args) != 4:
             raise InvalidUsage('Wrong number of arguments: this commands expects exactly three arguments.')
-        application = gc3utils.Application.RosettaApplication(
+        application = rosetta.RosettaApplication(
             application = args[1],
             inputs = { 
                 "-in:file:s":args[2],
@@ -247,7 +248,7 @@ def gsub(*args, **kw):
     if job.is_valid():
         print("Successfully submitted %s; use the 'gstat' command to monitor its progress." 
               % job.unique_token)
-        gc3utils.Job.persist_job(job)
+        gc3libs.Job.persist_job(job)
         return 0
     else:
         raise Exception('Job object not valid')
@@ -259,7 +260,7 @@ def gresub(*args, **kw):
     parser = OptionParser(usage="%prog [options] JOBID")
     parser.add_option("-v", action="count", dest="verbosity", default=0, help="Set verbosity level")
     parser.add_option("-r", "--resource", action="store", dest="resource_name", metavar="STRING", default=None, help='Select resource destination')
-    parser.add_option("-d", "--jobdir", action="store", dest="job_local_dir", metavar="STRING", default=gc3utils.Default.JOB_FOLDER_LOCATION, help='Select job local folder location')
+    parser.add_option("-d", "--jobdir", action="store", dest="job_local_dir", metavar="STRING", default=gc3libs.Default.JOB_FOLDER_LOCATION, help='Select job local folder location')
     parser.add_option("-c", "--cores", action="store", dest="ncores", metavar="INT", default=0, help='Set number of requested cores')
     parser.add_option("-m", "--memory", action="store", dest="memory_per_core", metavar="INT", default=0, help='Set memory per core request (GB)')
     parser.add_option("-w", "--walltime", action="store", dest="walltime", metavar="INT", default=0, help='Set requested walltime (hours)')
@@ -279,14 +280,14 @@ def gresub(*args, **kw):
 
     failed = 0
     for jobid in args:
-        job = gc3utils.Job.get_job(jobid.strip())
+        job = gc3libs.Job.get_job(jobid.strip())
         try:
             _gcli.gstat(job) # update status
             if not ( 
-                job.status == gc3utils.Job.JOB_STATE_COMPLETED 
-                or job.status == gc3utils.Job.JOB_STATE_FINISHED 
-                or job.status == gc3utils.Job.JOB_STATE_FAILED 
-                or job.status == gc3utils.Job.JOB_STATE_DELETED 
+                job.status == gc3libs.Job.JOB_STATE_COMPLETED 
+                or job.status == gc3libs.Job.JOB_STATE_FINISHED 
+                or job.status == gc3libs.Job.JOB_STATE_FAILED 
+                or job.status == gc3libs.Job.JOB_STATE_DELETED 
                 ):
                 job = _gcli.gkill(job)
         except Exception, ex:
@@ -297,7 +298,7 @@ def gresub(*args, **kw):
         if job.is_valid():
             print("Successfully re-submitted %s; use the 'gstat' command to monitor its progress." 
                   % job.unique_token)
-            gc3utils.Job.persist_job(job)
+            gc3libs.Job.persist_job(job)
         else:
             failed += 1
             gc3utils.log.error("Failed resubmission of job '%s'", jobid)
@@ -317,8 +318,8 @@ def grid_credential_renew(*args, **kw):
         
     gc3utils.log.debug('Checking grid credential')
     _gcli = _get_gcli(_default_config_file_locations)
-    if not _gcli.check_authentication(gc3utils.Default.SMSCG_AUTHENTICATION):
-        return _gcli.enable_authentication(gc3utils.Default.SMSCG_AUTHENTICATION)
+    if not _gcli.check_authentication(gc3libs.Default.SMSCG_AUTHENTICATION):
+        return _gcli.enable_authentication(gc3libs.Default.SMSCG_AUTHENTICATION)
     else:
         return True
 
@@ -338,7 +339,7 @@ def gstat(*args, **kw):
         if len(args) == 0:
             job_list = _gcli.gstat(None)
         elif len(args) == 1:
-            job_list = _gcli.gstat(gc3utils.Job.get_job(args[0]))
+            job_list = _gcli.gstat(gc3libs.Job.get_job(args[0]))
         else:
             raise InvalidUsage("This command requires either one argument or no arguments at all.")
     except Exception, x:
@@ -367,7 +368,7 @@ def gstat(*args, **kw):
         raise
 
     for _job in job_list:
-        gc3utils.Job.persist_job(_job)         
+        gc3libs.Job.persist_job(_job)         
 
     return 0
 
@@ -385,11 +386,11 @@ def gget(*args, **kw):
     unique_token = args[0]
 
     _gcli = _get_gcli(_default_config_file_locations)
-    job_obj = gc3utils.Job.get_job(unique_token)
+    job_obj = gc3libs.Job.get_job(unique_token)
 
     gc3utils.log.debug('job status [%d]',job_obj.status)
     
-    if job_obj.status == gc3utils.Job.JOB_STATE_COMPLETED:
+    if job_obj.status == gc3libs.Job.JOB_STATE_COMPLETED:
         if job_obj.has_key('download_dir'):
             sys.stdout.write('Job already retrieved in [ '+job_obj.download_dir+' ]\n')
         else:
@@ -397,7 +398,7 @@ def gget(*args, **kw):
             sys.stdout.write('Job cold not be retirieved any furhter\n')
         sys.stdout.flush
     else:
-        if  job_obj.status == gc3utils.Job.JOB_STATE_FINISHED or job_obj.status == gc3utils.Job.JOB_STATE_DELETED or job_obj.status == gc3utils.Job.JOB_STATE_FAILED:
+        if  job_obj.status == gc3libs.Job.JOB_STATE_FINISHED or job_obj.status == gc3libs.Job.JOB_STATE_DELETED or job_obj.status == gc3libs.Job.JOB_STATE_FAILED:
             try:
                 gc3utils.log.debug('running gcli.gget')
                 job_obj = _gcli.gget(job_obj)
@@ -405,8 +406,8 @@ def gget(*args, **kw):
                 gc3utils.log.error('gget failed ')
                 raise
             
-            if job_obj.status == gc3utils.Job.JOB_STATE_COMPLETED or job_obj.status == gc3utils.Job.JOB_STATE_FAILED:
-                gc3utils.Job.persist_job(job_obj)
+            if job_obj.status == gc3libs.Job.JOB_STATE_COMPLETED or job_obj.status == gc3libs.Job.JOB_STATE_FAILED:
+                gc3libs.Job.persist_job(job_obj)
                 if job_obj.has_key('download_dir'):
                     print("Job results successfully retrieved in '%s'\n" % job_obj.download_dir)
                 else:
@@ -439,18 +440,18 @@ def gkill(*args, **kw):
         # Assume args are all jobids
         for unique_token in args:
             try:
-                job = gc3utils.Job.get_job(unique_token)
+                job = gc3libs.Job.get_job(unique_token)
 
                 gc3utils.log.debug('%s in status %d' % (unique_token,job.status))
 
                 if not (
-                    job.status == gc3utils.Job.JOB_STATE_COMPLETED
-                    or job.status == gc3utils.Job.JOB_STATE_FAILED
-                    or job.status == gc3utils.Job.JOB_STATE_DELETED
+                    job.status == gc3libs.Job.JOB_STATE_COMPLETED
+                    or job.status == gc3libs.Job.JOB_STATE_FAILED
+                    or job.status == gc3libs.Job.JOB_STATE_DELETED
                     or options.force == True
                     ):
                     job = _gcli.gkill(job)
-                    gc3utils.Job.persist_job(job)
+                    gc3libs.Job.persist_job(job)
 
                     # or shall we simply return an ack message ?
                     sys.stdout.write('Sent request to kill job ' + unique_token +'\n')
@@ -494,11 +495,11 @@ def gtail(*args, **kw):
             
         _gcli = _get_gcli(_default_config_file_locations)
     
-        job = gc3utils.Job.get_job(unique_token)
+        job = gc3libs.Job.get_job(unique_token)
 
-        if job.status == gc3utils.Job.JOB_STATE_COMPLETED:
+        if job.status == gc3libs.Job.JOB_STATE_COMPLETED:
             raise Exception('Job results already retrieved')
-        if job.status == gc3utils.Job.JOB_STATE_UNKNOWN or job.status == gc3utils.Job.JOB_STATE_SUBMITTED:
+        if job.status == gc3libs.Job.JOB_STATE_UNKNOWN or job.status == gc3libs.Job.JOB_STATE_SUBMITTED:
             raise Exception('Job output not yet available')
 
         file_handle = _gcli.tail(job,std)
@@ -524,8 +525,8 @@ def gnotify(*args, **kw):
         raise InvalidUsage("This command requires exactly one argument: the Job ID.")
     unique_token = args[0]
 
-    job = gc3utils.Job.get_job(unique_token)
-    return gc3utils.utils.notify(job,options.include_job_results)
+    job = gc3libs.Job.get_job(unique_token)
+    return gc3libs.utils.notify(job,options.include_job_results)
     
 
 

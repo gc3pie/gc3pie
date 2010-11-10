@@ -1,22 +1,45 @@
-from Exceptions import *
-from InformationContainer import *
+#! /usr/bin/env python
+"""
+Support for running a generic application with the GC3Libs.
+"""
+# Copyright (C) 2009-2010 GC3, University of Zurich. All rights reserved.
+#
+# Includes parts adapted from the ``bzr`` code, which is
+# copyright (C) 2005, 2006, 2007, 2008, 2009 Canonical Ltd
+#
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU Lesser General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU Lesser General Public License
+# along with this program; if not, write to the Free Software
+# Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
+#
+__docformat__ = 'reStructuredText'
+__version__ = '$Revision$'
+
+
+import gc3libs
+from gc3libs.Exceptions import *
+from gc3libs.InformationContainer import *
 import os
 import os.path
-import types
-import gc3utils
 
-from pkg_resources import Requirement, resource_filename
-
-
-# -----------------------------------------------------
-# Applications
-#
 
 class Application(InformationContainer):
+    """
+    Support for running a generic application with the GC3Libs.
+    """
 
     def __init__(self, executable, arguments, inputs, outputs, **kw):
         """
-        Support for running a generic application with the Gc3Utils.
+        Support for running a generic application with the GC3Libs.
         The following parameters are *required* to create an `Application`
         instance:
 
@@ -116,7 +139,7 @@ class Application(InformationContainer):
         self.executable = executable
         self.arguments = [ str(x) for x in arguments ]
 
-        gc3utils.log.debug("Application: on entrance, inputs=%s" % inputs)
+        gc3libs.log.debug("Application: on entrance, inputs=%s" % inputs)
         def convert_to_tuple(val):
             if isinstance(val, (str, unicode)):
                 l = str(val)
@@ -126,7 +149,7 @@ class Application(InformationContainer):
                 return tuple(val)
         self.inputs = dict([ convert_to_tuple(x) for x in inputs ])
         self.outputs = dict([ convert_to_tuple(x) for x in outputs ])
-        gc3utils.log.debug("Application: set inputs=%s" %  self.inputs)
+        gc3libs.log.debug("Application: set inputs=%s" %  self.inputs)
 
         # optional params
         def get_and_remove(dictionary, key, default=None, verbose=False):
@@ -136,7 +159,7 @@ class Application(InformationContainer):
             else:
                 result = default
             if verbose:
-                gc3utils.log.info("Using value '%s' for 'Application.%s'", result, key)
+                gc3libs.log.info("Using value '%s' for 'Application.%s'", result, key)
             return result
         # FIXME: should use appropriate unit classes for requested_*
         self.requested_cores = get_and_remove(kw, 'requested_cores')
@@ -283,7 +306,7 @@ class Application(InformationContainer):
             qsub += ' -l mem_free=%dG' % self.requested_memory
         if self.requested_cores and not _suppress_warning:
             # XXX: should this be an error instead?
-            gc3utils.log.warning("Application requested %d cores,"
+            gc3libs.log.warning("Application requested %d cores,"
                                  " but there is no generic way of expressing this requirement in SGE!"
                                  " Ignoring request, but this will likely result in malfunctioning later on.", 
                                  self.requested_cores)
@@ -292,209 +315,8 @@ class Application(InformationContainer):
         return (qsub, self.cmdline(resource))
         
 
-class GamessApplication(Application):
-    """
-    Specialized `Application` object to submit computational jobs running GAMESS-US.
-
-    The only required parameter for construction is the input file
-    name; any other argument names an additional input file, that
-    is added to the `Application.inputs` list, but not otherwise 
-    treated specially.
-
-    Any other kyword parameter that is valid in the `Application`
-    class can be used here as well, with the exception of `input` and
-    `output`.  Note that a GAMESS-US job is *always* submitted with
-    `join = True`, therefore any `stderr` setting is ignored.
-    """
-    def __init__(self, inp_file_path, *other_input_files, **kw):
-        input_file_name = os.path.basename(inp_file_path)
-        input_file_name_sans = os.path.splitext(input_file_name)[0]
-        output_file_name = input_file_name_sans + '.dat'
-        # add defaults to `kw` if not already present
-        def set_if_unset(key, value):
-            if not kw.has_key(key):
-                kw[key] = value
-        set_if_unset('stdout', input_file_name_sans + '.out')
-        set_if_unset('application_tag', "gamess")
-        if kw.has_key('rtes'):
-            kw['rtes'].append("APPS/CHEM/GAMESS-2009")
-        else:
-            kw['rtes'] = [ "APPS/CHEM/GAMESS-2009" ]
-        arguments = [ input_file_name ] + (kw.get('arguments') or [ ])
-        if kw.has_key('arguments'):
-            del kw['arguments']
-        # build generic `Application` obj
-        # set job name
-        kw['job_name'] = input_file_name_sans
-        Application.__init__(self, 
-                             executable = "$GAMESS_LOCATION/nggms",
-                             arguments = arguments,
-                             inputs = [ (inp_file_path, input_file_name) ] + list(other_input_files),
-                             outputs = [ output_file_name ],
-                             join=True,
-                             **kw)
-                             
-    def qgms(self, resource, **kw):
-        """
-        Return a `qgms` invocation to run GAMESS-US with the
-        parameters embedded in this object.
-        """
-        try:
-            qgms = os.path.join(resource.gamess_location, 'qgms')
-        except AttributeError:
-            raise ConfigurationError("Missing configuration parameter `gamess_location` on resource '%s'.",
-                                     resource.name)
-
-        if self.requested_walltime:
-            # XXX: should this be an error instead?
-            gc3utils.log.warning("Requested %d hours of wall-clock time,"
-                                 " but setting running time limits is not supported by the `qgms` script."
-                                 " Ignoring request, GAMESS job will be submitted with unspecified running time.", 
-                                 self.requested_walltime)
-        if self.requested_memory:
-            # XXX: should this be an error instead?
-            gc3utils.log.warning("Requested %d Gigabytes of memory per core,"
-                                 " but setting memory limits is not supported by the `qgms` script."
-                                 " Ignoring request, GAMESS job will be submitted with unspecified memory requirements.", 
-                                 self.requested_memory)
-        if self.requested_cores:
-            qgms += ' -n %d' % self.requested_cores
-        # silently ignore `self.job_name`: `qgms` will set it to a default
-
-        # finally, add the input files
-        qgms += ' ' + str.join(" ", [ os.path.basename(r) for r in self.inputs.values() ])
-        return (qgms, None)
-
-
-    # XXX: Assumes `qgms` is the correct way to run GAMESS on *any* batch system...
-    qsub = qgms
-
-    
-    def cmdline(self, resource, **kw):
-        raise NotImplementedError("There is currently no way of running GAMESS directly from the command-line."
-                                  " GAMESS invocation requires too many deployment-specific parameters"
-                                  " to make a generic invocation script possible.")
-
-
-class RosettaApplication(Application):
-    """
-    Specialized `Application` object to submit one run of a single
-    application in the Rosetta suite.
-
-    Required parameters for construction:
-    * `application`: name of the Rosetta application to call (e.g., "docking_protocol" or "relax")
-    * `inputs`: a `dict` instance, keys are Rosetta "-in:file:*" options, values are the (local) path names of the corresponding files.  (Example: `inputs={"-in:file:s":"1brs.pdb"}`) 
-    * `outputs`: list of output file names to fetch after Rosetta has finished running.
-
-    Optional parameters:
-    * `flags_file`: path to a local file containing additional flags for controlling Rosetta invocation;
-      if `None`, a local configuration file will be used.
-    * `database`: (local) path to the Rosetta DB; if this is not specified, then it is assumed that
-      the correct location will be available at the remote execution site as environment variable
-      'ROSETTA_DB_LOCATION'
-    * `arguments`: If present, they will be appended to the Rosetta application command line.
-    """
-    def __init__(self, application, inputs, outputs=[], 
-                 flags_file=None, database=None, arguments=[], **kw):
-        # ensure `application` has no trailing ".something' (e.g., ".linuxgccrelease")
-        application = os.path.splitext(application)[0]
-        
-        _inputs = list(inputs.values())
-        gc3utils.log.debug("RosettaApplication: _inputs=%s" % _inputs)
-        _outputs = list(outputs) # make a copy
-
-        # do specific setup required for/by the support script "rosetta.sh"
-        src_rosetta_sh = resource_filename(Requirement.parse("gc3utils"), 
-                                           "gc3utils/etc/rosetta.sh")
-        gc3utils.log.debug("RosettaApplication: src_rosetta_sh=%s" % src_rosetta_sh)
-        rosetta_sh = application + '.sh'
-        _inputs.append((src_rosetta_sh, rosetta_sh))
-        _outputs.append(application + '.log')
-        _outputs.append(application + '.tar.gz')
-
-        _arguments = [ ]
-        for opt, file in inputs.items():
-            _arguments.append(opt)
-            _arguments.append(os.path.basename(file))
-
-        if flags_file:
-            _inputs.append((flags_file, application + '.flags'))
-            # the `rosetta.sh` driver will do this automatically
-            #_arguments.append("@" + os.path.basename(flags_file))
-
-        if database:
-            _inputs.append(database)
-            _arguments.append("-database")
-            _arguments.append(os.path.basename(database))
-
-        if len(arguments) > 0:
-            _arguments.extend(arguments)
-
-        kw['application_tag'] = 'rosetta'
-        if kw.has_key('rtes'):
-            kw['rtes'].append("APPS/BIO/ROSETTA-3.1")
-        else:
-            kw['rtes'] = [ "APPS/BIO/ROSETTA-3.1" ]
-
-        kw.setdefault('stdout', application+'.stdout.txt')
-        kw.setdefault('stderr', application+'.stderr.txt')
-
-        Application.__init__(self,
-                             executable = "./%s" % rosetta_sh,
-                             arguments = _arguments,
-                             inputs = _inputs,
-                             outputs = _outputs,
-                             **kw)
-
-
-class RosettaDockingApplication(RosettaApplication):
-    """
-    Specialized `Application` class for executing a single run of the
-    Rosetta "docking_protocol" application.
-
-    Currently used in the `grosetta` app.
-    """
-    def __init__(self, pdb_file_path, native_file_path=None, 
-                 number_of_decoys_to_create=1, flags_file=None, **kw):
-        pdb_file_name = os.path.basename(pdb_file_path)
-        pdb_file_dir = os.path.dirname(pdb_file_path)
-        pdb_file_name_sans = os.path.splitext(pdb_file_name)[0]
-        if native_file_path is None:
-            native_file_path = pdb_file_path
-        def get_and_remove(D, k, d):
-            if D.has_key(k):
-                result = D[k]
-                del D[k]
-                return result
-            else:
-                return d
-        RosettaApplication.__init__(
-            self,
-            application = 'docking_protocol',
-            inputs = { 
-                "-in:file:s":pdb_file_path,
-                "-in:file:native":native_file_path,
-                },
-            outputs = [
-                pdb_file_name_sans + '.fasc',
-                pdb_file_name_sans + '.sc',
-                ],
-            flags_file = flags_file,
-            arguments = [ 
-                "-out:file:o", pdb_file_name_sans,
-                "-out:nstruct", number_of_decoys_to_create,
-                ] + get_and_remove(kw, 'arguments', []),
-            job_local_dir = get_and_remove(kw, 'job_local_dir', pdb_file_dir),
-            **kw)
-
-
-
-
-
-__registered_apps = {
-    'gamess': GamessApplication,
-    'rosetta': RosettaApplication,
-}
+## registry of applications
+__registered_apps = { }
 
 def get(tag, *args, **kwargs):
     """
@@ -515,5 +337,22 @@ def get(tag, *args, **kwargs):
     try:
         return __registered_apps[tag](*args, **kwargs)
     except KeyError:
-        raise UnknownApplication("Application '%s' is not unknown to the gc3utils library." % tag)
+        raise UnknownApplication("Application '%s' is not unknown to the gc3libs library." % tag)
 
+
+def register(application_class, tag):
+    """
+    Register an application class with name `tag`.
+    After registration, application instances can be retrieved
+    by tag name with ``gc3libs.application.get('tag')``.
+    """
+    __registered_apps[tag] = application_class
+
+
+
+## main: run tests
+
+if "__main__" == __name__:
+    import doctest
+    doctest.testmod(name="__init__",
+                    optionflags=doctest.NORMALIZE_WHITESPACE)

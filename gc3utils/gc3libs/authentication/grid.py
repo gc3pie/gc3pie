@@ -1,64 +1,41 @@
-import sys
-import os
-import subprocess
-import getpass
+#! /usr/bin/env python
+#
+"""
+Authentication support with Grid proxy certificates.
+"""
+# Copyright (C) 2009-2010 GC3, University of Zurich. All rights reserved.
+#
+# Includes parts adapted from the ``bzr`` code, which is
+# copyright (C) 2005, 2006, 2007, 2008, 2009 Canonical Ltd
+#
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU Lesser General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU Lesser General Public License
+# along with this program; if not, write to the Free Software
+# Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
+#
+__docformat__ = 'reStructuredText'
+__version__ = '$Revision$'
 
-from InformationContainer import *
-import gc3utils
-import Default
-from Exceptions import *
 
 import arclib
-
-class Auth(object):
-    types = {}
-    # new proposal
-    def __init__(self, authorizations, auto_enable):
-        self.auto_enable = auto_enable
-        self.__auths = { }
-        self._auth_dict = authorizations
-        self._auth_type = { }
-        for auth_name, auth_params in self._auth_dict.items():
-            self._auth_type[auth_name] = Auth.types[auth_params['type']]
-
-    def get(self, auth_name):
-        if not self.__auths.has_key(auth_name):
-            try:
-                a =  self._auth_type[auth_name](** self._auth_dict[auth_name])
-                if not a.is_valid():
-                    raise Exception('Missing required configuration parameters')
-
-                if not a.check():
-                    if self.auto_enable:
-                        try:
-                            a.enable()
-                        except Exception, x:
-                            gc3utils.log.debug("Got exception while enabling auth '%s',"
-                                               " will remember for next invocations:"
-                                               " %s: %s" % (auth_name, x.__class__.__name__, x))
-                            a = x
-                    else:
-                        a = AuthenticationException("No valid credentials of type '%s'"
-                                                    " and `auto_enable` not set." % auth_name)
-            except KeyError:
-                a = ConfigurationError("Unknown auth '%s' - check configuration file" % auth_name)
-            except Exception, x:
-                a = AuthenticationException("Got error while creating auth '%s': %s: %s"
-                                            % (auth_name, x.__class__.__name__, x))
-
-            self.__auths[auth_name] = a
-
-        a = self.__auths[auth_name]
-        if isinstance(a, Exception):
-            raise a
-        return a
-
-    @staticmethod
-    def register(auth_type, ctor):
-        Auth.types[auth_type] = ctor
+from gc3libs.authentication import Auth
+import gc3libs
+import getpass
+import os
+import subprocess
+import sys
 
 
-class ArcAuth(object):
+class GridAuth(object):
 
     def __init__(self, **authorization):
         self.user_cert_valid = False
@@ -76,12 +53,12 @@ class ArcAuth(object):
             return False
 
     def check(self):
-        gc3utils.log.debug('Checking authentication: GRID')
+        gc3libs.log.debug('Checking authentication: GRID')
         try:
             self.user_cert_valid = _user_certificate_is_valid()
             self.proxy_valid = _voms_proxy_is_valid()
         except Exception, x:
-            gc3utils.log.error('Error checking GRID authentication: %s', str(x), exc_info=True)
+            gc3libs.log.error('Error checking GRID authentication: %s', str(x), exc_info=True)
 
         return ( self.user_cert_valid and self.proxy_valid )
      
@@ -125,11 +102,7 @@ class ArcAuth(object):
 
             input_passwd = getpass.getpass(message)
             
-            # End collecting information
-
-
             # Start renewing credential
-
             new_cert = False
 
             # User certificate
@@ -137,7 +110,7 @@ class ArcAuth(object):
                 if not self.usercert == 'slcs':
                     raise Exception('User credential expired')
 
-                gc3utils.log.debug('No valid certificate found; trying to get new one by slcs-init ...')
+                gc3libs.log.debug('No valid certificate found; trying to get new one by slcs-init ...')
                 returncode = subprocess.call(["slcs-init", "--idp", self.idp, "-u", self.aai_username,
                                               "-p", input_passwd, "-k", input_passwd],
                                              close_fds=True)
@@ -145,21 +118,20 @@ class ArcAuth(object):
                 if returncode != 0:
                     raise SLCSException("Failed while running 'slcs-init'")
                 new_cert = True
-                gc3utils.log.info('Create new SLCS certificate [ ok ].')
-
+                gc3libs.log.info('Create new SLCS certificate [ ok ].')
 
             # renew proxy if cert has changed or proxy expired
             if new_cert or not self.proxy_valid:
                 if self.type == 'voms-proxy':
                     # Try renew voms credential; another interactive command
-                    gc3utils.log.debug("No valid proxy found; trying to get a new one by 'voms-proxy-init' ...")
+                    gc3libs.log.debug("No valid proxy found; trying to get a new one by 'voms-proxy-init' ...")
                     proxy_enable_command_list = ['voms-proxy-init',
                                                  '-valid', '24:00',
                                                  '-voms', self.vo,
                                                  '-q','-pwstdin']
                 elif self.type == 'grid-proxy':
                     # Try renew voms credential; another interactive command
-                    gc3utils.log.debug("No valid proxy found; trying to get a new one by 'grid-proxy-init' ...")
+                    gc3libs.log.debug("No valid proxy found; trying to get a new one by 'grid-proxy-init' ...")
                     proxy_enable_command_list = ['grid-proxy-init',
                                                  '-valid', '24:00',
                                                  '-q','-pwstdin']
@@ -184,38 +156,6 @@ class ArcAuth(object):
                                           % (x.__class__.__name__, str(x)))
 
 
-class SshAuth(object):
-    def __init__(self, **authorization):
-        self.__dict__.update(authorization)
-
-    def is_valid(self):
-        try:
-            self.type
-            self.username
-            return True
-        except:
-            return False
-
-    def check(self):
-        return True
-    def enable(self):
-        return True
-
-
-class NoneAuth(object):
-    def __init__(self, **authorization):
-        self.__dict__.update(authorization)
-
-    def is_valid(self):
-        return True
-    
-    def check(self):
-        return True
-
-    def enable(self):
-        return True
-
-    
 def _voms_proxy_is_valid():
     try:
         c = arclib.Certificate(arclib.PROXY)
@@ -231,7 +171,15 @@ def _user_certificate_is_valid():
     except:
         return False
 
-Auth.register('ssh', SshAuth)
-Auth.register('voms-proxy', ArcAuth)
-Auth.register('grid-proxy', ArcAuth)
-Auth.register('none', NoneAuth)
+
+Auth.register('grid-proxy', GridAuth)
+Auth.register('voms-proxy', GridAuth)
+
+
+
+## main: run tests
+
+if "__main__" == __name__:
+    import doctest
+    doctest.testmod(name="arc",
+                    optionflags=doctest.NORMALIZE_WHITESPACE)

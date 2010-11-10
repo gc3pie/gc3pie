@@ -33,7 +33,7 @@ import setuptools
 import setuptools.dist
 setuptools.setup(
     name = "gc3utils",
-    version = "0.10.18", # format: 0.MONTH.DAY (for now ...)
+    version = "0.11.10", # format: 0.MONTH.DAY (for now ...)
 
     packages = setuptools.find_packages(exclude=['ez_setup']),
     #scripts = ['gcmd.py'],
@@ -70,8 +70,8 @@ setuptools.setup(
 
     # additional non-Python files to be bundled in the package
     package_data = {
-        'gc3utils': ['etc/gc3utils.conf.example',
-                     'etc/logging.conf.example'],
+        'gc3libs': ['etc/gc3pie.conf.example',
+                    'etc/logging.conf.example'],
         },
 
     # `zip_safe` can ease deployment, but is only allowed if the package

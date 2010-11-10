@@ -1,4 +1,31 @@
-import gc3utils
+#! /usr/bin/env python
+"""
+Generic Python programming utility functions.
+"""
+# Copyright (C) 2009-2010 GC3, University of Zurich. All rights reserved.
+#
+# Includes parts adapted from the ``bzr`` code, which is
+# copyright (C) 2005, 2006, 2007, 2008, 2009 Canonical Ltd
+#
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU Lesser General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU Lesser General Public License
+# along with this program; if not, write to the Free Software
+# Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
+#
+__docformat__ = 'reStructuredText'
+__version__ = '$Revision$'
+
+
+import gc3libs
 import os
 import os.path
 import re
@@ -155,7 +182,7 @@ def progressive_number():
     id = int(id_file.read(8) or "0", 16)
     id +=1 
     id_file.seek(0)
-    id_file.write("%08x -- DO NOT REMOVE OR ALTER THIS FILE: it is used internally by the gc3utils\n" % id)
+    id_file.write("%08x -- DO NOT REMOVE OR ALTER THIS FILE: it is used internally by the gc3libs\n" % id)
     id_file.close()
     lock.release()
     return id
@@ -199,25 +226,6 @@ def check_jobdir(jobdir):
         return False
 
 
-def check_qgms_version(minimum_version):
-    """
-    This will check that the qgms script is an acceptably new version.
-    This function could also be exanded to make sure gamess is installed and working, and if not recompile it first.
-    """
-    # todo: fill out this function.
-    # todo: add checks to verify gamess is working?
-
-    current_version = 0.1
-
-    # todo: write some function that goes out and determines version
-
-    if minimum_version < current_version:
-        gc3utils.log.error('qgms script version is too old.  Please update it and resubmit.')
-        return False
-
-    return True
-
-
 def deploy_configuration_file(filename, template_filename=None):
     """
     Ensure that configuration file `filename` exists; possibly
@@ -229,7 +237,7 @@ def deploy_configuration_file(filename, template_filename=None):
     a `NoConfigurationFile` exception is raised.
 
     If parameter `filename` is not an absolute path, it is interpreted
-    as relative to `gc3utils.Default.RCDIR`; if `template_filename` is
+    as relative to `gc3libs.Default.RCDIR`; if `template_filename` is
     `None`, then it is assumed to be the same as `filename`.
     """
     if template_filename is None:
@@ -244,13 +252,13 @@ def deploy_configuration_file(filename, template_filename=None):
             if not os.path.exists(dirname(filename)):
                 os.makedirs(dirname(filename))
             from pkg_resources import Requirement, resource_filename
-            sample_config = resource_filename(Requirement.parse("gc3utils"), 
-                                              "gc3utils/etc/" + template_filename)
+            sample_config = resource_filename(Requirement.parse("gc3libs"), 
+                                              "gc3libs/etc/" + template_filename)
             import shutil
             shutil.copyfile(sample_config, filename)
             return False
         except IOError, x:
-            gc3utils.log.critical("CRITICAL ERROR: Failed copying configuration file: %s" % x)
+            gc3libs.log.critical("CRITICAL ERROR: Failed copying configuration file: %s" % x)
             raise NoConfigurationFile("No configuration file '%s' was found, and an attempt to create it failed. Aborting." % filename)
         except ImportError:
             raise NoConfigurationFile("No configuration file '%s' was found. Aborting." % filename)
@@ -371,10 +379,10 @@ def obtain_file_lock(joblist_location, joblist_lock):
     # if joblist_location does not exist, create it
     if not os.path.exists(joblist_location):
         open(joblist_location, 'w').close()
-        gc3utils.log.debug(joblist_location + ' did not exist.  created it.')
+        gc3libs.log.debug(joblist_location + ' did not exist.  created it.')
 
 
-    gc3utils.log.debug('trying creating lock for %s in %s',joblist_location,joblist_lock)    
+    gc3libs.log.debug('trying creating lock for %s in %s',joblist_location,joblist_lock)    
 
     while lock_obtained == False:
         if ( retries > 0 ):
@@ -384,14 +392,14 @@ def obtain_file_lock(joblist_location, joblist_lock):
                 break
             except OSError:
                 # lock already created; wait
-                gc3utils.log.debug('Lock already created; retry later [ %d ]',retries)
+                gc3libs.log.debug('Lock already created; retry later [ %d ]',retries)
                 time.sleep(default_wait_time)
                 retries = retries - 1
             except:
-                gc3utils.log.error('failed obtaining lock due to %s',sys.exc_info()[1])
+                gc3libs.log.error('failed obtaining lock due to %s',sys.exc_info()[1])
                 raise
         else:
-            gc3utils.log.error('could not obtain lock for updating list of jobs')
+            gc3libs.log.error('could not obtain lock for updating list of jobs')
             break
 
     return lock_obtained
@@ -405,7 +413,7 @@ def release_file_lock(joblist_lock):
         os.remove(joblist_lock)
         return True
     except:
-        gc3utils.log.debug('Failed removing lock due to %s',sys.exc_info()[1])
+        gc3libs.log.debug('Failed removing lock due to %s',sys.exc_info()[1])
         return False
 
 def date_normalize(date_string):
@@ -418,7 +426,7 @@ def notify(job, include_job_results):
     try:
         # create tgz with job information
 
-        job_tarname = gc3utils.Default.NOTIFY_DESTINATIONFOLDER + '/' + job.unique_token + '.tgz'
+        job_tarname = gc3libs.Default.NOTIFY_DESTINATIONFOLDER + '/' + job.unique_token + '.tgz'
         tar = tarfile.open(job_tarname, "w:gz")
 
         if include_job_results:
@@ -426,24 +434,24 @@ def notify(job, include_job_results):
                 for file in os.listdir(job.job_local_dir):
                     tar.add(os.path.join(job.job_local_dir,file))
             except:
-                gc3utils.log.error('Failed while adding files from job_local_dir %s', job.job_local_dir)
+                gc3libs.log.error('Failed while adding files from job_local_dir %s', job.job_local_dir)
         
         # add job object file
-        tar.add(os.path.join(gc3utils.Default.JOBS_DIR, job.unique_token))
+        tar.add(os.path.join(gc3libs.Default.JOBS_DIR, job.unique_token))
         
         tar.close()
 
         # send notification email to gc3admin
-        send_mail(gc3utils.Default.NOTIFY_USER_EMAIL,
-                   gc3utils.Default.NOTIFY_GC3ADMIN,
-                   gc3utils.Default.NOTIFY_SUBJECTS,
-                   gc3utils.Default.NOTIFY_MSG,
+        send_mail(gc3libs.Default.NOTIFY_USER_EMAIL,
+                   gc3libs.Default.NOTIFY_GC3ADMIN,
+                   gc3libs.Default.NOTIFY_SUBJECTS,
+                   gc3libs.Default.NOTIFY_MSG,
                    [job_tarname])
 
         return 0
 
     except:
-        gc3utils.log.error('failed creating report')
+        gc3libs.log.error('failed creating report')
         # return 1
         raise
 
@@ -485,7 +493,7 @@ def send_email(_to,_from,_subject,_msg):
         return 0
 
     except:
-        gc3utils.log.error('Failed sending email [ %s ]',sys.exc_info()[1])
+        gc3libs.log.error('Failed sending email [ %s ]',sys.exc_info()[1])
         return 1
 
 if __name__ == '__main__':

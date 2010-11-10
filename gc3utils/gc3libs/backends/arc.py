@@ -1,3 +1,31 @@
+#! /usr/bin/env python
+#
+"""
+Job control on ARC0 resources.
+"""
+# Copyright (C) 2009-2010 GC3, University of Zurich. All rights reserved.
+#
+# Includes parts adapted from the ``bzr`` code, which is
+# copyright (C) 2005, 2006, 2007, 2008, 2009 Canonical Ltd
+#
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU Lesser General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU Lesser General Public License
+# along with this program; if not, write to the Free Software
+# Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
+#
+__docformat__ = 'reStructuredText'
+__version__ = '$Revision$'
+
+
 import sys
 import os
 import time
@@ -6,14 +34,14 @@ import tempfile
 import warnings
 warnings.simplefilter("ignore")
 
-import gc3utils
-from utils import *
-from LRMS import LRMS
-from Resource import Resource
-import Job
-import Application
-import Default
-import Exceptions
+import gc3libs
+from gc3libs.application import Application
+from gc3libs.backends import LRMS
+import gc3libs.Exceptions as Exceptions
+from gc3libs.utils import *
+from gc3libs.Resource import Resource
+import gc3libs.Job as Job
+import gc3libs.Default as Default
 
 import arclib
  
@@ -45,16 +73,16 @@ class ArcLrms(LRMS):
         if (not hasattr(self, '_queues')) or (not hasattr(self, '_queues_last_accessed')) \
                 or (time.time() - self._queues_last_updated > self._queues_cache_time):
             if self._resource.has_key('arc_ldap'):
-                gc3utils.log.debug("Getting list of ARC resources from GIIS '%s' ...", 
+                gc3libs.log.debug("Getting list of ARC resources from GIIS '%s' ...", 
                                    self._resource.arc_ldap)
                 cls = arclib.GetClusterResources(arclib.URL(self._resource.arc_ldap),True,'',1)
             else:
                 cls = arclib.GetClusterResources()
-            gc3utils.log.debug('Got cluster list of length %d', len(cls))
+            gc3libs.log.debug('Got cluster list of length %d', len(cls))
             # Temporarly disable this check
             #if len(cls) > 0:
             self._queues = arclib.GetQueueInfo(cls,arclib.MDS_FILTER_CLUSTERINFO, True, '', 5)
-            gc3utils.log.debug('returned valid queue information for %d queues', len(self._queues))
+            gc3libs.log.debug('returned valid queue information for %d queues', len(self._queues))
             self._queues_last_updated = time.time()
             #else:
             ## return empty queues list
@@ -65,7 +93,7 @@ class ArcLrms(LRMS):
 
         # Initialize xrsl
         xrsl = application.xrsl(self._resource)
-        gc3utils.log.debug('Application provided XRSL: %s' % xrsl)
+        gc3libs.log.debug('Application provided XRSL: %s' % xrsl)
 
         try:
             # ARClib cannot handle unicode strings, so convert `xrsl` to ascii
@@ -193,23 +221,23 @@ class ArcLrms(LRMS):
                 _download_dir = Default.JOB_FOLDER_LOCATION + '/' + job_obj.unique_token
 
             # Prepare/Clean download dir
-            if gc3utils.Job.prepare_job_dir(_download_dir) is False:
-                gc3utils.log.error('failed creating local folder %s' % _download_dir)
+            if gc3libs.Job.prepare_job_dir(_download_dir) is False:
+                gc3libs.log.error('failed creating local folder %s' % _download_dir)
                 raise IOError('Failed while creating local folder %s' % _download_dir)
 
-            gc3utils.log.debug('downloading job into %s',_download_dir)
+            gc3libs.log.debug('downloading job into %s',_download_dir)
             try:
                 arclib.JobFTPControl.DownloadDirectory(jftpc,job_obj.lrms_jobid,_download_dir)
             except arclib.FTPControlError:
                 # critical error. consider job remote data as lost
-                gc3utils.log.error('failed downloading remote folder %s' % job_obj.lrms_jobid)
+                gc3libs.log.error('failed downloading remote folder %s' % job_obj.lrms_jobid)
                 raise LRMSUnrecoverableError('failed downloading remote folder')
 
             # Clean remote job sessiondir
             try:
                 retval = arclib.JobFTPControl.Clean(jftpc,job_obj.lrms_jobid)
             except arclib.FTPControlError:
-                gc3utils.log.error('Failed wile removing remote folder %s' % job_obj.lrms_jobid)
+                gc3libs.log.error('Failed wile removing remote folder %s' % job_obj.lrms_jobid)
                 job_obj.warning_flag = 1
 
             # set job status to COMPLETED
@@ -222,7 +250,7 @@ class ArcLrms(LRMS):
         except arclib.FTPControlError:
             raise
         except:
-            gc3utils.log.error('Failure in retrieving job results [%s]',sys.exc_info()[1])
+            gc3libs.log.error('Failure in retrieving job results [%s]',sys.exc_info()[1])
             raise
 
 
@@ -243,10 +271,10 @@ class ArcLrms(LRMS):
 
         try:
             if self._resource.has_key('arc_ldap'):
-                gc3utils.log.debug("Getting cluster list from %s ...", self._resource.arc_ldap)
+                gc3libs.log.debug("Getting cluster list from %s ...", self._resource.arc_ldap)
                 cls = arclib.GetClusterResources(arclib.URL(self._resource.arc_ldap),True,'',2)
             else:
-                gc3utils.log.debug("Getting cluster list from ARC's default GIIS ...")
+                gc3libs.log.debug("Getting cluster list from ARC's default GIIS ...")
                 cls = arclib.GetClusterResources()
 
             total_queued = 0
@@ -265,7 +293,7 @@ class ArcLrms(LRMS):
             for cluster in cls:
                 queues =  arclib.GetQueueInfo(cluster,arclib.MDS_FILTER_CLUSTERINFO,True,"",1)
                 if len(queues) == 0:
-                    gc3utils.log.error('No ARC queues found for resource %s' % str(cluster))
+                    gc3libs.log.error('No ARC queues found for resource %s' % str(cluster))
                     continue
                     # raise LRMSSubmitError('No ARC queues found')              
 
@@ -308,7 +336,7 @@ class ArcLrms(LRMS):
             self._resource.user_run = user_running
             self._resource.used_quota = -1
 
-            gc3utils.log.info("Updated resource '%s' status:"
+            gc3libs.log.info("Updated resource '%s' status:"
                               " free slots: %d,"
                               " own running jobs: %d,"
                               " own queued jobs: %d,"
@@ -352,14 +380,14 @@ class ArcLrms(LRMS):
             jftpc = arclib.JobFTPControl()
 
             # download file
-            gc3utils.log.debug('Downloading remote file %s into local tmp file %s' % (filename,_tmp_filehandle.name))
+            gc3libs.log.debug('Downloading remote file %s into local tmp file %s' % (filename,_tmp_filehandle.name))
             # arclib.JobFTPControl.Download(jftpc,_remote_filename,_tmp_filehandle.name)
             #  arclib.JobFTPControl.Download(jftpc, arclib.URL, offset, buffer_size, local_file)
 
-            gc3utils.log.debug('using %d %d ',offset,buffer_size)
+            gc3libs.log.debug('using %d %d ',offset,buffer_size)
             arclib.JobFTPControl.Download(jftpc, arclib.URL(_remote_filename), int(offset), int(buffer_size), _tmp_filehandle.name)
 
-            gc3utils.log.debug('done')
+            gc3libs.log.debug('done')
 
             # pass content of filename as part of job object dictionary
             # assuming stdout/stderr are alqays limited in size
@@ -382,9 +410,17 @@ class ArcLrms(LRMS):
 
             return _file_content
         except:
-            gc3utils.log.error('Failed while retrieving remote file %s', _remote_filename)
+            gc3libs.log.error('Failed while retrieving remote file %s', _remote_filename)
             raise
 
     def _date_normalize(self, date_string):
         return time.localtime(int(date_string))
 
+
+
+## main: run tests
+
+if "__main__" == __name__:
+    import doctest
+    doctest.testmod(name="arc",
+                    optionflags=doctest.NORMALIZE_WHITESPACE)
