@@ -74,7 +74,7 @@ def _get_gcli(config_file_locations, auto_enable_auth=True):
         return gc3libs.gcli.Gcli(default, resources, authorizations, auto_enable_auth)
     except NoResources:
         raise FatalError("No computational resources defined.  Please edit the configuration file '%s'." 
-                         % config_file_path)
+                         % config_file_locations)
     except:
         gc3utils.log.debug("Failed loading config file from '%s'", 
                            str.join("', '", config_file_locations))
