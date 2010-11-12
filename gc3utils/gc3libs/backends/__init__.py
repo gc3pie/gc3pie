@@ -33,17 +33,7 @@ class LRMS:
     """Base class for interfacing with a computing resource."""
 
     def __init__(self, resource): 
-        if resource.has_key('transport'):
-            if resource.transport is 'local':
-                transport = LocalTransport()
-            elif resource.transport is 'ssh':
-                transport = SshTransport()
-            elif resource.transport is 'globus':
-                transport = GlobusTransport()
-            else:
-                raise TransportException('Could not initialize transport')
-        else:
-            raise LRMSException('Invalid resource description: missing transport')
+        raise NotImplementedError("Abstract method `LRMS()` called - this should have been defined in a derived class.")
     
     def submit_job(self, application):
         """

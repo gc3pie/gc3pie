@@ -47,6 +47,7 @@ JOBS_DIR = RCDIR + "/jobs"
 JOB_FILE = ".lrms_id"
 JOB_FINISHED_FILE = ".finished"
 JOB_LOG = ".log"
+
 CACHE_TIME = 90 # only update ARC resources status every this seconds
 
 ARC_LRMS = 1
@@ -63,6 +64,11 @@ NOTIFY_GC3ADMIN = "sergio.maffioletti@gc3.uzh.ch"
 NOTIFY_SUBJECTS = "Job notification"
 NOTIFY_MSG = """This is an authomatic generated email."""
 NOTIFY_DESTINATIONFOLDER = os.path.join('/tmp',NOTIFY_USERNAME)
+
+# Transport information
+SSH_PORT = 22
+SSH_CONNECT_TIMEOUT = 30
+
 
 class Default(InformationContainer):
 

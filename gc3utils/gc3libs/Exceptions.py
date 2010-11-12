@@ -154,6 +154,9 @@ class ConfigurationError(Error):
 class OutputNotAvailableError(Error):
     pass
 
+class TransportError(Error):
+    pass
+
 ## main: run tests
 
 if "__main__" == __name__:

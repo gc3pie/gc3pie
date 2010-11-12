@@ -43,6 +43,7 @@ import gc3libs.Exceptions as Exceptions
 import gc3libs.Job as Job
 import gc3libs.utils as utils # first, defaultdict, to_bytes
 
+import transport
 
 def _int_floor(s):
     return int(float(s))
@@ -285,7 +286,19 @@ class SgeLrms(LRMS):
         self._resource.setdefault('sge_accounting_delay', 15)
 
         auth = auths.get(resource.authorization_type)
+
         self._ssh_username = auth.username
+
+        # for this backend transport object is mandatory.
+        if resource.has_key('transport'):
+            if resource.transport == 'local':
+                self.transport = transport.LocalTransport()
+            elif resource.transport == 'ssh':
+                self.transport = transport.SshTransport(self._resource.frontend,username=self._ssh_username)
+            else:
+                raise transport.TransportError('Unknown transport %s', resource.transport)
+        else:
+            raise LRMSException('Invalid resource description: missing transport')
         
         # XXX: does Ssh really needs this ?
         self._resource.ncores = int(self._resource.ncores)
@@ -297,6 +310,9 @@ class SgeLrms(LRMS):
 
         self.isValid = 1
 
+
+    def _is_transport_open(self):
+        pass
 
     def is_valid(self):
         return self.isValid
@@ -310,23 +326,24 @@ class SgeLrms(LRMS):
         On the backend, the command will look something like this:
         # ssh user@remote_frontend 'cd unique_token ; $gamess_location -n cores input_file'
         """
-        # Establish an ssh connection.
-        (ssh, sftp) = self._connect_ssh(self._resource.frontend,self._ssh_username)
+        
+        self.transport.connect()
+
+        ## Establish an ssh connection.
+        #(ssh, sftp) = self._connect_ssh(self._resource.frontend,self._ssh_username)
 
         # Create the remote unique_token directory. 
         try:
             _command = 'mkdir -p $HOME/.gc3utils_jobs; mktemp -p $HOME/.gc3utils_jobs -d lrms_job.XXXXXXXXXX'
-            exit_code, stdout, stderr = self._execute_command(ssh, _command)
+            exit_code, stdout, stderr = self.transport.execute_command(_command)
             if exit_code == 0:
                 ssh_remote_folder = stdout.split('\n')[0]
             else:
-                raise paramiko.SSHException('Failed while executing remote command')
+                raise LRMSError('Failed while executing remote command')
         except:
-            gc3libs.log.critical("Failed creating remote temporary folder: command '%s' returned exit code %d)"
-                                  % (_command, exit_code))
-
-            if not ssh  is None:
-                ssh.close()
+            gc3libs.log.critical("Failed creating remote temporary folder: command '%s' returned exit code %d, stderr %s)"
+                                 % (_command, exit_code, stderr))
+            self.transport.close()
             raise
 
         # Copy the input file to remote directory.
@@ -336,25 +353,24 @@ class SgeLrms(LRMS):
 
             gc3libs.log.debug("Transferring file '%s' to '%s'" % (local_path, remote_path))
             try:
-                sftp.put(local_path, remote_path)
+                self.transport.put(local_path, remote_path)
             except:
                 gc3libs.log.critical("Copying input file '%s' to remote cluster '%s' failed",
                                       local_path, self._resource.frontend)
-                if not ssh  is None:
-                    ssh.close()
+                self.transport.close()
                 raise
 
-        def run_ssh_command(command, msg=None):
-            """Run the specified command and raise an exception if it failed."""
-            gc3libs.log.debug(msg or ("Running remote command '%s' ..." % command))
-            exit_code, stdout, stderr = self._execute_command(ssh, command)
-            if exit_code != 0:
-                gc3libs.log.critical("Failed executing remote command '%s'; exit status %d"
-                                      % (command, exit_code))
-                gc3libs.log.debug('remote command returned stdout: %s' % stdout)
-                gc3libs.log.debug('remote command returned stderr: %s' % stderr)
-                raise paramiko.SSHException("Failed executing remote command '%s'" % command)
-            return stdout, stderr
+        #def run_ssh_command(command, msg=None):
+        #    """Run the specified command and raise an exception if it failed."""
+        #    gc3libs.log.debug(msg or ("Running remote command '%s' ..." % command))
+        #    exit_code, stdout, stderr = self._execute_command(ssh, command)
+        #    if exit_code != 0:
+        #        gc3libs.log.critical("Failed executing remote command '%s'; exit status %d"
+        #                              % (command, exit_code))
+        #        gc3libs.log.debug('remote command returned stdout: %s' % stdout)
+        #        gc3libs.log.debug('remote command returned stderr: %s' % stderr)
+        #        raise paramiko.SSHException("Failed executing remote command '%s'" % command)
+        #    return stdout, stderr
 
         try:
             # Try to submit it to the local queueing system.
@@ -367,18 +383,18 @@ class SgeLrms(LRMS):
                 script_name = '%s.%x.sh' % (application.get('application_tag', 'script'), 
                                             random.randint(0, sys.maxint))
                 # upload script to remote location
-                sftp.put(local_script_file.name, 
-                         os.path.join(ssh_remote_folder, script_name))
+                self.transport.put(local_script_file.name,
+                                   os.path.join(ssh_remote_folder, script_name))
                 # cleanup
                 local_script_file.close()
                 if os.path.exists(local_script_file.name):
                     os.unlink(local_script_file.name)
                 # submit it
                 qsub += ' ' + script_name
-            stdout, stderr = run_ssh_command("/bin/sh -c 'cd %s && %s'" % (ssh_remote_folder, qsub))
+            exitcode, stdout, stderr = self.transport.execute_command("/bin/sh -c 'cd %s && %s'" % (ssh_remote_folder, qsub))
             lrms_jobid = get_qsub_jobid(stdout)
             gc3libs.log.debug('Job submitted with jobid: %s',lrms_jobid)
-            ssh.close()
+            self.transport.close()
 
             job_log = "\nstdout:\n" + stdout + "\nstderr:\n" + stderr
 
@@ -403,8 +419,7 @@ class SgeLrms(LRMS):
             return job
 
         except:
-            if ssh is not None:
-                ssh.close()
+            self.transport.close()
             gc3libs.log.critical("Failure submitting job to resource '%s' - see log file for errors"
                                   % self._resource.name)
             raise
@@ -427,13 +442,14 @@ class SgeLrms(LRMS):
             'maxvmem':'used_memory',
             }
         try:
+            self.transport.connect()
             # open ssh connection
-            ssh, sftp = self._connect_ssh(self._resource.frontend,self._ssh_username)
+            # ssh, sftp = self._connect_ssh(self._resource.frontend,self._ssh_username)
 
             # then check the lrms_jobid with qstat
             _command = "qstat | egrep  '^ *%s'" % job.lrms_jobid
             gc3libs.log.debug("checking remote job status with '%s'" % _command)
-            exit_code, stdout, stderr = self._execute_command(ssh, _command)
+            exit_code, stdout, stderr = self.transport.execute_command(_command)
             if exit_code == 0:
                 # parse `qstat` output
                 job_status = stdout.split()[4]
@@ -455,7 +471,7 @@ class SgeLrms(LRMS):
                 # we rely on `qacct` to provide information on a finished job
                 _command = 'qacct -j %s' % job.lrms_jobid
                 gc3libs.log.debug("`qstat` returned no job information; trying with '%s'" % _command)
-                exit_code, stdout, stderr = self._execute_command(ssh, _command)
+                exit_code, stdout, stderr = self.transport.execute_command(_command)
                 if exit_code == 0:
                     # parse stdout and update job obect with detailed accounting information
                     gc3libs.log.debug('parsing stdout to get job accounting information')
@@ -508,23 +524,24 @@ class SgeLrms(LRMS):
             job.stdout_filename = job.lrms_job_name + '.o' + job.lrms_jobid
             job.stderr_filename = job.lrms_job_name + '.o' + job.lrms_jobid
             
-            ssh.close()
+            self.transport.close()
             
             return job
         
         except:
-            if not ssh  is None:
-                ssh.close()
+            self.transport.close()
             gc3libs.log.critical('Failure in checking status')
             raise
 
 
     def cancel_job(self, job_obj):
         try:
-            ssh, sftp = self._connect_ssh(self._resource.frontend,self._ssh_username)
+            
+            self.transport.connect()
+
             _command = 'qdel '+job_obj.lrms_jobid
 
-            exit_code, stdout, stderr = self._execute_command(ssh, _command)
+            exit_code, stdout, stderr = self.transport.execute_command(_command)
 
             if exit_code != 0:
                 # It is possible that 'qdel' fails because job has been already completed
@@ -534,36 +551,34 @@ class SgeLrms(LRMS):
                 gc3libs.log.debug('remote command returned stderr: %s' % stderr)
                 if exit_code == 127:
                     # failed executing remote command
-                    raise paramiko.SSHException('Failed executing remote command')
+                    raise LRMSError('Failed executing remote command')
 
-            ssh.close()
+            self.transport.close()
             return job_obj
 
         except:
-            if not ssh  is None:
-                ssh.close()
+            self.transport.close()
             gc3libs.log.critical('Failure in checking status')
             raise
         
 
 
-    def get_results(self,job):
+    def get_results(self, job):
         """Retrieve results of a job."""
-
+        
         gc3libs.log.debug("Connecting to cluster frontend '%s' as user '%s' via SSH ...", 
                            self._resource.frontend, self._ssh_username)
         try:
-            ssh, sftp = self._connect_ssh(self._resource.frontend,self._ssh_username)
-            
-            # If the dir no longer exists, exit.
-            # todo : maybe change the status to something else
+
+            self.transport.connect()
+
             try:
-                files_list = sftp.listdir(job.remote_ssh_folder)
+                files_list = self.transport.listdir(job.remote_ssh_folder)
             except Exception, x:
                 gc3libs.log.error("Could not read remote job directory '%s': " 
                                    % job.remote_ssh_folder, exc_info=True)
-                if not ssh  is None:
-                   ssh.close()
+                gc3libs.log.debug("Error type %s, %s" % (sys.exc_info()[0], sys.exc_info()[1]))
+                self.transport.close()
                 #raise
                 job.status = Job.JOB_STATE_FAILED
                 return job
@@ -611,7 +626,7 @@ class SgeLrms(LRMS):
                 try:
                     if not os.path.exists(local_path):
                         gc3libs.log.debug("Copying remote '%s' to local '%s'", remote_path, local_path)
-                        sftp.get(remote_path, local_path)
+                        self.transport.get(remote_path, local_path)
                     else:
                         gc3libs.log.info("Local file '%s' already exists; will not be overwritten!",
                                           local_path)
@@ -626,22 +641,21 @@ class SgeLrms(LRMS):
                            _download_dir + '/' + jobname + '.err')
 
             # cleanup remote folder
-            _command = "rm -rf '%s'" % job.remote_ssh_folder
-            exit_code, stdout, stderr = self._execute_command(ssh, _command)
-            if exit_code != 0:
-                gc3libs.log.error('Failed while removing remote folder %s' % job.remote_ssh_folder)
-                gc3libs.log.debug('error: %s' % stderr)
+            try:
+                self.transport.remove_tree(job.remote_ssh_folder)
+            except:
+                gc3libs.log.error('Failed while removing remote folder %s. Error type %s, %s' 
+                                  % (job.remote_ssh_folder, sys.exc_info()[0], sys.exc_info()[1]))
             
             # set job status to COMPLETED
             job.download_dir = _download_dir
             job.status = Job.JOB_STATE_COMPLETED
 
-            ssh.close()
+            self.transport.close()
             return job
 
         except: 
-            if not ssh  is None:
-                ssh.close()
+            self.transport.close()
             gc3libs.log.critical('Failure in retrieving results')
             gc3libs.log.debug('%s %s',sys.exc_info()[0], sys.exc_info()[1])
             raise 
@@ -652,130 +666,94 @@ class SgeLrms(LRMS):
         tail allows to get a snapshot of any valid file created by the job
         """
 
-        # Sanitize offset
-        if int(offset) < 1024:
-            offset = 0
+        try:
 
-        # Sanitize buffer_size
-        if  not buffer_size:
-            buffer_size = -1
+            self.transport.connect()
 
-        # open ssh channel
-        ssh, sftp = self._connect_ssh(self._resource.frontend,self._ssh_username)
+            # Sanitize offset
+            if int(offset) < 1024:
+                offset = 0
 
-        # reference to remote file
-        _remote_filename = job_obj.remote_ssh_folder + '/' + filename
+            # Sanitize buffer_size
+            if  not buffer_size:
+                buffer_size = -1
 
-        # create temp file
-        _tmp_filehandle = tempfile.NamedTemporaryFile(mode='w+b', suffix='.tmp', prefix='gc3_')
+            # reference to remote file
+            _remote_filename = job_obj.remote_ssh_folder + '/' + filename
 
-        remote_handler = sftp.open(_remote_filename, mode='r', bufsize=-1)
+            # create temp file
+            _tmp_filehandle = tempfile.NamedTemporaryFile(mode='w+b', suffix='.tmp', prefix='gc3_')
 
-        remote_handler.seek(offset)
-        _tmp_filehandle.write(remote_handler.read(buffer_size))
+            # remote_handler = sftp.open(_remote_filename, mode='r', bufsize=-1)
+            remote_handler = self.transport.open(_remote_filename, mode='r', bufsize=-1)
 
-        gc3libs.log.debug('Done')
+            remote_handler.seek(offset)
+            _tmp_filehandle.write(remote_handler.read(buffer_size))
 
-        # sftp.get(_remote_filename, _tmp_filehandle.name)
+            gc3libs.log.debug('Done')
 
-        # pass content of filename as part of job object dictionary
-        # assuming stdout/stderr are always limited in size
-        # We read the entire content in one step
-        # shall we foresee different strategies ?
-        _tmp_filehandle.file.flush()
-        _tmp_filehandle.file.seek(0)
-
-        # _file_content = ""
-        
-        # for line in _tmp_filehandle.file:
-        #     _file_content += str(line)
+            _tmp_filehandle.file.flush()
+            _tmp_filehandle.file.seek(0)
             
-        # cleanup: close and remove tmp file
-        # _tmp_filehandle.close()
-        # os.unlink(_tmp_filehandle.name)
+            self.transport.close()
         
-        ssh.close()
-        sftp.close()
-        
-        return _tmp_filehandle
+            return _tmp_filehandle
+        except:
+            self.transport.close()
+            gc3libs.log.critical('Failure in reading remote file %s', filename)
+            gc3libs.log.debug('%s %s',sys.exc_info()[0], sys.exc_info()[1])
+            raise
                 
     def get_resource_status(self):
 
-        username = self._ssh_username
-        gc3libs.log.debug("Establishing SSH connection to '%s' as user '%s' ...", 
-                           self._resource.frontend, username)
-        ssh, sftp = self._connect_ssh(self._resource.frontend, username)
-        # FIXME: should check `exit_code` and `stderr`
-        gc3libs.log.debug("Running `qstat -U %s`...", username)
-        exit_code, qstat_stdout, stderr = self._execute_command(ssh, "qstat -U %s" % username)
-        gc3libs.log.debug("Running `qstat -F -U %s`...", username)
-        exit_code, qstat_F_stdout, stderr = self._execute_command(ssh, "qstat -F -U %s" % username)
-        ssh.close()
-        sftp.close()
+        try:
 
-        gc3libs.log.debug("Computing updated values for total/available slots ...")
-        (total_running, self._resource.queued, 
-         self._resource.user_run, self._resource.user_queued) = count_jobs(qstat_stdout, username)
-        slots = compute_nr_of_slots(qstat_F_stdout)
-        self._resource.free_slots = int(slots['global']['available'])
-        self._resource.used_quota = -1
+            self.transport.connect()
 
-        gc3libs.log.info("Updated resource '%s' status:"
-                          " free slots: %d,"
-                          " own running jobs: %d,"
-                          " own queued jobs: %d,"
-                          " total queued jobs: %d",
-                          self._resource.name,
-                          self._resource.free_slots,
-                          self._resource.user_run,
-                          self._resource.user_queued,
-                          self._resource.queued,
-                          )
-        return self._resource
+            username = self._ssh_username
+            gc3libs.log.debug("Running `qstat -U %s`...", username)
+            _command = "qstat -U "+username
+            exit_code, qstat_stdout, stderr = self.transport.execute_command(_command)
 
+            gc3libs.log.debug("Running `qstat -F -U %s`...", username)
+            _command = "qstat -F -U "+username
+            exit_code, qstat_F_stdout, stderr = self.transport.execute_command(_command)
+
+            self.transport.close()
+
+            gc3libs.log.debug("Computing updated values for total/available slots ...")
+            (total_running, self._resource.queued, 
+             self._resource.user_run, self._resource.user_queued) = count_jobs(qstat_stdout, username)
+            slots = compute_nr_of_slots(qstat_F_stdout)
+            self._resource.free_slots = int(slots['global']['available'])
+            self._resource.used_quota = -1
+
+            gc3libs.log.info("Updated resource '%s' status:"
+                             " free slots: %d,"
+                             " own running jobs: %d,"
+                             " own queued jobs: %d,"
+                             " total queued jobs: %d",
+                             self._resource.name,
+                             self._resource.free_slots,
+                             self._resource.user_run,
+                             self._resource.user_queued,
+                             self._resource.queued,
+                             )
+            return self._resource
+
+        except:
+            self.transport.close()
+            gc3libs.log.critical('Failure while querying remote LRMS')
+            gc3libs.log.debug('%s %s',sys.exc_info()[0], sys.exc_info()[1])
+            raise
         
      ## Below are the functions needed only for the SshLrms -class.
-
-    def _execute_command(self, ssh, command):
-        """
-        Returns tuple: exit_status, stdout, stderr
-        """
-        try:
-            stdin_stream, stdout_stream, stderr_stream = ssh.exec_command(command)
-            output = stdout_stream.read()
-            errors = stderr_stream.read()
-            exitcode = stdout_stream.channel.recv_exit_status()
-            return exitcode, output, errors
-        except:
-            gc3libs.log.error('Failed while executing remote command: %s' % command)
-            raise
-                
-    def _connect_ssh(self,host,username):
-        """Create an ssh connection."""
-        # todo : add fancier key handling and password asking stuff
-
-        try:
-            ssh = paramiko.SSHClient()
-            ssh.load_system_host_keys()
-            ssh.connect(host,timeout=30,username=username, allow_agent=True)
-            sftp = ssh.open_sftp()
-            return ssh, sftp
-
-        except paramiko.SSHException, x:
-            if not ssh  is None:
-               ssh.close()
-            gc3libs.log.critical("Could not create ssh connection to '%s': %s: %s", 
-                                  host, x.__class__.__name__, str(x))
-            raise
-
 
     def _date_normalize(self, date_string):
         # Example format: Wed Aug 25 15:41:30 2010
         t = time.strptime(date_string,"%a %b %d %H:%M:%S %Y")
         # Temporarly adapted to return a string representation
         return time.strftime("%Y-%m-%d %H:%M:%S", t)
-
-
 
 ## main: run tests
 
