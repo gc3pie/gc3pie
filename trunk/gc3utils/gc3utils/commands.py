@@ -504,7 +504,7 @@ def gtail(*args, **kw):
 
         file_handle = _gcli.tail(job,std)
         for line in file_handle.readlines()[-(options.num_lines):]:
-            print line
+            print line.strip()
 
         file_handle.close()
 
