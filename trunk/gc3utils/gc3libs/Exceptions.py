@@ -66,6 +66,14 @@ class AuthenticationException(Error):
 class BrokerException(Error):
     pass
 
+class ConfigurationError(FatalError):
+    """
+    Raised when the configuration file (or parts of it) could not be
+    read/parsed.  Also used to signal that a required parameter is
+    missing or has an unknown/invaliud value.
+    """
+    pass
+
 class DataStagingError(Error):
     """
     Raised when problems with copying data to or from the remote

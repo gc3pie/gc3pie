@@ -100,8 +100,9 @@ def gclean(*args, **kw):
     # Assume args are all jobids
     for jobid in args:
         job = gc3libs.Job.get_job(jobid)
-        if job.state != gc3libs.Job.State.TERMINATED or options.force == True:
+        if job.state == gc3libs.Job.State.TERMINATED or options.force == True:
             gc3libs.Job.clean_job(job)
+            gc3utils.log.info("Removed job '%s'", job)
         else:
             gc3utils.log.error("Job %s not in terminal state: ignoring.", job)
 
