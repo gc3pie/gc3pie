@@ -120,6 +120,9 @@ class InvalidUsage(FatalError):
     pass
 
 class JobRetrieveError(Error):
+    """
+    Raised upon errors loading a job from the persistent storage.
+    """
     pass
 
 class LRMSException(Error):

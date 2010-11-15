@@ -49,7 +49,7 @@ class Gcli:
 
     def __init__(self, defaults, resource_list, authorization, auto_enable_auth):
         if ( len(resource_list) == 0 ):
-            raise NoResources('Resource list has length 0')
+            raise NoResources("Resource list has length 0")
         self._resources = resource_list
         self._defaults = defaults
         self.authorization = authorization
