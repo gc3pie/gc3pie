@@ -42,8 +42,10 @@ import gc3libs.Default as Default
 import gc3libs.Exceptions as Exceptions 
 import gc3libs.Job as Job
 import gc3libs.utils as utils # first, defaultdict, to_bytes
+from gc3libs.utils import same_docstring_as
 
 import transport
+
 
 def _int_floor(s):
     return int(float(s))
@@ -238,7 +240,7 @@ def count_jobs(qstat_output, whoami):
 _qsub_jobid_re = re.compile(r"Your job (?P<jobid>\d+) .+ has been submitted", re.I)
 
 def get_qsub_jobid(qsub_output):
-    """Parse the qsub output for the local jobid."""
+    """Parse the ``qsub`` output for the local jobid."""
     for line in qsub_output.split('\n'):
         match = _qsub_jobid_re.match(line)
         if match:
@@ -317,22 +319,11 @@ class SgeLrms(LRMS):
     def is_valid(self):
         return self.isValid
 
-    def submit_job(self, application, job=None):
-        """
-        Submit a job running an instance of the given `application`.
-        Return the `job` object, modified to refer to the submitted computational job,
-        or a new instance of the `Job` class if `job` is `None` (default).
 
-        On the backend, the command will look something like this:
-        # ssh user@remote_frontend 'cd unique_token ; $gamess_location -n cores input_file'
-        """
-        
-        self.transport.connect()
+    @same_docstring_as(LRMS.submit_job)
+    def submit_job(self, application, job):
 
-        ## Establish an ssh connection.
-        #(ssh, sftp) = self._connect_ssh(self._resource.frontend,self._ssh_username)
-
-        # Create the remote unique_token directory. 
+        # Create the remote directory. 
         try:
             _command = 'mkdir -p $HOME/.gc3utils_jobs; mktemp -p $HOME/.gc3utils_jobs -d lrms_job.XXXXXXXXXX'
             exit_code, stdout, stderr = self.transport.execute_command(_command)
@@ -398,23 +389,14 @@ class SgeLrms(LRMS):
 
             job_log = "\nstdout:\n" + stdout + "\nstderr:\n" + stderr
 
-            if job is None:
-                job = Job.Job()
             job.lrms_jobid = lrms_jobid
-            job.status = Job.JOB_STATE_SUBMITTED
-            job.resource_name = self._resource.name
             job.log = job_log
             job.remote_ssh_folder = ssh_remote_folder
-
             # remember outputs for later ref
             job.outputs = dict(application.outputs)
             if isinstance(application, GamessApplication):
                 # XXX: very qgms/GAMESS-specific!
                 job.lrms_job_name = _qgms_job_name(utils.first(application.inputs.values()))
-
-
-            # add submssion time reference
-            job.submission_time = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
 
             return job
 
@@ -425,8 +407,8 @@ class SgeLrms(LRMS):
             raise
 
 
-    def check_status(self, job):
-        """Check status of a job."""
+    @same_docstring_as(LRMS.get_state)
+    def get_state(self, job):
 
         mapping = {
             'qname':'queue',
@@ -453,19 +435,18 @@ class SgeLrms(LRMS):
             if exit_code == 0:
                 # parse `qstat` output
                 job_status = stdout.split()[4]
-                gc3libs.log.debug("translating SGE's `qstat` code '%s' to gc3utils.Job status" % job_status)
+                gc3libs.log.debug("translating SGE's `qstat` code '%s' to gc3libs.Job state" % job_status)
                 if 'qw' in job_status:
-                    job.status = Job.JOB_STATE_SUBMITTED
+                    state = Job.State.SUBMITTED
                 elif 'r' in job_status or 'R' in job_status or 't' in job_status:
-                    job.status = Job.JOB_STATE_RUNNING
-                elif job_status == 'd':
-                    job.status = Job.JOB_STATE_DELETED
+                    state = Job.State.RUNNING
+                elif job_status in ['s', 'S', 'T'] or 'qh' in job_status:
+                    state = Job.State.STOPPED
                 elif job_status == 'E':
-                    job.status = Job.JOB_STATE_FAILED
-                elif job.status == 's' or job.status == 'S' or job.status == 'T' or 'qh' in job.status:
-                    # use JOB_STATE_UNKNOWN for the time being
-                    # we need to introduce an additional stated that clarifies a sysadmin internvention is needed
-                    job.status = Job.JOB_STATE_UNKNOWN
+                    state = Job.State.TERMINATED
+                else:
+                    gc3libs.log.warning("unknown SGE job status '%s', returning `UNKNOWN`", job_status)
+                    state = Job.State.UNKNOWN
             else:
                 # jobs disappear from `qstat` output as soon as they are finished;
                 # we rely on `qacct` to provide information on a finished job
@@ -485,22 +466,28 @@ class SgeLrms(LRMS):
                         value = value.strip()
                         try:
                             job[mapping[key]] = value
-
                         except KeyError:
                             gc3libs.log.debug("Ignoring job information '%s=%s'"
                                                " -- no mapping defined to gc3utils.Job attributes." 
                                                % (key,value))
 
-                    gc3libs.log.debug('Normalizing data')
-                    # Need to mormalize dates
-                    if job.has_key('submission_time'):
-                        gc3libs.log.debug('submission_time: %s',job.submission_time)
-                        job.submission_time = self._date_normalize(job.submission_time)
-                    if job.has_key('completion_time'):
-                        gc3libs.log.debug('completion_time: %s',job.completion_time)
-                        job.completion_time = self._date_normalize(job.completion_time)
+                    # FIXME: parsing dates is locale-dependent; if the
+                    # locale of the local computer and the SGE
+                    # front-end server do not match, this will blow
+                    # up.  Disabling it for now, until we can find a
+                    # way to force both locales to be the same.  (RM,
+                    # 2010-11-15)
+                    #
+                    # gc3libs.log.debug('Normalizing data')
+                    # # Need to mormalize dates
+                    # if job.has_key('submission_time'):
+                    #     gc3libs.log.debug('submission_time: %s',job.submission_time)
+                    #     job.submission_time = self._date_normalize(job.submission_time)
+                    # if job.has_key('completion_time'):
+                    #     gc3libs.log.debug('completion_time: %s',job.completion_time)
+                    #     job.completion_time = self._date_normalize(job.completion_time)
                                                                                                     
-                    job.status = Job.JOB_STATE_FINISHED
+                    state = Job.State.TERMINATED
                 else:
                     # `qacct` failed as well...
                     try:
@@ -526,14 +513,15 @@ class SgeLrms(LRMS):
             
             self.transport.close()
             
-            return job
+            return state
         
-        except:
             self.transport.close()
-            gc3libs.log.critical('Failure in checking status')
+            gc3libs.log.critical('Failure in checking status: %s: %s',
+                                 ex.__class__.__name__, str(ex))
             raise
 
 
+    @same_docstring_as(LRMS.cancel_job)
     def cancel_job(self, job_obj):
         try:
             
@@ -563,9 +551,8 @@ class SgeLrms(LRMS):
         
 
 
-    def get_results(self, job):
-        """Retrieve results of a job."""
-        
+    @same_docstring_as(LRMS.get_results)
+    def get_results(self, job, download_dir):
         gc3libs.log.debug("Connecting to cluster frontend '%s' as user '%s' via SSH ...", 
                            self._resource.frontend, self._ssh_username)
         try:
@@ -575,23 +562,11 @@ class SgeLrms(LRMS):
             try:
                 files_list = self.transport.listdir(job.remote_ssh_folder)
             except Exception, x:
-                gc3libs.log.error("Could not read remote job directory '%s': " 
-                                   % job.remote_ssh_folder, exc_info=True)
-                gc3libs.log.debug("Error type %s, %s" % (sys.exc_info()[0], sys.exc_info()[1]))
                 self.transport.close()
-                #raise
-                job.status = Job.JOB_STATE_FAILED
+                gc3libs.log.error("Could not read remote job directory '%s': %s: %s" 
+                                  % job.remote_ssh_folder, 
+                                  x.__class__.__name__, str(x), exc_info=True)
                 return job
-
-            if job.has_key('job_local_dir'):
-                _download_dir = job.job_local_dir + '/' + job.unique_token
-            else:
-                _download_dir = Default.JOB_FOLDER_LOCATION + '/' + job.unique_token
-                
-            # Prepare/Clean download dir
-            if Job.prepare_job_dir(_download_dir) is False:
-                # failed creating local folder
-                raise Exception("failed creating download folder '%s'" % _download_dir)
 
             # copy back all files, renaming them to adhere to the ArcLRMS convention
             try: 
@@ -612,7 +587,7 @@ class SgeLrms(LRMS):
                 ('%s.irc'   % jobname) : ('%s.o%s.irc'   % (jobname, job.lrms_jobid)),
                 }
             # copy back all files
-            gc3libs.log.debug("Downloading job output into '%s' ...",_download_dir)
+            gc3libs.log.debug("Downloading job output into '%s' ...",download_dir)
             for remote_path, local_path in job.outputs.items():
                 try:
                     # override the remote name if it's a known variable one...
@@ -620,7 +595,7 @@ class SgeLrms(LRMS):
                 except KeyError:
                     # ...but keep it if it's not a known one
                     remote_path = os.path.join(job.remote_ssh_folder, remote_path)
-                local_path = os.path.join(_download_dir, local_path)
+                local_path = os.path.join(download_dir, local_path)
                 gc3libs.log.debug("Downloading remote file '%s' to local file '%s'", 
                                    remote_path, local_path)
                 try:
@@ -636,9 +611,9 @@ class SgeLrms(LRMS):
             # `qgms` submits GAMESS jobs with `-j y`, i.e., stdout and stderr are
             # collected into the same file; make jobname.stderr a link to jobname.stdout
             # in case some program relies on its existence
-            if not os.path.exists(_download_dir + '/' + jobname + '.err'):
-                os.symlink(_download_dir + '/' + jobname + '.out',
-                           _download_dir + '/' + jobname + '.err')
+            if not os.path.exists(download_dir + '/' + jobname + '.err'):
+                os.symlink(download_dir + '/' + jobname + '.out',
+                           download_dir + '/' + jobname + '.err')
 
             # cleanup remote folder
             try:
@@ -647,10 +622,6 @@ class SgeLrms(LRMS):
                 gc3libs.log.error('Failed while removing remote folder %s. Error type %s, %s' 
                                   % (job.remote_ssh_folder, sys.exc_info()[0], sys.exc_info()[1]))
             
-            # set job status to COMPLETED
-            job.download_dir = _download_dir
-            job.status = Job.JOB_STATE_COMPLETED
-
             self.transport.close()
             return job
 
@@ -661,49 +632,37 @@ class SgeLrms(LRMS):
             raise 
 
 
-    def tail(self, job_obj, filename, offset=0, buffer_size=None):
-        """
-        tail allows to get a snapshot of any valid file created by the job
-        """
+    @same_docstring_as(LRMS.tail)
+    def tail(self, job_obj, remote_filename, local_file, offset=0, size=None):
+        assert job_obj.has_key('remote_ssh_folder'), \
+            "Missing attribute `remote_ssh_folder` on `Job` instance passed to `SgeLrms.tail`."
+
+        if size is None:
+            size = sys.maxint
+
+        _remote_filename = job_obj.remote_ssh_folder + '/' + remote_filename
+        try:
+            self.transport.connect()
+            remote_handler = self.transport.open(_remote_filename, mode='r', bufsize=-1)
+            remote_handler.seek(offset)
+            data = remote_handler.read(size)
+            self.transport.close()
+        except Exception, ex:
+            self.transport.close()
+            gc3libs.log.error("Could not read remote file '%s': %s: %s",
+                              _remote_filename, ex.__class__.__name__, str(ex))
 
         try:
+            local_file.write(data)
+        except (TypeError, AttributeError):
+            output_file = open(local_file, 'w+b')
+            output_file.write(data)
+            output_file.close()
+        gc3libs.log.debug('... Done.')
 
-            self.transport.connect()
-
-            # Sanitize offset
-            if int(offset) < 1024:
-                offset = 0
-
-            # Sanitize buffer_size
-            if  not buffer_size:
-                buffer_size = -1
-
-            # reference to remote file
-            _remote_filename = job_obj.remote_ssh_folder + '/' + filename
-
-            # create temp file
-            _tmp_filehandle = tempfile.NamedTemporaryFile(mode='w+b', suffix='.tmp', prefix='gc3_')
-
-            # remote_handler = sftp.open(_remote_filename, mode='r', bufsize=-1)
-            remote_handler = self.transport.open(_remote_filename, mode='r', bufsize=-1)
-
-            remote_handler.seek(offset)
-            _tmp_filehandle.write(remote_handler.read(buffer_size))
-
-            gc3libs.log.debug('Done')
-
-            _tmp_filehandle.file.flush()
-            _tmp_filehandle.file.seek(0)
-            
-            self.transport.close()
-        
-            return _tmp_filehandle
-        except:
-            self.transport.close()
-            gc3libs.log.critical('Failure in reading remote file %s', filename)
-            gc3libs.log.debug('%s %s',sys.exc_info()[0], sys.exc_info()[1])
-            raise
+>>>>>>> MERGE-SOURCE
                 
+    @same_docstring_as(LRMS.get_resource_status)
     def get_resource_status(self):
 
         try:

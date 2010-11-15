@@ -29,6 +29,7 @@ __date__ = '$Date$'
 from fnmatch import fnmatch
 import os
 import sys
+import time
 import ConfigParser
 
 import gc3libs
@@ -77,7 +78,7 @@ class Gcli:
             self._resources = [ res for res in self._resources
                                 if fnmatch(res.name, match) ]
 
-#========== Start gsub ===========
+
     def gsub(self, application, job=None, **kw):
         """
         Submit a job running an instance of the given `application`.
@@ -89,7 +90,7 @@ class Gcli:
         # gsub workflow:
         #    check input files from application
         #    create list of LRMSs
-        #    create unique_token
+        #    create jobid
         #    do Brokering
         #    submit job
         #    return job_obj
@@ -107,39 +108,34 @@ class Gcli:
         _lrms_list = []
         for _resource in self._resources:
             try:
-                _lrms_list.append(self.__get_LRMS(_resource.name))
-            except:
+                _lrms_list.append(self._get_backend(_resource.name))
+            except Exception, ex:
                 # log exceptions but ignore them
-                gc3libs.log.warning("Failed creating LRMS for resource '%s' of type '%s'",
-                                     _resource.name, _resource.type)
-                gc3libs.log.debug('gcli.py:gsub() got exception:', exc_info=True)
+                gc3libs.log.warning("Failed creating LRMS for resource '%s' of type '%s': %s: %s",
+                                    _resource.name, _resource.type,
+                                    ex.__class__.__name__, str(ex), exc_info=True)
                 continue
-            
         if ( len(_lrms_list) == 0 ):
-            raise NoResources("Could not initialize any computational resource - please check log and configuration file.")
+            raise NoResources("Could not initialize any computational resource"
+                              " - please check log and configuration file.")
 
-        gc3libs.log.debug('Performing brokering')
+        gc3libs.log.debug('Performing brokering ...')
         # decide which resource to use
         # (Resource)[] = (Scheduler).PerformBrokering((Resource)[],(Application))
         _selected_lrms_list = scheduler.do_brokering(_lrms_list,application)
         gc3libs.log.debug('Scheduler returned %d matching resources',
                            len(_selected_lrms_list))
         if 0 == len(_selected_lrms_list):
-            raise NoResources("Could not select any compatible computational resource - please check log and configuration file.")
+            raise NoResources("Could not select any compatible computational resource"
+                              " - please check log and configuration file.")
 
+        if job is None:
+            job = Job.Job()
         # Scheduler.do_brokering should return a sorted list of valid lrms
         for lrms in _selected_lrms_list:
             try:
                 self.authorization.get(lrms._resource.authorization_type)
                 job = lrms.submit_job(application, job)
-                if job.is_valid():
-                    gc3libs.log.info('Successfully submitted process to LRMS backend')
-                    # job submitted; leave loop
-                    if application.has_key('job_local_dir'):
-                        job.job_local_dir = application.job_local_dir
-                    else:
-                        job.job_local_dir = os.getcwd()
-                    break
             except AuthenticationException:
                 # ignore authentication errors: e.g., we may fail some SSH connections but succeed in others
                 gc3libs.log.debug("Authentication error in submitting to resource '%s'" 
@@ -149,291 +145,161 @@ class Gcli:
                 gc3libs.log.error("Error in submitting job to resource '%s'", 
                                    lrms._resource.name, exc_info=True)
                 continue
-        if job is None or not job.is_valid():
-            raise LRMSException('Failed submitting application to any LRMS')
+            gc3libs.log.info('Successfully submitted process to LRMS backend')
+            job.jobid = Job.JobId()
+            job.state = Job.State.SUBMITTED
+            job.resource_name = lrms._resource.name
+            job.timestamp[Job.State.SUBMITTED] = time.time()
+            if application.has_key('job_local_dir'):
+                job.job_local_dir = application.job_local_dir
+            else:
+                job.job_local_dir = os.getcwd()
+            # job submitted; leave loop
+            break
 
-        # return an object of type Job which contains also the unique_token
+        # return an object of type Job which contains also the jobid
         return job
 
-#======= Start gstat =========
-# First variant gstat with no job obj passed
-# list status of all jobs
-# How to get the list of jobids ?
-# We need an internal method for this
-# This method returns a list of job objs 
-    def gstat(self, job_obj, **kw):
-        auto_enable_auth = kw.get('auto_enable_auth', self.auto_enable_auth)
-       
-        job_return_list = [] 
-        if job_obj is None:
-            try:
-                _list_of_runnign_jobs = self.__get_list_running_jobs()
-            except:
-                gc3libs.log.debug('Failed obtaining list of running jobs %s',str(sys.exc_info()[1]))
-                raise
-        else:
-            _list_of_runnign_jobs = [job_obj]
 
-        for _running_job in _list_of_runnign_jobs:
+    def gstat(self, *jobs, **kw):
+        """
+        Update state of all jobs passed in as arguments,
+        and return list of updated states.
+        
+        If `update_on_error` is `False` (default), then job state is
+        not changed in case a communication error happens; it is
+        changed to `UNKNOWN` otherwise.
+        """
+        update_on_error = kw.get('update_on_error', False)
+        auto_enable_auth = kw.get('auto_enable_auth', self.auto_enable_auth)
+
+        states = [] 
+        for job in jobs:
+            state = job.state
             try:
-                job_return_list.append(self.__gstat(_running_job, auto_enable_auth))
-            except:
-                gc3libs.log.debug('Exception when trying getting status of job %s: %s',_running_job.unique_token,str(sys.exc_info()[1]))
+                lrms = self._get_backend(job.resource_name)
+                if job.state not in [ Job.State.NEW, Job.State.TERMINATED ]:
+                    self.authorization.get(lrms._resource.authorization_type)
+                    state = lrms.get_state(job)
+                if state != Job.State.UNKNOWN or update_on_error:
+                    job.state = state
+                states.append(state)
+            except Exception, ex:
+                gc3libs.log.error("Error getting status of job '%s': %s",
+                                  job.jobid, str(ex))
                 continue                                
 
-        return job_return_list
+        return states
 
-    def __gstat(self, job_obj, auto_enable_auth):
-        # returns an updated job object
-        # create instance of LRMS depending on resource type associated to job
-        
-        _lrms = self.__get_LRMS(job_obj.resource_name)
 
-        # gc3libs.log.debug('current job status is %d' % job_obj.status)
+    def gget(self, job, download_dir=None, **kw):
+        """
+        Retrieve job output into local directory `job.job_local_dir`.
 
-        if not ( job_obj.status == gc3libs.Job.JOB_STATE_COMPLETED or job_obj.status == gc3libs.Job.JOB_STATE_FINISHED or job_obj.status == gc3libs.Job.JOB_STATE_FAILED or job_obj.status == gc3libs.Job.JOB_STATE_DELETED ):
-            # check job status
-            # gc3libs.log.debug('checking job status')
-            #a = Auth(auto_enable_auth)
-            self.authorization.get(_lrms._resource.authorization_type)
-            job_obj = _lrms.check_status(job_obj)
+        Job output cannot be retrieved when `job` is in one of the
+        states `NEW` or `SUBMITTED`; a `OutputNotAvailableError`
+        exception is thrown in these cases.
 
-        return job_obj
+        If `download_dir` is `None` (default), then is is formed by
+        appending the job ID to `job_local_dir` if the `job` object
+        has such attribute, or is formed by appending the job id to
+        the default download location `gc3libs.Default.JOB_FOLDER_LOCATION`.
 
-#====== Gget =======
-    def gget(self, job, **kw):
-
-        if job.status == gc3libs.Job.JOB_STATE_SUBMITTED or job.status == gc3libs.Job.JOB_STATE_UNKNOWN:
+        Directory `download_dir` is created if it does not exist; if
+        already existent, it is renamed with a `.NUMBER` suffix and a
+        new empty one is created in its place.
+        """
+        if job.state in [ Job.State.NEW, Job.State.SUBMITTED ]:
             raise OutputNotAvailableError('Output Not avilable')
 
         auto_enable_auth = kw.get('auto_enable_auth', self.auto_enable_auth)
-        _lrms = self.__get_LRMS(job.resource_name)
-        self.authorization.get(_lrms._resource.authorization_type)
+
+        # Prepare/Clean download dir
+        if download_dir is None:
+            try:
+                download_dir = os.path.join(job.job_local_dir, job.jobid)
+            except AttributeError:
+                download_dir = os.path.join(Default.JOB_FOLDER_LOCATION, job.jobid)
+        try:
+            utils.mkdir_with_backup(download_dir)
+        except Exception, ex:
+            gc3libs.log.error("Failed creating download directory '%s': %s: %s" 
+                              % download_dir, ex.__class__.__name__, str(ex))
+            raise
 
         try:
-            return  _lrms.get_results(job)
+            lrms = self._get_backend(job.resource_name)
+            self.authorization.get(lrms._resource.authorization_type)
+            lrms.get_results(job, download_dir)
         except LRMSUnrecoverableError:
-            job.status = gc3libs.Job.JOB_STATE_COMPLETED
-            return job
+            # FIXME: assumes LRMS has correctly set the `returncode` attribute on the job...
+            job.state = Job.State.TERMINATED
         
-#====== Glist =======
+        # successfully downloaded results
+        job.download_dir = download_dir
+        job.output_retrieved = True
+        return job
+        
+
     def glist(self,resource_name, **kw):
-        """ List status of a give resource."""
+        """ List status of a given resource."""
         auto_enable_auth = kw.get('auto_enable_auth', self.auto_enable_auth)
-        _lrms = self.__get_LRMS(resource_name)
-        self.authorization.get(_lrms._resource.authorization_type)
-        return  _lrms.get_resource_status()
+        lrms = self._get_backend(resource_name)
+        self.authorization.get(lrms._resource.authorization_type)
+        return  lrms.get_resource_status()
 
-#====== Gkill ========
-    def gkill(self, job_obj, **kw):
-        """Kill a job."""
-        
-        auto_enable_auth = kw.get('auto_enable_auth', self.auto_enable_auth)
-        
-        _lrms = self.__get_LRMS(job_obj.resource_name)
-        
-        self.authorization.get(_lrms._resource.authorization_type)
-        
-        job_obj = _lrms.cancel_job(job_obj)
-        gc3libs.log.debug('setting job status to DELETED')
-        job_obj.status =  gc3libs.Job.JOB_STATE_DELETED
-        return job_obj
 
-#====== Tail ========
-    def tail(self, job, std='stdout', **kw):
+    def gkill(self, job, **kw):
+        """Terminate a job.
+
+        Terminating a job in RUNNING, SUBMITTED, or STOPPED state
+        entails canceling the job with the remote execution system;
+        terminating a job in the NEW or TERMINATED state is a no-op.
         """
-        Tail returns job object with .stdout or .stderr containing content of stdout or stderr respectively
-        Note: For the time beind we allow only stdout or stderr as valid filenames
+        
+        auto_enable_auth = kw.get('auto_enable_auth', self.auto_enable_auth)
+        lrms = self._get_backend(job.resource_name)
+        self.authorization.get(lrms._resource.authorization_type)
+        job = lrms.cancel_job(job)
+
+        gc3libs.log.debug("Setting job '%s' status to TERMINATED"
+                          " and returncode to SIGCANCEL" % job.jobid)
+        job.state = Job.State.TERMINATED
+        job.signal = Job.Signals.Cancelled
+        return job
+
+
+    def tail(self, job, what='stdout', offset=0, size=None, **kw):
+        """
+        Return job object with .stdout or .stderr containing content of stdout or stderr respectively
+        Note: For the time being we allow only stdout or stderr as valid filenames
         """
 
         # Get authorization
         auto_enable_auth = kw.get('auto_enable_auth', self.auto_enable_auth)
-        _lrms = self.__get_LRMS(job.resource_name)
+        _lrms = self._get_backend(job.resource_name)
         self.authorization.get(_lrms._resource.authorization_type)
 
-        # Get offset and buffersize
-        _remote_file_offset = kw.get('offset',0)
-        _remote_file_buffer_size = kw.get('buffer_size',None)
+        if what == 'stdout':
+            remote_filename = job.stdout_filename
+        elif what == 'stderr':
+            remote_filename = job.stderr_filename
+        else:
+            raise Error("File name requested to `Gcli.tail` must be"
+                        " 'stdout' or 'stderr', not '%s'" % what)
 
-        try:
-            if std == 'stdout':
-                filename = job.stdout_filename
-            elif std == 'stderr':
-                filename = job.stderr_filename
-            else:
-                raise Error('Invalid requested filename')
+        local_file = tempfile.NamedTemporaryFile(suffix='.tmp', prefix='gc3libs.')
 
-            file_handle = _lrms.tail(job,filename,_remote_file_offset,_remote_file_buffer_size)
-
-            if file_handle:
-                # return a file handle of the local copy
-                return file_handle
-
-        except AttributeError:
-            gc3libs.log.critical('Missing attribute')
-            raise
-        except:
-            raise
-
-#=========     INTERNAL METHODS ============
-
-    def _glist(self, shortview):
-        """List status of jobs."""
-        global default_joblist_location
-
-        try:
-
-            # print the header
-            if shortview == False:
-                # long view
-                print "%-100s %-20s %-10s" % ("[unique_token]","[name]","[status]")
-            else:
-                # short view
-                print "%-20s %-10s" % ("[name]","[status]")
-
-            # look in current directory for jobdirs
-            jobdirs = []
-            dirlist = os.listdir("./")
-            for dir in dirlist:
-                if os.path.isdir(dir) == True:
-                    if os.path.exists(dir + "/.lrms_jobid") and os.path.exists(dir + "/.lrms_log"):
-                        logging.debug(dir + "is a jobdir")
-                        jobdirs.append(dir)
-
-            # break down unique_token into vars
-            for dir in jobdirs:
-                unique_token = dir
-                name =  '-'.join( unique_token.split('-')[0:-3])
-                if os.path.exists(dir + "/.finished"):
-                    status = "FINISHED"
-                else:
-                    retval,job_status_list = self.gstat(unique_token)
-                    first = job_status_list[0]
-                    status = first[1].split(' ')[1]
-
-                if shortview == False:
-                    # long view
-                    print '%-100s %-20s %-10s' % (unique_token, name, status)
-                else:
-                    # short view
-                    print '%-20s %-10s' % (name, status)
-
-            logging.debug('Jobs listed.')
-
-        except Exception, e:
-            logging.critical('Failure in listing jobs')
-            raise e
-
-        return
-
-    def __log_job(self, job_obj):
-        # dumping lrms_jobid
-        # not catching the exception as this is supposed to be a fatal failure;
-        # thus propagated to gsub's main try
-        try:
-            _fileHandle = open(job_obj.unique_token+'/'+Default.JOB_FILE,'w')
-            _fileHandle.write(job_obj.resource_name+'\t'+job_obj.lrms_jobid)
-            _fileHandle.close()
-        except:
-            gc3libs.log.error('failed updating job lrms_id')
-
-        try:
-            _fileHandle = open(job_obj.unique_token+'/'+Default.JOB_LOG,'w')
-            _fileHandle.write(job_obj.log)
-            _fileHandle.close()
-        except:
-            gc3libs.log.error('failed updating job log')
-                        
-        # if joblist_file & joblist_lock are not defined, use default
-        #RFR: WHY DO I NEED THIS ?
-        try:
-            joblist_file
-        except NameError:
-            joblist_file = os.path.expandvars(Default.JOBLIST_FILE)
-
-        try:
-            joblist_lock
-        except NameError:
-            joblist_lock = os.path.expandvars(Default.JOBLIST_LOCK)
-
-        # if joblist_file does not exist, create it
-        if not os.path.exists(joblist_file):
-            try:
-                open(joblist_file, 'w').close()
-                gc3libs.log.debug(joblist_file + ' did not exist... created successfully.')
-            except:
-                gc3libs.log.error('Failed opening joblist_file')
-                return False
-
-        gc3libs.log.debug('appending jobid to joblist file as specified in defaults')
-        try:
-            # appending jobid to .jobs file as specified in defaults
-            gc3libs.log.debug('obtaining lock')
-            if ( obtain_file_lock(joblist_file,joblist_lock) ):
-                _fileHandle = open(joblist_file,'a')
-                _fileHandle.write(job_obj.unique_token+'\n')
-                _fileHandle.close()
-            else:
-                gc3libs.log.error('Failed obtain lock')
-                return False
-
-        except:
-            gc3libs.log.error('Failed in appending current jobid to list of jobs in %s',Default.JOBLIST_FILE)
-            gc3libs.log.debug('Exception %s',sys.exc_info()[1])
-            return False
-
-        # release lock
-        if ( (not release_file_lock(joblist_lock)) & (os.path.isfile(joblist_lock)) ):
-            gc3libs.log.error('Failed removing lock file')
-            return False
-
-        return True
-
-    def __get_list_running_jobs(self):
-        # This internal method is supposed to:
-        # get a list of jobs still running
-        # create instances of jobs
-        # group them in a list
-        # return such a list
-
-        return self.__get_list_running_jobs_filesystem()
-    
-    def __get_list_running_jobs_filesystem(self):
-        # This implementation is based on persistent information on the filesystem 
-        # Read content of .joblist and return gstat for each of them
-
-        try:
-            if not os.path.isdir(Default.JOBS_DIR):
-                # try to create it first
-                gc3libs.log.error('JOBS_DIR %s Not found. creating it' % Default.JOBS_DIR)
-                try:
-                    os.makedirs(Default.JOBS_DIR)
-                except:
-                    gc3libs.log.critical('%s',sys.exc_info()[1])
-                    raise RetrieveJobsFilesystemError('Failed accessing job dir %s' % Default.JOBS_DIR)
-
-            _jobs_list = os.listdir(Default.JOBS_DIR)
-
-            # for each unique_token retrieve job information and create instance of Job obj
-            _job_list = []
-
-            for _job in _jobs_list:
-                try:
-                    _job_list.append(Job.get_job(_job))
-                except:
-                    gc3libs.log.error('Failed retrieving job information for %s',_job)
-                    gc3libs.log.debug('%s',sys.exc_info()[1])
-                    continue
-
-            return _job_list
-
-        except:
-            raise
+        _lrms.tail(job, remote_filename, local_file, offset, size)
+        local_file.flush()
+        local_file.seek(0)
+        
+        return local_file
 
 
 #======= Static methods =======
 
-    def __get_LRMS(self,resource_name):
+    def _get_backend(self,resource_name):
         _lrms = None
 
         for _resource in self._resources:
@@ -456,7 +322,6 @@ class Gcli:
             raise ResourceNotFoundError("Cannot find computational resource '%s'" % resource_name)
 
         return _lrms
-#====== End
 
 
 # === Configuration File

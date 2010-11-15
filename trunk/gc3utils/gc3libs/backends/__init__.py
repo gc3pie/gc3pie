@@ -29,73 +29,37 @@ import gc3libs
 from gc3libs.Exceptions import *
 
 
-class LRMS:
+class LRMS(object):
     """Base class for interfacing with a computing resource."""
 
-    def __init__(self, resource): 
-        raise NotImplementedError("Abstract method `LRMS()` called - this should have been defined in a derived class.")
-    
-    def submit_job(self, application):
-        """
-        Submit a single job.
-        Return a Job object.
-        """
-        raise NotImplementedError("Abstract method `LRMS.submit_job()` called - this should have been defined in a derived class.")
-
-    def check_status(self, job):
-        """
-        Check the status of a single job.
-        Return a Job object.
-        """
-        raise NotImplementedError("Abstract method `LRMS.check_status()` called - this should have been defined in a derived class.")
-    
-    def get_results(self, job):
-        """
-        Retrieve results from a single job.
-        Return a Job object.
-        """
-        raise NotImplementedError("Abstract method `LRMS.get_results()` called - this should have been defined in a derived class.")
-    
     def cancel_job(self, job):
         """
-        Cancel a single running job.
-        Return a Job object.
+        Cancel a running job.  If `job` has a queued or running remote
+        instance, tell the execution middleware to cancel it.
         """
         raise NotImplementedError("Abstract method `LRMS.cancel_job()` called - this should have been defined in a derived class.")
     
     def get_resource_status(self):
         """
-        Get the status of a single resource.
-        Return a Resource object.
+        Update the status of the resource associated with this `LRMS`
+        instance in-place.  Return updated `Resource` object.
         """
         raise NotImplementedError("Abstract method `LRMS.get_resource_status()` called - this should have been defined in a derived class.")
     
-    def tail(self, job, remote_filename, **kw):
+    def get_results(self, job, download_dir):
         """
-        Gets the output of a running job, similar to ngcat.
-        Return open File handler to local copy of the file
-        
-        examples:
-        h = gcli.tail(job,'stdout')
-        for line in h:
-            print line
-
-        h = gcli.tail(job,'stdout', {'offset':1024,'buffer_size':2048})
-        ...
-        
-        Copy a remote file belonging to the job sandbox and return a file handler to the local copy of the file.
-        Additional parameters could be:
-           offset: int
-           buffer_size: int
-        Primarly conceived for stdout and stderr.
-        Any exception raised by operations will be passed through.
-        @param job: the job object
-        @type job: gc3utils.Job
-        @param remote_filename: the remote file to copy
-        @type remote_filename: string
-        @since: 0.2
+        Retrieve job output files into local directory `download_dir`.
         """
-        raise NotImplementedError("Abstract method `LRMS.tail()` called - this should have been defined in a derived class.")
+        raise NotImplementedError("Abstract method `LRMS.get_results()` called - this should have been defined in a derived class.")
+    
+    def get_state(self, job):
+        """
+        Query the state of the remote job associated with `job` and
+        return the corresponding `Job.State`.
+        
+        See `Job.State` for more details.
+        """
+        raise NotImplementedError("Abstract method `LRMS.update_state()` called - this should have been defined in a derived class.")
     
     def is_valid(self):
         """
@@ -104,6 +68,45 @@ class LRMS:
         """
         raise NotImplementedError("Abstract method `LRMS.is_valid()` called - this should have been defined in a derived class.")
 
+    def submit_job(self, application, job):
+        """
+        Submit an `Application` instance to the configured
+        computational resource; return a `gc3libs.Job` instance for
+        controlling the submitted job.
+
+        This method only returns if the job is successfully submitted;
+        upon any failure, an exception is raised.
+
+        *Note:* 
+
+          1. `job.state` is *not* altered; it is the caller's
+          responsibility to update it.
+
+          2. the `job` object may be updated with any information that
+          is necessary for this LRMS to perform further operations on
+          it.
+        """
+        raise NotImplementedError("Abstract method `LRMS.submit_job()` called - this should have been defined in a derived class.")
+
+    def tail(self, job, remote_filename, local_file, offset=0, size=None):
+        """
+        Download `size` bytes (at offset `offset` from the start) from
+        remote file `remote_filename` and write them into
+        `local_file`.  If `size` is `None` (default), then snarf the
+        contents of remote file from `offset` unto the end.
+
+        Argument `local_file` is either a local path name (string), or
+        a file-like object supporting a `.write()` method.  If
+        `local_file` is a path name, it is created if not existent,
+        otherwise overwritten.
+
+        Argument `remote_filename` is the name of a file in the remote job
+        "sandbox".
+        
+        Any exception raised by operations will be passed through.
+        """
+        raise NotImplementedError("Abstract method `LRMS.tail()` called - this should have been defined in a derived class.")
+    
 
 
 ## main: run tests

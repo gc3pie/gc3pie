@@ -1,6 +1,99 @@
 #! /usr/bin/env python
 """
 Object-oriented interface for computational job control.
+
+A GC3Libs' `Job` is an abstraction of an independent asynchronous
+computation, i.e., a GC3Libs' `Job` behaves much like an independent
+UNIX process. Indeed, GC3Libs' `Job` objects mimick the POSIX process
+interface: `Job`s are started by a parent process, run independently
+of it, and need to have their final exit code and output reaped by the
+calling process.
+
+The following table makes the correspondence between POSIX processes
+and GC3Libs' Job objects explicit.
+
+====================   ================   =====================
+`os` module function   GC3Libs function   purpose
+====================   ================   =====================
+exec                   Gcli.gsub          start new job
+kill (SIGTERM)         Gcli.gkill         terminate executing job
+wait (WNOHANG)         Gcli.gstat         get job status (running, terminated)
+-                      Gcli.gget          retrieve output 
+
+At any given moment, a GC3Libs job is in any one of a set of
+pre-defined states, listed in the table below.
+
+GC3Libs' Job state   purpose                                                         can change to
+==================   ==============================================================  ======================
+NEW                  Job has not yet been submitted/started (i.e., gsub not called)  SUBMITTED (by gsub)
+SUBMITTED            Job has been sent to execution resource, jobid is known         RUNNING, STOPPED
+STOPPED              Trap state: job needs manual intervention (either user- \
+                     or sysadmin-level) to resume normal execution                   TERMINATED (by gkill), SUBMITTED (by miracle)
+RUNNING              Job is executing on remote resource                             TERMINATED
+TERMINATED           Job execution is finished (correctly or not) \
+                     and will not be resumed                                         N/A
+
+A job that is not in the NEW or TERMINATED state is said to be a "live" job.
+
+When a Job object is first created, it is assigned the state NEW.
+
+After a successful invocation of Gcli.gsub(), the Job object is
+transitioned to state SUBMITTED and assigned a jobid attribute, which
+uniquely identifies this Job object among all submitted jobs. The
+jobid can be used to refer to the submitted job and operate on it
+across multiple processes, or different invocations of the same
+program. Compare this with the POSIX PID, which can be used to
+uniquely refer to a process (after a successful call to
+fork()/exec()); unlike PIDs, the jobid will never be recycled.
+
+Further transitions to RUNNING or STOPPED or TERMINATED state, happen
+completely independently of the creator program. The Gcli.gstat() call
+provides updates on the status of a job. (Somewhat like the POSIX
+wait(..., WNOHANG) system call, except that GC3Libs provide explicit
+RUNNING and STOPPED states, instead of encoding them into the return
+value.)
+
+The STOPPED state is a kind of generic "run time error" state: a job
+can get into the STOPPED state if its execution is stopped (e.g., a
+SIGSTOP is sent to the remote process) or delayed indefinitely (e.g.,
+the remote batch system puts the job "on hold"). There is no way a job
+can get out of the STOPPED state by itself: all transitions from the
+STOPPED state require manual intervention, either by the submitting
+user (e.g., cancel the job), or by the remote systems administrator
+(e.g., by releasing the hold).
+
+The TERMINATED state is the final state of a job: once a job reaches
+it, it cannot get back to any other state. Jobs reach TERMINATED state
+regardless of their exit code, or even if a system failure occurred
+during remote execution; actually, jobs can reach the TERMINATED
+status even if they didn't run at all! Just like POSIX encodes process
+termination information in the "return code", the GC3Libs encode
+information about abnormal process termination using a set of
+pseudo-signal codes in a job's returncode attribute: i.e., if
+termination of a job is due to some gird/batch system/middleware
+error, the job's os.WIFSIGNALED(job.returncode) will be True and the
+signal code (as gotten from os.WTERMSIG(job.returncode)) will be one
+of the following:
+
+======  ============================================================
+signal  error condition
+======  ============================================================
+125     submission to batch system failed
+124     remote error (e.g., execution node crashed, batch system misconfigured)
+123     data staging failure
+122     job killed by batch system / sysadmin
+121     job canceled by user
+
+In addition, each GC3Libs' Job object in TERMINATED state is
+guaranteed to have these additional attributes:
+
+    * output_retrieved: boolean flag, indicating whether job output
+      has been fetched from the remote resource; use the Gcli.gget()
+      function to retrieve the output. (Note: for jobs in TERMINATED
+      state, the output can be retrieved only once!)
+
+    * ... 
+
 """
 # Copyright (C) 2009-2010 GC3, University of Zurich. All rights reserved.
 #
@@ -31,143 +124,336 @@ import types
 
 from Exceptions import *
 import gc3libs
-import gc3libs.utils
-from InformationContainer import InformationContainer
+from gc3libs.utils import defproperty, Struct, progressive_number, safe_repr
 import Default
 
 
-# -----------------------------------------------------
-# Job
-#
-
-# Job is finished on grid or cluster, results have not yet been retrieved.
-# User or Application can now call gget.
-JOB_STATE_FINISHED = 1
-
-# Job is currently running on a grid or cluster.
-# Gc3libs must wait until it finishes to proceed.
-JOB_STATE_RUNNING = 2
-
-# Could mean several things:
-#   - LRMS failed to accept the job for some reason.
-#   - LRMS killed the job.
-#   - Job exited with non-zero exit status.
-# The User can decide whether to do gget or resubmit or nothing.
-JOB_STATE_FAILED = 3
-
-# Job is between the submit phase and confirmed in the LRMS scheduler.
-# For example, this applies to ARC jobs after they are submitted but not yet officially queued according to the ARC scheduler.
-# SGE+SSH jobs do not have this.
-# No action required.
-JOB_STATE_SUBMITTED = 4
-
-# Job is finished and results successfully retrieved.
-# User or Application can do whatever it wants with the results.
-JOB_STATE_COMPLETED = 5
-
-# Job has been deleted with gkill
-JOB_STATE_DELETED = 6
-
-# This is the default initial state of a job instance before it has been updated by a gsub/gstat/gget/etc.
-# No action required; the state will be set to something else as the code executes.
-JOB_STATE_UNKNOWN = 7
+class State(object):
+    """
+    States a GC3Libs `Job` can be in.
+    """
+    NEW = 'NEW' # Job has not yet been submitted/started
+    SUBMITTED = 'SUBMITTED' # Job has been sent to execution resource, `jobid` is known
+    STOPPED = 'STOPPED' # trap state: job needs manual intervention
+    RUNNING = 'RUNNING' # job is executing on remote resource
+    TERMINATED = 'TERMINATED' # job execution finished (correctly or not) and will not be resumed
+    UNKNOWN = 'UNKNOWN' # job info not found or lost track of job (e.g., network error or invalid job ID)
 
 
-#JOB_STATE_HOLD = 7 # Initial state
-#JOB_STATE_READY = 8 # Ready for gsub
-#JOB_STATE_WAIT = 9 # equivalent to SUBMITTED
-#JOB_STATE_OUTPUT = 10 # equivalent to FINISHED
-#JOB_STATE_UNREACHABLE = 11 # AuthError
-#JOB_STATE_NOTIFIED = 12 # User Notified of AuthError
-#JOB_STATE_ERROR = 13 # Equivalent to FAILED
+class _Signal(object):
+    """
+    Base class for representing fake signals encoding the failure
+    reason for GC3Libs jobs.
+    """
+    def __init__(self, name, signum, description):
+        self._name = name
+        self._signum = signum
+        self.__doc__ = description
+    # conversion to integer types
+    def __int__(self):
+        return self._signum
+    def __long__(self):
+        return self._signum
+    # human-readable explanation
+    def __str__(self):
+        return "SIG%s(%d) - %s" % (self._name, self._signum, self.__doc__)
+
+class Signals(object):
+    """
+    Collection of (fake) signals used to encode termination reason in `Job.returncode`.
+    """
+    Cancelled = _Signal('CANCEL', 121, "Job canceled by user")
+    RemoteKill = _Signal('BATCHKILL', 122, "Job killed by batch system or sysadmin")
+    DataStagingFailure = _Signal('STAGE', 123, "Data staging failure")
+    RemoteError = _Signal('BATCHERR', 124, 
+                          "Unspecified remote error, e.g., execution node crashed"
+                          " or batch system misconfigured")
+    SubmissionFailed = _Signal('SUBMIT', 125, "Submission to batch system failed.")
 
 
-def job_status_to_string(job_status):
-    try:
-        return {
-#            JOB_STATE_HOLD:    'HOLD',
-#            JOB_STATE_WAIT:    'WAITING',
-#            JOB_STATE_READY:   'READY',
-#            JOB_STATE_ERROR:   'ERROR',
-            JOB_STATE_FAILED:  'FAILED',
-#            JOB_STATE_OUTPUT:  'OUTPUTTING',
-            JOB_STATE_RUNNING: 'RUNNING',
-            JOB_STATE_FINISHED:'FINISHED',
-#            JOB_STATE_NOTIFIED:'NOTIFIED',
-            JOB_STATE_SUBMITTED:'SUBMITTED',
-            JOB_STATE_COMPLETED:'COMPLETED',
-            JOB_STATE_DELETED: 'DELETED'
-            }[job_status]
-    except KeyError:
-        gc3libs.log.error('job status code %s unknown', job_status)
-        return 'UNKNOWN'
+class JobId(str):
+    """
+    An automatically-generated "unique job identifier" (a string).
+    Job identifiers are temporally unique: no job identifier will
+    (ever) be re-used, even in different invocations of the program.
+    
+    Currently, the unique job identifier has the form "job.XXX" where
+    "XXX" is a decimal number.  
+
+    This class provides services for generating temporally unique Job
+    IDs, and for comparing/sorting Job IDs based on their progressive
+    number.
+    """
+    def __new__(cls):
+        """
+        Construct a new "unique job identifier" instance (a string).
+        """
+        num = progressive_number()
+        instance = str.__new__(cls, "job.%d" % num)
+        instance._num = num
+        return instance
+
+    # rich comparison operators, to ensure `JobId` is sorted by numerical value
+    def __gt__(self, other):
+        try:
+            return self._num > other._num
+        except AttributeError:
+            raise TypeError("`JobId` objects can only be compared with other `JobId` objects")
+    def __ge__(self, other):
+        try:
+            return self._num >= other._num
+        except AttributeError:
+            raise TypeError("`JobId` objects can only be compared with other `JobId` objects")
+    def __eq__(self, other):
+        try:
+            return self._num == other._num
+        except AttributeError:
+            raise TypeError("`JobId` objects can only be compared with other `JobId` objects")
+    def __ne__(self, other):
+        try:
+            return self._num != other._num
+        except AttributeError:
+            raise TypeError("`JobId` objects can only be compared with other `JobId` objects")
+    def __le__(self, other):
+        try:
+            return self._num <= other._num
+        except AttributeError:
+            raise TypeError("`JobId` objects can only be compared with other `JobId` objects")
+    def __lt__(self, other):
+        try:
+            return self._num < other._num
+        except AttributeError:
+            raise TypeError("`JobId` objects can only be compared with other `JobId` objects")
 
 
-class Job(InformationContainer):
+class Job(Struct):
+    """A specialized `dict`-like object that keeps information about a GC3Libs job. 
 
+    A `Job` object is guaranteed to have the following attributes:
+
+      * `jobid`: Initially `None`, set to a unique after a successful `Gcli.gsub`
+      * `state`: Current state of the job, initially `State.NEW`; 
+         see `Job.State` for a list of the possible values.
+      * `output_retrieved`: Set to `True` after a successful call to `Gcli.gget`
+
+    `Job` objects support attribute lookup by both the ``[...]`` and the ``.`` syntax;
+    see `gc3libs.utils.Struct` for examples.
+    """
     def __init__(self,initializer=None,**keywd):
         """
-        Create a new Job object.
+        Create a new Job object; constructor accepts the same
+        arguments as the `dict` constructor.
         
-        Examples::
+        Examples:
         
-        >>> df = Job()
+          1. Create a new job with default parameters::
+
+            >>> j1 = Job()
+            >>> j1.returncode
+            None
+            >>> j1.state
+            'NEW'
+            >>> j1.jobid
+            None
+
+          2. Create a new job with additional attributes::
+
+            >>> j2 = Job(application='GAMESS', version='2010R1')
+            >>> j2.state
+            'NEW'
+            >>> j2.application
+            'GAMESS'
+            >>> j2['version']
+            '2010R1'
+
+          3. Clone an existing job object::
+
+            >>> j3 = Job(j2)
+            >>> j3.application
+            'GAMESS'
+            >>> j3['version']
+            '2010R1'
+            
         """
-        # create_unique_token
-        if ((not keywd.has_key('unique_token')) 
-                and not (initializer is not None 
-                         and hasattr(initializer, 'has_key') 
-                         and initializer.has_key('unique_token'))):
-            gc3libs.log.debug('Creating new unique_token ...')
-            keywd['unique_token'] = gc3libs.utils.create_unique_token()
-            gc3libs.log.debug('... got "%s"' % keywd['unique_token'])
-        InformationContainer.__init__(self,initializer,**keywd)
-
-    def is_valid(self):
-        if (self.has_key('unique_token')
-            #and self.has_key('status') 
-            #and self.has_key('resource_name') 
-            #and self.has_key('lrms_jobid') 
-            ):
-            return True
+        Struct.__init__(self, initializer, **keywd)
+        self.setdefault('jobid', None)
+        self.setdefault('output_retrieved', False)
+        self.setdefault('returncode', None)
+        self.setdefault('state', State.NEW)
+        self.setdefault('timestamp', dict())
+        
+        self._exitcode = None
+        self._signal = None
 
 
-def get_job(unique_token):
-    return get_job_filesystem(unique_token)
+    def __str__(self):
+        try:
+            return str(self.jobid)
+        except AttributeError:
+            return safe_repr(self)
 
-def get_job_filesystem(unique_token):
-    job_file = os.path.join(Default.JOBS_DIR, unique_token)
-    gc3libs.log.debug('retrieving job from %s', job_file)
+    def __repr__(self):
+        return str.join('', [self.__class___.__name___, "("] +
+                        [ ("%s=%s" % (k,v)) for k,v in self.items() ]
+                        + [")"])
+
+    @defproperty
+    def signal():
+        doc = """
+        The "signal number" part of a `Job.returncode`, see
+        `os.WTERMSIG` for details. 
+
+        The "signal number" is a 7-bit integer value in the range
+        0..127; value `0` is used to mean that no signal has been
+        received during the application runtime (i.e., the application
+        terminated by calling ``exit()``).  
+
+        The value represents either a real UNIX system signal, or a
+        "fake" one that GC3Libs uses to represent Grid middleware
+        errors (see `Job.Signals`).
+        """
+        def fget(self): 
+            return self._signal
+        def fset(self, value): 
+            if value is None:
+                self._signal = None
+            else:
+                self._signal = int(value) & 0x7f
+        return (locals())
+
+
+    @defproperty
+    def exitcode():
+        """
+        The "exit code" part of a `Job.returncode`, see
+        `os.WEXITSTATUS`.  This is an 8-bit integer, whose meaning is
+        entirely application-specific.  However, the value `-1` is
+        used to mean that an error has occurred and the application
+        could not end its execution normally.
+        """
+        def fget(self):
+            return self._exitcode
+        def fset(self, value):
+            if value is None:
+                self._exitcode = None
+            else:
+                self._exitcode = int(value) & 0xff
+        return (locals())
+
+
+    @defproperty
+    def returncode():
+        doc = """
+        The `returncode` attribute of this job object encodes the
+        `Job` termination status in a manner compatible with the POSIX
+        termination status as implemented by `os.WIFSIGNALED()` and
+        `os.WIFEXITED()`.
+
+        However, in contrast with POSIX usage, the `exitcode` and the
+        `signal` part can *both* be significant: in case a Grid
+        middleware error happened *after* the application has
+        successfully completed its execution.  In other words,
+        `os.WEXITSTATUS(job.returncode)` is meaningful iff
+        `os.WTERMSIG(job.returncode)` is 0 or one of the
+        pseudo-signals listed in `Job.Signals`.
+        
+        `Job.exitcode` and `Job.signal` are combined to form the
+        return code 16-bit integer as follows (the convention appears
+        to be obyed on every known system)::
+
+           Bit     Encodes...
+           ======  ====================================
+           0..7    signal
+           8       1 if program is stopped; 0 otherwise
+           9..16   exitcode 
+
+        *Note:* the "stop bit" is always 0.
+
+        Setting the `returncode` property sets `exitcode` and
+        `signal`; you can either assign a `(signal, exitcode)` pair to
+        `returncode`, or set `returncode` to an integer from which the
+        correct `exitcode` and `signal` attribute values are
+        extracted::
+
+           >>> j = Job()
+           >>> j.returncode = (42, 56)
+           >>> j.signal
+           42
+           >>> j.exitcode
+           56
+
+           >>> j.returncode = 137
+           >>> j.signal
+           9
+           >>> j.exitcode
+           0
+
+        See also `Job.exitcode` and `Job.signal`.
+        """
+        def fget(self): 
+            if self.exitcode is None and self.signal is None:
+                return None
+            if self.exitcode is None:
+                exitcode = -1
+            else:
+                exitcode = self.exitcode
+            if self.signal is None:
+                signal = 0
+            else: 
+                signal = self.signal
+            return (exitcode << 8) | signal
+        def fset(self, value):
+            try:
+                # `value` can be a tuple `(signal, exitcode)`
+                self.signal = int(value[0])
+                self.exitcode = int(value[1])
+            except TypeError:
+                self.exitcode = (int(value) >> 8) & 0xff
+                self.signal = int(value) & 0x7f
+            # ensure values are within allowed range
+            self.exitcode &= 0xff
+            self.signal &= 0x7f
+        return (locals())
+
+
+def get_job(jobid):
+    return get_job_filesystem(jobid)
+
+def get_job_filesystem(jobid):
+    job_file = os.path.join(Default.JOBS_DIR, jobid)
+    gc3libs.log.debug("Retrieving job from file '%s' ...", job_file)
 
     if not os.path.exists(job_file):
         raise JobRetrieveError("No '%s' file found in directory '%s'" 
-                               % (unique_token, Default.JOBS_DIR))
-    # XXX: this should become `with handler = ...:` as soon as we stop
+                               % (jobid, Default.JOBS_DIR))
+    # XXX: this should become `with db = ...:` as soon as we stop
     # supporting Python 2.4
-    handler = None
+    db = None
     try:
-        handler = shelve.open(job_file)
-        job = Job(handler) 
-        handler.close()
+        db = shelve.open(job_file)
+        job = Job(db) 
+        db.close()
     except Exception, x:
-        if handler is not None:
+        if db is not None:
             try:
-                handler.close()
+                db.close()
             except:
                 pass # ignore errors
         raise JobRetrieveError("Failed retrieving job from filesystem: %s: %s"
                                % (x.__class__.__name__, str(x)))
-    if job.is_valid():
-        return job
-    else:
-        raise JobRetrieveError("Got invalid job from file '%s'" % job_file)
+    if str(job.jobid) != str(jobid):
+        raise JobRetrieveError("Retrieved Job ID '%s' does not match given Job ID '%s'" 
+                               % (job.jobid, jobid))
+    return job
+
 
 def persist_job(job_obj):
     return persist_job_filesystem(job_obj)
 
 def persist_job_filesystem(job_obj):
-    job_file = os.path.join(Default.JOBS_DIR, job_obj.unique_token)
+    job_file = os.path.join(Default.JOBS_DIR, job_obj.jobid)
     gc3libs.log.debug("dumping job into file '%s'", job_file)
+
     if not os.path.exists(Default.JOBS_DIR):
         try:
             os.makedirs(Default.JOBS_DIR)
@@ -176,51 +462,41 @@ def persist_job_filesystem(job_obj):
             gc3libs.log.error("Could not create jobs directory '%s': %s" 
                                % (Default.JOBS_DIR, x))
             raise
-    handler = None
+
+    backup_file = None
+    if os.path.exists(job_file):
+        backup_file = job_file + '.OLD'
+        os.rename(job_file, backup_file)
+        
+    db = None
     try:
-        handler = shelve.open(job_file)
-        handler.update(job_obj)
-        handler.close()
+        db = shelve.open(job_file)
+        for key, value in job_obj.items():
+            gc3libs.log.debug("writing attribute'%s=%s' (type: %s)" % (key, value, type(value)))
+            db[key] = value
+        db.close()
+        os.remove(backup_file)
     except Exception, x:
-        gc3libs.log.error("Could not persist job %s to '%s': %s: %s" 
-                           % (job_obj.unique_token, Default.JOBS_DIR, x.__class__.__name__, x))
-        if handler is not None:
+        gc3libs.log.error("Error saving job %s to '%s': %s: %s" 
+                           % (job_obj.jobid, job_file, x.__class__.__name__, x))
+        if db is not None:
             try:
-                handler.close()
+                db.close()
+            except:
+                pass # ignore errors
+        if backup_file is not None:
+            try: 
+                os.rename(backup_file, job_file)
             except:
                 pass # ignore errors
         raise
 
 def clean_job(job):
-    return clean_job_filesystem(job.unique_token)
+    return clean_job_filesystem(job.jobid)
 
-def clean_job_filesystem(unique_token):
-    job_file_path = os.path.join(Default.JOBS_DIR,unique_token)
+def clean_job_filesystem(jobid):
+    job_file_path = os.path.join(Default.JOBS_DIR,jobid)
     if os.path.isfile(job_file_path):
         return os.remove(job_file_path)
     else:
         raise RetrieveJobsFilesystemError('Job file %s not found' % job_file_path)
-
-def prepare_job_dir(_download_dir):
-    try:
-        if os.path.isdir(_download_dir):
-            # directory exists; find a suitable extension and rename
-            parent_dir = os.path.dirname(_download_dir)
-            prefix = os.path.dirname(_download_dir) + '.'
-            l = len(prefix)
-            suffix = 1
-            for name in [ x for x in os.listdir(parent_dir) if x.startswith(prefix) ]:
-                try:
-                    n = int(name[l:])
-                    suffix = max(suffix, n)
-                except:
-                    # ignore non-numeric suffixes
-                    pass
-            os.rename(_download_dir, "%s.%d" % (_download_dir, suffix))
-
-        os.makedirs(_download_dir)
-        return True
-    except:
-        gc3libs.log.error('Failed creating folder %s ' % _download_dir)
-        gc3libs.log.debug('%s %s',sys.exc_info()[0], sys.exc_info()[1])
-        return False
