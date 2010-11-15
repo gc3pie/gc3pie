@@ -89,6 +89,7 @@ class NoneAuth(object):
 
 Auth.register('none', NoneAuth)
 # register additional authentication types
+# FIXME: it would be nice to have some kind of auto-discovery instead
 import gc3libs.authentication.grid
 import gc3libs.authentication.ssh
     
