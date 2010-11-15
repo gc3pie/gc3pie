@@ -328,7 +328,9 @@ class SgeLrms(LRMS):
 
         # Create the remote directory. 
         try:
-            _command = 'mkdir -p $HOME/.gc3utils_jobs; mktemp -p $HOME/.gc3utils_jobs -d lrms_job.XXXXXXXXXX'
+            self.transport.connect()
+
+            _command = 'mkdir -p $HOME/.gc3pie_jobs; mktemp -p $HOME/.gc3pie_jobs -d lrms_job.XXXXXXXXXX'
             exit_code, stdout, stderr = self.transport.execute_command(_command)
             if exit_code == 0:
                 ssh_remote_folder = stdout.split('\n')[0]
@@ -517,8 +519,11 @@ class SgeLrms(LRMS):
 
         # explicitly set stdout and stderr
         # Note: stdout and stderr are always considered as merged
-        job.stdout_filename = job.lrms_job_name + '.o' + job.lrms_jobid
-        job.stderr_filename = job.lrms_job_name + '.o' + job.lrms_jobid
+        # job.stdout_filename = job.lrms_job_name + '.o' + job.lrms_jobid
+        # job.stderr_filename = job.lrms_job_name + '.o' + job.lrms_jobid
+
+        job.stdout_filename = job.lrms_job_name + '.out'
+        job.stderr_filename = job.lrms_job_name + '.err'
         
         return state
 
@@ -571,29 +576,33 @@ class SgeLrms(LRMS):
                 return job
 
             # copy back all files, renaming them to adhere to the ArcLRMS convention
-            try: 
-                jobname = job.lrms_job_name
-                gc3libs.log.debug("Recorded job name is '%s'" % jobname)
-            except KeyError:
-                # no job name was set, empty string should be safe for following code
-                jobname = ''
-                gc3libs.log.warning("No recorded job name; will not be able to rename files accordingly")
-            filename_map = { 
-                # XXX: SGE-specific?
-                ('%s.out' % jobname) : ('%s.o%s' % (jobname, job.lrms_jobid)),
-                ('%s.err' % jobname) : ('%s.e%s' % (jobname, job.lrms_jobid)),
-                # the following is definitely GAMESS-specific
-                ('%s.cosmo' % jobname) : ('%s.o%s.cosmo' % (jobname, job.lrms_jobid)),
-                ('%s.dat'   % jobname) : ('%s.o%s.dat'   % (jobname, job.lrms_jobid)),
-                ('%s.inp'   % jobname) : ('%s.o%s.inp'   % (jobname, job.lrms_jobid)),
-                ('%s.irc'   % jobname) : ('%s.o%s.irc'   % (jobname, job.lrms_jobid)),
-                }
+
+            #try: 
+            #    jobname = job.lrms_job_name
+            #    gc3libs.log.debug("Recorded job name is '%s'" % jobname)
+            #except KeyError:
+            #    # no job name was set, empty string should be safe for following code
+            #    jobname = ''
+            #    gc3libs.log.warning("No recorded job name; will not be able to rename files accordingly")
+
+
+            #filename_map = { 
+            #    # XXX: SGE-specific?
+            #    ('%s.out' % jobname) : ('%s.o%s' % (jobname, job.lrms_jobid)),
+            #    ('%s.err' % jobname) : ('%s.e%s' % (jobname, job.lrms_jobid)),
+            #    # the following is definitely GAMESS-specific
+            #    ('%s.cosmo' % jobname) : ('%s.o%s.cosmo' % (jobname, job.lrms_jobid)),
+            #    ('%s.dat'   % jobname) : ('%s.o%s.dat'   % (jobname, job.lrms_jobid)),
+            #    ('%s.inp'   % jobname) : ('%s.o%s.inp'   % (jobname, job.lrms_jobid)),
+            #    ('%s.irc'   % jobname) : ('%s.o%s.irc'   % (jobname, job.lrms_jobid)),
+            #    }
             # copy back all files
             gc3libs.log.debug("Downloading job output into '%s' ...",download_dir)
             for remote_path, local_path in job.outputs.items():
                 try:
                     # override the remote name if it's a known variable one...
-                    remote_path = os.path.join(job.remote_ssh_folder, filename_map[remote_path])
+                    remote_path = os.path.join(job.remote_ssh_folder, self._sge_filename_mapping(job.lrms_job_name, job.lrms_jobid, remote_path))
+                    # remote_path = os.path.join(job.remote_ssh_folder, filename_map[remote_path])
                 except KeyError:
                     # ...but keep it if it's not a known one
                     remote_path = os.path.join(job.remote_ssh_folder, remote_path)
@@ -642,7 +651,24 @@ class SgeLrms(LRMS):
         if size is None:
             size = sys.maxint
 
-        _remote_filename = job_obj.remote_ssh_folder + '/' + remote_filename
+        # jobname = job_obj.lrms_job_name
+
+        _filename_mapping = self._sge_filename_mapping(job_obj.lrms_job_name, job_obj.lrms_jobid, remote_filename)
+        _remote_filename = os.path.join(job_obj.remote_ssh_folder, _filename_mapping)
+
+        #filename_map = {
+        #    # XXX: SGE-specific?
+        #    ('%s.out' % jobname) : ('%s.o%s' % (jobname, job_obj.lrms_jobid)),
+        #    ('%s.err' % jobname) : ('%s.e%s' % (jobname, job_obj.lrms_jobid)),
+        #    # the following is definitely GAMESS-specific                                                                
+        #    ('%s.cosmo' % jobname) : ('%s.o%s.cosmo' % (jobname, job_obj.lrms_jobid)),
+        #    ('%s.dat'   % jobname) : ('%s.o%s.dat'   % (jobname, job_obj.lrms_jobid)),
+        #    ('%s.inp'   % jobname) : ('%s.o%s.inp'   % (jobname, job_obj.lrms_jobid)),
+        #    ('%s.irc'   % jobname) : ('%s.o%s.irc'   % (jobname, job_obj.lrms_jobid)),
+        #    }
+
+        #_remote_filename = os.path.join(job_obj.remote_ssh_folder, filename_map[remote_filename])
+
         try:
             self.transport.connect()
             remote_handler = self.transport.open(_remote_filename, mode='r', bufsize=-1)
@@ -714,6 +740,20 @@ class SgeLrms(LRMS):
         # Temporarly adapted to return a string representation
         return time.strftime("%Y-%m-%d %H:%M:%S", t)
 
+    def _sge_filename_mapping(self, job_name, lrms_jobid, file_name):
+
+        filename_map = {
+            # XXX: SGE-specific?                                                                                             
+            ('%s.out' % job_name) : ('%s.o%s' % (job_name, lrms_jobid)),
+            ('%s.err' % job_name) : ('%s.e%s' % (job_name, lrms_jobid)),
+            # the following is definitely GAMESS-specific                                                                    
+            ('%s.cosmo' % job_name) : ('%s.o%s.cosmo' % (job_name, lrms_jobid)),
+            ('%s.dat'   % job_name) : ('%s.o%s.dat'   % (job_name, lrms_jobid)),
+            ('%s.inp'   % job_name) : ('%s.o%s.inp'   % (job_name, lrms_jobid)),
+            ('%s.irc'   % job_name) : ('%s.o%s.irc'   % (job_name, lrms_jobid)),
+            }
+
+        return filename_map[file_name]
 
 ## main: run tests
 
