@@ -475,7 +475,8 @@ def persist_job_filesystem(job_obj):
             gc3libs.log.debug("writing attribute'%s=%s' (type: %s)" % (key, value, type(value)))
             db[key] = value
         db.close()
-        os.remove(backup_file)
+        if backup_file is not None:
+            os.remove(backup_file)
     except Exception, x:
         gc3libs.log.error("Error saving job %s to '%s': %s: %s" 
                            % (job_obj.jobid, job_file, x.__class__.__name__, x))

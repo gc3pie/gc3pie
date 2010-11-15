@@ -292,15 +292,18 @@ class SgeLrms(LRMS):
         self._ssh_username = auth.username
 
         # for this backend transport object is mandatory.
-        if resource.has_key('transport'):
-            if resource.transport == 'local':
-                self.transport = transport.LocalTransport()
-            elif resource.transport == 'ssh':
-                self.transport = transport.SshTransport(self._resource.frontend,username=self._ssh_username)
-            else:
-                raise transport.TransportError('Unknown transport %s', resource.transport)
+        if not resource.has_key('transport'):
+            raise ConfigurationError("Invalid resource '%s' description:"
+                                     " missing 'transport' configuration parameter."
+                                     % resource.name)
+
+        if resource.transport == 'local':
+            self.transport = transport.LocalTransport()
+        elif resource.transport == 'ssh':
+            self.transport = transport.SshTransport(self._resource.frontend, 
+                                                    username=self._ssh_username)
         else:
-            raise LRMSException('Invalid resource description: missing transport')
+            raise transport.TransportError("Unknown transport '%s'", resource.transport)
         
         # XXX: does Ssh really needs this ?
         self._resource.ncores = int(self._resource.ncores)
@@ -425,10 +428,8 @@ class SgeLrms(LRMS):
             }
         try:
             self.transport.connect()
-            # open ssh connection
-            # ssh, sftp = self._connect_ssh(self._resource.frontend,self._ssh_username)
 
-            # then check the lrms_jobid with qstat
+            # check the lrms_jobid with qstat
             _command = "qstat | egrep  '^ *%s'" % job.lrms_jobid
             gc3libs.log.debug("checking remote job status with '%s'" % _command)
             exit_code, stdout, stderr = self.transport.execute_command(_command)
@@ -506,19 +507,20 @@ class SgeLrms(LRMS):
                         # this is the first time `qstat` fails, record a timestamp and retry later
                         job.sge_qstat_failed_at = time.time()
 
-            # explicitly set stdout and stderr
-            # Note: stdout and stderr are always considered as merged
-            job.stdout_filename = job.lrms_job_name + '.o' + job.lrms_jobid
-            job.stderr_filename = job.lrms_job_name + '.o' + job.lrms_jobid
-            
+        except Exception, ex:
             self.transport.close()
-            
-            return state
-        
-            self.transport.close()
-            gc3libs.log.critical('Failure in checking status: %s: %s',
-                                 ex.__class__.__name__, str(ex))
+            gc3libs.log.error("Error in querying SGE resource '%s': %s: %s",
+                              self._resource.name, ex.__class__.__name__, str(ex))
             raise
+        
+        self.transport.close()
+
+        # explicitly set stdout and stderr
+        # Note: stdout and stderr are always considered as merged
+        job.stdout_filename = job.lrms_job_name + '.o' + job.lrms_jobid
+        job.stderr_filename = job.lrms_job_name + '.o' + job.lrms_jobid
+        
+        return state
 
 
     @same_docstring_as(LRMS.cancel_job)
@@ -660,7 +662,6 @@ class SgeLrms(LRMS):
             output_file.close()
         gc3libs.log.debug('... Done.')
 
->>>>>>> MERGE-SOURCE
                 
     @same_docstring_as(LRMS.get_resource_status)
     def get_resource_status(self):
@@ -706,13 +707,13 @@ class SgeLrms(LRMS):
             gc3libs.log.debug('%s %s',sys.exc_info()[0], sys.exc_info()[1])
             raise
         
-     ## Below are the functions needed only for the SshLrms -class.
-
+    ## Below are the functions needed only for the SshLrms -class.
     def _date_normalize(self, date_string):
         # Example format: Wed Aug 25 15:41:30 2010
         t = time.strptime(date_string,"%a %b %d %H:%M:%S %Y")
         # Temporarly adapted to return a string representation
         return time.strftime("%Y-%m-%d %H:%M:%S", t)
+
 
 ## main: run tests
 
