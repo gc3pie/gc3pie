@@ -324,7 +324,9 @@ class ArcLrms(LRMS):
 
 
     @same_docstring_as(LRMS.tail)
-    def tail(self, job_obj, filename, offset=0, size=None):
+#    def tail(self, job_obj, filename, offset=0, size=None):
+    def tail(self, job_obj, remote_filename, local_file, offset=0, size=None):
+
         assert job_obj.has_key('lrms_jobid'), \
             "Missing attribute `lrms_jobid` on `Job` instance passed to `ArcLrms.tail`."
 
@@ -335,24 +337,27 @@ class ArcLrms(LRMS):
         if int(offset) < 1024:
             offset = 0
 
-        _remote_filename = job_obj.lrms_jobid + '/' + filename
-        
-        # get JobFTPControl handle            
+        _remote_filename = job_obj.lrms_jobid + '/' + remote_filename
+
+        # get JobFTPControl handle
         jftpc = arclib.JobFTPControl()
 
         # download file
         gc3libs.log.debug("Downloading %d bytes at offset %d of remote file '%s' into local file '%s' ..."
-                          % (size, offset, filename, _tmp_filehandle.name))
-        try:
-            local_file_name = local_file.name
-        except AttributeError:
-            local_file_name = local_file
+                          % (size, offset, remote_filename, local_file.name))
+
+        # XXX: why this ?
+        #try:
+        #    local_file_name = local_file.name
+        #except AttributeError:
+        #    local_file_name = local_file
+
         arclib.JobFTPControl.Download(jftpc, 
                                       arclib.URL(_remote_filename), 
                                       int(offset), int(size), 
-                                      local_file_name)
-        gc3libs.log.debug('... Done.')
+                                      local_file.name)
 
+        gc3libs.log.info('status arclib.JobFTPControl.Download [ completed ]')
 
 
 ## main: run tests

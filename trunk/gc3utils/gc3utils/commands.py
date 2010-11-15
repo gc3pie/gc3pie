@@ -387,8 +387,9 @@ def gtail(*args, **kw):
     
         job = _store.load(jobid)
 
-        if job.state == gc3libs.Job.State.COMPLETED:
-            raise Exception('Job results already retrieved')
+        # Remove this control. is ourput already retrieved. gcli will read from local copy
+        #        if job.state == gc3libs.Job.State.TERMINATED and job.output_retrieved:
+        #            raise Exception('Job results already retrieved')
         if job.state == gc3libs.Job.State.UNKNOWN or job.state == gc3libs.Job.State.SUBMITTED:
             raise Exception('Job output not yet available')
 

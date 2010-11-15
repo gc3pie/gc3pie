@@ -31,6 +31,7 @@ import os
 import sys
 import time
 import ConfigParser
+import tempfile
 
 import gc3libs
 from gc3libs.application import Application
@@ -216,10 +217,7 @@ class Gcli:
 
         # Prepare/Clean download dir
         if download_dir is None:
-            try:
-                download_dir = os.path.join(job.job_local_dir, job.jobid)
-            except AttributeError:
-                download_dir = os.path.join(Default.JOB_FOLDER_LOCATION, job.jobid)
+            download_dir = os.path.join(job.job_local_dir, job.jobid)
         try:
             utils.mkdir_with_backup(download_dir)
         except Exception, ex:
@@ -275,11 +273,6 @@ class Gcli:
         Note: For the time being we allow only stdout or stderr as valid filenames
         """
 
-        # Get authorization
-        auto_enable_auth = kw.get('auto_enable_auth', self.auto_enable_auth)
-        _lrms = self._get_backend(job.resource_name)
-        self.authorization.get(_lrms._resource.authorization_type)
-
         if what == 'stdout':
             remote_filename = job.stdout_filename
         elif what == 'stderr':
@@ -288,13 +281,25 @@ class Gcli:
             raise Error("File name requested to `Gcli.tail` must be"
                         " 'stdout' or 'stderr', not '%s'" % what)
 
-        local_file = tempfile.NamedTemporaryFile(suffix='.tmp', prefix='gc3libs.')
+        # Check if local data available
+        # cross reference check: job status and local data availability
+        if job.state == gc3libs.Job.State.TERMINATED and job.output_retrieved:
+            _filename = os.path.join(job.job_local_dir, job.jobid, remote_filename)
+            _local_file = open(_filename)
+        else:
 
-        _lrms.tail(job, remote_filename, local_file, offset, size)
-        local_file.flush()
-        local_file.seek(0)
+            # Get authorization
+            auto_enable_auth = kw.get('auto_enable_auth', self.auto_enable_auth)
+            _lrms = self._get_backend(job.resource_name)
+            self.authorization.get(_lrms._resource.authorization_type)
+
+            _local_file = tempfile.NamedTemporaryFile(suffix='.tmp', prefix='gc3libs.')
+
+            _lrms.tail(job, remote_filename, _local_file, offset, size)
+            _local_file.flush()
+            _local_file.seek(0)
         
-        return local_file
+        return _local_file
 
 
 #======= Static methods =======
