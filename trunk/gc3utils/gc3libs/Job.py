@@ -184,11 +184,16 @@ class JobId(str):
     IDs, and for comparing/sorting Job IDs based on their progressive
     number.
     """
-    def __new__(cls):
+    def __new__(cls, id=None):
         """
         Construct a new "unique job identifier" instance (a string).
         """
-        num = progressive_number()
+        if id is None:
+            num = progressive_number()
+        else:
+            # only used when (un)pickling `JobId` objects, 
+            # assumes `id` has the form "job.XXX"
+            num = int(id[4:])
         instance = str.__new__(cls, "job.%d" % num)
         instance._num = num
         return instance
@@ -278,7 +283,6 @@ class Job(Struct):
         Struct.__init__(self, initializer, **keywd)
         self.setdefault('jobid', None)
         self.setdefault('output_retrieved', False)
-        self.setdefault('returncode', None)
         self.setdefault('state', State.NEW)
         self.setdefault('timestamp', dict())
         
@@ -414,90 +418,3 @@ class Job(Struct):
             self.exitcode &= 0xff
             self.signal &= 0x7f
         return (locals())
-
-
-def get_job(jobid):
-    return get_job_filesystem(jobid)
-
-def get_job_filesystem(jobid):
-    job_file = os.path.join(Default.JOBS_DIR, jobid)
-    gc3libs.log.debug("Retrieving job from file '%s' ...", job_file)
-
-    if not os.path.exists(job_file):
-        raise JobRetrieveError("No '%s' file found in directory '%s'" 
-                               % (jobid, Default.JOBS_DIR))
-    # XXX: this should become `with db = ...:` as soon as we stop
-    # supporting Python 2.4
-    db = None
-    try:
-        db = shelve.open(job_file)
-        job = Job(db) 
-        db.close()
-    except Exception, x:
-        if db is not None:
-            try:
-                db.close()
-            except:
-                pass # ignore errors
-        raise JobRetrieveError("Failed retrieving job from filesystem: %s: %s"
-                               % (x.__class__.__name__, str(x)))
-    if str(job.jobid) != str(jobid):
-        raise JobRetrieveError("Retrieved Job ID '%s' does not match given Job ID '%s'" 
-                               % (job.jobid, jobid))
-    return job
-
-
-def persist_job(job_obj):
-    return persist_job_filesystem(job_obj)
-
-def persist_job_filesystem(job_obj):
-    job_file = os.path.join(Default.JOBS_DIR, job_obj.jobid)
-    gc3libs.log.debug("dumping job into file '%s'", job_file)
-
-    if not os.path.exists(Default.JOBS_DIR):
-        try:
-            os.makedirs(Default.JOBS_DIR)
-        except Exception, x:
-            # raise same exception but add context message
-            gc3libs.log.error("Could not create jobs directory '%s': %s" 
-                               % (Default.JOBS_DIR, x))
-            raise
-
-    backup_file = None
-    if os.path.exists(job_file):
-        backup_file = job_file + '.OLD'
-        os.rename(job_file, backup_file)
-        
-    db = None
-    try:
-        db = shelve.open(job_file)
-        for key, value in job_obj.items():
-            gc3libs.log.debug("writing attribute'%s=%s' (type: %s)" % (key, value, type(value)))
-            db[key] = value
-        db.close()
-        if backup_file is not None:
-            os.remove(backup_file)
-    except Exception, x:
-        gc3libs.log.error("Error saving job %s to '%s': %s: %s" 
-                           % (job_obj.jobid, job_file, x.__class__.__name__, x))
-        if db is not None:
-            try:
-                db.close()
-            except:
-                pass # ignore errors
-        if backup_file is not None:
-            try: 
-                os.rename(backup_file, job_file)
-            except:
-                pass # ignore errors
-        raise
-
-def clean_job(job):
-    return clean_job_filesystem(job.jobid)
-
-def clean_job_filesystem(jobid):
-    job_file_path = os.path.join(Default.JOBS_DIR,jobid)
-    if os.path.isfile(job_file_path):
-        return os.remove(job_file_path)
-    else:
-        raise RetrieveJobsFilesystemError('Job file %s not found' % job_file_path)

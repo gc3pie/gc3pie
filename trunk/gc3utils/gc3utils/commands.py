@@ -24,6 +24,7 @@ import gc3libs.Default as Default
 from   gc3libs.Exceptions import *
 import gc3libs.Job as Job
 import gc3libs.gcli as gcli
+import gc3libs.persistence
 import gc3libs.utils as utils
 
 import gc3utils
@@ -37,6 +38,9 @@ _default_joblist_file = _rcdir + "/.joblist"
 _default_joblist_lock = _rcdir + "/.joblist_lock"
 _default_job_folder_location = os.getcwd()
 _default_wait_time = 3 # XXX: does it really make sense to have a default wall-clock time??
+
+
+_store = gc3libs.persistence.FilesystemStore()
 
 
 def _configure_logger(verbosity):
@@ -99,9 +103,9 @@ def gclean(*args, **kw):
 
     # Assume args are all jobids
     for jobid in args:
-        job = gc3libs.Job.get_job(jobid)
+        job = _store.load(jobid)
         if job.state == gc3libs.Job.State.TERMINATED or options.force == True:
-            gc3libs.Job.clean_job(job)
+            _store.remove(jobid)
             gc3utils.log.info("Removed job '%s'", job)
         else:
             gc3utils.log.error("Job %s not in terminal state: ignoring.", job)
@@ -114,11 +118,13 @@ def ginfo(*args, **kw):
     (options, args) = parser.parse_args(list(args))
     _configure_logger(options.verbosity)
 
+    gcli = _get_gcli(_default_config_file_locations)
+
     # build list of jobs to query status of
     if len(args) == 0:
-        jobs = _get_jobs(_list_job_ids())
+        jobs = _get_jobs()
     else:
-        jobs = [ gc3libs.Job.get_job(jobid) for jobid in args ]
+        jobs = _get_jobs(args)
 
     print (78 * '=')
     for job in jobs:
@@ -195,7 +201,7 @@ def gsub(*args, **kw):
 
     print("Successfully submitted %s; use the 'gstat' command to monitor its progress." 
           % job.jobid)
-    gc3libs.Job.persist_job(job)
+    _store.save(job)
     return 0
 
 
@@ -225,7 +231,7 @@ def gresub(*args, **kw):
 
     failed = 0
     for jobid in args:
-        job = gc3libs.Job.get_job(jobid.strip())
+        job = _store.load(jobid.strip())
         try:
             _gcli.gstat(job) # update state
         except Exception, ex:
@@ -243,7 +249,7 @@ def gresub(*args, **kw):
             job = _gcli.gsub(job.application, job)
             print("Successfully re-submitted %s; use the 'gstat' command to monitor its progress." 
                   % job.jobid)
-            gc3libs.Job.persist_job(job)
+            _store.replace(jobid, job)
         except Exception, ex:
             failed += 1
             gc3utils.log.error("Failed resubmission of job '%s': %s: %s", 
@@ -258,23 +264,16 @@ def gstat(*args, **kw):
     (options, args) = parser.parse_args(list(args))
     _configure_logger(options.verbosity)
 
+    gcli = _get_gcli(_default_config_file_locations)
+
     # build list of jobs to query status of
     if len(args) == 0:
-        jobs = _get_jobs(_list_job_ids())
+        jobs = _get_jobs()
     else:
-        jobs = [ gc3libs.Job.get_job(jobid) for jobid in args ]
+        jobs = _get_jobs(args)
 
-    try:
-        _gcli = _get_gcli(_default_config_file_locations)
-        _gcli.gstat(*jobs)
-    except Exception, x:
-        # FIXME: this `if` can go away once all exceptions do the logging in their ctor.
-        if isinstance(x, InvalidUsage):
-            raise
-        else:
-            gc3utils.log.critical('Failed retrieving job state')
-            raise
-
+    gcli.gstat(*jobs)
+        
     # Print result
     if len(jobs) == 0:
         print ("No jobs in gc3utils database.")
@@ -288,7 +287,7 @@ def gstat(*args, **kw):
 
     # save jobs back to disk
     for job in jobs:
-        gc3libs.Job.persist_job(job)
+        _store.replace(job.jobid, job)
 
     return 0
 
@@ -306,13 +305,13 @@ def gget(*args, **kw):
     jobid = args[0]
 
     _gcli = _get_gcli(_default_config_file_locations)
-    job_obj = gc3libs.Job.get_job(jobid)
+    job_obj = _store.load(jobid)
 
     if job_obj.state == gc3libs.Job.State.TERMINATED:
         if not job_obj.output_retrieved:
             _gcli.gget(job_obj)
             print("Job results successfully retrieved in '%s'\n" % job_obj.download_dir)
-            gc3libs.Job.persist_job(job_obj)
+            _store.replace(job_obj.jobid, job_obj)
         else:
             gc3utils.log.error("Job output already downloaded into '%s'", job_obj.download_dir)
     else: # job not in terminal state
@@ -340,7 +339,7 @@ def gkill(*args, **kw):
         # Assume args are all jobids
         for jobid in args:
             try:
-                job = gc3libs.Job.get_job(jobid)
+                job = _store.load(jobid)
 
                 gc3utils.log.debug("gkill: Job '%s' in state %s" % (jobid, job.state))
 
@@ -348,7 +347,7 @@ def gkill(*args, **kw):
                     raise InvalidOperation("Job '%s' is already in terminal state" % job)
                 else:
                     job = _gcli.gkill(job)
-                    gc3libs.Job.persist_job(job)
+                    _store.replace(jobid, job)
 
                     # or shall we simply return an ack message ?
                     print("Sent request to cancel remote job '%s'."% job)
@@ -386,7 +385,7 @@ def gtail(*args, **kw):
             
         _gcli = _get_gcli(_default_config_file_locations)
     
-        job = gc3libs.Job.get_job(jobid)
+        job = _store.load(jobid)
 
         if job.state == gc3libs.Job.State.COMPLETED:
             raise Exception('Job results already retrieved')
@@ -416,7 +415,7 @@ def gnotify(*args, **kw):
         raise InvalidUsage("This command requires exactly one argument: the Job ID.")
     jobid = args[0]
 
-    job = gc3libs.Job.get_job(jobid)
+    job = _store.load(jobid)
     return gc3libs.utils.notify(job,options.include_job_results)
     
 
@@ -449,20 +448,13 @@ def glist(*args, **kw):
         raise Exception("glist terminated")
 
 
-## utility functions
 
-def _list_job_ids():
-    """
-    Return list of Job IDs of all currently defined jobs.
-    """
-    if not os.path.exists(Default.JOBS_DIR):
-        return [ ]
-    return os.listdir(Default.JOBS_DIR)
+## helper functions
 
-
-def _get_jobs(job_ids, ignore_failures=True):
+def _get_jobs(job_ids=None, ignore_failures=True):
     """
-    Return list of jobs (gc3libs.Job objects) corresponding to the given Job IDs.
+    Return list of jobs (gc3libs.Job objects) corresponding to the
+    given Job IDs.
 
     If `ignore_failures` is `True` (default), errors retrieving a
     job from the persistence layer are ignored and the jobid is
@@ -470,11 +462,25 @@ def _get_jobs(job_ids, ignore_failures=True):
     list of Job IDs given as argument.  If `ignore_failures` is
     `False`, then any errors result in the relevant exception being
     re-raised.
+
+    If `job_ids` is `None` (default), then load all jobs available
+    in the persistent storage; if persistent storage does not
+    implement the `list` operation, then an empty list is returned
+    (when `ignore_failures` is `True`) or a `NotImplementedError`
+    exception is raised (when `ignore_failures` is `False`).
     """
+    if job_ids is None:
+        try:
+            job_ids = _store.list()
+        except NotImplementedError, ex:
+            if ignore_failures:
+                return [ ]
+            else:
+                raise
     jobs = [ ]
     for jobid in job_ids:
         try:
-            jobs.append(Job.get_job(jobid))
+            jobs.append(_store.load(jobid))
         except Exception, ex:
             if ignore_failures:
                 gc3libs.log.error("Could not retrieve job '%s' (%s: %s). Ignoring.", 
@@ -483,3 +489,5 @@ def _get_jobs(job_ids, ignore_failures=True):
             else:
                 raise
     return jobs
+
+
