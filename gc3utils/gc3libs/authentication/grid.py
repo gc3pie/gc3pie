@@ -27,8 +27,9 @@ __version__ = '$Revision$'
 
 
 import arclib
-from gc3libs.authentication import Auth
 import gc3libs
+from gc3libs.authentication import Auth
+from gc3libs.Exceptions import AuthenticationException
 import getpass
 import os
 import subprocess

@@ -66,7 +66,11 @@ class AuthenticationException(Error):
 class BrokerException(Error):
     pass
 
-class InvalidJobid(FatalError):
+class DataStagingError(Error):
+    """
+    Raised when problems with copying data to or from the remote
+    execution site occurred.
+    """
     pass
 
 class InputFileError(FatalError):
@@ -82,6 +86,17 @@ class InternalError(Error):
     that do not depend on the library client code.  For instance, when
     a response string gotten from an external command cannot be parsed
     as expected.
+    """
+    pass
+
+class InvalidJobid(FatalError):
+    pass
+
+class InvalidOperation(Error):
+    """
+    Raised when an operation is attempted, that is not considered
+    valid according to the system state.  For instance, trying to
+    retrieve the output of a job that has not yet been submitted.
     """
     pass
 
@@ -125,6 +140,15 @@ class SshSubmitException(Error):
     pass
 
 class TransportException(Error):
+    pass
+
+class UnknownJobState(Error):
+    """
+    Raised when a job state is gotten from the Grid middleware, that
+    is not handled by the GC3Libs code.  Might actually mean that
+    there is a version mismatch between GC3Libs and the Grid
+    middleware used.
+    """
     pass
 
 class VOMSException(AuthenticationException):

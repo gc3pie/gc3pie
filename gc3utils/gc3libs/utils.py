@@ -140,9 +140,14 @@ class Struct(dict):
         if self.has_key(key):
             return self[key]
         else:
-            raise AttributeError, "No attribute '%s' on object %s" % (key, self)
+            try:
+                raise AttributeError("No attribute '%s' on object %s" % (key, self))
+            except RuntimeError:
+                raise AttributeError("No attribute '%s' on %s", safe_repr(self))
     def __hasattr__(self, key):
         return self.has_key(key)
+    def __getstate__(self):
+        return False
 
 
 def progressive_number():
@@ -188,16 +193,13 @@ def progressive_number():
     return id
 
 
-def create_unique_token():
+def defproperty(fn):
     """
-    Return a "unique job identifier" (a string).  Job identifiers are 
-    temporally unique: no job identifier will (ever) be re-used,
-    even in different invocations of the program.
-
-    Currently, the unique job identifier has the form "job.XXX" where
-    "XXX" is a decimal number.  
+    Decorator to define properties with a simplified syntax in Python 2.4.
+    See http://code.activestate.com/recipes/410698-property-decorator-for-python-24/#c6
+    for details and examples.
     """
-    return "job.%d" % progressive_number()
+    return property(**fn())
 
 
 def dirname(pathname):
@@ -287,6 +289,53 @@ def from_template(template, **kw):
         template_contents = template
     # substitute `kw` into `t` and return it
     return (template_contents % kw)
+
+
+def mkdir_with_backup(path):
+    """
+    Like `os.mkdirs`, but if `path` already exists, rename the existing
+    one appending a `.NUMBER` suffix.
+    """
+    if os.path.isdir(path):
+        # directory exists; find a suitable extension and rename
+        parent_dir = os.path.dirname(path)
+        prefix = os.path.dirname(path) + '.'
+        p = len(prefix)
+        suffix = 1
+        for name in [ x for x in os.listdir(parent_dir) if x.startswith(prefix) ]:
+            try:
+                n = int(name[p:])
+                suffix = max(suffix, n)
+            except:
+                # ignore non-numeric suffixes
+                pass
+        os.rename(path, "%s.%d" % (path, suffix))
+    os.makedirs(path)
+
+
+def safe_repr(obj):
+    """
+    Return a string describing Python object `obj`.  Avoids calling
+    any Python magic methods, so should be safe to use as a "last
+    resort" in implementation of `__str__` and `__repr__` magic.
+    """
+    return ("<`%s` instance @ %x>" 
+            % (obj.__class__.__name__, id(obj)))
+
+
+def same_docstring_as(referenced_fn):
+    """
+    Function decorator: sets the docstring of the following function
+    to the one of `referenced_fn`.  
+
+    Intended usage is for setting docstrings on methods redefined in
+    derived classes, so that they inherit the docstring from the
+    corresponding abstract method in the base class.
+    """
+    def decorate(f):
+            f.__doc__ = referenced_fn.__doc__
+            return f
+    return decorate
 
 
 def string_to_boolean(word):

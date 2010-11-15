@@ -25,6 +25,9 @@ __docformat__ = 'reStructuredText'
 __version__ = '$Revision$'
 
 
+from gc3libs.Exceptions import AuthenticationException
+
+
 class Auth(object):
     types = {}
     # new proposal
@@ -48,7 +51,7 @@ class Auth(object):
                         try:
                             a.enable()
                         except Exception, x:
-                            gc3utils.log.debug("Got exception while enabling auth '%s',"
+                            gc3libs.log.debug("Got exception while enabling auth '%s',"
                                                " will remember for next invocations:"
                                                " %s: %s" % (auth_name, x.__class__.__name__, x))
                             a = x
