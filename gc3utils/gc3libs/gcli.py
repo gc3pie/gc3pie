@@ -184,11 +184,10 @@ class Gcli:
                     state = lrms.get_state(job)
                 if state != Job.State.UNKNOWN or update_on_error:
                     job.state = state
-                states.append(state)
             except Exception, ex:
                 gc3libs.log.error("Error getting status of job '%s': %s",
                                   job.jobid, str(ex))
-                continue                                
+            states.append(state)
 
         return states
 
