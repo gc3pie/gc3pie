@@ -112,24 +112,23 @@ guaranteed to have these additional attributes:
 import os
 import shelve
 import sys
+import time
 import types
 
 from Exceptions import *
 import gc3libs
-from gc3libs.utils import defproperty, Struct, safe_repr
+from gc3libs.utils import defproperty, Enum, Log, Struct, safe_repr
 import Default
 
 
-class State(object):
-    """
-    States a GC3Libs `Job` can be in.
-    """
-    NEW = 'NEW' # Job has not yet been submitted/started
-    SUBMITTED = 'SUBMITTED' # Job has been sent to execution resource
-    STOPPED = 'STOPPED' # trap state: job needs manual intervention
-    RUNNING = 'RUNNING' # job is executing on remote resource
-    TERMINATED = 'TERMINATED' # job execution finished (correctly or not) and will not be resumed
-    UNKNOWN = 'UNKNOWN' # job info not found or lost track of job (e.g., network error or invalid job ID)
+State = Enum(
+    'NEW',       # Job has not yet been submitted/started
+    'SUBMITTED', # Job has been sent to execution resource
+    'STOPPED',   # trap state: job needs manual intervention
+    'RUNNING',   # job is executing on remote resource
+    'TERMINATED',# job execution finished (correctly or not) and will not be resumed
+    'UNKNOWN',   # job info not found or lost track of job (e.g., network error or invalid job ID)
+    )
 
 
 class _Signal(object):
@@ -170,7 +169,12 @@ class Job(Struct):
 
       * `state`: Current state of the job, initially `State.NEW`; 
          see `Job.State` for a list of the possible values.
-      * `output_retrieved`: Set to `True` after a successful call to `Gcli.gget`
+
+      * `output_dir`: path to the directory where output has been
+        downloaded, or `None` if no output has been retrieved yet.
+
+      * `output_retrieved`: Initially, `False`, set to `True` after a
+        successful call to `Gcli.gget`
 
     `Job` objects support attribute lookup by both the ``[...]`` and the ``.`` syntax;
     see `gc3libs.utils.Struct` for examples.
@@ -209,13 +213,15 @@ class Job(Struct):
             '2010R1'
             
         """
-        Struct.__init__(self, initializer, **keywd)
-        self.setdefault('output_retrieved', False)
-        self.setdefault('state', State.NEW)
-        self.setdefault('timestamp', dict())
-        
+        if not hasattr(self, '_state'): self._state = State.NEW
         self._exitcode = None
         self._signal = None
+
+        Struct.__init__(self, initializer, **keywd)
+
+        if 'log' not in self: self.log = Log()
+        if 'output_retrieved' not in self: self.output_retrieved = False
+        if 'timestamp' not in self: self.timestamp = { }
 
 
     def __str__(self):
@@ -225,13 +231,33 @@ class Job(Struct):
             return safe_repr(self)
 
     def __repr__(self):
-        return str.join('', [self.__class___.__name___, "("] +
-                        [ ("%s=%s" % (k,v)) for k,v in self.items() ]
-                        + [")"])
+        return "Job(%s)" % str.join(', ', 
+                                    [ ("%s=%s" % (k,repr(v))) 
+                                      for k,v in self.items() ])
+
+
+    @defproperty
+    def state():
+        """
+        The state a `Job` is in; see `Job.State` for possible values.
+        The value of `Job.state` must always be a value from the
+        `Job.State` enumeration.
+        """
+        def fget(self):
+            return self._state
+        def fset(self, value):
+            if value not in State:
+                raise ValueError("Value '%s' is not a legal `gc3libs.Job.State` value." % value)
+            if self._state != value:
+                self.timestamp[value] = time.time()
+                self.log.append('%s on %s' % (value, time.asctime()))
+            self._state = value
+        return locals()
+
 
     @defproperty
     def signal():
-        doc = """
+        """
         The "signal number" part of a `Job.returncode`, see
         `os.WTERMSIG` for details. 
 
@@ -275,7 +301,7 @@ class Job(Struct):
 
     @defproperty
     def returncode():
-        doc = """
+        """
         The `returncode` attribute of this job object encodes the
         `Job` termination status in a manner compatible with the POSIX
         termination status as implemented by `os.WIFSIGNALED()` and

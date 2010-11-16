@@ -144,7 +144,7 @@ class RosettaDockingApplication(RosettaApplication):
                 "-out:file:o", pdb_file_name_sans,
                 "-out:nstruct", number_of_decoys_to_create,
                 ] + get_and_remove(kw, 'arguments', []),
-            job_local_dir = get_and_remove(kw, 'job_local_dir', pdb_file_dir),
+            output_dir = get_and_remove(kw, 'output_dir', pdb_file_dir),
             **kw)
 
 register(RosettaDockingApplication, 'docking_protocol')

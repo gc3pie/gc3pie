@@ -161,49 +161,38 @@ class ArcLrms(LRMS):
         arc_job = arclib.GetJobInfo(job.lrms_jobid)
 
         # update status
-        # XXX: should we keep status intact in case the status is 'UNKNOWN' and retry later?
         state = map_arc_status_to_gc3job_status(arc_job.status)
+        if arc_job.exitcode != -1:
+            job.returncode = arc_job.exitcode
+        job.lrms_jobname = arc_job.job_name # XXX: `lrms_jobname` is the name used in `sge.py`
 
-        # set time stamps
-        # FIXME: use Python's `datetime` types
-        if arc_job.submission_time.GetTime() > -1:
-            job.arc_submission_time = str(arc_job.submission_time)
-        if arc_job.completion_time.GetTime() > -1:
-            job.arc_completion_time = str(arc_job.completion_time)
-        else:
-            job.arc_completion_time = ""
-
-        job.job_name = arc_job.job_name
-        job.used_memory = arc_job.used_memory
-        job.cpu_count = arc_job.cpu_count
-        job.exit_code = arc_job.exitcode
-        job.used_cpu_time = arc_job.used_cpu_time
-        job.used_walltime = arc_job.used_wall_time
-        job.requested_cpu_time = arc_job.requested_cpu_time
-        job.requested_wall_time = arc_job.requested_wall_time
-        job.queue = arc_job.queue
-
-        # FIXME: This should become part of mandatory Job information
-        # as it's required for 'tail' function
+        # FIXME: These should become part of mandatory Job information
+        # as it's required for 'tail' function (SM)
+        # -- They're already available from `Application` (RM)
         job.stdout_filename = arc_job.sstdout
         job.stderr_filename = arc_job.sstderr
 
-        # XXX: These should be removed. To check impact on additional
-        # services first see Issue 27
+        # update ARC-specific info
         job.arc_cluster = arc_job.cluster
         job.arc_cpu_count = arc_job.cpu_count
-        job.arc_exitcode = arc_job.exitcode
         job.arc_job_name = arc_job.job_name
         job.arc_queue = arc_job.queue
         job.arc_queue_rank = arc_job.queue_rank
         job.arc_requested_cpu_time = arc_job.requested_cpu_time
         job.arc_requested_wall_time = arc_job.requested_wall_time
         job.arc_sstderr = arc_job.sstderr
-        job.arc_sstdout = arc_job.sstdout
         job.arc_sstdin = arc_job.sstdin
+        job.arc_sstdout = arc_job.sstdout
         job.arc_used_cpu_time = arc_job.used_cpu_time
-        job.arc_used_wall_time = arc_job.used_wall_time
         job.arc_used_memory = arc_job.used_memory
+        job.arc_used_wall_time = arc_job.used_wall_time
+        # FIXME: use Python's `datetime` types (RM)
+        if arc_job.submission_time.GetTime() > -1:
+            job.arc_submission_time = str(arc_job.submission_time)
+        if arc_job.completion_time.GetTime() > -1:
+            job.arc_completion_time = str(arc_job.completion_time)
+        else:
+            job.arc_completion_time = ""
 
         return state
 
@@ -256,8 +245,8 @@ class ArcLrms(LRMS):
         user_queued = 0
 
         def _normalize_value(val):
-            # an ARC value may contains -1 when the subsystem cannot get/resolve it
-            # we treat then these values as 0
+            # an ARC value may contains -1 when the subsystem cannot
+            # get/resolve it we treat then these values as 0
             if val < 0:
                 return 0
             else:
@@ -324,7 +313,6 @@ class ArcLrms(LRMS):
 
 
     @same_docstring_as(LRMS.tail)
-#    def tail(self, job_obj, filename, offset=0, size=None):
     def tail(self, job_obj, remote_filename, local_file, offset=0, size=None):
 
         assert job_obj.has_key('lrms_jobid'), \
@@ -346,11 +334,12 @@ class ArcLrms(LRMS):
         gc3libs.log.debug("Downloading %d bytes at offset %d of remote file '%s' into local file '%s' ..."
                           % (size, offset, remote_filename, local_file.name))
 
-        # XXX: why this ?
-        #try:
-        #    local_file_name = local_file.name
-        #except AttributeError:
-        #    local_file_name = local_file
+        # XXX: why this ? Because `local_file` could be a file name
+        # (string) or a file-like object, as per function docstring.
+        try:
+           local_file_name = local_file.name
+        except AttributeError:
+           local_file_name = local_file
 
         arclib.JobFTPControl.Download(jftpc, 
                                       arclib.URL(_remote_filename), 

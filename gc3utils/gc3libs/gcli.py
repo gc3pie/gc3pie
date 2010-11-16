@@ -48,11 +48,10 @@ import gc3libs.utils as utils
 
 class Gcli:
 
-    def __init__(self, defaults, resource_list, authorization, auto_enable_auth):
+    def __init__(self, resource_list, authorization, auto_enable_auth):
         if ( len(resource_list) == 0 ):
             raise NoResources("Resource list has length 0")
         self._resources = resource_list
-        self._defaults = defaults
         self.authorization = authorization
         self.auto_enable_auth = auto_enable_auth
 
@@ -99,7 +98,6 @@ class Gcli:
         gc3libs.log.debug('input_file(s): %s',application.inputs)
         gc3libs.log.debug('application tag: %s',application.application_tag)
         gc3libs.log.debug('application arguments: %s',application.arguments)
-        gc3libs.log.debug('default_job_folder_location: %s',self._defaults.job_folder_location)
         gc3libs.log.debug('requested cores: %s',str(application.requested_cores))
         gc3libs.log.debug('requested memory: %s GB',str(application.requested_memory))
         gc3libs.log.debug('requested walltime: %s hours',str(application.requested_walltime))
@@ -148,11 +146,12 @@ class Gcli:
             gc3libs.log.info('Successfully submitted process to LRMS backend')
             job.state = Job.State.SUBMITTED
             job.resource_name = lrms._resource.name
-            job.timestamp[Job.State.SUBMITTED] = time.time()
-            if application.has_key('job_local_dir'):
-                job.job_local_dir = application.job_local_dir
+            #if application.has_key('output_dir'):
+            #    job.output_dir = application.output_dir
+            if application.has_key('default_output_dir'):
+                job.default_output_dir = application.default_output_dir
             else:
-                job.job_local_dir = os.getcwd()
+                job.default_output_dir = os.getcwd()
             # job submitted; leave loop
             break
 
@@ -191,35 +190,43 @@ class Gcli:
 
     def gget(self, job, download_dir=None, **kw):
         """
-        Retrieve job output into local directory `job.job_local_dir`.
+        Retrieve job output into local directory `download_dir`.  If
+        `download_dir` is `None` (default), then its path is formed by
+        appending the job ID to `default_output_dir` if the `job`
+        object has such attribute, or by appending the job id to the
+        default download location `gc3libs.Default.JOB_FOLDER_LOCATION`.
 
-        Job output cannot be retrieved when `job` is in one of the
-        states `NEW` or `SUBMITTED`; a `OutputNotAvailableError`
-        exception is thrown in these cases.
-
-        If `download_dir` is `None` (default), then it is formed by
-        appending the job ID to `job_local_dir` if the `job` object
-        has such attribute, or is formed by appending the job id to
-        the default download location `gc3libs.Default.JOB_FOLDER_LOCATION`.
+        The instance attribute `job.output_dir` is set to the actual
+        download directory path, and `job.output_retrieved` is set to
+        `True`.
 
         Directory `download_dir` is created if it does not exist; if
         already existent, it is renamed with a `.NUMBER` suffix and a
         new empty one is created in its place.
+
+        Job output cannot be retrieved when `job` is in one of the
+        states `NEW` or `SUBMITTED`; a `OutputNotAvailableError`
+        exception is thrown in these cases.
         """
         if job.state in [ Job.State.NEW, Job.State.SUBMITTED ]:
-            raise OutputNotAvailableError('Output Not avilable')
+            raise OutputNotAvailableError("Output not available: Job '%s' currently in state '%s'"
+                                          % (job, job,state))
 
         auto_enable_auth = kw.get('auto_enable_auth', self.auto_enable_auth)
 
         # Prepare/Clean download dir
         if download_dir is None:
-                download_dir = os.path.join(job.job_local_dir, str(job))
+            if hasattr(job, 'output_dir'):
+                download_dir = job.output_dir
+            elif hasattr(job, 'default_output_dir'):
+                download_dir = os.path.join(job.default_output_dir, str(job))
+            else:
                 download_dir = os.path.join(Default.JOB_FOLDER_LOCATION, str(job))
         try:
             utils.mkdir_with_backup(download_dir)
         except Exception, ex:
-            gc3libs.log.error("Failed creating download directory '%s': %s: %s" 
-                              % download_dir, ex.__class__.__name__, str(ex))
+            gc3libs.log.error("Failed creating download directory '%s': %s: %s",
+                              download_dir, ex.__class__.__name__, str(ex))
             raise
 
         try:
@@ -231,8 +238,9 @@ class Gcli:
             job.state = Job.State.TERMINATED
         
         # successfully downloaded results
-        job.download_dir = download_dir
+        job.output_dir = download_dir
         job.output_retrieved = True
+        job.log.append("Output downloaded to '%s'" % download_dir)
         return job
         
 
@@ -261,6 +269,7 @@ class Gcli:
                           " and returncode to SIGCANCEL" % job)
         job.state = Job.State.TERMINATED
         job.signal = Job.Signals.Cancelled
+        job.log.append("Cancelled by `Gcli.gkill`")
         return job
 
 
@@ -281,7 +290,7 @@ class Gcli:
         # Check if local data available
         # cross reference check: job status and local data availability
         if job.state == gc3libs.Job.State.TERMINATED and job.output_retrieved:
-            _filename = os.path.join(job.job_local_dir, job.jobid, remote_filename)
+            _filename = os.path.join(job.output_dir, job.jobid, remote_filename)
             _local_file = open(_filename)
         else:
 
@@ -329,9 +338,8 @@ class Gcli:
 # === Configuration File
 
 def import_config(config_file_locations, auto_enable_auth=True):
-    (default_val, resources_vals, authorizations) = read_config(*config_file_locations)
-    return (get_defaults(default_val),
-            get_resources(resources_vals), 
+    (resources, authorizations) = read_config(*config_file_locations)
+    return (get_resources(resources), 
             get_authorization(authorizations,auto_enable_auth), 
             auto_enable_auth)
 
@@ -343,17 +351,6 @@ def get_authorization(authorizations,auto_enable_auth):
         gc3libs.log.critical('Failed initializing Authorization module')
         raise
 
-
-def get_defaults(defaults):
-    # Create an default object for the defaults
-    # defaults is a list[] of values
-    try:
-        # Create default values
-        return gc3libs.Default.Default(defaults)
-    except:
-        gc3libs.log.critical('Failed loading default values')
-        raise
-    
 
 def get_resources(resources_list):
     # build Resource objects from the list returned from read_config
@@ -459,4 +456,4 @@ def read_config(*locations):
         raise NoConfigurationFile("Could not read any configuration file; tried locations '%s'."
                                   % str.join("', '", locations))
 
-    return (defaults, resources, authorizations)
+    return (resources, authorizations)
