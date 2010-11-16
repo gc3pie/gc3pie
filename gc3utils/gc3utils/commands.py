@@ -274,7 +274,7 @@ def gstat(*args, **kw):
         
     # Print result
     if len(jobs) == 0:
-        print ("No jobs in gc3utils database.")
+        print ("No jobs submitted with GC3Utils.")
     else:
         print("%-16s  %-10s" % ("Job ID", "State"))
         print("===========================")
