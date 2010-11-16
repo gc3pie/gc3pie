@@ -199,7 +199,9 @@ def defproperty(fn):
     See http://code.activestate.com/recipes/410698-property-decorator-for-python-24/#c6
     for details and examples.
     """
-    return property(**fn())
+    p = { 'doc':fn.__doc__ }
+    p.update(fn())
+    return property(**p)
 
 
 def dirname(pathname):
