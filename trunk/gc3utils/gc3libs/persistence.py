@@ -165,7 +165,7 @@ class FilesystemStore(Store):
     documentation for details.
     """
     def __init__(self, directory=gc3libs.Default.JOBS_DIR, 
-                 idfactory=_Id, protocol=0): 
+                 idfactory=_Id, protocol=2):
         self._directory = directory
         self._idfactory = idfactory
         self._protocol = protocol

@@ -32,9 +32,7 @@ import re
 import shelve
 import sys
 import time
-
-import warnings
-warnings.simplefilter("ignore")
+import UserDict
 
 # import for send_mail
 import tarfile
@@ -45,6 +43,7 @@ from email.MIMEBase import MIMEBase
 from email.MIMEText import MIMEText
 from email.Utils import COMMASPACE, formatdate
 from email import Encoders
+
 
 from Exceptions import *
 from arclib import *
@@ -105,7 +104,10 @@ def first(seq):
     raise TypeError("Argument to `first()` method needs to be iterator or sequence.")
 
 
-class Struct(dict):
+# as of Python 2.7, `DictMixin` is an old-style class; thus, we need
+# to make `Struct` inherit from `object` otherwise we loose properties
+# when setting/pickling/unpickling
+class Struct(object, UserDict.DictMixin):
     """
     A `dict`-like object, whose keys can be accessed with the usual
     '[...]' lookup syntax, or with the '.' get attribute syntax.
@@ -130,24 +132,26 @@ class Struct(dict):
       3
     """
     def __init__(self, initializer=None, **kw):
-        if initializer is None:
-            dict.__init__(self, **kw)
-        else:
-            dict.__init__(self, initializer, **kw)
-    def __setattr__(self, key, val):
-        self[key] = val
-    def __getattr__(self, key):
-        if self.has_key(key):
-            return self[key]
-        else:
+        if initializer is not None:
             try:
-                raise AttributeError("No attribute '%s' on object %s" % (key, self))
-            except RuntimeError:
-                raise AttributeError("No attribute '%s' on %s", safe_repr(self))
-    def __hasattr__(self, key):
-        return self.has_key(key)
-    def __getstate__(self):
-        return False
+                # initializer is `dict`-like?
+                for name, value in initializer.items():
+                    self[name] = value
+            except AttributeError: 
+                # initializer is a sequence of (name,value) pairs?
+                for name, value in initializer:
+                    self[name] = value
+        for name, value in kw.items():
+            self[name] = value
+
+    # the `DictMixin` class defines all std `dict` methods, provided
+    # that `__getitem__`, `__setitem__` and `keys` are defined.
+    def __setitem__(self, name, val):
+        self.__dict__[name] = val
+    def __getitem__(self, name):
+        return self.__dict__[name]
+    def keys(self):
+        return self.__dict__.keys()
 
 
 def progressive_number():
@@ -213,6 +217,52 @@ def dirname(pathname):
         dirname = '.'
     # FIXME: figure out if this is a desirable outcome.  i.e. do we want dirname to be empty, or do a pwd and find out what the current dir is, or keep the "./".  I suppose this could make a difference to some of the behavior of the scripts, such as copying files around and such.
     return dirname
+
+
+class Enum(frozenset):
+    """
+    A generic enumeration class.  Inspired by:
+    http://stackoverflow.com/questions/36932/whats-the-best-way-to-implement-an-enum-in-python/2182437#2182437
+    with some more syntactic sugar added.
+
+    An `Enum` class must be instanciated with a list of strings, that
+    make the enumeration "label"::
+
+      >>> Animal = Enum('CAT', 'DOG')
+    
+    Each label is available as an instance attribute, evaluating to
+    itself::
+
+      >>> Animal.DOG
+      'DOG'
+
+      >>> Animal.CAT == 'CAT'
+      True
+
+    As a consequence, you can test for presence of an enumeration
+    label by string value::
+
+      >>> 'DOG' in Animal
+      True
+
+    Finally, enumeration labels can also be iterated upon::
+
+      >>> for a in Animal: print a
+      CAT
+      DOG
+    """
+    def __new__(cls, *args):
+        return frozenset.__new__(cls, args)
+    def __getattr__(self, name):
+            if name in self:
+                    return name
+            else:
+                    raise AttributeError("No '%s' in enumeration '%s'"
+                                         % (name, self.__class__.__name__))
+    def __setattr__(self, name, value):
+            raise SyntaxError("Cannot assign enumeration values.")
+    def __delattr__(self, name):
+            raise SyntaxError("Cannot delete enumeration values.")
 
 
 def check_jobdir(jobdir):
@@ -293,6 +343,37 @@ def from_template(template, **kw):
     return (template_contents % kw)
 
 
+class Log(object):
+    """
+    A list of messages with timestamps and (optional) tags.
+
+    The `append` method should be used to add a message to the `Log`::
+
+      >>> L = Log()
+      >>> L.append('first message')
+      >>> L.append('second one')
+
+    Iterating over a `Log` instance returns message texts in the
+    temporal order they were added to the list::
+
+      >>> for msg in L: print msg
+      first message
+      second one
+
+    """
+    def __init__(self):
+        self._messages = [ ]
+
+    def append(self, message, *tags):
+        self._messages.append((message, time.time(), tags))
+
+    def __iter__(self):
+        return iter([record[0] for record in self._messages])
+
+    def __str__(self):
+        return str.join('\n', [record[0] for record in self._messages])
+
+
 def mkdir_with_backup(path):
     """
     Like `os.mkdirs`, but if `path` already exists, rename the existing
@@ -301,14 +382,14 @@ def mkdir_with_backup(path):
     if os.path.isdir(path):
         # directory exists; find a suitable extension and rename
         parent_dir = os.path.dirname(path)
-        prefix = os.path.dirname(path) + '.'
+        prefix = os.path.basename(path) + '.'
         p = len(prefix)
         suffix = 1
         for name in [ x for x in os.listdir(parent_dir) if x.startswith(prefix) ]:
             try:
                 n = int(name[p:])
-                suffix = max(suffix, n)
-            except:
+                suffix = max(suffix, n+1)
+            except ValueError:
                 # ignore non-numeric suffixes
                 pass
         os.rename(path, "%s.%d" % (path, suffix))
@@ -482,10 +563,10 @@ def notify(job, include_job_results):
 
         if include_job_results:
             try:
-                for file in os.listdir(job.job_local_dir):
-                    tar.add(os.path.join(job.job_local_dir,file))
+                for file in os.listdir(job.output_dir):
+                    tar.add(os.path.join(job.output_dir,file))
             except:
-                gc3libs.log.error('Failed while adding files from job_local_dir %s', job.job_local_dir)
+                gc3libs.log.error('Failed while adding files from output_dir %s', job.output_dir)
         
         # add job object file
         tar.add(os.path.join(gc3libs.Default.JOBS_DIR, job.unique_token))

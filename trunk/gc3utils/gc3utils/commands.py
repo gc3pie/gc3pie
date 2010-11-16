@@ -73,9 +73,8 @@ def _get_gcli(config_file_locations, auto_enable_auth=True):
                                  " a sample one has been copied in that location;"
                                  " please edit it and define resources." % location)
     try:
-        (default, resources, authorizations, auto_enable_auth) = gc3libs.gcli.import_config(config_file_locations, auto_enable_auth)
-        gc3utils.log.debug('Creating instance of Gcli')
-        return gc3libs.gcli.Gcli(default, resources, authorizations, auto_enable_auth)
+        gc3utils.log.debug('Creating instance of Gcli ...')
+        return gc3libs.gcli.Gcli(* gc3libs.gcli.import_config(config_file_locations, auto_enable_auth))
     except NoResources:
         raise FatalError("No computational resources defined.  Please edit the configuration file '%s'." 
                          % config_file_locations)
@@ -104,7 +103,7 @@ def gclean(*args, **kw):
     # Assume args are all jobids
     for jobid in args:
         job = _store.load(jobid)
-        if job.state == gc3libs.Job.State.TERMINATED or options.force == True:
+        if job.state == gc3libs.Job.State.TERMINATED or options.force:
             _store.remove(jobid)
             gc3utils.log.info("Removed job '%s'", job)
         else:
@@ -143,7 +142,7 @@ def gsub(*args, **kw):
     parser = OptionParser(usage="%prog [options] APPLICATION INPUTFILE [OTHER INPUT FILES]")
     parser.add_option("-v", action="count", dest="verbosity", default=0, help="Set verbosity level")
     parser.add_option("-r", "--resource", action="store", dest="resource_name", metavar="STRING", default=None, help='Select resource destination')
-    parser.add_option("-d", "--jobdir", action="store", dest="job_local_dir", metavar="STRING", default=gc3libs.Default.JOB_FOLDER_LOCATION, help='Select job local folder location')
+    parser.add_option("-d", "--jobdir", action="store", dest="output_dir", metavar="STRING", default=gc3libs.Default.JOB_FOLDER_LOCATION, help='Select job local folder location')
     parser.add_option("-c", "--cores", action="store", dest="ncores", metavar="INT", default=0, help='Set number of requested cores')
     parser.add_option("-m", "--memory", action="store", dest="memory_per_core", metavar="INT", default=0, help='Set memory per core request (GB)')
     parser.add_option("-w", "--walltime", action="store", dest="walltime", metavar="INT", default=0, help='Set requested walltime (hours)')
@@ -167,7 +166,7 @@ def gsub(*args, **kw):
                 'requested_cores':int(options.ncores),
                 'requestd_resource':options.resource_name,
                 'requested_walltime':int(options.walltime),
-                'job_local_dir':options.job_local_dir,
+                'output_dir':options.output_dir,
                 }
             )
     elif application_tag == 'rosetta':
@@ -185,7 +184,7 @@ def gsub(*args, **kw):
             requested_cores=options.ncores,
             requested_resource=options.resource_name,
             requested_walltime=options.walltime,
-            job_local_dir=options.job_local_dir,
+            output_dir=options.output_dir,
             )
     else:
         raise InvalidUsage("Unknown application '%s'" % application_tag)
@@ -210,7 +209,7 @@ def gresub(*args, **kw):
     parser = OptionParser(usage="%prog [options] JOBID [JOBID ...]")
     parser.add_option("-v", action="count", dest="verbosity", default=0, help="Set verbosity level")
     parser.add_option("-r", "--resource", action="store", dest="resource_name", metavar="STRING", default=None, help='Select resource destination')
-    parser.add_option("-d", "--jobdir", action="store", dest="job_local_dir", metavar="STRING", default=gc3libs.Default.JOB_FOLDER_LOCATION, help='Select job local folder location')
+    parser.add_option("-d", "--jobdir", action="store", dest="output_dir", metavar="STRING", default=gc3libs.Default.JOB_FOLDER_LOCATION, help='Select job local folder location')
     parser.add_option("-c", "--cores", action="store", dest="ncores", metavar="INT", default=0, help='Set number of requested cores')
     parser.add_option("-m", "--memory", action="store", dest="memory_per_core", metavar="INT", default=0, help='Set memory per core request (GB)')
     parser.add_option("-w", "--walltime", action="store", dest="walltime", metavar="INT", default=0, help='Set requested walltime (hours)')
@@ -308,10 +307,10 @@ def gget(*args, **kw):
     if job_obj.state == gc3libs.Job.State.TERMINATED:
         if not job_obj.output_retrieved:
             _gcli.gget(job_obj)
-            print("Job results successfully retrieved in '%s'\n" % job_obj.download_dir)
+            print("Job results successfully retrieved in '%s'\n" % job_obj.output_dir)
             _store.replace(job_obj._id, job_obj)
         else:
-            gc3utils.log.error("Job output already downloaded into '%s'", job_obj.download_dir)
+            gc3utils.log.error("Job output already downloaded into '%s'", job_obj.output_dir)
     else: # job not in terminal state
         raise InvalidOperation("Job '%s;' not ready for retrieving results" % job)
 
