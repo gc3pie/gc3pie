@@ -94,7 +94,7 @@ def gclean(*args, **kw):
     if any of the clean requests will fail, gclean will exit with exitcode 1
     gclean will try anyway to process all requests
     """
-    parser = OptionParser(usage="Usage: %prog [options] [JOBIDs]", 
+    parser = OptionParser(usage="Usage: %prog [options] JOBID [JOBID ...]", 
                           version="GC3pie project version 1.0. %prog ")
     parser.add_option("-v", action="count", dest="verbosity", default=0, help="Set verbosity level")
     parser.add_option("-f", "--force", action="store_true", dest="force", default=False, help="Force removing job")
@@ -113,7 +113,7 @@ def gclean(*args, **kw):
 
 def ginfo(*args, **kw):
     """The 'ginfo' command."""
-    parser = OptionParser(usage="Usage: %prog [options] JOBID")
+    parser = OptionParser(usage="Usage: %prog [options] JOBID [JOBID ...]")
     parser.add_option("-v", action="count", dest="verbosity", default=0, help="Set verbosity level")
     (options, args) = parser.parse_args(list(args))
     _configure_logger(options.verbosity)
@@ -198,17 +198,16 @@ def gsub(*args, **kw):
                           options.resource_name)
 
     job = _gcli.gsub(application)
-
-    print("Successfully submitted %s; use the 'gstat' command to monitor its progress." 
-          % job.jobid)
     _store.save(job)
+
+    print("Successfully submitted %s; use the 'gstat' command to monitor its progress." % job)
     return 0
 
 
 def gresub(*args, **kw):
     """The `gresub` command: resubmit an already-submitted job with different parameters."""
     # Parse command line arguments
-    parser = OptionParser(usage="%prog [options] JOBID")
+    parser = OptionParser(usage="%prog [options] JOBID [JOBID ...]")
     parser.add_option("-v", action="count", dest="verbosity", default=0, help="Set verbosity level")
     parser.add_option("-r", "--resource", action="store", dest="resource_name", metavar="STRING", default=None, help='Select resource destination')
     parser.add_option("-d", "--jobdir", action="store", dest="job_local_dir", metavar="STRING", default=gc3libs.Default.JOB_FOLDER_LOCATION, help='Select job local folder location')
@@ -247,8 +246,7 @@ def gresub(*args, **kw):
 
         try:
             job = _gcli.gsub(job.application, job)
-            print("Successfully re-submitted %s; use the 'gstat' command to monitor its progress." 
-                  % job.jobid)
+            print("Successfully re-submitted %s; use the 'gstat' command to monitor its progress." % job)
             _store.replace(jobid, job)
         except Exception, ex:
             failed += 1
@@ -259,7 +257,7 @@ def gresub(*args, **kw):
 
 def gstat(*args, **kw):                        
     """The `gstat` command."""
-    parser = OptionParser(usage="Usage: %prog [options] JOBID")
+    parser = OptionParser(usage="Usage: %prog [options] JOBID [JOBID ...]")
     parser.add_option("-v", action="count", dest="verbosity", default=0, help="Set verbosity level")
     (options, args) = parser.parse_args(list(args))
     _configure_logger(options.verbosity)
@@ -281,13 +279,13 @@ def gstat(*args, **kw):
         print("%-16s  %-10s" % ("Job ID", "State"))
         print("===========================")
         def cmp_job_ids(a,b):
-            return cmp(a.jobid, b.jobid)
+            return cmp(a._id, b._id)
         for job in sorted(jobs, cmp=cmp_job_ids):
             print("%-16s  %-10s" % (job, job.state))
 
     # save jobs back to disk
     for job in jobs:
-        _store.replace(job.jobid, job)
+        _store.replace(job._id, job)
 
     return 0
 
@@ -311,7 +309,7 @@ def gget(*args, **kw):
         if not job_obj.output_retrieved:
             _gcli.gget(job_obj)
             print("Job results successfully retrieved in '%s'\n" % job_obj.download_dir)
-            _store.replace(job_obj.jobid, job_obj)
+            _store.replace(job_obj._id, job_obj)
         else:
             gc3utils.log.error("Job output already downloaded into '%s'", job_obj.download_dir)
     else: # job not in terminal state
@@ -331,8 +329,6 @@ def gkill(*args, **kw):
     (options, args) = parser.parse_args(list(args))
     _configure_logger(options.verbosity)
 
-    shortview = True
-
     try:
         _gcli = _get_gcli(_default_config_file_locations)
 
@@ -342,7 +338,6 @@ def gkill(*args, **kw):
                 job = _store.load(jobid)
 
                 gc3utils.log.debug("gkill: Job '%s' in state %s" % (jobid, job.state))
-
                 if job.state == Job.State.TERMINATED:
                     raise InvalidOperation("Job '%s' is already in terminal state" % job)
                 else:
@@ -355,12 +350,12 @@ def gkill(*args, **kw):
 
             except Exception, ex:
                 gc3utils.log.error("gkill: Failed canceling Job '%s': %s: %s", 
-                                   job, ex.__class__.__name__, str(ex))
+                                   jobid, ex.__class__.__name__, str(ex))
                 continue
-
+    
     except Exception, ex:
-        raise ("gkill failed: %s: %s" % (ex.__class__.__name__, str(ex)))
-
+        raise FatalError("gkill failed: %s: %s" % (ex.__class__.__name__, str(ex)))
+        
 
 def gtail(*args, **kw):
     """The 'gtail' command."""

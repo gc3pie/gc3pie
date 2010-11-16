@@ -32,7 +32,7 @@ import os
 import gc3libs
 import gc3libs.Default
 from gc3libs.Exceptions import JobRetrieveError
-from gc3libs.utils import same_docstring_as
+from gc3libs.utils import progressive_number, same_docstring_as
 
 
 
@@ -40,13 +40,17 @@ class Store(object):
     """
     Interface for storing and retrieving `Job`s on permanent storage.
 
-    Any object that can stored, provided it can be pickled (with
-    Python's standard module `pickle`).
-    
     Each `save` operation returns a unique "ID"; each ID is a Python
     string value, which is guaranteed to be temporally unique, i.e.,
     no two `save` operations in the same persistent store can result
-    in the same IDs being assigned to different objects.
+    in the same IDs being assigned to different objects.  The "ID" is
+    also stored in the instance attribute `_id`.
+
+    Any Python object can stored, provided it meets the following
+    conditions:
+      * it can be pickled with Python's standard module `pickle`.
+      * the instance attribute `_id` is reserved for use by the `Store` 
+        class: it should not be set or altered by other parts of the code.
     """
     
     def list(self, **kw):
@@ -58,21 +62,21 @@ class Store(object):
         """
         raise NotImplementedError("Method `list` not implemented in this class.")
 
-    def remove(self, id):
+    def remove(self, id_):
         """
         Delete a given object from persistent storage, given its ID.
         """
         raise NotImplementedError("Abstract method 'Store.remove' called"
                                   " -- should have been implemented in a derived class!")
 
-    def replace(self, id, obj):
+    def replace(self, id_, obj):
         """
         Replace the object already saved with the given ID with a copy of `obj`.
         """
         raise NotImplementedError("Abstract method 'Store.replace' called"
                                   " -- should have been implemented in a derived class!")
 
-    def load(self, id):
+    def load(self, id_):
         """
         Load a saved object given its ID, and return it.
         """
@@ -88,6 +92,66 @@ class Store(object):
 
 
 
+class _Id(str):
+    """
+    An automatically-generated "unique job identifier" (a string).
+    Job identifiers are temporally unique: no job identifier will
+    (ever) be re-used, even in different invocations of the program.
+    
+    Currently, the unique job identifier has the form "job.XXX" where
+    "XXX" is a decimal number.  
+
+    This class provides services for generating temporally unique Job
+    IDs, and for comparing/sorting Job IDs based on their progressive
+    number.
+    """
+    def __new__(cls, seqno=None, prefix="job"):
+        """
+        Construct a new "unique job identifier" instance (a string).
+        """
+        if seqno is None:
+            seqno = progressive_number()
+        instance = str.__new__(cls, "%s.%d" % (prefix, seqno))
+        instance._seqno = seqno
+        instance._prefix = prefix
+        return instance
+    def __getnewargs__(self):
+        return (self._seqno, self._prefix)
+
+    # rich comparison operators, to ensure `_Id` is sorted by numerical value
+    def __gt__(self, other):
+        try:
+            return self._seqno > other._seqno
+        except AttributeError:
+            raise TypeError("`_Id` objects can only be compared with other `_Id` objects")
+    def __ge__(self, other):
+        try:
+            return self._seqno >= other._seqno
+        except AttributeError:
+            raise TypeError("`_Id` objects can only be compared with other `_Id` objects")
+    def __eq__(self, other):
+        try:
+            return self._seqno == other._seqno
+        except AttributeError:
+            raise TypeError("`_Id` objects can only be compared with other `_Id` objects")
+    def __ne__(self, other):
+        try:
+            return self._seqno != other._seqno
+        except AttributeError:
+            raise TypeError("`_Id` objects can only be compared with other `_Id` objects")
+    def __le__(self, other):
+        try:
+            return self._seqno <= other._seqno
+        except AttributeError:
+            raise TypeError("`_Id` objects can only be compared with other `_Id` objects")
+    def __lt__(self, other):
+        try:
+            return self._seqno < other._seqno
+        except AttributeError:
+            raise TypeError("`_Id` objects can only be compared with other `_Id` objects")
+
+
+
 class FilesystemStore(Store):
     """
     Save and load objects in a given directory.  Uses Python's
@@ -97,12 +161,13 @@ class FilesystemStore(Store):
     `gc3libs.Default.JOBS_DIR`).
 
     The `protocol` argument specifies the pickle protocol to use
-    (default: `pickle.HIGHEST_PROTOCOL`).  See the `pickle` module
+    (default: `pickle` protocol 0).  See the `pickle` module
     documentation for details.
     """
     def __init__(self, directory=gc3libs.Default.JOBS_DIR, 
-                 protocol=0): #pickle.HIGHEST_PROTOCOL):
+                 idfactory=_Id, protocol=0): 
         self._directory = directory
+        self._idfactory = idfactory
         self._protocol = protocol
 
 
@@ -110,18 +175,18 @@ class FilesystemStore(Store):
     def list(self):
         if not os.path.exists(self._directory):
             return [ ]
-        return [ id for id in os.listdir(self._directory)
-                 if not id.endswith('.OLD') ]
+        return [ id_ for id_ in os.listdir(self._directory)
+                 if not id_.endswith('.OLD') ]
 
 
     @same_docstring_as(Store.load)
-    def load(self, id):
-        filename = os.path.join(self._directory, id)
+    def load(self, id_):
+        filename = os.path.join(self._directory, id_)
         gc3libs.log.debug("Retrieving job from file '%s' ...", filename)
 
         if not os.path.exists(filename):
             raise JobRetrieveError("No '%s' file found in directory '%s'" 
-                                   % (id, self._directory))
+                                   % (id_, self._directory))
 
         # XXX: this should become `with src = ...:` as soon as we stop
         # supporting Python 2.4
@@ -138,36 +203,38 @@ class FilesystemStore(Store):
                     pass # ignore errors
             raise JobRetrieveError("Failed retrieving job from file '%s': %s: %s"
                                    % (filename, ex.__class__.__name__, str(ex)))
-        if str(obj.jobid) != str(id):
+        if str(obj._id) != str(id_):
             raise JobRetrieveError("Retrieved Job ID '%s' does not match given Job ID '%s'" 
-                                   % (obj.jobid, id))
+                                   % (obj._id, id_))
         return obj
 
 
     @same_docstring_as(Store.remove)
-    def remove(self, id):
-        filename = os.path.join(self._directory, id)
+    def remove(self, id_):
+        filename = os.path.join(self._directory, id_)
         os.remove(filename)
 
 
     @same_docstring_as(Store.replace)
-    def replace(self, id, obj):
-        self._save_or_replace(id, obj)
+    def replace(self, id_, obj):
+        self._save_or_replace(id_, obj)
 
 
     @same_docstring_as(Store.save)
     def save(self, obj):
-        self._save_or_replace(obj.jobid, obj)
-        return obj.jobid
+        if not hasattr(obj, '_id'):
+            obj._id = self._idfactory(prefix=obj.__class__.__name__)
+        self._save_or_replace(obj._id, obj)
+        return obj._id
 
 
-    def _save_or_replace(self, id, obj):
+    def _save_or_replace(self, id_, obj):
         """
-        Save `obj` into file identified by `id`; if no such
+        Save `obj` into file identified by `id_`; if no such
         destination file exists, create it.  Ensure that the
         destination file is kept intact in case dumping `obj` fails.
         """
-        filename = os.path.join(self._directory, id)
+        filename = os.path.join(self._directory, id_)
         gc3libs.log.debug("Storing job '%s' into file '%s'", obj, filename)
 
         if not os.path.exists(self._directory):

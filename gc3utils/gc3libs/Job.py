@@ -1,4 +1,26 @@
 #! /usr/bin/env python
+#
+# Copyright (C) 2009-2010 GC3, University of Zurich. All rights reserved.
+#
+# Includes parts adapted from the ``bzr`` code, which is
+# copyright (C) 2005, 2006, 2007, 2008, 2009 Canonical Ltd
+#
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU Lesser General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU Lesser General Public License
+# along with this program; if not, write to the Free Software
+# Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
+#
+__docformat__ = 'reStructuredText'
+__version__ = '$Revision$'
 """
 Object-oriented interface for computational job control.
 
@@ -26,38 +48,29 @@ pre-defined states, listed in the table below.
 GC3Libs' Job state   purpose                                                         can change to
 ==================   ==============================================================  ======================
 NEW                  Job has not yet been submitted/started (i.e., gsub not called)  SUBMITTED (by gsub)
-SUBMITTED            Job has been sent to execution resource, jobid is known         RUNNING, STOPPED
+SUBMITTED            Job has been sent to execution resource                         RUNNING, STOPPED
 STOPPED              Trap state: job needs manual intervention (either user- \
                      or sysadmin-level) to resume normal execution                   TERMINATED (by gkill), SUBMITTED (by miracle)
 RUNNING              Job is executing on remote resource                             TERMINATED
 TERMINATED           Job execution is finished (correctly or not) \
-                     and will not be resumed                                         N/A
+                     and will not be resumed                                         None: final state
 
 A job that is not in the NEW or TERMINATED state is said to be a "live" job.
 
 When a Job object is first created, it is assigned the state NEW.
-
-After a successful invocation of Gcli.gsub(), the Job object is
-transitioned to state SUBMITTED and assigned a jobid attribute, which
-uniquely identifies this Job object among all submitted jobs. The
-jobid can be used to refer to the submitted job and operate on it
-across multiple processes, or different invocations of the same
-program. Compare this with the POSIX PID, which can be used to
-uniquely refer to a process (after a successful call to
-fork()/exec()); unlike PIDs, the jobid will never be recycled.
-
-Further transitions to RUNNING or STOPPED or TERMINATED state, happen
-completely independently of the creator program. The Gcli.gstat() call
-provides updates on the status of a job. (Somewhat like the POSIX
-wait(..., WNOHANG) system call, except that GC3Libs provide explicit
-RUNNING and STOPPED states, instead of encoding them into the return
-value.)
+After a successful invocation of `Gcli.gsub()`, the Job object is
+transitioned to state SUBMITTED.  Further transitions to RUNNING or
+STOPPED or TERMINATED state, happen completely independently of the
+creator program.  The `Gcli.gstat()` call provides updates on the
+status of a job. (Somewhat like the POSIX `wait(..., WNOHANG)` system
+call, except that GC3Libs provide explicit RUNNING and STOPPED states,
+instead of encoding them into the return value.)
 
 The STOPPED state is a kind of generic "run time error" state: a job
 can get into the STOPPED state if its execution is stopped (e.g., a
 SIGSTOP is sent to the remote process) or delayed indefinitely (e.g.,
 the remote batch system puts the job "on hold"). There is no way a job
-can get out of the STOPPED state by itself: all transitions from the
+can get out of the STOPPED state automatically: all transitions from the
 STOPPED state require manual intervention, either by the submitting
 user (e.g., cancel the job), or by the remote systems administrator
 (e.g., by releasing the hold).
@@ -71,8 +84,8 @@ termination information in the "return code", the GC3Libs encode
 information about abnormal process termination using a set of
 pseudo-signal codes in a job's returncode attribute: i.e., if
 termination of a job is due to some gird/batch system/middleware
-error, the job's os.WIFSIGNALED(job.returncode) will be True and the
-signal code (as gotten from os.WTERMSIG(job.returncode)) will be one
+error, the job's `os.WIFSIGNALED(job.returncode)` will be True and the
+signal code (as gotten from `os.WTERMSIG(job.returncode)`) will be one
 of the following:
 
 ======  ============================================================
@@ -95,27 +108,6 @@ guaranteed to have these additional attributes:
     * ... 
 
 """
-# Copyright (C) 2009-2010 GC3, University of Zurich. All rights reserved.
-#
-# Includes parts adapted from the ``bzr`` code, which is
-# copyright (C) 2005, 2006, 2007, 2008, 2009 Canonical Ltd
-#
-# This program is free software; you can redistribute it and/or modify
-# it under the terms of the GNU Lesser General Public License as published by
-# the Free Software Foundation; either version 2 of the License, or
-# (at your option) any later version.
-#
-# This program is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
-#
-# You should have received a copy of the GNU Lesser General Public License
-# along with this program; if not, write to the Free Software
-# Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
-#
-__docformat__ = 'reStructuredText'
-__version__ = '$Revision$'
 
 import os
 import shelve
@@ -124,7 +116,7 @@ import types
 
 from Exceptions import *
 import gc3libs
-from gc3libs.utils import defproperty, Struct, progressive_number, safe_repr
+from gc3libs.utils import defproperty, Struct, safe_repr
 import Default
 
 
@@ -133,7 +125,7 @@ class State(object):
     States a GC3Libs `Job` can be in.
     """
     NEW = 'NEW' # Job has not yet been submitted/started
-    SUBMITTED = 'SUBMITTED' # Job has been sent to execution resource, `jobid` is known
+    SUBMITTED = 'SUBMITTED' # Job has been sent to execution resource
     STOPPED = 'STOPPED' # trap state: job needs manual intervention
     RUNNING = 'RUNNING' # job is executing on remote resource
     TERMINATED = 'TERMINATED' # job execution finished (correctly or not) and will not be resumed
@@ -171,72 +163,11 @@ class Signals(object):
     SubmissionFailed = _Signal('SUBMIT', 125, "Submission to batch system failed.")
 
 
-class JobId(str):
-    """
-    An automatically-generated "unique job identifier" (a string).
-    Job identifiers are temporally unique: no job identifier will
-    (ever) be re-used, even in different invocations of the program.
-    
-    Currently, the unique job identifier has the form "job.XXX" where
-    "XXX" is a decimal number.  
-
-    This class provides services for generating temporally unique Job
-    IDs, and for comparing/sorting Job IDs based on their progressive
-    number.
-    """
-    def __new__(cls, id=None):
-        """
-        Construct a new "unique job identifier" instance (a string).
-        """
-        if id is None:
-            num = progressive_number()
-        else:
-            # only used when (un)pickling `JobId` objects, 
-            # assumes `id` has the form "job.XXX"
-            num = int(id[4:])
-        instance = str.__new__(cls, "job.%d" % num)
-        instance._num = num
-        return instance
-
-    # rich comparison operators, to ensure `JobId` is sorted by numerical value
-    def __gt__(self, other):
-        try:
-            return self._num > other._num
-        except AttributeError:
-            raise TypeError("`JobId` objects can only be compared with other `JobId` objects")
-    def __ge__(self, other):
-        try:
-            return self._num >= other._num
-        except AttributeError:
-            raise TypeError("`JobId` objects can only be compared with other `JobId` objects")
-    def __eq__(self, other):
-        try:
-            return self._num == other._num
-        except AttributeError:
-            raise TypeError("`JobId` objects can only be compared with other `JobId` objects")
-    def __ne__(self, other):
-        try:
-            return self._num != other._num
-        except AttributeError:
-            raise TypeError("`JobId` objects can only be compared with other `JobId` objects")
-    def __le__(self, other):
-        try:
-            return self._num <= other._num
-        except AttributeError:
-            raise TypeError("`JobId` objects can only be compared with other `JobId` objects")
-    def __lt__(self, other):
-        try:
-            return self._num < other._num
-        except AttributeError:
-            raise TypeError("`JobId` objects can only be compared with other `JobId` objects")
-
-
 class Job(Struct):
     """A specialized `dict`-like object that keeps information about a GC3Libs job. 
 
     A `Job` object is guaranteed to have the following attributes:
 
-      * `jobid`: Initially `None`, set to a unique after a successful `Gcli.gsub`
       * `state`: Current state of the job, initially `State.NEW`; 
          see `Job.State` for a list of the possible values.
       * `output_retrieved`: Set to `True` after a successful call to `Gcli.gget`
@@ -258,8 +189,6 @@ class Job(Struct):
             None
             >>> j1.state
             'NEW'
-            >>> j1.jobid
-            None
 
           2. Create a new job with additional attributes::
 
@@ -281,7 +210,6 @@ class Job(Struct):
             
         """
         Struct.__init__(self, initializer, **keywd)
-        self.setdefault('jobid', None)
         self.setdefault('output_retrieved', False)
         self.setdefault('state', State.NEW)
         self.setdefault('timestamp', dict())
@@ -292,7 +220,7 @@ class Job(Struct):
 
     def __str__(self):
         try:
-            return str(self.jobid)
+            return str(self._id) # XXX: keep in sync with what `persistence.Store` does
         except AttributeError:
             return safe_repr(self)
 

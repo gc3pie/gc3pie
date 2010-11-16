@@ -39,7 +39,7 @@ from gc3libs.application import Application
 from gc3libs.application.gamess import GamessApplication
 from gc3libs.backends import LRMS
 import gc3libs.Default as Default
-import gc3libs.Exceptions as Exceptions 
+from gc3libs.Exceptions import *
 import gc3libs.Job as Job
 import gc3libs.utils as utils # first, defaultdict, to_bytes
 from gc3libs.utils import same_docstring_as
@@ -245,8 +245,8 @@ def get_qsub_jobid(qsub_output):
         match = _qsub_jobid_re.match(line)
         if match:
             return match.group('jobid')
-    raise Exceptions.InternalError("Could not extract jobid from qsub output '%s'" 
-                                   % qsub_output.rstrip())
+    raise InternalError("Could not extract jobid from qsub output '%s'" 
+                        % qsub_output.rstrip())
 
 def _qgms_job_name(filename):
     """

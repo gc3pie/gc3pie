@@ -91,7 +91,6 @@ class Gcli:
         # gsub workflow:
         #    check input files from application
         #    create list of LRMSs
-        #    create jobid
         #    do Brokering
         #    submit job
         #    return job_obj
@@ -147,7 +146,6 @@ class Gcli:
                                    lrms._resource.name, exc_info=True)
                 continue
             gc3libs.log.info('Successfully submitted process to LRMS backend')
-            job.jobid = Job.JobId()
             job.state = Job.State.SUBMITTED
             job.resource_name = lrms._resource.name
             job.timestamp[Job.State.SUBMITTED] = time.time()
@@ -158,7 +156,6 @@ class Gcli:
             # job submitted; leave loop
             break
 
-        # return an object of type Job which contains also the jobid
         return job
 
 
@@ -186,7 +183,7 @@ class Gcli:
                     job.state = state
             except Exception, ex:
                 gc3libs.log.error("Error getting status of job '%s': %s",
-                                  job.jobid, str(ex))
+                                  job, str(ex))
             states.append(state)
 
         return states
@@ -200,7 +197,7 @@ class Gcli:
         states `NEW` or `SUBMITTED`; a `OutputNotAvailableError`
         exception is thrown in these cases.
 
-        If `download_dir` is `None` (default), then is is formed by
+        If `download_dir` is `None` (default), then it is formed by
         appending the job ID to `job_local_dir` if the `job` object
         has such attribute, or is formed by appending the job id to
         the default download location `gc3libs.Default.JOB_FOLDER_LOCATION`.
@@ -216,7 +213,8 @@ class Gcli:
 
         # Prepare/Clean download dir
         if download_dir is None:
-            download_dir = os.path.join(job.job_local_dir, job.jobid)
+                download_dir = os.path.join(job.job_local_dir, str(job))
+                download_dir = os.path.join(Default.JOB_FOLDER_LOCATION, str(job))
         try:
             utils.mkdir_with_backup(download_dir)
         except Exception, ex:
@@ -260,7 +258,7 @@ class Gcli:
         job = lrms.cancel_job(job)
 
         gc3libs.log.debug("Setting job '%s' status to TERMINATED"
-                          " and returncode to SIGCANCEL" % job.jobid)
+                          " and returncode to SIGCANCEL" % job)
         job.state = Job.State.TERMINATED
         job.signal = Job.Signals.Cancelled
         return job
