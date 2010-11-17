@@ -285,8 +285,8 @@ class Application(InformationContainer):
         files should be created in this same directory.
 
         The default implementation just prefixes any output from the
-        `cmdline` method with an SGE `qsub` invocation of the form
-        '`qsub -cwd -S /bin/sh' + resource limits.  Note that *there
+        `cmdline` method with an SGE ``qsub`` invocation of the form
+        ``qsub -cwd -S /bin/sh`` + resource limits.  Note that *there
         is no generic way of requesting a certain number of cores* in
         SGE: it all depends on the installed parallel environment, and
         these are totally under control of the local sysadmin;

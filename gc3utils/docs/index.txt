@@ -1,0 +1,149 @@
+.. gc3pie documentation master file, created by
+   sphinx-quickstart on Wed Nov 17 09:38:24 2010.
+   You can adapt this file completely to your liking, but it should at least
+   contain the root `toctree` directive.
+
+Welcome to gc3pie's documentation!
+==================================
+
+Contents:
+
+.. toctree::
+   :maxdepth: 2
+
+
+GC3Libs modules
+===============
+
+The module `gc3libs`
+--------------------
+.. automodule:: gc3libs
+   :members:
+
+The module `gcli`
+~~~~~~~~~~~~~~~~~
+.. automodule:: gc3libs.gcli
+    :members:
+
+The module `Default`
+~~~~~~~~~~~~~~~~~~~~
+.. automodule:: gc3libs.Default
+   :members:
+
+The module `Exceptions`
+~~~~~~~~~~~~~~~~~~~~~~~
+.. automodule:: gc3libs.Exceptions
+   :members:
+
+The module `utils`
+~~~~~~~~~~~~~~~~~~
+.. automodule:: gc3libs.utils
+    :members:
+
+The module `Job`
+~~~~~~~~~~~~~~~~
+.. automodule:: gc3libs.Job
+    :members:
+
+The module `persistence`
+~~~~~~~~~~~~~~~~~~~~~~~~
+.. automodule:: gc3libs.persistence
+    :members:
+
+The module `Resource`
+~~~~~~~~~~~~~~~~~~~~~
+.. automodule:: gc3libs.Resource
+    :members:
+
+The module `scheduler`
+~~~~~~~~~~~~~~~~~~~~~~
+.. automodule:: gc3libs.scheduler
+    :members:
+
+The module `InformationContainer`
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+.. automodule:: gc3libs.InformationContainer
+    :members:
+
+
+The module `application`
+~~~~~~~~~~~~~~~~~~~~~~~~
+.. automodule:: gc3libs.application
+    :members:
+
+The module `gamess`
++++++++++++++++++++
+.. automodule:: gc3libs.application.gamess
+    :members:
+
+The module `rosetta`
+++++++++++++++++++++
+.. automodule:: gc3libs.application.rosetta
+    :members:
+
+
+The module `authentication`
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+.. automodule:: gc3libs.authentication
+    :members:
+
+The module `ssh`
+++++++++++++++++
+.. automodule:: gc3libs.authentication.ssh
+    :members:
+
+The module `grid`
++++++++++++++++++
+.. automodule:: gc3libs.authentication.grid
+    :members:
+
+
+The module `backends`
+~~~~~~~~~~~~~~~~~~~~~
+.. automodule:: gc3libs.backends
+    :members:
+
+The module `arc`
+++++++++++++++++
+.. automodule:: gc3libs.backends.arc
+    :members:
+
+The module `sge`
+++++++++++++++++
+.. automodule:: gc3libs.backends.sge
+    :members:
+
+The module `transport`
+++++++++++++++++++++++
+.. automodule:: gc3libs.backends.transport
+    :members:
+
+
+
+GC3Utils modules
+================
+
+The module `gc3utils`
+---------------------
+.. automodule:: gc3utils
+   :members:
+
+The module `gcmd`
+~~~~~~~~~~~~~~~~~
+.. automodule:: gc3utils.gcmd
+   :members:
+
+The module `commands`
+~~~~~~~~~~~~~~~~~~~~~
+.. automodule:: gc3utils.commands
+   :members:
+
+
+
+Indices and tables
+==================
+
+* :ref:`genindex`
+* :ref:`modindex`
+* :ref:`search`
+

@@ -38,7 +38,7 @@ from gc3libs.utils import progressive_number, same_docstring_as
 
 class Store(object):
     """
-    Interface for storing and retrieving `Job`s on permanent storage.
+    Interface for storing and retrieving objects on permanent storage.
 
     Each `save` operation returns a unique "ID"; each ID is a Python
     string value, which is guaranteed to be temporally unique, i.e.,
@@ -48,6 +48,7 @@ class Store(object):
 
     Any Python object can stored, provided it meets the following
     conditions:
+
       * it can be pickled with Python's standard module `pickle`.
       * the instance attribute `_id` is reserved for use by the `Store` 
         class: it should not be set or altered by other parts of the code.
@@ -156,12 +157,12 @@ class FilesystemStore(Store):
     """
     Save and load objects in a given directory.  Uses Python's
     standard `pickle` module to serialize objects onto files.
-
+    
     All objects are saved as files in the given directory (default:
     `gc3libs.Default.JOBS_DIR`).
-
+    
     The `protocol` argument specifies the pickle protocol to use
-    (default: `pickle` protocol 0).  See the `pickle` module
+    (default: `pickle` protocol 2).  See the `pickle` module
     documentation for details.
     """
     def __init__(self, directory=gc3libs.Default.JOBS_DIR, 

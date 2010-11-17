@@ -80,11 +80,10 @@ class LRMS(object):
         *Note:* 
 
           1. `job.state` is *not* altered; it is the caller's
-          responsibility to update it.
-
+             responsibility to update it.
+          
           2. the `job` object may be updated with any information that
-          is necessary for this LRMS to perform further operations on
-          it.
+             is necessary for this LRMS to perform further operations on it.
         """
         raise NotImplementedError("Abstract method `LRMS.submit_job()` called - this should have been defined in a derived class.")
 
