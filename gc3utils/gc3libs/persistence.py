@@ -93,23 +93,27 @@ class Store(object):
 
 
 
-class _Id(str):
+class Id(str):
     """
-    An automatically-generated "unique job identifier" (a string).
-    Job identifiers are temporally unique: no job identifier will
+    An automatically-generated "unique identifier" (a string-like object).
+    Object identifiers are temporally unique: no identifier will
     (ever) be re-used, even in different invocations of the program.
     
-    Currently, the unique job identifier has the form "job.XXX" where
-    "XXX" is a decimal number.  
+    The unique job identifier has the form "PREFIX.XXX"
+    where "XXX" is a decimal number, and "PREFIX" defaults to the
+    object class name but can be overridden in the :py:class:`Id`
+    constructor.
 
-    This class provides services for generating temporally unique Job
-    IDs, and for comparing/sorting Job IDs based on their progressive
-    number.
+    Two object IDs can be compared iff they have the same prefix; in
+    which case, the result of the comparison is the same as comparing
+    the two sequence numbers.
     """
-    def __new__(cls, seqno=None, prefix="obj"):
+    def __new__(cls, obj, prefix=None, seqno=None):
         """
-        Construct a new "unique job identifier" instance (a string).
+        Construct a new "unique identifier" instance (a string).
         """
+        if prefix is None:
+            prefix = obj.__class__.__name__
         if seqno is None:
             seqno = progressive_number()
         instance = str.__new__(cls, "%s.%d" % (prefix, seqno))
@@ -117,57 +121,57 @@ class _Id(str):
         instance._prefix = prefix
         return instance
     def __getnewargs__(self):
-        return (self._seqno, self._prefix)
+        return (None, self._prefix, self._seqno)
 
-    # rich comparison operators, to ensure `_Id` is sorted by numerical value
+    # rich comparison operators, to ensure `Id` is sorted by numerical value
     def __gt__(self, other):
         try:
             if self.prefix != other.prefix:
-                raise TypeError("Cannot compare `_Id(prefix=%s)` with `_Id(prefix=%s)`"
+                raise TypeError("Cannot compare `Id(prefix=%s)` with `Id(prefix=%s)`"
                                 % (repr(self.prefix), repr(other.prefix)))
             return self._seqno > other._seqno
         except AttributeError:
-            raise TypeError("`_Id` objects can only be compared with other `_Id` objects")
+            raise TypeError("`Id` objects can only be compared with other `Id` objects")
     def __ge__(self, other):
         try:
             if self.prefix != other.prefix:
-                raise TypeError("Cannot compare `_Id(prefix=%s)` with `_Id(prefix=%s)`"
+                raise TypeError("Cannot compare `Id(prefix=%s)` with `Id(prefix=%s)`"
                                 % (repr(self.prefix), repr(other.prefix)))
             return self._seqno >= other._seqno
         except AttributeError:
-            raise TypeError("`_Id` objects can only be compared with other `_Id` objects")
+            raise TypeError("`Id` objects can only be compared with other `Id` objects")
     def __eq__(self, other):
         try:
             if self.prefix != other.prefix:
-                raise TypeError("Cannot compare `_Id(prefix=%s)` with `_Id(prefix=%s)`"
+                raise TypeError("Cannot compare `Id(prefix=%s)` with `Id(prefix=%s)`"
                                 % (repr(self.prefix), repr(other.prefix)))
             return self._seqno == other._seqno
         except AttributeError:
-            raise TypeError("`_Id` objects can only be compared with other `_Id` objects")
+            raise TypeError("`Id` objects can only be compared with other `Id` objects")
     def __ne__(self, other):
         try:
             if self.prefix != other.prefix:
-                raise TypeError("Cannot compare `_Id(prefix=%s)` with `_Id(prefix=%s)`"
+                raise TypeError("Cannot compare `Id(prefix=%s)` with `Id(prefix=%s)`"
                                 % (repr(self.prefix), repr(other.prefix)))
             return self._seqno != other._seqno
         except AttributeError:
-            raise TypeError("`_Id` objects can only be compared with other `_Id` objects")
+            raise TypeError("`Id` objects can only be compared with other `Id` objects")
     def __le__(self, other):
         try:
             if self.prefix != other.prefix:
-                raise TypeError("Cannot compare `_Id(prefix=%s)` with `_Id(prefix=%s)`"
+                raise TypeError("Cannot compare `Id(prefix=%s)` with `Id(prefix=%s)`"
                                 % (repr(self.prefix), repr(other.prefix)))
             return self._seqno <= other._seqno
         except AttributeError:
-            raise TypeError("`_Id` objects can only be compared with other `_Id` objects")
+            raise TypeError("`Id` objects can only be compared with other `Id` objects")
     def __lt__(self, other):
         try:
             if self.prefix != other.prefix:
-                raise TypeError("Cannot compare `_Id(prefix=%s)` with `_Id(prefix=%s)`"
+                raise TypeError("Cannot compare `Id(prefix=%s)` with `Id(prefix=%s)`"
                                 % (repr(self.prefix), repr(other.prefix)))
             return self._seqno < other._seqno
         except AttributeError:
-            raise TypeError("`_Id` objects can only be compared with other `_Id` objects")
+            raise TypeError("`Id` objects can only be compared with other `Id` objects")
 
 
 
@@ -177,21 +181,18 @@ class FilesystemStore(Store):
     standard `pickle` module to serialize objects onto files.
 
     All objects are saved as files in the given directory (default:
-    `gc3libs.Default.JOBS_DIR`).  The file name is the (lowercased)
-    object ID.  
+    `gc3libs.Default.JOBS_DIR`).  The file name is the object ID.
 
     The default `idfactory` assigns object IDs by appending a
-    sequential number to the class name; see class :py:class:`_Id` for
+    sequential number to the class name; see class :py:class:`Id` for
     details.
 
-    Note that object IDs are treated case-insensitively in this class.
-    
     The `protocol` argument specifies the pickle protocol to use
     (default: `pickle` protocol 2).  See the `pickle` module
     documentation for details.
     """
     def __init__(self, directory=gc3libs.Default.JOBS_DIR, 
-                 idfactory=_Id, protocol=2):
+                 idfactory=Id, protocol=2):
         self._directory = directory
         self._idfactory = idfactory
         self._protocol = protocol
@@ -207,7 +208,7 @@ class FilesystemStore(Store):
 
     @same_docstring_as(Store.load)
     def load(self, id_):
-        filename = os.path.join(self._directory, id_.lower())
+        filename = os.path.join(self._directory, id_)
         gc3libs.log.debug("Retrieving job from file '%s' ...", filename)
 
         if not os.path.exists(filename):
@@ -229,7 +230,7 @@ class FilesystemStore(Store):
                     pass # ignore errors
             raise JobRetrieveError("Failed retrieving job from file '%s': %s: %s"
                                    % (filename, ex.__class__.__name__, str(ex)))
-        if str(obj._id).lower() != str(id_).lower():
+        if str(obj._id) != str(id_):
             raise JobRetrieveError("Retrieved Job ID '%s' does not match given Job ID '%s'" 
                                    % (obj._id, id_))
         return obj
@@ -237,7 +238,7 @@ class FilesystemStore(Store):
 
     @same_docstring_as(Store.remove)
     def remove(self, id_):
-        filename = os.path.join(self._directory, id_.lower())
+        filename = os.path.join(self._directory, id_)
         os.remove(filename)
 
 
@@ -249,7 +250,7 @@ class FilesystemStore(Store):
     @same_docstring_as(Store.save)
     def save(self, obj):
         if not hasattr(obj, '_id'):
-            obj._id = self._idfactory(prefix=obj.__class__.__name__)
+            obj._id = self._idfactory(obj)
         self._save_or_replace(obj._id, obj)
         return obj._id
 
@@ -260,7 +261,7 @@ class FilesystemStore(Store):
         destination file exists, create it.  Ensure that the
         destination file is kept intact in case dumping `obj` fails.
         """
-        filename = os.path.join(self._directory, id_.lower())
+        filename = os.path.join(self._directory, id_)
         gc3libs.log.debug("Storing job '%s' into file '%s'", obj, filename)
 
         if not os.path.exists(self._directory):

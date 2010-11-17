@@ -40,7 +40,15 @@ _default_job_folder_location = os.getcwd()
 _default_wait_time = 3 # XXX: does it really make sense to have a default wall-clock time??
 
 
-_store = gc3libs.persistence.FilesystemStore()
+class _JobIdFactory(gc3libs.persistence.Id):
+    """
+    Override :py:class:`Id` behavior and generate IDs starting with a
+    lowercase ``job`` prefix.
+    """
+    def __new__(cls, obj, prefix=None, seqno=None):
+        return gc3libs.persistence.Id.__new__(cls, obj, 'job', seqno)
+
+_store = gc3libs.persistence.FilesystemStore(idfactory=_JobIdFactory)
 
 
 def _configure_logger(verbosity):
@@ -82,9 +90,10 @@ def _get_gcli(config_file_locations, auto_enable_auth=True):
         gc3utils.log.debug("Failed loading config file from '%s'", 
                            str.join("', '", config_file_locations))
         raise
-        
+
 
 #====== Main ========
+
 
 def gclean(*args, **kw):
     """
