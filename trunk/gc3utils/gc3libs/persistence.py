@@ -175,9 +175,16 @@ class FilesystemStore(Store):
     """
     Save and load objects in a given directory.  Uses Python's
     standard `pickle` module to serialize objects onto files.
-    
+
     All objects are saved as files in the given directory (default:
-    `gc3libs.Default.JOBS_DIR`).
+    `gc3libs.Default.JOBS_DIR`).  The file name is the (lowercased)
+    object ID.  
+
+    The default `idfactory` assigns object IDs by appending a
+    sequential number to the class name; see class :py:class:`_Id` for
+    details.
+
+    Note that object IDs are treated case-insensitively in this class.
     
     The `protocol` argument specifies the pickle protocol to use
     (default: `pickle` protocol 2).  See the `pickle` module
@@ -200,7 +207,7 @@ class FilesystemStore(Store):
 
     @same_docstring_as(Store.load)
     def load(self, id_):
-        filename = os.path.join(self._directory, id_)
+        filename = os.path.join(self._directory, id_.lower())
         gc3libs.log.debug("Retrieving job from file '%s' ...", filename)
 
         if not os.path.exists(filename):
@@ -222,7 +229,7 @@ class FilesystemStore(Store):
                     pass # ignore errors
             raise JobRetrieveError("Failed retrieving job from file '%s': %s: %s"
                                    % (filename, ex.__class__.__name__, str(ex)))
-        if str(obj._id) != str(id_):
+        if str(obj._id).lower() != str(id_).lower():
             raise JobRetrieveError("Retrieved Job ID '%s' does not match given Job ID '%s'" 
                                    % (obj._id, id_))
         return obj
@@ -230,7 +237,7 @@ class FilesystemStore(Store):
 
     @same_docstring_as(Store.remove)
     def remove(self, id_):
-        filename = os.path.join(self._directory, id_)
+        filename = os.path.join(self._directory, id_.lower())
         os.remove(filename)
 
 
@@ -253,7 +260,7 @@ class FilesystemStore(Store):
         destination file exists, create it.  Ensure that the
         destination file is kept intact in case dumping `obj` fails.
         """
-        filename = os.path.join(self._directory, id_)
+        filename = os.path.join(self._directory, id_.lower())
         gc3libs.log.debug("Storing job '%s' into file '%s'", obj, filename)
 
         if not os.path.exists(self._directory):
