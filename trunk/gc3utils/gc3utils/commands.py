@@ -34,6 +34,7 @@ import sys
 import os
 import ConfigParser
 from optparse import OptionParser
+import tarfile
 import time
 
 import gc3libs
@@ -439,9 +440,36 @@ def gnotify(*args, **kw):
     jobid = args[0]
 
     job = _store.load(jobid)
-    return gc3libs.utils.notify(job,options.include_job_results)
-    
+    try:
+        # create tgz with job information
+        job_tarname = gc3libs.Default.NOTIFY_DESTINATIONFOLDER + '/' + jobid + '.tgz'
+        tar = tarfile.open(job_tarname, "w:gz")
+        if options.include_job_results:
+            try:
+                for filename in os.listdir(job.output_dir):
+                    tar.add(os.path.join(job.output_dir,filename))
+            except Exception, ex:
+                gc3libs.log.error("Could not add file '%s/%s' to tar file '%s': %s: %s", 
+                                  job.output_dir, filename, job_tarname,
+                                  ex.__class__.__name__, str(ex))
+        # FIXME: this requires knowledge of how the persistence layer is saving jobs...
+        tar.add(os.path.join(gc3libs.Default.JOBS_DIR, jobid))
+        tar.close()
 
+        # send notification email to gc3admin
+        send_mail(gc3libs.Default.NOTIFY_USER_EMAIL,
+                   gc3libs.Default.NOTIFY_GC3ADMIN,
+                   gc3libs.Default.NOTIFY_SUBJECTS,
+                   gc3libs.Default.NOTIFY_MSG,
+                   [job_tarname])
+
+        return 0
+
+    except Exception, ex:
+        gc3libs.log.error('Failed creating report: %s: %s',
+                          ex.__class__.__name__, str(ex))
+        raise
+    
 
 def glist(*args, **kw):
     """The `glist` command."""
