@@ -101,7 +101,7 @@ def first(seq):
     raise TypeError("Argument to `first()` method needs to be iterator or sequence.")
 
 
-# as of Python 2.7, `DictMixin` is an old-style class; thus, we need
+# In Python 2.7 still, `DictMixin` is an old-style class; thus, we need
 # to make `Struct` inherit from `object` otherwise we loose properties
 # when setting/pickling/unpickling
 class Struct(object, UserDict.DictMixin):
@@ -260,21 +260,6 @@ class Enum(frozenset):
             raise SyntaxError("Cannot assign enumeration values.")
     def __delattr__(self, name):
             raise SyntaxError("Cannot delete enumeration values.")
-
-
-def check_jobdir(jobdir):
-    """
-    Perform various checks on the jobdir.
-    Right now we just make sure it exists.  In the future it could include checks for:
-
-    - are the files inside valid
-    - etc.
-    """
-
-    if os.path.isdir(jobdir):
-        return True
-    else:
-        return False
 
 
 def deploy_configuration_file(filename, template_filename=None):
@@ -494,63 +479,6 @@ def to_bytes(s):
         return int(float(s[0:last])*k*k*k*k*k*k*k*k)
 
  
-def obtain_file_lock(joblist_location, joblist_lock):
-    """
-    Lock a file.
-    """
-
-    # Obtain lock
-    lock_obtained = False
-    retries = 3
-    default_wait_time = 1
-
-
-    # if joblist_location does not exist, create it
-    if not os.path.exists(joblist_location):
-        open(joblist_location, 'w').close()
-        gc3libs.log.debug(joblist_location + ' did not exist.  created it.')
-
-
-    gc3libs.log.debug('trying creating lock for %s in %s',joblist_location,joblist_lock)    
-
-    while lock_obtained == False:
-        if ( retries > 0 ):
-            try:
-                os.link(joblist_location,joblist_lock)
-                lock_obtained = True
-                break
-            except OSError:
-                # lock already created; wait
-                gc3libs.log.debug('Lock already created; retry later [ %d ]',retries)
-                time.sleep(default_wait_time)
-                retries = retries - 1
-            except:
-                gc3libs.log.error('failed obtaining lock due to %s',sys.exc_info()[1])
-                raise
-        else:
-            gc3libs.log.error('could not obtain lock for updating list of jobs')
-            break
-
-    return lock_obtained
-
-def release_file_lock(joblist_lock):
-    """
-    Release locked file.
-    """
-
-    try:
-        os.remove(joblist_lock)
-        return True
-    except:
-        gc3libs.log.debug('Failed removing lock due to %s',sys.exc_info()[1])
-        return False
-
-def date_normalize(date_string):
-    """
-    Normalizes date format from ARC and SGE sources to  common string
-    """
-    pass
-
 def notify(job, include_job_results):
     try:
         # create tgz with job information
