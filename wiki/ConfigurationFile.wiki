@@ -198,6 +198,8 @@ The `frontend` key should contain the FQDN of the SGE front-end node.
 An SSH connection will be attempted to this node, in order to submit
 jobs and retrieve status info. 
 
+  * `transport`: defines which transport layer is used to connect to the SGE LRMS. Possible values are: `ssh`, `local`.
+
 Since the installation path to supported applications is not known (there
 is no information system, differently from ARC), then the path must be
 specified here:
