@@ -38,19 +38,18 @@ class RosettaApplication(Application):
     """
     Specialized `Application` object to submit one run of a single
     application in the Rosetta suite.
-
+    
     Required parameters for construction:
-    * `application`: name of the Rosetta application to call (e.g., "docking_protocol" or "relax")
-    * `inputs`: a `dict` instance, keys are Rosetta "-in:file:*" options, values are the (local) path names of the corresponding files.  (Example: `inputs={"-in:file:s":"1brs.pdb"}`) 
-    * `outputs`: list of output file names to fetch after Rosetta has finished running.
 
+      * `application`: name of the Rosetta application to call (e.g., "docking_protocol" or "relax")
+      * `inputs`: a `dict` instance, keys are Rosetta ``-in:file:*`` options, values are the (local) path names of the corresponding files.  (Example: ``inputs={"-in:file:s":"1brs.pdb"}``) 
+      * `outputs`: list of output file names to fetch after Rosetta has finished running.
+    
     Optional parameters:
-    * `flags_file`: path to a local file containing additional flags for controlling Rosetta invocation;
-      if `None`, a local configuration file will be used.
-    * `database`: (local) path to the Rosetta DB; if this is not specified, then it is assumed that
-      the correct location will be available at the remote execution site as environment variable
-      'ROSETTA_DB_LOCATION'
-    * `arguments`: If present, they will be appended to the Rosetta application command line.
+
+      * `flags_file`: path to a local file containing additional flags for controlling Rosetta invocation; if `None`, a local configuration file will be used. 
+      * `database`: (local) path to the Rosetta DB; if this is not specified, then it is assumed that the correct location will be available at the remote execution site as environment variable ``ROSETTA_DB_LOCATION``
+      * `arguments`: If present, they will be appended to the Rosetta application command line.
     """
     def __init__(self, application, inputs, outputs=[], 
                  flags_file=None, database=None, arguments=[], **kw):
