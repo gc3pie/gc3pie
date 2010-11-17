@@ -4,9 +4,6 @@ Support for running a generic application with the GC3Libs.
 """
 # Copyright (C) 2009-2010 GC3, University of Zurich. All rights reserved.
 #
-# Includes parts adapted from the ``bzr`` code, which is
-# copyright (C) 2005, 2006, 2007, 2008, 2009 Canonical Ltd
-#
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
 # the Free Software Foundation; either version 2 of the License, or
@@ -124,6 +121,7 @@ class Application(InformationContainer):
 
         After successful construction, an `Application` object is
         guaranteed to have at least the following instance attributes:
+
         * `executable`: a string specifying the executable name
         * `arguments`: list of strings specifying command-line arguments for executable invocation; possibly empty
         * `inputs`: dictionary mapping local file name (a string) to a remote file name (a string)
