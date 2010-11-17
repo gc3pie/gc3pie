@@ -252,6 +252,10 @@ class Job(Struct):
                 self.timestamp[value] = time.time()
                 self.log.append('%s on %s' % (value, time.asctime()))
             self._state = value
+            # call state transition methods, if they exist
+            handler_name = str(self._state).lower()
+            if hasattr(self, handler_name):
+                getattr(self, handler_name)()
         return locals()
 
 
