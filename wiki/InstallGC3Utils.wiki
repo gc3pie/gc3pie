@@ -105,3 +105,20 @@ instructions, you can issue the commands:
   env CC=gcc ./setup.py develop
   cd ..
 }}}
+
+
+=== Sphinx Documentation ==
+
+Sphinx documentation can be generated from the source:
+
+{{{
+cd docs
+make html
+}}}
+
+
+To commit new versions to the web page:
+
+{{{ 
+svn commit -m'Edited blah and updated API docs'
+}}}
