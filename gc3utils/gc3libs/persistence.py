@@ -106,7 +106,7 @@ class _Id(str):
     IDs, and for comparing/sorting Job IDs based on their progressive
     number.
     """
-    def __new__(cls, seqno=None, prefix="job"):
+    def __new__(cls, seqno=None, prefix="obj"):
         """
         Construct a new "unique job identifier" instance (a string).
         """
@@ -122,31 +122,49 @@ class _Id(str):
     # rich comparison operators, to ensure `_Id` is sorted by numerical value
     def __gt__(self, other):
         try:
+            if self.prefix != other.prefix:
+                raise TypeError("Cannot compare `_Id(prefix=%s)` with `_Id(prefix=%s)`"
+                                % (repr(self.prefix), repr(other.prefix)))
             return self._seqno > other._seqno
         except AttributeError:
             raise TypeError("`_Id` objects can only be compared with other `_Id` objects")
     def __ge__(self, other):
         try:
+            if self.prefix != other.prefix:
+                raise TypeError("Cannot compare `_Id(prefix=%s)` with `_Id(prefix=%s)`"
+                                % (repr(self.prefix), repr(other.prefix)))
             return self._seqno >= other._seqno
         except AttributeError:
             raise TypeError("`_Id` objects can only be compared with other `_Id` objects")
     def __eq__(self, other):
         try:
+            if self.prefix != other.prefix:
+                raise TypeError("Cannot compare `_Id(prefix=%s)` with `_Id(prefix=%s)`"
+                                % (repr(self.prefix), repr(other.prefix)))
             return self._seqno == other._seqno
         except AttributeError:
             raise TypeError("`_Id` objects can only be compared with other `_Id` objects")
     def __ne__(self, other):
         try:
+            if self.prefix != other.prefix:
+                raise TypeError("Cannot compare `_Id(prefix=%s)` with `_Id(prefix=%s)`"
+                                % (repr(self.prefix), repr(other.prefix)))
             return self._seqno != other._seqno
         except AttributeError:
             raise TypeError("`_Id` objects can only be compared with other `_Id` objects")
     def __le__(self, other):
         try:
+            if self.prefix != other.prefix:
+                raise TypeError("Cannot compare `_Id(prefix=%s)` with `_Id(prefix=%s)`"
+                                % (repr(self.prefix), repr(other.prefix)))
             return self._seqno <= other._seqno
         except AttributeError:
             raise TypeError("`_Id` objects can only be compared with other `_Id` objects")
     def __lt__(self, other):
         try:
+            if self.prefix != other.prefix:
+                raise TypeError("Cannot compare `_Id(prefix=%s)` with `_Id(prefix=%s)`"
+                                % (repr(self.prefix), repr(other.prefix)))
             return self._seqno < other._seqno
         except AttributeError:
             raise TypeError("`_Id` objects can only be compared with other `_Id` objects")
