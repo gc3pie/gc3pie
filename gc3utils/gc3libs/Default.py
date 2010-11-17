@@ -4,9 +4,6 @@ Defaults for the GC3Libs package.
 """
 # Copyright (C) 2009-2010 GC3, University of Zurich. All rights reserved.
 #
-# Includes parts adapted from the ``bzr`` code, which is
-# copyright (C) 2005, 2006, 2007, 2008, 2009 Canonical Ltd
-#
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
 # the Free Software Foundation; either version 2 of the License, or

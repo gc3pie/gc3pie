@@ -6,7 +6,6 @@ gc3utils - A simple command-line frontend to distributed resources
 This is a generic front-end code; actual implementation of commands
 can be found in gc3utils/commands.py
 """
-
 # Copyright (C) 2009-2010 GC3, University of Zurich. All rights reserved.
 #
 # Includes parts adapted from the ``bzr`` code, which is
