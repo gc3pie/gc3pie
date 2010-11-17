@@ -194,7 +194,7 @@ If, in addition, the `frontend` key is also defined, then only queues
 belonging to the specified frontend will be considered for brokering.
 
 === `ssh_sge` resources ===
-The `frontend` key should contain the FQDN of the SGE front-end node.
+  * `frontend`: should contain the FQDN of the SGE front-end node.
 An SSH connection will be attempted to this node, in order to submit
 jobs and retrieve status info. 
 
