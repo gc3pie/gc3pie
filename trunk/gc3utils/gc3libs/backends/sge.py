@@ -562,15 +562,31 @@ class SgeLrms(LRMS):
         
 
 
-    @same_docstring_as(LRMS.get_results)
-    def get_results(self, app, download_dir):
-        log.debug("Connecting to cluster frontend '%s' as user '%s' via SSH ...", 
-                           self._resource.frontend, self._ssh_username)
+    @same_docstring_as(LRMS.free)
+    def free(self, app):
+
         job = app.execution
         try:
+            log.debug("Connecting to cluster frontend '%s' as user '%s' via SSH ...", 
+                           self._resource.frontend, self._ssh_username)
+            self.transport.connect()
+            self.transport.remove_tree(job.ssh_remote_folder)
+        except:
+            log.warning("Failed removing remote folder '%s': %s: %s" 
+                        % (job.ssh_remote_folder, sys.exc_info()[0], sys.exc_info()[1]))
+        return
 
+
+    @same_docstring_as(LRMS.get_results)
+    def get_results(self, app, download_dir, overwrite=False):
+
+        job = app.execution
+        try:
+            log.debug("Connecting to cluster frontend '%s' as user '%s' via SSH ...", 
+                           self._resource.frontend, self._ssh_username)
             self.transport.connect()
 
+            # XXX: why do we list the remote dir? `file_list` is not used ever after...
             try:
                 files_list = self.transport.listdir(job.ssh_remote_folder)
             except Exception, x:
@@ -578,10 +594,10 @@ class SgeLrms(LRMS):
                 log.error("Could not read remote job directory '%s': %s: %s" 
                                   % (job.ssh_remote_folder, x.__class__.__name__, str(x)), 
                                   exc_info=True)
-                return job
+                return
 
             # copy back all files, renaming them to adhere to the ArcLRMS convention
-            log.debug("Downloading job output into '%s' ...",download_dir)
+            log.debug("Downloading job output into '%s' ...", download_dir)
             for remote_path, local_path in app.outputs.items():
                 try:
                     # override the remote name if it's a known variable one...
@@ -596,7 +612,7 @@ class SgeLrms(LRMS):
                 log.debug("Downloading remote file '%s' to local file '%s'", 
                                    remote_path, local_path)
                 try:
-                    if not os.path.exists(local_path):
+                    if not os.path.exists(local_path) or overwrite:
                         log.debug("Copying remote '%s' to local '%s'", remote_path, local_path)
                         self.transport.get(remote_path, local_path)
                     else:
@@ -619,20 +635,11 @@ class SgeLrms(LRMS):
                 os.symlink(os.path.join(download_dir, job.stdout_filename),
                            os.path.join(download_dir, job.stderr_filename))
 
-            # cleanup remote folder
-            try:
-                self.transport.remove_tree(job.ssh_remote_folder)
-            except:
-                log.error("Failed while removing remote folder '%s': %s: %s" 
-                                  % (job.ssh_remote_folder, sys.exc_info()[0], sys.exc_info()[1]))
-            
             self.transport.close()
-            return job
+            return # XXX: should we return list of downloaded files?
 
         except: 
             self.transport.close()
-            log.critical('Failure in retrieving results')
-            log.debug('%s %s',sys.exc_info()[0], sys.exc_info()[1])
             raise 
 
 

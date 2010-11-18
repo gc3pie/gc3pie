@@ -74,6 +74,26 @@ class Gcli:
             self._resources = [ res for res in self._resources
                                 if fnmatch(res.name, match) ]
 
+    def free(self, app, **kw):
+        """
+        Free up any remote resources used for the execution of `app`.
+        In particular, this should delete any remote directories and
+        files.
+
+        It is an error to call this method if `app.execution.state` is
+        anything other than `TERMINATED`.
+        """
+
+        if app.execution.state != Run.State.TERMINATED:
+            raise InvalidOperation("Attempting to free resources of job '%s',"
+                                   " which is in non-terminal state." % app)
+
+        auto_enable_auth = kw.get('auto_enable_auth', self.auto_enable_auth)
+
+        lrms = self._get_backend(app.execution.resource_name)
+        self.authorization.get(lrms._resource.authorization_type)
+        lrms.free(app)
+        
 
     def gsub(self, app, **kw):
         """
@@ -169,41 +189,40 @@ class Gcli:
         return states
 
 
-    def gget(self, app, download_dir=None, **kw):
+    def gget(self, app, download_dir=None, overwrite=False, **kw):
         """
-        Retrieve job output into local directory `download_dir`.  If
-        `download_dir` is `None` (default), then its path is formed by
-        appending the job ID to `default_output_dir` if the `job`
-        object has such attribute, or by appending the job id to the
-        default download location `gc3libs.Default.JOB_FOLDER_LOCATION`.
+        Retrieve job output into local directory `app.output_dir`;
+        optional argument `download_dir` overrides this.
 
-        The instance attribute `job.output_dir` is set to the actual
-        download directory path, and `job.output_retrieved` is set to
-        `True`.
-
-        Directory `download_dir` is created if it does not exist; if
+        The download directory is created if it does not exist.  If
         already existent, it is renamed with a `.NUMBER` suffix and a
-        new empty one is created in its place.
+        new empty one is created in its place, unless the optional
+        argument `overwrite` is `True`.
 
-        Job output cannot be retrieved when `job` is in one of the
-        states `NEW` or `SUBMITTED`; a `OutputNotAvailableError`
-        exception is thrown in these cases.
+        If the job is in a terminal state, the instance attribute
+        `app.final_output_retrieved` is set to `True`.
+
+        Job output cannot be retrieved when `app.execution` is in one
+        of the states `NEW` or `SUBMITTED`; a
+        `OutputNotAvailableError` exception is thrown in these cases.
         """
         job = app.execution
         if job.state in [ Run.State.NEW, Run.State.SUBMITTED ]:
-            raise OutputNotAvailableError("Output not available: Job '%s' currently in state '%s'"
-                                          % (job, job,state))
+            raise OutputNotAvailableError("Output not available:"
+                                          " Job '%s' currently in state '%s'"
+                                          % (app, app.execution.state))
 
         auto_enable_auth = kw.get('auto_enable_auth', self.auto_enable_auth)
 
         # Prepare/Clean download dir
         if download_dir is None:
-            if hasattr(application, 'output_dir'):
-                download_dir = application.output_dir
-            else:
-                download_dir = os.path.join(Default.JOB_FOLDER_LOCATION, str(job))
+            download_dir = application.output_dir
         try:
-            utils.mkdir_with_backup(download_dir)
+            if overwrite:
+                if not os.path.exists(download_dir):
+                    os.makedirs(download_dir)
+            else:
+                utils.mkdir_with_backup(download_dir)
         except Exception, ex:
             gc3libs.log.error("Failed creating download directory '%s': %s: %s",
                               download_dir, ex.__class__.__name__, str(ex))
@@ -213,15 +232,16 @@ class Gcli:
             lrms = self._get_backend(job.resource_name)
             self.authorization.get(lrms._resource.authorization_type)
             lrms.get_results(app, download_dir)
-        except LRMSUnrecoverableError:
-            # FIXME: assumes LRMS has correctly set the `returncode` attribute on the job...
-            job.state = Run.State.TERMINATED
+        except DataStagingError:
+            job.signal = Run.Signals.DataStagingFailure
+            raise
         
         # successfully downloaded results
-        app.output_dir = download_dir
-        app.output_retrieved = True
         job.log.append("Output downloaded to '%s'" % download_dir)
-        return job
+        app.output_dir = download_dir
+        if job.state == Run.State.TERMINATED:
+            app.final_output_retrieved = True
+        return download_dir
         
 
     def glist(self,resource_name, **kw):

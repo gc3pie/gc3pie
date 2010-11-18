@@ -220,6 +220,10 @@ class Application(Struct):
       `remote_file_name`, then a warning will be issued and the
       behavior is undefined.
 
+    `output_dir`
+      Path to the base directory where output files will be downloaded.
+      Output file names are interpreted relative to this base directory.
+
     The following optional parameters may be additionally
     specified as keyword arguments and will be given special
     treatment by the `Application` class logic:
@@ -286,14 +290,13 @@ class Application(Struct):
       dictionary mapping remote file name (a string) to a local file name (a string)
 
     `output_dir`
-      Path to the base directory where output files were last
-      downloaded to, or `None` if no output files have been downloaded
-      yet.
+      Path to the base directory where output files will be downloaded.
+      Output file names are interpreted relative to this base directory.
 
-    `output_retrieved` 
-      boolean flag, indicating whether job output has been fetched
-      from the remote resource; use the Gcli.gget() function to
-      retrieve the output. (Note: for jobs in TERMINATED state, the
+    `final_output_retrieved` 
+      boolean, indicating whether job output has been fetched from the
+      remote resource; if `True`, you cannot assume that data is still
+      available remotely.  (Note: for jobs in TERMINATED state, the
       output can be retrieved only once!)
 
     `environment`
@@ -320,7 +323,7 @@ class Application(Struct):
       list of strings specifying the tags to request in each resource
       for submission; possibly empty.
     """
-    def __init__(self, executable, arguments, inputs, outputs, **kw):
+    def __init__(self, executable, arguments, inputs, outputs, output_dir, **kw):
         # required parameters
         self.executable = executable
         self.arguments = [ str(x) for x in arguments ]
@@ -334,6 +337,8 @@ class Application(Struct):
                 return tuple(val)
         self.inputs = dict([ convert_to_tuple(x) for x in inputs ])
         self.outputs = dict([ convert_to_tuple(x) for x in outputs ])
+
+        self.output_dir = output_dir
 
         # optional params
         def get_and_remove(dictionary, key, default=None, verbose=False):
@@ -380,8 +385,7 @@ class Application(Struct):
         self.execution.attach(self)
 
         # output management
-        self.output_dir = None
-        self.output_retrieved = False
+        self.final_output_retrieved = False
 
         # any additional param
         Struct.__init__(self, **kw)
@@ -551,14 +555,16 @@ class Run(Struct):
 
     A `Run` object is guaranteed to have the following attributes:
 
-      * `state`: Current state of the job, initially `State.NEW`; 
-         see `Run.State` for a list of the possible values.
+      `log`
+        A `gc3libs.utils.Log` instance, recording human-readable text
+        messages on events in this job's history.
 
-      * `output_dir`: path to the directory where output has been
-        downloaded, or `None` if no output has been retrieved yet.
+      `timestamp`
+        Dictionary, recording the most recent timestamp when a certain
+        state was reached.  Timestamps are given as UNIX epochs.
 
-      * `output_retrieved`: Initially, `False`, set to `True` after a
-        successful call to `Gcli.gget`
+    For properties `state`, `signal` and `returncode`, see the
+    respective documentation.
 
     `Run` objects support attribute lookup by both the ``[...]`` and
     the ``.`` syntax; see `gc3libs.utils.Struct` for examples.
@@ -604,7 +610,6 @@ class Run(Struct):
         Struct.__init__(self, initializer, **keywd)
 
         if 'log' not in self: self.log = Log()
-        if 'output_retrieved' not in self: self.output_retrieved = False
         if 'timestamp' not in self: self.timestamp = { }
 
     

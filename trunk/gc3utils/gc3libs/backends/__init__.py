@@ -36,7 +36,19 @@ class LRMS(object):
         it.
         """
         raise NotImplementedError("Abstract method `LRMS.cancel_job()` called - this should have been defined in a derived class.")
-    
+
+    def free(self, app):
+        """
+        Free up any remote resources used for the execution of `app`.
+        In particular, this should delete any remote directories and
+        files.
+
+        Call this method when `app.execution.state` is anything other
+        than `TERMINATED` results in undefined behavior and will
+        likely be the cause of errors later on.  Be cautious.
+        """
+        raise NotImplementedError("Abstract method `LRMS.free()` called - this should have been defined in a derived class.")
+        
     def get_resource_status(self):
         """
         Update the status of the resource associated with this `LRMS`
@@ -44,9 +56,11 @@ class LRMS(object):
         """
         raise NotImplementedError("Abstract method `LRMS.get_resource_status()` called - this should have been defined in a derived class.")
     
-    def get_results(self, job, download_dir):
+    def get_results(self, job, download_dir, overwrite=False):
         """
-        Retrieve job output files into local directory `download_dir`.
+        Retrieve job output files into local directory `download_dir`
+        (which must already exists).  Will not overwrite existing
+        files, unless the optional argument `overwrite` is `True`.
         """
         raise NotImplementedError("Abstract method `LRMS.get_results()` called - this should have been defined in a derived class.")
     

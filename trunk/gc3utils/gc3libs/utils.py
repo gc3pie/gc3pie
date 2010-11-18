@@ -356,8 +356,8 @@ class Log(object):
 
 def mkdir_with_backup(path):
     """
-    Like `os.mkdirs`, but if `path` already exists, rename the existing
-    one appending a `.NUMBER` suffix.
+    Like `os.makedirs`, but if `path` already exists, rename the
+    existing one appending a `.NUMBER` suffix.
     """
     if os.path.isdir(path):
         # directory exists; find a suitable extension and rename
