@@ -98,7 +98,7 @@ class Id(str):
     
     The unique job identifier has the form "PREFIX.XXX"
     where "XXX" is a decimal number, and "PREFIX" defaults to the
-    object class name but can be overridden in the :py:class:`Id`
+    object class name but can be overridden in the `Id`
     constructor.
 
     Two object IDs can be compared iff they have the same prefix; in
@@ -123,49 +123,49 @@ class Id(str):
     # rich comparison operators, to ensure `Id` is sorted by numerical value
     def __gt__(self, other):
         try:
-            if self.prefix != other.prefix:
+            if self._prefix != other._prefix:
                 raise TypeError("Cannot compare `Id(prefix=%s)` with `Id(prefix=%s)`"
-                                % (repr(self.prefix), repr(other.prefix)))
+                                % (repr(self._prefix), repr(other._prefix)))
             return self._seqno > other._seqno
         except AttributeError:
             raise TypeError("`Id` objects can only be compared with other `Id` objects")
     def __ge__(self, other):
         try:
-            if self.prefix != other.prefix:
+            if self._prefix != other._prefix:
                 raise TypeError("Cannot compare `Id(prefix=%s)` with `Id(prefix=%s)`"
-                                % (repr(self.prefix), repr(other.prefix)))
+                                % (repr(self._prefix), repr(other._prefix)))
             return self._seqno >= other._seqno
         except AttributeError:
             raise TypeError("`Id` objects can only be compared with other `Id` objects")
     def __eq__(self, other):
         try:
-            if self.prefix != other.prefix:
+            if self._prefix != other._prefix:
                 raise TypeError("Cannot compare `Id(prefix=%s)` with `Id(prefix=%s)`"
-                                % (repr(self.prefix), repr(other.prefix)))
+                                % (repr(self._prefix), repr(other._prefix)))
             return self._seqno == other._seqno
         except AttributeError:
             raise TypeError("`Id` objects can only be compared with other `Id` objects")
     def __ne__(self, other):
         try:
-            if self.prefix != other.prefix:
+            if self._prefix != other._prefix:
                 raise TypeError("Cannot compare `Id(prefix=%s)` with `Id(prefix=%s)`"
-                                % (repr(self.prefix), repr(other.prefix)))
+                                % (repr(self._prefix), repr(other._prefix)))
             return self._seqno != other._seqno
         except AttributeError:
             raise TypeError("`Id` objects can only be compared with other `Id` objects")
     def __le__(self, other):
         try:
-            if self.prefix != other.prefix:
+            if self._prefix != other._prefix:
                 raise TypeError("Cannot compare `Id(prefix=%s)` with `Id(prefix=%s)`"
-                                % (repr(self.prefix), repr(other.prefix)))
+                                % (repr(self._prefix), repr(other._prefix)))
             return self._seqno <= other._seqno
         except AttributeError:
             raise TypeError("`Id` objects can only be compared with other `Id` objects")
     def __lt__(self, other):
         try:
-            if self.prefix != other.prefix:
+            if self._prefix != other._prefix:
                 raise TypeError("Cannot compare `Id(prefix=%s)` with `Id(prefix=%s)`"
-                                % (repr(self.prefix), repr(other.prefix)))
+                                % (repr(self._prefix), repr(other._prefix)))
             return self._seqno < other._seqno
         except AttributeError:
             raise TypeError("`Id` objects can only be compared with other `Id` objects")
@@ -181,7 +181,7 @@ class FilesystemStore(Store):
     `gc3libs.Default.JOBS_DIR`).  The file name is the object ID.
 
     The default `idfactory` assigns object IDs by appending a
-    sequential number to the class name; see class :py:class:`Id` for
+    sequential number to the class name; see class `Id` for
     details.
 
     The `protocol` argument specifies the pickle protocol to use

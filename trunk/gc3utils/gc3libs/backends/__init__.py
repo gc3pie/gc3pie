@@ -29,10 +29,11 @@ from gc3libs.Exceptions import *
 class LRMS(object):
     """Base class for interfacing with a computing resource."""
 
-    def cancel_job(self, job):
+    def cancel_job(self, app):
         """
-        Cancel a running job.  If `job` has a queued or running remote
-        instance, tell the execution middleware to cancel it.
+        Cancel a running job.  If `app` is associated to a queued or
+        running remote job, tell the execution middleware to cancel
+        it.
         """
         raise NotImplementedError("Abstract method `LRMS.cancel_job()` called - this should have been defined in a derived class.")
     
@@ -49,12 +50,11 @@ class LRMS(object):
         """
         raise NotImplementedError("Abstract method `LRMS.get_results()` called - this should have been defined in a derived class.")
     
-    def get_state(self, job):
+    def update_job_state(self, app):
         """
-        Query the state of the remote job associated with `job` and
-        return the corresponding `Job.State`.
-        
-        See `Job.State` for more details.
+        Query the state of the remote job associated with `app` and
+        update `app.execution.state` accordingly.  Return the
+        corresponding `Run.State`; see `Run.State` for more details.
         """
         raise NotImplementedError("Abstract method `LRMS.update_state()` called - this should have been defined in a derived class.")
     
@@ -84,11 +84,11 @@ class LRMS(object):
         """
         raise NotImplementedError("Abstract method `LRMS.submit_job()` called - this should have been defined in a derived class.")
 
-    def tail(self, job, remote_filename, local_file, offset=0, size=None):
+    def tail(self, app, remote_filename, local_file, offset=0, size=None):
         """
         Download `size` bytes (at offset `offset` from the start) from
         remote file `remote_filename` and write them into
-        `local_file`.  If `size` is `None` (default), then snarf the
+        `local_file`.  If `size` is `None` (default), then snarf
         contents of remote file from `offset` unto the end.
 
         Argument `local_file` is either a local path name (string), or

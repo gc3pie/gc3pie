@@ -31,13 +31,12 @@ import ConfigParser
 import tempfile
 
 import gc3libs
-from gc3libs.application import Application
+from gc3libs import Application, Run
 from gc3libs.backends.sge import SgeLrms
 from gc3libs.backends.arc import ArcLrms
 from gc3libs.authentication import Auth
 import gc3libs.Default as Default
 from gc3libs.Exceptions import *
-import gc3libs.Job as Job
 import gc3libs.Resource as Resource
 import gc3libs.scheduler as scheduler
 import gc3libs.utils as utils 
@@ -76,30 +75,17 @@ class Gcli:
                                 if fnmatch(res.name, match) ]
 
 
-    def gsub(self, application, job=None, **kw):
+    def gsub(self, app, **kw):
         """
-        Submit a job running an instance of the given `application`.
-        Return the `job` object, modified to refer to the submitted computational job,
-        or a new instance of the `Job` class if `job` is `None` (default).
+        Submit a job running an instance of the given `app`.  Return
+        the `app` object, modified to refer to the submitted
+        computational job.
         """
         auto_enable_auth = kw.get('auto_enable_auth', self.auto_enable_auth)
 
-        # gsub workflow:
-        #    check input files from application
-        #    create list of LRMSs
-        #    do Brokering
-        #    submit job
-        #    return job_obj
-        
-        # Parsing passed arguments
-        gc3libs.log.debug('input_file(s): %s',application.inputs)
-        gc3libs.log.debug('application tag: %s',application.application_tag)
-        gc3libs.log.debug('application arguments: %s',application.arguments)
-        gc3libs.log.debug('requested cores: %s',str(application.requested_cores))
-        gc3libs.log.debug('requested memory: %s GB',str(application.requested_memory))
-        gc3libs.log.debug('requested walltime: %s hours',str(application.requested_walltime))
+        job = app.execution
 
-        gc3libs.log.debug('Instantiating LRMSs')
+        gc3libs.log.debug('Instantiating LRMSs ...')
         _lrms_list = []
         for _resource in self._resources:
             try:
@@ -117,20 +103,18 @@ class Gcli:
         gc3libs.log.debug('Performing brokering ...')
         # decide which resource to use
         # (Resource)[] = (Scheduler).PerformBrokering((Resource)[],(Application))
-        _selected_lrms_list = scheduler.do_brokering(_lrms_list,application)
+        _selected_lrms_list = scheduler.do_brokering(_lrms_list,app)
         gc3libs.log.debug('Scheduler returned %d matching resources',
                            len(_selected_lrms_list))
         if 0 == len(_selected_lrms_list):
             raise NoResources("Could not select any compatible computational resource"
                               " - please check log and configuration file.")
 
-        if job is None:
-            job = Job.Job()
         # Scheduler.do_brokering should return a sorted list of valid lrms
         for lrms in _selected_lrms_list:
             try:
                 self.authorization.get(lrms._resource.authorization_type)
-                job = lrms.submit_job(application, job)
+                lrms.submit_job(app)
             except AuthenticationException:
                 # ignore authentication errors: e.g., we may fail some SSH connections but succeed in others
                 gc3libs.log.debug("Authentication error in submitting to resource '%s'" 
@@ -141,51 +125,51 @@ class Gcli:
                                    lrms._resource.name, exc_info=True)
                 continue
             gc3libs.log.info('Successfully submitted process to LRMS backend')
-            job.state = Job.State.SUBMITTED
+            job.state = Run.State.SUBMITTED
             job.resource_name = lrms._resource.name
-            #if application.has_key('output_dir'):
-            #    job.output_dir = application.output_dir
-            if application.has_key('default_output_dir'):
-                job.default_output_dir = application.default_output_dir
-            else:
-                job.default_output_dir = os.getcwd()
             # job submitted; leave loop
             break
 
         return job
 
 
-    def gstat(self, *jobs, **kw):
+    def gstat(self, *apps, **kw):
         """
-        Update state of all jobs passed in as arguments,
+        Update state of all applications passed in as arguments,
         and return list of updated states.
         
-        If `update_on_error` is `False` (default), then job state is
-        not changed in case a communication error happens; it is
-        changed to `UNKNOWN` otherwise.
+        If `update_on_error` is `False` (default), then application
+        execution state is not changed in case a backend error
+        happens; it is changed to `UNKNOWN` otherwise.
         """
         update_on_error = kw.get('update_on_error', False)
         auto_enable_auth = kw.get('auto_enable_auth', self.auto_enable_auth)
 
         states = [] 
-        for job in jobs:
-            state = job.state
+        for app in apps:
+            state = app.execution.state
+            gc3libs.log.debug("Updating state (%s) of application: %s", state, app)
             try:
-                lrms = self._get_backend(job.resource_name)
-                if job.state not in [ Job.State.NEW, Job.State.TERMINATED ]:
+                lrms = self._get_backend(app.execution.resource_name)
+                if state not in [ Run.State.NEW, Run.State.TERMINATED ]:
                     self.authorization.get(lrms._resource.authorization_type)
-                    state = lrms.get_state(job)
-                if state != Job.State.UNKNOWN or update_on_error:
-                    job.state = state
+                    try:
+                        state = lrms.update_job_state(app)
+                    except Exception, ex:
+                        gc3libs.log.debug("Error getting status of application '%s': %s: %s",
+                                          app, ex.__class__.__name__, str(ex))
+                        state = Run.State.UNKNOWN
+                    if state != Run.State.UNKNOWN or update_on_error:
+                        app.execution.state = state
             except Exception, ex:
-                gc3libs.log.error("Error getting status of job '%s': %s",
-                                  job, str(ex))
+                gc3libs.log.error("Error in Gcli.gstat(), ignored: %s: %s",
+                                  ex.__class__.__name__, str(ex))
             states.append(state)
 
         return states
 
 
-    def gget(self, job, download_dir=None, **kw):
+    def gget(self, app, download_dir=None, **kw):
         """
         Retrieve job output into local directory `download_dir`.  If
         `download_dir` is `None` (default), then its path is formed by
@@ -205,7 +189,8 @@ class Gcli:
         states `NEW` or `SUBMITTED`; a `OutputNotAvailableError`
         exception is thrown in these cases.
         """
-        if job.state in [ Job.State.NEW, Job.State.SUBMITTED ]:
+        job = app.execution
+        if job.state in [ Run.State.NEW, Run.State.SUBMITTED ]:
             raise OutputNotAvailableError("Output not available: Job '%s' currently in state '%s'"
                                           % (job, job,state))
 
@@ -213,10 +198,8 @@ class Gcli:
 
         # Prepare/Clean download dir
         if download_dir is None:
-            if hasattr(job, 'output_dir'):
-                download_dir = job.output_dir
-            elif hasattr(job, 'default_output_dir'):
-                download_dir = os.path.join(job.default_output_dir, str(job))
+            if hasattr(application, 'output_dir'):
+                download_dir = application.output_dir
             else:
                 download_dir = os.path.join(Default.JOB_FOLDER_LOCATION, str(job))
         try:
@@ -229,14 +212,14 @@ class Gcli:
         try:
             lrms = self._get_backend(job.resource_name)
             self.authorization.get(lrms._resource.authorization_type)
-            lrms.get_results(job, download_dir)
+            lrms.get_results(app, download_dir)
         except LRMSUnrecoverableError:
             # FIXME: assumes LRMS has correctly set the `returncode` attribute on the job...
-            job.state = Job.State.TERMINATED
+            job.state = Run.State.TERMINATED
         
         # successfully downloaded results
-        job.output_dir = download_dir
-        job.output_retrieved = True
+        app.output_dir = download_dir
+        app.output_retrieved = True
         job.log.append("Output downloaded to '%s'" % download_dir)
         return job
         
@@ -249,33 +232,32 @@ class Gcli:
         return  lrms.get_resource_status()
 
 
-    def gkill(self, job, **kw):
+    def gkill(self, app, **kw):
         """Terminate a job.
 
         Terminating a job in RUNNING, SUBMITTED, or STOPPED state
         entails canceling the job with the remote execution system;
         terminating a job in the NEW or TERMINATED state is a no-op.
         """
-        
+        job = app.execution
         auto_enable_auth = kw.get('auto_enable_auth', self.auto_enable_auth)
         lrms = self._get_backend(job.resource_name)
         self.authorization.get(lrms._resource.authorization_type)
-        job = lrms.cancel_job(job)
-
+        lrms.cancel_job(app)
         gc3libs.log.debug("Setting job '%s' status to TERMINATED"
                           " and returncode to SIGCANCEL" % job)
-        job.state = Job.State.TERMINATED
-        job.signal = Job.Signals.Cancelled
+        job.state = Run.State.TERMINATED
+        job.signal = Run.Signals.Cancelled
         job.log.append("Cancelled by `Gcli.gkill`")
         return job
 
 
-    def tail(self, job, what='stdout', offset=0, size=None, **kw):
+    def tail(self, app, what='stdout', offset=0, size=None, **kw):
         """
         Return job object with .stdout or .stderr containing content of stdout or stderr respectively
         Note: For the time being we allow only stdout or stderr as valid filenames
         """
-
+        job = app.execution
         if what == 'stdout':
             remote_filename = job.stdout_filename
         elif what == 'stderr':
@@ -285,9 +267,9 @@ class Gcli:
                         " 'stdout' or 'stderr', not '%s'" % what)
 
         # Check if local data available
-        # cross reference check: job status and local data availability
-        if job.state == gc3libs.Job.State.TERMINATED and job.output_retrieved:
-            _filename = os.path.join(job.output_dir, job.jobid, remote_filename)
+        # FIXME: local data could be stale!!
+        if job.state == Run.State.TERMINATED and app.output_retrieved:
+            _filename = os.path.join(app.output_dir, remote_filename)
             _local_file = open(_filename)
         else:
 
@@ -298,7 +280,7 @@ class Gcli:
 
             _local_file = tempfile.NamedTemporaryFile(suffix='.tmp', prefix='gc3libs.')
 
-            _lrms.tail(job, remote_filename, _local_file, offset, size)
+            _lrms.tail(app, remote_filename, _local_file, offset, size)
             _local_file.flush()
             _local_file.seek(0)
         

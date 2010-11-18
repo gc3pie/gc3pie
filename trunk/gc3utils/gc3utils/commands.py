@@ -37,7 +37,7 @@ from optparse import OptionParser
 import tarfile
 import time
 
-import gc3libs
+from gc3libs import Application, Run
 import gc3libs.application.gamess as gamess
 import gc3libs.application.rosetta as rosetta
 import gc3libs.Default as Default
@@ -46,6 +46,7 @@ import gc3libs.Job as Job
 import gc3libs.gcli as gcli
 import gc3libs.persistence
 import gc3libs.utils as utils
+
 
 import gc3utils
 
@@ -131,12 +132,12 @@ def gclean(*args, **kw):
 
     # Assume args are all jobids
     for jobid in args:
-        job = _store.load(jobid)
-        if job.state == gc3libs.Job.State.TERMINATED or options.force:
+        app = _store.load(jobid)
+        if app.execution.state == Run.State.TERMINATED or options.force:
             _store.remove(jobid)
-            gc3utils.log.info("Removed job '%s'", job)
+            gc3utils.log.info("Removed job '%s'", app)
         else:
-            gc3utils.log.error("Job %s not in terminal state: ignoring.", job)
+            gc3utils.log.error("Job %s not in terminal state: ignoring.", app)
 
 
 def ginfo(*args, **kw):
@@ -148,15 +149,15 @@ def ginfo(*args, **kw):
 
     gcli = _get_gcli(_default_config_file_locations)
 
-    # build list of jobs to query status of
+    # build list of apps to query status of
     if len(args) == 0:
-        jobs = _get_jobs()
+        apps = _get_jobs()
     else:
-        jobs = _get_jobs(args)
+        apps = _get_jobs(args)
 
     print (78 * '=')
-    for job in jobs:
-        for key, value in sorted(job.items()):
+    for app in apps:
+        for key, value in sorted(app.execution.items()):
             if options.verbosity == 0 and (key.startswith('_') 
                                            or key == 'log' 
                                            or str(value) in ['', '-1']):
@@ -187,7 +188,7 @@ def gsub(*args, **kw):
     if application_tag == 'gamess':
         if len(args) < 2:
             raise InvalidUsage('Wrong number of arguments: this commands expects at least two arguments.')
-        application = gamess.GamessApplication(
+        app = gamess.GamessApplication(
             *args[1:], # 1st arg is .INP file path, rest are (optional) additional inputs
             **{ 
                 'arguments':options.application_arguments,
@@ -201,7 +202,7 @@ def gsub(*args, **kw):
     elif application_tag == 'rosetta':
         if len(args) != 4:
             raise InvalidUsage('Wrong number of arguments: this commands expects exactly three arguments.')
-        application = rosetta.RosettaApplication(
+        app = rosetta.RosettaApplication(
             application = args[1],
             inputs = { 
                 "-in:file:s":args[2],
@@ -225,10 +226,10 @@ def gsub(*args, **kw):
                           str.join(",", [res['name'] for res in _gcli._resources]), 
                           options.resource_name)
 
-    job = _gcli.gsub(application)
-    _store.save(job)
+    _gcli.gsub(app)
+    _store.save(app)
 
-    print("Successfully submitted %s; use the 'gstat' command to monitor its progress." % job)
+    print("Successfully submitted %s; use the 'gstat' command to monitor its progress." % app)
     return 0
 
 
@@ -258,24 +259,24 @@ def gresub(*args, **kw):
 
     failed = 0
     for jobid in args:
-        job = _store.load(jobid.strip())
+        app = _store.load(jobid.strip())
         try:
-            _gcli.gstat(job) # update state
+            _gcli.gstat(app) # update state
         except Exception, ex:
             # ignore errors, and proceed to resubmission anyway
             gc3utils.log.warning("Could not update state of %s: %s: %s", 
                                  jobid, ex.__class__.__name__, str(ex))
         # kill remote job
         try:
-            job = _gcli.gkill(job)
+            app = _gcli.gkill(app)
         except Exception, ex:
             # ignore errors, but alert user...
             pass
 
         try:
-            job = _gcli.gsub(job.application, job)
+            app = _gcli.gsub(app)
             print("Successfully re-submitted %s; use the 'gstat' command to monitor its progress." % job)
-            _store.replace(jobid, job)
+            _store.replace(jobid, app)
         except Exception, ex:
             failed += 1
             gc3utils.log.error("Failed resubmission of job '%s': %s: %s", 
@@ -292,28 +293,28 @@ def gstat(*args, **kw):
 
     gcli = _get_gcli(_default_config_file_locations)
 
-    # build list of jobs to query status of
+    # build list of apps to query status of
     if len(args) == 0:
-        jobs = _get_jobs()
+        apps = _get_jobs()
     else:
-        jobs = _get_jobs(args)
+        apps = _get_jobs(args)
 
-    gcli.gstat(*jobs)
+    gcli.gstat(*apps)
         
     # Print result
-    if len(jobs) == 0:
+    if len(apps) == 0:
         print ("No jobs submitted with GC3Utils.")
     else:
         print("%-16s  %-10s" % ("Job ID", "State"))
         print("===========================")
         def cmp_job_ids(a,b):
             return cmp(a._id, b._id)
-        for job in sorted(jobs, cmp=cmp_job_ids):
-            print("%-16s  %-10s" % (job, job.state))
+        for app in sorted(apps, cmp=cmp_job_ids):
+            print("%-16s  %-10s" % (app, app.execution.state))
 
     # save jobs back to disk
-    for job in jobs:
-        _store.replace(job._id, job)
+    for app in apps:
+        _store.replace(app._id, app)
 
     return 0
 
@@ -331,17 +332,17 @@ def gget(*args, **kw):
     jobid = args[0]
 
     _gcli = _get_gcli(_default_config_file_locations)
-    job_obj = _store.load(jobid)
+    app = _store.load(jobid)
 
-    if job_obj.state == gc3libs.Job.State.TERMINATED:
-        if not job_obj.output_retrieved:
-            _gcli.gget(job_obj)
-            print("Job results successfully retrieved in '%s'\n" % job_obj.output_dir)
-            _store.replace(job_obj._id, job_obj)
+    if app.execution.state == Run.State.TERMINATED:
+        if not app.output_retrieved:
+            _gcli.gget(app, os.path.join(os.getcwd(), app._id))
+            print("Job results successfully retrieved in '%s'\n" % app.output_dir)
+            _store.replace(app._id, app)
         else:
-            gc3utils.log.error("Job output already downloaded into '%s'", job_obj.output_dir)
+            gc3utils.log.error("Job output already downloaded into '%s'", app.output_dir)
     else: # job not in terminal state
-        raise InvalidOperation("Job '%s;' not ready for retrieving results" % job)
+        raise InvalidOperation("Job '%s' not ready for retrieving results" % job)
 
 
 def gkill(*args, **kw):
@@ -363,18 +364,17 @@ def gkill(*args, **kw):
         # Assume args are all jobids
         for jobid in args:
             try:
-                job = _store.load(jobid)
+                app = _store.load(jobid)
 
-                gc3utils.log.debug("gkill: Job '%s' in state %s" % (jobid, job.state))
-                if job.state == Job.State.TERMINATED:
-                    raise InvalidOperation("Job '%s' is already in terminal state" % job)
+                gc3utils.log.debug("gkill: Job '%s' in state %s" % (jobid, app.execution.state))
+                if app.execution.state == Run.State.TERMINATED:
+                    raise InvalidOperation("Job '%s' is already in terminal state" % app)
                 else:
-                    job = _gcli.gkill(job)
-                    _store.replace(jobid, job)
+                    app = _gcli.gkill(app)
+                    _store.replace(jobid, app)
 
                     # or shall we simply return an ack message ?
-                    print("Sent request to cancel remote job '%s'."% job)
-                    print("It may take a few moments for the job to terminate.")
+                    print("Sent request to cancel job '%s'."% jobid)
 
             except Exception, ex:
                 gc3utils.log.error("gkill: Failed canceling Job '%s': %s: %s", 
@@ -395,36 +395,30 @@ def gtail(*args, **kw):
     (options, args) = parser.parse_args(list(args))
     _configure_logger(options.verbosity)
 
-    try:
-        if len(args) != 1:
-            raise InvalidUsage("This command requires exactly one argument: the job ID.")
-        
-        jobid = args[0]
-    
-        if options.stderr:
-            std = 'stderr'
-        else:
-            std = 'stdout'
-            
-        _gcli = _get_gcli(_default_config_file_locations)
-    
-        job = _store.load(jobid)
+    if len(args) != 1:
+        raise InvalidUsage("This command requires exactly one argument: the job ID.")
 
-        # Remove this control. is ourput already retrieved. gcli will read from local copy
-        #        if job.state == gc3libs.Job.State.TERMINATED and job.output_retrieved:
-        #            raise Exception('Job results already retrieved')
-        if job.state == gc3libs.Job.State.UNKNOWN or job.state == gc3libs.Job.State.SUBMITTED:
-            raise Exception('Job output not yet available')
+    jobid = args[0]
 
-        file_handle = _gcli.tail(job,std)
-        for line in file_handle.readlines()[-(options.num_lines):]:
-            print line.strip()
+    if options.stderr:
+        std = 'stderr'
+    else:
+        std = 'stdout'
 
-        file_handle.close()
+    _gcli = _get_gcli(_default_config_file_locations)
 
-    except:
-        gc3utils.log.critical('program failed due to: %s' % sys.exc_info()[1])
-        raise Exception("gtail failed")
+    app = _store.load(jobid)
+    if app.execution.state == Run.State.UNKNOWN \
+            or app.execution.state == Run.State.SUBMITTED:
+        raise Exception('Job output not yet available')
+
+    file_handle = _gcli.tail(app, std)
+    for line in file_handle.readlines()[-(options.num_lines):]:
+        print line.strip()
+
+    file_handle.close()
+
+    return 0
 
 
 def gnotify(*args, **kw):
@@ -439,29 +433,29 @@ def gnotify(*args, **kw):
         raise InvalidUsage("This command requires exactly one argument: the Job ID.")
     jobid = args[0]
 
-    job = _store.load(jobid)
+    app = _store.load(jobid)
     try:
         # create tgz with job information
-        job_tarname = gc3libs.Default.NOTIFY_DESTINATIONFOLDER + '/' + jobid + '.tgz'
-        tar = tarfile.open(job_tarname, "w:gz")
+        tar_filename = gc3libs.Default.NOTIFY_DESTINATIONFOLDER + '/' + jobid + '.tgz'
+        tar = tarfile.open(tar_filename, "w:gz")
         if options.include_job_results:
             try:
-                for filename in os.listdir(job.output_dir):
-                    tar.add(os.path.join(job.output_dir,filename))
+                for filename in os.listdir(app.output_dir):
+                    tar.add(os.path.join(app.output_dir,filename))
             except Exception, ex:
                 gc3libs.log.error("Could not add file '%s/%s' to tar file '%s': %s: %s", 
-                                  job.output_dir, filename, job_tarname,
+                                  app.output_dir, filename, tar_filename,
                                   ex.__class__.__name__, str(ex))
         # FIXME: this requires knowledge of how the persistence layer is saving jobs...
         tar.add(os.path.join(gc3libs.Default.JOBS_DIR, jobid))
         tar.close()
 
         # send notification email to gc3admin
-        send_mail(gc3libs.Default.NOTIFY_USER_EMAIL,
-                   gc3libs.Default.NOTIFY_GC3ADMIN,
-                   gc3libs.Default.NOTIFY_SUBJECTS,
-                   gc3libs.Default.NOTIFY_MSG,
-                   [job_tarname])
+        utils.send_mail(gc3libs.Default.NOTIFY_USER_EMAIL,
+                        gc3libs.Default.NOTIFY_GC3ADMIN,
+                        gc3libs.Default.NOTIFY_SUBJECTS,
+                        gc3libs.Default.NOTIFY_MSG,
+                        [tar_filename])
 
         return 0
 
@@ -504,8 +498,8 @@ def glist(*args, **kw):
 
 def _get_jobs(job_ids=None, ignore_failures=True):
     """
-    Return list of jobs (gc3libs.Job objects) corresponding to the
-    given Job IDs.
+    Return list of jobs (gc3libs.Application objects) corresponding to
+    the given Job IDs.
 
     If `ignore_failures` is `True` (default), errors retrieving a
     job from the persistence layer are ignored and the jobid is
@@ -528,10 +522,10 @@ def _get_jobs(job_ids=None, ignore_failures=True):
                 return [ ]
             else:
                 raise
-    jobs = [ ]
+    apps = [ ]
     for jobid in job_ids:
         try:
-            jobs.append(_store.load(jobid))
+            apps.append(_store.load(jobid))
         except Exception, ex:
             if ignore_failures:
                 gc3libs.log.error("Could not retrieve job '%s' (%s: %s). Ignoring.", 
@@ -539,6 +533,6 @@ def _get_jobs(job_ids=None, ignore_failures=True):
                 continue
             else:
                 raise
-    return jobs
+    return apps
 
 

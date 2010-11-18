@@ -24,14 +24,14 @@ __version__ = '$Revision$'
 
 
 import gc3libs
-from gc3libs.application import Application, register
+import gc3libs.application
 from gc3libs.Exceptions import *
 from gc3libs.InformationContainer import *
 import os
 import os.path
 
 
-class GamessApplication(Application):
+class GamessApplication(gc3libs.Application):
     """
     Specialized `Application` object to submit computational jobs running GAMESS-US.
 
@@ -55,23 +55,23 @@ class GamessApplication(Application):
                 kw[key] = value
         set_if_unset('stdout', input_file_name_sans + '.out')
         set_if_unset('application_tag', "gamess")
-        if kw.has_key('rtes'):
-            kw['rtes'].append("APPS/CHEM/GAMESS-2009")
+        if kw.has_key('tags'):
+            kw['tags'].append("APPS/CHEM/GAMESS-2009")
         else:
-            kw['rtes'] = [ "APPS/CHEM/GAMESS-2009" ]
+            kw['tags'] = [ "APPS/CHEM/GAMESS-2009" ]
         arguments = [ input_file_name ] + (kw.get('arguments') or [ ])
         if kw.has_key('arguments'):
             del kw['arguments']
         # build generic `Application` obj
         # set job name
         kw['job_name'] = input_file_name_sans
-        Application.__init__(self, 
-                             executable = "$GAMESS_LOCATION/nggms",
-                             arguments = arguments,
-                             inputs = [ (inp_file_path, input_file_name) ] + list(other_input_files),
-                             outputs = [ output_file_name ],
-                             join=True,
-                             **kw)
+        gc3libs.Application.__init__(self, 
+                                     executable = "$GAMESS_LOCATION/nggms",
+                                     arguments = arguments,
+                                     inputs = [ (inp_file_path, input_file_name) ] + list(other_input_files),
+                                     outputs = [ output_file_name ],
+                                     join=True,
+                                     **kw)
                              
     def qgms(self, resource, **kw):
         """
@@ -114,7 +114,7 @@ class GamessApplication(Application):
                                   " GAMESS invocation requires too many deployment-specific parameters"
                                   " to make a generic invocation script possible.")
 
-register(GamessApplication, 'gamess')
+gc3libs.application.register(GamessApplication, 'gamess')
 
 
 
