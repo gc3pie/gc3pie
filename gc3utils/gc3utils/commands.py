@@ -137,14 +137,26 @@ def gclean(*args, **kw):
     if options.all:
         args = _store.list()
 
+    _gcli = _get_gcli(_default_config_file_locations)
     failed = 0
     for jobid in args:
         try:
             app = _store.load(jobid)
-            if app.execution.state != Run.State.TERMINATED and not options.force:
-                failed += 1
-                gc3utils.log.error("Job '%s' not in terminal state: ignoring.", jobid)
-                continue
+            if app.execution.state != Run.State.TERMINATED:
+                if options.force:
+                    gc3utils.log.warning("Job '%s' not in terminal state:"
+                                         " attempting to kill before cleaning up.")
+                    try:
+                        _gcli.gkill(app)
+                    except Exception, ex:
+                        gc3utils.log.warning("Killing job '%s' failed (%s: %s);"
+                                             " continuing anyway, but errors might ensue.",
+                                             app, ex.__class__.__name__, str(ex))
+                else:
+                    failed += 1
+                    gc3utils.log.error("Job '%s' not in terminal state: ignoring.", jobid)
+                    continue
+            _gcli.free(app)
         except JobRetrieveError:
             if options.force:
                 pass
@@ -345,26 +357,30 @@ def gget(*args, **kw):
     """ The `gget` command."""
     parser = OptionParser(usage="Usage: %prog [options] JOBID")
     parser.add_option("-v", action="count", dest="verbosity", default=0, help="Set verbosity level")
+    parser.add_option("-d", "--download-dir", action="store", dest="download_dir", default=None,
+                      help="Destination directory (job id will be appended to it); default is '.'")
+    parser.add_option("-f", "--overwrite", action="store_true", dest="overwrite", default=False, 
+                      help="Overwrite files in destination directory")
     (options, args) = parser.parse_args(list(args))
+
     _configure_logger(options.verbosity)
-    
-    # FIXME: should take possibly a list of JOBIDs and get files for all of them
-    if len(args) != 1:
-        raise InvalidUsage("This command requires either one argument (the JOBID) or none.")
-    jobid = args[0]
 
     _gcli = _get_gcli(_default_config_file_locations)
-    app = _store.load(jobid)
+    for jobid in args:
+        app = _store.load(jobid)
 
-    if app.execution.state == Run.State.TERMINATED:
-        if not app.output_retrieved:
-            _gcli.gget(app, os.path.join(os.getcwd(), app._id))
-            print("Job results successfully retrieved in '%s'\n" % app.output_dir)
-            _store.replace(app._id, app)
+        if app.final_output_retrieved:
+            raise InvalidOperation("Output of '%s' already downloaded to '%s'" 
+                                   % (app._id, app.output_dir))
+
+        if options.download_dir is None:
+            download_dir = os.path.join(os.getcwd(), app._id)
         else:
-            gc3utils.log.error("Job output already downloaded into '%s'", app.output_dir)
-    else: # job not in terminal state
-        raise InvalidOperation("Job '%s' not ready for retrieving results" % job)
+            download_dir = options.download_dir
+
+        _gcli.gget(app, download_dir, overwrite=options.overwrite)
+        print("Job results successfully retrieved in '%s'\n" % app.output_dir)
+        _store.replace(app._id, app)
 
 
 def gkill(*args, **kw):

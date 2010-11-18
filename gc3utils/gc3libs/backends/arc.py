@@ -68,7 +68,6 @@ class ArcLrms(LRMS):
     @same_docstring_as(LRMS.cancel_job)
     def cancel_job(self, app):
         arclib.CancelJob(app.execution.lrms_jobid)
-        return app.execution
 
 
     def _get_queues(self):
@@ -194,26 +193,35 @@ class ArcLrms(LRMS):
 
 
     @same_docstring_as(LRMS.get_results)
-    def get_results(self, app, download_dir):
+    def get_results(self, app, download_dir, overwrite=False):
+
         job = app.execution
         jftpc = arclib.JobFTPControl()
 
         log.debug("Downloading job output into '%s' ...", download_dir)
         try:
-            arclib.JobFTPControl.DownloadDirectory(jftpc,job.lrms_jobid,download_dir)
+            arclib.JobFTPControl.DownloadDirectory(jftpc, job.lrms_jobid,download_dir)
             job.download_dir = download_dir
         except arclib.FTPControlError:
             # critical error. consider job remote data as lost
             raise DataStagingError("Failed downloading remote folder '%s'" 
                                    % job.lrms_jobid)
 
+        return # XXX: return list of downloaded files?
+
+
+    @same_docstring_as(LRMS.free)
+    def free(self, app):
+
+        job = app.execution
+        jftpc = arclib.JobFTPControl()
+
         # Clean remote job sessiondir
         try:
             retval = arclib.JobFTPControl.Clean(jftpc,job.lrms_jobid)
         except arclib.FTPControlError:
-            log.error("Failed removing remote folder '%s'" % job.lrms_jobid)
-
-        return job
+            log.warning("Failed removing remote folder '%s'" % job.lrms_jobid)
+            pass
 
 
     @same_docstring_as(LRMS.get_resource_status)
