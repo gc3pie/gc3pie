@@ -31,13 +31,10 @@ import sys
 import tempfile
 import time
 
-import gc3libs
-from gc3libs.application import Application
-from gc3libs.application.gamess import GamessApplication
+from gc3libs import log, Run
 from gc3libs.backends import LRMS
 import gc3libs.Default as Default
 from gc3libs.Exceptions import *
-import gc3libs.Job as Job
 import gc3libs.utils as utils # first, defaultdict, to_bytes
 from gc3libs.utils import same_docstring_as
 
@@ -330,8 +327,8 @@ class SgeLrms(LRMS):
 
 
     @same_docstring_as(LRMS.submit_job)
-    def submit_job(self, application, job):
-
+    def submit_job(self, app):
+        job = app.execution
         # Create the remote directory. 
         try:
             self.transport.connect()
@@ -344,34 +341,34 @@ class SgeLrms(LRMS):
                 raise LRMSError("Failed while executing command '%s' on resource '%s'"
                                 % (_command, self._resource))
         except:
-            gc3libs.log.critical("Failed creating remote temporary folder: command '%s' returned exit code %d, stderr %s)"
+            log.critical("Failed creating remote temporary folder: command '%s' returned exit code %d, stderr %s)"
                                  % (_command, exit_code, stderr))
             self.transport.close()
             raise
 
         # Copy the input file to remote directory.
-        for input in application.inputs.items():
+        for input in app.inputs.items():
             local_path, remote_path = input
             remote_path = os.path.join(ssh_remote_folder, remote_path)
 
-            gc3libs.log.debug("Transferring file '%s' to '%s'" % (local_path, remote_path))
+            log.debug("Transferring file '%s' to '%s'" % (local_path, remote_path))
             try:
                 self.transport.put(local_path, remote_path)
             except:
-                gc3libs.log.critical("Copying input file '%s' to remote cluster '%s' failed",
+                log.critical("Copying input file '%s' to remote cluster '%s' failed",
                                       local_path, self._resource.frontend)
                 self.transport.close()
                 raise
 
         try:
             # Try to submit it to the local queueing system.
-            qsub, script = application.qsub(self._resource)
+            qsub, script = app.qsub(self._resource)
             if script is not None:
                 # save script to a temporary file and submit that one instead
                 local_script_file = tempfile.NamedTemporaryFile()
                 local_script_file.write(script)
                 local_script_file.flush()
-                script_name = '%s.%x.sh' % (application.get('application_tag', 'script'), 
+                script_name = '%s.%x.sh' % (app.get('application_tag', 'script'), 
                                             random.randint(0, sys.maxint))
                 # upload script to remote location
                 self.transport.put(local_script_file.name,
@@ -385,20 +382,20 @@ class SgeLrms(LRMS):
             exitcode, stdout, stderr = self.transport.execute_command("/bin/sh -c 'cd %s && %s'" 
                                                                       % (ssh_remote_folder, qsub))
             jobid, jobname = get_qsub_jobid(stdout)
-            gc3libs.log.debug('Job submitted with jobid: %s', jobid)
+            log.debug('Job submitted with jobid: %s', jobid)
             self.transport.close()
 
             job.lrms_jobid = jobid
             job.lrms_jobname = jobname
-            if application.has_key('stdout'):
-                job.stdout_filename = application.stdout
+            if app.has_key('stdout'):
+                job.stdout_filename = app.stdout
             else:
                 job.stdout_filename = '%s.o%s' % (jobname, jobid)
-            if application.join:
+            if app.join:
                 job.stderr_filename = job.stdout_filename
             else:
-                if application.has_key('stderr'):
-                    job.stderr_filename = application.stderr
+                if app.has_key('stderr'):
+                    job.stderr_filename = app.stderr
                 else:
                     job.stderr_filename = '%s.e%s' % (jobname, jobid)
             job.log.append('Submitted to SGE @ %s with jobid %s' 
@@ -409,20 +406,19 @@ class SgeLrms(LRMS):
                            "  === end ===\n" 
                            % (stdout, stderr), 'sge', 'qsub')
             job.ssh_remote_folder = ssh_remote_folder
-            # remember outputs for later ref
-            job.outputs = dict(application.outputs)
 
             return job
 
         except:
             self.transport.close()
-            gc3libs.log.critical("Failure submitting job to resource '%s' - see log file for errors"
+            log.critical("Failure submitting job to resource '%s' - see log file for errors"
                                   % self._resource.name)
             raise
 
 
-    @same_docstring_as(LRMS.get_state)
-    def get_state(self, job):
+    @same_docstring_as(LRMS.update_job_state)
+    def update_job_state(self, app):
+        job = app.execution
         def map_sge_names_to_local_ones(name):
             return 'sge_' + name
         # mapping = {
@@ -443,32 +439,32 @@ class SgeLrms(LRMS):
 
             # check the lrms_jobid with qstat
             _command = "qstat | egrep  '^ *%s'" % job.lrms_jobid
-            gc3libs.log.debug("checking remote job status with '%s'" % _command)
+            log.debug("checking remote job status with '%s'" % _command)
             exit_code, stdout, stderr = self.transport.execute_command(_command)
             if exit_code == 0:
                 # parse `qstat` output
                 job_status = stdout.split()[4]
-                gc3libs.log.debug("translating SGE's `qstat` code '%s' to gc3libs.Job state" % job_status)
+                log.debug("translating SGE's `qstat` code '%s' to gc3libs.Job state" % job_status)
                 if 'qw' in job_status:
-                    state = Job.State.SUBMITTED
+                    state = Run.State.SUBMITTED
                 elif 'r' in job_status or 'R' in job_status or 't' in job_status:
-                    state = Job.State.RUNNING
+                    state = Run.State.RUNNING
                 elif job_status in ['s', 'S', 'T'] or 'qh' in job_status:
-                    state = Job.State.STOPPED
+                    state = Run.State.STOPPED
                 elif job_status == 'E':
-                    state = Job.State.TERMINATED
+                    state = Run.State.TERMINATED
                 else:
-                    gc3libs.log.warning("unknown SGE job status '%s', returning `UNKNOWN`", job_status)
-                    state = Job.State.UNKNOWN
+                    log.warning("unknown SGE job status '%s', returning `UNKNOWN`", job_status)
+                    state = Run.State.UNKNOWN
             else:
                 # jobs disappear from `qstat` output as soon as they are finished;
                 # we rely on `qacct` to provide information on a finished job
                 _command = 'qacct -j %s' % job.lrms_jobid
-                gc3libs.log.debug("`qstat` returned no job information; trying with '%s'" % _command)
+                log.debug("`qstat` returned no job information; trying with '%s'" % _command)
                 exit_code, stdout, stderr = self.transport.execute_command(_command)
                 if exit_code == 0:
                     # parse stdout and update job obect with detailed accounting information
-                    gc3libs.log.debug('parsing stdout to get job accounting information')
+                    log.debug('parsing stdout to get job accounting information')
                     for line in stdout.split('\n'):
                         # skip empty and header lines
                         line = line.strip()
@@ -487,7 +483,7 @@ class SgeLrms(LRMS):
                                     # XXX: is exit_status significant? should we reset it to -1?
                                     job.signal = Job.Signals.RemoteError
                         except KeyError:
-                            gc3libs.log.debug("Ignoring job information '%s=%s'"
+                            log.debug("Ignoring job information '%s=%s'"
                                                " -- no mapping defined to gc3utils.Job attributes." 
                                                % (key,value))
 
@@ -498,25 +494,25 @@ class SgeLrms(LRMS):
                     # way to force both locales to be the same.  (RM,
                     # 2010-11-15)
                     #
-                    # gc3libs.log.debug('Normalizing data')
+                    # log.debug('Normalizing data')
                     # # Need to mormalize dates
                     # if job.has_key('submission_time'):
-                    #     gc3libs.log.debug('submission_time: %s',job.submission_time)
+                    #     log.debug('submission_time: %s',job.submission_time)
                     #     job.submission_time = _date_normalize(job.submission_time)
                     # if job.has_key('completion_time'):
-                    #     gc3libs.log.debug('completion_time: %s',job.completion_time)
+                    #     log.debug('completion_time: %s',job.completion_time)
                     #     job.completion_time = _date_normalize(job.completion_time)
                                                                                                     
-                    state = Job.State.TERMINATED
+                    state = Run.State.TERMINATED
                 else:
                     # `qacct` failed as well...
                     try:
                         if (time.time() - job.sge_qstat_failed_at) > self._resource.sge_accounting_delay:
                             # accounting info should be there, if it's not then job is definitely lost
-                            gc3libs.log.critical("Failed executing remote command: '%s'; exit status %d" 
+                            log.critical("Failed executing remote command: '%s'; exit status %d" 
                                                   % (_command,exit_code))
-                            gc3libs.log.debug('remote command returned stdout: %s' % stdout)
-                            gc3libs.log.debug('remote command returned stderr: %s' % stderr)
+                            log.debug('remote command returned stdout: %s' % stdout)
+                            log.debug('remote command returned stderr: %s' % stderr)
                             raise paramiko.SSHException("Failed executing remote command: '%s'; exit status %d" 
                                                         % (_command,exit_code))
                         else:
@@ -528,49 +524,49 @@ class SgeLrms(LRMS):
 
         except Exception, ex:
             self.transport.close()
-            gc3libs.log.error("Error in querying SGE resource '%s': %s: %s",
+            log.error("Error in querying SGE resource '%s': %s: %s",
                               self._resource.name, ex.__class__.__name__, str(ex))
             raise
         
         self.transport.close()
 
+        job.state = state
         return state
 
 
     @same_docstring_as(LRMS.cancel_job)
-    def cancel_job(self, job_obj):
+    def cancel_job(self, app):
+        job = app.execution
         try:
-            
             self.transport.connect()
 
-            _command = 'qdel '+job_obj.lrms_jobid
-
+            _command = 'qdel '+job.lrms_jobid
             exit_code, stdout, stderr = self.transport.execute_command(_command)
-
             if exit_code != 0:
                 # It is possible that 'qdel' fails because job has been already completed
                 # thus the cancel_job behaviour should be to 
-                gc3libs.log.error('Failed executing remote command: %s. exit status %d' % (_command,exit_code))
-                gc3libs.log.debug('remote command returned stdout: %s' % stdout)
-                gc3libs.log.debug('remote command returned stderr: %s' % stderr)
+                log.error('Failed executing remote command: %s. exit status %d' % (_command,exit_code))
+                log.debug('remote command returned stdout: %s' % stdout)
+                log.debug('remote command returned stderr: %s' % stderr)
                 if exit_code == 127:
                     # failed executing remote command
                     raise LRMSError('Failed executing remote command')
 
             self.transport.close()
-            return job_obj
+            return job
 
         except:
             self.transport.close()
-            gc3libs.log.critical('Failure in checking status')
+            log.critical('Failure in checking status')
             raise
         
 
 
     @same_docstring_as(LRMS.get_results)
-    def get_results(self, job, download_dir):
-        gc3libs.log.debug("Connecting to cluster frontend '%s' as user '%s' via SSH ...", 
+    def get_results(self, app, download_dir):
+        log.debug("Connecting to cluster frontend '%s' as user '%s' via SSH ...", 
                            self._resource.frontend, self._ssh_username)
+        job = app.execution
         try:
 
             self.transport.connect()
@@ -579,14 +575,14 @@ class SgeLrms(LRMS):
                 files_list = self.transport.listdir(job.ssh_remote_folder)
             except Exception, x:
                 self.transport.close()
-                gc3libs.log.error("Could not read remote job directory '%s': %s: %s" 
+                log.error("Could not read remote job directory '%s': %s: %s" 
                                   % (job.ssh_remote_folder, x.__class__.__name__, str(x)), 
                                   exc_info=True)
                 return job
 
             # copy back all files, renaming them to adhere to the ArcLRMS convention
-            gc3libs.log.debug("Downloading job output into '%s' ...",download_dir)
-            for remote_path, local_path in job.outputs.items():
+            log.debug("Downloading job output into '%s' ...",download_dir)
+            for remote_path, local_path in app.outputs.items():
                 try:
                     # override the remote name if it's a known variable one...
                     remote_path = os.path.join(job.ssh_remote_folder, 
@@ -597,17 +593,17 @@ class SgeLrms(LRMS):
                     # ...but keep it if it's not a known one
                     remote_path = os.path.join(job.ssh_remote_folder, remote_path)
                 local_path = os.path.join(download_dir, local_path)
-                gc3libs.log.debug("Downloading remote file '%s' to local file '%s'", 
+                log.debug("Downloading remote file '%s' to local file '%s'", 
                                    remote_path, local_path)
                 try:
                     if not os.path.exists(local_path):
-                        gc3libs.log.debug("Copying remote '%s' to local '%s'", remote_path, local_path)
+                        log.debug("Copying remote '%s' to local '%s'", remote_path, local_path)
                         self.transport.get(remote_path, local_path)
                     else:
-                        gc3libs.log.info("Local file '%s' already exists; will not be overwritten!",
+                        log.info("Local file '%s' already exists; will not be overwritten!",
                                           local_path)
                 except:
-                    gc3libs.log.error('Could not copy remote file: ' + remote_path)
+                    log.error('Could not copy remote file: ' + remote_path)
                     # FIXME: should we set `job.signal` to
                     # `Job.Signals.DataStagingError`?  Does not seem a
                     # good idea: What if one file is missing out of
@@ -627,7 +623,7 @@ class SgeLrms(LRMS):
             try:
                 self.transport.remove_tree(job.ssh_remote_folder)
             except:
-                gc3libs.log.error("Failed while removing remote folder '%s': %s: %s" 
+                log.error("Failed while removing remote folder '%s': %s: %s" 
                                   % (job.ssh_remote_folder, sys.exc_info()[0], sys.exc_info()[1]))
             
             self.transport.close()
@@ -635,21 +631,22 @@ class SgeLrms(LRMS):
 
         except: 
             self.transport.close()
-            gc3libs.log.critical('Failure in retrieving results')
-            gc3libs.log.debug('%s %s',sys.exc_info()[0], sys.exc_info()[1])
+            log.critical('Failure in retrieving results')
+            log.debug('%s %s',sys.exc_info()[0], sys.exc_info()[1])
             raise 
 
 
     @same_docstring_as(LRMS.tail)
-    def tail(self, job_obj, remote_filename, local_file, offset=0, size=None):
-        assert job_obj.has_key('ssh_remote_folder'), \
+    def tail(self, app, remote_filename, local_file, offset=0, size=None):
+        job = app.execution
+        assert job.has_key('ssh_remote_folder'), \
             "Missing attribute `ssh_remote_folder` on `Job` instance passed to `SgeLrms.tail`."
 
         if size is None:
             size = sys.maxint
 
-        _filename_mapping = _sge_filename_mapping(job_obj.lrms_jobname, job_obj.lrms_jobid, remote_filename)
-        _remote_filename = os.path.join(job_obj.ssh_remote_folder, _filename_mapping)
+        _filename_mapping = _sge_filename_mapping(job.lrms_jobname, job.lrms_jobid, remote_filename)
+        _remote_filename = os.path.join(job.ssh_remote_folder, _filename_mapping)
 
         try:
             self.transport.connect()
@@ -659,7 +656,7 @@ class SgeLrms(LRMS):
             self.transport.close()
         except Exception, ex:
             self.transport.close()
-            gc3libs.log.error("Could not read remote file '%s': %s: %s",
+            log.error("Could not read remote file '%s': %s: %s",
                               _remote_filename, ex.__class__.__name__, str(ex))
 
         try:
@@ -668,51 +665,49 @@ class SgeLrms(LRMS):
             output_file = open(local_file, 'w+b')
             output_file.write(data)
             output_file.close()
-        gc3libs.log.debug('... Done.')
+        log.debug('... Done.')
 
                 
     @same_docstring_as(LRMS.get_resource_status)
     def get_resource_status(self):
-
         try:
-
             self.transport.connect()
 
             username = self._ssh_username
-            gc3libs.log.debug("Running `qstat -U %s`...", username)
+            log.debug("Running `qstat -U %s`...", username)
             _command = "qstat -U "+username
             exit_code, qstat_stdout, stderr = self.transport.execute_command(_command)
 
-            gc3libs.log.debug("Running `qstat -F -U %s`...", username)
+            log.debug("Running `qstat -F -U %s`...", username)
             _command = "qstat -F -U "+username
             exit_code, qstat_F_stdout, stderr = self.transport.execute_command(_command)
 
             self.transport.close()
 
-            gc3libs.log.debug("Computing updated values for total/available slots ...")
+            log.debug("Computing updated values for total/available slots ...")
             (total_running, self._resource.queued, 
              self._resource.user_run, self._resource.user_queued) = count_jobs(qstat_stdout, username)
             slots = compute_nr_of_slots(qstat_F_stdout)
             self._resource.free_slots = int(slots['global']['available'])
             self._resource.used_quota = -1
 
-            gc3libs.log.info("Updated resource '%s' status:"
-                             " free slots: %d,"
-                             " own running jobs: %d,"
-                             " own queued jobs: %d,"
-                             " total queued jobs: %d",
-                             self._resource.name,
-                             self._resource.free_slots,
-                             self._resource.user_run,
-                             self._resource.user_queued,
-                             self._resource.queued,
-                             )
+            log.info("Updated resource '%s' status:"
+                     " free slots: %d,"
+                     " own running jobs: %d,"
+                     " own queued jobs: %d,"
+                     " total queued jobs: %d",
+                     self._resource.name,
+                     self._resource.free_slots,
+                     self._resource.user_run,
+                     self._resource.user_queued,
+                     self._resource.queued,
+                     )
             return self._resource
 
         except:
             self.transport.close()
-            gc3libs.log.critical('Failure while querying remote LRMS')
-            gc3libs.log.debug('%s %s',sys.exc_info()[0], sys.exc_info()[1])
+            log.critical('Failure while querying remote LRMS')
+            log.debug('%s %s',sys.exc_info()[0], sys.exc_info()[1])
             raise
         
 

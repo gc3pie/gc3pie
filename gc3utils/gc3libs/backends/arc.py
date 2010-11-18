@@ -31,8 +31,7 @@ import tempfile
 import warnings
 warnings.simplefilter("ignore")
 
-import gc3libs
-from gc3libs.application import Application
+from gc3libs import log, Run
 from gc3libs.backends import LRMS
 import gc3libs.Exceptions as Exceptions
 from gc3libs.utils import *
@@ -47,7 +46,6 @@ class ArcLrms(LRMS):
     """
     Manage jobs through the ARC middleware.
     """
-
     def __init__(self,resource, auths):
         # Normalize resource types
         if resource.type is Default.ARC_LRMS:
@@ -68,25 +66,25 @@ class ArcLrms(LRMS):
 
 
     @same_docstring_as(LRMS.cancel_job)
-    def cancel_job(self, job_obj):
-        arclib.CancelJob(job_obj.lrms_jobid)
-        return job_obj
+    def cancel_job(self, app):
+        arclib.CancelJob(app.execution.lrms_jobid)
+        return app.execution
 
 
     def _get_queues(self):
         if (not hasattr(self, '_queues')) or (not hasattr(self, '_queues_last_accessed')) \
                 or (time.time() - self._queues_last_updated > self._queues_cache_time):
             if self._resource.has_key('arc_ldap'):
-                gc3libs.log.debug("Getting list of ARC resources from GIIS '%s' ...", 
+                log.debug("Getting list of ARC resources from GIIS '%s' ...", 
                                    self._resource.arc_ldap)
                 cls = arclib.GetClusterResources(arclib.URL(self._resource.arc_ldap),True,'',1)
             else:
                 cls = arclib.GetClusterResources()
-            gc3libs.log.debug('Got cluster list of length %d', len(cls))
+            log.debug('Got cluster list of length %d', len(cls))
             # Temporarly disable this check
             #if len(cls) > 0:
             self._queues = arclib.GetQueueInfo(cls,arclib.MDS_FILTER_CLUSTERINFO, True, '', 5)
-            gc3libs.log.debug('returned valid queue information for %d queues', len(self._queues))
+            log.debug('returned valid queue information for %d queues', len(self._queues))
             self._queues_last_updated = time.time()
             #else:
             ## return empty queues list
@@ -95,14 +93,16 @@ class ArcLrms(LRMS):
 
             
     @same_docstring_as(LRMS.submit_job)
-    def submit_job(self, application, job=None):
+    def submit_job(self, app):
+        job = app.execution
+
         # Initialize xrsl
-        xrsl = application.xrsl(self._resource)
-        gc3libs.log.debug('Application provided XRSL: %s' % xrsl)
+        xrsl = app.xrsl(self._resource)
+        log.debug('Application provided XRSL: %s' % xrsl)
         try:
             # ARClib cannot handle unicode strings, so convert `xrsl` to ascii
             # XXX: should this be done in Application.xrsl() instead?
-            _xrsl = arclib.Xrsl(str(xrsl))
+            xrsl = arclib.Xrsl(str(xrsl))
         except Exception, ex:
             raise LRMSSubmitError('Failed in getting `Xrsl` object from arclib: %s: %s'
                                   % (ex.__class__.__name__, str(ex)))
@@ -111,12 +111,12 @@ class ArcLrms(LRMS):
         if len(queues) == 0:
             raise LRMSSubmitError('No ARC queues found')
 
-        targets = arclib.PerformStandardBrokering(arclib.ConstructTargets(queues, _xrsl))
+        targets = arclib.PerformStandardBrokering(arclib.ConstructTargets(queues, xrsl))
         if len(targets) == 0:
             raise LRMSSubmitError('No ARC targets found')
 
         try:
-            lrms_jobid = arclib.SubmitJob(_xrsl,targets)
+            lrms_jobid = arclib.SubmitJob(xrsl,targets)
         except arclib.JobSubmissionError:
             raise LRMSSubmitError('Got error from arclib.SubmitJob():')
 
@@ -124,32 +124,30 @@ class ArcLrms(LRMS):
         return job
 
 
-    def get_state(self, job):
-        """
-        Query the state of the ARC job associated with `job` and
-        return the corresponding `Job.State`.
-        """
+    @same_docstring_as(LRMS.update_job_state)
+    def update_job_state(self, app):
+        job = app.execution
         def map_arc_status_to_gc3job_status(status):
             try:
                 return {
-                    'ACCEPTED':  Job.State.SUBMITTED,
-                    'SUBMITTING':Job.State.SUBMITTED,
-                    'PREPARING': Job.State.SUBMITTED,
-                    'INLRMS:Q':  Job.State.SUBMITTED,
-                    'INLRMS:R':  Job.State.RUNNING,
-                    'INLRMS:O':  Job.State.RUNNING,
-                    'INLRMS:E':  Job.State.RUNNING,
-                    'INLRMS:X':  Job.State.RUNNING,
-                    'INLRMS:S':  Job.State.STOPPED,
-                    'INLRMS:H':  Job.State.STOPPED,
-                    'FINISHING': Job.State.RUNNING,
-                    'EXECUTED':  Job.State.RUNNING,
-                    'FINISHED':  Job.State.TERMINATED,
-                    'CANCELING': Job.State.TERMINATED,
-                    'FINISHED':  Job.State.TERMINATED,
-                    'KILLED':    Job.State.TERMINATED,
-                    'FAILED':    Job.State.TERMINATED,
-                    'DELETED':   Job.State.TERMINATED,
+                    'ACCEPTED':  Run.State.SUBMITTED,
+                    'SUBMITTING':Run.State.SUBMITTED,
+                    'PREPARING': Run.State.SUBMITTED,
+                    'INLRMS:Q':  Run.State.SUBMITTED,
+                    'INLRMS:R':  Run.State.RUNNING,
+                    'INLRMS:O':  Run.State.RUNNING,
+                    'INLRMS:E':  Run.State.RUNNING,
+                    'INLRMS:X':  Run.State.RUNNING,
+                    'INLRMS:S':  Run.State.STOPPED,
+                    'INLRMS:H':  Run.State.STOPPED,
+                    'FINISHING': Run.State.RUNNING,
+                    'EXECUTED':  Run.State.RUNNING,
+                    'FINISHED':  Run.State.TERMINATED,
+                    'CANCELING': Run.State.TERMINATED,
+                    'FINISHED':  Run.State.TERMINATED,
+                    'KILLED':    Run.State.TERMINATED,
+                    'FAILED':    Run.State.TERMINATED,
+                    'DELETED':   Run.State.TERMINATED,
                     }[status]
             except KeyError:
                 raise UnknownJobState("Unknown ARC job state '%s'" % status)
@@ -191,30 +189,31 @@ class ArcLrms(LRMS):
         else:
             job.arc_completion_time = ""
 
+        job.state = state
         return state
 
 
     @same_docstring_as(LRMS.get_results)
-    def get_results(self, job_obj, download_dir):
-        # get FTP control
+    def get_results(self, app, download_dir):
+        job = app.execution
         jftpc = arclib.JobFTPControl()
 
-        gc3libs.log.debug("Downloading job output into '%s' ...", download_dir)
+        log.debug("Downloading job output into '%s' ...", download_dir)
         try:
-            arclib.JobFTPControl.DownloadDirectory(jftpc,job_obj.lrms_jobid,download_dir)
-            job_obj.download_dir = download_dir
+            arclib.JobFTPControl.DownloadDirectory(jftpc,job.lrms_jobid,download_dir)
+            job.download_dir = download_dir
         except arclib.FTPControlError:
             # critical error. consider job remote data as lost
             raise DataStagingError("Failed downloading remote folder '%s'" 
-                                   % job_obj.lrms_jobid)
+                                   % job.lrms_jobid)
 
         # Clean remote job sessiondir
         try:
-            retval = arclib.JobFTPControl.Clean(jftpc,job_obj.lrms_jobid)
+            retval = arclib.JobFTPControl.Clean(jftpc,job.lrms_jobid)
         except arclib.FTPControlError:
-            gc3libs.log.error("Failed removing remote folder '%s'" % job_obj.lrms_jobid)
+            log.error("Failed removing remote folder '%s'" % job.lrms_jobid)
 
-        return job_obj
+        return job
 
 
     @same_docstring_as(LRMS.get_resource_status)
@@ -230,10 +229,10 @@ class ArcLrms(LRMS):
         # user_queued
 
         if self._resource.has_key('arc_ldap'):
-            gc3libs.log.debug("Getting cluster list from %s ...", self._resource.arc_ldap)
+            log.debug("Getting cluster list from %s ...", self._resource.arc_ldap)
             cls = arclib.GetClusterResources(arclib.URL(self._resource.arc_ldap),True,'',2)
         else:
-            gc3libs.log.debug("Getting cluster list from ARC's default GIIS ...")
+            log.debug("Getting cluster list from ARC's default GIIS ...")
             cls = arclib.GetClusterResources()
 
         total_queued = 0
@@ -252,7 +251,7 @@ class ArcLrms(LRMS):
         for cluster in cls:
             queues =  arclib.GetQueueInfo(cluster,arclib.MDS_FILTER_CLUSTERINFO,True,"",1)
             if len(queues) == 0:
-                gc3libs.log.error('No ARC queues found for resource %s' % str(cluster))
+                log.error('No ARC queues found for resource %s' % str(cluster))
                 continue
                 # raise LRMSSubmitError('No ARC queues found')              
 
@@ -295,7 +294,7 @@ class ArcLrms(LRMS):
         self._resource.user_run = user_running
         self._resource.used_quota = -1
 
-        gc3libs.log.info("Updated resource '%s' status:"
+        log.info("Updated resource '%s' status:"
                           " free slots: %d,"
                           " own running jobs: %d,"
                           " own queued jobs: %d,"
@@ -310,9 +309,10 @@ class ArcLrms(LRMS):
 
 
     @same_docstring_as(LRMS.tail)
-    def tail(self, job_obj, remote_filename, local_file, offset=0, size=None):
+    def tail(self, app, remote_filename, local_file, offset=0, size=None):
+        job = app.execution
 
-        assert job_obj.has_key('lrms_jobid'), \
+        assert job.has_key('lrms_jobid'), \
             "Missing attribute `lrms_jobid` on `Job` instance passed to `ArcLrms.tail`."
 
         if size is None:
@@ -322,13 +322,13 @@ class ArcLrms(LRMS):
         if int(offset) < 1024:
             offset = 0
 
-        _remote_filename = job_obj.lrms_jobid + '/' + remote_filename
+        _remote_filename = job.lrms_jobid + '/' + remote_filename
 
         # get JobFTPControl handle
         jftpc = arclib.JobFTPControl()
 
         # download file
-        gc3libs.log.debug("Downloading %d bytes at offset %d of remote file '%s' into local file '%s' ..."
+        log.debug("Downloading %d bytes at offset %d of remote file '%s' into local file '%s' ..."
                           % (size, offset, remote_filename, local_file.name))
 
         # XXX: why this ? Because `local_file` could be a file name
@@ -343,7 +343,7 @@ class ArcLrms(LRMS):
                                       int(offset), int(size), 
                                       local_file.name)
 
-        gc3libs.log.info('status arclib.JobFTPControl.Download [ completed ]')
+        log.info('status arclib.JobFTPControl.Download [ completed ]')
 
 
 ## main: run tests

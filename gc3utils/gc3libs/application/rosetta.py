@@ -24,14 +24,14 @@ __version__ = '$Revision$'
 
 
 import gc3libs
-from gc3libs.application import Application, register
+import gc3libs.application
 from gc3libs.Exceptions import *
 import os
 import os.path
 from pkg_resources import Requirement, resource_filename
 
 
-class RosettaApplication(Application):
+class RosettaApplication(gc3libs.Application):
     """
     Specialized `Application` object to submit one run of a single
     application in the Rosetta suite.
@@ -85,10 +85,10 @@ class RosettaApplication(Application):
             _arguments.extend(arguments)
 
         kw['application_tag'] = 'rosetta'
-        if kw.has_key('rtes'):
-            kw['rtes'].append("APPS/BIO/ROSETTA-3.1")
+        if kw.has_key('tags'):
+            kw['tags'].append("APPS/BIO/ROSETTA-3.1")
         else:
-            kw['rtes'] = [ "APPS/BIO/ROSETTA-3.1" ]
+            kw['tags'] = [ "APPS/BIO/ROSETTA-3.1" ]
 
         kw.setdefault('stdout', application+'.stdout.txt')
         kw.setdefault('stderr', application+'.stderr.txt')
@@ -100,7 +100,7 @@ class RosettaApplication(Application):
                              outputs = _outputs,
                              **kw)
 
-register(RosettaApplication, 'rosetta')
+gc3libs.application.register(RosettaApplication, 'rosetta')
 
 
 class RosettaDockingApplication(RosettaApplication):
@@ -143,7 +143,7 @@ class RosettaDockingApplication(RosettaApplication):
             output_dir = get_and_remove(kw, 'output_dir', pdb_file_dir),
             **kw)
 
-register(RosettaDockingApplication, 'docking_protocol')
+gc3libs.application.register(RosettaDockingApplication, 'docking_protocol')
 
 
 ## main: run tests

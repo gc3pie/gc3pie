@@ -3,145 +3,188 @@
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
-Welcome to gc3pie's documentation!
-==================================
-
-Contents:
+====================================
+ Welcome to gc3pie's documentation!
+====================================
 
 .. toctree::
    :maxdepth: 2
 
 
-GC3Libs modules
-===============
++++++++++++++++++
+ GC3Libs modules
++++++++++++++++++
 
-The module `gc3libs`
---------------------
+
+---------
+`gc3libs`
+---------
 .. automodule:: gc3libs
    :members:
 
-The module `gcli`
-~~~~~~~~~~~~~~~~~
+--------------
+`gc3libs.gcli`
+--------------
 .. automodule:: gc3libs.gcli
     :members:
 
-The module `Default`
-~~~~~~~~~~~~~~~~~~~~
+-----------------
+`gc3libs.Default`
+-----------------
+.. warning:: 
+
+   This module is deprecated and will be removed in a future release.
+   Do not depend on it.
+
 .. automodule:: gc3libs.Default
    :members:
 
-The module `Exceptions`
-~~~~~~~~~~~~~~~~~~~~~~~
+--------------------
+`gc3libs.Exceptions`
+--------------------
 .. automodule:: gc3libs.Exceptions
    :members:
 
-The module `utils`
-~~~~~~~~~~~~~~~~~~
+---------------
+`gc3libs.utils`
+---------------
 .. automodule:: gc3libs.utils
     :members:
 
-The module `Job`
-~~~~~~~~~~~~~~~~
+-------------
+`gc3libs.Job`
+-------------
 .. automodule:: gc3libs.Job
     :members:
 
-The module `persistence`
-~~~~~~~~~~~~~~~~~~~~~~~~
+---------------------
+`gc3libs.persistence`
+---------------------
 .. automodule:: gc3libs.persistence
     :members:
 
-The module `Resource`
-~~~~~~~~~~~~~~~~~~~~~
+------------------
+`gc3libs.Resource`
+------------------
+.. warning:: 
+
+   This module is deprecated and will be removed in a future release.
+   Do not depend on it.
+
 .. automodule:: gc3libs.Resource
     :members:
 
-The module `scheduler`
-~~~~~~~~~~~~~~~~~~~~~~
+-------------------
+`gc3libs.scheduler`
+-------------------
 .. automodule:: gc3libs.scheduler
     :members:
 
-The module `InformationContainer`
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+------------------------------
+`gc3libs.InformationContainer`
+------------------------------
+
+.. warning:: 
+
+   This module is deprecated and will be removed in a future release.
+   Do not depend on it.
+
 .. automodule:: gc3libs.InformationContainer
     :members:
 
 
-The module `application`
-~~~~~~~~~~~~~~~~~~~~~~~~
+---------------------
+`gc3libs.application`
+---------------------
 .. automodule:: gc3libs.application
     :members:
 
-The module `gamess`
-+++++++++++++++++++
+----------------------------
+`gc3libs.application.gamess`
+----------------------------
 .. automodule:: gc3libs.application.gamess
     :members:
 
-The module `rosetta`
-++++++++++++++++++++
+-----------------------------
+`gc3libs.application.rosetta`
+-----------------------------
 .. automodule:: gc3libs.application.rosetta
     :members:
 
 
-The module `authentication`
-~~~~~~~~~~~~~~~~~~~~~~~~~~~
+------------------------
+`gc3libs.authentication`
+------------------------
 .. automodule:: gc3libs.authentication
     :members:
 
-The module `ssh`
-++++++++++++++++
+----------------------------
+`gc3libs.authentication.ssh`
+----------------------------
 .. automodule:: gc3libs.authentication.ssh
     :members:
 
-The module `grid`
-+++++++++++++++++
+-----------------------------
+`gc3libs.authentication.grid`
+-----------------------------
 .. automodule:: gc3libs.authentication.grid
     :members:
 
 
-The module `backends`
-~~~~~~~~~~~~~~~~~~~~~
+------------------
+`gc3libs.backends`
+------------------
 .. automodule:: gc3libs.backends
     :members:
 
-The module `arc`
-++++++++++++++++
+----------------------
+`gc3libs.backends.arc`
+----------------------
 .. automodule:: gc3libs.backends.arc
     :members:
 
-The module `sge`
-++++++++++++++++
+----------------------
+`gc3libs.backends.sge`
+----------------------
 .. automodule:: gc3libs.backends.sge
     :members:
 
-The module `transport`
-++++++++++++++++++++++
+----------------------------
+`gc3libs.backends.transport`
+----------------------------
 .. automodule:: gc3libs.backends.transport
     :members:
 
 
 
-GC3Utils modules
-================
+++++++++++++++++++
+ GC3Utils modules
+++++++++++++++++++
 
-The module `gc3utils`
----------------------
+----------
+`gc3utils`
+----------
 .. automodule:: gc3utils
    :members:
 
-The module `gcmd`
-~~~~~~~~~~~~~~~~~
+---------------
+`gc3utils.gcmd`
+---------------
+
 .. automodule:: gc3utils.gcmd
    :members:
 
-The module `commands`
-~~~~~~~~~~~~~~~~~~~~~
+-------------------
+`gc3utils.commands`
+-------------------
 .. automodule:: gc3utils.commands
    :members:
 
 
 
-Indices and tables
-==================
+++++++++++++++++++++
+ Indices and tables
+++++++++++++++++++++
 
 * :ref:`genindex`
 * :ref:`modindex`
