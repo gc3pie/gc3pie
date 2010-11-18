@@ -126,18 +126,32 @@ def gclean(*args, **kw):
     parser = OptionParser(usage="Usage: %prog [options] JOBID [JOBID ...]", 
                           version="GC3pie project version 1.0. %prog ")
     parser.add_option("-v", action="count", dest="verbosity", default=0, help="Set verbosity level")
-    parser.add_option("-f", "--force", action="store_true", dest="force", default=False, help="Force removing job")
+    parser.add_option("-A", action="store_true", dest="all", default=False, help="Remove all stored jobs.")
+    parser.add_option("-f", "--force", action="store_true", dest="force", default=False, help="Remove job even when not in terminal state.")
     (options, args) = parser.parse_args(list(args))
     _configure_logger(options.verbosity)
 
-    # Assume args are all jobids
+    if options.all and len(args) > 0:
+        raise InvalidUsage("Option '-A' conflicts with list of job IDs to remove.")
+    
+    if options.all:
+        args = _store.list()
+
     for jobid in args:
-        app = _store.load(jobid)
-        if app.execution.state == Run.State.TERMINATED or options.force:
-            _store.remove(jobid)
-            gc3utils.log.info("Removed job '%s'", app)
-        else:
-            gc3utils.log.error("Job %s not in terminal state: ignoring.", app)
+        try:
+            app = _store.load(jobid)
+            if app.execution.state != Run.State.TERMINATED and not options.force:
+                gc3utils.log.error("Job '%s' not in terminal state: ignoring.", jobid)
+                continue
+        except JobRetrieveError:
+            if options.force:
+                pass
+            else:
+                gc3utils.log.error("Could not load '%s': ignoring"
+                                   " (use option '-f' to remove nonetheless).", jobid)
+                continue
+        _store.remove(jobid)
+        gc3utils.log.info("Removed job '%s'", jobid)
 
 
 def ginfo(*args, **kw):

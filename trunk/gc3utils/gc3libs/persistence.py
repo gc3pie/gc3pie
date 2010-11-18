@@ -227,6 +227,9 @@ class FilesystemStore(Store):
                     pass # ignore errors
             raise JobRetrieveError("Failed retrieving job from file '%s': %s: %s"
                                    % (filename, ex.__class__.__name__, str(ex)))
+        if not hasattr(obj, '_id'):
+            raise JobRetrieveError("Invalid format in file '%s': missing '_id' attribute"
+                                   % (filename))
         if str(obj._id) != str(id_):
             raise JobRetrieveError("Retrieved Job ID '%s' does not match given Job ID '%s'" 
                                    % (obj._id, id_))
