@@ -384,7 +384,7 @@ def gkill(*args, **kw):
                 if app.execution.state == Run.State.TERMINATED:
                     raise InvalidOperation("Job '%s' is already in terminal state" % app)
                 else:
-                    app = _gcli.gkill(app)
+                    _gcli.gkill(app)
                     _store.replace(jobid, app)
 
                     # or shall we simply return an ack message ?
