@@ -76,7 +76,7 @@ def _configure_logger(verbosity):
     """
     Configure the logger verbosity.
     """
-    logging_level = max(1, (5-verbosity)*10)
+    logging_level = max(1, (4-verbosity)*10)
     gc3libs.log.setLevel(logging_level)
     gc3utils.log.setLevel(logging_level)
 
@@ -137,21 +137,29 @@ def gclean(*args, **kw):
     if options.all:
         args = _store.list()
 
+    failed = 0
     for jobid in args:
         try:
             app = _store.load(jobid)
             if app.execution.state != Run.State.TERMINATED and not options.force:
+                failed += 1
                 gc3utils.log.error("Job '%s' not in terminal state: ignoring.", jobid)
                 continue
         except JobRetrieveError:
             if options.force:
                 pass
             else:
+                failed += 1
                 gc3utils.log.error("Could not load '%s': ignoring"
                                    " (use option '-f' to remove nonetheless).", jobid)
                 continue
         _store.remove(jobid)
         gc3utils.log.info("Removed job '%s'", jobid)
+
+    if 0 == failed:
+        return 0
+    else:
+        return 1
 
 
 def ginfo(*args, **kw):
