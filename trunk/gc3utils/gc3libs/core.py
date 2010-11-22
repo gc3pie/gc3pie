@@ -30,6 +30,9 @@ import time
 import ConfigParser
 import tempfile
 
+import warnings
+warnings.simplefilter("ignore")
+
 import gc3libs
 from gc3libs import Application, Run
 from gc3libs.backends.sge import SgeLrms
@@ -45,7 +48,7 @@ import gc3libs.utils as utils
 class Core:
 
     def __init__(self, resource_list, authorization, auto_enable_auth):
-        if ( len(resource_list) == 0 ):
+        if len(resource_list) == 0:
             raise NoResources("Resource list has length 0")
         self._resources = resource_list
         self.authorization = authorization
@@ -119,7 +122,7 @@ class Core:
                                     _resource.name, _resource.type,
                                     ex.__class__.__name__, str(ex), exc_info=True)
                 continue
-        if ( len(_lrms_list) == 0 ):
+        if len(_lrms_list) == 0:
             raise NoResources("Could not initialize any computational resource"
                               " - please check log and configuration file.")
 
@@ -310,7 +313,7 @@ class Core:
 
         # Check if local data available
         # FIXME: local data could be stale!!
-        if job.state == Run.State.TERMINATED and app.output_retrieved:
+        if job.state == Run.State.TERMINATED and app.final_output_retrieved:
             _filename = os.path.join(app.output_dir, remote_filename)
             _local_file = open(_filename)
         else:

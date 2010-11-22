@@ -152,7 +152,7 @@ def gclean(*args, **kw):
                                              " continuing anyway, but errors might ensue.",
                                              app, ex.__class__.__name__, str(ex))
                 else:
-                    failed += 1
+                    failed = 1
                     gc3utils.log.error("Job '%s' not in terminal state: ignoring.", jobid)
                     continue
             _core.free(app)
@@ -160,18 +160,14 @@ def gclean(*args, **kw):
             if options.force:
                 pass
             else:
-                failed += 1
+                failed = 1
                 gc3utils.log.error("Could not load '%s': ignoring"
                                    " (use option '-f' to remove nonetheless).", jobid)
                 continue
         _store.remove(jobid)
         gc3utils.log.info("Removed job '%s'", jobid)
 
-    if 0 == failed:
-        return 0
-    else:
-        return 1
-
+    return failed
 
 def ginfo(*args, **kw):
     """The 'ginfo' command."""
@@ -309,7 +305,7 @@ def gresub(*args, **kw):
             print("Successfully re-submitted %s; use the 'gstat' command to monitor its progress." % job)
             _store.replace(jobid, app)
         except Exception, ex:
-            failed += 1
+            failed = 1
             gc3utils.log.error("Failed resubmission of job '%s': %s: %s", 
                                jobid, ex.__class__.__name__, str(ex))
     return failed
@@ -334,7 +330,7 @@ def gstat(*args, **kw):
         
     # Print result
     if len(apps) == 0:
-        print ("No jobs submitted with GC3Utils.")
+        print ("No jobs submitted.")
     else:
         print("%-16s  %-10s" % ("Job ID", "State"))
         print("===========================")

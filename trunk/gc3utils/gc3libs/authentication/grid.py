@@ -72,13 +72,13 @@ class GridAuth(object):
                     self.aai_username
                 except AttributeError:
                     # Go interactive
-                    self.aai_username = raw_input('Insert AAI/Switch username for user '+getpass.getuser()+': ')
+                    self.aai_username = raw_input('Insert AAI username for user '+getpass.getuser()+': ')
                     
                 # Check if idp is already set.  If not, ask interactively
                 try:
                     self.idp
                 except AttributeError:
-                    self.idp = raw_input('Insert AAI/Switch idp for user '+getpass.getuser()+': ')            
+                    self.idp = raw_input('Insert AAI idp for user '+getpass.getuser()+': ')            
 
             # Check information for grid/voms proxy
             if self.type == 'voms-proxy':
@@ -90,10 +90,10 @@ class GridAuth(object):
 
             # UserName set, go interactive asking password
             if self.usercert == 'slcs':
-                message = 'Insert AAI/Switch password for user  '+self.aai_username+' :'
+                message = 'Insert AAI password for user  '+self.aai_username+': '
             else:
                 if self.type == 'voms-proxy':
-                    message = 'Insert voms proxy password :'
+                    message = 'Insert voms proxy password: '
                 else:
                     # Assume grid-proxy
                     message = 'Insert grid proxy password :'
