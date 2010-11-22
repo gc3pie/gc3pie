@@ -293,7 +293,7 @@ def gresub(*args, **kw):
     for jobid in args:
         app = _store.load(jobid.strip())
         try:
-            _core.update_state(app) # update state
+            _core.update_job_state(app) # update state
         except Exception, ex:
             # ignore errors, and proceed to resubmission anyway
             gc3utils.log.warning("Could not update state of %s: %s: %s", 
@@ -331,7 +331,7 @@ def gstat(*args, **kw):
     else:
         apps = _get_jobs(args)
 
-    _core.update_state(*apps)
+    _core.update_job_state(*apps)
         
     # Print result
     if len(apps) == 0:
