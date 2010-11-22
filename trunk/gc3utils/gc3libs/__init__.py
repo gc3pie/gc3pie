@@ -34,31 +34,29 @@ relevant aspects of the application being represented.
 Computational job management with GC3Libs
 =========================================
 
-The `Application` class constructor provides an interface
-for the description of a compute job features, like: executable file
-to run, input files to copy to the execution location, output files to
-copy back, job memory requirements, etc.
+The `Application` class constructor provides an interface for the
+description of a compute job features, like: executable file to run,
+input files to copy to the execution location, output files to copy
+back, job memory requirements, etc.
 
-In addition, `Application` objects expose an interface to
-control the execution of the associated (remote) computational job;
-the data regarding the associated job is exposed through the
-`.execution` instance attribute, which is an instance of the
-`Run` class.
+In addition, `Application` objects expose an interface to control the
+execution of the associated (remote) computational job; the data
+regarding the associated job is exposed through the `.execution`
+instance attribute, which is an instance of the `Run` class.
 
 
 Computational job specification
 -------------------------------
 
-GC3Libs `Application` provide a way to describe
-computational job characteristics (program to run, input and output
-files, memory/duration requirements, etc.) loosely patterned after
-ARC's xRSL_ language.
+GC3Libs `Application` provide a way to describe computational job
+characteristics (program to run, input and output files,
+memory/duration requirements, etc.) loosely patterned after ARC's
+xRSL_ language.
 
 The description of the computational job is done through keyword
-parameters to the `Application` constructor, which see for
-details.  Changes in the job characteristics *after* an
-`Application` object has been constructed are not currently
-supported.
+parameters to the `Application` constructor, which see for details.
+Changes in the job characteristics *after* an `Application` object has
+been constructed are not currently supported.
 
 .. _xRSL: http://www.nordugrid.org/documents/xrsl.pdf
 
@@ -66,13 +64,12 @@ supported.
 Execution model of GC3Libs applications
 ---------------------------------------
 
-An `Application` can be regarded as an abstraction of an
-independent asynchronous computation, i.e., a GC3Libs'
-`Application` behaves much like an independent UNIX
-process. Indeed, GC3Libs' `Application` objects mimic the
-POSIX process interface: `Application` are started by a
-parent process, run independently of it, and need to have their final
-exit code and output reaped by the calling process.
+An `Application` can be regarded as an abstraction of an independent
+asynchronous computation, i.e., a GC3Libs' `Application` behaves much
+like an independent UNIX process. Indeed, GC3Libs' `Application`
+objects mimic the POSIX process interface: `Application` are started
+by a parent process, run independently of it, and need to have their
+final exit code and output reaped by the calling process.
 
 The following table makes the correspondence between POSIX processes
 and GC3Libs' `Application` objects explicit.
@@ -106,14 +103,14 @@ always available in the `.execution.state` instance property of any
 +------------------+--------------------------------------------------------------+----------------------+
 |RUNNING           |Job is executing on remote resource                           |TERMINATED            |
 +------------------+--------------------------------------------------------------+----------------------+
-|TERMINATED        |Job execution is finished (correctly or not)                  |                      |
-|                  |and will not be resumed                                       |None: final state     |
+|TERMINATED        |Job execution is finished (correctly or not)                  |None: final state     |
+|                  |and will not be resumed                                       |                      |
 +------------------+--------------------------------------------------------------+----------------------+
 
 A job that is not in the NEW or TERMINATED state is said to be a "live" job.
 
 When a Job object is first created, it is assigned the state NEW.
-After a successful invocation of `Core.gsub()`, the Job object is
+After a successful invocation of `Core.submit()`, the Job object is
 transitioned to state SUBMITTED.  Further transitions to RUNNING or
 STOPPED or TERMINATED state, happen completely independently of the
 creator program.  The `Core.update_job_state()` call provides updates
@@ -138,7 +135,7 @@ status even if they didn't run at all! Just like POSIX encodes process
 termination information in the "return code", the GC3Libs encode
 information about abnormal process termination using a set of
 pseudo-signal codes in a job's returncode attribute: i.e., if
-termination of a job is due to some gird/batch system/middleware
+termination of a job is due to some grid/batch system/middleware
 error, the job's `os.WIFSIGNALED(job.returncode)` will be True and the
 signal code (as gotten from `os.WTERMSIG(job.returncode)`) will be one
 of the following:
@@ -152,6 +149,7 @@ signal  error condition
 122     job killed by batch system / sysadmin
 121     job canceled by user
 ======  ============================================================
+
 """
 __docformat__ = 'reStructuredText'
 __version__ = '$Revision$'
@@ -381,7 +379,6 @@ class Application(Struct):
 
         # execution
         self.execution = Run()
-        self.execution.attach(self)
 
         # output management
         self.final_output_retrieved = False
@@ -505,9 +502,8 @@ class Application(Struct):
         therefore, any request for cores is ignored and a warning is
         logged.
 
-        You definitely want to override this method in
-        application-specific classes to provide appropriate invocation
-        templates.
+        Override this method in application-specific classes to
+        provide appropriate invocation templates.
         """
         qsub = 'qsub -cwd -S /bin/sh '
         if self.requested_walltime:
@@ -526,6 +522,70 @@ class Application(Struct):
             qsub += " -N '%s'" % self.job_name
         return (qsub, self.cmdline(resource))
 
+
+    # State transition handlers.
+    def new(self):
+        """
+        Called when the job state is (re)set to `NEW`.
+
+        The default implementation does nothing, override in derived
+        classes to implement additional behavior.
+        """
+        pass
+
+    def submitted(self):
+        """
+        Called when the job state transitions to `SUBMITTED`, i.e.,
+        the job has been successfully sent to a (possibly) remote
+        execution resource and is now waiting to be scheduled.
+
+        The default implementation does nothing, override in derived
+        classes to implement additional behavior.
+        """
+        pass
+
+    def running(self):
+        """
+        Called when the job state transitions to `RUNNING`, i.e., the
+        job has been successfully started on a (possibly) remote
+        resource.
+
+        The default implementation does nothing, override in derived
+        classes to implement additional behavior.
+        """
+        pass
+
+    def stopped(self):
+        """
+        Called when the job state transitions to `STOPPED`, i.e., the
+        job has been remotely suspended for an unknown reason and
+        cannot automatically resume execution.
+
+        The default implementation does nothing, override in derived
+        classes to implement additional behavior.
+        """
+        pass
+
+    def terminated(self):
+        """
+        Called when the job state transitions to `TERMINATED`, i.e.,
+        the job has finished execution (with whatever exit status, see
+        `returncode`) and its execution cannot resume.
+
+        The default implementation does nothing, override in derived
+        classes to implement additional behavior.
+        """
+        pass
+
+    def postprocess(self, dir):
+        """
+        Called when the final output of the job has been retrieved to
+        local directory `dir`.
+
+        The default implementation does nothing, override in derived
+        classes to implement additional behavior.
+        """
+        pass
 
 
 class _Signal(object):
@@ -612,22 +672,6 @@ class Run(Struct):
         if 'timestamp' not in self: self.timestamp = { }
 
     
-    def attach(self, observer):
-        """
-        Notify `observer` of any changes to the execution state.
-
-        Only one observer will receive notifications; this overrides
-        any previously-set observer.
-        """
-        self._observer = observer
-
-    def detach(self):
-        """
-        Stop notifying any observer of execution state changes.
-        """
-        self._observer = None
-
-
     # states that a `Run` can be in
     State = Enum(
         'NEW',       # Job has not yet been submitted/started
@@ -654,12 +698,6 @@ class Run(Struct):
                 self.timestamp[value] = time.time()
                 self.log.append('%s on %s' % (value, time.asctime()))
             self._state = value
-            # call state transition methods on observer, if they exist
-            observer = self._observer
-            if observer is not None:
-                handler_name = str(self._state).lower()
-                if hasattr(observer, handler_name):
-                    getattr(observer, handler_name)()
         return locals()
 
 

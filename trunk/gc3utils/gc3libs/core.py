@@ -100,6 +100,9 @@ class Core:
         Submit a job running an instance of the given `app`.  Return
         the `app` object, modified to refer to the submitted
         computational job.
+
+        Upon successful submission, call the `submitted` method on the
+        `app` object.
         """
         auto_enable_auth = kw.get('auto_enable_auth', self.auto_enable_auth)
 
@@ -147,13 +150,15 @@ class Core:
             gc3libs.log.info('Successfully submitted process to LRMS backend')
             job.state = Run.State.SUBMITTED
             job.resource_name = lrms._resource.name
+            if hasattr(job, 'submitted'):
+                job.submitted()
             # job submitted; leave loop
             break
 
         return job
 
 
-    def update_state(self, *apps, **kw):
+    def update_job_state(self, *apps, **kw):
         """
         Update state of all applications passed in as arguments,
         and return list of updated states.
@@ -161,6 +166,12 @@ class Core:
         If keyword argument `update_on_error` is `False` (default),
         then application execution state is not changed in case a
         backend error happens; it is changed to `UNKNOWN` otherwise.
+
+        If state of a job has changed, call the appropriate handler
+        method on the job object, if it's defined.  Handler methods
+        are named after the (lowercase) name of the state; e.g., if a
+        job reaches state `TERMINATED`, then `job.terminated()` is
+        called.
         """
         update_on_error = kw.get('update_on_error', False)
         auto_enable_auth = kw.get('auto_enable_auth', self.auto_enable_auth)
@@ -168,6 +179,7 @@ class Core:
         states = [] 
         for app in apps:
             state = app.execution.state
+            old_state = state
             gc3libs.log.debug("Updating state (%s) of application: %s", state, app)
             try:
                 lrms = self._get_backend(app.execution.resource_name)
@@ -181,10 +193,14 @@ class Core:
                         state = Run.State.UNKNOWN
                     if state != Run.State.UNKNOWN or update_on_error:
                         app.execution.state = state
+                if app.execution.state != old_state:
+                    handler_name = str(app.execution.state).lower()
+                    if hasattr(app, handler_name):
+                        getattr(app, handler_name)()
             except Exception, ex:
-                gc3libs.log.error("Error in Core.update_state(), ignored: %s: %s",
+                gc3libs.log.error("Error in Core.update_job_state(), ignored: %s: %s",
                                   ex.__class__.__name__, str(ex))
-            states.append(state)
+            states.append(app.execution.state)
 
         return states
 
@@ -200,7 +216,9 @@ class Core:
         argument `overwrite` is `True`.
 
         If the job is in a terminal state, the instance attribute
-        `app.final_output_retrieved` is set to `True`.
+        `app.final_output_retrieved` is set to `True`, and the
+        `postprocess` method is called on the `app` object (if it's
+        defined), with the effective `download_dir` as sole argument.
 
         Job output cannot be retrieved when `app.execution` is in one
         of the states `NEW` or `SUBMITTED`; a
@@ -241,6 +259,8 @@ class Core:
         app.output_dir = download_dir
         if job.state == Run.State.TERMINATED:
             app.final_output_retrieved = True
+            if hasattr(app, 'postprocess'):
+                app.postprocess(download_dir)
         return download_dir
         
 
@@ -269,6 +289,8 @@ class Core:
         job.state = Run.State.TERMINATED
         job.signal = Run.Signals.Cancelled
         job.log.append("Cancelled by `Core.kill`")
+        if hasattr(job, 'terminated'):
+            job.terminated()
         return job
 
 
@@ -396,9 +418,9 @@ def read_config(*locations):
     for location in locations:
         location = os.path.expandvars(location)
         if os.path.exists(location) and os.access(location, os.R_OK):
-            gc3libs.log.debug("core.read_config(): reading file '%s' ..." % location)
+            gc3libs.log.debug("Core.read_config(): reading file '%s' ..." % location)
         else:
-            gc3libs.log.debug("core.read_config(): ignoring non-existent file '%s' ..." % location)
+            gc3libs.log.debug("Core.read_config(): ignoring non-existent file '%s' ..." % location)
             continue # with next `location`
 
         # Config File exists; read it
@@ -415,7 +437,7 @@ def read_config(*locations):
         for sectname in config.sections():
             if sectname.startswith('authorization/'):
                 # handle authorization section
-                gc3libs.log.debug("core.read_config(): adding authorization '%s' ", sectname)
+                gc3libs.log.debug("Core.read_config(): adding authorization '%s' ", sectname)
                 # extract authorization name and register authorization dictionary
                 auth_name = sectname.split('/', 1)[1]
                 authorizations[auth_name].update(dict(config.items(sectname)))
@@ -423,7 +445,7 @@ def read_config(*locations):
             elif  sectname.startswith('resource/'):
                 # handle resource section
                 resource_name = sectname.split('/', 1)[1]
-                gc3libs.log.debug("core.read_config(): adding resource '%s' ", resource_name)
+                gc3libs.log.debug("Core.read_config(): adding resource '%s' ", resource_name)
                 config_items = dict(config.items(sectname))
                 if config_items.has_key('enabled'):
                     config_items['enabled'] = utils.string_to_boolean(config_items['enabled'])
@@ -434,10 +456,10 @@ def read_config(*locations):
 
             else:
                 # Unhandled sectname
-                gc3libs.log.error("core.read_config(): unknown configuration section '%s' -- ignoring!", 
+                gc3libs.log.error("Core.read_config(): unknown configuration section '%s' -- ignoring!", 
                                    sectname)
 
-        gc3libs.log.debug("core.read_config(): read %d resources from configuration file '%s'",
+        gc3libs.log.debug("Core.read_config(): read %d resources from configuration file '%s'",
                            len(resources), location)
 
         # remove disabled resources
