@@ -31,6 +31,8 @@ import tempfile
 import warnings
 warnings.simplefilter("ignore")
 
+import arclib
+
 from gc3libs import log, Run
 from gc3libs.backends import LRMS
 import gc3libs.Exceptions as Exceptions
@@ -38,8 +40,6 @@ from gc3libs.utils import *
 from gc3libs.Resource import Resource
 import gc3libs.Default as Default
 
-import arclib
- 
 
 class ArcLrms(LRMS):
     """
@@ -47,18 +47,21 @@ class ArcLrms(LRMS):
     """
     def __init__(self,resource, auths):
         # Normalize resource types
-        if resource.type is Default.ARC_LRMS:
-            self._resource = resource
-            self.isValid = 1
+        if not resource.type == Default.ARC_LRMS:
+            raise LRMSException("ArcLRMS.__init__(): Failed. Resource type execyted 'arc'. Received '%s'" % resource.type)
 
-            self._resource.ncores = int(self._resource.ncores)
-            self._resource.max_memory_per_core = int(self._resource.max_memory_per_core) * 1000
-            self._resource.max_walltime = int(self._resource.max_walltime)
-            if self._resource.max_walltime > 0:
-                # Convert from hours to minutes
-                self._resource.max_walltime = self._resource.max_walltime * 60
+        self._resource = resource
+        
+        self._resource.ncores = int(self._resource.ncores)
+        self._resource.max_memory_per_core = int(self._resource.max_memory_per_core) * 1000
+        self._resource.max_walltime = int(self._resource.max_walltime)
+        if self._resource.max_walltime > 0:
+            # Convert from hours to minutes
+            self._resource.max_walltime = self._resource.max_walltime * 60
+            
+        self._queues_cache_time = Default.CACHE_TIME # XXX: should it be configurable?
 
-            self._queues_cache_time = Default.CACHE_TIME # XXX: should it be configurable?
+        self.isValid = 1
 
     def is_valid(self):
         return self.isValid
@@ -79,14 +82,9 @@ class ArcLrms(LRMS):
             else:
                 cls = arclib.GetClusterResources()
             log.debug('Got cluster list of length %d', len(cls))
-            # Temporarly disable this check
-            #if len(cls) > 0:
             self._queues = arclib.GetQueueInfo(cls,arclib.MDS_FILTER_CLUSTERINFO, True, '', 5)
             log.debug('returned valid queue information for %d queues', len(self._queues))
             self._queues_last_updated = time.time()
-            #else:
-            ## return empty queues list
-            # self._queues = [] 
         return self._queues
 
             

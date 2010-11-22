@@ -24,7 +24,7 @@ __version__ = '$Revision$'
 
 
 import os
-import paramiko
+#import paramiko
 import random
 import re
 import sys
@@ -106,7 +106,7 @@ def parse_qstat_f(qstat_output):
                 continue # ignore non-batch queues
             # Some versions of SGE do not have a "reserved" digit in the slots column, so
             # slots_resv will be set to None.  For our purposes it is better that it is 0.
-            if slots_resv == None:
+            if slots_resv is None:
                 slots_resv = 0
             # key names are taken from 'qstat -xml' output
             result[qname][hostname]['slots_resv'] = _parse_value('slots_resv', slots_resv)
@@ -282,23 +282,18 @@ class SgeLrms(LRMS):
           * `r.auth_type` must be a valid key to pass to `Authorization.get()`.
         """
         # XXX: should these be `InternalError` instead?
-        assert (resource.has_key('type') and resource.type == Default.SGE_LRMS), \
-            "SgeLRMS.__init__(): called with a resource parameter that does not have 'type' equal to 'ssh_sge'"
-        assert resource.has_key('name'), \
-            "SgeLRMS.__init__(): passed a resource parameter without a 'name' attribute."
+        if not resource.type == Default.SGE_LRMS:
+            raise LRMSException("SgeLRMS.__init__(): Failed. Resource type execyted 'sge'. Received '%s'" % resource.type)
 
-        if not resource.has_key('frontend'):
-            raise ConfigurationError("Resource '%s' has type 'ssh_sge' but no 'frontend' attribute." 
-                                     % resource.name)
-        if not resource.has_key('transport'):
-            raise ConfigurationError("Invalid resource '%s' description:"
-                                     " missing 'transport' configuration parameter."
-                                     % resource.name)
+        # checking mandatory resource attributes
+        resource.name
+        resource.frontend
+        resource.transport
 
         self._resource = resource
+
         # set defaults
         self._resource.setdefault('sge_accounting_delay', 15)
-
         auth = auths.get(resource.authorization_type)
 
         self._ssh_username = auth.username
