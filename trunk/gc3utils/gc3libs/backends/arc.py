@@ -120,8 +120,43 @@ class ArcLrms(LRMS):
         return job
 
 
-    @same_docstring_as(LRMS.update_job_state)
     def update_job_state(self, app):
+        """
+        Query the state of the ARC job associated with `app` and
+        update `app.execution.state` accordingly.  Return the
+        corresponding `Run.State`; see `Run.State` for more details.
+
+        The mapping of ARC job statuses to `Run.State` is as follows: 
+
+                    ==============  ===========
+                    ARC job status  `Run.State`
+                    ==============  ===========
+                    ACCEPTED        SUBMITTED
+                    SUBMITTING      SUBMITTED
+                    PREPARING       SUBMITTED
+                    INLRMS:Q        SUBMITTED
+                    INLRMS:R        RUNNING
+                    INLRMS:O        RUNNING
+                    INLRMS:E        RUNNING
+                    INLRMS:X        RUNNING
+                    INLRMS:S        STOPPED
+                    INLRMS:H        STOPPED
+                    FINISHING       RUNNING
+                    EXECUTED        RUNNING
+                    FINISHED        TERMINATED
+                    CANCELING       TERMINATED
+                    FINISHED        TERMINATED
+                    KILLED          TERMINATED
+                    FAILED          TERMINATED
+                    DELETED         TERMINATED
+                    ==============  ===========
+
+        Any other ARC job status is mapped to `Run.State.UNKNOWN`.  In
+        particular, query a job ID that is not found in the ARC
+        information system will result in `UNKNOWN` state, as will
+        querying a job that has just been submitted and has not yet
+        found its way to the infosys.
+        """
         job = app.execution
         def map_arc_status_to_gc3job_status(status):
             try:
