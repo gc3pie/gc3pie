@@ -27,7 +27,7 @@ gc3libs.utils.Singleton class index.html
 gc3libs.core.Engine class index.html
 gc3libs.backends.arc.ArcLrms.update_job_state method index.html
 gc3libs.backends.sge.get_qsub_jobid function index.html
-gc3utils.commands.gtail function index.html
+gc3libs.core.Engine.free method index.html
 gc3libs.backends.arc.ArcLrms.get_results method index.html
 gc3libs.Application class index.html
 gc3libs.Application.clone method index.html
@@ -53,6 +53,7 @@ gc3libs.backends.LRMS.get_results method index.html
 gc3libs.backends.sge.SgeLrms class index.html
 gc3libs.Exceptions.NoResources exception index.html
 gc3libs.application.gamess.GamessApplication.qgms method index.html
+gc3utils.commands.gtail function index.html
 gc3utils.commands.ginfo function index.html
 gc3utils.commands.glist function index.html
 gc3libs.utils.same_docstring_as function index.html
@@ -67,6 +68,7 @@ gc3libs.utils.PlusInfinity class index.html
 gc3libs.backends.sge.compute_nr_of_slots function index.html
 gc3libs.Run.Signals class index.html
 gc3libs.Application.running method index.html
+gc3libs.core.Engine.submit method index.html
 gc3libs.Exceptions.UnknownJobState exception index.html
 gc3libs.backends.sge.SgeLrms.peek method index.html
 gc3libs.backends.arc.ArcLrms.cancel_job method index.html
@@ -79,6 +81,7 @@ gc3libs.Exceptions.InputFileError exception index.html
 gc3utils.commands.gnotify function index.html
 gc3libs.Exceptions.NoConfigurationFile exception index.html
 gc3libs.core.read_config function index.html
+gc3libs.core.Engine.peek method index.html
 gc3libs.backends.LRMS.update_job_state method index.html
 gc3libs.Exceptions.InternalError exception index.html
 gc3libs.Exceptions.DataStagingError exception index.html
@@ -91,6 +94,7 @@ gc3utils.commands.gresub function index.html
 gc3libs.backends.sge.SgeLrms.cancel_job method index.html
 gc3libs.persistence.Store class index.html
 gc3libs.Application.submitted method index.html
+gc3libs.core.Engine.fetch_output method index.html
 gc3libs.backends.sge.SgeLrms.free method index.html
 gc3libs.Exceptions.Error exception index.html
 gc3libs.Run.state attribute index.html
@@ -102,11 +106,14 @@ gc3libs.persistence.FilesystemStore.remove method index.html
 gc3libs.backends.sge.SgeLrms.submit_job method index.html
 gc3libs.Run.exitcode attribute index.html
 gc3utils.commands.gkill function index.html
+gc3libs.core.Engine.update_job_state method index.html
 gc3libs.utils.Struct class index.html
+gc3libs.core.Engine.remove method index.html
 gc3libs.Resource.Resource class index.html
 gc3libs.Run class index.html
 gc3libs.Run.signal attribute index.html
 gc3libs.persistence.FilesystemStore.replace method index.html
+gc3libs.core.Engine.kill method index.html
 gc3libs.Application.postprocess method index.html
 gc3libs.Application.stopped method index.html
 gc3libs.backends.arc.ArcLrms.peek method index.html
@@ -125,6 +132,7 @@ gc3libs.authentication.NoneAuth class index.html
 gc3utils.commands.gstat function index.html
 gc3libs.utils.defaultdict class index.html
 gc3libs.backends.arc.ArcLrms.free method index.html
+gc3libs.core.Engine.add method index.html
 gc3libs.persistence.Id class index.html
 gc3libs.utils.progressive_number function index.html
 gc3libs.utils.defproperty function index.html
