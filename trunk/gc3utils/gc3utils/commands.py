@@ -42,7 +42,6 @@ import gc3libs.application.gamess as gamess
 import gc3libs.application.rosetta as rosetta
 import gc3libs.Default as Default
 from   gc3libs.Exceptions import *
-import gc3libs.Job as Job
 import gc3libs.core as core
 import gc3libs.persistence
 import gc3libs.utils as utils

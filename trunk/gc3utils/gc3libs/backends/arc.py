@@ -36,7 +36,6 @@ from gc3libs.backends import LRMS
 import gc3libs.Exceptions as Exceptions
 from gc3libs.utils import *
 from gc3libs.Resource import Resource
-import gc3libs.Job as Job
 import gc3libs.Default as Default
 
 import arclib
