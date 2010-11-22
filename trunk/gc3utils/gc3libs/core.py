@@ -42,7 +42,7 @@ import gc3libs.scheduler as scheduler
 import gc3libs.utils as utils 
 
 
-class Gcli:
+class Core:
 
     def __init__(self, resource_list, authorization, auto_enable_auth):
         if ( len(resource_list) == 0 ):
@@ -95,7 +95,7 @@ class Gcli:
         lrms.free(app)
         
 
-    def gsub(self, app, **kw):
+    def submit(self, app, **kw):
         """
         Submit a job running an instance of the given `app`.  Return
         the `app` object, modified to refer to the submitted
@@ -153,14 +153,14 @@ class Gcli:
         return job
 
 
-    def gstat(self, *apps, **kw):
+    def update_state(self, *apps, **kw):
         """
         Update state of all applications passed in as arguments,
         and return list of updated states.
         
-        If `update_on_error` is `False` (default), then application
-        execution state is not changed in case a backend error
-        happens; it is changed to `UNKNOWN` otherwise.
+        If keyword argument `update_on_error` is `False` (default),
+        then application execution state is not changed in case a
+        backend error happens; it is changed to `UNKNOWN` otherwise.
         """
         update_on_error = kw.get('update_on_error', False)
         auto_enable_auth = kw.get('auto_enable_auth', self.auto_enable_auth)
@@ -182,14 +182,14 @@ class Gcli:
                     if state != Run.State.UNKNOWN or update_on_error:
                         app.execution.state = state
             except Exception, ex:
-                gc3libs.log.error("Error in Gcli.gstat(), ignored: %s: %s",
+                gc3libs.log.error("Error in Core.update_state(), ignored: %s: %s",
                                   ex.__class__.__name__, str(ex))
             states.append(state)
 
         return states
 
 
-    def gget(self, app, download_dir=None, overwrite=False, **kw):
+    def fetch_output(self, app, download_dir=None, overwrite=False, **kw):
         """
         Retrieve job output into local directory `app.output_dir`;
         optional argument `download_dir` overrides this.
@@ -244,7 +244,7 @@ class Gcli:
         return download_dir
         
 
-    def glist(self,resource_name, **kw):
+    def update_resource_status(self,resource_name, **kw):
         """ List status of a given resource."""
         auto_enable_auth = kw.get('auto_enable_auth', self.auto_enable_auth)
         lrms = self._get_backend(resource_name)
@@ -252,7 +252,7 @@ class Gcli:
         return  lrms.get_resource_status()
 
 
-    def gkill(self, app, **kw):
+    def kill(self, app, **kw):
         """Terminate a job.
 
         Terminating a job in RUNNING, SUBMITTED, or STOPPED state
@@ -268,7 +268,7 @@ class Gcli:
                           " and returncode to SIGCANCEL" % job)
         job.state = Run.State.TERMINATED
         job.signal = Run.Signals.Cancelled
-        job.log.append("Cancelled by `Gcli.gkill`")
+        job.log.append("Cancelled by `Core.kill`")
         return job
 
 
@@ -283,7 +283,7 @@ class Gcli:
         elif what == 'stderr':
             remote_filename = job.stderr_filename
         else:
-            raise Error("File name requested to `Gcli.tail` must be"
+            raise Error("File name requested to `Core.tail` must be"
                         " 'stdout' or 'stderr', not '%s'" % what)
 
         # Check if local data available
@@ -386,7 +386,7 @@ def read_config(*locations):
     """
     Read each of the configuration files listed in `locations`, and
     return a `(defaults, resources, authorizations)` triple that can
-    be passed to the `Gcli` class constructor.
+    be passed to the `Core` class constructor.
     """
     files_successfully_read = 0
     defaults = { }
@@ -396,9 +396,9 @@ def read_config(*locations):
     for location in locations:
         location = os.path.expandvars(location)
         if os.path.exists(location) and os.access(location, os.R_OK):
-            gc3libs.log.debug("gcli.read_config(): reading file '%s' ..." % location)
+            gc3libs.log.debug("core.read_config(): reading file '%s' ..." % location)
         else:
-            gc3libs.log.debug("gcli.read_config(): ignoring non-existent file '%s' ..." % location)
+            gc3libs.log.debug("core.read_config(): ignoring non-existent file '%s' ..." % location)
             continue # with next `location`
 
         # Config File exists; read it
@@ -415,7 +415,7 @@ def read_config(*locations):
         for sectname in config.sections():
             if sectname.startswith('authorization/'):
                 # handle authorization section
-                gc3libs.log.debug("gcli.read_config(): adding authorization '%s' ", sectname)
+                gc3libs.log.debug("core.read_config(): adding authorization '%s' ", sectname)
                 # extract authorization name and register authorization dictionary
                 auth_name = sectname.split('/', 1)[1]
                 authorizations[auth_name].update(dict(config.items(sectname)))
@@ -423,7 +423,7 @@ def read_config(*locations):
             elif  sectname.startswith('resource/'):
                 # handle resource section
                 resource_name = sectname.split('/', 1)[1]
-                gc3libs.log.debug("gcli.read_config(): adding resource '%s' ", resource_name)
+                gc3libs.log.debug("core.read_config(): adding resource '%s' ", resource_name)
                 config_items = dict(config.items(sectname))
                 if config_items.has_key('enabled'):
                     config_items['enabled'] = utils.string_to_boolean(config_items['enabled'])
@@ -434,10 +434,10 @@ def read_config(*locations):
 
             else:
                 # Unhandled sectname
-                gc3libs.log.error("gcli.read_config(): unknown configuration section '%s' -- ignoring!", 
+                gc3libs.log.error("core.read_config(): unknown configuration section '%s' -- ignoring!", 
                                    sectname)
 
-        gc3libs.log.debug("gcli.read_config(): read %d resources from configuration file '%s'",
+        gc3libs.log.debug("core.read_config(): read %d resources from configuration file '%s'",
                            len(resources), location)
 
         # remove disabled resources

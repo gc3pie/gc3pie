@@ -139,7 +139,7 @@ def main():
 
     if PROG == 'gc3utils':
         # the real command name is the first non-option argument;
-        # e.g., "gcli kill ..." is silently translated to "gkill ..."
+        # e.g., "core kill ..." is silently translated to "gkill ..."
         for arg in sys.argv[1:]:
             if not arg.startswith('-'):
                 if arg.startswith(g):
