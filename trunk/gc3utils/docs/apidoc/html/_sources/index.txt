@@ -23,9 +23,9 @@
    :members:
 
 --------------
-`gc3libs.gcli`
+`gc3libs.core`
 --------------
-.. automodule:: gc3libs.gcli
+.. automodule:: gc3libs.core
     :members:
 
 -----------------
@@ -49,12 +49,6 @@
 `gc3libs.utils`
 ---------------
 .. automodule:: gc3libs.utils
-    :members:
-
--------------
-`gc3libs.Job`
--------------
-.. automodule:: gc3libs.Job
     :members:
 
 ---------------------

@@ -60,43 +60,40 @@ subclasses can expose adapted interfaces, focusing on the most
 relevant aspects of the application being represented.</p>
 <div class="section" id="computational-job-management-with-gc3libs">
 <h4>Computational job management with GC3Libs<a class="headerlink" href="#computational-job-management-with-gc3libs" title="Permalink to this headline">¶</a></h4>
-<p>The <cite>Application</cite> class constructor provides an interface
-for the description of a compute job features, like: executable file
-to run, input files to copy to the execution location, output files to
-copy back, job memory requirements, etc.</p>
-<p>In addition, <cite>Application</cite> objects expose an interface to
-control the execution of the associated (remote) computational job;
-the data regarding the associated job is exposed through the
-<cite>.execution</cite> instance attribute, which is an instance of the
-<cite>Run</cite> class.</p>
+<p>The <cite>Application</cite> class constructor provides an interface for the
+description of a compute job features, like: executable file to run,
+input files to copy to the execution location, output files to copy
+back, job memory requirements, etc.</p>
+<p>In addition, <cite>Application</cite> objects expose an interface to control the
+execution of the associated (remote) computational job; the data
+regarding the associated job is exposed through the <cite>.execution</cite>
+instance attribute, which is an instance of the <cite>Run</cite> class.</p>
 <div class="section" id="computational-job-specification">
 <h5>Computational job specification<a class="headerlink" href="#computational-job-specification" title="Permalink to this headline">¶</a></h5>
-<p>GC3Libs <cite>Application</cite> provide a way to describe
-computational job characteristics (program to run, input and output
-files, memory/duration requirements, etc.) loosely patterned after
-ARC&#8217;s <a class="reference external" href="http://www.nordugrid.org/documents/xrsl.pdf">xRSL</a> language.</p>
+<p>GC3Libs <cite>Application</cite> provide a way to describe computational job
+characteristics (program to run, input and output files,
+memory/duration requirements, etc.) loosely patterned after ARC&#8217;s
+<a class="reference external" href="http://www.nordugrid.org/documents/xrsl.pdf">xRSL</a> language.</p>
 <p>The description of the computational job is done through keyword
-parameters to the <cite>Application</cite> constructor, which see for
-details.  Changes in the job characteristics <em>after</em> an
-<cite>Application</cite> object has been constructed are not currently
-supported.</p>
+parameters to the <cite>Application</cite> constructor, which see for details.
+Changes in the job characteristics <em>after</em> an <cite>Application</cite> object has
+been constructed are not currently supported.</p>
 </div>
 <div class="section" id="execution-model-of-gc3libs-applications">
 <h5>Execution model of GC3Libs applications<a class="headerlink" href="#execution-model-of-gc3libs-applications" title="Permalink to this headline">¶</a></h5>
-<p>An <cite>Application</cite> can be regarded as an abstraction of an
-independent asynchronous computation, i.e., a GC3Libs&#8217;
-<cite>Application</cite> behaves much like an independent UNIX
-process. Indeed, GC3Libs&#8217; <cite>Application</cite> objects mimic the
-POSIX process interface: <cite>Application</cite> are started by a
-parent process, run independently of it, and need to have their final
-exit code and output reaped by the calling process.</p>
+<p>An <cite>Application</cite> can be regarded as an abstraction of an independent
+asynchronous computation, i.e., a GC3Libs&#8217; <cite>Application</cite> behaves much
+like an independent UNIX process. Indeed, GC3Libs&#8217; <cite>Application</cite>
+objects mimic the POSIX process interface: <cite>Application</cite> are started
+by a parent process, run independently of it, and need to have their
+final exit code and output reaped by the calling process.</p>
 <p>The following table makes the correspondence between POSIX processes
 and GC3Libs&#8217; <cite>Application</cite> objects explicit.</p>
 <table border="1" class="docutils">
 <colgroup>
-<col width="28%" />
-<col width="22%" />
-<col width="50%" />
+<col width="26%" />
+<col width="27%" />
+<col width="47%" />
 </colgroup>
 <thead valign="bottom">
 <tr><th class="head"><cite>os</cite> module function</th>
@@ -106,22 +103,22 @@ and GC3Libs&#8217; <cite>Application</cite> objects explicit.</p>
 </thead>
 <tbody valign="top">
 <tr><td>exec</td>
-<td>Gcli.gsub</td>
+<td>Core.submit</td>
 <td>start new job</td>
 </tr>
 <tr><td>kill (SIGTERM)</td>
-<td>Gcli.gkill</td>
+<td>Core.kill</td>
 <td>terminate executing job</td>
 </tr>
 <tr><td>wait (WNOHANG)</td>
-<td>Gcli.gstat</td>
-<td>get job status (running, terminated)</td>
+<td>Core.update_job_state</td>
+<td>get job status (RUNNING, TERMINATED)</td>
 </tr>
 <tr><td><ul class="first last simple">
 <li></li>
 </ul>
 </td>
-<td>Gcli.gget</td>
+<td>Core.fetch_output</td>
 <td>retrieve output</td>
 </tr>
 </tbody>
@@ -170,13 +167,13 @@ and will not be resumed</td>
 </table>
 <p>A job that is not in the NEW or TERMINATED state is said to be a &#8220;live&#8221; job.</p>
 <p>When a Job object is first created, it is assigned the state NEW.
-After a successful invocation of <cite>Gcli.gsub()</cite>, the Job object is
+After a successful invocation of <cite>Core.submit()</cite>, the Job object is
 transitioned to state SUBMITTED.  Further transitions to RUNNING or
 STOPPED or TERMINATED state, happen completely independently of the
-creator program.  The <cite>Gcli.gstat()</cite> call provides updates on the
-status of a job. (Somewhat like the POSIX <cite>wait(..., WNOHANG)</cite> system
-call, except that GC3Libs provide explicit RUNNING and STOPPED states,
-instead of encoding them into the return value.)</p>
+creator program.  The <cite>Core.update_job_state()</cite> call provides updates
+on the status of a job. (Somewhat like the POSIX <cite>wait(..., WNOHANG)</cite>
+system call, except that GC3Libs provide explicit RUNNING and STOPPED
+states, instead of encoding them into the return value.)</p>
 <p>The STOPPED state is a kind of generic &#8220;run time error&#8221; state: a job
 can get into the STOPPED state if its execution is stopped (e.g., a
 SIGSTOP is sent to the remote process) or delayed indefinitely (e.g.,
@@ -193,7 +190,7 @@ status even if they didn&#8217;t run at all! Just like POSIX encodes process
 termination information in the &#8220;return code&#8221;, the GC3Libs encode
 information about abnormal process termination using a set of
 pseudo-signal codes in a job&#8217;s returncode attribute: i.e., if
-termination of a job is due to some gird/batch system/middleware
+termination of a job is due to some grid/batch system/middleware
 error, the job&#8217;s <cite>os.WIFSIGNALED(job.returncode)</cite> will be True and the
 signal code (as gotten from <cite>os.WTERMSIG(job.returncode)</cite>) will be one
 of the following:</p>
@@ -227,7 +224,7 @@ of the following:</p>
 </table>
 <dl class="class">
 <dt id="gc3libs.Application">
-<em class="property">class </em><tt class="descclassname">gc3libs.</tt><tt class="descname">Application</tt><big>(</big><em>executable</em>, <em>arguments</em>, <em>inputs</em>, <em>outputs</em>, <em>**kw</em><big>)</big><a class="headerlink" href="#gc3libs.Application" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><tt class="descclassname">gc3libs.</tt><tt class="descname">Application</tt><big>(</big><em>executable</em>, <em>arguments</em>, <em>inputs</em>, <em>outputs</em>, <em>output_dir</em>, <em>**kw</em><big>)</big><a class="headerlink" href="#gc3libs.Application" title="Permalink to this definition">¶</a></dt>
 <dd><p>Support for running a generic application with the GC3Libs.
 The following parameters are <em>required</em> to create an <cite>Application</cite>
 instance:</p>
@@ -265,6 +262,9 @@ in both <cite>local_file_name</cite> and <cite>remote_file_name</cite> being
 equal.  If an absolute path name is specified as
 <cite>remote_file_name</cite>, then a warning will be issued and the
 behavior is undefined.</dd>
+<dt><cite>output_dir</cite></dt>
+<dd>Path to the base directory where output files will be downloaded.
+Output file names are interpreted relative to this base directory.</dd>
 </dl>
 <p>The following optional parameters may be additionally
 specified as keyword arguments and will be given special
@@ -321,13 +321,12 @@ invocation; possibly empty</dd>
 <dt><cite>outputs</cite></dt>
 <dd>dictionary mapping remote file name (a string) to a local file name (a string)</dd>
 <dt><cite>output_dir</cite></dt>
-<dd>Path to the base directory where output files were last
-downloaded to, or <cite>None</cite> if no output files have been downloaded
-yet.</dd>
-<dt><cite>output_retrieved</cite> </dt>
-<dd>boolean flag, indicating whether job output has been fetched
-from the remote resource; use the Gcli.gget() function to
-retrieve the output. (Note: for jobs in TERMINATED state, the
+<dd>Path to the base directory where output files will be downloaded.
+Output file names are interpreted relative to this base directory.</dd>
+<dt><cite>final_output_retrieved</cite> </dt>
+<dd>boolean, indicating whether job output has been fetched from the
+remote resource; if <cite>True</cite>, you cannot assume that data is still
+available remotely.  (Note: for jobs in TERMINATED state, the
 output can be retrieved only once!)</dd>
 <dt><cite>environment</cite></dt>
 <dd>dictionary mapping environment variable names to the requested
@@ -368,6 +367,23 @@ templates.</p>
 </dd></dl>
 
 <dl class="method">
+<dt id="gc3libs.Application.new">
+<tt class="descname">new</tt><big>(</big><big>)</big><a class="headerlink" href="#gc3libs.Application.new" title="Permalink to this definition">¶</a></dt>
+<dd><p>Called when the job state is (re)set to <cite>NEW</cite>.</p>
+<p>The default implementation does nothing, override in derived
+classes to implement additional behavior.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="gc3libs.Application.postprocess">
+<tt class="descname">postprocess</tt><big>(</big><em>dir</em><big>)</big><a class="headerlink" href="#gc3libs.Application.postprocess" title="Permalink to this definition">¶</a></dt>
+<dd><p>Called when the final output of the job has been retrieved to
+local directory <cite>dir</cite>.</p>
+<p>The default implementation does nothing, override in derived
+classes to implement additional behavior.</p>
+</dd></dl>
+
+<dl class="method">
 <dt id="gc3libs.Application.qsub">
 <tt class="descname">qsub</tt><big>(</big><em>resource</em>, <em>_suppress_warning=False</em>, <em>**kw</em><big>)</big><a class="headerlink" href="#gc3libs.Application.qsub" title="Permalink to this definition">¶</a></dt>
 <dd><p>Get an SGE <tt class="docutils literal"><span class="pre">qsub</span></tt> command-line invocation for submitting an
@@ -388,9 +404,48 @@ in SGE: it all depends on the installed parallel environment, and
 these are totally under control of the local sysadmin;
 therefore, any request for cores is ignored and a warning is
 logged.</p>
-<p>You definitely want to override this method in
-application-specific classes to provide appropriate invocation
-templates.</p>
+<p>Override this method in application-specific classes to
+provide appropriate invocation templates.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="gc3libs.Application.running">
+<tt class="descname">running</tt><big>(</big><big>)</big><a class="headerlink" href="#gc3libs.Application.running" title="Permalink to this definition">¶</a></dt>
+<dd><p>Called when the job state transitions to <cite>RUNNING</cite>, i.e., the
+job has been successfully started on a (possibly) remote
+resource.</p>
+<p>The default implementation does nothing, override in derived
+classes to implement additional behavior.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="gc3libs.Application.stopped">
+<tt class="descname">stopped</tt><big>(</big><big>)</big><a class="headerlink" href="#gc3libs.Application.stopped" title="Permalink to this definition">¶</a></dt>
+<dd><p>Called when the job state transitions to <cite>STOPPED</cite>, i.e., the
+job has been remotely suspended for an unknown reason and
+cannot automatically resume execution.</p>
+<p>The default implementation does nothing, override in derived
+classes to implement additional behavior.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="gc3libs.Application.submitted">
+<tt class="descname">submitted</tt><big>(</big><big>)</big><a class="headerlink" href="#gc3libs.Application.submitted" title="Permalink to this definition">¶</a></dt>
+<dd><p>Called when the job state transitions to <cite>SUBMITTED</cite>, i.e.,
+the job has been successfully sent to a (possibly) remote
+execution resource and is now waiting to be scheduled.</p>
+<p>The default implementation does nothing, override in derived
+classes to implement additional behavior.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="gc3libs.Application.terminated">
+<tt class="descname">terminated</tt><big>(</big><big>)</big><a class="headerlink" href="#gc3libs.Application.terminated" title="Permalink to this definition">¶</a></dt>
+<dd><p>Called when the job state transitions to <cite>TERMINATED</cite>, i.e.,
+the job has finished execution (with whatever exit status, see
+<cite>returncode</cite>) and its execution cannot resume.</p>
+<p>The default implementation does nothing, override in derived
+classes to implement additional behavior.</p>
 </dd></dl>
 
 <dl class="method">
@@ -413,40 +468,23 @@ to produce XRSL tailored to your application.</p>
 the execution state of an <cite>Application</cite> instance.</p>
 <p>A <cite>Run</cite> object is guaranteed to have the following attributes:</p>
 <blockquote>
-<ul>
-<li><dl class="first docutils">
-<dt><cite>state</cite>: Current state of the job, initially <cite>State.NEW</cite>; </dt>
-<dd><p class="first last">see <cite>Run.State</cite> for a list of the possible values.</p>
-</dd>
+<dl class="docutils">
+<dt><cite>log</cite></dt>
+<dd>A <cite>gc3libs.utils.Log</cite> instance, recording human-readable text
+messages on events in this job&#8217;s history.</dd>
+<dt><cite>timestamp</cite></dt>
+<dd>Dictionary, recording the most recent timestamp when a certain
+state was reached.  Timestamps are given as UNIX epochs.</dd>
 </dl>
-</li>
-<li><p class="first"><cite>output_dir</cite>: path to the directory where output has been
-downloaded, or <cite>None</cite> if no output has been retrieved yet.</p>
-</li>
-<li><p class="first"><cite>output_retrieved</cite>: Initially, <cite>False</cite>, set to <cite>True</cite> after a
-successful call to <cite>Gcli.gget</cite></p>
-</li>
-</ul>
 </blockquote>
+<p>For properties <cite>state</cite>, <cite>signal</cite> and <cite>returncode</cite>, see the
+respective documentation.</p>
 <p><cite>Run</cite> objects support attribute lookup by both the <tt class="docutils literal"><span class="pre">[...]</span></tt> and
 the <tt class="docutils literal"><span class="pre">.</span></tt> syntax; see <cite>gc3libs.utils.Struct</cite> for examples.</p>
 <dl class="class">
 <dt id="gc3libs.Run.Signals">
 <em class="property">class </em><tt class="descname">Signals</tt><a class="headerlink" href="#gc3libs.Run.Signals" title="Permalink to this definition">¶</a></dt>
 <dd>Collection of (fake) signals used to encode termination reason in <cite>Job.returncode</cite>.</dd></dl>
-
-<dl class="method">
-<dt id="gc3libs.Run.attach">
-<tt class="descclassname">Run.</tt><tt class="descname">attach</tt><big>(</big><em>observer</em><big>)</big><a class="headerlink" href="#gc3libs.Run.attach" title="Permalink to this definition">¶</a></dt>
-<dd><p>Notify <cite>observer</cite> of any changes to the execution state.</p>
-<p>Only one observer will receive notifications; this overrides
-any previously-set observer.</p>
-</dd></dl>
-
-<dl class="method">
-<dt id="gc3libs.Run.detach">
-<tt class="descclassname">Run.</tt><tt class="descname">detach</tt><big>(</big><big>)</big><a class="headerlink" href="#gc3libs.Run.detach" title="Permalink to this definition">¶</a></dt>
-<dd>Stop notifying any observer of execution state changes.</dd></dl>
 
 <dl class="attribute">
 <dt id="gc3libs.Run.exitcode">
@@ -547,15 +585,72 @@ The value of <cite>Run.state</cite> must always be a value from the
 </div>
 </div>
 </div>
-<div class="section" id="module-gc3libs.gcli">
-<h3><cite>gc3libs.gcli</cite><a class="headerlink" href="#module-gc3libs.gcli" title="Permalink to this headline">¶</a></h3>
+<div class="section" id="module-gc3libs.core">
+<h3><cite>gc3libs.core</cite><a class="headerlink" href="#module-gc3libs.core" title="Permalink to this headline">¶</a></h3>
 <p>Top-level interface to Grid functionality.</p>
+<dl class="class">
+<dt id="gc3libs.core.Engine">
+<em class="property">class </em><tt class="descclassname">gc3libs.core.</tt><tt class="descname">Engine</tt><big>(</big><em>grid</em>, <em>jobs=</em><span class="optional">[</span><span class="optional">]</span>, <em>store=None</em>, <em>can_submit=True</em>, <em>can_retrieve=True</em>, <em>max_in_flight=0</em>, <em>max_submitted=0</em><big>)</big><a class="headerlink" href="#gc3libs.core.Engine" title="Permalink to this definition">¶</a></dt>
+<dd><p>Submit jobs in a collection, and update their state until a
+terminal state is reached. Specifically:</p>
+<blockquote>
+<ul class="simple">
+<li>jobs in <cite>NEW</cite> state are submitted;</li>
+<li>the state of jobs in <cite>SUBMITTED</cite>, <cite>RUNNING</cite> or <cite>STOPPED</cite> state is updated;</li>
+<li>when a job reaches <cite>TERMINATED</cite> state, its output is downloaded.</li>
+</ul>
+</blockquote>
+<p>The behavior of <cite>Engine</cite> instances can be further customized by
+setting the following instance attributes:</p>
+<blockquote>
+<dl class="docutils">
+<dt><cite>can_submit</cite></dt>
+<dd>Boolean value: if <cite>False</cite>, no job will be submitted.</dd>
+<dt><cite>can_retrieve</cite></dt>
+<dd>Boolean value: if <cite>False</cite>, no output will ever be retrieved.</dd>
+<dt><cite>max_in_flight</cite></dt>
+<dd>If &gt;0, limit the number of jobs in <cite>SUBMITTED</cite> or <cite>RUNNING</cite>
+state: if the number of jobs in <cite>SUBMITTED</cite>, <cite>RUNNING</cite> or
+<cite>STOPPED</cite> state is greater than <cite>max_in_flight</cite>, then no new
+submissions will be attempted.</dd>
+<dt><cite>max_submitted</cite> </dt>
+<dd>If &gt;0, limit the number of jobs in <cite>SUBMITTED</cite> state: if the
+number of jobs in <cite>SUBMITTED</cite>, <cite>RUNNING</cite> or <cite>STOPPED</cite> state is
+greater than <cite>max_submitted</cite>, then no new submissions will be
+attempted.</dd>
+</dl>
+</blockquote>
+<p>Any of the above can also be set by passing a keyword argument to
+the constructor:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">e</span> <span class="o">=</span> <span class="n">Engine</span><span class="p">(</span><span class="n">can_submit</span><span class="o">=</span><span class="bp">False</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">e</span><span class="o">.</span><span class="n">can_submit</span>
+<span class="go">False</span>
+</pre></div>
+</div>
+<dl class="method">
+<dt id="gc3libs.core.Engine.progress">
+<tt class="descname">progress</tt><big>(</big><big>)</big><a class="headerlink" href="#gc3libs.core.Engine.progress" title="Permalink to this definition">¶</a></dt>
+<dd><p>Update state of all registered jobs and take appropriate action.
+Specifically:</p>
+<blockquote>
+<ul class="simple">
+<li>jobs in <cite>NEW</cite> state are submitted;</li>
+<li>the state of jobs in <cite>SUBMITTED</cite>, <cite>RUNNING</cite> or <cite>STOPPED</cite> state is updated;</li>
+<li>when a job reaches <cite>TERMINATED</cite> state, its output is downloaded.</li>
+</ul>
+</blockquote>
+<p>The <cite>max_in_flight</cite> and <cite>max_submitted</cite> limits (if &gt;0) are
+taken into account when attempting submission of jobs.</p>
+</dd></dl>
+
+</dd></dl>
+
 <dl class="function">
-<dt id="gc3libs.gcli.read_config">
-<tt class="descclassname">gc3libs.gcli.</tt><tt class="descname">read_config</tt><big>(</big><em>*locations</em><big>)</big><a class="headerlink" href="#gc3libs.gcli.read_config" title="Permalink to this definition">¶</a></dt>
+<dt id="gc3libs.core.read_config">
+<tt class="descclassname">gc3libs.core.</tt><tt class="descname">read_config</tt><big>(</big><em>*locations</em><big>)</big><a class="headerlink" href="#gc3libs.core.read_config" title="Permalink to this definition">¶</a></dt>
 <dd>Read each of the configuration files listed in <cite>locations</cite>, and
 return a <cite>(defaults, resources, authorizations)</cite> triple that can
-be passed to the <cite>Gcli</cite> class constructor.</dd></dl>
+be passed to the <cite>Core</cite> class constructor.</dd></dl>
 
 </div>
 <div class="section" id="module-gc3libs.Default">
@@ -685,8 +780,8 @@ label by string value:</p>
 </div>
 <p>Finally, enumeration labels can also be iterated upon:</p>
 <div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="k">for</span> <span class="n">a</span> <span class="ow">in</span> <span class="n">Animal</span><span class="p">:</span> <span class="k">print</span> <span class="n">a</span>
-<span class="go">CAT</span>
 <span class="go">DOG</span>
+<span class="go">CAT</span>
 </pre></div>
 </div>
 </dd></dl>
@@ -706,6 +801,76 @@ temporal order they were added to the list:</p>
 <div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="k">for</span> <span class="n">msg</span> <span class="ow">in</span> <span class="n">L</span><span class="p">:</span> <span class="k">print</span> <span class="n">msg</span>
 <span class="go">first message</span>
 <span class="go">second one</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="class">
+<dt id="gc3libs.utils.PlusInfinity">
+<em class="property">class </em><tt class="descclassname">gc3libs.utils.</tt><tt class="descname">PlusInfinity</tt><a class="headerlink" href="#gc3libs.utils.PlusInfinity" title="Permalink to this definition">¶</a></dt>
+<dd><p>An object that is greater-than any other object.</p>
+<blockquote>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">x</span> <span class="o">=</span> <span class="n">PlusInfinity</span><span class="p">()</span>
+</pre></div>
+</div>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">x</span> <span class="o">&gt;</span> <span class="mi">1</span>
+<span class="go">True</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="mi">1</span> <span class="o">&lt;</span> <span class="n">x</span>
+<span class="go">True</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="mi">1245632479102509834570124871023487235987634518745</span> <span class="o">&lt;</span> <span class="n">x</span>
+<span class="go">True</span>
+</pre></div>
+</div>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">x</span> <span class="o">&gt;</span> <span class="n">sys</span><span class="o">.</span><span class="n">maxint</span>
+<span class="go">True</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">x</span> <span class="o">&lt;</span> <span class="n">sys</span><span class="o">.</span><span class="n">maxint</span>
+<span class="go">False</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">sys</span><span class="o">.</span><span class="n">maxint</span> <span class="o">&lt;</span> <span class="n">x</span>
+<span class="go">True</span>
+</pre></div>
+</div>
+</blockquote>
+<p><cite>PlusInfinity</cite> objects are actually larger than <em>any</em> given Python
+object:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">x</span> <span class="o">&gt;</span> <span class="s">&#39;azz&#39;</span>
+<span class="go">True</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">x</span> <span class="o">&gt;</span> <span class="nb">object</span><span class="p">()</span>
+<span class="go">True</span>
+</pre></div>
+</div>
+<p>Note that <cite>PlusInfinity</cite> is a singleton, therefore you always get
+the same instance when calling the class constructor:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">x</span> <span class="o">=</span> <span class="n">PlusInfinity</span><span class="p">()</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">y</span> <span class="o">=</span> <span class="n">PlusInfinity</span><span class="p">()</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">x</span> <span class="ow">is</span> <span class="n">y</span>
+<span class="go">True</span>
+</pre></div>
+</div>
+<p>Relational operators try to return the correct value when
+comparing <cite>PlusInfinity</cite> to itself:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">x</span> <span class="o">&lt;</span> <span class="n">y</span>
+<span class="go">False</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">x</span> <span class="o">&lt;=</span> <span class="n">y</span>
+<span class="go">True</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">x</span> <span class="o">==</span> <span class="n">y</span> 
+<span class="go">True</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">x</span> <span class="o">&gt;=</span> <span class="n">y</span>
+<span class="go">True</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">x</span> <span class="o">&gt;</span> <span class="n">y</span>
+<span class="go">False</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="class">
+<dt id="gc3libs.utils.Singleton">
+<em class="property">class </em><tt class="descclassname">gc3libs.utils.</tt><tt class="descname">Singleton</tt><a class="headerlink" href="#gc3libs.utils.Singleton" title="Permalink to this definition">¶</a></dt>
+<dd><p>Derived classes of <cite>Singleton</cite> can have only one instance in the
+running Python interpreter.</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">x</span> <span class="o">=</span> <span class="n">Singleton</span><span class="p">()</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">y</span> <span class="o">=</span> <span class="n">Singleton</span><span class="p">()</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">x</span> <span class="ow">is</span> <span class="n">y</span>
+<span class="go">True</span>
 </pre></div>
 </div>
 </dd></dl>
@@ -802,8 +967,8 @@ template contents itself.</p>
 <dl class="function">
 <dt id="gc3libs.utils.mkdir_with_backup">
 <tt class="descclassname">gc3libs.utils.</tt><tt class="descname">mkdir_with_backup</tt><big>(</big><em>path</em><big>)</big><a class="headerlink" href="#gc3libs.utils.mkdir_with_backup" title="Permalink to this definition">¶</a></dt>
-<dd>Like <cite>os.mkdirs</cite>, but if <cite>path</cite> already exists, rename the existing
-one appending a <cite>.NUMBER</cite> suffix.</dd></dl>
+<dd>Like <cite>os.makedirs</cite>, but if <cite>path</cite> already exists, rename the
+existing one appending a <cite>.NUMBER</cite> suffix.</dd></dl>
 
 <dl class="function">
 <dt id="gc3libs.utils.progressive_number">
@@ -880,9 +1045,6 @@ suffixes.</p>
 </div>
 </dd></dl>
 
-</div>
-<div class="section" id="module-gc3libs.Job">
-<h3><cite>gc3libs.Job</cite><a class="headerlink" href="#module-gc3libs.Job" title="Permalink to this headline">¶</a></h3>
 </div>
 <div class="section" id="module-gc3libs.persistence">
 <h3><cite>gc3libs.persistence</cite><a class="headerlink" href="#module-gc3libs.persistence" title="Permalink to this headline">¶</a></h3>
@@ -1168,6 +1330,17 @@ running remote job, tell the execution middleware to cancel
 it.</dd></dl>
 
 <dl class="method">
+<dt id="gc3libs.backends.LRMS.free">
+<tt class="descname">free</tt><big>(</big><em>app</em><big>)</big><a class="headerlink" href="#gc3libs.backends.LRMS.free" title="Permalink to this definition">¶</a></dt>
+<dd><p>Free up any remote resources used for the execution of <cite>app</cite>.
+In particular, this should delete any remote directories and
+files.</p>
+<p>Call this method when <cite>app.execution.state</cite> is anything other
+than <cite>TERMINATED</cite> results in undefined behavior and will
+likely be the cause of errors later on.  Be cautious.</p>
+</dd></dl>
+
+<dl class="method">
 <dt id="gc3libs.backends.LRMS.get_resource_status">
 <tt class="descname">get_resource_status</tt><big>(</big><big>)</big><a class="headerlink" href="#gc3libs.backends.LRMS.get_resource_status" title="Permalink to this definition">¶</a></dt>
 <dd>Update the status of the resource associated with this <cite>LRMS</cite>
@@ -1175,14 +1348,32 @@ instance in-place.  Return updated <cite>Resource</cite> object.</dd></dl>
 
 <dl class="method">
 <dt id="gc3libs.backends.LRMS.get_results">
-<tt class="descname">get_results</tt><big>(</big><em>job</em>, <em>download_dir</em><big>)</big><a class="headerlink" href="#gc3libs.backends.LRMS.get_results" title="Permalink to this definition">¶</a></dt>
-<dd>Retrieve job output files into local directory <cite>download_dir</cite>.</dd></dl>
+<tt class="descname">get_results</tt><big>(</big><em>job</em>, <em>download_dir</em>, <em>overwrite=False</em><big>)</big><a class="headerlink" href="#gc3libs.backends.LRMS.get_results" title="Permalink to this definition">¶</a></dt>
+<dd>Retrieve job output files into local directory <cite>download_dir</cite>
+(which must already exists).  Will not overwrite existing
+files, unless the optional argument <cite>overwrite</cite> is <cite>True</cite>.</dd></dl>
 
 <dl class="method">
 <dt id="gc3libs.backends.LRMS.is_valid">
 <tt class="descname">is_valid</tt><big>(</big><big>)</big><a class="headerlink" href="#gc3libs.backends.LRMS.is_valid" title="Permalink to this definition">¶</a></dt>
 <dd>Determine if a provided LRMS instance is valid.
 Returns True or False.</dd></dl>
+
+<dl class="method">
+<dt id="gc3libs.backends.LRMS.peek">
+<tt class="descname">peek</tt><big>(</big><em>app</em>, <em>remote_filename</em>, <em>local_file</em>, <em>offset=0</em>, <em>size=None</em><big>)</big><a class="headerlink" href="#gc3libs.backends.LRMS.peek" title="Permalink to this definition">¶</a></dt>
+<dd><p>Download <cite>size</cite> bytes (at offset <cite>offset</cite> from the start) from
+remote file <cite>remote_filename</cite> and write them into
+<cite>local_file</cite>.  If <cite>size</cite> is <cite>None</cite> (default), then snarf
+contents of remote file from <cite>offset</cite> unto the end.</p>
+<p>Argument <cite>local_file</cite> is either a local path name (string), or
+a file-like object supporting a <cite>.write()</cite> method.  If
+<cite>local_file</cite> is a path name, it is created if not existent,
+otherwise overwritten.</p>
+<p>Argument <cite>remote_filename</cite> is the name of a file in the remote job
+&#8220;sandbox&#8221;.</p>
+<p>Any exception raised by operations will be passed through.</p>
+</dd></dl>
 
 <dl class="method">
 <dt id="gc3libs.backends.LRMS.submit_job">
@@ -1201,22 +1392,6 @@ responsibility to update it.</li>
 is necessary for this LRMS to perform further operations on it.</li>
 </ol>
 </blockquote>
-</dd></dl>
-
-<dl class="method">
-<dt id="gc3libs.backends.LRMS.tail">
-<tt class="descname">tail</tt><big>(</big><em>app</em>, <em>remote_filename</em>, <em>local_file</em>, <em>offset=0</em>, <em>size=None</em><big>)</big><a class="headerlink" href="#gc3libs.backends.LRMS.tail" title="Permalink to this definition">¶</a></dt>
-<dd><p>Download <cite>size</cite> bytes (at offset <cite>offset</cite> from the start) from
-remote file <cite>remote_filename</cite> and write them into
-<cite>local_file</cite>.  If <cite>size</cite> is <cite>None</cite> (default), then snarf
-contents of remote file from <cite>offset</cite> unto the end.</p>
-<p>Argument <cite>local_file</cite> is either a local path name (string), or
-a file-like object supporting a <cite>.write()</cite> method.  If
-<cite>local_file</cite> is a path name, it is created if not existent,
-otherwise overwritten.</p>
-<p>Argument <cite>remote_filename</cite> is the name of a file in the remote job
-&#8220;sandbox&#8221;.</p>
-<p>Any exception raised by operations will be passed through.</p>
 </dd></dl>
 
 <dl class="method">
@@ -1244,6 +1419,17 @@ running remote job, tell the execution middleware to cancel
 it.</dd></dl>
 
 <dl class="method">
+<dt id="gc3libs.backends.arc.ArcLrms.free">
+<tt class="descname">free</tt><big>(</big><em>app</em><big>)</big><a class="headerlink" href="#gc3libs.backends.arc.ArcLrms.free" title="Permalink to this definition">¶</a></dt>
+<dd><p>Free up any remote resources used for the execution of <cite>app</cite>.
+In particular, this should delete any remote directories and
+files.</p>
+<p>Call this method when <cite>app.execution.state</cite> is anything other
+than <cite>TERMINATED</cite> results in undefined behavior and will
+likely be the cause of errors later on.  Be cautious.</p>
+</dd></dl>
+
+<dl class="method">
 <dt id="gc3libs.backends.arc.ArcLrms.get_resource_status">
 <tt class="descname">get_resource_status</tt><big>(</big><big>)</big><a class="headerlink" href="#gc3libs.backends.arc.ArcLrms.get_resource_status" title="Permalink to this definition">¶</a></dt>
 <dd>Update the status of the resource associated with this <cite>LRMS</cite>
@@ -1251,8 +1437,26 @@ instance in-place.  Return updated <cite>Resource</cite> object.</dd></dl>
 
 <dl class="method">
 <dt id="gc3libs.backends.arc.ArcLrms.get_results">
-<tt class="descname">get_results</tt><big>(</big><em>app</em>, <em>download_dir</em><big>)</big><a class="headerlink" href="#gc3libs.backends.arc.ArcLrms.get_results" title="Permalink to this definition">¶</a></dt>
-<dd>Retrieve job output files into local directory <cite>download_dir</cite>.</dd></dl>
+<tt class="descname">get_results</tt><big>(</big><em>app</em>, <em>download_dir</em>, <em>overwrite=False</em><big>)</big><a class="headerlink" href="#gc3libs.backends.arc.ArcLrms.get_results" title="Permalink to this definition">¶</a></dt>
+<dd>Retrieve job output files into local directory <cite>download_dir</cite>
+(which must already exists).  Will not overwrite existing
+files, unless the optional argument <cite>overwrite</cite> is <cite>True</cite>.</dd></dl>
+
+<dl class="method">
+<dt id="gc3libs.backends.arc.ArcLrms.peek">
+<tt class="descname">peek</tt><big>(</big><em>app</em>, <em>remote_filename</em>, <em>local_file</em>, <em>offset=0</em>, <em>size=None</em><big>)</big><a class="headerlink" href="#gc3libs.backends.arc.ArcLrms.peek" title="Permalink to this definition">¶</a></dt>
+<dd><p>Download <cite>size</cite> bytes (at offset <cite>offset</cite> from the start) from
+remote file <cite>remote_filename</cite> and write them into
+<cite>local_file</cite>.  If <cite>size</cite> is <cite>None</cite> (default), then snarf
+contents of remote file from <cite>offset</cite> unto the end.</p>
+<p>Argument <cite>local_file</cite> is either a local path name (string), or
+a file-like object supporting a <cite>.write()</cite> method.  If
+<cite>local_file</cite> is a path name, it is created if not existent,
+otherwise overwritten.</p>
+<p>Argument <cite>remote_filename</cite> is the name of a file in the remote job
+&#8220;sandbox&#8221;.</p>
+<p>Any exception raised by operations will be passed through.</p>
+</dd></dl>
 
 <dl class="method">
 <dt id="gc3libs.backends.arc.ArcLrms.submit_job">
@@ -1271,22 +1475,6 @@ responsibility to update it.</li>
 is necessary for this LRMS to perform further operations on it.</li>
 </ol>
 </blockquote>
-</dd></dl>
-
-<dl class="method">
-<dt id="gc3libs.backends.arc.ArcLrms.tail">
-<tt class="descname">tail</tt><big>(</big><em>app</em>, <em>remote_filename</em>, <em>local_file</em>, <em>offset=0</em>, <em>size=None</em><big>)</big><a class="headerlink" href="#gc3libs.backends.arc.ArcLrms.tail" title="Permalink to this definition">¶</a></dt>
-<dd><p>Download <cite>size</cite> bytes (at offset <cite>offset</cite> from the start) from
-remote file <cite>remote_filename</cite> and write them into
-<cite>local_file</cite>.  If <cite>size</cite> is <cite>None</cite> (default), then snarf
-contents of remote file from <cite>offset</cite> unto the end.</p>
-<p>Argument <cite>local_file</cite> is either a local path name (string), or
-a file-like object supporting a <cite>.write()</cite> method.  If
-<cite>local_file</cite> is a path name, it is created if not existent,
-otherwise overwritten.</p>
-<p>Argument <cite>remote_filename</cite> is the name of a file in the remote job
-&#8220;sandbox&#8221;.</p>
-<p>Any exception raised by operations will be passed through.</p>
 </dd></dl>
 
 <dl class="method">
@@ -1314,6 +1502,17 @@ running remote job, tell the execution middleware to cancel
 it.</dd></dl>
 
 <dl class="method">
+<dt id="gc3libs.backends.sge.SgeLrms.free">
+<tt class="descname">free</tt><big>(</big><em>app</em><big>)</big><a class="headerlink" href="#gc3libs.backends.sge.SgeLrms.free" title="Permalink to this definition">¶</a></dt>
+<dd><p>Free up any remote resources used for the execution of <cite>app</cite>.
+In particular, this should delete any remote directories and
+files.</p>
+<p>Call this method when <cite>app.execution.state</cite> is anything other
+than <cite>TERMINATED</cite> results in undefined behavior and will
+likely be the cause of errors later on.  Be cautious.</p>
+</dd></dl>
+
+<dl class="method">
 <dt id="gc3libs.backends.sge.SgeLrms.get_resource_status">
 <tt class="descname">get_resource_status</tt><big>(</big><big>)</big><a class="headerlink" href="#gc3libs.backends.sge.SgeLrms.get_resource_status" title="Permalink to this definition">¶</a></dt>
 <dd>Update the status of the resource associated with this <cite>LRMS</cite>
@@ -1321,8 +1520,26 @@ instance in-place.  Return updated <cite>Resource</cite> object.</dd></dl>
 
 <dl class="method">
 <dt id="gc3libs.backends.sge.SgeLrms.get_results">
-<tt class="descname">get_results</tt><big>(</big><em>app</em>, <em>download_dir</em><big>)</big><a class="headerlink" href="#gc3libs.backends.sge.SgeLrms.get_results" title="Permalink to this definition">¶</a></dt>
-<dd>Retrieve job output files into local directory <cite>download_dir</cite>.</dd></dl>
+<tt class="descname">get_results</tt><big>(</big><em>app</em>, <em>download_dir</em>, <em>overwrite=False</em><big>)</big><a class="headerlink" href="#gc3libs.backends.sge.SgeLrms.get_results" title="Permalink to this definition">¶</a></dt>
+<dd>Retrieve job output files into local directory <cite>download_dir</cite>
+(which must already exists).  Will not overwrite existing
+files, unless the optional argument <cite>overwrite</cite> is <cite>True</cite>.</dd></dl>
+
+<dl class="method">
+<dt id="gc3libs.backends.sge.SgeLrms.peek">
+<tt class="descname">peek</tt><big>(</big><em>app</em>, <em>remote_filename</em>, <em>local_file</em>, <em>offset=0</em>, <em>size=None</em><big>)</big><a class="headerlink" href="#gc3libs.backends.sge.SgeLrms.peek" title="Permalink to this definition">¶</a></dt>
+<dd><p>Download <cite>size</cite> bytes (at offset <cite>offset</cite> from the start) from
+remote file <cite>remote_filename</cite> and write them into
+<cite>local_file</cite>.  If <cite>size</cite> is <cite>None</cite> (default), then snarf
+contents of remote file from <cite>offset</cite> unto the end.</p>
+<p>Argument <cite>local_file</cite> is either a local path name (string), or
+a file-like object supporting a <cite>.write()</cite> method.  If
+<cite>local_file</cite> is a path name, it is created if not existent,
+otherwise overwritten.</p>
+<p>Argument <cite>remote_filename</cite> is the name of a file in the remote job
+&#8220;sandbox&#8221;.</p>
+<p>Any exception raised by operations will be passed through.</p>
+</dd></dl>
 
 <dl class="method">
 <dt id="gc3libs.backends.sge.SgeLrms.submit_job">
@@ -1341,22 +1558,6 @@ responsibility to update it.</li>
 is necessary for this LRMS to perform further operations on it.</li>
 </ol>
 </blockquote>
-</dd></dl>
-
-<dl class="method">
-<dt id="gc3libs.backends.sge.SgeLrms.tail">
-<tt class="descname">tail</tt><big>(</big><em>app</em>, <em>remote_filename</em>, <em>local_file</em>, <em>offset=0</em>, <em>size=None</em><big>)</big><a class="headerlink" href="#gc3libs.backends.sge.SgeLrms.tail" title="Permalink to this definition">¶</a></dt>
-<dd><p>Download <cite>size</cite> bytes (at offset <cite>offset</cite> from the start) from
-remote file <cite>remote_filename</cite> and write them into
-<cite>local_file</cite>.  If <cite>size</cite> is <cite>None</cite> (default), then snarf
-contents of remote file from <cite>offset</cite> unto the end.</p>
-<p>Argument <cite>local_file</cite> is either a local path name (string), or
-a file-like object supporting a <cite>.write()</cite> method.  If
-<cite>local_file</cite> is a path name, it is created if not existent,
-otherwise overwritten.</p>
-<p>Argument <cite>remote_filename</cite> is the name of a file in the remote job
-&#8220;sandbox&#8221;.</p>
-<p>Any exception raised by operations will be passed through.</p>
 </dd></dl>
 
 <dl class="method">
@@ -1450,7 +1651,7 @@ can be found in gc3utils/commands.py</p>
 </div>
 <div class="section" id="module-gc3utils.commands">
 <h3><cite>gc3utils.commands</cite><a class="headerlink" href="#module-gc3utils.commands" title="Permalink to this headline">¶</a></h3>
-<p>Implementation of the <cite>gcli</cite> command-line front-ends.</p>
+<p>Implementation of the <cite>core</cite> command-line front-ends.</p>
 <dl class="function">
 <dt id="gc3utils.commands.gclean">
 <tt class="descclassname">gc3utils.commands.</tt><tt class="descname">gclean</tt><big>(</big><em>*args</em>, <em>**kw</em><big>)</big><a class="headerlink" href="#gc3utils.commands.gclean" title="Permalink to this definition">¶</a></dt>
@@ -1537,11 +1738,10 @@ gkill will try anyway to process all requests</dd></dl>
 </li>
 </ul>
 </li>
-<li><a class="reference external" href="#module-gc3libs.gcli"><cite>gc3libs.gcli</cite></a></li>
+<li><a class="reference external" href="#module-gc3libs.core"><cite>gc3libs.core</cite></a></li>
 <li><a class="reference external" href="#module-gc3libs.Default"><cite>gc3libs.Default</cite></a></li>
 <li><a class="reference external" href="#module-gc3libs.Exceptions"><cite>gc3libs.Exceptions</cite></a></li>
 <li><a class="reference external" href="#module-gc3libs.utils"><cite>gc3libs.utils</cite></a></li>
-<li><a class="reference external" href="#module-gc3libs.Job"><cite>gc3libs.Job</cite></a></li>
 <li><a class="reference external" href="#module-gc3libs.persistence"><cite>gc3libs.persistence</cite></a></li>
 <li><a class="reference external" href="#module-gc3libs.Resource"><cite>gc3libs.Resource</cite></a></li>
 <li><a class="reference external" href="#module-gc3libs.scheduler"><cite>gc3libs.scheduler</cite></a></li>
