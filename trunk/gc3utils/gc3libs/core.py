@@ -276,7 +276,8 @@ class Core:
 
 
     def kill(self, app, **kw):
-        """Terminate a job.
+        """
+        Terminate a job.
 
         Terminating a job in RUNNING, SUBMITTED, or STOPPED state
         entails canceling the job with the remote execution system;
@@ -297,10 +298,20 @@ class Core:
         return job
 
 
-    def tail(self, app, what='stdout', offset=0, size=None, **kw):
+    def peek(self, app, what='stdout', offset=0, size=None, **kw):
         """
-        Return job object with .stdout or .stderr containing content of stdout or stderr respectively
-        Note: For the time being we allow only stdout or stderr as valid filenames
+        Download `size` bytes (at offset `offset` from the start) from
+        the remote job standard output or error stream, and write them
+        into a local file.  Return file-like object from which the
+        downloaded contents can be read.
+
+        If `size` is `None` (default), then snarf all available
+        contents of the remote stream from `offset` unto the end.
+        
+        The only allowed values for the `what` arguments are the
+        strings `'stdout'` and `'stderr'`, indicating that the
+        relevant section of the job's standard output resp. standard
+        error should be downloaded.
         """
         job = app.execution
         if what == 'stdout':
@@ -308,7 +319,7 @@ class Core:
         elif what == 'stderr':
             remote_filename = job.stderr_filename
         else:
-            raise Error("File name requested to `Core.tail` must be"
+            raise Error("File name requested to `Core.peek` must be"
                         " 'stdout' or 'stderr', not '%s'" % what)
 
         # Check if local data available
@@ -325,7 +336,7 @@ class Core:
 
             _local_file = tempfile.NamedTemporaryFile(suffix='.tmp', prefix='gc3libs.')
 
-            _lrms.tail(app, remote_filename, _local_file, offset, size)
+            _lrms.peek(app, remote_filename, _local_file, offset, size)
             _local_file.flush()
             _local_file.seek(0)
         

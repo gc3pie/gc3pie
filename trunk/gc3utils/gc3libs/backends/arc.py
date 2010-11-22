@@ -313,12 +313,12 @@ class ArcLrms(LRMS):
         return self._resource
 
 
-    @same_docstring_as(LRMS.tail)
-    def tail(self, app, remote_filename, local_file, offset=0, size=None):
+    @same_docstring_as(LRMS.peek)
+    def peek(self, app, remote_filename, local_file, offset=0, size=None):
         job = app.execution
 
         assert job.has_key('lrms_jobid'), \
-            "Missing attribute `lrms_jobid` on `Job` instance passed to `ArcLrms.tail`."
+            "Missing attribute `lrms_jobid` on `Job` instance passed to `ArcLrms.peek`."
 
         if size is None:
             size = sys.maxint
