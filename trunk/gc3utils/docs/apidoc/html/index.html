@@ -628,6 +628,32 @@ the constructor:</p>
 </pre></div>
 </div>
 <dl class="method">
+<dt id="gc3libs.core.Engine.add">
+<tt class="descname">add</tt><big>(</big><em>job</em><big>)</big><a class="headerlink" href="#gc3libs.core.Engine.add" title="Permalink to this definition">¶</a></dt>
+<dd>Add <cite>job</cite> to the list of jobs managed by this Engine.</dd></dl>
+
+<dl class="method">
+<dt id="gc3libs.core.Engine.fetch_output">
+<tt class="descname">fetch_output</tt><big>(</big><em>job</em><big>)</big><a class="headerlink" href="#gc3libs.core.Engine.fetch_output" title="Permalink to this definition">¶</a></dt>
+<dd>Proxy for <cite>Core.fetch_output</cite> (which see).</dd></dl>
+
+<dl class="method">
+<dt id="gc3libs.core.Engine.free">
+<tt class="descname">free</tt><big>(</big><em>job</em><big>)</big><a class="headerlink" href="#gc3libs.core.Engine.free" title="Permalink to this definition">¶</a></dt>
+<dd>Proxy for <cite>Core.free</cite> (which see); in addition, remove <cite>job</cite>
+from the list of managed jobs.</dd></dl>
+
+<dl class="method">
+<dt id="gc3libs.core.Engine.kill">
+<tt class="descname">kill</tt><big>(</big><em>job</em><big>)</big><a class="headerlink" href="#gc3libs.core.Engine.kill" title="Permalink to this definition">¶</a></dt>
+<dd>Proxy for <cite>Core.kill</cite> (which see).</dd></dl>
+
+<dl class="method">
+<dt id="gc3libs.core.Engine.peek">
+<tt class="descname">peek</tt><big>(</big><em>job</em>, <em>what='stdout'</em>, <em>offset=0</em>, <em>size=None</em>, <em>**kw</em><big>)</big><a class="headerlink" href="#gc3libs.core.Engine.peek" title="Permalink to this definition">¶</a></dt>
+<dd>Proxy for <cite>Core.peek</cite> (which see).</dd></dl>
+
+<dl class="method">
 <dt id="gc3libs.core.Engine.progress">
 <tt class="descname">progress</tt><big>(</big><big>)</big><a class="headerlink" href="#gc3libs.core.Engine.progress" title="Permalink to this definition">¶</a></dt>
 <dd><p>Update state of all registered jobs and take appropriate action.
@@ -642,6 +668,26 @@ Specifically:</p>
 <p>The <cite>max_in_flight</cite> and <cite>max_submitted</cite> limits (if &gt;0) are
 taken into account when attempting submission of jobs.</p>
 </dd></dl>
+
+<dl class="method">
+<dt id="gc3libs.core.Engine.remove">
+<tt class="descname">remove</tt><big>(</big><em>job</em><big>)</big><a class="headerlink" href="#gc3libs.core.Engine.remove" title="Permalink to this definition">¶</a></dt>
+<dd>Remove a <cite>job</cite> from the list of jobs managed by this Engine.</dd></dl>
+
+<dl class="method">
+<dt id="gc3libs.core.Engine.submit">
+<tt class="descname">submit</tt><big>(</big><em>job</em><big>)</big><a class="headerlink" href="#gc3libs.core.Engine.submit" title="Permalink to this definition">¶</a></dt>
+<dd>Submit <cite>job</cite> at the next invocation of <cite>perform</cite>.  Actually,
+the job is just added to the collection of managed jobs,
+regardless of its state.</dd></dl>
+
+<dl class="method">
+<dt id="gc3libs.core.Engine.update_job_state">
+<tt class="descname">update_job_state</tt><big>(</big><em>*jobs</em><big>)</big><a class="headerlink" href="#gc3libs.core.Engine.update_job_state" title="Permalink to this definition">¶</a></dt>
+<dd>Return list of <em>current</em> states of the given jobs.  States
+will only be updated at the next invocation of <cite>perform</cite>; in
+particular, no state-change handlers are called as a result of
+calling this method.</dd></dl>
 
 </dd></dl>
 

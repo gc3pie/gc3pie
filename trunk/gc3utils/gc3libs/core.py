@@ -713,3 +713,53 @@ class Engine(object):
                     except Exception, x:
                         gc3libs.log.error("Got error in fetching output of job '%s': %s: %s" 
                                           % (job._id, x.__class__.__name__, str(x)), exc_info=True)
+
+
+    # implement a Core-like interface, so `Engine` objects can be used
+    # as substitutes for `Core`.
+
+    def free(job):
+        """
+        Proxy for `Core.free` (which see); in addition, remove `job`
+        from the list of managed jobs.
+        """
+        self.remove(job)
+        self._core.free(job)
+
+
+    def submit(self, job):
+        """
+        Submit `job` at the next invocation of `perform`.  Actually,
+        the job is just added to the collection of managed jobs,
+        regardless of its state.
+        """
+        return self.add(job)
+
+
+    def update_job_state(self, *jobs):
+        """
+        Return list of *current* states of the given jobs.  States
+        will only be updated at the next invocation of `perform`; in
+        particular, no state-change handlers are called as a result of
+        calling this method.
+        """
+        return [job.state for job in jobs]
+
+
+    def fetch_output(self, job):
+        """
+        Proxy for `Core.fetch_output` (which see).
+        """
+        return self._core.fetch_output(job)
+
+    def kill(self, job):
+        """
+        Proxy for `Core.kill` (which see).
+        """
+        self._core.kill(job)
+
+    def peek(self, job, what='stdout', offset=0, size=None, **kw):
+        """
+        Proxy for `Core.peek` (which see).
+        """
+        return self._core.peek(job, what, offset, size, **kw)
