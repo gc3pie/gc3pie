@@ -1526,9 +1526,85 @@ is necessary for this LRMS to perform further operations on it.</li>
 <dl class="method">
 <dt id="gc3libs.backends.arc.ArcLrms.update_job_state">
 <tt class="descname">update_job_state</tt><big>(</big><em>app</em><big>)</big><a class="headerlink" href="#gc3libs.backends.arc.ArcLrms.update_job_state" title="Permalink to this definition">¶</a></dt>
-<dd>Query the state of the remote job associated with <cite>app</cite> and
+<dd><p>Query the state of the ARC job associated with <cite>app</cite> and
 update <cite>app.execution.state</cite> accordingly.  Return the
-corresponding <cite>Run.State</cite>; see <cite>Run.State</cite> for more details.</dd></dl>
+corresponding <cite>Run.State</cite>; see <cite>Run.State</cite> for more details.</p>
+<p>The mapping of ARC job statuses to <cite>Run.State</cite> is as follows:</p>
+<blockquote>
+<table border="1" class="docutils">
+<colgroup>
+<col width="56%" />
+<col width="44%" />
+</colgroup>
+<thead valign="bottom">
+<tr><th class="head">ARC job status</th>
+<th class="head"><cite>Run.State</cite></th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr><td>ACCEPTED</td>
+<td>SUBMITTED</td>
+</tr>
+<tr><td>SUBMITTING</td>
+<td>SUBMITTED</td>
+</tr>
+<tr><td>PREPARING</td>
+<td>SUBMITTED</td>
+</tr>
+<tr><td>INLRMS:Q</td>
+<td>SUBMITTED</td>
+</tr>
+<tr><td>INLRMS:R</td>
+<td>RUNNING</td>
+</tr>
+<tr><td>INLRMS:O</td>
+<td>RUNNING</td>
+</tr>
+<tr><td>INLRMS:E</td>
+<td>RUNNING</td>
+</tr>
+<tr><td>INLRMS:X</td>
+<td>RUNNING</td>
+</tr>
+<tr><td>INLRMS:S</td>
+<td>STOPPED</td>
+</tr>
+<tr><td>INLRMS:H</td>
+<td>STOPPED</td>
+</tr>
+<tr><td>FINISHING</td>
+<td>RUNNING</td>
+</tr>
+<tr><td>EXECUTED</td>
+<td>RUNNING</td>
+</tr>
+<tr><td>FINISHED</td>
+<td>TERMINATED</td>
+</tr>
+<tr><td>CANCELING</td>
+<td>TERMINATED</td>
+</tr>
+<tr><td>FINISHED</td>
+<td>TERMINATED</td>
+</tr>
+<tr><td>KILLED</td>
+<td>TERMINATED</td>
+</tr>
+<tr><td>FAILED</td>
+<td>TERMINATED</td>
+</tr>
+<tr><td>DELETED</td>
+<td>TERMINATED</td>
+</tr>
+</tbody>
+</table>
+</blockquote>
+<p>Any other ARC job status is mapped to <cite>Run.State.UNKNOWN</cite>.  In
+particular, query a job ID that is not found in the ARC
+information system will result in <cite>UNKNOWN</cite> state, as will
+querying a job that has just been submitted and has not yet
+found its way to the infosys.</p>
+</dd></dl>
 
 </dd></dl>
 
