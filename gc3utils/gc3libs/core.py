@@ -492,3 +492,224 @@ def read_config(*locations):
                                   % str.join("', '", locations))
 
     return (resources, authorizations)
+
+
+
+class Engine(object):
+    """
+    Submit jobs in a collection, and update their state until a
+    terminal state is reached. Specifically:
+      
+      * jobs in `NEW` state are submitted;
+      * the state of jobs in `SUBMITTED`, `RUNNING` or `STOPPED` state is updated;
+      * when a job reaches `TERMINATED` state, its output is downloaded.
+
+    The behavior of `Engine` instances can be further customized by
+    setting the following instance attributes:
+
+      `can_submit`
+        Boolean value: if `False`, no job will be submitted.
+
+      `can_retrieve`
+        Boolean value: if `False`, no output will ever be retrieved.
+
+      `max_in_flight`
+        If >0, limit the number of jobs in `SUBMITTED` or `RUNNING`
+        state: if the number of jobs in `SUBMITTED`, `RUNNING` or
+        `STOPPED` state is greater than `max_in_flight`, then no new
+        submissions will be attempted.
+
+      `max_submitted` 
+        If >0, limit the number of jobs in `SUBMITTED` state: if the
+        number of jobs in `SUBMITTED`, `RUNNING` or `STOPPED` state is
+        greater than `max_submitted`, then no new submissions will be
+        attempted.
+
+    Any of the above can also be set by passing a keyword argument to
+    the constructor::
+
+      >>> e = Engine(can_submit=False)
+      >>> e.can_submit
+      False
+    """
+
+
+    def __init__(self, grid, jobs=list(), store=None, 
+                 can_submit=True, can_retrieve=True, max_in_flight=0, max_submitted=0):
+        """
+        Create a new `Engine` instance.  Arguments are as follows: 
+
+        `grid`
+          A `gc3libs.Core` instance, that will be used to operate on
+          jobs.  This is the only required argument.
+
+        `jobs`
+          Initial list of jobs to be managed by this Engine.  Jobs can
+          be later added and removed with the `add` and `remove`
+          methods (which see).  Defaults to the empty list.
+
+        `store`
+          An instance of `gc3libs.persistence.Store`, or `None`.  If
+          not `None`, it will be used to persist jobs after each
+          iteration; by default no store is used so no job state is
+          persisted.
+
+        `can_submit`, `can_retrieve`, `max_in_flight`, `max_submitted`
+          Optional keyword arguments; see `Engine` for a description.
+        """
+        # internal-use attributes
+        self._new = []
+        self._in_flight = []
+        self._stopped = []
+        self._terminated = []
+        self._core = grid
+        self._store = store
+        for job in jobs:
+            self.add(job)
+        # public attributes
+        self.can_submit = can_submit
+        self.can_retrieve = can_retrieve
+        self.max_in_flight = max_in_flight
+        self.max_submitted = max_submitted
+
+            
+    def add(self, job):
+        """Add `job` to the list of jobs managed by this Engine."""
+        state = job.state
+        if Run.State.NEW == state:
+            self._new.append(job)
+        elif Run.State.SUBMITTED == state or Run.State.RUNNING == state:
+            self._in_flight.append(job)
+        elif Run.State.STOPPED == state:
+            self._stopped.append(job)
+        elif Run.State.TERMINATED == state:
+            self._terminated.append(job)
+        else:
+            raise AssertionError("Unhandled job state '%s' in gc3libs.core.Engine." % state)
+
+
+    def remove(self, job):
+        """Remove a `job` from the list of jobs managed by this Engine."""
+        state = job.state
+        if Run.State.NEW == state:
+            self._new.remove(job)
+        elif Run.State.SUBMITTED == state or Run.State.RUNNING == state:
+            self._in_flight.remove(job)
+        elif Run.State.STOPPED == state:
+            self._stopped.remove(job)
+        elif Run.State.TERMINATED == state:
+            self._terminated.remove(job)
+        else:
+            raise AssertionError("Unhandled job state '%s' in gc3libs.core.Engine." % state)
+        
+
+    def progress(self):
+        """
+        Update state of all registered jobs and take appropriate action.
+        Specifically:
+
+          * jobs in `NEW` state are submitted;
+          * the state of jobs in `SUBMITTED`, `RUNNING` or `STOPPED` state is updated;
+          * when a job reaches `TERMINATED` state, its output is downloaded.
+
+        The `max_in_flight` and `max_submitted` limits (if >0) are
+        taken into account when attempting submission of jobs.
+        """
+        # prepare 
+        currently_submitted = 0
+        currently_in_flight = 0
+        if self.max_in_flight > 0:
+            limit_in_flight = self.max_in_flight
+        else:
+            limit_in_flight = utils.PlusInfinity()
+        if self.max_submitted > 0:
+            limit_submitted = self.max_submitted
+        else:
+            limit_submitted = utils.PlusInfinity()
+
+        # update status of SUBMITTED/RUNNING jobs before launching
+        # new ones, otherwise we would be checking the status of
+        # some jobs twice...
+        transitioned = []
+        for index, job in enumerate(self._in_flight):
+            try:
+                self._core.update_job_state(job)
+                if self._store:
+                    store.save(job)
+                if job.state == Run.State.SUBMITTED:
+                    currently_submitted += 1
+                    currently_in_flight += 1
+                elif job.state == Run.State.RUNNING:
+                    currently_in_flight += 1
+                elif job.state == Run.State.STOPPED:
+                    transitioned.append(index) # job changed state, mark as to remove
+                    self._stopped.append(job)
+                elif job.state == Run.State.TERMINATED:
+                    transitioned.append(index) # job changed state, mark as to remove
+                    self._terminated.append(job)
+            except Exception, x:
+                gc3libs.log.error("Ignoring error in updating state of job '%s': %s: %s"
+                                  % (job._id, x.__class__.__name__, str(x)),
+                                  exc_info=True)
+        # remove jobs that transitioned to other states
+        for index in reversed(transitioned):
+            del self._in_flight[index]
+
+        # update state of STOPPED jobs; again need to make before new
+        # submissions, because it can alter the count of in-flight
+        # jobs.
+        transitioned = []
+        for index, job in enumerate(self._stopped):
+            try:
+                self._core.update_job_state(job)
+                if self._store:
+                    store.save(job)
+                if job.state in [Run.State.SUBMITTED, Run.State.RUNNING]:
+                    currently_submitted += 1
+                    currently_in_flight += 1
+                    self._in_flight.append(job)
+                elif job.state == Run.State.TERMINATED:
+                    transitioned.append(index) # job changed state, mark as to remove
+                    self._terminated.append(job)
+            except Exception, x:
+                gc3libs.log.error("Ignoring error in updating state of STOPPED job '%s': %s: %s"
+                                  % (job._id, x.__class__.__name__, str(x)),
+                                  exc_info=True)
+        # remove jobs that transitioned to other states
+        for index in reversed(transitioned):
+            del self._stopped[index]
+
+        # now try to submit NEW jobs
+        transitioned = []
+        if self.can_submit:
+            for index, job in enumerate(self._new):
+                # try to submit; go to SUBMITTED if successful, FAILED if not
+                if currently_submitted < limit_submitted and currently_in_flight < limit_in_flight:
+                    try:
+                        self._core.submit(job)
+                        if self._store:
+                            store.save(job)
+                        transitioned.append(index)
+                        self._submitted.append(job)
+                        currently_submitted += 1
+                        currently_in_flight += 1
+                    except Exception, x:
+                        gc3libs.log.error("Error in submitting job '%s': %s: %s"
+                                          % (job._id, x.__class__.__name__, str(x)))
+                        job.log("Submission failed: %s: %s" % (x.__class__.__name__, str(x)))
+        # remove jobs that transitioned to SUBMITTED state
+        for index in reversed(transitioned):
+            del self._new[index]
+
+        # finally, retrieve output of finished jobs
+        if self.can_retrieve:
+            for index, job in enumerate(self._terminated):
+                if not job.final_output_retrieved:
+                    # try to get output
+                    try:
+                        self._core.fetch_output(job)
+                        if self._store:
+                            store.save(job)
+                    except Exception, x:
+                        gc3libs.log.error("Got error in fetching output of job '%s': %s: %s" 
+                                          % (job._id, x.__class__.__name__, str(x)), exc_info=True)

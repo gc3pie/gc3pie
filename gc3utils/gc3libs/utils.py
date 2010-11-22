@@ -243,8 +243,8 @@ class Enum(frozenset):
     Finally, enumeration labels can also be iterated upon::
 
       >>> for a in Animal: print a
-      CAT
       DOG
+      CAT
     """
     def __new__(cls, *args):
         return frozenset.__new__(cls, args)
@@ -399,6 +399,99 @@ def same_docstring_as(referenced_fn):
             f.__doc__ = referenced_fn.__doc__
             return f
     return decorate
+
+
+# see http://stackoverflow.com/questions/31875/is-there-a-simple-elegant-way-to-define-singletons-in-python/1810391#1810391
+class Singleton(object):
+    """
+    Derived classes of `Singleton` can have only one instance in the
+    running Python interpreter.
+
+       >>> x = Singleton()
+       >>> y = Singleton()
+       >>> x is y
+       True
+
+    """
+    def __new__(cls, *args, **kw):
+        if not hasattr(cls, '_instance'):
+            cls._instance = super(Singleton, cls).__new__(cls, *args, **kw)
+        return cls._instance
+
+
+class PlusInfinity(Singleton):
+    """
+    An object that is greater-than any other object.
+
+        >>> x = PlusInfinity()
+
+        >>> x > 1
+        True
+        >>> 1 < x
+        True
+        >>> 1245632479102509834570124871023487235987634518745 < x
+        True
+
+        >>> x > sys.maxint
+        True
+        >>> x < sys.maxint
+        False
+        >>> sys.maxint < x
+        True
+
+    `PlusInfinity` objects are actually larger than *any* given Python
+    object::
+
+        >>> x > 'azz'
+        True
+        >>> x > object()
+        True
+
+    Note that `PlusInfinity` is a singleton, therefore you always get
+    the same instance when calling the class constructor::
+
+        >>> x = PlusInfinity()
+        >>> y = PlusInfinity()
+        >>> x is y
+        True
+
+    Relational operators try to return the correct value when
+    comparing `PlusInfinity` to itself::
+
+        >>> x < y
+        False
+        >>> x <= y
+        True
+        >>> x == y 
+        True
+        >>> x >= y
+        True
+        >>> x > y
+        False
+
+    """
+    def __gt__(self, other):
+        if self is other:
+            return False
+        else:
+            return True
+    def __ge__(self, other):
+        return True
+    def __lt__(self, other):
+        return False
+    def __le__(self, other):
+        if self is other:
+            return True
+        else:
+            return False
+    def __eq__(self, other):
+        if self is other:
+            return True
+        else:
+            return False
+    def __ne__(self, other):
+        return not self.__eq__(other)
+
 
 
 def string_to_boolean(word):
