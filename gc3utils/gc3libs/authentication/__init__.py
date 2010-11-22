@@ -22,12 +22,11 @@ __docformat__ = 'reStructuredText'
 __version__ = '$Revision$'
 
 
-from gc3libs.Exceptions import AuthenticationException
+from gc3libs.Exceptions import AuthenticationException, ConfigurationError
 
 
 class Auth(object):
     types = {}
-    # new proposal
     def __init__(self, authorizations, auto_enable):
         self.auto_enable = auto_enable
         self.__auths = { }
@@ -41,7 +40,8 @@ class Auth(object):
             try:
                 a =  self._auth_type[auth_name](** self._auth_dict[auth_name])
                 if not a.is_valid():
-                    raise Exception('Missing required configuration parameters')
+                    raise ConfigurationError("Missing required configuration parameters"
+                                             " in auth section '%s'" % auth_name)
 
                 if not a.check():
                     if self.auto_enable:
@@ -57,6 +57,8 @@ class Auth(object):
                                                     " and `auto_enable` not set." % auth_name)
             except KeyError:
                 a = ConfigurationError("Unknown auth '%s' - check configuration file" % auth_name)
+            except ConfigurationError:
+                raise # propagate configuration errors to caller, users should see them!
             except Exception, x:
                 a = AuthenticationException("Got error while creating auth '%s': %s: %s"
                                             % (auth_name, x.__class__.__name__, x))

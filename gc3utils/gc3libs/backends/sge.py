@@ -638,11 +638,11 @@ class SgeLrms(LRMS):
             raise 
 
 
-    @same_docstring_as(LRMS.tail)
-    def tail(self, app, remote_filename, local_file, offset=0, size=None):
+    @same_docstring_as(LRMS.peek)
+    def peek(self, app, remote_filename, local_file, offset=0, size=None):
         job = app.execution
         assert job.has_key('ssh_remote_folder'), \
-            "Missing attribute `ssh_remote_folder` on `Job` instance passed to `SgeLrms.tail`."
+            "Missing attribute `ssh_remote_folder` on `Job` instance passed to `SgeLrms.peek`."
 
         if size is None:
             size = sys.maxint

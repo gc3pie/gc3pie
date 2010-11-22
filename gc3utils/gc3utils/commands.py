@@ -443,7 +443,7 @@ def gtail(*args, **kw):
             or app.execution.state == Run.State.SUBMITTED:
         raise Exception('Job output not yet available')
 
-    file_handle = _core.tail(app, std)
+    file_handle = _core.peek(app, std)
     for line in file_handle.readlines()[-(options.num_lines):]:
         print line.strip()
 

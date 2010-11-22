@@ -98,7 +98,7 @@ class LRMS(object):
         """
         raise NotImplementedError("Abstract method `LRMS.submit_job()` called - this should have been defined in a derived class.")
 
-    def tail(self, app, remote_filename, local_file, offset=0, size=None):
+    def peek(self, app, remote_filename, local_file, offset=0, size=None):
         """
         Download `size` bytes (at offset `offset` from the start) from
         remote file `remote_filename` and write them into
@@ -115,7 +115,7 @@ class LRMS(object):
         
         Any exception raised by operations will be passed through.
         """
-        raise NotImplementedError("Abstract method `LRMS.tail()` called - this should have been defined in a derived class.")
+        raise NotImplementedError("Abstract method `LRMS.peek()` called - this should have been defined in a derived class.")
     
 
 
