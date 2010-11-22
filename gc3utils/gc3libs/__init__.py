@@ -77,17 +77,17 @@ exit code and output reaped by the calling process.
 The following table makes the correspondence between POSIX processes
 and GC3Libs' `Application` objects explicit.
 
-+--------------------+----------------+------------------------------------+
-|`os` module function|GC3Libs function|purpose                             |
-+====================+================+====================================+
-|exec                |Gcli.gsub       |start new job                       |
-+--------------------+----------------+------------------------------------+
-|kill (SIGTERM)      |Gcli.gkill      |terminate executing job             |
-+--------------------+----------------+------------------------------------+
-|wait (WNOHANG)      |Gcli.gstat      |get job status (running, terminated)|
-+--------------------+----------------+------------------------------------+
-|-                   |Gcli.gget       |retrieve output                     |
-+--------------------+----------------+------------------------------------+
++--------------------+---------------------+------------------------------------+
+|`os` module function|GC3Libs function     |purpose                             |
++====================+=====================+====================================+
+|exec                |Core.submit          |start new job                       |
++--------------------+---------------------+------------------------------------+
+|kill (SIGTERM)      |Core.kill            |terminate executing job             |
++--------------------+---------------------+------------------------------------+
+|wait (WNOHANG)      |Core.update_job_state|get job status (RUNNING, TERMINATED)|
++--------------------+---------------------+------------------------------------+
+|-                   |Core.fetch_output    |retrieve output                     |
++--------------------+---------------------+------------------------------------+
 
 At any given moment, a GC3Libs job is in any one of a set of
 pre-defined states, listed in the table below.  The job state is
@@ -101,9 +101,8 @@ always available in the `.execution.state` instance property of any
 +------------------+--------------------------------------------------------------+----------------------+
 |SUBMITTED         |Job has been sent to execution resource                       |RUNNING, STOPPED      |
 +------------------+--------------------------------------------------------------+----------------------+
-|STOPPED           |Trap state: job needs manual intervention (either user-       |                      |
-|                  |or sysadmin-level) to resume normal execution                 |TERMINATED (by gkill),| 
-|                  |                                                              |SUBMITTED (by miracle)|
+|STOPPED           |Trap state: job needs manual intervention (either user-       |TERMINATED (by gkill),|
+|                  |or sysadmin-level) to resume normal execution                 |SUBMITTED (by miracle)|
 +------------------+--------------------------------------------------------------+----------------------+
 |RUNNING           |Job is executing on remote resource                           |TERMINATED            |
 +------------------+--------------------------------------------------------------+----------------------+
@@ -114,13 +113,13 @@ always available in the `.execution.state` instance property of any
 A job that is not in the NEW or TERMINATED state is said to be a "live" job.
 
 When a Job object is first created, it is assigned the state NEW.
-After a successful invocation of `Gcli.gsub()`, the Job object is
+After a successful invocation of `Core.gsub()`, the Job object is
 transitioned to state SUBMITTED.  Further transitions to RUNNING or
 STOPPED or TERMINATED state, happen completely independently of the
-creator program.  The `Gcli.gstat()` call provides updates on the
-status of a job. (Somewhat like the POSIX `wait(..., WNOHANG)` system
-call, except that GC3Libs provide explicit RUNNING and STOPPED states,
-instead of encoding them into the return value.)
+creator program.  The `Core.update_job_state()` call provides updates
+on the status of a job. (Somewhat like the POSIX `wait(..., WNOHANG)`
+system call, except that GC3Libs provide explicit RUNNING and STOPPED
+states, instead of encoding them into the return value.)
 
 The STOPPED state is a kind of generic "run time error" state: a job
 can get into the STOPPED state if its execution is stopped (e.g., a

@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 #
 """
-Implementation of the `gcli` command-line front-ends.
+Implementation of the `core` command-line front-ends.
 """
 # Copyright (C) 2009-2010 GC3, University of Zurich. All rights reserved.
 #
@@ -43,7 +43,7 @@ import gc3libs.application.rosetta as rosetta
 import gc3libs.Default as Default
 from   gc3libs.Exceptions import *
 import gc3libs.Job as Job
-import gc3libs.gcli as gcli
+import gc3libs.core as core
 import gc3libs.persistence
 import gc3libs.utils as utils
 
@@ -51,7 +51,7 @@ import gc3libs.utils as utils
 import gc3utils
 
 
-# defaults - XXX: do they belong in ../gcli.py instead?
+# defaults - XXX: do they belong in ../core.py instead?
 _homedir = os.path.expandvars('$HOME')
 _rcdir = _homedir + "/.gc3"
 _default_config_file_locations = [ "/etc/gc3/gc3pie.conf", _rcdir + "/gc3pie.conf" ]
@@ -81,15 +81,15 @@ def _configure_logger(verbosity):
     gc3utils.log.setLevel(logging_level)
 
 
-def _get_gcli(config_file_locations, auto_enable_auth=True):
+def _get_core(config_file_locations, auto_enable_auth=True):
     """
-    Return a `gc3libs.gcli.Gcli` instance configured by parsing
+    Return a `gc3libs.core.Core` instance configured by parsing
     the configuration file(s) located at `config_file_locations`.
     Order of configuration files matters: files read last overwrite
     settings from previously-read ones; list the most specific configuration
     files last.
 
-    If `auto_enable_auth` is `True` (default), then `Gcli` will try to renew
+    If `auto_enable_auth` is `True` (default), then `Core` will try to renew
     expired credentials; this requires interaction with the user and will
     certainly fail unless stdin & stdout are connected to a terminal.
     """
@@ -102,8 +102,8 @@ def _get_gcli(config_file_locations, auto_enable_auth=True):
                                  " a sample one has been copied in that location;"
                                  " please edit it and define resources." % location)
     try:
-        gc3utils.log.debug('Creating instance of Gcli ...')
-        return gc3libs.gcli.Gcli(* gc3libs.gcli.import_config(config_file_locations, auto_enable_auth))
+        gc3utils.log.debug('Creating instance of Core ...')
+        return gc3libs.core.Core(* gc3libs.core.import_config(config_file_locations, auto_enable_auth))
     except NoResources:
         raise FatalError("No computational resources defined.  Please edit the configuration file '%s'." 
                          % config_file_locations)
@@ -137,7 +137,7 @@ def gclean(*args, **kw):
     if options.all:
         args = _store.list()
 
-    _gcli = _get_gcli(_default_config_file_locations)
+    _core = _get_core(_default_config_file_locations)
     failed = 0
     for jobid in args:
         try:
@@ -147,7 +147,7 @@ def gclean(*args, **kw):
                     gc3utils.log.warning("Job '%s' not in terminal state:"
                                          " attempting to kill before cleaning up.")
                     try:
-                        _gcli.gkill(app)
+                        _core.kill(app)
                     except Exception, ex:
                         gc3utils.log.warning("Killing job '%s' failed (%s: %s);"
                                              " continuing anyway, but errors might ensue.",
@@ -156,7 +156,7 @@ def gclean(*args, **kw):
                     failed += 1
                     gc3utils.log.error("Job '%s' not in terminal state: ignoring.", jobid)
                     continue
-            _gcli.free(app)
+            _core.free(app)
         except JobRetrieveError:
             if options.force:
                 pass
@@ -180,8 +180,6 @@ def ginfo(*args, **kw):
     parser.add_option("-v", action="count", dest="verbosity", default=0, help="Set verbosity level")
     (options, args) = parser.parse_args(list(args))
     _configure_logger(options.verbosity)
-
-    gcli = _get_gcli(_default_config_file_locations)
 
     # build list of apps to query status of
     if len(args) == 0:
@@ -253,14 +251,14 @@ def gsub(*args, **kw):
     else:
         raise InvalidUsage("Unknown application '%s'" % application_tag)
 
-    _gcli = _get_gcli(_default_config_file_locations)
+    _core = _get_core(_default_config_file_locations)
     if options.resource_name:
-        _gcli.select_resource(options.resource_name)
+        _core.select_resource(options.resource_name)
         gc3utils.log.info("Retained only resources: %s (restricted by command-line option '-r %s')",
-                          str.join(",", [res['name'] for res in _gcli._resources]), 
+                          str.join(",", [res['name'] for res in _core._resources]), 
                           options.resource_name)
 
-    _gcli.gsub(app)
+    _core.submit(app)
     _store.save(app)
 
     print("Successfully submitted %s; use the 'gstat' command to monitor its progress." % app)
@@ -284,31 +282,31 @@ def gresub(*args, **kw):
     if len(args) < 1:
         raise InvalidUsage('Wrong number of arguments: this commands expects at least 1 argument: JOBID')
 
-    _gcli = _get_gcli(_default_config_file_locations)
+    _core = _get_core(_default_config_file_locations)
     if options.resource_name:
-        _gcli.select_resource(options.resource_name)
+        _core.select_resource(options.resource_name)
         gc3utils.log.info("Retained only resources: %s (restricted by command-line option '-r %s')",
-                          str.join(",", [res['name'] for res in _gcli._resources]), 
+                          str.join(",", [res['name'] for res in _core._resources]), 
                           options.resource_name)
 
     failed = 0
     for jobid in args:
         app = _store.load(jobid.strip())
         try:
-            _gcli.gstat(app) # update state
+            _core.update_state(app) # update state
         except Exception, ex:
             # ignore errors, and proceed to resubmission anyway
             gc3utils.log.warning("Could not update state of %s: %s: %s", 
                                  jobid, ex.__class__.__name__, str(ex))
         # kill remote job
         try:
-            app = _gcli.gkill(app)
+            app = _core.kill(app)
         except Exception, ex:
             # ignore errors, but alert user...
             pass
 
         try:
-            app = _gcli.gsub(app)
+            app = _core.submit(app)
             print("Successfully re-submitted %s; use the 'gstat' command to monitor its progress." % job)
             _store.replace(jobid, app)
         except Exception, ex:
@@ -325,7 +323,7 @@ def gstat(*args, **kw):
     (options, args) = parser.parse_args(list(args))
     _configure_logger(options.verbosity)
 
-    gcli = _get_gcli(_default_config_file_locations)
+    _core = _get_core(_default_config_file_locations)
 
     # build list of apps to query status of
     if len(args) == 0:
@@ -333,7 +331,7 @@ def gstat(*args, **kw):
     else:
         apps = _get_jobs(args)
 
-    gcli.gstat(*apps)
+    _core.update_state(*apps)
         
     # Print result
     if len(apps) == 0:
@@ -365,7 +363,7 @@ def gget(*args, **kw):
 
     _configure_logger(options.verbosity)
 
-    _gcli = _get_gcli(_default_config_file_locations)
+    _core = _get_core(_default_config_file_locations)
     for jobid in args:
         app = _store.load(jobid)
 
@@ -378,7 +376,7 @@ def gget(*args, **kw):
         else:
             download_dir = options.download_dir
 
-        _gcli.gget(app, download_dir, overwrite=options.overwrite)
+        _core.fetch_output(app, download_dir, overwrite=options.overwrite)
         print("Job results successfully retrieved in '%s'\n" % app.output_dir)
         _store.replace(app._id, app)
 
@@ -397,7 +395,7 @@ def gkill(*args, **kw):
     _configure_logger(options.verbosity)
 
     try:
-        _gcli = _get_gcli(_default_config_file_locations)
+        _core = _get_core(_default_config_file_locations)
 
         # Assume args are all jobids
         for jobid in args:
@@ -408,7 +406,7 @@ def gkill(*args, **kw):
                 if app.execution.state == Run.State.TERMINATED:
                     raise InvalidOperation("Job '%s' is already in terminal state" % app)
                 else:
-                    _gcli.gkill(app)
+                    _core.kill(app)
                     _store.replace(jobid, app)
 
                     # or shall we simply return an ack message ?
@@ -443,14 +441,14 @@ def gtail(*args, **kw):
     else:
         std = 'stdout'
 
-    _gcli = _get_gcli(_default_config_file_locations)
+    _core = _get_core(_default_config_file_locations)
 
     app = _store.load(jobid)
     if app.execution.state == Run.State.UNKNOWN \
             or app.execution.state == Run.State.SUBMITTED:
         raise Exception('Job output not yet available')
 
-    file_handle = _gcli.tail(app, std)
+    file_handle = _core.tail(app, std)
     for line in file_handle.readlines()[-(options.num_lines):]:
         print line.strip()
 
@@ -517,8 +515,8 @@ def glist(*args, **kw):
         raise InvalidUsage("This command requires exactly one argument: the resource name.")
     resource_name = args[0]
 
-    _gcli = _get_gcli(_default_config_file_locations)
-    resource_object = _gcli.glist(resource_name)
+    _core = _get_core(_default_config_file_locations)
+    resource_object = _core.update_resource_status(resource_name)
     if not resource_object is None:
         if resource_object.has_key("name"):
             sys.stdout.write('Resource Name: '+resource_object.name+'\n')
