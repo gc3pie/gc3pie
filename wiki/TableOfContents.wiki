@@ -9,6 +9,6 @@
     ** [InstallGC3Utils Installation: GC3Utils]
     ** [InstallHTPie Installation: HTPie]
   * Programming reference:
-    ** [http://gc3pie.googlecode.com/svn/trunk/gc3utils/docs/apidoc/html/index.html API documentation]
+    ** [http://gc3pie.googlecode.com/svn/trunk/gc3utils/docs/html/index.html API documentation]
     ** [Job GC3Libs Job model]
   * [Citations Citations]
