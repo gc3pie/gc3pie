@@ -134,7 +134,7 @@ class InvalidUsage(FatalError):
     """
     pass
 
-class JobRetrieveError(Error):
+class LoadError(Error):
     """
     Raised upon errors loading a job from the persistent storage.
     """

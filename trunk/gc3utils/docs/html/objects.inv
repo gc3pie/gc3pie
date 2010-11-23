@@ -51,6 +51,7 @@ gc3utils.gcmd.main function index.html
 gc3libs.persistence.Store.remove method index.html
 gc3libs.application.get function index.html
 gc3libs.backends.LRMS.get_results method index.html
+gc3libs.persistence.Persistable class index.html
 gc3libs.backends.sge.SgeLrms class index.html
 gc3libs.Exceptions.NoResources exception index.html
 gc3libs.application.gamess.GamessApplication.qgms method index.html
@@ -95,6 +96,7 @@ gc3libs.backends.arc.ArcLrms.submit_job method index.html
 gc3utils.commands.gresub function index.html
 gc3libs.backends.sge.SgeLrms.cancel_job method index.html
 gc3libs.persistence.Store class index.html
+gc3libs.persistence.FilesystemStore.Pickler class index.html
 gc3libs.Application.submitted method index.html
 gc3libs.core.Engine.fetch_output method index.html
 gc3libs.backends.sge.SgeLrms.free method index.html
@@ -125,7 +127,7 @@ gc3libs.utils.deploy_configuration_file function index.html
 gc3libs.persistence.Store.load method index.html
 gc3libs.Exceptions.ConfigurationError exception index.html
 gc3libs.backends.LRMS.submit_job method index.html
-gc3libs.Exceptions.JobRetrieveError exception index.html
+gc3libs.Exceptions.LoadError exception index.html
 gc3libs.Run.returncode attribute index.html
 gc3libs.persistence.FilesystemStore.list method index.html
 gc3libs.utils.from_template function index.html

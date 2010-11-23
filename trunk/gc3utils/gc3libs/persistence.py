@@ -23,12 +23,14 @@ __docformat__ = 'reStructuredText'
 __version__ = '$Revision$'
 
 
-import cPickle as pickle
+import operator
 import os
+import pickle
+import sys
 
 import gc3libs
 import gc3libs.Default
-from gc3libs.Exceptions import JobRetrieveError
+from gc3libs.Exceptions import LoadError
 from gc3libs.utils import progressive_number, same_docstring_as
 
 
@@ -91,6 +93,27 @@ class Store(object):
 
 
 
+# since the code for `Id` comparison methods is basically the same for
+# all methods, we use a decorator-based approach to reduce boilerplate
+# code...  Oh, how do I long for LISP macros! :-)
+def _Id_make_comparison_function(op):
+    """
+    Return a function that compares two `Id` objects with the
+    passed relational operator. Discards the function being
+    decorated.
+    """
+    def decorate(fn):
+        def cmp_fn(self, other):
+            try:
+                if self._prefix != other._prefix:
+                    raise TypeError("Cannot compare `Id(prefix=%s)` with `Id(prefix=%s)`"
+                                    % (repr(self._prefix), repr(other._prefix)))
+                return op(self._seqno, other._seqno)
+            except AttributeError:
+                raise TypeError("`Id` objects can only be compared with other `Id` objects")
+        return cmp_fn
+    return decorate
+
 class Id(str):
     """
     An automatically-generated "unique identifier" (a string-like object).
@@ -120,57 +143,36 @@ class Id(str):
         return instance
     def __getnewargs__(self):
         return (None, self._prefix, self._seqno)
-
-    # rich comparison operators, to ensure `Id` is sorted by numerical value
+    
+    # Rich comparison operators, to ensure `Id` is sorted by numerical value
+    @_Id_make_comparison_function(operator.gt)
     def __gt__(self, other):
-        try:
-            if self._prefix != other._prefix:
-                raise TypeError("Cannot compare `Id(prefix=%s)` with `Id(prefix=%s)`"
-                                % (repr(self._prefix), repr(other._prefix)))
-            return self._seqno > other._seqno
-        except AttributeError:
-            raise TypeError("`Id` objects can only be compared with other `Id` objects")
+        pass
+    @_Id_make_comparison_function(operator.ge)
     def __ge__(self, other):
-        try:
-            if self._prefix != other._prefix:
-                raise TypeError("Cannot compare `Id(prefix=%s)` with `Id(prefix=%s)`"
-                                % (repr(self._prefix), repr(other._prefix)))
-            return self._seqno >= other._seqno
-        except AttributeError:
-            raise TypeError("`Id` objects can only be compared with other `Id` objects")
+        pass
+    @_Id_make_comparison_function(operator.eq)
     def __eq__(self, other):
-        try:
-            if self._prefix != other._prefix:
-                raise TypeError("Cannot compare `Id(prefix=%s)` with `Id(prefix=%s)`"
-                                % (repr(self._prefix), repr(other._prefix)))
-            return self._seqno == other._seqno
-        except AttributeError:
-            raise TypeError("`Id` objects can only be compared with other `Id` objects")
+        pass
+    @_Id_make_comparison_function(operator.ne)
     def __ne__(self, other):
-        try:
-            if self._prefix != other._prefix:
-                raise TypeError("Cannot compare `Id(prefix=%s)` with `Id(prefix=%s)`"
-                                % (repr(self._prefix), repr(other._prefix)))
-            return self._seqno != other._seqno
-        except AttributeError:
-            raise TypeError("`Id` objects can only be compared with other `Id` objects")
+        pass
+    @_Id_make_comparison_function(operator.le)
     def __le__(self, other):
-        try:
-            if self._prefix != other._prefix:
-                raise TypeError("Cannot compare `Id(prefix=%s)` with `Id(prefix=%s)`"
-                                % (repr(self._prefix), repr(other._prefix)))
-            return self._seqno <= other._seqno
-        except AttributeError:
-            raise TypeError("`Id` objects can only be compared with other `Id` objects")
+        pass
+    @_Id_make_comparison_function(operator.lt)
     def __lt__(self, other):
-        try:
-            if self._prefix != other._prefix:
-                raise TypeError("Cannot compare `Id(prefix=%s)` with `Id(prefix=%s)`"
-                                % (repr(self._prefix), repr(other._prefix)))
-            return self._seqno < other._seqno
-        except AttributeError:
-            raise TypeError("`Id` objects can only be compared with other `Id` objects")
+        pass
 
+
+class Persistable(object):
+    """
+    A mix-in class to mark that an object should be persisted by its ID.
+
+    Any instance of this class is saved as an "external reference"
+    when a container holding a reference to it is saved.
+    """
+    pass
 
 
 class FilesystemStore(Store):
@@ -181,19 +183,71 @@ class FilesystemStore(Store):
     All objects are saved as files in the given directory (default:
     `gc3libs.Default.JOBS_DIR`).  The file name is the object ID.
 
+    If an object contains references to other `Persistable` objects,
+    these are saved in the file they would have been saved if the
+    `save` method was called on them in the first place, and only an
+    "external reference" is saved in the pickled container. This
+    ensures that: (1) only one copy of a shared object is ever saved,
+    and (2) any shared reference to `Persistable` objects is correctly
+    restored when restoring the container.
+
     The default `idfactory` assigns object IDs by appending a
     sequential number to the class name; see class `Id` for
     details.
 
     The `protocol` argument specifies the pickle protocol to use
-    (default: `pickle` protocol 2).  See the `pickle` module
+    (default: `pickle` protocol 0).  See the `pickle` module
     documentation for details.
     """
     def __init__(self, directory=gc3libs.Default.JOBS_DIR, 
-                 idfactory=Id, protocol=2):
+                 idfactory=Id, protocol=pickle.HIGHEST_PROTOCOL):
         self._directory = directory
         self._idfactory = idfactory
         self._protocol = protocol
+
+
+    class Pickler(pickle.Pickler):
+        """
+        Pickle a Python object, saving the `Persistable` instances contained
+        in it as external references through the same `FilesystemStore`.
+        """
+        def __init__(self, parent, file, root_obj):
+            pickle.Pickler.__init__(self, file, parent._protocol)
+            self._parent = parent
+            self._root = root_obj
+        def persistent_id(self, obj):
+            # see: http://docs.python.org/library/pickle.html#pickling-and-unpickling-external-objects
+            if obj is self._root:
+                return None
+            elif hasattr(obj, 'persistent_id'):
+                return obj.persistent_id
+            elif isinstance(obj, Persistable):
+                # object is persistable, but not saved (yet), so save
+                # it now and then return its `persistent_id` as
+                # assigned by `save`.
+                self._parent.save(obj)
+                return obj.persistent_id
+            else:
+                return None
+        # we may need to pickle/unpickle `None`, so define an
+        # "impossible object" to be used as a "no argument given"
+        # marker (Oh, CL... again!)
+        _NoObject = object()
+        def dump(self, obj=_NoObject):
+            if obj is self._NoObject:
+                pickle.Pickler.dump(self, self._root)
+            elif isinstance(obj, Persistable):
+                self._parent.save(obj)
+            else:
+                pickle.Pickler.dump(self, obj)
+
+    class Unpickler(pickle.Unpickler):
+        def __init__(self, parent, file):
+            pickle.Unpickler.__init__(self, file)
+            self._parent = parent
+        # see: http://docs.python.org/library/pickle.html#pickling-and-unpickling-external-objects
+        def persistent_load(self, id_):
+            return self._parent.load(id_)
 
 
     @same_docstring_as(Store.list)
@@ -207,10 +261,10 @@ class FilesystemStore(Store):
     @same_docstring_as(Store.load)
     def load(self, id_):
         filename = os.path.join(self._directory, id_)
-        gc3libs.log.debug("Retrieving job from file '%s' ...", filename)
+        gc3libs.log.debug("Loading object from file '%s' ...", filename)
 
         if not os.path.exists(filename):
-            raise JobRetrieveError("No '%s' file found in directory '%s'" 
+            raise LoadError("No '%s' file found in directory '%s'" 
                                    % (id_, self._directory))
 
         # XXX: this should become `with src = ...:` as soon as we stop
@@ -218,7 +272,8 @@ class FilesystemStore(Store):
         src = None
         try:
             src = open(filename, 'rb')
-            obj = pickle.load(src)
+            unpickler = FilesystemStore.Unpickler(self, src)
+            obj = unpickler.load()
             src.close()
         except Exception, ex:
             if src is not None:
@@ -226,13 +281,14 @@ class FilesystemStore(Store):
                     src.close()
                 except:
                     pass # ignore errors
-            raise JobRetrieveError("Failed retrieving job from file '%s': %s: %s"
+            sys.excepthook(* sys.exc_info())
+            raise LoadError("Failed retrieving object from file '%s': %s: %s"
                                    % (filename, ex.__class__.__name__, str(ex)))
         if not hasattr(obj, 'persistent_id'):
-            raise JobRetrieveError("Invalid format in file '%s': missing 'persistent_id' attribute"
+            raise LoadError("Invalid format in file '%s': missing 'persistent_id' attribute"
                                    % (filename))
         if str(obj.persistent_id) != str(id_):
-            raise JobRetrieveError("Retrieved Job ID '%s' does not match given Job ID '%s'" 
+            raise LoadError("Retrieved persistent ID '%s' does not match given ID '%s'" 
                                    % (obj.persistent_id, id_))
         return obj
 
@@ -279,15 +335,18 @@ class FilesystemStore(Store):
             backup = filename + '.OLD'
             os.rename(filename, backup)
         
-        # XXX: this should become `with tgt = ...:` as soon as we stop
-        # supporting Python 2.4
+        # TODO: this should become `with tgt = ...:` as soon as we
+        # stop supporting Python 2.4
         tgt = None
         try:
             tgt = open(filename, 'w+b')
-            pickle.dump(obj, tgt, self._protocol)
+            pickler = FilesystemStore.Pickler(self, tgt, obj)
+            pickler.dump()
             tgt.close()
-            if backup is not None:
+            try:
                 os.remove(backup)
+            except:
+                pass # ignore errors
         except Exception, ex:
             gc3libs.log.error("Error saving job '%s' to file '%s': %s: %s" 
                               % (obj, filename, ex.__class__.__name__, ex))

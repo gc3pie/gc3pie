@@ -175,9 +175,8 @@ def gclean(*args, **kw):
                                              " continuing anyway, but errors might ensue.",
                                              app, ex.__class__.__name__, str(ex))
                         continue
-
         
-        except JobRetrieveError:
+        except LoadError:
             if options.force:
                 pass
             else:
