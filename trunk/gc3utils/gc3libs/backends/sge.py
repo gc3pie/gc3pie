@@ -304,7 +304,7 @@ class SgeLrms(LRMS):
             self.transport = transport.SshTransport(self._resource.frontend, 
                                                     username=self._ssh_username)
         else:
-            raise transport.TransportError("Unknown transport '%s'", resource.transport)
+            raise TransportError("Unknown transport '%s'", resource.transport)
         
         # XXX: does Ssh really needs this ?
         self._resource.ncores = int(self._resource.ncores)

@@ -100,11 +100,8 @@ class Core:
 
     def submit(self, app, **kw):
         """
-        Submit a job running an instance of the given `app`.  Return
-        the `app` object, modified to refer to the submitted
-        computational job.
-
-        Upon successful submission, call the `submitted` method on the
+        Submit a job running an instance of the given `app`.  Upon
+        successful submission, call the `submitted` method on the
         `app` object.
         """
         auto_enable_auth = kw.get('auto_enable_auth', self.auto_enable_auth)
@@ -158,8 +155,6 @@ class Core:
             # job submitted; leave loop
             break
 
-        return job
-
 
     def update_job_state(self, *apps, **kw):
         """
@@ -211,7 +206,8 @@ class Core:
     def fetch_output(self, app, download_dir=None, overwrite=False, **kw):
         """
         Retrieve job output into local directory `app.output_dir`;
-        optional argument `download_dir` overrides this.
+        optional argument `download_dir` overrides this.  Return
+        actual download directory.
 
         The download directory is created if it does not exist.  If
         already existent, it is renamed with a `.NUMBER` suffix and a
@@ -237,7 +233,12 @@ class Core:
 
         # Prepare/Clean download dir
         if download_dir is None:
-            download_dir = application.output_dir
+            try:
+                download_dir = application.output_dir
+            except AttributeError:
+                raise InvalidArgument("`Core.fetch_output` called with no explicit download directory,"
+                                      " but `Application` object '%s' has no `output_dir` set either."
+                                      % app)
         try:
             if overwrite:
                 if not os.path.exists(download_dir):
@@ -249,6 +250,7 @@ class Core:
                               download_dir, ex.__class__.__name__, str(ex))
             raise
 
+        # download job output
         try:
             lrms = self._get_backend(job.resource_name)
             self.authorization.get(lrms._resource.authorization_type)
@@ -268,7 +270,7 @@ class Core:
         
 
     def update_resource_status(self,resource_name, **kw):
-        """ List status of a given resource."""
+        """Update status of a given resource. Return resource object after update."""
         auto_enable_auth = kw.get('auto_enable_auth', self.auto_enable_auth)
         lrms = self._get_backend(resource_name)
         self.authorization.get(lrms._resource.authorization_type)
@@ -295,7 +297,6 @@ class Core:
         job.log.append("Cancelled by `Core.kill`")
         if hasattr(job, 'terminated'):
             job.terminated()
-        return job
 
 
     def peek(self, app, what='stdout', offset=0, size=None, **kw):
@@ -365,7 +366,7 @@ class Core:
                     raise
 
         if _lrms is None:
-            raise ResourceNotFoundError("Cannot find computational resource '%s'" % resource_name)
+            raise InvalidResourceName("Cannot find computational resource '%s'" % resource_name)
 
         return _lrms
 

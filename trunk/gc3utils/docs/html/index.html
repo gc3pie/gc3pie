@@ -712,6 +712,13 @@ Do not depend on it.</p>
 <h3><cite>gc3libs.Exceptions</cite><a class="headerlink" href="#module-gc3libs.Exceptions" title="Permalink to this headline">¶</a></h3>
 <p>Exceptions specific to the <cite>gc3libs</cite> package.</p>
 <dl class="exception">
+<dt id="gc3libs.Exceptions.ConfigurationError">
+<em class="property">exception </em><tt class="descclassname">gc3libs.Exceptions.</tt><tt class="descname">ConfigurationError</tt><big>(</big><em>msg</em>, <em>do_log=True</em><big>)</big><a class="headerlink" href="#gc3libs.Exceptions.ConfigurationError" title="Permalink to this definition">¶</a></dt>
+<dd>Raised when the configuration file (or parts of it) could not be
+read/parsed.  Also used to signal that a required parameter is
+missing or has an unknown/invaliud value.</dd></dl>
+
+<dl class="exception">
 <dt id="gc3libs.Exceptions.DataStagingError">
 <em class="property">exception </em><tt class="descclassname">gc3libs.Exceptions.</tt><tt class="descname">DataStagingError</tt><big>(</big><em>msg</em>, <em>do_log=True</em><big>)</big><a class="headerlink" href="#gc3libs.Exceptions.DataStagingError" title="Permalink to this definition">¶</a></dt>
 <dd>Raised when problems with copying data to or from the remote
@@ -752,11 +759,24 @@ a response string gotten from an external command cannot be parsed
 as expected.</dd></dl>
 
 <dl class="exception">
+<dt id="gc3libs.Exceptions.InvalidArgument">
+<em class="property">exception </em><tt class="descclassname">gc3libs.Exceptions.</tt><tt class="descname">InvalidArgument</tt><big>(</big><em>msg</em>, <em>do_log=True</em><big>)</big><a class="headerlink" href="#gc3libs.Exceptions.InvalidArgument" title="Permalink to this definition">¶</a></dt>
+<dd>Raised when the arguments passed to a function do not honor some
+required contract.  For instance, either one of two optional
+arguments must be provided, but none of them was.</dd></dl>
+
+<dl class="exception">
 <dt id="gc3libs.Exceptions.InvalidOperation">
 <em class="property">exception </em><tt class="descclassname">gc3libs.Exceptions.</tt><tt class="descname">InvalidOperation</tt><big>(</big><em>msg</em>, <em>do_log=True</em><big>)</big><a class="headerlink" href="#gc3libs.Exceptions.InvalidOperation" title="Permalink to this definition">¶</a></dt>
 <dd>Raised when an operation is attempted, that is not considered
 valid according to the system state.  For instance, trying to
 retrieve the output of a job that has not yet been submitted.</dd></dl>
+
+<dl class="exception">
+<dt id="gc3libs.Exceptions.InvalidResourceName">
+<em class="property">exception </em><tt class="descclassname">gc3libs.Exceptions.</tt><tt class="descname">InvalidResourceName</tt><big>(</big><em>msg</em>, <em>do_log=True</em><big>)</big><a class="headerlink" href="#gc3libs.Exceptions.InvalidResourceName" title="Permalink to this definition">¶</a></dt>
+<dd>Raised to signal that no computational resource with the given
+name is defined in the configuration file.</dd></dl>
 
 <dl class="exception">
 <dt id="gc3libs.Exceptions.InvalidUsage">
@@ -785,6 +805,12 @@ malformed).</dd></dl>
 <em class="property">exception </em><tt class="descclassname">gc3libs.Exceptions.</tt><tt class="descname">NoResources</tt><big>(</big><em>msg</em>, <em>do_log=True</em><big>)</big><a class="headerlink" href="#gc3libs.Exceptions.NoResources" title="Permalink to this definition">¶</a></dt>
 <dd>Raised to signal that no resources are defined, or that none are
 compatible with the request.</dd></dl>
+
+<dl class="exception">
+<dt id="gc3libs.Exceptions.OutputNotAvailableError">
+<em class="property">exception </em><tt class="descclassname">gc3libs.Exceptions.</tt><tt class="descname">OutputNotAvailableError</tt><big>(</big><em>msg</em>, <em>do_log=True</em><big>)</big><a class="headerlink" href="#gc3libs.Exceptions.OutputNotAvailableError" title="Permalink to this definition">¶</a></dt>
+<dd>Raised upon attempts to retrieve the output for jobs that are
+still in <cite>NEW</cite> or <cite>SUBMITTED</cite> state.</dd></dl>
 
 <dl class="exception">
 <dt id="gc3libs.Exceptions.UnknownJobState">

@@ -46,6 +46,7 @@ gc3libs.utils.mkdir_with_backup function index.html
 gc3libs.application.rosetta.RosettaApplication class index.html
 gc3libs.application.rosetta.RosettaDockingApplication class index.html
 gc3libs.persistence.Store.list method index.html
+gc3libs.Exceptions.OutputNotAvailableError exception index.html
 gc3utils.gcmd.main function index.html
 gc3libs.persistence.Store.remove method index.html
 gc3libs.application.get function index.html
@@ -122,11 +123,13 @@ gc3libs.persistence.FilesystemStore.load method index.html
 gc3libs.persistence.Store.replace method index.html
 gc3libs.utils.deploy_configuration_file function index.html
 gc3libs.persistence.Store.load method index.html
+gc3libs.Exceptions.ConfigurationError exception index.html
 gc3libs.backends.LRMS.submit_job method index.html
 gc3libs.Exceptions.JobRetrieveError exception index.html
 gc3libs.Run.returncode attribute index.html
 gc3libs.persistence.FilesystemStore.list method index.html
 gc3libs.utils.from_template function index.html
+gc3libs.Exceptions.InvalidArgument exception index.html
 gc3libs.backends.sge.parse_qstat_f function index.html
 gc3libs.authentication.NoneAuth class index.html
 gc3utils.commands.gstat function index.html
@@ -139,6 +142,7 @@ gc3libs.utils.defproperty function index.html
 gc3libs.Application.terminated method index.html
 gc3libs.backends.arc.ArcLrms class index.html
 gc3libs.Exceptions.InvalidUsage exception index.html
+gc3libs.Exceptions.InvalidResourceName exception index.html
 gc3libs.persistence.FilesystemStore.save method index.html
 gc3libs.backends.arc.ArcLrms.get_resource_status method index.html
 gc3libs.utils.safe_repr function index.html
