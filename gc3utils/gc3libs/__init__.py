@@ -170,11 +170,12 @@ log = logging.getLogger("gc3libs")
 
 import Default
 from Exceptions import *
+from persistence import Persistable
 from gc3libs.utils import defproperty, Enum, Log, Struct, safe_repr
 
 
 
-class Application(Struct):
+class Application(Struct, Persistable):
     """
     Support for running a generic application with the GC3Libs.
     The following parameters are *required* to create an `Application`

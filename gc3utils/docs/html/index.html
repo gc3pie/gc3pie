@@ -789,8 +789,8 @@ try to be specific about what is wrong on the command line.</p>
 </dd></dl>
 
 <dl class="exception">
-<dt id="gc3libs.Exceptions.JobRetrieveError">
-<em class="property">exception </em><tt class="descclassname">gc3libs.Exceptions.</tt><tt class="descname">JobRetrieveError</tt><big>(</big><em>msg</em>, <em>do_log=True</em><big>)</big><a class="headerlink" href="#gc3libs.Exceptions.JobRetrieveError" title="Permalink to this definition">¶</a></dt>
+<dt id="gc3libs.Exceptions.LoadError">
+<em class="property">exception </em><tt class="descclassname">gc3libs.Exceptions.</tt><tt class="descname">LoadError</tt><big>(</big><em>msg</em>, <em>do_log=True</em><big>)</big><a class="headerlink" href="#gc3libs.Exceptions.LoadError" title="Permalink to this definition">¶</a></dt>
 <dd>Raised upon errors loading a job from the persistent storage.</dd></dl>
 
 <dl class="exception">
@@ -1128,15 +1128,28 @@ suffixes.</p>
 standard <cite>pickle</cite> module to serialize objects onto files.</p>
 <p>All objects are saved as files in the given directory (default:
 <cite>gc3libs.Default.JOBS_DIR</cite>).  The file name is the object ID.</p>
+<p>If an object contains references to other <cite>Persistable</cite> objects,
+these are saved in the file they would have been saved if the
+<cite>save</cite> method was called on them in the first place, and only an
+&#8220;external reference&#8221; is saved in the pickled container. This
+ensures that: (1) only one copy of a shared object is ever saved,
+and (2) any shared reference to <cite>Persistable</cite> objects is correctly
+restored when restoring the container.</p>
 <p>The default <cite>idfactory</cite> assigns object IDs by appending a
 sequential number to the class name; see class <cite>Id</cite> for
 details.</p>
 <p>The <cite>protocol</cite> argument specifies the pickle protocol to use
-(default: <cite>pickle</cite> protocol 2).  See the <cite>pickle</cite> module
+(default: <cite>pickle</cite> protocol 0).  See the <cite>pickle</cite> module
 documentation for details.</p>
+<dl class="class">
+<dt id="gc3libs.persistence.FilesystemStore.Pickler">
+<em class="property">class </em><tt class="descname">Pickler</tt><big>(</big><em>parent</em>, <em>file</em>, <em>root_obj</em><big>)</big><a class="headerlink" href="#gc3libs.persistence.FilesystemStore.Pickler" title="Permalink to this definition">¶</a></dt>
+<dd>Pickle a Python object, saving the <cite>Persistable</cite> instances contained
+in it as external references through the same <cite>FilesystemStore</cite>.</dd></dl>
+
 <dl class="method">
 <dt id="gc3libs.persistence.FilesystemStore.list">
-<tt class="descname">list</tt><big>(</big><big>)</big><a class="headerlink" href="#gc3libs.persistence.FilesystemStore.list" title="Permalink to this definition">¶</a></dt>
+<tt class="descclassname">FilesystemStore.</tt><tt class="descname">list</tt><big>(</big><big>)</big><a class="headerlink" href="#gc3libs.persistence.FilesystemStore.list" title="Permalink to this definition">¶</a></dt>
 <dd><p>Return list of IDs of saved <cite>Job</cite> objects.</p>
 <p>This is an optional method; classes that do not implement it
 should raise a <cite>NotImplementedError</cite> exception.</p>
@@ -1144,22 +1157,22 @@ should raise a <cite>NotImplementedError</cite> exception.</p>
 
 <dl class="method">
 <dt id="gc3libs.persistence.FilesystemStore.load">
-<tt class="descname">load</tt><big>(</big><em>id_</em><big>)</big><a class="headerlink" href="#gc3libs.persistence.FilesystemStore.load" title="Permalink to this definition">¶</a></dt>
+<tt class="descclassname">FilesystemStore.</tt><tt class="descname">load</tt><big>(</big><em>id_</em><big>)</big><a class="headerlink" href="#gc3libs.persistence.FilesystemStore.load" title="Permalink to this definition">¶</a></dt>
 <dd>Load a saved object given its ID, and return it.</dd></dl>
 
 <dl class="method">
 <dt id="gc3libs.persistence.FilesystemStore.remove">
-<tt class="descname">remove</tt><big>(</big><em>id_</em><big>)</big><a class="headerlink" href="#gc3libs.persistence.FilesystemStore.remove" title="Permalink to this definition">¶</a></dt>
+<tt class="descclassname">FilesystemStore.</tt><tt class="descname">remove</tt><big>(</big><em>id_</em><big>)</big><a class="headerlink" href="#gc3libs.persistence.FilesystemStore.remove" title="Permalink to this definition">¶</a></dt>
 <dd>Delete a given object from persistent storage, given its ID.</dd></dl>
 
 <dl class="method">
 <dt id="gc3libs.persistence.FilesystemStore.replace">
-<tt class="descname">replace</tt><big>(</big><em>id_</em>, <em>obj</em><big>)</big><a class="headerlink" href="#gc3libs.persistence.FilesystemStore.replace" title="Permalink to this definition">¶</a></dt>
+<tt class="descclassname">FilesystemStore.</tt><tt class="descname">replace</tt><big>(</big><em>id_</em>, <em>obj</em><big>)</big><a class="headerlink" href="#gc3libs.persistence.FilesystemStore.replace" title="Permalink to this definition">¶</a></dt>
 <dd>Replace the object already saved with the given ID with a copy of <cite>obj</cite>.</dd></dl>
 
 <dl class="method">
 <dt id="gc3libs.persistence.FilesystemStore.save">
-<tt class="descname">save</tt><big>(</big><em>obj</em><big>)</big><a class="headerlink" href="#gc3libs.persistence.FilesystemStore.save" title="Permalink to this definition">¶</a></dt>
+<tt class="descclassname">FilesystemStore.</tt><tt class="descname">save</tt><big>(</big><em>obj</em><big>)</big><a class="headerlink" href="#gc3libs.persistence.FilesystemStore.save" title="Permalink to this definition">¶</a></dt>
 <dd>Save an object, and return an ID.</dd></dl>
 
 </dd></dl>
@@ -1180,6 +1193,14 @@ the two sequence numbers.</p>
 </dd></dl>
 
 <dl class="class">
+<dt id="gc3libs.persistence.Persistable">
+<em class="property">class </em><tt class="descclassname">gc3libs.persistence.</tt><tt class="descname">Persistable</tt><a class="headerlink" href="#gc3libs.persistence.Persistable" title="Permalink to this definition">¶</a></dt>
+<dd><p>A mix-in class to mark that an object should be persisted by its ID.</p>
+<p>Any instance of this class is saved as an &#8220;external reference&#8221;
+when a container holding a reference to it is saved.</p>
+</dd></dl>
+
+<dl class="class">
 <dt id="gc3libs.persistence.Store">
 <em class="property">class </em><tt class="descclassname">gc3libs.persistence.</tt><tt class="descname">Store</tt><a class="headerlink" href="#gc3libs.persistence.Store" title="Permalink to this definition">¶</a></dt>
 <dd><p>Interface for storing and retrieving objects on permanent storage.</p>
@@ -1193,8 +1214,9 @@ conditions:</p>
 <blockquote>
 <ul class="simple">
 <li>it can be pickled with Python&#8217;s standard module <cite>pickle</cite>.</li>
-<li>the instance attribute <cite>_id</cite> is reserved for use by the <cite>Store</cite> 
-class: it should not be set or altered by other parts of the code.</li>
+<li>the instance attribute <cite>persistent_id</cite> is reserved for use by
+the <cite>Store</cite> class: it should not be set or altered by other
+parts of the code.</li>
 </ul>
 </blockquote>
 <dl class="method">
