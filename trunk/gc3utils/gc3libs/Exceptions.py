@@ -154,7 +154,7 @@ class NoResources(Error):
 class OutputNotAvailableError(Error):
     """
     Raised upon attempts to retrieve the output for jobs that are
-    still in `NEW` or `SUBMITTED state.
+    still in `NEW` or `SUBMITTED` state.
     """
     pass
 
