@@ -374,13 +374,13 @@ def gstat(*args, **kw):
         print("%-16s  %-10s" % ("Job ID", "State"))
         print("===========================")
         def cmp_job_ids(a,b):
-            return cmp(a._id, b._id)
+            return cmp(a.persistent_id, b.persistent_id)
         for app in sorted(apps, cmp=cmp_job_ids):
             print("%-16s  %-10s" % (app, app.execution.state))
 
     # save jobs back to disk
     for app in apps:
-        _store.replace(app._id, app)
+        _store.replace(app.persistent_id, app)
 
     return 0
 
@@ -397,7 +397,7 @@ def gget(*args, **kw):
 
     _configure_logger(options.verbosity)
 
-    failed = 0
+    failed = False
     try:
         _core = _get_core(_default_config_file_locations)
     except Exception, ex:
@@ -409,24 +409,24 @@ def gget(*args, **kw):
 
             if app.execution.state == Run.State.NEW:
                 raise InvalidOperation("'%s' Not submitted. Output cannot be retireved"
-                                       % app._id)
+                                       % app.persistent_id)
 
             if app.final_output_retrieved:
                 raise InvalidOperation("Output of '%s' already downloaded to '%s'" 
-                                       % (app._id, app.output_dir))
+                                       % (app.persistent_id, app.output_dir))
 
             if options.download_dir is None:
-                download_dir = os.path.join(os.getcwd(), app._id)
+                download_dir = os.path.join(os.getcwd(), app.persistent_id)
             else:
                 download_dir = options.download_dir
 
             _core.fetch_output(app, download_dir, overwrite=options.overwrite)
             print("Job results successfully retrieved in '%s'\n" % app.output_dir)
-            _store.replace(app._id, app)
+            _store.replace(app.persistent_id, app)
 
         except Exception, ex:
-            print("Failed retrieving job '%s': %s"% (jobid, str(ex)))
-            failed = 1
+            print("Failed retrieving results of job '%s': %s"% (jobid, str(ex)))
+            failed = True
             continue
 
     return failed
