@@ -94,6 +94,14 @@ class InternalError(Error):
     """
     pass
 
+class InvalidArgument(Error): # XXX: should this be fatal? should it be a descendant of `AssertionError`?
+    """
+    Raised when the arguments passed to a function do not honor some
+    required contract.  For instance, either one of two optional
+    arguments must be provided, but none of them was.
+    """
+    pass
+
 class InvalidInformationContainerError(Error):
     pass
 
