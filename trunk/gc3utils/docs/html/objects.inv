@@ -76,6 +76,7 @@ gc3libs.Exceptions.InvalidOperation exception index.html
 gc3libs.backends.sge.count_jobs function index.html
 gc3utils.commands.gclean function index.html
 gc3libs.Application.cmdline method index.html
+gc3libs.core.Engine.perform method index.html
 gc3libs.application.gamess.GamessApplication.qsub method index.html
 gc3libs.Exceptions.InputFileError exception index.html
 gc3utils.commands.gnotify function index.html
@@ -122,7 +123,6 @@ gc3libs.persistence.Store.replace method index.html
 gc3libs.utils.deploy_configuration_file function index.html
 gc3libs.persistence.Store.load method index.html
 gc3libs.backends.LRMS.submit_job method index.html
-gc3libs.core.Engine.progress method index.html
 gc3libs.Exceptions.JobRetrieveError exception index.html
 gc3libs.Run.returncode attribute index.html
 gc3libs.persistence.FilesystemStore.list method index.html

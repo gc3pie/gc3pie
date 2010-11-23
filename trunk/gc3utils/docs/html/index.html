@@ -646,7 +646,7 @@ from the list of managed jobs.</dd></dl>
 <dl class="method">
 <dt id="gc3libs.core.Engine.kill">
 <tt class="descname">kill</tt><big>(</big><em>job</em><big>)</big><a class="headerlink" href="#gc3libs.core.Engine.kill" title="Permalink to this definition">¶</a></dt>
-<dd>Proxy for <cite>Core.kill</cite> (which see).</dd></dl>
+<dd>Schedule a job for killing on the next <cite>perform</cite> run.</dd></dl>
 
 <dl class="method">
 <dt id="gc3libs.core.Engine.peek">
@@ -654,8 +654,8 @@ from the list of managed jobs.</dd></dl>
 <dd>Proxy for <cite>Core.peek</cite> (which see).</dd></dl>
 
 <dl class="method">
-<dt id="gc3libs.core.Engine.progress">
-<tt class="descname">progress</tt><big>(</big><big>)</big><a class="headerlink" href="#gc3libs.core.Engine.progress" title="Permalink to this definition">¶</a></dt>
+<dt id="gc3libs.core.Engine.perform">
+<tt class="descname">perform</tt><big>(</big><big>)</big><a class="headerlink" href="#gc3libs.core.Engine.perform" title="Permalink to this definition">¶</a></dt>
 <dd><p>Update state of all registered jobs and take appropriate action.
 Specifically:</p>
 <blockquote>
