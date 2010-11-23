@@ -136,26 +136,47 @@ def gclean(*args, **kw):
     if options.all:
         args = _store.list()
 
-    _core = _get_core(_default_config_file_locations)
+    try:
+        _core = _get_core(_default_config_file_locations)
+    except Exception, ex:
+        raise FatalError("gkill failed: %s: %s" % (ex.__class__.__name__, str(ex)))
+
     failed = 0
     for jobid in args:
         try:
             app = _store.load(jobid)
-            if app.execution.state != Run.State.TERMINATED:
-                if options.force:
-                    gc3utils.log.warning("Job '%s' not in terminal state:"
-                                         " attempting to kill before cleaning up.")
-                    try:
-                        _core.kill(app)
-                    except Exception, ex:
-                        gc3utils.log.warning("Killing job '%s' failed (%s: %s);"
+
+            if app.execution.state != Run.State.NEW:
+                if app.execution.state != Run.State.TERMINATED:
+                    if options.force:
+                        gc3utils.log.warning("Job '%s' not in terminal state:"
+                                             " attempting to kill before cleaning up.")
+                        try:
+                            _core.kill(app)
+                        except Exception, ex:
+                            gc3utils.log.warning("Killing job '%s' failed (%s: %s);"
+                                                 " continuing anyway, but errors might ensue.",
+                                                 app, ex.__class__.__name__, str(ex))
+
+                            app.execution.state = Run.State.TERMINATED
+                    else:
+                        failed = 1
+                        gc3utils.log.error("Job '%s' not in terminal state: ignoring.", jobid)
+                        continue
+
+                try:
+                    _core.free(app)
+                except Exception, ex:
+                    if options.force:
+                        pass
+                    else:
+                        failed = 1
+                        gc3utils.log.warning("Free job '%s' failed (%s: %s);"
                                              " continuing anyway, but errors might ensue.",
                                              app, ex.__class__.__name__, str(ex))
-                else:
-                    failed = 1
-                    gc3utils.log.error("Job '%s' not in terminal state: ignoring.", jobid)
-                    continue
-            _core.free(app)
+                        continue
+
+        
         except JobRetrieveError:
             if options.force:
                 pass
@@ -164,8 +185,15 @@ def gclean(*args, **kw):
                 gc3utils.log.error("Could not load '%s': ignoring"
                                    " (use option '-f' to remove nonetheless).", jobid)
                 continue
-        _store.remove(jobid)
-        gc3utils.log.info("Removed job '%s'", jobid)
+
+        try:
+            _store.remove(jobid)
+            gc3utils.log.info("Removed job '%s'", jobid)
+        except:
+            failed = 1
+            gc3utils.log.error("Failed removing '%s' from persistency layer."
+                               " option '-f' harmless"% jobid)
+            continue
 
     return failed
 
@@ -246,7 +274,11 @@ def gsub(*args, **kw):
     else:
         raise InvalidUsage("Unknown application '%s'" % application_tag)
 
-    _core = _get_core(_default_config_file_locations)
+    try:
+        _core = _get_core(_default_config_file_locations)
+    except Exception, ex:
+        raise FatalError("gkill failed: %s: %s" % (ex.__class__.__name__, str(ex)))
+
     if options.resource_name:
         _core.select_resource(options.resource_name)
         gc3utils.log.info("Retained only resources: %s (restricted by command-line option '-r %s')",
@@ -277,7 +309,11 @@ def gresub(*args, **kw):
     if len(args) < 1:
         raise InvalidUsage('Wrong number of arguments: this commands expects at least 1 argument: JOBID')
 
-    _core = _get_core(_default_config_file_locations)
+    try:
+        _core = _get_core(_default_config_file_locations)
+    except Exception, ex:
+        raise FatalError("gkill failed: %s: %s" % (ex.__class__.__name__, str(ex)))
+
     if options.resource_name:
         _core.select_resource(options.resource_name)
         gc3utils.log.info("Retained only resources: %s (restricted by command-line option '-r %s')",
@@ -301,8 +337,8 @@ def gresub(*args, **kw):
             pass
 
         try:
-            app = _core.submit(app)
-            print("Successfully re-submitted %s; use the 'gstat' command to monitor its progress." % job)
+            _core.submit(app)
+            print("Successfully re-submitted %s; use the 'gstat' command to monitor its progress." % app)
             _store.replace(jobid, app)
         except Exception, ex:
             failed = 1
@@ -318,7 +354,10 @@ def gstat(*args, **kw):
     (options, args) = parser.parse_args(list(args))
     _configure_logger(options.verbosity)
 
-    _core = _get_core(_default_config_file_locations)
+    try:
+        _core = _get_core(_default_config_file_locations)
+    except Exception, ex:
+        raise FatalError("gkill failed: %s: %s" % (ex.__class__.__name__, str(ex)))
 
     # build list of apps to query status of
     if len(args) == 0:
@@ -358,22 +397,39 @@ def gget(*args, **kw):
 
     _configure_logger(options.verbosity)
 
-    _core = _get_core(_default_config_file_locations)
+    failed = 0
+    try:
+        _core = _get_core(_default_config_file_locations)
+    except Exception, ex:
+        raise FatalError("gkill failed: %s: %s" % (ex.__class__.__name__, str(ex)))
+
     for jobid in args:
-        app = _store.load(jobid)
+        try:
+            app = _store.load(jobid)
 
-        if app.final_output_retrieved:
-            raise InvalidOperation("Output of '%s' already downloaded to '%s'" 
-                                   % (app._id, app.output_dir))
+            if app.execution.state == Run.State.NEW:
+                raise InvalidOperation("'%s' Not submitted. Output cannot be retireved"
+                                       % app._id)
 
-        if options.download_dir is None:
-            download_dir = os.path.join(os.getcwd(), app._id)
-        else:
-            download_dir = options.download_dir
+            if app.final_output_retrieved:
+                raise InvalidOperation("Output of '%s' already downloaded to '%s'" 
+                                       % (app._id, app.output_dir))
 
-        _core.fetch_output(app, download_dir, overwrite=options.overwrite)
-        print("Job results successfully retrieved in '%s'\n" % app.output_dir)
-        _store.replace(app._id, app)
+            if options.download_dir is None:
+                download_dir = os.path.join(os.getcwd(), app._id)
+            else:
+                download_dir = options.download_dir
+
+            _core.fetch_output(app, download_dir, overwrite=options.overwrite)
+            print("Job results successfully retrieved in '%s'\n" % app.output_dir)
+            _store.replace(app._id, app)
+
+        except Exception, ex:
+            print("Failed retrieving job '%s': %s"% (jobid, str(ex)))
+            failed = 1
+            continue
+
+    return failed
 
 
 def gkill(*args, **kw):
@@ -385,36 +441,41 @@ def gkill(*args, **kw):
     """
     parser = OptionParser(usage="%prog [options] JOBID")
     parser.add_option("-v", action="count", dest="verbosity", default=0, help="Set verbosity level")
-    parser.add_option("-f", "--force", action="store_true", dest="force", default=False, help="Force removing job")
+    # parser.add_option("-f", "--force", action="store_true", dest="force", default=False, help="Force removing job")
     (options, args) = parser.parse_args(list(args))
     _configure_logger(options.verbosity)
 
+    failed = 0
     try:
         _core = _get_core(_default_config_file_locations)
-
-        # Assume args are all jobids
-        for jobid in args:
-            try:
-                app = _store.load(jobid)
-
-                gc3utils.log.debug("gkill: Job '%s' in state %s" % (jobid, app.execution.state))
-                if app.execution.state == Run.State.TERMINATED:
-                    raise InvalidOperation("Job '%s' is already in terminal state" % app)
-                else:
-                    _core.kill(app)
-                    _store.replace(jobid, app)
-
-                    # or shall we simply return an ack message ?
-                    print("Sent request to cancel job '%s'."% jobid)
-
-            except Exception, ex:
-                gc3utils.log.error("gkill: Failed canceling Job '%s': %s: %s", 
-                                   jobid, ex.__class__.__name__, str(ex))
-                continue
-    
     except Exception, ex:
         raise FatalError("gkill failed: %s: %s" % (ex.__class__.__name__, str(ex)))
-        
+
+    # Assume args are all jobids
+    for jobid in args:
+        try:
+            app = _store.load(jobid)
+            
+            gc3utils.log.debug("gkill: Job '%s' in state %s" % (jobid, app.execution.state))
+            if app.execution.state == Run.State.NEW:
+                raise InvalidOperation("Job '%s' not submitted." % app)
+            if app.execution.state == Run.State.TERMINATED:
+                raise InvalidOperation("Job '%s' is already in terminal state" % app)
+            else:
+                _core.kill(app)
+                _store.replace(jobid, app)
+
+                # or shall we simply return an ack message ?
+                print("Sent request to cancel job '%s'."% jobid)
+
+        except Exception, ex:
+            #gc3utils.log.error("gkill: Failed canceling Job '%s': %s: %s", 
+            #                   jobid, ex.__class__.__name__, str(ex))
+            print("Failed canceling job '%s': %s"% (jobid, str(ex)))
+            failed = 1
+            continue
+    
+    return failed
 
 def gtail(*args, **kw):
     """The 'gtail' command."""
@@ -436,11 +497,15 @@ def gtail(*args, **kw):
     else:
         std = 'stdout'
 
-    _core = _get_core(_default_config_file_locations)
+    try:
+        _core = _get_core(_default_config_file_locations)
+    except Exception, ex:
+        raise FatalError("gkill failed: %s: %s" % (ex.__class__.__name__, str(ex)))
 
     app = _store.load(jobid)
     if app.execution.state == Run.State.UNKNOWN \
-            or app.execution.state == Run.State.SUBMITTED:
+            or app.execution.state == Run.State.SUBMITTED \
+            or app.execution.state == Run.State.NEW:
         raise Exception('Job output not yet available')
 
     file_handle = _core.peek(app, std)
@@ -510,7 +575,11 @@ def glist(*args, **kw):
         raise InvalidUsage("This command requires exactly one argument: the resource name.")
     resource_name = args[0]
 
-    _core = _get_core(_default_config_file_locations)
+    try:
+        _core = _get_core(_default_config_file_locations)
+    except Exception, ex:
+        raise FatalError("gkill failed: %s: %s" % (ex.__class__.__name__, str(ex)))
+
     resource_object = _core.update_resource_status(resource_name)
     if not resource_object is None:
         if resource_object.has_key("name"):

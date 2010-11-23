@@ -52,7 +52,7 @@ class Error(Exception):
 
     This is the base class for all error-level exceptions.
     """
-    def __init__(self, msg, do_log=True):
+    def __init__(self, msg, do_log=False):
         if do_log: 
             gc3libs.log.error(msg)
         Exception.__init__(self, msg)
@@ -60,7 +60,10 @@ class Error(Exception):
 
 ## derived exceptions
 
-class AuthenticationException(Error):
+class RecoverableAuthError(Error):
+    pass
+
+class UnrecoverableAuthError(Error):
     pass
 
 class ConfigurationError(FatalError):
@@ -164,9 +167,6 @@ class OutputNotAvailableError(Error):
     Raised upon attempts to retrieve the output for jobs that are
     still in `NEW` or `SUBMITTED` state.
     """
-    pass
-
-class SLCSException(AuthenticationException):
     pass
 
 class TransportError(Error):

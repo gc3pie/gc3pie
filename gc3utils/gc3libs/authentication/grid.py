@@ -22,81 +22,73 @@ Authentication support with Grid proxy certificates.
 __docformat__ = 'reStructuredText'
 __version__ = '$Revision$'
 
+import sys
+import shlex
+import getpass
+import os
+import subprocess
 
 import arclib
 import gc3libs
 from gc3libs.authentication import Auth
-from gc3libs.Exceptions import AuthenticationException
-import getpass
-import os
-import subprocess
-import sys
-
+from gc3libs.Exceptions import ConfigurationError, RecoverableAuthError, UnrecoverableAuthError
 
 class GridAuth(object):
 
-    def __init__(self, **authorization):
+    def __init__(self, **auth):
+
+        # test validity
+        assert auth['type'] == 'voms-proxy' or auth['type'] == 'grid-proxy',\
+            "Configuration error. Unknown type: %s. Valid types: [voms-proxy, grid-proxy]" \
+            % auth.type
+        assert auth['usercert'] == 'manual' or auth['usercert'] == 'slcs',  \
+            "Configuration error. Unknown usercert: %s. Valid types: [voms-proxy, grid-proxy]" \
+            % auth.usercert
+
         self.user_cert_valid = False
         self.proxy_valid = False
-        self.__dict__.update(authorization)
+        self.__dict__.update(auth)
 
-    def is_valid(self):
-        try:
-            # Try required values
-            self.type
-            self.usercert
-            
-            return True
-        except:
-            return False
 
     def check(self):
-        gc3libs.log.debug('Checking authentication: GRID')
-        try:
-            self.user_cert_valid = _user_certificate_is_valid()
-            self.proxy_valid = _voms_proxy_is_valid()
-        except Exception, x:
-            gc3libs.log.error('Error checking GRID authentication: %s', str(x), exc_info=True)
+        gc3libs.log.debug('Checking auth: grid')
 
+        self.user_cert_valid = _user_certificate_is_valid()
+        self.proxy_valid = _voms_proxy_is_valid()
+ 
         return ( self.user_cert_valid and self.proxy_valid )
-     
+    
     def enable(self):
-        try:
+        # Obtain username. Depends on type + usercert combination.
+        if self.usercert == 'slcs':
+            # Check if aai_username is already set. If not, ask interactively
+            try:
+                self.aai_username
+            except AttributeError:
+                self.aai_username = raw_input('Insert AAI username: ')
 
-            # Need to renew user certificate
-            # if slcs-enabled, try slcs-init
-            # otherwise trow an Exception
-            if self.usercert == 'slcs':
-                # Check if aai_username is already set. If not, ask interactively
-                try:
-                    self.aai_username
-                except AttributeError:
-                    # Go interactive
-                    self.aai_username = raw_input('Insert AAI username for user '+getpass.getuser()+': ')
-                    
-                # Check if idp is already set.  If not, ask interactively
-                try:
-                    self.idp
-                except AttributeError:
-                    self.idp = raw_input('Insert AAI idp for user '+getpass.getuser()+': ')            
+            # Check if idp is already set.  If not, ask interactively
+            try:
+                self.idp
+            except AttributeError:
+                self.idp = raw_input('Insert AAI identity provider (for UZH use uzh.ch): ')
 
-            # Check information for grid/voms proxy
-            if self.type == 'voms-proxy':
-                # Check if vo is already set.  If not, ask interactively
-                try:
-                    self.vo
-                except AttributeError:
-                    self.vo = raw_input('Insert VO name for user '+getpass.getuser()+': ')
+        # Check information for grid/voms proxy
+        if self.type == 'voms-proxy':
+            # Check if vo is already set.  If not, ask interactively
+            try:
+                self.vo
+            except AttributeError:
+                self.vo = raw_input('Insert VO name: ' )
 
             # UserName set, go interactive asking password
             if self.usercert == 'slcs':
-                message = 'Insert AAI password for user  '+self.aai_username+': '
+                message = 'Insert AAI password for user '+self.aai_username+': '
             else:
                 if self.type == 'voms-proxy':
                     message = 'Insert voms proxy password: '
                 else:
-                    # Assume grid-proxy
-                    message = 'Insert grid proxy password :'
+                    message = 'Insert grid proxy password: '
 
             input_passwd = getpass.getpass(message)
             
@@ -105,54 +97,76 @@ class GridAuth(object):
 
             # User certificate
             if not self.user_cert_valid:
-                if not self.usercert == 'slcs':
-                    raise Exception('User credential expired')
+                if self.usercert == 'manual':
+                    raise UnrecoverableAuthError('User credential expired')
 
-                gc3libs.log.debug('No valid certificate found; trying to get new one by slcs-init ...')
-                returncode = subprocess.call(["slcs-init", "--idp", self.idp, "-u", self.aai_username,
-                                              "-p", input_passwd, "-k", input_passwd],
-                                             close_fds=True)
+                _cmd = shlex.split("slcs-init --idp %s -u %s -p %s -k %s" 
+                                   % (self.idp, self.aai_username, input_passwd, input_passwd))
+                gc3libs.log.debug("Executing slcs-init --idp %s -u %s" 
+                                  % (self.idp, self.aai_username))
 
-                if returncode != 0:
-                    raise SLCSException("Failed while running 'slcs-init'")
+                try:
+                    p = subprocess.Popen(_cmd,stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+                    (stdout, stderr) = p.communicate()
+                    if p.returncode != 0:
+                        # assume transient error (i.e wrong password or so)
+                        gc3libs.log.error("RecoverableAuthError: %s" % stdout)
+                        raise RecoverableAuthError(stdout) 
+                except (OSError) as x:
+                    gc3libs.log.error("UnrecoverableAuthError: %s" % str(x))
+                    raise UnrecoverableAuthError(str(x))
+
                 new_cert = True
                 gc3libs.log.info('Create new SLCS certificate [ ok ].')
+
 
             # renew proxy if cert has changed or proxy expired
             if new_cert or not self.proxy_valid:
                 if self.type == 'voms-proxy':
                     # Try renew voms credential; another interactive command
-                    gc3libs.log.debug("No valid proxy found; trying to get a new one by 'voms-proxy-init' ...")
-                    proxy_enable_command_list = ['voms-proxy-init',
-                                                 '-valid', '24:00',
-                                                 '-voms', self.vo,
-                                                 '-q','-pwstdin']
+                    gc3libs.log.debug("No valid proxy found; trying to get "
+                                      " a new one by 'voms-proxy-init' ...")
+                    _cmd = shlex.split("voms-proxy-init -valid 24:00 -voms "
+                                       "%s -q -pwstdin" % self.vo)
+
                 elif self.type == 'grid-proxy':
-                    # Try renew voms credential; another interactive command
-                    gc3libs.log.debug("No valid proxy found; trying to get a new one by 'grid-proxy-init' ...")
-                    proxy_enable_command_list = ['grid-proxy-init',
-                                                 '-valid', '24:00',
-                                                 '-q','-pwstdin']
-                else:
-                    # No valid proxy methods recognized
-                    raise Exception('No valid proxy methods found')
+                    # Try renew grid credential; another interactive command
+                    gc3libs.log.debug("No valid proxy found; trying to get "
+                                      "a new one by 'grid-proxy-init' ...")
+                    _cmd = shlex.split("grid-proxy-init -valid 24:00 -q -pwstdin")
 
-                devnull = open('/dev/null', 'w')
-                p1 = subprocess.Popen(['echo',input_passwd], stdout=subprocess.PIPE)
-                p2 = subprocess.Popen(proxy_enable_command_list,
-                                      stdin=p1.stdout,
-                                      stdout=subprocess.PIPE,
-                                      stderr=devnull)
-                p2.communicate()
-                devnull.close()
-                input_passwd = None # dispose content of password
+                try:
 
-            return self.check()
+                    _echo_cmd = shlex.split("echo %s" % input_passwd)
+                    p1 = subprocess.Popen(_echo_cmd, stdout=subprocess.PIPE)
+                    p2 = subprocess.Popen(_cmd,
+                                          stdin=p1.stdout,
+                                          stdout=subprocess.PIPE,
+                                          stderr=subprocess.STDOUT)
+                    (stdout, stderr) = p2.communicate()
 
-        except Exception, x:
-            raise AuthenticationException('Failed renewing GRID credential: %s: %s'
-                                          % (x.__class__.__name__, str(x)))
+                    # dispose content of password
+                    input_passwd = None
 
+                    if p2.returncode != 0:
+                        gc3libs.log.error("voms-proxy-init returned exitcode %d. Message: %s."
+                                          % (p2.returncode, stdout))
+
+                except ValueError as x:
+                    # is this more a programming error ?
+                    gc3libs.log.error("TO_BE_CONFIRMED: UnrecoverableAuthError: %s" % str(x))
+                    raise RecoverableAuthError(str(x))
+                except OSError as x:
+                    gc3libs.log.error("UnrecoverableAuthError: %s" % str(x))
+                    raise UnrecoverableAuthError(str(x))
+                
+            if not self.check():
+                raise RecoverableAuthError("Temporary failure in auth 'grid' enabling. "
+                                           "grid/voms proxy status: [%s]. "
+                                           "user certificate status: [%s]" 
+                                           % (self.proxy_valid, self.user_cert_valid))
+            
+            return True
 
 def _voms_proxy_is_valid():
     try:

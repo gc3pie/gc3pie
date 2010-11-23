@@ -21,16 +21,17 @@ Authentication support for the GC3Libs.
 __docformat__ = 'reStructuredText'
 __version__ = '$Revision$'
 
+import sys
 
-from gc3libs.Exceptions import AuthenticationException, ConfigurationError
+from gc3libs.Exceptions import ConfigurationError, RecoverableAuthError, UnrecoverableAuthError
 
 
 class Auth(object):
     types = {}
-    def __init__(self, authorizations, auto_enable):
+    def __init__(self, _auth_dict, auto_enable):
         self.auto_enable = auto_enable
         self.__auths = { }
-        self._auth_dict = authorizations
+        self._auth_dict = _auth_dict
         self._auth_type = { }
         for auth_name, auth_params in self._auth_dict.items():
             self._auth_type[auth_name] = Auth.types[auth_params['type']]
@@ -39,30 +40,23 @@ class Auth(object):
         if not self.__auths.has_key(auth_name):
             try:
                 a =  self._auth_type[auth_name](** self._auth_dict[auth_name])
-                if not a.is_valid():
-                    raise ConfigurationError("Missing required configuration parameters"
-                                             " in auth section '%s'" % auth_name)
-
-                if not a.check():
-                    if self.auto_enable:
-                        try:
-                            a.enable()
-                        except Exception, x:
-                            gc3libs.log.debug("Got exception while enabling auth '%s',"
-                                               " will remember for next invocations:"
-                                               " %s: %s" % (auth_name, x.__class__.__name__, x))
-                            a = x
-                    else:
-                        a = AuthenticationException("No valid credentials of type '%s'"
-                                                    " and `auto_enable` not set." % auth_name)
-            except KeyError:
-                a = ConfigurationError("Unknown auth '%s' - check configuration file" % auth_name)
-            except ConfigurationError:
-                raise # propagate configuration errors to caller, users should see them!
-            except Exception, x:
-                a = AuthenticationException("Got error while creating auth '%s': %s: %s"
-                                            % (auth_name, x.__class__.__name__, x))
-
+            except (AssertError, AttributeError) as x:
+                a = ConfigurationError("Missing required configuration parameters"
+                                         " in auth section '%s': %s" % (auth_name, str(x)))
+            if not a.check():
+                if self.auto_enable:
+                    try:
+                        a.enable()
+                    except RecoverableAuthError as x:
+                        raise
+                    except UnrecoverableAuthError as x:
+                        gc3libs.log.debug("Got exception while enabling auth '%s',"
+                                          " will remember for next invocations:"
+                                          " %s: %s" % (auth_name, x.__class__.__name__, x))
+                        a = x
+                else:
+                    a = UnrecoverableAuthError("No valid credentials of type '%s'"
+                                                " and `auto_enable` not set." % auth_name)
             self.__auths[auth_name] = a
 
         a = self.__auths[auth_name]
@@ -76,9 +70,9 @@ class Auth(object):
 
 
 class NoneAuth(object):
-    """Authentication proxy to use when no authentication is needed."""
-    def __init__(self, **authorization):
-        self.__dict__.update(authorization)
+    """Auth proxy to use when no auth is needed."""
+    def __init__(self, **auth_dicts):
+        self.__dict__.update(auth_dicts)
 
     def is_valid(self):
         return True
@@ -90,11 +84,10 @@ class NoneAuth(object):
         return True
 
 Auth.register('none', NoneAuth)
-# register additional authentication types
+# register additional auth types
 # FIXME: it would be nice to have some kind of auto-discovery instead
 import gc3libs.authentication.grid
 import gc3libs.authentication.ssh
-    
 
 ## main: run tests
 

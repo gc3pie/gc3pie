@@ -22,27 +22,26 @@ Authentication support for accessing resources through the SSH protocol.
 __docformat__ = 'reStructuredText'
 __version__ = '$Revision$'
 
-
+import gc3libs
 from gc3libs.authentication import Auth
 
 
 class SshAuth(object):
-    def __init__(self, **authorization):
-        self.__dict__.update(authorization)
+    def __init__(self, **auth):
 
-    def is_valid(self):
-        try:
-            self.type
-            self.username
-            return True
-        except:
-            return False
+        # test validity
+        assert auth['type'] == 'ssh',\
+            "Configuration error. Unknown type: %s. Valid type: ssh" \
+            % auth.type
+        auth['username']
+        self.__dict__.update(auth)
 
     def check(self):
-        return True
-    def enable(self):
+        gc3libs.log.debug('Checking auth: ssh')
         return True
 
+    def enable(self):
+        return True
 
 Auth.register('ssh', SshAuth)
 
