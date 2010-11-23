@@ -562,6 +562,7 @@ class Engine(object):
         self._in_flight = []
         self._stopped = []
         self._terminated = []
+        self._to_kill = []
         self._core = grid
         self._store = store
         for job in jobs:
@@ -603,7 +604,7 @@ class Engine(object):
             raise AssertionError("Unhandled job state '%s' in gc3libs.core.Engine." % state)
         
 
-    def progress(self):
+    def perform(self):
         """
         Update state of all registered jobs and take appropriate action.
         Specifically:
@@ -635,7 +636,7 @@ class Engine(object):
             try:
                 self._core.update_job_state(job)
                 if self._store:
-                    store.save(job)
+                    self._store.save(job)
                 if job.state == Run.State.SUBMITTED:
                     currently_submitted += 1
                     currently_in_flight += 1
@@ -655,6 +656,28 @@ class Engine(object):
         for index in reversed(transitioned):
             del self._in_flight[index]
 
+        # execute kills and update count of submitted/in-flight jobs
+        transitioned = []
+        for index, job in enumerate(self._to_kill):
+            try: 
+                self._core.kill(job)
+                if self._store:
+                    self._store.save(job)
+                if job.state == Run.State.SUBMITTED:
+                    currently_submitted -= 1
+                    currently_in_flight -= 1
+                elif job.state == Run.State.RUNNING:
+                    currently_in_flight -= 1
+                self._terminated.append(job)
+                transitioned.append(index)
+            except Exception, x:
+                gc3libs.log.error("Ignored error in killing job '%s': %s: %s"
+                                  % (job._id, x.__class__.__name__, str(x)),
+                                  exc_info=True)
+        # remove jobs that transitioned to other states
+        for index in reversed(transitioned):
+            del self._to_kill[index]
+
         # update state of STOPPED jobs; again need to make before new
         # submissions, because it can alter the count of in-flight
         # jobs.
@@ -663,14 +686,15 @@ class Engine(object):
             try:
                 self._core.update_job_state(job)
                 if self._store:
-                    store.save(job)
+                    self._store.save(job)
                 if job.state in [Run.State.SUBMITTED, Run.State.RUNNING]:
                     currently_submitted += 1
                     currently_in_flight += 1
                     self._in_flight.append(job)
-                elif job.state == Run.State.TERMINATED:
                     transitioned.append(index) # job changed state, mark as to remove
+                elif job.state == Run.State.TERMINATED:
                     self._terminated.append(job)
+                    transitioned.append(index) # job changed state, mark as to remove
             except Exception, x:
                 gc3libs.log.error("Ignoring error in updating state of STOPPED job '%s': %s: %s"
                                   % (job._id, x.__class__.__name__, str(x)),
@@ -688,13 +712,13 @@ class Engine(object):
                     try:
                         self._core.submit(job)
                         if self._store:
-                            store.save(job)
-                        transitioned.append(index)
+                            self._store.save(job)
                         self._submitted.append(job)
+                        transitioned.append(index)
                         currently_submitted += 1
                         currently_in_flight += 1
                     except Exception, x:
-                        gc3libs.log.error("Error in submitting job '%s': %s: %s"
+                        gc3libs.log.error("Ignored error in submitting job '%s': %s: %s"
                                           % (job._id, x.__class__.__name__, str(x)))
                         job.log("Submission failed: %s: %s" % (x.__class__.__name__, str(x)))
         # remove jobs that transitioned to SUBMITTED state
@@ -709,9 +733,9 @@ class Engine(object):
                     try:
                         self._core.fetch_output(job)
                         if self._store:
-                            store.save(job)
+                            self._store.save(job)
                     except Exception, x:
-                        gc3libs.log.error("Got error in fetching output of job '%s': %s: %s" 
+                        gc3libs.log.error("Ignored error in fetching output of job '%s': %s: %s" 
                                           % (job._id, x.__class__.__name__, str(x)), exc_info=True)
 
 
@@ -752,11 +776,13 @@ class Engine(object):
         """
         return self._core.fetch_output(job)
 
+
     def kill(self, job):
         """
-        Proxy for `Core.kill` (which see).
+        Schedule a job for killing on the next `perform` run.
         """
-        self._core.kill(job)
+        self._to_kill.append(job)
+
 
     def peek(self, job, what='stdout', offset=0, size=None, **kw):
         """
