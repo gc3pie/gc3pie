@@ -24,6 +24,7 @@ __version__ = '$Revision$'
 
 import gc3libs
 
+## base error classes
 
 class FatalError(Exception):
     """
@@ -57,10 +58,9 @@ class Error(Exception):
         Exception.__init__(self, msg)
         
 
-class AuthenticationException(Error):
-    pass
+## derived exceptions
 
-class BrokerException(Error):
+class AuthenticationException(Error):
     pass
 
 class ConfigurationError(FatalError):
@@ -94,7 +94,7 @@ class InternalError(Error):
     """
     pass
 
-class InvalidJobid(FatalError):
+class InvalidInformationContainerError(Error):
     pass
 
 class InvalidOperation(Error):
@@ -102,6 +102,13 @@ class InvalidOperation(Error):
     Raised when an operation is attempted, that is not considered
     valid according to the system state.  For instance, trying to
     retrieve the output of a job that has not yet been submitted.
+    """
+    pass
+
+class InvalidResourceName(Error):
+    """
+    Raised to signal that no computational resource with the given
+    name is defined in the configuration file.
     """
     pass
 
@@ -125,6 +132,9 @@ class JobRetrieveError(Error):
 class LRMSException(Error):
     pass    
 
+class LRMSSubmitError(Error):
+    pass
+
 class NoConfigurationFile(FatalError):
     """
     Raised when the configuration file cannot be read (e.g., does not
@@ -141,13 +151,17 @@ class NoResources(Error):
     # FIXME: should we have a separate `NoCompatibleResources` exception?
     pass
 
+class OutputNotAvailableError(Error):
+    """
+    Raised upon attempts to retrieve the output for jobs that are
+    still in `NEW` or `SUBMITTED state.
+    """
+    pass
+
 class SLCSException(AuthenticationException):
     pass
 
-class SshSubmitException(Error):
-    pass
-
-class TransportException(Error):
+class TransportError(Error):
     pass
 
 class UnknownJobState(Error):
@@ -159,35 +173,6 @@ class UnknownJobState(Error):
     """
     pass
 
-class VOMSException(AuthenticationException):
-    pass
-
-class InvalidInformationContainerError(Error):
-    pass
-
-class LRMSUnrecoverableError(Error):
-    pass
-
-class ResourceNotFoundError(Error):
-    pass
-
-class XRSLNotFoundError(Error):
-    pass
-
-class LRMSSubmitError(Error):
-    pass
-
-class LRMSSshError(Error):
-    pass
-
-class ConfigurationError(Error):
-    pass
-
-class OutputNotAvailableError(Error):
-    pass
-
-class TransportError(Error):
-    pass
 
 ## main: run tests
 
