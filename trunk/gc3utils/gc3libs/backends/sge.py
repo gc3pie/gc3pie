@@ -282,8 +282,9 @@ class SgeLrms(LRMS):
           * `r.auth_type` must be a valid key to pass to `Authorization.get()`.
         """
         # XXX: should these be `InternalError` instead?
-        if not resource.type == Default.SGE_LRMS:
-            raise LRMSException("SgeLRMS.__init__(): Failed. Resource type execyted 'sge'. Received '%s'" % resource.type)
+        assert resource.type == Default.SGE_LRMS, \
+            "SgeLRMS.__init__(): Failed. Resource type expected 'sge'. Received '%s'" \
+            % resource.type
 
         # checking mandatory resource attributes
         resource.name

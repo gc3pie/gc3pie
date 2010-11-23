@@ -47,11 +47,12 @@ class ArcLrms(LRMS):
     """
     def __init__(self,resource, auths):
         # Normalize resource types
-        if not resource.type == Default.ARC_LRMS:
-            raise LRMSException("ArcLRMS.__init__(): Failed. Resource type execyted 'arc'. Received '%s'" % resource.type)
+        assert resource.type == Default.ARC_LRMS, \
+            "ArcLRMS.__init__(): Failed. Resource type expected 'arc'. Received '%s'" \
+            % resource.type
 
         self._resource = resource
-        
+
         self._resource.ncores = int(self._resource.ncores)
         self._resource.max_memory_per_core = int(self._resource.max_memory_per_core) * 1000
         self._resource.max_walltime = int(self._resource.max_walltime)
@@ -258,7 +259,8 @@ class ArcLrms(LRMS):
 
     @same_docstring_as(LRMS.get_resource_status)
     def get_resource_status(self):
-        # Get dynamic information out of the attached ARC subsystem (being it a single resource or a grid)
+        # Get dynamic information out of the attached ARC subsystem 
+        # (being it a single resource or a grid)
         # Fill self._resource object with dynamic information
         # return self._resource
 
@@ -307,11 +309,14 @@ class ArcLrms(LRMS):
                 q.cluster.total_cpus = _normalize_value(q.cluster.total_cpus)
 
                 # total_queued
-                total_queued = total_queued +  q.grid_queued + q.local_queued + q.prelrms_queued + q.queued
+                total_queued = total_queued +  q.grid_queued + \
+                    q.local_queued + q.prelrms_queued + q.queued
 
                 # free_slots
                 # free_slots - free_slots + ( q.total_cpus - q.running )
-                free_slots = free_slots + min((q.total_cpus - q.running),(q.cluster.total_cpus - q.cluster.used_cpus))
+                free_slots = free_slots +\
+                    min((q.total_cpus - q.running),\
+                            (q.cluster.total_cpus - q.cluster.used_cpus))
 
             # user_running and user_queued
             for job in list_of_jobs:

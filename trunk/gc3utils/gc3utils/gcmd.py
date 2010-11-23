@@ -187,7 +187,7 @@ where command is one of these:
         return 1
     except Exception, x:
         sys.stderr.write("%s: ERROR: %s\n" % (PROG, str(x)))
-        gc3utils.log.debug("%s: %s" % (x.__class__.__name__, str(x)), 
-                           exc_info=True)
-        sys.excepthook(* sys.exc_info()) 
+        #gc3utils.log.debug("%s: %s" % (x.__class__.__name__, str(x)), 
+        #                   exc_info=True)
+        # sys.excepthook(* sys.exc_info()) 
         return 1

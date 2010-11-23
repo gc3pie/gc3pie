@@ -138,10 +138,11 @@ class Core:
             try:
                 self.authorization.get(lrms._resource.authorization_type)
                 lrms.submit_job(app)
-            except AuthenticationException:
-                # ignore authentication errors: e.g., we may fail some SSH connections but succeed in others
-                gc3libs.log.debug("Authentication error in submitting to resource '%s'" 
-                                   % lrms._resource.name)
+            except RecoverableAuthError as x:
+                gc3libs.log.debug("RecoverableAuthError: %s" % str(x))
+                continue
+            except UnrecoverableAuthError as x:
+                gc3libs.log.debug("UnrecoverableAuthError: %s" % str(x))
                 continue
             except LRMSException:
                 gc3libs.log.error("Error in submitting job to resource '%s'", 
@@ -180,11 +181,19 @@ class Core:
             old_state = state
             gc3libs.log.debug("Updating state (%s) of application: %s", state, app)
             try:
-                lrms = self._get_backend(app.execution.resource_name)
                 if state not in [ Run.State.NEW, Run.State.TERMINATED ]:
-                    self.authorization.get(lrms._resource.authorization_type)
+                    lrms = self._get_backend(app.execution.resource_name)
                     try:
+                        self.authorization.get(lrms._resource.authorization_type)
                         state = lrms.update_job_state(app)
+                    except ConfigurationError:
+                        # Unrecoverable. Break everything
+                        # rather break ?
+                        raise
+                    except UnrecoverableAuthError:
+                        raise
+                    except RecoverableAuthError:
+                        raise
                     except Exception, ex:
                         gc3libs.log.debug("Error getting status of application '%s': %s: %s",
                                           app, ex.__class__.__name__, str(ex))
