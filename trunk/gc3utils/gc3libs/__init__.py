@@ -389,7 +389,7 @@ class Application(Struct):
 
     def __str__(self):
         try:
-            return str(self._id)
+            return str(self.persistent_id)
         except AttributeError:
             return safe_repr(self)
 

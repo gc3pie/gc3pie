@@ -47,8 +47,9 @@ class Store(object):
     conditions:
 
       * it can be pickled with Python's standard module `pickle`.
-      * the instance attribute `_id` is reserved for use by the `Store` 
-        class: it should not be set or altered by other parts of the code.
+      * the instance attribute `persistent_id` is reserved for use by
+        the `Store` class: it should not be set or altered by other
+        parts of the code.
     """
     
     def list(self, **kw):
@@ -227,12 +228,12 @@ class FilesystemStore(Store):
                     pass # ignore errors
             raise JobRetrieveError("Failed retrieving job from file '%s': %s: %s"
                                    % (filename, ex.__class__.__name__, str(ex)))
-        if not hasattr(obj, '_id'):
-            raise JobRetrieveError("Invalid format in file '%s': missing '_id' attribute"
+        if not hasattr(obj, 'persistent_id'):
+            raise JobRetrieveError("Invalid format in file '%s': missing 'persistent_id' attribute"
                                    % (filename))
-        if str(obj._id) != str(id_):
+        if str(obj.persistent_id) != str(id_):
             raise JobRetrieveError("Retrieved Job ID '%s' does not match given Job ID '%s'" 
-                                   % (obj._id, id_))
+                                   % (obj.persistent_id, id_))
         return obj
 
 
@@ -249,10 +250,10 @@ class FilesystemStore(Store):
 
     @same_docstring_as(Store.save)
     def save(self, obj):
-        if not hasattr(obj, '_id'):
-            obj._id = self._idfactory(obj)
-        self._save_or_replace(obj._id, obj)
-        return obj._id
+        if not hasattr(obj, 'persistent_id'):
+            obj.persistent_id = self._idfactory(obj)
+        self._save_or_replace(obj.persistent_id, obj)
+        return obj.persistent_id
 
 
     def _save_or_replace(self, id_, obj):

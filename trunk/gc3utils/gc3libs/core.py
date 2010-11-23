@@ -660,7 +660,7 @@ class Engine(object):
                     self._terminated.append(job)
             except Exception, x:
                 gc3libs.log.error("Ignoring error in updating state of job '%s': %s: %s"
-                                  % (job._id, x.__class__.__name__, str(x)),
+                                  % (job.persistent_id, x.__class__.__name__, str(x)),
                                   exc_info=True)
         # remove jobs that transitioned to other states
         for index in reversed(transitioned):
@@ -682,7 +682,7 @@ class Engine(object):
                 transitioned.append(index)
             except Exception, x:
                 gc3libs.log.error("Ignored error in killing job '%s': %s: %s"
-                                  % (job._id, x.__class__.__name__, str(x)),
+                                  % (job.persistent_id, x.__class__.__name__, str(x)),
                                   exc_info=True)
         # remove jobs that transitioned to other states
         for index in reversed(transitioned):
@@ -707,7 +707,7 @@ class Engine(object):
                     transitioned.append(index) # job changed state, mark as to remove
             except Exception, x:
                 gc3libs.log.error("Ignoring error in updating state of STOPPED job '%s': %s: %s"
-                                  % (job._id, x.__class__.__name__, str(x)),
+                                  % (job.persistent_id, x.__class__.__name__, str(x)),
                                   exc_info=True)
         # remove jobs that transitioned to other states
         for index in reversed(transitioned):
@@ -729,7 +729,7 @@ class Engine(object):
                         currently_in_flight += 1
                     except Exception, x:
                         gc3libs.log.error("Ignored error in submitting job '%s': %s: %s"
-                                          % (job._id, x.__class__.__name__, str(x)))
+                                          % (job.persistent_id, x.__class__.__name__, str(x)))
                         job.log("Submission failed: %s: %s" % (x.__class__.__name__, str(x)))
         # remove jobs that transitioned to SUBMITTED state
         for index in reversed(transitioned):
@@ -746,7 +746,7 @@ class Engine(object):
                             self._store.save(job)
                     except Exception, x:
                         gc3libs.log.error("Ignored error in fetching output of job '%s': %s: %s" 
-                                          % (job._id, x.__class__.__name__, str(x)), exc_info=True)
+                                          % (job.persistent_id, x.__class__.__name__, str(x)), exc_info=True)
 
 
     # implement a Core-like interface, so `Engine` objects can be used
