@@ -178,16 +178,15 @@ where command is one of these:
         # Fatal errors do their own printing, we only add a short usage message
         sys.stderr.write("Type '%s --help' to get usage help.\n" %PROG)
         return 1
-    except AssertionError:
+    except AssertionError, x:
         sys.stderr.write("%s: BUG: %s\n"
                          "Please send an email to gc3utils-dev@gc3.uzh.ch copying this\n"
                          "output and and attach file '~/.gc3utils.log'.  Many thanks for\n"
                          "your cooperation.\n"
-                         % (PROG, x))
+                         % (PROG, str(x)))
         return 1
     except Exception, x:
         sys.stderr.write("%s: ERROR: %s\n" % (PROG, str(x)))
-        #gc3utils.log.debug("%s: %s" % (x.__class__.__name__, str(x)), 
-        #                   exc_info=True)
-        # sys.excepthook(* sys.exc_info()) 
+        if __debug__:
+            sys.excepthook(* sys.exc_info()) 
         return 1
