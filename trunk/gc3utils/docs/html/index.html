@@ -720,13 +720,13 @@ missing or has an unknown/invaliud value.</dd></dl>
 
 <dl class="exception">
 <dt id="gc3libs.Exceptions.DataStagingError">
-<em class="property">exception </em><tt class="descclassname">gc3libs.Exceptions.</tt><tt class="descname">DataStagingError</tt><big>(</big><em>msg</em>, <em>do_log=True</em><big>)</big><a class="headerlink" href="#gc3libs.Exceptions.DataStagingError" title="Permalink to this definition">¶</a></dt>
+<em class="property">exception </em><tt class="descclassname">gc3libs.Exceptions.</tt><tt class="descname">DataStagingError</tt><big>(</big><em>msg</em>, <em>do_log=False</em><big>)</big><a class="headerlink" href="#gc3libs.Exceptions.DataStagingError" title="Permalink to this definition">¶</a></dt>
 <dd>Raised when problems with copying data to or from the remote
 execution site occurred.</dd></dl>
 
 <dl class="exception">
 <dt id="gc3libs.Exceptions.Error">
-<em class="property">exception </em><tt class="descclassname">gc3libs.Exceptions.</tt><tt class="descname">Error</tt><big>(</big><em>msg</em>, <em>do_log=True</em><big>)</big><a class="headerlink" href="#gc3libs.Exceptions.Error" title="Permalink to this definition">¶</a></dt>
+<em class="property">exception </em><tt class="descclassname">gc3libs.Exceptions.</tt><tt class="descname">Error</tt><big>(</big><em>msg</em>, <em>do_log=False</em><big>)</big><a class="headerlink" href="#gc3libs.Exceptions.Error" title="Permalink to this definition">¶</a></dt>
 <dd><p>A non-fatal error.</p>
 <p>Depending on the nature of the task, steps could be taken to
 continue, but users <em>must</em> be aware that an error condition
@@ -752,7 +752,7 @@ cannot be read.</dd></dl>
 
 <dl class="exception">
 <dt id="gc3libs.Exceptions.InternalError">
-<em class="property">exception </em><tt class="descclassname">gc3libs.Exceptions.</tt><tt class="descname">InternalError</tt><big>(</big><em>msg</em>, <em>do_log=True</em><big>)</big><a class="headerlink" href="#gc3libs.Exceptions.InternalError" title="Permalink to this definition">¶</a></dt>
+<em class="property">exception </em><tt class="descclassname">gc3libs.Exceptions.</tt><tt class="descname">InternalError</tt><big>(</big><em>msg</em>, <em>do_log=False</em><big>)</big><a class="headerlink" href="#gc3libs.Exceptions.InternalError" title="Permalink to this definition">¶</a></dt>
 <dd>Raised when some function cannot fulfill its duties, for reasons
 that do not depend on the library client code.  For instance, when
 a response string gotten from an external command cannot be parsed
@@ -760,21 +760,21 @@ as expected.</dd></dl>
 
 <dl class="exception">
 <dt id="gc3libs.Exceptions.InvalidArgument">
-<em class="property">exception </em><tt class="descclassname">gc3libs.Exceptions.</tt><tt class="descname">InvalidArgument</tt><big>(</big><em>msg</em>, <em>do_log=True</em><big>)</big><a class="headerlink" href="#gc3libs.Exceptions.InvalidArgument" title="Permalink to this definition">¶</a></dt>
+<em class="property">exception </em><tt class="descclassname">gc3libs.Exceptions.</tt><tt class="descname">InvalidArgument</tt><big>(</big><em>msg</em>, <em>do_log=False</em><big>)</big><a class="headerlink" href="#gc3libs.Exceptions.InvalidArgument" title="Permalink to this definition">¶</a></dt>
 <dd>Raised when the arguments passed to a function do not honor some
 required contract.  For instance, either one of two optional
 arguments must be provided, but none of them was.</dd></dl>
 
 <dl class="exception">
 <dt id="gc3libs.Exceptions.InvalidOperation">
-<em class="property">exception </em><tt class="descclassname">gc3libs.Exceptions.</tt><tt class="descname">InvalidOperation</tt><big>(</big><em>msg</em>, <em>do_log=True</em><big>)</big><a class="headerlink" href="#gc3libs.Exceptions.InvalidOperation" title="Permalink to this definition">¶</a></dt>
+<em class="property">exception </em><tt class="descclassname">gc3libs.Exceptions.</tt><tt class="descname">InvalidOperation</tt><big>(</big><em>msg</em>, <em>do_log=False</em><big>)</big><a class="headerlink" href="#gc3libs.Exceptions.InvalidOperation" title="Permalink to this definition">¶</a></dt>
 <dd>Raised when an operation is attempted, that is not considered
 valid according to the system state.  For instance, trying to
 retrieve the output of a job that has not yet been submitted.</dd></dl>
 
 <dl class="exception">
 <dt id="gc3libs.Exceptions.InvalidResourceName">
-<em class="property">exception </em><tt class="descclassname">gc3libs.Exceptions.</tt><tt class="descname">InvalidResourceName</tt><big>(</big><em>msg</em>, <em>do_log=True</em><big>)</big><a class="headerlink" href="#gc3libs.Exceptions.InvalidResourceName" title="Permalink to this definition">¶</a></dt>
+<em class="property">exception </em><tt class="descclassname">gc3libs.Exceptions.</tt><tt class="descname">InvalidResourceName</tt><big>(</big><em>msg</em>, <em>do_log=False</em><big>)</big><a class="headerlink" href="#gc3libs.Exceptions.InvalidResourceName" title="Permalink to this definition">¶</a></dt>
 <dd>Raised to signal that no computational resource with the given
 name is defined in the configuration file.</dd></dl>
 
@@ -790,7 +790,7 @@ try to be specific about what is wrong on the command line.</p>
 
 <dl class="exception">
 <dt id="gc3libs.Exceptions.LoadError">
-<em class="property">exception </em><tt class="descclassname">gc3libs.Exceptions.</tt><tt class="descname">LoadError</tt><big>(</big><em>msg</em>, <em>do_log=True</em><big>)</big><a class="headerlink" href="#gc3libs.Exceptions.LoadError" title="Permalink to this definition">¶</a></dt>
+<em class="property">exception </em><tt class="descclassname">gc3libs.Exceptions.</tt><tt class="descname">LoadError</tt><big>(</big><em>msg</em>, <em>do_log=False</em><big>)</big><a class="headerlink" href="#gc3libs.Exceptions.LoadError" title="Permalink to this definition">¶</a></dt>
 <dd>Raised upon errors loading a job from the persistent storage.</dd></dl>
 
 <dl class="exception">
@@ -802,320 +802,23 @@ malformed).</dd></dl>
 
 <dl class="exception">
 <dt id="gc3libs.Exceptions.NoResources">
-<em class="property">exception </em><tt class="descclassname">gc3libs.Exceptions.</tt><tt class="descname">NoResources</tt><big>(</big><em>msg</em>, <em>do_log=True</em><big>)</big><a class="headerlink" href="#gc3libs.Exceptions.NoResources" title="Permalink to this definition">¶</a></dt>
+<em class="property">exception </em><tt class="descclassname">gc3libs.Exceptions.</tt><tt class="descname">NoResources</tt><big>(</big><em>msg</em>, <em>do_log=False</em><big>)</big><a class="headerlink" href="#gc3libs.Exceptions.NoResources" title="Permalink to this definition">¶</a></dt>
 <dd>Raised to signal that no resources are defined, or that none are
 compatible with the request.</dd></dl>
 
 <dl class="exception">
 <dt id="gc3libs.Exceptions.OutputNotAvailableError">
-<em class="property">exception </em><tt class="descclassname">gc3libs.Exceptions.</tt><tt class="descname">OutputNotAvailableError</tt><big>(</big><em>msg</em>, <em>do_log=True</em><big>)</big><a class="headerlink" href="#gc3libs.Exceptions.OutputNotAvailableError" title="Permalink to this definition">¶</a></dt>
+<em class="property">exception </em><tt class="descclassname">gc3libs.Exceptions.</tt><tt class="descname">OutputNotAvailableError</tt><big>(</big><em>msg</em>, <em>do_log=False</em><big>)</big><a class="headerlink" href="#gc3libs.Exceptions.OutputNotAvailableError" title="Permalink to this definition">¶</a></dt>
 <dd>Raised upon attempts to retrieve the output for jobs that are
 still in <cite>NEW</cite> or <cite>SUBMITTED</cite> state.</dd></dl>
 
 <dl class="exception">
 <dt id="gc3libs.Exceptions.UnknownJobState">
-<em class="property">exception </em><tt class="descclassname">gc3libs.Exceptions.</tt><tt class="descname">UnknownJobState</tt><big>(</big><em>msg</em>, <em>do_log=True</em><big>)</big><a class="headerlink" href="#gc3libs.Exceptions.UnknownJobState" title="Permalink to this definition">¶</a></dt>
+<em class="property">exception </em><tt class="descclassname">gc3libs.Exceptions.</tt><tt class="descname">UnknownJobState</tt><big>(</big><em>msg</em>, <em>do_log=False</em><big>)</big><a class="headerlink" href="#gc3libs.Exceptions.UnknownJobState" title="Permalink to this definition">¶</a></dt>
 <dd>Raised when a job state is gotten from the Grid middleware, that
 is not handled by the GC3Libs code.  Might actually mean that
 there is a version mismatch between GC3Libs and the Grid
 middleware used.</dd></dl>
-
-</div>
-<div class="section" id="module-gc3libs.utils">
-<h3><cite>gc3libs.utils</cite><a class="headerlink" href="#module-gc3libs.utils" title="Permalink to this headline">¶</a></h3>
-<p>Generic Python programming utility functions.</p>
-<dl class="class">
-<dt id="gc3libs.utils.Enum">
-<em class="property">class </em><tt class="descclassname">gc3libs.utils.</tt><tt class="descname">Enum</tt><a class="headerlink" href="#gc3libs.utils.Enum" title="Permalink to this definition">¶</a></dt>
-<dd><p>A generic enumeration class.  Inspired by:
-<a class="reference external" href="http://stackoverflow.com/questions/36932/whats-the-best-way-to-implement-an-enum-in-python/2182437#2182437">http://stackoverflow.com/questions/36932/whats-the-best-way-to-implement-an-enum-in-python/2182437#2182437</a>
-with some more syntactic sugar added.</p>
-<p>An <cite>Enum</cite> class must be instanciated with a list of strings, that
-make the enumeration &#8220;label&#8221;:</p>
-<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">Animal</span> <span class="o">=</span> <span class="n">Enum</span><span class="p">(</span><span class="s">&#39;CAT&#39;</span><span class="p">,</span> <span class="s">&#39;DOG&#39;</span><span class="p">)</span>
-</pre></div>
-</div>
-<p>Each label is available as an instance attribute, evaluating to
-itself:</p>
-<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">Animal</span><span class="o">.</span><span class="n">DOG</span>
-<span class="go">&#39;DOG&#39;</span>
-
-<span class="gp">&gt;&gt;&gt; </span><span class="n">Animal</span><span class="o">.</span><span class="n">CAT</span> <span class="o">==</span> <span class="s">&#39;CAT&#39;</span>
-<span class="go">True</span>
-</pre></div>
-</div>
-<p>As a consequence, you can test for presence of an enumeration
-label by string value:</p>
-<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="s">&#39;DOG&#39;</span> <span class="ow">in</span> <span class="n">Animal</span>
-<span class="go">True</span>
-</pre></div>
-</div>
-<p>Finally, enumeration labels can also be iterated upon:</p>
-<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="k">for</span> <span class="n">a</span> <span class="ow">in</span> <span class="n">Animal</span><span class="p">:</span> <span class="k">print</span> <span class="n">a</span>
-<span class="go">DOG</span>
-<span class="go">CAT</span>
-</pre></div>
-</div>
-</dd></dl>
-
-<dl class="class">
-<dt id="gc3libs.utils.Log">
-<em class="property">class </em><tt class="descclassname">gc3libs.utils.</tt><tt class="descname">Log</tt><a class="headerlink" href="#gc3libs.utils.Log" title="Permalink to this definition">¶</a></dt>
-<dd><p>A list of messages with timestamps and (optional) tags.</p>
-<p>The <cite>append</cite> method should be used to add a message to the <cite>Log</cite>:</p>
-<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">L</span> <span class="o">=</span> <span class="n">Log</span><span class="p">()</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">L</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s">&#39;first message&#39;</span><span class="p">)</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">L</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s">&#39;second one&#39;</span><span class="p">)</span>
-</pre></div>
-</div>
-<p>Iterating over a <cite>Log</cite> instance returns message texts in the
-temporal order they were added to the list:</p>
-<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="k">for</span> <span class="n">msg</span> <span class="ow">in</span> <span class="n">L</span><span class="p">:</span> <span class="k">print</span> <span class="n">msg</span>
-<span class="go">first message</span>
-<span class="go">second one</span>
-</pre></div>
-</div>
-</dd></dl>
-
-<dl class="class">
-<dt id="gc3libs.utils.PlusInfinity">
-<em class="property">class </em><tt class="descclassname">gc3libs.utils.</tt><tt class="descname">PlusInfinity</tt><a class="headerlink" href="#gc3libs.utils.PlusInfinity" title="Permalink to this definition">¶</a></dt>
-<dd><p>An object that is greater-than any other object.</p>
-<blockquote>
-<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">x</span> <span class="o">=</span> <span class="n">PlusInfinity</span><span class="p">()</span>
-</pre></div>
-</div>
-<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">x</span> <span class="o">&gt;</span> <span class="mi">1</span>
-<span class="go">True</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="mi">1</span> <span class="o">&lt;</span> <span class="n">x</span>
-<span class="go">True</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="mi">1245632479102509834570124871023487235987634518745</span> <span class="o">&lt;</span> <span class="n">x</span>
-<span class="go">True</span>
-</pre></div>
-</div>
-<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">x</span> <span class="o">&gt;</span> <span class="n">sys</span><span class="o">.</span><span class="n">maxint</span>
-<span class="go">True</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">x</span> <span class="o">&lt;</span> <span class="n">sys</span><span class="o">.</span><span class="n">maxint</span>
-<span class="go">False</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">sys</span><span class="o">.</span><span class="n">maxint</span> <span class="o">&lt;</span> <span class="n">x</span>
-<span class="go">True</span>
-</pre></div>
-</div>
-</blockquote>
-<p><cite>PlusInfinity</cite> objects are actually larger than <em>any</em> given Python
-object:</p>
-<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">x</span> <span class="o">&gt;</span> <span class="s">&#39;azz&#39;</span>
-<span class="go">True</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">x</span> <span class="o">&gt;</span> <span class="nb">object</span><span class="p">()</span>
-<span class="go">True</span>
-</pre></div>
-</div>
-<p>Note that <cite>PlusInfinity</cite> is a singleton, therefore you always get
-the same instance when calling the class constructor:</p>
-<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">x</span> <span class="o">=</span> <span class="n">PlusInfinity</span><span class="p">()</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">y</span> <span class="o">=</span> <span class="n">PlusInfinity</span><span class="p">()</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">x</span> <span class="ow">is</span> <span class="n">y</span>
-<span class="go">True</span>
-</pre></div>
-</div>
-<p>Relational operators try to return the correct value when
-comparing <cite>PlusInfinity</cite> to itself:</p>
-<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">x</span> <span class="o">&lt;</span> <span class="n">y</span>
-<span class="go">False</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">x</span> <span class="o">&lt;=</span> <span class="n">y</span>
-<span class="go">True</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">x</span> <span class="o">==</span> <span class="n">y</span> 
-<span class="go">True</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">x</span> <span class="o">&gt;=</span> <span class="n">y</span>
-<span class="go">True</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">x</span> <span class="o">&gt;</span> <span class="n">y</span>
-<span class="go">False</span>
-</pre></div>
-</div>
-</dd></dl>
-
-<dl class="class">
-<dt id="gc3libs.utils.Singleton">
-<em class="property">class </em><tt class="descclassname">gc3libs.utils.</tt><tt class="descname">Singleton</tt><a class="headerlink" href="#gc3libs.utils.Singleton" title="Permalink to this definition">¶</a></dt>
-<dd><p>Derived classes of <cite>Singleton</cite> can have only one instance in the
-running Python interpreter.</p>
-<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">x</span> <span class="o">=</span> <span class="n">Singleton</span><span class="p">()</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">y</span> <span class="o">=</span> <span class="n">Singleton</span><span class="p">()</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">x</span> <span class="ow">is</span> <span class="n">y</span>
-<span class="go">True</span>
-</pre></div>
-</div>
-</dd></dl>
-
-<dl class="class">
-<dt id="gc3libs.utils.Struct">
-<em class="property">class </em><tt class="descclassname">gc3libs.utils.</tt><tt class="descname">Struct</tt><big>(</big><em>initializer=None</em>, <em>**kw</em><big>)</big><a class="headerlink" href="#gc3libs.utils.Struct" title="Permalink to this definition">¶</a></dt>
-<dd><p>A <cite>dict</cite>-like object, whose keys can be accessed with the usual
-&#8216;[...]&#8217; lookup syntax, or with the &#8216;.&#8217; get attribute syntax.</p>
-<p>Examples:</p>
-<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">a</span> <span class="o">=</span> <span class="n">Struct</span><span class="p">()</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">a</span><span class="p">[</span><span class="s">&#39;x&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">a</span><span class="o">.</span><span class="n">x</span>
-<span class="go">1</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">a</span><span class="o">.</span><span class="n">y</span> <span class="o">=</span> <span class="mi">2</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">a</span><span class="p">[</span><span class="s">&#39;y&#39;</span><span class="p">]</span>
-<span class="go">2</span>
-</pre></div>
-</div>
-<p>Values can also be initially set by specifying them as keyword
-arguments to the constructor:</p>
-<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">a</span> <span class="o">=</span> <span class="n">Struct</span><span class="p">(</span><span class="n">z</span><span class="o">=</span><span class="mi">3</span><span class="p">)</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">a</span><span class="p">[</span><span class="s">&#39;z&#39;</span><span class="p">]</span>
-<span class="go">3</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">a</span><span class="o">.</span><span class="n">z</span>
-<span class="go">3</span>
-</pre></div>
-</div>
-</dd></dl>
-
-<dl class="class">
-<dt id="gc3libs.utils.defaultdict">
-<em class="property">class </em><tt class="descclassname">gc3libs.utils.</tt><tt class="descname">defaultdict</tt><big>(</big><em>default_factory</em><big>)</big><a class="headerlink" href="#gc3libs.utils.defaultdict" title="Permalink to this definition">¶</a></dt>
-<dd>A backport of <cite>defaultdict</cite> to Python 2.4
-See <a class="reference external" href="http://docs.python.org/library/collections.html">http://docs.python.org/library/collections.html</a></dd></dl>
-
-<dl class="function">
-<dt id="gc3libs.utils.defproperty">
-<tt class="descclassname">gc3libs.utils.</tt><tt class="descname">defproperty</tt><big>(</big><em>fn</em><big>)</big><a class="headerlink" href="#gc3libs.utils.defproperty" title="Permalink to this definition">¶</a></dt>
-<dd>Decorator to define properties with a simplified syntax in Python 2.4.
-See <a class="reference external" href="http://code.activestate.com/recipes/410698-property-decorator-for-python-24/#c6">http://code.activestate.com/recipes/410698-property-decorator-for-python-24/#c6</a>
-for details and examples.</dd></dl>
-
-<dl class="function">
-<dt id="gc3libs.utils.deploy_configuration_file">
-<tt class="descclassname">gc3libs.utils.</tt><tt class="descname">deploy_configuration_file</tt><big>(</big><em>filename</em>, <em>template_filename=None</em><big>)</big><a class="headerlink" href="#gc3libs.utils.deploy_configuration_file" title="Permalink to this definition">¶</a></dt>
-<dd><p>Ensure that configuration file <cite>filename</cite> exists; possibly
-copying it from the specified <cite>template_filename</cite>.</p>
-<p>Return <cite>True</cite> if a file with the specified name exists in the 
-configuration directory.  If not, try to copy the template file
-over and then return <cite>False</cite>; in case the copy operations fails, 
-a <cite>NoConfigurationFile</cite> exception is raised.</p>
-<p>If parameter <cite>filename</cite> is not an absolute path, it is interpreted
-as relative to <cite>gc3libs.Default.RCDIR</cite>; if <cite>template_filename</cite> is
-<cite>None</cite>, then it is assumed to be the same as <cite>filename</cite>.</p>
-</dd></dl>
-
-<dl class="function">
-<dt id="gc3libs.utils.dirname">
-<tt class="descclassname">gc3libs.utils.</tt><tt class="descname">dirname</tt><big>(</big><em>pathname</em><big>)</big><a class="headerlink" href="#gc3libs.utils.dirname" title="Permalink to this definition">¶</a></dt>
-<dd>Same as <cite>os.path.dirname</cite> but return <cite>.</cite> in case of path names with no directory component.</dd></dl>
-
-<dl class="function">
-<dt id="gc3libs.utils.first">
-<tt class="descclassname">gc3libs.utils.</tt><tt class="descname">first</tt><big>(</big><em>seq</em><big>)</big><a class="headerlink" href="#gc3libs.utils.first" title="Permalink to this definition">¶</a></dt>
-<dd><p>Return the first element of sequence or iterator <cite>seq</cite>.
-Raise <cite>TypeError</cite> if the argument does not implement
-either of the two interfaces.</p>
-<p>Examples:</p>
-<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">s</span> <span class="o">=</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">]</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">first</span><span class="p">(</span><span class="n">s</span><span class="p">)</span>
-<span class="go">0</span>
-
-<span class="gp">&gt;&gt;&gt; </span><span class="n">s</span> <span class="o">=</span> <span class="p">{</span><span class="s">&#39;a&#39;</span><span class="p">:</span><span class="mi">1</span><span class="p">,</span> <span class="s">&#39;b&#39;</span><span class="p">:</span><span class="mi">2</span><span class="p">,</span> <span class="s">&#39;c&#39;</span><span class="p">:</span><span class="mi">3</span><span class="p">}</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">first</span><span class="p">(</span><span class="nb">sorted</span><span class="p">(</span><span class="n">s</span><span class="o">.</span><span class="n">keys</span><span class="p">()))</span>
-<span class="go">&#39;a&#39;</span>
-</pre></div>
-</div>
-</dd></dl>
-
-<dl class="function">
-<dt id="gc3libs.utils.from_template">
-<tt class="descclassname">gc3libs.utils.</tt><tt class="descname">from_template</tt><big>(</big><em>template</em>, <em>**kw</em><big>)</big><a class="headerlink" href="#gc3libs.utils.from_template" title="Permalink to this definition">¶</a></dt>
-<dd><p>Return the contents of <cite>template</cite>, substituting all occurrences
-of Python formatting directives &#8216;%(key)s&#8217; with the corresponding values 
-taken from dictionary <cite>kw</cite>.</p>
-<p>If <cite>template</cite> is an object providing a <cite>read()</cite> method, that is
-used to gather the template contents; else, if a file named
-<cite>template</cite> exists, the template contents are read from it;
-otherwise, <cite>template</cite> is treated like a string providing the
-template contents itself.</p>
-</dd></dl>
-
-<dl class="function">
-<dt id="gc3libs.utils.mkdir_with_backup">
-<tt class="descclassname">gc3libs.utils.</tt><tt class="descname">mkdir_with_backup</tt><big>(</big><em>path</em><big>)</big><a class="headerlink" href="#gc3libs.utils.mkdir_with_backup" title="Permalink to this definition">¶</a></dt>
-<dd>Like <cite>os.makedirs</cite>, but if <cite>path</cite> already exists, rename the
-existing one appending a <cite>.NUMBER</cite> suffix.</dd></dl>
-
-<dl class="function">
-<dt id="gc3libs.utils.progressive_number">
-<tt class="descclassname">gc3libs.utils.</tt><tt class="descname">progressive_number</tt><big>(</big><big>)</big><a class="headerlink" href="#gc3libs.utils.progressive_number" title="Permalink to this definition">¶</a></dt>
-<dd><p>Return a positive integer, whose value is guaranteed to
-be monotonically increasing across different invocations
-of this function, and also across separate instances of the
-calling program.</p>
-<p>Example:</p>
-<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">n</span> <span class="o">=</span> <span class="n">progressive_number</span><span class="p">()</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">m</span> <span class="o">=</span> <span class="n">progressive_number</span><span class="p">()</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">m</span> <span class="o">&gt;</span> <span class="n">n</span>
-<span class="go">True</span>
-</pre></div>
-</div>
-<p>After every invocation of this function, the returned number
-is stored into the file <tt class="docutils literal"><span class="pre">~/.gc3/next_id.txt</span></tt>.</p>
-<p><em>Note:</em> as file-level locking is used to serialize access to the
-counter file, this function may block (default timeout: 30
-seconds) while trying to acquire the lock, or raise an exception
-if this fails.</p>
-</dd></dl>
-
-<dl class="function">
-<dt id="gc3libs.utils.safe_repr">
-<tt class="descclassname">gc3libs.utils.</tt><tt class="descname">safe_repr</tt><big>(</big><em>obj</em><big>)</big><a class="headerlink" href="#gc3libs.utils.safe_repr" title="Permalink to this definition">¶</a></dt>
-<dd>Return a string describing Python object <cite>obj</cite>.  Avoids calling
-any Python magic methods, so should be safe to use as a &#8220;last
-resort&#8221; in implementation of <cite>__str__</cite> and <cite>__repr__</cite> magic.</dd></dl>
-
-<dl class="function">
-<dt id="gc3libs.utils.same_docstring_as">
-<tt class="descclassname">gc3libs.utils.</tt><tt class="descname">same_docstring_as</tt><big>(</big><em>referenced_fn</em><big>)</big><a class="headerlink" href="#gc3libs.utils.same_docstring_as" title="Permalink to this definition">¶</a></dt>
-<dd><p>Function decorator: sets the docstring of the following function
-to the one of <cite>referenced_fn</cite>.</p>
-<p>Intended usage is for setting docstrings on methods redefined in
-derived classes, so that they inherit the docstring from the
-corresponding abstract method in the base class.</p>
-</dd></dl>
-
-<dl class="function">
-<dt id="gc3libs.utils.string_to_boolean">
-<tt class="descclassname">gc3libs.utils.</tt><tt class="descname">string_to_boolean</tt><big>(</big><em>word</em><big>)</big><a class="headerlink" href="#gc3libs.utils.string_to_boolean" title="Permalink to this definition">¶</a></dt>
-<dd>Convert <cite>word</cite> to a Python boolean value and return it.
-The strings <cite>true</cite>, <cite>yes</cite>, <cite>on</cite>, <cite>1</cite> (with any
-capitalization and any amount of leading and trailing
-spaces) are recognized as meaning Python <cite>True</cite>.
-Any other word is considered as boolean <cite>False</cite>.</dd></dl>
-
-<dl class="function">
-<dt id="gc3libs.utils.to_bytes">
-<tt class="descclassname">gc3libs.utils.</tt><tt class="descname">to_bytes</tt><big>(</big><em>s</em><big>)</big><a class="headerlink" href="#gc3libs.utils.to_bytes" title="Permalink to this definition">¶</a></dt>
-<dd><p>Convert string <cite>s</cite> to an integer number of bytes.  Suffixes like
-&#8216;KB&#8217;, &#8216;MB&#8217;, &#8216;GB&#8217; (up to &#8216;YB&#8217;), with or without the trailing &#8216;B&#8217;,
-are allowed and properly accounted for.  Case is ignored in
-suffixes.</p>
-<p>Examples:</p>
-<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">to_bytes</span><span class="p">(</span><span class="s">&#39;12&#39;</span><span class="p">)</span>
-<span class="go">12</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">to_bytes</span><span class="p">(</span><span class="s">&#39;12B&#39;</span><span class="p">)</span>
-<span class="go">12</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">to_bytes</span><span class="p">(</span><span class="s">&#39;12KB&#39;</span><span class="p">)</span>
-<span class="go">12000</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">to_bytes</span><span class="p">(</span><span class="s">&#39;1G&#39;</span><span class="p">)</span>
-<span class="go">1000000000</span>
-</pre></div>
-</div>
-<p>Binary units &#8216;KiB&#8217;, &#8216;MiB&#8217; etc. are also accepted:</p>
-<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">to_bytes</span><span class="p">(</span><span class="s">&#39;1KiB&#39;</span><span class="p">)</span>
-<span class="go">1024</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">to_bytes</span><span class="p">(</span><span class="s">&#39;1MiB&#39;</span><span class="p">)</span>
-<span class="go">1048576</span>
-</pre></div>
-</div>
-</dd></dl>
 
 </div>
 <div class="section" id="module-gc3libs.persistence">
@@ -1250,54 +953,6 @@ should raise a <cite>NotImplementedError</cite> exception.</p>
 </dd></dl>
 
 </div>
-<div class="section" id="module-gc3libs.Resource">
-<h3><cite>gc3libs.Resource</cite><a class="headerlink" href="#module-gc3libs.Resource" title="Permalink to this headline">¶</a></h3>
-<div class="admonition warning">
-<p class="first admonition-title">Warning</p>
-<p class="last">This module is deprecated and will be removed in a future release.
-Do not depend on it.</p>
-</div>
-<p>A specialized dictionary for representing computational resource characteristics.</p>
-<dl class="class">
-<dt id="gc3libs.Resource.Resource">
-<em class="property">class </em><tt class="descclassname">gc3libs.Resource.</tt><tt class="descname">Resource</tt><big>(</big><em>initializer=None</em>, <em>**keywd</em><big>)</big><a class="headerlink" href="#gc3libs.Resource.Resource" title="Permalink to this definition">¶</a></dt>
-<dd><p><cite>Resource</cite> objects are dictionaries, comprised of the following keys.</p>
-<p>Statically provided, i.e., specified at construction time and changed never after:</p>
-<blockquote>
-arc_ldap             string   
-authorization_type   string
-frontend             string
-gamess_location      string
-max_cores_per_job    int     *
-max_memory_per_core  int     *
-max_walltime         int     *
-name                 string  *
-ncores               int
-type                 int     *</blockquote>
-<p>Starred attributes are required for object construction.</p>
-<dl class="docutils">
-<dt>Dynamically provided (i.e., defined by the <cite>get_resource_status()</cite> method or similar):</dt>
-<dd>free_slots          int
-user_run            int
-user_queued         int
-queued              int</dd>
-</dl>
-</dd></dl>
-
-</div>
-<div class="section" id="module-gc3libs.scheduler">
-<h3><cite>gc3libs.scheduler</cite><a class="headerlink" href="#module-gc3libs.scheduler" title="Permalink to this headline">¶</a></h3>
-<p>Simple-minded scheduling for GC3Libs.</p>
-</div>
-<div class="section" id="module-gc3libs.InformationContainer">
-<h3><cite>gc3libs.InformationContainer</cite><a class="headerlink" href="#module-gc3libs.InformationContainer" title="Permalink to this headline">¶</a></h3>
-<div class="admonition warning">
-<p class="first admonition-title">Warning</p>
-<p class="last">This module is deprecated and will be removed in a future release.
-Do not depend on it.</p>
-</div>
-<p>A specialized <cite>dict</cite> class.</p>
-</div>
 <div class="section" id="module-gc3libs.application">
 <h3><cite>gc3libs.application</cite><a class="headerlink" href="#module-gc3libs.application" title="Permalink to this headline">¶</a></h3>
 <p>Support for running a generic application with the GC3Libs.</p>
@@ -1397,8 +1052,8 @@ Rosetta &#8220;docking_protocol&#8221; application.</p>
 <p>Authentication support for the GC3Libs.</p>
 <dl class="class">
 <dt id="gc3libs.authentication.NoneAuth">
-<em class="property">class </em><tt class="descclassname">gc3libs.authentication.</tt><tt class="descname">NoneAuth</tt><big>(</big><em>**authorization</em><big>)</big><a class="headerlink" href="#gc3libs.authentication.NoneAuth" title="Permalink to this definition">¶</a></dt>
-<dd>Authentication proxy to use when no authentication is needed.</dd></dl>
+<em class="property">class </em><tt class="descclassname">gc3libs.authentication.</tt><tt class="descname">NoneAuth</tt><big>(</big><em>**auth_dicts</em><big>)</big><a class="headerlink" href="#gc3libs.authentication.NoneAuth" title="Permalink to this definition">¶</a></dt>
+<dd>Auth proxy to use when no auth is needed.</dd></dl>
 
 </div>
 <div class="section" id="module-gc3libs.authentication.ssh">
@@ -1802,6 +1457,661 @@ execute commands and copy/move files irrespective of whether the
 destination is the local computer or a remote front-end that we access
 via SSH.</p>
 </div>
+<div class="section" id="module-gc3libs.task">
+<h3><cite>gc3libs.task</cite><a class="headerlink" href="#module-gc3libs.task" title="Permalink to this headline">¶</a></h3>
+<p>Implementation of task and task collections.</p>
+<p>A <cite>Task</cite> is a simplified interface to running jobs; it can be
+described as an &#8220;active&#8221; job, in the sense that all job control is
+done through methods on the <cite>Task</cite> instance itself.  (Contrast this
+with job and <cite>Application</cite> objects that you operate on through a
+<cite>Core</cite> or <cite>Engine</cite> instance.)</p>
+<p>Tasks can be grouped into collections, which are tasks themselves,
+therefore can be controlled (started/stopped/cancelled) like a single
+whole.  Collection classes provided in this module implement the basic
+patterns of job group execution; they can be combined to form more
+complex workflows.  Hook methods are provided so that derived classes
+can implement problem-specific job control policies.</p>
+<dl class="class">
+<dt id="gc3libs.task.ParallelTaskCollection">
+<em class="property">class </em><tt class="descclassname">gc3libs.task.</tt><tt class="descname">ParallelTaskCollection</tt><big>(</big><em>tasks=None</em>, <em>grid=None</em><big>)</big><a class="headerlink" href="#gc3libs.task.ParallelTaskCollection" title="Permalink to this definition">¶</a></dt>
+<dd><p>A <cite>ParallelTaskCollection</cite> runs all of its tasks concurrently.</p>
+<p>The collection state is set to <cite>TERMINATED</cite> once all tasks have
+reached the same terminal status.</p>
+<dl class="method">
+<dt id="gc3libs.task.ParallelTaskCollection.kill">
+<tt class="descname">kill</tt><big>(</big><big>)</big><a class="headerlink" href="#gc3libs.task.ParallelTaskCollection.kill" title="Permalink to this definition">¶</a></dt>
+<dd>Terminate all tasks in the collection, and set collection
+state to <cite>TERMINATED</cite>.</dd></dl>
+
+<dl class="method">
+<dt id="gc3libs.task.ParallelTaskCollection.progress">
+<tt class="descname">progress</tt><big>(</big><big>)</big><a class="headerlink" href="#gc3libs.task.ParallelTaskCollection.progress" title="Permalink to this definition">¶</a></dt>
+<dd>Try to advance all jobs in the collection to the next state in
+a normal lifecycle.  Return list of task execution states.</dd></dl>
+
+<dl class="method">
+<dt id="gc3libs.task.ParallelTaskCollection.submit">
+<tt class="descname">submit</tt><big>(</big><big>)</big><a class="headerlink" href="#gc3libs.task.ParallelTaskCollection.submit" title="Permalink to this definition">¶</a></dt>
+<dd>Start all tasks in the collection.</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="gc3libs.task.SequentialTaskCollection">
+<em class="property">class </em><tt class="descclassname">gc3libs.task.</tt><tt class="descname">SequentialTaskCollection</tt><big>(</big><em>tasks</em>, <em>grid=None</em><big>)</big><a class="headerlink" href="#gc3libs.task.SequentialTaskCollection" title="Permalink to this definition">¶</a></dt>
+<dd><p>A <cite>SequentialTaskCollection</cite> runs its tasks one at a time.</p>
+<p>After a task has completed, the <cite>next</cite> method is called with the
+index of the finished task in the <cite>self.tasks</cite> list; the return
+value of the <cite>next</cite> method is then made the collection
+<cite>execution.state</cite>.  If the returned state is <cite>RUNNING</cite>, then the
+subsequent task is started, otherwise no action is performed.</p>
+<p>The default <cite>next</cite> implementation just runs the tasks in the order
+they were given to the constructor, and sets the state to
+<cite>TERMINATED</cite> when all tasks have been run.</p>
+<dl class="method">
+<dt id="gc3libs.task.SequentialTaskCollection.kill">
+<tt class="descname">kill</tt><big>(</big><big>)</big><a class="headerlink" href="#gc3libs.task.SequentialTaskCollection.kill" title="Permalink to this definition">¶</a></dt>
+<dd>Stop execution of this sequence.  Kill currently-running task
+(if any), then set collection state to TERMINATED.</dd></dl>
+
+<dl class="method">
+<dt id="gc3libs.task.SequentialTaskCollection.next">
+<tt class="descname">next</tt><big>(</big><em>index</em><big>)</big><a class="headerlink" href="#gc3libs.task.SequentialTaskCollection.next" title="Permalink to this definition">¶</a></dt>
+<dd><p>Called when a job is finished; if <cite>Run.State.TERMINATED</cite> is
+returned, then no other jobs will be run; otherwise, the
+return value is assigned to <cite>execution.state</cite> and the next job
+in the <cite>self.tasks</cite> list is executed.</p>
+<p>The default implmentation runs the tasks in the order they
+were given to the constructor, and sets the state to
+terminated when all tasks have been run.  This method can (and
+should) be overridden in derived classes to implement policies
+for serial job execution.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="gc3libs.task.SequentialTaskCollection.progress">
+<tt class="descname">progress</tt><big>(</big><big>)</big><a class="headerlink" href="#gc3libs.task.SequentialTaskCollection.progress" title="Permalink to this definition">¶</a></dt>
+<dd>Sequentially advance tasks in the collection through all steps
+of a regular lifecycle.  When the last task transitions to
+TERMINATED state, the collection&#8217;s state is set to TERMINATED
+as well and this method becomes a no-op.  If during execution,
+any of the managed jobs gets into state <cite>STOPPED</cite> or
+<cite>UNKNOWN</cite>, then an exception <cite>Task.UnexpectedExecutionState</cite>
+is raised.</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="gc3libs.task.Task">
+<em class="property">class </em><tt class="descclassname">gc3libs.task.</tt><tt class="descname">Task</tt><big>(</big><em>grid=None</em><big>)</big><a class="headerlink" href="#gc3libs.task.Task" title="Permalink to this definition">¶</a></dt>
+<dd><p>Mix-in class implementing a facade for job control.</p>
+<p>A <cite>Task</cite> can be described as an &#8220;active&#8221; job, in the sense that
+all job control is done through methods on the <cite>Task</cite> instance
+itself; contrast this with job and <cite>Application</cite> objects that
+you operate on through a <cite>Core</cite> or <cite>Engine</cite> instance.</p>
+<p><cite>Task</cite> should be used as a mix-in class that you add to
+application objects to create instances with the additional task
+interface. For example, the following code creates a <cite>GamessTask</cite>
+class that can be used exactly as a <tt class="xref docutils literal"><span class="pre">GamessApplication</span></tt> but
+also exposes the task interface for job control (see below):</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="k">class</span> <span class="nc">GamessTask</span><span class="p">(</span><span class="n">GamessApplication</span><span class="p">,</span> <span class="n">Task</span><span class="p">):</span>
+  <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">grid</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kw</span><span class="p">):</span>
+    <span class="n">GamessApplication</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kw</span><span class="p">)</span>
+    <span class="n">Task</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="n">grid</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>The following pseudo-code is an example of the usage of the <cite>Task</cite>
+interface for controlling a job.  Assume that <cite>GamessTask</cite> is
+defined as above:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="n">t</span> <span class="o">=</span> <span class="n">GamessTask</span><span class="p">(</span><span class="n">input_file</span><span class="p">)</span>
+<span class="n">t</span><span class="o">.</span><span class="n">submit</span><span class="p">()</span>
+<span class="c"># ... do other stuff </span>
+<span class="n">t</span><span class="o">.</span><span class="n">update</span><span class="p">()</span>
+<span class="c"># ... take decisions based on t.execution.state</span>
+<span class="n">t</span><span class="o">.</span><span class="n">wait</span><span class="p">()</span> <span class="c"># blocks until task is terminated</span>
+</pre></div>
+</div>
+<p>Each <cite>Task</cite> object has an <cite>execution</cite> attribute: it is an instance
+of class <tt class="xref docutils literal"><span class="pre">Run</span></tt>, initialized with a new instance of <cite>Run</cite>,
+and at any given time it reflects the current status of the
+associated remote job.  In particular, <cite>execution.state</cite> can be
+checked for the current task status.</p>
+<dl class="exception">
+<dt id="gc3libs.task.Task.DetachedFromGridError">
+<em class="property">exception </em><tt class="descname">DetachedFromGridError</tt><big>(</big><em>msg</em>, <em>do_log=False</em><big>)</big><a class="headerlink" href="#gc3libs.task.Task.DetachedFromGridError" title="Permalink to this definition">¶</a></dt>
+<dd>Raised when a method (other than <tt class="xref docutils literal"><span class="pre">attach()</span></tt>) is called on
+a detached <cite>Task</cite> instance.</dd></dl>
+
+<dl class="exception">
+<dt id="gc3libs.task.Task.Error">
+<em class="property">exception </em><tt class="descclassname">Task.</tt><tt class="descname">Error</tt><big>(</big><em>msg</em>, <em>do_log=False</em><big>)</big><a class="headerlink" href="#gc3libs.task.Task.Error" title="Permalink to this definition">¶</a></dt>
+<dd>Generic error condition in a <cite>Task</cite> object.</dd></dl>
+
+<dl class="exception">
+<dt id="gc3libs.task.Task.UnexpectedStateError">
+<em class="property">exception </em><tt class="descclassname">Task.</tt><tt class="descname">UnexpectedStateError</tt><big>(</big><em>msg</em>, <em>do_log=False</em><big>)</big><a class="headerlink" href="#gc3libs.task.Task.UnexpectedStateError" title="Permalink to this definition">¶</a></dt>
+<dd>Raised by <a title="gc3libs.task.Task.progress" class="reference internal" href="#gc3libs.task.Task.progress"><tt class="xref docutils literal"><span class="pre">Task.progress()</span></tt></a> when a job lands in <cite>STOPPED</cite>
+or <cite>TERMINATED</cite> state.</dd></dl>
+
+<dl class="method">
+<dt id="gc3libs.task.Task.attach">
+<tt class="descclassname">Task.</tt><tt class="descname">attach</tt><big>(</big><em>grid</em><big>)</big><a class="headerlink" href="#gc3libs.task.Task.attach" title="Permalink to this definition">¶</a></dt>
+<dd>Use the given Grid interface for operations on the job
+associated with this task.</dd></dl>
+
+<dl class="method">
+<dt id="gc3libs.task.Task.detach">
+<tt class="descclassname">Task.</tt><tt class="descname">detach</tt><big>(</big><big>)</big><a class="headerlink" href="#gc3libs.task.Task.detach" title="Permalink to this definition">¶</a></dt>
+<dd>Remove any reference to the current grid interface.  After
+this, calling any method other than <a title="gc3libs.task.Task.attach" class="reference internal" href="#gc3libs.task.Task.attach"><tt class="xref docutils literal"><span class="pre">attach()</span></tt></a> results in
+an exception <cite>Task.DetachedFromGridError</cite> being thrown.</dd></dl>
+
+<dl class="method">
+<dt id="gc3libs.task.Task.fetch_output">
+<tt class="descclassname">Task.</tt><tt class="descname">fetch_output</tt><big>(</big><em>output_dir=None</em><big>)</big><a class="headerlink" href="#gc3libs.task.Task.fetch_output" title="Permalink to this definition">¶</a></dt>
+<dd><p>Retrieve the outputs of the computational job associated with
+this task into directory <cite>output_dir</cite>, or, if that is <cite>None</cite>,
+into the directory whose path is stored in instance attribute
+<cite>.output_dir</cite>.</p>
+<p>See <tt class="xref docutils literal"><span class="pre">gc3libs.Core.fetch_output()</span></tt> for a full explanation.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Returns:</th><td class="field-body">Path to the directory where the job output has been
+collected.</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="gc3libs.task.Task.kill">
+<tt class="descclassname">Task.</tt><tt class="descname">kill</tt><big>(</big><big>)</big><a class="headerlink" href="#gc3libs.task.Task.kill" title="Permalink to this definition">¶</a></dt>
+<dd><p>Terminate the computational job associated with this task.</p>
+<p>See <tt class="xref docutils literal"><span class="pre">gc3libs.Core.kill()</span></tt> for a full explanation.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="gc3libs.task.Task.peek">
+<tt class="descclassname">Task.</tt><tt class="descname">peek</tt><big>(</big><em>what='stdout'</em>, <em>offset=0</em>, <em>size=None</em><big>)</big><a class="headerlink" href="#gc3libs.task.Task.peek" title="Permalink to this definition">¶</a></dt>
+<dd><p>Download <cite>size</cite> bytes (at offset <cite>offset</cite> from the start) from
+the associated job standard output or error stream, and write them
+into a local file.  Return a file-like object from which the
+downloaded contents can be read.</p>
+<p>See <tt class="xref docutils literal"><span class="pre">gc3libs.Core.peek()</span></tt> for a full explanation.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="gc3libs.task.Task.progress">
+<tt class="descclassname">Task.</tt><tt class="descname">progress</tt><big>(</big><big>)</big><a class="headerlink" href="#gc3libs.task.Task.progress" title="Permalink to this definition">¶</a></dt>
+<dd><p>Advance the associated job through all states of a regular
+lifecycle. In detail:</p>
+<blockquote>
+<ol class="arabic simple">
+<li>If <cite>execution.state</cite> is <cite>NEW</cite>, the associated job is started.</li>
+<li>The state is updated until it reaches <cite>TERMINATED</cite></li>
+<li>Output is collected and the final returncode is returned.</li>
+</ol>
+</blockquote>
+<p>An exception <cite>Task.Error</cite> is raised if the job hits state
+<cite>STOPPED</cite> or <cite>UNKNOWN</cite> during an update in phase 2.</p>
+<p>When the job reaches <cite>TERMINATED</cite> state, the output is
+retrieved, and the return code (stored also in <cite>.returncode</cite>)
+is returned; if the job is not yet in <cite>TERMINATED</cite> state,
+calling <cite>progress</cite> returns <cite>None</cite>.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Raises:</th><td class="field-body">exception <a title="gc3libs.task.Task.UnexpectedStateError" class="reference internal" href="#gc3libs.task.Task.UnexpectedStateError"><tt class="xref docutils literal"><span class="pre">Task.UnexpectedStateError</span></tt></a> if the
+associated job goes into state <cite>STOPPED</cite> or <cite>UNKNOWN</cite></td>
+</tr>
+<tr class="field"><th class="field-name">Returns:</th><td class="field-body">job final returncode, or <cite>None</cite> if the execution
+state is not <cite>TERMINATED</cite>.</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="gc3libs.task.Task.submit">
+<tt class="descclassname">Task.</tt><tt class="descname">submit</tt><big>(</big><big>)</big><a class="headerlink" href="#gc3libs.task.Task.submit" title="Permalink to this definition">¶</a></dt>
+<dd>Start the computational job associated with this <cite>Task</cite> instance.</dd></dl>
+
+<dl class="method">
+<dt id="gc3libs.task.Task.update">
+<tt class="descclassname">Task.</tt><tt class="descname">update</tt><big>(</big><big>)</big><a class="headerlink" href="#gc3libs.task.Task.update" title="Permalink to this definition">¶</a></dt>
+<dd>In-place update of the execution state of the computational
+job associated with this <cite>Task</cite>.  After successful completion,
+<cite>.execution.state</cite> will contain the new state.</dd></dl>
+
+<dl class="method">
+<dt id="gc3libs.task.Task.wait">
+<tt class="descclassname">Task.</tt><tt class="descname">wait</tt><big>(</big><em>interval=60</em><big>)</big><a class="headerlink" href="#gc3libs.task.Task.wait" title="Permalink to this definition">¶</a></dt>
+<dd><p>Block until the associated job has reached <cite>TERMINATED</cite> state,
+then return the job&#8217;s return code.  Note that this does not
+automatically fetch the output.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Parameter:</th><td class="field-body"><em>integer interval</em> &#8211; Poll job state every this number of seconds</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="gc3libs.task.TaskCollection">
+<em class="property">class </em><tt class="descclassname">gc3libs.task.</tt><tt class="descname">TaskCollection</tt><big>(</big><em>tasks=None</em>, <em>grid=None</em><big>)</big><a class="headerlink" href="#gc3libs.task.TaskCollection" title="Permalink to this definition">¶</a></dt>
+<dd><p>Base class for all task collections. A &#8220;task collection&#8221; is a
+group of tasks, that can be managed collectively as a single one.</p>
+<p>A task collection implements the same interface as the <cite>Task</cite>
+class, so you can use a <cite>TaskCollection</cite> everywhere a <cite>Task</cite> is
+required.  A task collection has a <cite>state</cite> attribute, which is an
+instance of <cite>gc3libs.Run.State</cite>; each concrete collection class
+decides how to deduce a collective state based on the individual
+task states.</p>
+<dl class="method">
+<dt id="gc3libs.task.TaskCollection.add">
+<tt class="descname">add</tt><big>(</big><em>task</em><big>)</big><a class="headerlink" href="#gc3libs.task.TaskCollection.add" title="Permalink to this definition">¶</a></dt>
+<dd>Add a task to the collection.</dd></dl>
+
+<dl class="method">
+<dt id="gc3libs.task.TaskCollection.attach">
+<tt class="descname">attach</tt><big>(</big><em>grid</em><big>)</big><a class="headerlink" href="#gc3libs.task.TaskCollection.attach" title="Permalink to this definition">¶</a></dt>
+<dd>Use the given Grid interface for operations on the job
+associated with this task.</dd></dl>
+
+<dl class="method">
+<dt id="gc3libs.task.TaskCollection.peek">
+<tt class="descname">peek</tt><big>(</big><em>what</em>, <em>offset=0</em>, <em>size=None</em><big>)</big><a class="headerlink" href="#gc3libs.task.TaskCollection.peek" title="Permalink to this definition">¶</a></dt>
+<dd>Raise a <cite>gc3libs.Exceptions.InvalidOperation</cite> error, as there
+is no meaningful semantics that can be defined for <cite>peek</cite> into
+a generic collection of tasks.</dd></dl>
+
+<dl class="method">
+<dt id="gc3libs.task.TaskCollection.remove">
+<tt class="descname">remove</tt><big>(</big><em>task</em><big>)</big><a class="headerlink" href="#gc3libs.task.TaskCollection.remove" title="Permalink to this definition">¶</a></dt>
+<dd>Remove a task from the collection.</dd></dl>
+
+<dl class="method">
+<dt id="gc3libs.task.TaskCollection.update">
+<tt class="descname">update</tt><big>(</big><big>)</big><a class="headerlink" href="#gc3libs.task.TaskCollection.update" title="Permalink to this definition">¶</a></dt>
+<dd>Update the running state of all managed tasks.</dd></dl>
+
+<dl class="method">
+<dt id="gc3libs.task.TaskCollection.wait">
+<tt class="descname">wait</tt><big>(</big><em>interval=60</em><big>)</big><a class="headerlink" href="#gc3libs.task.TaskCollection.wait" title="Permalink to this definition">¶</a></dt>
+<dd><p>Block until execution state reaches <cite>TERMINATED</cite>, then return
+a list of return codes.  Note that this does not automatically
+fetch the output.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Parameter:</th><td class="field-body"><em>integer interval</em> &#8211; Poll job state every this number of seconds</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-gc3libs.utils">
+<h3><cite>gc3libs.utils</cite><a class="headerlink" href="#module-gc3libs.utils" title="Permalink to this headline">¶</a></h3>
+<p>Generic Python programming utility functions.</p>
+<p>This module collects general utility functions, not specifically
+related to GC3Libs.  A good rule of thumb for determining if a
+function or class belongs in here is the following: place a function
+or class in the <tt class="xref docutils literal"><span class="pre">utils</span></tt> if you could copy its code into the
+sources of a different project and it would not stop working.</p>
+<dl class="class">
+<dt id="gc3libs.utils.Enum">
+<em class="property">class </em><tt class="descclassname">gc3libs.utils.</tt><tt class="descname">Enum</tt><a class="headerlink" href="#gc3libs.utils.Enum" title="Permalink to this definition">¶</a></dt>
+<dd><p>A generic enumeration class.  Inspired by:
+<a class="reference external" href="http://stackoverflow.com/questions/36932/whats-the-best-way-to-implement-an-enum-in-python/2182437#2182437">http://stackoverflow.com/questions/36932/whats-the-best-way-to-implement-an-enum-in-python/2182437#2182437</a>
+with some more syntactic sugar added.</p>
+<p>An <cite>Enum</cite> class must be instanciated with a list of strings, that
+make the enumeration &#8220;label&#8221;:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">Animal</span> <span class="o">=</span> <span class="n">Enum</span><span class="p">(</span><span class="s">&#39;CAT&#39;</span><span class="p">,</span> <span class="s">&#39;DOG&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Each label is available as an instance attribute, evaluating to
+itself:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">Animal</span><span class="o">.</span><span class="n">DOG</span>
+<span class="go">&#39;DOG&#39;</span>
+
+<span class="gp">&gt;&gt;&gt; </span><span class="n">Animal</span><span class="o">.</span><span class="n">CAT</span> <span class="o">==</span> <span class="s">&#39;CAT&#39;</span>
+<span class="go">True</span>
+</pre></div>
+</div>
+<p>As a consequence, you can test for presence of an enumeration
+label by string value:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="s">&#39;DOG&#39;</span> <span class="ow">in</span> <span class="n">Animal</span>
+<span class="go">True</span>
+</pre></div>
+</div>
+<p>Finally, enumeration labels can also be iterated upon:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="k">for</span> <span class="n">a</span> <span class="ow">in</span> <span class="n">Animal</span><span class="p">:</span> <span class="k">print</span> <span class="n">a</span>
+<span class="go">DOG</span>
+<span class="go">CAT</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="class">
+<dt id="gc3libs.utils.Log">
+<em class="property">class </em><tt class="descclassname">gc3libs.utils.</tt><tt class="descname">Log</tt><a class="headerlink" href="#gc3libs.utils.Log" title="Permalink to this definition">¶</a></dt>
+<dd><p>A list of messages with timestamps and (optional) tags.</p>
+<p>The <cite>append</cite> method should be used to add a message to the <cite>Log</cite>:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">L</span> <span class="o">=</span> <span class="n">Log</span><span class="p">()</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">L</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s">&#39;first message&#39;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">L</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s">&#39;second one&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Iterating over a <cite>Log</cite> instance returns message texts in the
+temporal order they were added to the list:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="k">for</span> <span class="n">msg</span> <span class="ow">in</span> <span class="n">L</span><span class="p">:</span> <span class="k">print</span> <span class="n">msg</span>
+<span class="go">first message</span>
+<span class="go">second one</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="class">
+<dt id="gc3libs.utils.PlusInfinity">
+<em class="property">class </em><tt class="descclassname">gc3libs.utils.</tt><tt class="descname">PlusInfinity</tt><a class="headerlink" href="#gc3libs.utils.PlusInfinity" title="Permalink to this definition">¶</a></dt>
+<dd><p>An object that is greater-than any other object.</p>
+<blockquote>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">x</span> <span class="o">=</span> <span class="n">PlusInfinity</span><span class="p">()</span>
+</pre></div>
+</div>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">x</span> <span class="o">&gt;</span> <span class="mi">1</span>
+<span class="go">True</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="mi">1</span> <span class="o">&lt;</span> <span class="n">x</span>
+<span class="go">True</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="mi">1245632479102509834570124871023487235987634518745</span> <span class="o">&lt;</span> <span class="n">x</span>
+<span class="go">True</span>
+</pre></div>
+</div>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">x</span> <span class="o">&gt;</span> <span class="n">sys</span><span class="o">.</span><span class="n">maxint</span>
+<span class="go">True</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">x</span> <span class="o">&lt;</span> <span class="n">sys</span><span class="o">.</span><span class="n">maxint</span>
+<span class="go">False</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">sys</span><span class="o">.</span><span class="n">maxint</span> <span class="o">&lt;</span> <span class="n">x</span>
+<span class="go">True</span>
+</pre></div>
+</div>
+</blockquote>
+<p><cite>PlusInfinity</cite> objects are actually larger than <em>any</em> given Python
+object:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">x</span> <span class="o">&gt;</span> <span class="s">&#39;azz&#39;</span>
+<span class="go">True</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">x</span> <span class="o">&gt;</span> <span class="nb">object</span><span class="p">()</span>
+<span class="go">True</span>
+</pre></div>
+</div>
+<p>Note that <cite>PlusInfinity</cite> is a singleton, therefore you always get
+the same instance when calling the class constructor:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">x</span> <span class="o">=</span> <span class="n">PlusInfinity</span><span class="p">()</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">y</span> <span class="o">=</span> <span class="n">PlusInfinity</span><span class="p">()</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">x</span> <span class="ow">is</span> <span class="n">y</span>
+<span class="go">True</span>
+</pre></div>
+</div>
+<p>Relational operators try to return the correct value when
+comparing <cite>PlusInfinity</cite> to itself:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">x</span> <span class="o">&lt;</span> <span class="n">y</span>
+<span class="go">False</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">x</span> <span class="o">&lt;=</span> <span class="n">y</span>
+<span class="go">True</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">x</span> <span class="o">==</span> <span class="n">y</span> 
+<span class="go">True</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">x</span> <span class="o">&gt;=</span> <span class="n">y</span>
+<span class="go">True</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">x</span> <span class="o">&gt;</span> <span class="n">y</span>
+<span class="go">False</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="class">
+<dt id="gc3libs.utils.Singleton">
+<em class="property">class </em><tt class="descclassname">gc3libs.utils.</tt><tt class="descname">Singleton</tt><a class="headerlink" href="#gc3libs.utils.Singleton" title="Permalink to this definition">¶</a></dt>
+<dd><p>Derived classes of <cite>Singleton</cite> can have only one instance in the
+running Python interpreter.</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">x</span> <span class="o">=</span> <span class="n">Singleton</span><span class="p">()</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">y</span> <span class="o">=</span> <span class="n">Singleton</span><span class="p">()</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">x</span> <span class="ow">is</span> <span class="n">y</span>
+<span class="go">True</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="class">
+<dt id="gc3libs.utils.Struct">
+<em class="property">class </em><tt class="descclassname">gc3libs.utils.</tt><tt class="descname">Struct</tt><big>(</big><em>initializer=None</em>, <em>**kw</em><big>)</big><a class="headerlink" href="#gc3libs.utils.Struct" title="Permalink to this definition">¶</a></dt>
+<dd><p>A <cite>dict</cite>-like object, whose keys can be accessed with the usual
+&#8216;[...]&#8217; lookup syntax, or with the &#8216;.&#8217; get attribute syntax.</p>
+<p>Examples:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">a</span> <span class="o">=</span> <span class="n">Struct</span><span class="p">()</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">a</span><span class="p">[</span><span class="s">&#39;x&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">a</span><span class="o">.</span><span class="n">x</span>
+<span class="go">1</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">a</span><span class="o">.</span><span class="n">y</span> <span class="o">=</span> <span class="mi">2</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">a</span><span class="p">[</span><span class="s">&#39;y&#39;</span><span class="p">]</span>
+<span class="go">2</span>
+</pre></div>
+</div>
+<p>Values can also be initially set by specifying them as keyword
+arguments to the constructor:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">a</span> <span class="o">=</span> <span class="n">Struct</span><span class="p">(</span><span class="n">z</span><span class="o">=</span><span class="mi">3</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">a</span><span class="p">[</span><span class="s">&#39;z&#39;</span><span class="p">]</span>
+<span class="go">3</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">a</span><span class="o">.</span><span class="n">z</span>
+<span class="go">3</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="class">
+<dt id="gc3libs.utils.defaultdict">
+<em class="property">class </em><tt class="descclassname">gc3libs.utils.</tt><tt class="descname">defaultdict</tt><big>(</big><em>default_factory</em><big>)</big><a class="headerlink" href="#gc3libs.utils.defaultdict" title="Permalink to this definition">¶</a></dt>
+<dd>A backport of <cite>defaultdict</cite> to Python 2.4
+See <a class="reference external" href="http://docs.python.org/library/collections.html">http://docs.python.org/library/collections.html</a></dd></dl>
+
+<dl class="function">
+<dt id="gc3libs.utils.defproperty">
+<tt class="descclassname">gc3libs.utils.</tt><tt class="descname">defproperty</tt><big>(</big><em>fn</em><big>)</big><a class="headerlink" href="#gc3libs.utils.defproperty" title="Permalink to this definition">¶</a></dt>
+<dd>Decorator to define properties with a simplified syntax in Python 2.4.
+See <a class="reference external" href="http://code.activestate.com/recipes/410698-property-decorator-for-python-24/#c6">http://code.activestate.com/recipes/410698-property-decorator-for-python-24/#c6</a>
+for details and examples.</dd></dl>
+
+<dl class="function">
+<dt id="gc3libs.utils.deploy_configuration_file">
+<tt class="descclassname">gc3libs.utils.</tt><tt class="descname">deploy_configuration_file</tt><big>(</big><em>filename</em>, <em>template_filename=None</em><big>)</big><a class="headerlink" href="#gc3libs.utils.deploy_configuration_file" title="Permalink to this definition">¶</a></dt>
+<dd><p>Ensure that configuration file <cite>filename</cite> exists; possibly
+copying it from the specified <cite>template_filename</cite>.</p>
+<p>Return <cite>True</cite> if a file with the specified name exists in the 
+configuration directory.  If not, try to copy the template file
+over and then return <cite>False</cite>; in case the copy operations fails, 
+a <cite>NoConfigurationFile</cite> exception is raised.</p>
+<p>If parameter <cite>filename</cite> is not an absolute path, it is interpreted
+as relative to <cite>gc3libs.Default.RCDIR</cite>; if <cite>template_filename</cite> is
+<cite>None</cite>, then it is assumed to be the same as <cite>filename</cite>.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="gc3libs.utils.dirname">
+<tt class="descclassname">gc3libs.utils.</tt><tt class="descname">dirname</tt><big>(</big><em>pathname</em><big>)</big><a class="headerlink" href="#gc3libs.utils.dirname" title="Permalink to this definition">¶</a></dt>
+<dd>Same as <cite>os.path.dirname</cite> but return <cite>.</cite> in case of path names with no directory component.</dd></dl>
+
+<dl class="function">
+<dt id="gc3libs.utils.first">
+<tt class="descclassname">gc3libs.utils.</tt><tt class="descname">first</tt><big>(</big><em>seq</em><big>)</big><a class="headerlink" href="#gc3libs.utils.first" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return the first element of sequence or iterator <cite>seq</cite>.
+Raise <cite>TypeError</cite> if the argument does not implement
+either of the two interfaces.</p>
+<p>Examples:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">s</span> <span class="o">=</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">]</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">first</span><span class="p">(</span><span class="n">s</span><span class="p">)</span>
+<span class="go">0</span>
+
+<span class="gp">&gt;&gt;&gt; </span><span class="n">s</span> <span class="o">=</span> <span class="p">{</span><span class="s">&#39;a&#39;</span><span class="p">:</span><span class="mi">1</span><span class="p">,</span> <span class="s">&#39;b&#39;</span><span class="p">:</span><span class="mi">2</span><span class="p">,</span> <span class="s">&#39;c&#39;</span><span class="p">:</span><span class="mi">3</span><span class="p">}</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">first</span><span class="p">(</span><span class="nb">sorted</span><span class="p">(</span><span class="n">s</span><span class="o">.</span><span class="n">keys</span><span class="p">()))</span>
+<span class="go">&#39;a&#39;</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="function">
+<dt id="gc3libs.utils.from_template">
+<tt class="descclassname">gc3libs.utils.</tt><tt class="descname">from_template</tt><big>(</big><em>template</em>, <em>**kw</em><big>)</big><a class="headerlink" href="#gc3libs.utils.from_template" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return the contents of <cite>template</cite>, substituting all occurrences
+of Python formatting directives &#8216;%(key)s&#8217; with the corresponding values 
+taken from dictionary <cite>kw</cite>.</p>
+<p>If <cite>template</cite> is an object providing a <cite>read()</cite> method, that is
+used to gather the template contents; else, if a file named
+<cite>template</cite> exists, the template contents are read from it;
+otherwise, <cite>template</cite> is treated like a string providing the
+template contents itself.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="gc3libs.utils.mkdir_with_backup">
+<tt class="descclassname">gc3libs.utils.</tt><tt class="descname">mkdir_with_backup</tt><big>(</big><em>path</em><big>)</big><a class="headerlink" href="#gc3libs.utils.mkdir_with_backup" title="Permalink to this definition">¶</a></dt>
+<dd>Like <cite>os.makedirs</cite>, but if <cite>path</cite> already exists, rename the
+existing one appending a <cite>.NUMBER</cite> suffix.</dd></dl>
+
+<dl class="function">
+<dt id="gc3libs.utils.progressive_number">
+<tt class="descclassname">gc3libs.utils.</tt><tt class="descname">progressive_number</tt><big>(</big><big>)</big><a class="headerlink" href="#gc3libs.utils.progressive_number" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return a positive integer, whose value is guaranteed to
+be monotonically increasing across different invocations
+of this function, and also across separate instances of the
+calling program.</p>
+<p>Example:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">n</span> <span class="o">=</span> <span class="n">progressive_number</span><span class="p">()</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">m</span> <span class="o">=</span> <span class="n">progressive_number</span><span class="p">()</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">m</span> <span class="o">&gt;</span> <span class="n">n</span>
+<span class="go">True</span>
+</pre></div>
+</div>
+<p>After every invocation of this function, the returned number
+is stored into the file <tt class="docutils literal"><span class="pre">~/.gc3/next_id.txt</span></tt>.</p>
+<p><em>Note:</em> as file-level locking is used to serialize access to the
+counter file, this function may block (default timeout: 30
+seconds) while trying to acquire the lock, or raise an exception
+if this fails.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="gc3libs.utils.safe_repr">
+<tt class="descclassname">gc3libs.utils.</tt><tt class="descname">safe_repr</tt><big>(</big><em>obj</em><big>)</big><a class="headerlink" href="#gc3libs.utils.safe_repr" title="Permalink to this definition">¶</a></dt>
+<dd>Return a string describing Python object <cite>obj</cite>.  Avoids calling
+any Python magic methods, so should be safe to use as a &#8220;last
+resort&#8221; in implementation of <cite>__str__</cite> and <cite>__repr__</cite> magic.</dd></dl>
+
+<dl class="function">
+<dt id="gc3libs.utils.same_docstring_as">
+<tt class="descclassname">gc3libs.utils.</tt><tt class="descname">same_docstring_as</tt><big>(</big><em>referenced_fn</em><big>)</big><a class="headerlink" href="#gc3libs.utils.same_docstring_as" title="Permalink to this definition">¶</a></dt>
+<dd><p>Function decorator: sets the docstring of the following function
+to the one of <cite>referenced_fn</cite>.</p>
+<p>Intended usage is for setting docstrings on methods redefined in
+derived classes, so that they inherit the docstring from the
+corresponding abstract method in the base class.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="gc3libs.utils.string_to_boolean">
+<tt class="descclassname">gc3libs.utils.</tt><tt class="descname">string_to_boolean</tt><big>(</big><em>word</em><big>)</big><a class="headerlink" href="#gc3libs.utils.string_to_boolean" title="Permalink to this definition">¶</a></dt>
+<dd>Convert <cite>word</cite> to a Python boolean value and return it.
+The strings <cite>true</cite>, <cite>yes</cite>, <cite>on</cite>, <cite>1</cite> (with any
+capitalization and any amount of leading and trailing
+spaces) are recognized as meaning Python <cite>True</cite>.
+Any other word is considered as boolean <cite>False</cite>.</dd></dl>
+
+<dl class="function">
+<dt id="gc3libs.utils.to_bytes">
+<tt class="descclassname">gc3libs.utils.</tt><tt class="descname">to_bytes</tt><big>(</big><em>s</em><big>)</big><a class="headerlink" href="#gc3libs.utils.to_bytes" title="Permalink to this definition">¶</a></dt>
+<dd><p>Convert string <cite>s</cite> to an integer number of bytes.  Suffixes like
+&#8216;KB&#8217;, &#8216;MB&#8217;, &#8216;GB&#8217; (up to &#8216;YB&#8217;), with or without the trailing &#8216;B&#8217;,
+are allowed and properly accounted for.  Case is ignored in
+suffixes.</p>
+<p>Examples:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">to_bytes</span><span class="p">(</span><span class="s">&#39;12&#39;</span><span class="p">)</span>
+<span class="go">12</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">to_bytes</span><span class="p">(</span><span class="s">&#39;12B&#39;</span><span class="p">)</span>
+<span class="go">12</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">to_bytes</span><span class="p">(</span><span class="s">&#39;12KB&#39;</span><span class="p">)</span>
+<span class="go">12000</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">to_bytes</span><span class="p">(</span><span class="s">&#39;1G&#39;</span><span class="p">)</span>
+<span class="go">1000000000</span>
+</pre></div>
+</div>
+<p>Binary units &#8216;KiB&#8217;, &#8216;MiB&#8217; etc. are also accepted:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">to_bytes</span><span class="p">(</span><span class="s">&#39;1KiB&#39;</span><span class="p">)</span>
+<span class="go">1024</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">to_bytes</span><span class="p">(</span><span class="s">&#39;1MiB&#39;</span><span class="p">)</span>
+<span class="go">1048576</span>
+</pre></div>
+</div>
+</dd></dl>
+
+</div>
+<div class="section" id="module-gc3libs.Resource">
+<h3><cite>gc3libs.Resource</cite><a class="headerlink" href="#module-gc3libs.Resource" title="Permalink to this headline">¶</a></h3>
+<div class="admonition warning">
+<p class="first admonition-title">Warning</p>
+<p class="last">This module is deprecated and will be removed in a future release.
+Do not depend on it.</p>
+</div>
+<p>A specialized dictionary for representing computational resource characteristics.</p>
+<dl class="class">
+<dt id="gc3libs.Resource.Resource">
+<em class="property">class </em><tt class="descclassname">gc3libs.Resource.</tt><tt class="descname">Resource</tt><big>(</big><em>initializer=None</em>, <em>**keywd</em><big>)</big><a class="headerlink" href="#gc3libs.Resource.Resource" title="Permalink to this definition">¶</a></dt>
+<dd><p><cite>Resource</cite> objects are dictionaries, comprised of the following keys.</p>
+<p>Statically provided, i.e., specified at construction time and changed never after:</p>
+<blockquote>
+arc_ldap             string   
+authorization_type   string
+frontend             string
+gamess_location      string
+max_cores_per_job    int     *
+max_memory_per_core  int     *
+max_walltime         int     *
+name                 string  *
+ncores               int
+type                 int     *</blockquote>
+<p>Starred attributes are required for object construction.</p>
+<dl class="docutils">
+<dt>Dynamically provided (i.e., defined by the <cite>get_resource_status()</cite> method or similar):</dt>
+<dd>free_slots          int
+user_run            int
+user_queued         int
+queued              int</dd>
+</dl>
+</dd></dl>
+
+</div>
+<div class="section" id="module-gc3libs.scheduler">
+<h3><cite>gc3libs.scheduler</cite><a class="headerlink" href="#module-gc3libs.scheduler" title="Permalink to this headline">¶</a></h3>
+<p>Simple-minded scheduling for GC3Libs.</p>
+</div>
+<div class="section" id="module-gc3libs.InformationContainer">
+<h3><cite>gc3libs.InformationContainer</cite><a class="headerlink" href="#module-gc3libs.InformationContainer" title="Permalink to this headline">¶</a></h3>
+<div class="admonition warning">
+<p class="first admonition-title">Warning</p>
+<p class="last">This module is deprecated and will be removed in a future release.
+Do not depend on it.</p>
+</div>
+<p>A specialized <cite>dict</cite> class.</p>
+</div>
 </div>
 <div class="section" id="gc3utils-modules">
 <h2>GC3Utils modules<a class="headerlink" href="#gc3utils-modules" title="Permalink to this headline">¶</a></h2>
@@ -1911,11 +2221,7 @@ gkill will try anyway to process all requests</dd></dl>
 <li><a class="reference external" href="#module-gc3libs.core"><cite>gc3libs.core</cite></a></li>
 <li><a class="reference external" href="#module-gc3libs.Default"><cite>gc3libs.Default</cite></a></li>
 <li><a class="reference external" href="#module-gc3libs.Exceptions"><cite>gc3libs.Exceptions</cite></a></li>
-<li><a class="reference external" href="#module-gc3libs.utils"><cite>gc3libs.utils</cite></a></li>
 <li><a class="reference external" href="#module-gc3libs.persistence"><cite>gc3libs.persistence</cite></a></li>
-<li><a class="reference external" href="#module-gc3libs.Resource"><cite>gc3libs.Resource</cite></a></li>
-<li><a class="reference external" href="#module-gc3libs.scheduler"><cite>gc3libs.scheduler</cite></a></li>
-<li><a class="reference external" href="#module-gc3libs.InformationContainer"><cite>gc3libs.InformationContainer</cite></a></li>
 <li><a class="reference external" href="#module-gc3libs.application"><cite>gc3libs.application</cite></a></li>
 <li><a class="reference external" href="#module-gc3libs.application.gamess"><cite>gc3libs.application.gamess</cite></a></li>
 <li><a class="reference external" href="#module-gc3libs.application.rosetta"><cite>gc3libs.application.rosetta</cite></a></li>
@@ -1926,6 +2232,11 @@ gkill will try anyway to process all requests</dd></dl>
 <li><a class="reference external" href="#module-gc3libs.backends.arc"><cite>gc3libs.backends.arc</cite></a></li>
 <li><a class="reference external" href="#module-gc3libs.backends.sge"><cite>gc3libs.backends.sge</cite></a></li>
 <li><a class="reference external" href="#module-gc3libs.backends.transport"><cite>gc3libs.backends.transport</cite></a></li>
+<li><a class="reference external" href="#module-gc3libs.task"><cite>gc3libs.task</cite></a></li>
+<li><a class="reference external" href="#module-gc3libs.utils"><cite>gc3libs.utils</cite></a></li>
+<li><a class="reference external" href="#module-gc3libs.Resource"><cite>gc3libs.Resource</cite></a></li>
+<li><a class="reference external" href="#module-gc3libs.scheduler"><cite>gc3libs.scheduler</cite></a></li>
+<li><a class="reference external" href="#module-gc3libs.InformationContainer"><cite>gc3libs.InformationContainer</cite></a></li>
 </ul>
 </li>
 <li><a class="reference external" href="#gc3utils-modules">GC3Utils modules</a><ul>
