@@ -1,6 +1,12 @@
 #! /usr/bin/env python
 """
 Generic Python programming utility functions.
+
+This module collects general utility functions, not specifically
+related to GC3Libs.  A good rule of thumb for determining if a
+function or class belongs in here is the following: place a function
+or class in the :mod:`utils` if you could copy its code into the
+sources of a different project and it would not stop working.
 """
 # Copyright (C) 2009-2010 GC3, University of Zurich. All rights reserved.
 #
