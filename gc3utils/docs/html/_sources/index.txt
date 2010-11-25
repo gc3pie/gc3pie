@@ -45,45 +45,10 @@
 .. automodule:: gc3libs.Exceptions
    :members:
 
----------------
-`gc3libs.utils`
----------------
-.. automodule:: gc3libs.utils
-    :members:
-
 ---------------------
 `gc3libs.persistence`
 ---------------------
 .. automodule:: gc3libs.persistence
-    :members:
-
-------------------
-`gc3libs.Resource`
-------------------
-.. warning:: 
-
-   This module is deprecated and will be removed in a future release.
-   Do not depend on it.
-
-.. automodule:: gc3libs.Resource
-    :members:
-
--------------------
-`gc3libs.scheduler`
--------------------
-.. automodule:: gc3libs.scheduler
-    :members:
-
-------------------------------
-`gc3libs.InformationContainer`
-------------------------------
-
-.. warning:: 
-
-   This module is deprecated and will be removed in a future release.
-   Do not depend on it.
-
-.. automodule:: gc3libs.InformationContainer
     :members:
 
 
@@ -149,6 +114,46 @@
 .. automodule:: gc3libs.backends.transport
     :members:
 
+--------------
+`gc3libs.task`
+--------------
+.. automodule:: gc3libs.task
+     :members:
+
+---------------
+`gc3libs.utils`
+---------------
+.. automodule:: gc3libs.utils
+    :members:
+
+------------------
+`gc3libs.Resource`
+------------------
+.. warning:: 
+
+   This module is deprecated and will be removed in a future release.
+   Do not depend on it.
+
+.. automodule:: gc3libs.Resource
+    :members:
+
+-------------------
+`gc3libs.scheduler`
+-------------------
+.. automodule:: gc3libs.scheduler
+    :members:
+
+------------------------------
+`gc3libs.InformationContainer`
+------------------------------
+
+.. warning:: 
+
+   This module is deprecated and will be removed in a future release.
+   Do not depend on it.
+
+.. automodule:: gc3libs.InformationContainer
+    :members:
 
 
 ++++++++++++++++++
