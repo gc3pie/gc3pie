@@ -208,7 +208,7 @@ class Job(Gc3utilsJob):
     extensions.
     """
     def __init__(self, **kw):
-        kw.setdefault('log', list())
+        kw.setdefault('history', list())
         kw.setdefault('state', None) # user-visible status 
         kw.setdefault('status', -1)  # gc3utils status (internal use only)
         kw.setdefault('timestamp', gc3utils.utils.defaultdict(time.time))
@@ -220,7 +220,7 @@ class Job(Gc3utilsJob):
 
     def set_info(self, msg):
         self.info = msg
-        self.log.append(msg)
+        self.history.append(msg)
 
     def set_state(self, state):
         if state != self.state:
@@ -388,7 +388,7 @@ class JobCollection(dict):
         for passing to Python's stdlib `csv.DictReader`.
         """
         for row in csv.DictReader(session,  # FIXME: field list must match `job` attributes!
-                                  ['id', 'jobid', 'state', 'info', 'history']):
+                                  ['id', 'jobid', 'state', 'info', 'activity']):
             if row['id'].strip() == '':
                 # invalid row, skip
                 continue 
@@ -400,10 +400,10 @@ class JobCollection(dict):
             job.update(row)
             # resurrect saved state
             job.update(gc3utils.Job.get_job(job.jobid))
-            # convert 'history' into a list
-            job.log = job.history.split("; ")
+            # convert 'activity' into a list
+            job.history = job.activity.split("; ")
             # get back timestamps of various events
-            for event in job.log:
+            for event in job.history:
                 if event.upper().startswith('CREATED'):
                     job.created = time.mktime(time.strptime(event.split(' ',2)[2]))
                 if event.upper().startswith('SUBMITTED'):
@@ -422,7 +422,7 @@ class JobCollection(dict):
         Python's standard library `csv.DictWriter`.
         """
         for job in self.values():
-            job.history = str.join("; ", job.log)
+            job.history = str.join("; ", job.history)
             csv.DictWriter(session, ['id', 'jobid', 'state', 'info', 'history'], 
                            extrasaction='ignore').writerow(job)
 
