@@ -1,8 +1,20 @@
 #! /usr/bin/env python
 #
 """
-An interface for starting GAMESS analyses of molecules in the online
-GAMESS.UZH database (http://ocikbgtw.uzh.ch/gamess.uzh).
+GrunDB is an interface for starting GAMESS analyses of molecules from
+the online GAMESS.UZH database (http://ocikbgtw.uzh.ch/gamess.uzh) on
+the Grid resources from the Swiss National Infrastructure SMSCG and
+local compute clusters.
+
+Given a template GAMESS input file, GRunDB will launch a GAMESS job
+for each molecule of the chosen subset(s) of the GAMESS.UZH database, 
+manage the job lifecycle, and finally print out a comparison table
+of stoichiomery reference data (from the database) and the same
+quantitites as computed by GAMESS.
+
+GRunDB is a Linux command-line program and is structured so to
+interoperate with other programs from the GC3Utils suite, giving users
+flexibility in managing the computational job lifecycle.
 """
 __author__ = 'Riccardo Murri <riccardo.murri@uzh.ch>'
 __changelog__ = '''
@@ -243,7 +255,7 @@ class Grid(object):
     An interface to job lifecycle management.
     """
     def __init__(self, config_file=gc3utils.Default.CONFIG_FILE_LOCATION, default_output_dir=None):
-        self.mw = gc3utils.gcli.Gcli(*gc3utils.gcli.import_config(config_file))
+        self.mw = gc3utils.gcli.Gcli(*gc3utils.gcli.import_config([config_file]))
         self.default_output_dir = default_output_dir
 
     def save(self, job):
