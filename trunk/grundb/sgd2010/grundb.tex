@@ -27,7 +27,7 @@
 
 
 \title[GRunDB]% will appear on the bottom line
-{GrunDB: a tool for validating \\ QM algorithms in GAMESS}
+{GrunDB: a tool for validating \\ QM algorithms in GAMESS(US)}
 % \begin{abstract}
 %   GrunDB is an interface for starting GAMESS analyses of molecules
 %   from the online GAMESS.UZH database on the Grid resources from the
@@ -97,7 +97,7 @@
 \begin{frame}
   \frametitle{What is GAMESS?}
   
-  GAMESS is a program for ab initio molecular quantum chemistry.
+  GAMESS(US) is a program for ab initio molecular quantum chemistry.
   It can perform a number of general computational chemistry
   calculations (too many to list here!).
 
@@ -141,6 +141,15 @@
   \+
   \emph{Solution:} compare results with known data.  The more extensive the
   comparison, the better the validation.
+
+  \pause\alert<2>{
+    \+ Ideal high-throughtput processing case!
+    \begin{itemize}
+    \item \emph{Many independent} jobs
+    \item Spread them around SMSCG
+    \end{itemize}
+  }
+
 \end{frame}
 
 \begin{frame}
@@ -188,6 +197,25 @@
   \begin{center}
     \includegraphics[width=0.8\textwidth]{architecture}
   \end{center}
+\end{frame}
+
+\begin{frame}
+  \frametitle{The GC3Libs framework}
+
+  GC3Libs is a set of Python classes to submit and control batch jobs
+  to clusters and grid resources.
+
+  \+ GC3Libs takes care of the job processing and computational
+  resource control; GRunDB does the pre- and post-processing.
+
+  \+ GC3Libs has an \emph{application-oriented} paradigm: each
+  application has its own specialized job class, that knows how to
+  cope with \emph{that} application's own features.
+
+  \+
+  \begin{tiny}
+    Find out more at: \url{http://gc3pie.googlecode.com/}
+  \end{tiny}
 \end{frame}
 
 \begin{frame}
@@ -397,9 +425,59 @@ Reaction                            Comp. energy  (Ref. data; deviation)
   \begin{center}
     {\Huge Thank you!}
     \\
-    \largeskip{} 
+    \+
     {\Large (Any questions?)}
   \end{center}
+\end{frame}
+
+\section{More information}
+
+\begin{frame}
+  \frametitle{References}
+  \begin{small}
+    \begin{description}
+    \item[GRunDB]
+      \url{http://gc3pie.googlecode.com/svn/branches/0.10/grundb}
+    \item[GC3Libs] \url{http://gc3pie.googlecode.com/}
+    \item[GAMESS(US)] \url{http://www.msg.chem.iastate.edu/gamess/}
+
+      \begin{footnotesize}
+        \+ ``General Atomic and Molecular Electronic Structure
+        System'', M.~W.~Schmidt, K.~K.~Baldridge, J.~A.~Boatz,
+        S.~T.~Elbert, M.~S.~Gordon, J.~H.~Jensen, S.~Koseki,
+        N.~Matsunaga, K.~A.~Nguyen, S.~Su, T.~L.~Windus, M.~Dupuis,
+        J.~A.~Montgomery, \emph{J. Comput. Chem.}, 14,
+        1347-1363(1993).
+
+        \+ ``Advances in electronic structure theory: GAMESS a decade
+        later'', M.~S.~Gordon, M.~W.~Schmidt, pp. 1167-1189, in {\em
+          Theory and Applications of Computational Chemistry: the
+          first forty years}, C.~E.~Dykstra, G.~Frenking, K.~S.~Kim,
+        G.~E.~Scuseria (editors), Elsevier, Amsterdam, 2005.
+      \end{footnotesize}
+    \end{description}
+  \end{small}
+\end{frame}
+
+\begin{frame}
+  \frametitle{Well, and the errors...?}
+
+  Errors happen, and it's not necessarily a users' fault.  (e.g., disk
+  full on a remote cluster)
+
+  \+ How does GRunDB deal with this?
+
+  \pause
+  \+ Use GC3Utils to get control over the \emph{individual} job:
+  \begin{itemize}
+  \item Inspect job output and logs in the \emph{session.out.d}
+    directory (or use the \texttt{gtail} command)
+  \item Take measures against the failure
+  \item Re-submit the failed job with \texttt{gresub}
+  \item GRunDB will notice and re-process the results when the new job
+    is done.    
+  \end{itemize}
+
 \end{frame}
 
 \end{document}
