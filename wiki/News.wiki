@@ -1,0 +1,10 @@
+#summary User-visible changes in GC3Utils and Gc3Libs
+
+
+  * Renamed configuration file to `gc3pie.conf`.
+  * Removed `-l` option from `gstat`.
+
+
+== 0.10 ==
+
+  * First release for public use outside of GC3
