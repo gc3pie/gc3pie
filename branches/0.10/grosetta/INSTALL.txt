@@ -3,7 +3,7 @@
 ========================================================================
 
 :Author:   Riccardo Murri <riccardo.murri@gmail.com>
-:Date:     2010-07-21
+:Date:     2010-12-09
 :Revision: $Revision$
 
 
@@ -54,28 +54,25 @@ from the GC3 svn repository into their own python environment.
       rm -rf virtualenv
 
 
-2. Create a virtuelnv to host the ``grosetta`` installation::
+2. Create a virtualenv to host the ``grosetta`` installation::
 
-       virtualenv grosetta
-       cd grosetta/
+       virtualenv grosetta-0.10
+       cd grosetta-0.10/
        source bin/activate
 
 
-3. Create a ``src/`` directory to host the ``grosetta`` and
-   check-out the ``gc3utils`` sources there::
+3. Check-out the ``gc3utils`` and ``grosetta`` sources into a ``src/``
+   directory::
      
-       mkdir src
-       cd src/
-       svn co http://gc3pie.googlecode.com/svn/trunk/gc3utils
-       svn co http://gc3pie.googlecode.com/svn/trunk/grosetta
+       svn co http://gc3pie.googlecode.com/svn/branches/0.10 src
    
   
 4. Install the ``gc3utils`` in "develop" mode, so any modification
    pulled from subversion is immediately reflected in the running environment::
 
-       cd gc3utils/
+       cd src/gc3utils/
        env CC=gcc ./setup.py develop 
-       cd .. # back into the `src` directory
+       cd ../.. # back into the `src` directory
 
 
 5. Create a symlink to the ``grosetta`` script in the ``bin/``
@@ -90,26 +87,22 @@ Upgrade
 =======
 
 These instructions show how to upgrade the ``grosetta`` script to the
-latest version found in the GC3 svn repository.
+latest version in the current branch:
 
 1. `cd` to the directory containing the `grosetta` virtualenv;
-   assuming it's named ``grosetta`` as in the above installation
+   assuming it's named ``grosetta-0.10`` as in the above installation
    instructions, you can issue the commands::
 
-     cd grosetta/src
+     cd grosetta-0.10/src
 
-2. Upgrade the `grosetta` source:
+2. Upgrade the source files:
 
-     cd grosetta
      svn up
-     cd ..
 
 3. Upgrade the `gc3utils` source and run the `setup.py` script again:
 
      cd gc3utils
-     svn up
      env CC=gcc ./setup.py develop
-     cd ..
 
 
 
