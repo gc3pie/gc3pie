@@ -152,7 +152,7 @@ class Grid(object):
     An interface to job lifecycle management.
     """
     def __init__(self, config_file=gc3utils.Default.CONFIG_FILE_LOCATION, default_output_dir=None):
-        self.mw = gc3utils.gcli.Gcli(*gc3utils.gcli.import_config(config_file))
+        self.mw = gc3utils.gcli.Gcli(*gc3utils.gcli.import_config([config_file]))
         self.default_output_dir = default_output_dir
 
     def save(self, job):
@@ -229,7 +229,7 @@ class Grid(object):
         """
         # update status of SUBMITTED/RUNNING jobs before launching new ones, otherwise
         # we would be checking the status of some jobs twice...
-        if job.state == 'SUBMITTED' or job.state == 'RUNNING':
+        if job.state in ['SUBMITTED', 'RUNNING', 'UNKNOWN']:
             # update state 
             try:
                 self.update_state(job)
