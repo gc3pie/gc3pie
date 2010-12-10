@@ -155,14 +155,11 @@ __docformat__ = 'reStructuredText'
 __version__ = '$Revision$'
 
 
+import copy
 import os
 import os.path
-# NG's default packages install arclib into /opt/nordugrid/lib/pythonX.Y/site-packages;
-# add this anyway in case users did not set their PYTHONPATH correctly
-import sys
-sys.path.append('/opt/nordugrid/lib/python%d.%d/site-packages' 
-                % sys.version_info[:2])
 import time
+import types
 
 import logging
 log = logging.getLogger("gc3libs")
@@ -171,7 +168,7 @@ log = logging.getLogger("gc3libs")
 import Default
 from Exceptions import *
 from persistence import Persistable
-from gc3libs.utils import defproperty, Enum, Log, Struct, safe_repr
+from gc3libs.utils import defproperty, get_and_remove, Enum, Log, Struct, safe_repr
 
 
 
@@ -186,7 +183,7 @@ class Application(Struct, Persistable):
       launched on the remote resource; the specifics of how this is
       handled are dependent on the submission backend, but you may
       always run a script that you upload through the `inputs`
-      mechanism by specifying './scriptname' as `executable`.
+      mechanism by specifying ``./scriptname`` as `executable`.
 
     `arguments`
       list of command-line arguments to pass to
@@ -197,26 +194,36 @@ class Application(Struct, Persistable):
       be equal to `executable`.
 
     `inputs`
-      list of files that will be copied from the local
-      computer to the remote execution node before execution
-      starts. Each item in the list should be a pair
-      `(local_file_name, remote_file_name)`; specifying a single
-      string `file_name` is allowed as a shortcut and will result
-      in both `local_file_name` and `remote_file_name` being
-      equal.  If an absolute path name is specified as
-      `remote_file_name`, then a warning will be issued and the
-      behavior is undefined.
+      files that will be copied from the local computer to the remote
+      execution node before execution starts.
+
+      There are two possible ways of specifying the `inputs` parameter:
+
+        * It can be a Python dictionary: keys are local file paths, 
+          values are remote file names.
+        * It can be a Python list: each item in the list should be a
+          pair `(local_file_name, remote_file_name)`; specifying a
+          single string `file_name` is allowed as a shortcut and will
+          result in both `local_file_name` and `remote_file_name` being
+          equal.  If an absolute path name is specified as
+          `remote_file_name`, then an :class:`InvalidArgument` exception
+          is thrown.
 
     `outputs`
-      list of files that will be copied back from the
-      remote execution node back to the local computer after
-      execution has completed.  Each item in the list should be a pair
-      `(remote_file_name, local_file_name)`; specifying a single
-      string `file_name` is allowed as a shortcut and will result
-      in both `local_file_name` and `remote_file_name` being
-      equal.  If an absolute path name is specified as
-      `remote_file_name`, then a warning will be issued and the
-      behavior is undefined.
+      list of files that will be copied back from the remote execution
+      node back to the local computer after execution has completed.
+
+      There are two possible ways of specifying the `outputs` parameter:
+
+      * It can be a Python dictionary: keys are local file paths, 
+        values are remote file names.
+      * It can be a Python list: each item in the list should be a
+        pair `(remote_file_name, local_file_name)`; specifying a
+        single string `file_name` is allowed as a shortcut and will
+        result in both `local_file_name` and `remote_file_name` being
+        equal.  If an absolute path name is specified as
+        `remote_file_name`, then an :class:`InvalidArgument` exception
+        is thrown.
 
     `output_dir`
       Path to the base directory where output files will be downloaded.
@@ -266,7 +273,7 @@ class Application(Struct, Persistable):
       list of tag names (string) that must be present on a
       resource in order to be eligible for submission; in the ARC
       backend, tags are interpreted as run-time environments (RTE) to
-      request.  name).
+      request.
 
     Any other keyword arguments will be set as instance attributes,
     but otherwise ignored by the `Application` constructor.
@@ -282,10 +289,12 @@ class Application(Struct, Persistable):
       invocation; possibly empty
 
     `inputs`
-      dictionary mapping local file name (a string) to a remote file name (a string)
+      dictionary mapping local file name (a string) to a remote file name (a string);
+      remote file names are relative paths (root directory is the remote job folder)
 
     `outputs`
-      dictionary mapping remote file name (a string) to a local file name (a string)
+      dictionary mapping remote file name (a string) to a local file name (a string);
+      remote file names are relative paths (root directory is the remote job folder)
 
     `output_dir`
       Path to the base directory where output files will be downloaded.
@@ -294,8 +303,11 @@ class Application(Struct, Persistable):
     `final_output_retrieved` 
       boolean, indicating whether job output has been fetched from the
       remote resource; if `True`, you cannot assume that data is still
-      available remotely.  (Note: for jobs in TERMINATED state, the
+      available remotely.  (Note: for jobs in ``TERMINATED`` state, the
       output can be retrieved only once!)
+
+    `execution`
+      a `Run` instance; its state attribute is initially set to ``NEW``
 
     `environment`
       dictionary mapping environment variable names to the requested
@@ -327,40 +339,46 @@ class Application(Struct, Persistable):
         self.arguments = [ str(x) for x in arguments ]
 
         def convert_to_tuple(val):
-            if isinstance(val, (str, unicode)):
-                l = str(val)
+            if isinstance(val, types.StringTypes):
+                l = str(val) # XXX: might throw enconding error if `val` is Unicode?
                 r = os.path.basename(l)
                 return (l, r)
             else: 
                 return tuple(val)
-        self.inputs = dict([ convert_to_tuple(x) for x in inputs ])
-        self.outputs = dict([ convert_to_tuple(x) for x in outputs ])
+        try:
+            # is `inputs` dict-like?
+            self.inputs = dict((k,v) for k,v in inputs.iteritems())
+        except AttributeError:
+            # `inputs` is a list-like
+            self.inputs = dict(convert_to_tuple(x) for x in inputs)
+        try:
+            self.outputs = dict((k,v) for k,v in outputs.iteritems())
+        except AttributeError:
+            self.outputs = dict(convert_to_tuple(x) for x in outputs)
+        # esnure remote paths are not absolute
+        for r in self.inputs.itervalues():
+            if os.path.isabs(r):
+                raise InvalidArgument("Remote paths not allowed to be absolute")
+        for r in self.outputs.iterkeys():
+            if os.path.isabs(r):
+                raise InvalidArgument("Remote paths not allowed to be absolute")
 
         self.output_dir = output_dir
 
         # optional params
-        def get_and_remove(dictionary, key, default=None, verbose=False):
-            if dictionary.has_key(key):
-                result = dictionary[key]
-                del dictionary[key]
-            else:
-                result = default
-            if verbose:
-                log.info("Using value '%s' for 'Application.%s'", result, key)
-            return result
         # FIXME: should use appropriate unit classes for requested_*
         self.requested_cores = get_and_remove(kw, 'requested_cores')
         self.requested_memory = get_and_remove(kw, 'requested_memory')
         self.requested_walltime = get_and_remove(kw, 'requested_walltime')
 
-        self.environment = get_and_remove(kw, 'environment', {})
+        self.environment = get_and_remove(kw, 'environment', dict())
         def to_env_pair(val):
             if isinstance(val, tuple):
                 return val
             else:
                 # assume `val` is a string
                 return tuple(val.split('=', 1))
-        self.environment = dict([ to_env_pair(x) for x in self.environment.items() ])
+        self.environment = dict(to_env_pair(x) for x in self.environment.items())
 
         self.join = get_and_remove(kw, 'join', False)
         self.stdin = get_and_remove(kw, 'stdin')
@@ -373,7 +391,7 @@ class Application(Struct, Persistable):
         if self.stderr and self.stderr not in self.outputs:
             self.outputs[self.stderr] = os.path.basename(self.stderr)
 
-        self.tags = get_and_remove(kw, 'tags', [])
+        self.tags = get_and_remove(kw, 'tags', list())
 
         # job name
         self.jobname = get_and_remove(kw, 'jobname', self.__class__.__name__)
@@ -395,13 +413,15 @@ class Application(Struct, Persistable):
             return safe_repr(self)
 
         
-    def clone():
+    def clone(self):
         """
         Return a deep copy of this `Application` object, with the
         `.execution` instance variable reset to a fresh new instance
         of `Run`.
         """
-        return Application(**self)
+        new = copy.deepcopy(self)
+        new.execution = Run()
+        return new
 
 
     def xrsl(self, resource):
@@ -439,10 +459,11 @@ class Application(Struct, Persistable):
         if len(self.outputs) > 0:
             xrsl += ('(outputFiles=%s)'
                      % str.join(' ', [ ('("%s" "%s")' % rl) 
-                                       for rl in [ _filtered 
-                                                   for _filtered in self.outputs.items() 
-                                                   if (_filtered[0] != self.stdout 
-                                                       and _filtered[0] != self.stderr)]]))
+                                       for rl in [ (remotename, localname)
+                                                   for remotename,localname 
+                                                   in self.outputs.iteritems() 
+                                                   if (remotename != self.stdout 
+                                                       and remotename != self.stderr)]]))
         if len(self.tags) > 0:
             xrsl += str.join('\n', [
                     ('(runTimeEnvironment>="%s")' % rte) for rte in self.tags ])
