@@ -73,61 +73,66 @@ section.
 ===  Types of Authorization === 
 
 Synopsis:
-  * type: one of `voms-proxy`, `grid-proxy`,  or `ssh`
-  * usercert: `slcs` or `manual`
+  * type: one of {{{voms-proxy}}}, {{{grid-proxy}}},  or {{{ssh}}}
+  * cert_renewal_method: {{{slcs}}} or {{{manual}}}
 
 {{{ type }}} defines the authorization type that wil be used to access a resource. Currently, there are three supported authorization types:
-  * `ssh`: use for resources that will be accessed by opening an SSH connection to the front-end node
-  * `voms-proxy`: uses `voms-proxy-init`: use for resources that require a VOMS-enabled Grid proxy.
-  * `grid-proxy`: uses `grid-proxy-init`: use for resources that require a Grid proxy (but no VOMS extensions)
+  * {{{ssh}}}: use for resources that will be accessed by opening an SSH connection to the front-end node
+  * {{{voms-proxy}}}: uses {{{voms-proxy-init}}} to generate a proxy: use for resources that require a VOMS-enabled Grid proxy.
+  * {{{grid-proxy}}}: uses {{{grid-proxy-init}}} to generate a proxy: use for resources that require a Grid proxy (but no VOMS extensions)
 
-{{{ usercert }}} defines how the user certificate is handled.
-Currently there are two supported usercert types:
-  * `slcs`: user certificate is generated through `slcs-init` request. When `slcs` is selected, `slcs-init` is used to renew expired user certificate.
-  * `manual`: user certificate is generated/renewed though an external process and has to be performed by the user outside of the scope of gc3pie. In this case, if user certificate is expired, gc3pie will fail the related authorization module.
+{{{ cert_renewal_method }}} specifies whether GC3Libs should attempt
+to get a certificate if the current one is expired or otherwise invalid.
+Currently there are two supported {{{cert_renewal_method}}} types:
+  * {{{slcs}}}: user certificate is generated through an invocation of the{{{slcs-init}}} command.
+  * {{{manual}}}: user certificate is generated/renewed though an
+    external process and has to be performed by the user outside of
+    the scope of gc3pie. In this case, if user certificate is expired,
+    invalid or non-existent, gc3pie will fail the related
+    authorization module.
 
-For `ssh` type authorization, the following keys must be provided:
-  * `type`: must be `ssh`
-  * `username`: must be the username to log in as on the remote machine
+For the {{{ssh}}} type authorization, the following keys must be provided:
+  * {{{type}}}: must be {{{ssh}}}
+  * {{{username}}}: must be the username to log in as on the remote machine
 Any other key/value pair will be ignored.
 
-For `voms-proxy` type auth, the following keys must be provided:
-  * `type`: must be `voms-proxy`
-  * `vo`: the VO to authenticate with (passed directly to `voms-proxy-init` as argument to the `--vo` command-line switch)
+For the {{{voms-proxy}}} type auth, the following keys must be provided:
+  * {{{type}}}: must be {{{voms-proxy}}}
+  * {{{vo}}}: the VO to authenticate with (passed directly to {{{voms-proxy-init}}} as argument to the {{{--vo}}} command-line switch)
 Any other key/value pair will be ignored.
 
-For `grid-proxy` type auth, the following keys must be provided:
-  * `type`: must be `grid-proxy`
+For the {{{grid-proxy}}} type auth, the following keys must be provided:
+  * {{{type}}}: must be {{{grid-proxy}}}
 Any other key/value pair will be ignored.
 
-For `slcs` usercert auth, the  following keys must be provided:
+For the {{{slcs}}} certificate renewal method, the  following keys must be provided:
   * `aai_username`: passed directly to `slcs-init` as argument to the `--user` command-line switch
   * `idp`: passed directly to `slcs-init` as argument to the `--idp` command-line switch
 
-For `manual` usercert auth, no additional keys are required.
+For the {{{manual}}} certificate renewal method, no additional keys are required.
 
 
 Allowed combination:
 
-1. voms + slcs 
+1. voms + slcs-generated certificate
 {{{
  type: voms-proxy
- usercert: slcs
+ cert_renewal_method: slcs
 }}}
-2. voms + manually generated usercert
+2. voms + manually-generated certificate
 {{{
  type: voms-proxy
- usercert: manual
+ cert_renewal_method: manual
 }}}
-3. grid-proxy + slcs
+3. grid-proxy + slcs-generated certificate
 {{{
  type: grid-proxy
- usercert: slcs
+ cert_renewal_method: slcs
 }}}
-4. grid-proxy + manually generated usercert
+4. grid-proxy + manually-generated certificate
 {{{
  type: grid-proxy
- usercert: manual
+ cert_renewal_method: manual
 }}}
 5. ssh connection
 {{{
@@ -139,14 +144,14 @@ Examples:
 {{{
 [authorization/smscg]
 type = voms-proxy
-usercert = slcs
+cert_renewal_method = slcs
 aai_username= <aai_user_name>
 idp= uzh.ch
 vo = smscg
 
 [authorization/campus]
 type = grid-proxy
-usercert = manual
+cert_renewal_method = manual
 
 [authorization/ssh1]
 type = ssh
