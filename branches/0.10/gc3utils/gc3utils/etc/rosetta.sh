@@ -121,7 +121,7 @@ fi
 require_environment_variable ROSETTA_LOCATION
 
 $say Running: $ROSETTA_LOCATION/${PROG}.linuxgccrelease $database $flags "$@"
-${ROSETTA_LOCATION}/${PROG}.linuxgccrelease $flags $database "$@" | tee ${PROG}.log
+(${ROSETTA_LOCATION}/${PROG}.linuxgccrelease $flags $database "$@" 2>&1; echo $? > ${PROG}.exitcode) | tee ${PROG}.log
 
 $say Collecting computed decoys energy scores in file "${stem}${PROG}.tar.gz" ...
 # the fancy `$(ls ...)` constructs avoid tar complaining about '*.something not found'
@@ -131,5 +131,8 @@ tar $verbose -cvzf "${PROG}.tar.gz" \
     $(ls *.sc 2>/dev/null) \
     *.fasc
 
-$say All done.
+rc=$(cat ${PROG}.exitcode)
+
+$say All done, exitcode: $rc
+exit $rc
 
