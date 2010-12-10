@@ -45,11 +45,11 @@ class GridAuth(object):
 
         # test validity
         assert auth['type'] == 'voms-proxy' or auth['type'] == 'grid-proxy',\
-            "Configuration error. Unknown type: %s. Valid types: [voms-proxy, grid-proxy]" \
+            "Configuration error: Unknown type: %s. Valid types: [voms-proxy, grid-proxy]" \
             % auth.type
-        assert auth['usercert'] == 'manual' or auth['usercert'] == 'slcs',  \
-            "Configuration error. Unknown usercert: %s. Valid types: [voms-proxy, grid-proxy]" \
-            % auth.usercert
+        assert auth['cert_renewal_method'] == 'manual' or auth['cert_renewal_method'] == 'slcs',  \
+            "Configuration error: Unknown cert_renewal_method: %s. Valid types: [voms-proxy, grid-proxy]" \
+            % auth.cert_renewal_method
 
         self.user_cert_valid = False
         self.proxy_valid = False
@@ -65,8 +65,8 @@ class GridAuth(object):
         return ( self.user_cert_valid and self.proxy_valid )
     
     def enable(self):
-        # Obtain username. Depends on type + usercert combination.
-        if self.usercert == 'slcs':
+        # Obtain username. Depends on type + cert_renewal_method combination.
+        if self.cert_renewal_method == 'slcs':
             # Check if aai_username is already set. If not, ask interactively
             try:
                 self.aai_username
@@ -88,7 +88,7 @@ class GridAuth(object):
                 self.vo = raw_input('Insert VO name: ' )
 
             # UserName set, go interactive asking password
-            if self.usercert == 'slcs':
+            if self.cert_renewal_method == 'slcs':
                 message = 'Insert AAI password for user '+self.aai_username+': '
             else:
                 if self.type == 'voms-proxy':
@@ -103,7 +103,7 @@ class GridAuth(object):
 
             # User certificate
             if not self.user_cert_valid:
-                if self.usercert == 'manual':
+                if self.cert_renewal_method == 'manual':
                     raise UnrecoverableAuthError('User credential expired')
 
                 _cmd = shlex.split("slcs-init --idp %s -u %s -p %s -k %s" 
