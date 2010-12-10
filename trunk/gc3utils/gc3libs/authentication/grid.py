@@ -28,7 +28,13 @@ import getpass
 import os
 import subprocess
 
+# NG's default packages install arclib into /opt/nordugrid/lib/pythonX.Y/site-packages;
+# add this anyway in case users did not set their PYTHONPATH correctly
+import sys
+sys.path.append('/opt/nordugrid/lib/python%d.%d/site-packages' 
+                % sys.version_info[:2])
 import arclib
+
 import gc3libs
 from gc3libs.authentication import Auth
 from gc3libs.Exceptions import ConfigurationError, RecoverableAuthError, UnrecoverableAuthError
