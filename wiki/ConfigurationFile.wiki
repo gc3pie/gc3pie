@@ -14,11 +14,10 @@ Configuration data from corresponding sections in the two
 configuration files is merged; the value in the user-private file
 overrides the one from the system-wide configuration.
 
-The  gc3utils configuration file follows the format understood
-by Python `ConfigParser` objects, which is very close to the syntax
-used in MS-Windows `.INI` files.
-See http://docs.python.org/library/configparser.html 
-for reference.
+The gc3utils configuration file follows the format understood by
+Python `ConfigParser` objects, which is very close to the syntax
+used in MS-Windows `.INI` files.  See
+http://docs.python.org/library/configparser.html for reference.
 
 If you try to start any GC3Utils command without having a
 configuration file, a sample one (with all resources commented out)
@@ -34,10 +33,10 @@ part.
 The following sections are used by the GC3Libs/GC3Utils programs:
 {{{
     [DEFAULT]
-    [authorization/<authorization_name>]
+    [auth/<auth_name>]
     [resource/<resource_name>]
 }}}
-Sections with a different name can be present but will be ignored.
+Sections with a different name are allowed but will be ignored.
 
 
 = 3 Types of Sections =
@@ -45,11 +44,11 @@ Sections with a different name can be present but will be ignored.
 There are 3 types of sections. 
 
   * `[DEFAULT]` is for global settings.
-  * `[authorization]` is for settings related to identity/authentication (identifying yourself to clusters & grids).
-  * `[resource]` is for settings related to a specific computing resource (cluster, grid, etc.)
+  * `[auth]` are for settings related to identity/authentication (identifying yourself to clusters & grids).
+  * `[resource]` are for settings related to a specific computing resource (cluster, grid, etc.)
 
 
-== DEFAULT Section ==
+== The `DEFAULT` section ==
 
 The `[DEFAULT]` section is optional, but there should be no more than 1.  Its values can be used to insert values in other sections, using the `%(name)s` syntax.  See below for an example of this.
 
@@ -57,62 +56,71 @@ See documentation of the `SafeConfigParser` object at:
   http://docs.python.org/library/configparser.html
 
 
-== Authorization Sections ==
+== `auth` sections ==
 
-There can be more than one `[authorization]` section.  
+There can be more than one `[auth]` section.  
 
-Each authorization section must begin with a line of the form:
-    [authorization/<authorization_name>]
+Each authentication section must begin with a line of the form:
+{{{
+    [auth/<name>]
+}}}
+where the `<name>` portion is any alphanumeric string.
 
-You can have as many `[authorization]` sections as you want, and can have any name.
-This allows you to define different authorization methods for different resources.
-Each `[resource/<name>]` section will reference one (and one only) authorization
-section.
+You can have as many `[auth/name]` sections as you want; any name is
+allowed provided it's composed only of letters, numbers and the
+underscore character `_`.
+
+This allows you to define different auth methods for different
+resources.  Each `[resource/name]` section will reference one (and one
+only) authentication section.
 
 
-===  Types of Authorization === 
+===  Authentication types === 
 
-Synopsis:
-  * type: one of {{{voms-proxy}}}, {{{grid-proxy}}},  or {{{ssh}}}
-  * cert_renewal_method: {{{slcs}}} or {{{manual}}}
+Each authentication section *must* specify a `type` setting.
 
-{{{ type }}} defines the authorization type that wil be used to access a resource. Currently, there are three supported authorization types:
-  * {{{ssh}}}: use for resources that will be accessed by opening an SSH connection to the front-end node
-  * {{{voms-proxy}}}: uses {{{voms-proxy-init}}} to generate a proxy: use for resources that require a VOMS-enabled Grid proxy.
-  * {{{grid-proxy}}}: uses {{{grid-proxy-init}}} to generate a proxy: use for resources that require a Grid proxy (but no VOMS extensions)
+` type ` defines the authentication type that will be used to access a resource. There are three supported authentication types:
+  * `ssh`: use for resources that will be accessed by opening an SSH connection to the front-end node
+  * `voms-proxy`: uses `voms-proxy-init` to generate a proxy: use for resources that require a VOMS-enabled Grid proxy.
+  * `grid-proxy`: uses `grid-proxy-init` to generate a proxy: use for resources that require a Grid proxy (but no VOMS extensions)
 
-{{{ cert_renewal_method }}} specifies whether GC3Libs should attempt
+For the `ssh` type auth, the following keys must be provided:
+  * `type`: must be `ssh`
+  * `username`: must be the username to log in as on the remote machine
+Any other key/value pair will be ignored.
+
+For the `voms-proxy` type auth, the following keys must be provided:
+  * `type`: must be `voms-proxy`
+  * `vo`: the VO to authenticate with (passed directly to
+    `voms-proxy-init` as argument to the `--vo` command-line
+    switch)
+  * `cert_renewal_method`: see below.
+Any other key/value pair will be ignored.
+
+For the `grid-proxy` type auth, the following keys must be provided:
+  * `type`: must be `grid-proxy`
+  * `cert_renewal_method`: see below.
+Any other key/value pair will be ignored.
+
+For the `voms-proxy` and `grid-proxy` authentication types, the
+`cert_renewal_method` setting specifies whether GC3Libs should attempt
 to get a certificate if the current one is expired or otherwise invalid.
-Currently there are two supported {{{cert_renewal_method}}} types:
-  * {{{slcs}}}: user certificate is generated through an invocation of the{{{slcs-init}}} command.
-  * {{{manual}}}: user certificate is generated/renewed though an
+Currently there are two supported `cert_renewal_method` types:
+  * `slcs`: user certificate is generated through an invocation of the`slcs-init` command.
+  * `manual`: user certificate is generated/renewed though an
     external process and has to be performed by the user outside of
     the scope of gc3pie. In this case, if user certificate is expired,
     invalid or non-existent, gc3pie will fail the related
-    authorization module.
+    auth module.
 
-For the {{{ssh}}} type authorization, the following keys must be provided:
-  * {{{type}}}: must be {{{ssh}}}
-  * {{{username}}}: must be the username to log in as on the remote machine
-Any other key/value pair will be ignored.
-
-For the {{{voms-proxy}}} type auth, the following keys must be provided:
-  * {{{type}}}: must be {{{voms-proxy}}}
-  * {{{vo}}}: the VO to authenticate with (passed directly to {{{voms-proxy-init}}} as argument to the {{{--vo}}} command-line switch)
-Any other key/value pair will be ignored.
-
-For the {{{grid-proxy}}} type auth, the following keys must be provided:
-  * {{{type}}}: must be {{{grid-proxy}}}
-Any other key/value pair will be ignored.
-
-For the {{{slcs}}} certificate renewal method, the  following keys must be provided:
+For the `slcs` certificate renewal method, the  following keys must be provided:
   * `aai_username`: passed directly to `slcs-init` as argument to the `--user` command-line switch
   * `idp`: passed directly to `slcs-init` as argument to the `--idp` command-line switch
 
-For the {{{manual}}} certificate renewal method, no additional keys are required.
+For the `manual` certificate renewal method, no additional keys are required.
 
 
-Allowed combination:
+Allowed combinations:
 
 1. voms + slcs-generated certificate
 {{{
@@ -142,22 +150,22 @@ Allowed combination:
 
 Examples: 
 {{{
-[authorization/smscg]
+[auth/smscg]
 type = voms-proxy
 cert_renewal_method = slcs
-aai_username= <aai_user_name>
+aai_username = <aai_user_name> # SWITCHaai/Shibboleth user name
 idp= uzh.ch
 vo = smscg
 
-[authorization/campus]
+[auth/campus]
 type = grid-proxy
 cert_renewal_method = manual
 
-[authorization/ssh1]
+[auth/ssh1]
 type = ssh
 username = murri # your username here
 
-[authorization/ssh2] # I use a different account name on some resources
+[auth/ssh2] # I use a different account name on some resources
 type = ssh
 username = rmurri 
 }}}
@@ -170,8 +178,8 @@ Each resource section must begin with a line of the form:
 
 You can have as many `resource/name` sections as you want; this
 allows you to define many different resources.  Each `resource/***`
-section must reference one (and one only) `authorization/name`
-section (in the `authorization_type` key).
+section must reference one (and one only) `auth/name`
+section (in the `auth` key).
 
 Resources currently come in two flavours, distinguished by the value
 of the `type` key:
@@ -179,18 +187,18 @@ of the `type` key:
   * If `type` is `ssh_sge`, then the resource is an SGE batch system, to be accessed by an SSH connection to its front-end node.
 #
 Every `resource/***` section must reference a valid
-`authorization/***` section. Resources of `arc` type can only
+`auth/***` section. Resources of `arc` type can only
 reference `voms` type auth sections; resources of `ssh_sge` type can
 only reference `ssh` type sections.
 
 Some keys are commmon to all resource types:
-  *  authorization_type : must reference the name of a valid `authorization/***` section; only the name (after the `/` must be specified)
-  *  max_cores_per_job : Maximum number of CPU cores that a job can request; a resource will be dropped during the brokering process if a job requests more cores than this
-  *  max_memory_per_core : Max amount of memory (expressed in GBs) that a job can request
-  *  max_walltime : Maximum job running time (in hours)
-  *  name : Resource name
-  *  ncores : Total number of cores provided by the resource
-  *  type : Resource type, one of `arc` or `sge_ssh`
+  *  `auth`: the name of a valid `auth/***` section; only the authentication section name (after the `/` must be specified)
+  *  `max_cores_per_job`: Maximum number of CPU cores that a job can request; a resource will be dropped during the brokering process if a job requests more cores than this
+  *  `max_memory_per_core`: Max amount of memory (expressed in GBs) that a job can request
+  *  `max_walltime`: Maximum job running time (in hours)
+  *  `name`: Resource name
+  *  `ncores`: Total number of cores provided by the resource
+  *  `type`: Resource type, one of `arc` or `sge_ssh`
 
 === `arc` resources ===
 The `arc_ldap` key should be defined to the LDAP URL of an ARC GIIS
@@ -219,7 +227,7 @@ information lookups are allowed to fail for a certain time span after
 the first time `qstat` failed. The duration of this time span is set
 with the `sge_accounting_delay` parameter, whose default is 15 seconds
 (matches the default in SGE, as of release 6.2): 
-  * `sge_accounting_delay`: Time (in seconds) a failure in `qacct` will not be considered critical
+  * `sge_accounting_delay`: Time (in seconds) a failure in `qacct` will *not* be considered critical
 
 
 = enabling/disabling selected resources =
@@ -243,12 +251,12 @@ and users can enable those they prefer in the private configuration
 file.
 
 
-= Example configuration file =
+=== Example resource sections ====
 {{{
 [resource/gc3]
 # A single cluster, accessed through the ARC middleware
 type = arc
-authorization_type = <auth_name> # pick a `voms` type auth
+auth = <auth_name> # pick a `voms` type auth
 frontend = idgc3grid01.uzh.ch
 name = gc3
 arc_ldap = ldap://idgc3grid01.uzh.ch:2135/mds-vo-name=resource,o=grid
@@ -260,7 +268,7 @@ ncores = 80
 [resource/ocikbpra]
 # A single SGE cluster, accessed by SSH'ing to the front-end node
 type = ssh_sge
-authorization_type = <auth_name> # pick an `ssh` type auth, e.g., "ssh1"
+auth = <auth_name> # pick an `ssh` type auth, e.g., "ssh1"
 frontend = ocikbpra.uzh.ch
 gamess_location = /share/apps/gamess
 max_cores_per_job = 80
