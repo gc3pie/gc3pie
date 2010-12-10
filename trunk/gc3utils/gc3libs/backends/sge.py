@@ -279,7 +279,7 @@ class SgeLrms(LRMS):
         parameter, the following conditions must be met:
           * `r.type` must have value `Default.SGE_LRMS`;
           * `r.frontend` must be a string, containing the FQDN of an SGE cluster submit node;
-          * `r.auth_type` must be a valid key to pass to `Authorization.get()`.
+          * `r.auth` must be a valid key to pass to `Auth.get()`.
         """
         # XXX: should these be `InternalError` instead?
         assert resource.type == Default.SGE_LRMS, \
@@ -295,7 +295,7 @@ class SgeLrms(LRMS):
 
         # set defaults
         self._resource.setdefault('sge_accounting_delay', 15)
-        auth = auths.get(resource.authorization_type)
+        auth = auths.get(resource.auth)
 
         self._ssh_username = auth.username
 

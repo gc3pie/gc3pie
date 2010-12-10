@@ -15,9 +15,9 @@
 #   http://docs.python.org/library/configparser.html
 debug = 0
 
-# Authorization section
+# Auth section
 #
-# You can have as many `authorization/name` sections as you want;
+# You can have as many `auth/name` sections as you want;
 # this allows you to define different auths for different resources.
 # Each `resource/***` section can reference one (and one only) auth
 # section.
@@ -26,7 +26,7 @@ debug = 0
 # type: [voms-proxy, grid-proxy, ssh]
 # cert_renewal_method: [slcs, manual]
 #
-# Allowed combination:
+# Allowed combinations:
 #
 # 1) voms + slcs-generated certificate
 #
@@ -55,21 +55,21 @@ debug = 0
 #
 # Examples:
 #
-# [authorization/smscg]
+# [auth/smscg]
 # type = voms-proxy
 # cert_renewal_method = slcs
 # aai_username = <your_aai_user_name>
 # idp = uzh.ch
 # vo = smscg
 #
-# [authorization/ssh1]
+# [auth/ssh1]
 # type = ssh
 # username = <your_ssh_user_name>
 #
 # If you have a different account name on some resources, you can create
-# another authorization section with, e.g.
+# another auth section with, e.g.
 #
-# [authorization/ssh2]
+# [auth/ssh2]
 # type = ssh
 # username = <your_other_ssh_user_name>
 
@@ -79,15 +79,15 @@ debug = 0
 #
 # You can have as many `resource/name` sections as you want; this
 # allows you to define many different resources.  Each `resource/***`
-# section must reference one (and one only) `authorization/name`
-# section (in the `authorization_type` key).
+# section must reference one (and one only) `auth/name`
+# section (in the `auth` key).
 #
 # Examples:
 #
 # [resource/gc3]
 # # A single cluster, accessed through the ARC middleware
 # type = arc
-# authorization_type = <voms_auth_type_name>
+# auth = <voms_auth_type_name>
 # frontend = idgc3grid01.uzh.ch
 # name = gc3
 # arc_ldap = ldap://idgc3grid01.uzh.ch:2135/mds-vo-name=resource,o=grid
@@ -101,7 +101,7 @@ debug = 0
 # [resource/ocikbpra]
 # # A single SGE cluster, accessed by SSH'ing to the front-end node
 # type = ssh_sge
-# authorization_type = <ssh_auth_type_name>
+# auth = <ssh_auth_type_name>
 # frontend = ocikbpra.uzh.ch
 # gamess_location = /share/apps/gamess
 # max_cores_per_job = 80
