@@ -26,6 +26,12 @@ __docformat__ = 'reStructuredText'
 __version__ = '$Revision$'
 
 
+import os
+import os.path
+
+from gc3libs.utils import same_docstring_as
+
+
 class Transport(object):
 
     def __init__(self):
@@ -33,7 +39,7 @@ class Transport(object):
 
     def connect(self):
         """
-        Open an transport session.
+        Open a transport session.
         """
         raise NotImplementedError("Abstract method `Transport.open()` called - this should have been defined in a derived class.")
 
@@ -41,49 +47,55 @@ class Transport(object):
         """
         Execute a command using the available tranport media.  
         The command's input and output streams are returned 
-        as python C{file}-like objects representing exit_status, stdout, stderr.
+        as python ``file``-like objects representing exit_status, stdout, stderr.
 
-        @param command: the command to execute
-        @type command: str
-        @return: the exit_status, stdout, and stderr of the executing command
-        @rtype: tuple(C{int}, L{ChannelFile}, L{ChannelFile})
+        :param string command: the command to execute
+
+        :return: the exit_status (int), stdout (ChannelFile), and stderr (ChannelFile) of the executing command
        
-        @raise TransportException: if fails to execute the command
+        :raise TransportException: if fails to execute the command
         
         """
         raise NotImplementedError("Abstract method `Transport.execute_command()` called - this should have been defined in a derived class.")
 
     def listdir(self, path):
         """
-        Return a list containing the names of the entries in the given C{path}.
+        Return a list containing the names of the entries in the given ``path``.
         The list is in arbitrary order.  It does not include the special
         entries C{'.'} and C{'..'} even if they are present in the folder.
-        This method is meant to mirror C{os.listdir} as closely as possible.
+        This method is meant to mirror ``os.listdir`` as closely as possible.
         
-        @param path: path to list (defaults to C{'.'})
-        @type path: str
-        @return: list of filenames
-        @rtype: list of str
+        :param string path: path to list (defaults to C{'.'})
+        :return: list of filenames (string)
         
         """
         raise NotImplementedError("Abstract method `Transport.listdir()` called - this should have been defined in a derived class.")
 
+    def makedirs(self, path, mode=0777):
+        """
+        Recursive directory creation function. Makes all
+        intermediate-level directories needed to contain the leaf
+        directory.
+        
+        :param string path: Remote path to directory to be created.
+        :return: None
+        """
+        raise NotImplementedError("Abstract method `Transport.makedirs()` called - this should have been defined in a derived class.")
+
+
     def open(self, source, mode, bufsize=-1):
         """
-        Open a file. The arguments are the same as for python's built-in C{file} 
-        (aka C{open}).  A file-like object is returned, which closely mimics 
+        Open a file. The arguments are the same as for python's built-in ``file`` 
+        (aka ``open``).  A file-like object is returned, which closely mimics 
         the behavior of a normal python file object.
         
-        @param source: name of the file to open
-        @type source: str
-        @param mode: mode (python-style) to open in
-        @type mode: str
-        @param bufsize: desired buffering (-1 = default buffer size)
-        @type bufsize: int
-        @return: a file object representing the open file
-        @rtype: File
+        :param str source: name of the file to open
+        :param str mode: mode to open in, as in Python built-in `open`
+        :param bufsize: desired buffering (-1 = default buffer size)
+
+        :return: a `file` object representing the open file
         
-        @raise IOError: if the file could not be opened.        
+        :raise IOError: if the file could not be opened.        
         """
         raise NotImplementedError("Abstract method `Transport.open()` called - this should have been defined in a derived class.")
 
@@ -96,10 +108,8 @@ class Transport(object):
         names given as strings.
         Any exception raised by operations will be passed through.  
         
-        @param source: the file to copy
-        @type source: str
-        @param destinaton: the destination file or directory
-        @type destinaton: str
+        :param str source: the file to copy
+        :param str destinaton: the destination file or directory
         """
         raise NotImplementedError("Abstract method `Transport.put()` called - this should have been defined in a derived class.")
 
@@ -112,10 +122,8 @@ class Transport(object):
         names given as strings.
         Any exception raised by operations will be passed through.
 
-        @param source: the file to copy
-        @type source: str
-        @param destinaton: the destination file or directory
-        @type destinaton: str
+        :param str source: the file to copy
+        :param str destinaton: the destination file or directory
         """
         raise NotImplementedError("Abstract method `Transport.get()` called - this should have been defined in a derived class.")
 
@@ -159,11 +167,8 @@ class SshTransport(Transport):
         self.port = port
         self.username = username
 
+    @same_docstring_as(Transport.connect)
     def connect(self):
-        """
-        Open an transport session.
-        
-        """
         try:
             if not self._is_open:
                 self.ssh = paramiko.SSHClient()
@@ -177,20 +182,8 @@ class SshTransport(Transport):
             raise Exceptions.TransportError("Failed while connecting to remote host: %s. Error type %s, %s"
                                             % (self.remote_frontend, sys.exc_info()[0], sys.exc_info()[1]))
 
+    @same_docstring_as(Transport.execute_command)
     def execute_command(self, command):
-        """
-        Execute a command using the available tranport media.
-        The command's input and output streams are returned
-        as python C{file}-like objects representing exit_status, stdout, stderr.
-
-        @param command: the command to execute
-        @type command: str
-        @return: the exit_status, stdout, and stderr of the executing command
-        @rtype: tuple(C{int}, L{ChannelFile}, L{ChannelFile})
-       
-        @raise TransportException: if fails to execute the command
-        
-        """
         try:
             stdin_stream, stdout_stream, stderr_stream = self.ssh.exec_command(command)
             stdout = stdout_stream.read()
@@ -204,19 +197,8 @@ class SshTransport(Transport):
             raise Exceptions.TransportError("Failed while executing remote command: %s. Error type %s, %s" 
                                             % (command, sys.exc_info()[0], sys.exc_info()[1]))
         
+    @same_docstring_as(Transport.listdir)
     def listdir(self, path):
-        """
-        Return a list containing the names of the entries in the given C{path}.
-        The list is in arbitrary order.  It does not include the special
-        entries C{'.'} and C{'..'} even if they are present in the folder.
-        This method is meant to mirror C{os.listdir} as closely as possible.
-        
-        @param path: path to list (defaults to C{'.'})
-        @type path: str
-        @return: list of filenames
-        @rtype: list of str
-        
-        """
         try:
             return self.sftp.listdir(path)
         except Exception, x:
@@ -224,21 +206,27 @@ class SshTransport(Transport):
                               % (path, self.remote_frontend), exc_info=True)
             raise Exceptions.TransportError("Failed method listdir on %s. Error type %s, %s"
                                             % (path, sys.exc_info()[0], sys.exc_info()[1]))
+
+    @same_docstring_as(Transport.makedirs)
+    def makedirs(self, path, mode=0777):
+        dirs = path.split('/')
+        if '..' in dirs:
+            raise InvalidArgument("Path component '..' not allowed in `SshTransport.makedirs()`")
+        dest = ''
+        for dir in dirs:
+            if dir in ['', '.']:
+                continue
+            try:
+                self.sftp.listdir(dest + dir)
+            except IOError:
+                # sftp.mkdir raises IOError if the directory exists;
+                # ignore error and continue
+                pass
+            dest = os.path.join(dest, dir)
+
         
+    @same_docstring_as(Transport.put)
     def put(self, source, destination):
-        """
-        Copy the file source to the file or directory destination.
-        If destination is a directory, a file with the same basename 
-        as source is created (or overwritten) in the directory specified. 
-        Permission bits are copied. source and destinaton are path 
-        names given as strings.
-        Any exception raised by operations will be passed through.  
-        
-        @param source: the file to copy
-        @type source: str
-        @param destinaton: the destination file or directory
-        @type destinaton: str
-        """
         try:
             gc3libs.log.debug("Running metohd: put. local source: %s. remote destination: %s. remote host: %s." % (source, destination, self.remote_frontend))
             self.sftp.put(source, destination)
@@ -247,20 +235,8 @@ class SshTransport(Transport):
             raise Exceptions.TransportError("Failed method put. Error type %s, %s"
                                             % (sys.exc_info()[0], sys.exc_info()[1]))
 
+    @same_docstring_as(Transport.get)
     def get(self, source, destination):
-        """
-        Copy the file source to the file or directory destinaton.
-        If destination is a directory, a file with the same basename 
-        as source is created (or overwritten) in the directory specified. 
-        Permission bits are copied. source and destination are path 
-        names given as strings.
-        Any exception raised by operations will be passed through.
-
-        @param source: the file to copy
-        @type source: str
-        @param destinaton: the destination file or directory
-        @type destinaton: str
-        """
         try:
             gc3libs.log.debug("Running method: get. remote source %s. remote host: %s. local destination/: %s" % (source, self.remote_frontend, destination))
             self.sftp.get(source, destination)
@@ -269,10 +245,8 @@ class SshTransport(Transport):
             raise Exceptions.TransportError("Failed method get. Error type %s, %s"
                                             % (sys.exc_info()[0], sys.exc_info()[1]))
 
+    @same_docstring_as(Transport.remove)
     def remove(self, path):
-        """
-        Removes a file.
-        """
         try:
             gc3libs.log.debug("Running method: remove. path: %s. remote host: %s" % (path, self.remote_frontend))
             self.sftp.remove(path)
@@ -281,10 +255,8 @@ class SshTransport(Transport):
             raise Exceptions.TransportError("Failed method remove. Error type %s, %s"
                                             % (sys.exc_info()[0], sys.exc_info()[1]))
         
+    @same_docstring_as(Transport.remove_tree)
     def remove_tree(self, path):
-        """
-        Removes a directory tree.
-        """
         try:
             gc3libs.log.debug("Running metohd: remove_tree. remote path: %s remote host: %s" % (path, self.remote_frontend))
             # Note: At the moment rmdir does not work as expected
@@ -300,6 +272,7 @@ class SshTransport(Transport):
             raise Exceptions.TransportError("Failed method remove. Error type %s, %s"
                                             % (sys.exc_info()[0], sys.exc_info()[1]))
 
+    @same_docstring_as(Transport.open)
     def open(self, source, mode, bufsize=-1):
         try:
             return self.sftp.open(source, mode, bufsize)
@@ -308,6 +281,7 @@ class SshTransport(Transport):
             raise Exceptions.TransportError("Failed method remove. Error type %s, %s"
                                             % (sys.exc_info()[0], sys.exc_info()[1]))
                        
+    @same_docstring_as(Transport.close)
     def close(self):
         """
         Close the transport channel
@@ -321,14 +295,14 @@ class SshTransport(Transport):
         gc3libs.log.info("SshTransport status [ closed ]")
 
 
+# -----------------------------------------------------------------------------
+# Local Transport class
+#
+
 import subprocess
 import shlex
 import shutil
 
-
-# -----------------------------------------------------------------------------
-# Local Transport class
-#
 
 class LocalTransport(Transport):
 
@@ -337,26 +311,12 @@ class LocalTransport(Transport):
     def __init__(self):
         pass
 
+    @same_docstring_as(Transport.open)
     def open(self):
-        """
-        Open an transport session.        
-        """
         self._is_open = True
 
+    @same_docstring_as(Transport.execute_command)
     def execute_command(self, command):
-        """
-        Execute a command using the available tranport media.  
-        The command's input and output streams are returned 
-        as python C{file}-like objects representing exit_status, stdout, stderr.
-
-        @param command: the command to execute
-        @type command: str
-        @return: the exit_status, stdout, and stderr of the executing command
-        @rtype: tuple(C{int}, L{ChannelFile}, L{ChannelFile})
-       
-        @raise TransportException: if fails to execute the command
-        
-        """
         try:
             if self._is_open is False:
                 raise Exception("Transport not open")
@@ -378,19 +338,8 @@ class LocalTransport(Transport):
             raise TransportException("Failed while executing command: %s. Error type %s, %s" 
                                      % (command, sys.exc_info()[0], sys.exc_info()[1]))
         
+    @same_docstring_as(Transport.listdir)
     def listdir(self, path):
-        """
-        Return a list containing the names of the entries in the given C{path}.
-        The list is in arbitrary order.  It does not include the special
-        entries C{'.'} and C{'..'} even if they are present in the folder.
-        This method is meant to mirror C{os.listdir} as closely as possible.
-        
-        @param path: path to list (defaults to C{'.'})
-        @type path: str
-        @return: list of filenames
-        @rtype: list of str
-        
-        """
         try:
             if self._is_open is False:
                 raise Exception("Transport not open")
@@ -402,20 +351,12 @@ class LocalTransport(Transport):
             raise TransportException("Failed method listdir. path: %s. Error type %s, %s"
                                      % (path, sys.exc_info()[0], sys.exc_info()[1]))
 
+    @same_docstring_as(Transport.makedirs)
+    def makedirs(self, path, mode=0777):
+        os.path.makedirs(path, mode)
+
+    @same_docstring_as(Transport.put)
     def put(self, source, destinaton):
-        """
-        Copy the file source to the file or directory destination.
-        If destination is a directory, a file with the same basename 
-        as source is created (or overwritten) in the directory specified. 
-        Permission bits are copied. source and destinaton are path 
-        names given as strings.
-        Any exception raised by operations will be passed through.  
-        
-        @param source: the file to copy
-        @type source: str
-        @param destinaton: the destination file or directory
-        @type destinaton: str
-        """
         try:
             if self._is_open is False:
                 raise Exception("Transport not open")
@@ -428,27 +369,13 @@ class LocalTransport(Transport):
                                      % (source, destination, sys.exc_info()[0], sys.exc_info()[1]))
 
 
+    @same_docstring_as(Transport.get)
     def get(self, source, destinaton):
-        """
-        Copy the file source to the file or directory destinaton.
-        If destination is a directory, a file with the same basename 
-        as source is created (or overwritten) in the directory specified. 
-        Permission bits are copied. source and destination are path 
-        names given as strings.
-        Any exception raised by operations will be passed through.
-
-        @param source: the file to copy
-        @type source: str
-        @param destinaton: the destination file or directory
-        @type destinaton: str
-        """
         gc3libs.log.debug("GET implemented with PUT... ")
         self.put(source,destination)
 
+    @same_docstring_as(Transport.remove)
     def remove(self, path):
-        """
-        Removes a file.
-        """
         try:
             if self._is_open is False:
                 raise Exception("Transport not open")
@@ -460,10 +387,8 @@ class LocalTransport(Transport):
             raise TransportException("Failed while removing file %s. Error type %s, %s"
                                      % (path, sys.exc_info()[0], sys.exc_info()[1]))
 
+    @same_docstring_as(Transport.remove_tree)
     def remove_tree(self, path):
-        """
-        Removes a directory tree.
-        """
         try:
             if self._is_open is False:
                 raise Exception("Transport not open")
@@ -475,10 +400,8 @@ class LocalTransport(Transport):
             raise TransportException("Failed while removing folder %s. Error type %s, %s"
                                      % (path, sys.exc_info()[0], sys.exc_info()[1]))
 
+    @same_docstring_as(Transport.close)
     def close(self):
-        """
-        Close the transport channel
-        """
         self._is_open = False
         gc3libs.log.info("SshTransport status [ closed ]")
 
