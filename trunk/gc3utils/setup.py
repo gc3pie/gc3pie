@@ -66,7 +66,7 @@ setuptools.setup(
 
     # run-time dependencies ("pycrypto" is a dependency of Paramiko;
     # setuptools apparently does not process dependencies recursively)
-    install_requires = ['paramiko', 'pycrypto>=1.9', 'lockfile'], 
+    install_requires = ['paramiko', 'pycrypto>=1.9', 'lockfile==0.8'],
 
     # additional non-Python files to be bundled in the package
     package_data = {
