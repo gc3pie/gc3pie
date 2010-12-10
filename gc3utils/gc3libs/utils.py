@@ -105,6 +105,19 @@ def first(seq):
     raise TypeError("Argument to `first()` method needs to be iterator or sequence.")
 
 
+def get_and_remove(dictionary, key, default=None):
+    """
+    Return the value associated to `key` in `dictionary`, or `default`
+    if there is no such key.  Remove `key` from `dictionary` afterwards.
+    """
+    if dictionary.has_key(key):
+        result = dictionary[key]
+        del dictionary[key]
+    else:
+        result = default
+    return result
+
+
 # In Python 2.7 still, `DictMixin` is an old-style class; thus, we need
 # to make `Struct` inherit from `object` otherwise we loose properties
 # when setting/pickling/unpickling

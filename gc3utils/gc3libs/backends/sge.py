@@ -346,9 +346,13 @@ class SgeLrms(LRMS):
         for input in app.inputs.items():
             local_path, remote_path = input
             remote_path = os.path.join(ssh_remote_folder, remote_path)
+            remote_parent = os.path.dirname(remote_path)
 
-            log.debug("Transferring file '%s' to '%s'" % (local_path, remote_path))
             try:
+                if remote_parent not in ['', '.']:
+                    log.debug("Making remote directory '%s'" % remote_parent)
+                    self.transport.makedirs(remote_parent)
+                log.debug("Transferring file '%s' to '%s'" % (local_path, remote_path))
                 self.transport.put(local_path, remote_path)
             except:
                 log.critical("Copying input file '%s' to remote cluster '%s' failed",
