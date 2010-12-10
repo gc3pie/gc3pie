@@ -21,7 +21,7 @@ GC3Libs is a python package for controlling the life-cycle of a Grid
 or batch computational job.
 
 GC3Libs provides services for submitting computational jobs to Grids
-and batch systems and controlling their execution, persisting job
+and batch systems, controlling their execution, persisting job
 information, and retrieving the final output.
 
 GC3Libs takes an application-oriented approach to batch computing. A

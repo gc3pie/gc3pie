@@ -47,11 +47,11 @@ import gc3libs.utils as utils
 
 class Core:
 
-    def __init__(self, resource_list, authorization, auto_enable_auth):
+    def __init__(self, resource_list, auths, auto_enable_auth):
         if len(resource_list) == 0:
             raise NoResources("Resource list has length 0")
         self._resources = resource_list
-        self.authorization = authorization
+        self.auths = auths
         self.auto_enable_auth = auto_enable_auth
 
     def select_resource(self, match):
@@ -94,7 +94,7 @@ class Core:
         auto_enable_auth = kw.get('auto_enable_auth', self.auto_enable_auth)
 
         lrms = self._get_backend(app.execution.resource_name)
-        self.authorization.get(lrms._resource.authorization_type)
+        self.auths.get(lrms._resource.auth)
         lrms.free(app)
         
 
@@ -136,7 +136,7 @@ class Core:
         # Scheduler.do_brokering should return a sorted list of valid lrms
         for lrms in _selected_lrms_list:
             try:
-                self.authorization.get(lrms._resource.authorization_type)
+                self.auths.get(lrms._resource.auth)
                 lrms.submit_job(app)
             except RecoverableAuthError as x:
                 gc3libs.log.debug("RecoverableAuthError: %s" % str(x))
@@ -184,7 +184,7 @@ class Core:
                 if state not in [ Run.State.NEW, Run.State.TERMINATED ]:
                     lrms = self._get_backend(app.execution.resource_name)
                     try:
-                        self.authorization.get(lrms._resource.authorization_type)
+                        self.auths.get(lrms._resource.auth)
                         state = lrms.update_job_state(app)
                     except ConfigurationError:
                         # Unrecoverable. Break everything
@@ -262,7 +262,7 @@ class Core:
         # download job output
         try:
             lrms = self._get_backend(job.resource_name)
-            self.authorization.get(lrms._resource.authorization_type)
+            self.auths.get(lrms._resource.auth)
             lrms.get_results(app, download_dir)
         except DataStagingError:
             job.signal = Run.Signals.DataStagingFailure
@@ -282,7 +282,7 @@ class Core:
         """Update status of a given resource. Return resource object after update."""
         auto_enable_auth = kw.get('auto_enable_auth', self.auto_enable_auth)
         lrms = self._get_backend(resource_name)
-        self.authorization.get(lrms._resource.authorization_type)
+        self.auths.get(lrms._resource.auth)
         return  lrms.get_resource_status()
 
 
@@ -297,7 +297,7 @@ class Core:
         job = app.execution
         auto_enable_auth = kw.get('auto_enable_auth', self.auto_enable_auth)
         lrms = self._get_backend(job.resource_name)
-        self.authorization.get(lrms._resource.authorization_type)
+        self.auths.get(lrms._resource.auth)
         lrms.cancel_job(app)
         gc3libs.log.debug("Setting job '%s' status to TERMINATED"
                           " and returncode to SIGCANCEL" % job)
@@ -339,10 +339,10 @@ class Core:
             _local_file = open(_filename)
         else:
 
-            # Get authorization
+            # Get authN
             auto_enable_auth = kw.get('auto_enable_auth', self.auto_enable_auth)
             _lrms = self._get_backend(job.resource_name)
-            self.authorization.get(_lrms._resource.authorization_type)
+            self.auths.get(_lrms._resource.auth)
 
             _local_file = tempfile.NamedTemporaryFile(suffix='.tmp', prefix='gc3libs.')
 
@@ -364,9 +364,9 @@ class Core:
                 gc3libs.log.debug('Creating instance of type %s for %s', _resource.type, _resource.name)
                 try:
                     if _resource.type is Default.ARC_LRMS:
-                        _lrms = ArcLrms(_resource, self.authorization)
+                        _lrms = ArcLrms(_resource, self.auths)
                     elif _resource.type is Default.SGE_LRMS:
-                        _lrms = SgeLrms(_resource, self.authorization)
+                        _lrms = SgeLrms(_resource, self.auths)
                     else:
                         gc3libs.log.error('Unknown resource type %s',_resource.type)
                         raise Exception('Unknown resource type')
@@ -383,17 +383,18 @@ class Core:
 # === Configuration File
 
 def import_config(config_file_locations, auto_enable_auth=True):
-    (resources, authorizations) = read_config(*config_file_locations)
+    (resources, auths) = read_config(*config_file_locations)
     return (get_resources(resources), 
-            get_authorization(authorizations,auto_enable_auth), 
+            get_auth(auths,auto_enable_auth), 
             auto_enable_auth)
 
 
-def get_authorization(authorizations,auto_enable_auth):
+def get_auth(auths,auto_enable_auth):
     try:
-        return Auth(authorizations, auto_enable_auth)
-    except:
-        gc3libs.log.critical('Failed initializing Authorization module')
+        return Auth(auths, auto_enable_auth)
+    except Exception, ex:
+        gc3libs.log.critical('Failed initializing Auth module: %s: %s',
+                             ex.__class__.__name__, str(ex))
         raise
 
 
@@ -431,13 +432,13 @@ def get_resources(resources_list):
 def read_config(*locations):
     """
     Read each of the configuration files listed in `locations`, and
-    return a `(defaults, resources, authorizations)` triple that can
-    be passed to the `Core` class constructor.
+    return a `(defaults, resources, auths)` triple that can be passed
+    to the `Core` class constructor.
     """
     files_successfully_read = 0
     defaults = { }
     resources = gc3libs.utils.defaultdict(lambda: dict())
-    authorizations = gc3libs.utils.defaultdict(lambda: dict())
+    auths = gc3libs.utils.defaultdict(lambda: dict())
 
     for location in locations:
         location = os.path.expandvars(location)
@@ -459,12 +460,12 @@ def read_config(*locations):
         defaults.update(config.defaults())
 
         for sectname in config.sections():
-            if sectname.startswith('authorization/'):
-                # handle authorization section
-                gc3libs.log.debug("Core.read_config(): adding authorization '%s' ", sectname)
-                # extract authorization name and register authorization dictionary
+            if sectname.startswith('auth/'):
+                # handle auth section
+                gc3libs.log.debug("Core.read_config(): adding auth '%s' ", sectname)
+                # extract auth name and register auth dictionary
                 auth_name = sectname.split('/', 1)[1]
-                authorizations[auth_name].update(dict(config.items(sectname)))
+                auths[auth_name].update(dict(config.items(sectname)))
 
             elif  sectname.startswith('resource/'):
                 # handle resource section
@@ -501,7 +502,7 @@ def read_config(*locations):
         raise NoConfigurationFile("Could not read any configuration file; tried locations '%s'."
                                   % str.join("', '", locations))
 
-    return (resources, authorizations)
+    return (resources, auths)
 
 
 
