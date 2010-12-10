@@ -8,7 +8,6 @@
     ** [ConfigurationFile Configuration: GC3Utils Configuration]
     ** [InstallGC3Utils Installation: GC3Utils]
     ** [InstallHTPie Installation: HTPie]
-  * Programming reference:
-    ** [http://gc3pie.googlecode.com/svn/trunk/gc3utils/docs/html/index.html API documentation]
-    ** [Job GC3Libs Job model]
+  * [http://gc3pie.googlecode.com/svn/trunk/gc3utils/docs/html/index.html GC3Libs API documentation]
   * [Citations Citations]
+  * [http://code.google.com/p/gc3pie/w/list Full list of GC3Pie wiki pages]
