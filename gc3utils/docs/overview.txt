@@ -1,0 +1,286 @@
+.. This file follows reStructuredText markup syntax; see
+   http://docutils.sf.net/rst.html for more information
+
+++++++++++
+ Overview
+++++++++++
+
+GC3Libs takes an application-oriented approach to asynchronous
+computing. A generic :class:`Application` class provides the basic
+operations for controlling remote computations and fetching a result;
+client code should derive specialized sub-classes to deal with a
+particular application, and to perform any application-specific
+pre- and post-processing.
+
+The generic procedure for performing computations with GC3Libs is the
+following:
+
+  1. Client code creates an instance of an `Application` sub-class.
+
+  2. Asynchronous computation is started by submitting the application
+     object; this associates the application with an actual (possibly
+     remote) computational job.
+
+  3. Client code can monitor the state of the computational job; state
+     handlers are called on the application object as the state
+     changes.
+
+  4. When the job is done, the final output is retrieved and a
+     post-processing method is invoked on the application object.
+
+At this point, results of the computation are available and can be
+used by the calling program.  
+
+The :class:`Application` class (and its sub-classes) alow client code
+to control the above process by:
+
+  1. Specifying the characteristics (computer program to run,
+     input/output files, memory/CPU/duration requirements, etc.) of the
+     corresponding computational job.  This is done by passing suitable
+     values to the :class:`Application` constructor.  See the
+     :class:`Application` constructor documentation for more info.
+
+  2. Providing methods to control the "life-cycle" of the associated
+     computational job: start, check execution state, stop, retrieve a
+     snapshot of the output files.  There are actually two different
+     interfaces for this, detailed below:
+     
+       1. A *passive* interface: a :class:`Core` or a
+          :class:`Engine` object is used to start/stop/monitor jobs
+          associated with the given application.  For instance::
+
+            a = GamessApplication(...)
+
+            # create a `Core` object; only one instance is needed
+            g = Core(...)
+
+            # start the remote computation
+            g.submit(a)
+
+            # periodically monitor job execution
+            g.update_job_state(a)
+
+            # retrieve output when the job is done
+            g.fetch_output(a)
+
+          The passive interface gives client code full control over
+          the lifecycle of the job, but cannot support some use cases
+          (e.g., automatic application re-start).
+
+          As you can see from the above example, the passive interface
+          is implemented by methods in the :class:`Core` and
+          :class:`Engine` classes (they implement the same
+          interface).  See those classes documentation for more details.
+
+       2. An *active* interface: this requires that the
+          :class:`Application` object be attached to a :class:`Core`
+          or :class:`Engine` instance::
+
+            a = GamessApplication(...)
+
+            # create a `Core` object; only one instance is needed
+            g = Core(...)
+
+            # tell application to use the active interface
+            a.attach(g)
+
+            # start the remote computation
+            a.submit()            
+
+            # periodically monitor job execution
+            a.update_job_state()
+
+            # retrieve output when the job is done
+            a.fetch_output()
+
+          With the active interface, application objects can support
+          automated restart and similar use-cases.
+
+          When an :class:`Engine` object is used instead of a
+          :class:`Core` one, the job life-cycle is automatically
+          managed, providing a fully asynchronous way of executing
+          computations. 
+
+          The active interface is implemented by the :class:`Task`
+          class and all its descendants (including :class:`Application`).
+
+  3. Providing "state transition methods" that are called when a
+     change in the job execution state is detected; those methods can
+     implement application specific behavior, like restarting the
+     computational job with changed input if the alloted duration has
+     expired but the computation has not finished.  In particular, a
+     `postprocess` method is called when the final output of an
+     application is available locally for processing.
+
+     The set of "state transition methods" currently implemented by
+     the :class:`Application` class are: :meth:`new`,
+     :meth:`submitted`, :meth:`running`, :meth:`stopped`,
+     :meth:`terminated` and :meth:`postprocess`.  Each method is
+     called when the execution state of an application object changes
+     to the corresponding state; see each method's documentation for
+     exact information.
+
+In addition, GC3Libs provides *collection* classes, that expose
+interfaces *2.* and *3.* above, allowing one to control a set of
+applications as a single whole.  Collections can be nested (i.e., a
+collection can hold a mix of :class:`Application` and
+:class:`TaskCollection` objects), so that workflows can be implemented
+by composing collection objects.
+
+Note that the term *computational job* (or just *job*, for short) is
+used here in a quite general sense, to mean any kind of computation
+that can happen independently of the main thread of the calling
+program.  GC3Libs currently provide means to execute a job as a
+separate process on the same computer, or as a batch job on a remote
+computational cluster.
+
+
+Execution model of GC3Libs applications
+=======================================
+
+An `Application` can be regarded as an abstraction of an independent
+asynchronous computation, i.e., a GC3Libs' `Application` behaves much
+like an independent UNIX process (but it can actually run on a
+separate remote computer). Indeed, GC3Libs' `Application` objects
+mimic the POSIX process model: `Application` are started by a
+parent process, run independently of it, and need to have their final
+exit code and output reaped by the calling process.
+
+The following table makes the correspondence between POSIX processes
+and GC3Libs' `Application` objects explicit.
+
++--------------------+---------------------+------------------------+
+|`os` module function|`Core` function      |purpose                 |
++====================+=====================+========================+
+|exec                |Core.submit          |start new job           |
++--------------------+---------------------+------------------------+
+|kill(..., SIGTERM)  |Core.kill            |terminate executing job |
++--------------------+---------------------+------------------------+
+|wait(..., WNOHANG)  |Core.update_job_state|get job status          |
++--------------------+---------------------+------------------------+
+|-                   |Core.fetch_output    |retrieve output         |
++--------------------+---------------------+------------------------+
+
+.. note::
+
+   1. With GC3Libs, it is not possible to send an arbitrary signal to
+      a running job: jobs can only be started and stopped (killed).
+
+   2. Since POSIX processes are always executed on the local machine,
+      there is no equivalent of the GC3Libs `fetch_output`.
+
+
+
+Application exit codes
+----------------------
+
+POSIX encodes process termination information in the "return code",
+which can be parsed through `os.WEXITSTATUS`, `os.WIFSIGNALED`,
+`os.WTERMSIG` and relative library calls.
+
+Likewise, GC3Libs provides each :class:`Application` object with an
+`execution.returncode` attribute, which is a valid POSIX "return
+code".  Client code can therefore use `os.WEXITSTATUS` and relatives
+to inspect it; convenience attributes `execution.signal` and
+`execution.exitcode` are available for direct access to the parts of
+the return code.  See :meth:`Run.returncode` for more information.
+
+However, GC3Libs has to deal with error conditions that are not
+catered for by the POSIX process model: for instance, execution of an
+application may fail because of an error connecting to the remote
+execution cluster.
+
+To this purpose, GC3Libs encodes information about abnormal job
+termination using a set of pseudo-signal codes in a job's
+`execution.returncode` attribute: i.e., if termination of a job is due
+to some grid/batch system/middleware error, the job's
+`os.WIFSIGNALED(app.execution.returncode)` will be `True` and the
+signal code (as gotten from `os.WTERMSIG(app.execution.returncode)`)
+will be one of those listed in the :class:`Run.Signals` documentation.
+
+
+Application execution states
+----------------------------
+
+At any given moment, a GC3Libs job is in any one of a set of
+pre-defined states, listed in the table below.  The job state is
+always available in the `.execution.state` instance property of any
+`Application` or `Task` object; see :meth:`Run.state` for detailed
+information.
+
++------------------+--------------------------------------------------------------+----------------------+
+|GC3Libs' Job state|purpose                                                       |can change to         |
++==================+==============================================================+======================+
+|NEW               |Job has not yet been submitted/started (i.e., gsub not called)|SUBMITTED (by gsub)   |
++------------------+--------------------------------------------------------------+----------------------+
+|SUBMITTED         |Job has been sent to execution resource                       |RUNNING, STOPPED      |
++------------------+--------------------------------------------------------------+----------------------+
+|STOPPED           |Trap state: job needs manual intervention (either user-       |TERMINATED (by gkill),|
+|                  |or sysadmin-level) to resume normal execution                 |SUBMITTED (by miracle)|
++------------------+--------------------------------------------------------------+----------------------+
+|RUNNING           |Job is executing on remote resource                           |TERMINATED            |
++------------------+--------------------------------------------------------------+----------------------+
+|TERMINATED        |Job execution is finished (correctly or not)                  |None: final state     |
+|                  |and will not be resumed                                       |                      |
++------------------+--------------------------------------------------------------+----------------------+
+
+When an :class:`Application` object is first created, its
+`.execution.state` attribute is assigned the state NEW.  After a
+successful start (via `Core.submit()` or similar), it is transitioned
+to state SUBMITTED.  Further transitions to RUNNING or STOPPED or
+TERMINATED state, happen completely independently of the creator
+program: the `Core.update_job_state()` call provides updates on the
+status of a job. (Somewhat like the POSIX `wait(..., WNOHANG)` system
+call, except that GC3Libs provide explicit RUNNING and STOPPED states,
+instead of encoding them into the return value.)
+
+The STOPPED state is a kind of generic "run time error" state: a job
+can get into the STOPPED state if its execution is stopped (e.g., a
+SIGSTOP is sent to the remote process) or delayed indefinitely (e.g.,
+the remote batch system puts the job "on hold"). There is no way a job
+can get out of the STOPPED state automatically: all transitions from the
+STOPPED state require manual intervention, either by the submitting
+user (e.g., cancel the job), or by the remote systems administrator
+(e.g., by releasing the hold).
+
+The TERMINATED state is the final state of a job: once a job reaches
+it, it cannot get back to any other state. Jobs reach TERMINATED state
+regardless of their exit code, or even if a system failure occurred
+during remote execution; actually, jobs can reach the TERMINATED
+status even if they didn't run at all! 
+
+A job that is not in the NEW or TERMINATED state is said to be a "live" job.
+
+
+Computational job specification
+-------------------------------
+
+One of the purposes of GC3Libs is to provide an abstraction layer
+that frees client code from dealing with the details of job execution
+on a possibly remote cluster. For this to work, it necessary to
+specify job characteristics and requirements, so that the GC3Libs
+scheduler can select an appropriate computational resource for
+executing the job.
+
+GC3Libs `Application` provide a way to describe computational job
+characteristics (program to run, input and output files,
+memory/duration requirements, etc.) loosely patterned after ARC's
+xRSL_ language.
+
+The description of the computational job is done through keyword
+parameters to the :class:`Application` constructor, which see for
+details.  Changes in the job characteristics *after* an
+:class:`Application` object has been constructed are not currently
+supported.
+
+.. _xRSL: http://www.nordugrid.org/documents/xrsl.pdf
+
+
+
+
+
+.. (for Emacs only)
+..
+  Local variables:
+  mode: rst
+  End:
