@@ -5,7 +5,7 @@
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     
-    <title>Welcome to gc3pie’s documentation! &mdash; gc3pie v0.12.14 documentation</title>
+    <title>GC3Libs modules &mdash; gc3pie v0.12.14 documentation</title>
     <link rel="stylesheet" href="_static/default.css" type="text/css" />
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
     <script type="text/javascript">
@@ -19,7 +19,7 @@
     </script>
     <script type="text/javascript" src="_static/jquery.js"></script>
     <script type="text/javascript" src="_static/doctools.js"></script>
-    <link rel="top" title="gc3pie v0.12.14 documentation" href="#" /> 
+    <link rel="top" title="gc3pie v0.12.14 documentation" href="index.html" /> 
   </head>
   <body>
     <div class="related">
@@ -31,7 +31,7 @@
         <li class="right" >
           <a href="modindex.html" title="Global Module Index"
              accesskey="M">modules</a> |</li>
-        <li><a href="#">gc3pie v0.12.14 documentation</a> &raquo;</li> 
+        <li><a href="index.html">gc3pie v0.12.14 documentation</a> &raquo;</li> 
       </ul>
     </div>  
 
@@ -40,341 +40,18 @@
         <div class="bodywrapper">
           <div class="body">
             
-  <div class="section" id="welcome-to-gc3pie-s-documentation">
-<h1>Welcome to gc3pie&#8217;s documentation!<a class="headerlink" href="#welcome-to-gc3pie-s-documentation" title="Permalink to this headline">¶</a></h1>
-<ul class="simple">
-</ul>
-<div class="section" id="introduction">
-<h2>Introduction<a class="headerlink" href="#introduction" title="Permalink to this headline">¶</a></h2>
-<p>GC3Libs is a python package for controlling the life-cycle of a Grid
-or batch computational job.</p>
-<p>GC3Libs provides services for submitting computational jobs to Grids
-and batch systems, controlling their execution, persisting job
-information, and retrieving the final output.</p>
-<p>GC3Libs takes an application-oriented approach to batch computing. A
-generic <cite>Application</cite> class provides the basic operations for
-controlling remote computations, but different <cite>Application</cite>
-subclasses can expose adapted interfaces, focusing on the most
-relevant aspects of the application being represented.</p>
-<p>This document is the technical reference for the GC3Libs programming
-model, aimed at programmers who want to use GC3Libs to implement
-computational workflows in Python.</p>
-<div class="section" id="outline-of-the-contents">
-<h3>Outline of the contents<a class="headerlink" href="#outline-of-the-contents" title="Permalink to this headline">¶</a></h3>
-<p>The <a class="reference internal" href="#overview">Overview</a> section presents the main concepts behind GC3Libs
-programming.</p>
-<p>The <a class="reference internal" href="#gc3libs-modules">GC3Libs modules</a> section is a comprehensive list of
-all the modules, classes and functions comprising GC3Libs; its content
-is automatically generated from the docstrings in the source code.</p>
-</div>
-</div>
-<div class="section" id="overview">
-<h2>Overview<a class="headerlink" href="#overview" title="Permalink to this headline">¶</a></h2>
-<p>GC3Libs takes an application-oriented approach to asynchronous
-computing. A generic <tt class="xref docutils literal"><span class="pre">Application</span></tt> class provides the basic
-operations for controlling remote computations and fetching a result;
-client code should derive specialized sub-classes to deal with a
-particular application, and to perform any application-specific
-pre- and post-processing.</p>
-<p>The generic procedure for performing computations with GC3Libs is the
-following:</p>
-<blockquote>
-<ol class="arabic simple">
-<li>Client code creates an instance of an <cite>Application</cite> sub-class.</li>
-<li>Asynchronous computation is started by submitting the application
-object; this associates the application with an actual (possibly
-remote) computational job.</li>
-<li>Client code can monitor the state of the computational job; state
-handlers are called on the application object as the state
-changes.</li>
-<li>When the job is done, the final output is retrieved and a
-post-processing method is invoked on the application object.</li>
-</ol>
-</blockquote>
-<p>At this point, results of the computation are available and can be
-used by the calling program.</p>
-<p>The <tt class="xref docutils literal"><span class="pre">Application</span></tt> class (and its sub-classes) alow client code
-to control the above process by:</p>
-<blockquote>
-<ol class="arabic">
-<li><p class="first">Specifying the characteristics (computer program to run,
-input/output files, memory/CPU/duration requirements, etc.) of the
-corresponding computational job.  This is done by passing suitable
-values to the <tt class="xref docutils literal"><span class="pre">Application</span></tt> constructor.  See the
-<tt class="xref docutils literal"><span class="pre">Application</span></tt> constructor documentation for more info.</p>
-</li>
-<li><p class="first">Providing methods to control the &#8220;life-cycle&#8221; of the associated
-computational job: start, check execution state, stop, retrieve a
-snapshot of the output files.  There are actually two different
-interfaces for this, detailed below:</p>
-<blockquote>
-<ol class="arabic">
-<li><p class="first">A <em>passive</em> interface: a <tt class="xref docutils literal"><span class="pre">Core</span></tt> or a
-<tt class="xref docutils literal"><span class="pre">Engine</span></tt> object is used to start/stop/monitor jobs
-associated with the given application.  For instance:</p>
-<div class="highlight-python"><div class="highlight"><pre><span class="n">a</span> <span class="o">=</span> <span class="n">GamessApplication</span><span class="p">(</span><span class="o">...</span><span class="p">)</span>
-
-<span class="c"># create a `Core` object; only one instance is needed</span>
-<span class="n">g</span> <span class="o">=</span> <span class="n">Core</span><span class="p">(</span><span class="o">...</span><span class="p">)</span>
-
-<span class="c"># start the remote computation</span>
-<span class="n">g</span><span class="o">.</span><span class="n">submit</span><span class="p">(</span><span class="n">a</span><span class="p">)</span>
-
-<span class="c"># periodically monitor job execution</span>
-<span class="n">g</span><span class="o">.</span><span class="n">update_job_state</span><span class="p">(</span><span class="n">a</span><span class="p">)</span>
-
-<span class="c"># retrieve output when the job is done</span>
-<span class="n">g</span><span class="o">.</span><span class="n">fetch_output</span><span class="p">(</span><span class="n">a</span><span class="p">)</span>
-</pre></div>
-</div>
-<p>The passive interface gives client code full control over
-the lifecycle of the job, but cannot support some use cases
-(e.g., automatic application re-start).</p>
-<p>As you can see from the above example, the passive interface
-is implemented by methods in the <tt class="xref docutils literal"><span class="pre">Core</span></tt> and
-<tt class="xref docutils literal"><span class="pre">Engine</span></tt> classes (they implement the same
-interface).  See those classes documentation for more details.</p>
-</li>
-<li><p class="first">An <em>active</em> interface: this requires that the
-<tt class="xref docutils literal"><span class="pre">Application</span></tt> object be attached to a <tt class="xref docutils literal"><span class="pre">Core</span></tt>
-or <tt class="xref docutils literal"><span class="pre">Engine</span></tt> instance:</p>
-<div class="highlight-python"><div class="highlight"><pre><span class="n">a</span> <span class="o">=</span> <span class="n">GamessApplication</span><span class="p">(</span><span class="o">...</span><span class="p">)</span>
-
-<span class="c"># create a `Core` object; only one instance is needed</span>
-<span class="n">g</span> <span class="o">=</span> <span class="n">Core</span><span class="p">(</span><span class="o">...</span><span class="p">)</span>
-
-<span class="c"># tell application to use the active interface</span>
-<span class="n">a</span><span class="o">.</span><span class="n">attach</span><span class="p">(</span><span class="n">g</span><span class="p">)</span>
-
-<span class="c"># start the remote computation</span>
-<span class="n">a</span><span class="o">.</span><span class="n">submit</span><span class="p">()</span>
-
-<span class="c"># periodically monitor job execution</span>
-<span class="n">a</span><span class="o">.</span><span class="n">update_job_state</span><span class="p">()</span>
-
-<span class="c"># retrieve output when the job is done</span>
-<span class="n">a</span><span class="o">.</span><span class="n">fetch_output</span><span class="p">()</span>
-</pre></div>
-</div>
-<p>With the active interface, application objects can support
-automated restart and similar use-cases.</p>
-<p>When an <tt class="xref docutils literal"><span class="pre">Engine</span></tt> object is used instead of a
-<tt class="xref docutils literal"><span class="pre">Core</span></tt> one, the job life-cycle is automatically
-managed, providing a fully asynchronous way of executing
-computations.</p>
-<p>The active interface is implemented by the <tt class="xref docutils literal"><span class="pre">Task</span></tt>
-class and all its descendants (including <tt class="xref docutils literal"><span class="pre">Application</span></tt>).</p>
-</li>
-</ol>
-</blockquote>
-</li>
-<li><p class="first">Providing &#8220;state transition methods&#8221; that are called when a
-change in the job execution state is detected; those methods can
-implement application specific behavior, like restarting the
-computational job with changed input if the alloted duration has
-expired but the computation has not finished.  In particular, a
-<cite>postprocess</cite> method is called when the final output of an
-application is available locally for processing.</p>
-<p>The set of &#8220;state transition methods&#8221; currently implemented by
-the <tt class="xref docutils literal"><span class="pre">Application</span></tt> class are: <tt class="xref docutils literal"><span class="pre">new()</span></tt>,
-<tt class="xref docutils literal"><span class="pre">submitted()</span></tt>, <tt class="xref docutils literal"><span class="pre">running()</span></tt>, <tt class="xref docutils literal"><span class="pre">stopped()</span></tt>,
-<tt class="xref docutils literal"><span class="pre">terminated()</span></tt> and <tt class="xref docutils literal"><span class="pre">postprocess()</span></tt>.  Each method is
-called when the execution state of an application object changes
-to the corresponding state; see each method&#8217;s documentation for
-exact information.</p>
-</li>
-</ol>
-</blockquote>
-<p>In addition, GC3Libs provides <em>collection</em> classes, that expose
-interfaces <em>2.</em> and <em>3.</em> above, allowing one to control a set of
-applications as a single whole.  Collections can be nested (i.e., a
-collection can hold a mix of <tt class="xref docutils literal"><span class="pre">Application</span></tt> and
-<tt class="xref docutils literal"><span class="pre">TaskCollection</span></tt> objects), so that workflows can be implemented
-by composing collection objects.</p>
-<p>Note that the term <em>computational job</em> (or just <em>job</em>, for short) is
-used here in a quite general sense, to mean any kind of computation
-that can happen independently of the main thread of the calling
-program.  GC3Libs currently provide means to execute a job as a
-separate process on the same computer, or as a batch job on a remote
-computational cluster.</p>
-<div class="section" id="execution-model-of-gc3libs-applications">
-<h3>Execution model of GC3Libs applications<a class="headerlink" href="#execution-model-of-gc3libs-applications" title="Permalink to this headline">¶</a></h3>
-<p>An <cite>Application</cite> can be regarded as an abstraction of an independent
-asynchronous computation, i.e., a GC3Libs&#8217; <cite>Application</cite> behaves much
-like an independent UNIX process (but it can actually run on a
-separate remote computer). Indeed, GC3Libs&#8217; <cite>Application</cite> objects
-mimic the POSIX process model: <cite>Application</cite> are started by a
-parent process, run independently of it, and need to have their final
-exit code and output reaped by the calling process.</p>
-<p>The following table makes the correspondence between POSIX processes
-and GC3Libs&#8217; <cite>Application</cite> objects explicit.</p>
-<table border="1" class="docutils">
-<colgroup>
-<col width="31%" />
-<col width="32%" />
-<col width="37%" />
-</colgroup>
-<thead valign="bottom">
-<tr><th class="head"><cite>os</cite> module function</th>
-<th class="head"><cite>Core</cite> function</th>
-<th class="head">purpose</th>
-</tr>
-</thead>
-<tbody valign="top">
-<tr><td>exec</td>
-<td>Core.submit</td>
-<td>start new job</td>
-</tr>
-<tr><td>kill(..., SIGTERM)</td>
-<td>Core.kill</td>
-<td>terminate executing job</td>
-</tr>
-<tr><td>wait(..., WNOHANG)</td>
-<td>Core.update_job_state</td>
-<td>get job status</td>
-</tr>
-<tr><td><ul class="first last simple">
-<li></li>
-</ul>
-</td>
-<td>Core.fetch_output</td>
-<td>retrieve output</td>
-</tr>
-</tbody>
-</table>
-<div class="admonition note">
-<p class="first admonition-title">Note</p>
-<ol class="last arabic simple">
-<li>With GC3Libs, it is not possible to send an arbitrary signal to
-a running job: jobs can only be started and stopped (killed).</li>
-<li>Since POSIX processes are always executed on the local machine,
-there is no equivalent of the GC3Libs <cite>fetch_output</cite>.</li>
-</ol>
-</div>
-<div class="section" id="application-exit-codes">
-<h4>Application exit codes<a class="headerlink" href="#application-exit-codes" title="Permalink to this headline">¶</a></h4>
-<p>POSIX encodes process termination information in the &#8220;return code&#8221;,
-which can be parsed through <cite>os.WEXITSTATUS</cite>, <cite>os.WIFSIGNALED</cite>,
-<cite>os.WTERMSIG</cite> and relative library calls.</p>
-<p>Likewise, GC3Libs provides each <tt class="xref docutils literal"><span class="pre">Application</span></tt> object with an
-<cite>execution.returncode</cite> attribute, which is a valid POSIX &#8220;return
-code&#8221;.  Client code can therefore use <cite>os.WEXITSTATUS</cite> and relatives
-to inspect it; convenience attributes <cite>execution.signal</cite> and
-<cite>execution.exitcode</cite> are available for direct access to the parts of
-the return code.  See <tt class="xref docutils literal"><span class="pre">Run.returncode()</span></tt> for more information.</p>
-<p>However, GC3Libs has to deal with error conditions that are not
-catered for by the POSIX process model: for instance, execution of an
-application may fail because of an error connecting to the remote
-execution cluster.</p>
-<p>To this purpose, GC3Libs encodes information about abnormal job
-termination using a set of pseudo-signal codes in a job&#8217;s
-<cite>execution.returncode</cite> attribute: i.e., if termination of a job is due
-to some grid/batch system/middleware error, the job&#8217;s
-<cite>os.WIFSIGNALED(app.execution.returncode)</cite> will be <cite>True</cite> and the
-signal code (as gotten from <cite>os.WTERMSIG(app.execution.returncode)</cite>)
-will be one of those listed in the <tt class="xref docutils literal"><span class="pre">Run.Signals</span></tt> documentation.</p>
-</div>
-<div class="section" id="application-execution-states">
-<h4>Application execution states<a class="headerlink" href="#application-execution-states" title="Permalink to this headline">¶</a></h4>
-<p>At any given moment, a GC3Libs job is in any one of a set of
-pre-defined states, listed in the table below.  The job state is
-always available in the <cite>.execution.state</cite> instance property of any
-<cite>Application</cite> or <cite>Task</cite> object; see <tt class="xref docutils literal"><span class="pre">Run.state()</span></tt> for detailed
-information.</p>
-<table border="1" class="docutils">
-<colgroup>
-<col width="18%" />
-<col width="61%" />
-<col width="22%" />
-</colgroup>
-<thead valign="bottom">
-<tr><th class="head">GC3Libs&#8217; Job state</th>
-<th class="head">purpose</th>
-<th class="head">can change to</th>
-</tr>
-</thead>
-<tbody valign="top">
-<tr><td>NEW</td>
-<td>Job has not yet been submitted/started (i.e., gsub not called)</td>
-<td>SUBMITTED (by gsub)</td>
-</tr>
-<tr><td>SUBMITTED</td>
-<td>Job has been sent to execution resource</td>
-<td>RUNNING, STOPPED</td>
-</tr>
-<tr><td>STOPPED</td>
-<td>Trap state: job needs manual intervention (either user-
-or sysadmin-level) to resume normal execution</td>
-<td>TERMINATED (by gkill),
-SUBMITTED (by miracle)</td>
-</tr>
-<tr><td>RUNNING</td>
-<td>Job is executing on remote resource</td>
-<td>TERMINATED</td>
-</tr>
-<tr><td>TERMINATED</td>
-<td>Job execution is finished (correctly or not)
-and will not be resumed</td>
-<td>None: final state</td>
-</tr>
-</tbody>
-</table>
-<p>When an <tt class="xref docutils literal"><span class="pre">Application</span></tt> object is first created, its
-<cite>.execution.state</cite> attribute is assigned the state NEW.  After a
-successful start (via <cite>Core.submit()</cite> or similar), it is transitioned
-to state SUBMITTED.  Further transitions to RUNNING or STOPPED or
-TERMINATED state, happen completely independently of the creator
-program: the <cite>Core.update_job_state()</cite> call provides updates on the
-status of a job. (Somewhat like the POSIX <cite>wait(..., WNOHANG)</cite> system
-call, except that GC3Libs provide explicit RUNNING and STOPPED states,
-instead of encoding them into the return value.)</p>
-<p>The STOPPED state is a kind of generic &#8220;run time error&#8221; state: a job
-can get into the STOPPED state if its execution is stopped (e.g., a
-SIGSTOP is sent to the remote process) or delayed indefinitely (e.g.,
-the remote batch system puts the job &#8220;on hold&#8221;). There is no way a job
-can get out of the STOPPED state automatically: all transitions from the
-STOPPED state require manual intervention, either by the submitting
-user (e.g., cancel the job), or by the remote systems administrator
-(e.g., by releasing the hold).</p>
-<p>The TERMINATED state is the final state of a job: once a job reaches
-it, it cannot get back to any other state. Jobs reach TERMINATED state
-regardless of their exit code, or even if a system failure occurred
-during remote execution; actually, jobs can reach the TERMINATED
-status even if they didn&#8217;t run at all!</p>
-<p>A job that is not in the NEW or TERMINATED state is said to be a &#8220;live&#8221; job.</p>
-</div>
-<div class="section" id="computational-job-specification">
-<h4>Computational job specification<a class="headerlink" href="#computational-job-specification" title="Permalink to this headline">¶</a></h4>
-<p>One of the purposes of GC3Libs is to provide an abstraction layer
-that frees client code from dealing with the details of job execution
-on a possibly remote cluster. For this to work, it necessary to
-specify job characteristics and requirements, so that the GC3Libs
-scheduler can select an appropriate computational resource for
-executing the job.</p>
-<p>GC3Libs <cite>Application</cite> provide a way to describe computational job
-characteristics (program to run, input and output files,
-memory/duration requirements, etc.) loosely patterned after ARC&#8217;s
-<a class="reference external" href="http://www.nordugrid.org/documents/xrsl.pdf">xRSL</a> language.</p>
-<p>The description of the computational job is done through keyword
-parameters to the <tt class="xref docutils literal"><span class="pre">Application</span></tt> constructor, which see for
-details.  Changes in the job characteristics <em>after</em> an
-<tt class="xref docutils literal"><span class="pre">Application</span></tt> object has been constructed are not currently
-supported.</p>
-</div>
-</div>
-</div>
-<div class="section" id="gc3libs-modules">
-<h2>GC3Libs modules<a class="headerlink" href="#gc3libs-modules" title="Permalink to this headline">¶</a></h2>
+  <div class="section" id="gc3libs-modules">
+<h1>GC3Libs modules<a class="headerlink" href="#gc3libs-modules" title="Permalink to this headline">¶</a></h1>
 <div class="section" id="module-gc3libs">
-<h3><cite>gc3libs</cite><a class="headerlink" href="#module-gc3libs" title="Permalink to this headline">¶</a></h3>
+<h2><cite>gc3libs</cite><a class="headerlink" href="#module-gc3libs" title="Permalink to this headline">¶</a></h2>
 <p>GC3Libs is a python package for controlling the life-cycle of a Grid
 or batch computational job.</p>
 <p>GC3Libs provides services for submitting computational jobs to Grids
 and batch systems, controlling their execution, persisting job
 information, and retrieving the final output.</p>
 <p>GC3Libs takes an application-oriented approach to batch computing. A
-generic <a title="gc3libs.Application" class="reference internal" href="#gc3libs.Application"><tt class="xref docutils literal"><span class="pre">Application</span></tt></a> class provides the basic operations for
-controlling remote computations, but different <a title="gc3libs.Application" class="reference internal" href="#gc3libs.Application"><tt class="xref docutils literal"><span class="pre">Application</span></tt></a>
+generic <a title="gc3libs.Application" class="reference external" href="index.html#gc3libs.Application"><tt class="xref docutils literal"><span class="pre">Application</span></tt></a> class provides the basic operations for
+controlling remote computations, but different <a title="gc3libs.Application" class="reference external" href="index.html#gc3libs.Application"><tt class="xref docutils literal"><span class="pre">Application</span></tt></a>
 subclasses can expose adapted interfaces, focusing on the most
 relevant aspects of the application being represented.</p>
 <dl class="class">
@@ -819,7 +496,7 @@ and will not be resumed</td>
 </tr>
 </tbody>
 </table>
-<p>When a <a title="gc3libs.Run" class="reference internal" href="#gc3libs.Run"><tt class="xref docutils literal"><span class="pre">Run</span></tt></a> object is first created, it is assigned
+<p>When a <a title="gc3libs.Run" class="reference external" href="index.html#gc3libs.Run"><tt class="xref docutils literal"><span class="pre">Run</span></tt></a> object is first created, it is assigned
 the state NEW.  After a successful invocation of
 <cite>Core.submit()</cite>, it is transitioned to state SUBMITTED.
 Further transitions to RUNNING or STOPPED or TERMINATED state,
@@ -848,7 +525,7 @@ submission step.</p>
 
 </div>
 <div class="section" id="module-gc3libs.core">
-<h3><cite>gc3libs.core</cite><a class="headerlink" href="#module-gc3libs.core" title="Permalink to this headline">¶</a></h3>
+<h2><cite>gc3libs.core</cite><a class="headerlink" href="#module-gc3libs.core" title="Permalink to this headline">¶</a></h2>
 <p>Top-level interface to Grid functionality.</p>
 <dl class="class">
 <dt id="gc3libs.core.Engine">
@@ -962,7 +639,7 @@ to the <cite>Core</cite> class constructor.</dd></dl>
 
 </div>
 <div class="section" id="module-gc3libs.Default">
-<h3><cite>gc3libs.Default</cite><a class="headerlink" href="#module-gc3libs.Default" title="Permalink to this headline">¶</a></h3>
+<h2><cite>gc3libs.Default</cite><a class="headerlink" href="#module-gc3libs.Default" title="Permalink to this headline">¶</a></h2>
 <div class="admonition warning">
 <p class="first admonition-title">Warning</p>
 <p class="last">This module is deprecated and will be removed in a future release.
@@ -971,7 +648,7 @@ Do not depend on it.</p>
 <p>Defaults for the GC3Libs package.</p>
 </div>
 <div class="section" id="module-gc3libs.Exceptions">
-<h3><cite>gc3libs.Exceptions</cite><a class="headerlink" href="#module-gc3libs.Exceptions" title="Permalink to this headline">¶</a></h3>
+<h2><cite>gc3libs.Exceptions</cite><a class="headerlink" href="#module-gc3libs.Exceptions" title="Permalink to this headline">¶</a></h2>
 <p>Exceptions specific to the <cite>gc3libs</cite> package.</p>
 <dl class="exception">
 <dt id="gc3libs.Exceptions.ConfigurationError">
@@ -1084,7 +761,7 @@ middleware used.</dd></dl>
 
 </div>
 <div class="section" id="module-gc3libs.persistence">
-<h3><cite>gc3libs.persistence</cite><a class="headerlink" href="#module-gc3libs.persistence" title="Permalink to this headline">¶</a></h3>
+<h2><cite>gc3libs.persistence</cite><a class="headerlink" href="#module-gc3libs.persistence" title="Permalink to this headline">¶</a></h2>
 <p>Facade to store and retrieve Job information from permanent storage.</p>
 <dl class="class">
 <dt id="gc3libs.persistence.FilesystemStore">
@@ -1216,7 +893,7 @@ should raise a <cite>NotImplementedError</cite> exception.</p>
 
 </div>
 <div class="section" id="module-gc3libs.application">
-<h3><cite>gc3libs.application</cite><a class="headerlink" href="#module-gc3libs.application" title="Permalink to this headline">¶</a></h3>
+<h2><cite>gc3libs.application</cite><a class="headerlink" href="#module-gc3libs.application" title="Permalink to this headline">¶</a></h2>
 <p>Support for running a generic application with the GC3Libs.</p>
 <dl class="function">
 <dt id="gc3libs.application.get">
@@ -1245,7 +922,7 @@ by tag name with <tt class="docutils literal"><span class="pre">gc3libs.applicat
 
 </div>
 <div class="section" id="module-gc3libs.application.gamess">
-<h3><cite>gc3libs.application.gamess</cite><a class="headerlink" href="#module-gc3libs.application.gamess" title="Permalink to this headline">¶</a></h3>
+<h2><cite>gc3libs.application.gamess</cite><a class="headerlink" href="#module-gc3libs.application.gamess" title="Permalink to this headline">¶</a></h2>
 <p>Specialized support for computational jobs running GAMESS-US.</p>
 <dl class="class">
 <dt id="gc3libs.application.gamess.GamessApplication">
@@ -1275,7 +952,7 @@ parameters embedded in this object.</dd></dl>
 
 </div>
 <div class="section" id="module-gc3libs.application.rosetta">
-<h3><cite>gc3libs.application.rosetta</cite><a class="headerlink" href="#module-gc3libs.application.rosetta" title="Permalink to this headline">¶</a></h3>
+<h2><cite>gc3libs.application.rosetta</cite><a class="headerlink" href="#module-gc3libs.application.rosetta" title="Permalink to this headline">¶</a></h2>
 <p>Specialized support for computational jobs running programs in the Rosetta suite.</p>
 <dl class="class">
 <dt id="gc3libs.application.rosetta.RosettaApplication">
@@ -1310,7 +987,7 @@ Rosetta &#8220;docking_protocol&#8221; application.</p>
 
 </div>
 <div class="section" id="module-gc3libs.authentication">
-<h3><cite>gc3libs.authentication</cite><a class="headerlink" href="#module-gc3libs.authentication" title="Permalink to this headline">¶</a></h3>
+<h2><cite>gc3libs.authentication</cite><a class="headerlink" href="#module-gc3libs.authentication" title="Permalink to this headline">¶</a></h2>
 <p>Authentication support for the GC3Libs.</p>
 <dl class="class">
 <dt id="gc3libs.authentication.NoneAuth">
@@ -1319,15 +996,15 @@ Rosetta &#8220;docking_protocol&#8221; application.</p>
 
 </div>
 <div class="section" id="module-gc3libs.authentication.ssh">
-<h3><cite>gc3libs.authentication.ssh</cite><a class="headerlink" href="#module-gc3libs.authentication.ssh" title="Permalink to this headline">¶</a></h3>
+<h2><cite>gc3libs.authentication.ssh</cite><a class="headerlink" href="#module-gc3libs.authentication.ssh" title="Permalink to this headline">¶</a></h2>
 <p>Authentication support for accessing resources through the SSH protocol.</p>
 </div>
 <div class="section" id="module-gc3libs.authentication.grid">
-<h3><cite>gc3libs.authentication.grid</cite><a class="headerlink" href="#module-gc3libs.authentication.grid" title="Permalink to this headline">¶</a></h3>
+<h2><cite>gc3libs.authentication.grid</cite><a class="headerlink" href="#module-gc3libs.authentication.grid" title="Permalink to this headline">¶</a></h2>
 <p>Authentication support with Grid proxy certificates.</p>
 </div>
 <div class="section" id="module-gc3libs.backends">
-<h3><cite>gc3libs.backends</cite><a class="headerlink" href="#module-gc3libs.backends" title="Permalink to this headline">¶</a></h3>
+<h2><cite>gc3libs.backends</cite><a class="headerlink" href="#module-gc3libs.backends" title="Permalink to this headline">¶</a></h2>
 <p>Interface to different resource management systems for the GC3Libs.</p>
 <dl class="class">
 <dt id="gc3libs.backends.LRMS">
@@ -1416,7 +1093,7 @@ corresponding <cite>Run.State</cite>; see <cite>Run.State</cite> for more detail
 
 </div>
 <div class="section" id="module-gc3libs.backends.arc">
-<h3><cite>gc3libs.backends.arc</cite><a class="headerlink" href="#module-gc3libs.backends.arc" title="Permalink to this headline">¶</a></h3>
+<h2><cite>gc3libs.backends.arc</cite><a class="headerlink" href="#module-gc3libs.backends.arc" title="Permalink to this headline">¶</a></h2>
 <p>Job control on ARC0 resources.</p>
 <dl class="class">
 <dt id="gc3libs.backends.arc.ArcLrms">
@@ -1575,7 +1252,7 @@ found its way to the infosys.</p>
 
 </div>
 <div class="section" id="module-gc3libs.backends.sge">
-<h3><cite>gc3libs.backends.sge</cite><a class="headerlink" href="#module-gc3libs.backends.sge" title="Permalink to this headline">¶</a></h3>
+<h2><cite>gc3libs.backends.sge</cite><a class="headerlink" href="#module-gc3libs.backends.sge" title="Permalink to this headline">¶</a></h2>
 <p>Job control on SGE clusters (possibly connecting to the front-end via SSH).</p>
 <dl class="class">
 <dt id="gc3libs.backends.sge.SgeLrms">
@@ -1713,14 +1390,14 @@ and return a <cite>dict</cite> instance, mapping each queue name to its attribut
 
 </div>
 <div class="section" id="module-gc3libs.backends.transport">
-<h3><cite>gc3libs.backends.transport</cite><a class="headerlink" href="#module-gc3libs.backends.transport" title="Permalink to this headline">¶</a></h3>
+<h2><cite>gc3libs.backends.transport</cite><a class="headerlink" href="#module-gc3libs.backends.transport" title="Permalink to this headline">¶</a></h2>
 <p>The <cite>Transport</cite> class hierarchy provides an abstraction layer to
 execute commands and copy/move files irrespective of whether the
 destination is the local computer or a remote front-end that we access
 via SSH.</p>
 </div>
 <div class="section" id="module-gc3libs.task">
-<h3><cite>gc3libs.task</cite><a class="headerlink" href="#module-gc3libs.task" title="Permalink to this headline">¶</a></h3>
+<h2><cite>gc3libs.task</cite><a class="headerlink" href="#module-gc3libs.task" title="Permalink to this headline">¶</a></h2>
 <p>Implementation of task and task collections.</p>
 <p>A <cite>Task</cite> is a simplified interface to running jobs; it can be
 described as an &#8220;active&#8221; job, in the sense that all job control is
@@ -1852,7 +1529,7 @@ a detached <cite>Task</cite> instance.</dd></dl>
 <dl class="exception">
 <dt id="gc3libs.task.Task.UnexpectedStateError">
 <em class="property">exception </em><tt class="descclassname">Task.</tt><tt class="descname">UnexpectedStateError</tt><big>(</big><em>msg</em>, <em>do_log=False</em><big>)</big><a class="headerlink" href="#gc3libs.task.Task.UnexpectedStateError" title="Permalink to this definition">¶</a></dt>
-<dd>Raised by <a title="gc3libs.task.Task.progress" class="reference internal" href="#gc3libs.task.Task.progress"><tt class="xref docutils literal"><span class="pre">Task.progress()</span></tt></a> when a job lands in <cite>STOPPED</cite>
+<dd>Raised by <a title="gc3libs.task.Task.progress" class="reference external" href="index.html#gc3libs.task.Task.progress"><tt class="xref docutils literal"><span class="pre">Task.progress()</span></tt></a> when a job lands in <cite>STOPPED</cite>
 or <cite>TERMINATED</cite> state.</dd></dl>
 
 <dl class="method">
@@ -1865,7 +1542,7 @@ associated with this task.</dd></dl>
 <dt id="gc3libs.task.Task.detach">
 <tt class="descclassname">Task.</tt><tt class="descname">detach</tt><big>(</big><big>)</big><a class="headerlink" href="#gc3libs.task.Task.detach" title="Permalink to this definition">¶</a></dt>
 <dd>Remove any reference to the current grid interface.  After
-this, calling any method other than <a title="gc3libs.task.Task.attach" class="reference internal" href="#gc3libs.task.Task.attach"><tt class="xref docutils literal"><span class="pre">attach()</span></tt></a> results in
+this, calling any method other than <a title="gc3libs.task.Task.attach" class="reference external" href="index.html#gc3libs.task.Task.attach"><tt class="xref docutils literal"><span class="pre">attach()</span></tt></a> results in
 an exception <cite>Task.DetachedFromGridError</cite> being thrown.</dd></dl>
 
 <dl class="method">
@@ -1926,7 +1603,7 @@ calling <cite>progress</cite> returns <cite>None</cite>.</p>
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field"><th class="field-name">Raises:</th><td class="field-body">exception <a title="gc3libs.task.Task.UnexpectedStateError" class="reference internal" href="#gc3libs.task.Task.UnexpectedStateError"><tt class="xref docutils literal"><span class="pre">Task.UnexpectedStateError</span></tt></a> if the
+<tr class="field"><th class="field-name">Raises:</th><td class="field-body">exception <a title="gc3libs.task.Task.UnexpectedStateError" class="reference external" href="index.html#gc3libs.task.Task.UnexpectedStateError"><tt class="xref docutils literal"><span class="pre">Task.UnexpectedStateError</span></tt></a> if the
 associated job goes into state <cite>STOPPED</cite> or <cite>UNKNOWN</cite></td>
 </tr>
 <tr class="field"><th class="field-name">Returns:</th><td class="field-body">job final returncode, or <cite>None</cite> if the execution
@@ -2025,7 +1702,7 @@ fetch the output.</p>
 
 </div>
 <div class="section" id="module-gc3libs.utils">
-<h3><cite>gc3libs.utils</cite><a class="headerlink" href="#module-gc3libs.utils" title="Permalink to this headline">¶</a></h3>
+<h2><cite>gc3libs.utils</cite><a class="headerlink" href="#module-gc3libs.utils" title="Permalink to this headline">¶</a></h2>
 <p>Generic Python programming utility functions.</p>
 <p>This module collects general utility functions, not specifically
 related to GC3Libs.  A good rule of thumb for determining if a
@@ -2333,7 +2010,7 @@ suffixes.</p>
 
 </div>
 <div class="section" id="module-gc3libs.Resource">
-<h3><cite>gc3libs.Resource</cite><a class="headerlink" href="#module-gc3libs.Resource" title="Permalink to this headline">¶</a></h3>
+<h2><cite>gc3libs.Resource</cite><a class="headerlink" href="#module-gc3libs.Resource" title="Permalink to this headline">¶</a></h2>
 <div class="admonition warning">
 <p class="first admonition-title">Warning</p>
 <p class="last">This module is deprecated and will be removed in a future release.
@@ -2368,11 +2045,11 @@ queued              int</dd>
 
 </div>
 <div class="section" id="module-gc3libs.scheduler">
-<h3><cite>gc3libs.scheduler</cite><a class="headerlink" href="#module-gc3libs.scheduler" title="Permalink to this headline">¶</a></h3>
+<h2><cite>gc3libs.scheduler</cite><a class="headerlink" href="#module-gc3libs.scheduler" title="Permalink to this headline">¶</a></h2>
 <p>Simple-minded scheduling for GC3Libs.</p>
 </div>
 <div class="section" id="module-gc3libs.InformationContainer">
-<h3><cite>gc3libs.InformationContainer</cite><a class="headerlink" href="#module-gc3libs.InformationContainer" title="Permalink to this headline">¶</a></h3>
+<h2><cite>gc3libs.InformationContainer</cite><a class="headerlink" href="#module-gc3libs.InformationContainer" title="Permalink to this headline">¶</a></h2>
 <div class="admonition warning">
 <p class="first admonition-title">Warning</p>
 <p class="last">This module is deprecated and will be removed in a future release.
@@ -2382,12 +2059,12 @@ Do not depend on it.</p>
 </div>
 </div>
 <div class="section" id="gc3utils-modules">
-<h2>GC3Utils modules<a class="headerlink" href="#gc3utils-modules" title="Permalink to this headline">¶</a></h2>
+<h1>GC3Utils modules<a class="headerlink" href="#gc3utils-modules" title="Permalink to this headline">¶</a></h1>
 <div class="section" id="module-gc3utils">
-<h3><cite>gc3utils</cite><a class="headerlink" href="#module-gc3utils" title="Permalink to this headline">¶</a></h3>
+<h2><cite>gc3utils</cite><a class="headerlink" href="#module-gc3utils" title="Permalink to this headline">¶</a></h2>
 </div>
 <div class="section" id="module-gc3utils.gcmd">
-<h3><cite>gc3utils.gcmd</cite><a class="headerlink" href="#module-gc3utils.gcmd" title="Permalink to this headline">¶</a></h3>
+<h2><cite>gc3utils.gcmd</cite><a class="headerlink" href="#module-gc3utils.gcmd" title="Permalink to this headline">¶</a></h2>
 <p>gc3utils - A simple command-line frontend to distributed resources</p>
 <p>This is a generic front-end code; actual implementation of commands
 can be found in gc3utils/commands.py</p>
@@ -2398,7 +2075,7 @@ can be found in gc3utils/commands.py</p>
 
 </div>
 <div class="section" id="module-gc3utils.commands">
-<h3><cite>gc3utils.commands</cite><a class="headerlink" href="#module-gc3utils.commands" title="Permalink to this headline">¶</a></h3>
+<h2><cite>gc3utils.commands</cite><a class="headerlink" href="#module-gc3utils.commands" title="Permalink to this headline">¶</a></h2>
 <p>Implementation of the <cite>core</cite> command-line front-ends.</p>
 <dl class="function">
 <dt id="gc3utils.commands.gclean">
@@ -2458,15 +2135,6 @@ gkill will try anyway to process all requests</dd></dl>
 
 </div>
 </div>
-<div class="section" id="indices-and-tables">
-<h2>Indices and tables<a class="headerlink" href="#indices-and-tables" title="Permalink to this headline">¶</a></h2>
-<ul class="simple">
-<li><a class="reference external" href="genindex.html"><em>Index</em></a></li>
-<li><a class="reference external" href="modindex.html"><em>Module Index</em></a></li>
-<li><a class="reference external" href="search.html"><em>Search Page</em></a></li>
-</ul>
-</div>
-</div>
 
 
           </div>
@@ -2474,23 +2142,9 @@ gkill will try anyway to process all requests</dd></dl>
       </div>
       <div class="sphinxsidebar">
         <div class="sphinxsidebarwrapper">
-            <h3><a href="#">Table Of Contents</a></h3>
+            <h3><a href="index.html">Table Of Contents</a></h3>
             <ul>
-<li><a class="reference external" href="#">Welcome to gc3pie&#8217;s documentation!</a><ul>
-<li><a class="reference external" href="#introduction">Introduction</a><ul>
-<li><a class="reference external" href="#outline-of-the-contents">Outline of the contents</a></li>
-</ul>
-</li>
-<li><a class="reference external" href="#overview">Overview</a><ul>
-<li><a class="reference external" href="#execution-model-of-gc3libs-applications">Execution model of GC3Libs applications</a><ul>
-<li><a class="reference external" href="#application-exit-codes">Application exit codes</a></li>
-<li><a class="reference external" href="#application-execution-states">Application execution states</a></li>
-<li><a class="reference external" href="#computational-job-specification">Computational job specification</a></li>
-</ul>
-</li>
-</ul>
-</li>
-<li><a class="reference external" href="#gc3libs-modules">GC3Libs modules</a><ul>
+<li><a class="reference external" href="#">GC3Libs modules</a><ul>
 <li><a class="reference external" href="#module-gc3libs"><cite>gc3libs</cite></a></li>
 <li><a class="reference external" href="#module-gc3libs.core"><cite>gc3libs.core</cite></a></li>
 <li><a class="reference external" href="#module-gc3libs.Default"><cite>gc3libs.Default</cite></a></li>
@@ -2519,14 +2173,11 @@ gkill will try anyway to process all requests</dd></dl>
 <li><a class="reference external" href="#module-gc3utils.commands"><cite>gc3utils.commands</cite></a></li>
 </ul>
 </li>
-<li><a class="reference external" href="#indices-and-tables">Indices and tables</a></li>
-</ul>
-</li>
 </ul>
 
             <h3>This Page</h3>
             <ul class="this-page-menu">
-              <li><a href="_sources/index.txt"
+              <li><a href="_sources/api.txt"
                      rel="nofollow">Show Source</a></li>
             </ul>
           <div id="searchbox" style="display: none">
@@ -2555,7 +2206,7 @@ gkill will try anyway to process all requests</dd></dl>
         <li class="right" >
           <a href="modindex.html" title="Global Module Index"
              >modules</a> |</li>
-        <li><a href="#">gc3pie v0.12.14 documentation</a> &raquo;</li> 
+        <li><a href="index.html">gc3pie v0.12.14 documentation</a> &raquo;</li> 
       </ul>
     </div>
     <div class="footer">

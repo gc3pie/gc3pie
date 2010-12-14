@@ -25,130 +25,10 @@ and batch systems, controlling their execution, persisting job
 information, and retrieving the final output.
 
 GC3Libs takes an application-oriented approach to batch computing. A
-generic `Application` class provides the basic operations for
-controlling remote computations, but different `Application`
+generic :class:`Application` class provides the basic operations for
+controlling remote computations, but different :class:`Application`
 subclasses can expose adapted interfaces, focusing on the most
 relevant aspects of the application being represented.
-
-
-Computational job management with GC3Libs
-=========================================
-
-The `Application` class constructor provides an interface for the
-description of a compute job features, like: executable file to run,
-input files to copy to the execution location, output files to copy
-back, job memory requirements, etc.
-
-In addition, `Application` objects expose an interface to control the
-execution of the associated (remote) computational job; the data
-regarding the associated job is exposed through the `.execution`
-instance attribute, which is an instance of the `Run` class.
-
-
-Computational job specification
--------------------------------
-
-GC3Libs `Application` provide a way to describe computational job
-characteristics (program to run, input and output files,
-memory/duration requirements, etc.) loosely patterned after ARC's
-xRSL_ language.
-
-The description of the computational job is done through keyword
-parameters to the `Application` constructor, which see for details.
-Changes in the job characteristics *after* an `Application` object has
-been constructed are not currently supported.
-
-.. _xRSL: http://www.nordugrid.org/documents/xrsl.pdf
-
-
-Execution model of GC3Libs applications
----------------------------------------
-
-An `Application` can be regarded as an abstraction of an independent
-asynchronous computation, i.e., a GC3Libs' `Application` behaves much
-like an independent UNIX process. Indeed, GC3Libs' `Application`
-objects mimic the POSIX process interface: `Application` are started
-by a parent process, run independently of it, and need to have their
-final exit code and output reaped by the calling process.
-
-The following table makes the correspondence between POSIX processes
-and GC3Libs' `Application` objects explicit.
-
-+--------------------+---------------------+------------------------------------+
-|`os` module function|GC3Libs function     |purpose                             |
-+====================+=====================+====================================+
-|exec                |Core.submit          |start new job                       |
-+--------------------+---------------------+------------------------------------+
-|kill (SIGTERM)      |Core.kill            |terminate executing job             |
-+--------------------+---------------------+------------------------------------+
-|wait (WNOHANG)      |Core.update_job_state|get job status (RUNNING, TERMINATED)|
-+--------------------+---------------------+------------------------------------+
-|-                   |Core.fetch_output    |retrieve output                     |
-+--------------------+---------------------+------------------------------------+
-
-At any given moment, a GC3Libs job is in any one of a set of
-pre-defined states, listed in the table below.  The job state is
-always available in the `.execution.state` instance property of any
-`Application` object.
-
-+------------------+--------------------------------------------------------------+----------------------+
-|GC3Libs' Job state|purpose                                                       |can change to         |
-+==================+==============================================================+======================+
-|NEW               |Job has not yet been submitted/started (i.e., gsub not called)|SUBMITTED (by gsub)   |
-+------------------+--------------------------------------------------------------+----------------------+
-|SUBMITTED         |Job has been sent to execution resource                       |RUNNING, STOPPED      |
-+------------------+--------------------------------------------------------------+----------------------+
-|STOPPED           |Trap state: job needs manual intervention (either user-       |TERMINATED (by gkill),|
-|                  |or sysadmin-level) to resume normal execution                 |SUBMITTED (by miracle)|
-+------------------+--------------------------------------------------------------+----------------------+
-|RUNNING           |Job is executing on remote resource                           |TERMINATED            |
-+------------------+--------------------------------------------------------------+----------------------+
-|TERMINATED        |Job execution is finished (correctly or not)                  |None: final state     |
-|                  |and will not be resumed                                       |                      |
-+------------------+--------------------------------------------------------------+----------------------+
-
-A job that is not in the NEW or TERMINATED state is said to be a "live" job.
-
-When a Job object is first created, it is assigned the state NEW.
-After a successful invocation of `Core.submit()`, the Job object is
-transitioned to state SUBMITTED.  Further transitions to RUNNING or
-STOPPED or TERMINATED state, happen completely independently of the
-creator program.  The `Core.update_job_state()` call provides updates
-on the status of a job. (Somewhat like the POSIX `wait(..., WNOHANG)`
-system call, except that GC3Libs provide explicit RUNNING and STOPPED
-states, instead of encoding them into the return value.)
-
-The STOPPED state is a kind of generic "run time error" state: a job
-can get into the STOPPED state if its execution is stopped (e.g., a
-SIGSTOP is sent to the remote process) or delayed indefinitely (e.g.,
-the remote batch system puts the job "on hold"). There is no way a job
-can get out of the STOPPED state automatically: all transitions from the
-STOPPED state require manual intervention, either by the submitting
-user (e.g., cancel the job), or by the remote systems administrator
-(e.g., by releasing the hold).
-
-The TERMINATED state is the final state of a job: once a job reaches
-it, it cannot get back to any other state. Jobs reach TERMINATED state
-regardless of their exit code, or even if a system failure occurred
-during remote execution; actually, jobs can reach the TERMINATED
-status even if they didn't run at all! Just like POSIX encodes process
-termination information in the "return code", the GC3Libs encode
-information about abnormal process termination using a set of
-pseudo-signal codes in a job's returncode attribute: i.e., if
-termination of a job is due to some grid/batch system/middleware
-error, the job's `os.WIFSIGNALED(job.returncode)` will be True and the
-signal code (as gotten from `os.WTERMSIG(job.returncode)`) will be one
-of the following:
-
-======  ============================================================
-signal  error condition
-======  ============================================================
-125     submission to batch system failed
-124     remote error (e.g., execution node crashed, batch system misconfigured)
-123     data staging failure
-122     job killed by batch system / sysadmin
-121     job canceled by user
-======  ============================================================
 
 """
 __docformat__ = 'reStructuredText'
@@ -707,9 +587,52 @@ class Run(Struct):
     @defproperty
     def state():
         """
-        The state a `Run` is in; see `Run.State` for possible values.
+        The state a `Run` is in.  
+
         The value of `Run.state` must always be a value from the
-        `Run.State` enumeration.
+        `Run.State` enumeration, i.e., one of the following values.
+
+        +---------------+--------------------------------------------------------------+----------------------+
+        |Run.State value|purpose                                                       |can change to         |
+        +===============+==============================================================+======================+
+        |NEW            |Job has not yet been submitted/started (i.e., gsub not called)|SUBMITTED (by gsub)   |
+        +---------------+--------------------------------------------------------------+----------------------+
+        |SUBMITTED      |Job has been sent to execution resource                       |RUNNING, STOPPED      |
+        +---------------+--------------------------------------------------------------+----------------------+
+        |STOPPED        |Trap state: job needs manual intervention (either user-       |TERMINATED (by gkill),|
+        |               |or sysadmin-level) to resume normal execution                 |SUBMITTED (by miracle)|
+        +---------------+--------------------------------------------------------------+----------------------+
+        |RUNNING        |Job is executing on remote resource                           |TERMINATED            |
+        +---------------+--------------------------------------------------------------+----------------------+
+        |TERMINATED     |Job execution is finished (correctly or not)                  |None: final state     |
+        |               |and will not be resumed                                       |                      |
+        +---------------+--------------------------------------------------------------+----------------------+
+
+        When a :class:`Run` object is first created, it is assigned
+        the state NEW.  After a successful invocation of
+        `Core.submit()`, it is transitioned to state SUBMITTED.
+        Further transitions to RUNNING or STOPPED or TERMINATED state,
+        happen completely independently of the creator progra; the
+        `Core.update_job_state()` call provides updates on the status
+        of a job.
+
+        The STOPPED state is a kind of generic "run time error" state:
+        a job can get into the STOPPED state if its execution is
+        stopped (e.g., a SIGSTOP is sent to the remote process) or
+        delayed indefinitely (e.g., the remote batch system puts the
+        job "on hold"). There is no way a job can get out of the
+        STOPPED state automatically: all transitions from the STOPPED
+        state require manual intervention, either by the submitting
+        user (e.g., cancel the job), or by the remote systems
+        administrator (e.g., by releasing the hold).
+
+        The TERMINATED state is the final state of a job: once a job
+        reaches it, it cannot get back to any other state. Jobs reach
+        TERMINATED state regardless of their exit code, or even if a
+        system failure occurred during remote execution; actually,
+        jobs can reach the TERMINATED status even if they didn't run
+        at all, for example, in case of a fatal failure during the
+        submission step.
         """
         def fget(self):
             return self._state
@@ -772,8 +695,8 @@ class Run(Struct):
         """
         The `returncode` attribute of this job object encodes the
         `Run` termination status in a manner compatible with the POSIX
-        termination status as implemented by `os.WIFSIGNALED()` and
-        `os.WIFEXITED()`.
+        termination status as implemented by `os.WIFSIGNALED` and
+        `os.WIFEXITED`.
 
         However, in contrast with POSIX usage, the `exitcode` and the
         `signal` part can *both* be significant: in case a Grid
@@ -847,7 +770,18 @@ class Run(Struct):
 
     class Signals(object):
         """
-        Collection of (fake) signals used to encode termination reason in `Job.returncode`.
+        Collection of (fake) signals used to encode termination reason in `Run.returncode`.
+
+        ======  ============================================================
+        signal  error condition
+        ======  ============================================================
+        125     submission to batch system failed
+        124     remote error (e.g., execution node crashed, batch system misconfigured)
+        123     data staging failure
+        122     job killed by batch system / sysadmin
+        121     job canceled by user
+        ======  ============================================================
+
         """
         Cancelled = _Signal('CANCEL', 121, "Job canceled by user")
         RemoteKill = _Signal('BATCHKILL', 122, "Job killed by batch system or sysadmin")
