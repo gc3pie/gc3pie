@@ -40,7 +40,7 @@ class Auth(object):
         if not self.__auths.has_key(auth_name):
             try:
                 a =  self._auth_type[auth_name](** self._auth_dict[auth_name])
-            except (AssertError, AttributeError) as x:
+            except (AssertionError, AttributeError) as x:
                 a = ConfigurationError("Missing required configuration parameters"
                                          " in auth section '%s': %s" % (auth_name, str(x)))
             if not a.check():
