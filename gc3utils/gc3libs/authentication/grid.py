@@ -27,10 +27,10 @@ import shlex
 import getpass
 import os
 import subprocess
+import errno
 
 # NG's default packages install arclib into /opt/nordugrid/lib/pythonX.Y/site-packages;
 # add this anyway in case users did not set their PYTHONPATH correctly
-import sys
 sys.path.append('/opt/nordugrid/lib/python%d.%d/site-packages' 
                 % sys.version_info[:2])
 import arclib
@@ -119,8 +119,14 @@ class GridAuth(object):
                         gc3libs.log.error("RecoverableAuthError: %s" % stdout)
                         raise RecoverableAuthError(stdout) 
                 except (OSError) as x:
-                    gc3libs.log.error("UnrecoverableAuthError: %s" % str(x))
-                    raise UnrecoverableAuthError(str(x))
+                    if x.errno == errno.ENOENT or x.errno == errno.EPERM \
+                            or x.errno == errno.EACCES:
+                        gc3libs.log.error("Failed while running slcs-init. Please verify your $PATH. Error type: OSError, message: %s" % x.strerror)
+                        raise UnrecoverableAuthError('Failed while running slcs-init. Please verify your $PATH')
+                    else:
+                        gc3libs.log.error("UnrecoverableAuthError: errno [%d], message [%s]" 
+                                          % (x.errno, x.strerror))
+                        raise UnrecoverableAuthError(str(x.strerror))
 
                 new_cert = True
                 gc3libs.log.info('Create new SLCS certificate [ ok ].')
@@ -163,8 +169,12 @@ class GridAuth(object):
                     gc3libs.log.error("TO_BE_CONFIRMED: UnrecoverableAuthError: %s" % str(x))
                     raise RecoverableAuthError(str(x))
                 except OSError as x:
-                    gc3libs.log.error("UnrecoverableAuthError: %s" % str(x))
-                    raise UnrecoverableAuthError(str(x))
+                    if x.errno == errno.ENOENT or x.errno == errno.EPERM or x.errno == errno.EACCES:
+                        gc3libs.log.error("Failed while running [grid/voms]-init. Please verify your $PATH. Error type: OSError, message: %s" % x.strerror)
+                        raise UnrecoverableAuthError('Failed while running [grid/voms]-proxy-init. Please verify your $PATH')
+                    else:
+                        gc3libs.log.error("UnrecoverableAuthError: errno [%d], message [%s]" % (x.errno, x.strerror))
+                        raise UnrecoverableAuthError(str(x.strerror))
                 
             if not self.check():
                 raise RecoverableAuthError("Temporary failure in auth 'grid' enabling. "

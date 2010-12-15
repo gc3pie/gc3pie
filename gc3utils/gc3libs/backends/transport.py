@@ -362,7 +362,11 @@ class LocalTransport(Transport):
                 raise Exception("Transport not open")
 
             gc3libs.log.debug("Running metohd: put. source: %s. destination: %s" % (source, destination))
-            return shutil.copy(source, destination)
+            if source != destination:
+                return shutil.copy(source, destination)
+            else:
+                gc3libs.log.warning("Trying to copy file over identical source and destination.")
+                return True
         except:
             gc3libs.log.critical("Failed method put. source: %s. destination: %s" % (source, destinaton))
             raise TransportException("Failed method put. source: %s destination: %s. Error type %s, %s"
