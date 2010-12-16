@@ -5,13 +5,13 @@
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     
-    <title>Welcome to gc3pie’s documentation! &mdash; gc3pie v0.12.14 documentation</title>
+    <title>Welcome to gc3pie’s documentation! &mdash; gc3pie v0.12.16 documentation</title>
     <link rel="stylesheet" href="_static/default.css" type="text/css" />
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
     <script type="text/javascript">
       var DOCUMENTATION_OPTIONS = {
         URL_ROOT:    '#',
-        VERSION:     '0.12.14',
+        VERSION:     '0.12.16',
         COLLAPSE_MODINDEX: false,
         FILE_SUFFIX: '.html',
         HAS_SOURCE:  true
@@ -19,7 +19,7 @@
     </script>
     <script type="text/javascript" src="_static/jquery.js"></script>
     <script type="text/javascript" src="_static/doctools.js"></script>
-    <link rel="top" title="gc3pie v0.12.14 documentation" href="#" /> 
+    <link rel="top" title="gc3pie v0.12.16 documentation" href="#" /> 
   </head>
   <body>
     <div class="related">
@@ -31,7 +31,7 @@
         <li class="right" >
           <a href="modindex.html" title="Global Module Index"
              accesskey="M">modules</a> |</li>
-        <li><a href="#">gc3pie v0.12.14 documentation</a> &raquo;</li> 
+        <li><a href="#">gc3pie v0.12.16 documentation</a> &raquo;</li> 
       </ul>
     </div>  
 
@@ -454,6 +454,9 @@ the string <cite>name</cite> will be defined as the content of string
 <cite>value</cite> (i.e., as if &#8220;export name=value&#8221; was executed prior
 to starting the application).  Alternately, one can pass in
 a list of strings of the form &#8220;name=value&#8221;.</dd>
+<dt><cite>grid</cite></dt>
+<dd>if not <cite>None</cite>, equivalent to calling <cite>Task.attach(self, grid)</cite>;
+enables the use of the <cite>Task</cite>/active job control interface</dd>
 <dt><cite>stdin</cite></dt>
 <dd>file name of a file whose contents will be fed as
 standard input stream to the remote-executing process.</dd>
@@ -540,6 +543,18 @@ templates.</p>
 </dd></dl>
 
 <dl class="method">
+<dt id="gc3libs.Application.fetch_output_error">
+<tt class="descname">fetch_output_error</tt><big>(</big><em>ex</em><big>)</big><a class="headerlink" href="#gc3libs.Application.fetch_output_error" title="Permalink to this definition">¶</a></dt>
+<dd><p>Invocation of <cite>Core.fetch_output()</cite> on this object failed;
+<cite>ex</cite> is the <cite>Exception</cite> that describes the error.</p>
+<p>If this method returns an exception object, that is raised as
+a result of the <cite>Core.fetch_output()</cite>, otherwise the return
+value is ignored and <cite>Core.fetch_output</cite> returns <cite>None</cite>.</p>
+<p>Default is to return <cite>ex</cite> unchanged; override in derived classes
+to change this behavior.</p>
+</dd></dl>
+
+<dl class="method">
 <dt id="gc3libs.Application.new">
 <tt class="descname">new</tt><big>(</big><big>)</big><a class="headerlink" href="#gc3libs.Application.new" title="Permalink to this definition">¶</a></dt>
 <dd><p>Called when the job state is (re)set to <cite>NEW</cite>.</p>
@@ -602,6 +617,19 @@ classes to implement additional behavior.</p>
 </dd></dl>
 
 <dl class="method">
+<dt id="gc3libs.Application.submit_error">
+<tt class="descname">submit_error</tt><big>(</big><em>exs</em><big>)</big><a class="headerlink" href="#gc3libs.Application.submit_error" title="Permalink to this definition">¶</a></dt>
+<dd><p>Invocation of <cite>Core.submit()</cite> on this object failed;
+<cite>exs</cite> is a list of <cite>Exception</cite> objects, one for each attempted
+submission.</p>
+<p>If this method returns an exception object, that is raised as
+a result of the <cite>Core.submit()</cite>, otherwise the return value is
+ignored and <cite>Core.submit</cite> returns <cite>None</cite>.</p>
+<p>Default is to always return <cite>None</cite>; override in derived
+classes to change this behavior.</p>
+</dd></dl>
+
+<dl class="method">
 <dt id="gc3libs.Application.submitted">
 <tt class="descname">submitted</tt><big>(</big><big>)</big><a class="headerlink" href="#gc3libs.Application.submitted" title="Permalink to this definition">¶</a></dt>
 <dd><p>Called when the job state transitions to <cite>SUBMITTED</cite>, i.e.,
@@ -619,6 +647,23 @@ the job has finished execution (with whatever exit status, see
 <cite>returncode</cite>) and its execution cannot resume.</p>
 <p>The default implementation does nothing, override in derived
 classes to implement additional behavior.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="gc3libs.Application.update_job_state_error">
+<tt class="descname">update_job_state_error</tt><big>(</big><em>ex</em><big>)</big><a class="headerlink" href="#gc3libs.Application.update_job_state_error" title="Permalink to this definition">¶</a></dt>
+<dd><p>Invocation of <cite>Core.update_job_state()</cite> on this object failed;
+<cite>ex</cite> is the <cite>Exception</cite> that describes the error.</p>
+<p>If this method returns an exception object, that is raised as
+a result of the <cite>Core.update_job_state()</cite>, otherwise the
+return value is ignored and <cite>Core.update_job_state</cite> returns
+<cite>None</cite>.</p>
+<p>Note that returning an <cite>Exception</cite> instance interrupts the
+normal flow of <cite>Core.update_job_state</cite>: in particular, the
+execution state is not updated and state transition methods
+will not be called.</p>
+<p>Default is to return <cite>None</cite>; override in derived classes to
+change this behavior.</p>
 </dd></dl>
 
 <dl class="method">
@@ -846,20 +891,172 @@ submission step.</p>
 
 </dd></dl>
 
+<dl class="class">
+<dt id="gc3libs.Task">
+<em class="property">class </em><tt class="descclassname">gc3libs.</tt><tt class="descname">Task</tt><big>(</big><em>grid=None</em><big>)</big><a class="headerlink" href="#gc3libs.Task" title="Permalink to this definition">¶</a></dt>
+<dd><p>Mix-in class implementing a facade for job control.</p>
+<p>A <cite>Task</cite> can be described as an &#8220;active&#8221; job, in the sense that
+all job control is done through methods on the <cite>Task</cite> instance
+itself; contrast this with operating on <cite>Application</cite> objects
+through a <cite>Core</cite> or <cite>Engine</cite> instance.</p>
+<p>The following pseudo-code is an example of the usage of the <cite>Task</cite>
+interface for controlling a job.  Assume that <cite>GamessApplication</cite> is
+inheriting from <cite>Task</cite> (and it actually is):</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="n">t</span> <span class="o">=</span> <span class="n">GamessApplication</span><span class="p">(</span><span class="n">input_file</span><span class="p">)</span>
+<span class="n">t</span><span class="o">.</span><span class="n">submit</span><span class="p">()</span>
+<span class="c"># ... do other stuff </span>
+<span class="n">t</span><span class="o">.</span><span class="n">update</span><span class="p">()</span>
+<span class="c"># ... take decisions based on t.execution.state</span>
+<span class="n">t</span><span class="o">.</span><span class="n">wait</span><span class="p">()</span> <span class="c"># blocks until task is terminated</span>
+</pre></div>
+</div>
+<p>Each <cite>Task</cite> object has an <cite>execution</cite> attribute: it is an instance
+of class <a title="gc3libs.Run" class="reference internal" href="#gc3libs.Run"><tt class="xref docutils literal"><span class="pre">Run</span></tt></a>, initialized with a new instance of <cite>Run</cite>,
+and at any given time it reflects the current status of the
+associated remote job.  In particular, <cite>execution.state</cite> can be
+checked for the current task status.</p>
+<dl class="exception">
+<dt id="gc3libs.Task.DetachedFromGridError">
+<em class="property">exception </em><tt class="descname">DetachedFromGridError</tt><big>(</big><em>msg</em>, <em>do_log=False</em><big>)</big><a class="headerlink" href="#gc3libs.Task.DetachedFromGridError" title="Permalink to this definition">¶</a></dt>
+<dd>Raised when a method (other than <tt class="xref docutils literal"><span class="pre">attach()</span></tt>) is called on
+a detached <cite>Task</cite> instance.</dd></dl>
+
+<dl class="exception">
+<dt id="gc3libs.Task.Error">
+<em class="property">exception </em><tt class="descclassname">Task.</tt><tt class="descname">Error</tt><big>(</big><em>msg</em>, <em>do_log=False</em><big>)</big><a class="headerlink" href="#gc3libs.Task.Error" title="Permalink to this definition">¶</a></dt>
+<dd>Generic error condition in a <cite>Task</cite> object.</dd></dl>
+
+<dl class="exception">
+<dt id="gc3libs.Task.UnexpectedStateError">
+<em class="property">exception </em><tt class="descclassname">Task.</tt><tt class="descname">UnexpectedStateError</tt><big>(</big><em>msg</em>, <em>do_log=False</em><big>)</big><a class="headerlink" href="#gc3libs.Task.UnexpectedStateError" title="Permalink to this definition">¶</a></dt>
+<dd>Raised by <a title="gc3libs.Task.progress" class="reference internal" href="#gc3libs.Task.progress"><tt class="xref docutils literal"><span class="pre">Task.progress()</span></tt></a> when a job lands in <cite>STOPPED</cite>
+or <cite>TERMINATED</cite> state.</dd></dl>
+
+<dl class="method">
+<dt id="gc3libs.Task.attach">
+<tt class="descclassname">Task.</tt><tt class="descname">attach</tt><big>(</big><em>grid</em><big>)</big><a class="headerlink" href="#gc3libs.Task.attach" title="Permalink to this definition">¶</a></dt>
+<dd>Use the given Grid interface for operations on the job
+associated with this task.</dd></dl>
+
+<dl class="method">
+<dt id="gc3libs.Task.detach">
+<tt class="descclassname">Task.</tt><tt class="descname">detach</tt><big>(</big><big>)</big><a class="headerlink" href="#gc3libs.Task.detach" title="Permalink to this definition">¶</a></dt>
+<dd>Remove any reference to the current grid interface.  After
+this, calling any method other than <a title="gc3libs.Task.attach" class="reference internal" href="#gc3libs.Task.attach"><tt class="xref docutils literal"><span class="pre">attach()</span></tt></a> results in
+an exception <a title="gc3libs.Task.DetachedFromGridError" class="reference internal" href="#gc3libs.Task.DetachedFromGridError"><tt class="xref docutils literal"><span class="pre">Task.DetachedFromGridError</span></tt></a> being thrown.</dd></dl>
+
+<dl class="method">
+<dt id="gc3libs.Task.fetch_output">
+<tt class="descclassname">Task.</tt><tt class="descname">fetch_output</tt><big>(</big><em>output_dir=None</em>, <em>overwrite=True</em><big>)</big><a class="headerlink" href="#gc3libs.Task.fetch_output" title="Permalink to this definition">¶</a></dt>
+<dd><p>Retrieve the outputs of the computational job associated with
+this task into directory <cite>output_dir</cite>, or, if that is <cite>None</cite>,
+into the directory whose path is stored in instance attribute
+<cite>.output_dir</cite>.</p>
+<p>See <tt class="xref docutils literal"><span class="pre">gc3libs.Core.fetch_output()</span></tt> for a full explanation.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Returns:</th><td class="field-body">Path to the directory where the job output has been
+collected.</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="gc3libs.Task.kill">
+<tt class="descclassname">Task.</tt><tt class="descname">kill</tt><big>(</big><big>)</big><a class="headerlink" href="#gc3libs.Task.kill" title="Permalink to this definition">¶</a></dt>
+<dd><p>Terminate the computational job associated with this task.</p>
+<p>See <tt class="xref docutils literal"><span class="pre">gc3libs.Core.kill()</span></tt> for a full explanation.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="gc3libs.Task.peek">
+<tt class="descclassname">Task.</tt><tt class="descname">peek</tt><big>(</big><em>what='stdout'</em>, <em>offset=0</em>, <em>size=None</em><big>)</big><a class="headerlink" href="#gc3libs.Task.peek" title="Permalink to this definition">¶</a></dt>
+<dd><p>Download <cite>size</cite> bytes (at offset <cite>offset</cite> from the start) from
+the associated job standard output or error stream, and write them
+into a local file.  Return a file-like object from which the
+downloaded contents can be read.</p>
+<p>See <tt class="xref docutils literal"><span class="pre">gc3libs.Core.peek()</span></tt> for a full explanation.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="gc3libs.Task.progress">
+<tt class="descclassname">Task.</tt><tt class="descname">progress</tt><big>(</big><big>)</big><a class="headerlink" href="#gc3libs.Task.progress" title="Permalink to this definition">¶</a></dt>
+<dd><p>Advance the associated job through all states of a regular
+lifecycle. In detail:</p>
+<blockquote>
+<ol class="arabic simple">
+<li>If <cite>execution.state</cite> is <cite>NEW</cite>, the associated job is started.</li>
+<li>The state is updated until it reaches <cite>TERMINATED</cite></li>
+<li>Output is collected and the final returncode is returned.</li>
+</ol>
+</blockquote>
+<p>An exception <cite>Task.Error</cite> is raised if the job hits state
+<cite>STOPPED</cite> or <cite>UNKNOWN</cite> during an update in phase 2.</p>
+<p>When the job reaches <cite>TERMINATED</cite> state, the output is
+retrieved, and the return code (stored also in <cite>.returncode</cite>)
+is returned; if the job is not yet in <cite>TERMINATED</cite> state,
+calling <cite>progress</cite> returns <cite>None</cite>.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Raises:</th><td class="field-body">exception <a title="gc3libs.Task.UnexpectedStateError" class="reference internal" href="#gc3libs.Task.UnexpectedStateError"><tt class="xref docutils literal"><span class="pre">Task.UnexpectedStateError</span></tt></a> if the
+associated job goes into state <cite>STOPPED</cite> or <cite>UNKNOWN</cite></td>
+</tr>
+<tr class="field"><th class="field-name">Returns:</th><td class="field-body">job final returncode, or <cite>None</cite> if the execution
+state is not <cite>TERMINATED</cite>.</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="gc3libs.Task.submit">
+<tt class="descclassname">Task.</tt><tt class="descname">submit</tt><big>(</big><big>)</big><a class="headerlink" href="#gc3libs.Task.submit" title="Permalink to this definition">¶</a></dt>
+<dd>Start the computational job associated with this <cite>Task</cite> instance.</dd></dl>
+
+<dl class="method">
+<dt id="gc3libs.Task.update_state">
+<tt class="descclassname">Task.</tt><tt class="descname">update_state</tt><big>(</big><big>)</big><a class="headerlink" href="#gc3libs.Task.update_state" title="Permalink to this definition">¶</a></dt>
+<dd>In-place update of the execution state of the computational
+job associated with this <cite>Task</cite>.  After successful completion,
+<cite>.execution.state</cite> will contain the new state.</dd></dl>
+
+<dl class="method">
+<dt id="gc3libs.Task.wait">
+<tt class="descclassname">Task.</tt><tt class="descname">wait</tt><big>(</big><em>interval=60</em><big>)</big><a class="headerlink" href="#gc3libs.Task.wait" title="Permalink to this definition">¶</a></dt>
+<dd><p>Block until the associated job has reached <cite>TERMINATED</cite> state,
+then return the job&#8217;s return code.  Note that this does not
+automatically fetch the output.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Parameter:</th><td class="field-body"><em>integer interval</em> &#8211; Poll job state every this number of seconds</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</dd></dl>
+
 </div>
 <div class="section" id="module-gc3libs.core">
 <h3><cite>gc3libs.core</cite><a class="headerlink" href="#module-gc3libs.core" title="Permalink to this headline">¶</a></h3>
 <p>Top-level interface to Grid functionality.</p>
 <dl class="class">
 <dt id="gc3libs.core.Engine">
-<em class="property">class </em><tt class="descclassname">gc3libs.core.</tt><tt class="descname">Engine</tt><big>(</big><em>grid</em>, <em>jobs=</em><span class="optional">[</span><span class="optional">]</span>, <em>store=None</em>, <em>can_submit=True</em>, <em>can_retrieve=True</em>, <em>max_in_flight=0</em>, <em>max_submitted=0</em><big>)</big><a class="headerlink" href="#gc3libs.core.Engine" title="Permalink to this definition">¶</a></dt>
-<dd><p>Submit jobs in a collection, and update their state until a
+<em class="property">class </em><tt class="descclassname">gc3libs.core.</tt><tt class="descname">Engine</tt><big>(</big><em>grid</em>, <em>tasks=</em><span class="optional">[</span><span class="optional">]</span>, <em>store=None</em>, <em>can_submit=True</em>, <em>can_retrieve=True</em>, <em>max_in_flight=0</em>, <em>max_submitted=0</em>, <em>output_dir=None</em>, <em>fetch_output_overwrites=False</em><big>)</big><a class="headerlink" href="#gc3libs.core.Engine" title="Permalink to this definition">¶</a></dt>
+<dd><p>Submit tasks in a collection, and update their state until a
 terminal state is reached. Specifically:</p>
 <blockquote>
 <ul class="simple">
-<li>jobs in <cite>NEW</cite> state are submitted;</li>
-<li>the state of jobs in <cite>SUBMITTED</cite>, <cite>RUNNING</cite> or <cite>STOPPED</cite> state is updated;</li>
-<li>when a job reaches <cite>TERMINATED</cite> state, its output is downloaded.</li>
+<li>tasks in <cite>NEW</cite> state are submitted;</li>
+<li>the state of tasks in <cite>SUBMITTED</cite>, <cite>RUNNING</cite> or <cite>STOPPED</cite> state is updated;</li>
+<li>when a task reaches <cite>TERMINATED</cite> state, its output is downloaded.</li>
 </ul>
 </blockquote>
 <p>The behavior of <cite>Engine</cite> instances can be further customized by
@@ -867,19 +1064,27 @@ setting the following instance attributes:</p>
 <blockquote>
 <dl class="docutils">
 <dt><cite>can_submit</cite></dt>
-<dd>Boolean value: if <cite>False</cite>, no job will be submitted.</dd>
+<dd>Boolean value: if <cite>False</cite>, no task will be submitted.</dd>
 <dt><cite>can_retrieve</cite></dt>
 <dd>Boolean value: if <cite>False</cite>, no output will ever be retrieved.</dd>
 <dt><cite>max_in_flight</cite></dt>
-<dd>If &gt;0, limit the number of jobs in <cite>SUBMITTED</cite> or <cite>RUNNING</cite>
-state: if the number of jobs in <cite>SUBMITTED</cite>, <cite>RUNNING</cite> or
+<dd>If &gt;0, limit the number of tasks in <cite>SUBMITTED</cite> or <cite>RUNNING</cite>
+state: if the number of tasks in <cite>SUBMITTED</cite>, <cite>RUNNING</cite> or
 <cite>STOPPED</cite> state is greater than <cite>max_in_flight</cite>, then no new
 submissions will be attempted.</dd>
 <dt><cite>max_submitted</cite> </dt>
-<dd>If &gt;0, limit the number of jobs in <cite>SUBMITTED</cite> state: if the
-number of jobs in <cite>SUBMITTED</cite>, <cite>RUNNING</cite> or <cite>STOPPED</cite> state is
+<dd>If &gt;0, limit the number of tasks in <cite>SUBMITTED</cite> state: if the
+number of tasks in <cite>SUBMITTED</cite>, <cite>RUNNING</cite> or <cite>STOPPED</cite> state is
 greater than <cite>max_submitted</cite>, then no new submissions will be
 attempted.</dd>
+<dt><cite>output_dir</cite></dt>
+<dd>Base directory for job output; if not <cite>None</cite>, each task&#8217;s
+results will be downloaded in a subdirectory named after the
+task&#8217;s <cite>permanent_id</cite>.</dd>
+<dt><cite>fetch_output_overwrites</cite></dt>
+<dd>Default value to pass as the <cite>overwrite</cite> argument to
+<tt class="xref docutils literal"><span class="pre">Core.fetch_output()</span></tt> when retrieving results of a
+terminated task.</dd>
 </dl>
 </blockquote>
 <p>Any of the above can also be set by passing a keyword argument to
@@ -891,62 +1096,62 @@ the constructor:</p>
 </div>
 <dl class="method">
 <dt id="gc3libs.core.Engine.add">
-<tt class="descname">add</tt><big>(</big><em>job</em><big>)</big><a class="headerlink" href="#gc3libs.core.Engine.add" title="Permalink to this definition">¶</a></dt>
-<dd>Add <cite>job</cite> to the list of jobs managed by this Engine.</dd></dl>
+<tt class="descname">add</tt><big>(</big><em>app</em><big>)</big><a class="headerlink" href="#gc3libs.core.Engine.add" title="Permalink to this definition">¶</a></dt>
+<dd>Add <cite>app</cite> to the list of tasks managed by this Engine.</dd></dl>
 
 <dl class="method">
 <dt id="gc3libs.core.Engine.fetch_output">
-<tt class="descname">fetch_output</tt><big>(</big><em>job</em><big>)</big><a class="headerlink" href="#gc3libs.core.Engine.fetch_output" title="Permalink to this definition">¶</a></dt>
+<tt class="descname">fetch_output</tt><big>(</big><em>task</em>, <em>output_dir=None</em>, <em>overwrite=True</em><big>)</big><a class="headerlink" href="#gc3libs.core.Engine.fetch_output" title="Permalink to this definition">¶</a></dt>
 <dd>Proxy for <cite>Core.fetch_output</cite> (which see).</dd></dl>
 
 <dl class="method">
 <dt id="gc3libs.core.Engine.free">
-<tt class="descname">free</tt><big>(</big><em>job</em><big>)</big><a class="headerlink" href="#gc3libs.core.Engine.free" title="Permalink to this definition">¶</a></dt>
-<dd>Proxy for <cite>Core.free</cite> (which see); in addition, remove <cite>job</cite>
-from the list of managed jobs.</dd></dl>
+<tt class="descname">free</tt><big>(</big><em>task</em><big>)</big><a class="headerlink" href="#gc3libs.core.Engine.free" title="Permalink to this definition">¶</a></dt>
+<dd>Proxy for <cite>Core.free</cite> (which see); in addition, remove <cite>task</cite>
+from the list of managed tasks.</dd></dl>
 
 <dl class="method">
 <dt id="gc3libs.core.Engine.kill">
-<tt class="descname">kill</tt><big>(</big><em>job</em><big>)</big><a class="headerlink" href="#gc3libs.core.Engine.kill" title="Permalink to this definition">¶</a></dt>
-<dd>Schedule a job for killing on the next <cite>perform</cite> run.</dd></dl>
+<tt class="descname">kill</tt><big>(</big><em>task</em><big>)</big><a class="headerlink" href="#gc3libs.core.Engine.kill" title="Permalink to this definition">¶</a></dt>
+<dd>Schedule a task for killing on the next <cite>perform</cite> run.</dd></dl>
 
 <dl class="method">
 <dt id="gc3libs.core.Engine.peek">
-<tt class="descname">peek</tt><big>(</big><em>job</em>, <em>what='stdout'</em>, <em>offset=0</em>, <em>size=None</em>, <em>**kw</em><big>)</big><a class="headerlink" href="#gc3libs.core.Engine.peek" title="Permalink to this definition">¶</a></dt>
+<tt class="descname">peek</tt><big>(</big><em>task</em>, <em>what='stdout'</em>, <em>offset=0</em>, <em>size=None</em>, <em>**kw</em><big>)</big><a class="headerlink" href="#gc3libs.core.Engine.peek" title="Permalink to this definition">¶</a></dt>
 <dd>Proxy for <cite>Core.peek</cite> (which see).</dd></dl>
 
 <dl class="method">
-<dt id="gc3libs.core.Engine.perform">
-<tt class="descname">perform</tt><big>(</big><big>)</big><a class="headerlink" href="#gc3libs.core.Engine.perform" title="Permalink to this definition">¶</a></dt>
-<dd><p>Update state of all registered jobs and take appropriate action.
+<dt id="gc3libs.core.Engine.progress">
+<tt class="descname">progress</tt><big>(</big><big>)</big><a class="headerlink" href="#gc3libs.core.Engine.progress" title="Permalink to this definition">¶</a></dt>
+<dd><p>Update state of all registered tasks and take appropriate action.
 Specifically:</p>
 <blockquote>
 <ul class="simple">
-<li>jobs in <cite>NEW</cite> state are submitted;</li>
-<li>the state of jobs in <cite>SUBMITTED</cite>, <cite>RUNNING</cite> or <cite>STOPPED</cite> state is updated;</li>
-<li>when a job reaches <cite>TERMINATED</cite> state, its output is downloaded.</li>
+<li>tasks in <cite>NEW</cite> state are submitted;</li>
+<li>the state of tasks in <cite>SUBMITTED</cite>, <cite>RUNNING</cite> or <cite>STOPPED</cite> state is updated;</li>
+<li>when a task reaches <cite>TERMINATED</cite> state, its output is downloaded.</li>
 </ul>
 </blockquote>
 <p>The <cite>max_in_flight</cite> and <cite>max_submitted</cite> limits (if &gt;0) are
-taken into account when attempting submission of jobs.</p>
+taken into account when attempting submission of tasks.</p>
 </dd></dl>
 
 <dl class="method">
 <dt id="gc3libs.core.Engine.remove">
-<tt class="descname">remove</tt><big>(</big><em>job</em><big>)</big><a class="headerlink" href="#gc3libs.core.Engine.remove" title="Permalink to this definition">¶</a></dt>
-<dd>Remove a <cite>job</cite> from the list of jobs managed by this Engine.</dd></dl>
+<tt class="descname">remove</tt><big>(</big><em>app</em><big>)</big><a class="headerlink" href="#gc3libs.core.Engine.remove" title="Permalink to this definition">¶</a></dt>
+<dd>Remove a <cite>app</cite> from the list of tasks managed by this Engine.</dd></dl>
 
 <dl class="method">
 <dt id="gc3libs.core.Engine.submit">
-<tt class="descname">submit</tt><big>(</big><em>job</em><big>)</big><a class="headerlink" href="#gc3libs.core.Engine.submit" title="Permalink to this definition">¶</a></dt>
-<dd>Submit <cite>job</cite> at the next invocation of <cite>perform</cite>.  Actually,
-the job is just added to the collection of managed jobs,
+<tt class="descname">submit</tt><big>(</big><em>task</em><big>)</big><a class="headerlink" href="#gc3libs.core.Engine.submit" title="Permalink to this definition">¶</a></dt>
+<dd>Submit <cite>task</cite> at the next invocation of <cite>perform</cite>.  Actually,
+the task is just added to the collection of managed tasks,
 regardless of its state.</dd></dl>
 
 <dl class="method">
 <dt id="gc3libs.core.Engine.update_job_state">
-<tt class="descname">update_job_state</tt><big>(</big><em>*jobs</em><big>)</big><a class="headerlink" href="#gc3libs.core.Engine.update_job_state" title="Permalink to this definition">¶</a></dt>
-<dd>Return list of <em>current</em> states of the given jobs.  States
+<tt class="descname">update_job_state</tt><big>(</big><em>*tasks</em><big>)</big><a class="headerlink" href="#gc3libs.core.Engine.update_job_state" title="Permalink to this definition">¶</a></dt>
+<dd>Return list of <em>current</em> states of the given tasks.  States
 will only be updated at the next invocation of <cite>perform</cite>; in
 particular, no state-change handlers are called as a result of
 calling this method.</dd></dl>
@@ -1565,7 +1770,7 @@ corresponding <cite>Run.State</cite>; see <cite>Run.State</cite> for more detail
 </table>
 </blockquote>
 <p>Any other ARC job status is mapped to <cite>Run.State.UNKNOWN</cite>.  In
-particular, query a job ID that is not found in the ARC
+particular, querying a job ID that is not found in the ARC
 information system will result in <cite>UNKNOWN</cite> state, as will
 querying a job that has just been submitted and has not yet
 found its way to the infosys.</p>
@@ -2555,7 +2760,7 @@ gkill will try anyway to process all requests</dd></dl>
         <li class="right" >
           <a href="modindex.html" title="Global Module Index"
              >modules</a> |</li>
-        <li><a href="#">gc3pie v0.12.14 documentation</a> &raquo;</li> 
+        <li><a href="#">gc3pie v0.12.16 documentation</a> &raquo;</li> 
       </ul>
     </div>
     <div class="footer">

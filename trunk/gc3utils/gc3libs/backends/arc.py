@@ -158,12 +158,11 @@ class ArcLrms(LRMS):
                     ==============  ===========
 
         Any other ARC job status is mapped to `Run.State.UNKNOWN`.  In
-        particular, query a job ID that is not found in the ARC
+        particular, querying a job ID that is not found in the ARC
         information system will result in `UNKNOWN` state, as will
         querying a job that has just been submitted and has not yet
         found its way to the infosys.
         """
-        job = app.execution
         def map_arc_status_to_gc3job_status(status):
             try:
                 return {
@@ -189,8 +188,14 @@ class ArcLrms(LRMS):
             except KeyError:
                 raise UnknownJobState("Unknown ARC job state '%s'" % status)
 
-        # Prototype from arclib
-        arc_job = arclib.GetJobInfo(job.lrms_jobid)
+        # try to intercept error conditions and translate them into
+        # meaningful exceptions
+        try:
+            job = app.execution
+            arc_job = arclib.GetJobInfo(job.lrms_jobid)
+        except AttributeError, ex:
+            # `job` has no `lrms_jobid`: object is invalid
+            raise InvalidArgument("Job object is invalid: %s" % str(ex))
 
         # update status
         state = map_arc_status_to_gc3job_status(arc_job.status)

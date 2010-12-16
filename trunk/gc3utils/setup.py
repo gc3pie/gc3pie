@@ -33,7 +33,7 @@ import setuptools
 import setuptools.dist
 setuptools.setup(
     name = "gc3utils",
-    version = "0.11.10", # format: 0.MONTH.DAY (for now ...)
+    version = "0.12.16", # format: 0.MONTH.DAY (for now ...)
 
     packages = setuptools.find_packages(exclude=['ez_setup']),
     #scripts = ['gcmd.py'],

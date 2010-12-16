@@ -133,29 +133,36 @@ class Core:
             raise NoResources("Could not select any compatible computational resource"
                               " - please check log and configuration file.")
 
+        exs = [ ]
         # Scheduler.do_brokering should return a sorted list of valid lrms
         for lrms in _selected_lrms_list:
+            gc3libs.log.debug("Attempting submission to resource '%s'..." 
+                              % lrms._resource.name)
             try:
                 self.auths.get(lrms._resource.auth)
                 lrms.submit_job(app)
-            except RecoverableAuthError as x:
-                gc3libs.log.debug("RecoverableAuthError: %s" % str(x))
+            except Exception, ex:
+                gc3libs.log.debug("Error in submitting job to resource '%s': %s: %s", 
+                                  lrms._resource.name, ex.__class__.__name__, str(ex),
+                                  exc_info=True)
+                exs.append(ex) 
                 continue
-            except UnrecoverableAuthError as x:
-                gc3libs.log.debug("UnrecoverableAuthError: %s" % str(x))
-                continue
-            except LRMSException:
-                gc3libs.log.error("Error in submitting job to resource '%s'", 
-                                   lrms._resource.name, exc_info=True)
-                continue
-            gc3libs.log.info('Successfully submitted process to LRMS backend')
+            gc3libs.log.info('Successfully submitted process to: %s', lrms._resource.name)
             job.state = Run.State.SUBMITTED
             job.resource_name = lrms._resource.name
             if hasattr(job, 'submitted'):
                 job.submitted()
-            # job submitted; leave loop
-            break
-
+            # job submitted; return to caller
+            return
+        # if we get here, all submissions have failed; call the
+        # appropriate handler method if defined
+        if hasattr(app, 'submit_error'):
+            ex = app.submit_error(exs)
+            if isinstance(ex, Exception):
+                raise ex
+            else:
+                return
+        
 
     def update_job_state(self, *apps, **kw):
         """
@@ -186,9 +193,10 @@ class Core:
                     try:
                         self.auths.get(lrms._resource.auth)
                         state = lrms.update_job_state(app)
-                    except ConfigurationError:
-                        # Unrecoverable. Break everything
-                        # rather break ?
+                    except (InvalidArgument, ConfigurationError):
+                        # Unrecoverable; no sense in continuing --
+                        # pass immediately on to client code and let
+                        # it handle this...
                         raise
                     except UnrecoverableAuthError:
                         raise
@@ -198,12 +206,22 @@ class Core:
                         gc3libs.log.debug("Error getting status of application '%s': %s: %s",
                                           app, ex.__class__.__name__, str(ex))
                         state = Run.State.UNKNOWN
+                        # run error handler if defined
+                        if hasattr(app, 'update_job_state_error'):
+                            ex = app.update_job_state_error(ex)
+                            if isinstance(ex, Exception):
+                                raise ex
                     if state != Run.State.UNKNOWN or update_on_error:
                         app.execution.state = state
                 if app.execution.state != old_state:
                     handler_name = str(app.execution.state).lower()
                     if hasattr(app, handler_name):
                         getattr(app, handler_name)()
+            except (InvalidArgument, ConfigurationError):
+                # Unrecoverable; no sense in continuing --
+                # pass immediately on to client code and let
+                # it handle this...
+                raise
             except Exception, ex:
                 gc3libs.log.error("Error in Core.update_job_state(), ignored: %s: %s",
                                   ex.__class__.__name__, str(ex))
@@ -212,16 +230,17 @@ class Core:
         return states
 
 
-    def fetch_output(self, app, download_dir=None, overwrite=False, **kw):
+    def fetch_output(self, app, download_dir=None, overwrite=True, **kw):
         """
         Retrieve job output into local directory `app.output_dir`;
         optional argument `download_dir` overrides this.  Return
         actual download directory.
 
-        The download directory is created if it does not exist.  If
-        already existent, it is renamed with a `.NUMBER` suffix and a
-        new empty one is created in its place, unless the optional
-        argument `overwrite` is `True`.
+        The download directory is created if it does not exist.  If it
+        already exists, and the optional argument `overwrite` is
+        `False`, it is renamed with a `.NUMBER` suffix and a new empty
+        one is created in its place.  By default, 'overwrite` is
+        `True`, so files are downloaded over the ones already present.
 
         If the job is in a terminal state, the instance attribute
         `app.final_output_retrieved` is set to `True`, and the
@@ -243,7 +262,7 @@ class Core:
         # Prepare/Clean download dir
         if download_dir is None:
             try:
-                download_dir = application.output_dir
+                download_dir = app.output_dir
             except AttributeError:
                 raise InvalidArgument("`Core.fetch_output` called with no explicit download directory,"
                                       " but `Application` object '%s' has no `output_dir` set either."
@@ -264,9 +283,19 @@ class Core:
             lrms = self._get_backend(job.resource_name)
             self.auths.get(lrms._resource.auth)
             lrms.get_results(app, download_dir)
-        except DataStagingError:
+        except DataStagingError, ex:
             job.signal = Run.Signals.DataStagingFailure
-            raise
+            ex = app.fetch_output_error(ex)
+            if isinstance(ex, Exception):
+                raise ex
+            else:
+                return
+        except Exception, ex:
+            ex = app.fetch_output_error(ex)
+            if isinstance(ex, Exception):
+                raise ex
+            else:
+                return
         
         # successfully downloaded results
         job.log.append("Output downloaded to '%s'" % download_dir)
@@ -508,33 +537,45 @@ def read_config(*locations):
 
 class Engine(object):
     """
-    Submit jobs in a collection, and update their state until a
+    Submit tasks in a collection, and update their state until a
     terminal state is reached. Specifically:
       
-      * jobs in `NEW` state are submitted;
-      * the state of jobs in `SUBMITTED`, `RUNNING` or `STOPPED` state is updated;
-      * when a job reaches `TERMINATED` state, its output is downloaded.
+      * tasks in `NEW` state are submitted;
+
+      * the state of tasks in `SUBMITTED`, `RUNNING` or `STOPPED` state is updated;
+
+      * when a task reaches `TERMINATED` state, its output is downloaded.
 
     The behavior of `Engine` instances can be further customized by
     setting the following instance attributes:
 
       `can_submit`
-        Boolean value: if `False`, no job will be submitted.
+        Boolean value: if `False`, no task will be submitted.
 
       `can_retrieve`
         Boolean value: if `False`, no output will ever be retrieved.
 
       `max_in_flight`
-        If >0, limit the number of jobs in `SUBMITTED` or `RUNNING`
-        state: if the number of jobs in `SUBMITTED`, `RUNNING` or
+        If >0, limit the number of tasks in `SUBMITTED` or `RUNNING`
+        state: if the number of tasks in `SUBMITTED`, `RUNNING` or
         `STOPPED` state is greater than `max_in_flight`, then no new
         submissions will be attempted.
 
       `max_submitted` 
-        If >0, limit the number of jobs in `SUBMITTED` state: if the
-        number of jobs in `SUBMITTED`, `RUNNING` or `STOPPED` state is
+        If >0, limit the number of tasks in `SUBMITTED` state: if the
+        number of tasks in `SUBMITTED`, `RUNNING` or `STOPPED` state is
         greater than `max_submitted`, then no new submissions will be
         attempted.
+
+      `output_dir`
+        Base directory for job output; if not `None`, each task's
+        results will be downloaded in a subdirectory named after the
+        task's `permanent_id`.
+
+      `fetch_output_overwrites`
+        Default value to pass as the `overwrite` argument to
+        :meth:`Core.fetch_output` when retrieving results of a
+        terminated task.
 
     Any of the above can also be set by passing a keyword argument to
     the constructor::
@@ -545,24 +586,26 @@ class Engine(object):
     """
 
 
-    def __init__(self, grid, jobs=list(), store=None, 
-                 can_submit=True, can_retrieve=True, max_in_flight=0, max_submitted=0):
+    def __init__(self, grid, tasks=list(), store=None, 
+                 can_submit=True, can_retrieve=True, 
+                 max_in_flight=0, max_submitted=0,
+                 output_dir=None, fetch_output_overwrites=False):
         """
         Create a new `Engine` instance.  Arguments are as follows: 
 
         `grid`
           A `gc3libs.Core` instance, that will be used to operate on
-          jobs.  This is the only required argument.
+          tasks.  This is the only required argument.
 
-        `jobs`
-          Initial list of jobs to be managed by this Engine.  Jobs can
+        `apps`
+          Initial list of tasks to be managed by this Engine.  Tasks can
           be later added and removed with the `add` and `remove`
           methods (which see).  Defaults to the empty list.
 
         `store`
           An instance of `gc3libs.persistence.Store`, or `None`.  If
-          not `None`, it will be used to persist jobs after each
-          iteration; by default no store is used so no job state is
+          not `None`, it will be used to persist tasks after each
+          iteration; by default no store is used so no task state is
           persisted.
 
         `can_submit`, `can_retrieve`, `max_in_flight`, `max_submitted`
@@ -576,56 +619,60 @@ class Engine(object):
         self._to_kill = []
         self._core = grid
         self._store = store
-        for job in jobs:
-            self.add(job)
+        for task in tasks:
+            self.add(task)
         # public attributes
         self.can_submit = can_submit
         self.can_retrieve = can_retrieve
         self.max_in_flight = max_in_flight
         self.max_submitted = max_submitted
+        self.output_dir = output_dir
+        self.fetch_output_overwrites = fetch_output_overwrites
 
             
-    def add(self, job):
-        """Add `job` to the list of jobs managed by this Engine."""
-        state = job.state
+    def add(self, app):
+        """Add `app` to the list of tasks managed by this Engine."""
+        state = app.execution.state
         if Run.State.NEW == state:
-            self._new.append(job)
+            self._new.append(app)
         elif Run.State.SUBMITTED == state or Run.State.RUNNING == state:
-            self._in_flight.append(job)
+            self._in_flight.append(app)
         elif Run.State.STOPPED == state:
-            self._stopped.append(job)
+            self._stopped.append(app)
         elif Run.State.TERMINATED == state:
-            self._terminated.append(job)
+            self._terminated.append(app)
         else:
-            raise AssertionError("Unhandled job state '%s' in gc3libs.core.Engine." % state)
+            raise AssertionError("Unhandled run state '%s' in gc3libs.core.Engine." % state)
 
 
-    def remove(self, job):
-        """Remove a `job` from the list of jobs managed by this Engine."""
-        state = job.state
+    def remove(self, app):
+        """Remove a `app` from the list of tasks managed by this Engine."""
+        state = app.execution.state
         if Run.State.NEW == state:
-            self._new.remove(job)
+            self._new.remove(app)
         elif Run.State.SUBMITTED == state or Run.State.RUNNING == state:
-            self._in_flight.remove(job)
+            self._in_flight.remove(app)
         elif Run.State.STOPPED == state:
-            self._stopped.remove(job)
+            self._stopped.remove(app)
         elif Run.State.TERMINATED == state:
-            self._terminated.remove(job)
+            self._terminated.remove(app)
         else:
-            raise AssertionError("Unhandled job state '%s' in gc3libs.core.Engine." % state)
+            raise AssertionError("Unhandled run state '%s' in gc3libs.core.Engine." % state)
         
 
-    def perform(self):
+    def progress(self):
         """
-        Update state of all registered jobs and take appropriate action.
+        Update state of all registered tasks and take appropriate action.
         Specifically:
 
-          * jobs in `NEW` state are submitted;
-          * the state of jobs in `SUBMITTED`, `RUNNING` or `STOPPED` state is updated;
-          * when a job reaches `TERMINATED` state, its output is downloaded.
+          * tasks in `NEW` state are submitted;
+
+          * the state of tasks in `SUBMITTED`, `RUNNING` or `STOPPED` state is updated;
+
+          * when a task reaches `TERMINATED` state, its output is downloaded.
 
         The `max_in_flight` and `max_submitted` limits (if >0) are
-        taken into account when attempting submission of jobs.
+        taken into account when attempting submission of tasks.
         """
         # prepare 
         currently_submitted = 0
@@ -639,164 +686,175 @@ class Engine(object):
         else:
             limit_submitted = utils.PlusInfinity()
 
-        # update status of SUBMITTED/RUNNING jobs before launching
+        # update status of SUBMITTED/RUNNING tasks before launching
         # new ones, otherwise we would be checking the status of
-        # some jobs twice...
+        # some tasks twice...
         transitioned = []
-        for index, job in enumerate(self._in_flight):
+        for index, task in enumerate(self._in_flight):
             try:
-                self._core.update_job_state(job)
+                self._core.update_job_state(task)
                 if self._store:
-                    self._store.save(job)
-                if job.state == Run.State.SUBMITTED:
+                    self._store.save(task)
+                if task.execution.state == Run.State.SUBMITTED:
                     currently_submitted += 1
                     currently_in_flight += 1
-                elif job.state == Run.State.RUNNING:
+                elif task.execution.state == Run.State.RUNNING:
                     currently_in_flight += 1
-                elif job.state == Run.State.STOPPED:
-                    transitioned.append(index) # job changed state, mark as to remove
-                    self._stopped.append(job)
-                elif job.state == Run.State.TERMINATED:
-                    transitioned.append(index) # job changed state, mark as to remove
-                    self._terminated.append(job)
+                elif task.execution.state == Run.State.STOPPED:
+                    transitioned.append(index) # task changed state, mark as to remove
+                    self._stopped.append(task)
+                elif task.execution.state == Run.State.TERMINATED:
+                    transitioned.append(index) # task changed state, mark as to remove
+                    self._terminated.append(task)
+            except ConfigurationError:
+                # Unrecoverable; no sense in continuing -- pass
+                # immediately on to client code and let it handle
+                # this...
+                raise
             except Exception, x:
-                gc3libs.log.error("Ignoring error in updating state of job '%s': %s: %s"
-                                  % (job.persistent_id, x.__class__.__name__, str(x)),
+                gc3libs.log.error("Ignoring error in updating state of task '%s': %s: %s"
+                                  % (task.persistent_id, x.__class__.__name__, str(x)),
                                   exc_info=True)
-        # remove jobs that transitioned to other states
+        # remove tasks that transitioned to other states
         for index in reversed(transitioned):
             del self._in_flight[index]
 
-        # execute kills and update count of submitted/in-flight jobs
+        # execute kills and update count of submitted/in-flight tasks
         transitioned = []
-        for index, job in enumerate(self._to_kill):
+        for index, task in enumerate(self._to_kill):
             try: 
-                self._core.kill(job)
+                self._core.kill(task)
                 if self._store:
-                    self._store.save(job)
-                if job.state == Run.State.SUBMITTED:
+                    self._store.save(task)
+                if task.execution.state == Run.State.SUBMITTED:
                     currently_submitted -= 1
                     currently_in_flight -= 1
-                elif job.state == Run.State.RUNNING:
+                elif task.execution.state == Run.State.RUNNING:
                     currently_in_flight -= 1
-                self._terminated.append(job)
+                self._terminated.append(task)
                 transitioned.append(index)
             except Exception, x:
-                gc3libs.log.error("Ignored error in killing job '%s': %s: %s"
-                                  % (job.persistent_id, x.__class__.__name__, str(x)),
+                gc3libs.log.error("Ignored error in killing task '%s': %s: %s"
+                                  % (task.persistent_id, x.__class__.__name__, str(x)),
                                   exc_info=True)
-        # remove jobs that transitioned to other states
+        # remove tasks that transitioned to other states
         for index in reversed(transitioned):
             del self._to_kill[index]
 
-        # update state of STOPPED jobs; again need to make before new
+        # update state of STOPPED tasks; again need to make before new
         # submissions, because it can alter the count of in-flight
-        # jobs.
+        # tasks.
         transitioned = []
-        for index, job in enumerate(self._stopped):
+        for index, task in enumerate(self._stopped):
             try:
-                self._core.update_job_state(job)
+                self._core.update_job_state(task)
                 if self._store:
-                    self._store.save(job)
-                if job.state in [Run.State.SUBMITTED, Run.State.RUNNING]:
+                    self._store.save(task)
+                if task.execution.state in [Run.State.SUBMITTED, Run.State.RUNNING]:
                     currently_submitted += 1
                     currently_in_flight += 1
-                    self._in_flight.append(job)
-                    transitioned.append(index) # job changed state, mark as to remove
-                elif job.state == Run.State.TERMINATED:
-                    self._terminated.append(job)
-                    transitioned.append(index) # job changed state, mark as to remove
+                    self._in_flight.append(task)
+                    transitioned.append(index) # task changed state, mark as to remove
+                elif task.execution.state == Run.State.TERMINATED:
+                    self._terminated.append(task)
+                    transitioned.append(index) # task changed state, mark as to remove
             except Exception, x:
-                gc3libs.log.error("Ignoring error in updating state of STOPPED job '%s': %s: %s"
-                                  % (job.persistent_id, x.__class__.__name__, str(x)),
+                gc3libs.log.error("Ignoring error in updating state of STOPPED task '%s': %s: %s"
+                                  % (task.persistent_id, x.__class__.__name__, str(x)),
                                   exc_info=True)
-        # remove jobs that transitioned to other states
+        # remove tasks that transitioned to other states
         for index in reversed(transitioned):
             del self._stopped[index]
 
-        # now try to submit NEW jobs
+        # now try to submit NEW tasks
         transitioned = []
         if self.can_submit:
-            for index, job in enumerate(self._new):
+            for index, task in enumerate(self._new):
                 # try to submit; go to SUBMITTED if successful, FAILED if not
                 if currently_submitted < limit_submitted and currently_in_flight < limit_in_flight:
                     try:
-                        self._core.submit(job)
+                        self._core.submit(task)
                         if self._store:
-                            self._store.save(job)
-                        self._submitted.append(job)
+                            self._store.save(task)
+                        self._in_flight.append(task)
                         transitioned.append(index)
                         currently_submitted += 1
                         currently_in_flight += 1
                     except Exception, x:
-                        gc3libs.log.error("Ignored error in submitting job '%s': %s: %s"
-                                          % (job.persistent_id, x.__class__.__name__, str(x)))
-                        job.log("Submission failed: %s: %s" % (x.__class__.__name__, str(x)))
-        # remove jobs that transitioned to SUBMITTED state
+                        sys.excepthook(*sys.exc_info()) # DEBUG
+                        gc3libs.log.error("Ignored error in submitting task '%s': %s: %s"
+                                          % (task.persistent_id, x.__class__.__name__, str(x)))
+                        task.execution.log("Submission failed: %s: %s" 
+                                           % (x.__class__.__name__, str(x)))
+        # remove tasks that transitioned to SUBMITTED state
         for index in reversed(transitioned):
             del self._new[index]
 
-        # finally, retrieve output of finished jobs
+        # finally, retrieve output of finished tasks
         if self.can_retrieve:
-            for index, job in enumerate(self._terminated):
-                if not job.final_output_retrieved:
+            for index, task in enumerate(self._terminated):
+                if not task.final_output_retrieved:
                     # try to get output
                     try:
-                        self._core.fetch_output(job)
+                        self._core.fetch_output(task)
                         if self._store:
-                            self._store.save(job)
+                            self._store.save(task)
                     except Exception, x:
-                        gc3libs.log.error("Ignored error in fetching output of job '%s': %s: %s" 
-                                          % (job.persistent_id, x.__class__.__name__, str(x)), exc_info=True)
+                        gc3libs.log.error("Ignored error in fetching output of task '%s': %s: %s" 
+                                          % (task.persistent_id, x.__class__.__name__, str(x)), exc_info=True)
 
 
     # implement a Core-like interface, so `Engine` objects can be used
     # as substitutes for `Core`.
 
-    def free(job):
+    def free(task):
         """
-        Proxy for `Core.free` (which see); in addition, remove `job`
-        from the list of managed jobs.
+        Proxy for `Core.free` (which see); in addition, remove `task`
+        from the list of managed tasks.
         """
-        self.remove(job)
-        self._core.free(job)
+        self.remove(task)
+        self._core.free(task)
 
 
-    def submit(self, job):
+    def submit(self, task):
         """
-        Submit `job` at the next invocation of `perform`.  Actually,
-        the job is just added to the collection of managed jobs,
+        Submit `task` at the next invocation of `perform`.  Actually,
+        the task is just added to the collection of managed tasks,
         regardless of its state.
         """
-        return self.add(job)
+        return self.add(task)
 
 
-    def update_job_state(self, *jobs):
+    def update_job_state(self, *tasks):
         """
-        Return list of *current* states of the given jobs.  States
+        Return list of *current* states of the given tasks.  States
         will only be updated at the next invocation of `perform`; in
         particular, no state-change handlers are called as a result of
         calling this method.
         """
-        return [job.state for job in jobs]
+        return [task.execution.state for task in tasks]
 
 
-    def fetch_output(self, job):
+    def fetch_output(self, task, output_dir=None, overwrite=True):
         """
         Proxy for `Core.fetch_output` (which see).
         """
-        return self._core.fetch_output(job)
+        if output_dir is None and self.output_dir is not None:
+            output_dir = os.path.join(self.output_dir, task.persistent_id)
+        if overwrite is None:
+            overwrite = self.fetch_output_overwrites
+        return self._core.fetch_output(task, output_dir, overwrite)
 
 
-    def kill(self, job):
+    def kill(self, task):
         """
-        Schedule a job for killing on the next `perform` run.
+        Schedule a task for killing on the next `perform` run.
         """
-        self._to_kill.append(job)
+        self._to_kill.append(task)
 
 
-    def peek(self, job, what='stdout', offset=0, size=None, **kw):
+    def peek(self, task, what='stdout', offset=0, size=None, **kw):
         """
         Proxy for `Core.peek` (which see).
         """
-        return self._core.peek(job, what, offset, size, **kw)
+        return self._core.peek(task, what, offset, size, **kw)

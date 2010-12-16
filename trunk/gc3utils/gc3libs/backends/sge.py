@@ -418,7 +418,14 @@ class SgeLrms(LRMS):
 
     @same_docstring_as(LRMS.update_job_state)
     def update_job_state(self, app):
-        job = app.execution
+        # check that passed object obeys contract
+        try:
+            job = app.execution
+            job.lrms_jobid
+        except AttributeError, ex:
+            # `job` has no `lrms_jobid`: object is invalid
+            raise InvalidArgument("Job object is invalid: %s" % str(ex))
+
         def map_sge_names_to_local_ones(name):
             return 'sge_' + name
         # mapping = {
