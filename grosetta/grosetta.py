@@ -229,7 +229,7 @@ class Grid(object):
         """
         # update status of SUBMITTED/RUNNING jobs before launching new ones, otherwise
         # we would be checking the status of some jobs twice...
-        if job.state == 'SUBMITTED' or job.state == 'RUNNING':
+        if job.state in ['SUBMITTED', 'RUNNING', 'UNKNOWN']:
             # update state 
             try:
                 self.update_state(job)
