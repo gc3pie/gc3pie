@@ -52,7 +52,242 @@ from gc3libs.utils import defproperty, get_and_remove, Enum, Log, Struct, safe_r
 
 
 
-class Application(Struct, Persistable):
+class Task(object):
+    # XXX: alternative design: we could make Task take an additional
+    # `job` parameter, which is the controlled job (i.e., the one that
+    # `submit()` and friends act upon), defaulting to `self`.  This
+    # way, Task would become a mediator object binding a "grid" (core
+    # || engine) and a "job" (Application or whatnot).
+    """
+    Mix-in class implementing a facade for job control.
+
+    A `Task` can be described as an "active" job, in the sense that
+    all job control is done through methods on the `Task` instance
+    itself; contrast this with operating on `Application` objects
+    through a `Core` or `Engine` instance.
+
+    The following pseudo-code is an example of the usage of the `Task`
+    interface for controlling a job.  Assume that `GamessApplication` is
+    inheriting from `Task` (and it actually is)::
+
+        t = GamessApplication(input_file)
+        t.submit()
+        # ... do other stuff 
+        t.update()
+        # ... take decisions based on t.execution.state
+        t.wait() # blocks until task is terminated
+
+    Each `Task` object has an `execution` attribute: it is an instance
+    of class :class:`Run`, initialized with a new instance of `Run`,
+    and at any given time it reflects the current status of the
+    associated remote job.  In particular, `execution.state` can be
+    checked for the current task status.
+
+    """
+
+    def __init__(self, grid=None):
+        """
+        Initialize a `Task` instance.
+
+        :param grid: A :class:`gc3libs.Engine` or
+                     :class:`gc3libs.Core` instance, or anything
+                     implementing the same interface.
+        """
+        if grid is not None:
+            self.attach(grid)
+        else:
+            self.detach()
+        # `self.execution` could have been initialized by the
+        # `Application` class, so chek before re-initializing it.
+        if not hasattr(self, 'execution'):
+            self.execution = Run()
+
+    class Error(gc3libs.Exceptions.Error):
+        """
+        Generic error condition in a `Task` object.
+        """
+        pass
+    class DetachedFromGridError(Error):
+        """
+        Raised when a method (other than :meth:`attach`) is called on
+        a detached `Task` instance.
+        """
+        pass
+    class UnexpectedStateError(Error):
+        """
+        Raised by :meth:`Task.progress` when a job lands in `STOPPED`
+        or `TERMINATED` state.
+        """
+        pass
+
+    # manipulate the "grid" interface used to control the associated job
+    def attach(self, grid):
+        """
+        Use the given Grid interface for operations on the job
+        associated with this task.
+        """
+        self._grid = grid
+        self._attached = True
+
+    # create a class-shared fake "grid" object, that just throws a
+    # DetachedFromGrid exception when any of its methods is used.  We
+    # use this as a safeguard for detached `Task` objects, in order to
+    # get sensible error reporting.
+    class __NoGrid(object):
+        # XXX: this returns a function object for whatever `name`;
+        # should be fine since a "grid" interface should just contain
+        # methods, but one never knows...
+        def __getattr__(self, name):
+            def throw_error():
+                raise DetachedFromGridError("Task object has been detached from a Grid interface.")
+            return throw_error
+    __no_grid = __NoGrid()
+
+    def detach(self):
+        """
+        Remove any reference to the current grid interface.  After
+        this, calling any method other than :meth:`attach` results in
+        an exception :class:`Task.DetachedFromGridError` being thrown.
+        """
+        self._grid = Task.__no_grid
+        self._attached = False
+
+
+    # interface with pickle/gc3libs.persistence: do not save the
+    # attached grid/engine/core as well: it definitely needs to be
+    # saved separately.
+
+    def __getstate__(self):
+        state = self.__dict__.copy()
+        state['_grid'] = None
+        state['_attached'] = None
+        return state
+
+    def __setstate__(self, state):
+        self.__dict__ = state
+        self.detach()
+
+
+    # grid-level actions on this Task object are re-routed to the
+    # grid/engine/core instance
+    def submit(self):
+        """
+        Start the computational job associated with this `Task` instance.
+        """
+        self._grid.submit(self)
+
+    def update_state(self):
+        """
+        In-place update of the execution state of the computational
+        job associated with this `Task`.  After successful completion,
+        `.execution.state` will contain the new state.
+        """
+        self._grid.update_job_state(self)
+
+    def kill(self):
+        """
+        Terminate the computational job associated with this task.
+
+        See :meth:`gc3libs.Core.kill` for a full explanation.
+        """
+        self._grid.kill(self)
+
+    def fetch_output(self, output_dir=None, overwrite=True):
+        """
+        Retrieve the outputs of the computational job associated with
+        this task into directory `output_dir`, or, if that is `None`,
+        into the directory whose path is stored in instance attribute
+        `.output_dir`.
+
+        See :meth:`gc3libs.Core.fetch_output` for a full explanation.
+
+        :return: Path to the directory where the job output has been
+                 collected.
+        """
+        return self._grid.fetch_output(self, output_dir, overwrite)
+
+    def peek(self, what='stdout', offset=0, size=None):
+        """
+        Download `size` bytes (at offset `offset` from the start) from
+        the associated job standard output or error stream, and write them
+        into a local file.  Return a file-like object from which the
+        downloaded contents can be read. 
+
+        See :meth:`gc3libs.Core.peek` for a full explanation.
+        """
+        return self._grid.peek(self, what, offset, size)
+
+    # convenience methods, do not really add any functionality over
+    # what's above
+    
+    def progress(self):
+        """
+        Advance the associated job through all states of a regular
+        lifecycle. In detail:
+
+          1. If `execution.state` is `NEW`, the associated job is started.
+          2. The state is updated until it reaches `TERMINATED`
+          3. Output is collected and the final returncode is returned.
+
+        An exception `Task.Error` is raised if the job hits state
+        `STOPPED` or `UNKNOWN` during an update in phase 2.
+
+        When the job reaches `TERMINATED` state, the output is
+        retrieved, and the return code (stored also in `.returncode`)
+        is returned; if the job is not yet in `TERMINATED` state,
+        calling `progress` returns `None`.
+
+        :raises: exception :class:`Task.UnexpectedStateError` if the
+                 associated job goes into state `STOPPED` or `UNKNOWN`
+
+        :return: job final returncode, or `None` if the execution
+                 state is not `TERMINATED`.
+
+        """
+        # first update state, we'll submit NEW jobs last, so that the
+        # state is not updated immediately after submission as ARC
+        # does not cope well with this...
+        if self.execution.state in [ Run.State.SUBMITTED, 
+                                     Run.State.RUNNING, 
+                                     Run.State.STOPPED, 
+                                     Run.State.UNKNOWN ]:
+            self.update()
+        # now "do the right thing" based on actual state
+        if self.execution.state in [ Run.State.STOPPED, 
+                                     Run.State.UNKNOWN ]:
+            raise Task.UnexpectedStateError("Job '%s' entered `%s` state." 
+                                            % (self, self.execution.state))
+        elif self.execution.state == Run.State.NEW:
+            self.submit()
+        elif self.execution.state == Run.State.TERMINATED:
+            self.fetch_output()
+            return self.returncode
+
+
+    def wait(self, interval=60):
+        """
+        Block until the associated job has reached `TERMINATED` state,
+        then return the job's return code.  Note that this does not
+        automatically fetch the output.
+
+        :param integer interval: Poll job state every this number of seconds
+        """
+        # FIXME: I'm not sure how to deal with this... Ideally, this
+        # call should suspend the current thread and wait for
+        # notifications from the Engine, but:
+        #  - there's no way to tell if we are running threaded,
+        #  - `self._grid` could be a `Core` instance, thus not capable 
+        #    of running independently.
+        # For now this is a poll+sleep loop, but we certainly need to revise it.
+        while True:
+            self.update()
+            if self.execution.state == Run.State.TERMINATED:
+                return self.returncode
+            time.sleep(interval)
+
+
+
+class Application(Struct, Persistable, Task):
     """
     Support for running a generic application with the GC3Libs.
     The following parameters are *required* to create an `Application`
@@ -129,6 +364,10 @@ class Application(Struct, Persistable):
       `value` (i.e., as if "export name=value" was executed prior
       to starting the application).  Alternately, one can pass in
       a list of strings of the form "name=value".
+
+    `grid`
+      if not `None`, equivalent to calling `Task.attach(self, grid)`;
+      enables the use of the `Task`/active job control interface
 
     `stdin`
       file name of a file whose contents will be fed as
@@ -276,9 +515,9 @@ class Application(Struct, Persistable):
         # job name
         self.jobname = get_and_remove(kw, 'jobname', self.__class__.__name__)
 
-        # execution
-        self.execution = Run()
-
+        # task setup; creates the `.execution` attribute as well
+        Task.__init__(self, get_and_remove(kw, 'grid', None))
+        
         # output management
         self.final_output_retrieved = False
 
@@ -426,6 +665,9 @@ class Application(Struct, Persistable):
 
 
     # State transition handlers.
+    #
+    # XXX: should these be moved to the `Task` interface?
+                      
     def new(self):
         """
         Called when the job state is (re)set to `NEW`.
@@ -488,6 +730,62 @@ class Application(Struct, Persistable):
         classes to implement additional behavior.
         """
         pass
+    
+    # Operation error handlers; called when transition from one state
+    # to another fails.  The names are formed by suffixing the
+    # corresponding `Core` method (operation) with ``_error``.
+
+    def submit_error(self, exs):
+        """
+        Invocation of `Core.submit()` on this object failed;
+        `exs` is a list of `Exception` objects, one for each attempted
+        submission.
+
+        If this method returns an exception object, that is raised as
+        a result of the `Core.submit()`, otherwise the return value is
+        ignored and `Core.submit` returns `None`.
+
+        Default is to always return `None`; override in derived
+        classes to change this behavior.
+        """
+        return None
+
+    # XXX: this method might be dangerous in that it can break the
+    # `update_job_state` semantics; it's here for completeness, but we
+    # should consider removing...
+    def update_job_state_error(self, ex):
+        """
+        Invocation of `Core.update_job_state()` on this object failed;
+        `ex` is the `Exception` that describes the error.
+
+        If this method returns an exception object, that is raised as
+        a result of the `Core.update_job_state()`, otherwise the
+        return value is ignored and `Core.update_job_state` returns
+        `None`.
+
+        Note that returning an `Exception` instance interrupts the
+        normal flow of `Core.update_job_state`: in particular, the
+        execution state is not updated and state transition methods
+        will not be called.
+
+        Default is to return `None`; override in derived classes to
+        change this behavior.
+        """
+        return None
+
+    def fetch_output_error(self, ex):
+        """
+        Invocation of `Core.fetch_output()` on this object failed;
+        `ex` is the `Exception` that describes the error.
+
+        If this method returns an exception object, that is raised as
+        a result of the `Core.fetch_output()`, otherwise the return
+        value is ignored and `Core.fetch_output` returns `None`.
+
+        Default is to return `ex` unchanged; override in derived classes
+        to change this behavior.
+        """
+        return ex
 
 
 class _Signal(object):
@@ -790,7 +1088,24 @@ class Run(Struct):
                               "Unspecified remote error, e.g., execution node crashed"
                               " or batch system misconfigured")
         SubmissionFailed = _Signal('SUBMIT', 125, "Submission to batch system failed.")
-
+        
+        def __contains__(self, signal_num):
+            if 121 <= signal_num <= 125:
+                return True
+            else:
+                return False
+        def __getitem__(self, signal_num):
+            if signal_num == 121:
+                return Signals.Cancelled
+            if signal_num == 122:
+                return Signals.RemoteKill
+            if signal_num == 123:
+                return Signals.DataStagingFailure
+            if signal_num == 124:
+                return Signals.RemoteError
+            if signal_num == 125:
+                return Signals.SubmissionFailed
+            raise InvalidArgument("Unknown signal number %d" % signal_num)
 
         
 ## main: run tests
