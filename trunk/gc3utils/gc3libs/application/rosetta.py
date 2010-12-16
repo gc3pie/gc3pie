@@ -54,13 +54,13 @@ class RosettaApplication(gc3libs.Application):
         application = os.path.splitext(application)[0]
         
         _inputs = list(inputs.values())
-        gc3utils.log.debug("RosettaApplication: _inputs=%s" % _inputs)
+        gc3libs.log.debug("RosettaApplication: _inputs=%s" % _inputs)
         _outputs = list(outputs) # make a copy
 
         # do specific setup required for/by the support script "rosetta.sh"
         src_rosetta_sh = resource_filename(Requirement.parse("gc3utils"), 
-                                           "gc3utils/etc/rosetta.sh")
-        gc3utils.log.debug("RosettaApplication: src_rosetta_sh=%s" % src_rosetta_sh)
+                                           "gc3libs/etc/rosetta.sh")
+        gc3libs.log.debug("RosettaApplication: src_rosetta_sh=%s" % src_rosetta_sh)
         rosetta_sh = application + '.sh'
         _inputs.append((src_rosetta_sh, rosetta_sh))
         _outputs.append(application + '.log')
@@ -93,12 +93,12 @@ class RosettaApplication(gc3libs.Application):
         kw.setdefault('stdout', application+'.stdout.txt')
         kw.setdefault('stderr', application+'.stderr.txt')
 
-        Application.__init__(self,
-                             executable = "./%s" % rosetta_sh,
-                             arguments = _arguments,
-                             inputs = _inputs,
-                             outputs = _outputs,
-                             **kw)
+        gc3libs.Application.__init__(self,
+                                     executable = "./%s" % rosetta_sh,
+                                     arguments = _arguments,
+                                     inputs = _inputs,
+                                     outputs = _outputs,
+                                     **kw)
 
 gc3libs.application.register(RosettaApplication, 'rosetta')
 
