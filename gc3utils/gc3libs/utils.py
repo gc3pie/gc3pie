@@ -47,7 +47,6 @@ from email import Encoders
 
 
 from Exceptions import *
-from arclib import *
 from lockfile import FileLock
     
 
@@ -365,6 +364,10 @@ class Log(object):
 
     def append(self, message, *tags):
         self._messages.append((message, time.time(), tags))
+
+    # shortcut for append
+    def __call__(self, message, *tags):
+        self.append(message, *tags)
 
     def __iter__(self):
         return iter([record[0] for record in self._messages])
