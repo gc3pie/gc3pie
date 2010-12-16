@@ -32,12 +32,14 @@ __changelog__ = """
     * Exitcode tracks job status; use the "-b" option to get the old behavior back.
       The new exitcode is a bitfield; the 4 least-significant bits have the following
       meaning:
+         ===    ============================================================
          Bit    Meaning
          ===    ============================================================
          0      Set if a fatal error occurred: `grosetta` could not complete
          1      Set if there are jobs in `FAILED` state
          2      Set if there are jobs in `RUNNING` or `SUBMITTED` state
          3      Set if there are jobs in `NEW` state
+         ===    ============================================================
       This boils down to the following rules:
          * exitcode == 0: all jobs are `DONE`, no further `grosetta` action
          * exitcode == 1: an error interrupted `grosetta` execution
@@ -77,293 +79,16 @@ import sys
 import tarfile
 import time
 
-import gc3utils
-import gc3utils.Default
-import gc3utils.gcli
-from gc3utils.Job import Job as Gc3utilsJob
-import gc3utils.utils
 
+## interface to Gc3libs
 
-## interface to Gc3Utils
+import gc3libs
+import gc3libs.application.rosetta
+import gc3libs.collections
+import gc3libs.Default
+import gc3libs.core
+import gc3libs.utils
 
-from gc3utils.Application import RosettaDockingApplication
-
-## common code with gmtkn24 -- will be migrated into gc3libs someday
-
-def zerodict():
-    """
-    A dictionary that automatically creates keys 
-    with value 0 on first reference.
-    """
-    def zero(): 
-        return 0
-    return gc3utils.utils.defaultdict(zero)
-
-class Job(Gc3utilsJob):
-    """
-    A small extension to `gc3utils.Job.Job`, with a few convenience
-    extensions.
-    """
-    def __init__(self, **kw):
-        kw.setdefault('history', "")
-        kw.setdefault('state', None) # user-visible status 
-        kw.setdefault('status', -1)  # gc3utils status (internal use only)
-        kw.setdefault('timestamp', gc3utils.utils.defaultdict(time.time))
-        Gc3utilsJob.__init__(self, **kw)
-    def is_valid(self):
-        # override validity checks -- this will not be a valid `Gc3utilsJob`
-        # object until Grid.submit() is called on it ...
-        return True
-
-    def set_info(self, msg):
-        self.info = msg
-        self.history += "; " + msg
-
-    def set_state(self, state):
-        if state != self.state:
-            self.state = state
-            epoch = time.time()
-            self.timestamp[state] = epoch
-            if state == 'NEW':
-                self.created = epoch
-            self.set_info(state.capitalize() + ' at ' + time.asctime(time.localtime(epoch)))
-        
-
-def _get_state_from_gc3utils_job_status(status):
-    """
-    Convert a gc3utils.Job status code into a readable state description.
-    """
-    try:
-        return {
-           -1:'NEW', # XXX: local addition!
-            1:'FINISHING',
-            2:'RUNNING',
-            3:'FAILED',
-            4:'SUBMITTED',
-            5:'DONE',
-            6:'DELETED',
-            7:'UNKNOWN',
-            }[status]
-    except KeyError:
-        return 'UNKNOWN'
-
-class Grid(object):
-    """
-    An interface to job lifecycle management.
-    """
-    def __init__(self, config_file=gc3utils.Default.CONFIG_FILE_LOCATION, default_output_dir=None):
-        self.mw = gc3utils.gcli.Gcli(*gc3utils.gcli.import_config([config_file]))
-        self.default_output_dir = default_output_dir
-
-    def save(self, job):
-        """
-        Save a job using gc3utils' persistence mechanism.
-        """
-        # `unique_token` is added by gc3utils.gcli.gsub() upon
-        # successful submission, so it may lack on newly-created objects
-        if job.has_key('unique_token'):
-            job.jobid = job.unique_token
-        # update state so that it is correctly saved, but do not use
-        # set_state() so the job history is not altered; if
-        # `job.status` is not present, then the job has not yet been
-        # submitted and its state should default to "NEW"
-        job.state = _get_state_from_gc3utils_job_status(job.get('status', -1)) # XXX: should be gc3utils.Job.JOB_STATE_NEW
-        gc3utils.Job.persist_job(job)
-
-    def submit(self, application, job=None):
-        """
-        Submit an instance of the given `application`, and store it
-        into `job` (or a new instance of the `Job` class if `job` is
-        `None`).  After successful submission, persist job to
-        permanent storage.  Return (string) id of submitted job.
-        """
-        job = self.mw.gsub(application, job)
-        return job.unique_token
-
-    def update_state(self, job):
-        """
-        Update running status of `job`.  In case update fails, state
-        is set to 'UNKNOWN'.  Return job state.
-        """
-        st = self.mw.gstat(job) # `gstat` returns list(!?)
-        if len(st) == 0:
-            job.set_state('UNKNOWN')
-            job.set_info("Could not update job status.")
-        else:
-            job.set_state(_get_state_from_gc3utils_job_status(job.status))
-        return job.state
-
-    def get_output(self, job, output_dir=None):
-        """
-        Retrieve job's output files into `output_dir`.
-        If `output_dir` is `None` (default), then use
-        `self.output_dir`. 
-        """
-        # `job_local_dir` is where gc3utils will retrieve the output
-        if output_dir is not None:
-            job.job_local_dir = output_dir
-        elif self.default_output_dir is not None:
-            job.job_local_dir = self.default_output_dir
-        else:
-            job.job_local_dir = os.getcwd()
-        self.mw.gget(job)
-        job.output_retrieved_to = os.path.join(job.job_local_dir, job.jobid)
-        # XXX: Need to reset the `output_processing_done` attribute, 
-        # but the `persist_job` fn in gc3utils.Job will only do an update
-        # to the persisted file, so that deleting an attribute does not work.
-        # We work this around by setting the value to `None`, since this is 
-        # what we use as sentinel value later on, but gc3utils.Job.persist_job()
-        # definitely needs fixing
-        if job.has_key('output_processing_done'):
-            job.output_processing_done = None
-
-    def progress(self, job, can_submit=True, can_retrieve=True):
-        """
-        Update the job's state and take appropriate action;
-        return the (possibly changed) job state.
-
-        If optional argument `can_submit` is `True` (default), will
-        try to submit jobs in state ``NEW``.  If optional argument
-        `can_retrieve` is `False` (default), will try to fetch job
-        results back.
-        """
-        # update status of SUBMITTED/RUNNING jobs before launching new ones, otherwise
-        # we would be checking the status of some jobs twice...
-        if job.state in ['SUBMITTED', 'RUNNING', 'UNKNOWN']:
-            # update state 
-            try:
-                self.update_state(job)
-            except Exception, x:
-                logger.error("Ignoring error in updating state of job '%s': %s: %s"
-                             % (job.id, x.__class__.__name__, str(x)),
-                             exc_info=True)
-        if job.state == 'NEW' and can_submit:
-            # try to submit; go to 'SUBMITTED' if successful, 'FAILED' if not
-            try:
-                self.submit(job.application, job)
-                job.set_state('SUBMITTED')
-            except Exception, x:
-                logger.error("Error in submitting job '%s': %s: %s"
-                             % (job.id, x.__class__.__name__, str(x)))
-                job.set_state('NEW')
-                job.set_info("Submission failed: %s" % str(x))
-        if can_retrieve and job.state == 'FINISHING':
-            # get output; go to 'DONE' if successful, ignore errors so we retry next time
-            try:
-                self.get_output(job, job.output_dir)
-                job.set_state('DONE')
-                job.set_info("Results retrieved into directory '%s'" 
-                             % os.path.join(job.output_dir, job.jobid))
-            except Exception, x:
-                logger.error("Got error in fetching output of job '%s': %s: %s" 
-                             % (job.id, x.__class__.__name__, str(x)), exc_info=True)
-        if can_retrieve and (job.state == 'FAILED') and not job.get('output_retrieved_to', None):
-            # try to get output, ignore errors as there might be no output
-            try:
-                self.get_output(job, job.output_dir)
-                job.status = gc3utils.Job.JOB_STATE_FAILED # patch
-                job.set_info("Output retrieved into directory '%s/%s'" 
-                             % (job.output_dir, job.jobid))
-            except Exception, x:
-                logger.error("Got error in fetching output of job '%s': %s: %s" 
-                             % (job.id, x.__class__.__name__, str(x)), exc_info=True)
-                job.set_info("No output could be retrieved.")
-        self.save(job)
-        return job.state
-
-
-class JobCollection(dict):
-    """
-    A collection of `Job` objects, indexed and accessible by `(input,
-    instance)` pair.
-    """
-    def __init__(self, **kw):
-        self.default_job_initializer = kw
-
-    def add(self, job):
-        """Add a `Job` instance to the collection."""
-        self[job.id] = job
-    def __iadd__(self, job):
-        self.add(job)
-        return self
-
-    def remove(self, job):
-        """Remove a `Job` instance from the collection."""
-        del self[job.id]
-
-    def load(self, session):
-        """
-        Load all jobs from a previously-saved session file.
-        The `session` argument can be any file-like object suitable
-        for passing to Python's stdlib `csv.DictReader`.
-        """
-        for row in csv.DictReader(session,  # FIXME: field list must match `job` attributes!
-                                  ['id', 'jobid', 'state', 'info', 'history']):
-            if row['id'].strip() == '':
-                # invalid row, skip
-                continue 
-            id = row['id']
-            if not self.has_key(id):
-                self[id] = Job(unique_token=row['jobid'], ** self.default_job_initializer)
-            job = self[id]
-            # update state etc.
-            job.update(row)
-            # resurrect saved state
-            job.update(gc3utils.Job.get_job(job.jobid))
-            # get back timestamps of various events
-            for event in job.history.split("; "):
-                if event.upper().startswith('CREATED'):
-                    job.created = time.mktime(time.strptime(event.split(' ',2)[2]))
-                if event.upper().startswith('SUBMITTED'):
-                    job.timestamp['SUBMITTED'] = time.mktime(time.strptime(event.split(' ',2)[2]))
-                if event.upper().startswith('RUNNING'):
-                    job.timestamp['RUNNING'] = time.mktime(time.strptime(event.split(' ',2)[2]))
-                if event.upper().startswith('FINISHING'):
-                    job.timestamp['FINISHING'] = time.mktime(time.strptime(event.split(' ',2)[2]))
-                if event.upper().startswith('DONE'):
-                    job.timestamp['DONE'] = time.mktime(time.strptime(event.split(' ',2)[2]))
-
-    def save(self, session):
-        """
-        Save all jobs into a given session file.  The `session`
-        argument can be any file-like object suitable for passing to
-        Python's standard library `csv.DictWriter`.
-        """
-        for job in self.values():
-            csv.DictWriter(session, ['id', 'jobid', 'state', 'info', 'history'], 
-                           extrasaction='ignore').writerow(job)
-
-    def stats(self):
-        """
-        Return a dictionary mapping each state name into the count of
-        jobs in that state; an additional key 'total' maps to the
-        total number of jobs in this collection.
-        """
-        result = zerodict()
-        for job in self.values():
-            result[job.state] += 1
-        return result
-
-    # XXX: this is not part of the to-be gc3libs class `JobCollection`:
-    # this is UI-specific code, that shall go into a derived class, 
-    # owned by the `GRosetta` code.
-    def pprint(self, output=sys.stdout, session=None):
-        """
-        Output a summary table to stream `output`.
-        """
-        if len(self) == 0:
-            if session is not None:
-                print ("There are no jobs in session file '%s'." % session)
-            else:
-                print ("There are no jobs in session file.")
-        else:
-            output.write("%-15s  %-15s  %-18s  %-s\n" 
-                         % ("Input file name", "Decoys Nr.", "State (JobID)", "Info"))
-            output.write(80 * "=" + '\n')
-            for job in self.values():
-                output.write("%-15s  %-15s  %-18s  %-s\n" % 
-                             (os.path.basename(job.input), job.instance, 
-                              ('%s (%s)' % (job.state, job.jobid)), job.info))
 
 
 ## parse command-line
@@ -405,7 +130,7 @@ cmdline.add_option("-c", "--cpu-cores", dest="ncores", type="int", default=1, # 
                    " for each Rosetta 'docking_protocol' job. NUM must be a whole number."
                    )
 cmdline.add_option("-f", "--flags-file", dest="flags_file", 
-                   default=os.path.join(gc3utils.Default.RCDIR, 'docking_protocol.flags'),
+                   default=os.path.join(gc3libs.Default.RCDIR, 'docking_protocol.flags'),
                    metavar="PATH",
                    help="Pass the specified flags file to Rosetta 'docking_protocol'"
                    " Default: '~/.gc3/docking_protocol.flags'"
@@ -454,7 +179,7 @@ cmdline.add_option("-p", "--decoys-per-job", type="int", dest="decoys_per_job",
 cmdline.add_option("-s", "--session", dest="session", 
                    default=os.path.join(os.getcwd(), 'grosetta.csv'),
                    metavar="FILE",
-                   help="Use FILE to store the status of running jobs (default: '%default')."
+                   help="Use FILE to store the index of running jobs (default: '%default')."
                    " Any input files specified on the command line will be added to the existing"
                    " session.  Any jobs already in the session will be monitored and"
                    " their output will be fetched if the jobs are done."
@@ -485,7 +210,7 @@ cmdline.add_option("-z", "--compress-pdb", dest="compress", default=False, actio
 logging.basicConfig(level=max(1, logging.ERROR - 10 * options.verbose),
                     format='%(name)s: %(message)s')
 logger = logging.getLogger(PROG)
-gc3utils.log.setLevel(max(1, (5-options.verbose)*10))
+gc3libs.log.setLevel(max(1, (5-options.verbose)*10))
 
 # consistency check
 if options.max_running < 1:
@@ -517,13 +242,170 @@ elif 2 == n: # wctime expressed as 'HH:MM:SS'
     options.wctime = hrs*60*60 + mins*60 + secs
 else:
     cmdline.error("Argument to option -w/--wall-clock-time must have the form 'HH:MM' or be a duration expressed in seconds.")
-# FIXME
 options.walltime = int(options.wctime / 3600)
 
+# XXX: ARClib errors out if the download directory already exists, so
+# we need to make sure that each job downloads results in a new one.
+# The easiest way to do so is to append 'INSTANCE' to the `output_dir`
+# (if it's not already there).
+if not 'INSTANCE' in options.output:
+    options.output = os.path.join(options.output, 'NAME.INSTANCE')
 
+## interface to GC3Libs
+
+def set_info(app, msg):
+    """
+    Record `msg` into the application execution log,
+    and into the `.execution.grosetta_info` attribute.
+    """
+    app.info = msg
+    app.execution.log.append(msg)
+
+
+class GRosettaApplication(gc3libs.application.rosetta.RosettaDockingApplication):
+    """
+    Augment a `RosettaDockingApplication` with state transition
+    methods that implement job status reporting for the UI, and data
+    post-processing.
+    """
+    def __init__(self, pdb_file_path, native_file_path=None, 
+                 number_of_decoys_to_create=1, flags_file=None, **kw):
+        gc3libs.application.rosetta.RosettaDockingApplication.__init__(self, pdb_file_path, native_file_path, number_of_decoys_to_create, flags_file, **kw)
+        # save pdb_file_path for later processing
+        self.pdb_file_path = pdb_file_path
+        # define two additional attributes
+        self.computed = 0 # number of decoys actually computed by this job
+        self.info = ''    # user-visible job information
+
+    def submit_error(self, exs):
+        set_info(self, "Submission failure; please inspect log file for details.")
+
+    def fetch_output_error(self, ex):
+        set_info(self, "No output could be retrieved: %s" % str(ex))
+
+    def submitted(self):
+        set_info(self, "Submitted at %s" 
+                 % time.ctime(self.execution.timestamp[gc3libs.Run.State.SUBMITTED]))
+
+    def running(self):
+        set_info(self, "Running at %s" 
+                 % time.ctime(self.execution.timestamp[gc3libs.Run.State.RUNNING]))
+
+    def terminated(self):
+        if self.execution.returncode == 0:
+            set_info(self, "Successfully terminated at %s; output not yet retrieved." 
+                     % time.ctime(self.execution.timestamp[gc3libs.Run.State.TERMINATED]))
+        else:
+            # there was some error, try to explain
+            signal = self.execution.signal
+            if signal in gc3libs.Run.Signals:
+                set_info(self, "Abnormal termination: %s" % 'x')
+            else:
+                if os.WIFSIGNALED(self.execution.returncode):
+                    set_info(self, "Job terminated by signal %d" % signal)
+                else:
+                    set_info(self, "Job exited with code %d" 
+                             % self.execution.exitcode)
+
+    def postprocess(self, output_dir):
+        set_info(self, "Output retrieved into directory '%s'" % output_dir)
+        # work directory is the parent of the download directory
+        work_dir = os.path.dirname(output_dir)
+        # move around output files so they're easier to preprocess:
+        #   1. All '.fasc' files land in the same directory as the input '.pdb' file
+        #   2. All generated '.pdb'/'.pdb.gz' files are collected in a '.decoys.tar'
+        #   3. Anything else is left as-is
+        input_name = os.path.basename(self.pdb_file_path)
+        input_name_sans = os.path.splitext(input_name)[0]
+        output_tar_filename = os.path.join(output_dir, 'docking_protocol.tar.gz')
+        # count: 'protocols.jobdist.main: Finished 1brs.0--1.1brs_0002 in 149 seconds.'
+        if os.path.exists(output_tar_filename):
+            output_tar = tarfile.open(output_tar_filename, 'r:gz')
+            # single tar file holding all decoy .PDB files
+            pdbs_tarfile_path = os.path.join(work_dir, input_name_sans) + '.decoys.tar'
+            if options.tarfile:
+                if not os.path.exists(pdbs_tarfile_path):
+                    pdbs = tarfile.open(pdbs_tarfile_path, 'w')
+                else:
+                    pdbs = tarfile.open(pdbs_tarfile_path, 'a')
+            for entry in output_tar:
+                if (entry.name.endswith('.fasc') or entry.name.endswith('.sc')):
+                    filename, extension = os.path.splitext(entry.name)
+                    scoring_file_name = (os.path.join(work_dir, input_name_sans) 
+                                      + '.' + self.instance + extension)
+                    src = output_tar.extractfile(entry)
+                    dst = open(scoring_file_name, 'wb')
+                    dst.write(src.read())
+                    dst.close()
+                    src.close()
+                elif (options.tarfile and 
+                      (entry.name.endswith('.pdb.gz') or entry.name.endswith('.pdb'))):
+                    src = output_tar.extractfile(entry)
+                    dst = tarfile.TarInfo(entry.name)
+                    dst.size = entry.size
+                    dst.type = entry.type
+                    dst.mode = entry.mode
+                    dst.mtime = entry.mtime
+                    dst.uid = os.getuid()
+                    dst.gid = os.getgid()
+                    dst.uname = pwd.getpwuid(os.getuid()).pw_name
+                    dst.gname = grp.getgrgid(os.getgid()).gr_name
+                    if hasattr(entry, 'pax_headers'):
+                        dst.pax_headers = entry.pax_headers
+                    pdbs.addfile(dst, src)
+                    src.close()
+            if options.tarfile:
+                pdbs.close()
+        else: # no `docking_protocol.tar.gz` file
+            set_info(self, "No 'docking_protocol.tar.gz' file found.")
+
+        
 ## create/retrieve session
 
-jobs = JobCollection()
+def load(session, store):
+    """
+    Load all jobs from a previously-saved session file.
+    The `session` argument can be any file-like object suitable
+    for passing to Python's stdlib `csv.DictReader`.
+    """
+    result = [ ]
+    for row in csv.DictReader(session,  # FIXME: field list must match `job` attributes!
+                              ['id', 'persistent_id', 'state', 'info', 'computed']):
+        if row['id'].strip() == '':
+            # invalid row, skip
+            continue 
+        # resurrect saved state
+        task = store.load(row['persistent_id'])
+        # update state etc.
+        task.update(row)
+        # append to this list
+        result.append(task)
+    return result
+
+def save(tasks, session, store):
+    """
+    Save tasks into a given session file.  The `session`
+    argument can be any file-like object suitable for passing to
+    Python's standard library `csv.DictWriter`.
+    """
+    for task in tasks:
+        store.save(task)
+        csv.DictWriter(session, ['id', 'persistent_id', 'state', 'info', 'computed'], 
+                       extrasaction='ignore').writerow(task)
+
+# create a `Persistence` instance to save/load jobs
+
+class _JobIdFactory(gc3libs.persistence.Id):
+    """
+    Override :py:class:`Id` behavior and generate IDs starting with a
+    lowercase ``job`` prefix.
+    """
+    def __new__(cls, obj, prefix=None, seqno=None):
+        return gc3libs.persistence.Id.__new__(cls, obj, 'job', seqno)
+
+store = gc3libs.persistence.FilesystemStore(idfactory=_JobIdFactory)
+
+# load the session file, or create a new empty one if not existing
 try:
     session_file_name = os.path.realpath(options.session)
     if os.path.exists(session_file_name) and not options.new_session:
@@ -534,20 +416,32 @@ except IOError, x:
     logger.critical("Cannot open session file '%s' in read/write mode: %s. Aborting."
                      % (options.session, str(x)))
     sys.exit(1)
-jobs.load(session)
+tasks = load(session, store)
 session.close()
 
-# compute number of decoys already entered for each input file
+
+## compute number of decoys already entered for each input file
+def zerodict():
+    """
+    A dictionary that automatically creates keys 
+    with value 0 on first reference.
+    """
+    def zero(): 
+        return 0
+    return gc3libs.utils.defaultdict(zero)
+
 decoys = zerodict()
-for job in jobs.values():
-    start, end = job.instance.split('--')
-    decoys[job.input] = max(decoys[job.input], int(end))
-    logger.debug("Job '%s': total computed decoys for input '%s': %d", job.id, job.input, decoys[job.input])
+for task in tasks:
+    start, end = task.instance.split('--')
+    input = task.pdb_file_path
+    decoys[input] += int(end) - int(start) + 1
+    logger.debug("Task '%s': total no. of decoys being computed for input '%s': %d", 
+                 task.persistent_id, task.pdb_file_path, decoys[input])
 
 
 ## build input file list
 
-inputs = set([ job.input for job in jobs.values() ])
+inputs = set([ task.pdb_file_path for task in tasks ])
 for path in args:
     if os.path.isdir(path):
         # recursively scan for .pdb files
@@ -562,15 +456,16 @@ for path in args:
         inputs.add(path + '.pdb')
     else:
         logger.error("Cannot access input path '%s' - ignoring it.", path)
-logger.debug("Gathered input file list %s" % inputs)
+logger.debug("Gathered input files: '%s'" % str.join("', '", inputs))
 
 
 ## compute job list
             
 for input in inputs:
     if decoys[input] < options.decoys_per_file-1:
-        logger.info("Already computing %d decoys for '%s', requested %d more.",
-                    decoys[input], input, options.decoys_per_file - 1 - decoys[input])
+        if decoys[input] > 0:
+            logger.info("Already computing %d decoys for '%s', requested %d more.",
+                        decoys[input], input, options.decoys_per_file - 1 - decoys[input])
         for nr in range(decoys[input], options.decoys_per_file, options.decoys_per_job):
             instance = ("%d--%d" 
                         % (nr, min(options.decoys_per_file - 1, 
@@ -579,23 +474,16 @@ for input in inputs:
             arguments = [ '-out:prefix', prefix ]
             if options.compress:
                 arguments.append('-out:pdb_gz') # compress PDB output files
-            jobs += Job(
-                id = prefix[:-1], # except the trailing '.'
-                input = input,
-                instance = instance,
-                application = RosettaDockingApplication(
-                    input, 
-                    flags_file = options.flags_file,
-                    # set computational requirements
-                    requested_memory = options.memory_per_core,
-                    requested_cores = options.ncores,
-                    requested_walltime = options.walltime,
-                    # Rosetta-specific data
-                    number_of_decoys_to_create = options.decoys_per_job,
-                    arguments = arguments,
-                    ),
-                state = 'NEW',
-                created = time.time(),
+            tasks.append(GRosettaApplication(
+                input, # == pdb_file_path
+                flags_file = options.flags_file,
+                # set computational requirements
+                requested_memory = options.memory_per_core,
+                requested_cores = options.ncores,
+                requested_walltime = options.walltime,
+                # Rosetta-specific data
+                number_of_decoys_to_create = options.decoys_per_job,
+                arguments = arguments,
                 # set job output directory
                 output_dir = (
                     options.output
@@ -605,116 +493,118 @@ for input in inputs:
                     .replace('DATE', time.strftime('%Y-%m-%d', time.localtime(time.time())))
                     .replace('TIME', time.strftime('%H:%M', time.localtime(time.time())))
                     ),
-                )
+                # grosetta-specific data
+                id = prefix[:-1], # except the trailing '.'
+                input = input,
+                instance = instance,
+                ))
 
 
 ## iterate through job list, updating state and acting accordingly
 
 
-def main(jobs):
-    grid = Grid(default_output_dir=options.output)
-    # build table
-    in_flight_count = 0
-    can_submit = True
-    can_retrieve = True
-    for job in jobs.values():
-        state = grid.progress(job, can_submit, can_retrieve)
-        if state in [ 'SUBMITTED', 'RUNNING' ]:
-            in_flight_count += 1
-            if in_flight_count > options.max_running:
-                can_submit = False
-        if (job.get('output_retrieved_to', None) 
-            and not job.get('output_processing_done', False)
-            and options.tarfile):
-            # move around output files so they're easier to preprocess:
-            #   1. All '.fasc' files land in the same directory as the input '.pdb' file
-            #   2. All generated '.pdb'/'.pdb.gz' files are collected in a '.decoys.tar'
-            #   3. Anything else is left as-is
-            input_name = os.path.basename(job.input)
-            input_name_sans = os.path.splitext(input_name)[0]
-            output_tar_name = os.path.join(job.output_retrieved_to, 'docking_protocol.tar.gz')
-            if os.path.exists(output_tar_name):
-                output_tar = tarfile.open(output_tar_name, 'r:gz')
-                pdbs_tarfile_path = os.path.join(job.output_dir, input_name_sans) + '.decoys.tar'
-                if not os.path.exists(pdbs_tarfile_path):
-                    pdbs = tarfile.open(pdbs_tarfile_path, 'w')
-                else:
-                    pdbs = tarfile.open(pdbs_tarfile_path, 'a')
-                for entry in output_tar:
-                    if (entry.name.endswith('.fasc') or entry.name.endswith('.sc')):
-                        filename, extension = os.path.splitext(entry.name)
-                        scoring_file_name = (os.path.join(job.output_dir, input_name_sans) 
-                                          + '.' + job.instance + extension)
-                        src = output_tar.extractfile(entry)
-                        dst = open(scoring_file_name, 'wb')
-                        dst.write(src.read())
-                        dst.close()
-                        src.close()
-                    elif (entry.name.endswith('.pdb.gz') or entry.name.endswith('.pdb')):
-                        src = output_tar.extractfile(entry)
-                        dst = tarfile.TarInfo(entry.name)
-                        dst.size = entry.size
-                        dst.type = entry.type
-                        dst.mode = entry.mode
-                        dst.mtime = entry.mtime
-                        dst.uid = os.getuid()
-                        dst.gid = os.getgid()
-                        dst.uname = pwd.getpwuid(os.getuid()).pw_name
-                        dst.gname = grp.getgrgid(os.getgid()).gr_name
-                        if hasattr(entry, 'pax_headers'):
-                            dst.pax_headers = entry.pax_headers
-                        pdbs.addfile(dst, src)
-                        src.close()
-                pdbs.close()
-            else: # no `docking_protocol.tar.gz` file
-                job.set_info("No 'docking_protocol.tar.gz' file found.")
-            job.output_processing_done = True
-        if state == 'DONE':
-            # nothing more to do - remove from job list if more than 1 day old
-            if (time.time() - job.timestamp['DONE']) > 24*60*60:
-                jobs.remove(job)
-        if job.state == 'FAILED':
-            # what should we do?
-            # just keep the job around for a while and then remove it?
-            if (time.time() - job.timestamp['FAILED']) > 3*24*60*60:
-                jobs.remove(job)
+# create a `Core` instance to interface with the Grid middleware
+grid = gc3libs.core.Core(*gc3libs.core.import_config([gc3libs.Default.CONFIG_FILE_LOCATION]))
+
+# create an `Engine` instance to manage the job list; we'll call its
+# `progress` method in the main loop
+engine = gc3libs.core.Engine(grid, tasks, store,
+                             max_in_flight = options.max_running)
+
+def compute_stats(tasks):
+    """
+    Return a dictionary mapping each state name into the count of
+    jobs in that state. In addition, the following keys are defined:
+
+      * `ok`:  count of TERMINATED jobs with return code 0
+
+      * `failed`: count of TERMINATED jobs with nonzero return code
+    """
+    result = zerodict()
+    for task in tasks:
+        state = task.execution.state
+        result[state] += 1
+        if state == gc3libs.Run.State.TERMINATED:
+            # need to distinguish failed jobs from successful ones
+            if task.execution.returncode == 0:
+                result['ok'] += 1
+            else:
+                result['failed'] += 1
+    return result
+
+def pprint(tasks, output=sys.stdout, session=None):
+    """
+    Output a summary table to stream `output`.
+    """
+    if len(tasks) == 0:
+        if session is not None:
+            print ("There are no jobs in session file '%s'." % session)
+        else:
+            print ("There are no jobs in session file.")
+    else:
+        output.write("%-15s  %-15s  %-18s  %-s\n" 
+                     % ("Input file name", "Decoys Nr.", "State (JobID)", "Info"))
+        output.write(80 * "=" + '\n')
+        for task in tasks:
+            output.write("%-15s  %-15s  %-18s  %-s\n" % 
+                         (os.path.basename(task.pdb_file_path), task.instance, 
+                          ('%s (%s)' % (task.execution.state, task.persistent_id)), task.info))
+
+def main(tasks):
+    # advance all jobs
+    engine.progress()
+    # manage terminated jobs
+    for task in tasks:
+        if task.execution.state == gc3libs.Run.State.TERMINATED:
+            if task.execution.returncode == 0:
+                # task terminated successfully; remove from job list
+                # if more than 1 day old
+                if (time.time() - task.execution.timestamp['TERMINATED']) > 24*60*60:
+                    tasks.remove(task)
+            else:
+                # something went wrong; what should we do?
+                # just keep the job around for a while and then remove it?
+                if (time.time() - task.execution.timestamp['TERMINATED']) > 3*24*60*60:
+                    tasks.remove(task)
     # write updated jobs to session file
     try:
         session = file(session_file_name, "wb")
-        jobs.save(session)
+        save(tasks, session, store)
         session.close()
     except IOError, x:
         logger.error("Cannot save job status to session file '%s': %s"
                      % (session_file_name, str(x)))
     ## print results to user
+    stats = compute_stats(tasks)
     if options.list:
-        jobs.pprint(sys.stdout)
+        pprint(tasks, sys.stdout)
     else:
         print ("Status of jobs in the '%s' session:" 
                % os.path.basename(session_file_name))
-        stats = jobs.stats()
-        total = len(jobs)
-        for state in sorted(stats.keys()):
-            print ("  %-10s  %d/%d (%.1f%%)"
-                   % (state, stats[state], total, 
-                      (100.0 * stats[state] / total)))
+        total = len(tasks)
+        if total > 0:
+            for state in sorted(stats.keys()):
+                print ("  %-10s  %d/%d (%.1f%%)"
+                       % (state, stats[state], total, 
+                          (100.0 * stats[state] / total)))
+        else:
+            print ("  No jobs in this session.")
     ## compute exitcode based on the running status of jobs
-    stats = jobs.stats()
     rc = 0
-    if stats['FAILED'] > 0:
+    if stats['failed'] > 0:
         rc |= 2
-    if in_flight_count > 0: # there are jobs in 'RUNNING' and 'SUBMITTED' state
+    if stats[gc3libs.Run.State.RUNNING] > 0 or stats[gc3libs.Run.State.SUBMITTED] > 0:
         rc |= 4
-    if stats['NEW'] > 0:
+    if stats[gc3libs.Run.State.NEW] > 0:
         rc |= 8
     return rc
 
-rc = main(jobs)
+rc = main(tasks)
 if options.wait > 0:
     try:
         while rc > 3:
             time.sleep(options.wait)
-            rc = main(jobs)
+            rc = main(tasks)
     except KeyboardInterrupt: # gracefully intercept Ctrl+C
         pass
 
