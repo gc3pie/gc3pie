@@ -14,13 +14,16 @@
 Installation
 ============
 
-These instructions show how to install the ``grosetta`` script
-from the GC3 svn repository into their own python environment.
+These instructions show how to install the ``grosetta`` and
+``gdocking`` scripts from the GC3 svn repository into their own python
+environment.
 
 0. Prerequisites are: ``svn`` (package ``subversion`` in CentOS5 and
-   Debian/Ubuntu), the Python development headers and libraries (package
-   ``python-devel`` in CentOS5, ``python-dev`` in Debian/Ubuntu).
-   These should be available in any decent Linux distribution.
+   Debian/Ubuntu), the Python development headers and libraries
+   (package ``python-devel`` in CentOS5, ``python-dev`` in Debian/Ubuntu).
+
+   These should be available in any decent Linux distribution, not
+   just CentOS5 and Debian/Ubuntu.
 
 
 1. If it's not already installed, get the `virtualenv` Python package
@@ -54,15 +57,21 @@ from the GC3 svn repository into their own python environment.
       rm -rf virtualenv
 
 
-2. Create a virtuelnv to host the ``grosetta`` installation::
+2. Create a virtualenv to host the ``grosetta`` installation::
 
        virtualenv grosetta
        cd grosetta/
        source bin/activate
 
+    You can name the ``grosetta`` virtualenv anything you like, as
+    long as it is a valid UNIX dictory name and contains no spaces.
+    If, for instance, you are installing both the "trunk" and a
+    release version of ``grosetta``/``gdocking``, then it might make
+    sense to use a name like grosetta-version instead.
 
-3. Create a ``src/`` directory to host the ``grosetta`` and
-   check-out the ``gc3utils`` sources there::
+
+3. Create a ``src/`` directory to host the ``grosetta`` source code
+   and check-out the ``gc3utils`` sources there::
      
        mkdir src
        cd src/
@@ -78,19 +87,21 @@ from the GC3 svn repository into their own python environment.
        cd .. # back into the `src` directory
 
 
-5. Create a symlink to the ``grosetta`` script in the ``bin/``
-   directory::
+5. Create symlinks to the ``grosetta`` and ``gdocking`` scripts in the
+   ``bin/`` directory::
 
        cd .. # back into the `grosetta` directory
        ln -s `pwd`/src/grosetta/grosetta.py bin/grosetta
+       ln -s `pwd`/src/grosetta/gdocking.py bin/gdocking
 
 
    
 Upgrade
 =======
 
-These instructions show how to upgrade the ``grosetta`` script to the
-latest version found in the GC3 svn repository.
+These instructions show how to upgrade the ``grosetta`` and
+``gdocking`` scripts to the latest version found in the GC3 svn
+repository.
 
 1. `cd` to the directory containing the `grosetta` virtualenv;
    assuming it's named ``grosetta`` as in the above installation
@@ -98,16 +109,16 @@ latest version found in the GC3 svn repository.
 
      cd grosetta/src
 
-2. Upgrade the `grosetta` source:
+2. Update the ``grosetta`` and ``gdocking`` sources:
 
      cd grosetta
-     svn up
+     svn update
      cd ..
 
-3. Upgrade the `gc3utils` source and run the `setup.py` script again:
+3. Update the ``gc3utils`` source and run the ``setup.py`` script again:
 
      cd gc3utils
-     svn up
+     svn update
      env CC=gcc ./setup.py develop
      cd ..
 

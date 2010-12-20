@@ -1,6 +1,6 @@
 #! /usr/bin/env python
 #
-#   grosetta.py -- Front-end script for submitting ROSETTA jobs to SMSCG.
+#   gdocking.py -- Front-end script for submitting ROSETTA `docking_protocol` jobs to SMSCG.
 #
 #   Copyright (C) 2010 GC3, University of Zurich
 #
@@ -23,6 +23,8 @@ Front-end script for submitting ROSETTA jobs to SMSCG.
 __author__ = 'Riccardo Murri <riccardo.murri@uzh.ch>'
 # summary of user-visible changes
 __changelog__ = """
+  2010-12-20:
+    * Renamed to ``gdocking``; default session file is not ``gdocking.csv``.
   2010-09-21:
     * Do not collect output FASC and PDB files into a single tar file. 
       (Get old behavior back with the '-t' option)
@@ -177,7 +179,7 @@ cmdline.add_option("-p", "--decoys-per-job", type="int", dest="decoys_per_job",
                    " of a single job does not exceed the maximum wall-clock time."
                    )
 cmdline.add_option("-s", "--session", dest="session", 
-                   default=os.path.join(os.getcwd(), 'grosetta.csv'),
+                   default=os.path.join(os.getcwd(), 'gdocking.csv'),
                    metavar="FILE",
                    help="Use FILE to store the index of running jobs (default: '%default')."
                    " Any input files specified on the command line will be added to the existing"
@@ -270,7 +272,10 @@ class GRosettaApplication(gc3libs.application.rosetta.RosettaDockingApplication)
     """
     def __init__(self, pdb_file_path, native_file_path=None, 
                  number_of_decoys_to_create=1, flags_file=None, **kw):
-        gc3libs.application.rosetta.RosettaDockingApplication.__init__(self, pdb_file_path, native_file_path, number_of_decoys_to_create, flags_file, **kw)
+        gc3libs.application.rosetta.RosettaDockingApplication.__init__(
+            self, pdb_file_path, native_file_path, 
+            number_of_decoys_to_create, flags_file, 
+            **kw)
         # save pdb_file_path for later processing
         self.pdb_file_path = pdb_file_path
         # define two additional attributes
@@ -553,19 +558,6 @@ def pprint(tasks, output=sys.stdout, session=None):
 def main(tasks):
     # advance all jobs
     engine.progress()
-    # manage terminated jobs
-    for task in tasks:
-        if task.execution.state == gc3libs.Run.State.TERMINATED:
-            if task.execution.returncode == 0:
-                # task terminated successfully; remove from job list
-                # if more than 1 day old
-                if (time.time() - task.execution.timestamp['TERMINATED']) > 24*60*60:
-                    tasks.remove(task)
-            else:
-                # something went wrong; what should we do?
-                # just keep the job around for a while and then remove it?
-                if (time.time() - task.execution.timestamp['TERMINATED']) > 3*24*60*60:
-                    tasks.remove(task)
     # write updated jobs to session file
     try:
         session = file(session_file_name, "wb")
