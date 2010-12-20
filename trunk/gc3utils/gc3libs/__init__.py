@@ -192,7 +192,7 @@ class Task(object):
         """
         self._grid.kill(self)
 
-    def fetch_output(self, output_dir=None, overwrite=True):
+    def fetch_output(self, output_dir=None, overwrite=False):
         """
         Retrieve the outputs of the computational job associated with
         this task into directory `output_dir`, or, if that is `None`,
@@ -457,23 +457,8 @@ class Application(Struct, Persistable, Task):
         self.executable = executable
         self.arguments = [ str(x) for x in arguments ]
 
-        def convert_to_tuple(val):
-            if isinstance(val, types.StringTypes):
-                l = str(val) # XXX: might throw enconding error if `val` is Unicode?
-                r = os.path.basename(l)
-                return (l, r)
-            else: 
-                return tuple(val)
-        try:
-            # is `inputs` dict-like?
-            self.inputs = dict((k,v) for k,v in inputs.iteritems())
-        except AttributeError:
-            # `inputs` is a list-like
-            self.inputs = dict(convert_to_tuple(x) for x in inputs)
-        try:
-            self.outputs = dict((k,v) for k,v in outputs.iteritems())
-        except AttributeError:
-            self.outputs = dict(convert_to_tuple(x) for x in outputs)
+        self.inputs = Application._io_spec_to_dict(inputs)
+        self.outputs = Application._io_spec_to_dict(outputs)
         # esnure remote paths are not absolute
         for r in self.inputs.itervalues():
             if os.path.isabs(r):
@@ -524,6 +509,47 @@ class Application(Struct, Persistable, Task):
         # any additional param
         Struct.__init__(self, **kw)
 
+    @staticmethod
+    def _io_spec_to_dict(spec):
+        """
+        Return a dictionary formed by pairs path:name.  (Only used for
+        internal processing of `input` and `output` fields.)
+
+        Argument `spec` is either a list or a Python `dict` instance,
+        in which case a copy of it is returned::
+        
+          >>> d1 = { '/tmp/1':'1', '/tmp/2':'2' }
+          >>> d2 = Application._io_spec_to_dict(d1)
+          >>> d2 == d1
+          True
+          >>> d2 is d1
+          False
+
+        If `spec` is a list, each element can be either a tuple
+        `(path, name)`, or a string `path`, which is converted to a
+        tuple `(path, name)` by setting `name =
+        os.path.basename(path)`::
+
+          >>> l1 = [ ('/tmp/1', '1'), '/tmp/2' ]
+          >>> d3 = Application._io_spec_to_dict(l1)
+          >>> d3 == d2
+          True
+
+        """
+        try:
+            # is `spec` dict-like?
+            return dict((k,v) for k,v in spec.iteritems())
+        except AttributeError:
+            # `spec` is a list-like
+            def convert_to_tuple(val):
+                if isinstance(val, types.StringTypes):
+                    l = str(val) # XXX: might throw enconding error if `val` is Unicode?
+                    r = os.path.basename(l)
+                    return (l, r)
+                else: 
+                    return tuple(val)
+            return dict(convert_to_tuple(x) for x in spec)
+        
 
     def __str__(self):
         try:
@@ -672,6 +698,10 @@ class Application(Struct, Persistable, Task):
         """
         Called when the job state is (re)set to `NEW`.
 
+        Note this will not be called when the application object is
+        created, rather if the state is reset to `NEW` after it has
+        already been submitted.
+
         The default implementation does nothing, override in derived
         classes to implement additional behavior.
         """
@@ -793,8 +823,7 @@ class _Signal(object):
     Base class for representing fake signals encoding the failure
     reason for GC3Libs jobs.
     """
-    def __init__(self, name, signum, description):
-        self._name = name
+    def __init__(self, signum, description):
         self._signum = signum
         self.__doc__ = description
     # conversion to integer types
@@ -804,7 +833,49 @@ class _Signal(object):
         return self._signum
     # human-readable explanation
     def __str__(self):
-        return "SIG%s(%d) - %s" % (self._name, self._signum, self.__doc__)
+        return "Signal %d: %s" % (self._signum, self.__doc__)
+
+class _Signals(object):
+    """
+    Collection of (fake) signals used to encode termination reason in `Run.returncode`.
+
+    ======  ============================================================
+    signal  error condition
+    ======  ============================================================
+    125     submission to batch system failed
+    124     remote error (e.g., execution node crashed, batch system misconfigured)
+    123     data staging failure
+    122     job killed by batch system / sysadmin
+    121     job canceled by user
+    ======  ============================================================
+
+    """
+
+    Cancelled = _Signal(121, "Job canceled by user")
+    RemoteKill = _Signal(122, "Job killed by batch system or sysadmin")
+    DataStagingFailure = _Signal(123, "Data staging failure")
+    RemoteError = _Signal(124, "Unspecified remote error,"
+                          " e.g., execution node crashed"
+                          " or batch system misconfigured")
+    SubmissionFailed = _Signal(125, "Submission to batch system failed.")
+
+    def __contains__(self, signal):
+        if 121 <= int(signal) <= 125:
+            return True
+        else:
+            return False
+    def __getitem__(self, signal_num):
+        if signal_num == 121:
+            return Signals.Cancelled
+        if signal_num == 122:
+            return Signals.RemoteKill
+        if signal_num == 123:
+            return Signals.DataStagingFailure
+        if signal_num == 124:
+            return Signals.RemoteError
+        if signal_num == 125:
+            return Signals.SubmissionFailed
+        raise InvalidArgument("Unknown signal number %d" % signal_num)
 
 
 class Run(Struct):
@@ -1058,7 +1129,7 @@ class Run(Struct):
                 # `value` can be a tuple `(signal, exitcode)`
                 self.signal = int(value[0])
                 self.exitcode = int(value[1])
-            except TypeError:
+            except (TypeError, ValueError):
                 self.exitcode = (int(value) >> 8) & 0xff
                 self.signal = int(value) & 0x7f
             # ensure values are within allowed range
@@ -1066,46 +1137,8 @@ class Run(Struct):
             self.signal &= 0x7f
         return (locals())
 
-    class Signals(object):
-        """
-        Collection of (fake) signals used to encode termination reason in `Run.returncode`.
-
-        ======  ============================================================
-        signal  error condition
-        ======  ============================================================
-        125     submission to batch system failed
-        124     remote error (e.g., execution node crashed, batch system misconfigured)
-        123     data staging failure
-        122     job killed by batch system / sysadmin
-        121     job canceled by user
-        ======  ============================================================
-
-        """
-        Cancelled = _Signal('CANCEL', 121, "Job canceled by user")
-        RemoteKill = _Signal('BATCHKILL', 122, "Job killed by batch system or sysadmin")
-        DataStagingFailure = _Signal('STAGE', 123, "Data staging failure")
-        RemoteError = _Signal('BATCHERR', 124, 
-                              "Unspecified remote error, e.g., execution node crashed"
-                              " or batch system misconfigured")
-        SubmissionFailed = _Signal('SUBMIT', 125, "Submission to batch system failed.")
-        
-        def __contains__(self, signal_num):
-            if 121 <= signal_num <= 125:
-                return True
-            else:
-                return False
-        def __getitem__(self, signal_num):
-            if signal_num == 121:
-                return Signals.Cancelled
-            if signal_num == 122:
-                return Signals.RemoteKill
-            if signal_num == 123:
-                return Signals.DataStagingFailure
-            if signal_num == 124:
-                return Signals.RemoteError
-            if signal_num == 125:
-                return Signals.SubmissionFailed
-            raise InvalidArgument("Unknown signal number %d" % signal_num)
+    # `Run.Signals` is an instance of global class `_Signals`
+    Signals = _Signals()    
 
         
 ## main: run tests
