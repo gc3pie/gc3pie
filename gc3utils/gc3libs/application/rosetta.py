@@ -29,6 +29,7 @@ from gc3libs.Exceptions import *
 import os
 import os.path
 from pkg_resources import Requirement, resource_filename
+import tarfile
 
 
 class RosettaApplication(gc3libs.Application):
@@ -50,34 +51,52 @@ class RosettaApplication(gc3libs.Application):
     """
     def __init__(self, application, inputs, outputs=[], 
                  flags_file=None, database=None, arguments=[], **kw):
-        # ensure `application` has no trailing ".something' (e.g., ".linuxgccrelease")
-        application = os.path.splitext(application)[0]
-        
-        _inputs = list(inputs.values())
-        gc3libs.log.debug("RosettaApplication: _inputs=%s" % _inputs)
-        _outputs = list(outputs) # make a copy
 
-        # do specific setup required for/by the support script "rosetta.sh"
+        # we're submitting Rosetta jobs thorugh the support script
+        # "rosetta.sh", so do the specific setup tailored to this
+        # script' usage
         src_rosetta_sh = resource_filename(Requirement.parse("gc3utils"), 
                                            "gc3libs/etc/rosetta.sh")
-        gc3libs.log.debug("RosettaApplication: src_rosetta_sh=%s" % src_rosetta_sh)
-        rosetta_sh = application + '.sh'
-        _inputs.append((src_rosetta_sh, rosetta_sh))
-        _outputs.append(application + '.log')
-        _outputs.append(application + '.tar.gz')
 
-        _arguments = [ ]
-        for opt, file in inputs.items():
-            _arguments.append(opt)
-            _arguments.append(os.path.basename(file))
+        # ensure `application` has no trailing ".something' (e.g., ".linuxgccrelease")
+        # because it depends on the execution platform/compiler
+        # XXX: this does not currently work as intended, since the
+        # rosetta.sh script encodes the '.linuxgccrelease' suffix, but
+        # we shall eventually move it into the RTE
+        if application.endswith('release'):
+            application = os.path.splitext(application)[0]
+        # remember the protocol name for event methods
+        self.__protocol = application
+
+        _inputs = gc3libs.Application._io_spec_to_dict(inputs)
+
+        # since ARC/xRSL does not allow wildcards in the "outputFiles"
+        # line, and Rosetta can create ouput files whose number/name
+        # is not known in advance, the support script will create a
+        # tar archive all of all the output files; therefore, the
+        # GC3Libs Application is only told to fetch two files back,
+        # and we extract output files back during the postprocessing stage
+        _outputs = [ 
+            self.__protocol + '.log',
+            self.__protocol + '.tar.gz' 
+            ]
+
+        if len(outputs) > 0:
+            _arguments = ['--tar', str.join(' ', [ str(o) for o in outputs ])]
+        else:
+            _arguments = ['--tar', '*.pdb *.sc *.fasc']
+        # XXX: this is too gdocking-specific!
+        # for opt, file in _inputs.items():
+        #     _arguments.append(opt)
+        #     _arguments.append(os.path.basename(file))
 
         if flags_file:
-            _inputs.append((flags_file, application + '.flags'))
-            # the `rosetta.sh` driver will do this automatically
+            _inputs[flags_file] = self.__protocol + '.flags'
+            # the `rosetta.sh` driver will do this automatically:
             #_arguments.append("@" + os.path.basename(flags_file))
 
         if database:
-            _inputs.append(database)
+            _inputs[database] = os.path.basename(database)
             _arguments.append("-database")
             _arguments.append(os.path.basename(database))
 
@@ -93,12 +112,41 @@ class RosettaApplication(gc3libs.Application):
         kw.setdefault('stdout', application+'.stdout.txt')
         kw.setdefault('stderr', application+'.stderr.txt')
 
-        gc3libs.Application.__init__(self,
-                                     executable = "./%s" % rosetta_sh,
-                                     arguments = _arguments,
-                                     inputs = _inputs,
-                                     outputs = _outputs,
-                                     **kw)
+        rosetta_sh = self.__protocol + '.sh'
+        _inputs[src_rosetta_sh] = rosetta_sh
+
+        gc3libs.Application.__init__(
+            self,
+            executable = "./%s" % rosetta_sh,
+            arguments = _arguments,
+            inputs = _inputs,
+            outputs = _outputs,
+            **kw)
+
+    def postprocess(self, output_dir):
+        """
+        Extract output files from the tar archive created by the
+        'rosetta.sh' script.
+        """
+        tar_file_name = os.path.join(output_dir, 
+                                     self.__protocol + '.tar.gz')
+        if os.path.exists(tar_file_name):
+            if tarfile.is_tarfile(tar_file_name):
+                try:
+                    tar_file = tarfile.open(tar_file_name, 'r:gz')
+                    tar_file.extractall(path=output_dir)
+                    os.remove(tar_file_name)
+                except tarfile.TarError, ex:
+                    gc3libs.log.error("Error extracting output from archive '%s': %s: %s"
+                                      % (tar_file_name, ex.__class__.__name__, str(ex)))
+            else:
+                gc3libs.log.error("Could not extract output archive '%s':"
+                                  " format not handled by Python 'tarfile' module" 
+                                  % tar_file_name)
+        else:
+            gc3libs.log.error("Could not find output archive '%s' for Rosetta job" 
+                              % tar_file_name)
+                
 
 gc3libs.application.register(RosettaApplication, 'rosetta')
 
@@ -127,16 +175,18 @@ class RosettaDockingApplication(RosettaApplication):
         RosettaApplication.__init__(
             self,
             application = 'docking_protocol',
-            inputs = { 
-                "-in:file:s":pdb_file_path,
-                "-in:file:native":native_file_path,
-                },
+            inputs = [
+                pdb_file_path,
+                native_file_path,
+                ],
             outputs = [
-                pdb_file_name_sans + '.fasc',
-                pdb_file_name_sans + '.sc',
+                #pdb_file_name_sans + '.fasc',
+                #pdb_file_name_sans + '.sc',
                 ],
             flags_file = flags_file,
             arguments = [ 
+                "-in:file:s", os.path.basename(pdb_file_path),
+                "-in:file:native", os.path.basename(native_file_path),
                 "-out:file:o", pdb_file_name_sans,
                 "-out:nstruct", number_of_decoys_to_create,
                 ] + get_and_remove(kw, 'arguments', []),

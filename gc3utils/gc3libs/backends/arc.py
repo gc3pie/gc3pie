@@ -221,10 +221,11 @@ class ArcLrms(LRMS):
                         " killed by remote batch system" 
                         % arc_job.requested_wall_time)
                 job.returncode = (Run.Signals.RemoteError, -1)
-            elif arc_job.used_memory >= (app.requested_memory * 1024):
+            # note: arc_job.used_memory is in KiB (!), app.requested_memory is in GiB
+            elif (arc_job.used_memory / 1024) >= (app.requested_memory * 1024):
                 job.log("Job used more memory (%d GB) than requested (%d GB),"
                         " killed by remote batch system" 
-                        % (arc_job.used_memory / 1024, app.requested_memory))
+                        % (arc_job.used_memory / 1024 / 1024, app.requested_memory))
                 job.returncode = (Run.Signals.RemoteError, -1)
             else:
                 # presume everything went well...
@@ -273,10 +274,10 @@ class ArcLrms(LRMS):
         try:
             arclib.JobFTPControl.DownloadDirectory(jftpc, job.lrms_jobid,download_dir)
             job.download_dir = download_dir
-        except arclib.FTPControlError:
+        except arclib.FTPControlError, ex:
             # critical error. consider job remote data as lost
-            raise DataStagingError("Failed downloading remote folder '%s'" 
-                                   % job.lrms_jobid)
+            raise DataStagingError("Failed downloading remote folder '%s': %s" 
+                                   % (job.lrms_jobid, str(ex)))
 
         return # XXX: return list of downloaded files?
 

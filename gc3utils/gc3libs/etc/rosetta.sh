@@ -9,28 +9,36 @@ Usage: $PROG [script options] [rosetta arguments ...]
 Run the Rosetta '${PROG}' application with any arguments specified on
 the command-line; if a '${PROG}.flags' file exists in the current
 directory, all options specified there will be appended to the
-RosettaDock invocation.  
+Rosetta invocation command-line.
 
-Output from the RosettaDock application will be collected to a
+Output from the Rosetta application will be collected to a
 '${PROG}.log' file.
 
-After a successful run, computed decoy energy scores will be
-collected into a file named '${PROG}.tar.gz'
-
-Arguments starting with a single '-' are not interpreted as
-options, instead they are passed unchanged to RosettaDock.
+After a successful run, all '.pdb', '.sc' and '.fasc' files will be
+collected into a file named '${PROG}.tar.gz'.  The list of files to be
+packed into the archive can be overridden with the '--tar' script
+option.
 
 Option processing stops at the first argument that is not recognized
-as an option; i.e., all script options must precede RosettaDock
-options.
+as an option; i.e., all script options must precede Rosetta options.
 
 Script options:
 
-  --help  Print this help text.
+  --help   Print this help text.
 
-  --quiet Do not report on script progress status: only errors
-          and messages directly coming from RosettaDock will appear
-          in the standard output.
+  --quiet  Do not report on script progress status: only errors
+           and messages directly coming from RosettaDock will appear
+           in the standard output.
+
+  --tar "FILES"
+           Pack the given files into a single '${PROG}.tar.gz' archive;
+           by default this includes all '.pdb', '.sc' and '.fasc' files.
+           Argument FILES must be a whitespace-separated list of files
+           to include in the archive; shell glob patterns '*' and '?' 
+           are allowed.  No error will be produced if any of the listed
+           files is not found in the execution directory.
+              
+   --no-tar Do not create a tar archive of results at all.
 
 EOF
 }
@@ -81,11 +89,14 @@ is_absolute_path () {
 ## parse command-line 
 
 say="echo $PROG: "
+tar_patterns='*.pdb *.sc *.fasc'
 
 while [ $# -gt 0 ]; do
     case "$1" in
-        --help) usage; exit 0 ;;
-        --quiet) say=':' ;;
+        --help)   usage; exit 0 ;;
+        --no-tar) tar_patterns='' ;;
+        --quiet)  say=':' ;;
+        --tar)    tar_patterns="$2"; shift ;;
         *) break ;;
     esac
     shift
@@ -105,17 +116,34 @@ require_command cut
 if [ -e "${PROG}.flags" ]; then
     if grep -q -e '^-database' "${PROG}.flags"; then
         # correct database location
-        sed -i -r -e "s|-database +.*|-database $ROSETTA_DB_LOCATION|g" "${PROG}.flags"
+        case "${PROG}" in
+            minirosetta*)
+                sed -i -r -e "s|-database +.*|-database ${MINIROSETTA_DB_LOCATION}|g" "${PROG}.flags" 
+                $say Changed database location in ${PROG}.flags file to "$MINIROSETTA_DB_LOCATION"
+                ;;
+            *) 
+                sed -i -r -e "s|-database +.*|-database ${ROSETTA_DB_LOCATION}|g" "${PROG}.flags" 
+                $say Changed database location in ${PROG}.flags file to "$ROSETTA_DB_LOCATION"
+                ;;
+        esac
         database_specified_in_flags_file=yes
-        $say Changed database location in ${PROG}.flags file to "$ROSETTA_DB_LOCATION"
     fi
     flags="`grep ^- ${PROG}.flags`"
 fi
 
 if [ -z "$database_specified_in_flags_file" ]; then
-    require_environment_variable ROSETTA_DB_LOCATION
-    database="-database $ROSETTA_DB_LOCATION"
-    $say "Database location not in flags file, using the one from RTE: '$ROSETTA_DB_LOCATION'"
+    case "${PROG}" in
+        minirosetta*)
+            require_environment_variable MINIROSETTA_DB_LOCATION
+            database="-database $MINIROSETTA_DB_LOCATION"
+            $say "Database location not in flags file, using the one from RTE: '$MINIROSETTA_DB_LOCATION'"
+            ;;
+        *)
+            require_environment_variable ROSETTA_DB_LOCATION
+            database="-database $ROSETTA_DB_LOCATION"
+            $say "Database location not in flags file, using the one from RTE: '$ROSETTA_DB_LOCATION'"
+            ;;
+    esac
 fi
 
 require_environment_variable ROSETTA_LOCATION
@@ -123,13 +151,13 @@ require_environment_variable ROSETTA_LOCATION
 $say Running: $ROSETTA_LOCATION/${PROG}.linuxgccrelease $database $flags "$@"
 (${ROSETTA_LOCATION}/${PROG}.linuxgccrelease $flags $database "$@" 2>&1; echo $? > ${PROG}.exitcode) | tee ${PROG}.log
 
-$say Collecting computed decoys energy scores in file "${stem}${PROG}.tar.gz" ...
-# the fancy `$(ls ...)` constructs avoid tar complaining about '*.something not found'
-tar $verbose -cvzf "${PROG}.tar.gz" \
-    $(ls *.pdb 2>/dev/null) \
-    $(ls *.pdb.gz 2>/dev/null) \
-    $(ls *.sc 2>/dev/null) \
-    *.fasc
+$say Contents of the execution directory, after processing:
+ls -l
+
+if [ -n "$tar_patterns" ]; then
+    $say Collecting  "'$tar_patterns'" into archive "${PROG}.tar.gz" ...
+    tar $verbose -cvzf "${PROG}.tar.gz" $(ls $tar_patterns 2>/dev/null)
+fi
 
 rc=$(cat ${PROG}.exitcode)
 

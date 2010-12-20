@@ -98,14 +98,15 @@ class TaskCollection(Task):
         # XXX: provide default implementation that kills all jobs?
         raise NotImplementedError("Called abstract method TaskCollection.kill() - this should be overridden in derived classes.")
 
-    def fetch_output(self, output_dir=None):
+    def fetch_output(self, output_dir=None, overwrite=False):
         # if `output_dir` is not None, it is interpreted as the base
         # directory where to download files; each task will get its
         # own subdir based on its `.persistent_id`
         for task in self._tasks:
             if output_dir is not None:
-                self._grid.fetch_output(task, os.path.join(output_dir, 
-                                                           task.permanent_id))
+                self._grid.fetch_output(task, 
+                                        os.path.join(output_dir, task.permanent_id),
+                                        overwrite)
     def peek(self, what, offset=0, size=None):
         """
         Raise a `gc3libs.Exceptions.InvalidOperation` error, as there

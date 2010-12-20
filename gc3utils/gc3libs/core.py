@@ -204,7 +204,7 @@ class Core:
                         raise
                     except Exception, ex:
                         gc3libs.log.debug("Error getting status of application '%s': %s: %s",
-                                          app, ex.__class__.__name__, str(ex))
+                                          app, ex.__class__.__name__, str(ex), exc_info=True)
                         state = Run.State.UNKNOWN
                         # run error handler if defined
                         if hasattr(app, 'update_job_state_error'):
@@ -222,15 +222,18 @@ class Core:
                 # pass immediately on to client code and let
                 # it handle this...
                 raise
-            except Exception, ex:
-                gc3libs.log.error("Error in Core.update_job_state(), ignored: %s: %s",
-                                  ex.__class__.__name__, str(ex))
+            # XXX: disabling this catch-all clause: I think it just
+            # makes it harder to catch code errors; consider
+            # re-enabling when the code is more proved and stable...
+            #except Exception, ex:
+            #    gc3libs.log.error("Error in Core.update_job_state(), ignored: %s: %s",
+            #                      ex.__class__.__name__, str(ex), exc_info=True)
             states.append(app.execution.state)
 
         return states
 
 
-    def fetch_output(self, app, download_dir=None, overwrite=True, **kw):
+    def fetch_output(self, app, download_dir=None, overwrite=False, **kw):
         """
         Retrieve job output into local directory `app.output_dir`;
         optional argument `download_dir` overrides this.  Return
@@ -835,7 +838,7 @@ class Engine(object):
         return [task.execution.state for task in tasks]
 
 
-    def fetch_output(self, task, output_dir=None, overwrite=True):
+    def fetch_output(self, task, output_dir=None, overwrite=False):
         """
         Proxy for `Core.fetch_output` (which see).
         """
