@@ -203,6 +203,32 @@ class ArcLrms(LRMS):
         state = map_arc_status_to_gc3job_status(arc_job.status)
         if arc_job.exitcode != -1:
             job.returncode = arc_job.exitcode
+        elif state == Run.State.TERMINATED:
+            # XXX: it seems that ARC does not report the job exit code
+            # (at least in some cases); let's make one up based on
+            # some crude heuristics
+            if arc_job.errors != '':
+                job.log("ARC reported error: %s" % arc_job.errors)
+                job.returncode = (Run.Signals.RemoteError, -1)
+            # XXX: we should introduce a kind of "wrong requirements" error
+            elif arc_job.used_wall_time >= arc_job.requested_wall_time:
+                job.log("Job exceeded requested wall-clock time (%d s),"
+                        " killed by remote batch system" 
+                        % arc_job.requested_wall_time)
+                job.returncode = (Run.Signals.RemoteError, -1)
+            elif arc_job.used_cpu_time >= arc_job.requested_cpu_time:
+                job.log("Job exceeded requested CPU time (%d s),"
+                        " killed by remote batch system" 
+                        % arc_job.requested_wall_time)
+                job.returncode = (Run.Signals.RemoteError, -1)
+            elif arc_job.used_memory >= (app.requested_memory * 1024):
+                job.log("Job used more memory (%d GB) than requested (%d GB),"
+                        " killed by remote batch system" 
+                        % (arc_job.used_memory / 1024, app.requested_memory))
+                job.returncode = (Run.Signals.RemoteError, -1)
+            else:
+                # presume everything went well...
+                job.returncode = 0
         job.lrms_jobname = arc_job.job_name # XXX: `lrms_jobname` is the name used in `sge.py`
 
         # FIXME: These should become part of mandatory Job information
