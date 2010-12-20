@@ -138,6 +138,7 @@ class ArcLrms(LRMS):
                     ARC job status  `Run.State`
                     ==============  ===========
                     ACCEPTED        SUBMITTED
+                    ACCEPTING       SUBMITTED
                     SUBMITTING      SUBMITTED
                     PREPARING       SUBMITTED
                     INLRMS:Q        SUBMITTED
@@ -167,6 +168,7 @@ class ArcLrms(LRMS):
             try:
                 return {
                     'ACCEPTED':  Run.State.SUBMITTED,
+                    'ACCEPTING': Run.State.SUBMITTED,
                     'SUBMITTING':Run.State.SUBMITTED,
                     'PREPARING': Run.State.SUBMITTED,
                     'INLRMS:Q':  Run.State.SUBMITTED,
