@@ -26,23 +26,23 @@ meaning:
    ===    ============================================================
    Bit    Meaning
    ===    ============================================================
-   0      Set if a fatal error occurred: `grosetta` could not complete
+   0      Set if a fatal error occurred: `ggamess` could not complete
    1      Set if there are jobs in `FAILED` state
    2      Set if there are jobs in `RUNNING` or `SUBMITTED` state
    3      Set if there are jobs in `NEW` state
    ===    ============================================================
 This boils down to the following rules:
-   * exitcode == 0: all jobs are `DONE`, no further `grosetta` action
-   * exitcode == 1: an error interrupted `grosetta` execution
+   * exitcode == 0: all jobs are `DONE`, no further `ggamess` action
+   * exitcode == 1: an error interrupted `ggamess` execution
    * exitcode == 2: all jobs finished, but some are in `FAILED` state
-   * exitcode > 3: run `grosetta` again to progress jobs
+   * exitcode > 3: run `ggamess` again to progress jobs
 
 See the output of ``ggamess --help`` for program usage instructions.
 """
 # summary of user-visible changes
 __changelog__ = """
   2010-12-20:
-    * Initial release, forked off the ``grosetta`` sources.
+    * Initial release, forked off the ``ggamess`` sources.
 """
 __author__ = 'Riccardo Murri <riccardo.murri@uzh.ch>'
 __docformat__ = 'reStructuredText'
@@ -137,7 +137,7 @@ cmdline.add_option("-o", "--output", dest="output", default=os.getcwd(),
                    " TIME is replaced by the submission time formatted as HH:MM."
                    )
 cmdline.add_option("-s", "--session", dest="session", 
-                   default=os.path.join(os.getcwd(), 'grosetta.csv'),
+                   default=os.path.join(os.getcwd(), 'ggamess.csv'),
                    metavar="FILE",
                    help="Use FILE to store the index of running jobs (default: '%default')."
                    " Any input files specified on the command line will be added to the existing"
@@ -203,7 +203,7 @@ class GGamessApplication(GamessApplication):
     methods that implement job status reporting for the UI, and data
     post-processing.
     """
-    def __init__(self, application, inp_file_path, **kw):
+    def __init__(self, inp_file_path, **kw):
         GamessApplication.__init__(self, inp_file_path, **kw)
         # define additional attributes
         self.inp_file_path = inp_file_path
@@ -247,29 +247,29 @@ class GGamessApplication(GamessApplication):
                     self.set_info("Job exited with code %d" 
                                   % self.execution.exitcode)
 
-    def postprocess(self, tmp_dir):
-        # the GGamessApplication instance points to a temporary
-        # download directory, one level below the intended output
-        # directory; here we check for correct GAMESS output and move
-        # files to their correct final destination.
-        output_dir = os.path.dirname(tmp_dir)
-        jobname = os.path.splitext(os.path.basename(self.inp_file_name))[0]
-        if self.returncode == 0:
-            # job successful, move files out of the temp dir
-            out_file_name = jobname + '.out'
-            dat_file_name = jobname + '.dat'
-            os.rename(os.path.join(tmp_dir, out_file_name), 
-                      os.path.join(output_dir, out_file_name))
-            os.rename(os.path.join(tmp_dir, dat_file_name), 
-                      os.path.join(output_dir, dat_file_name))
-            shutil.rmtree(tmp_dir, ignore_errors=True)
-        else:
-            # job failed, keep results dir and make a marker symlink
-            job_dir = os.path.join(output_dir, self.permanent_id)
-            os.rename(tmp_dir, job_dir)
-            os.symlink(os.path.join(job_dir, out_file_name), 
-                       os.path.join(output_dir, jobname + '.FAILED'))
-        self.set_info("Output retrieved into directory '%s'" % output_dir)
+    # def postprocess(self, tmp_dir):
+    #     # the GGamessApplication instance points to a temporary
+    #     # download directory, one level below the intended output
+    #     # directory; here we check for correct GAMESS output and move
+    #     # files to their correct final destination.
+    #     output_dir = os.path.dirname(tmp_dir)
+    #     jobname = os.path.splitext(os.path.basename(self.inp_file_name))[0]
+    #     if self.returncode == 0:
+    #         # job successful, move files out of the temp dir
+    #         out_file_name = jobname + '.out'
+    #         dat_file_name = jobname + '.dat'
+    #         os.rename(os.path.join(tmp_dir, out_file_name), 
+    #                   os.path.join(output_dir, out_file_name))
+    #         os.rename(os.path.join(tmp_dir, dat_file_name), 
+    #                   os.path.join(output_dir, dat_file_name))
+    #         shutil.rmtree(tmp_dir, ignore_errors=True)
+    #     else:
+    #         # job failed, keep results dir and make a marker symlink
+    #         job_dir = os.path.join(output_dir, self.permanent_id)
+    #         os.rename(tmp_dir, job_dir)
+    #         os.symlink(os.path.join(job_dir, out_file_name), 
+    #                    os.path.join(output_dir, jobname + '.FAILED'))
+    #     self.set_info("Output retrieved into directory '%s'" % output_dir)
         
 
 ## create/retrieve session
@@ -347,7 +347,7 @@ for path in args:
                     # like `inputs.append(dirpath + filename)` but make path absolute
                     inp = os.path.realpath(os.path.join(dirpath, filename))
                     if inp not in old_inputs:
-                        new_inputs.add()
+                        new_inputs.add(inp)
     elif os.path.exists(path):
         inp = os.path.realpath(path)
         if inp not in old_inputs:
@@ -358,7 +358,7 @@ for path in args:
             new_inputs.add(inp)
     else:
         logger.error("Cannot access input path '%s' - ignoring it.", path)
-logger.debug("Gathered input files: '%s'" % str.join("', '", inputs))
+logger.debug("Gathered input files: '%s'" % str.join("', '", new_inputs))
 
 
 ## compute job list
@@ -374,19 +374,18 @@ for inp in new_inputs:
         requested_cores = options.ncores,
         requested_walltime = options.walltime,
         # set job output directory
-        output_dir = os.path.join(
+        output_dir = (
             options.output
             .replace('PATH', os.path.dirname(session_file_name) or os.getcwd())
             .replace('NAME', inp_file_name)
             .replace('DATE', time.strftime('%Y-%m-%d', time.localtime(time.time())))
             .replace('TIME', time.strftime('%H:%M', time.localtime(time.time())))
-            ,
-            # use a temporary download directory; the
-            # GGamessApplication.postprocess() method will move files
-            # to the correct final destination
-            "tmp.%x" % random.randint(0, sys.maxint)
+            # # use a temporary download directory; the
+            # # GGamessApplication.postprocess() method will move files
+            # # to the correct final destination
+            # + "/tmp.%x" % random.randint(0, sys.maxint)
             ),
-        # grosetta-specific data
+        # ggamess-specific data
         instance = inp_file_name,
         ))
 
