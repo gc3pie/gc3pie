@@ -224,7 +224,6 @@ class GHessianStateMachine(StateMachine):
         #child.result.normal_mode.mode
         self.task.result['normal_mode'] = child.result['normal_mode']
         
-        self.state = States.COMPLETE
         return True
     
     @state(States.KILL, StateTypes.ONCE)

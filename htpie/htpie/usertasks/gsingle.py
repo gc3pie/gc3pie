@@ -8,6 +8,7 @@ from htpie.lib.exceptions import *
 import gc3utils.Application
 import gc3utils.Default
 import gc3utils.gcli
+import gc3utils.gcommands
 import gc3utils.Job
 import gc3utils.Exceptions
 
@@ -210,8 +211,12 @@ class GSingleStateMachine(StateMachine):
     
     def __init__(self):
         super(GSingleStateMachine, self).__init__()
-        config_file = gc3utils.Default.CONFIG_FILE_LOCATION
-        self._gcli = gc3utils.gcli.Gcli(*gc3utils.gcli.import_config(config_file))
+        # The gc3utils 'DEFAULT' no longer includes all the config file locations
+        import os
+        _homedir = os.path.expandvars('$HOME')
+        _rcdir = _homedir + "/.gc3"
+        _default_config_file_locations = [ "/etc/gc3/gc3utils.conf", _rcdir + "/gc3utils.conf" ]
+        self._gcli = gc3utils.gcommands._get_gcli(_default_config_file_locations)
     
     @state(States.READY)
     def handle_ready_state(self):

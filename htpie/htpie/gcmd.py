@@ -186,7 +186,7 @@ def main():
     parser_gcontrol_subcommand_sub.add_argument("-i", "--id", dest="id",help="task id to be acted upon", required=True)
     parser_gcontrol_subcommand_sub = parser_gcontrol_subcommand.add_parser('query')
     parser_gcontrol_subcommand_sub.add_argument("-i", "--id", dest="id",help="task type to be acted upon", required=True)
-    parser_gcontrol_subcommand_sub.add_argument("-time", "--time-ago", dest="time_ago",help="number of hours ago since executed last")
+    parser_gcontrol_subcommand_sub.add_argument("-time", "--time-ago", type=float, dest="time_ago",help="number of hours ago since executed last")
     parser_gcontrol_subcommand_sub = parser_gcontrol_subcommand.add_parser('statediag')
     parser_gcontrol_subcommand_sub.add_argument("-i", "--id", dest="id",help="task type to be acted upon", required=True)
     parser_gcontrol.set_defaults(func=gcontrol)
