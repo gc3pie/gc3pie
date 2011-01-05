@@ -671,11 +671,11 @@ class GamessApplication(application.Application):
     @staticmethod
     def gc3_application(f_inp_path, requested_cores, requested_memory,  requested_walltime):
         from gc3utils import Application
-        return Application.GamessApplication(input_file_path=f_inp_path, 
-                                                                       requested_memory = requested_memory, 
-                                                                       requested_cores = requested_cores, 
-                                                                       requested_walltime = requested_walltime, 
-                                                                       job_local_dir = os.path.expanduser('~/gc3_jobs')
+        return Application.GamessApplication(f_inp_path,**{ 'requested_memory' : int(requested_memory), 
+                                                                                        'requested_cores' : int(requested_cores), 
+                                                                                        'requested_walltime' : int(requested_walltime), 
+                                                                                        'job_local_dir' : os.path.expanduser('~/gc3_jobs')
+                                                                                }
                                                                     )
     
     @staticmethod
