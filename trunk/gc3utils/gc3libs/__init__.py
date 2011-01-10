@@ -38,18 +38,50 @@ __version__ = '$Revision$'
 import copy
 import os
 import os.path
+import sys
 import time
 import types
 
 import logging
+import logging.config
 log = logging.getLogger("gc3libs")
-
 
 import Default
 from Exceptions import *
 from persistence import Persistable
-from gc3libs.utils import defproperty, get_and_remove, Enum, Log, Struct, safe_repr
+from gc3libs.utils import defproperty, deploy_configuration_file, get_and_remove, Enum, Log, Struct, safe_repr
 
+
+def configure_logger(level=logging.ERROR,
+                     format=(os.path.basename(sys.argv[0]) 
+                             + ': [%(asctime)s] %(levelname)-8s: %(message)s'),
+                     datefmt='%Y-%m-%d %H:%M:%S'):
+    """
+    Configure the ``gc3libs`` logger.
+
+    Arguments `level`, `format` and `datefmt` set the corresponding
+    arguments in the `logging.basicConfig()` call.  
+
+    If a user configuration file exists in ``~/.gc3/logging.conf``, it
+    is read and used for more advanced configuration; if it does not
+    exist, then a sample one is created.
+    """
+    logging.basicConfig(level=level, format=format, datefmt=datefmt)
+    deploy_configuration_file(Default.LOG_FILE_LOCATION, "logging.conf.example")
+    logging.config.fileConfig(Default.LOG_FILE_LOCATION, {
+            'RCDIR': Default.RCDIR,
+            'HOMEDIR': Default.HOMEDIR 
+            })
+    log.setLevel(level)
+    # due to a bug in Python 2.4.x (see 
+    # https://bugzilla.redhat.com/show_bug.cgi?id=573782 )
+    # we need to disable `logging` reporting of exceptions.
+    try:
+        version_info = sys.version_info
+    except AttributeError:
+        version_info = (1, 5) # 1.5 or earlier
+    if version_info < (2, 5):
+        logging.raiseExceptions = False
 
 
 class Task(object):

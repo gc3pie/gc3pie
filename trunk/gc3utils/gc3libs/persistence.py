@@ -3,7 +3,7 @@
 """
 Facade to store and retrieve Job information from permanent storage.
 """
-# Copyright (C) 2009-2010 GC3, University of Zurich. All rights reserved.
+# Copyright (C) 2009-2011 GC3, University of Zurich. All rights reserved.
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
@@ -104,13 +104,21 @@ def _Id_make_comparison_function(op):
     """
     def decorate(fn):
         def cmp_fn(self, other):
+            # try:
+            #     if self._prefix != other._prefix:
+            #         raise TypeError("Cannot compare `Id(prefix=%s)` with `Id(prefix=%s)`"
+            #                         % (repr(self._prefix), repr(other._prefix)))
+            #     return op(self._seqno, other._seqno)
+            # except AttributeError:
+            #    raise TypeError("`Id` objects can only be compared with other `Id` objects")
             try:
-                if self._prefix != other._prefix:
-                    raise TypeError("Cannot compare `Id(prefix=%s)` with `Id(prefix=%s)`"
-                                    % (repr(self._prefix), repr(other._prefix)))
-                return op(self._seqno, other._seqno)
+                return op((str(self._prefix), self._seqno), 
+                          (str(other._prefix), other._seqno))
             except AttributeError:
-                raise TypeError("`Id` objects can only be compared with other `Id` objects")
+                # fall back to safe comparison as `str`
+                gc3libs.log.debug("Wrong job ID: comparing '%s' (%s) with '%s' (%s)" 
+                                  % (self, type(self), other, type(other)))
+                return op(str(self), str(other))
         return cmp_fn
     return decorate
 

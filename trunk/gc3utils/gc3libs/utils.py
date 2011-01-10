@@ -37,6 +37,7 @@ import sys
 import time
 import UserDict
 
+import Default
 from Exceptions import *
 from lockfile import FileLock
     
