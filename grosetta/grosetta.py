@@ -2,7 +2,7 @@
 #
 #   grosetta.py -- Front-end script for submitting ROSETTA jobs to SMSCG.
 #
-#   Copyright (C) 2010 GC3, University of Zurich
+#   Copyright (C) 2010, 2011 GC3, University of Zurich
 #
 #   This program is free software: you can redistribute it and/or modify
 #   it under the terms of the GNU General Public License as published by
@@ -235,65 +235,6 @@ if not os.path.exists(flags_file):
     sys.exit(1)
 logger.info("Using flags file '%s'", flags_file)
 
-
-## interface to GC3Libs
-
-class GRosettaApplication(gc3libs.application.rosetta.RosettaApplication):
-    """
-    Augment a `RosettaApplication` with state transition
-    methods that implement job status reporting for the UI, and data
-    post-processing.
-    """
-    def __init__(self, application, inputs, outputs,
-                 flags_file=None, **kw):
-        gc3libs.application.rosetta.RosettaApplication.__init__(
-            self, application, inputs, outputs, 
-            flags_file=flags_file, 
-            **kw)
-        # define additional attributes
-        self.info = ''    # user-visible job information
-
-    def set_info(self, msg):
-        """
-        Record `msg` into the application execution log,
-        and into the `.info` attribute.
-        """
-        self.info = msg
-        self.execution.log.append(msg)
-
-    def submit_error(self, exs):
-        self.set_info("Submission failure; please inspect log file for details.")
-
-    def fetch_output_error(self, ex):
-        self.set_info("No output could be retrieved: %s" % str(ex))
-
-    def submitted(self):
-        self.set_info("Submitted at %s" 
-                      % time.ctime(self.execution.timestamp[gc3libs.Run.State.SUBMITTED]))
-
-    def running(self):
-        self.set_info("Running at %s" 
-                      % time.ctime(self.execution.timestamp[gc3libs.Run.State.RUNNING]))
-
-    def terminated(self):
-        if self.execution.returncode == 0:
-            self.set_info("Successfully terminated at %s." 
-                          % time.ctime(self.execution.timestamp[gc3libs.Run.State.TERMINATED]))
-        else:
-            # there was some error, try to explain
-            signal = self.execution.signal
-            if signal in gc3libs.Run.Signals:
-                self.set_info("Abnormal termination: %s" % signal)
-            else:
-                if os.WIFSIGNALED(self.execution.returncode):
-                    self.set_info("Job terminated by signal %d" % signal)
-                else:
-                    self.set_info("Job exited with code %d" 
-                                  % self.execution.exitcode)
-
-    def postprocess(self, output_dir):
-        gc3libs.application.rosetta.RosettaApplication.postprocess(self, output_dir)
-        self.set_info("Output retrieved into directory '%s'" % output_dir)
         
 
 ## create/retrieve session
@@ -394,7 +335,7 @@ if decoys < options.total_decoys:
                     % (nr, min(options.total_decoys, 
                                nr + options.decoys_per_job)))
         arguments = [ '-out:nstruct', str(options.decoys_per_job) ]
-        tasks.append(GRosettaApplication(
+        tasks.append(gc3libs.application.rosetta.RosettaApplication(
             options.protocol,
             inputs,
             outputs,
@@ -468,7 +409,7 @@ def pprint(tasks, output=sys.stdout, session=None):
             output.write("%-15s  %-18s  %-s\n" % 
                          (task.instance, 
                           ('%s (%s)' % (task.execution.state, task.persistent_id)), 
-                          task.info))
+                          task.execution.info))
 
 # create a `Core` instance to interface with the Grid middleware
 grid = gc3libs.core.Core(*gc3libs.core.import_config([
