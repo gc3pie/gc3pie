@@ -2,7 +2,7 @@
 #
 #   ggamess.py -- Front-end script for submitting multiple GAMESS jobs to SMSCG.
 #
-#   Copyright (C) 2010 GC3, University of Zurich
+#   Copyright (C) 2010, 2011 GC3, University of Zurich
 #
 #   This program is free software: you can redistribute it and/or modify
 #   it under the terms of the GNU General Public License as published by
@@ -195,83 +195,6 @@ if not 'NAME' in options.output:
     options.output = os.path.join(options.output, 'NAME')
 
 
-## interface to GC3Libs
-
-class GGamessApplication(GamessApplication):
-    """
-    Augment a `GamessApplication` with state transition
-    methods that implement job status reporting for the UI, and data
-    post-processing.
-    """
-    def __init__(self, inp_file_path, **kw):
-        GamessApplication.__init__(self, inp_file_path, **kw)
-        # define additional attributes
-        self.inp_file_path = inp_file_path
-        self.info = ''    # user-visible job information
-
-    def set_info(self, msg):
-        """
-        Record `msg` into the application execution log,
-        and into the `.info` attribute.
-        """
-        self.info = msg
-        self.execution.log.append(msg)
-
-    def submit_error(self, exs):
-        self.set_info("Submission failure; please inspect log file for details.")
-
-    def fetch_output_error(self, ex):
-        self.set_info("No output could be retrieved: %s" % str(ex))
-
-    def submitted(self):
-        self.set_info("Submitted at %s" 
-                      % time.ctime(self.execution.timestamp[gc3libs.Run.State.SUBMITTED]))
-
-    def running(self):
-        self.set_info("Running at %s" 
-                      % time.ctime(self.execution.timestamp[gc3libs.Run.State.RUNNING]))
-
-    def terminated(self):
-        if self.execution.returncode == 0:
-            self.set_info("Successfully terminated at %s." 
-                          % time.ctime(self.execution.timestamp[gc3libs.Run.State.TERMINATED]))
-        else:
-            # there was some error, try to explain
-            signal = self.execution.signal
-            if signal in gc3libs.Run.Signals:
-                self.set_info("Abnormal termination: %s" % signal)
-            else:
-                if os.WIFSIGNALED(self.execution.returncode):
-                    self.set_info("Job terminated by signal %d" % signal)
-                else:
-                    self.set_info("Job exited with code %d" 
-                                  % self.execution.exitcode)
-
-    # def postprocess(self, tmp_dir):
-    #     # the GGamessApplication instance points to a temporary
-    #     # download directory, one level below the intended output
-    #     # directory; here we check for correct GAMESS output and move
-    #     # files to their correct final destination.
-    #     output_dir = os.path.dirname(tmp_dir)
-    #     jobname = os.path.splitext(os.path.basename(self.inp_file_name))[0]
-    #     if self.returncode == 0:
-    #         # job successful, move files out of the temp dir
-    #         out_file_name = jobname + '.out'
-    #         dat_file_name = jobname + '.dat'
-    #         os.rename(os.path.join(tmp_dir, out_file_name), 
-    #                   os.path.join(output_dir, out_file_name))
-    #         os.rename(os.path.join(tmp_dir, dat_file_name), 
-    #                   os.path.join(output_dir, dat_file_name))
-    #         shutil.rmtree(tmp_dir, ignore_errors=True)
-    #     else:
-    #         # job failed, keep results dir and make a marker symlink
-    #         job_dir = os.path.join(output_dir, self.permanent_id)
-    #         os.rename(tmp_dir, job_dir)
-    #         os.symlink(os.path.join(job_dir, out_file_name), 
-    #                    os.path.join(output_dir, jobname + '.FAILED'))
-    #     self.set_info("Output retrieved into directory '%s'" % output_dir)
-        
-
 ## create/retrieve session
 
 def load(session, store):
@@ -440,7 +363,7 @@ def pprint(tasks, output=sys.stdout, session=None):
             output.write("%-15s  %-18s  %-s\n" % 
                          (task.instance, 
                           ('%s (%s)' % (task.execution.state, task.persistent_id)), 
-                          task.info))
+                          task.execution.info))
 
 # create a `Core` instance to interface with the Grid middleware
 grid = gc3libs.core.Core(*gc3libs.core.import_config([
