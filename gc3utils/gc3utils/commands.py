@@ -3,7 +3,7 @@
 """
 Implementation of the `core` command-line front-ends.
 """
-# Copyright (C) 2009-2010 GC3, University of Zurich. All rights reserved.
+# Copyright (C) 2009-2011 GC3, University of Zurich. All rights reserved.
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
@@ -60,15 +60,7 @@ _default_job_folder_location = os.getcwd()
 _default_wait_time = 3 # XXX: does it really make sense to have a default wall-clock time??
 
 
-class _JobIdFactory(gc3libs.persistence.Id):
-    """
-    Override :py:class:`Id` behavior and generate IDs starting with a
-    lowercase ``job`` prefix.
-    """
-    def __new__(cls, obj, prefix=None, seqno=None):
-        return gc3libs.persistence.Id.__new__(cls, obj, 'job', seqno)
-
-_store = gc3libs.persistence.FilesystemStore(idfactory=_JobIdFactory)
+_store = gc3libs.persistence.FilesystemStore(idfactory=gc3libs.persistence.JobIdFactory)
 
 
 def _configure_logger(verbosity):

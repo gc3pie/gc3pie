@@ -173,6 +173,16 @@ class Id(str):
         pass
 
 
+class JobIdFactory(Id):
+    """
+    Override :py:class:`Id` behavior and generate IDs starting with a
+    lowercase ``job`` prefix.
+    """
+    def __new__(cls, obj, prefix=None, seqno=None):
+        return gc3libs.persistence.Id.__new__(cls, obj, 'job', seqno)
+
+
+
 class Persistable(object):
     """
     A mix-in class to mark that an object should be persisted by its ID.
