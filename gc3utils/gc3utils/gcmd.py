@@ -6,7 +6,7 @@ gc3utils - A simple command-line frontend to distributed resources
 This is a generic front-end code; actual implementation of commands
 can be found in gc3utils/commands.py
 """
-# Copyright (C) 2009-2010 GC3, University of Zurich. All rights reserved.
+# Copyright (C) 2009-2011 GC3, University of Zurich. All rights reserved.
 #
 # Includes parts adapted from the ``bzr`` code, which is
 # copyright (C) 2005, 2006, 2007, 2008, 2009 Canonical Ltd
@@ -127,7 +127,8 @@ def main():
     # due to a bug in Python 2.4.x (see 
     # https://bugzilla.redhat.com/show_bug.cgi?id=573782 )
     # we need to disable `logging` reporting of exceptions.
-    logging.raiseExceptions = False
+    if version_info < (2, 5):
+        logging.raiseExceptions = False
 
 
     # build OptionParser with common options
