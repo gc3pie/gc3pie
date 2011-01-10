@@ -2,7 +2,7 @@
 """
 Top-level interface to Grid functionality.
 """
-# Copyright (C) 2009-2010 GC3, University of Zurich. All rights reserved.
+# Copyright (C) 2009-2011 GC3, University of Zurich. All rights reserved.
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
@@ -150,6 +150,9 @@ class Core:
             gc3libs.log.info('Successfully submitted process to: %s', lrms._resource.name)
             job.state = Run.State.SUBMITTED
             job.resource_name = lrms._resource.name
+            job.info = ("Submitted to '%s' at %s"
+                        % (job.resource_name, 
+                           time.ctime(job.timestamp[Run.State.SUBMITTED])))
             if hasattr(job, 'submitted'):
                 job.submitted()
             # job submitted; return to caller
@@ -159,6 +162,7 @@ class Core:
         if hasattr(app, 'submit_error'):
             ex = app.submit_error(exs)
             if isinstance(ex, Exception):
+                app.execution.info = ("Submission failed: %s" % str(ex))
                 raise ex
             else:
                 return
@@ -214,6 +218,26 @@ class Core:
                     if state != Run.State.UNKNOWN or update_on_error:
                         app.execution.state = state
                 if app.execution.state != old_state:
+                    # set log information accordingly
+                    if app.execution.state == Run.State.RUNNING:
+                        app.execution.info = ("Running at %s" 
+                                              % time.ctime(app.execution.timestamp[Run.State.RUNNING]))
+                    elif app.execution.state == Run.State.TERMINATED:
+                        if app.execution.returncode == 0:
+                            app.execution.info = ("Successfully terminated at %s." 
+                                                  % time.ctime(app.execution.timestamp[gc3libs.Run.State.TERMINATED]))
+                        else:
+                            # there was some error, try to explain
+                            signal = app.execution.signal
+                            if signal in Run.Signals:
+                                app.execution.info = ("Abnormal termination: %s" % signal)
+                            else:
+                                if os.WIFSIGNALED(app.execution.returncode):
+                                    app.execution.info = ("Job terminated by signal %d" % signal)
+                                else:
+                                    app.execution.info = ("Job exited with code %d" 
+                                                          % self.execution.exitcode)
+                    # call Application-specific handler
                     handler_name = str(app.execution.state).lower()
                     if hasattr(app, handler_name):
                         getattr(app, handler_name)()
@@ -290,6 +314,7 @@ class Core:
             job.signal = Run.Signals.DataStagingFailure
             ex = app.fetch_output_error(ex)
             if isinstance(ex, Exception):
+                job.info = ("No output could be retrieved: %s" % str(ex))
                 raise ex
             else:
                 return
@@ -301,7 +326,7 @@ class Core:
                 return
         
         # successfully downloaded results
-        job.log.append("Output downloaded to '%s'" % download_dir)
+        job.info = ("Output downloaded to '%s'" % download_dir)
         app.output_dir = download_dir
         if job.state == Run.State.TERMINATED:
             app.final_output_retrieved = True

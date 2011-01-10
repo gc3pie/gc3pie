@@ -180,8 +180,6 @@ class RosettaDockingApplication(RosettaApplication):
                 native_file_path,
                 ],
             outputs = [
-                #pdb_file_name_sans + '.fasc',
-                #pdb_file_name_sans + '.sc',
                 ],
             flags_file = flags_file,
             arguments = [ 
