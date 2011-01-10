@@ -165,7 +165,7 @@ class GStringStateMachine(StateMachine):
         super(GStringStateMachine, self).__init__()
 
     @transtate(States.WAIT, States.PROCESS, color=StatePrint.START)
-    def handle_wait_tran(self):
+    def handle_wait(self):
         if self._wait_util_done():
             return True
     
