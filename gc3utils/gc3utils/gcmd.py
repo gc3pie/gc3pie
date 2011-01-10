@@ -106,29 +106,10 @@ def main():
 
 
     # configure logging
+    gc3libs.configure_logger()
     import logging
-    logging.basicConfig(
-        level=logging.ERROR, 
-        format=(PROG + ': [%(asctime)s] %(levelname)-8s: %(message)s'),
-        datefmt='%Y-%m-%d %H:%M:%S'
-        )
-
-    import logging.config
-    import gc3utils
-    import gc3libs.Default
-    import gc3libs.utils
-    gc3libs.utils.deploy_configuration_file(gc3libs.Default.LOG_FILE_LOCATION,
-                                             "logging.conf.example")
-    logging.config.fileConfig(gc3libs.Default.LOG_FILE_LOCATION, 
-                              { 'RCDIR':gc3libs.Default.RCDIR,
-                                'HOMEDIR':gc3libs.Default.HOMEDIR })
-    gc3libs.log.setLevel(logging.ERROR)
-    gc3utils.log.setLevel(logging.ERROR)
-    # due to a bug in Python 2.4.x (see 
-    # https://bugzilla.redhat.com/show_bug.cgi?id=573782 )
-    # we need to disable `logging` reporting of exceptions.
-    if version_info < (2, 5):
-        logging.raiseExceptions = False
+    from gc3utils import log
+    log.setLevel(logging.ERROR)
 
 
     # build OptionParser with common options
