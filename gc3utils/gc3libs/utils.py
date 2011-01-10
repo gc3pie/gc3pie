@@ -383,8 +383,14 @@ class Log(object):
         self._messages.append((message, time.time(), tags))
 
     def last(self):
-        """Return text of last message appended."""
-        return self._messages[-1][0]
+        """
+        Return text of last message appended. 
+        If log is empty, return empty string.
+        """
+        if len(self._messages) == 0:
+            return ''
+        else:
+            return self._messages[-1][0]
 
     # shortcut for append
     def __call__(self, message, *tags):
