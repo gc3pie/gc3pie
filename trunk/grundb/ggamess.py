@@ -160,10 +160,10 @@ cmdline.add_option("-w", "--wall-clock-time", dest="wctime", default=str(8), # 8
 (options, args) = cmdline.parse_args()
 
 # set up logging
-logging.basicConfig(level=max(1, logging.ERROR - 10 * options.verbose),
-                    format='%(name)s: %(message)s')
-logger = logging.getLogger(PROG)
-gc3libs.log.setLevel(max(1, (5-options.verbose)*10))
+loglevel = max(1, logging.ERROR - 10 * options.verbose)
+gc3libs.configure_logger(loglevel)
+logger = logging.getLogger()
+logger.setLevel(loglevel)
 
 # consistency check
 if options.max_running < 1:
