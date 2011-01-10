@@ -26,7 +26,7 @@ class GHessianTest(model.Task):
     result = model.ListField(model.EmbeddedDocumentField(GHessianResult))
     
     def display(self, long_format=False):
-        output = '%s %s %s %s\n'%(self.cls_name, self.id, self.state, self.transition)
+        output = '%s %s %s %s\n'%(self.cls_name, self.id, self.state, self.status)
         output += '-' * 80 + '\n'
         for result in self.result:
             output += 'Filename: %s\n'%(result['fname'])
@@ -112,7 +112,7 @@ class GHessianTest(model.Task):
                     pass
     
     def successful(self):
-        if self.state == States.PROCESS:
+        if self.state == States.COMPLETE:
             return True
     
     @staticmethod

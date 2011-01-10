@@ -63,8 +63,8 @@ class States(dict):
                 G.add_node(state, **val[2])
         for start_state, transition in self.transitions.iteritems():
             for pair in transition:
-                G.add_edge(start_state, pair[0], label=pair[1].__name__)
-        fullpath = os.path.expanduser(path + '/file.png')
+                G.add_edge(start_state, pair[0], label=' ' + pair[1].__name__ + '    ')
+        fullpath = os.path.expanduser(path + '/%s.png'%doc_name )
         G.draw(fullpath, prog='dot')
         return fullpath
 

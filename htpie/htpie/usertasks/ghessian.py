@@ -103,7 +103,7 @@ class GHessianStateMachine(StateMachine):
     def __init__(self):
         super(GHessianStateMachine, self).__init__()
     
-    @state(States.FIRST_WAIT)
+    @state(States.FIRST_WAIT, color=StatePrint.START)
     def handle_first_wait_state(self):
         pass
     
@@ -226,7 +226,7 @@ class GHessianStateMachine(StateMachine):
         
         return True
     
-    @state(States.KILL, StateTypes.ONCE)
+    @state(States.KILL, StateTypes.ONCE, color=StatePrint.START)
     def handle_kill_state(self):
         return True
 
