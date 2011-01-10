@@ -186,8 +186,12 @@ def progressive_number():
 
     *Note:* as file-level locking is used to serialize access to the
     counter file, this function may block (default timeout: 30
-    seconds) while trying to acquire the lock, or raise an exception
-    if this fails.
+    seconds) while trying to acquire the lock, or raise a
+    `LockTimeout` exception if this fails.
+
+    @raise LockTimeout
+    
+    @return A positive integer number, monotonically increasing with every call.
     """
     # FIXME: should use global config value for directory
     id_filename = os.path.expanduser("~/.gc3/next_id.txt")
