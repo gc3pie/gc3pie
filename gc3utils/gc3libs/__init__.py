@@ -1,6 +1,6 @@
 #! /usr/bin/env python
 #
-# Copyright (C) 2009-2010 GC3, University of Zurich. All rights reserved.
+# Copyright (C) 2009-2011 GC3, University of Zurich. All rights reserved.
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
@@ -889,6 +889,12 @@ class Run(Struct):
         A `gc3libs.utils.Log` instance, recording human-readable text
         messages on events in this job's history.
 
+      `info` 
+        A simplified interface for reading/writing messages to
+        `Run.log`.  Reading from the `info` attribute returns the last
+        message appended to `log`.  Writing into `info` appends a
+        message to `log`.
+
       `timestamp`
         Dictionary, recording the most recent timestamp when a certain
         state was reached.  Timestamps are given as UNIX epochs.
@@ -942,6 +948,29 @@ class Run(Struct):
         if 'log' not in self: self.log = Log()
         if 'timestamp' not in self: self.timestamp = { }
 
+
+    @defproperty
+    def info():
+        """
+        A simplified interface for reading/writing entries into `log`.
+
+        Setting the `info` attribute appends a message to the log::
+
+           >>> j1.info = 'a message'
+           >>> j1.info = 'a second message'
+
+        Getting the value of the `info` attribute returns the last
+        message entered in the log::
+
+          >>> j1.info
+          'a second message'
+
+        """
+        def fget(self):
+            return self.log.last()
+        def fset(self, value):
+            self.log.append(str(value))
+        return locals()
     
     # states that a `Run` can be in
     State = Enum(
