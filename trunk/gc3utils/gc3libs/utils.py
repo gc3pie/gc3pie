@@ -8,7 +8,7 @@ function or class belongs in here is the following: place a function
 or class in the :mod:`utils` if you could copy its code into the
 sources of a different project and it would not stop working.
 """
-# Copyright (C) 2009-2010 GC3, University of Zurich. All rights reserved.
+# Copyright (C) 2009-2011 GC3, University of Zurich. All rights reserved.
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
@@ -351,10 +351,15 @@ class Log(object):
       >>> L.append('first message')
       >>> L.append('second one')
 
+    The `last` method returns the text of the last message appended::
+
+      >>> L.last()
+      'second one'
+
     Iterating over a `Log` instance returns message texts in the
     temporal order they were added to the list::
 
-      >>> for msg in L: print msg
+      >>> for msg in L: print(msg)
       first message
       second one
 
@@ -363,16 +368,35 @@ class Log(object):
         self._messages = [ ]
 
     def append(self, message, *tags):
+        """
+        Append a message to this `Log`.  
+
+        The message is timestamped with the time at the moment of the
+        call.
+
+        The optional `tags` argument is a sequence of strings. Tags
+        are recorded together with the message and may be used to
+        filter log messages given a set of labels. *(This feature is
+        not yet implemented.)*
+        
+        """
         self._messages.append((message, time.time(), tags))
+
+    def last(self):
+        """Return text of last message appended."""
+        return self._messages[-1][0]
 
     # shortcut for append
     def __call__(self, message, *tags):
+        """Shortcut for `Log.append` (which see)."""
         self.append(message, *tags)
 
     def __iter__(self):
+        """Iterate over messages in the temporal order they were added."""
         return iter([record[0] for record in self._messages])
 
     def __str__(self):
+        """Return all messages texts in a single string, separated by newline characters."""
         return str.join('\n', [record[0] for record in self._messages])
 
 
