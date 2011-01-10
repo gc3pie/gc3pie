@@ -7,4 +7,5 @@ sys.path.append('/opt/nordugrid/lib/python%d.%d/site-packages'
                 % sys.version_info[:2])
 
 import logging
-log = logging.getLogger("gc3utils")
+log = logging.getLogger("gc3.gc3utils")
+log.propagate = True

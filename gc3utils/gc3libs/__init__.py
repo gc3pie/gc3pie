@@ -44,7 +44,7 @@ import types
 
 import logging
 import logging.config
-log = logging.getLogger("gc3libs")
+log = logging.getLogger("gc3.gc3libs")
 
 import Default
 from Exceptions import *
@@ -72,7 +72,9 @@ def configure_logger(level=logging.ERROR,
             'RCDIR': Default.RCDIR,
             'HOMEDIR': Default.HOMEDIR 
             })
+    log = logging.getLogger("gc3.gc3libs")
     log.setLevel(level)
+    log.propagate = 1
     # due to a bug in Python 2.4.x (see 
     # https://bugzilla.redhat.com/show_bug.cgi?id=573782 )
     # we need to disable `logging` reporting of exceptions.
