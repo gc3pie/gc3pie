@@ -2,7 +2,7 @@
 #
 #   gdocking.py -- Front-end script for submitting ROSETTA `docking_protocol` jobs to SMSCG.
 #
-#   Copyright (C) 2010 GC3, University of Zurich
+#   Copyright (C) 2010, 2011 GC3, University of Zurich
 #
 #   This program is free software: you can redistribute it and/or modify
 #   it under the terms of the GNU General Public License as published by
@@ -255,15 +255,6 @@ if not 'INSTANCE' in options.output:
 
 ## interface to GC3Libs
 
-def set_info(app, msg):
-    """
-    Record `msg` into the application execution log,
-    and into the `.execution.grosetta_info` attribute.
-    """
-    app.info = msg
-    app.execution.log.append(msg)
-
-
 class GRosettaApplication(gc3libs.application.rosetta.RosettaDockingApplication):
     """
     Augment a `RosettaDockingApplication` with state transition
@@ -278,42 +269,10 @@ class GRosettaApplication(gc3libs.application.rosetta.RosettaDockingApplication)
             **kw)
         # save pdb_file_path for later processing
         self.pdb_file_path = pdb_file_path
-        # define two additional attributes
+        # define additional attributes
         self.computed = 0 # number of decoys actually computed by this job
-        self.info = ''    # user-visible job information
-
-    def submit_error(self, exs):
-        set_info(self, "Submission failure; please inspect log file for details.")
-
-    def fetch_output_error(self, ex):
-        set_info(self, "No output could be retrieved: %s" % str(ex))
-
-    def submitted(self):
-        set_info(self, "Submitted at %s" 
-                 % time.ctime(self.execution.timestamp[gc3libs.Run.State.SUBMITTED]))
-
-    def running(self):
-        set_info(self, "Running at %s" 
-                 % time.ctime(self.execution.timestamp[gc3libs.Run.State.RUNNING]))
-
-    def terminated(self):
-        if self.execution.returncode == 0:
-            set_info(self, "Successfully terminated at %s; output not yet retrieved." 
-                     % time.ctime(self.execution.timestamp[gc3libs.Run.State.TERMINATED]))
-        else:
-            # there was some error, try to explain
-            signal = self.execution.signal
-            if signal in gc3libs.Run.Signals:
-                set_info(self, "Abnormal termination: %s" % 'x')
-            else:
-                if os.WIFSIGNALED(self.execution.returncode):
-                    set_info(self, "Job terminated by signal %d" % signal)
-                else:
-                    set_info(self, "Job exited with code %d" 
-                             % self.execution.exitcode)
 
     def postprocess(self, output_dir):
-        set_info(self, "Output retrieved into directory '%s'" % output_dir)
         # work directory is the parent of the download directory
         work_dir = os.path.dirname(output_dir)
         # move around output files so they're easier to preprocess:
@@ -362,7 +321,7 @@ class GRosettaApplication(gc3libs.application.rosetta.RosettaDockingApplication)
             if options.tarfile:
                 pdbs.close()
         else: # no `docking_protocol.tar.gz` file
-            set_info(self, "No 'docking_protocol.tar.gz' file found.")
+            self.info = ("No 'docking_protocol.tar.gz' file found.")
 
         
 ## create/retrieve session
@@ -450,7 +409,7 @@ inputs = set([ task.pdb_file_path for task in tasks ])
 for path in args:
     if os.path.isdir(path):
         # recursively scan for .pdb files
-        for dirpath, dirnames, filenames in os.walk(inputs):
+        for dirpath, dirnames, filenames in os.walk(path):
             for filename in filenames:
                 if filename.endswith('.pdb'):
                     # like `inputs.append(dirpath + filename)` but make path absolute
@@ -553,7 +512,8 @@ def pprint(tasks, output=sys.stdout, session=None):
         for task in tasks:
             output.write("%-15s  %-15s  %-18s  %-s\n" % 
                          (os.path.basename(task.pdb_file_path), task.instance, 
-                          ('%s (%s)' % (task.execution.state, task.persistent_id)), task.info))
+                          ('%s (%s)' % (task.execution.state, task.persistent_id)), 
+                          task.execution.info))
 
 def main(tasks):
     # advance all jobs
