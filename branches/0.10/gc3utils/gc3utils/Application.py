@@ -208,11 +208,11 @@ class Application(InformationContainer):
                      % str.join(' ', [ ('("%s" "%s")' % (r,l)) for (l,r) in self.inputs.items() ]))
         if len(self.outputs) > 0:
             xrsl += ('(outputFiles=%s)'
-                     % str.join(' ', [ ('("%s" "%s")' % rl) for rl in [ _filtered for _filtered in self.outputs.items() if _filtered[0] != self.stdout and _filtered[0] != self.stderr ]]))
+                     % str.join(' ', [ ('("%s" "")' % rl[0]) for rl in [ _filtered for _filtered in self.outputs.items() if _filtered[0] != self.stdout and _filtered[0] != self.stderr ]]))
 #                     % str.join(' ', [ ('("%s" "%s")' % rl) for rl in self.outputs.items() if rl[0] != self.stdout and rl[0] != stderr ]))
         if len(self.rtes) > 0:
             xrsl += str.join('\n', [
-                    ('(runTimeEnvironment>="%s")' % rte) for rte in self.rtes ])
+                    ('(runTimeEnvironment="%s")' % rte) for rte in self.rtes ])
         if len(self.environment) > 0:
             xrsl += ('(environment=%s)' % 
                      str.join(' ', [ ('("%s" "%s")' % kv) for kv in self.environment ]))
@@ -440,7 +440,7 @@ class RosettaApplication(Application):
         kw.setdefault('stderr', application+'.stderr.txt')
 
         Application.__init__(self,
-                             executable = "./%s" % rosetta_sh,
+                             executable = "%s" % rosetta_sh,
                              arguments = _arguments,
                              inputs = _inputs,
                              outputs = _outputs,
