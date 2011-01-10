@@ -102,6 +102,7 @@ latest version in the current branch:
 3. Upgrade the `gc3utils` source and run the `setup.py` script again:
 
      cd gc3utils
+     svn up
      env CC=gcc ./setup.py develop
 
 
