@@ -86,9 +86,9 @@ import time
 
 import gc3libs
 import gc3libs.application.rosetta
-import gc3libs.collections
-import gc3libs.Default
 import gc3libs.core
+import gc3libs.Default
+import gc3libs.persistence
 import gc3libs.utils
 
 
@@ -360,15 +360,7 @@ def save(tasks, session, store):
 
 # create a `Persistence` instance to save/load jobs
 
-class _JobIdFactory(gc3libs.persistence.Id):
-    """
-    Override :py:class:`Id` behavior and generate IDs starting with a
-    lowercase ``job`` prefix.
-    """
-    def __new__(cls, obj, prefix=None, seqno=None):
-        return gc3libs.persistence.Id.__new__(cls, obj, 'job', seqno)
-
-store = gc3libs.persistence.FilesystemStore(idfactory=_JobIdFactory)
+store = gc3libs.persistence.FilesystemStore(idfactory=gc3libs.persistence.JobIdFactory)
 
 # load the session file, or create a new empty one if not existing
 try:
