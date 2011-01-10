@@ -27,8 +27,8 @@ sources of a different project and it would not stop working.
 __docformat__ = 'reStructuredText'
 __version__ = '$Revision$'
 
-
 import gc3libs
+
 import os
 import os.path
 import re
@@ -36,15 +36,6 @@ import shelve
 import sys
 import time
 import UserDict
-
-# import for send_mail
-import smtplib
-from email.MIMEMultipart import MIMEMultipart
-from email.MIMEBase import MIMEBase
-from email.MIMEText import MIMEText
-from email.Utils import COMMASPACE, formatdate
-from email import Encoders
-
 
 from Exceptions import *
 from lockfile import FileLock
@@ -55,7 +46,6 @@ from lockfile import FileLock
 #                     Generic functions
 #
 # ================================================================
-
 
 class defaultdict(dict):
     """
@@ -628,6 +618,13 @@ def to_bytes(s):
  
 def send_mail(send_from, send_to, subject, text, files=[], server="localhost"):
 
+    from smtplib import SMTP
+    from email.MIMEMultipart import MIMEMultipart
+    from email.MIMEBase import MIMEBase
+    from email.MIMEText import MIMEText
+    from email.Utils import COMMASPACE, formatdate
+    from email import Encoders
+
     msg = MIMEMultipart()
     msg['From'] = send_from
     msg['To'] = COMMASPACE.join(send_to)
@@ -644,7 +641,7 @@ def send_mail(send_from, send_to, subject, text, files=[], server="localhost"):
                         'attachment; filename="%s"' % os.path.basename(f))
         msg.attach(part)
         
-    smtp = smtplib.SMTP(server)
+    smtp = SMTP(server)
     smtp.sendmail(send_from, send_to, msg.as_string())
     smtp.close()
 
