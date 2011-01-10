@@ -20,8 +20,8 @@
 """
 Front-end script for submitting ROSETTA jobs to SMSCG.
 
-Exitcode tracks job status; use the "-b" option to get the old behavior back.
-The new exitcode is a bitfield; the 4 least-significant bits have the following
+Exitcode tracks job status; use the "-b" option to get a 0/1 exit code.
+The exitcode is a bitfield; the 4 least-significant bits have the following
 meaning:
    ===    ============================================================
    Bit    Meaning
@@ -137,7 +137,7 @@ cmdline.add_option("-o", "--output", dest="output", default=os.getcwd(),
                    " DATE is replaced by the submission date in ISO format (YYYY-MM-DD);"
                    " TIME is replaced by the submission time formatted as HH:MM."
                    )
-cmdline.add_option("-P", "--decoys-per-file", type="int", dest="decoys_per_file", 
+cmdline.add_option("-P", "--total-decoys", type="int", dest="total_decoys", 
                    default=1,
                    metavar="NUM",
                    help="Compute NUM decoys per input file (default: %default)."
@@ -184,7 +184,7 @@ gc3libs.log.setLevel(max(1, (5-options.verbose)*10))
 # consistency check
 if options.max_running < 1:
     cmdline.error("Argument to option -J/--max-running must be a positive integer.")
-if options.decoys_per_file < 1:
+if options.total_decoys < 1:
     cmdline.error("Argument to option -P/--decoys-per-file must be a positive integer.")
 if options.decoys_per_job < 1:
     cmdline.error("Argument to option -p/--decoys-per-job must be a positive integer.")
@@ -385,13 +385,13 @@ logger.debug("Gathered input files: '%s'" % str.join("', '", inputs))
             
 # add jobs to the session, until we are computing the specified number of decoys
 # XXX: if the number of requested decoys is lowered, we should cancel jobs!
-if decoys < options.decoys_per_file:
+if decoys < options.total_decoys:
     if decoys > 0:
         logger.info("Already computing %d decoys for '%s', requested %d more.",
-                    decoys, input, options.decoys_per_file - decoys)
-    for nr in range(decoys, options.decoys_per_file, options.decoys_per_job):
+                    decoys, input, options.total_decoys - decoys)
+    for nr in range(decoys, options.total_decoys, options.decoys_per_job):
         instance = ("%d--%d" 
-                    % (nr, min(options.decoys_per_file, 
+                    % (nr, min(options.total_decoys, 
                                nr + options.decoys_per_job)))
         arguments = [ '-out:nstruct', str(options.decoys_per_job) ]
         tasks.append(GRosettaApplication(
