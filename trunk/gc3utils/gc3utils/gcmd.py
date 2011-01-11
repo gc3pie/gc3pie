@@ -106,7 +106,7 @@ def main():
 
 
     # configure logging
-    gc3libs.configure_logger()
+    gc3libs.configure_logger(name='gc3utils')
     import logging
     from gc3utils import log
     log.setLevel(logging.ERROR)

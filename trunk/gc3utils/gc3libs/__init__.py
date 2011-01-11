@@ -53,6 +53,7 @@ from gc3libs.utils import defproperty, deploy_configuration_file, get_and_remove
 
 
 def configure_logger(level=logging.ERROR,
+                     name=None,
                      format=(os.path.basename(sys.argv[0]) 
                              + ': [%(asctime)s] %(levelname)-8s: %(message)s'),
                      datefmt='%Y-%m-%d %H:%M:%S'):
@@ -66,9 +67,12 @@ def configure_logger(level=logging.ERROR,
     is read and used for more advanced configuration; if it does not
     exist, then a sample one is created.
     """
+    if name is None:
+        name = os.path.basename(sys.argv[0])
+    log_conf = os.path.join(Default.RCDIR, name + '.log.conf')
     logging.basicConfig(level=level, format=format, datefmt=datefmt)
-    deploy_configuration_file(Default.LOG_FILE_LOCATION, "logging.conf.example")
-    logging.config.fileConfig(Default.LOG_FILE_LOCATION, {
+    deploy_configuration_file(log_conf, "logging.conf.example")
+    logging.config.fileConfig(log_conf, {
             'RCDIR': Default.RCDIR,
             'HOMEDIR': Default.HOMEDIR 
             })
