@@ -162,7 +162,7 @@ cmdline.add_option("-w", "--wall-clock-time", dest="wctime", default=str(8), # 8
 
 # set up logging
 loglevel = max(1, logging.ERROR - 10 * options.verbose)
-gc3libs.configure_logger(loglevel)
+gc3libs.configure_logger(loglevel, "ggamess")
 logger = logging.getLogger("gc3.ggamess")
 logger.setLevel(loglevel)
 logger.propagate = True
