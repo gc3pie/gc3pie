@@ -177,7 +177,7 @@ cmdline.add_option("-x", "--protocol", dest="protocol", default="minirosetta.sta
 
 # set up logging
 loglevel = max(1, logging.ERROR - 10 * options.verbose)
-gc3libs.configure_logger(loglevel)
+gc3libs.configure_logger(loglevel, "grosetta")
 logger = logging.getLogger("gc3.grosetta")
 logger.setLevel(loglevel)
 logger.propagate = True

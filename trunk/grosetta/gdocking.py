@@ -210,7 +210,7 @@ cmdline.add_option("-z", "--compress-pdb", dest="compress", default=False, actio
 
 # set up logging
 loglevel = max(1, logging.ERROR - 10 * options.verbose)
-gc3libs.configure_logger(loglevel)
+gc3libs.configure_logger(loglevel, "gdocking")
 logger = logging.getLogger("gc3.gdocking")
 logger.setLevel(loglevel)
 logger.propagate = True
