@@ -50,14 +50,11 @@ import gc3libs.utils as utils
 import gc3utils
 
 
-# defaults - XXX: do they belong in ../core.py instead?
-_homedir = os.path.expandvars('$HOME')
-_rcdir = _homedir + "/.gc3"
-_default_config_file_locations = [ "/etc/gc3/gc3pie.conf", _rcdir + "/gc3pie.conf" ]
-_default_joblist_file = _rcdir + "/.joblist"
-_default_joblist_lock = _rcdir + "/.joblist_lock"
-_default_job_folder_location = os.getcwd()
-_default_wait_time = 3 # XXX: does it really make sense to have a default wall-clock time??
+# defaults
+DEFAULT_CONFIG_FILE_LOCATIONS = [ 
+    "/etc/gc3/gc3pie.conf", 
+    os.path.join(gc3libs.Default.RCDIR, "gc3pie.conf") 
+    ]
 
 
 _store = gc3libs.persistence.FilesystemStore(idfactory=gc3libs.persistence.JobIdFactory)
@@ -129,7 +126,7 @@ def gclean(*args, **kw):
         args = _store.list()
 
     try:
-        _core = _get_core(_default_config_file_locations)
+        _core = _get_core(DEFAULT_CONFIG_FILE_LOCATIONS)
     except Exception, ex:
         raise FatalError("gkill failed: %s: %s" % (ex.__class__.__name__, str(ex)))
 
@@ -218,7 +215,7 @@ def gsub(*args, **kw):
     parser = OptionParser(usage="%prog [options] APPLICATION INPUTFILE [OTHER INPUT FILES]")
     parser.add_option("-v", action="count", dest="verbosity", default=0, help="Set verbosity level")
     parser.add_option("-r", "--resource", action="store", dest="resource_name", metavar="STRING", default=None, help='Select resource destination')
-    parser.add_option("-d", "--jobdir", action="store", dest="output_dir", metavar="STRING", default=gc3libs.Default.JOB_FOLDER_LOCATION, help='Select job local folder location')
+    parser.add_option("-d", "--jobdir", action="store", dest="output_dir", metavar="PATH", default=gc3libs.Default.DOWNLOAD_DIR, help='Select output download directory')
     parser.add_option("-c", "--cores", action="store", dest="ncores", metavar="INT", default=0, help='Set number of requested cores')
     parser.add_option("-m", "--memory", action="store", dest="memory_per_core", metavar="INT", default=0, help='Set memory per core request (GB)')
     parser.add_option("-w", "--walltime", action="store", dest="walltime", metavar="INT", default=0, help='Set requested walltime (hours)')
@@ -266,7 +263,7 @@ def gsub(*args, **kw):
         raise InvalidUsage("Unknown application '%s'" % application_tag)
 
     try:
-        _core = _get_core(_default_config_file_locations)
+        _core = _get_core(DEFAULT_CONFIG_FILE_LOCATIONS)
     except Exception, ex:
         raise FatalError("gkill failed: %s: %s" % (ex.__class__.__name__, str(ex)))
 
@@ -289,7 +286,7 @@ def gresub(*args, **kw):
     parser = OptionParser(usage="%prog [options] JOBID [JOBID ...]")
     parser.add_option("-v", action="count", dest="verbosity", default=0, help="Set verbosity level")
     parser.add_option("-r", "--resource", action="store", dest="resource_name", metavar="STRING", default=None, help='Select resource destination')
-    parser.add_option("-d", "--jobdir", action="store", dest="output_dir", metavar="STRING", default=gc3libs.Default.JOB_FOLDER_LOCATION, help='Select job local folder location')
+    parser.add_option("-d", "--jobdir", action="store", dest="output_dir", metavar="PATH", default=gc3libs.Default.DOWNLOAD_DIR, help='Select output download directory')
     parser.add_option("-c", "--cores", action="store", dest="ncores", metavar="INT", default=0, help='Set number of requested cores')
     parser.add_option("-m", "--memory", action="store", dest="memory_per_core", metavar="INT", default=0, help='Set memory per core request (GB)')
     parser.add_option("-w", "--walltime", action="store", dest="walltime", metavar="INT", default=0, help='Set requested walltime (hours)')
@@ -301,7 +298,7 @@ def gresub(*args, **kw):
         raise InvalidUsage('Wrong number of arguments: this commands expects at least 1 argument: JOBID')
 
     try:
-        _core = _get_core(_default_config_file_locations)
+        _core = _get_core(DEFAULT_CONFIG_FILE_LOCATIONS)
     except Exception, ex:
         raise FatalError("gkill failed: %s: %s" % (ex.__class__.__name__, str(ex)))
 
@@ -346,7 +343,7 @@ def gstat(*args, **kw):
     _configure_logger(options.verbosity)
 
     try:
-        _core = _get_core(_default_config_file_locations)
+        _core = _get_core(DEFAULT_CONFIG_FILE_LOCATIONS)
     except Exception, ex:
         raise FatalError("gkill failed: %s: %s" % (ex.__class__.__name__, str(ex)))
 
@@ -390,7 +387,7 @@ def gget(*args, **kw):
 
     failed = False
     try:
-        _core = _get_core(_default_config_file_locations)
+        _core = _get_core(DEFAULT_CONFIG_FILE_LOCATIONS)
     except Exception, ex:
         raise FatalError("gkill failed: %s: %s" % (ex.__class__.__name__, str(ex)))
 
@@ -438,7 +435,7 @@ def gkill(*args, **kw):
 
     failed = 0
     try:
-        _core = _get_core(_default_config_file_locations)
+        _core = _get_core(DEFAULT_CONFIG_FILE_LOCATIONS)
     except Exception, ex:
         raise FatalError("gkill failed: %s: %s" % (ex.__class__.__name__, str(ex)))
 
@@ -489,7 +486,7 @@ def gtail(*args, **kw):
         std = 'stdout'
 
     try:
-        _core = _get_core(_default_config_file_locations)
+        _core = _get_core(DEFAULT_CONFIG_FILE_LOCATIONS)
     except Exception, ex:
         raise FatalError("gkill failed: %s: %s" % (ex.__class__.__name__, str(ex)))
 
@@ -508,6 +505,19 @@ def gtail(*args, **kw):
     return 0
 
 
+# email notification information
+#
+# FIXME: this is terribly wrong! There is no way for the user to
+# override NOTIFY_USER_EMAIL or configure any other of the parameters
+# given here...
+#
+NOTIFY_USER_EMAIL = "default_urename@gc3.uzh.ch"
+NOTIFY_USERNAME = "sergio"
+NOTIFY_GC3ADMIN = "sergio.maffioletti@gc3.uzh.ch"
+NOTIFY_SUBJECTS = "Job notification"
+NOTIFY_MSG = """This is an authomatic generated email."""
+NOTIFY_DESTINATIONFOLDER = os.path.join('/tmp',NOTIFY_USERNAME)
+
 def gnotify(*args, **kw):
     """The gnotify command"""
     parser = OptionParser(usage="Usage: %prog [options] JOBID")
@@ -523,7 +533,7 @@ def gnotify(*args, **kw):
     app = _store.load(jobid)
     try:
         # create tgz with job information
-        tar_filename = gc3libs.Default.NOTIFY_DESTINATIONFOLDER + '/' + jobid + '.tgz'
+        tar_filename = NOTIFY_DESTINATIONFOLDER + '/' + jobid + '.tgz'
         tar = tarfile.open(tar_filename, "w:gz")
         if options.include_job_results:
             try:
@@ -538,10 +548,10 @@ def gnotify(*args, **kw):
         tar.close()
 
         # send notification email to gc3admin
-        utils.send_mail(gc3libs.Default.NOTIFY_USER_EMAIL,
-                        gc3libs.Default.NOTIFY_GC3ADMIN,
-                        gc3libs.Default.NOTIFY_SUBJECTS,
-                        gc3libs.Default.NOTIFY_MSG,
+        utils.send_mail(NOTIFY_USER_EMAIL,
+                        NOTIFY_GC3ADMIN,
+                        NOTIFY_SUBJECTS,
+                        NOTIFY_MSG,
                         [tar_filename])
 
         return 0
@@ -567,7 +577,7 @@ def glist(*args, **kw):
     resource_name = args[0]
 
     try:
-        _core = _get_core(_default_config_file_locations)
+        _core = _get_core(DEFAULT_CONFIG_FILE_LOCATIONS)
     except Exception, ex:
         raise FatalError("gkill failed: %s: %s" % (ex.__class__.__name__, str(ex)))
 

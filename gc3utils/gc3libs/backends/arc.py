@@ -3,7 +3,7 @@
 """
 Job control on ARC0 resources.
 """
-# Copyright (C) 2009-2010 GC3, University of Zurich. All rights reserved.
+# Copyright (C) 2009-2011 GC3, University of Zurich. All rights reserved.
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
@@ -65,7 +65,7 @@ class ArcLrms(LRMS):
             # Convert from hours to minutes
             self._resource.max_walltime = self._resource.max_walltime * 60
             
-        self._queues_cache_time = Default.CACHE_TIME # XXX: should it be configurable?
+        self._queues_cache_time = Default.ARC_CACHE_TIME # XXX: should it be configurable?
 
         self.isValid = 1
 
