@@ -60,7 +60,8 @@ setuptools.setup(
             'gstat = gc3utils.gcmd:main',
             'gsub = gc3utils.gcmd:main',
             'gtail = gc3utils.gcmd:main',
-            'gnotify = gc3utils.gcmd:main',
+            #'gnotify = gc3utils.gcmd:main',
+	    # 'gdemo = gc3utils.gdemo',
             ],
        },
 

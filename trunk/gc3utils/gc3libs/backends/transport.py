@@ -178,7 +178,7 @@ class SshTransport(Transport):
                 self._is_open = True
                 gc3libs.log.info("SshTransport remote_frontend: %s port: %d username: %s connection status [ conected ]" % (self.remote_frontend, self.port, self.username))
         except:
-            gc3libs.log.error("Could not create ssh connection to %s" % host)
+            gc3libs.log.error("Could not create ssh connection to %s" % self.remote_frontend)
             raise Exceptions.TransportError("Failed while connecting to remote host: %s. Error type %s, %s"
                                             % (self.remote_frontend, sys.exc_info()[0], sys.exc_info()[1]))
 
@@ -286,7 +286,7 @@ class SshTransport(Transport):
         """
         Close the transport channel
         """
-        gc3libs.log.debug("Closing sftp and ssh connections... ")
+        # gc3libs.log.debug("Closing sftp and ssh connections... ")
         if self.sftp is not None:
             self.sftp.close()
         if self.ssh is not None:

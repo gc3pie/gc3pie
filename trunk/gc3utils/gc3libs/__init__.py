@@ -641,15 +641,15 @@ class Application(Struct, Persistable, Task):
                      % str.join(' ', [ ('("%s" "%s")' % (r,l)) for (l,r) in self.inputs.items() ]))
         if len(self.outputs) > 0:
             xrsl += ('(outputFiles=%s)'
-                     % str.join(' ', [ ('("%s" "%s")' % rl) 
-                                       for rl in [ (remotename, localname)
+                     % str.join(' ', [ ('("%s" "")' % r) 
+                                       for (r,l) in [ (remotename, localname)
                                                    for remotename,localname 
                                                    in self.outputs.iteritems() 
                                                    if (remotename != self.stdout 
                                                        and remotename != self.stderr)]]))
         if len(self.tags) > 0:
             xrsl += str.join('\n', [
-                    ('(runTimeEnvironment>="%s")' % rte) for rte in self.tags ])
+                    ('(runTimeEnvironment="%s")' % rte) for rte in self.tags ])
         if len(self.environment) > 0:
             xrsl += ('(environment=%s)' % 
                      str.join(' ', [ ('("%s" "%s")' % kv) for kv in self.environment ]))

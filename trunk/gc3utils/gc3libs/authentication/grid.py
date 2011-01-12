@@ -43,17 +43,20 @@ class GridAuth(object):
 
     def __init__(self, **auth):
 
-        # test validity
-        assert auth['type'] == 'voms-proxy' or auth['type'] == 'grid-proxy',\
-            "Configuration error: Unknown type: %s. Valid types: [voms-proxy, grid-proxy]" \
-            % auth.type
-        assert auth['cert_renewal_method'] == 'manual' or auth['cert_renewal_method'] == 'slcs',  \
-            "Configuration error: Unknown cert_renewal_method: %s. Valid types: [voms-proxy, grid-proxy]" \
-            % auth.cert_renewal_method
-
-        self.user_cert_valid = False
-        self.proxy_valid = False
-        self.__dict__.update(auth)
+        try:
+            # test validity
+            assert auth['type'] == 'voms-proxy' or auth['type'] == 'grid-proxy',\
+                "Configuration error: Unknown type: %s. Valid types: [voms-proxy, grid-proxy]" \
+                % auth.type
+            assert auth['cert_renewal_method'] == 'manual' or auth['cert_renewal_method'] == 'slcs',  \
+                "Configuration error: Unknown cert_renewal_method: %s. Valid types: [voms-proxy, grid-proxy]" \
+                % auth.cert_renewal_method
+            
+            self.user_cert_valid = False
+            self.proxy_valid = False
+            self.__dict__.update(auth)
+        except AssertionError as x:
+            raise ConfigurationError('Erroneous configuration parameter: %s' % str(x))
 
 
     def check(self):
@@ -127,6 +130,10 @@ class GridAuth(object):
                         gc3libs.log.error("UnrecoverableAuthError: errno [%d], message [%s]" 
                                           % (x.errno, x.strerror))
                         raise UnrecoverableAuthError(str(x.strerror))
+                except Exception as ex:
+                    # Intercept any other Error that subprocess may raise
+                    gc3libs.log.error("Unhanlded error. type: %s message: %s" % (ex.__class__, ex.message))
+                    raise UnrecoverableAuthError(str(ex.message))
 
                 new_cert = True
                 gc3libs.log.info('Create new SLCS certificate [ ok ].')
@@ -175,6 +182,10 @@ class GridAuth(object):
                     else:
                         gc3libs.log.error("UnrecoverableAuthError: errno [%d], message [%s]" % (x.errno, x.strerror))
                         raise UnrecoverableAuthError(str(x.strerror))
+                except Exception as ex:
+                    # Intercept any other Error that subprocess may raise                                                                                                
+                    gc3libs.log.error("Unhanlded error. type: %s message: %s" % (ex.__class__, ex.message))
+                    raise UnrecoverableAuthError(str(ex.message))
                 
             if not self.check():
                 raise RecoverableAuthError("Temporary failure in auth 'grid' enabling. "

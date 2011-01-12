@@ -30,6 +30,16 @@ import os.path
 HOMEDIR = os.path.expandvars('$HOME')
 RCDIR = os.path.join(HOMEDIR, ".gc3")
 CONFIG_FILE_LOCATION = os.path.join(RCDIR, "gc3pie.conf")
+CONFIG_FILE_LOCATIONS = [ "/etc/gc3/gc3pie.conf", CONFIG_FILE_LOCATION ]
+LOG_FILE_LOCATION = RCDIR + '/logging.conf'
+JOBLIST_FILE = RCDIR + "/.joblist"
+JOBLIST_LOCK = RCDIR + "/.joblist_lock"
+JOB_FOLDER_LOCATION = os.getcwd()
+AAI_CREDENTIAL_REPO = RCDIR + "/aai_credential"
+GAMESS_XRSL_TEMPLATE = os.path.expandvars("$HOME/.gc3/gamess_template.xrsl")
+JOB_FILE = ".lrms_id"
+JOB_FINISHED_FILE = ".finished"
+JOB_LOG = ".log"
 DOWNLOAD_DIR = os.getcwd()
 JOBS_DIR = os.path.join(RCDIR, "jobs")
 

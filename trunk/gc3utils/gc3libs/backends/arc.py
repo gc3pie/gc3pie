@@ -37,7 +37,6 @@ import sys
 sys.path.append('/opt/nordugrid/lib/python%d.%d/site-packages' 
                 % sys.version_info[:2])
 import arclib
-
 from gc3libs import log, Run
 from gc3libs.backends import LRMS
 import gc3libs.Exceptions as Exceptions
@@ -211,18 +210,18 @@ class ArcLrms(LRMS):
                 job.log("ARC reported error: %s" % arc_job.errors)
                 job.returncode = (Run.Signals.RemoteError, -1)
             # XXX: we should introduce a kind of "wrong requirements" error
-            elif arc_job.used_wall_time >= arc_job.requested_wall_time:
+            elif arc_job.requested_wall_time > -1 and arc_job.used_wall_time > -1 and arc_job.used_wall_time >= arc_job.requested_wall_time:
                 job.log("Job exceeded requested wall-clock time (%d s),"
                         " killed by remote batch system" 
                         % arc_job.requested_wall_time)
                 job.returncode = (Run.Signals.RemoteError, -1)
-            elif arc_job.used_cpu_time >= arc_job.requested_cpu_time:
+            elif arc_job.requested_cpu_time > -1 and arc_job.used_cpu_time > -1 and arc_job.used_cpu_time >= arc_job.requested_cpu_time:
                 job.log("Job exceeded requested CPU time (%d s),"
                         " killed by remote batch system" 
                         % arc_job.requested_wall_time)
                 job.returncode = (Run.Signals.RemoteError, -1)
             # note: arc_job.used_memory is in KiB (!), app.requested_memory is in GiB
-            elif (arc_job.used_memory / 1024) >= (app.requested_memory * 1024):
+            elif app.requested_memory > 0 and arc_job.used_memory > -1 and (arc_job.used_memory / 1024) >= (app.requested_memory * 1024):
                 job.log("Job used more memory (%d GB) than requested (%d GB),"
                         " killed by remote batch system" 
                         % (arc_job.used_memory / 1024 / 1024, app.requested_memory))
@@ -232,11 +231,19 @@ class ArcLrms(LRMS):
                 job.returncode = 0
         job.lrms_jobname = arc_job.job_name # XXX: `lrms_jobname` is the name used in `sge.py`
 
-        # FIXME: These should become part of mandatory Job information
-        # as it's required for 'tail' function (SM)
-        # -- They're already available from `Application` (RM)
         job.stdout_filename = arc_job.sstdout
         job.stderr_filename = arc_job.sstderr
+
+        # Common struture as described in Issue #78
+        job.queue = arc_job.queue
+        job.cores = arc_job.cpu_count
+        job.exit_code = arc_job.exitcode
+        job.used_walltime = arc_job.used_wall_time # exressed in sec.
+        job.used_cputime = arc_job.used_cpu_time # expressed in sec.
+        job.used_memory = arc_job.used_memory # expressed in KiB
+
+        if (arc_job.status == 'FAILED'):
+            job.error_log = arc_job.errors
 
         # update ARC-specific info
         job.arc_cluster = arc_job.cluster
