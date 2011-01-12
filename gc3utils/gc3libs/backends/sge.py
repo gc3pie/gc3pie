@@ -247,12 +247,14 @@ def get_qsub_jobid(qsub_output):
 # so this won't work if the date was printed on a computer
 # that has a different locale than this one.
 #
-# def _date_normalize(self, date_string):
-#     # Example format: Wed Aug 25 15:41:30 2010
-#     t = time.strptime(date_string,"%a %b %d %H:%M:%S %Y")
-#     # Temporarly adapted to return a string representation
-#     return time.strftime("%Y-%m-%d %H:%M:%S", t)
+def _job_info_normalize(self, job):
+    if job.haskey('used_cputime'):
+        # convert from string to int. Also convert from float representation to int
+        job.used_cputime =  int(job.used_cputime.split('.')[0])
 
+    if job.haskey('used_memory'):
+        # convert from MB to KiB. Remove 'M' or'G' charater at the end.
+        job.used_memory = int(mem[:len(mem)-1]) * 1024
 
 def _sge_filename_mapping(job_name, lrms_jobid, file_name):
     return {
@@ -428,19 +430,20 @@ class SgeLrms(LRMS):
 
         def map_sge_names_to_local_ones(name):
             return 'sge_' + name
-        # mapping = {
-        #     'qname':         'sge_queue',
-        #     'jobname':       'sge_job_name',
-        #     'slots':         'sge_cpu_count',
-        #     'exit_status':   'sge_exit_status',
-        #     'failed':        'sge_system_failed',
-        #     'cpu':           'sge_used_cpu_time',
-        #     'ru_wallclock':  'sge_used_walltime',
-        #     'maxvmem':       'sge_used_memory',
-        #     'end_time':      'sge_completion_time',
-        #     'qsub_time':     'sge_submission_time',
-        #     'maxvmem':       'sge_used_memory',
-        #     }
+
+        mapping = {
+            'qname':         'queue',
+            'jobname':       'job_name',
+            'slots':         'cores',
+            'exit_status':   'exit_code',
+            'failed':        'sge_system_failed',
+            'cpu':           'used_cpu_time',
+            'ru_wallclock':  'used_walltime',
+            'maxvmem':       'used_memory',
+            'end_time':      'sge_completion_time',
+            'qsub_time':     'sge_submission_time',
+            }
+
         try:
             self.transport.connect()
 
@@ -481,7 +484,11 @@ class SgeLrms(LRMS):
                         key, value = line.split(' ', 1)
                         value = value.strip()
                         try:
-                            job[map_sge_names_to_local_ones(key)] = value
+                            # job[map_sge_names_to_local_ones(key)] = value
+                            # job[mapping[key]] =  _parse_value(key, value)
+                            job[mapping[key]] = value
+                            #self.no
+
                             if key == 'exit_status':
                                 job.returncode = int(value)
                             elif key == 'failed':

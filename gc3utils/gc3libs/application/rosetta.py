@@ -81,7 +81,8 @@ class RosettaApplication(gc3libs.Application):
             self.__protocol + '.tar.gz' 
             ]
 
-        if len(outputs) > 0:
+        # if len(outputs) > 0:
+        if outputs:
             _arguments = ['--tar', str.join(' ', [ str(o) for o in outputs ])]
         else:
             _arguments = ['--tar', '*.pdb *.sc *.fasc']
@@ -100,7 +101,8 @@ class RosettaApplication(gc3libs.Application):
             _arguments.append("-database")
             _arguments.append(os.path.basename(database))
 
-        if len(arguments) > 0:
+        #if len(arguments) > 0:
+        if arguments:   
             _arguments.extend(arguments)
 
         kw['application_tag'] = 'rosetta'
@@ -117,7 +119,7 @@ class RosettaApplication(gc3libs.Application):
 
         gc3libs.Application.__init__(
             self,
-            executable = "./%s" % rosetta_sh,
+            executable = "%s" % rosetta_sh,
             arguments = _arguments,
             inputs = _inputs,
             outputs = _outputs,

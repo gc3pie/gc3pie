@@ -112,7 +112,9 @@ class Core:
         _lrms_list = []
         for _resource in self._resources:
             try:
-                _lrms_list.append(self._get_backend(_resource.name))
+                _lrms = self._get_backend(_resource.name)
+                self.auths.get(_lrms._resource.auth)
+                _lrms_list.append(_lrms)
             except Exception, ex:
                 # log exceptions but ignore them
                 gc3libs.log.warning("Failed creating LRMS for resource '%s' of type '%s': %s: %s",
@@ -139,7 +141,7 @@ class Core:
             gc3libs.log.debug("Attempting submission to resource '%s'..." 
                               % lrms._resource.name)
             try:
-                self.auths.get(lrms._resource.auth)
+                # self.auths.get(lrms._resource.auth)
                 lrms.submit_job(app)
             except Exception, ex:
                 gc3libs.log.debug("Error in submitting job to resource '%s': %s: %s", 
@@ -335,13 +337,39 @@ class Core:
         return download_dir
         
 
-    def update_resource_status(self,resource_name, **kw):
-        """Update status of a given resource. Return resource object after update."""
-        auto_enable_auth = kw.get('auto_enable_auth', self.auto_enable_auth)
-        lrms = self._get_backend(resource_name)
-        self.auths.get(lrms._resource.auth)
-        return  lrms.get_resource_status()
+    def get_all_updated_resources(self, **kw):
 
+        updated_resources = []
+
+        for resource in self._resources:
+            try:
+                auto_enable_auth = kw.get('auto_enable_auth', self.auto_enable_auth)
+                lrms = self._get_backend(resource.name)
+                self.auths.get(lrms._resource.auth)
+                updated_resources.append(lrms.get_resource_status())
+            except Exception, x:
+                gc3libs.log.error('Error type %s. %s.' % (x.__class__.__name__, str(x)))
+                resource.updated = False
+                updated_resources.append(resource)
+                
+        return updated_resources
+
+#    def update_resource_status(self, resource_name):
+#        """Update status of a given resource. Return resource object after update."""
+#        for resource in self._resources:
+#            if resource_name == resource.name:
+#                #if resource_name in [ o.name for o in self._resources ]:
+#                try:
+#                    auto_enable_auth = kw.get('auto_enable_auth', self.auto_enable_auth)
+#                    lrms = self._get_backend(resource_name)
+#                    self.auths.get(lrms._resource.auth)
+#                    return  lrms.get_resource_status()
+#                except Exception, x:
+#                    gc3libs.log.error('Error type %s. %s.' % (x.__class__.__name__, str(x)))
+#                    raise
+#
+#        # if we reach this point it means no resource has been matched
+#        raise InvalidResourceName('Resources %s not found' % resource_name)
 
     def kill(self, app, **kw):
         """
@@ -418,7 +446,7 @@ class Core:
         for _resource in self._resources:
             if _resource.name == resource_name:
                 # there's a matching resource
-                gc3libs.log.debug('Creating instance of type %s for %s', _resource.type, _resource.name)
+                # gc3libs.log.debug('Creating instance of type %s for %s', _resource.type, _resource.name)
                 try:
                     if _resource.type is Default.ARC_LRMS:
                         _lrms = ArcLrms(_resource, self.auths)
@@ -463,14 +491,13 @@ def get_resources(resources_list):
     try:
         for key in resources_list.keys():
             resource = resources_list[key]
-            gc3libs.log.debug('creating instance of Resource object... ')
             try:
                 tmpres = gc3libs.Resource.Resource(resource)
             except Exception, x:
                 gc3libs.log.error("rejecting resource '%s': %s: %s",
                                    key, x.__class__.__name__, str(x))
                 continue
-            gc3libs.log.debug('Checking resource type %s',resource['type'])
+            # gc3libs.log.debug('Checking resource type %s',resource['type'])
             if resource['type'] == 'arc':
                 tmpres.type = gc3libs.Default.ARC_LRMS
             elif resource['type'] == 'ssh_sge':
@@ -478,7 +505,7 @@ def get_resources(resources_list):
             else:
                 gc3libs.log.error('No valid resource type %s',resource['type'])
                 continue
-            gc3libs.log.debug('checking validity with %s',str(tmpres.is_valid()))
+            gc3libs.log.debug('Resource type %s, validity %s' % (resource['type'], str(tmpres.is_valid())))
             resources.append(tmpres)
     except:
         gc3libs.log.critical('failed creating Resource list')
@@ -500,9 +527,9 @@ def read_config(*locations):
     for location in locations:
         location = os.path.expandvars(location)
         if os.path.exists(location) and os.access(location, os.R_OK):
-            gc3libs.log.debug("Core.read_config(): reading file '%s' ..." % location)
+            gc3libs.log.debug("Core.read_config(): reading file '%s'" % location)
         else:
-            gc3libs.log.debug("Core.read_config(): ignoring non-existent file '%s' ..." % location)
+            gc3libs.log.debug("Core.read_config(): ignoring non-existent file '%s'" % location)
             continue # with next `location`
 
         # Config File exists; read it
@@ -531,8 +558,9 @@ def read_config(*locations):
                 config_items = dict(config.items(sectname))
                 if config_items.has_key('enabled'):
                     config_items['enabled'] = utils.string_to_boolean(config_items['enabled'])
-                    gc3libs.log.debug("Resource '%s': enabled=%s in file '%s'", 
-                                       resource_name, config_items['enabled'], location)
+                    # Sergio: Irrelevant debug information as the list of disabled resources is already reported later in the code.
+                    # gc3libs.log.debug("Resource '%s': enabled=%s in file '%s'", 
+                    #                   resource_name, config_items['enabled'], location)
                 resources[resource_name].update(config_items)
                 resources[resource_name]['name'] = resource_name
 
@@ -541,8 +569,8 @@ def read_config(*locations):
                 gc3libs.log.error("Core.read_config(): unknown configuration section '%s' -- ignoring!", 
                                    sectname)
 
-        gc3libs.log.debug("Core.read_config(): read %d resources from configuration file '%s'",
-                           len(resources), location)
+        # gc3libs.log.debug("Core.read_config(): read %d resources from configuration file '%s'",
+        #                    len(resources), location)
 
         # remove disabled resources
         disabled_resources = [ ]

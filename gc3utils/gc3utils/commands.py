@@ -246,7 +246,8 @@ def gsub(*args, **kw):
         if len(args) != 4:
             raise InvalidUsage('Wrong number of arguments: this commands expects exactly three arguments.')
         app = rosetta.RosettaApplication(
-            application = args[1],
+            application = args[0],
+            flags_file= args[1],
             inputs = { 
                 "-in:file:s":args[2],
                 "-in:file:native":args[3],
@@ -563,36 +564,60 @@ def gnotify(*args, **kw):
     
 
 def glist(*args, **kw):
-    """The `glist` command."""
+    """
+    The `glist` command.
+    """
+
     parser = OptionParser(usage="Usage: %prog [options] resource_name")
     parser.add_option("-v", action="count", dest="verbosity", default=0, help="Set verbosity level")
-    parser.add_option("-s", "--short", action="store_true", dest="shortview", help="Short view.")
-    parser.add_option("-l", "--long", action="store_false", dest="shortview", help="Long view.")
     (options, args) = parser.parse_args(list(args))
     _configure_logger(options.verbosity)
-
-    # FIXME: should take possibly a list of resource IDs and get files for all of them
-    if len(args) != 1:
-        raise InvalidUsage("This command requires exactly one argument: the resource name.")
-    resource_name = args[0]
 
     try:
         _core = _get_core(DEFAULT_CONFIG_FILE_LOCATIONS)
     except Exception, ex:
         raise FatalError("gkill failed: %s: %s" % (ex.__class__.__name__, str(ex)))
 
-    resource_object = _core.update_resource_status(resource_name)
-    if not resource_object is None:
-        if resource_object.has_key("name"):
-            sys.stdout.write('Resource Name: '+resource_object.name+'\n')
-        if resource_object.has_key("total_cores") and resource_object.has_key("free_slots"):
-            sys.stdout.write('Cores Total/Free: '+str(resource_object.total_cores)+'/'+str(resource_object.free_slots)+'\n')
-        if resource_object.has_key("user_run") and resource_object.has_key("user_queued"):
-            sys.stdout.write('User Jobs Running/Queued: '+str(resource_object.user_run)+'/'+str(resource_object.user_queued)+'\n')
-        sys.stdout.flush()
-    else:
-        raise Exception("glist terminated")
+    resource_name = args
+    if resource_name:
+        _core.select_resource(lambda r: r.name in resource_name)
 
+    resources = _core.get_all_updated_resources()
+
+    if not resources:
+        raise InvalidResourceName('Resources %s not found' % resource_name)
+
+    for resource in resources:
+        print (78 * '=')
+
+        print("Resource: %s" % resource.name)
+        print("Frontend name: %s" % resource.frontend)
+        if resource.type is Default.ARC_LRMS:
+            resource_access_type = "arc"
+        elif resource.type is Default.SGE_LRMS:
+            resource_access_type = "ssh"
+        print("Resource access type: %s" % resource_access_type)
+        if resource.has_key('auth'):
+            print("Authorization type: %s" % resource.auth)
+        if resource.has_key('updated'):
+            can_access = resource.updated
+        else:
+            can_access = True
+        print("User can access: %s" % str(can_access))
+        if resource.has_key('ncores'):
+            print("Total number of cores: %d" % int(resource.ncores))
+        if resource.has_key('queued'):
+            print("Queued jobs: %d" % int(resource.queued))
+        if resource.has_key('user_run'):
+            print("Running jobs: %d" % int(resource.user_run))
+        if resource.has_key('max_cores_per_job'):
+            print("Max cores per job: %d" % int(resource.max_cores_per_job))
+        if resource.has_key('max_memory_per_core'):
+            print("Max memory per core: %d (MB)" % int(resource.max_memory_per_core))
+        if resource.has_key('max_walltime'):
+            print("Max walltime per job: %d (minutes)" % int(resource.max_walltime))
+        if resource.has_key('applications'):
+            print("Supported applications: %s" % resource.applications)
 
 
 ## helper functions

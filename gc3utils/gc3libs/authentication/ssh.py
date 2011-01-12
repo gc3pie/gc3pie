@@ -28,13 +28,16 @@ from gc3libs.authentication import Auth
 
 class SshAuth(object):
     def __init__(self, **auth):
-
-        # test validity
-        assert auth['type'] == 'ssh',\
-            "Configuration error. Unknown type: %s. Valid type: ssh" \
-            % auth.type
-        auth['username']
-        self.__dict__.update(auth)
+        
+        try:
+            # test validity
+            assert auth['type'] == 'ssh',\
+                "Configuration error. Unknown type: %s. Valid type: ssh" \
+                % auth.type
+            auth['username']
+            self.__dict__.update(auth)
+        except AssertionError as x:
+            raise ConfigurationError('Erroneous configuration parameter: %s' % str(x))
 
     def check(self):
         gc3libs.log.debug('Checking auth: ssh')
