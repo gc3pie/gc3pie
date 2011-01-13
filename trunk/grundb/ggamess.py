@@ -253,7 +253,6 @@ session.close()
 ## build input file set
 
 old_inputs = set([ task.inp_file_path for task in tasks ])
-#old_inputs = set([ task.input_file_name for task in tasks ])
 
 new_inputs = set()
 for path in args:
