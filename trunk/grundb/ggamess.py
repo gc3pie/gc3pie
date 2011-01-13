@@ -253,6 +253,7 @@ session.close()
 ## build input file set
 
 old_inputs = set([ task.inp_file_path for task in tasks ])
+#old_inputs = set([ task.input_file_name for task in tasks ])
 
 new_inputs = set()
 for path in args:
@@ -284,7 +285,7 @@ logger.debug("Gathered input files: '%s'" % str.join("', '", new_inputs))
 random.seed()
 for inp in new_inputs:
     inp_file_name = os.path.splitext(os.path.basename(inp))[0]
-    tasks.append(GGamessApplication(
+    tasks.append(GamessApplication(
         inp,
         # set computational requirements
         requested_memory = options.memory_per_core,
@@ -360,9 +361,9 @@ def pprint(tasks, output=sys.stdout, session=None):
                           task.execution.info))
 
 # create a `Core` instance to interface with the Grid middleware
-grid = gc3libs.core.Core(*gc3libs.core.import_config([
-            gc3libs.Default.CONFIG_FILE_LOCATION
-            ]))
+grid = gc3libs.core.Core(*gc3libs.core.import_config(
+            gc3libs.Default.CONFIG_FILE_LOCATIONS
+            ))
 
 # create an `Engine` instance to manage the job list; we'll call its
 # `progress` method in the main loop
