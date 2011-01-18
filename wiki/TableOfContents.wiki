@@ -10,3 +10,4 @@
   * [http://gc3pie.googlecode.com/svn/trunk/gc3utils/docs/html/index.html GC3Libs API documentation]
   * [Citations Citations]
   * [http://code.google.com/p/gc3pie/w/list Full list of GC3Pie wiki pages]
+  * [PylintReport Pylint Report]
