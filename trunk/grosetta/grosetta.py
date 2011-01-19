@@ -323,6 +323,11 @@ if decoys < options.total_decoys:
     if decoys > 0:
         logger.info("Already computing %d decoys for '%s', requested %d more.",
                     decoys, input, options.total_decoys - decoys)
+    # pre-allocate Job IDs (XXX: we could group this into one single
+    # invocation, but I'm not sure the speed benefit would compensate
+    # the increased complexity in the code...)
+    gc3libs.persistence.Id.reserve(options.total_decoys - decoys)
+    # create new jobs and add them to session
     for nr in range(decoys, options.total_decoys, options.decoys_per_job):
         instance = ("%d--%d" 
                     % (nr, min(options.total_decoys, 

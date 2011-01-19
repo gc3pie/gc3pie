@@ -158,7 +158,7 @@ class Struct(object, UserDict.DictMixin):
         return self.__dict__.keys()
 
 
-def progressive_number():
+def progressive_number(qty=None):
     """
     Return a positive integer, whose value is guaranteed to
     be monotonically increasing across different invocations
@@ -172,7 +172,21 @@ def progressive_number():
       >>> m > n
       True
 
-    After every invocation of this function, the returned number
+    If you specify a positive integer as argument, then a list of
+    monotonically increasing numbers is returned.  For example::
+
+      >>> ls = progressive_number(5)
+      >>> len(ls)
+      5
+
+    In other words, `progressive_number(N)` is equivalent to::
+
+      nums = [ progressive_number() for n in range(N) ]
+
+    only more efficient, because it has to obtain and release the lock
+    only once.  
+
+    After every invocation of this function, the last returned number
     is stored into the file ``~/.gc3/next_id.txt``.
 
     *Note:* as file-level locking is used to serialize access to the
@@ -183,7 +197,10 @@ def progressive_number():
     @raise LockTimeout
     
     @return A positive integer number, monotonically increasing with every call.
+            A list of such numbers if argument `qty` is a positive integer.
     """
+    assert qty is None or qty > 0, \
+        "Argument `qty` must be a positive integer"
     # FIXME: should use global config value for directory
     id_filename = os.path.expanduser("~/.gc3/next_id.txt")
     # ``FileLock`` requires that the to-be-locked file exists; if it
@@ -197,12 +214,17 @@ def progressive_number():
     lock.acquire(timeout=30) # XXX: can raise 'LockTimeout'
     id_file = open(id_filename, 'r+')
     id = int(id_file.read(8) or "0", 16)
-    id +=1 
     id_file.seek(0)
-    id_file.write("%08x -- DO NOT REMOVE OR ALTER THIS FILE: it is used internally by the gc3libs\n" % id)
+    if qty is None:
+        id_file.write("%08x -- DO NOT REMOVE OR ALTER THIS FILE: it is used internally by the gc3libs\n" % (id+1))
+    else: 
+        id_file.write("%08x -- DO NOT REMOVE OR ALTER THIS FILE: it is used internally by the gc3libs\n" % (id+qty))
     id_file.close()
     lock.release()
-    return id
+    if qty is None:
+        return id+1
+    else:
+        return [ (id+n) for n in range(1, qty+1) ]
 
 
 def defproperty(fn):
