@@ -137,6 +137,19 @@ class Id(str):
     which case, the result of the comparison is the same as comparing
     the two sequence numbers.
     """
+
+    @staticmethod
+    def reserve(n):
+        """
+        Pre-allocate `n` IDs.  Successive invocations of the `Id`
+        constructor will return one of the pre-allocated, with a
+        potential speed gain if many `Id` objects are constructed in a
+        loop.
+        """
+        assert n > 0, "Argument `n` must be a positive integer"
+        Id._seqno_pool.extend(progressive_number(n))
+    _seqno_pool = [ ]
+
     def __new__(cls, obj, prefix=None, seqno=None):
         """
         Construct a new "unique identifier" instance (a string).
@@ -144,7 +157,10 @@ class Id(str):
         if prefix is None:
             prefix = obj.__class__.__name__
         if seqno is None:
-            seqno = progressive_number()
+            if len(Id._seqno_pool) > 0:
+                seqno = Id._seqno_pool.pop()
+            else:
+                seqno = progressive_number()
         instance = str.__new__(cls, "%s.%d" % (prefix, seqno))
         instance._seqno = seqno
         instance._prefix = prefix

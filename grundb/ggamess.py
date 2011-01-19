@@ -280,6 +280,10 @@ logger.debug("Gathered input files: '%s'" % str.join("', '", new_inputs))
 
 ## compute job list
             
+# pre-allocate Job IDs
+if len(new_inputs) > 0:
+    gc3libs.persistence.Id.reserve(len(new_inputs))
+
 # add new jobs to the session
 random.seed()
 for inp in new_inputs:
