@@ -107,7 +107,7 @@ cmdline.add_option("-C", "--continuous", type="int", dest="wait", default=0,
 cmdline.add_option("-c", "--cpu-cores", dest="ncores", type="int", default=1, # 1 core
                    metavar="NUM",
                    help="Require the specified number of CPU cores (default: %default)"
-                   " for each Rosetta 'docking_protocol' job. NUM must be a whole number."
+                   " for each GAMESS job. NUM must be a whole number."
                    )
 cmdline.add_option("-J", "--max-running", type="int", dest="max_running", default=50,
                    metavar="NUM",
@@ -152,7 +152,7 @@ cmdline.add_option("-v", "--verbose", type="int", dest="verbose", default=0,
                    )
 cmdline.add_option("-w", "--wall-clock-time", dest="wctime", default=str(8), # 8 hrs
                    metavar="DURATION",
-                   help="Each Rosetta job will run for at most DURATION time"
+                   help="Each GAMESS job will run for at most DURATION time"
                    " (default: %default hours), after which it"
                    " will be killed and considered failed. DURATION can be a whole"
                    " number, expressing duration in hours, or a string of the form HH:MM,"
