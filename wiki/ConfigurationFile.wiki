@@ -269,6 +269,7 @@ ncores = 80
 # A single SGE cluster, accessed by SSH'ing to the front-end node
 type = ssh_sge
 auth = <auth_name> # pick an `ssh` type auth, e.g., "ssh1"
+transport = ssh
 frontend = ocikbpra.uzh.ch
 gamess_location = /share/apps/gamess
 max_cores_per_job = 80
