@@ -149,6 +149,8 @@ cmdline.add_option("-p", "--decoys-per-job", type="int", dest="decoys_per_job",
                    " This parameter should be tuned so that the running time"
                    " of a single job does not exceed the maximum wall-clock time."
                    )
+cmdline.add_option("-r", "--resource", action="store", dest="resource_name", metavar="STRING",
+                   default=None, help='Select resource destination')
 cmdline.add_option("-s", "--session", dest="session", 
                    default=os.path.join(os.getcwd(), 'grosetta.csv'),
                    metavar="FILE",
@@ -173,9 +175,6 @@ cmdline.add_option("-w", "--wall-clock-time", dest="wctime", default=str(8), # 8
 cmdline.add_option("-x", "--protocol", dest="protocol", default="minirosetta.static",
                    metavar="PROTOCOL",
                    help="Run the specified Rosetta protocol/application; default: %default")
-
-cmdline.add_option("-r", "--resource", action="store", dest="resource_name", metavar="STRING", 
-                   default=None, help='Select resource destination')
 
 (options, args) = cmdline.parse_args()
 
