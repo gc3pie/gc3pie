@@ -173,6 +173,10 @@ cmdline.add_option("-w", "--wall-clock-time", dest="wctime", default=str(8), # 8
 cmdline.add_option("-x", "--protocol", dest="protocol", default="minirosetta.static",
                    metavar="PROTOCOL",
                    help="Run the specified Rosetta protocol/application; default: %default")
+
+cmdline.add_option("-r", "--resource", action="store", dest="resource_name", metavar="STRING", 
+                   default=None, help='Select resource destination')
+
 (options, args) = cmdline.parse_args()
 
 # set up logging
@@ -410,9 +414,15 @@ def pprint(tasks, output=sys.stdout, session=None):
                           task.execution.info))
 
 # create a `Core` instance to interface with the Grid middleware
-grid = gc3libs.core.Core(*gc3libs.core.import_config([
-            gc3libs.Default.CONFIG_FILE_LOCATION
-            ]))
+grid = gc3libs.core.Core(*gc3libs.core.import_config(
+        gc3libs.Default.CONFIG_FILE_LOCATIONS
+        ))
+
+if options.resource_name:
+    grid.select_resource(options.resource_name)
+    gc3libs.log.info("Retained only resources: %s (restricted by command-line option '-r %s')",
+                      str.join(",", [res['name'] for res in grid._resources]),
+                      options.resource_name)
 
 # create an `Engine` instance to manage the job list; we'll call its
 # `progress` method in the main loop
