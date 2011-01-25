@@ -137,6 +137,8 @@ cmdline.add_option("-o", "--output", dest="output", default=os.getcwd(),
                    " DATE is replaced by the submission date in ISO format (YYYY-MM-DD);"
                    " TIME is replaced by the submission time formatted as HH:MM."
                    )
+cmdline.add_option("-r", "--resource", action="store", dest="resource_name", metavar="STRING",
+                   default=None, help='Select resource destination')
 cmdline.add_option("-s", "--session", dest="session", 
                    default=os.path.join(os.getcwd(), 'ggamess.csv'),
                    metavar="FILE",
@@ -365,8 +367,14 @@ def pprint(tasks, output=sys.stdout, session=None):
 
 # create a `Core` instance to interface with the Grid middleware
 grid = gc3libs.core.Core(*gc3libs.core.import_config(
-            gc3libs.Default.CONFIG_FILE_LOCATIONS
-            ))
+        gc3libs.Default.CONFIG_FILE_LOCATIONS
+        ))
+
+if options.resource_name:
+    grid.select_resource(options.resource_name)
+    gc3libs.log.info("Retained only resources: %s (restricted by command-line option '-r %s')",
+                      str.join(",", [res['name'] for res in grid._resources]),
+                      options.resource_name)
 
 # create an `Engine` instance to manage the job list; we'll call its
 # `progress` method in the main loop
