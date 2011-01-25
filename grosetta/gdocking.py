@@ -466,7 +466,7 @@ for input in inputs:
 
 
 # create a `Core` instance to interface with the Grid middleware
-grid = gc3libs.core.Core(*gc3libs.core.import_config([gc3libs.Default.CONFIG_FILE_LOCATION]))
+grid = gc3libs.core.Core(*gc3libs.core.import_config(gc3libs.Default.CONFIG_FILE_LOCATIONS))
 
 # create an `Engine` instance to manage the job list; we'll call its
 # `progress` method in the main loop
