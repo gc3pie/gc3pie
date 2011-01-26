@@ -33,6 +33,7 @@ import os
 import os.path
 import re
 import shelve
+import string
 import sys
 import time
 import UserDict
@@ -672,6 +673,196 @@ def send_mail(send_from, send_to, subject, text, files=[], server="localhost"):
     smtp.close()
 
 
+## 
+## Template support
+##
+
+try:
+    import itertools
+    SetProductIterator = itertools.product
+except:
+    # use our own implementation, in case `itertools` does not (yet)
+    # provide the set-product
+    class SetProductIterator(object):
+        """Iterate over all elements in a cartesian product.
+
+        Argument `factors` is a sequence, all whose items are sequences
+        themselves: the returned iterator will return -upon each
+        successive invocation- a list `[t_1, t_2, ..., t_n]` where `t_k`
+        is an item in the `k`-th sequence.
+
+        Examples::
+          >>> list(SetProductIterator([]))
+          [[]]
+          >>> list(SetProductIterator([[1]]))
+          [[1]]
+          >>> list(SetProductIterator([[1],[1]]))
+          [[1, 1]]
+          >>> list(SetProductIterator([[1,2],[]]))
+          [[]]
+          >>> list(SetProductIterator([[1,2],[1]]))
+          [[1, 1], [2, 1]]
+          >>> list(SetProductIterator([[1,2],[1,2]]))
+          [[1, 1], [2, 1], [1, 2], [2, 2]]
+        """
+        def __init__(self, *factors):
+            self.__closed = False
+            self.__factors = factors
+            self.__L = len(factors)
+            self.__M = [ len(s)-1 for s in factors ]
+            self.__m = [0] * self.__L
+            self.__i = 0
+
+        def __iter__(self):
+            return self
+
+        def next(self):
+            if self.__closed:
+                raise StopIteration
+            if (0 == self.__L) or (-1 in self.__M):
+                # there are no factors, or one of them has no elements
+                self.__closed = True
+                return []
+            else:
+                if self.__i < self.__L:
+                    # will return element corresponding to current multi-index
+                    result = [ s[self.__m[i]]
+                               for (i,s) in enumerate(self.__factors) ]
+                    # advance multi-index
+                    i = 0
+                    while (i < self.__L):
+                        if self.__m[i] == self.__M[i]:
+                            self.__m[i] = 0
+                            i += 1
+                        else:
+                            self.__m[i] += 1
+                            break
+                    self.__i = i
+                    # back to caller
+                    return result
+                else:
+                    # at end of iteration
+                    self.__closed = True
+                    raise StopIteration
+
+
+class Template(object):
+    """
+    A template is a pair `(string, keywords)`, where the `keywords`
+    are substituted into `string` by means of the Python's standard
+    library `string.Template.safe_substitute` function.
+    """
+    def __init__(self, template, validator=None, **kw):
+        self._template = template
+        self._keywords = kw
+        if validator is None:
+            self._valid = (lambda kw: True)
+        else:
+            self._valid = validator
+
+    def substitute(self, **kw):
+        """
+        Return string resulting from interpolating the value of
+        keywords into the template.  Keyword arguments `kw` can be
+        used to override keyword values passed to the constructor.
+        """
+        kws = self._keywords.copy()
+        kws.update(kw)
+        if self._valid(kws):
+            return string.Template(self._template).safe_substitute(kws)
+        else:
+            raise ValueError("Invalid substitution values in template.")
+    def __str__(self):
+        """Same as `Template.substitute`."""
+        return self.substitute()
+
+    def expansions(self, **kws):
+        kws_ = self._keywords.copy()
+        kws_.update(kws)
+        for kw in expansions(kws_):
+            try:
+                yield self.substitute(**kw)
+            except ValueError:
+                pass # ignore invalid substitutions, try with next set of keywords
+
+
+def expansions(t, **kw):
+    """
+    Iterate through all expansions of a given object, recursively
+    expanding all templates found.  How the expansions are actually
+    computed, depends on the type of object being passed in the first
+    argument `obj`:
+
+    * If `t` is a dictionary, return dictionary formed by all
+      combinations of a key `k` in `t` with an expansion of the
+      corresponding value `t[k]`.  Expansions are computed by calling
+      expansions(t[k], **kw)`.
+
+      Example::
+      
+        >>> D = {'a':1, 'b':[2,3]}
+        >>> list(expansions(D))
+        [{'a': 1, 'b': 2}, {'a': 1, 'b': 3}]
+
+    * If `t` is a `tuple`, iterate over all tuples formed by the
+      expansion of every item in `t`.  (Each item `t[i]` is expanded
+      by calling `expansions(t[i], **kw)`.)
+
+      Example::
+
+        >>> T = (1, [2, 3])
+        >>> list(expansions(T))
+        [(1, 2), (1, 3)]
+
+    * If `t` is a `list`, iterate over expansions of items in `t`.
+
+      Example::
+
+        >>> L = [0, (1, [2, 3])]
+        >>> list(expansions(L))
+        [0, (1, 2), (1, 3)]
+
+    * If `t` is a `Template` class instance, then the returned values
+      are the result of applying the template to the expansion of each
+      of its keywords.
+
+      Example::
+
+        >>> T = Template("a=${num}")
+        >>> list(expansions(T, num=[1,2,3]))
+        ['a=1', 'a=2', 'a=3']
+
+    * Any other value is returned unchanged.
+
+      Example:
+      
+        >>> V = 42
+        >>> list(expansions(V))
+        [42]
+
+    """
+    if isinstance(t, dict):
+        keys = tuple(t.keys()) # fix a key order
+        for items in SetProductIterator(*[ list(expansions(t[keys[i]], **kw))
+                                           for i in range(len(keys)) ]):
+            yield dict((keys[i], items[i]) for i in range(len(keys)))
+    elif isinstance(t, tuple):
+        for items in SetProductIterator(*[ list(expansions(u, **kw)) for u in t ]):
+            yield tuple(items)
+    elif isinstance(t, list):
+        for item in t:
+            for result in expansions(item, **kw):
+                yield result
+    elif isinstance(t, Template):
+        for s in t.expansions(**kw):
+            yield s
+    else:
+        yield t
+
+
+##
+## Main 
+##
 
 if __name__ == '__main__':
     import doctest
