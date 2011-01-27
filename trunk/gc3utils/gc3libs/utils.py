@@ -748,55 +748,106 @@ except:
 
 class Template(object):
     """
-    A template is a pair `(string, keywords)`, where the `keywords`
-    are substituted into `string` by means of the Python's standard
-    library `string.Template.safe_substitute` function.
+    A template object is a pair `(obj, keywords)`.  Methods are
+    provided to substitute the keyword values into `obj`, and to
+    iterate over expansions of the given keywords (optionally
+    filtering the allowed combination of keyword values).
+
+    Second optional argument `validator` must be a function that
+    accepts a set of keyword arguments, and returns `True` if the
+    keyword combination is valid (can be expanded/substituted back
+    into the template) or `False` if it should be discarded.
+    The default validator passes any combination of keywords/values.
     """
-    def __init__(self, template, validator=None, **kw):
+    def __init__(self, template, 
+                 validator=(lambda kws: True), **kw):
         self._template = template
         self._keywords = kw
-        if validator is None:
-            self._valid = (lambda kw: True)
-        else:
-            self._valid = validator
+        self._valid = validator
 
     def substitute(self, **kw):
         """
-        Return string resulting from interpolating the value of
-        keywords into the template.  Keyword arguments `kw` can be
-        used to override keyword values passed to the constructor.
+        Return result of interpolating the value of keywords into the
+        template.  Keyword arguments `kw` can be used to override
+        keyword values passed to the constructor.
+
+        If the templated object provides a `substitute` method, then
+        return the result of invoking it with the template keywords as
+        keyword arguments.  Otherwise, return the result of applying
+        Python standard library's `string.Template.safe_substitute()`
+        on the string representation of the templated object.
+
+        Raise `ValueError` if the set of keywords/values is not valid
+        according to the validator specified in the constructor.
         """
         kws = self._keywords.copy()
         kws.update(kw)
         if self._valid(kws):
-            return string.Template(self._template).safe_substitute(kws)
+            try:
+                return self._template.substitute(**kws)
+            except AttributeError:
+                return string.Template(str(self._template)).safe_substitute(kws)
         else:
             raise ValueError("Invalid substitution values in template.")
     def __str__(self):
-        """Same as `Template.substitute`."""
+        """Alias for `Template.substitute`."""
         return self.substitute()
 
+    def __repr__(self):
+        """
+        Return a string representation such that `x == eval(repr(x))`.
+        """
+        return str.join('', ["Template(", 
+                             str.join(', ', [repr(self._template)] +
+                                      [ ("%s=%s" % (k,v)) 
+                                        for k,v in self._keywords.items() ]),
+                             ')'])
+                         
+
     def expansions(self, **kws):
+        """
+        Iterate over all valid expansions of the templated object
+        *and* the template keywords.  Returned items are `Template`
+        instances constucted with the expanded template object and a
+        valid combination of keyword values.
+        """
         kws_ = self._keywords.copy()
         kws_.update(kws)
         for kw in expansions(kws_):
-            try:
-                yield self.substitute(**kw)
-            except ValueError:
-                pass # ignore invalid substitutions, try with next set of keywords
+            #if self._valid(kw):
+            for item in expansions(self._template, **kw):
+                # propagate expanded keywords upwards;
+                # this allows container templates to
+                # check validity based on keywords expanded
+                # on contained templates as well.
+                new_kw = kw.copy()
+                for v in kw.values():
+                    if isinstance(v, Template):
+                        new_kw.update(v._keywords)
+                if self._valid(new_kw):
+                    yield Template(item, self._valid, **new_kw)
 
 
-def expansions(t, **kw):
+def expansions(obj, **kw):
     """
-    Iterate through all expansions of a given object, recursively
+    Iterate over all expansions of a given object, recursively
     expanding all templates found.  How the expansions are actually
     computed, depends on the type of object being passed in the first
     argument `obj`:
 
-    * If `t` is a dictionary, return dictionary formed by all
-      combinations of a key `k` in `t` with an expansion of the
-      corresponding value `t[k]`.  Expansions are computed by calling
-      expansions(t[k], **kw)`.
+    * If `obj` is a `list`, iterate over expansions of items in `obj`.
+      (In particular, this flattens out nested lists.)
+
+      Example::
+
+        >>> L = [0, [2, 3]]
+        >>> list(expansions(L))
+        [0, 2, 3]
+
+    * If `obj` is a dictionary, return dictionary formed by all
+      combinations of a key `k` in `obj` with an expansion of the
+      corresponding value `obj[k]`.  Expansions are computed by
+      recursively calling `expansions(obj[k], **kw)`.
 
       Example::
       
@@ -804,8 +855,8 @@ def expansions(t, **kw):
         >>> list(expansions(D))
         [{'a': 1, 'b': 2}, {'a': 1, 'b': 3}]
 
-    * If `t` is a `tuple`, iterate over all tuples formed by the
-      expansion of every item in `t`.  (Each item `t[i]` is expanded
+    * If `obj` is a `tuple`, iterate over all tuples formed by the
+      expansion of every item in `obj`.  (Each item `t[i]` is expanded
       by calling `expansions(t[i], **kw)`.)
 
       Example::
@@ -814,23 +865,26 @@ def expansions(t, **kw):
         >>> list(expansions(T))
         [(1, 2), (1, 3)]
 
-    * If `t` is a `list`, iterate over expansions of items in `t`.
-
-      Example::
-
-        >>> L = [0, (1, [2, 3])]
-        >>> list(expansions(L))
-        [0, (1, 2), (1, 3)]
-
-    * If `t` is a `Template` class instance, then the returned values
+    * If `obj` is a `Template` class instance, then the returned values
       are the result of applying the template to the expansion of each
       of its keywords.
 
       Example::
 
-        >>> T = Template("a=${num}")
-        >>> list(expansions(T, num=[1,2,3]))
-        ['a=1', 'a=2', 'a=3']
+        >>> T1 = Template("a=${n}", n=[0,1])
+        >>> list(expansions(T1))
+        [Template('a=${n}', n=0), Template('a=${n}', n=1)]
+
+      Note that keywords passed to the `expand` invocation override
+      the ones used in template construction::
+
+        >>> T2 = Template("a=${n}")
+        >>> list(expansions(T2, n=[1,3]))
+        [Template('a=${n}', n=1), Template('a=${n}', n=3)]
+
+        >>> T3 = Template("a=${n}", n=[0,1])
+        >>> list(expansions(T3, n=[2,3]))
+        [Template('a=${n}', n=2), Template('a=${n}', n=3)]
 
     * Any other value is returned unchanged.
 
@@ -841,23 +895,24 @@ def expansions(t, **kw):
         [42]
 
     """
-    if isinstance(t, dict):
-        keys = tuple(t.keys()) # fix a key order
-        for items in SetProductIterator(*[ list(expansions(t[keys[i]], **kw))
+    if isinstance(obj, dict):
+        keys = tuple(obj.keys()) # fix a key order
+        for items in SetProductIterator(*[ list(expansions(obj[keys[i]], **kw))
                                            for i in range(len(keys)) ]):
             yield dict((keys[i], items[i]) for i in range(len(keys)))
-    elif isinstance(t, tuple):
-        for items in SetProductIterator(*[ list(expansions(u, **kw)) for u in t ]):
+    elif isinstance(obj, tuple):
+        for items in SetProductIterator(*[ list(expansions(u, **kw)) for u in obj ]):
             yield tuple(items)
-    elif isinstance(t, list):
-        for item in t:
+    elif isinstance(obj, list):
+        for item in obj:
             for result in expansions(item, **kw):
                 yield result
-    elif isinstance(t, Template):
-        for s in t.expansions(**kw):
+    elif isinstance(obj, Template):
+        for s in obj.expansions(**kw):
             yield s
     else:
-        yield t
+        yield obj
+
 
 
 ##
