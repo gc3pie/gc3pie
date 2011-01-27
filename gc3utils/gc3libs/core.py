@@ -338,6 +338,13 @@ class Core:
         
 
     def get_all_updated_resources(self, **kw):
+        """
+        Return a list of resources known by core.
+        Core will try to update the status of resources before returning
+        If core fails updating a given resource, it will send back the same 
+        resource as created from information imported from configurartion file
+        marking it with an additional flag 'updated'.
+        """
 
         updated_resources = []
 
@@ -347,6 +354,7 @@ class Core:
                 lrms = self._get_backend(resource.name)
                 self.auths.get(lrms._resource.auth)
                 updated_resources.append(lrms.get_resource_status())
+                resource.updated = True
             except Exception, x:
                 gc3libs.log.error('Error type %s. %s.' % (x.__class__.__name__, str(x)))
                 resource.updated = False

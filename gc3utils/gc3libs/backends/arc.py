@@ -286,8 +286,7 @@ class ArcLrms(LRMS):
             raise DataStagingError("Failed downloading remote folder '%s': %s" 
                                    % (job.lrms_jobid, str(ex)))
 
-        return # XXX: return list of downloaded files?
-
+        return 
 
     @same_docstring_as(LRMS.free)
     def free(self, app):
