@@ -29,9 +29,28 @@ with a sequential number appended.
 
 ## Timm's GAMESS template
 
+
+def match_ispher_with_basis(kw):
+    """Ensure we have ISPHER=1 if (and only if) the basis set requires it."""
+    def val(k): # small aux function
+        return str(kw[k])
+    if (kw.has_key('SIMPLEBASIS') 
+        and val('SIMPLEBASIS') in [ "CCD", "CCT", "CCQ", "CC5", "CC6" ]):
+        # CCn requires ISPHER=1
+        if val('ISPHER') == "1":
+            return True
+        else:
+            return False
+    else:
+        # with simple bases, default ISPHER is OK
+        if val('ISPHER') == "1":
+            return False
+        else:
+            return True
+
 def acceptable_gbasis_and_ngauss(kw):
     """Define which combination of GBASIS and NGAUSS are valid."""
-    def val(k):
+    def val(k): # small aux function
         return str(kw[k])
     # a. N21 with all NGAUSS except 5
     if val('GBASIS') == 'N21' and val('NGAUSS') == '5':
@@ -54,11 +73,16 @@ def acceptable_gbasis_and_ngauss(kw):
     # g. NGAUSS=5 only with GBASIS=N31
     if val('NGAUSS') == '5' and val('GBASIS') != 'N31':
         return False
-    # h. every other combination is ok
+    # h. Use NFFUNC and NDFUNC only with N31,N311 and NGAUSS=5,6
+    if ((val('NFFUNC') == 'NFFUNC=1' or val('NDFUNC') == 'NDFUNC=1')
+        and (val('NGAUSS') not in ['5', '6'] or val('GBASIS') not in ['N31', 'N311'])):
+            return False
+    # j. every other combination is ok
     return True
 
 GAMESS_INP = Template("""
- $$CONTRL ${SCF} RUNTYP=ENERGY MAXIT=1 UNITS=BOHR $$END
+ $$CONTRL ${SCF} ISPHER=${ISPHER} RUNTYP=ENERGY MAXIT=1 UNITS=BOHR $$END
+ $$SCF DIRSCF=${DIRSCF} $$END
  $$ACCURACY ITOL=${ITOL} ILOAD=${ILOAD} $$END
  $$SYSTEM MWORDS=1 $$END
  $$BASIS ${BASIS} $$END
@@ -68,31 +92,32 @@ GAMESS_INP = Template("""
 ${GEOMETRY}
  $$END
 """,
+                      match_ispher_with_basis,
                       GEOMETRY = [
+        # beware that GAMESS won't run if there is a blank
+        # line at the end of the $DATA section; so be sure
+        # to put the closing `"""` at the very end of the 
+        # last $DATA line
         """Water
 C1
-
 O   8.0        0.0              0.0                    0.0
 H   1.0        0.0              1.428036               1.0957706
-H   1.0        0.0             -1.428036               1.0957706 
-""",
+H   1.0        0.0             -1.428036               1.0957706""",
         """Methane
 Td
 
 C     6.0   0.0            0.0            0.0
-H     1.0   0.6252197764   0.6252197764   0.6252197764
-"""
+H     1.0   0.6252197764   0.6252197764   0.6252197764""",
         ], # end of GEOMETRY
                       SCF = [Template("SCFTYP=${SCFTYP} DFTTYP=${DFTTYP}", # WITHDFT
                                       SCFTYP = ["RHF", "ROHF", "UHF"],
                                       DFTTYP = ["SVWN", "BLYP", "B97-D", "B3LYP", "revTPSS", "TPSSh", "M06"],
                                       ),
-                             Template("SCFTYP=${SCFTYP} DIRSCF=${DIRSCF}", # MPLEVL=${MPLEVL}", # NODFT
+                             Template("SCFTYP=${SCFTYP}", # "MPLEVL=${MPLEVL}", # NODFT
                                       SCFTYP = ["RHF", "ROHF", "UHF"],
-                                      DIRSCF = [".TRUE.", ".FALSE."],
-                                      #MPLEVL = [0, 2],
                                       ),
                       ], # end of SCF
+                      DIRSCF = [".TRUE.", ".FALSE."],
                       ITOL = [20, 15, 10],
                       ILOAD = [9, 7, 5],
                       BASIS = [Template("GBASIS=${SIMPLEBASIS}",
@@ -107,24 +132,21 @@ H     1.0   0.6252197764   0.6252197764   0.6252197764
                                         NFFUNC = ["", "NFFUNC=1"],
                                         ),
                                ], # end of BASIS
+                      ISPHER = [-1, +1], # 0 is also a legal value; -1 is default
                      ) # end of GAMESS_INP
 
     
                                         
-## main: run tests
+## main
 
 if "__main__" == __name__:
-    # import doctest
-    # doctest.testmod(name="tsub",
-    #                 optionflags=doctest.NORMALIZE_WHITESPACE)
-    
     for n, t in enumerate(expansions(GAMESS_INP)):
         if len(args) == 0:
             # no BASENAME, print to stdout
             print ("==== Input file #%d ====" % n)
             print (t)
         else:
-            output = open(args[0] + str(n) + '.inp', 'w+')
+            output = open(args[0] + ("%05d" % n) + '.inp', 'w+')
             output.write("%s\n" % t)
             output.close()
 
