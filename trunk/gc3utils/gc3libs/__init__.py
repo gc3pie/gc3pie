@@ -46,9 +46,9 @@ import logging
 import logging.config
 log = logging.getLogger("gc3.gc3libs")
 
-import Default
-from Exceptions import *
-from persistence import Persistable
+import gc3libs.Default
+from gc3libs.Exceptions import *
+from gc3libs.persistence import Persistable
 from gc3libs.utils import defproperty, deploy_configuration_file, get_and_remove, Enum, Log, Struct, safe_repr
 
 
@@ -289,7 +289,7 @@ class Task(object):
                                      Run.State.RUNNING, 
                                      Run.State.STOPPED, 
                                      Run.State.UNKNOWN ]:
-            self.update()
+            self.update_state()
         # now "do the right thing" based on actual state
         if self.execution.state in [ Run.State.STOPPED, 
                                      Run.State.UNKNOWN ]:
@@ -299,7 +299,7 @@ class Task(object):
             self.submit()
         elif self.execution.state == Run.State.TERMINATED:
             self.fetch_output()
-            return self.returncode
+            return self.execution.returncode
 
 
     def wait(self, interval=60):
@@ -497,12 +497,12 @@ class Application(Struct, Persistable, Task):
 
         self.inputs = Application._io_spec_to_dict(inputs)
         self.outputs = Application._io_spec_to_dict(outputs)
-        # esnure remote paths are not absolute
-        for r in self.inputs.itervalues():
-            if os.path.isabs(r):
+        # ensure remote paths are not absolute
+        for r_path in self.inputs.itervalues():
+            if os.path.isabs(r_path):
                 raise InvalidArgument("Remote paths not allowed to be absolute")
-        for r in self.outputs.iterkeys():
-            if os.path.isabs(r):
+        for r_path in self.outputs.iterkeys():
+            if os.path.isabs(r_path):
                 raise InvalidArgument("Remote paths not allowed to be absolute")
 
         self.output_dir = output_dir
@@ -524,8 +524,8 @@ class Application(Struct, Persistable, Task):
 
         self.join = get_and_remove(kw, 'join', False)
         self.stdin = get_and_remove(kw, 'stdin')
-        if self.stdin and self.stdin not in self.inputs:
-            self.input[self.stdin] = os.path.basename(self.stdin)
+        if self.stdin and self.stdin not in self.inpu0ts:
+            self.inputs[self.stdin] = os.path.basename(self.stdin)
         self.stdout = get_and_remove(kw, 'stdout')
         if self.stdout and self.stdout not in self.outputs:
             self.outputs[self.stdout] = os.path.basename(self.stdout)
@@ -576,7 +576,7 @@ class Application(Struct, Persistable, Task):
         """
         try:
             # is `spec` dict-like?
-            return dict((k,v) for k,v in spec.iteritems())
+            return dict((k, v) for k,v in spec.iteritems())
         except AttributeError:
             # `spec` is a list-like
             def convert_to_tuple(val):

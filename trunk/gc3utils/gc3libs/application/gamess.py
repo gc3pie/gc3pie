@@ -56,9 +56,9 @@ class GamessApplication(gc3libs.Application):
         set_if_unset('stdout', input_file_name_sans + '.out')
         set_if_unset('application_tag', "gamess")
         if kw.has_key('tags'):
-            kw['tags'].append("APPS/CHEM/GAMESS-2009")
+            kw['tags'].append("APPS/CHEM/GAMESS-2010")
         else:
-            kw['tags'] = [ "APPS/CHEM/GAMESS-2009" ]
+            kw['tags'] = [ "APPS/CHEM/GAMESS-2010" ]
         arguments = [ input_file_name ] + (kw.get('arguments') or [ ])
         if kw.has_key('arguments'):
             del kw['arguments']

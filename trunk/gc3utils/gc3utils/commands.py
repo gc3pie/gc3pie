@@ -471,6 +471,7 @@ def gtail(*args, **kw):
     parser = OptionParser(usage="Usage: %prog [options] JOBID")
     parser.add_option("-v", "--verbose", action="count", dest="verbosity", default=0, help="Set verbosity level")
     parser.add_option("-e", "--stderr", action="store_true", dest="stderr", default=False, help="show stderr of the job")
+    parser.add_option("-f", "--follow", action="store_true", dest="follow", default=False, help="output appended data as the file grows")
     parser.add_option("-o", "--stdout", action="store_true", dest="stdout", default=True, help="show stdout of the job (default)")
     parser.add_option("-n", "--lines", dest="num_lines", type=int, default=10, help="output  the  last N lines, instead of the last 10")
     (options, args) = parser.parse_args(list(args))
@@ -497,11 +498,23 @@ def gtail(*args, **kw):
             or app.execution.state == Run.State.NEW:
         raise Exception('Job output not yet available')
 
-    file_handle = _core.peek(app, std)
-    for line in file_handle.readlines()[-(options.num_lines):]:
-        print line.strip()
-
-    file_handle.close()
+    if options.follow:
+        where = 0
+        while True:
+            file_handle = _core.peek(app, std)
+            gc3utils.log.debug('Seeking file to posisiton to %d' % where)
+            file_handle.seek(where)
+            for line in file_handle.readlines():
+                print line.strip()
+            where = file_handle.tell()
+            gc3utils.log.debug('Marking file to posisiton to %d' % where)
+            file_handle.close()
+            time.sleep(5)
+    else:
+        file_handle = _core.peek(app, std)
+        for line in file_handle.readlines()[-(options.num_lines):]:
+            print line.strip()
+        file_handle.close()
 
     return 0
 
@@ -512,17 +525,26 @@ def gtail(*args, **kw):
 # override NOTIFY_USER_EMAIL or configure any other of the parameters
 # given here...
 #
-NOTIFY_USER_EMAIL = "default_urename@gc3.uzh.ch"
-NOTIFY_USERNAME = "sergio"
-NOTIFY_GC3ADMIN = "sergio.maffioletti@gc3.uzh.ch"
-NOTIFY_SUBJECTS = "Job notification"
-NOTIFY_MSG = """This is an authomatic generated email."""
-NOTIFY_DESTINATIONFOLDER = os.path.join('/tmp',NOTIFY_USERNAME)
+#NOTIFY_USER_EMAIL = "default_urename@gc3.uzh.ch"
+
+
+
+#NOTIFY_USERNAME = "sergio"
+#NOTIFY_DESTINATIONFOLDER = os.path.join('/tmp',NOTIFY_USERNAME)
+
+#NOTIFY_GC3ADMIN = "sergio.maffioletti@gc3.uzh.ch"
+#NOTIFY_SUBJECTS = "Job notification"
+#NOTIFY_MSG = """This is an authomatic generated email."""
+
 
 def gnotify(*args, **kw):
     """The gnotify command"""
     parser = OptionParser(usage="Usage: %prog [options] JOBID")
     parser.add_option("-v", action="count", dest="verbosity", default=0, help="Set verbosity level")
+    parser.add_option("-s", "--sender", action="store", dest="sender", default="default_urename@gc3.uzh.ch", help="Set email's sender address")
+    parser.add_option("-r", "--receiver", action="store", dest="receiver", default="root@localhost", help="Set email's receiver  address")
+    parser.add_option("-m", "--subject", action="store", dest="subject", default="Job notification", help="Set email's subject")
+    parser.add_option("-t", "--text", action="store", dest="message", default="This is an authomatic generated email.", help="Set email's body text")
     parser.add_option("-i", "--include", action="store_true", dest="include_job_results", default=False, help="Include Job's results in notification package")
     (options, args) = parser.parse_args(list(args))
     _configure_logger(options.verbosity)
@@ -532,9 +554,13 @@ def gnotify(*args, **kw):
     jobid = args[0]
 
     app = _store.load(jobid)
+
+    # this should be probably specified in the configuration file
+    _tmp_folder = '/tmp'
+
     try:
         # create tgz with job information
-        tar_filename = NOTIFY_DESTINATIONFOLDER + '/' + jobid + '.tgz'
+        tar_filename = os.path.join(_tmp_folder,jobid + '.tgz')
         tar = tarfile.open(tar_filename, "w:gz")
         if options.include_job_results:
             try:
@@ -549,11 +575,18 @@ def gnotify(*args, **kw):
         tar.close()
 
         # send notification email to gc3admin
-        utils.send_mail(NOTIFY_USER_EMAIL,
-                        NOTIFY_GC3ADMIN,
-                        NOTIFY_SUBJECTS,
-                        NOTIFY_MSG,
+        utils.send_mail(options.sender,
+                        options.receiver,
+                        options.subject,
+                        options.message,
                         [tar_filename])
+
+        # cleaning up tar.gz archive
+        try:
+            os.remove(tar_filename)
+        except Exception as x:
+            gc3libs.log.error('Failed removing temporary job archive file %s. Error %s, %s' % (tar.name, x.__class__,x.message))
+            raise
 
         return 0
 
@@ -600,10 +633,7 @@ def glist(*args, **kw):
         if resource.has_key('auth'):
             print("Authorization type: %s" % resource.auth)
         if resource.has_key('updated'):
-            can_access = resource.updated
-        else:
-            can_access = True
-        print("User can access: %s" % str(can_access))
+            print("User can access: %s" % str(resource.updated))
         if resource.has_key('ncores'):
             print("Total number of cores: %d" % int(resource.ncores))
         if resource.has_key('queued'):
