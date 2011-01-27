@@ -24,6 +24,8 @@ into a template.  The template is hard-coded into the script.
 Generated files follow the pattern specified by BASENAME,
 with a sequential number appended.
 """)
+cmdline.add_option('-w', '--width', action='store', type=int, default=5, metavar='NUM',
+                   help="How many digits to use for numbering output files (default: %default).")
 (options, args) = cmdline.parse_args()
 
 
@@ -140,13 +142,23 @@ H     1.0   0.6252197764   0.6252197764   0.6252197764""",
 ## main
 
 if "__main__" == __name__:
+    fmt = "%0" + str(options.width) + "d"
     for n, t in enumerate(expansions(GAMESS_INP)):
         if len(args) == 0:
             # no BASENAME, print to stdout
-            print ("==== Input file #%d ====" % n)
+            print ("==== Input file #"+ (fmt % n) +" ====")
             print (t)
         else:
-            output = open(args[0] + ("%05d" % n) + '.inp', 'w+')
+            if t._keywords.has_key('DFTTYP'):
+                dfttyp = t._keywords['DFTTYP']
+            else:
+                dfttyp = 'NODFT'
+            scftyp = t._keywords['SCFTYP']
+            dirname = os.path.join(dfttyp, scftyp)
+            if not os.path.exists(dirname):
+                os.makedirs(dirname)
+            filename = os.path.join(dirname, args[0] + (fmt % n) + '.inp')
+            output = open(filename, 'w+')
             output.write("%s\n" % t)
             output.close()
 
