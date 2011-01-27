@@ -66,6 +66,9 @@ class ArcLrms(LRMS):
             
         self._queues_cache_time = Default.ARC_CACHE_TIME # XXX: should it be configurable?
 
+        arcnotifier = arclib.Notify_getNotifier()
+        arcnotifier.SetOutStream(arcnotifier.GetNullStream())
+
         self.isValid = 1
 
     def is_valid(self):

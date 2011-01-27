@@ -154,6 +154,9 @@ where command is one of these:
     try:
         rc = cmd(*sys.argv[1:], **{'opts':parser})
         return rc
+    except KeyboardInterrupt:
+        sys.stderr.write("%s: Exiting upon user request (Ctrl+C)\n" % PROG)
+        return 13
     except SystemExit, x:
         return x.code
     except InvalidUsage, x:
