@@ -524,13 +524,13 @@ class Application(Struct, Persistable, Task):
 
         self.join = get_and_remove(kw, 'join', False)
         self.stdin = get_and_remove(kw, 'stdin')
-        if self.stdin and self.stdin not in self.inpu0ts:
+        if self.stdin and self.stdin not in self.inputs:
             self.inputs[self.stdin] = os.path.basename(self.stdin)
         self.stdout = get_and_remove(kw, 'stdout')
-        if self.stdout and self.stdout not in self.outputs:
+        if self.stdout and (self.stdout not in self.outputs):
             self.outputs[self.stdout] = os.path.basename(self.stdout)
         self.stderr = get_and_remove(kw, 'stderr')
-        if self.stderr and self.stderr not in self.outputs:
+        if self.stderr and (self.stderr not in self.outputs):
             self.outputs[self.stderr] = os.path.basename(self.stderr)
 
         self.tags = get_and_remove(kw, 'tags', list())
@@ -640,13 +640,16 @@ class Application(Struct, Persistable, Task):
             xrsl += ('(inputFiles=%s)' 
                      % str.join(' ', [ ('("%s" "%s")' % (r,l)) for (l,r) in self.inputs.items() ]))
         if len(self.outputs) > 0:
-            xrsl += ('(outputFiles=%s)'
-                     % str.join(' ', [ ('("%s" "")' % r) 
-                                       for (r,l) in [ (remotename, localname)
-                                                   for remotename,localname 
-                                                   in self.outputs.iteritems() 
-                                                   if (remotename != self.stdout 
-                                                       and remotename != self.stderr)]]))
+            # filter out stdout/stderr (they are automatically
+            # retrieved) and then check again
+            outputs_ = [ ('("%s" "")' % r) 
+                         for (r,l) in [ (remotename, localname)
+                                        for remotename,localname 
+                                        in self.outputs.iteritems() 
+                                        if (remotename != self.stdout 
+                                            and remotename != self.stderr)]]
+            if len(outputs_) > 0:
+                xrsl += ('(outputFiles=%s)' % str.join(' ', outputs_))
         if len(self.tags) > 0:
             xrsl += str.join('\n', [
                     ('(runTimeEnvironment="%s")' % rte) for rte in self.tags ])
