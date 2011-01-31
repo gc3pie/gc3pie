@@ -299,7 +299,7 @@ for inp in new_inputs:
         # set job output directory
         output_dir = (
             options.output
-            .replace('PATH', os.path.dirname(session_file_name) or os.getcwd())
+            .replace('PATH', os.path.dirname(inp) or os.getcwd())
             .replace('NAME', inp_file_name)
             .replace('DATE', time.strftime('%Y-%m-%d', time.localtime(time.time())))
             .replace('TIME', time.strftime('%H:%M', time.localtime(time.time())))
