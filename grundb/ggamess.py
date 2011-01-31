@@ -209,8 +209,8 @@ def load(session, store):
     """
     result = [ ]
     for row in csv.DictReader(session,  # FIXME: field list must match `job` attributes!
-                              ['instance', 'persistent_id', 'state', 'info']):
-        if row['instance'].strip() == '':
+                              ['inp_file_path', 'persistent_id', 'state', 'info']):
+        if row['inp_file_path'].strip() == '':
             # invalid row, skip
             continue 
         # resurrect saved state
@@ -230,7 +230,7 @@ def save(tasks, session, store):
     for task in tasks:
         store.save(task)
         csv.DictWriter(session, 
-                       ['instance', 'persistent_id', 'state', 'info'], 
+                       ['inp_file_path', 'persistent_id', 'state', 'info'], 
                        extrasaction='ignore').writerow(task)
 
 # create a `Persistence` instance to save/load jobs
@@ -308,8 +308,6 @@ for inp in new_inputs:
             # # to the correct final destination
             # + "/tmp.%x" % random.randint(0, sys.maxint)
             ),
-        # ggamess-specific data
-        instance = inp_file_name,
         ))
 
 
@@ -361,7 +359,7 @@ def pprint(tasks, output=sys.stdout, session=None):
         output.write(80 * "=" + '\n')
         for task in tasks:
             output.write("%-15s  %-18s  %-s\n" % 
-                         (task.instance, 
+                         (os.path.basename(task.inp_file_path),
                           ('%s (%s)' % (task.execution.state, task.persistent_id)), 
                           task.execution.info))
 
