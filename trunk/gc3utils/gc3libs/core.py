@@ -861,6 +861,8 @@ class Engine(object):
                     # try to get output
                     try:
                         self._core.fetch_output(task)
+                        if task.final_output_retrieved == True:
+                            self._core.free(task)
                         if self._store:
                             self._store.save(task)
                     except Exception, x:
