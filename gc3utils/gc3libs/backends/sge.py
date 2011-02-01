@@ -727,7 +727,7 @@ class SgeLrms(LRMS):
 
         except:
             self.transport.close()
-            log.critical('Failure while querying remote LRMS')
+            log.error('Failure while querying remote LRMS')
             log.debug('%s %s',sys.exc_info()[0], sys.exc_info()[1])
             raise
         

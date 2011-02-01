@@ -341,9 +341,8 @@ class ArcLrms(LRMS):
         for cluster in cls:
             queues =  arclib.GetQueueInfo(cluster,arclib.MDS_FILTER_CLUSTERINFO,True,"",1)
             if len(queues) == 0:
-                log.error('No ARC queues found for resource %s' % str(cluster))
+                log.warning('No ARC queues found for resource %s' % str(cluster))
                 continue
-                # raise LRMSSubmitError('No ARC queues found')              
 
             list_of_jobs = arclib.GetAllJobs(cluster,True,"",1)
 
