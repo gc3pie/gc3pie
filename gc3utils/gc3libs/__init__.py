@@ -524,7 +524,7 @@ class Application(Struct, Persistable, Task):
 
         self.join = get_and_remove(kw, 'join', False)
         self.stdin = get_and_remove(kw, 'stdin')
-        if self.stdin and self.stdin not in self.inputs:
+        if self.stdin and (self.stdin not in self.inputs):
             self.inputs[self.stdin] = os.path.basename(self.stdin)
         self.stdout = get_and_remove(kw, 'stdout')
         if self.stdout and (self.stdout not in self.outputs):
