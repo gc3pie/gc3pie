@@ -815,8 +815,9 @@ class Engine(object):
                 if self._store:
                     self._store.save(task)
                 if task.execution.state in [Run.State.SUBMITTED, Run.State.RUNNING]:
-                    currently_submitted += 1
                     currently_in_flight += 1
+                    if task.execution.state == Run.State.SUBMITTED:
+                        currently_submitted += 1
                     self._in_flight.append(task)
                     transitioned.append(index) # task changed state, mark as to remove
                 elif task.execution.state == Run.State.TERMINATED:
