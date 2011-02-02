@@ -83,10 +83,10 @@ def acceptable_gbasis_and_ngauss(kw):
     return True
 
 GAMESS_INP = Template("""
- $$CONTRL ${SCF} ISPHER=${ISPHER} RUNTYP=ENERGY MAXIT=1 UNITS=BOHR $$END
- $$SCF DIRSCF=${DIRSCF} $$END
+ $$CONTRL RUNTYP=ENERGY MAXIT=1 UNITS=BOHR $$END
+ $$CONTRL ${SCF} ISPHER=${ISPHER} $$END
  $$ACCURACY ITOL=${ITOL} ILOAD=${ILOAD} $$END
- $$SYSTEM MWORDS=1 $$END
+ $$SYSTEM MWORDS=5 $$END
  $$BASIS ${BASIS} $$END
  $$GUESS GUESS=HUCKEL $$END
 
@@ -119,7 +119,7 @@ H     1.0   0.6252197764   0.6252197764   0.6252197764""",
                                       SCFTYP = ["RHF", "ROHF", "UHF"],
                                       ),
                       ], # end of SCF
-                      DIRSCF = [".TRUE.", ".FALSE."],
+                      #DIRSCF = [".TRUE.", ".FALSE."],
                       ITOL = [20, 15, 10],
                       ILOAD = [9, 7, 5],
                       BASIS = [Template("GBASIS=${SIMPLEBASIS}",
@@ -161,4 +161,3 @@ if "__main__" == __name__:
             output = open(filename, 'w+')
             output.write("%s\n" % t)
             output.close()
-
