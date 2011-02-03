@@ -218,7 +218,7 @@ class GSingleStateMachine(StateMachine):
         _default_config_file_locations = [ "/etc/gc3/gc3utils.conf", _rcdir + "/gc3utils.conf" ]
         self._gcli = gc3utils.gcommands._get_gcli(_default_config_file_locations)
     
-    @state(States.READY)
+    @state(States.READY, color=StatePrint.START)
     def handle_ready_state(self):
         #Need to sleep to give the arc info system time to update itself
         #with any jobs just submitted by me
@@ -295,7 +295,7 @@ class GSingleStateMachine(StateMachine):
 #        except gc3utils.Exceptions.AuthenticationException:
 #            self.state = States.NOTIFIED
     
-    @state(States.KILL, StateTypes.ONCE)
+    @state(States.KILL, StateTypes.ONCE, color=StatePrint.START)
     def handle_kill_state(self):
         if self.task.job:
             if not self.task.job.status == gc3utils.Job.JOB_STATE_COMPLETED:

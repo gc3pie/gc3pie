@@ -80,12 +80,30 @@ class GString(model.Task):
                 output += '%s %s %s %s\n'%(child.cls_name,  child.id, child.state, child.status)
             return output
         
+        def save_path_output_files(rootdir, path):
+            import shutil
+            path = path['gsingle']
+            for child in path:
+                f_list = child.mk_local_copy('outputs')
+                if f_list:
+                    [f.close() for f in f_list]
+                    try:
+                        os.mkdir(rootdir)
+                    except OSError:
+                        if not os.path.isdir(rootdir):
+                            raise
+                    for f in f_list:
+                        shutil.move(f.name, '%s/%s'%(rootdir, os.path.basename(f.name)))
+        
         if long_format:
+            rootdir = utils.generate_temp_dir(str(self.id))
             output += 'Child Tasks:\n'
+            output += 'Root File Path: %s\n'%(rootdir)
             for i in xrange(len(self.result)):
                 output += '-' * 80 + '\n'
                 output += 'Path %d:\n'%(i)
                 output += print_path(self.result[i])
+                save_path_output_files('%s/%d'%(rootdir, i) , self.result[i])
         else:
             output += 'Last Ran Child Tasks:\n'
             output += 'Path %d:\n'%(len(self.result)-1)
@@ -98,8 +116,19 @@ class GString(model.Task):
         task = super(GString, cls,).create()
         task.app_tag = u'%s'%(app_tag)
         app = _app_tag_mapping[task.app_tag]
+        num_images = 9
         
-        a_neb = neb.NEB()
+        #Defaults: Didn't ever converge: 4d3f0baeaa22e307e2000002
+        #a_neb = neb.NEB(spring_constant = 2.0, tangent = "new",       \
+        #                            dneb = True, dnebOrg = False, method = 'normal')
+        #
+        #The ci will push the highest energy image up, which can cause issues with the
+        #whole path
+        #a_neb = neb.NEB(spring_constant = 2.0, tangent = "old",       \
+        #                            dneb = False, dnebOrg = False, method = 'ci')
+        a_neb = neb.NEB(spring_constant = 2.0, tangent = "old",       \
+                                    dneb = False, dnebOrg = False, method = 'normal')
+        
         l_opt = list()
         
         for a_file in f_list:
@@ -109,7 +138,7 @@ class GString(model.Task):
         atoms_end, params_end = app.parse_input(f_list[1])
         
         assert params_start == params_end,  'Start and finish need to have the same params.'
-        path = neb.interpolate(atoms_start.get_positions(), atoms_end.get_positions())
+        path = neb.interpolate(atoms_start.get_positions(), atoms_end.get_positions(), num_images)
         
         #Zero out the fire.v matrix
         optimizer.initialize(shape=atoms_start.get_positions().shape)
@@ -119,7 +148,7 @@ class GString(model.Task):
             task.opt.append(mongo_pickle)
             task.opt[i].pickle = copy.deepcopy(optimizer)
         
-        l_gsingle = GStringResult(gsingle=_convert_pos_to_jobs(app_tag, atoms_start, params_start, path, requested_cores, requested_memory, requested_walltime))
+        l_gsingle = GStringResult(gsingle=_convert_pos_to_jobs(app_tag, atoms_start, params_start, 0, path, requested_cores, requested_memory, requested_walltime))
         task.result.append(l_gsingle)
         task.neb = model.PickleProxy()
         task.neb.pickle = a_neb
@@ -132,8 +161,8 @@ class GString(model.Task):
     def cls_fsm():
         return eval(_STATEMACHINE_CLASS)
         
-def _convert_pos_to_jobs(app_tag, atoms_start, params_start, path, requested_cores, requested_memory,  requested_walltime):
-        count = 0
+def _convert_pos_to_jobs(app_tag, atoms_start, params_start, starting_id, path, requested_cores, requested_memory,  requested_walltime):
+        count = starting_id
         app = _app_tag_mapping[app_tag]
         gsingle_path = list()
         for image in path:
@@ -197,9 +226,13 @@ class GStringStateMachine(StateMachine):
         for a_opt in self.task.opt:
             l_opt.append(a_opt.pickle)
         
-        for i in xrange(len(a_neb.path)):
-            self.fmax = neb.vmag(a_neb.path[i].f)
-            htpie.log.debug('GString %d %s max force %f'%(i, self.task.id, self.fmax))
+        self.fmax = 0
+        for i in xrange(1, len(a_neb.path) - 1):
+            ftemp = neb.vmag(a_neb.path[i].f)
+            htpie.log.debug('GString %d %s force %f'%(i, self.task.id,ftemp))
+            if ftemp > self.fmax:
+                self.fmax = ftemp
+        htpie.log.debug('GString max force %f'%(self.fmax))
         
         if self.handle_process_wait_tran():
             # FIXME: We are doing a forward look ahead here.
@@ -217,7 +250,7 @@ class GStringStateMachine(StateMachine):
             
             #We need the energy from the first and last position on the path, but we do not want to change them.
             #We therefore lock those positions and keep the old gsingle run for them
-            path = _convert_pos_to_jobs(self.task.app_tag, atoms_start, params_start, new_pos[1:-1], **gc3_temp)
+            path = _convert_pos_to_jobs(self.task.app_tag, atoms_start, params_start, 1, new_pos[1:-1], **gc3_temp)
             path.insert(0, children[0])
             path.append(children[-1])
             
@@ -231,7 +264,7 @@ class GStringStateMachine(StateMachine):
     @fromto(States.PROCESS, States.WAIT)
     def handle_process_wait_tran(self):
         FORCE_CONVERGE = .01
-        if self.fmax >= FORCE_CONVERGE:
+        if self.fmax >= FORCE_CONVERGE:            
             return True
 
     @fromto(States.PROCESS, States.COMPLETE)
