@@ -495,12 +495,15 @@ class Application(Struct, Persistable, Task):
         self.executable = executable
         self.arguments = [ str(x) for x in arguments ]
 
+        
         self.inputs = Application._io_spec_to_dict(inputs)
-        self.outputs = Application._io_spec_to_dict(outputs)
         # ensure remote paths are not absolute
         for r_path in self.inputs.itervalues():
             if os.path.isabs(r_path):
                 raise InvalidArgument("Remote paths not allowed to be absolute")
+
+        self.outputs = Application._io_spec_to_dict(outputs)
+        # ensure remote paths are not absolute
         for r_path in self.outputs.iterkeys():
             if os.path.isabs(r_path):
                 raise InvalidArgument("Remote paths not allowed to be absolute")
@@ -620,9 +623,11 @@ class Application(Struct, Persistable, Task):
         xrsl= str.join(' ', [
                 '&',
                 '(executable="%s")' % self.executable,
-                '(arguments=%s)' % str.join(' ', [('"%s"' % x) for x in self.arguments]),
                 '(gmlog="gmlog")', # FIXME: should check if conflicts with any input/output files
                 ])
+        # treat 'arguments' separately
+        if self.arguments:
+            xrsl += '(arguments=%s)' % str.join(' ', [('"%s"' % x) for x in self.arguments])
         if (os.path.basename(self.executable) in self.inputs
             or './'+os.path.basename(self.executable) in self.inputs):
             xrsl += '(executables="%s")' % os.path.basename(self.executable)

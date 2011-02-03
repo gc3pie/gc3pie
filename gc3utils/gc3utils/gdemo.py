@@ -31,6 +31,7 @@ __copyright__="Copyright (c) 2009,2010 Grid Computing Competence Center, Univers
 import sys
 import os
 import time
+import logging
 
 from optparse import OptionParser
 
@@ -55,6 +56,8 @@ _default_job_folder_location = os.getcwd()
 
 def main():
     # We will skip argument parsing and all other decorative tasks
+    # 0.0) parse command line arguments
+    # 0.1) configure logger
     # 1) obtain instance on core
     # 2) create application instance
     # 3) submit application
@@ -65,13 +68,28 @@ def main():
     
     # 0) parse command line arguments
     parser = OptionParser(usage="%prog INPUTFILE")
+    parser.add_option("-v", "--verbose", type="int", dest="verbose", default=0,
+                      metavar="LEVEL",
+                      help="Increase program verbosity"
+                      " (default is 0; any higher number may spoil screen output).",
+                      )
+
+
     (options, args) = parser.parse_args(sys.argv[1:])
 
     if len(args) < 1:
-        raise InvalidUsage('Wrong number of arguments: this commands expects at exactly 1 argument: file containing the list of integer to be calculated')
+        raise InvalidUsage('Wrong number of arguments: this commands expects at exactly 1 argument: Integer to be squared')
+
+    # 0.1) configure logger
+    loglevel = max(1, logging.ERROR - 10 * options.verbose)
+    gc3libs.configure_logger(loglevel, "gdemo")
+    logger = logging.getLogger("gc3.gdemo")
+    logger.setLevel(loglevel)
+    logger.propagate = True
+
 
     # 1) obtain instance on core
-    print("Creating instance of core... ")
+    sys.stdout.write("Creating instance of core... ")
     try:
         _core = gc3libs.core.Core(* gc3libs.core.import_config(config_file_locations, True))
     except NoResources:
@@ -81,43 +99,58 @@ def main():
         gc3utils.log.debug("Failed loading config file from '%s'",
                            str.join("', '", config_file_locations))
         raise
+    sys.stdout.write("\t[ ok ]\n")
 
-    print("Creating instance of application... ")
+    sys.stdout.write("Creating instance of application... ")
     # 2) create application instance
     app = demo.Square(
-        args[0], # 1st arg is .txt file path containing a list of integer to be calculated
-        requested_memory = '1',
-        requested_cores = '1',
-        requested_walltime = '1'
+        args[0] # 1st arg is the int value to be squared. 
+        # requested_memory = 1,
+        # requested_cores = 1,
+        # requested_walltime = 60, # 60 seconds should be fine
+        # output_dir = None
         )
+    sys.stdout.write("\t[ ok ]\n")    
 
-    print("Submitting... ")
+    sys.stdout.write("Submitting... ")
     # 3) submit application  
     _core.submit(app)
 
+    sys.stdout.write("\t[ %s ]\n" % app.execution.lrms_jobid)
 
-    print("Looping over running state... ")
+    sys.stdout.write("Looping over running state... \n")
     # 4) monitor status (loop)
     while app.execution.state != Run.State.TERMINATED:
         try:
-            _core.update_job_state(app)
             time.sleep(10)
+            _core.update_job_state(app)
+            sys.stdout.write("[ %s ]\r" % app.execution.state)
+            sys.stdout.flush()
         except:
             raise
         
-    print("retrieving results... ")
+    sys.stdout.write("\nRetrieving results... ")
+
+    file_handle = _core.peek(app)
+    result = file_handle.read()
+
     #  5) retrieve results
-    _core.fetch_output(app, app.output_dir, overwrite=False)
+    _core.fetch_output(app, download_dir=os.path.join(os.getcwd(),'gdemo_result'), overwrite=False)
+
+    sys.stdout.write("\t[ %d ]\n" % int(result))    
+
+    sys.stdout.write("Cleaning up application execution... ")
 
     # 5.1) clean application: remove remote data
     _core.free(app)
+
+    sys.stdout.write("\t[ ok ]\n")
 
     # 6) display status log 
     print("Application termianted")
     print (78 * '=')
     for key, value in sorted(app.execution.items()):  
         print("%-20s  %-10s " % (key, value)) 
-        print (78 * '=')
 
         #print("Status: %s" % app.execution.state)
         #print("Return code: %d" % app.execution.returncode)

@@ -36,21 +36,37 @@ class Square(gc3libs.Application):
     Square class, takes a filename containing a list of integer to be squared.
     writes an output containing the square of each of them
     """
-    def __init__(self, input_file, **kw):
-        src_square_sh = resource_filename(Requirement.parse("gc3utils"),
-                                          "gc3utils/etc/square.sh")
+    def __init__(self, x):
+        # src_square_sh = resource_filename(Requirement.parse("gc3utils"),
+        #                                   "gc3libs/etc/square.sh")
 
         _inputs = []
-        _inputs.append((input_file, os.path.basename(input_file)))
-        _inputs.append((src_square_sh, 'square.sh'))
+        # _inputs.append((input_file, os.path.basename(input_file)))
+        # _inputs.append((src_square_sh, 'square.sh'))
+
+        _outputs = []
+
+        # kw.setdefault('stdout', 'stdout.txt')
+        # kw.setdefault('stderr', 'stderr.txt')
+        
+        #  gc3libs.Application.__init__(self, executable, arguments, inputs, outputs, output_dir, **kw):
+
 
         gc3libs.Application.__init__(self,
-                                     executable = "square.sh",
-                                     arguments = '',
-                                     inputs = _inputs,
-                                     outputs = None,
+                                     executable = "/usr/bin/expr",
+                                     arguments = [str(x), "*", str(x)],
+                                     inputs = [],
+                                     outputs = [],
                                      output_dir = None,
-                                     **kw)
+                                     stdout = "stdout.txt",
+                                     stderr = "stderr.txt",
+                                     # set computational requirements. XXX this is mandatory, thus probably should become part of the Application's signature
+                                     requested_memory = 1,
+                                     requested_cores = 1,
+                                     requested_walltime = 1
+                                     )
+
+
 
 gc3libs.application.register(Square, 'square')
 
