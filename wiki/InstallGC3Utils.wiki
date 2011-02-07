@@ -17,7 +17,7 @@ These should be available in any decent Linux distribution.
 and install it (more info at http://pypi.python.org/pypi/virtualenv):
 {{{
    wget http://bitbucket.org/ianb/virtualenv/get/tip.gz#egg=virtualenv-tip
-   tar -xzf tip.gz && rm tip.gz 
+   tar -xzf tip.tar.gz && rm tip.tar.gz 
    cd virtualenv/
 }}}
 If you are installing as `root`, the following command is all you
