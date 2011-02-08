@@ -1,7 +1,7 @@
 = Logo proposal =
 
-* [http://code.google.com/p/gc3pie/wiki/cooltext505294713.png]
-* [http://code.google.com/p/gc3pie/wiki/cooltext505294974.png]
-* [http://code.google.com/p/gc3pie/wiki/cooltext505303962.png]
-* [http://code.google.com/p/gc3pie/wiki/cooltext505304272.png]
-* [http://code.google.com/p/gc3pie/wiki/cooltext505305179.png]
+* [http://www.gc3.uzh.ch http://code.google.com/p/gc3pie/wiki/cooltext505294713.png]
+* [http://www.gc3.uzh.ch http://code.google.com/p/gc3pie/wiki/cooltext505294974.png]
+* [http://www.gc3.uzh.ch http://code.google.com/p/gc3pie/wiki/cooltext505303962.png]
+* [http://www.gc3.uzh.ch http://code.google.com/p/gc3pie/wiki/cooltext505304272.png]
+* [http://www.gc3.uzh.ch http://code.google.com/p/gc3pie/wiki/cooltext505305179.png]
