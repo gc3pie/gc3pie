@@ -80,6 +80,13 @@ def main():
     if len(args) < 1:
         raise InvalidUsage('Wrong number of arguments: this commands expects at exactly 1 argument: Integer to be squared')
 
+    # 0.1) check input argument 
+    try:
+        int(args[0])
+    except ValueError:
+        parser.print_help()
+        return 1
+
     # 0.1) configure logger
     loglevel = max(1, logging.ERROR - 10 * options.verbose)
     gc3libs.configure_logger(loglevel, "gdemo")

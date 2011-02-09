@@ -36,7 +36,7 @@ warnings.simplefilter("ignore")
 import gc3libs
 from gc3libs import Application, Run
 from gc3libs.backends.sge import SgeLrms
-from gc3libs.backends.arc import ArcLrms
+# from gc3libs.backends.arc import ArcLrms
 from gc3libs.authentication import Auth
 import gc3libs.Default as Default
 from gc3libs.Exceptions import *
@@ -457,6 +457,7 @@ class Core:
                 # gc3libs.log.debug('Creating instance of type %s for %s', _resource.type, _resource.name)
                 try:
                     if _resource.type is Default.ARC_LRMS:
+                        from gc3libs.backends.arc import ArcLrms
                         _lrms = ArcLrms(_resource, self.auths)
                     elif _resource.type is Default.SGE_LRMS:
                         _lrms = SgeLrms(_resource, self.auths)

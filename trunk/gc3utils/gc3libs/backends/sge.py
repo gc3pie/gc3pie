@@ -332,15 +332,17 @@ class SgeLrms(LRMS):
             self.transport.connect()
 
             _command = 'mkdir -p $HOME/.gc3pie_jobs; mktemp -p $HOME/.gc3pie_jobs -d lrms_job.XXXXXXXXXX'
+            log.info("Creating remote temporary folder: command '%s' "
+                                 % _command)
             exit_code, stdout, stderr = self.transport.execute_command(_command)
             if exit_code == 0:
                 ssh_remote_folder = stdout.split('\n')[0]
             else:
-                raise LRMSError("Failed while executing command '%s' on resource '%s'"
-                                % (_command, self._resource))
+                raise LRMSError("Failed while executing command '%s' on resource '%s'. exit code %d, stderr %s."
+                                % (_command, self._resource, exit_code, stderr))
+        except TransportError, x:
+            raise
         except:
-            log.critical("Failed creating remote temporary folder: command '%s' returned exit code %d, stderr %s)"
-                                 % (_command, exit_code, stderr))
             self.transport.close()
             raise
 

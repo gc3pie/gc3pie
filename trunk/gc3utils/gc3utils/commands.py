@@ -346,7 +346,7 @@ def gstat(*args, **kw):
     try:
         _core = _get_core(DEFAULT_CONFIG_FILE_LOCATIONS)
     except Exception, ex:
-        raise FatalError("gkill failed: %s: %s" % (ex.__class__.__name__, str(ex)))
+        raise FatalError("gstat failed: %s: %s" % (ex.__class__.__name__, str(ex)))
 
     # build list of apps to query status of
     if len(args) == 0:
