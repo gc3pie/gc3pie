@@ -29,11 +29,6 @@ import os
 import subprocess
 import errno
 
-# NG's default packages install arclib into /opt/nordugrid/lib/pythonX.Y/site-packages;
-# add this anyway in case users did not set their PYTHONPATH correctly
-sys.path.append('/opt/nordugrid/lib/python%d.%d/site-packages' 
-                % sys.version_info[:2])
-import arclib
 
 import gc3libs
 from gc3libs.authentication import Auth
@@ -60,6 +55,8 @@ class GridAuth(object):
 
 
     def check(self):
+        import arclib
+
         gc3libs.log.debug('Checking auth: grid')
 
         self.user_cert_valid = _user_certificate_is_valid()
@@ -183,7 +180,7 @@ class GridAuth(object):
                         gc3libs.log.error("UnrecoverableAuthError: errno [%d], message [%s]" % (x.errno, x.strerror))
                         raise UnrecoverableAuthError(str(x.strerror))
                 except Exception as ex:
-                    # Intercept any other Error that subprocess may raise                                                                                                
+                    # Intercept any other Error that subprocess may raise 
                     gc3libs.log.error("Unhanlded error. type: %s message: %s" % (ex.__class__, ex.message))
                     raise UnrecoverableAuthError(str(ex.message))
                 
@@ -195,7 +192,15 @@ class GridAuth(object):
             
             return True
 
+
+# ARC's default packages install arclib into /opt/nordugrid/lib/pythonX.Y/site-packages; 
+# add this anyway in case users did not set their PYTHONPATH correctly 
+sys.path.append('/opt/nordugrid/lib/python%d.%d/site-packages'
+                % sys.version_info[:2])
+
 def _voms_proxy_is_valid():
+    import arclib
+
     try:
         c = arclib.Certificate(arclib.PROXY)
         return not c.IsExpired()
@@ -204,6 +209,8 @@ def _voms_proxy_is_valid():
 
 
 def _user_certificate_is_valid():
+    import arclib
+
     try:
         c = arclib.Certificate(arclib.USERCERT)
         return not c.IsExpired()
