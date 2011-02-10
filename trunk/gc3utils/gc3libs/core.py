@@ -882,16 +882,16 @@ class Engine(object):
         * `failed`: count of TERMINATED jobs with nonzero return code
         """
         result = utils.defaultdict(lambda: 0)
-        result['NEW'] = len(self._new)
+        result[Run.State.NEW] = len(self._new)
         for task in self._in_flight:
             state = task.execution.state
             result[state] += 1
-        result['STOPPED'] = len(self._stopped)
+        result[Run.State.STOPPED] = len(self._stopped)
         for task in self._to_kill:
             # XXX: presumes no task in the `_to_kill` list is TERMINATED
             state = task.execution.state
             result[state] += 1
-        result['TERMINATED'] = len(self._terminated)
+        result[Run.State.TERMINATED] = len(self._terminated)
         # for TERMINATED tasks, compute the number of successes/failures
         for task in self._terminated:
             if task.execution.returncode == 0:
