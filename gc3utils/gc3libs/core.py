@@ -694,7 +694,7 @@ class Engine(object):
         self.output_dir = output_dir
         self.fetch_output_overwrites = fetch_output_overwrites
 
-            
+
     def add(self, app):
         """Add `app` to the list of tasks managed by this Engine."""
         state = app.execution.state
@@ -872,6 +872,35 @@ class Engine(object):
                                           % (task.persistent_id, x.__class__.__name__, str(x)), exc_info=True)
 
 
+    def stats(self):
+        """
+        Return a dictionary mapping each state name into the count of
+        jobs in that state. In addition, the following keys are defined:
+        
+        * `ok`:  count of TERMINATED jobs with return code 0
+        
+        * `failed`: count of TERMINATED jobs with nonzero return code
+        """
+        result = utils.defaultdict(lambda: 0)
+        result['NEW'] = len(self._new)
+        for task in self._in_flight:
+            state = task.execution.state
+            result[state] += 1
+        result['STOPPED'] = len(self._stopped)
+        for task in self._to_kill:
+            # XXX: presumes no task in the `_to_kill` list is TERMINATED
+            state = task.execution.state
+            result[state] += 1
+        result['TERMINATED'] = len(self._terminated)
+        # for TERMINATED tasks, compute the number of successes/failures
+        for task in self._terminated:
+            if task.execution.returncode == 0:
+                result['ok'] += 1
+            else:
+                result['failed'] += 1
+        return result
+
+            
     # implement a Core-like interface, so `Engine` objects can be used
     # as substitutes for `Core`.
 
