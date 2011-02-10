@@ -143,6 +143,7 @@ class ArcLrms(LRMS):
                     ACCEPTING       SUBMITTED
                     SUBMITTING      SUBMITTED
                     PREPARING       SUBMITTED
+                    PREPARED        SUBMITTED
                     INLRMS:Q        SUBMITTED
                     INLRMS:R        RUNNING
                     INLRMS:O        RUNNING
@@ -173,6 +174,7 @@ class ArcLrms(LRMS):
                     'ACCEPTING': Run.State.SUBMITTED,
                     'SUBMITTING':Run.State.SUBMITTED,
                     'PREPARING': Run.State.SUBMITTED,
+                    'PREPARED':  Run.State.SUBMITTED,
                     'INLRMS:Q':  Run.State.SUBMITTED,
                     'INLRMS:R':  Run.State.RUNNING,
                     'INLRMS:O':  Run.State.RUNNING,
