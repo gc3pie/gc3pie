@@ -61,13 +61,23 @@ setuptools.setup(
             'gsub = gc3utils.gcmd:main',
             'gtail = gc3utils.gcmd:main',
             # 'gnotify = gc3utils.gcmd:main',
-	    'gdemo = gc3utils.gdemo:main',
+            'gdemo = gc3utils.gdemo:main',
             ],
        },
 
-    # run-time dependencies ("pycrypto" is a dependency of Paramiko;
-    # setuptools apparently does not process dependencies recursively)
-    install_requires = ['paramiko', 'pycrypto>=1.9', 'lockfile==0.8'],
+    # run-time dependencies
+    install_requires = [
+        # paramiko and pycrypto are required for SSH operations
+        # ("pycrypto" is actually a dependency of Paramiko, but
+        # setuptools apparently does not process dependencies recursively)
+        'paramiko', 'pycrypto>=1.9', 
+        # lockfile 0.9 dropped supprot for Python 2.4; let's stick with 0.8
+        'lockfile==0.8',
+        # texttable -- format tabular text output
+        'texttable',
+        # pyCLI -- object-oriented command-line app programming
+        'pyCLI',
+        ],
 
     # additional non-Python files to be bundled in the package
     package_data = {
