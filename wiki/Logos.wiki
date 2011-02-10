@@ -1,7 +1,9 @@
-= Logo proposal =
+= Logo proposals =
 
-* [http://www.gc3.uzh.ch http://code.google.com/p/gc3pie/wiki/cooltext505294713.png]
-* [http://www.gc3.uzh.ch http://code.google.com/p/gc3pie/wiki/cooltext505294974.png]
-* [http://www.gc3.uzh.ch http://code.google.com/p/gc3pie/wiki/cooltext505303962.png]
-* [http://www.gc3.uzh.ch http://code.google.com/p/gc3pie/wiki/cooltext505304272.png]
-* [http://www.gc3.uzh.ch http://code.google.com/p/gc3pie/wiki/cooltext505305179.png]
+Use comments to vote your favorite logo!
+
+* [http://gc3pie.googlecode.com/svn/wiki/cooltext505294713.png]
+* [http://gc3pie.googlecode.com/svn/wiki/cooltext505294974.png]
+* [http://gc3pie.googlecode.com/svn/wiki/cooltext505303962.png]
+* [http://gc3pie.googlecode.com/svn/wiki/cooltext505304272.png]
+* [http://gc3pie.googlecode.com/svn/wiki/cooltext505305179.png]
