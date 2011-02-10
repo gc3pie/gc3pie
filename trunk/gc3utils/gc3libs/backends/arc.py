@@ -121,8 +121,8 @@ class ArcLrms(LRMS):
 
         try:
             lrms_jobid = arclib.SubmitJob(xrsl,targets)
-        except arclib.JobSubmissionError:
-            raise LRMSSubmitError('Got error from arclib.SubmitJob():')
+        except arclib.JobSubmissionError, ex:
+            raise LRMSSubmitError('Got error from arclib.SubmitJob(): %s' % str(ex))
 
         job.lrms_jobid = lrms_jobid
         return job
