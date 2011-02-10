@@ -36,7 +36,7 @@ pre-defined states, listed in the table below.
 A job that is not in the `NEW` or `TERMINATED` state is said to be a
 "live" job.
 
-[http://code.google.com/p/gc3pie/wiki/GC3Libs_Job_states.png]
+[http://gc3pie.googlecode.com/svn/wiki/GC3Libs_Job_states.png]
 
 When a `Job` object is first created, it is assigned the state `NEW`.
 
