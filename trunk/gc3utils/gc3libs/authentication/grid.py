@@ -28,9 +28,11 @@ import getpass
 import os
 import subprocess
 import errno
+import time
 
 
 import gc3libs
+import gc3libs.Default
 from gc3libs.authentication import Auth
 from gc3libs.Exceptions import ConfigurationError, RecoverableAuthError, UnrecoverableAuthError
 
@@ -50,18 +52,24 @@ class GridAuth(object):
             self.user_cert_valid = False
             self.proxy_valid = False
             self.__dict__.update(auth)
+            self.validity_timestamp = 0 # Default init value for auth enalbed validity. 
         except AssertionError as x:
             raise ConfigurationError('Erroneous configuration parameter: %s' % str(x))
 
 
     def check(self):
-        import arclib
-
         gc3libs.log.debug('Checking auth: grid')
+
+
+        if (self.validity_timestamp - int(time.time())) > gc3libs.Default.PROXY_VALIDITY_THRESHOLD:
+            gc3libs.log.info('auth: grid still within validity period. skipping')
+            return True
+
 
         self.user_cert_valid = _user_certificate_is_valid()
         self.proxy_valid = _voms_proxy_is_valid()
- 
+        self.validity_timestamp = _get_proxy_expires_time()
+
         return ( self.user_cert_valid and self.proxy_valid )
     
     def enable(self):
@@ -190,6 +198,7 @@ class GridAuth(object):
                                            "user certificate status: [%s]" 
                                            % (self.proxy_valid, self.user_cert_valid))
             
+            self.validity_timestamp = _get_proxy_expires_time()
             return True
 
 
@@ -197,6 +206,15 @@ class GridAuth(object):
 # add this anyway in case users did not set their PYTHONPATH correctly 
 sys.path.append('/opt/nordugrid/lib/python%d.%d/site-packages'
                 % sys.version_info[:2])
+
+def _get_proxy_expires_time():
+    import arclib
+
+    try:
+        c = arclib.Certificate(arclib.PROXY)
+        return c.Expires().GetTime()
+    except:
+        return 0
 
 def _voms_proxy_is_valid():
     import arclib

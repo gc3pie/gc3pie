@@ -51,3 +51,6 @@ SGE_LRMS = 2
 # Transport information
 SSH_PORT = 22
 SSH_CONNECT_TIMEOUT = 30
+
+# Proxy
+PROXY_VALIDITY_THRESHOLD = 600 # proxy validity threshold in seconds. If proxy is expiring before the thresold, it will be mrked as to be renewed.
