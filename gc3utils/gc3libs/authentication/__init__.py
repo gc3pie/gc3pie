@@ -43,8 +43,16 @@ class Auth(object):
             except (AssertionError, AttributeError) as x:
                 a = ConfigurationError("Missing required configuration parameters"
                                          " in auth section '%s': %s" % (auth_name, str(x)))
-            if not a.check():
-                if self.auto_enable:
+        else:
+            a = self.__auths[auth_name]
+
+
+        if isinstance(a, Exception):
+            self.__auths[auth_name] = a
+            raise a
+
+        if not a.check():
+            if self.auto_enable:
                     try:
                         a.enable()
                     except RecoverableAuthError as x:
@@ -54,14 +62,11 @@ class Auth(object):
                                           " will remember for next invocations:"
                                           " %s: %s" % (auth_name, x.__class__.__name__, x))
                         a = x
-                else:
-                    a = UnrecoverableAuthError("No valid credentials of type '%s'"
+            else:
+                a = UnrecoverableAuthError("No valid credentials of type '%s'"
                                                 " and `auto_enable` not set." % auth_name)
-            self.__auths[auth_name] = a
 
-        a = self.__auths[auth_name]
-        if isinstance(a, Exception):
-            raise a
+        self.__auths[auth_name] = a
         return a
 
     @staticmethod
