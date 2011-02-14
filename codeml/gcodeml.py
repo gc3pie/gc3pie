@@ -118,7 +118,7 @@ class CodemlApplication(gc3libs.Application):
             # ignore empty lines
             if len(line) == 0:
                 continue
-            key, value = self._assignment_re.split(line, maxsplit=1)
+            key, value = CodemlApplication._assignment_re.split(line, maxsplit=1)
             if key in [ 'seqfile', 'treefile' ]:
                 result[key] = abspath(value)
             # shortcut: if we already have both 'seqfile' and

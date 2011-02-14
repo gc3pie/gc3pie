@@ -40,15 +40,14 @@ There are two base classes provided here:
 __author__ = 'Riccardo Murri <riccardo.murri@uzh.ch>'
 __docformat__ = 'reStructuredText'
 
+
 import cli # pyCLI
 import cli.app
 import csv
 import fnmatch
 import logging
-import operator
 import os
 import os.path
-from optparse import OptionParser
 import re
 import sys
 import random
