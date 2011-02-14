@@ -531,13 +531,13 @@ class SessionBasedScript(cli.app.CommandLineApp):
             # create a new `Application` object
             try:
                 app = cls(*args, **kwargs)
+                self.tasks.append(app)
             except Exception, ex:
                 self.log.error("Could not create job '%s': %s."
                                % (jobname, str(ex)))
                 # XXX: should we raise an exception here?
                 #raise AssertionError("Could not create job '%s': %s: %s" 
                 #                     % (jobname, ex.__class__.__name__, str(ex)))
-            self.tasks.append(app)
 
         # save the session list immediately, so newly added jobs will
         # be in it if the script is stopped here
