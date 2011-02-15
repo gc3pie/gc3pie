@@ -869,7 +869,8 @@ class cmd_glist(_BaseCmd):
     """
 
     def main(self):
-        self._select_resources(* self.params.args)
+        if len(self.params.args) > 0:
+            self._select_resources(* self.params.args)
 
         resources = self._core.get_all_updated_resources()
         for resource in resources:
