@@ -422,8 +422,8 @@ class ArcLrms(LRMS):
         jftpc = arclib.JobFTPControl()
 
         # download file
-        log.debug("Downloading %d bytes at offset %d of remote file '%s' into local file '%s' ..."
-                          % (size, offset, remote_filename, local_file.name))
+        log.debug("Downloading max %d bytes at offset %d of remote file '%s' into local file '%s' ..."
+                  % (size, offset, remote_filename, local_file.name))
 
         # XXX: why this ? Because `local_file` could be a file name
         # (string) or a file-like object, as per function docstring.
@@ -437,7 +437,7 @@ class ArcLrms(LRMS):
                                       int(offset), int(size), 
                                       local_file.name)
 
-        log.info('status arclib.JobFTPControl.Download [ completed ]')
+        log.debug('ArcLRMS.peek(): arclib.JobFTPControl.Download: completed')
 
 
 ## main: run tests
