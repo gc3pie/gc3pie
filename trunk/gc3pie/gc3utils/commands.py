@@ -229,6 +229,22 @@ class _BaseCmd(cli.app.CommandLineApp):
         """
         try:
             return cli.app.CommandLineApp.run(self)
+        except KeyboardInterrupt:
+            sys.stderr.write("%s: Exiting upon user request (Ctrl+C)\n" % self.name)
+            return 13
+        except SystemExit, ex:
+            return ex.code
+        except InvalidUsage, ex:
+            # Fatal errors do their own printing, we only add a short usage message
+            sys.stderr.write("Type '%s --help' to get usage help.\n" % self.name)
+            return 1
+        except AssertionError, ex:
+            sys.stderr.write("%s: BUG: %s\n"
+                             "Please send an email to gc3utils-dev@gc3.uzh.ch copying this\n"
+                             "output and and attach file '~/.gc3/debug.log'.  Many thanks for\n"
+                             "your cooperation.\n"
+                             % (self.name, str(ex)))
+            return 1
         except Exception, ex:
             self.log.critical("%s: %s" % (ex.__class__.__name__, str(ex)), 
                               exc_info=(self.params.verbose > 2))
