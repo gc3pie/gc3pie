@@ -69,29 +69,24 @@ GC3 svn repository into its own python environment.
     sense to use a name like gcodeml-vX.Y instead.
 
 
-3. Create a ``src/`` directory to host the ``gcodeml`` source code
-   and check-out the ``gc3utils`` sources there::
+3. Check-out the ``gc3pie`` sources in a ``src/`` directory::
      
-       mkdir src
-       cd src/
-       svn co http://gc3pie.googlecode.com/svn/trunk/gc3utils
-       svn co http://gc3pie.googlecode.com/svn/trunk/gcodeml
+       svn co http://gc3pie.googlecode.com/svn/trunk/gc3pie src
    
   
-4. Install the ``gc3utils`` in "develop" mode, so any modification
+4. Install the ``gc3pie`` in "develop" mode, so any modification
    pulled from subversion is immediately reflected in the running
    environment::
 
-       cd gc3utils/
+       cd src/
        env CC=gcc ./setup.py develop 
-       cd .. # back into the `src` directory
 
 
 5. Create symlinks to the ``gcodeml`` script in the
    ``bin/`` directory::
 
        cd .. # back into the `gcodeml` directory
-       ln -s `pwd`/src/gcodeml/gcodeml.py bin/gcodeml
+       ln -s `pwd`/src/gc3apps/codeml/gcodeml.py bin/gcodeml
 
 
    
@@ -107,18 +102,10 @@ latest version found in the GC3 svn repository.
 
      cd gcodeml/src
 
-2. Update the ``gcodeml`` sources:
+2. Update the ``gc3pie`` source and run the ``setup.py`` script again:
 
-     cd gcodeml
-     svn update
-     cd ..
-
-3. Update the ``gc3utils`` source and run the ``setup.py`` script again:
-
-     cd gc3utils
      svn update
      env CC=gcc ./setup.py develop
-     cd ..
 
 
 
