@@ -574,11 +574,16 @@ class cmd_gsub(_BaseCmd):
                           self.params.resource_name)
 
         self._core.submit(app)
-        self._store.save(app)
-
-        print("Successfully submitted %s;"
-              " use the 'gstat' command to monitor its progress." % app)
-        return 0
+        if app.execution.state is Run.State.SUBMITTED:
+            self._store.save(app)
+            print("Successfully submitted %s;"
+                  " use the 'gstat' command to monitor its progress." % app)
+            return 0
+        else:
+            self.log.error("Could not submit computational job."
+                           " Please check log file or re-run with"
+                           " higher verbosity ('-vvvv' option)")
+            return 1
 
 
 class cmd_gresub(_BaseCmd):
