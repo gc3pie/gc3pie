@@ -107,12 +107,6 @@ def main():
                          % (PROG, e))
 
 
-    # configure logging
-    gc3libs.configure_logger(name='gc3utils')
-    import logging
-    from gc3utils import log
-    log.setLevel(logging.ERROR)
-
     if PROG == 'gc3utils':
         # the real command name is the first non-option argument
         for arg in sys.argv[1:]:

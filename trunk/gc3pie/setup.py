@@ -36,7 +36,6 @@ setuptools.setup(
     version = "0.14.15", # format: 0.(MONTH+12).DAY (for now ...)
 
     packages = setuptools.find_packages(exclude=['ez_setup']),
-    #scripts = ['gcmd.py'],
 
     # metadata for upload to PyPI
     description = "A Python library and simple command-line frontend for computational job submission to multiple resources.",
@@ -44,22 +43,22 @@ setuptools.setup(
     author_email = "gc3utils-dev@gc3.lists.uzh.ch",
     license = "LGPL",
     keywords = "grid arc globus sge gridengine ssh gamess rosetta batch job",
-    url = "http://gc3pie.googlecode.com/",   # project home page, if any
+    url = "http://gc3pie.googlecode.com/", # project home page
 
     entry_points = {
         'console_scripts': [
             # the generic, catch-all script:
-            'gc3utils = gc3utils.gc3utils:main',
+            'gc3utils = gc3utils.frontend:main',
             # symlinks to specific subcommands:
-            'gclean = gc3utils.gc3utils:main',
-            'gget = gc3utils.gc3utils:main',
-            'ginfo = gc3utils.gc3utils:main',
-            'gkill = gc3utils.gc3utils:main',
-            'glist = gc3utils.gc3utils:main',
-            'gresub = gc3utils.gc3utils:main',
-            'gstat = gc3utils.gc3utils:main',
-            'gsub = gc3utils.gc3utils:main',
-            'gtail = gc3utils.gc3utils:main',
+            'gclean = gc3utils.frontend:main',
+            'gget = gc3utils.frontend:main',
+            'ginfo = gc3utils.frontend:main',
+            'gkill = gc3utils.frontend:main',
+            'glist = gc3utils.frontend:main',
+            'gresub = gc3utils.frontend:main',
+            'gstat = gc3utils.frontend:main',
+            'gsub = gc3utils.frontend:main',
+            'gtail = gc3utils.frontend:main',
             ],
        },
 
