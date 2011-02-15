@@ -356,8 +356,9 @@ class Core:
                 self.auths.get(lrms._resource.auth)
                 updated_resources.append(lrms.get_resource_status())
                 resource.updated = True
-            except Exception, x:
-                gc3libs.log.error('Error type %s. %s.' % (x.__class__.__name__, str(x)))
+            except Exception, ex:
+                gc3libs.log.error("Got error while updating resource '%s': %s."
+                                  % (resource.name, str(ex)))
                 resource.updated = False
                 updated_resources.append(resource)
                 
@@ -373,8 +374,9 @@ class Core:
 #                    lrms = self._get_backend(resource_name)
 #                    self.auths.get(lrms._resource.auth)
 #                    return  lrms.get_resource_status()
-#                except Exception, x:
-#                    gc3libs.log.error('Error type %s. %s.' % (x.__class__.__name__, str(x)))
+#                except Exception, ex:
+#                    gc3libs.log.error('Got error while updating resource '%s': %s.' 
+#                                      % (resource.name, str(ex)))
 #                    raise
 #
 #        # if we reach this point it means no resource has been matched
@@ -397,7 +399,7 @@ class Core:
                           " and returncode to SIGCANCEL" % job)
         job.state = Run.State.TERMINATED
         job.signal = Run.Signals.Cancelled
-        job.log.append("Cancelled by `Core.kill`")
+        job.log.append("Cancelled.")
         if hasattr(job, 'terminated'):
             job.terminated()
 
@@ -463,14 +465,17 @@ class Core:
                     elif _resource.type is Default.SGE_LRMS:
                         _lrms = SgeLrms(_resource, self.auths)
                     else:
-                        gc3libs.log.error('Unknown resource type %s',_resource.type)
-                        raise Exception('Unknown resource type')
-                except:
-                    gc3libs.log.error('Exception creating LRMS instance %s',_resource.type)
+                        raise ConfigurationError("Unknown resource type '%s'" 
+                                                 % _resource.type)
+                except Exception, ex:
+                    gc3libs.log.error("Error in creating resource %s: %s."
+                                      " Configuration file problem?"
+                                      % (_resource.name, str(ex)))
                     raise
 
         if _lrms is None:
-            raise InvalidResourceName("Cannot find computational resource '%s'" % resource_name)
+            raise InvalidResourceName("Cannot find computational resource '%s'" 
+                                      % resource_name)
 
         return _lrms
 
@@ -498,28 +503,29 @@ def get_resources(resources_list):
     #        and match with selectd_resource from comand line
     #        (optional) if not options.resource_name is None:
     resources = [ ]
-    try:
-        for key in resources_list.keys():
-            resource = resources_list[key]
-            try:
-                tmpres = gc3libs.Resource.Resource(resource)
-            except Exception, x:
-                gc3libs.log.error("rejecting resource '%s': %s: %s",
-                                   key, x.__class__.__name__, str(x))
-                continue
-            # gc3libs.log.debug('Checking resource type %s',resource['type'])
-            if resource['type'] == 'arc':
-                tmpres.type = gc3libs.Default.ARC_LRMS
-            elif resource['type'] == 'ssh_sge':
-                tmpres.type = gc3libs.Default.SGE_LRMS
-            else:
-                gc3libs.log.error('No valid resource type %s',resource['type'])
-                continue
-            gc3libs.log.debug('Resource type %s, validity %s' % (resource['type'], str(tmpres.is_valid())))
-            resources.append(tmpres)
-    except:
-        gc3libs.log.critical('failed creating Resource list')
-        raise
+    for key in resources_list.keys():
+        resource = resources_list[key]
+        try:
+            tmpres = gc3libs.Resource.Resource(resource)
+        except Exception, x:
+            gc3libs.log.error("Could not create resource '%s': %s."
+                              " Please check configuration file.",
+                               key, str(x))
+            continue
+        if resource['type'] == 'arc':
+            tmpres.type = gc3libs.Default.ARC_LRMS
+        elif resource['type'] == 'ssh_sge':
+            tmpres.type = gc3libs.Default.SGE_LRMS
+        else:
+            gc3libs.log.error("Configuration error: '%s' is no valid resource type.", 
+                              resource['type'])
+            continue
+        gc3libs.log.debug("Created%svalid resource '%s' of type %s"
+                          # horrible hack to circumvent Py 2.4's lack of ?:-operator
+                          % ((tmpres.is_valid() and " ") or "in", 
+                             resource['name'], 
+                             resource['type']))
+        resources.append(tmpres)
     return resources
 
                                 
