@@ -214,8 +214,9 @@ class _BaseCmd(cli.app.CommandLineApp):
         self.log.setLevel(loglevel)
         self.log.propagate = True
 
-        # interface to the persistence layer
+        # interface to the GC3Libs main functionality
         self._store = gc3libs.persistence.FilesystemStore(idfactory=gc3libs.persistence.JobIdFactory)
+        self._core = self._get_core(DEFAULT_CONFIG_FILE_LOCATIONS)
 
         # call hook methods from derived classes
         self.parse_args()
@@ -338,12 +339,28 @@ class _BaseCmd(cli.app.CommandLineApp):
         return apps
 
 
+    def _select_resources(self, *resource_names):
+        """
+        Restrict resources to those listed in `resource_names`.
+        Argument `resource_names` is a string listing all names of
+        allowed resources (comma-separated), or a list of names of the
+        resources to keep active.
+        """
+        resource_list = [ ]
+        for item in resource_names:
+            resource_list.extend(name for name in item.split(','))
+        kept = self._core.select_resource(lambda r: r.name in resource_list)
+        if kept == 0:
+            raise NoResources("No resources match the names '%s'" 
+                              % str.join(',', resource_list))
+
+
 #====== Main ========
 
 
 class cmd_gclean(_BaseCmd):
     """
-    ``gclean`` permanently removes jobs from local and remote storage.
+    Permanently remove jobs from local and remote storage.
 
     In normal operation, only jobs that are in a terminal status can
     be removed; if you want to force ``gclean`` to remove a job that
@@ -370,8 +387,6 @@ class cmd_gclean(_BaseCmd):
         else:
             args = self.params.args
 
-        _core = self._get_core(DEFAULT_CONFIG_FILE_LOCATIONS)
-
         failed = 0
         for jobid in args:
             try:
@@ -383,7 +398,7 @@ class cmd_gclean(_BaseCmd):
                             self.log.warning("Job '%s' not in terminal state:"
                                              " attempting to kill before cleaning up.")
                             try:
-                                _core.kill(app)
+                                self._core.kill(app)
                             except Exception, ex:
                                 self.log.warning("Killing job '%s' failed (%s: %s);"
                                                  " continuing anyway, but errors might ensue.",
@@ -396,7 +411,7 @@ class cmd_gclean(_BaseCmd):
                             continue
 
                     try:
-                        _core.free(app)
+                        self._core.free(app)
                     except Exception, ex:
                         if self.params.force:
                             pass
@@ -486,7 +501,7 @@ class cmd_gsub(_BaseCmd):
     def setup_options(self):
         self.add_param("-r", "--resource", action="store", dest="resource_name", 
                        metavar="NAME", default=None, 
-                       help='Select execution resource')
+                       help='Select execution resource by name')
         self.add_param("-c", "--cores", action="store", dest="ncores", type=int,
                        metavar="NUM", default=1, 
                        help='Request running job on this number of CPU cores')
@@ -541,15 +556,14 @@ class cmd_gsub(_BaseCmd):
         else:
             raise InvalidUsage("Unknown application '%s'" % application_tag)
 
-        _core = self._get_core(DEFAULT_CONFIG_FILE_LOCATIONS)
         if self.params.resource_name:
-            _core.select_resource(self.params.resource_name)
+            self._select_resources(self.params.resource_name)
             self.log.info("Retained only resources: %s "
                           "(restricted by command-line option '-r %s')",
-                          str.join(",", [res['name'] for res in _core._resources]), 
+                          str.join(",", [res['name'] for res in self._core._resources]), 
                           self.params.resource_name)
 
-        _core.submit(app)
+        self._core.submit(app)
         self._store.save(app)
 
         print("Successfully submitted %s;"
@@ -568,7 +582,7 @@ class cmd_gresub(_BaseCmd):
     def setup_options(self):
         self.add_param("-r", "--resource", action="store", dest="resource_name", 
                        metavar="NAME", default=None, 
-                       help='Select execution resource')
+                       help='Select execution resource by name')
         self.add_param("-c", "--cores", action="store", dest="ncores", type=int,
                        metavar="NUM", default=1, 
                        help='Request running job on this number of CPU cores')
@@ -580,31 +594,30 @@ class cmd_gresub(_BaseCmd):
                        help='Guaranteed minimal duration of job, in hours.')
 
     def main(self):
-        _core = self._get_core(DEFAULT_CONFIG_FILE_LOCATIONS)
         if self.params.resource_name:
-            _core.select_resource(self.params.resource_name)
+            self._select_resources(self.params.resource_name)
             self.log.info("Retained only resources: %s (restricted by command-line option '-r %s')",
-                              str.join(",", [res['name'] for res in _core._resources]), 
+                              str.join(",", [res['name'] for res in self._core._resources]), 
                               self.params.resource_name)
 
         failed = 0
         for jobid in self.params.args:
             app = self._store.load(jobid.strip())
             try:
-                _core.update_job_state(app) # update state
+                self._core.update_job_state(app) # update state
             except Exception, ex:
                 # ignore errors, and proceed to resubmission anyway
                 self.log.warning("Could not update state of %s: %s: %s", 
                                      jobid, ex.__class__.__name__, str(ex))
             # kill remote job
             try:
-                app = _core.kill(app)
+                app = self._core.kill(app)
             except Exception, ex:
                 # ignore errors, but alert user...
                 pass
 
             try:
-                _core.submit(app)
+                self._core.submit(app)
                 print("Successfully re-submitted %s; use the 'gstat' command to monitor its progress." % app)
                 self._store.replace(jobid, app)
             except Exception, ex:
@@ -620,11 +633,9 @@ class cmd_gstat(_BaseCmd):
     """
 
     def main(self):
-        _core = self._get_core(DEFAULT_CONFIG_FILE_LOCATIONS)
-        
         apps = self._get_jobs(self.params.args)
 
-        _core.update_job_state(*apps)
+        self._core.update_job_state(*apps)
 
         # Print result
         if len(apps) == 0:
@@ -666,8 +677,6 @@ class cmd_gget(_BaseCmd):
                        help="Overwrite files in destination directory")
 
     def main(self):
-        _core = self._get_core(DEFAULT_CONFIG_FILE_LOCATIONS)
-
         failed = False
         for jobid in self.params.args:
             try:
@@ -686,7 +695,7 @@ class cmd_gget(_BaseCmd):
                 else:
                     download_dir = self.params.download_dir
 
-                _core.fetch_output(app, download_dir, overwrite=self.params.overwrite)
+                self._core.fetch_output(app, download_dir, overwrite=self.params.overwrite)
                 print("Job results successfully retrieved in '%s'" % app.output_dir)
                 self._store.replace(app.persistent_id, app)
 
@@ -709,8 +718,6 @@ class cmd_gkill(_BaseCmd):
     error occurred.
     """
     def main(self):
-        _core = self._get_core(DEFAULT_CONFIG_FILE_LOCATIONS)
-
         failed = 0
         for jobid in self.params.args:
             try:
@@ -722,7 +729,7 @@ class cmd_gkill(_BaseCmd):
                 if app.execution.state == Run.State.TERMINATED:
                     raise InvalidOperation("Job '%s' is already in terminal state" % app)
                 else:
-                    _core.kill(app)
+                    self._core.kill(app)
                     self._store.replace(jobid, app)
 
                     # or shall we simply return an ack message ?
@@ -761,8 +768,6 @@ class cmd_gtail(_BaseCmd):
         else:
             stream = 'stdout'
 
-        _core = self._get_core(DEFAULT_CONFIG_FILE_LOCATIONS)
-
         app = self._store.load(jobid)
         if app.execution.state == Run.State.UNKNOWN \
                 or app.execution.state == Run.State.SUBMITTED \
@@ -772,7 +777,7 @@ class cmd_gtail(_BaseCmd):
         if self.params.follow:
             where = 0
             while True:
-                file_handle = _core.peek(app, stream)
+                file_handle = self._core.peek(app, stream)
                 self.log.debug("Seeking position %d in stream %s" % (where, stream))
                 file_handle.seek(where)
                 for line in file_handle.readlines():
@@ -782,7 +787,7 @@ class cmd_gtail(_BaseCmd):
                 file_handle.close()
                 time.sleep(5)
         else:
-            file_handle = _core.peek(app, stream)
+            file_handle = self._core.peek(app, stream)
             for line in file_handle.readlines()[-(self.params.num_lines):]:
                 print line.strip()
             file_handle.close()
@@ -854,17 +859,9 @@ class cmd_glist(_BaseCmd):
     """
 
     def main(self):
-        _core = self._get_core(DEFAULT_CONFIG_FILE_LOCATIONS)
+        self._select_resources(* self.params.args)
 
-        resource_names = args
-        if resource_names:
-            _core.select_resource(lambda r: r.name in resource_names)
-
-        resources = _core.get_all_updated_resources()
-
-        if not resources:
-            raise InvalidResourceName('Resources %s not found' % resource_name)
-
+        resources = self._core.get_all_updated_resources()
         for resource in resources:
             table = Texttable(0) # max_width=0 => dynamically resize cells
             table.set_deco(Texttable.HEADER | Texttable.BORDER) # also: .VLINES, .HLINES
@@ -876,7 +873,7 @@ class cmd_glist(_BaseCmd):
                 resource_access_type = "arc"
             elif resource.type is Default.SGE_LRMS:
                 resource_access_type = "ssh"
-            table._add_row(("Resource access type", resource_access_type))
+            table.add_row(("Resource access type", resource_access_type))
             if resource.has_key('auth'):
                 table.add_row(("Authorization type", resource.auth))
             if resource.has_key('updated'):
@@ -895,4 +892,5 @@ class cmd_glist(_BaseCmd):
                 table.add_row(("Max walltime per job (minutes)", resource.max_walltime))
             if resource.has_key('applications'):
                 table.add_row(("Supported applications", resource.applications))
+            print(table.draw())
 
