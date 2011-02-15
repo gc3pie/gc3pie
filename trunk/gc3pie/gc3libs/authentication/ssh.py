@@ -36,7 +36,7 @@ class SshAuth(object):
                 % auth.type
             auth['username']
             self.__dict__.update(auth)
-        except AssertionError as x:
+        except AssertionError, x:
             raise ConfigurationError('Erroneous configuration parameter: %s' % str(x))
 
     def check(self):

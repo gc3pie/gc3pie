@@ -59,7 +59,7 @@ class GridAuth(object):
             self.user_cert_valid = False
             self.proxy_valid = False
             self.__dict__.update(auth)
-        except AssertionError as x:
+        except AssertionError, x:
             raise ConfigurationError('Erroneous configuration parameter: %s' % str(x))
 
 
@@ -141,7 +141,7 @@ class GridAuth(object):
                         # assume transient error (i.e wrong password or so)
                         gc3libs.log.error("RecoverableAuthError: %s" % stdout)
                         raise RecoverableAuthError(stdout) 
-                except (OSError) as x:
+                except OSError, x:
                     if x.errno == errno.ENOENT or x.errno == errno.EPERM \
                             or x.errno == errno.EACCES:
                         gc3libs.log.error("Failed while running slcs-init. Please verify your $PATH. Error type: OSError, message: %s" % x.strerror)
@@ -150,7 +150,7 @@ class GridAuth(object):
                         gc3libs.log.error("UnrecoverableAuthError: errno [%d], message [%s]" 
                                           % (x.errno, x.strerror))
                         raise UnrecoverableAuthError(str(x.strerror))
-                except Exception as ex:
+                except Exception, ex:
                     # Intercept any other Error that subprocess may raise
                     gc3libs.log.error("Unhanlded error. type: %s message: %s" % (ex.__class__, ex.message))
                     raise UnrecoverableAuthError(str(ex.message))
@@ -193,18 +193,18 @@ class GridAuth(object):
                         gc3libs.log.error("voms-proxy-init returned exitcode %d. Message: %s."
                                           % (p2.returncode, stdout))
 
-                except ValueError as x:
+                except ValueError, x:
                     # is this more a programming error ?
                     gc3libs.log.error("TO_BE_CONFIRMED: UnrecoverableAuthError: %s" % str(x))
                     raise RecoverableAuthError(str(x))
-                except OSError as x:
+                except OSError, x:
                     if x.errno == errno.ENOENT or x.errno == errno.EPERM or x.errno == errno.EACCES:
                         gc3libs.log.error("Failed while running [grid/voms]-init. Please verify your $PATH. Error type: OSError, message: %s" % x.strerror)
                         raise UnrecoverableAuthError('Failed while running [grid/voms]-proxy-init. Please verify your $PATH')
                     else:
                         gc3libs.log.error("UnrecoverableAuthError: errno [%d], message [%s]" % (x.errno, x.strerror))
                         raise UnrecoverableAuthError(str(x.strerror))
-                except Exception as ex:
+                except Exception, ex:
                     # Intercept any other Error that subprocess may raise                                                                                                
                     gc3libs.log.error("Unhanlded error. type: %s message: %s" % (ex.__class__, ex.message))
                     raise UnrecoverableAuthError(str(ex.message))

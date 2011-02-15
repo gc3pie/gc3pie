@@ -2,7 +2,7 @@
 """
 Authentication support for the GC3Libs.
 """
-# Copyright (C) 2009-2010 GC3, University of Zurich. All rights reserved.
+# Copyright (C) 2009-2011 GC3, University of Zurich. All rights reserved.
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
@@ -40,9 +40,9 @@ class Auth(object):
         if not self.__auths.has_key(auth_name):
             try:
                 a =  self._auth_type[auth_name](** self._auth_dict[auth_name])
-            except (AssertionError, AttributeError) as x:
+            except (AssertionError, AttributeError), ex:
                 a = ConfigurationError("Missing required configuration parameters"
-                                         " in auth section '%s': %s" % (auth_name, str(x)))
+                                       " in auth section '%s': %s" % (auth_name, str(ex)))
         else:
             a = self.__auths[auth_name]
 
@@ -55,9 +55,9 @@ class Auth(object):
             if self.auto_enable:
                     try:
                         a.enable()
-                    except RecoverableAuthError as x:
+                    except RecoverableAuthError, x:
                         raise
-                    except UnrecoverableAuthError as x:
+                    except UnrecoverableAuthError, x:
                         gc3libs.log.debug("Got exception while enabling auth '%s',"
                                           " will remember for next invocations:"
                                           " %s: %s" % (auth_name, x.__class__.__name__, x))
