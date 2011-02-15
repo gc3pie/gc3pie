@@ -520,9 +520,8 @@ def get_resources(resources_list):
             gc3libs.log.error("Configuration error: '%s' is no valid resource type.", 
                               resource['type'])
             continue
-        gc3libs.log.debug("Created%svalid resource '%s' of type %s"
-                          # horrible hack to circumvent Py 2.4's lack of ?:-operator
-                          % ((tmpres.is_valid() and " ") or "in", 
+        gc3libs.log.debug("Created %s resource '%s' of type %s"
+                          % (utils.ifelse(tmpres.is_valid, "valid", "invalid"),
                              resource['name'], 
                              resource['type']))
         resources.append(tmpres)
