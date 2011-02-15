@@ -614,7 +614,11 @@ class SessionBasedScript(cli.app.CommandLineApp):
         if self.params.wait > 0:
             try:
                 while rc > 3:
-                    time.sleep(self.params.wait)
+                    # Python scripts become unresponsive during `time.sleep()`,
+                    # so we just do the wait in small steps, to allow the interpreter
+                    # to process interrupts in the breaks.  Ugly, but works...
+                    for x in xrange(self.params.wait):
+                        time.sleep(1)
                     rc = loop()
             except KeyboardInterrupt: # gracefully intercept Ctrl+C
                 pass
