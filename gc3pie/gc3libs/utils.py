@@ -109,6 +109,27 @@ def get_and_remove(dictionary, key, default=None):
     return result
 
 
+def ifelse(test, if_true, if_false):
+    """
+    Return `if_true` is argument `test` evaluates to `True`,
+    return `if_false` otherwise.
+
+    This is just a workaround for Python 2.4 lack of the
+    conditional assignment operator::
+
+      >>> a = 1
+      >>> b = ifelse(a, "yes", "no"); print b
+      yes
+      >>> b = ifelse(not a, 'yay', 'nope'); print b
+      nope
+
+    """
+    if test:
+        return if_true
+    else:
+        return if_false
+
+
 # In Python 2.7 still, `DictMixin` is an old-style class; thus, we need
 # to make `Struct` inherit from `object` otherwise we loose properties
 # when setting/pickling/unpickling
