@@ -32,7 +32,7 @@ if hasattr(os, "unsetenv"):
 import setuptools
 import setuptools.dist
 setuptools.setup(
-    name = "gc3utils",
+    name = "gc3pie",
     version = "0.14.15", # format: 0.(MONTH+12).DAY (for now ...)
 
     packages = setuptools.find_packages(exclude=['ez_setup']),
@@ -49,17 +49,17 @@ setuptools.setup(
     entry_points = {
         'console_scripts': [
             # the generic, catch-all script:
-            'gc3utils = gc3utils.gc3utils:main',
+            'gc3utils = gc3pie.gc3utils:main',
             # symlinks to specific subcommands:
-            'gclean = gc3utils.gc3utils:main',
-            'gget = gc3utils.gc3utils:main',
-            'ginfo = gc3utils.gc3utils:main',
-            'gkill = gc3utils.gc3utils:main',
-            'glist = gc3utils.gc3utils:main',
-            'gresub = gc3utils.gc3utils:main',
-            'gstat = gc3utils.gc3utils:main',
-            'gsub = gc3utils.gc3utils:main',
-            'gtail = gc3utils.gc3utils:main',
+            'gclean = gc3pie.gc3utils:main',
+            'gget = gc3pie.gc3utils:main',
+            'ginfo = gc3pie.gc3utils:main',
+            'gkill = gc3pie.gc3utils:main',
+            'glist = gc3pie.gc3utils:main',
+            'gresub = gc3pie.gc3utils:main',
+            'gstat = gc3pie.gc3utils:main',
+            'gsub = gc3pie.gc3utils:main',
+            'gtail = gc3pie.gc3utils:main',
             ],
        },
 
