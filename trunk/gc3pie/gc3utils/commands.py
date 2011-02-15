@@ -632,12 +632,12 @@ class cmd_gstat(_BaseCmd):
         else:
             table = Texttable(0) # max_width=0 => dynamically resize cells
             table.set_deco(Texttable.HEADER) # also: .VLINES, .HLINES .BORDER
-            table.set_cols_align(['l', 'l'])
-            table.header(["Job ID", "State"])
+            table.set_cols_align(['l', 'l', 'l'])
+            table.header(["Job ID", "State", "Info"])
             def cmp_job_ids(a,b):
                 return cmp(a.persistent_id, b.persistent_id)
             for app in sorted(apps, cmp=cmp_job_ids):
-                table.add_row((app, app.execution.state))
+                table.add_row((app, app.execution.state, app.execution.info))
             print(table.draw())
 
         # save jobs back to disk
