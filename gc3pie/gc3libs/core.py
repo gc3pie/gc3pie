@@ -76,6 +76,7 @@ class Core:
             # glob pattern and select resources whose name matches
             self._resources = [ res for res in self._resources
                                 if fnmatch(res.name, match) ]
+        return len(self._resources)
 
     def free(self, app, **kw):
         """
