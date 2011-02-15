@@ -583,8 +583,9 @@ class SessionBasedScript(cli.app.CommandLineApp):
             if self.params.table:
                 self._print_tasks_table(sys.stdout)
             else:
-                print ("Status of jobs in the '%s' session:" 
-                       % os.path.basename(self.params.session))
+                print ("Status of jobs in the '%s' session: (at %s)" 
+                       % (os.path.basename(self.params.session),
+                          time.strftime('%X, %x')))
                 total = len(self.tasks)
                 if total > 0:
                     table = Texttable(0) # max_width=0 => dynamically resize cells
