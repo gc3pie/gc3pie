@@ -33,6 +33,8 @@ import warnings
 
 from gc3libs.Exceptions import *
 
+import gc3utils
+
 
 def main():
     """
@@ -111,26 +113,19 @@ def main():
     from gc3utils import log
     log.setLevel(logging.ERROR)
 
-
-    # build OptionParser with common options
-    from optparse import OptionParser
-    parser = OptionParser(usage="%prog [options]")
-    parser.add_option("-v", "--verbose",
-                      action="count", dest="verbosity", default=0, 
-                      help="Set verbosity level")
-
     if PROG == 'gc3utils':
-        # the real command name is the first non-option argument;
-        # e.g., "core kill ..." is silently translated to "gkill ..."
+        # the real command name is the first non-option argument
         for arg in sys.argv[1:]:
             if not arg.startswith('-'):
-                if arg.startswith(g):
+                if arg.startswith('g'):
                     PROG = arg
                 else:
                     PROG = 'g' + arg
+                del sys.argv[0] # so that PROG == sys.argv[0]
                 break
+
+        # no command name found, print usage text and exit
         if PROG == 'gc3utils':
-            # no command name found, print usage text and exit
             sys.stderr.write("""Usage: gc3utils COMMAND [options]
 
 Command `gc3utils` is a unified front-end to computing resources.
@@ -138,8 +133,8 @@ You can get more help on a specific sub-command by typing::
   gc3utils COMMAND --help
 where command is one of these:
 """)
-            # XXX: crude hack to get list of commands
-            for cmd in [ sym for sym in dir(gc3utils.commands) if sym.startswith("g") ]:
+            import gc3utils.commands
+            for cmd in [ sym[5:] for sym in dir(gc3utils.commands) if sym.startswith("cmd_") ]:
                 sys.stderr.write('  ' + cmd + '\n')
             return 1
 
@@ -147,12 +142,12 @@ where command is one of these:
     PROG.replace('-', '_')
     import gc3utils.commands
     try:
-        cmd = getattr(gc3utils.commands, PROG)
+        cmd = getattr(gc3utils.commands, 'cmd_' + PROG)
     except AttributeError:
         sys.stderr.write("Cannot find command '%s' in gc3utils; aborting now.\n" % PROG)
         return 1
     try:
-        rc = cmd(*sys.argv[1:], **{'opts':parser})
+        rc = cmd().run() # (*sys.argv[1:])
         return rc
     except KeyboardInterrupt:
         sys.stderr.write("%s: Exiting upon user request (Ctrl+C)\n" % PROG)
