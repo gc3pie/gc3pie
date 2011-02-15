@@ -25,12 +25,8 @@ functionality for GC3Libs command-line utilities and scripts.  User
 applications should implement their specific behavior by subclassing 
 and overriding a few customization methods.
 
-There are two base classes provided here:
+There is currently only a base class provided here:
 
-:py:class:`OneShotScript`
-  Base class for GC3Utils commands: provides just the minimal setup
-  needed for using GC3Libs and common command-line options.
-  
 :py:class:`SessionBasedScript`
   Base class for the ``grosetta``/``ggamess``/``gcodeml`` scripts.
   Implements a long-running script to submit and manage a large number
@@ -353,15 +349,17 @@ class SessionBasedScript(cli.app.CommandLineApp):
 
         # 2. session control
         self.add_param("-s", "--session", dest="session", 
-                           default=os.path.join(os.getcwd(), self.name + '.csv'),
-                           metavar="FILE",
-                           help="Use FILE to store the index of running jobs (default: '%(default)s')."
-                           " Any input files specified on the command line will be added to the existing"
-                           " session.  Any jobs already in the session will be monitored and"
-                           " their output will be fetched if the jobs are done."
+                           default=os.path.join(os.getcwd(), self.name),
+                           metavar="PATH",
+                           help="Use PATH to store jobs (default: '%(default)s')."
+                           " If PATH is an existing directory, it will be used for storing job"
+                           " information, and an index file (with suffix '.csv') will be created"
+                           " in it.  Otherwise, the job information will be stored in a directory"
+                           " named after PATH with a suffix '.jobs' appended, and the index file"
+                           " will be named after PATH with a suffix '.csv' added."
                            )
         self.add_param("-N", "--new-session", dest="new_session", action="store_true", default=False,
-                           help="Discard any information saved in the session file (see '--session' option)"
+                           help="Discard any information saved in the session directory (see '--session' option)"
                            " and start a new session afresh.  Any information about previous jobs is lost.")
 
         # 3. script execution control
@@ -383,7 +381,7 @@ class SessionBasedScript(cli.app.CommandLineApp):
                            " destination directory does not exist, it is created."
                            " Some special strings will be substituted into DIRECTORY,"
                            " to specify an output location that varies with the submitted job:"
-                           " PATH is replaced by the directory where the session file resides;"
+                           " PATH is replaced by the directory where the input file resides;"
                            " NAME is replaced by the input file name;"
                            " DATE is replaced by the submission date in ISO format (YYYY-MM-DD);"
                            " TIME is replaced by the submission time formatted as HH:MM."
@@ -484,20 +482,37 @@ class SessionBasedScript(cli.app.CommandLineApp):
         :method:`process_args`, :method:`parse_args`, :method:`setup_args`. 
         """
 
-        ## create a `Persistence` instance to _save_session/_load_session jobs
-        self.store = gc3libs.persistence.FilesystemStore(idfactory=gc3libs.persistence.JobIdFactory)
-
-        ## load the session file, or create a new empty one if not existing
+        ## determine the session file name (and possibly create an empty index)
         try:
-            self.params.session = os.path.realpath(self.params.session)
-            if os.path.exists(self.params.session) and not self.params.new_session:
-                session_file = file(self.params.session, "r+b")
+            if os.path.exists(self.params.session):
+                self.session_dirname = os.path.realpath(self.params.session)
+                self.session_filename = os.path.join(self.session_dirname, 'index.csv')
             else:
-                session_file = file(self.params.session, "w+b")
+                if self.params.session.endswith('.jobs'):
+                    self.session_dirname = self.params.session[:-5]
+                    self.session_filename = self.session_dirname + '.csv'
+                elif self.params.session.endswith('.csv'):
+                    self.session_filename = self.params.session
+                    self.session_dirname = self.session_filename[:-4] + '.jobs'
+                else:
+                    self.session_dirname = self.params.session + '.jobs'
+                    self.session_filename = self.params.session + '.csv'
+            if not os.path.exists(self.session_dirname):
+                os.makedirs(self.session_dirname)
+            if os.path.exists(self.session_filename) and not self.params.new_session:
+                session_file = file(self.session_filename, "r+b")
+            else:
+                session_file = file(self.session_filename, "w+b")
         except IOError, ex:
             self.log.critical("Cannot open session file '%s' in read+write mode: %s. Aborting."
                               % (self.params.session, str(ex)))
             return 1
+
+        ## create a `Persistence` instance to _save_session/_load_session jobs
+        self.store = gc3libs.persistence.FilesystemStore(self.session_dirname, 
+                                                         idfactory=gc3libs.persistence.JobIdFactory)
+
+        ## load the session index file
         self._load_session(session_file, self.store)
         session_file.close()
 
@@ -638,7 +653,7 @@ class SessionBasedScript(cli.app.CommandLineApp):
         in the session is also saved to it.
         """
         try:
-            session_file = file(self.params.session, "wb")
+            session_file = file(self.session_filename, "wb")
             for task in self.tasks:
                 if store is not None:
                     store.save(task)

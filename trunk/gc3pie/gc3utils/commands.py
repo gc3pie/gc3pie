@@ -191,6 +191,8 @@ class _BaseCmd(cli.app.CommandLineApp):
         ## setup of base classes
         cli.app.CommandLineApp.setup(self)
 
+        self.add_param("-s", "--session", action="store", default=Default.JOBS_DIR,
+                       help="Directory where job information will be stored.")
         self.add_param("-v", "--verbose", action="count", dest="verbose", default=0,
                        help="Be more detailed in reporting program activity."
                        " Repeat to increase verbosity.")
@@ -215,8 +217,16 @@ class _BaseCmd(cli.app.CommandLineApp):
         self.log.propagate = True
 
         # interface to the GC3Libs main functionality
-        self._store = gc3libs.persistence.FilesystemStore(idfactory=gc3libs.persistence.JobIdFactory)
         self._core = self._get_core(DEFAULT_CONFIG_FILE_LOCATIONS)
+
+        jobs_dir = self.params.session
+        if jobs_dir != Default.JOBS_DIR:
+            if (not os.path.isdir(jobs_dir)
+                and not jobs_dir.endswith('.jobs')):
+                jobs_dir = jobs_dir + '.jobs'
+        self._store = gc3libs.persistence.FilesystemStore(jobs_dir, 
+                                                          idfactory=gc3libs.persistence.JobIdFactory)
+
 
         # call hook methods from derived classes
         self.parse_args()
