@@ -33,7 +33,7 @@ import setuptools
 import setuptools.dist
 setuptools.setup(
     name = "gc3utils",
-    version = "0.13.27", # format: 0.MONTH.DAY (for now ...)
+    version = "0.14.15", # format: 0.(MONTH+12).DAY (for now ...)
 
     packages = setuptools.find_packages(exclude=['ez_setup']),
     #scripts = ['gcmd.py'],
@@ -49,17 +49,17 @@ setuptools.setup(
     entry_points = {
         'console_scripts': [
             # the generic, catch-all script:
-            'gc3utils = gc3utils.gcmd:main',
+            'gc3utils = gc3utils.gc3utils:main',
             # symlinks to specific subcommands:
-            'gclean = gc3utils.gcmd:main',
-            'gget = gc3utils.gcmd:main',
-            'ginfo = gc3utils.gcmd:main',
-            'gkill = gc3utils.gcmd:main',
-            'glist = gc3utils.gcmd:main',
-            'gresub = gc3utils.gcmd:main',
-            'gstat = gc3utils.gcmd:main',
-            'gsub = gc3utils.gcmd:main',
-            'gtail = gc3utils.gcmd:main',
+            'gclean = gc3utils.gc3utils:main',
+            'gget = gc3utils.gc3utils:main',
+            'ginfo = gc3utils.gc3utils:main',
+            'gkill = gc3utils.gc3utils:main',
+            'glist = gc3utils.gc3utils:main',
+            'gresub = gc3utils.gc3utils:main',
+            'gstat = gc3utils.gc3utils:main',
+            'gsub = gc3utils.gc3utils:main',
+            'gtail = gc3utils.gc3utils:main',
             ],
        },
 
