@@ -27,7 +27,7 @@ repository into their own python environment.
    and install it::
 
       wget http://bitbucket.org/ianb/virtualenv/get/tip.gz#egg=virtualenv-tip
-      tar -xzf tip.gz && rm tip.gz 
+      tar -xzf tip.tar.gz && rm tip.tar.gz 
       cd virtualenv/
  
     If you are installing as `root`, the following command is all you
@@ -54,38 +54,35 @@ repository into their own python environment.
       rm -rf virtualenv
 
 
-2. Create a virtuelnv to host the ``gc3utils`` installation::
+2. Create a virtuelnv to host the ``gc3pie`` installation::
 
-       virtualenv gc3utils
-       cd gc3utils/
+       virtualenv gc3pie
+       cd gc3pie/
        source bin/activate
 
 
-3. Create a ``src/`` directory to host the Python sources and
-   check-out the ``gc3utils`` files there::
+3. Check-out the ``gc3pie`` files in a ``src/`` directory::
      
-       mkdir src
-       cd src/
-       svn co http://gc3pie.googlecode.com/svn/trunk/gc3utils
+       svn co http://gc3pie.googlecode.com/svn/trunk/gc3pie src
    
   
-4. Install the ``gc3utils`` in "develop" mode, so any modification
+4. Install the ``gc3pie`` in "develop" mode, so any modification
    pulled from subversion is immediately reflected in the running environment::
 
-       cd gc3utils/
+       cd src/
        env CC=gcc ./setup.py develop 
-       cd .. # back into the `src` directory
+       cd .. # back into the `gc3pie` directory
 
-   This will place all the GC3Utils command into the ``gc3utils/bin/``
+   This will place all the Gc3pie command into the ``gc3pie/bin/``
    directory.
 
-5. Before you can actually run the GC3Utils, you need to have a
+5. Before you can actually run the Gc3pie, you need to have a
    working configuration file; `the ConfigurationFile Wiki page
    <http://code.google.com/p/gc3pie/wiki/ConfigurationFile>` provides
    an explanation of the syntax to use in configuration files.
 
    In order to use the ARC backend, you need the NorduGrid/ARC
-   binaries installed on the same machine where GC3Utils are.
+   binaries installed on the same machine where Gc3pie are.
    You can find instructions for installing ARC at:
    http://www.nordugrid.org/documents/ng-client-install.html
 
@@ -94,21 +91,19 @@ repository into their own python environment.
 Upgrade
 =======
 
-These instructions show how to upgrade the GC3Utils scripts to the
+These instructions show how to upgrade the Gc3pie scripts to the
 latest version found in the GC3 svn repository.
 
-1. `cd` to the directory containing the GC3Utils virtualenv;
-   assuming it's named ``gc3utils`` as in the above installation
+1. `cd` to the directory containing the Gc3pie virtualenv;
+   assuming it's named ``gc3pie`` as in the above installation
    instructions, you can issue the commands::
 
-     cd gc3utils/src
+     cd gc3pie/src
 
-2. Upgrade the `gc3utils` source and run the `setup.py` script again:
+2. Upgrade the `gc3pie` source and run the `setup.py` script again:
 
-     cd gc3utils
      svn up
      env CC=gcc ./setup.py develop
-     cd ..
 
 
 

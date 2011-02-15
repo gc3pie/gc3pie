@@ -14,8 +14,8 @@
 Installation
 ============
 
-These instructions show how to install the ``grundb`` script
-from the GC3 svn repository into their own python environment.
+These instructions show how to install the ``ggamess`` and ``grundb``
+scripts from the GC3 svn repository into their own python environment.
 
 0. Prerequisites are: ``svn`` (package ``subversion`` in CentOS5 and
    Debian/Ubuntu), the Python development headers and libraries (package
@@ -27,7 +27,7 @@ from the GC3 svn repository into their own python environment.
    and install it::
 
       wget http://bitbucket.org/ianb/virtualenv/get/tip.gz#egg=virtualenv-tip
-      tar -xzf tip.gz && rm tip.gz 
+      tar -xzf tip.tar.gz && rm tip.tar.gz 
       cd virtualenv/
  
     If you are installing as `root`, the following command is all you
@@ -54,42 +54,40 @@ from the GC3 svn repository into their own python environment.
       rm -rf virtualenv
 
 
-2. Create a virtual env to host the ``grundb`` installation::
+2. Create a virtual env to host the ``ggamess`` and ``grundb``
+   installation::
 
-       virtualenv grundb
-       cd grundb/
+       virtualenv ggamess
+       cd ggamess/
        source bin/activate
 
 
-3. Create a ``src/`` directory to host the ``grundb`` and
-   check-out the ``gc3utils`` sources there::
+3. Check-out the ``gc3pie`` sources into a `src/` directory::
      
-       mkdir src
-       cd src/
-       svn co http://gc3pie.googlecode.com/svn/trunk/gc3utils
-       svn co http://gc3pie.googlecode.com/svn/trunk/grundb
+       svn co http://gc3pie.googlecode.com/svn/trunk/gc3pie src
    
   
-4. Install the ``gc3utils`` in "develop" mode, so any modification
-   pulled from subversion is immediately reflected in the running environment::
+4. Install ``gc3pie`` in "develop" mode, so any modification pulled
+   from subversion is immediately reflected in the running
+   environment::
 
-       cd gc3utils/
+       cd src/
        env CC=gcc ./setup.py develop 
-       cd .. # back into the `src` directory
 
 
-5. Create a symlink to the ``grundb`` script in the ``bin/``
-   directory::
+5. Create a symlink to the ``gamess`` and ``grundb`` scripts in the
+   ``bin/`` directory::
 
-       cd .. # back into the `grundb` directory
-       ln -s `pwd`/src/grundb/grundb.py bin/grundb
+       cd .. # back into the `ggamess` directory
+       ln -s `pwd`/src/gc3apps/gamess/ggamess.py bin/ggamess
+       ln -s `pwd`/src/gc3apps/gamess/grundb.py bin/grundb
 
 
 6. Copy the `grundb/grundb.inp.template` file into the `~/.gc3`
    directory::
 
        mkdir -p ~/.gc3
-       cp -a src/grundb/grundb.inp.template ~/.gc3/
+       cp -a src/gc3apps/gamess/grundb.inp.template ~/.gc3/
 
 
 7. Be sure to set-up your GC3Utils configuration file correctly!
@@ -100,27 +98,19 @@ from the GC3 svn repository into their own python environment.
 Upgrade
 =======
 
-These instructions show how to upgrade the ``grundb`` script to the
-latest version found in the GC3 svn repository.
+These instructions show how to upgrade the scripts to the latest
+version found in the GC3 svn repository.
 
-1. `cd` to the directory containing the `grundb` virtualenv;
-   assuming it's named ``grundb`` as in the above installation
+1. `cd` to the directory containing the `ggamess` virtualenv;
+   assuming it's named ``ggamess`` as in the above installation
    instructions, you can issue the commands::
 
-     cd grundb/src
+     cd ggamess/src
 
-2. Upgrade the `grundb` source:
+2. Upgrade the `gc3pie` source and run the `setup.py` script again:
 
-     cd grundb
-     svn up
-     cd ..
-
-3. Upgrade the `gc3utils` source and run the `setup.py` script again:
-
-     cd gc3utils
      svn up
      env CC=gcc ./setup.py develop
-     cd ..
 
 
 
