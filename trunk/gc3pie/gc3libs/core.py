@@ -594,7 +594,8 @@ def read_config(*locations):
                 disabled_resources.append(resource['name'])
         for resource_name in disabled_resources:
             gc3libs.log.info("Ignoring computational resource '%s'"
-                              " because of 'enabled=False' setting.",
+                              " because of 'enabled=False' setting"
+                             " in configuration file.",
                               resource_name)
             del resources[resource_name]
 

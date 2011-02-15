@@ -3,7 +3,7 @@
 """
 Authentication support with Grid proxy certificates.
 """
-# Copyright (C) 2009-2010 GC3, University of Zurich. All rights reserved.
+# Copyright (C) 2009-2011 GC3, University of Zurich. All rights reserved.
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
@@ -156,7 +156,7 @@ class GridAuth(object):
                     raise UnrecoverableAuthError(str(ex.message))
 
                 new_cert = True
-                gc3libs.log.info('Create new SLCS certificate [ ok ].')
+                gc3libs.log.info('Successfully created new SLCS certificate.')
 
 
             # renew proxy if cert has changed or proxy expired

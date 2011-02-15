@@ -3,7 +3,7 @@
 """
 Job control on SGE clusters (possibly connecting to the front-end via SSH).
 """
-# Copyright (C) 2009-2010 GC3, University of Zurich. All rights reserved.
+# Copyright (C) 2009-2011 GC3, University of Zurich. All rights reserved.
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
@@ -332,8 +332,7 @@ class SgeLrms(LRMS):
             self.transport.connect()
 
             _command = 'mkdir -p $HOME/.gc3pie_jobs; mktemp -p $HOME/.gc3pie_jobs -d lrms_job.XXXXXXXXXX'
-            log.info("Creating remote temporary folder: command '%s' "
-                                 % _command)
+            log.info("Creating remote temporary folder: command '%s' " % _command)
             exit_code, stdout, stderr = self.transport.execute_command(_command)
             if exit_code == 0:
                 ssh_remote_folder = stdout.split('\n')[0]
@@ -633,7 +632,7 @@ class SgeLrms(LRMS):
                         self.transport.get(remote_path, local_path)
                     else:
                         log.info("Local file '%s' already exists; will not be overwritten!",
-                                          local_path)
+                                 local_path)
                 except:
                     log.error('Could not copy remote file: ' + remote_path)
                     # FIXME: should we set `job.signal` to
