@@ -133,8 +133,8 @@ class Core:
         gc3libs.log.debug('Scheduler returned %d matching resources',
                            len(_selected_lrms_list))
         if 0 == len(_selected_lrms_list):
-            raise NoResources("Could not select any compatible computational resource"
-                              " - please check log and configuration file.")
+            raise NoResources("No available resource can accomodate the requested"
+                              " CPU/memory/wall-clock time combination.")
 
         exs = [ ]
         # Scheduler.do_brokering should return a sorted list of valid lrms
