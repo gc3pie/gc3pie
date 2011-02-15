@@ -38,7 +38,7 @@ import gc3utils
 
 def main():
     """
-    Generic front-end function to invoke the commands in `gc3utils/gcommands.py`
+    Generic front-end function to invoke the commands in `gc3utils/commands.py`
     """
 
     # program name
@@ -47,7 +47,7 @@ def main():
     # use docstrings for providing help to users,
     # so complain if they were removed by excessive optimization
     if __doc__ is None:
-        sys.stderr.write("%s do not support python -OO; aborting now.\n" % PROG)
+        sys.stderr.write("%s does not support python -OO; aborting now.\n" % PROG)
         sys.exit(2)
 
     # ensure we run on a supported Python version
@@ -140,27 +140,5 @@ where command is one of these:
     except AttributeError:
         sys.stderr.write("Cannot find command '%s' in gc3utils; aborting now.\n" % PROG)
         return 1
-    try:
-        rc = cmd().run() # (*sys.argv[1:])
-        return rc
-    except KeyboardInterrupt:
-        sys.stderr.write("%s: Exiting upon user request (Ctrl+C)\n" % PROG)
-        return 13
-    except SystemExit, x:
-        return x.code
-    except InvalidUsage, x:
-        # Fatal errors do their own printing, we only add a short usage message
-        sys.stderr.write("Type '%s --help' to get usage help.\n" %PROG)
-        return 1
-    except AssertionError, x:
-        sys.stderr.write("%s: BUG: %s\n"
-                         "Please send an email to gc3utils-dev@gc3.uzh.ch copying this\n"
-                         "output and and attach file '~/.gc3utils.log'.  Many thanks for\n"
-                         "your cooperation.\n"
-                         % (PROG, str(x)))
-        return 1
-    except Exception, x:
-        sys.stderr.write("%s: ERROR: %s\n" % (PROG, str(x)))
-        if __debug__:
-            sys.excepthook(* sys.exc_info()) 
-        return 1
+    rc = cmd().run() # (*sys.argv[1:])
+    return rc
