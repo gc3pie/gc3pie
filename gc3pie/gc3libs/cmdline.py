@@ -296,7 +296,7 @@ class SessionBasedScript(cli.app.CommandLineApp):
         cli.app.CommandLineApp.__init__(
             self,
             main=self._main,
-            name=os.path.basename(sys.argv[0]),
+            name=os.path.splitext(os.path.basename(sys.argv[0]))[0],
             **kw
             )
         
