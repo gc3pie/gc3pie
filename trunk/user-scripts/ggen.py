@@ -86,7 +86,7 @@ GAMESS_INP = Template("""
  $$CONTRL RUNTYP=ENERGY MAXIT=1 UNITS=BOHR $$END
  $$CONTRL ${SCF} ISPHER=${ISPHER} $$END
  $$ACCURACY ITOL=${ITOL} ILOAD=${ILOAD} $$END
- $$SYSTEM MWORDS=5 $$END
+ $$SYSTEM MWORDS=10 $$END
  $$BASIS ${BASIS} $$END
  $$GUESS GUESS=HUCKEL $$END
 
@@ -111,13 +111,13 @@ Td
 C     6.0   0.0            0.0            0.0
 H     1.0   0.6252197764   0.6252197764   0.6252197764""",
         ], # end of GEOMETRY
-                      SCF = [Template("SCFTYP=${SCFTYP} DFTTYP=${DFTTYP}", # WITHDFT
-                                      SCFTYP = ["RHF", "ROHF", "UHF"],
-                                      DFTTYP = ["SVWN", "BLYP", "B97-D", "B3LYP", "revTPSS", "TPSSh", "M06"],
-                                      ),
-                             Template("SCFTYP=${SCFTYP}", # "MPLEVL=${MPLEVL}", # NODFT
+                      SCF = [Template("SCFTYP=${SCFTYP}", # "MPLEVL=${MPLEVL}", # NODFT
                                       SCFTYP = ["RHF", "ROHF", "UHF"],
                                       ),
+                             # Template("SCFTYP=${SCFTYP} DFTTYP=${DFTTYP}", # WITHDFT
+                             #          SCFTYP = ["RHF", "ROHF", "UHF"],
+                             #          DFTTYP = ["SVWN", "BLYP", "B97-D", "B3LYP", "revTPSS", "TPSSh", "M06"],
+                             #          ),
                       ], # end of SCF
                       #DIRSCF = [".TRUE.", ".FALSE."],
                       ITOL = [20, 15, 10],
