@@ -1,6 +1,10 @@
-#summary User-visible changes in GC3Utils and Gc3Libs
+#summary User-visible changes in GC3Utils and GC3Libs
 
 
+  * GC3Utils and GC3Apps (grosetta/ggamess/etc.) now all accept a 
+    `-s`/`--session` option for locating the job storage directory: 
+    this allows grouping jobs into folders instead of shoveling 
+    them all into `~/.gc3/jobs`.
   * Renamed configuration file to `gc3pie.conf`.
   * Removed `-l` option from `gstat`.
 
