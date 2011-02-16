@@ -599,6 +599,17 @@ class cmd_gresub(_BaseCmd):
                        help='Guaranteed minimal duration of job, in hours.')
 
     def main(self):
+        if len(self.params.args) == 0:
+            self.log.error("No job IDs given on command line: nothing to do."
+                           " Type '%s --help' for usage help." 
+                           # if we were called with an absolute path,
+                           # presume the command has been found by the
+                           # shell through PATH and just print the command name,
+                           # otherwise print the exact path name.
+                           % utils.ifelse(os.path.isabs(sys.argv[0]),
+                                          os.path.basename(sys.argv[0]),
+                                          sys.argv[0]))
+
         if self.params.resource_name:
             self._select_resources(self.params.resource_name)
             self.log.info("Retained only resources: %s (restricted by command-line option '-r %s')",
@@ -686,6 +697,17 @@ class cmd_gget(_BaseCmd):
                        help="Overwrite files in destination directory")
 
     def main(self):
+        if len(self.params.args) == 0:
+            self.log.error("No job IDs given on command line: nothing to do."
+                           " Type '%s --help' for usage help." 
+                           # if we were called with an absolute path,
+                           # presume the command has been found by the
+                           # shell through PATH and just print the command name,
+                           # otherwise print the exact path name.
+                           % utils.ifelse(os.path.isabs(sys.argv[0]),
+                                          os.path.basename(sys.argv[0]),
+                                          sys.argv[0]))
+
         failed = False
         for jobid in self.params.args:
             try:
@@ -727,6 +749,17 @@ class cmd_gkill(_BaseCmd):
     error occurred.
     """
     def main(self):
+        if len(self.params.args) == 0:
+            self.log.error("No job IDs given on command line: nothing to do."
+                           " Type '%s --help' for usage help." 
+                           # if we were called with an absolute path,
+                           # presume the command has been found by the
+                           # shell through PATH and just print the command name,
+                           # otherwise print the exact path name.
+                           % utils.ifelse(os.path.isabs(sys.argv[0]),
+                                          os.path.basename(sys.argv[0]),
+                                          sys.argv[0]))
+
         failed = 0
         for jobid in self.params.args:
             try:
