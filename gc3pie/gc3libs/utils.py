@@ -343,7 +343,7 @@ def deploy_configuration_file(filename, template_filename=None):
             if not os.path.exists(dirname(filename)):
                 os.makedirs(dirname(filename))
             from pkg_resources import Requirement, resource_filename, DistributionNotFound
-            sample_config = resource_filename(Requirement.parse("gc3utils"), 
+            sample_config = resource_filename(Requirement.parse("gc3pie"), 
                                               "gc3libs/etc/" + template_filename)
             import shutil
             shutil.copyfile(sample_config, filename)
