@@ -307,11 +307,10 @@ class _BaseCmd(cli.app.CommandLineApp):
                            str.join("', '", config_file_locations))
             raise
 
-
     def _get_jobs(self, job_ids, ignore_failures=True):
         """
-        Return list of jobs (gc3libs.Application objects) corresponding to
-        the given Job IDs.
+        Iterate over jobs (gc3libs.Application objects) corresponding
+        to the given Job IDs.
 
         If `ignore_failures` is `True` (default), errors retrieving a
         job from the persistence layer are ignored and the jobid is
@@ -319,25 +318,10 @@ class _BaseCmd(cli.app.CommandLineApp):
         list of Job IDs given as argument.  If `ignore_failures` is
         `False`, then any errors result in the relevant exception being
         re-raised.
-
-        If `job_ids` is `None` (default), then load all jobs available
-        in the persistent storage; if persistent storage does not
-        implement the `list` operation, then an empty list is returned
-        (when `ignore_failures` is `True`) or a `NotImplementedError`
-        exception is raised (when `ignore_failures` is `False`).
         """
-        if len(job_ids) == 0:
-            try:
-                job_ids = self._store.list()
-            except NotImplementedError, ex:
-                if ignore_failures:
-                    return [ ]
-                else:
-                    raise
-        apps = [ ]
         for jobid in job_ids:
             try:
-                apps.append(self._store.load(jobid))
+                yield self._store.load(jobid)
             except Exception, ex:
                 if ignore_failures:
                     gc3libs.log.error("Could not retrieve job '%s' (%s: %s). Ignoring.", 
@@ -346,7 +330,6 @@ class _BaseCmd(cli.app.CommandLineApp):
                     continue
                 else:
                     raise
-        return apps
 
 
     def _select_resources(self, *resource_names):
@@ -462,8 +445,15 @@ class cmd_ginfo(_BaseCmd):
     GC3Libs internals.
     """
     def main(self):
-        apps = self._get_jobs(self.params.args)
-        for app in apps:
+        if len(self.params.args) == 0:
+            # if no arguments, operate on all known jobs
+            try:
+                self.params.args = self._store.list()
+            except NotImplementedError, ex:
+                raise NotImplementedError("Job storage module does not allow listing all jobs."
+                                          " Please specify the job IDs you wish to operate on.")
+
+        for app in self._get_jobs(self.params.args):
             table = Texttable(0) # max_width=0 => dynamically resize cells
             table.set_deco(Texttable.HEADER | Texttable.BORDER) # also: .VLINES, .HLINES
             table.set_cols_align(['l', 'l'])
@@ -648,27 +638,31 @@ class cmd_gstat(_BaseCmd):
     """
 
     def main(self):
-        apps = self._get_jobs(self.params.args)
+        if len(self.params.args) == 0:
+            # if no arguments, operate on all known jobs
+            try:
+                self.params.args = self._store.list()
+            except NotImplementedError, ex:
+                raise NotImplementedError("Job storage module does not allow listing all jobs."
+                                          " Please specify the job IDs you wish to operate on.")
 
-        self._core.update_job_state(*apps)
+        table = Texttable(0) # max_width=0 => dynamically resize cells
+        table.set_deco(Texttable.HEADER) # also: .VLINES, .HLINES .BORDER
+        table.set_cols_align(['l', 'l', 'l'])
+        table.header(["Job ID", "State", "Info"])
+
+        rows = [ ]
+        for app in self._get_jobs(self.params.args):
+            self._core.update_job_state(app)
+            rows.append((app, app.execution.state, app.execution.info))
+            self._store.replace(app.persistent_id, app)
 
         # Print result
-        if len(apps) == 0:
+        if len(rows) == 0:
             print ("No jobs submitted.")
         else:
-            table = Texttable(0) # max_width=0 => dynamically resize cells
-            table.set_deco(Texttable.HEADER) # also: .VLINES, .HLINES .BORDER
-            table.set_cols_align(['l', 'l', 'l'])
-            table.header(["Job ID", "State", "Info"])
-            def cmp_job_ids(a,b):
-                return cmp(a.persistent_id, b.persistent_id)
-            for app in sorted(apps, cmp=cmp_job_ids):
-                table.add_row((app, app.execution.state, app.execution.info))
+            table.add_rows(sorted(rows), header=False)
             print(table.draw())
-
-        # save jobs back to disk
-        for app in apps:
-            self._store.replace(app.persistent_id, app)
 
         return 0
 
