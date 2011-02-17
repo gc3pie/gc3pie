@@ -683,6 +683,12 @@ to produce XRSL tailored to your application.</p>
 </dd></dl>
 
 <dl class="class">
+<dt id="gc3libs.Default">
+<em class="property">class </em><tt class="descclassname">gc3libs.</tt><tt class="descname">Default</tt><a class="headerlink" href="#gc3libs.Default" title="Permalink to this definition">¶</a></dt>
+<dd>A namespace for all constants and default values used in the
+GC3Libs package.</dd></dl>
+
+<dl class="class">
 <dt id="gc3libs.Run">
 <em class="property">class </em><tt class="descclassname">gc3libs.</tt><tt class="descname">Run</tt><big>(</big><em>initializer=None</em>, <em>**keywd</em><big>)</big><a class="headerlink" href="#gc3libs.Run" title="Permalink to this definition">¶</a></dt>
 <dd><p>A specialized <cite>dict</cite>-like object that keeps information about
@@ -1179,15 +1185,13 @@ return a <cite>(defaults, resources, auths)</cite> triple that can be passed
 to the <cite>Core</cite> class constructor.</dd></dl>
 
 </div>
-<div class="section" id="module-gc3libs.Default">
-<h3><cite>gc3libs.Default</cite><a class="headerlink" href="#module-gc3libs.Default" title="Permalink to this headline">¶</a></h3>
+<div class="section" id="gc3libs-default">
+<h3><cite>gc3libs.Default</cite><a class="headerlink" href="#gc3libs-default" title="Permalink to this headline">¶</a></h3>
 <div class="admonition warning">
 <p class="first admonition-title">Warning</p>
 <p class="last">This module is deprecated and will be removed in a future release.
 Do not depend on it.</p>
 </div>
-<p>A namespace for all constants and default values used in the GC3Libs
-package.</p>
 </div>
 <div class="section" id="module-gc3libs.Exceptions">
 <h3><cite>gc3libs.Exceptions</cite><a class="headerlink" href="#module-gc3libs.Exceptions" title="Permalink to this headline">¶</a></h3>
@@ -2149,7 +2153,7 @@ arguments to the constructor:</p>
 
 <dl class="class">
 <dt id="gc3libs.utils.Template">
-<em class="property">class </em><tt class="descclassname">gc3libs.utils.</tt><tt class="descname">Template</tt><big>(</big><em>template</em>, <em>validator=&lt;function &lt;lambda&gt; at 0x26bb5f0&gt;</em>, <em>**kw</em><big>)</big><a class="headerlink" href="#gc3libs.utils.Template" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><tt class="descclassname">gc3libs.utils.</tt><tt class="descname">Template</tt><big>(</big><em>template</em>, <em>validator=&lt;function &lt;lambda&gt; at 0x2ba8b90&gt;</em>, <em>**kw</em><big>)</big><a class="headerlink" href="#gc3libs.utils.Template" title="Permalink to this definition">¶</a></dt>
 <dd><p>A template object is a pair <cite>(obj, keywords)</cite>.  Methods are
 provided to substitute the keyword values into <cite>obj</cite>, and to
 iterate over expansions of the given keywords (optionally
@@ -2324,6 +2328,22 @@ template contents itself.</p>
 if there is no such key.  Remove <cite>key</cite> from <cite>dictionary</cite> afterwards.</dd></dl>
 
 <dl class="function">
+<dt id="gc3libs.utils.ifelse">
+<tt class="descclassname">gc3libs.utils.</tt><tt class="descname">ifelse</tt><big>(</big><em>test</em>, <em>if_true</em>, <em>if_false</em><big>)</big><a class="headerlink" href="#gc3libs.utils.ifelse" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return <cite>if_true</cite> is argument <cite>test</cite> evaluates to <cite>True</cite>,
+return <cite>if_false</cite> otherwise.</p>
+<p>This is just a workaround for Python 2.4 lack of the
+conditional assignment operator:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">a</span> <span class="o">=</span> <span class="mi">1</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">b</span> <span class="o">=</span> <span class="n">ifelse</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="s">&quot;yes&quot;</span><span class="p">,</span> <span class="s">&quot;no&quot;</span><span class="p">);</span> <span class="k">print</span> <span class="n">b</span>
+<span class="go">yes</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">b</span> <span class="o">=</span> <span class="n">ifelse</span><span class="p">(</span><span class="ow">not</span> <span class="n">a</span><span class="p">,</span> <span class="s">&#39;yay&#39;</span><span class="p">,</span> <span class="s">&#39;nope&#39;</span><span class="p">);</span> <span class="k">print</span> <span class="n">b</span>
+<span class="go">nope</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="function">
 <dt id="gc3libs.utils.mkdir_with_backup">
 <tt class="descclassname">gc3libs.utils.</tt><tt class="descname">mkdir_with_backup</tt><big>(</big><em>path</em><big>)</big><a class="headerlink" href="#gc3libs.utils.mkdir_with_backup" title="Permalink to this definition">¶</a></dt>
 <dd>Like <cite>os.makedirs</cite>, but if <cite>path</cite> already exists, rename the
@@ -2477,75 +2497,116 @@ Do not depend on it.</p>
 <div class="section" id="module-gc3utils">
 <h3><cite>gc3utils</cite><a class="headerlink" href="#module-gc3utils" title="Permalink to this headline">¶</a></h3>
 </div>
-<div class="section" id="module-gc3utils.gcmd">
-<h3><cite>gc3utils.gcmd</cite><a class="headerlink" href="#module-gc3utils.gcmd" title="Permalink to this headline">¶</a></h3>
-<p>gc3utils - A simple command-line frontend to distributed resources</p>
-<p>This is a generic front-end code; actual implementation of commands
-can be found in gc3utils/commands.py</p>
-<dl class="function">
-<dt id="gc3utils.gcmd.main">
-<tt class="descclassname">gc3utils.gcmd.</tt><tt class="descname">main</tt><big>(</big><big>)</big><a class="headerlink" href="#gc3utils.gcmd.main" title="Permalink to this definition">¶</a></dt>
-<dd>Generic front-end function to invoke the commands in <cite>gc3utils/gcommands.py</cite></dd></dl>
-
+<div class="section" id="gc3utils-gcmd">
+<h3><cite>gc3utils.gcmd</cite><a class="headerlink" href="#gc3utils-gcmd" title="Permalink to this headline">¶</a></h3>
 </div>
 <div class="section" id="module-gc3utils.commands">
 <h3><cite>gc3utils.commands</cite><a class="headerlink" href="#module-gc3utils.commands" title="Permalink to this headline">¶</a></h3>
 <p>Implementation of the <cite>core</cite> command-line front-ends.</p>
-<dl class="function">
-<dt id="gc3utils.commands.gclean">
-<tt class="descclassname">gc3utils.commands.</tt><tt class="descname">gclean</tt><big>(</big><em>*args</em>, <em>**kw</em><big>)</big><a class="headerlink" href="#gc3utils.commands.gclean" title="Permalink to this definition">¶</a></dt>
-<dd>The &#8216;glean&#8217; command.
-gclean takes a list of jobids and tries to clean each of them.
-if any of the clean requests will fail, gclean will exit with exitcode 1
-gclean will try anyway to process all requests</dd></dl>
+<dl class="class">
+<dt id="gc3utils.commands.cmd_gclean">
+<em class="property">class </em><tt class="descclassname">gc3utils.commands.</tt><tt class="descname">cmd_gclean</tt><big>(</big><em>**kw</em><big>)</big><a class="headerlink" href="#gc3utils.commands.cmd_gclean" title="Permalink to this definition">¶</a></dt>
+<dd><p>Permanently remove jobs from local and remote storage.</p>
+<p>In normal operation, only jobs that are in a terminal status can
+be removed; if you want to force <tt class="docutils literal"><span class="pre">gclean</span></tt> to remove a job that
+is not in any one of those states, add the <tt class="docutils literal"><span class="pre">-f</span></tt> option to the
+command line.</p>
+<p>If a job description cannot be successfully read, the
+corresponding job will not be deleted; use the <tt class="docutils literal"><span class="pre">-f</span></tt> option to
+force removal of a job regardless.</p>
+</dd></dl>
 
-<dl class="function">
-<dt id="gc3utils.commands.gget">
-<tt class="descclassname">gc3utils.commands.</tt><tt class="descname">gget</tt><big>(</big><em>*args</em>, <em>**kw</em><big>)</big><a class="headerlink" href="#gc3utils.commands.gget" title="Permalink to this definition">¶</a></dt>
-<dd>The <cite>gget</cite> command.</dd></dl>
+<dl class="class">
+<dt id="gc3utils.commands.cmd_gget">
+<em class="property">class </em><tt class="descclassname">gc3utils.commands.</tt><tt class="descname">cmd_gget</tt><big>(</big><em>**kw</em><big>)</big><a class="headerlink" href="#gc3utils.commands.cmd_gget" title="Permalink to this definition">¶</a></dt>
+<dd><p>Retrieve output files of a job.</p>
+<p>Output files can only be retrieved once a job has reached the 
+&#8216;RUNNING&#8217; state; this command will print an error message if
+no output files are available.</p>
+<p>Output files can be retrieved multiple times until a job reaches
+&#8216;TERMINATED&#8217; state: after that, the remote storage will be
+released once the output files have been fetched.</p>
+</dd></dl>
 
-<dl class="function">
-<dt id="gc3utils.commands.ginfo">
-<tt class="descclassname">gc3utils.commands.</tt><tt class="descname">ginfo</tt><big>(</big><em>*args</em>, <em>**kw</em><big>)</big><a class="headerlink" href="#gc3utils.commands.ginfo" title="Permalink to this definition">¶</a></dt>
-<dd>The &#8216;ginfo&#8217; command.</dd></dl>
+<dl class="class">
+<dt id="gc3utils.commands.cmd_ginfo">
+<em class="property">class </em><tt class="descclassname">gc3utils.commands.</tt><tt class="descname">cmd_ginfo</tt><big>(</big><em>**kw</em><big>)</big><a class="headerlink" href="#gc3utils.commands.cmd_ginfo" title="Permalink to this definition">¶</a></dt>
+<dd><p>Print detailed information about a job.</p>
+<p>A complete dump of all the information known about jobs listed on
+the command line is printed; this will only make sense if you know
+GC3Libs internals.</p>
+</dd></dl>
 
-<dl class="function">
-<dt id="gc3utils.commands.gkill">
-<tt class="descclassname">gc3utils.commands.</tt><tt class="descname">gkill</tt><big>(</big><em>*args</em>, <em>**kw</em><big>)</big><a class="headerlink" href="#gc3utils.commands.gkill" title="Permalink to this definition">¶</a></dt>
-<dd>The <cite>gkill</cite> command.
-gkill takes a list of jobids and tries to kill each of them.
-if any of the clean requests will fail, gkill will exit with exitcode 1
-gkill will try anyway to process all requests</dd></dl>
+<dl class="class">
+<dt id="gc3utils.commands.cmd_gkill">
+<em class="property">class </em><tt class="descclassname">gc3utils.commands.</tt><tt class="descname">cmd_gkill</tt><big>(</big><em>**kw</em><big>)</big><a class="headerlink" href="#gc3utils.commands.cmd_gkill" title="Permalink to this definition">¶</a></dt>
+<dd><p>Cancel a submitted job.  Given a list of jobs, try to cancel each
+one of them; exit with code 0 if all jobs were cancelled
+successfully, and 1 if some job was not.</p>
+<p>The command will print an error message if a job cannot be
+canceled because it&#8217;s in NEW or TERMINATED state, or if some other
+error occurred.</p>
+</dd></dl>
 
-<dl class="function">
-<dt id="gc3utils.commands.glist">
-<tt class="descclassname">gc3utils.commands.</tt><tt class="descname">glist</tt><big>(</big><em>*args</em>, <em>**kw</em><big>)</big><a class="headerlink" href="#gc3utils.commands.glist" title="Permalink to this definition">¶</a></dt>
-<dd>The <cite>glist</cite> command.</dd></dl>
+<dl class="class">
+<dt id="gc3utils.commands.cmd_glist">
+<em class="property">class </em><tt class="descclassname">gc3utils.commands.</tt><tt class="descname">cmd_glist</tt><big>(</big><em>**kw</em><big>)</big><a class="headerlink" href="#gc3utils.commands.cmd_glist" title="Permalink to this definition">¶</a></dt>
+<dd>List status of computational resources.</dd></dl>
 
-<dl class="function">
-<dt id="gc3utils.commands.gnotify">
-<tt class="descclassname">gc3utils.commands.</tt><tt class="descname">gnotify</tt><big>(</big><em>*args</em>, <em>**kw</em><big>)</big><a class="headerlink" href="#gc3utils.commands.gnotify" title="Permalink to this definition">¶</a></dt>
-<dd>The gnotify command</dd></dl>
+<dl class="class">
+<dt id="gc3utils.commands.cmd_gnotify">
+<em class="property">class </em><tt class="descclassname">gc3utils.commands.</tt><tt class="descname">cmd_gnotify</tt><big>(</big><em>**kw</em><big>)</big><a class="headerlink" href="#gc3utils.commands.cmd_gnotify" title="Permalink to this definition">¶</a></dt>
+<dd><p>Report a failed job to the GC3Libs developers.</p>
+<p>This command will not likely work on any machine other than
+the ones directly controlled by GC3 sysadmins, so just don&#8217;t
+use it and send an email to <a class="reference external" href="mailto:gc3pie&#37;&#52;&#48;googlegroups&#46;com">gc3pie<span>&#64;</span>googlegroups<span>&#46;</span>com</a> describing
+your problem instead.</p>
+</dd></dl>
 
-<dl class="function">
-<dt id="gc3utils.commands.gresub">
-<tt class="descclassname">gc3utils.commands.</tt><tt class="descname">gresub</tt><big>(</big><em>*args</em>, <em>**kw</em><big>)</big><a class="headerlink" href="#gc3utils.commands.gresub" title="Permalink to this definition">¶</a></dt>
-<dd>The <cite>gresub</cite> command: resubmit an already-submitted job with different parameters.</dd></dl>
+<dl class="class">
+<dt id="gc3utils.commands.cmd_gresub">
+<em class="property">class </em><tt class="descclassname">gc3utils.commands.</tt><tt class="descname">cmd_gresub</tt><big>(</big><em>**kw</em><big>)</big><a class="headerlink" href="#gc3utils.commands.cmd_gresub" title="Permalink to this definition">¶</a></dt>
+<dd><p>Resubmit an already-submitted job with (possibly) different parameters.</p>
+<p>If you resubmit a job that is not in terminal state, the existing job
+is canceled before re-submission.</p>
+</dd></dl>
 
-<dl class="function">
-<dt id="gc3utils.commands.gstat">
-<tt class="descclassname">gc3utils.commands.</tt><tt class="descname">gstat</tt><big>(</big><em>*args</em>, <em>**kw</em><big>)</big><a class="headerlink" href="#gc3utils.commands.gstat" title="Permalink to this definition">¶</a></dt>
-<dd>The <cite>gstat</cite> command.</dd></dl>
+<dl class="class">
+<dt id="gc3utils.commands.cmd_gstat">
+<em class="property">class </em><tt class="descclassname">gc3utils.commands.</tt><tt class="descname">cmd_gstat</tt><big>(</big><em>**kw</em><big>)</big><a class="headerlink" href="#gc3utils.commands.cmd_gstat" title="Permalink to this definition">¶</a></dt>
+<dd>Print job state.</dd></dl>
 
-<dl class="function">
-<dt id="gc3utils.commands.gsub">
-<tt class="descclassname">gc3utils.commands.</tt><tt class="descname">gsub</tt><big>(</big><em>*args</em>, <em>**kw</em><big>)</big><a class="headerlink" href="#gc3utils.commands.gsub" title="Permalink to this definition">¶</a></dt>
-<dd>The <cite>gsub</cite> command.</dd></dl>
+<dl class="class">
+<dt id="gc3utils.commands.cmd_gsub">
+<em class="property">class </em><tt class="descclassname">gc3utils.commands.</tt><tt class="descname">cmd_gsub</tt><big>(</big><em>**kw</em><big>)</big><a class="headerlink" href="#gc3utils.commands.cmd_gsub" title="Permalink to this definition">¶</a></dt>
+<dd><p>Submit an application job.  Option arguments set computational job
+requirements.  Interpretation of positional arguments varies with
+the application being submitted; the application name is always
+the first non-option argument.</p>
+<p>Currently supported applications are:</p>
+<blockquote>
+<ul class="simple">
+<li><tt class="docutils literal"><span class="pre">gamess</span></tt>: Each positional argument (after the application
+name) is the path to an input file; the first one is the
+GAMESS &#8216;.inp&#8217; file and is required.</li>
+<li><tt class="docutils literal"><span class="pre">rosetta</span></tt>: The first positional argument is the name of the
+Rosetta application/protocol to run (e.g.,
+<tt class="docutils literal"><span class="pre">minirosetta.static</span></tt> or <tt class="docutils literal"><span class="pre">docking_protocol</span></tt>); after that
+comes the path to the flags file; remaining positional
+arguments are paths to input files (at least one must be
+provided).  A list of output files may additionally be
+specified after the list of input files, separated from this
+by a <tt class="docutils literal"><span class="pre">:</span></tt> character.</li>
+</ul>
+</blockquote>
+</dd></dl>
 
-<dl class="function">
-<dt id="gc3utils.commands.gtail">
-<tt class="descclassname">gc3utils.commands.</tt><tt class="descname">gtail</tt><big>(</big><em>*args</em>, <em>**kw</em><big>)</big><a class="headerlink" href="#gc3utils.commands.gtail" title="Permalink to this definition">¶</a></dt>
-<dd>The &#8216;gtail&#8217; command.</dd></dl>
+<dl class="class">
+<dt id="gc3utils.commands.cmd_gtail">
+<em class="property">class </em><tt class="descclassname">gc3utils.commands.</tt><tt class="descname">cmd_gtail</tt><big>(</big><em>**kw</em><big>)</big><a class="headerlink" href="#gc3utils.commands.cmd_gtail" title="Permalink to this definition">¶</a></dt>
+<dd>Display the last lines from a job&#8217;s standard output or error stream.
+Optionally, keep running and displaying the last part of the file
+as more lines are written to the given stream.</dd></dl>
 
 </div>
 </div>
@@ -2584,7 +2645,7 @@ gkill will try anyway to process all requests</dd></dl>
 <li><a class="reference external" href="#gc3libs-modules">GC3Libs modules</a><ul>
 <li><a class="reference external" href="#module-gc3libs"><cite>gc3libs</cite></a></li>
 <li><a class="reference external" href="#module-gc3libs.core"><cite>gc3libs.core</cite></a></li>
-<li><a class="reference external" href="#module-gc3libs.Default"><cite>gc3libs.Default</cite></a></li>
+<li><a class="reference external" href="#gc3libs-default"><cite>gc3libs.Default</cite></a></li>
 <li><a class="reference external" href="#module-gc3libs.Exceptions"><cite>gc3libs.Exceptions</cite></a></li>
 <li><a class="reference external" href="#module-gc3libs.persistence"><cite>gc3libs.persistence</cite></a></li>
 <li><a class="reference external" href="#module-gc3libs.application"><cite>gc3libs.application</cite></a></li>
@@ -2606,7 +2667,7 @@ gkill will try anyway to process all requests</dd></dl>
 </li>
 <li><a class="reference external" href="#gc3utils-modules">GC3Utils modules</a><ul>
 <li><a class="reference external" href="#module-gc3utils"><cite>gc3utils</cite></a></li>
-<li><a class="reference external" href="#module-gc3utils.gcmd"><cite>gc3utils.gcmd</cite></a></li>
+<li><a class="reference external" href="#gc3utils-gcmd"><cite>gc3utils.gcmd</cite></a></li>
 <li><a class="reference external" href="#module-gc3utils.commands"><cite>gc3utils.commands</cite></a></li>
 </ul>
 </li>

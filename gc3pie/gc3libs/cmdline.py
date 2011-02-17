@@ -25,9 +25,13 @@ functionality for GC3Libs command-line utilities and scripts.  User
 applications should implement their specific behavior by subclassing 
 and overriding a few customization methods.
 
-There is currently only a base class provided here:
+There are currently two public classes provided here:
 
-:py:class:`SessionBasedScript`
+:class:`GC3UtilsScript`
+  Base class for all the GC3Utils commands. Implements a few methods
+  useful for writing command-line scripts that operate on jobs by ID.
+ 
+:class:`SessionBasedScript`
   Base class for the ``grosetta``/``ggamess``/``gcodeml`` scripts.
   Implements a long-running script to submit and manage a large number
   of jobs grouped into a "session".
@@ -62,7 +66,366 @@ import gc3libs.utils
 
 ## parse command-line
 
-class SessionBasedScript(cli.app.CommandLineApp):
+
+
+class _Script(cli.app.CommandLineApp):
+    """
+    Base class for GC3Libs scripts.  
+
+    By default, only the standard options ``-h``/``--help`` and
+    ``-V``/``--version`` are considered; to add more, override
+    `setup_options`:method:
+
+    There is no defaults for positional arguments, you *must* override 
+    `setup_args`:method: in derived classes.
+    
+    """
+
+    ##
+    ## CUSTOMIZATION METHODS
+    ##
+    ## The following are meant to be freely customized in derived scripts.
+    ##
+
+    def setup_args(self):
+        """
+        Set up command-line argument parsing.
+
+        The default command line parsing considers every argument as
+        an (input) path name; processing of the given path names is
+        done in `parse_args`:method:
+        """
+        raise NotImplementedError("Abstract method `_Script.setup_args()` called,"
+                                  " which should have been implemented in a derived class")
+                       
+    def setup_options(self):
+        """
+        Override this method to add command-line options.
+        """
+        pass
+
+
+    def parse_args(self):
+        """
+        Do any parsing of the command-line arguments before the main
+        loop starts.  This is the place to check validity of the
+        parameters passed as command-line arguments, and to perform
+        setup of shared data structures and default values.
+
+        The default implementation does nothing; you are free to
+        override this method in derived classes.
+        """
+        pass
+
+
+    ##
+    ## pyCLI INTERFACE METHODS
+    ##
+    ## The following methods adapt the behavior of the
+    ## `SessionBasedScript` class to the interface expected by pyCLI
+    ## applications.  Think twice before overriding them, and read
+    ## the pyCLI docs before :-)
+    ##
+
+    def __init__(self, **kw):
+        """
+        Perform initialization and set the version, help and usage
+        strings.
+
+        The help text to be printed when the script is invoked with the 
+        ``-h``/``--help`` option will be taken from (in order of preference): 
+          * the keyword argument `description`
+          * the attribute `self.description`
+        If neither is provided, an `AssertionError` is raised.
+
+        The text to output when the the script is invoked with the
+        ``-V``/``--version`` options is taken from (in order of
+        preference):
+          * the keyword argument `version`
+          * the attribute `self.version`
+        If none of these is provided, an `AssertionError` is raised.
+
+        The `usage` keyword argument (if provided) will be used to
+        provide the program help text; if not provided, one will be
+        generated based on the options and positional arguments
+        defined in the code.
+
+        Any additional keyword argument will be used to set a
+        corresponding instance attribute on this Python object.
+        """
+        # use keyword arguments to set additional instance attrs
+        for k,v in kw.items():
+            if k not in ['name', 'description']:
+                setattr(self, k, v)
+        # init and setup pyCLI classes
+        if not kw.has_key('version'):
+            try:
+                kw['version'] = self.version
+            except AttributeError:
+                raise AssertionError("Missing required parameter 'version'.")
+        if not kw.has_key('description'):
+            if self.__doc__ is not None:
+                kw['description'] = self.__doc__
+            else:
+                raise AssertionError("Missing required parameter 'description'.")
+        cli.app.CommandLineApp.__init__(
+            self,
+            # remove the '.py' extension, if any
+            name=os.path.splitext(os.path.basename(sys.argv[0]))[0],
+            **kw
+            )
+        
+    @property
+    def description(self):
+        """A string describing the application.
+
+        Unless specified when the :class:`Application` was created, this
+        property will examine the :attr:`main` callable and use its
+        docstring (:attr:`__doc__` attribute).
+        """
+        if self._description is not None:
+            return self._description
+        else:
+            return getattr(self.main, "__doc__", '')
+
+
+    def setup(self):
+        """
+        Setup standard command-line parsing.
+
+        GC3Utils scripts should probably override `setup_args`:method: 
+        and `setup_options`:method: to modify command-line parsing.
+        """
+        ## setup of base classes
+        cli.app.CommandLineApp.setup(self)
+
+        self.add_param("-v", "--verbose", action="count", dest="verbose", default=0,
+                       help="Be more detailed in reporting program activity."
+                       " Repeat to increase verbosity.")
+        self.setup_options()
+        self.setup_args()
+        return
+
+
+    def pre_run(self):
+        """
+        Perform parsing of standard command-line options and call into
+        `parse_args()` to do non-optional argument processing.
+        """
+        ## parse command-line
+        cli.app.CommandLineApp.pre_run(self)
+
+        ## setup GC3Libs logging
+        loglevel = max(1, logging.ERROR - 10 * self.params.verbose)
+        gc3libs.configure_logger(loglevel, self.name)
+        self.log = logging.getLogger('gc3.gc3utils') # alternate: ('gc3.' + self.name)
+        self.log.setLevel(loglevel)
+        self.log.propagate = True
+
+        # call hook methods from derived classes
+        self.parse_args()
+
+
+    def run(self):
+        """
+        Execute `cli.app.Application.run`:method: if any exception is
+        raised, catch it, output an error message and then exit with
+        an appropriate error code.
+        """
+        try:
+            return cli.app.CommandLineApp.run(self)
+        except KeyboardInterrupt:
+            sys.stderr.write("%s: Exiting upon user request (Ctrl+C)\n" % self.name)
+            return 13
+        except SystemExit, ex:
+            return ex.code
+        except InvalidUsage, ex:
+            # Fatal errors do their own printing, we only add a short usage message
+            sys.stderr.write("Type '%s --help' to get usage help.\n" % self.name)
+            return 1
+        except AssertionError, ex:
+            sys.stderr.write("%s: BUG: %s\n"
+                             "Please send an email to gc3utils-dev@gc3.uzh.ch copying this\n"
+                             "output and and attach file '~/.gc3/debug.log'.  Many thanks for\n"
+                             "your cooperation.\n"
+                             % (self.name, str(ex)))
+            return 1
+        except Exception, ex:
+            try:
+                self.log.critical("%s: %s" % (ex.__class__.__name__, str(ex)), 
+                                  exc_info=(self.params.verbose > 2))
+            except:
+                sys.stderr.write("%s: ERROR: %s: %s" % (self.name, ex.__class__.__name__, str(ex)))
+            if isinstance(ex, cli.app.Abort):
+                sys.exit(ex.status)
+            elif isinstance(ex, EnvironmentError):
+                sys.exit(74) # EX_IOERR in /usr/include/sysexits.h
+            else:
+                # generic error exit
+                sys.exit(1)
+
+
+class GC3UtilsScript(_Script):
+    """
+    Base class for GC3Utils scripts.  
+
+    The default command line implemented is the following:
+
+      script [options] JOBID [JOBID ...]
+
+    By default, only the standard options ``-h``/``--help`` and
+    ``-V``/``--version`` are considered; to add more, override
+    `setup_options`:method:
+    To change default positional argument parsing, override 
+    `setup_args`:method:
+    
+    """
+
+    ##
+    ## CUSTOMIZATION METHODS
+    ##
+    ## The following are meant to be freely customized in derived scripts.
+    ##
+
+    def setup_args(self):
+        """
+        Set up command-line argument parsing.
+
+        The default command line parsing considers every argument as a
+        job ID; actual processing of the IDs is done in
+        `parse_args`:method:
+        """
+        self.add_param('args', nargs='*', metavar='JOBID', 
+                       help="Job ID string identifying the jobs to operate upon.")
+                       
+    ##
+    ## pyCLI INTERFACE METHODS
+    ##
+    ## The following methods adapt the behavior of the
+    ## `SessionBasedScript` class to the interface expected by pyCLI
+    ## applications.  Think twice before overriding them, and read
+    ## the pyCLI docs before :-)
+    ##
+
+    def __init__(self, **kw):
+        _Script.__init__(self, main=self.main, **kw)
+
+
+    def setup(self):
+        """
+        Setup standard command-line parsing.
+
+        GC3Utils scripts should probably override `setup_args`:method: 
+        and `setup_options`:method: to modify command-line parsing.
+        """
+        ## setup of base classes (creates the argparse stuff)
+        _Script.setup(self)
+        ## local additions
+        self.add_param("-s", "--session", action="store", default=gc3libs.Default.JOBS_DIR,
+                       help="Directory where job information will be stored.")
+
+
+    def pre_run(self):
+        """
+        Perform parsing of standard command-line options and call into
+        `parse_args()` to do non-optional argument processing.
+        """
+        ## base class parses command-line
+        _Script.pre_run(self)
+
+        # interface to the GC3Libs main functionality
+        self._core = self._get_core(gc3libs.Default.CONFIG_FILE_LOCATIONS)
+
+        jobs_dir = self.params.session
+        if jobs_dir != gc3libs.Default.JOBS_DIR:
+            if (not os.path.isdir(jobs_dir)
+                and not jobs_dir.endswith('.jobs')):
+                jobs_dir = jobs_dir + '.jobs'
+        self._store = gc3libs.persistence.FilesystemStore(jobs_dir, 
+                                                          idfactory=gc3libs.persistence.JobIdFactory)
+
+
+    ##
+    ## INTERNAL METHODS
+    ##
+    ## The following methods are for internal use; they can be
+    ## overridden and customized in derived classes, although there
+    ## should be no need to do so.
+    ##
+
+    def _get_core(self, config_file_locations, auto_enable_auth=True):
+        """
+        Return a `gc3libs.core.Core` instance configured by parsing
+        the configuration file(s) located at `config_file_locations`.
+        Order of configuration files matters: files read last overwrite
+        settings from previously-read ones; list the most specific configuration
+        files last.
+
+        If `auto_enable_auth` is `True` (default), then `Core` will try to renew
+        expired credentials; this requires interaction with the user and will
+        certainly fail unless stdin & stdout are connected to a terminal.
+        """
+        # ensure a configuration file exists in the most specific location
+        for location in reversed(config_file_locations):
+            if os.access(os.path.dirname(location), os.W_OK|os.X_OK) \
+                    and not gc3libs.utils.deploy_configuration_file(location, "gc3pie.conf.example"):
+                # warn user
+                self.log.warning("No configuration file '%s' was found;"
+                                 " a sample one has been copied in that location;"
+                                 " please edit it and define resources." % location)
+        try:
+            self.log.debug('Creating instance of Core ...')
+            return gc3libs.core.Core(* gc3libs.core.import_config(config_file_locations, auto_enable_auth))
+        except NoResources:
+            raise FatalError("No computational resources defined.  Please edit the configuration file '%s'." 
+                             % config_file_locations)
+        except:
+            self.log.debug("Failed loading config file from '%s'", 
+                           str.join("', '", config_file_locations))
+            raise
+
+    def _get_jobs(self, job_ids, ignore_failures=True):
+        """
+        Iterate over jobs (gc3libs.Application objects) corresponding
+        to the given Job IDs.
+
+        If `ignore_failures` is `True` (default), errors retrieving a
+        job from the persistence layer are ignored and the jobid is
+        skipped, therefore the returned list can be shorter than the
+        list of Job IDs given as argument.  If `ignore_failures` is
+        `False`, then any errors result in the relevant exception being
+        re-raised.
+        """
+        for jobid in job_ids:
+            try:
+                yield self._store.load(jobid)
+            except Exception, ex:
+                if ignore_failures:
+                    gc3libs.log.error("Could not retrieve job '%s' (%s: %s). Ignoring.", 
+                                      jobid, ex.__class__.__name__, str(ex),
+                                      exc_info=(self.params.verbose > 2))
+                    continue
+                else:
+                    raise
+
+
+    def _select_resources(self, *resource_names):
+        """
+        Restrict resources to those listed in `resource_names`.
+        Argument `resource_names` is a string listing all names of
+        allowed resources (comma-separated), or a list of names of the
+        resources to keep active.
+        """
+        resource_list = [ ]
+        for item in resource_names:
+            resource_list.extend(name for name in item.split(','))
+        kept = self._core.select_resource(lambda r: r.name in resource_list)
+        if kept == 0:
+            raise NoResources("No resources match the names '%s'" 
+                              % str.join(',', resource_list))
+
+
+class SessionBasedScript(_Script):
     """
     Base class for ``grosetta``/``ggamess``/``gcodeml`` and like scripts.
     Implements a long-running script to submit and manage a large number
@@ -129,28 +492,8 @@ class SessionBasedScript(cli.app.CommandLineApp):
                        " Directories are recursively scanned for input files"
                        " matching the glob pattern '%s'" 
                        % self.input_filename_pattern)
-                       
-    def setup_options(self):
-        """
-        Override this method to add command-line options, or
-        modify the standard ones.
-        """
-        pass
 
-
-    def parse_args(self):
-        """
-        Do any parsing of the command-line arguments before the main
-        loop starts.  This is the place to check validity of the
-        parameters passed as command-line arguments, and to perform
-        setup of shared data structures and default values.
-
-        The default implementation does nothing; you are free to
-        override this method in derived classes.
-        """
-        pass
-
-
+    
     def process_args(self, extra):
         """
         Iterate over jobs that should be added to the current session.
@@ -276,43 +619,14 @@ class SessionBasedScript(cli.app.CommandLineApp):
         self.input_filename_pattern = 'PLEASE SET `input_filename_pattern` IN `SessionBasedScript` CONSTRUCTOR'
         def _unset_application_cls(*args, **kwargs):
             raise Error("PLEASE SET `application` in `SessionBasedScript` CONSTRUCTOR")
+        ## init base classes
         self.application = _unset_application_cls
-        # use keyword arguments to set additional instance attrs
-        for k,v in kw.items():
-            if k not in ['name', 'description']:
-                setattr(self, k, v)
-        # init and setup pyCLI classes
-        if not kw.has_key('version'):
-            try:
-                kw['version'] = self.version
-            except AttributeError:
-                raise AssertionError("Missing required parameter 'version'.")
-        if not kw.has_key('description'):
-            if self.__doc__ is not None:
-                kw['description'] = self.__doc__
-            else:
-                raise AssertionError("Missing required parameter 'description'.")
-        cli.app.CommandLineApp.__init__(
+        _Script.__init__(
             self,
             main=self._main,
-            name=os.path.splitext(os.path.basename(sys.argv[0]))[0],
             **kw
             )
         
-    @property
-    def description(self):
-        """A string describing the application.
-
-        Unless specified when the :class:`Application` was created, this
-        property will examine the :attr:`main` callable and use its
-        docstring (:attr:`__doc__` attribute).
-        """
-        if self._description is not None:
-            return self._description
-        else:
-            return getattr(self.main, "__doc__", '')
-
-
     def setup(self):
         """
         Setup standard command-line parsing.
@@ -321,7 +635,7 @@ class SessionBasedScript(cli.app.CommandLineApp):
         to modify command-line parsing.
         """
         ## setup of base classes
-        cli.app.CommandLineApp.setup(self)
+        _Script.setup(self)
 
         ## add own "standard options"
         
@@ -388,11 +702,6 @@ class SessionBasedScript(cli.app.CommandLineApp):
         self.add_param("-t", "--table", action="store_true", dest="table", default=False,
                            help="Print table of all submitted jobs and their statuses."
                            )
-        self.add_param("-v", "--verbose", action="count", dest="verbose", default=0,
-                       help="Be more detailed in reporting program activity."
-                       " Repeat to increase verbosity.")
-        self.setup_args()
-        self.setup_options()
         return
 
 
@@ -401,15 +710,8 @@ class SessionBasedScript(cli.app.CommandLineApp):
         Perform parsing of standard command-line options and call into
         `parse_args()` to do non-optional argument processing.
         """
-        ## parse command-line
-        cli.app.CommandLineApp.pre_run(self)
-
-        ## setup GC3Libs logging
-        loglevel = max(1, logging.ERROR - 10 * self.params.verbose)
-        gc3libs.configure_logger(loglevel, self.name)
-        self.log = logging.getLogger('gc3.' + self.name)
-        self.log.setLevel(loglevel)
-        self.log.propagate = True
+        ## call base classes first (note: calls `parse_args()`)
+        _Script.pre_run(self)
 
         ## consistency checks
         if self.params.max_running < 1:
@@ -433,35 +735,12 @@ class SessionBasedScript(cli.app.CommandLineApp):
             raise cli.app.Error("Argument to option -w/--wall-clock-time must have the form 'HH:MM' or be a duration expressed in seconds.")
         self.params.walltime = int(self.params.wctime / 3600)
 
-        # call hook methods from derived classes
-        self.parse_args()
-
         # XXX: ARClib errors out if the download directory already exists, so
         # we need to make sure that each job downloads results in a new one.
         # The easiest way to do so is to append 'NAME' to the `output_dir`
         # (if it's not already there).
         if not 'NAME' in self.params.output:
             self.params.output = os.path.join(self.params.output, 'NAME')
-
-
-    def run(self):
-        """
-        Execute `cli.app.Application.run`:method: if any exception is
-        raised, catch it, output an error message and then exit with
-        an appropriate error code.
-        """
-        try:
-            return cli.app.CommandLineApp.run(self)
-        except Exception, ex:
-            self.log.critical("%s: %s" % (ex.__class__.__name__, str(ex)), 
-                              exc_info=(self.params.verbose > 2))
-            if isinstance(ex, cli.app.Abort):
-                sys.exit(ex.status)
-            elif isinstance(ex, EnvironmentError):
-                sys.exit(74) # EX_IOERR in /usr/include/sysexits.h
-            else:
-                # generic error exit
-                sys.exit(1)
 
 
     ##
