@@ -38,7 +38,6 @@ from gc3libs import Application, Run
 from gc3libs.backends.sge import SgeLrms
 # from gc3libs.backends.arc import ArcLrms
 from gc3libs.authentication import Auth
-import gc3libs.Default as Default
 from gc3libs.Exceptions import *
 import gc3libs.Resource as Resource
 import gc3libs.scheduler as scheduler
@@ -459,10 +458,10 @@ class Core:
                 # there's a matching resource
                 # gc3libs.log.debug('Creating instance of type %s for %s', _resource.type, _resource.name)
                 try:
-                    if _resource.type == Default.ARC_LRMS:
+                    if _resource.type == gc3libs.Default.ARC_LRMS:
                         from gc3libs.backends.arc import ArcLrms
                         _lrms = ArcLrms(_resource, self.auths)
-                    elif _resource.type == Default.SGE_LRMS:
+                    elif _resource.type == gc3libs.Default.SGE_LRMS:
                         _lrms = SgeLrms(_resource, self.auths)
                     else:
                         raise ConfigurationError("Unknown resource type '%s'" 

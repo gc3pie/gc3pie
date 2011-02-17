@@ -151,7 +151,6 @@ class Transport(object):
 #
 
 import paramiko
-import gc3libs.Default as Default
 import gc3libs
 import gc3libs.Exceptions as Exceptions
 import sys
@@ -162,7 +161,9 @@ class SshTransport(Transport):
     sftp = None
     _is_open = False
 
-    def __init__(self, remote_frontend, port=Default.SSH_PORT, username=None):
+    def __init__(self, remote_frontend,
+                 port=gc3libs.Default.SSH_PORT,
+                 username=None):
         self.remote_frontend = remote_frontend
         self.port = port
         self.username = username
@@ -173,7 +174,10 @@ class SshTransport(Transport):
             if not self._is_open:
                 self.ssh = paramiko.SSHClient()
                 self.ssh.load_system_host_keys()
-                self.ssh.connect(self.remote_frontend,timeout=Default.SSH_CONNECT_TIMEOUT,username=self.username, allow_agent=True)
+                self.ssh.connect(self.remote_frontend,
+                                 timeout=gc3libs.Default.SSH_CONNECT_TIMEOUT,
+                                 username=self.username,
+                                 allow_agent=True)
                 self.sftp = self.ssh.open_sftp()
                 self._is_open = True
                 gc3libs.log.debug("SshTransport: connected to '%s' on port %d with username '%s'" 

@@ -32,7 +32,6 @@ import time
 
 
 import gc3libs
-import gc3libs.Default
 from gc3libs.authentication import Auth
 from gc3libs.Exceptions import ConfigurationError, RecoverableAuthError, UnrecoverableAuthError
 

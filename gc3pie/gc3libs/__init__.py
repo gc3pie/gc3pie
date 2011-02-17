@@ -46,7 +46,35 @@ import logging
 import logging.config
 log = logging.getLogger("gc3.gc3libs")
 
-import gc3libs.Default
+
+# this needs to be defined before we import other GC3Libs modules, as
+# they may depend on it
+class Default(object):
+    """
+    A namespace for all constants and default values used in the
+    GC3Libs package.
+    """
+    RCDIR = os.path.join(os.path.expandvars('$HOME'), ".gc3")
+    CONFIG_FILE_LOCATIONS = [
+        # system-wide config file
+        "/etc/gc3/gc3pie.conf",
+        # user-private config file
+        os.path.join(RCDIR, "gc3pie.conf")
+        ]
+    JOBS_DIR = os.path.join(RCDIR, "jobs")
+    
+    ARC_LRMS = 'arc'
+    ARC_CACHE_TIME = 90 #: only update ARC resources status every this seconds
+    
+    SGE_LRMS = 'ssh_sge'
+    # Transport information
+    SSH_PORT = 22
+    SSH_CONNECT_TIMEOUT = 30
+    
+    # Proxy
+    PROXY_VALIDITY_THRESHOLD = 600 #: Proxy validity threshold in seconds. If proxy is expiring before the thresold, it will be marked as to be renewed.
+
+
 from gc3libs.Exceptions import *
 from gc3libs.persistence import Persistable
 from gc3libs.utils import defproperty, deploy_configuration_file, get_and_remove, Enum, Log, Struct, safe_repr
@@ -73,8 +101,9 @@ def configure_logger(level=logging.ERROR,
     logging.basicConfig(level=level, format=format, datefmt=datefmt)
     deploy_configuration_file(log_conf, "logging.conf.example")
     logging.config.fileConfig(log_conf, {
-            'RCDIR': Default.RCDIR,
-            })
+        'RCDIR': Default.RCDIR,
+        'HOMEDIR': os.path.expandvars('$HOME'),
+        })
     log = logging.getLogger("gc3.gc3libs")
     log.setLevel(level)
     log.propagate = 1

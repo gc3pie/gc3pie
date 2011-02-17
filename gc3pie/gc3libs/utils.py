@@ -27,7 +27,6 @@ sources of a different project and it would not stop working.
 __docformat__ = 'reStructuredText'
 __version__ = '$Revision$'
 
-import gc3libs
 
 import os
 import os.path
@@ -38,10 +37,11 @@ import sys
 import time
 import UserDict
 
-import Default
-from Exceptions import *
 from lockfile import FileLock
-    
+
+import gc3libs
+from gc3libs.Exceptions import *
+
 
 # ================================================================
 #
@@ -334,7 +334,7 @@ def deploy_configuration_file(filename, template_filename=None):
     if template_filename is None:
         template_filename = os.path.basename(filename)
     if not os.path.isabs(filename):
-        filename = os.path.join(Default.RCDIR, filename)
+        filename = os.path.join(gc3libs.Default.RCDIR, filename)
     if os.path.exists(filename):
         return True
     else:
