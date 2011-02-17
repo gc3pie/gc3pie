@@ -59,6 +59,7 @@ import time
 
 import gc3libs
 import gc3libs.core
+import gc3libs.Exceptions
 import gc3libs.persistence
 import gc3libs.utils
 import gc3libs.Exceptions
@@ -377,8 +378,9 @@ class GC3UtilsScript(_Script):
             self.log.debug('Creating instance of Core ...')
             return gc3libs.core.Core(* gc3libs.core.import_config(config_file_locations, auto_enable_auth))
         except gc3libs.Exceptions.NoResources:
-            raise gc3libs.Exceptions.FatalError("No computational resources defined.  Please edit the configuration file '%s'." 
-                             % config_file_locations)
+            raise gc3libs.Exceptions.FatalError("No computational resources defined."
+                                                " Please edit the configuration file(s): '%s'." 
+                                                % (str.join("', '", config_file_locations)))
         except:
             self.log.debug("Failed loading config file from '%s'", 
                            str.join("', '", config_file_locations))
@@ -618,7 +620,7 @@ class SessionBasedScript(_Script):
         # use bogus values that should point ppl to the right place
         self.input_filename_pattern = 'PLEASE SET `input_filename_pattern` IN `SessionBasedScript` CONSTRUCTOR'
         def _unset_application_cls(*args, **kwargs):
-            raise Error("PLEASE SET `application` in `SessionBasedScript` CONSTRUCTOR")
+            raise gc3libs.Exceptions.Error("PLEASE SET `application` in `SessionBasedScript` CONSTRUCTOR")
         ## init base classes
         self.application = _unset_application_cls
         _Script.__init__(
