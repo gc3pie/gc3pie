@@ -74,7 +74,6 @@ def configure_logger(level=logging.ERROR,
     deploy_configuration_file(log_conf, "logging.conf.example")
     logging.config.fileConfig(log_conf, {
             'RCDIR': Default.RCDIR,
-            'HOMEDIR': Default.HOMEDIR 
             })
     log = logging.getLogger("gc3.gc3libs")
     log.setLevel(level)

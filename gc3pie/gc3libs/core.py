@@ -459,10 +459,10 @@ class Core:
                 # there's a matching resource
                 # gc3libs.log.debug('Creating instance of type %s for %s', _resource.type, _resource.name)
                 try:
-                    if _resource.type is Default.ARC_LRMS:
+                    if _resource.type == Default.ARC_LRMS:
                         from gc3libs.backends.arc import ArcLrms
                         _lrms = ArcLrms(_resource, self.auths)
-                    elif _resource.type is Default.SGE_LRMS:
+                    elif _resource.type == Default.SGE_LRMS:
                         _lrms = SgeLrms(_resource, self.auths)
                     else:
                         raise ConfigurationError("Unknown resource type '%s'" 
