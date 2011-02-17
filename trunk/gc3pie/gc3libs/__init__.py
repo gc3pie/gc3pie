@@ -108,6 +108,15 @@ def configure_logger(level=logging.ERROR,
     log = logging.getLogger("gc3.gc3libs")
     log.setLevel(level)
     log.propagate = 1
+    # Up to Python 2.5, the `logging` library disables all existing
+    # loggers upon reconfiguration, and fails to re-create them when
+    # getLogger() is called again.  We work around this the hard way,
+    # using an undocumented internal variable; ignore errors and hope
+    # for the best.
+    try:
+        log.disabled = 0
+    except:
+        pass
     # due to a bug in Python 2.4.x (see 
     # https://bugzilla.redhat.com/show_bug.cgi?id=573782 )
     # we need to disable `logging` reporting of exceptions.
