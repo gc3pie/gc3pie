@@ -29,7 +29,7 @@ import pickle
 import sys
 
 import gc3libs
-from gc3libs.Exceptions import LoadError
+import gc3libs.Exceptions
 from gc3libs.utils import progressive_number, same_docstring_as
 
 
@@ -297,7 +297,7 @@ class FilesystemStore(Store):
         gc3libs.log.debug("Loading object from file '%s' ...", filename)
 
         if not os.path.exists(filename):
-            raise LoadError("No '%s' file found in directory '%s'" 
+            raise gc3libs.Exceptions.LoadError("No '%s' file found in directory '%s'" 
                                    % (id_, self._directory))
 
         # XXX: this should become `with src = ...:` as soon as we stop
@@ -315,13 +315,13 @@ class FilesystemStore(Store):
                 except:
                     pass # ignore errors
             sys.excepthook(* sys.exc_info())
-            raise LoadError("Failed retrieving object from file '%s': %s: %s"
+            raise gc3libs.Exceptions.LoadError("Failed retrieving object from file '%s': %s: %s"
                                    % (filename, ex.__class__.__name__, str(ex)))
         if not hasattr(obj, 'persistent_id'):
-            raise LoadError("Invalid format in file '%s': missing 'persistent_id' attribute"
+            raise gc3libs.Exceptions.LoadError("Invalid format in file '%s': missing 'persistent_id' attribute"
                                    % (filename))
         if str(obj.persistent_id) != str(id_):
-            raise LoadError("Retrieved persistent ID '%s' does not match given ID '%s'" 
+            raise gc3libs.Exceptions.LoadError("Retrieved persistent ID '%s' does not match given ID '%s'" 
                                    % (obj.persistent_id, id_))
         return obj
 

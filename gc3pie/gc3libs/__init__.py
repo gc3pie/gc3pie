@@ -46,6 +46,7 @@ import logging
 import logging.config
 log = logging.getLogger("gc3.gc3libs")
 
+import gc3libs.Exceptions
 
 # this needs to be defined before we import other GC3Libs modules, as
 # they may depend on it
@@ -528,13 +529,13 @@ class Application(Struct, Persistable, Task):
         # ensure remote paths are not absolute
         for r_path in self.inputs.itervalues():
             if os.path.isabs(r_path):
-                raise InvalidArgument("Remote paths not allowed to be absolute")
+                raise gc3libs.Exceptions.InvalidArgument("Remote paths not allowed to be absolute")
 
         self.outputs = Application._io_spec_to_dict(outputs)
         # ensure remote paths are not absolute
         for r_path in self.outputs.iterkeys():
             if os.path.isabs(r_path):
-                raise InvalidArgument("Remote paths not allowed to be absolute")
+                raise gc3libs.Exceptions.InvalidArgument("Remote paths not allowed to be absolute")
 
         self.output_dir = output_dir
 
@@ -949,7 +950,7 @@ class _Signals(object):
             return Signals.RemoteError
         if signal_num == 125:
             return Signals.SubmissionFailed
-        raise InvalidArgument("Unknown signal number %d" % signal_num)
+        raise gc3libs.Exceptions.InvalidArgument("Unknown signal number %d" % signal_num)
 
 
 class Run(Struct):

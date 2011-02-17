@@ -40,7 +40,7 @@ import UserDict
 from lockfile import FileLock
 
 import gc3libs
-from gc3libs.Exceptions import *
+import gc3libs.Exceptions
 
 
 # ================================================================
@@ -350,9 +350,9 @@ def deploy_configuration_file(filename, template_filename=None):
             return False
         except IOError, x:
             gc3libs.log.critical("CRITICAL ERROR: Failed copying configuration file: %s" % x)
-            raise NoConfigurationFile("No configuration file '%s' was found, and an attempt to create it failed. Aborting." % filename)
+            raise gc3libs.Exceptions.NoConfigurationFile("No configuration file '%s' was found, and an attempt to create it failed. Aborting." % filename)
         except ImportError:
-            raise NoConfigurationFile("No configuration file '%s' was found. Aborting." % filename)
+            raise gc3libs.Exceptions.NoConfigurationFile("No configuration file '%s' was found. Aborting." % filename)
         except DistributionNotFound, ex:
             raise AssertionError("BUG: Cannot access resources for Python package: %s."
                                  " Installation error?" % str(ex))

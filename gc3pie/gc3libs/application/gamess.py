@@ -25,7 +25,7 @@ __version__ = '$Revision$'
 
 import gc3libs
 import gc3libs.application
-from gc3libs.Exceptions import *
+import gc3libs.Exceptions
 from gc3libs.InformationContainer import *
 import os
 import os.path
@@ -83,7 +83,7 @@ class GamessApplication(gc3libs.Application):
         try:
             qgms = os.path.join(resource.gamess_location, 'qgms')
         except AttributeError:
-            raise ConfigurationError("Missing configuration parameter `gamess_location` on resource '%s'.",
+            raise gc3libs.Exceptions.ConfigurationError("Missing configuration parameter `gamess_location` on resource '%s'.",
                                      resource.name)
 
         if self.requested_walltime:

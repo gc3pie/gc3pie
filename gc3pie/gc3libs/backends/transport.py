@@ -30,7 +30,7 @@ import os
 import os.path
 
 from gc3libs.utils import same_docstring_as
-
+import gc3libs.Exceptions
 
 class Transport(object):
 
@@ -150,10 +150,11 @@ class Transport(object):
 # SSH Transport class
 #
 
-import paramiko
-import gc3libs
-import gc3libs.Exceptions as Exceptions
 import sys
+
+import paramiko
+
+import gc3libs
 
 class SshTransport(Transport):
 
@@ -184,7 +185,7 @@ class SshTransport(Transport):
                                   % (self.remote_frontend, self.port, self.username))
         except:
             gc3libs.log.error("Could not create ssh connection to %s" % self.remote_frontend)
-            raise Exceptions.TransportError("Failed while connecting to remote host: %s. Error type %s, %s"
+            raise gc3libs.Exceptions.TransportError("Failed while connecting to remote host: %s. Error type %s, %s"
                                             % (self.remote_frontend, sys.exc_info()[0], sys.exc_info()[1]))
 
     @same_docstring_as(Transport.execute_command)
@@ -199,7 +200,7 @@ class SshTransport(Transport):
                 
             return exitcode, stdout, stderr
         except Exception, ex:
-            raise Exceptions.TransportError("Failed executing remote command '%s': %s: %s" 
+            raise gc3libs.Exceptions.TransportError("Failed executing remote command '%s': %s: %s" 
                                             % (command, ex.__class__.__name__, str(ex)))
         
     @same_docstring_as(Transport.listdir)
@@ -207,7 +208,7 @@ class SshTransport(Transport):
         try:
             return self.sftp.listdir(path)
         except Exception, ex:
-            raise Exceptions.TransportError("Could not list directory '%s' on host '%s': %s: %s"
+            raise gc3libs.Exceptions.TransportError("Could not list directory '%s' on host '%s': %s: %s"
                                             % (path, self.remote_frontend, 
                                                ex.__class__.__name__, str(ex)))
 
@@ -215,7 +216,7 @@ class SshTransport(Transport):
     def makedirs(self, path, mode=0777):
         dirs = path.split('/')
         if '..' in dirs:
-            raise InvalidArgument("Path component '..' not allowed in `SshTransport.makedirs()`")
+            raise gc3libs.Exceptions.InvalidArgument("Path component '..' not allowed in `SshTransport.makedirs()`")
         dest = ''
         for dir in dirs:
             if dir in ['', '.']:
@@ -236,7 +237,7 @@ class SshTransport(Transport):
                               % (source, destination, self.remote_frontend))
             self.sftp.put(source, destination)
         except Exception, ex:
-            raise Exceptions.TransportError("Could not upload '%s' to '%s' on host '%s': %s: %s"
+            raise gc3libs.Exceptions.TransportError("Could not upload '%s' to '%s' on host '%s': %s: %s"
                                             % (source, destination, self.remote_frontend, 
                                                ex.__class__.__name__, str(ex)))
 
@@ -247,7 +248,7 @@ class SshTransport(Transport):
                               % (source, self.remote_frontend, destination))
             self.sftp.get(source, destination)
         except Exception, ex:
-            raise Exceptions.TransportError("Could not download '%s' on host '%s' to '%s': %s: %s"
+            raise gc3libs.Exceptions.TransportError("Could not download '%s' on host '%s' to '%s': %s: %s"
                                             % (source, self.remote_frontend, destination, 
                                                ex.__class__.__name__, str(ex)))
 
@@ -257,7 +258,7 @@ class SshTransport(Transport):
             gc3libs.log.debug("SshTransport.remove(): path: %s; remote host: %s" % (path, self.remote_frontend))
             self.sftp.remove(path)
         except IOError, ex:
-            raise Exceptions.TransportError("Could not remove '%s' on host '%s': %s: %s"
+            raise gc3libs.Exceptions.TransportError("Could not remove '%s' on host '%s': %s: %s"
                                             % (path, self.remote_frontend,
                                                ex.__class__.__name__, str(ex)))
         
@@ -274,7 +275,7 @@ class SshTransport(Transport):
                 raise Exception("Remote command '%s' failed with code %d: %s" 
                                 % (_command, exit_code, stderr))
         except Exception, ex:
-            raise Exceptions.TransportError("Could not remove tree '%s' on host '%s': %s: %s"
+            raise gc3libs.Exceptions.TransportError("Could not remove tree '%s' on host '%s': %s: %s"
                                             % (path, self.remote_frontend,
                                                ex.__class__.__name__, str(ex)))
 
@@ -283,7 +284,7 @@ class SshTransport(Transport):
         try:
             return self.sftp.open(source, mode, bufsize)
         except Exception, ex:
-            raise Exceptions.TransportError("Could not open file '%s' on host '%s': %s: %s"
+            raise gc3libs.Exceptions.TransportError("Could not open file '%s' on host '%s': %s: %s"
                                             % (source, self.remote_frontend,
                                                ex.__class__.__name__, str(ex)))
                        

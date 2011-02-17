@@ -33,7 +33,7 @@ import time
 
 import gc3libs
 from gc3libs.authentication import Auth
-from gc3libs.Exceptions import ConfigurationError, RecoverableAuthError, UnrecoverableAuthError
+import gc3libs.Exceptions
 
 class GridAuth(object):
 
@@ -53,7 +53,7 @@ class GridAuth(object):
             self.__dict__.update(auth)
             self.validity_timestamp = 0 # Default init value for auth enalbed validity. 
         except AssertionError, x:
-            raise ConfigurationError('Erroneous configuration parameter: %s' % str(x))
+            raise gc3libs.Exceptions.ConfigurationError('Erroneous configuration parameter: %s' % str(x))
 
 
     def check(self):
@@ -110,7 +110,7 @@ class GridAuth(object):
             # User certificate
             if not self.user_cert_valid:
                 if self.cert_renewal_method == 'manual':
-                    raise UnrecoverableAuthError("User certificate expired, please renew it.")
+                    raise gc3libs.Exceptions.UnrecoverableAuthError("User certificate expired, please renew it.")
 
                 _cmd = shlex.split("slcs-init --idp %s -u %s -p %s -k %s" 
                                    % (self.idp, self.aai_username, input_passwd, input_passwd))
@@ -122,24 +122,24 @@ class GridAuth(object):
                     (stdout, stderr) = p.communicate()
                     if p.returncode != 0:
                         # assume transient error (i.e wrong password or so)
-                        raise RecoverableAuthError("Error running '%s': %s."
+                        raise gc3libs.Exceptions.RecoverableAuthError("Error running '%s': %s."
                                                    " Assuming temporary failure, will retry later." 
                                                    % (_cmd, stdout)) 
                 except OSError, x:
                     if x.errno == errno.ENOENT or x.errno == errno.EPERM \
                             or x.errno == errno.EACCES:
-                        raise UnrecoverableAuthError("Failed running '%s': %s."
+                        raise gc3libs.Exceptions.UnrecoverableAuthError("Failed running '%s': %s."
                                                      " Please verify that the command 'slcs-init' is"
                                                      " available on your $PATH and that it actually works."
                                                      % (_cmd, str(x)))
                     else:
-                        raise UnrecoverableAuthError("Failed running '%s': %s."
+                        raise gc3libs.Exceptions.UnrecoverableAuthError("Failed running '%s': %s."
                                                      % (_cmd, str(x)))
                 except Exception, ex:
                     # Intercept any other Error that subprocess may raise
                     gc3libs.log.debug("Unexpected error in GridAuth: %s: %s" 
                                       % (ex.__class__.__name__, ex.message))
-                    raise UnrecoverableAuthError("Error renewing SLCS certificate: %s" 
+                    raise gc3libs.Exceptions.UnrecoverableAuthError("Error renewing SLCS certificate: %s" 
                                                  % str(ex))
 
                 new_cert = True
@@ -180,7 +180,7 @@ class GridAuth(object):
 
                 except ValueError, x:
                     # FIXME: is this more a programming error ?
-                    raise RecoverableAuthError(str(x))
+                    raise gc3libs.Exceptions.RecoverableAuthError(str(x))
                 except OSError, x:
                     if x.errno == errno.ENOENT or x.errno == errno.EPERM or x.errno == errno.EACCES:
                         if self.type == 'grid-proxy':
@@ -190,21 +190,21 @@ class GridAuth(object):
                         else:
                             # should not happen!
                             raise AssertionError("Unknown auth type '%s'" % self.type)
-                        raise UnrecoverableAuthError("Failed running '%s': %s."
+                        raise gc3libs.Exceptions.UnrecoverableAuthError("Failed running '%s': %s."
                                                      " Please verify that this command is available in"
                                                      " your $PATH and that it works."
                                                      % (cmd, str(x)))
                     else:
-                        raise UnrecoverableAuthError("Unrecoverable error in enabling"
+                        raise gc3libs.Exceptions.UnrecoverableAuthError("Unrecoverable error in enabling"
                                                      " Grid authentication: %s" % str(x))
                 except Exception, ex:
                     # Intercept any other Error that subprocess may raise 
                     gc3libs.log.debug("Unhandled error in GridAuth: %s: %s" 
                                       % (ex.__class__.__name__, ex.message))
-                    raise UnrecoverableAuthError(str(ex.message))
+                    raise gc3libs.Exceptions.UnrecoverableAuthError(str(ex.message))
                 
             if not self.check():
-                raise RecoverableAuthError("Temporary failure in enabling Grid authentication."
+                raise gc3libs.Exceptions.RecoverableAuthError("Temporary failure in enabling Grid authentication."
                                            " Grid/VOMS proxy status: %s."
                                            " user certificate status: %s" 
                                            % (utils.ifelse(self.proxy_valid, "valid", "invalid"),

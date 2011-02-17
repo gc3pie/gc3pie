@@ -24,7 +24,7 @@ __version__ = '$Revision$'
 
 import gc3libs
 from gc3libs.authentication import Auth
-
+import gc3libs.Exceptions
 
 class SshAuth(object):
     def __init__(self, **auth):
@@ -37,7 +37,7 @@ class SshAuth(object):
             auth['username']
             self.__dict__.update(auth)
         except AssertionError, x:
-            raise ConfigurationError('Erroneous configuration parameter: %s' % str(x))
+            raise gc3libs.Exceptions.ConfigurationError('Erroneous configuration parameter: %s' % str(x))
 
     def check(self):
         gc3libs.log.debug('Checking auth: ssh')
