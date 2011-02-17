@@ -48,13 +48,6 @@ import gc3libs.utils as utils
 import gc3utils
 
 
-## defaults
-DEFAULT_CONFIG_FILE_LOCATIONS = [ 
-    "/etc/gc3/gc3pie.conf", 
-    os.path.join(gc3libs.Default.RCDIR, "gc3pie.conf") 
-    ]
-
-
 class _BaseCmd(cli.app.CommandLineApp):
     """
     Base class for GC3Utils scripts.  
@@ -216,7 +209,7 @@ class _BaseCmd(cli.app.CommandLineApp):
         self.log.propagate = True
 
         # interface to the GC3Libs main functionality
-        self._core = self._get_core(DEFAULT_CONFIG_FILE_LOCATIONS)
+        self._core = self._get_core(gc3libs.Default.CONFIG_FILE_LOCATIONS)
 
         jobs_dir = self.params.session
         if jobs_dir != gc3libs.Default.JOBS_DIR:
