@@ -36,9 +36,8 @@ warnings.simplefilter("ignore")
 import gc3libs
 from gc3libs import Application, Run
 from gc3libs.backends.sge import SgeLrms
-# from gc3libs.backends.arc import ArcLrms
 from gc3libs.authentication import Auth
-from gc3libs.Exceptions import *
+import gc3libs.Exceptions
 import gc3libs.Resource as Resource
 import gc3libs.scheduler as scheduler
 import gc3libs.utils as utils 
@@ -48,7 +47,7 @@ class Core:
 
     def __init__(self, resource_list, auths, auto_enable_auth):
         if len(resource_list) == 0:
-            raise NoResources("Resource list has length 0")
+            raise gc3libs.Exceptions.NoResources("Resource list has length 0")
         self._resources = resource_list
         self.auths = auths
         self.auto_enable_auth = auto_enable_auth
@@ -88,7 +87,7 @@ class Core:
         """
 
         if app.execution.state != Run.State.TERMINATED:
-            raise InvalidOperation("Attempting to free resources of job '%s',"
+            raise gc3libs.Exceptions.InvalidOperation("Attempting to free resources of job '%s',"
                                    " which is in non-terminal state." % app)
 
         auto_enable_auth = kw.get('auto_enable_auth', self.auto_enable_auth)
@@ -122,7 +121,7 @@ class Core:
                                     ex.__class__.__name__, str(ex), exc_info=True)
                 continue
         if len(_lrms_list) == 0:
-            raise NoResources("Could not initialize any computational resource"
+            raise gc3libs.Exceptions.NoResources("Could not initialize any computational resource"
                               " - please check log and configuration file.")
 
         gc3libs.log.debug('Performing brokering ...')
@@ -132,7 +131,7 @@ class Core:
         gc3libs.log.debug('Scheduler returned %d matching resources',
                            len(_selected_lrms_list))
         if 0 == len(_selected_lrms_list):
-            raise NoResources("No available resource can accomodate the requested"
+            raise gc3libs.Exceptions.NoResources("No available resource can accomodate the requested"
                               " CPU/memory/wall-clock time combination.")
 
         exs = [ ]
@@ -199,14 +198,14 @@ class Core:
                     try:
                         self.auths.get(lrms._resource.auth)
                         state = lrms.update_job_state(app)
-                    except (InvalidArgument, ConfigurationError):
+                    except (gc3libs.Exceptions.InvalidArgument, gc3libs.Exceptions.ConfigurationError):
                         # Unrecoverable; no sense in continuing --
                         # pass immediately on to client code and let
                         # it handle this...
                         raise
-                    except UnrecoverableAuthError:
+                    except gc3libs.Exceptions.UnrecoverableAuthError:
                         raise
-                    except RecoverableAuthError:
+                    except gc3libs.Exceptions.RecoverableAuthError:
                         raise
                     except Exception, ex:
                         gc3libs.log.debug("Error getting status of application '%s': %s: %s",
@@ -243,7 +242,7 @@ class Core:
                     handler_name = str(app.execution.state).lower()
                     if hasattr(app, handler_name):
                         getattr(app, handler_name)()
-            except (InvalidArgument, ConfigurationError):
+            except (gc3libs.Exceptions.InvalidArgument, gc3libs.Exceptions.ConfigurationError):
                 # Unrecoverable; no sense in continuing --
                 # pass immediately on to client code and let
                 # it handle this...
@@ -282,7 +281,7 @@ class Core:
         """
         job = app.execution
         if job.state in [ Run.State.NEW, Run.State.SUBMITTED ]:
-            raise OutputNotAvailableError("Output not available:"
+            raise gc3libs.Exceptions.OutputNotAvailableError("Output not available:"
                                           " Job '%s' currently in state '%s'"
                                           % (app, app.execution.state))
 
@@ -293,7 +292,7 @@ class Core:
             try:
                 download_dir = app.output_dir
             except AttributeError:
-                raise InvalidArgument("`Core.fetch_output` called with no explicit download directory,"
+                raise gc3libs.Exceptions.InvalidArgument("`Core.fetch_output` called with no explicit download directory,"
                                       " but `Application` object '%s' has no `output_dir` set either."
                                       % app)
         try:
@@ -312,7 +311,7 @@ class Core:
             lrms = self._get_backend(job.resource_name)
             self.auths.get(lrms._resource.auth)
             lrms.get_results(app, download_dir)
-        except DataStagingError, ex:
+        except gc3libs.Exceptions.DataStagingError, ex:
             job.signal = Run.Signals.DataStagingFailure
             ex = app.fetch_output_error(ex)
             if isinstance(ex, Exception):
@@ -464,7 +463,7 @@ class Core:
                     elif _resource.type == gc3libs.Default.SGE_LRMS:
                         _lrms = SgeLrms(_resource, self.auths)
                     else:
-                        raise ConfigurationError("Unknown resource type '%s'" 
+                        raise gc3libs.Exceptions.ConfigurationError("Unknown resource type '%s'" 
                                                  % _resource.type)
                 except Exception, ex:
                     gc3libs.log.error("Error in creating resource %s: %s."
@@ -473,7 +472,7 @@ class Core:
                     raise
 
         if _lrms is None:
-            raise InvalidResourceName("Cannot find computational resource '%s'" 
+            raise gc3libs.Exceptions.InvalidResourceName("Cannot find computational resource '%s'" 
                                       % resource_name)
 
         return _lrms
@@ -599,7 +598,7 @@ def read_config(*locations):
             del resources[resource_name]
 
     if files_successfully_read == 0:
-        raise NoConfigurationFile("Could not read any configuration file; tried locations '%s'."
+        raise gc3libs.Exceptions.NoConfigurationFile("Could not read any configuration file; tried locations '%s'."
                                   % str.join("', '", locations))
 
     return (resources, auths)
@@ -777,7 +776,7 @@ class Engine(object):
                 elif task.execution.state == Run.State.TERMINATED:
                     transitioned.append(index) # task changed state, mark as to remove
                     self._terminated.append(task)
-            except ConfigurationError:
+            except gc3libs.Exceptions.ConfigurationError:
                 # Unrecoverable; no sense in continuing -- pass
                 # immediately on to client code and let it handle
                 # this...

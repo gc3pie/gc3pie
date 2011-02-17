@@ -61,7 +61,7 @@ import gc3libs
 import gc3libs.core
 import gc3libs.persistence
 import gc3libs.utils
-
+import gc3libs.Exceptions
 
 
 ## parse command-line
@@ -239,7 +239,7 @@ class _Script(cli.app.CommandLineApp):
             return 13
         except SystemExit, ex:
             return ex.code
-        except InvalidUsage, ex:
+        except gc3libs.Exceptions.InvalidUsage, ex:
             # Fatal errors do their own printing, we only add a short usage message
             sys.stderr.write("Type '%s --help' to get usage help.\n" % self.name)
             return 1
@@ -376,8 +376,8 @@ class GC3UtilsScript(_Script):
         try:
             self.log.debug('Creating instance of Core ...')
             return gc3libs.core.Core(* gc3libs.core.import_config(config_file_locations, auto_enable_auth))
-        except NoResources:
-            raise FatalError("No computational resources defined.  Please edit the configuration file '%s'." 
+        except gc3libs.Exceptions.NoResources:
+            raise gc3libs.Exceptions.FatalError("No computational resources defined.  Please edit the configuration file '%s'." 
                              % config_file_locations)
         except:
             self.log.debug("Failed loading config file from '%s'", 
@@ -421,7 +421,7 @@ class GC3UtilsScript(_Script):
             resource_list.extend(name for name in item.split(','))
         kept = self._core.select_resource(lambda r: r.name in resource_list)
         if kept == 0:
-            raise NoResources("No resources match the names '%s'" 
+            raise gc3libs.Exceptions.NoResources("No resources match the names '%s'" 
                               % str.join(',', resource_list))
 
 
