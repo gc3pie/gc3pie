@@ -17,13 +17,25 @@ Installation
 These instructions show how to install the ``gcodeml`` script from the
 GC3 svn repository into its own python environment.
 
-0. Prerequisites are: ``svn`` (package ``subversion`` in CentOS5 and
-   Debian/Ubuntu), the Python development headers and libraries
-   (package ``python-devel`` in CentOS5, ``python-dev`` in Debian/Ubuntu).
+0. Install software prerequisites: 
+   
+   * On Debian/Ubuntu, install packages: ``subversion``,
+     ``python-dev``, ``python-profiler`` and the C/C++ compiler::
+     
+       apt-get install subversion python-dev python-profiler gcc g++
 
-   These should be available in any decent Linux distribution, not
-   just CentOS5 and Debian/Ubuntu.
+   * On CentOS5, install packages ``subversion`` and ``python-devel``
+     and the C/C++ compiler::
 
+       yum install subversion python-devel gcc gcc-c++
+
+   * On other Linux distributions, you will need to install:
+     - the ``svn`` command (from the SubVersion_ VCS)
+     - Python development headers and libraries (for installing 
+       extension libraries written in C/C++)
+     - the Python package ``pstats`` (it's part of the Python
+       standard library, but it's sometimes installed separately)
+     - a C/C++ compiler (this is usually installed by default).
 
 1. If it's not already installed, get the `virtualenv` Python package
    and install it::
