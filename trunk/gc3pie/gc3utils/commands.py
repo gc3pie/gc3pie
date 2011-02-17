@@ -40,7 +40,6 @@ import time
 from gc3libs import Application, Run
 import gc3libs.application.gamess as gamess
 import gc3libs.application.rosetta as rosetta
-import gc3libs.Default as Default
 from   gc3libs.Exceptions import *
 import gc3libs.core as core
 import gc3libs.persistence
@@ -191,7 +190,7 @@ class _BaseCmd(cli.app.CommandLineApp):
         ## setup of base classes
         cli.app.CommandLineApp.setup(self)
 
-        self.add_param("-s", "--session", action="store", default=Default.JOBS_DIR,
+        self.add_param("-s", "--session", action="store", default=gc3libs.Default.JOBS_DIR,
                        help="Directory where job information will be stored.")
         self.add_param("-v", "--verbose", action="count", dest="verbose", default=0,
                        help="Be more detailed in reporting program activity."
@@ -220,7 +219,7 @@ class _BaseCmd(cli.app.CommandLineApp):
         self._core = self._get_core(DEFAULT_CONFIG_FILE_LOCATIONS)
 
         jobs_dir = self.params.session
-        if jobs_dir != Default.JOBS_DIR:
+        if jobs_dir != gc3libs.Default.JOBS_DIR:
             if (not os.path.isdir(jobs_dir)
                 and not jobs_dir.endswith('.jobs')):
                 jobs_dir = jobs_dir + '.jobs'
@@ -915,9 +914,9 @@ class cmd_glist(_BaseCmd):
             table.header([resource.name, ""])
 
             table.add_row(("Frontend name", resource.frontend))
-            if resource.type == Default.ARC_LRMS:
+            if resource.type == gc3libs.Default.ARC_LRMS:
                 resource_access_type = "arc"
-            elif resource.type == Default.SGE_LRMS:
+            elif resource.type == gc3libs.Default.SGE_LRMS:
                 resource_access_type = "ssh"
             table.add_row(("Resource access type", resource_access_type))
             if resource.has_key('auth'):

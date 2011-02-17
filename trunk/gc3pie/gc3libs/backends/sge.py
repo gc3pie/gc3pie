@@ -33,7 +33,6 @@ import time
 
 from gc3libs import log, Run
 from gc3libs.backends import LRMS
-import gc3libs.Default as Default
 from gc3libs.Exceptions import *
 import gc3libs.utils as utils # first, defaultdict, to_bytes
 from gc3libs.utils import same_docstring_as
@@ -284,7 +283,7 @@ class SgeLrms(LRMS):
           * `r.auth` must be a valid key to pass to `Auth.get()`.
         """
         # XXX: should these be `InternalError` instead?
-        assert resource.type == Default.SGE_LRMS, \
+        assert resource.type == gc3libs.Default.SGE_LRMS, \
             "SgeLRMS.__init__(): Failed. Resource type expected 'sge'. Received '%s'" \
             % resource.type
 

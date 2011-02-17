@@ -29,7 +29,6 @@ import pickle
 import sys
 
 import gc3libs
-import gc3libs.Default
 from gc3libs.Exceptions import LoadError
 from gc3libs.utils import progressive_number, same_docstring_as
 

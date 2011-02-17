@@ -55,7 +55,6 @@ import time
 
 import gc3libs
 import gc3libs.core
-import gc3libs.Default
 import gc3libs.persistence
 import gc3libs.utils
 

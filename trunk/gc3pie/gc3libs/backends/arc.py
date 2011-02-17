@@ -42,7 +42,6 @@ from gc3libs.backends import LRMS
 import gc3libs.Exceptions as Exceptions
 from gc3libs.utils import *
 from gc3libs.Resource import Resource
-import gc3libs.Default as Default
 
 
 class ArcLrms(LRMS):
@@ -51,7 +50,7 @@ class ArcLrms(LRMS):
     """
     def __init__(self,resource, auths):
         # Normalize resource types
-        assert resource.type == Default.ARC_LRMS, \
+        assert resource.type == gc3libs.Default.ARC_LRMS, \
             "ArcLRMS.__init__(): Failed. Resource type expected 'arc'. Received '%s'" \
             % resource.type
 
@@ -64,7 +63,7 @@ class ArcLrms(LRMS):
             # Convert from hours to minutes
             self._resource.max_walltime = self._resource.max_walltime * 60
             
-        self._queues_cache_time = Default.ARC_CACHE_TIME # XXX: should it be configurable?
+        self._queues_cache_time = gc3libs.Default.ARC_CACHE_TIME # XXX: should it be configurable?
 
         arcnotifier = arclib.Notify_getNotifier()
         arcnotifier.SetOutStream(arcnotifier.GetNullStream())
