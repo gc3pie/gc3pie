@@ -54,7 +54,7 @@ keys=logfile,stderr
 # rotate logfile on monday every week
 level=DEBUG
 class=handlers.TimedRotatingFileHandler
-args=('%(HOMEDIR)s/.gc3/debug.log','w0',1,5)
+args=('%(RCDIR)s/debug.log','w0',1,5)
 formatter=logfile
 
 [handler_stderr]
