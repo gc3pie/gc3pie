@@ -27,30 +27,22 @@ import os
 import os.path
 
 
-HOMEDIR = os.path.expandvars('$HOME')
-RCDIR = os.path.join(HOMEDIR, ".gc3")
-CONFIG_FILE_LOCATION = os.path.join(RCDIR, "gc3pie.conf")
-CONFIG_FILE_LOCATIONS = [ "/etc/gc3/gc3pie.conf", CONFIG_FILE_LOCATION ]
-LOG_FILE_LOCATION = RCDIR + '/logging.conf'
-JOBLIST_FILE = RCDIR + "/.joblist"
-JOBLIST_LOCK = RCDIR + "/.joblist_lock"
-JOB_FOLDER_LOCATION = os.getcwd()
-AAI_CREDENTIAL_REPO = RCDIR + "/aai_credential"
-GAMESS_XRSL_TEMPLATE = os.path.expandvars("$HOME/.gc3/gamess_template.xrsl")
-JOB_FILE = ".lrms_id"
-JOB_FINISHED_FILE = ".finished"
-JOB_LOG = ".log"
-DOWNLOAD_DIR = os.getcwd()
+RCDIR = os.path.join(os.path.expandvars('$HOME'), ".gc3")
+CONFIG_FILE_LOCATIONS = [
+    # system-wide config file
+    "/etc/gc3/gc3pie.conf",
+    # user-private config file
+    os.path.join(RCDIR, "gc3pie.conf")
+    ]
 JOBS_DIR = os.path.join(RCDIR, "jobs")
 
+ARC_LRMS = 'arc'
 ARC_CACHE_TIME = 90 # only update ARC resources status every this seconds
 
-ARC_LRMS = 1
-SGE_LRMS = 2
-
+SGE_LRMS = 'ssh_sge'
 # Transport information
 SSH_PORT = 22
 SSH_CONNECT_TIMEOUT = 30
 
 # Proxy
-PROXY_VALIDITY_THRESHOLD = 600 # proxy validity threshold in seconds. If proxy is expiring before the thresold, it will be mrked as to be renewed.
+PROXY_VALIDITY_THRESHOLD = 600 # Proxy validity threshold in seconds. If proxy is expiring before the thresold, it will be marked as to be renewed.

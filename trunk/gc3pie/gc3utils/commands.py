@@ -912,9 +912,9 @@ class cmd_glist(_BaseCmd):
             table.header([resource.name, ""])
 
             table.add_row(("Frontend name", resource.frontend))
-            if resource.type is Default.ARC_LRMS:
+            if resource.type == Default.ARC_LRMS:
                 resource_access_type = "arc"
-            elif resource.type is Default.SGE_LRMS:
+            elif resource.type == Default.SGE_LRMS:
                 resource_access_type = "ssh"
             table.add_row(("Resource access type", resource_access_type))
             if resource.has_key('auth'):
