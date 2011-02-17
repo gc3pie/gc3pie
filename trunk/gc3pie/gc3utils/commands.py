@@ -257,8 +257,11 @@ class _BaseCmd(cli.app.CommandLineApp):
                              % (self.name, str(ex)))
             return 1
         except Exception, ex:
-            self.log.critical("%s: %s" % (ex.__class__.__name__, str(ex)), 
-                              exc_info=(self.params.verbose > 2))
+            try:
+                self.log.critical("%s: %s" % (ex.__class__.__name__, str(ex)), 
+                                  exc_info=(self.params.verbose > 2))
+            except:
+                sys.stderr.write("%s: ERROR: %s: %s" % (self.name, ex.__class__.__name__, str(ex)))
             if isinstance(ex, cli.app.Abort):
                 sys.exit(ex.status)
             elif isinstance(ex, EnvironmentError):
