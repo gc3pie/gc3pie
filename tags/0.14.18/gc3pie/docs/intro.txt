@@ -1,0 +1,41 @@
+.. This file follows reStructuredText markup syntax; see
+   http://docutils.sf.net/rst.html for more information
+
+++++++++++++++
+ Introduction
+++++++++++++++
+
+GC3Libs is a python package for controlling the life-cycle of a Grid
+or batch computational job.
+
+GC3Libs provides services for submitting computational jobs to Grids
+and batch systems, controlling their execution, persisting job
+information, and retrieving the final output.
+
+GC3Libs takes an application-oriented approach to batch computing. A
+generic `Application` class provides the basic operations for
+controlling remote computations, but different `Application`
+subclasses can expose adapted interfaces, focusing on the most
+relevant aspects of the application being represented.
+
+This document is the technical reference for the GC3Libs programming
+model, aimed at programmers who want to use GC3Libs to implement
+computational workflows in Python.
+
+
+Outline of the contents
+=======================
+
+The Overview_ section presents the main concepts behind GC3Libs
+programming.  
+
+The `GC3Libs modules`_ section is a comprehensive list of
+all the modules, classes and functions comprising GC3Libs; its content
+is automatically generated from the docstrings in the source code.
+
+
+.. (for Emacs only)
+..
+  Local variables:
+  mode: rst
+  End:
