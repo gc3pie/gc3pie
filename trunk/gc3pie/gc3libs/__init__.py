@@ -87,14 +87,15 @@ def configure_logger(level=logging.ERROR,
                              + ': [%(asctime)s] %(levelname)-8s: %(message)s'),
                      datefmt='%Y-%m-%d %H:%M:%S'):
     """
-    Configure the ``gc3libs`` logger.
+    Configure the ``gc3.gc3libs`` logger.
 
     Arguments `level`, `format` and `datefmt` set the corresponding
     arguments in the `logging.basicConfig()` call.  
 
-    If a user configuration file exists in ``~/.gc3/logging.conf``, it
-    is read and used for more advanced configuration; if it does not
-    exist, then a sample one is created.
+    If a user configuration file exists in file NAME.log.conf in the
+    ``Default.RCDIR`` directory (usually ``~/.gc3``), it is read and
+    used for more advanced configuration; if it does not exist, then a
+    sample one is created.
     """
     if name is None:
         name = os.path.basename(sys.argv[0])
@@ -110,8 +111,8 @@ def configure_logger(level=logging.ERROR,
     log.propagate = 1
     # Up to Python 2.5, the `logging` library disables all existing
     # loggers upon reconfiguration, and fails to re-create them when
-    # getLogger() is called again.  We work around this the hard way,
-    # using an undocumented internal variable; ignore errors and hope
+    # getLogger() is called again.  We work around this the hard way:
+    # using an undocumented internal variable, ignore errors, and hope
     # for the best.
     try:
         log.disabled = 0
