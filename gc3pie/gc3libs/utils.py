@@ -34,6 +34,7 @@ import re
 import shelve
 import sys
 import time
+import cStringIO as StringIO
 import UserDict
 
 from lockfile import FileLock
@@ -445,6 +446,77 @@ class Log(object):
     def __str__(self):
         """Return all messages texts in a single string, separated by newline characters."""
         return str.join('\n', [record[0] for record in self._messages])
+
+
+def prettyprint(D, indent=0, width=0, maxdepth=None, step=4,
+                only_keys=None, output=sys.stdout):
+    """
+    Print dictionary instance `D` in a YAML-like format.
+    Each output line consists of:
+      * `indent` spaces,
+      * the key name,
+      * a colon character ``:``,
+      * the associated value.
+    If the total line length exceeds `width`, the value is printed
+    on the next line, indented by further `step` spaces; a value of 0 for
+    `width` disables this line wrapping.
+
+    Optional argument `only_keys` can be a callable that must return
+    `True` when called with keys that should be printed, or a list of
+    key names to print.
+
+    Dictionary instances appearing as values are processed recursively
+    (up to `maxdepth` nesting).  Each nested instance is printed
+    indented `step` spaces from the enclosing dictionary.
+    """
+    for k,v in sorted(D.iteritems()):
+        leading_spaces = indent * ' '
+        if only_keys is not None:
+            try:
+                # is `only_keys` a filter function?
+                if not only_keys(k):
+                    continue
+            except:
+                # no, then it must be a list of key names
+                if str(k) not in only_keys:
+                    continue
+        first = str.join('', [leading_spaces, str(k), ': '])
+        if isinstance(v, dict):
+            if maxdepth is None or maxdepth > 0:
+                if maxdepth is None:
+                    depth = None
+                else:
+                    depth = maxdepth-1
+                sstream = StringIO.StringIO()
+                prettyprint(v, indent+step, width, depth, step, only_keys, sstream)
+                second = sstream.getvalue()
+                sstream.close()
+            elif maxdepth == 0:
+                second = "..."
+        elif isinstance(v, (list, tuple)):
+            second = str.join(', ', [str(item) for item in v])
+        else:
+            second = str(v)
+        # wrap overlong lines
+        if (width > 0 and len(first) + len(second) > width):
+            first += '\n'
+        # indent a multi-line block by indent+step spaces
+        if '\n' in second:
+            lines = second.split('\n')
+            second = ''
+            for line in lines:
+                second = str.join('', [
+                    second,
+                    ' ' * (indent+step),
+                    line.strip(),
+                    '\n'
+                    ])
+        # there can be multiple trailing '\n's, which we remove here
+        second = second.rstrip()
+        # finally print line(s)
+        output.write(first)
+        output.write(second)
+        output.write('\n')
 
 
 def mkdir_with_backup(path):
