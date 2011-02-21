@@ -363,6 +363,21 @@ class cmd_gstat(_BaseCmd):
     """
     Print job state.
     """
+    verbose_logging_threshold = 1
+
+    def setup_options(self):
+        self.add_param("-l", "--state", action="store", dest="states", 
+                       metavar="STATE", default=None, 
+                       help="Only report about jobs in the given state."
+                       " Multiple states are allowed: separate them with commas.")
+        self.add_param("-n", "--no-update", action="store_false",
+                       dest="update", default=True,
+                       help="Do not update job statuses;"
+                       " only print what's in the local database.")
+        self.add_param("-p", "--print", action="store", dest="keys", 
+                       metavar="LIST", default=None, 
+                       help="Additionally print job attributes whose name appears in"
+                       " this comma-separated list.")
 
     def main(self):
         if len(self.params.args) == 0:
@@ -373,24 +388,62 @@ class cmd_gstat(_BaseCmd):
                 raise NotImplementedError("Job storage module does not allow listing all jobs."
                                           " Please specify the job IDs you wish to operate on.")
 
-        table = Texttable(0) # max_width=0 => dynamically resize cells
-        table.set_deco(Texttable.HEADER) # also: .VLINES, .HLINES .BORDER
-        table.set_cols_align(['l', 'l', 'l'])
-        table.header(["Job ID", "State", "Info"])
+        if len(self.params.args) == 0:
+            print("No jobs submitted.")
+            return 0
 
+        # try to determine how many lines of output can we fit in a screen
+        try:
+            capacity = int(os.environ['LINES']) - 5
+        except:
+            capacity = 20
+
+        # limit to specified job states?
+        if self.params.states is not None:
+            states = self.params.states.split(',')
+        else:
+            states = None
+
+        # any additional values to print?
+        if self.params.keys is not None:
+            keys = self.params.keys.split(',')
+        else:
+            keys = [ ]
+        
+        # update states and compute statistics
+        stats = utils.defaultdict(lambda: 0)
+        tot = 0
         rows = [ ]
         for app in self._get_jobs(self.params.args):
-            self._core.update_job_state(app)
-            rows.append((app, app.execution.state, app.execution.info))
-            self._store.replace(app.persistent_id, app)
+            if self.params.update:
+                self._core.update_job_state(app)
+                self._store.replace(app.persistent_id, app)
+            if states is None or app.execution.state in states:
+                rows.append([app, app.execution.state, app.execution.info] +
+                            [ app.execution.get(name, "N/A") for name in keys ])
+            stats[app.execution.state] += 1
+            tot += 1
 
-        # Print result
-        if len(rows) == 0:
-            print ("No jobs submitted.")
+        if len(rows) > capacity and self.params.verbose == 0:
+            # only print table with statistics
+            table = Texttable(0) # max_width=0 => dynamically resize cells
+            table.set_deco(0) # also: .VLINES, .HLINES .BORDER
+            table.set_cols_align(['r', 'c', 'r'])
+            for state, num in sorted(stats.items()):
+                if (states is None) or (str(state) in states):
+                    table.add_row([
+                        state,
+                        "%d/%d" % (num, tot),
+                        "%.2f%%" % (100.0 * num / tot)
+                        ])
         else:
+            # print table of job status
+            table = Texttable(0) # max_width=0 => dynamically resize cells
+            table.set_deco(Texttable.HEADER) # also: .VLINES, .HLINES .BORDER
+            table.set_cols_align(['l'] * (3 + len(keys)))
+            table.header(["Job ID", "State", "Info"] + keys)
             table.add_rows(sorted(rows), header=False)
-            print(table.draw())
-
+        print(table.draw())
         return 0
 
 
