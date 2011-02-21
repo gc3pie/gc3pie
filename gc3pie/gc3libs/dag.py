@@ -31,7 +31,7 @@ __version__ = '$Revision$'
 
 
 from gc3libs import log, Run, Task
-import gc3libs.Exceptions
+import gc3libs.exceptions
 
 
 class TaskCollection(Task):
@@ -109,12 +109,12 @@ class TaskCollection(Task):
                                         overwrite)
     def peek(self, what, offset=0, size=None):
         """
-        Raise a `gc3libs.Exceptions.InvalidOperation` error, as there
+        Raise a `gc3libs.exceptions.InvalidOperation` error, as there
         is no meaningful semantics that can be defined for `peek` into
         a generic collection of tasks.
         """
         # is there any sensible semantic here?
-        raise gc3libs.Exceptions.InvalidOperation("Cannot `peek()` on a task collection.")
+        raise gc3libs.exceptions.InvalidOperation("Cannot `peek()` on a task collection.")
 
     def progress(self):
         raise NotImplementedError("Called abstract method TaskCollection.progress() - this should be overridden in derived classes.")

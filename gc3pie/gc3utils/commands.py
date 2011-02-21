@@ -40,7 +40,7 @@ import time
 from gc3libs import Application, Run
 import gc3libs.application.gamess as gamess
 import gc3libs.application.rosetta as rosetta
-import gc3libs.Exceptions
+import gc3libs.exceptions
 import gc3libs.cmdline
 import gc3libs.core as core
 import gc3libs.persistence
@@ -83,7 +83,7 @@ class cmd_gclean(_BaseCmd):
 
     def main(self):
         if self.params.all and len(self.params.args) > 0:
-            raise gc3libs.Exceptions.InvalidUsage("Option '-A' conflicts with list of job IDs to remove.")
+            raise gc3libs.exceptions.InvalidUsage("Option '-A' conflicts with list of job IDs to remove.")
     
         if self.params.all:
             args = self._store.list()
@@ -125,7 +125,7 @@ class cmd_gclean(_BaseCmd):
                                              app, ex.__class__.__name__, str(ex))
                             continue
 
-            except gc3libs.Exceptions.LoadError:
+            except gc3libs.exceptions.LoadError:
                 if self.params.force:
                     pass
                 else:
@@ -228,7 +228,7 @@ class cmd_gsub(_BaseCmd):
         args = self.params.args
         if application_tag == 'gamess':
             if len(args) < 1:
-                raise gc3libs.Exceptions.InvalidUsage("Wrong number of arguments:"
+                raise gc3libs.exceptions.InvalidUsage("Wrong number of arguments:"
                                    " at least an '.inp' file argument should be specified"
                                    " for the 'gamess' application.")
             self.log.debug("Submitting GAMESS application with arguments: %s" % args)
@@ -245,7 +245,7 @@ class cmd_gsub(_BaseCmd):
                  )
         elif application_tag == 'rosetta':
             if len(args) < 3:
-                raise gc3libs.Exceptions.InvalidUsage("Wrong number of arguments for the 'rosetta' application")
+                raise gc3libs.exceptions.InvalidUsage("Wrong number of arguments for the 'rosetta' application")
             if ':' in args:
                 colon = args.index(':')
                 inputs = args[2:colon]
@@ -264,7 +264,7 @@ class cmd_gsub(_BaseCmd):
                 requested_walltime = self.params.walltime,
                 )
         else:
-            raise gc3libs.Exceptions.InvalidUsage("Unknown application '%s'" % application_tag)
+            raise gc3libs.exceptions.InvalidUsage("Unknown application '%s'" % application_tag)
 
         if self.params.resource_name:
             self._select_resources(self.params.resource_name)
@@ -424,11 +424,11 @@ class cmd_gget(_BaseCmd):
                 app = self._store.load(jobid)
 
                 if app.execution.state == Run.State.NEW:
-                    raise gc3libs.Exceptions.InvalidOperation("Job '%s' is not yet submitted. Output cannot be retrieved"
+                    raise gc3libs.exceptions.InvalidOperation("Job '%s' is not yet submitted. Output cannot be retrieved"
                                            % app.persistent_id)
 
                 if app.final_output_retrieved:
-                    raise gc3libs.Exceptions.InvalidOperation("Output of '%s' already downloaded to '%s'" 
+                    raise gc3libs.exceptions.InvalidOperation("Output of '%s' already downloaded to '%s'" 
                                            % (app.persistent_id, app.output_dir))
 
                 if self.params.download_dir is None:
@@ -477,9 +477,9 @@ class cmd_gkill(_BaseCmd):
 
                 self.log.debug("gkill: Job '%s' in state %s" % (jobid, app.execution.state))
                 if app.execution.state == Run.State.NEW:
-                    raise gc3libs.Exceptions.InvalidOperation("Job '%s' not submitted." % app)
+                    raise gc3libs.exceptions.InvalidOperation("Job '%s' not submitted." % app)
                 if app.execution.state == Run.State.TERMINATED:
-                    raise gc3libs.Exceptions.InvalidOperation("Job '%s' is already in terminal state" % app)
+                    raise gc3libs.exceptions.InvalidOperation("Job '%s' is already in terminal state" % app)
                 else:
                     self._core.kill(app)
                     self._store.replace(jobid, app)
@@ -512,7 +512,7 @@ class cmd_gtail(_BaseCmd):
 
     def main(self):
         if len(self.params.jobid) != 1:
-            raise gc3libs.Exceptions.InvalidUsage("This command takes only one argument: the Job ID.")
+            raise gc3libs.exceptions.InvalidUsage("This command takes only one argument: the Job ID.")
         jobid = self.params.jobid[0]
 
         if self.params.stderr:

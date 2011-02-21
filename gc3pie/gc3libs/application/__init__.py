@@ -2,7 +2,7 @@
 """
 Support for running a generic application with the GC3Libs.
 """
-# Copyright (C) 2009-2010 GC3, University of Zurich. All rights reserved.
+# Copyright (C) 2009-2011 GC3, University of Zurich. All rights reserved.
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
@@ -22,7 +22,7 @@ __docformat__ = 'reStructuredText'
 __version__ = '$Revision$'
 
 
-import gc3libs.Exceptions
+import gc3libs.exceptions
 
 
 ## registry of applications
@@ -47,7 +47,7 @@ def get(tag, *args, **kwargs):
     try:
         return __registered_apps[tag](*args, **kwargs)
     except KeyError:
-        raise gc3libs.Exceptions.UnknownApplication("Application '%s' is not unknown to the gc3libs library." % tag)
+        raise gc3libs.exceptions.UnknownApplication("Application '%s' is not unknown to the gc3libs library." % tag)
 
 
 def register(application_class, tag):

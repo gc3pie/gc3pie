@@ -3,7 +3,7 @@
 """
 Authentication support for accessing resources through the SSH protocol.
 """
-# Copyright (C) 2009-2010 GC3, University of Zurich. All rights reserved.
+# Copyright (C) 2009-2011 GC3, University of Zurich. All rights reserved.
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
@@ -24,7 +24,7 @@ __version__ = '$Revision$'
 
 import gc3libs
 from gc3libs.authentication import Auth
-import gc3libs.Exceptions
+import gc3libs.exceptions
 
 class SshAuth(object):
     def __init__(self, **auth):
@@ -37,7 +37,7 @@ class SshAuth(object):
             auth['username']
             self.__dict__.update(auth)
         except AssertionError, x:
-            raise gc3libs.Exceptions.ConfigurationError('Erroneous configuration parameter: %s' % str(x))
+            raise gc3libs.exceptions.ConfigurationError('Erroneous configuration parameter: %s' % str(x))
 
     def check(self):
         gc3libs.log.debug('Checking auth: ssh')

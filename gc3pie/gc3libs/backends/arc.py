@@ -39,7 +39,7 @@ sys.path.append('/opt/nordugrid/lib/python%d.%d/site-packages'
 import arclib
 from gc3libs import log, Run
 from gc3libs.backends import LRMS
-import gc3libs.Exceptions
+import gc3libs.exceptions
 from gc3libs.utils import *
 from gc3libs.Resource import Resource
 
@@ -107,21 +107,21 @@ class ArcLrms(LRMS):
             # XXX: should this be done in Application.xrsl() instead?
             xrsl = arclib.Xrsl(str(xrsl))
         except Exception, ex:
-            raise gc3libs.Exceptions.LRMSSubmitError('Failed in getting `Xrsl` object from arclib: %s: %s'
+            raise gc3libs.exceptions.LRMSSubmitError('Failed in getting `Xrsl` object from arclib: %s: %s'
                                   % (ex.__class__.__name__, str(ex)))
 
         queues = self._get_queues()
         if len(queues) == 0:
-            raise gc3libs.Exceptions.LRMSSubmitError('No ARC queues found')
+            raise gc3libs.exceptions.LRMSSubmitError('No ARC queues found')
 
         targets = arclib.PerformStandardBrokering(arclib.ConstructTargets(queues, xrsl))
         if len(targets) == 0:
-            raise gc3libs.Exceptions.LRMSSubmitError('No ARC targets found')
+            raise gc3libs.exceptions.LRMSSubmitError('No ARC targets found')
 
         try:
             lrms_jobid = arclib.SubmitJob(xrsl,targets)
         except arclib.JobSubmissionError, ex:
-            raise gc3libs.Exceptions.LRMSSubmitError('Got error from arclib.SubmitJob(): %s' % str(ex))
+            raise gc3libs.exceptions.LRMSSubmitError('Got error from arclib.SubmitJob(): %s' % str(ex))
 
         job.lrms_jobid = lrms_jobid
         return job
@@ -191,7 +191,7 @@ class ArcLrms(LRMS):
                     'DELETED':   Run.State.TERMINATED,
                     }[status]
             except KeyError:
-                raise gc3libs.Exceptions.UnknownJobState("Unknown ARC job state '%s'" % status)
+                raise gc3libs.exceptions.UnknownJobState("Unknown ARC job state '%s'" % status)
 
         # try to intercept error conditions and translate them into
         # meaningful exceptions
@@ -200,7 +200,7 @@ class ArcLrms(LRMS):
             arc_job = arclib.GetJobInfo(job.lrms_jobid)
         except AttributeError, ex:
             # `job` has no `lrms_jobid`: object is invalid
-            raise gc3libs.Exceptions.InvalidArgument("Job object is invalid: %s" % str(ex))
+            raise gc3libs.exceptions.InvalidArgument("Job object is invalid: %s" % str(ex))
 
         # update status
         state = map_arc_status_to_gc3job_status(arc_job.status)
@@ -287,7 +287,7 @@ class ArcLrms(LRMS):
             job.download_dir = download_dir
         except arclib.FTPControlError, ex:
             # critical error. consider job remote data as lost
-            raise gc3libs.Exceptions.DataStagingError("Failed downloading remote folder '%s': %s" 
+            raise gc3libs.exceptions.DataStagingError("Failed downloading remote folder '%s': %s" 
                                    % (job.lrms_jobid, str(ex)))
 
         return 

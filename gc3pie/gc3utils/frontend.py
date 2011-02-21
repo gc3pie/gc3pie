@@ -31,7 +31,7 @@ import os.path
 import sys
 import warnings
 
-from gc3libs.Exceptions import *
+from gc3libs.exceptions import *
 
 import gc3utils
 
