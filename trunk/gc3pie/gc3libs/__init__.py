@@ -536,12 +536,36 @@ class Application(Struct, Persistable, Task):
 
         
         self.inputs = Application._io_spec_to_dict(inputs)
+        # check that remote entries are all distinct
+        # (can happen that two local paths apre mapped to the same remote one)
+        if len(self.inputs.values()) != len(set(self.inputs.values())):
+            # try to build an exact error message
+            inv = { }
+            for l, r in self.inputs:
+                if r in inv:
+                    raise DuplicateEntryError("Local input files '%s' and '%s'"
+                                              " map to the same remote path '%s'"
+                                              % (l, inv[r], r))
+                else:
+                    inv[r] = l
         # ensure remote paths are not absolute
         for r_path in self.inputs.itervalues():
             if os.path.isabs(r_path):
                 raise gc3libs.exceptions.InvalidArgument("Remote paths not allowed to be absolute")
 
         self.outputs = Application._io_spec_to_dict(outputs)
+        # check that local entries are all distinct
+        # (can happen that two remote paths apre mapped to the same local one)
+        if len(self.outputs.values()) != len(set(self.outputs.values())):
+            # try to build an exact error message
+            inv = { }
+            for r, l in self.outputs:
+                if l in inv:
+                    raise DuplicateEntryError("Remote output files '%s' and '%s'"
+                                              " map to the same local path '%s'"
+                                              % (r, inv[l], l))
+                else:
+                    inv[l] = r
         # ensure remote paths are not absolute
         for r_path in self.outputs.iterkeys():
             if os.path.isabs(r_path):
