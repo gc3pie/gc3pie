@@ -174,6 +174,8 @@ class _Script(cli.app.CommandLineApp):
             name=os.path.splitext(os.path.basename(sys.argv[0]))[0],
             **kw
             )
+        # provide some defaults
+        self.verbose_logging_threshold = 0
         
     @property
     def description(self):
@@ -211,12 +213,18 @@ class _Script(cli.app.CommandLineApp):
         """
         Perform parsing of standard command-line options and call into
         `parse_args()` to do non-optional argument processing.
+
+        Also sets up the ``gc3.gc3utils`` logger; it is controlled by
+        the ``-v``/``--verbose`` command-line option.  Up to
+        `self.verbose_logging_threshold` occurrences of ``-v`` are
+        ignored, after which they start to lower the level of messages
+        sent to standard error output.
         """
         ## parse command-line
         cli.app.CommandLineApp.pre_run(self)
 
         ## setup GC3Libs logging
-        loglevel = max(1, logging.ERROR - 10 * self.params.verbose)
+        loglevel = max(1, logging.ERROR - 10 * max(0, self.params.verbose - self.verbose_logging_threshold))
         gc3libs.configure_logger(loglevel, self.name)
         self.log = logging.getLogger('gc3.gc3utils') # alternate: ('gc3.' + self.name)
         self.log.setLevel(loglevel)
