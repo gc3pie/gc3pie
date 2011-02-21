@@ -2,7 +2,7 @@
 """
 Exceptions specific to the `gc3libs` package.
 """
-# Copyright (C) 2009-2010 GC3, University of Zurich. All rights reserved.
+# Copyright (C) 2009-2011 GC3, University of Zurich. All rights reserved.
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
@@ -102,6 +102,13 @@ class InvalidArgument(Error): # XXX: should this be fatal? should it be a descen
     Raised when the arguments passed to a function do not honor some
     required contract.  For instance, either one of two optional
     arguments must be provided, but none of them was.
+    """
+    pass
+
+class DuplicateEntryError(InvalidArgument):
+    """
+    Raised by `Application.__init__` if not all (local or remote)
+    entries in the input or output files are distinct.
     """
     pass
 
