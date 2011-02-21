@@ -421,10 +421,6 @@ class Application(Struct, Persistable, Task):
       Path to the base directory where output files will be downloaded.
       Output file names are interpreted relative to this base directory.
 
-    The following optional parameters may be additionally
-    specified as keyword arguments and will be given special
-    treatment by the `Application` class logic:
-
     `requested_cores`,`requested_memory`,`requested_walltime`
       specify resource requirements for the application: the
       number of independent execution units (CPU cores), amount of
@@ -433,6 +429,10 @@ class Application(Struct, Persistable, Task):
       allocate for the computational job (in hours; will be
       converted to a whole number by truncating any decimal
       digits).
+
+    The following optional parameters may be additionally
+    specified as keyword arguments and will be given special
+    treatment by the `Application` class logic:
 
     `environment`
       a list of pairs `(name, value)`: the
