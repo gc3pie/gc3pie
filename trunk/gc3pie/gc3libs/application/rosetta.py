@@ -25,7 +25,7 @@ __version__ = '$Revision$'
 
 import gc3libs
 import gc3libs.application
-from gc3libs.Exceptions import *
+from gc3libs.exceptions import *
 import os
 import os.path
 from pkg_resources import Requirement, resource_filename

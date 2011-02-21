@@ -33,7 +33,7 @@ import time
 
 from gc3libs import log, Run
 from gc3libs.backends import LRMS
-import gc3libs.Exceptions
+import gc3libs.exceptions
 import gc3libs.utils as utils # first, defaultdict, to_bytes
 from gc3libs.utils import same_docstring_as
 
@@ -238,7 +238,7 @@ def get_qsub_jobid(qsub_output):
         match = _qsub_jobid_re.match(line)
         if match:
             return (match.group('jobid'), match.group('jobname'))
-    raise gc3libs.Exceptions.InternalError("Could not extract jobid from qsub output '%s'" 
+    raise gc3libs.exceptions.InternalError("Could not extract jobid from qsub output '%s'" 
                         % qsub_output.rstrip())
 
 
@@ -306,7 +306,7 @@ class SgeLrms(LRMS):
             self.transport = transport.SshTransport(self._resource.frontend, 
                                                     username=self._ssh_username)
         else:
-            raise gc3libs.Exceptions.TransportError("Unknown transport '%s'", resource.transport)
+            raise gc3libs.exceptions.TransportError("Unknown transport '%s'", resource.transport)
         
         # XXX: does Ssh really needs this ?
         self._resource.ncores = int(self._resource.ncores)
@@ -338,7 +338,7 @@ class SgeLrms(LRMS):
             else:
                 raise LRMSError("Failed while executing command '%s' on resource '%s'. exit code %d, stderr %s."
                                 % (_command, self._resource, exit_code, stderr))
-        except gc3libs.Exceptions.TransportError, x:
+        except gc3libs.exceptions.TransportError, x:
             raise
         except:
             self.transport.close()
@@ -426,7 +426,7 @@ class SgeLrms(LRMS):
             job.lrms_jobid
         except AttributeError, ex:
             # `job` has no `lrms_jobid`: object is invalid
-            raise gc3libs.Exceptions.InvalidArgument("Job object is invalid: %s" % str(ex))
+            raise gc3libs.exceptions.InvalidArgument("Job object is invalid: %s" % str(ex))
 
         def map_sge_names_to_local_ones(name):
             return 'sge_' + name

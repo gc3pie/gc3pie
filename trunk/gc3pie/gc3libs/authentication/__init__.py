@@ -23,7 +23,7 @@ __version__ = '$Revision$'
 
 import sys
 
-import gc3libs.Exceptions
+import gc3libs.exceptions
 
 class Auth(object):
     types = {}
@@ -40,7 +40,7 @@ class Auth(object):
             try:
                 a =  self._auth_type[auth_name](** self._auth_dict[auth_name])
             except (AssertionError, AttributeError), ex:
-                a = gc3libs.Exceptions.ConfigurationError("Missing required configuration parameters"
+                a = gc3libs.exceptions.ConfigurationError("Missing required configuration parameters"
                                        " in auth section '%s': %s" % (auth_name, str(ex)))
         else:
             a = self.__auths[auth_name]
@@ -54,15 +54,15 @@ class Auth(object):
             if self.auto_enable:
                     try:
                         a.enable()
-                    except gc3libs.Exceptions.RecoverableAuthError, x:
+                    except gc3libs.exceptions.RecoverableAuthError, x:
                         raise
-                    except gc3libs.Exceptions.UnrecoverableAuthError, x:
+                    except gc3libs.exceptions.UnrecoverableAuthError, x:
                         gc3libs.log.debug("Got exception while enabling auth '%s',"
                                           " will remember for next invocations:"
                                           " %s: %s" % (auth_name, x.__class__.__name__, x))
                         a = x
             else:
-                a = gc3libs.Exceptions.UnrecoverableAuthError("No valid credentials of type '%s'"
+                a = gc3libs.exceptions.UnrecoverableAuthError("No valid credentials of type '%s'"
                                                 " and `auto_enable` not set." % auth_name)
 
         self.__auths[auth_name] = a

@@ -46,7 +46,7 @@ import logging
 import logging.config
 log = logging.getLogger("gc3.gc3libs")
 
-import gc3libs.Exceptions
+import gc3libs.exceptions
 
 # this needs to be defined before we import other GC3Libs modules, as
 # they may depend on it
@@ -76,7 +76,7 @@ class Default(object):
     PROXY_VALIDITY_THRESHOLD = 600 #: Proxy validity threshold in seconds. If proxy is expiring before the thresold, it will be marked as to be renewed.
 
 
-from gc3libs.Exceptions import *
+from gc3libs.exceptions import *
 from gc3libs.persistence import Persistable
 from gc3libs.utils import defproperty, deploy_configuration_file, get_and_remove, Enum, Log, Struct, safe_repr
 
@@ -178,7 +178,7 @@ class Task(object):
         if not hasattr(self, 'execution'):
             self.execution = Run()
 
-    class Error(gc3libs.Exceptions.Error):
+    class Error(gc3libs.exceptions.Error):
         """
         Generic error condition in a `Task` object.
         """
@@ -392,13 +392,13 @@ class Application(Struct, Persistable, Task):
 
         * It can be a Python dictionary: keys are local file paths, 
           values are remote file names.
+
         * It can be a Python list: each item in the list should be a
-          pair `(local_file_name, remote_file_name)`; specifying a
-          single string `file_name` is allowed as a shortcut and will
-          result in both `local_file_name` and `remote_file_name` being
-          equal.  If an absolute path name is specified as
-          `remote_file_name`, then an :class:`InvalidArgument` exception
-          is thrown.
+          pair `(local_file_name, remote_file_name)`; a single string
+          `file_name` is allowed as a shortcut and will result in both
+          `local_file_name` and `remote_file_name` being equal.  If an
+          absolute path name is specified as `remote_file_name`, then
+          an :class:`InvalidArgument` exception is thrown.
 
     `outputs`
       list of files that will be copied back from the remote execution
@@ -408,13 +408,13 @@ class Application(Struct, Persistable, Task):
 
       * It can be a Python dictionary: keys are local file paths, 
         values are remote file names.
+
       * It can be a Python list: each item in the list should be a
-        pair `(remote_file_name, local_file_name)`; specifying a
-        single string `file_name` is allowed as a shortcut and will
-        result in both `local_file_name` and `remote_file_name` being
-        equal.  If an absolute path name is specified as
-        `remote_file_name`, then an :class:`InvalidArgument` exception
-        is thrown.
+        pair `(remote_file_name, local_file_name)`; a single string
+        `file_name` is allowed as a shortcut and will result in both
+        `local_file_name` and `remote_file_name` being equal.  If an
+        absolute path name is specified as `remote_file_name`, then an
+        :class:`InvalidArgument` exception is thrown.
 
     `output_dir`
       Path to the base directory where output files will be downloaded.
@@ -538,13 +538,13 @@ class Application(Struct, Persistable, Task):
         # ensure remote paths are not absolute
         for r_path in self.inputs.itervalues():
             if os.path.isabs(r_path):
-                raise gc3libs.Exceptions.InvalidArgument("Remote paths not allowed to be absolute")
+                raise gc3libs.exceptions.InvalidArgument("Remote paths not allowed to be absolute")
 
         self.outputs = Application._io_spec_to_dict(outputs)
         # ensure remote paths are not absolute
         for r_path in self.outputs.iterkeys():
             if os.path.isabs(r_path):
-                raise gc3libs.Exceptions.InvalidArgument("Remote paths not allowed to be absolute")
+                raise gc3libs.exceptions.InvalidArgument("Remote paths not allowed to be absolute")
 
         self.output_dir = output_dir
 
@@ -959,7 +959,7 @@ class _Signals(object):
             return Signals.RemoteError
         if signal_num == 125:
             return Signals.SubmissionFailed
-        raise gc3libs.Exceptions.InvalidArgument("Unknown signal number %d" % signal_num)
+        raise gc3libs.exceptions.InvalidArgument("Unknown signal number %d" % signal_num)
 
 
 class Run(Struct):
