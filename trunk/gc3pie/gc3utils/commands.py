@@ -154,6 +154,12 @@ class cmd_ginfo(_BaseCmd):
     the command line is printed; this will only make sense if you know
     GC3Libs internals.
     """
+    def setup_options(self):
+        self.add_param("-p", "--print", action="store", dest="keys", 
+                       metavar="LIST", default='', 
+                       help="Only print job attributes whose name appears in"
+                       " this comma-separated list.")
+
     def main(self):
         if len(self.params.args) == 0:
             # if no arguments, operate on all known jobs
@@ -163,19 +169,19 @@ class cmd_ginfo(_BaseCmd):
                 raise NotImplementedError("Job storage module does not allow listing all jobs."
                                           " Please specify the job IDs you wish to operate on.")
 
+        try:
+            width = int(os.environ['COLUMNS'])
+        except:
+            width = 0
+
+        if len(self.params.keys) > 0:
+            only_keys = self.params.keys.split(',')
+        else:
+            only_keys = None
+        
         for app in self._get_jobs(self.params.args):
-            table = Texttable(0) # max_width=0 => dynamically resize cells
-            table.set_deco(Texttable.HEADER | Texttable.BORDER) # also: .VLINES, .HLINES
-            table.set_cols_align(['l', 'l'])
-            table.header([str(app.persistent_id), ''])
-            for key, value in sorted(app.execution.items()):
-                if (self.params.verbose == 0 
-                    and (key.startswith('_') 
-                         or key == 'log' 
-                         or str(value) in ['', '-1'])):
-                    continue
-                table.add_row((key, value))
-            print(table.draw())
+            print(str(app.persistent_id))
+            utils.prettyprint(app.execution, indent=4, width=width, only_keys=only_keys)
         return 0
 
 
