@@ -686,7 +686,7 @@ class Application(Struct, Persistable, Task):
         xrsl= str.join(' ', [
                 '&',
                 '(executable="%s")' % self.executable,
-                '(gmlog="gmlog")', # FIXME: should check if conflicts with any input/output files
+                '(gmlog=".arc")', # FIXME: should check if conflicts with any input/output files
                 ])
         # treat 'arguments' separately
         if self.arguments:
