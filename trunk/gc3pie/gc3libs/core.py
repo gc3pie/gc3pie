@@ -101,8 +101,20 @@ class Core:
         Submit a job running an instance of the given `app`.  Upon
         successful submission, call the `submitted` method on the
         `app` object.
+
+        :raise: `gc3libs.exceptions.InputFileError` if an input file
+                does not exist or cannot otherwise be read.
         """
         auto_enable_auth = kw.get('auto_enable_auth', self.auto_enable_auth)
+
+        # check that all input files can be read
+        for local_path in app.inputs:
+            if not os.path.exists(local_path):
+                raise gc3libs.exceptions.InputFileError("Non-existent input file '%s'"
+                                                        % local_path)
+            if not os.access(local_path, os.R_OK):
+                raise gc3libs.exceptions.InputFileError("Cannot read input file '%s'"
+                                                        % local_path)
 
         job = app.execution
 
