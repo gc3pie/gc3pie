@@ -526,7 +526,7 @@ def get_resources(resources_list):
             continue
         if resource['type'] == 'arc':
             tmpres.type = gc3libs.Default.ARC_LRMS
-        elif resource['type'] == 'ssh_sge':
+        elif resource['type'] == 'sge':
             tmpres.type = gc3libs.Default.SGE_LRMS
         else:
             gc3libs.log.error("Configuration error: '%s' is no valid resource type.", 
