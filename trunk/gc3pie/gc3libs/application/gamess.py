@@ -29,6 +29,7 @@ import gc3libs.exceptions
 from gc3libs.InformationContainer import *
 import os
 import os.path
+import re
 
 
 class GamessApplication(gc3libs.Application):
@@ -74,6 +75,40 @@ class GamessApplication(gc3libs.Application):
                                      # needed by `ggamess`
                                      inp_file_path = inp_file_path,
                                      **kw)
+
+    _termination_re = re.compile(r'EXECUTION \s+ OF \s+ GAMESS \s+ TERMINATED \s+-?(?P<gamess_outcome>NORMALLY|ABNORMALLY)-?'
+                                 r'|ddikick.x: .+ (exited|quit) \s+ (?P<ddikick_outcome>gracefully|unexpectedly)', re.X)
+
+    def postprocess(self, output_dir):
+        """
+        Append to log the termination status line as extracted from
+        the GAMESS '.out' file.  According to the normal/abnormal
+        termination of the GAMESS job, set the output code to 0 or 1,
+        or 2 if the fault was reported only by ``ddikick``.
+        """
+        gc3libs.log.debug("Running GamessApplication post-processing hook...")
+        output_filename = os.path.join(output_dir,
+                                       os.path.splitext(os.path.basename(self.inp_file_path))[0] + '.out')
+        if os.path.exists(output_filename):
+            gc3libs.log.debug("Trying to read GAMESS termination status off output file '%s' ..." % output_filename)
+            output_file = open(output_filename, 'r')
+            for line in output_file.readlines():
+                match = self._termination_re.search(line)
+                if match:
+                    if match.group('gamess_outcome'):
+                        self.execution.info = line.strip().capitalize()
+                        if self.execution.exitcode == 0 and match.group('gamess_outcome') == 'ABNORMALLY':
+                            self.execution.exitcode = 1
+                        break
+                    elif match.group('ddikick_outcome'):
+                        self.execution.info = line.strip().capitalize()
+                        if self.execution.exitcode == 0 and match.group('ddikick_outcome') == 'unexpectedly':
+                            self.execution.exitcode = 2
+                        break
+                    else:
+                        raise AssertionError("Input line '%s' matched, but neither group 'gamess_outcome' nor 'ddikick_outcome' did!")
+            output_file.close()
+
                              
     def qgms(self, resource, **kw):
         """
