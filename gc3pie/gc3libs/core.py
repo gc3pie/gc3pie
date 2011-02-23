@@ -237,7 +237,7 @@ class Core:
                                               % time.ctime(app.execution.timestamp[Run.State.RUNNING]))
                     elif app.execution.state == Run.State.TERMINATED:
                         if app.execution.returncode == 0:
-                            app.execution.info = ("Successfully terminated at %s." 
+                            app.execution.info = ("Terminated at %s." 
                                                   % time.ctime(app.execution.timestamp[gc3libs.Run.State.TERMINATED]))
                         else:
                             # there was some error, try to explain
@@ -341,10 +341,12 @@ class Core:
         # successfully downloaded results
         job.info = ("Output downloaded to '%s'" % download_dir)
         app.output_dir = download_dir
+        gc3libs.log.debug("Downloaded output of '%s' (which is in state %s)"
+                      % (str(job), job.state))
         if job.state == Run.State.TERMINATED:
             app.final_output_retrieved = True
-            if hasattr(app, 'postprocess'):
-                app.postprocess(download_dir)
+            app.postprocess(download_dir)
+            gc3libs.log.debug("Final output of job '%s' retrieved" % str(job))
         return download_dir
         
 
