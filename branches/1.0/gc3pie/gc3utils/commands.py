@@ -680,29 +680,20 @@ class cmd_glist(_BaseCmd):
             table.set_cols_align(['r', 'l'])
             table.header([resource.name, ""])
 
-            table.add_row(("Frontend name", resource.frontend))
-            if resource.type == gc3libs.Default.ARC_LRMS:
-                resource_access_type = "arc"
-            elif resource.type == gc3libs.Default.SGE_LRMS:
-                resource_access_type = "ssh"
-            table.add_row(("Resource access type", resource_access_type))
-            if resource.has_key('auth'):
-                table.add_row(("Authorization type", resource.auth))
-            if resource.has_key('updated'):
-                table.add_row(("User can access", resource.updated))
-            if resource.has_key('ncores'):
-                table.add_row(("Total number of cores", resource.ncores))
-            if resource.has_key('queued'):
-                table.add_row(("Queued jobs", resource.queued))
-            if resource.has_key('user_run'):
-                table.add_row(("Running jobs", resource.user_run))
-            if resource.has_key('max_cores_per_job'):
-                table.add_row(("Max cores per job", resource.max_cores_per_job))
-            if resource.has_key('max_memory_per_core'):
-                table.add_row(("Max memory per core (MB)", resource.max_memory_per_core))
-            if resource.has_key('max_walltime'):
-                table.add_row(("Max walltime per job (minutes)", resource.max_walltime))
-            if resource.has_key('applications'):
-                table.add_row(("Supported applications", resource.applications))
+            # not all resources support the same keys...
+            def output_if_exists(name, print_name):
+                if hasattr(resource, name):
+                    table.add_row((print_name, getattr(resource, name)))
+            output_if_exists('frontend', "Frontend host name")
+            output_if_exists('type', "Access mode")
+            output_if_exists('auth', "Authorization name")
+            output_if_exists('updated', "Accessible?")
+            output_if_exists('ncores', "Total number of cores")
+            output_if_exists('queued', "Queued jobs")
+            output_if_exists('user_run', "Running jobs")
+            output_if_exists('max_cores_per_job', "Max cores per job")
+            output_if_exists('max_memory_per_core', "Max memory per core (MB)")
+            output_if_exists('max_walltime', "Max walltime per job (minutes)")
+            output_if_exists('applications', "Supported applications")
             print(table.draw())
 
