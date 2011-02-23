@@ -45,6 +45,7 @@ import cli # pyCLI
 import cli.app
 import csv
 import fnmatch
+import lockfile
 import logging
 import os
 import os.path
@@ -242,14 +243,22 @@ class _Script(cli.app.CommandLineApp):
         """
         try:
             return cli.app.CommandLineApp.run(self)
-        except KeyboardInterrupt:
-            sys.stderr.write("%s: Exiting upon user request (Ctrl+C)\n" % self.name)
-            return 13
-        except SystemExit, ex:
-            return ex.code
         except gc3libs.exceptions.InvalidUsage, ex:
             # Fatal errors do their own printing, we only add a short usage message
             sys.stderr.write("Type '%s --help' to get usage help.\n" % self.name)
+            return 1
+        except lockfile.Error, ex:
+            msg = ("Error manipulating the lock file (%s: %s)."
+                   " This likely points to a filesystem error"
+                   " or a stale process holding the lock."
+                   " If you cannot get this command to run after"
+                   " a system reboot, please write to gc3pie@googlegroups.com"
+                   " including any output you got by running '%s -vvvv %s'.")
+            if len(sys.argv) > 0:
+                msg %= (ex.__class__.__name__, str(ex),
+                        self.name, str.join(' ', sys.argv[1:]))
+            else:
+                msg %= (ex.__class__.__name__, str(ex), self.name, '')
             return 1
         except AssertionError, ex:
             sys.stderr.write("%s: BUG: %s\n"
@@ -258,6 +267,11 @@ class _Script(cli.app.CommandLineApp):
                              "your cooperation.\n"
                              % (self.name, str(ex)))
             return 1
+        except KeyboardInterrupt:
+            sys.stderr.write("%s: Exiting upon user request (Ctrl+C)\n" % self.name)
+            return 13
+        except SystemExit, ex:
+            return ex.code
         except Exception, ex:
             try:
                 self.log.critical("%s: %s" % (ex.__class__.__name__, str(ex)), 
