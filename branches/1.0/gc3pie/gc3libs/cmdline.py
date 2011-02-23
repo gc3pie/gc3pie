@@ -246,8 +246,18 @@ class _Script(cli.app.CommandLineApp):
         except gc3libs.exceptions.InvalidUsage, ex:
             # Fatal errors do their own printing, we only add a short usage message
             sys.stderr.write("Type '%s --help' to get usage help.\n" % self.name)
-            return 1
+            return 64 # EX_USAGE in /usr/include/sysexits.h
+        except KeyboardInterrupt:
+            sys.stderr.write("%s: Exiting upon user request (Ctrl+C)\n" % self.name)
+            return 13
+        except SystemExit, ex:
+            return ex.code
+        # the following exception handlers put their error message
+        # into `msg` and the exit code into `rc`; the closing stanza
+        # tries to log the message and only outputs it to stderr if
+        # this fails
         except lockfile.Error, ex:
+            exc_info = sys.exc_info()
             msg = ("Error manipulating the lock file (%s: %s)."
                    " This likely points to a filesystem error"
                    " or a stale process holding the lock."
@@ -259,32 +269,39 @@ class _Script(cli.app.CommandLineApp):
                         self.name, str.join(' ', sys.argv[1:]))
             else:
                 msg %= (ex.__class__.__name__, str(ex), self.name, '')
-            return 1
+            rc = 1
         except AssertionError, ex:
-            sys.stderr.write("%s: BUG: %s\n"
-                             "Please send an email to gc3utils-dev@gc3.uzh.ch copying this\n"
-                             "output and and attach file '~/.gc3/debug.log'.  Many thanks for\n"
-                             "your cooperation.\n"
-                             % (self.name, str(ex)))
-            return 1
-        except KeyboardInterrupt:
-            sys.stderr.write("%s: Exiting upon user request (Ctrl+C)\n" % self.name)
-            return 13
-        except SystemExit, ex:
-            return ex.code
+            exc_info = sys.exc_info()
+            msg = ("BUG: %s\n"
+                   "Please send an email to gc3pie@googlegroups.com"
+                   " including any output you got by running '%s -vvvv %s'."
+                   " Thanks for your cooperation!")
+            if len(sys.argv) > 0:
+                msg %= (str(ex), self.name, str.join(' ', sys.argv[1:]))
+            else:
+                msg %= (str(ex), self.name, '')
+            rc = 1
         except Exception, ex:
-            try:
-                self.log.critical("%s: %s" % (ex.__class__.__name__, str(ex)), 
-                                  exc_info=(self.params.verbose > 2))
-            except:
-                sys.stderr.write("%s: ERROR: %s: %s" % (self.name, ex.__class__.__name__, str(ex)))
+            msg = "%s: %s" % (ex.__class__.__name__, str(ex)) 
             if isinstance(ex, cli.app.Abort):
-                sys.exit(ex.status)
+                rc = (ex.status)
             elif isinstance(ex, EnvironmentError):
-                sys.exit(74) # EX_IOERR in /usr/include/sysexits.h
+                rc = 74 # EX_IOERR in /usr/include/sysexits.h
             else:
                 # generic error exit
-                sys.exit(1)
+                rc = 1
+        # output error message and -maybe- backtrace...
+        try:
+            self.log.critical(msg,
+                              exc_info=(self.params.verbose > self.verbose_logging_threshold + 2))
+        except:
+            # no logging setup, output to stderr
+            sys.stderr.write("%s: FATAL ERROR: %s\n" % (self.name, msg))
+            if self.params.verbose > self.verbose_logging_threshold + 2:
+                sys.excepthook(*exc_info)
+        # ...and exit
+        return 1
+            
 
 
 class GC3UtilsScript(_Script):
