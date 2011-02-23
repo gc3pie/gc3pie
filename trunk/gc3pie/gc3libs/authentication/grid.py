@@ -34,6 +34,7 @@ import time
 import gc3libs
 from gc3libs.authentication import Auth
 import gc3libs.exceptions
+import gc3libs.utils
 
 class GridAuth(object):
 
@@ -207,8 +208,10 @@ class GridAuth(object):
                 raise gc3libs.exceptions.RecoverableAuthError("Temporary failure in enabling Grid authentication."
                                            " Grid/VOMS proxy status: %s."
                                            " user certificate status: %s" 
-                                           % (utils.ifelse(self.proxy_valid, "valid", "invalid"),
-                                              utils.ifelse(self.user_cert_valid, "valid", "invalid")))
+                                           % (gc3libs.utils.ifelse(self.proxy_valid,
+                                                                   "valid", "invalid"),
+                                              gc3libs.utils.ifelse(self.user_cert_valid,
+                                                                   "valid", "invalid")))
             
             self.validity_timestamp = _get_proxy_expires_time()
             return True
