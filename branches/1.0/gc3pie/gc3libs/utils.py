@@ -497,8 +497,8 @@ def prettyprint(D, indent=0, width=0, maxdepth=None, step=4,
             second = str.join(', ', [str(item) for item in v])
         else:
             second = str(v)
-        # wrap overlong lines
-        if (width > 0 and len(first) + len(second) > width):
+        # wrap overlong lines, and always wrap if the second part is multi-line
+        if (width > 0 and len(first) + len(second) > width) or ('\n' in second):
             first += '\n'
         # indent a multi-line block by indent+step spaces
         if '\n' in second:
