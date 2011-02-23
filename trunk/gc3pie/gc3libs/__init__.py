@@ -67,7 +67,7 @@ class Default(object):
     ARC_LRMS = 'arc'
     ARC_CACHE_TIME = 90 #: only update ARC resources status every this seconds
     
-    SGE_LRMS = 'ssh_sge'
+    SGE_LRMS = 'sge'
     # Transport information
     SSH_PORT = 22
     SSH_CONNECT_TIMEOUT = 30
