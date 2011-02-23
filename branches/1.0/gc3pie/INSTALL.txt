@@ -1,0 +1,128 @@
+========================================================================
+    Installation of GC3Utils
+========================================================================
+
+:Author:   Riccardo Murri <riccardo.murri@gmail.com>
+:Date:     2010-10-06
+:Revision: $Revision$
+
+
+.. This file follows reStructuredText markup syntax; see
+   http://docutils.sf.net/rst.html for more information
+
+
+Installation
+============
+
+These instructions show how to install the GC3Utils from the GC3 svn
+repository into their own python environment.
+
+0. Install software prerequisites: 
+   
+   * On Debian/Ubuntu, install packages: ``subversion``,
+     ``python-dev``, ``python-profiler`` and the C/C++ compiler::
+     
+       apt-get install subversion python-dev python-profiler gcc g++
+
+   * On CentOS5, install packages ``subversion`` and ``python-devel``
+     and the C/C++ compiler::
+
+       yum install subversion python-devel gcc gcc-c++
+
+   * On other Linux distributions, you will need to install:
+     - the ``svn`` command (from the SubVersion_ VCS)
+     - Python development headers and libraries (for installing 
+       extension libraries written in C/C++)
+     - the Python package ``pstats`` (it's part of the Python
+       standard library, but it's sometimes installed separately)
+     - a C/C++ compiler (this is usually installed by default).
+
+1. If it's not already installed, get the `virtualenv` Python package
+   and install it::
+
+      wget http://bitbucket.org/ianb/virtualenv/get/tip.gz#egg=virtualenv-tip
+      tar -xzf tip.tar.gz && rm tip.tar.gz 
+      cd virtualenv/
+ 
+    If you are installing as `root`, the following command is all you
+    need:
+
+      python setup.py install
+
+    If instead you are installing as a normal, unprivileged user,
+    things get more complicated::
+
+      export PYTHONPATH=$HOME/lib/python:$PYTHONPATH
+      export PATH=$PATH:$HOME/bin
+      mkdir -p $HOME/lib/python
+      python setup.py install --home $HOME
+
+    (You will also need to add the two `export` lines above to the
+    `$HOME/.bashrc` file -if using the `bash` shell- or to the
+    `$HOME/.cshrc` file -if using the `tcsh` shell.)
+
+    In any case, once `virtualenv` has been installed, you can exit
+    its directory and remove it:
+   
+      cd ..
+      rm -rf virtualenv
+
+
+2. Create a virtuelnv to host the ``gc3pie`` installation::
+
+       virtualenv gc3pie
+       cd gc3pie/
+       source bin/activate
+
+
+3. Check-out the ``gc3pie`` files in a ``src/`` directory::
+     
+       svn co http://gc3pie.googlecode.com/svn/trunk/gc3pie src
+   
+  
+4. Install the ``gc3pie`` in "develop" mode, so any modification
+   pulled from subversion is immediately reflected in the running environment::
+
+       cd src/
+       env CC=gcc ./setup.py develop 
+       cd .. # back into the `gc3pie` directory
+
+   This will place all the Gc3pie command into the ``gc3pie/bin/``
+   directory.
+
+5. Before you can actually run the Gc3pie, you need to have a
+   working configuration file; `the ConfigurationFile Wiki page
+   <http://code.google.com/p/gc3pie/wiki/ConfigurationFile>` provides
+   an explanation of the syntax to use in configuration files.
+
+   In order to use the ARC backend, you need the NorduGrid/ARC
+   binaries installed on the same machine where Gc3pie are.
+   You can find instructions for installing ARC at:
+   http://www.nordugrid.org/documents/ng-client-install.html
+
+
+   
+Upgrade
+=======
+
+These instructions show how to upgrade the Gc3pie scripts to the
+latest version found in the GC3 svn repository.
+
+1. `cd` to the directory containing the Gc3pie virtualenv;
+   assuming it's named ``gc3pie`` as in the above installation
+   instructions, you can issue the commands::
+
+     cd gc3pie/src
+
+2. Upgrade the `gc3pie` source and run the `setup.py` script again:
+
+     svn up
+     env CC=gcc ./setup.py develop
+
+
+
+.. (for Emacs only)
+..
+  Local variables:
+  mode: rst
+  End:
