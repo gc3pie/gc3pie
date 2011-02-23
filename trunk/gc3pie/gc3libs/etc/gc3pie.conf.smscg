@@ -99,7 +99,7 @@ vo = life
 [resource/smscg]
 type = arc
 auth = smscg
-arc_ldap = ldap://idgc3grid06.uzh.ch:2135/o=grid/mds-vo-name=SMSCG
+arc_ldap = ldap://giis.smscg.ch:2135/o=grid/mds-vo-name=Switzerland
 # These values are correct as of 2011-02-28; please
 # ask on the SMSCG mailing list if unsure.
 max_cores_per_job = 256
