@@ -100,16 +100,13 @@ vo = life
 type = arc
 auth = smscg
 arc_ldap = ldap://idgc3grid06.uzh.ch:2135/o=grid/mds-vo-name=SMSCG
-# These values will be updated at run time,
-# but are required by the configuration file syntax,
-# just put some bogus values in here, so that we know
-# something is not working if we get an error message
-# related to "not enough resources".
-max_cores_per_job = 0
-max_memory_per_core = 0
-max_walltime = 0
-ncores = 0
-walltime = 0
+# These values are correct as of 2011-02-28; please
+# ask on the SMSCG mailing list if unsure.
+max_cores_per_job = 256
+max_memory_per_core = 3
+max_walltime = 9999
+ncores = 1200
+
 
 # More examples:
 #
