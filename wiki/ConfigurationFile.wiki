@@ -5,8 +5,8 @@
 = Introduction =
 
 The [GC3Utils] commands read two configuration files:
-  * system-wide one at `/etc/gc3/gc3utils.conf`, and
-  * a user-private one from `~/.gc3/gc3utils.conf`.
+  * system-wide one at `/etc/gc3/gc3pie.conf`, and
+  * a user-private one from `~/.gc3/gc3pie.conf`.
 
 Both files use the same format. The system-wide one is read first, so
 that users can override configuration in their private file.
@@ -21,7 +21,7 @@ http://docs.python.org/library/configparser.html for reference.
 
 If you try to start any GC3Utils command without having a
 configuration file, a sample one (with all resources commented out)
-will be copied to the user-private location `~/.gc3/gc3utils.conf` and
+will be copied to the user-private location `~/.gc3/gc3pie.conf` and
 an error message will be displayed, directing users to edit the sample
 file.
 
@@ -243,9 +243,9 @@ configuration file.
 
 Users can selectively disable or enable resources that are defined in
 the system-wide configuration file.  Two main use cases are supported:
-the system-wide configuration file `/etc/gc3/gc3utils.conf` lists and
+the system-wide configuration file `/etc/gc3/gc3pie.conf` lists and
 enables all available resources, and users can turn them off in their
-private configuration file `~/.gc3/gc3utils.conf`; or the system-wide
+private configuration file `~/.gc3/gc3pie.conf`; or the system-wide
 configuration can list all available resources but keep them disabled,
 and users can enable those they prefer in the private configuration
 file.
