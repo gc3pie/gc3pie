@@ -83,12 +83,11 @@ execution node before execution starts.</p>
 <li>It can be a Python dictionary: keys are local file paths, 
 values are remote file names.</li>
 <li>It can be a Python list: each item in the list should be a
-pair <cite>(local_file_name, remote_file_name)</cite>; specifying a
-single string <cite>file_name</cite> is allowed as a shortcut and will
-result in both <cite>local_file_name</cite> and <cite>remote_file_name</cite> being
-equal.  If an absolute path name is specified as
-<cite>remote_file_name</cite>, then an <tt class="xref docutils literal"><span class="pre">InvalidArgument</span></tt> exception
-is thrown.</li>
+pair <cite>(local_file_name, remote_file_name)</cite>; a single string
+<cite>file_name</cite> is allowed as a shortcut and will result in both
+<cite>local_file_name</cite> and <cite>remote_file_name</cite> being equal.  If an
+absolute path name is specified as <cite>remote_file_name</cite>, then
+an <tt class="xref docutils literal"><span class="pre">InvalidArgument</span></tt> exception is thrown.</li>
 </ul>
 </blockquote>
 </dd>
@@ -100,22 +99,16 @@ node back to the local computer after execution has completed.</p>
 <li>It can be a Python dictionary: keys are local file paths, 
 values are remote file names.</li>
 <li>It can be a Python list: each item in the list should be a
-pair <cite>(remote_file_name, local_file_name)</cite>; specifying a
-single string <cite>file_name</cite> is allowed as a shortcut and will
-result in both <cite>local_file_name</cite> and <cite>remote_file_name</cite> being
-equal.  If an absolute path name is specified as
-<cite>remote_file_name</cite>, then an <tt class="xref docutils literal"><span class="pre">InvalidArgument</span></tt> exception
-is thrown.</li>
+pair <cite>(remote_file_name, local_file_name)</cite>; a single string
+<cite>file_name</cite> is allowed as a shortcut and will result in both
+<cite>local_file_name</cite> and <cite>remote_file_name</cite> being equal.  If an
+absolute path name is specified as <cite>remote_file_name</cite>, then an
+<tt class="xref docutils literal"><span class="pre">InvalidArgument</span></tt> exception is thrown.</li>
 </ul>
 </dd>
 <dt><cite>output_dir</cite></dt>
 <dd>Path to the base directory where output files will be downloaded.
 Output file names are interpreted relative to this base directory.</dd>
-</dl>
-<p>The following optional parameters may be additionally
-specified as keyword arguments and will be given special
-treatment by the <cite>Application</cite> class logic:</p>
-<dl class="docutils">
 <dt><cite>requested_cores</cite>,`requested_memory`,`requested_walltime`</dt>
 <dd>specify resource requirements for the application: the
 number of independent execution units (CPU cores), amount of
@@ -124,6 +117,11 @@ truncating any decimal digits), amount of wall-clock time to
 allocate for the computational job (in hours; will be
 converted to a whole number by truncating any decimal
 digits).</dd>
+</dl>
+<p>The following optional parameters may be additionally
+specified as keyword arguments and will be given special
+treatment by the <cite>Application</cite> class logic:</p>
+<dl class="docutils">
 <dt><cite>environment</cite></dt>
 <dd>a list of pairs <cite>(name, value)</cite>: the
 environment variable whose name is given by the contents of
@@ -720,12 +718,13 @@ automatically fetch the output.</p>
 <dl class="function">
 <dt id="gc3libs.configure_logger">
 <tt class="descclassname">gc3libs.</tt><tt class="descname">configure_logger</tt><big>(</big><em>level=40</em>, <em>name=None</em>, <em>format='sphinx-build:</em><span class="optional">[</span>, <em>%(asctime)s</em><span class="optional">]</span>, <em>%(levelname)-8s: %(message)s'</em>, <em>datefmt='%Y-%m-%d %H:%M:%S'</em><big>)</big><a class="headerlink" href="#gc3libs.configure_logger" title="Permalink to this definition">¶</a></dt>
-<dd><p>Configure the <tt class="docutils literal"><span class="pre">gc3libs</span></tt> logger.</p>
+<dd><p>Configure the <tt class="docutils literal"><span class="pre">gc3.gc3libs</span></tt> logger.</p>
 <p>Arguments <cite>level</cite>, <cite>format</cite> and <cite>datefmt</cite> set the corresponding
 arguments in the <cite>logging.basicConfig()</cite> call.</p>
-<p>If a user configuration file exists in <tt class="docutils literal"><span class="pre">~/.gc3/logging.conf</span></tt>, it
-is read and used for more advanced configuration; if it does not
-exist, then a sample one is created.</p>
+<p>If a user configuration file exists in file NAME.log.conf in the
+<tt class="docutils literal"><span class="pre">Default.RCDIR</span></tt> directory (usually <tt class="docutils literal"><span class="pre">~/.gc3</span></tt>), it is read and
+used for more advanced configuration; if it does not exist, then a
+sample one is created.</p>
 </dd></dl>
 
 </div>
@@ -870,118 +869,8 @@ to the <cite>Core</cite> class constructor.</dd></dl>
 Do not depend on it.</p>
 </div>
 </div>
-<div class="section" id="module-gc3libs.Exceptions">
-<h2><cite>gc3libs.Exceptions</cite><a class="headerlink" href="#module-gc3libs.Exceptions" title="Permalink to this headline">¶</a></h2>
-<p>Exceptions specific to the <cite>gc3libs</cite> package.</p>
-<dl class="exception">
-<dt id="gc3libs.Exceptions.ConfigurationError">
-<em class="property">exception </em><tt class="descclassname">gc3libs.Exceptions.</tt><tt class="descname">ConfigurationError</tt><big>(</big><em>msg</em>, <em>do_log=True</em><big>)</big><a class="headerlink" href="#gc3libs.Exceptions.ConfigurationError" title="Permalink to this definition">¶</a></dt>
-<dd>Raised when the configuration file (or parts of it) could not be
-read/parsed.  Also used to signal that a required parameter is
-missing or has an unknown/invaliud value.</dd></dl>
-
-<dl class="exception">
-<dt id="gc3libs.Exceptions.DataStagingError">
-<em class="property">exception </em><tt class="descclassname">gc3libs.Exceptions.</tt><tt class="descname">DataStagingError</tt><big>(</big><em>msg</em>, <em>do_log=False</em><big>)</big><a class="headerlink" href="#gc3libs.Exceptions.DataStagingError" title="Permalink to this definition">¶</a></dt>
-<dd>Raised when problems with copying data to or from the remote
-execution site occurred.</dd></dl>
-
-<dl class="exception">
-<dt id="gc3libs.Exceptions.Error">
-<em class="property">exception </em><tt class="descclassname">gc3libs.Exceptions.</tt><tt class="descname">Error</tt><big>(</big><em>msg</em>, <em>do_log=False</em><big>)</big><a class="headerlink" href="#gc3libs.Exceptions.Error" title="Permalink to this definition">¶</a></dt>
-<dd><p>A non-fatal error.</p>
-<p>Depending on the nature of the task, steps could be taken to
-continue, but users <em>must</em> be aware that an error condition
-occurred, so the message is sent to the logs at the ERROR level.</p>
-<p>This is the base class for all error-level exceptions.</p>
-</dd></dl>
-
-<dl class="exception">
-<dt id="gc3libs.Exceptions.FatalError">
-<em class="property">exception </em><tt class="descclassname">gc3libs.Exceptions.</tt><tt class="descname">FatalError</tt><big>(</big><em>msg</em>, <em>do_log=True</em><big>)</big><a class="headerlink" href="#gc3libs.Exceptions.FatalError" title="Permalink to this definition">¶</a></dt>
-<dd><p>A fatal error; execution cannot continue and program should report
-to user and then stop.</p>
-<p>The message is sent to the logs at CRITICAL level
-when the exception is first constructed.</p>
-<p>This is the base class for all fatal exceptions.</p>
-</dd></dl>
-
-<dl class="exception">
-<dt id="gc3libs.Exceptions.InputFileError">
-<em class="property">exception </em><tt class="descclassname">gc3libs.Exceptions.</tt><tt class="descname">InputFileError</tt><big>(</big><em>msg</em>, <em>do_log=True</em><big>)</big><a class="headerlink" href="#gc3libs.Exceptions.InputFileError" title="Permalink to this definition">¶</a></dt>
-<dd>Raised when an input file is specified, which does not exist or
-cannot be read.</dd></dl>
-
-<dl class="exception">
-<dt id="gc3libs.Exceptions.InternalError">
-<em class="property">exception </em><tt class="descclassname">gc3libs.Exceptions.</tt><tt class="descname">InternalError</tt><big>(</big><em>msg</em>, <em>do_log=False</em><big>)</big><a class="headerlink" href="#gc3libs.Exceptions.InternalError" title="Permalink to this definition">¶</a></dt>
-<dd>Raised when some function cannot fulfill its duties, for reasons
-that do not depend on the library client code.  For instance, when
-a response string gotten from an external command cannot be parsed
-as expected.</dd></dl>
-
-<dl class="exception">
-<dt id="gc3libs.Exceptions.InvalidArgument">
-<em class="property">exception </em><tt class="descclassname">gc3libs.Exceptions.</tt><tt class="descname">InvalidArgument</tt><big>(</big><em>msg</em>, <em>do_log=False</em><big>)</big><a class="headerlink" href="#gc3libs.Exceptions.InvalidArgument" title="Permalink to this definition">¶</a></dt>
-<dd>Raised when the arguments passed to a function do not honor some
-required contract.  For instance, either one of two optional
-arguments must be provided, but none of them was.</dd></dl>
-
-<dl class="exception">
-<dt id="gc3libs.Exceptions.InvalidOperation">
-<em class="property">exception </em><tt class="descclassname">gc3libs.Exceptions.</tt><tt class="descname">InvalidOperation</tt><big>(</big><em>msg</em>, <em>do_log=False</em><big>)</big><a class="headerlink" href="#gc3libs.Exceptions.InvalidOperation" title="Permalink to this definition">¶</a></dt>
-<dd>Raised when an operation is attempted, that is not considered
-valid according to the system state.  For instance, trying to
-retrieve the output of a job that has not yet been submitted.</dd></dl>
-
-<dl class="exception">
-<dt id="gc3libs.Exceptions.InvalidResourceName">
-<em class="property">exception </em><tt class="descclassname">gc3libs.Exceptions.</tt><tt class="descname">InvalidResourceName</tt><big>(</big><em>msg</em>, <em>do_log=False</em><big>)</big><a class="headerlink" href="#gc3libs.Exceptions.InvalidResourceName" title="Permalink to this definition">¶</a></dt>
-<dd>Raised to signal that no computational resource with the given
-name is defined in the configuration file.</dd></dl>
-
-<dl class="exception">
-<dt id="gc3libs.Exceptions.InvalidUsage">
-<em class="property">exception </em><tt class="descclassname">gc3libs.Exceptions.</tt><tt class="descname">InvalidUsage</tt><big>(</big><em>msg</em>, <em>do_log=True</em><big>)</big><a class="headerlink" href="#gc3libs.Exceptions.InvalidUsage" title="Permalink to this definition">¶</a></dt>
-<dd><p>Raised when a command is not provided all required arguments on
-the command line, or the arguments do not match the expected
-syntax.</p>
-<p>Since the exception message is the last thing a user will see,
-try to be specific about what is wrong on the command line.</p>
-</dd></dl>
-
-<dl class="exception">
-<dt id="gc3libs.Exceptions.LoadError">
-<em class="property">exception </em><tt class="descclassname">gc3libs.Exceptions.</tt><tt class="descname">LoadError</tt><big>(</big><em>msg</em>, <em>do_log=False</em><big>)</big><a class="headerlink" href="#gc3libs.Exceptions.LoadError" title="Permalink to this definition">¶</a></dt>
-<dd>Raised upon errors loading a job from the persistent storage.</dd></dl>
-
-<dl class="exception">
-<dt id="gc3libs.Exceptions.NoConfigurationFile">
-<em class="property">exception </em><tt class="descclassname">gc3libs.Exceptions.</tt><tt class="descname">NoConfigurationFile</tt><big>(</big><em>msg</em>, <em>do_log=True</em><big>)</big><a class="headerlink" href="#gc3libs.Exceptions.NoConfigurationFile" title="Permalink to this definition">¶</a></dt>
-<dd>Raised when the configuration file cannot be read (e.g., does not
-exist or has wrong permissions), or cannot be parsed (e.g., is
-malformed).</dd></dl>
-
-<dl class="exception">
-<dt id="gc3libs.Exceptions.NoResources">
-<em class="property">exception </em><tt class="descclassname">gc3libs.Exceptions.</tt><tt class="descname">NoResources</tt><big>(</big><em>msg</em>, <em>do_log=False</em><big>)</big><a class="headerlink" href="#gc3libs.Exceptions.NoResources" title="Permalink to this definition">¶</a></dt>
-<dd>Raised to signal that no resources are defined, or that none are
-compatible with the request.</dd></dl>
-
-<dl class="exception">
-<dt id="gc3libs.Exceptions.OutputNotAvailableError">
-<em class="property">exception </em><tt class="descclassname">gc3libs.Exceptions.</tt><tt class="descname">OutputNotAvailableError</tt><big>(</big><em>msg</em>, <em>do_log=False</em><big>)</big><a class="headerlink" href="#gc3libs.Exceptions.OutputNotAvailableError" title="Permalink to this definition">¶</a></dt>
-<dd>Raised upon attempts to retrieve the output for jobs that are
-still in <cite>NEW</cite> or <cite>SUBMITTED</cite> state.</dd></dl>
-
-<dl class="exception">
-<dt id="gc3libs.Exceptions.UnknownJobState">
-<em class="property">exception </em><tt class="descclassname">gc3libs.Exceptions.</tt><tt class="descname">UnknownJobState</tt><big>(</big><em>msg</em>, <em>do_log=False</em><big>)</big><a class="headerlink" href="#gc3libs.Exceptions.UnknownJobState" title="Permalink to this definition">¶</a></dt>
-<dd>Raised when a job state is gotten from the Grid middleware, that
-is not handled by the GC3Libs code.  Might actually mean that
-there is a version mismatch between GC3Libs and the Grid
-middleware used.</dd></dl>
-
+<div class="section" id="gc3libs-exceptions">
+<h2><cite>gc3libs.Exceptions</cite><a class="headerlink" href="#gc3libs-exceptions" title="Permalink to this headline">¶</a></h2>
 </div>
 <div class="section" id="module-gc3libs.persistence">
 <h2><cite>gc3libs.persistence</cite><a class="headerlink" href="#module-gc3libs.persistence" title="Permalink to this headline">¶</a></h2>
@@ -1173,6 +1062,14 @@ treated specially.</p>
 class can be used here as well, with the exception of <cite>input</cite> and
 <cite>output</cite>.  Note that a GAMESS-US job is <em>always</em> submitted with
 <cite>join = True</cite>, therefore any <cite>stderr</cite> setting is ignored.</p>
+<dl class="method">
+<dt id="gc3libs.application.gamess.GamessApplication.postprocess">
+<tt class="descname">postprocess</tt><big>(</big><em>output_dir</em><big>)</big><a class="headerlink" href="#gc3libs.application.gamess.GamessApplication.postprocess" title="Permalink to this definition">¶</a></dt>
+<dd>Append to log the termination status line as extracted from
+the GAMESS &#8216;.out&#8217; file.  According to the normal/abnormal
+termination of the GAMESS job, set the output code to 0 or 1,
+or 2 if the fault was reported only by <tt class="docutils literal"><span class="pre">ddikick</span></tt>.</dd></dl>
+
 <dl class="method">
 <dt id="gc3libs.application.gamess.GamessApplication.qgms">
 <tt class="descname">qgms</tt><big>(</big><em>resource</em>, <em>**kw</em><big>)</big><a class="headerlink" href="#gc3libs.application.gamess.GamessApplication.qgms" title="Permalink to this definition">¶</a></dt>
@@ -1829,43 +1726,6 @@ arguments to the constructor:</p>
 </dd></dl>
 
 <dl class="class">
-<dt id="gc3libs.utils.Template">
-<em class="property">class </em><tt class="descclassname">gc3libs.utils.</tt><tt class="descname">Template</tt><big>(</big><em>template</em>, <em>validator=&lt;function &lt;lambda&gt; at 0x2ba8b90&gt;</em>, <em>**kw</em><big>)</big><a class="headerlink" href="#gc3libs.utils.Template" title="Permalink to this definition">¶</a></dt>
-<dd><p>A template object is a pair <cite>(obj, keywords)</cite>.  Methods are
-provided to substitute the keyword values into <cite>obj</cite>, and to
-iterate over expansions of the given keywords (optionally
-filtering the allowed combination of keyword values).</p>
-<p>Second optional argument <cite>validator</cite> must be a function that
-accepts a set of keyword arguments, and returns <cite>True</cite> if the
-keyword combination is valid (can be expanded/substituted back
-into the template) or <cite>False</cite> if it should be discarded.
-The default validator passes any combination of keywords/values.</p>
-<dl class="method">
-<dt id="gc3libs.utils.Template.expansions">
-<tt class="descname">expansions</tt><big>(</big><em>**kws</em><big>)</big><a class="headerlink" href="#gc3libs.utils.Template.expansions" title="Permalink to this definition">¶</a></dt>
-<dd>Iterate over all valid expansions of the templated object
-<em>and</em> the template keywords.  Returned items are <cite>Template</cite>
-instances constucted with the expanded template object and a
-valid combination of keyword values.</dd></dl>
-
-<dl class="method">
-<dt id="gc3libs.utils.Template.substitute">
-<tt class="descname">substitute</tt><big>(</big><em>**kw</em><big>)</big><a class="headerlink" href="#gc3libs.utils.Template.substitute" title="Permalink to this definition">¶</a></dt>
-<dd><p>Return result of interpolating the value of keywords into the
-template.  Keyword arguments <cite>kw</cite> can be used to override
-keyword values passed to the constructor.</p>
-<p>If the templated object provides a <cite>substitute</cite> method, then
-return the result of invoking it with the template keywords as
-keyword arguments.  Otherwise, return the result of applying
-Python standard library&#8217;s <cite>string.Template.safe_substitute()</cite>
-on the string representation of the templated object.</p>
-<p>Raise <cite>ValueError</cite> if the set of keywords/values is not valid
-according to the validator specified in the constructor.</p>
-</dd></dl>
-
-</dd></dl>
-
-<dl class="class">
 <dt id="gc3libs.utils.defaultdict">
 <em class="property">class </em><tt class="descclassname">gc3libs.utils.</tt><tt class="descname">defaultdict</tt><big>(</big><em>default_factory</em><big>)</big><a class="headerlink" href="#gc3libs.utils.defaultdict" title="Permalink to this definition">¶</a></dt>
 <dd>A backport of <cite>defaultdict</cite> to Python 2.4
@@ -1896,76 +1756,6 @@ as relative to <cite>gc3libs.Default.RCDIR</cite>; if <cite>template_filename</c
 <dt id="gc3libs.utils.dirname">
 <tt class="descclassname">gc3libs.utils.</tt><tt class="descname">dirname</tt><big>(</big><em>pathname</em><big>)</big><a class="headerlink" href="#gc3libs.utils.dirname" title="Permalink to this definition">¶</a></dt>
 <dd>Same as <cite>os.path.dirname</cite> but return <cite>.</cite> in case of path names with no directory component.</dd></dl>
-
-<dl class="function">
-<dt id="gc3libs.utils.expansions">
-<tt class="descclassname">gc3libs.utils.</tt><tt class="descname">expansions</tt><big>(</big><em>obj</em>, <em>**kw</em><big>)</big><a class="headerlink" href="#gc3libs.utils.expansions" title="Permalink to this definition">¶</a></dt>
-<dd><p>Iterate over all expansions of a given object, recursively
-expanding all templates found.  How the expansions are actually
-computed, depends on the type of object being passed in the first
-argument <cite>obj</cite>:</p>
-<ul>
-<li><p class="first">If <cite>obj</cite> is a <cite>list</cite>, iterate over expansions of items in <cite>obj</cite>.
-(In particular, this flattens out nested lists.)</p>
-<p>Example:</p>
-<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">L</span> <span class="o">=</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="p">[</span><span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">]]</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="nb">list</span><span class="p">(</span><span class="n">expansions</span><span class="p">(</span><span class="n">L</span><span class="p">))</span>
-<span class="go">[0, 2, 3]</span>
-</pre></div>
-</div>
-</li>
-<li><p class="first">If <cite>obj</cite> is a dictionary, return dictionary formed by all
-combinations of a key <cite>k</cite> in <cite>obj</cite> with an expansion of the
-corresponding value <cite>obj[k]</cite>.  Expansions are computed by
-recursively calling <cite>expansions(obj[k], **kw)</cite>.</p>
-<p>Example:</p>
-<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">D</span> <span class="o">=</span> <span class="p">{</span><span class="s">&#39;a&#39;</span><span class="p">:</span><span class="mi">1</span><span class="p">,</span> <span class="s">&#39;b&#39;</span><span class="p">:[</span><span class="mi">2</span><span class="p">,</span><span class="mi">3</span><span class="p">]}</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="nb">list</span><span class="p">(</span><span class="n">expansions</span><span class="p">(</span><span class="n">D</span><span class="p">))</span>
-<span class="go">[{&#39;a&#39;: 1, &#39;b&#39;: 2}, {&#39;a&#39;: 1, &#39;b&#39;: 3}]</span>
-</pre></div>
-</div>
-</li>
-<li><p class="first">If <cite>obj</cite> is a <cite>tuple</cite>, iterate over all tuples formed by the
-expansion of every item in <cite>obj</cite>.  (Each item <cite>t[i]</cite> is expanded
-by calling <cite>expansions(t[i], **kw)</cite>.)</p>
-<p>Example:</p>
-<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">T</span> <span class="o">=</span> <span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="p">[</span><span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">])</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="nb">list</span><span class="p">(</span><span class="n">expansions</span><span class="p">(</span><span class="n">T</span><span class="p">))</span>
-<span class="go">[(1, 2), (1, 3)]</span>
-</pre></div>
-</div>
-</li>
-<li><p class="first">If <cite>obj</cite> is a <cite>Template</cite> class instance, then the returned values
-are the result of applying the template to the expansion of each
-of its keywords.</p>
-<p>Example:</p>
-<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">T1</span> <span class="o">=</span> <span class="n">Template</span><span class="p">(</span><span class="s">&quot;a=${n}&quot;</span><span class="p">,</span> <span class="n">n</span><span class="o">=</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">])</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="nb">list</span><span class="p">(</span><span class="n">expansions</span><span class="p">(</span><span class="n">T1</span><span class="p">))</span>
-<span class="go">[Template(&#39;a=${n}&#39;, n=0), Template(&#39;a=${n}&#39;, n=1)]</span>
-</pre></div>
-</div>
-<p>Note that keywords passed to the <cite>expand</cite> invocation override
-the ones used in template construction:</p>
-<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">T2</span> <span class="o">=</span> <span class="n">Template</span><span class="p">(</span><span class="s">&quot;a=${n}&quot;</span><span class="p">)</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="nb">list</span><span class="p">(</span><span class="n">expansions</span><span class="p">(</span><span class="n">T2</span><span class="p">,</span> <span class="n">n</span><span class="o">=</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="mi">3</span><span class="p">]))</span>
-<span class="go">[Template(&#39;a=${n}&#39;, n=1), Template(&#39;a=${n}&#39;, n=3)]</span>
-
-<span class="gp">&gt;&gt;&gt; </span><span class="n">T3</span> <span class="o">=</span> <span class="n">Template</span><span class="p">(</span><span class="s">&quot;a=${n}&quot;</span><span class="p">,</span> <span class="n">n</span><span class="o">=</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">])</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="nb">list</span><span class="p">(</span><span class="n">expansions</span><span class="p">(</span><span class="n">T3</span><span class="p">,</span> <span class="n">n</span><span class="o">=</span><span class="p">[</span><span class="mi">2</span><span class="p">,</span><span class="mi">3</span><span class="p">]))</span>
-<span class="go">[Template(&#39;a=${n}&#39;, n=2), Template(&#39;a=${n}&#39;, n=3)]</span>
-</pre></div>
-</div>
-</li>
-<li><p class="first">Any other value is returned unchanged.</p>
-<p>Example:</p>
-<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">V</span> <span class="o">=</span> <span class="mi">42</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="nb">list</span><span class="p">(</span><span class="n">expansions</span><span class="p">(</span><span class="n">V</span><span class="p">))</span>
-<span class="go">[42]</span>
-</pre></div>
-</div>
-</li>
-</ul>
-</dd></dl>
 
 <dl class="function">
 <dt id="gc3libs.utils.first">
@@ -2025,6 +1815,30 @@ conditional assignment operator:</p>
 <tt class="descclassname">gc3libs.utils.</tt><tt class="descname">mkdir_with_backup</tt><big>(</big><em>path</em><big>)</big><a class="headerlink" href="#gc3libs.utils.mkdir_with_backup" title="Permalink to this definition">¶</a></dt>
 <dd>Like <cite>os.makedirs</cite>, but if <cite>path</cite> already exists, rename the
 existing one appending a <cite>.NUMBER</cite> suffix.</dd></dl>
+
+<dl class="function">
+<dt id="gc3libs.utils.prettyprint">
+<tt class="descclassname">gc3libs.utils.</tt><tt class="descname">prettyprint</tt><big>(</big><em>D</em>, <em>indent=0</em>, <em>width=0</em>, <em>maxdepth=None</em>, <em>step=4</em>, <em>only_keys=None</em>, <em>output=&lt;open file '&lt;stdout&gt;'</em>, <em>mode 'w' at 0x2b4ee8a57150&gt;</em><big>)</big><a class="headerlink" href="#gc3libs.utils.prettyprint" title="Permalink to this definition">¶</a></dt>
+<dd><p>Print dictionary instance <cite>D</cite> in a YAML-like format.
+Each output line consists of:</p>
+<blockquote>
+<ul class="simple">
+<li><cite>indent</cite> spaces,</li>
+<li>the key name,</li>
+<li>a colon character <tt class="docutils literal"><span class="pre">:</span></tt>,</li>
+<li>the associated value.</li>
+</ul>
+</blockquote>
+<p>If the total line length exceeds <cite>width</cite>, the value is printed
+on the next line, indented by further <cite>step</cite> spaces; a value of 0 for
+<cite>width</cite> disables this line wrapping.</p>
+<p>Optional argument <cite>only_keys</cite> can be a callable that must return
+<cite>True</cite> when called with keys that should be printed, or a list of
+key names to print.</p>
+<p>Dictionary instances appearing as values are processed recursively
+(up to <cite>maxdepth</cite> nesting).  Each nested instance is printed
+indented <cite>step</cite> spaces from the enclosing dictionary.</p>
+</dd></dl>
 
 <dl class="function">
 <dt id="gc3libs.utils.progressive_number">
@@ -2300,7 +2114,7 @@ as more lines are written to the given stream.</dd></dl>
 <li><a class="reference external" href="#module-gc3libs"><cite>gc3libs</cite></a></li>
 <li><a class="reference external" href="#module-gc3libs.core"><cite>gc3libs.core</cite></a></li>
 <li><a class="reference external" href="#gc3libs-default"><cite>gc3libs.Default</cite></a></li>
-<li><a class="reference external" href="#module-gc3libs.Exceptions"><cite>gc3libs.Exceptions</cite></a></li>
+<li><a class="reference external" href="#gc3libs-exceptions"><cite>gc3libs.Exceptions</cite></a></li>
 <li><a class="reference external" href="#module-gc3libs.persistence"><cite>gc3libs.persistence</cite></a></li>
 <li><a class="reference external" href="#module-gc3libs.application"><cite>gc3libs.application</cite></a></li>
 <li><a class="reference external" href="#module-gc3libs.application.gamess"><cite>gc3libs.application.gamess</cite></a></li>

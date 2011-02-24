@@ -33,7 +33,7 @@ import setuptools
 import setuptools.dist
 setuptools.setup(
     name = "gc3pie",
-    version = "0.14.15", # format: 0.(MONTH+12).DAY (for now ...)
+    version = "1.0rc1",
 
     packages = setuptools.find_packages(exclude=['ez_setup']),
 
@@ -73,7 +73,7 @@ setuptools.setup(
         # texttable -- format tabular text output
         'texttable',
         # pyCLI -- object-oriented command-line app programming
-        'pyCLI',
+        'pyCLI==2.0.1',
         # magnitude -- represent memory, time, etc. as physical quantitites
         'magnitude',
         ],
