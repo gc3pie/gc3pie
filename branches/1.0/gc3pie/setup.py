@@ -26,6 +26,13 @@ if hasattr(os, "unsetenv"):
     os.unsetenv(REINVOKE)
 
 
+def read_whole_file(path):
+    stream = open(path, 'r')
+    text = stream.read()
+    stream.close
+    return text
+
+
 # see http://peak.telecommunity.com/DevCenter/setuptools
 # for an explanation of the keywords and syntax of this file.
 #
@@ -39,11 +46,33 @@ setuptools.setup(
 
     # metadata for upload to PyPI
     description = "A Python library and simple command-line frontend for computational job submission to multiple resources.",
+    long_description = read_whole_file('README.txt'),
     author = "Grid Computing Competence Centre, University of Zurich",
     author_email = "gc3utils-dev@gc3.lists.uzh.ch",
     license = "LGPL",
     keywords = "grid arc globus sge gridengine ssh gamess rosetta batch job",
     url = "http://gc3pie.googlecode.com/", # project home page
+
+    # see http://pypi.python.org/pypi?%3Aaction=list_classifiers
+    classifiers = [
+        "Development Status :: 5 - Production/Stable",
+        "Environment :: Console",
+        "Intended Audience :: Developers",
+        "Intended Audience :: Science/Research",
+        "License :: OSI Approved :: GNU Library or Lesser General Public License (LGPL)",
+        "License :: DFSG approved",
+        "Operating System :: POSIX :: Linux",
+        "Programming Language :: Python",
+        "Programming Language :: Python :: 2",
+        "Programming Language :: Python :: 2.4",
+        "Programming Language :: Python :: 2.5",
+        "Programming Language :: Python :: 2.6",
+        "Programming Language :: Python :: 2.7",
+        "Topic :: Scientific/Engineering",
+        "Topic :: Scientific/Engineering :: Bio-Informatics",
+        "Topic :: Scientific/Engineering :: Chemistry",
+        "Topic :: System :: Distributed Computing",
+        ],
 
     entry_points = {
         'console_scripts': [
@@ -80,8 +109,10 @@ setuptools.setup(
 
     # additional non-Python files to be bundled in the package
     package_data = {
-        'gc3libs': ['etc/gc3pie.conf.example',
-                    'etc/logging.conf.example'],
+        'gc3libs': [
+            'etc/gc3pie.conf.example',
+            'etc/logging.conf.example'
+            ],
         },
 
     # `zip_safe` can ease deployment, but is only allowed if the package
