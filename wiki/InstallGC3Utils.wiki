@@ -134,7 +134,8 @@ Before you can actually use this file, you will need to insert into it
 three values, for which we can provide no default: ``aai_username``,
 ``idp``, and ``vo``.
 
-  * aai_username: This is the "username" you are asked for when
+  * aai_username: 
+     This is the "username" you are asked for when
      accessing any [http://www.switch.ch/aai SWITCHaai] / Shibboleth
      web page, e.g., https://gc3-aai01.uzh.ch/secure/
 
