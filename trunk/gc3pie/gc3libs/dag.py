@@ -27,7 +27,7 @@ can implement problem-specific job control policies.
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 #
 __docformat__ = 'reStructuredText'
-__version__ = '$Revision$'
+__version__ = 'development version (SVN $Revision$)'
 
 
 from gc3libs import log, Run, Task
