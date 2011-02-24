@@ -14,15 +14,15 @@
 Installation
 ============
 
-These instructions show how to install the GC3Utils from the GC3 svn
-repository into their own python environment.
+These instructions show how to install GC3Pie from the GC3 source
+repository into a separate python environment (called "virtualenv").
 
 0. Install software prerequisites: 
    
    * On Debian/Ubuntu, install packages: ``subversion``,
      ``python-dev``, ``python-profiler`` and the C/C++ compiler::
      
-       apt-get install subversion python-dev python-profiler gcc g++
+       apt-get install subversion python-dev gcc g++
 
    * On CentOS5, install packages ``subversion`` and ``python-devel``
      and the C/C++ compiler::
@@ -85,7 +85,7 @@ repository into their own python environment.
       rm -rf virtualenv
 
 
-2. Create a virtualenv to host the ``gc3pie`` installation at the
+3. Create a virtualenv to host the ``gc3pie`` installation at the
    directory you chose in Step 1.::
 
        virtualenv $HOME/gc3pie # use '/opt/gc3pie' if installing as root
@@ -93,12 +93,12 @@ repository into their own python environment.
        source bin/activate
 
 
-3. Check-out the ``gc3pie`` files in a ``src/`` directory::
+4. Check-out the ``gc3pie`` files in a ``src/`` directory::
      
        svn co http://gc3pie.googlecode.com/svn/branches/1.0/gc3pie src
    
   
-4. Install the ``gc3pie`` in "develop" mode, so any modification
+5. Install the ``gc3pie`` in "develop" mode, so any modification
    pulled from subversion is immediately reflected in the running environment::
 
        cd src/
@@ -109,7 +109,7 @@ repository into their own python environment.
    directory.
 
 
-5. GC3Pie comes with driver scripts to run and manage large families
+6. GC3Pie comes with driver scripts to run and manage large families
    of jobs from a few selected applications.  These scripts are not
    installed by default because not everyone needs them.
 
@@ -127,7 +127,7 @@ repository into their own python environment.
      ln -s '../src/gc3apps/codeml/gcodeml.py' bin/gcodeml
 
 
-6. Before you can actually run the GC3Pie, you need to have a
+7. Before you can actually run the GC3Pie, you need to have a
    working configuration file; `the ConfigurationFile Wiki page
    <http://code.google.com/p/gc3pie/wiki/ConfigurationFile>` provides
    an explanation of the syntax to use in configuration files.
