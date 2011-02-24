@@ -69,11 +69,11 @@ Installation instructions and further reading
 =============================================
 
 For up-to-date information, please visit the GC3Pie home page at:
-  http://gc3pie.googlecode.com/
+http://gc3pie.googlecode.com/
 
 Installation instructions are in the ``INSTALL.txt`` file (in this
 same directory), or can be read online at: 
-  http://code.google.com/p/gc3pie/wiki/InstallGC3Pie
+http://code.google.com/p/gc3pie/wiki/InstallGC3Pie
 
 
 .. References
