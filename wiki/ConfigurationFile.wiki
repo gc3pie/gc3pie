@@ -184,11 +184,11 @@ section (in the `auth` key).
 Resources currently come in two flavours, distinguished by the value
 of the `type` key:
   * If `type` is `arc`, then the resource is accessed using the ARC grid middleware;
-  * If `type` is `ssh_sge`, then the resource is an SGE batch system, to be accessed by an SSH connection to its front-end node.
+  * If `type` is `sge`, then the resource is an SGE batch system, to be accessed by an SSH connection to its front-end node.
 #
 Every `resource/***` section must reference a valid
 `auth/***` section. Resources of `arc` type can only
-reference `voms` type auth sections; resources of `ssh_sge` type can
+reference `voms` type auth sections; resources of `sge` type can
 only reference `ssh` type sections.
 
 Some keys are commmon to all resource types:
@@ -206,7 +206,7 @@ The `arc_ldap` key should be defined to the LDAP URL of an ARC GIIS
 If, in addition, the `frontend` key is also defined, then only queues 
 belonging to the specified frontend will be considered for brokering.
 
-=== `ssh_sge` resources ===
+=== `sge` resources ===
   * `frontend`: should contain the FQDN of the SGE front-end node.
 An SSH connection will be attempted to this node, in order to submit
 jobs and retrieve status info. 
@@ -267,7 +267,7 @@ ncores = 80
 
 [resource/ocikbpra]
 # A single SGE cluster, accessed by SSH'ing to the front-end node
-type = ssh_sge
+type = sge
 auth = <auth_name> # pick an `ssh` type auth, e.g., "ssh1"
 transport = ssh
 frontend = ocikbpra.uzh.ch
