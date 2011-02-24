@@ -1,0 +1,5 @@
+ $CONTRL DFTTYP=B2PLYP ISPHER=1 $END
+ $DFT NRAD=96 NLEB=302 $END 
+ $BASIS GBASIS=CCT $END              
+ $SYSTEM MWORDS=10 MEMDDI=100 $END
+!-- geometry data will be added below this line --
