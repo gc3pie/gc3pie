@@ -23,7 +23,7 @@ It uses the generic `gc3libs.cmdline.SessionBasedScript` framework.
 
 See the output of ``grosetta --help`` for program usage instructions.
 """
-__version__ = '$Revision$'
+__version__ = 'development version (SVN $Revision$)'
 # summary of user-visible changes
 __changelog__ = """
   2010-12-20:
