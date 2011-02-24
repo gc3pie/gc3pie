@@ -73,7 +73,7 @@ setuptools.setup(
         # texttable -- format tabular text output
         'texttable',
         # pyCLI -- object-oriented command-line app programming
-        'pyCLI',
+        'pyCLI==2.0.1',
         # magnitude -- represent memory, time, etc. as physical quantitites
         'magnitude',
         ],
