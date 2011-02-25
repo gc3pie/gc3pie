@@ -481,7 +481,7 @@ def prettyprint(D, indent=0, width=0, maxdepth=None, step=4,
                 if str(k) not in only_keys:
                     continue
         first = str.join('', [leading_spaces, str(k), ': '])
-        if isinstance(v, dict):
+        if isinstance(v, (dict, UserDict.DictMixin, UserDict.UserDict)):
             if maxdepth is None or maxdepth > 0:
                 if maxdepth is None:
                     depth = None
@@ -502,13 +502,19 @@ def prettyprint(D, indent=0, width=0, maxdepth=None, step=4,
             first += '\n'
         # indent a multi-line block by indent+step spaces
         if '\n' in second:
-            lines = second.split('\n')
+            lines = second.splitlines()
+            # keep indentation relative to first line
+            dedent = 0
+            line0 = lines[0].expandtabs(step)
+            while line0[dedent].isspace():
+                dedent += 1
+            # rebuild `second`, indenting each line by (indent+step) spaces
             second = ''
             for line in lines:
                 second = str.join('', [
                     second,
                     ' ' * (indent+step),
-                    line.strip(),
+                    line.rstrip().expandtabs(step)[dedent:],
                     '\n'
                     ])
         # there can be multiple trailing '\n's, which we remove here
