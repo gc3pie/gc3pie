@@ -165,19 +165,17 @@ class Core:
             job.info = ("Submitted to '%s' at %s"
                         % (job.resource_name, 
                            time.ctime(job.timestamp[Run.State.SUBMITTED])))
-            if hasattr(job, 'submitted'):
-                job.submitted()
+            job.submitted()
             # job submitted; return to caller
             return
         # if we get here, all submissions have failed; call the
         # appropriate handler method if defined
-        if hasattr(app, 'submit_error'):
-            ex = app.submit_error(exs)
-            if isinstance(ex, Exception):
-                app.execution.info = ("Submission failed: %s" % str(ex))
-                raise ex
-            else:
-                return
+        ex = app.submit_error(exs)
+        if isinstance(ex, Exception):
+            app.execution.info = ("Submission failed: %s" % str(ex))
+            raise ex
+        else:
+            return
         
 
     def update_job_state(self, *apps, **kw):
@@ -224,10 +222,9 @@ class Core:
                                           app, ex.__class__.__name__, str(ex), exc_info=True)
                         state = Run.State.UNKNOWN
                         # run error handler if defined
-                        if hasattr(app, 'update_job_state_error'):
-                            ex = app.update_job_state_error(ex)
-                            if isinstance(ex, Exception):
-                                raise ex
+                        ex = app.update_job_state_error(ex)
+                        if isinstance(ex, Exception):
+                            raise ex
                     if state != Run.State.UNKNOWN or update_on_error:
                         app.execution.state = state
                 if app.execution.state != old_state:
@@ -412,8 +409,7 @@ class Core:
         job.state = Run.State.TERMINATED
         job.signal = Run.Signals.Cancelled
         job.log.append("Cancelled.")
-        if hasattr(job, 'terminated'):
-            job.terminated()
+        job.terminated()
 
 
     def peek(self, app, what='stdout', offset=0, size=None, **kw):
