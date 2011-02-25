@@ -154,6 +154,9 @@ class cmd_ginfo(_BaseCmd):
     the command line is printed; this will only make sense if you know
     GC3Libs internals.
     """
+
+    verbose_logging_threshold = 2
+    
     def setup_options(self):
         self.add_param("-p", "--print", action="store", dest="keys", 
                        metavar="LIST", default='', 
@@ -177,11 +180,21 @@ class cmd_ginfo(_BaseCmd):
         if len(self.params.keys) > 0:
             only_keys = self.params.keys.split(',')
         else:
-            only_keys = None
+            if self.params.verbose < 2:
+                def names_not_starting_with_underscore(name):
+                    return not name.startswith('_')
+                only_keys = names_not_starting_with_underscore
+            else:
+                # print *all* keys if `-vv` is given
+                only_keys = None
         
         for app in self._get_jobs(self.params.args):
             print(str(app.persistent_id))
-            utils.prettyprint(app.execution, indent=4, width=width, only_keys=only_keys)
+            if self.params.verbose == 0:
+                utils.prettyprint(app.execution, indent=4, width=width, only_keys=only_keys)
+            else:
+                # with `-v` and above, dump the whole `Application` object
+                utils.prettyprint(app, indent=4, width=width, only_keys=only_keys)
         return 0
 
 
