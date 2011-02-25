@@ -356,7 +356,7 @@ class cmd_gresub(_BaseCmd):
                                      jobid, ex.__class__.__name__, str(ex))
             # kill remote job
             try:
-                app = self._core.kill(app)
+                self._core.kill(app)
             except Exception, ex:
                 # ignore errors, but alert user...
                 pass
@@ -368,7 +368,7 @@ class cmd_gresub(_BaseCmd):
             except Exception, ex:
                 failed = 1
                 self.log.error("Failed resubmission of job '%s': %s: %s", 
-                                   jobid, ex.__class__.__name__, str(ex))
+                               jobid, ex.__class__.__name__, str(ex))
         return failed
 
 
