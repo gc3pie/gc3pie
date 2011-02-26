@@ -72,6 +72,8 @@ class Default(object):
     SSH_PORT = 22
     SSH_CONNECT_TIMEOUT = 30
     
+    FORK_LRMS = 'fork'
+
     # Proxy
     PROXY_VALIDITY_THRESHOLD = 600 #: Proxy validity threshold in seconds. If proxy is expiring before the thresold, it will be marked as to be renewed.
 

@@ -35,6 +35,7 @@ warnings.simplefilter("ignore")
 import gc3libs
 from gc3libs import Application, Run
 from gc3libs.backends.sge import SgeLrms
+from gc3libs.backends.fork import ForkLrms
 from gc3libs.authentication import Auth
 import gc3libs.exceptions
 import gc3libs.Resource as Resource
@@ -50,6 +51,31 @@ class Core:
         self._resources = resource_list
         self.auths = auths
         self.auto_enable_auth = auto_enable_auth
+        self._lrms_list = []
+        self._init_backends()
+
+    def get_backend(self, resource_name):
+        lrms = [ lrms for lrms in self._lrms_list
+                 if fnmatch(lrms._resource.name, resource_name) ]
+        if lrms:
+            return lrms[0]
+        else:
+            raise gc3libs.exceptions.InvalidResourceName(
+                "Cannot find computational resource '%s'" % 
+                resource_name)
+
+    def _init_backends(self):
+        for _resource in self._resources:
+            try:
+                _lrms = self._get_backend(_resource.name)
+                self.auths.get(_lrms._resource.auth)
+                self._lrms_list.append(_lrms)
+            except Exception, ex:
+                # log exceptions but ignore them
+                gc3libs.log.warning("Failed creating LRMS for resource '%s' of type '%s': %s: %s",
+                                    _resource.name, _resource.type,
+                                    ex.__class__.__name__, str(ex), exc_info=True)
+                continue
 
     def select_resource(self, match):
         """
@@ -67,13 +93,17 @@ class Core:
             (wildcards "*" and "?" are allowed) are retained.
         """
         try:
-            self._resources = [ res for res in self._resources if match(res) ]
+            # self._resources = [ res for res in self._resources if match(res) ]
+            self._lrms_list = [ lrms for lrms in self._lrms_list if match(lrms._resource) ]
         except:
             # `match` is not callable, then assume it's a 
             # glob pattern and select resources whose name matches
-            self._resources = [ res for res in self._resources
-                                if fnmatch(res.name, match) ]
-        return len(self._resources)
+            # self._resources = [ res for res in self._resources
+            #                     if fnmatch(res.name, match) ]
+            self._lrms_list = [ lrms for lrms in self._lrms_list
+                                if fnmatch(lrms._resource.name, match) ]
+        # return len(self._resources)
+        return len(self._lrms_list)
 
     def free(self, app, **kw):
         """
@@ -91,7 +121,8 @@ class Core:
 
         auto_enable_auth = kw.get('auto_enable_auth', self.auto_enable_auth)
 
-        lrms = self._get_backend(app.execution.resource_name)
+        #lrms = self._get_backend(app.execution.resource_name)
+        lrms =  self.get_backend(app.execution.resource_name)
         self.auths.get(lrms._resource.auth)
         lrms.free(app)
         
@@ -118,27 +149,32 @@ class Core:
 
         job = app.execution
 
-        gc3libs.log.debug('Instantiating LRMSs ...')
-        _lrms_list = []
-        for _resource in self._resources:
-            try:
-                _lrms = self._get_backend(_resource.name)
-                self.auths.get(_lrms._resource.auth)
-                _lrms_list.append(_lrms)
-            except Exception, ex:
-                # log exceptions but ignore them
-                gc3libs.log.warning("Failed creating LRMS for resource '%s' of type '%s': %s: %s",
-                                    _resource.name, _resource.type,
-                                    ex.__class__.__name__, str(ex), exc_info=True)
-                continue
-        if len(_lrms_list) == 0:
+        # gc3libs.log.debug('Instantiating LRMSs ...')
+        # _lrms_list = []
+        # for _resource in self._resources:
+        #     try:
+        #         _lrms = self._get_backend(_resource.name)
+        #         self.auths.get(_lrms._resource.auth)
+        #         _lrms_list.append(_lrms)
+        #     except Exception, ex:
+        #         # log exceptions but ignore them
+        #         gc3libs.log.warning("Failed creating LRMS for resource '%s' of type '%s': %s: %s",
+        #                             _resource.name, _resource.type,
+        #                             ex.__class__.__name__, str(ex), exc_info=True)
+        #         continue
+
+        if len(self._lrms_list) == 0:
             raise gc3libs.exceptions.NoResources("Could not initialize any computational resource"
                               " - please check log and configuration file.")
+
+        # XXX: auth should probably become part of LRMS and controlled within it
+        for _lrms in self._lrms_list:
+            self.auths.get(_lrms._resource.auth)
 
         gc3libs.log.debug('Performing brokering ...')
         # decide which resource to use
         # (Resource)[] = (Scheduler).PerformBrokering((Resource)[],(Application))
-        _selected_lrms_list = scheduler.do_brokering(_lrms_list,app)
+        _selected_lrms_list = scheduler.do_brokering(self._lrms_list,app)
         gc3libs.log.debug('Scheduler returned %d matching resources',
                            len(_selected_lrms_list))
         if 0 == len(_selected_lrms_list):
@@ -151,7 +187,7 @@ class Core:
             gc3libs.log.debug("Attempting submission to resource '%s'..." 
                               % lrms._resource.name)
             try:
-                # self.auths.get(lrms._resource.auth)
+                self.auths.get(lrms._resource.auth)
                 lrms.submit_job(app)
             except Exception, ex:
                 gc3libs.log.debug("Error in submitting job to resource '%s': %s: %s", 
@@ -165,10 +201,10 @@ class Core:
             job.info = ("Submitted to '%s' at %s"
                         % (job.resource_name, 
                            time.ctime(job.timestamp[Run.State.SUBMITTED])))
-            job.submitted()
+            app.submitted()
             # job submitted; return to caller
             return
-        # if we get here, all submissions have failed; call the
+        # if wet get here, all submissions have failed; call the
         # appropriate handler method if defined
         ex = app.submit_error(exs)
         if isinstance(ex, Exception):
@@ -203,7 +239,7 @@ class Core:
             gc3libs.log.debug("Updating state (%s) of application: %s", state, app)
             try:
                 if state not in [ Run.State.NEW, Run.State.TERMINATED ]:
-                    lrms = self._get_backend(app.execution.resource_name)
+                    lrms = self.get_backend(app.execution.resource_name)
                     try:
                         self.auths.get(lrms._resource.auth)
                         state = lrms.update_job_state(app)
@@ -317,7 +353,7 @@ class Core:
 
         # download job output
         try:
-            lrms = self._get_backend(job.resource_name)
+            lrms = self.get_backend(job.resource_name)
             self.auths.get(lrms._resource.auth)
             lrms.get_results(app, download_dir)
         except gc3libs.exceptions.DataStagingError, ex:
@@ -361,7 +397,7 @@ class Core:
         for resource in self._resources:
             try:
                 auto_enable_auth = kw.get('auto_enable_auth', self.auto_enable_auth)
-                lrms = self._get_backend(resource.name)
+                lrms = self.get_backend(resource.name)
                 self.auths.get(lrms._resource.auth)
                 updated_resources.append(lrms.get_resource_status())
                 resource.updated = True
@@ -401,7 +437,7 @@ class Core:
         """
         job = app.execution
         auto_enable_auth = kw.get('auto_enable_auth', self.auto_enable_auth)
-        lrms = self._get_backend(job.resource_name)
+        lrms = self.get_backend(job.resource_name)
         self.auths.get(lrms._resource.auth)
         lrms.cancel_job(app)
         gc3libs.log.debug("Setting job '%s' status to TERMINATED"
@@ -409,7 +445,7 @@ class Core:
         job.state = Run.State.TERMINATED
         job.signal = Run.Signals.Cancelled
         job.log.append("Cancelled.")
-        job.terminated()
+        app.terminated()
 
 
     def peek(self, app, what='stdout', offset=0, size=None, **kw):
@@ -445,7 +481,7 @@ class Core:
 
             # Get authN
             auto_enable_auth = kw.get('auto_enable_auth', self.auto_enable_auth)
-            _lrms = self._get_backend(job.resource_name)
+            _lrms = self.get_backend(job.resource_name)
             self.auths.get(_lrms._resource.auth)
 
             _local_file = tempfile.NamedTemporaryFile(suffix='.tmp', prefix='gc3libs.')
@@ -472,6 +508,8 @@ class Core:
                         _lrms = ArcLrms(_resource, self.auths)
                     elif _resource.type == gc3libs.Default.SGE_LRMS:
                         _lrms = SgeLrms(_resource, self.auths)
+                    elif _resource.type == gc3libs.Default.FORK_LRMS:
+                        _lrms = ForkLrms(_resource, self.auths)
                     else:
                         raise gc3libs.exceptions.ConfigurationError("Unknown resource type '%s'" 
                                                  % _resource.type)
@@ -520,18 +558,14 @@ def get_resources(resources_list):
                               " Please check configuration file.",
                                key, str(x))
             continue
-        if resource['type'] == 'arc':
-            tmpres.type = gc3libs.Default.ARC_LRMS
-        elif resource['type'] == 'sge':
-            tmpres.type = gc3libs.Default.SGE_LRMS
-        else:
+        if not (tmpres.type == gc3libs.Default.ARC_LRMS or tmpres.type == gc3libs.Default.SGE_LRMS or tmpres.type == gc3libs.Default.FORK_LRMS):
             gc3libs.log.error("Configuration error: '%s' is no valid resource type.", 
                               resource['type'])
             continue
         gc3libs.log.debug("Created %s resource '%s' of type %s"
                           % (utils.ifelse(tmpres.is_valid, "valid", "invalid"),
-                             resource['name'], 
-                             resource['type']))
+                             tmpres.name, 
+                             tmpres.type))
         resources.append(tmpres)
     return resources
 
@@ -595,17 +629,17 @@ def read_config(*locations):
         # gc3libs.log.debug("Core.read_config(): read %d resources from configuration file '%s'",
         #                    len(resources), location)
 
-        # remove disabled resources
-        disabled_resources = [ ]
-        for resource in resources.values():
-            if resource.has_key('enabled') and not resource['enabled']:
-                disabled_resources.append(resource['name'])
-        for resource_name in disabled_resources:
-            gc3libs.log.info("Ignoring computational resource '%s'"
-                              " because of 'enabled=False' setting"
-                             " in configuration file.",
-                              resource_name)
-            del resources[resource_name]
+    # remove disabled resources
+    disabled_resources = [ ]
+    for resource in resources.values():
+        if resource.has_key('enabled') and not resource['enabled']:
+            disabled_resources.append(resource['name'])
+    for resource_name in disabled_resources:
+        gc3libs.log.info("Ignoring computational resource '%s'"
+                         " because of 'enabled=False' setting"
+                         " in configuration file.",
+                         resource_name)
+        del resources[resource_name]
 
     if files_successfully_read == 0:
         raise gc3libs.exceptions.NoConfigurationFile("Could not read any configuration file; tried locations '%s'."

@@ -55,7 +55,7 @@ class RosettaApplication(gc3libs.Application):
         # we're submitting Rosetta jobs thorugh the support script
         # "rosetta.sh", so do the specific setup tailored to this
         # script' usage
-        src_rosetta_sh = resource_filename(Requirement.parse("gc3utils"), 
+        src_rosetta_sh = resource_filename(Requirement.parse("gc3pie"), 
                                            "gc3libs/etc/rosetta.sh")
 
         # ensure `application` has no trailing ".something' (e.g., ".linuxgccrelease")
