@@ -75,13 +75,21 @@ class Auth(object):
 
 class NoneAuth(object):
     """Auth proxy to use when no auth is needed."""
-    def __init__(self, **auth_dicts):
-        self.__dict__.update(auth_dicts)
+    def __init__(self, **auth):
+        try:
+            # test validity
+            assert auth['type'] == 'none',\
+                "Configuration error. Unknown type: %s. Valid type: none" \
+                % auth.type
+            self.__dict__.update(auth)
+        except AssertionError, x:
+            raise gc3libs.exceptions.ConfigurationError('Erroneous configuration parameter: %s' % str(x))
 
     def is_valid(self):
         return True
     
     def check(self):
+        gc3libs.log.debug('Checking auth: none')
         return True
 
     def enable(self):

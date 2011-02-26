@@ -41,7 +41,7 @@ class Transport(object):
         """
         Open a transport session.
         """
-        raise NotImplementedError("Abstract method `Transport.open()` called - this should have been defined in a derived class.")
+        raise NotImplementedError("Abstract method `Transport.connect()` called - this should have been defined in a derived class.")
 
     def execute_command(self, command):
         """
@@ -315,30 +315,93 @@ import shutil
 class LocalTransport(Transport):
 
     _is_open = False
+    _process = None
 
     def __init__(self):
         pass
 
+    def get_proc_state(self, pid):
+        """
+        Getting process state.
+        params: pid - process id
+        
+        return:
+        0 (process terminated)
+        1 (process running)
+        -N (when available, process terminated with N exit code)
+ 
+        raise: IOError if status file cannot be accessed
+        TransportError if any other Exception is raised
+        """
+        
+        if (not self._process is None) and (_process.pid == pid):
+            return self._process.poll()
+        else:
 
-    @same_docstring_as(Transport.open)
-    def open(self):
+            statfile = os.path.join(self.procloc, str(pid), "stat")
+        
+            try:
+                if not os.path.exists(statfile):
+                    return '0'
+                fd = open(statfile,'r')
+                status = fd.readline().split(" ")[2]
+                fd.close()
+                if status in 'RSDZTW':
+                    # process still runing
+                    return 1
+                else:
+                    # unknown state
+                    gc3libs.log.warning('Unhandled process state [%s]' % status)
+                    return 1
+
+            except IOError:
+                raise
+            except Exception, ex:
+                log.error('Error while trying to read status file. Error type %s. message %s' % (ex.__class__, ex.message))
+                raise gc3libs.exceptions.TransportError(x.message)
+
+
+    @same_docstring_as(Transport.connect)
+    def connect(self):
         self._is_open = True
 
+    #@same_docstring_as(Transport.open)
+    #def open(self, source, mode, bufsize=-1):
 
-    @same_docstring_as(Transport.execute_command)
-    def execute_command(self, command):
-        assert self._is_open is False, \
+    def execute_command_and_detach(self, command):
+        assert self._is_open is True, \
             "`Transport.execute_command()` called" \
             " on `Transport` instance closed / not yet open"
 
         try:
             subprocess_command = shlex.split(command)
-            p = subprocess.Popen(subprocess_command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, close_fds=True)
+            _process = subprocess.Popen(subprocess_command, close_fds=True, stdout=subprocess.PIPE)
+            return _process.pid
+        except Exception, ex:
+            raise gc3libs.exceptions.TransportError("Failed executing command '%s': %s: %s" 
+                                     % (command, ex.__class__.__name__, str(ex)))
 
-            exitcode = p.comunicate()
 
-            stdout = p.stdout.read()
-            stderr = p.stderr.read()
+    def get_pid(self):
+        if not self._process is None:
+            return self._process.pid
+        else:
+            return -1
+
+    @same_docstring_as(Transport.execute_command)
+    def execute_command(self, command):
+        assert self._is_open is True, \
+            "`Transport.execute_command()` called" \
+            " on `Transport` instance closed / not yet open"
+
+        try:
+            subprocess_command = shlex.split(command)
+            self._process = subprocess.Popen(subprocess_command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, close_fds=True)
+
+            exitcode = self._process.wait()
+
+            stdout = self._process.stdout.read()
+            stderr = self._process.stderr.read()
 
             gc3libs.log.debug("Executed local command '%s', got exit status: %d" 
                               % (command, exitcode))
@@ -346,20 +409,20 @@ class LocalTransport(Transport):
             return exitcode, stdout, stderr
 
         except Exception, ex:
-            raise TransportException("Failed executing command '%s': %s: %s" 
+            raise gc3libs.exceptions.TransportError("Failed executing command '%s': %s: %s" 
                                      % (command, ex.__class__.__name__, str(ex)))
 
         
     @same_docstring_as(Transport.listdir)
     def listdir(self, path):
-        assert self._is_open is False, \
+        assert self._is_open is True, \
             "`Transport.execute_command()` called" \
             " on `Transport` instance closed / not yet open"
 
         try:
             return os.listdir(path)
         except Exception, ex:
-            raise TransportException("Could not list local directory '%s': %s: %s" 
+            raise gc3libs.exceptions.TransportError("Could not list local directory '%s': %s: %s" 
                                      % (path, ex.__class__.__name__, str(ex)))
 
 
@@ -370,7 +433,7 @@ class LocalTransport(Transport):
 
     @same_docstring_as(Transport.put)
     def put(self, source, destination):
-        assert self._is_open is False, \
+        assert self._is_open is True, \
             "`Transport.execute_command()` called" \
             " on `Transport` instance closed / not yet open"
 
@@ -383,7 +446,7 @@ class LocalTransport(Transport):
                                     " ('%s'). Ignoring." % source)
                 return True
         except Exception, ex:
-            raise TransportException("Could not copy '%s' to '%s': %s: %s" 
+            raise gc3libs.exceptions.TransportError("Could not copy '%s' to '%s': %s: %s" 
                                      % (source, destination, ex.__class__.__name__, str(ex)))
 
 
@@ -395,7 +458,7 @@ class LocalTransport(Transport):
 
     @same_docstring_as(Transport.remove)
     def remove(self, path):
-        assert self._is_open is False, \
+        assert self._is_open is True, \
             "`Transport.execute_command()` called" \
             " on `Transport` instance closed / not yet open"
 
@@ -403,13 +466,13 @@ class LocalTransport(Transport):
             gc3libs.log.debug("Removing %s", path)
             return os.remove(path)
         except Exception, ex:
-            raise TransportException("Could not remove file '%s': %s: %s" 
+            raise gc3libs.exceptions.TransportError("Could not remove file '%s': %s: %s" 
                                      % (path, ex.__class__.__name__, str(ex)))
 
 
     @same_docstring_as(Transport.remove_tree)
     def remove_tree(self, path):
-        assert self._is_open is False, \
+        assert self._is_open is True, \
             "`Transport.execute_command()` called" \
             " on `Transport` instance closed / not yet open"
 
@@ -418,7 +481,7 @@ class LocalTransport(Transport):
                               " removing local directory tree '%s'" % path)
             return os.removedirs(path)
         except Exception, ex:
-            raise TransportException("Could not remove directory tree '%s': %s: %s" 
+            raise gc3libs.exceptions.TransportError("Could not remove directory tree '%s': %s: %s" 
                                      % (path, ex.__class__.__name__, str(ex)))
 
 
