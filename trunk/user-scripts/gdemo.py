@@ -37,13 +37,10 @@ from optparse import OptionParser
 
 from gc3libs import Application, Run
 import gc3libs.application.demo as demo
-import gc3libs.Default as Default
-from   gc3libs.Exceptions import *
+import gc3libs
+import gc3libs.exceptions
 import gc3libs.core as core
-import gc3libs.utils as utils
-
-# import gc3utils
-
+#import gc3libs.utils as utils
 
 # defaults - XXX: do they belong in ../core.py instead?
 _homedir = os.path.expandvars('$HOME')
@@ -74,11 +71,15 @@ def main():
                       " (default is 0; any higher number may spoil screen output).",
                       )
 
+    parser.add_option("-r", "--resource", action="store", dest="resource_name", 
+                       metavar="NAME", default=None, 
+                       help='Select execution resource by name')
+
 
     (options, args) = parser.parse_args(sys.argv[1:])
 
     if len(args) < 1:
-        raise InvalidUsage('Wrong number of arguments: this commands expects at exactly 1 argument: Integer to be squared')
+        raise gc3libs.exceptions.InvalidUsage('Wrong number of arguments: this commands expects at exactly 1 argument: Integer to be squared')
 
     # 0.1) check input argument 
     try:
@@ -99,11 +100,11 @@ def main():
     sys.stdout.write("Creating instance of core... ")
     try:
         _core = gc3libs.core.Core(* gc3libs.core.import_config(config_file_locations, True))
-    except NoResources:
-        raise FatalError("No computational resources defined.  Please edit the configuration file '%s'."
+    except gc3libs.exceptions.NoResources:
+        raise gc3libs.exceptions.FatalError("No computational resources defined.  Please edit the configuration file '%s'."
                          % config_file_locations)
     except:
-        gc3utils.log.debug("Failed loading config file from '%s'",
+        gc3libs.log.debug("Failed loading config file from '%s'",
                            str.join("', '", config_file_locations))
         raise
     sys.stdout.write("\t[ ok ]\n")
@@ -119,17 +120,23 @@ def main():
         )
     sys.stdout.write("\t[ ok ]\n")    
 
+    if options.resource_name:
+        _core.select_resource(options.resource_name)
+        gc3libs.log.info("Retained only resources: %s ",
+                          options.resource_name)
+
+
     sys.stdout.write("Submitting... ")
     # 3) submit application  
     _core.submit(app)
 
-    sys.stdout.write("\t[ %s ]\n" % app.execution.lrms_jobid)
+    sys.stdout.write("\tjobid: %s \n" % app.execution.lrms_jobid)
 
     sys.stdout.write("Looping over running state... \n")
     # 4) monitor status (loop)
     while app.execution.state != Run.State.TERMINATED:
         try:
-            time.sleep(10)
+            time.sleep(5)
             _core.update_job_state(app)
             sys.stdout.write("[ %s ]\r" % app.execution.state)
             sys.stdout.flush()
@@ -138,11 +145,14 @@ def main():
         
     sys.stdout.write("\nRetrieving results... ")
 
-    file_handle = _core.peek(app)
-    result = file_handle.read()
-
     #  5) retrieve results
-    _core.fetch_output(app, download_dir=os.path.join(os.getcwd(),'gdemo_result'), overwrite=False)
+    download_dir=os.path.join(os.getcwd(),'gdemo_result')
+
+    _core.fetch_output(app, download_dir=download_dir, overwrite=False)
+
+    file_handle = open(os.path.join(download_dir,app.stdout))
+    result = file_handle.read()
+    file_handle.close()
 
     sys.stdout.write("\t[ %d ]\n" % int(result))    
 
