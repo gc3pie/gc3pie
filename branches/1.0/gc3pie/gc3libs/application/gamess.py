@@ -96,14 +96,16 @@ class GamessApplication(gc3libs.Application):
                 match = self._termination_re.search(line)
                 if match:
                     if match.group('gamess_outcome'):
-                        self.execution.info = line.strip().capitalize()
-                        if self.execution.exitcode == 0 and match.group('gamess_outcome') == 'ABNORMALLY':
+                        self.execution.info = line.strip().lower()
+                        if match.group('gamess_outcome') == 'abnormally':
                             self.execution.exitcode = 1
                         break
                     elif match.group('ddikick_outcome'):
-                        self.execution.info = line.strip().capitalize()
-                        if self.execution.exitcode == 0 and match.group('ddikick_outcome') == 'unexpectedly':
+                        self.execution.info = line.strip().lower()
+                        if match.group('ddikick_outcome') == 'unexpectedly':
                             self.execution.exitcode = 2
+                        if match.group('ddikick_outcome') == 'gracefully':
+                            self.execution.exitcode = 0
                         break
                     else:
                         raise AssertionError("Input line '%s' matched, but neither group 'gamess_outcome' nor 'ddikick_outcome' did!")
