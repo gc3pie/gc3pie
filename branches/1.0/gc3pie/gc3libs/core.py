@@ -68,7 +68,7 @@ class Core:
         for _resource in self._resources:
             try:
                 _lrms = self._get_backend(_resource.name)
-                self.auths.get(_lrms._resource.auth)
+                # self.auths.get(_lrms._resource.auth)
                 self._lrms_list.append(_lrms)
             except Exception, ex:
                 # log exceptions but ignore them
@@ -394,18 +394,20 @@ class Core:
 
         updated_resources = []
 
-        for resource in self._resources:
+        # for resource in self._resources:
+        for lrms in self._lrms_list:
             try:
                 auto_enable_auth = kw.get('auto_enable_auth', self.auto_enable_auth)
-                lrms = self.get_backend(resource.name)
+                # lrms = self.get_backend(resource.name)
                 self.auths.get(lrms._resource.auth)
-                updated_resources.append(lrms.get_resource_status())
+                resource = lrms.get_resource_status()
                 resource.updated = True
+                updated_resources.append(resource)
             except Exception, ex:
                 gc3libs.log.error("Got error while updating resource '%s': %s."
-                                  % (resource.name, str(ex)))
-                resource.updated = False
-                updated_resources.append(resource)
+                                  % (lrms._resource.name, str(ex)))
+                lrms._resource.updated = False
+                updated_resources.append(lrms._resource)
                 
         return updated_resources
 
