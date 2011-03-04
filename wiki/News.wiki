@@ -1,6 +1,13 @@
 #summary User-visible changes in GC3Utils and GC3Libs
 
 
+== 1.1 ==
+
+=== Configuration file changes ===
+
+* The `architecture` value is now required for every resource.
+
+
 == 1.0 ==
 
 === Configuration file changes ===

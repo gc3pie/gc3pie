@@ -192,13 +192,13 @@ reference `voms` type auth sections; resources of `sge` type can
 only reference `ssh` type sections.
 
 Some keys are commmon to all resource types:
+  *  `type`: Resource type, one of `arc` or `sge_ssh`
   *  `auth`: the name of a valid `auth/***` section; only the authentication section name (after the `/` must be specified)
   *  `max_cores_per_job`: Maximum number of CPU cores that a job can request; a resource will be dropped during the brokering process if a job requests more cores than this
   *  `max_memory_per_core`: Max amount of memory (expressed in GBs) that a job can request
   *  `max_walltime`: Maximum job running time (in hours)
-  *  `name`: Resource name
   *  `ncores`: Total number of cores provided by the resource
-  *  `type`: Resource type, one of `arc` or `sge_ssh`
+  *  `architecture`: Processor architecture.  Should be one of the strings ``x86_64`` (for 64-bit Intel/AMD/VIA processors) or ``i686`` (for 32-bit Intel/AMD/VIA x86 processors)
 
 === `arc` resources ===
 The `arc_ldap` key should be defined to the LDAP URL of an ARC GIIS
