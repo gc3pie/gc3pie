@@ -2,7 +2,7 @@
 """
 A specialized dictionary for representing computational resource characteristics.
 """
-# Copyright (C) 2009-2010 GC3, University of Zurich. All rights reserved.
+# Copyright (C) 2009-2011 GC3, University of Zurich. All rights reserved.
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
@@ -39,7 +39,8 @@ class Resource(InformationContainer):
     
     Statically provided, i.e., specified at construction time and changed never after:
 
-      arc_ldap             string   
+      arc_ldap             string
+      architecture         string
       auth                 string
       frontend             string
       gamess_location      string
@@ -60,7 +61,8 @@ class Resource(InformationContainer):
     '''
 
     def is_valid(self):
-        if (self.has_key('max_cores_per_job') 
+        if (self.has_key('architecture')
+            and self.has_key('max_cores_per_job') 
             and self.has_key('max_memory_per_core') 
             and self.has_key('type') 
             and self.has_key('name') 
