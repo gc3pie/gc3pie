@@ -124,11 +124,8 @@ def _Id_make_comparison_function(op):
 class Id(str):
     """
     An automatically-generated "unique identifier" (a string-like object).
-    Object identifiers are temporally unique: no identifier will
-    (ever) be re-used, even in different invocations of the program.
-    
-    The unique job identifier has the form "PREFIX.XXX"
-    where "XXX" is a decimal number, and "PREFIX" defaults to the
+    The unique object identifier has the form "PREFIX.NNN"
+    where "NNN" is a decimal number, and "PREFIX" defaults to the
     object class name but can be overridden in the `Id`
     constructor.
 
@@ -137,35 +134,16 @@ class Id(str):
     the two sequence numbers.
     """
 
-    @staticmethod
-    def reserve(n):
-        """
-        Pre-allocate `n` IDs.  Successive invocations of the `Id`
-        constructor will return one of the pre-allocated, with a
-        potential speed gain if many `Id` objects are constructed in a
-        loop.
-        """
-        assert n > 0, "Argument `n` must be a positive integer"
-        Id._seqno_pool.extend(progressive_number(n))
-    _seqno_pool = [ ]
-
-    def __new__(cls, obj, prefix=None, seqno=None):
+    def __new__(cls, prefix, seqno):
         """
         Construct a new "unique identifier" instance (a string).
         """
-        if prefix is None:
-            prefix = obj.__class__.__name__
-        if seqno is None:
-            if len(Id._seqno_pool) > 0:
-                seqno = Id._seqno_pool.pop()
-            else:
-                seqno = progressive_number()
         instance = str.__new__(cls, "%s.%d" % (prefix, seqno))
         instance._seqno = seqno
         instance._prefix = prefix
         return instance
     def __getnewargs__(self):
-        return (None, self._prefix, self._seqno)
+        return (self._prefix, self._seqno)
     
     # Rich comparison operators, to ensure `Id` is sorted by numerical value
     @_Id_make_comparison_function(operator.gt)
@@ -188,13 +166,63 @@ class Id(str):
         pass
 
 
-class JobIdFactory(Id):
+class IdFactory(object):
     """
-    Override :py:class:`Id` behavior and generate IDs starting with a
+    Automatically generate a "unique identifier" (of class `Id`).
+    Object identifiers are temporally unique: no identifier will
+    (ever) be re-used, even in different invocations of the program.
+    """
+    def __init__(self, prefix=None, next_id_fn=None, id_class=Id):
+        """
+        Construct an `IdFactory` instance whose `new` method returns
+        objects of class `id_class` (default: `Id`:class:) with the
+        given `prefix` string and whose identifier number is computed
+        by an invocation of function `next_id_fn`.
+
+        Function `next_id_fn` must conform to the calling syntax and
+        behavior of the `gc3libs.utils.progressive_number`:func:
+        (which is the one used by default).
+        """
+        self._prefix = prefix
+        if next_id_fn is None:
+            self._next_id_fn = progressive_number
+        else:
+            self._next_id_fn = next_id_fn
+        self._idclass = id_class
+
+    def reserve(self, n):
+        """
+        Pre-allocate `n` IDs.  Successive invocations of the `Id`
+        constructor will return one of the pre-allocated, with a
+        potential speed gain if many `Id` objects are constructed in a
+        loop.
+        """
+        assert n > 0, "Argument `n` must be a positive integer"
+        IdFactory._seqno_pool.extend(self._next_id_fn(n))
+    _seqno_pool = [ ]
+
+    def new(self, obj):
+        """
+        Return a new "unique identifier" instance (a string).
+        """
+        if self._prefix is None:
+            prefix = obj.__class__.__name__
+        else:
+            prefix = self._prefix
+        if len(IdFactory._seqno_pool) > 0:
+            seqno = IdFactory._seqno_pool.pop()
+        else:
+            seqno = self._next_id_fn()
+        return self._idclass(prefix, seqno)
+
+
+class JobIdFactory(IdFactory):
+    """
+    Override :py:class:`IdFactory` behavior and generate IDs starting with a
     lowercase ``job`` prefix.
     """
-    def __new__(cls, obj, prefix=None, seqno=None):
-        return gc3libs.persistence.Id.__new__(cls, obj, 'job', seqno)
+    def __init__(self, next_id_fn=None):
+        IdFactory.__init__(self, 'job', next_id_fn)
 
 
 
@@ -233,9 +261,9 @@ class FilesystemStore(Store):
     documentation for details.
     """
     def __init__(self, directory=gc3libs.Default.JOBS_DIR, 
-                 idfactory=Id, protocol=pickle.HIGHEST_PROTOCOL):
+                 idfactory=IdFactory(), protocol=pickle.HIGHEST_PROTOCOL):
         self._directory = directory
-        self._idfactory = idfactory
+        self.idfactory = idfactory
         self._protocol = protocol
 
 
@@ -340,7 +368,7 @@ class FilesystemStore(Store):
     @same_docstring_as(Store.save)
     def save(self, obj):
         if not hasattr(obj, 'persistent_id'):
-            obj.persistent_id = self._idfactory(obj)
+            obj.persistent_id = self.idfactory.new(obj)
         self._save_or_replace(obj.persistent_id, obj)
         return obj.persistent_id
 
