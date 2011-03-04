@@ -180,7 +180,8 @@ class Struct(object, UserDict.DictMixin):
         return self.__dict__.keys()
 
 
-def progressive_number(qty=None):
+def progressive_number(qty=None,
+                       id_filename=os.path.expanduser('~/.gc3/next_id.txt')):
     """
     Return a positive integer, whose value is guaranteed to
     be monotonically increasing across different invocations
@@ -209,22 +210,23 @@ def progressive_number(qty=None):
     only once.  
 
     After every invocation of this function, the last returned number
-    is stored into the file ``~/.gc3/next_id.txt``.
+    is stored into the file passed as argument `id_filename`.  If the
+    file does not exist, an attempt to create it is made before
+    allocating an id; the method can raise an `IOError` or `OSError`
+    if `id_filename` cannot be opened for writing.
 
     *Note:* as file-level locking is used to serialize access to the
     counter file, this function may block (default timeout: 30
     seconds) while trying to acquire the lock, or raise a
     `LockTimeout` exception if this fails.
 
-    @raise LockTimeout
+    @raise LockTimeout, IOError, OSError
     
     @return A positive integer number, monotonically increasing with every call.
             A list of such numbers if argument `qty` is a positive integer.
     """
     assert qty is None or qty > 0, \
         "Argument `qty` must be a positive integer"
-    # FIXME: should use global config value for directory
-    id_filename = os.path.expanduser("~/.gc3/next_id.txt")
     # ``FileLock`` requires that the to-be-locked file exists; if it
     # does not, we create an empty one (and avoid overwriting any
     # content, in case another process is also writing to it).  There

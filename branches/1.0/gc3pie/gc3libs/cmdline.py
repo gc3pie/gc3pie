@@ -380,8 +380,10 @@ class GC3UtilsScript(_Script):
             if (not os.path.isdir(jobs_dir)
                 and not jobs_dir.endswith('.jobs')):
                 jobs_dir = jobs_dir + '.jobs'
-        self._store = gc3libs.persistence.FilesystemStore(jobs_dir, 
-                                                          idfactory=gc3libs.persistence.JobIdFactory)
+        self._store = gc3libs.persistence.FilesystemStore(
+            jobs_dir, 
+            idfactory=gc3libs.persistence.JobIdFactory()
+            )
 
 
     ##
@@ -827,8 +829,10 @@ class SessionBasedScript(_Script):
             return 1
 
         ## create a `Persistence` instance to _save_session/_load_session jobs
-        self.store = gc3libs.persistence.FilesystemStore(self.session_dirname, 
-                                                         idfactory=gc3libs.persistence.JobIdFactory)
+        self.store = gc3libs.persistence.FilesystemStore(
+            self.session_dirname, 
+            idfactory=gc3libs.persistence.JobIdFactory()
+            )
 
         ## load the session index file
         self._load_session(session_file, self.store)
@@ -838,7 +842,7 @@ class SessionBasedScript(_Script):
         new_jobs = list(self.process_args(self.extra))
         # pre-allocate Job IDs
         if len(new_jobs) > 0:
-            gc3libs.persistence.Id.reserve(len(new_jobs))
+            self.store.idfactory.reserve(len(new_jobs))
 
         # add new jobs to the session
         existing_job_names = set(task.jobname for task in self.tasks)
