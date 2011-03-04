@@ -56,6 +56,8 @@ class ArcLrms(LRMS):
 
         self._resource = resource
 
+        self.auths = auths
+
         self._resource.ncores = int(self._resource.ncores)
         self._resource.max_memory_per_core = int(self._resource.max_memory_per_core) * 1000
         self._resource.max_walltime = int(self._resource.max_walltime)
@@ -76,7 +78,12 @@ class ArcLrms(LRMS):
 
     @same_docstring_as(LRMS.cancel_job)
     def cancel_job(self, app):
-        arclib.CancelJob(app.execution.lrms_jobid)
+        self.auths.get(self._resource.auth)
+        try:
+            arclib.CancelJob(app.execution.lrms_jobid)
+        except Exception, ex:
+            gc3libs.log.error('Failed while killing job. Error type %s, message %s' % (ex.__class__,str(ex)))
+            raise gc3libs.exceptions.LRMSError('Failed while killing job. Error type %s, message %s' % (ex.__class__,str(ex)))
 
 
     def _get_queues(self):
@@ -84,11 +91,11 @@ class ArcLrms(LRMS):
                 or (time.time() - self._queues_last_updated > self._queues_cache_time):
             if self._resource.has_key('arc_ldap'):
                 log.debug("Getting list of ARC resources from GIIS '%s' ...", 
-                                   self._resource.arc_ldap)
+                          self._resource.arc_ldap)
                 cls = arclib.GetClusterResources(arclib.URL(self._resource.arc_ldap),True,'',1)
             else:
                 cls = arclib.GetClusterResources()
-            log.debug('Got cluster list of length %d', len(cls))
+                log.debug('Got cluster list of length %d', len(cls))
             self._queues = arclib.GetQueueInfo(cls,arclib.MDS_FILTER_CLUSTERINFO, True, '', 5)
             log.debug('returned valid queue information for %d queues', len(self._queues))
             self._queues_last_updated = time.time()
@@ -98,6 +105,9 @@ class ArcLrms(LRMS):
     @same_docstring_as(LRMS.submit_job)
     def submit_job(self, app):
         job = app.execution
+
+        # XXX: it is ok for an LRMS to raise an AuthError
+        self.auths.get(self._resource.auth)
 
         # Initialize xrsl
         xrsl = app.xrsl(self._resource)
@@ -193,6 +203,10 @@ class ArcLrms(LRMS):
             except KeyError:
                 raise gc3libs.exceptions.UnknownJobState("Unknown ARC job state '%s'" % status)
 
+
+        # XXX: it is ok for an LRMS to raise an AuthError
+        self.auths.get(self._resource.auth)
+
         # try to intercept error conditions and translate them into
         # meaningful exceptions
         try:
@@ -278,6 +292,9 @@ class ArcLrms(LRMS):
     @same_docstring_as(LRMS.get_results)
     def get_results(self, app, download_dir, overwrite=False):
 
+        # XXX: it is ok for an LRMS to raise an AuthError
+        self.auths.get(self._resource.auth)
+
         job = app.execution
         jftpc = arclib.JobFTPControl()
 
@@ -294,6 +311,9 @@ class ArcLrms(LRMS):
 
     @same_docstring_as(LRMS.free)
     def free(self, app):
+
+        # XXX: it is ok for an LRMS to raise an AuthError
+        self.auths.get(self._resource.auth)
 
         job = app.execution
         jftpc = arclib.JobFTPControl()
@@ -318,6 +338,9 @@ class ArcLrms(LRMS):
         # free_slots
         # user_running
         # user_queued
+
+        # XXX: it is ok for an LRMS to raise an AuthError
+        self.auths.get(self._resource.auth)
 
         if self._resource.has_key('arc_ldap'):
             log.debug("Getting cluster list from %s ...", self._resource.arc_ldap)
@@ -407,6 +430,9 @@ class ArcLrms(LRMS):
 
         assert job.has_key('lrms_jobid'), \
             "Missing attribute `lrms_jobid` on `Job` instance passed to `ArcLrms.peek`."
+
+        # XXX: it is ok for an LRMS to raise an AuthError
+        self.auths.get(self._resource.auth)
 
         if size is None:
             size = sys.maxint
