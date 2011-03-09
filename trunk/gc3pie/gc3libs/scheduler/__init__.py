@@ -48,7 +48,7 @@ def _compatible_resources(lrms_list, application):
             and int(application.requested_walltime) < (int(lrms._resource.max_walltime or sys.maxint))
             ) and ( # if architecture is specified, check that it matches the resource one
             application.requested_architecture is None
-            or application.requested_architecture == lrms._resource.architecture
+            or application.requested_architecture in lrms._resource.architecture
             ):
             _selected_lrms_list.append(lrms)
         else:

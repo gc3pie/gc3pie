@@ -25,6 +25,7 @@ __date__ = '$Date$'
 
 from fnmatch import fnmatch
 import os
+import re
 import sys
 import time
 import ConfigParser
@@ -552,6 +553,25 @@ def read_config(*locations):
     resources = gc3libs.utils.defaultdict(lambda: dict())
     auths = gc3libs.utils.defaultdict(lambda: dict())
 
+    # map values for the `architecture=...` configuration item
+    # into internal constants
+    architecture_value_map = {
+        # 'x86-32', 'x86 32-bit', '32-bit x86' and variants thereof
+        re.compile('x86[ _-]+32([ _-]+bits?)?', re.I): Run.Arch.X86_32,
+        re.compile('32[ _-]+bits? +[ix]86', re.I):     Run.Arch.X86_32,
+        # accept also values printed by `uname -a` on 32-bit x86 archs
+        re.compile('i[3456]86', re.I):                 Run.Arch.X86_32,
+        # 'x86_64', 'x86 64-bit', '64-bit x86' and variants thereof
+        re.compile('x86[ _-]+64([ _-]+bits?)?', re.I): Run.Arch.X86_64,
+        re.compile('64[ _-]+bits? +[ix]86', re.I):     Run.Arch.X86_32,
+        # also accept commercial arch names
+        re.compile('(amd[ -]*64|x64|emt64|intel[ -]*64)( *bits?)?', re.I): \
+                                                       Run.Arch.X86_64,
+        # finally, map "32-bit" and "64-bit" to i686 and x86_64
+        re.compile('32[ _-]+bits?', re.I):             Run.Arch.X86_32,
+        re.compile('64[ _-]+bots?', re.I):             Run.Arch.X86_64,
+        }
+
     for location in locations:
         location = os.path.expandvars(location)
         if os.path.exists(location) and os.access(location, os.R_OK):
@@ -586,6 +606,20 @@ def read_config(*locations):
                 config_items = dict(config.items(sectname))
                 if config_items.has_key('enabled'):
                     config_items['enabled'] = utils.string_to_boolean(config_items['enabled'])
+                if config_items.has_key('architecture'):
+                    def matching_architecture(value):
+                        for matcher, arch in architecture_value_map.items():
+                            if matcher.match(value):
+                                return arch
+                        raise gc3libs.exceptions.ConfigurationError(
+                            "Unknown architecture '%s' in resource '%s'"
+                            " (reading configuration file '%s')"
+                            % (value, resource_name, location))
+                    archs = [ matching_architecture(value.strip())
+                              for value in config_items['architecture'].split(',') ]
+                    if len(archs) == 0:
+                        raise gc3libs.exceptions.ConfigurationError(
+                            "No architecture specified for resource '%s'" % resource_name)
                 resources[resource_name].update(config_items)
                 resources[resource_name]['name'] = resource_name
 
