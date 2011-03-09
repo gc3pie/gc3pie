@@ -59,6 +59,8 @@ class Default(object):
     CONFIG_FILE_LOCATIONS = [
         # system-wide config file
         "/etc/gc3/gc3pie.conf",
+        # user-private virtualenv config file
+        os.path.join(os.path.expandvars("$VIRTUAL_ENV"), "etc/gc3/gc3pie.conf"),
         # user-private config file
         os.path.join(RCDIR, "gc3pie.conf")
         ]
