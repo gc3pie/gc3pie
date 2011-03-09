@@ -70,7 +70,7 @@ class ConfigurationError(FatalError):
     """
     Raised when the configuration file (or parts of it) could not be
     read/parsed.  Also used to signal that a required parameter is
-    missing or has an unknown/invaliud value.
+    missing or has an unknown/invalid value.
     """
     pass
 
