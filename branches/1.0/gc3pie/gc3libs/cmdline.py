@@ -231,6 +231,9 @@ class _Script(cli.app.CommandLineApp):
         self.log.setLevel(loglevel)
         self.log.propagate = True
 
+        # interface to the GC3Libs main functionality
+        self._core = self._get_core(gc3libs.Default.CONFIG_FILE_LOCATIONS)
+
         # call hook methods from derived classes
         self.parse_args()
 
@@ -301,7 +304,65 @@ class _Script(cli.app.CommandLineApp):
                 sys.excepthook(*exc_info)
         # ...and exit
         return 1
-            
+
+
+    ##
+    ## INTERNAL METHODS
+    ##
+    ## The following methods are for internal use; they can be
+    ## overridden and customized in derived classes, although there
+    ## should be no need to do so.
+    ##
+
+    def _get_core(self, config_file_locations, auto_enable_auth=True):
+        """
+        Return a `gc3libs.core.Core` instance configured by parsing
+        the configuration file(s) located at `config_file_locations`.
+        Order of configuration files matters: files read last overwrite
+        settings from previously-read ones; list the most specific configuration
+        files last.
+
+        If `auto_enable_auth` is `True` (default), then `Core` will try to renew
+        expired credentials; this requires interaction with the user and will
+        certainly fail unless stdin & stdout are connected to a terminal.
+        """
+        # ensure a configuration file exists in the most specific location
+        for location in reversed(config_file_locations):
+            if os.access(os.path.dirname(location), os.W_OK|os.X_OK) \
+                    and not gc3libs.utils.deploy_configuration_file(location, "gc3pie.conf.example"):
+                # warn user
+                self.log.warning("No configuration file '%s' was found;"
+                                 " a sample one has been copied in that location;"
+                                 " please edit it and define resources." % location)
+        try:
+            self.log.debug('Creating instance of Core ...')
+            return gc3libs.core.Core(* gc3libs.core.import_config(config_file_locations, auto_enable_auth))
+        except gc3libs.exceptions.NoResources:
+            raise gc3libs.exceptions.FatalError("No computational resources defined."
+                                                " Please edit the configuration file(s): '%s'." 
+                                                % (str.join("', '", config_file_locations)))
+        except:
+            self.log.debug("Failed loading config file from '%s'", 
+                           str.join("', '", config_file_locations))
+            raise
+
+
+    def _select_resources(self, *resource_names):
+        """
+        Restrict resources to those listed in `resource_names`.
+        Argument `resource_names` is a string listing all names of
+        allowed resources (comma-separated), or a list of names of the
+        resources to keep active.
+        """
+        resource_list = [ ]
+        for item in resource_names:
+            resource_list.extend(name for name in item.split(','))
+        kept = self._core.select_resource(lambda r: r.name in resource_list)
+        if kept == 0:
+            raise gc3libs.exceptions.NoResources("No resources match the names '%s'" 
+                              % str.join(',', resource_list))
+
+
 
 
 class GC3UtilsScript(_Script):
@@ -372,9 +433,6 @@ class GC3UtilsScript(_Script):
         ## base class parses command-line
         _Script.pre_run(self)
 
-        # interface to the GC3Libs main functionality
-        self._core = self._get_core(gc3libs.Default.CONFIG_FILE_LOCATIONS)
-
         jobs_dir = self.params.session
         if jobs_dir != gc3libs.Default.JOBS_DIR:
             if (not os.path.isdir(jobs_dir)
@@ -393,38 +451,6 @@ class GC3UtilsScript(_Script):
     ## overridden and customized in derived classes, although there
     ## should be no need to do so.
     ##
-
-    def _get_core(self, config_file_locations, auto_enable_auth=True):
-        """
-        Return a `gc3libs.core.Core` instance configured by parsing
-        the configuration file(s) located at `config_file_locations`.
-        Order of configuration files matters: files read last overwrite
-        settings from previously-read ones; list the most specific configuration
-        files last.
-
-        If `auto_enable_auth` is `True` (default), then `Core` will try to renew
-        expired credentials; this requires interaction with the user and will
-        certainly fail unless stdin & stdout are connected to a terminal.
-        """
-        # ensure a configuration file exists in the most specific location
-        for location in reversed(config_file_locations):
-            if os.access(os.path.dirname(location), os.W_OK|os.X_OK) \
-                    and not gc3libs.utils.deploy_configuration_file(location, "gc3pie.conf.example"):
-                # warn user
-                self.log.warning("No configuration file '%s' was found;"
-                                 " a sample one has been copied in that location;"
-                                 " please edit it and define resources." % location)
-        try:
-            self.log.debug('Creating instance of Core ...')
-            return gc3libs.core.Core(* gc3libs.core.import_config(config_file_locations, auto_enable_auth))
-        except gc3libs.exceptions.NoResources:
-            raise gc3libs.exceptions.FatalError("No computational resources defined."
-                                                " Please edit the configuration file(s): '%s'." 
-                                                % (str.join("', '", config_file_locations)))
-        except:
-            self.log.debug("Failed loading config file from '%s'", 
-                           str.join("', '", config_file_locations))
-            raise
 
     def _get_jobs(self, job_ids, ignore_failures=True):
         """
@@ -450,21 +476,6 @@ class GC3UtilsScript(_Script):
                 else:
                     raise
 
-
-    def _select_resources(self, *resource_names):
-        """
-        Restrict resources to those listed in `resource_names`.
-        Argument `resource_names` is a string listing all names of
-        allowed resources (comma-separated), or a list of names of the
-        resources to keep active.
-        """
-        resource_list = [ ]
-        for item in resource_names:
-            resource_list.extend(name for name in item.split(','))
-        kept = self._core.select_resource(lambda r: r.name in resource_list)
-        if kept == 0:
-            raise gc3libs.exceptions.NoResources("No resources match the names '%s'" 
-                              % str.join(',', resource_list))
 
 
 class SessionBasedScript(_Script):
@@ -879,19 +890,15 @@ class SessionBasedScript(_Script):
         # be in it if the script is stopped here
         self._save_session(self.store)
 
-        ## create a `Core` instance to interface with the Grid middleware
-        grid = gc3libs.core.Core(*gc3libs.core.import_config(
-                gc3libs.Default.CONFIG_FILE_LOCATIONS
-                ))
-
+        # obey the ``-r`` command-line option
         if self.params.resource_name:
-            grid.select_resource(self.params.resource_name)
+            self._select_resources(self.params.resource_name)
             self.log.info("Retained only resources: %s (restricted by command-line option '-r %s')",
-                          str.join(",", [res['name'] for res in grid._resources]),
+                          str.join(",", [res['name'] for res in self._core._resources]),
                           self.params.resource_name)
 
         ## create an `Engine` instance to manage the job list
-        engine = gc3libs.core.Engine(grid, self.tasks, self.store,
+        engine = gc3libs.core.Engine(self._core, self.tasks, self.store,
                                      max_in_flight = self.params.max_running)
 
         ## The main loop of the application: it is a local function so
