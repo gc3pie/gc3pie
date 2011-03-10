@@ -187,8 +187,10 @@ class cmd_ginfo(_BaseCmd):
             else:
                 # print *all* keys if `-vv` is given
                 only_keys = None
-        
-        for app in self._get_jobs(self.params.args):
+
+        def cmp_by_jobid(x,y):
+            return cmp(x.persistent_id, y.persistent_id)
+        for app in sorted(self._get_jobs(self.params.args), cmp=cmp_by_jobid):
             print(str(app.persistent_id))
             if self.params.verbose == 0:
                 utils.prettyprint(app.execution, indent=4, width=width, only_keys=only_keys)
@@ -432,7 +434,7 @@ class cmd_gstat(_BaseCmd):
                 self._core.update_job_state(app)
                 self._store.replace(app.persistent_id, app)
             if states is None or app.execution.state in states:
-                rows.append([app, app.execution.state, app.execution.info] +
+                rows.append([app.persistent_id, app.execution.state, app.execution.info] +
                             [ app.execution.get(name, "N/A") for name in keys ])
             stats[app.execution.state] += 1
             tot += 1
@@ -687,7 +689,9 @@ class cmd_glist(_BaseCmd):
             self._select_resources(* self.params.args)
 
         resources = self._core.get_all_updated_resources()
-        for resource in resources:
+        def cmp_by_name(x,y):
+            return cmp(x.name, y.name)
+        for resource in sorted(resources, cmp=cmp_by_name):
             table = Texttable(0) # max_width=0 => dynamically resize cells
             table.set_deco(Texttable.HEADER | Texttable.BORDER) # also: .VLINES, .HLINES
             table.set_cols_align(['r', 'l'])
