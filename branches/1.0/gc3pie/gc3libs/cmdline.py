@@ -354,10 +354,19 @@ class _Script(cli.app.CommandLineApp):
         allowed resources (comma-separated), or a list of names of the
         resources to keep active.
         """
-        resource_list = [ ]
+        patterns = [ ]
         for item in resource_names:
-            resource_list.extend(name for name in item.split(','))
-        kept = self._core.select_resource(lambda r: r.name in resource_list)
+            patterns.extend(name for name in item.split(','))
+        def keep_resource_if_matches(resource):
+            """
+            Return `True` iff `resource`'s `name` attribute matches
+            one of the glob patterns in `patterns`.
+            """
+            for pattern in patterns:
+                if fnmatch.fnmatch(resource.name, pattern):
+                    return True
+            return False
+        kept = self._core.select_resource(keep_resource_if_matches)
         if kept == 0:
             raise gc3libs.exceptions.NoResources("No resources match the names '%s'" 
                               % str.join(',', resource_list))
