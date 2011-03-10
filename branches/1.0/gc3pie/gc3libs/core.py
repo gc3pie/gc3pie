@@ -104,6 +104,7 @@ class Core:
         # return len(self._resources)
         return len(self._lrms_list)
 
+
     def free(self, app, **kw):
         """
         Free up any remote resources used for the execution of `app`.

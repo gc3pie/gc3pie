@@ -823,30 +823,19 @@ class SessionBasedScript(_Script):
         """
 
         ## determine the session file name (and possibly create an empty index)
-        try:
-            if os.path.exists(self.params.session):
-                self.session_dirname = os.path.realpath(self.params.session)
-                self.session_filename = os.path.join(self.session_dirname, 'index.csv')
+        if os.path.exists(self.params.session):
+            self.session_dirname = os.path.realpath(self.params.session)
+            self.session_filename = os.path.join(self.session_dirname, 'index.csv')
+        else:
+            if self.params.session.endswith('.jobs'):
+                self.session_dirname = self.params.session[:-5]
+                self.session_filename = self.session_dirname + '.csv'
+            elif self.params.session.endswith('.csv'):
+                self.session_filename = self.params.session
+                self.session_dirname = self.session_filename[:-4] + '.jobs'
             else:
-                if self.params.session.endswith('.jobs'):
-                    self.session_dirname = self.params.session[:-5]
-                    self.session_filename = self.session_dirname + '.csv'
-                elif self.params.session.endswith('.csv'):
-                    self.session_filename = self.params.session
-                    self.session_dirname = self.session_filename[:-4] + '.jobs'
-                else:
-                    self.session_dirname = self.params.session + '.jobs'
-                    self.session_filename = self.params.session + '.csv'
-            if not os.path.exists(self.session_dirname):
-                os.makedirs(self.session_dirname)
-            if os.path.exists(self.session_filename) and not self.params.new_session:
-                session_file = file(self.session_filename, "r+b")
-            else:
-                session_file = file(self.session_filename, "w+b")
-        except IOError, ex:
-            self.log.critical("Cannot open session file '%s' in read+write mode: %s. Aborting."
-                              % (self.params.session, str(ex)))
-            return 1
+                self.session_dirname = self.params.session + '.jobs'
+                self.session_filename = self.params.session + '.csv'
 
         ## create a `Persistence` instance to _save_session/_load_session jobs
         self.store = gc3libs.persistence.FilesystemStore(
@@ -855,6 +844,15 @@ class SessionBasedScript(_Script):
             )
 
         ## load the session index file
+        try:
+            if os.path.exists(self.session_filename) and not self.params.new_session:
+                session_file = file(self.session_filename, "r+b")
+            else:
+                session_file = file(self.session_filename, "w+b")
+        except IOError, ex:
+            self.log.critical("Cannot open session file '%s' in read+write mode: %s. Aborting."
+                              % (self.params.session, str(ex)))
+            return 1
         self._load_session(session_file, self.store)
         session_file.close()
 
