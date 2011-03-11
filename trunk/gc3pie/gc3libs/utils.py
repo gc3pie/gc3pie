@@ -49,6 +49,13 @@ import gc3libs.exceptions
 #
 # ================================================================
 
+def basename_sans(path):
+    """
+    Return base name without the extension.
+    """
+    return os.path.splitext(os.path.basename(path))[0]
+
+
 class defaultdict(dict):
     """
     A backport of `defaultdict` to Python 2.4

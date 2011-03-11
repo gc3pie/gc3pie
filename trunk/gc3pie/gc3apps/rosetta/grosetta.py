@@ -143,7 +143,7 @@ class GRosettaScript(SessionBasedScript):
         self.inputs = inputs_
         self.log.debug("Gathered input files: '%s'" % str.join("', '", inputs))
 
-    def process_args(self, extra):
+    def new_tasks(self, extra):
         ## compute number of decoys already being computed in this session
         decoys = 0
         for task in self.tasks:

@@ -154,7 +154,7 @@ class Task(object):
         t = GamessApplication(input_file)
         t.submit()
         # ... do other stuff 
-        t.update()
+        t.update_state()
         # ... take decisions based on t.execution.state
         t.wait() # blocks until task is terminated
 
@@ -166,7 +166,7 @@ class Task(object):
 
     """
 
-    def __init__(self, grid=None):
+    def __init__(self, jobname, grid=None):
         """
         Initialize a `Task` instance.
 
@@ -174,6 +174,7 @@ class Task(object):
                      :class:`gc3libs.Core` instance, or anything
                      implementing the same interface.
         """
+        self.jobname = jobname
         if grid is not None:
             self.attach(grid)
         else:
@@ -613,11 +614,10 @@ class Application(Struct, Persistable, Task):
 
         self.tags = get_and_remove(kw, 'tags', list())
 
-        # job name
-        self.jobname = get_and_remove(kw, 'jobname', self.__class__.__name__)
-
         # task setup; creates the `.execution` attribute as well
-        Task.__init__(self, get_and_remove(kw, 'grid', None))
+        Task.__init__(self,
+                      get_and_remove(kw, 'jobname', self.__class__.__name__),
+                      get_and_remove(kw, 'grid', None))
         
         # output management
         self.final_output_retrieved = False

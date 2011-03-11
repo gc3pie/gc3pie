@@ -556,7 +556,67 @@ class SessionBasedScript(_Script):
                        % self.input_filename_pattern)
 
     
-    def process_args(self, extra):
+    def process_args(self):
+        """
+        Process command-line positional arguments and set up
+        `tasks`:attr: accordingly.  In particular, new jobs should be
+        appended to `tasks`:attr: in this method: `self.tasks` is not
+        altered elsewhere.
+
+        This method is called by the standard `_main`:meth: after
+        loading existing tasks into `self.tasks`.  New jobs should be
+        appended to `self.tasks` and it is also permitted to remove
+        existing ones.
+
+        The default implementation calls `new_tasks`:meth: and adds to
+        the session all jobs whose name does not clash with the
+        jobname of an already existing task.
+
+        See also: `new_tasks`:meth:
+        """
+        ## build job list
+        new_jobs = list(self.new_tasks(self.extra))
+        # pre-allocate Job IDs
+        if len(new_jobs) > 0:
+            self.store.idfactory.reserve(len(new_jobs))
+
+        # add new jobs to the session
+        existing_job_names = set(task.jobname for task in self.tasks)
+        random.seed()
+        for jobname, cls, args, kwargs in new_jobs:
+            self.log.debug("SessionBasedScript.process_args():"
+                           " considering adding new job defined by:"
+                           " jobname=%s cls=%s args=%s kwargs=%s ..."
+                           % (jobname, cls, args, kwargs))
+            if jobname in existing_job_names:
+                self.log.debug("  ...already existing job, skipping it.")
+                continue
+            self.log.debug("  ...new job, adding it to session...")
+            kwargs.setdefault('jobname', jobname)
+            kwargs.setdefault('requested_memory', self.params.memory_per_core)
+            kwargs.setdefault('requested_cores', self.params.ncores)
+            kwargs.setdefault('requested_walltime', self.params.walltime)
+            kwargs.setdefault('output_dir',                         
+                              self.params.output
+                              .replace('PATH', os.path.dirname(args[0]) # XXX: assumes `args[0]` exists and is a path name!
+                                       or os.getcwd())
+                              .replace('NAME', jobname)
+                              .replace('DATE', time.strftime('%Y-%m-%d', time.localtime(time.time())))
+                              .replace('TIME', time.strftime('%H:%M', time.localtime(time.time()))))
+            # create a new `Application` object
+            try:
+                app = cls(*args, **kwargs)
+                self.tasks.append(app)
+                self.log.debug("  ...created job '%s'." % jobname)
+            except Exception, ex:
+                self.log.error("Could not create job '%s': %s."
+                               % (jobname, str(ex)), exc_info=__debug__)
+                # XXX: should we raise an exception here?
+                #raise AssertionError("Could not create job '%s': %s: %s" 
+                #                     % (jobname, ex.__class__.__name__, str(ex)))
+
+
+    def new_tasks(self, extra):
         """
         Iterate over jobs that should be added to the current session.
         Each item yielded must have the form `(jobname, cls, args,
@@ -574,7 +634,7 @@ class SessionBasedScript(_Script):
         * `kwargs` is a dictionary used to provide keyword arguments
           when calling `cls`.
 
-        This method is called by the default `_main`, passing
+        This method is called by the default `process_args`:meth:, passing
         `self.extra` as the `extra` parameter.
 
         The default implementation of this method scans the arguments
@@ -589,53 +649,47 @@ class SessionBasedScript(_Script):
         generated, where N is the quotient of
         `self.instances_per_file` by `self.instances_per_job`.
 
-        
+        See also: `process_args`:meth:
         """
-        inputs = set()
+        inputs = self._search_for_input_files(self.params.args)
 
-        pattern = self.input_filename_pattern
-        # special case for '*.ext' patterns
-        ext = None
-        if pattern.startswith('*.'):
-            ext = pattern[1:]
-            # re-check for more wildcard characters
-            if '*' in ext or '?' in ext or '[' in ext:
-                ext = None
-
-        def matches(name):
-            return fnmatch.fnmatch(name, pattern)
-        for path in self.params.args:
-            self.log.debug("Now processing input argument '%s' ..." % path)
-            if os.path.isdir(path):
-                # recursively scan for input files
-                for dirpath, dirnames, filenames in os.walk(path):
-                    for filename in filenames:
-                        if matches(filename):
-                            inputs.add(os.path.join(dirpath, filename))
-            elif matches(path) and os.path.exists(path):
-                inputs.add(path)
-            elif ext is not None and not path.endswith(ext) and os.path.exists(path + ext):
-                inputs.add(os.path.realpath(path + ext))
-            else:
-                self.log.error("Cannot access input path '%s' - ignoring it.", path)
-            self.log.debug("Gathered input files: '%s'" % str.join("', '", inputs))
-
-        def filename_sans(path):
-            # return base name without the extension
-            return os.path.splitext(os.path.basename(path))[0]
         for path in inputs:
             if self.instances_per_file > 1:
                 for seqno in range(1, 1+self.instances_per_file, self.instances_per_job):
                     if self.instances_per_job > 1:
-                        yield ("%s.%d--%s" % (filename_sans(path), seqno, 
+                        yield ("%s.%d--%s" % (gc3libs.utils.basename_sans(path),
+                                              seqno, 
                                               min(seqno + self.instances_per_job - 1,
                                                   self.instances_per_file)),
                                self.application, [path], extra.copy())
                     else:
-                        yield ("%s.%d" % (filename_sans(path), seqno),
+                        yield ("%s.%d" % (gc3libs.utils.basename_sans(path), seqno),
                                self.application, [path], extra.copy())
             else:
-                yield (filename_sans(path), self.application, [path], extra.copy())
+                yield (gc3libs.utils.basename_sans(path),
+                       self.application, [path], extra.copy())
+
+
+    def make_task_controller(self):
+        """
+        Return a 'Controller' object to be used for progressing tasks
+        and getting statistics.  In detail, a good 'Controller' object
+        has to implement `progress` and `stats` methods with the same
+        interface as `gc3libs.core.Engine`.
+
+        By the time this method is called (from `_main`:meth:), the
+        following instance attributes are already defined:
+
+        * `self._core`: a `gc3libs.core.Core` instance;
+        * `self.tasks`: the list of `Task` instances to manage;
+        * `self.store`: the `gc3libs.persistence.Store` instance
+          that should be used to save/load jobs
+
+        In addition, any other attribute created during initialization
+        and command-line parsing is of course available.
+        """
+        return gc3libs.core.Engine(self._core, self.tasks, self.store,
+                                   max_in_flight = self.params.max_running)
 
 
     ##
@@ -715,7 +769,7 @@ class SessionBasedScript(_Script):
                            default=None, help='Select resource destination')
         self.add_param("-w", "--wall-clock-time", dest="wctime", default=str(8), # 8 hrs
                            metavar="DURATION",
-                           help="Each CODEML job will run for at most DURATION time"
+                           help="Each job will run for at most DURATION time"
                            " (default: %(default)s hours), after which it"
                            " will be killed and considered failed. DURATION can be a whole"
                            " number, expressing duration in hours, or a string of the form HH:MM,"
@@ -856,42 +910,8 @@ class SessionBasedScript(_Script):
         self._load_session(session_file, self.store)
         session_file.close()
 
-        ## build job list
-        new_jobs = list(self.process_args(self.extra))
-        # pre-allocate Job IDs
-        if len(new_jobs) > 0:
-            self.store.idfactory.reserve(len(new_jobs))
-
-        # add new jobs to the session
-        existing_job_names = set(task.jobname for task in self.tasks)
-        random.seed()
-        for jobname, cls, args, kwargs in new_jobs:
-            self.log.debug("SessionBasedScript.main(): considering adding new job defined by:"
-                           " jobname=%s cls=%s args=%s kwargs=%s"
-                           % (jobname, cls, args, kwargs))
-            if jobname in existing_job_names:
-                continue
-            kwargs.setdefault('jobname', jobname)
-            kwargs.setdefault('requested_memory', self.params.memory_per_core)
-            kwargs.setdefault('requested_cores', self.params.ncores)
-            kwargs.setdefault('requested_walltime', self.params.walltime)
-            kwargs.setdefault('output_dir',                         
-                              self.params.output
-                              .replace('PATH', os.path.dirname(args[0]) # XXX: assumes `args[0]` exists and is a path name!
-                                       or os.getcwd())
-                              .replace('NAME', jobname)
-                              .replace('DATE', time.strftime('%Y-%m-%d', time.localtime(time.time())))
-                              .replace('TIME', time.strftime('%H:%M', time.localtime(time.time()))))
-            # create a new `Application` object
-            try:
-                app = cls(*args, **kwargs)
-                self.tasks.append(app)
-            except Exception, ex:
-                self.log.error("Could not create job '%s': %s."
-                               % (jobname, str(ex)))
-                # XXX: should we raise an exception here?
-                #raise AssertionError("Could not create job '%s': %s: %s" 
-                #                     % (jobname, ex.__class__.__name__, str(ex)))
+        ## update session based on comman-line args
+        self.process_args()
 
         # save the session list immediately, so newly added jobs will
         # be in it if the script is stopped here
@@ -905,17 +925,16 @@ class SessionBasedScript(_Script):
                           self.params.resource_name)
 
         ## create an `Engine` instance to manage the job list
-        engine = gc3libs.core.Engine(self._core, self.tasks, self.store,
-                                     max_in_flight = self.params.max_running)
+        controller = self.make_task_controller()
 
         ## The main loop of the application: it is a local function so
         ## that we can call it just once or properly loop around it,
         ## as directed by the `self.params.wait` option.
         def loop():
             # advance all jobs
-            engine.progress()
+            controller.progress()
             # print results to user
-            stats = engine.stats()
+            stats = controller.stats()
             if self.params.table:
                 self._print_tasks_table(sys.stdout)
             else:
@@ -1028,3 +1047,53 @@ class SessionBasedScript(_Script):
                            header=False)
             output.write(table.draw())
             output.write("\n")
+
+
+    def _search_for_input_files(self, paths):
+        """
+        Recursively scan each location in list `paths` for files
+        matching the `self.input_filename_pattern` glob pattern, and
+        return the set of path names to such files.
+        """
+        inputs = set()
+
+        pattern = self.input_filename_pattern
+        # special case for '*.ext' patterns
+        ext = None
+        if pattern.startswith('*.'):
+            ext = pattern[1:]
+            # re-check for more wildcard characters
+            if '*' in ext or '?' in ext or '[' in ext:
+                ext = None
+        self.log.debug("Input files must match glob pattern '%s' or extension '%s'"
+                       % (pattern, ext))
+
+        def matches(name):
+            return fnmatch.fnmatch(name, pattern)
+        for path in paths:
+            self.log.debug("Now processing input path '%s' ..." % path)
+            if os.path.isdir(path):
+                # recursively scan for input files
+                for dirpath, dirnames, filenames in os.walk(path):
+                    for filename in filenames:
+                        if matches(filename):
+                            self.log.debug("Path '%s' matches pattern '%s',"
+                                           " adding it to input list"
+                                           % (os.path.join(dirpath, filename),
+                                              pattern))
+                            inputs.add(os.path.join(dirpath, filename))
+            elif matches(path) and os.path.exists(path):
+                self.log.debug("Path '%s' matches pattern '%s',"
+                               " adding it to input list" % (path, pattern))
+                inputs.add(path)
+            elif ext is not None and not path.endswith(ext) and os.path.exists(path + ext):
+                self.log.debug("Path '%s' matched extension '%s',"
+                               " adding to input list"
+                               % (path + ext, ext))
+                inputs.add(os.path.realpath(path + ext))
+            else:
+                self.log.error("Cannot access input path '%s' - ignoring it.", path)
+            self.log.debug("Gathered input files: '%s'" % str.join("', '", inputs))
+
+        return inputs
+
