@@ -103,8 +103,6 @@ setuptools.setup(
         'texttable',
         # pyCLI -- object-oriented command-line app programming
         'pyCLI==2.0.1',
-        # magnitude -- represent memory, time, etc. as physical quantitites
-        'magnitude',
         ],
 
     # additional non-Python files to be bundled in the package
