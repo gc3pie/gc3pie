@@ -32,9 +32,10 @@ __version__ = 'development version (SVN $Revision$)'
 
 from gc3libs import log, Run, Task
 import gc3libs.exceptions
+import gc3libs.utils
 
 
-class TaskCollection(Task):
+class TaskCollection(Task, gc3libs.utils.Struct):
     """
     Base class for all task collections. A "task collection" is a
     group of tasks, that can be managed collectively as a single one.
@@ -47,10 +48,12 @@ class TaskCollection(Task):
     task states.
     """
     
-    def __init__(self, tasks=None, grid=None):
-        Task.__init__(grid)
+    def __init__(self, jobname, tasks=None, grid=None):
+        Task.__init__(self, jobname, grid)
         if tasks is None:
             self._tasks = []
+        else:
+            self._tasks = tasks
         for task in self._tasks:
             task.attach(self._grid)
 
@@ -143,6 +146,26 @@ class TaskCollection(Task):
             time.sleep(interval)
 
 
+    def stats(self):
+        """
+        Return a dictionary mapping each state name into the count of
+        jobs in that state. In addition, the following keys are defined:
+        
+        * `ok`:  count of TERMINATED jobs with return code 0
+        
+        * `failed`: count of TERMINATED jobs with nonzero return code
+        """
+        result = gc3libs.utils.defaultdict(lambda: 0)
+        for task in self._tasks:
+            state = task.execution.state
+            result[state] += 1
+            if state == Run.State.TERMINATED:
+                if task.execution.returncode == 0:
+                    result['ok'] += 1
+                else:
+                    result['failed'] += 1
+        return result
+
 
 class SequentialTaskCollection(TaskCollection):
     """
@@ -159,9 +182,9 @@ class SequentialTaskCollection(TaskCollection):
     `TERMINATED` when all tasks have been run.
     """
 
-    def __init__(self, tasks, grid=None):
+    def __init__(self, jobname, tasks, grid=None):
         # XXX: check that `tasks` is a sequence type
-        TaskCollection.__int__(tasks, grid)
+        TaskCollection.__init__(self, jobname, tasks, grid)
         self._next_task = 0
 
 
