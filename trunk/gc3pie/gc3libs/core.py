@@ -34,7 +34,7 @@ import warnings
 warnings.simplefilter("ignore")
 
 import gc3libs
-from gc3libs import Application, Run
+from gc3libs import Application, Run, Task
 from gc3libs.backends.sge import SgeLrms
 from gc3libs.backends.fork import ForkLrms
 from gc3libs.authentication import Auth
@@ -274,10 +274,6 @@ class Core:
                                 else:
                                     app.execution.info = ("Job exited with code %d" 
                                                           % self.execution.exitcode)
-                    # call Application-specific handler
-                    handler_name = str(app.execution.state).lower()
-                    if hasattr(app, handler_name):
-                        getattr(app, handler_name)()
             except (gc3libs.exceptions.InvalidArgument, gc3libs.exceptions.ConfigurationError):
                 # Unrecoverable; no sense in continuing --
                 # pass immediately on to client code and let
@@ -317,7 +313,7 @@ class Core:
         job = app.execution
         if job.state in [ Run.State.NEW, Run.State.SUBMITTED ]:
             raise gc3libs.exceptions.OutputNotAvailableError("Output not available:"
-                                          " Job '%s' currently in state '%s'"
+                                          " '%s' currently in state '%s'"
                                           % (app, app.execution.state))
 
         auto_enable_auth = kw.get('auto_enable_auth', self.auto_enable_auth)
@@ -369,7 +365,7 @@ class Core:
         if job.state == Run.State.TERMINATED:
             app.final_output_retrieved = True
             app.postprocess(download_dir)
-            gc3libs.log.debug("Final output of job '%s' retrieved" % str(job))
+            gc3libs.log.debug("Final output of '%s' retrieved" % str(app))
         return download_dir
         
 
@@ -744,35 +740,37 @@ class Engine(object):
         self.fetch_output_overwrites = fetch_output_overwrites
 
 
-    def add(self, app):
-        """Add `app` to the list of tasks managed by this Engine."""
-        state = app.execution.state
+    def add(self, task):
+        """Add `task` to the list of tasks managed by this Engine."""
+        state = task.execution.state
         if Run.State.NEW == state:
-            self._new.append(app)
+            self._new.append(task)
         elif Run.State.SUBMITTED == state or Run.State.RUNNING == state:
-            self._in_flight.append(app)
+            self._in_flight.append(task)
         elif Run.State.STOPPED == state:
-            self._stopped.append(app)
+            self._stopped.append(task)
         elif Run.State.TERMINATED == state:
-            self._terminated.append(app)
+            self._terminated.append(task)
         else:
             raise AssertionError("Unhandled run state '%s' in gc3libs.core.Engine." % state)
+        task.attach(self)
 
 
-    def remove(self, app):
-        """Remove a `app` from the list of tasks managed by this Engine."""
-        state = app.execution.state
+    def remove(self, task):
+        """Remove a `task` from the list of tasks managed by this Engine."""
+        state = task.execution.state
         if Run.State.NEW == state:
-            self._new.remove(app)
+            self._new.remove(task)
         elif Run.State.SUBMITTED == state or Run.State.RUNNING == state:
-            self._in_flight.remove(app)
+            self._in_flight.remove(task)
         elif Run.State.STOPPED == state:
-            self._stopped.remove(app)
+            self._stopped.remove(task)
         elif Run.State.TERMINATED == state:
-            self._terminated.remove(app)
+            self._terminated.remove(task)
         else:
             raise AssertionError("Unhandled run state '%s' in gc3libs.core.Engine." % state)
-        
+        task.detach(self)
+
 
     def progress(self):
         """
@@ -806,7 +804,14 @@ class Engine(object):
         transitioned = []
         for index, task in enumerate(self._in_flight):
             try:
-                self._core.update_job_state(task)
+                if isinstance(task, Application):
+                    # let Core do the work
+                    self._core.update_job_state(task)
+                elif isinstance(task, Task):
+                    # `Task` objects are autonomous
+                    task.update_state()
+                else:
+                    raise InvalidArgument("Job %s is neither Application nor Task instance.")
                 if self._store:
                     self._store.save(task)
                 if task.execution.state == Run.State.SUBMITTED:
@@ -836,8 +841,13 @@ class Engine(object):
         # execute kills and update count of submitted/in-flight tasks
         transitioned = []
         for index, task in enumerate(self._to_kill):
-            try: 
-                self._core.kill(task)
+            try:
+                if isinstance(task, Application):
+                    self._core.kill(task)
+                elif isinstance(task, Task):
+                    task.kill()
+                else:
+                    raise InvalidArgument("Job %s is neither Application nor Task instance.")
                 if self._store:
                     self._store.save(task)
                 if task.execution.state == Run.State.SUBMITTED:
@@ -861,7 +871,12 @@ class Engine(object):
         transitioned = []
         for index, task in enumerate(self._stopped):
             try:
-                self._core.update_job_state(task)
+                if isinstance(task, Application):
+                    self._core.update_job_state(task)
+                elif isinstance(task, Task):
+                    task.update_state()
+                else:
+                    raise InvalidArgument("Job %s is neither Application nor Task instance.")
                 if self._store:
                     self._store.save(task)
                 if task.execution.state in [Run.State.SUBMITTED, Run.State.RUNNING]:
@@ -888,7 +903,12 @@ class Engine(object):
                 # try to submit; go to SUBMITTED if successful, FAILED if not
                 if currently_submitted < limit_submitted and currently_in_flight < limit_in_flight:
                     try:
-                        self._core.submit(task)
+                        if isinstance(task, Application):
+                            self._core.submit(task)
+                        elif isinstance(task, Task):
+                            task.submit()
+                        else:
+                            raise InvalidArgument("Job %s is neither Application nor Task instance.")
                         if self._store:
                             self._store.save(task)
                         self._in_flight.append(task)
@@ -908,6 +928,9 @@ class Engine(object):
         # finally, retrieve output of finished tasks
         if self.can_retrieve:
             for index, task in enumerate(self._terminated):
+                # XXX: this code is `Application`-specific!!
+                if not isinstance(task, Application):
+                    continue
                 if not task.final_output_retrieved:
                     # try to get output
                     try:

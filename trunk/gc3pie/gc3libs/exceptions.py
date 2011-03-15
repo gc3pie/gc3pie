@@ -176,6 +176,27 @@ class OutputNotAvailableError(Error):
     """
     pass
 
+class TaskError(Error):
+    """
+    Generic error condition in a `Task` object.
+    """
+    pass
+
+class DetachedFromGridError(TaskError):
+    """
+    Raised when a method (other than :meth:`attach`) is called on
+    a detached `Task` instance.
+    """
+    pass
+
+class UnexpectedStateError(TaskError):
+    """
+    Raised by :meth:`Task.progress` when a job lands in `STOPPED`
+    or `TERMINATED` state.
+    """
+    pass
+
+
 class TransportError(Error):
     pass
 

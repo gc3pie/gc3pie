@@ -24,6 +24,7 @@ __docformat__ = 'reStructuredText'
 __version__ = '$Revision$'
 
 
+import csv
 import math
 import os
 import os.path
@@ -34,11 +35,13 @@ import types
 ## interface to Gc3libs
 
 import gc3libs
-from gc3libs import Application
+from gc3libs import Application, Run, Task
 from gc3libs.cmdline import SessionBasedScript
 from gc3libs.dag import SequentialTaskCollection, ParallelTaskCollection
 import gc3libs.utils
 
+IN_VALUES_FILE = 'Values.txt'
+OUT_VALUES_FILE = 'SolVal.txt'
 TMPDIR = '/tmp'
 
 
@@ -55,8 +58,8 @@ class ValueFunctionIteration(SequentialTaskCollection):
     Perform a (predefined) number of iterations of a certain function
     over a set of values.  The function to be iterated is implemented
     in the form of an executable program, that takes a single input
-    file 'Values.txt' (a list of values) and creates a single output
-    file 'SolVal.txt'.
+    file IN_VALUES_FILE (a list of values) and creates a single output
+    file OUT_VALUES_FILE.
 
     The several-passes computation is implemented as a sequential task
     collection (totalling `total_iterations` steps); each step of
@@ -137,17 +140,28 @@ class ValueFunctionIteration(SequentialTaskCollection):
         Collect the output of all iterations into a single '.csv'
         file.
         """
-        self.log.debug("SequentialTaskCollection %s done, now processing results...")
-        # FIXME: implement this function
-        self.log.debug("  ...done.")
+        # determine output file name
+        output_filename = gc3libs.utils.basename_sans(self.initial_values) + '.csv'
+        gc3libs.log.debug("SequentialTaskCollection %s done,"
+                          " now processing results into file '%s'..."
+                          % (self, output_filename))
+        output_file = open(output_filename, 'w+')
+        output_csv = csv.writer(output_file)
+        output_csv.writerow(['I'] + [ ('Pass %d' % n)
+                                          for n in range(1, len(self.tasks)+1) ])
+        for n, values in enumerate(zip(*[ task.output_values
+                                          for task in self.tasks ])):
+            output_csv.writerow([n] + list(values))
+        output_file.close()
+        gc3libs.log.debug("  ...done.")
 
 
 class ValueFunctionIterationPass(ParallelTaskCollection):
     """
     Compute the values taken by a certain function over a set of
     inputs.  The function to be iterated is implemented in the form of
-    an executable program, that takes a single input file 'Values.txt'
-    (a list of values) and creates a single output file 'SolVal.txt'.
+    an executable program, that takes a single input file IN_VALUES_FILE
+    (a list of values) and creates a single output file OUT_VALUES_FILE.
 
     The computation will be split into separate independent processes,
     each working over a fraction of the input values (determined by
@@ -222,15 +236,16 @@ class ValueFunctionIterationPass(ParallelTaskCollection):
         jobname = gc3libs.utils.basename_sans(input_values_file)
         ParallelTaskCollection.__init__(self, jobname, tasks, grid)
 
+
     def terminated(self):
         """
         Collect all results from sub-tasks into `self.output_values`.
         """
-        self.log.debug("Pass %s terminated, now collecting return values from sub-tasks ..." % self)
+        gc3libs.log.debug("Pass %s terminated, now collecting return values from sub-tasks ..." % self)
         self.output_values = [ ]
         for task in self.tasks:
             self.output_values.extend(task.output_values)
-        self.log.debug("  ...done.")
+        gc3libs.log.debug("  ...done.")
 
 
 class ValueFunctionIterationApplication(Application):
@@ -238,8 +253,8 @@ class ValueFunctionIterationApplication(Application):
     A computational job to reckon the values taken by a certain
     function over a set of inputs.  The function to be iterated is
     implemented in the form of an executable program, that takes a
-    single input file 'Values.txt' (a list of values) and creates a
-    single output file 'SolVal.txt'.
+    single input file IN_VALUES_FILE (a list of values) and creates a
+    single output file OUT_VALUES_FILE.
 
     Optional arguments `start` and `end` constrain the application of
     the function to a subset of the input values (those with positions
@@ -264,20 +279,20 @@ class ValueFunctionIterationApplication(Application):
             # `start` and `end` arguments to `executable` follow the
             # FORTRAN convention of being 1-based
             arguments = [ count, iteration, total_iterations, start+1, end+1 ],
-            inputs = { input_values_file:'Values.txt' },
-            outputs = { 'SolVal.txt':'SolVal.txt' },
+            inputs = { input_values_file:IN_VALUES_FILE },
+            outputs = { OUT_VALUES_FILE:OUT_VALUES_FILE },
             join = True,
             stdout = 'output.txt', # stdout + stderr
             **kw)
 
 
     def postprocess(self, output_dir):
-        self.log.debug("Task %s terminated, post-processing files in directory '%s'"
+        gc3libs.log.debug("Task %s terminated, post-processing files in directory '%s'"
                        % (self, output_dir))
-        if self.returncode == 0:
+        if self.execution.returncode == 0:
             # everything ok, try to post-process results
             results = [ ]
-            output_filename = os.path.join(output_dir, 'SolVal.txt')
+            output_filename = os.path.join(output_dir, OUT_VALUES_FILE)
             try:
                 result_file = open(output_filename, 'r')
                 for lineno, line in enumerate(result_file):
