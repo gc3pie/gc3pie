@@ -49,13 +49,16 @@ class TaskCollection(Task, gc3libs.utils.Struct):
     """
     
     def __init__(self, jobname, tasks=None, grid=None):
-        Task.__init__(self, jobname, grid)
         if tasks is None:
-            self._tasks = []
+            self.tasks = [ ]
         else:
-            self._tasks = tasks
-        for task in self._tasks:
-            task.attach(self._grid)
+            self.tasks = tasks
+        for task in self.tasks:
+            if grid is not None:
+                task.attach(grid)
+            else:
+                task.detach()
+        Task.__init__(self, jobname, grid)
 
     # manipulate the "grid" interface used to control the associated task
     def attach(self, grid):
@@ -63,16 +66,23 @@ class TaskCollection(Task, gc3libs.utils.Struct):
         Use the given Grid interface for operations on the job
         associated with this task.
         """
-        self._grid = grid
-        self._attached = True
+        for task in self.tasks:
+            task.attach(grid)
+        Task.attach(self, grid)
 
+    
+    def detach(self):
+        for task in self.tasks:
+            task.detach()
+        Task.detach(self)
+    
 
     def add(self, task):
         """
         Add a task to the collection.
         """
         task.detach()
-        self._tasks.append(task)
+        self.tasks.append(task)
         if self._attached:
             task.attach(self._grid)
 
@@ -80,7 +90,7 @@ class TaskCollection(Task, gc3libs.utils.Struct):
         """
         Remove a task from the collection.
         """
-        self._tasks.remove(task)
+        self.tasks.remove(task)
         task.detach()
 
 
@@ -90,11 +100,11 @@ class TaskCollection(Task, gc3libs.utils.Struct):
     def submit(self):
         raise NotImplementedError("Called abstract method TaskCollection.submit() - this should be overridden in derived classes.")
 
-    def update(self):
+    def update_state(self):
         """
         Update the running state of all managed tasks.
         """
-        for task in self._tasks:
+        for task in self.tasks:
             self._grid.update_job_state(task)
 
     def kill(self):
@@ -105,7 +115,7 @@ class TaskCollection(Task, gc3libs.utils.Struct):
         # if `output_dir` is not None, it is interpreted as the base
         # directory where to download files; each task will get its
         # own subdir based on its `.persistent_id`
-        for task in self._tasks:
+        for task in self.tasks:
             if output_dir is not None:
                 self._grid.fetch_output(task, 
                                         os.path.join(output_dir, task.permanent_id),
@@ -142,7 +152,7 @@ class TaskCollection(Task, gc3libs.utils.Struct):
             self.progress()
             if self.execution.state == Run.State.TERMINATED:
                 return [ task.execution.returncode 
-                         for task in self._tasks ]
+                         for task in self.tasks ]
             time.sleep(interval)
 
 
@@ -156,7 +166,7 @@ class TaskCollection(Task, gc3libs.utils.Struct):
         * `failed`: count of TERMINATED jobs with nonzero return code
         """
         result = gc3libs.utils.defaultdict(lambda: 0)
-        for task in self._tasks:
+        for task in self.tasks:
             state = task.execution.state
             result[state] += 1
             if state == Run.State.TERMINATED:
@@ -185,27 +195,63 @@ class SequentialTaskCollection(TaskCollection):
     def __init__(self, jobname, tasks, grid=None):
         # XXX: check that `tasks` is a sequence type
         TaskCollection.__init__(self, jobname, tasks, grid)
-        self._next_task = 0
+        self._current_task = 0
 
 
+    def kill(self):
+        """
+        Stop execution of this sequence.  Kill currently-running task
+        (if any), then set collection state to TERMINATED.
+        """
+        if self._current_task is not None:
+            self.tasks[self._current_task].kill()
+        self.execution.state = Run.State.TERMINATED
+        self.execution.returncode = (Run.Signals.Cancelled, -1)
+
+ 
     def next(self, index):
         """
-        Called when a job is finished; if `Run.State.TERMINATED` is
-        returned, then no other jobs will be run; otherwise, the
-        return value is assigned to `execution.state` and the next job
-        in the `self.tasks` list is executed.
+        Called by :meth:`progress` when a job is finished; if
+        `Run.State.TERMINATED` is returned then no other jobs will be
+        run; otherwise, the return value is assigned to
+        `execution.state` and the next job in the `self.tasks` list is
+        executed.
 
-        The default implmentation runs the tasks in the order they
-        were given to the constructor, and sets the state to
-        terminated when all tasks have been run.  This method can (and
-        should) be overridden in derived classes to implement policies
-        for serial job execution.
+        The default implmentation runs tasks in the order they were
+        given to the constructor, and sets the state to TERMINATED
+        when all tasks have been run.  This method can (and should) be
+        overridden in derived classes to implement policies for serial
+        job execution.
         """
         if index == len(self.tasks) - 1:
             return Run.State.TERMINATED
         else:
             return Run.State.RUNNING
     
+
+    def progress(self):
+        """
+        Sequentially advance tasks in the collection through all steps
+        of a regular lifecycle.  When the last task transitions to
+        TERMINATED state, the collection's state is set to TERMINATED
+        as well and this method becomes a no-op.  If during execution,
+        any of the managed jobs gets into state `STOPPED` or
+        `UNKNOWN`, then an exception `Task.UnexpectedExecutionState`
+        is raised.
+        """
+        if execution.state == Run.State.TERMINATED:
+            return
+        if self._current_task is None:
+            # (re)submit initial task
+            self._current_task = 0
+        task = self.tasks[self._current_task]
+        task.progress()
+        if task.execution.state == Run.State.SUBMITTED and self._current_task == 0:
+            self.execution.state = Run.State.SUBMITTED
+        elif task.execution.state == Run.State.TERMINATED:
+            self._next_step()
+        else:
+            self.execution.state = Run.State.RUNNING
 
     def _next_step(self):
         """
@@ -224,43 +270,45 @@ class SequentialTaskCollection(TaskCollection):
 
 
     def submit(self):
-        if self.tasks[self._current_task] == Run.State.TERMINATED:
-            # submit next task
-            self._next_step()
-            self.tasks[self._current_task].submit()
-        else:
-            # ignore
-            pass
-
-
-    def kill(self):
         """
-        Stop execution of this sequence.  Kill currently-running task
-        (if any), then set collection state to TERMINATED.
+        Start the current task in the collection.
         """
-        if self._current_task is not None:
-            self.tasks[self._current_task].kill()
-        self.execution.state = Run.State.TERMINATED
-        self.execution.returncode = (Run.Signals.Cancelled, -1)
-
-
-    def progress(self):
-        """
-        Sequentially advance tasks in the collection through all steps
-        of a regular lifecycle.  When the last task transitions to
-        TERMINATED state, the collection's state is set to TERMINATED
-        as well and this method becomes a no-op.  If during execution,
-        any of the managed jobs gets into state `STOPPED` or
-        `UNKNOWN`, then an exception `Task.UnexpectedExecutionState`
-        is raised.
-        """
-        if execution.state == Run.State.TERMINATED:
-            return
+        if self._current_task is None:
+            self._current_task = 0
         task = self.tasks[self._current_task]
-        task.progress()
-        if task.execution.state == Run.State.TERMINATED:
-            self._next_step()
+        task.submit()
+        if task.execution.state == Run.State.NEW:
+            # submission failed, state unchanged
+            self.execution.state = Run.State.NEW
+        elif task.execution.state == Run.State.SUBMITTED:
+            self.execution.state = Run.State.SUBMITTED
+        else:
+            self.execution.state = Run.State.RUNNING
 
+
+    def update_state(self):
+        """
+        Update state of the collection, based on the jobs' statuses.
+        """
+        gc3libs.log.debug("Updating state of task %d in collection %s ..."
+                          % (self._current_task, self))
+        if self._current_task is None:
+            # it's either NEW or TERMINATED, no update
+            assert self.execution.state in [ Run.State.NEW, Run.State.TERMINATED ]
+        else:
+            task = self.tasks[self._current_task]
+            task.update_state()
+            gc3libs.log.debug("Task #%d (%s, %s) in state %s"
+                              % (self._current_task, task, type(task), task.execution.state))
+        if task.execution.state == Run.State.SUBMITTED and self._current_task == 0:
+            self.execution.state = Run.State.SUBMITTED
+        elif (task.execution.state == Run.State.TERMINATED
+              and self._current_task == len(self.tasks)-1):
+            self.execution.state = Run.State.TERMINATED
+        else:
+            self.execution.state = Run.State.RUNNING
+        return self.execution.state
+        
 
 
 class ParallelTaskCollection(TaskCollection):
@@ -270,37 +318,67 @@ class ParallelTaskCollection(TaskCollection):
     The collection state is set to `TERMINATED` once all tasks have
     reached the same terminal status.
     """
-    
-    def submit(self):
-        """
-        Start all tasks in the collection.
-        """
-        for task in self._tasks:
-            self._grid.submit(task)
-        for task in self.tasks:
-            if task.execution.state in [ Run.State.SUBMITTED, Run.State.RUNNING ]:
-                self.execution.state = Run.State.RUNNING
-                return
-        self.execution.state = Run.State.NEW
 
+    def _state(self):
+        """
+        Return the state of the collection.
+
+        For a `ParallelTaskCollection`, the state of dependent jobs is
+        computed by looping across the states NEW, SUBMITTED, RUNNING,
+        STOPPED, TERMINATED, UNKNOWN in the order given: the first
+        state for which there is at least one job in that state is
+        returned as the global collection state.
+        """
+        stats = self.stats()
+        for state in [ Run.State.NEW,
+                       Run.State.SUBMITTED,
+                       Run.State.RUNNING,
+                       Run.State.STOPPED,
+                       Run.State.TERMINATED,
+                       Run.State.UNKNOWN,
+                       ]:
+            if stats[state] > 0:
+                return state
+
+    
     def kill(self):
         """
         Terminate all tasks in the collection, and set collection
         state to `TERMINATED`.
         """
-        for task in self._tasks:
-            self._grid.kill(task)
+        for task in self.tasks:
+            task.kill()
         self.execution.state = TERMINATED
         self.execution.returncode = (Run.Signals.Cancelled, -1)
+
 
     def progress(self):
         """
         Try to advance all jobs in the collection to the next state in
         a normal lifecycle.  Return list of task execution states.
         """
-        return [ task.progress() for task in self._tasks ]
-        
+        return [ task.progress() for task in self.tasks ]
 
+
+    def submit(self):
+        """
+        Start all tasks in the collection.
+        """
+        for task in self.tasks:
+            task.submit()
+        self.execution.state = self._state()
+
+        
+    def update_state(self):
+        """
+        Update state of all tasks in the collection.
+        """
+        for task in self.tasks:
+            gc3libs.log.debug("Updating state of %s in collection %s ..."
+                              % (task, self))
+            task.update_state()
+        self.execution.state = self._state()
+        
 
 ## main: run tests
 
