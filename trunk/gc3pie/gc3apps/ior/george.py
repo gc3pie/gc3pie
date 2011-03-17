@@ -87,6 +87,7 @@ class ValueFunctionIteration(SequentialTaskCollection):
                " must be a non-negative integer."
         
         # remember values for later use
+        self.executable = executable
         self.initial_values = initial_values_file
         self.total_iterations = total_iterations - 1
         self.slice_size = slice_size
@@ -112,6 +113,7 @@ class ValueFunctionIteration(SequentialTaskCollection):
         See: `SequentialTaskCollection.next`:meth: for a description
         of the contract that this method must implement.
         """
+        gc3libs.log.debug("ValueFunctionIteration.next(%s, %d)" % (self, iteration))
         if iteration == self.total_iterations:
             return Run.State.TERMINATED
         else:
@@ -128,8 +130,11 @@ class ValueFunctionIteration(SequentialTaskCollection):
                 ValueFunctionIterationPass(
                     self.executable,
                     last_values_filename,
+                    iteration+1,
+                    self.total_iterations,
                     self.slice_size,
-                    self.grid
+                    extra=self.extra,
+                    grid=self._grid,
                     )
                 )
             return Run.State.RUNNING
@@ -205,7 +210,7 @@ class ValueFunctionIterationPass(ParallelTaskCollection):
 
         # pad numbers with correct amount of zeros, so they look
         # sorted in plain `ls -l` output
-        fmt = '%%0%dd' % (1 + int(math.log10(total_iterations)))
+        fmt = '%%0%dd' % (1 + int(math.log10(float(total_iterations))))
         
         # create data sub-directory
         datasubdir = os.path.join(datadir, "pass." + (fmt % iteration))
@@ -264,7 +269,7 @@ class ValueFunctionIterationApplication(Application):
     back, the list of output values is made available in the
     `self.output_values` attribute.
     """
-
+    
     def __init__(self, executable, input_values_file, iteration, total_iterations,
                  start=0, end=None, **kw):
         """
@@ -287,8 +292,6 @@ class ValueFunctionIterationApplication(Application):
 
 
     def postprocess(self, output_dir):
-        gc3libs.log.debug("Task %s terminated, post-processing files in directory '%s'"
-                       % (self, output_dir))
         if self.execution.returncode == 0:
             # everything ok, try to post-process results
             results = [ ]

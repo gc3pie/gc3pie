@@ -397,6 +397,7 @@ class Core:
                 
         return updated_resources
 
+
     def kill(self, app, **kw):
         """
         Terminate a job.
@@ -463,7 +464,23 @@ class Core:
         return _local_file
 
 
-#======= Static methods =======
+    def add(self, task):
+        """
+        This method is here just to allow `Core` and `Engine` objects
+        to be used interchangeably.  It's effectively a no-op, as it makes
+        no sense in the synchronous/blocking semantics implemented by `Core`.
+        """
+        pass
+
+
+    def remove(self, task):
+        """
+        This method is here just to allow `Core` and `Engine` objects
+        to be used interchangeably.  It's effectively a no-op, as it makes
+        no sense in the synchronous/blocking semantics implemented by `Core`.
+        """
+        pass
+
 
     def _get_backend(self,resource_name):
         _lrms = None
@@ -832,7 +849,7 @@ class Engine(object):
                 raise
             except Exception, x:
                 gc3libs.log.error("Ignoring error in updating state of task '%s': %s: %s"
-                                  % (task.persistent_id, x.__class__.__name__, str(x)),
+                                  % (task, x.__class__.__name__, str(x)),
                                   exc_info=True)
         # remove tasks that transitioned to other states
         for index in reversed(transitioned):
