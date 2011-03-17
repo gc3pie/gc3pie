@@ -102,7 +102,7 @@ setuptools.setup(
         # texttable -- format tabular text output
         'texttable',
         # pyCLI -- object-oriented command-line app programming
-        'pyCLI==2.0.1',
+        'pyCLI==2.0.2',
         ],
 
     # additional non-Python files to be bundled in the package
