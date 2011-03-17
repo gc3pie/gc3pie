@@ -90,12 +90,19 @@ class ArcLrms(LRMS):
         if (not hasattr(self, '_queues')) or (not hasattr(self, '_queues_last_accessed')) \
                 or (time.time() - self._queues_last_updated > self._queues_cache_time):
             if self._resource.has_key('arc_ldap'):
-                log.debug("Getting list of ARC resources from GIIS '%s' ...", 
+                log.debug("Acquiring cluster information form ldap '%s' ...", 
                           self._resource.arc_ldap)
                 cls = arclib.GetClusterResources(arclib.URL(self._resource.arc_ldap),True,'',1)
+                if not cls:
+                    log.warning("Empty cluster information list")
+                    # returning empty list
+                    return []
             else:
+                log.debug("Acquiring cluster information form default giis")
                 cls = arclib.GetClusterResources()
-                log.debug('Got cluster list of length %d', len(cls))
+
+            log.info('Cluster list of length %d', len(cls))
+
             self._queues = arclib.GetQueueInfo(cls,arclib.MDS_FILTER_CLUSTERINFO, True, '', 5)
             log.debug('returned valid queue information for %d queues', len(self._queues))
             self._queues_last_updated = time.time()

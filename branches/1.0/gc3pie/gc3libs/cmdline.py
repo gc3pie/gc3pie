@@ -369,7 +369,7 @@ class _Script(cli.app.CommandLineApp):
         kept = self._core.select_resource(keep_resource_if_matches)
         if kept == 0:
             raise gc3libs.exceptions.NoResources("No resources match the names '%s'" 
-                              % str.join(',', resource_list))
+                              % str.join(',', resource_names))
 
 
 

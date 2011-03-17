@@ -153,7 +153,7 @@ class GridAuth(object):
                     # Try renew voms credential; another interactive command
                     gc3libs.log.debug("No valid proxy found; trying to get "
                                       " a new one by 'voms-proxy-init' ...")
-                    _cmd = shlex.split("voms-proxy-init -valid 24:00 -voms "
+                    _cmd = shlex.split("voms-proxy-init -rfc -valid 24:00 -voms "
                                        "%s -q -pwstdin" % self.vo)
 
                 elif self.type == 'grid-proxy':
