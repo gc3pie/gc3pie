@@ -78,7 +78,7 @@ setuptools.setup(
         'console_scripts': [
             # the generic, catch-all script:
             'gc3utils = gc3utils.frontend:main',
-            # symlinks to specific subcommands:
+            # entry points to specific subcommands:
             'gclean = gc3utils.frontend:main',
             'gget = gc3utils.frontend:main',
             'ginfo = gc3utils.frontend:main',
@@ -97,7 +97,7 @@ setuptools.setup(
         # ("pycrypto" is actually a dependency of Paramiko, but
         # setuptools apparently does not process dependencies recursively)
         'paramiko', 'pycrypto>=1.9', 
-        # lockfile 0.9 dropped supprot for Python 2.4; let's stick with 0.8
+        # lockfile 0.9 dropped support for Python 2.4; let's stick with 0.8
         'lockfile==0.8',
         # texttable -- format tabular text output
         'texttable',
