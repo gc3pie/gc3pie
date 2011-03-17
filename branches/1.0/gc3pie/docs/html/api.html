@@ -5,13 +5,13 @@
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     
-    <title>GC3Libs modules &mdash; gc3pie v1.0rc2 documentation</title>
+    <title>GC3Libs modules &mdash; gc3pie v1.0rc3 documentation</title>
     <link rel="stylesheet" href="_static/default.css" type="text/css" />
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
     <script type="text/javascript">
       var DOCUMENTATION_OPTIONS = {
         URL_ROOT:    '#',
-        VERSION:     '1.0rc2',
+        VERSION:     '1.0rc3',
         COLLAPSE_MODINDEX: false,
         FILE_SUFFIX: '.html',
         HAS_SOURCE:  true
@@ -19,7 +19,7 @@
     </script>
     <script type="text/javascript" src="_static/jquery.js"></script>
     <script type="text/javascript" src="_static/doctools.js"></script>
-    <link rel="top" title="gc3pie v1.0rc2 documentation" href="index.html" /> 
+    <link rel="top" title="gc3pie v1.0rc3 documentation" href="index.html" /> 
   </head>
   <body>
     <div class="related">
@@ -31,7 +31,7 @@
         <li class="right" >
           <a href="modindex.html" title="Global Module Index"
              accesskey="M">modules</a> |</li>
-        <li><a href="index.html">gc3pie v1.0rc2 documentation</a> &raquo;</li> 
+        <li><a href="index.html">gc3pie v1.0rc3 documentation</a> &raquo;</li> 
       </ul>
     </div>  
 
@@ -83,11 +83,12 @@ execution node before execution starts.</p>
 <li>It can be a Python dictionary: keys are local file paths, 
 values are remote file names.</li>
 <li>It can be a Python list: each item in the list should be a
-pair <cite>(local_file_name, remote_file_name)</cite>; a single string
-<cite>file_name</cite> is allowed as a shortcut and will result in both
-<cite>local_file_name</cite> and <cite>remote_file_name</cite> being equal.  If an
-absolute path name is specified as <cite>remote_file_name</cite>, then
-an <tt class="xref docutils literal"><span class="pre">InvalidArgument</span></tt> exception is thrown.</li>
+pair <cite>(local_file_name, remote_file_name)</cite>; specifying a
+single string <cite>file_name</cite> is allowed as a shortcut and will
+result in both <cite>local_file_name</cite> and <cite>remote_file_name</cite> being
+equal.  If an absolute path name is specified as
+<cite>remote_file_name</cite>, then an <tt class="xref docutils literal"><span class="pre">InvalidArgument</span></tt> exception
+is thrown.</li>
 </ul>
 </blockquote>
 </dd>
@@ -99,16 +100,22 @@ node back to the local computer after execution has completed.</p>
 <li>It can be a Python dictionary: keys are local file paths, 
 values are remote file names.</li>
 <li>It can be a Python list: each item in the list should be a
-pair <cite>(remote_file_name, local_file_name)</cite>; a single string
-<cite>file_name</cite> is allowed as a shortcut and will result in both
-<cite>local_file_name</cite> and <cite>remote_file_name</cite> being equal.  If an
-absolute path name is specified as <cite>remote_file_name</cite>, then an
-<tt class="xref docutils literal"><span class="pre">InvalidArgument</span></tt> exception is thrown.</li>
+pair <cite>(remote_file_name, local_file_name)</cite>; specifying a
+single string <cite>file_name</cite> is allowed as a shortcut and will
+result in both <cite>local_file_name</cite> and <cite>remote_file_name</cite> being
+equal.  If an absolute path name is specified as
+<cite>remote_file_name</cite>, then an <tt class="xref docutils literal"><span class="pre">InvalidArgument</span></tt> exception
+is thrown.</li>
 </ul>
 </dd>
 <dt><cite>output_dir</cite></dt>
 <dd>Path to the base directory where output files will be downloaded.
 Output file names are interpreted relative to this base directory.</dd>
+</dl>
+<p>The following optional parameters may be additionally
+specified as keyword arguments and will be given special
+treatment by the <cite>Application</cite> class logic:</p>
+<dl class="docutils">
 <dt><cite>requested_cores</cite>,`requested_memory`,`requested_walltime`</dt>
 <dd>specify resource requirements for the application: the
 number of independent execution units (CPU cores), amount of
@@ -117,11 +124,6 @@ truncating any decimal digits), amount of wall-clock time to
 allocate for the computational job (in hours; will be
 converted to a whole number by truncating any decimal
 digits).</dd>
-</dl>
-<p>The following optional parameters may be additionally
-specified as keyword arguments and will be given special
-treatment by the <cite>Application</cite> class logic:</p>
-<dl class="docutils">
 <dt><cite>environment</cite></dt>
 <dd>a list of pairs <cite>(name, value)</cite>: the
 environment variable whose name is given by the contents of
@@ -356,12 +358,6 @@ to produce XRSL tailored to your application.</p>
 </dd></dl>
 
 </dd></dl>
-
-<dl class="class">
-<dt id="gc3libs.Default">
-<em class="property">class </em><tt class="descclassname">gc3libs.</tt><tt class="descname">Default</tt><a class="headerlink" href="#gc3libs.Default" title="Permalink to this definition">¶</a></dt>
-<dd>A namespace for all constants and default values used in the
-GC3Libs package.</dd></dl>
 
 <dl class="class">
 <dt id="gc3libs.Run">
@@ -718,13 +714,12 @@ automatically fetch the output.</p>
 <dl class="function">
 <dt id="gc3libs.configure_logger">
 <tt class="descclassname">gc3libs.</tt><tt class="descname">configure_logger</tt><big>(</big><em>level=40</em>, <em>name=None</em>, <em>format='sphinx-build:</em><span class="optional">[</span>, <em>%(asctime)s</em><span class="optional">]</span>, <em>%(levelname)-8s: %(message)s'</em>, <em>datefmt='%Y-%m-%d %H:%M:%S'</em><big>)</big><a class="headerlink" href="#gc3libs.configure_logger" title="Permalink to this definition">¶</a></dt>
-<dd><p>Configure the <tt class="docutils literal"><span class="pre">gc3.gc3libs</span></tt> logger.</p>
+<dd><p>Configure the <tt class="docutils literal"><span class="pre">gc3libs</span></tt> logger.</p>
 <p>Arguments <cite>level</cite>, <cite>format</cite> and <cite>datefmt</cite> set the corresponding
 arguments in the <cite>logging.basicConfig()</cite> call.</p>
-<p>If a user configuration file exists in file NAME.log.conf in the
-<tt class="docutils literal"><span class="pre">Default.RCDIR</span></tt> directory (usually <tt class="docutils literal"><span class="pre">~/.gc3</span></tt>), it is read and
-used for more advanced configuration; if it does not exist, then a
-sample one is created.</p>
+<p>If a user configuration file exists in <tt class="docutils literal"><span class="pre">~/.gc3/logging.conf</span></tt>, it
+is read and used for more advanced configuration; if it does not
+exist, then a sample one is created.</p>
 </dd></dl>
 
 </div>
@@ -826,17 +821,6 @@ taken into account when attempting submission of tasks.</p>
 <dd>Remove a <cite>app</cite> from the list of tasks managed by this Engine.</dd></dl>
 
 <dl class="method">
-<dt id="gc3libs.core.Engine.stats">
-<tt class="descname">stats</tt><big>(</big><big>)</big><a class="headerlink" href="#gc3libs.core.Engine.stats" title="Permalink to this definition">¶</a></dt>
-<dd><p>Return a dictionary mapping each state name into the count of
-jobs in that state. In addition, the following keys are defined:</p>
-<ul class="simple">
-<li><cite>ok</cite>:  count of TERMINATED jobs with return code 0</li>
-<li><cite>failed</cite>: count of TERMINATED jobs with nonzero return code</li>
-</ul>
-</dd></dl>
-
-<dl class="method">
 <dt id="gc3libs.core.Engine.submit">
 <tt class="descname">submit</tt><big>(</big><em>task</em><big>)</big><a class="headerlink" href="#gc3libs.core.Engine.submit" title="Permalink to this definition">¶</a></dt>
 <dd>Submit <cite>task</cite> at the next invocation of <cite>perform</cite>.  Actually,
@@ -861,16 +845,128 @@ return a <cite>(defaults, resources, auths)</cite> triple that can be passed
 to the <cite>Core</cite> class constructor.</dd></dl>
 
 </div>
-<div class="section" id="gc3libs-default">
-<h2><cite>gc3libs.Default</cite><a class="headerlink" href="#gc3libs-default" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="module-gc3libs.Default">
+<h2><cite>gc3libs.Default</cite><a class="headerlink" href="#module-gc3libs.Default" title="Permalink to this headline">¶</a></h2>
 <div class="admonition warning">
 <p class="first admonition-title">Warning</p>
 <p class="last">This module is deprecated and will be removed in a future release.
 Do not depend on it.</p>
 </div>
+<p>A namespace for all constants and default values used in the GC3Libs
+package.</p>
 </div>
-<div class="section" id="gc3libs-exceptions">
-<h2><cite>gc3libs.Exceptions</cite><a class="headerlink" href="#gc3libs-exceptions" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="module-gc3libs.Exceptions">
+<h2><cite>gc3libs.Exceptions</cite><a class="headerlink" href="#module-gc3libs.Exceptions" title="Permalink to this headline">¶</a></h2>
+<p>Exceptions specific to the <cite>gc3libs</cite> package.</p>
+<dl class="exception">
+<dt id="gc3libs.Exceptions.ConfigurationError">
+<em class="property">exception </em><tt class="descclassname">gc3libs.Exceptions.</tt><tt class="descname">ConfigurationError</tt><big>(</big><em>msg</em>, <em>do_log=True</em><big>)</big><a class="headerlink" href="#gc3libs.Exceptions.ConfigurationError" title="Permalink to this definition">¶</a></dt>
+<dd>Raised when the configuration file (or parts of it) could not be
+read/parsed.  Also used to signal that a required parameter is
+missing or has an unknown/invaliud value.</dd></dl>
+
+<dl class="exception">
+<dt id="gc3libs.Exceptions.DataStagingError">
+<em class="property">exception </em><tt class="descclassname">gc3libs.Exceptions.</tt><tt class="descname">DataStagingError</tt><big>(</big><em>msg</em>, <em>do_log=False</em><big>)</big><a class="headerlink" href="#gc3libs.Exceptions.DataStagingError" title="Permalink to this definition">¶</a></dt>
+<dd>Raised when problems with copying data to or from the remote
+execution site occurred.</dd></dl>
+
+<dl class="exception">
+<dt id="gc3libs.Exceptions.Error">
+<em class="property">exception </em><tt class="descclassname">gc3libs.Exceptions.</tt><tt class="descname">Error</tt><big>(</big><em>msg</em>, <em>do_log=False</em><big>)</big><a class="headerlink" href="#gc3libs.Exceptions.Error" title="Permalink to this definition">¶</a></dt>
+<dd><p>A non-fatal error.</p>
+<p>Depending on the nature of the task, steps could be taken to
+continue, but users <em>must</em> be aware that an error condition
+occurred, so the message is sent to the logs at the ERROR level.</p>
+<p>This is the base class for all error-level exceptions.</p>
+</dd></dl>
+
+<dl class="exception">
+<dt id="gc3libs.Exceptions.FatalError">
+<em class="property">exception </em><tt class="descclassname">gc3libs.Exceptions.</tt><tt class="descname">FatalError</tt><big>(</big><em>msg</em>, <em>do_log=True</em><big>)</big><a class="headerlink" href="#gc3libs.Exceptions.FatalError" title="Permalink to this definition">¶</a></dt>
+<dd><p>A fatal error; execution cannot continue and program should report
+to user and then stop.</p>
+<p>The message is sent to the logs at CRITICAL level
+when the exception is first constructed.</p>
+<p>This is the base class for all fatal exceptions.</p>
+</dd></dl>
+
+<dl class="exception">
+<dt id="gc3libs.Exceptions.InputFileError">
+<em class="property">exception </em><tt class="descclassname">gc3libs.Exceptions.</tt><tt class="descname">InputFileError</tt><big>(</big><em>msg</em>, <em>do_log=True</em><big>)</big><a class="headerlink" href="#gc3libs.Exceptions.InputFileError" title="Permalink to this definition">¶</a></dt>
+<dd>Raised when an input file is specified, which does not exist or
+cannot be read.</dd></dl>
+
+<dl class="exception">
+<dt id="gc3libs.Exceptions.InternalError">
+<em class="property">exception </em><tt class="descclassname">gc3libs.Exceptions.</tt><tt class="descname">InternalError</tt><big>(</big><em>msg</em>, <em>do_log=False</em><big>)</big><a class="headerlink" href="#gc3libs.Exceptions.InternalError" title="Permalink to this definition">¶</a></dt>
+<dd>Raised when some function cannot fulfill its duties, for reasons
+that do not depend on the library client code.  For instance, when
+a response string gotten from an external command cannot be parsed
+as expected.</dd></dl>
+
+<dl class="exception">
+<dt id="gc3libs.Exceptions.InvalidArgument">
+<em class="property">exception </em><tt class="descclassname">gc3libs.Exceptions.</tt><tt class="descname">InvalidArgument</tt><big>(</big><em>msg</em>, <em>do_log=False</em><big>)</big><a class="headerlink" href="#gc3libs.Exceptions.InvalidArgument" title="Permalink to this definition">¶</a></dt>
+<dd>Raised when the arguments passed to a function do not honor some
+required contract.  For instance, either one of two optional
+arguments must be provided, but none of them was.</dd></dl>
+
+<dl class="exception">
+<dt id="gc3libs.Exceptions.InvalidOperation">
+<em class="property">exception </em><tt class="descclassname">gc3libs.Exceptions.</tt><tt class="descname">InvalidOperation</tt><big>(</big><em>msg</em>, <em>do_log=False</em><big>)</big><a class="headerlink" href="#gc3libs.Exceptions.InvalidOperation" title="Permalink to this definition">¶</a></dt>
+<dd>Raised when an operation is attempted, that is not considered
+valid according to the system state.  For instance, trying to
+retrieve the output of a job that has not yet been submitted.</dd></dl>
+
+<dl class="exception">
+<dt id="gc3libs.Exceptions.InvalidResourceName">
+<em class="property">exception </em><tt class="descclassname">gc3libs.Exceptions.</tt><tt class="descname">InvalidResourceName</tt><big>(</big><em>msg</em>, <em>do_log=False</em><big>)</big><a class="headerlink" href="#gc3libs.Exceptions.InvalidResourceName" title="Permalink to this definition">¶</a></dt>
+<dd>Raised to signal that no computational resource with the given
+name is defined in the configuration file.</dd></dl>
+
+<dl class="exception">
+<dt id="gc3libs.Exceptions.InvalidUsage">
+<em class="property">exception </em><tt class="descclassname">gc3libs.Exceptions.</tt><tt class="descname">InvalidUsage</tt><big>(</big><em>msg</em>, <em>do_log=True</em><big>)</big><a class="headerlink" href="#gc3libs.Exceptions.InvalidUsage" title="Permalink to this definition">¶</a></dt>
+<dd><p>Raised when a command is not provided all required arguments on
+the command line, or the arguments do not match the expected
+syntax.</p>
+<p>Since the exception message is the last thing a user will see,
+try to be specific about what is wrong on the command line.</p>
+</dd></dl>
+
+<dl class="exception">
+<dt id="gc3libs.Exceptions.LoadError">
+<em class="property">exception </em><tt class="descclassname">gc3libs.Exceptions.</tt><tt class="descname">LoadError</tt><big>(</big><em>msg</em>, <em>do_log=False</em><big>)</big><a class="headerlink" href="#gc3libs.Exceptions.LoadError" title="Permalink to this definition">¶</a></dt>
+<dd>Raised upon errors loading a job from the persistent storage.</dd></dl>
+
+<dl class="exception">
+<dt id="gc3libs.Exceptions.NoConfigurationFile">
+<em class="property">exception </em><tt class="descclassname">gc3libs.Exceptions.</tt><tt class="descname">NoConfigurationFile</tt><big>(</big><em>msg</em>, <em>do_log=True</em><big>)</big><a class="headerlink" href="#gc3libs.Exceptions.NoConfigurationFile" title="Permalink to this definition">¶</a></dt>
+<dd>Raised when the configuration file cannot be read (e.g., does not
+exist or has wrong permissions), or cannot be parsed (e.g., is
+malformed).</dd></dl>
+
+<dl class="exception">
+<dt id="gc3libs.Exceptions.NoResources">
+<em class="property">exception </em><tt class="descclassname">gc3libs.Exceptions.</tt><tt class="descname">NoResources</tt><big>(</big><em>msg</em>, <em>do_log=False</em><big>)</big><a class="headerlink" href="#gc3libs.Exceptions.NoResources" title="Permalink to this definition">¶</a></dt>
+<dd>Raised to signal that no resources are defined, or that none are
+compatible with the request.</dd></dl>
+
+<dl class="exception">
+<dt id="gc3libs.Exceptions.OutputNotAvailableError">
+<em class="property">exception </em><tt class="descclassname">gc3libs.Exceptions.</tt><tt class="descname">OutputNotAvailableError</tt><big>(</big><em>msg</em>, <em>do_log=False</em><big>)</big><a class="headerlink" href="#gc3libs.Exceptions.OutputNotAvailableError" title="Permalink to this definition">¶</a></dt>
+<dd>Raised upon attempts to retrieve the output for jobs that are
+still in <cite>NEW</cite> or <cite>SUBMITTED</cite> state.</dd></dl>
+
+<dl class="exception">
+<dt id="gc3libs.Exceptions.UnknownJobState">
+<em class="property">exception </em><tt class="descclassname">gc3libs.Exceptions.</tt><tt class="descname">UnknownJobState</tt><big>(</big><em>msg</em>, <em>do_log=False</em><big>)</big><a class="headerlink" href="#gc3libs.Exceptions.UnknownJobState" title="Permalink to this definition">¶</a></dt>
+<dd>Raised when a job state is gotten from the Grid middleware, that
+is not handled by the GC3Libs code.  Might actually mean that
+there is a version mismatch between GC3Libs and the Grid
+middleware used.</dd></dl>
+
 </div>
 <div class="section" id="module-gc3libs.persistence">
 <h2><cite>gc3libs.persistence</cite><a class="headerlink" href="#module-gc3libs.persistence" title="Permalink to this headline">¶</a></h2>
@@ -1063,14 +1159,6 @@ class can be used here as well, with the exception of <cite>input</cite> and
 <cite>output</cite>.  Note that a GAMESS-US job is <em>always</em> submitted with
 <cite>join = True</cite>, therefore any <cite>stderr</cite> setting is ignored.</p>
 <dl class="method">
-<dt id="gc3libs.application.gamess.GamessApplication.postprocess">
-<tt class="descname">postprocess</tt><big>(</big><em>output_dir</em><big>)</big><a class="headerlink" href="#gc3libs.application.gamess.GamessApplication.postprocess" title="Permalink to this definition">¶</a></dt>
-<dd>Append to log the termination status line as extracted from
-the GAMESS &#8216;.out&#8217; file.  According to the normal/abnormal
-termination of the GAMESS job, set the output code to 0 or 1,
-or 2 if the fault was reported only by <tt class="docutils literal"><span class="pre">ddikick</span></tt>.</dd></dl>
-
-<dl class="method">
 <dt id="gc3libs.application.gamess.GamessApplication.qgms">
 <tt class="descname">qgms</tt><big>(</big><em>resource</em>, <em>**kw</em><big>)</big><a class="headerlink" href="#gc3libs.application.gamess.GamessApplication.qgms" title="Permalink to this definition">¶</a></dt>
 <dd>Return a <cite>qgms</cite> invocation to run GAMESS-US with the
@@ -1131,7 +1219,7 @@ Rosetta &#8220;docking_protocol&#8221; application.</p>
 <p>Authentication support for the GC3Libs.</p>
 <dl class="class">
 <dt id="gc3libs.authentication.NoneAuth">
-<em class="property">class </em><tt class="descclassname">gc3libs.authentication.</tt><tt class="descname">NoneAuth</tt><big>(</big><em>**auth</em><big>)</big><a class="headerlink" href="#gc3libs.authentication.NoneAuth" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><tt class="descclassname">gc3libs.authentication.</tt><tt class="descname">NoneAuth</tt><big>(</big><em>**auth_dicts</em><big>)</big><a class="headerlink" href="#gc3libs.authentication.NoneAuth" title="Permalink to this definition">¶</a></dt>
 <dd>Auth proxy to use when no auth is needed.</dd></dl>
 
 </div>
@@ -1334,9 +1422,6 @@ corresponding <cite>Run.State</cite>; see <cite>Run.State</cite> for more detail
 <td>SUBMITTED</td>
 </tr>
 <tr><td>PREPARING</td>
-<td>SUBMITTED</td>
-</tr>
-<tr><td>PREPARED</td>
 <td>SUBMITTED</td>
 </tr>
 <tr><td>INLRMS:Q</td>
@@ -1795,50 +1880,10 @@ template contents itself.</p>
 if there is no such key.  Remove <cite>key</cite> from <cite>dictionary</cite> afterwards.</dd></dl>
 
 <dl class="function">
-<dt id="gc3libs.utils.ifelse">
-<tt class="descclassname">gc3libs.utils.</tt><tt class="descname">ifelse</tt><big>(</big><em>test</em>, <em>if_true</em>, <em>if_false</em><big>)</big><a class="headerlink" href="#gc3libs.utils.ifelse" title="Permalink to this definition">¶</a></dt>
-<dd><p>Return <cite>if_true</cite> is argument <cite>test</cite> evaluates to <cite>True</cite>,
-return <cite>if_false</cite> otherwise.</p>
-<p>This is just a workaround for Python 2.4 lack of the
-conditional assignment operator:</p>
-<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">a</span> <span class="o">=</span> <span class="mi">1</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">b</span> <span class="o">=</span> <span class="n">ifelse</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="s">&quot;yes&quot;</span><span class="p">,</span> <span class="s">&quot;no&quot;</span><span class="p">);</span> <span class="k">print</span> <span class="n">b</span>
-<span class="go">yes</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">b</span> <span class="o">=</span> <span class="n">ifelse</span><span class="p">(</span><span class="ow">not</span> <span class="n">a</span><span class="p">,</span> <span class="s">&#39;yay&#39;</span><span class="p">,</span> <span class="s">&#39;nope&#39;</span><span class="p">);</span> <span class="k">print</span> <span class="n">b</span>
-<span class="go">nope</span>
-</pre></div>
-</div>
-</dd></dl>
-
-<dl class="function">
 <dt id="gc3libs.utils.mkdir_with_backup">
 <tt class="descclassname">gc3libs.utils.</tt><tt class="descname">mkdir_with_backup</tt><big>(</big><em>path</em><big>)</big><a class="headerlink" href="#gc3libs.utils.mkdir_with_backup" title="Permalink to this definition">¶</a></dt>
 <dd>Like <cite>os.makedirs</cite>, but if <cite>path</cite> already exists, rename the
 existing one appending a <cite>.NUMBER</cite> suffix.</dd></dl>
-
-<dl class="function">
-<dt id="gc3libs.utils.prettyprint">
-<tt class="descclassname">gc3libs.utils.</tt><tt class="descname">prettyprint</tt><big>(</big><em>D</em>, <em>indent=0</em>, <em>width=0</em>, <em>maxdepth=None</em>, <em>step=4</em>, <em>only_keys=None</em>, <em>output=&lt;open file '&lt;stdout&gt;'</em>, <em>mode 'w' at 0x2b2e17a9d150&gt;</em><big>)</big><a class="headerlink" href="#gc3libs.utils.prettyprint" title="Permalink to this definition">¶</a></dt>
-<dd><p>Print dictionary instance <cite>D</cite> in a YAML-like format.
-Each output line consists of:</p>
-<blockquote>
-<ul class="simple">
-<li><cite>indent</cite> spaces,</li>
-<li>the key name,</li>
-<li>a colon character <tt class="docutils literal"><span class="pre">:</span></tt>,</li>
-<li>the associated value.</li>
-</ul>
-</blockquote>
-<p>If the total line length exceeds <cite>width</cite>, the value is printed
-on the next line, indented by further <cite>step</cite> spaces; a value of 0 for
-<cite>width</cite> disables this line wrapping.</p>
-<p>Optional argument <cite>only_keys</cite> can be a callable that must return
-<cite>True</cite> when called with keys that should be printed, or a list of
-key names to print.</p>
-<p>Dictionary instances appearing as values are processed recursively
-(up to <cite>maxdepth</cite> nesting).  Each nested instance is printed
-indented <cite>step</cite> spaces from the enclosing dictionary.</p>
-</dd></dl>
 
 <dl class="function">
 <dt id="gc3libs.utils.progressive_number">
@@ -1988,116 +2033,75 @@ Do not depend on it.</p>
 <div class="section" id="module-gc3utils">
 <h2><cite>gc3utils</cite><a class="headerlink" href="#module-gc3utils" title="Permalink to this headline">¶</a></h2>
 </div>
-<div class="section" id="gc3utils-gcmd">
-<h2><cite>gc3utils.gcmd</cite><a class="headerlink" href="#gc3utils-gcmd" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="module-gc3utils.gcmd">
+<h2><cite>gc3utils.gcmd</cite><a class="headerlink" href="#module-gc3utils.gcmd" title="Permalink to this headline">¶</a></h2>
+<p>gc3utils - A simple command-line frontend to distributed resources</p>
+<p>This is a generic front-end code; actual implementation of commands
+can be found in gc3utils/commands.py</p>
+<dl class="function">
+<dt id="gc3utils.gcmd.main">
+<tt class="descclassname">gc3utils.gcmd.</tt><tt class="descname">main</tt><big>(</big><big>)</big><a class="headerlink" href="#gc3utils.gcmd.main" title="Permalink to this definition">¶</a></dt>
+<dd>Generic front-end function to invoke the commands in <cite>gc3utils/gcommands.py</cite></dd></dl>
+
 </div>
 <div class="section" id="module-gc3utils.commands">
 <h2><cite>gc3utils.commands</cite><a class="headerlink" href="#module-gc3utils.commands" title="Permalink to this headline">¶</a></h2>
 <p>Implementation of the <cite>core</cite> command-line front-ends.</p>
-<dl class="class">
-<dt id="gc3utils.commands.cmd_gclean">
-<em class="property">class </em><tt class="descclassname">gc3utils.commands.</tt><tt class="descname">cmd_gclean</tt><big>(</big><em>**kw</em><big>)</big><a class="headerlink" href="#gc3utils.commands.cmd_gclean" title="Permalink to this definition">¶</a></dt>
-<dd><p>Permanently remove jobs from local and remote storage.</p>
-<p>In normal operation, only jobs that are in a terminal status can
-be removed; if you want to force <tt class="docutils literal"><span class="pre">gclean</span></tt> to remove a job that
-is not in any one of those states, add the <tt class="docutils literal"><span class="pre">-f</span></tt> option to the
-command line.</p>
-<p>If a job description cannot be successfully read, the
-corresponding job will not be deleted; use the <tt class="docutils literal"><span class="pre">-f</span></tt> option to
-force removal of a job regardless.</p>
-</dd></dl>
+<dl class="function">
+<dt id="gc3utils.commands.gclean">
+<tt class="descclassname">gc3utils.commands.</tt><tt class="descname">gclean</tt><big>(</big><em>*args</em>, <em>**kw</em><big>)</big><a class="headerlink" href="#gc3utils.commands.gclean" title="Permalink to this definition">¶</a></dt>
+<dd>The &#8216;glean&#8217; command.
+gclean takes a list of jobids and tries to clean each of them.
+if any of the clean requests will fail, gclean will exit with exitcode 1
+gclean will try anyway to process all requests</dd></dl>
 
-<dl class="class">
-<dt id="gc3utils.commands.cmd_gget">
-<em class="property">class </em><tt class="descclassname">gc3utils.commands.</tt><tt class="descname">cmd_gget</tt><big>(</big><em>**kw</em><big>)</big><a class="headerlink" href="#gc3utils.commands.cmd_gget" title="Permalink to this definition">¶</a></dt>
-<dd><p>Retrieve output files of a job.</p>
-<p>Output files can only be retrieved once a job has reached the 
-&#8216;RUNNING&#8217; state; this command will print an error message if
-no output files are available.</p>
-<p>Output files can be retrieved multiple times until a job reaches
-&#8216;TERMINATED&#8217; state: after that, the remote storage will be
-released once the output files have been fetched.</p>
-</dd></dl>
+<dl class="function">
+<dt id="gc3utils.commands.gget">
+<tt class="descclassname">gc3utils.commands.</tt><tt class="descname">gget</tt><big>(</big><em>*args</em>, <em>**kw</em><big>)</big><a class="headerlink" href="#gc3utils.commands.gget" title="Permalink to this definition">¶</a></dt>
+<dd>The <cite>gget</cite> command.</dd></dl>
 
-<dl class="class">
-<dt id="gc3utils.commands.cmd_ginfo">
-<em class="property">class </em><tt class="descclassname">gc3utils.commands.</tt><tt class="descname">cmd_ginfo</tt><big>(</big><em>**kw</em><big>)</big><a class="headerlink" href="#gc3utils.commands.cmd_ginfo" title="Permalink to this definition">¶</a></dt>
-<dd><p>Print detailed information about a job.</p>
-<p>A complete dump of all the information known about jobs listed on
-the command line is printed; this will only make sense if you know
-GC3Libs internals.</p>
-</dd></dl>
+<dl class="function">
+<dt id="gc3utils.commands.ginfo">
+<tt class="descclassname">gc3utils.commands.</tt><tt class="descname">ginfo</tt><big>(</big><em>*args</em>, <em>**kw</em><big>)</big><a class="headerlink" href="#gc3utils.commands.ginfo" title="Permalink to this definition">¶</a></dt>
+<dd>The &#8216;ginfo&#8217; command.</dd></dl>
 
-<dl class="class">
-<dt id="gc3utils.commands.cmd_gkill">
-<em class="property">class </em><tt class="descclassname">gc3utils.commands.</tt><tt class="descname">cmd_gkill</tt><big>(</big><em>**kw</em><big>)</big><a class="headerlink" href="#gc3utils.commands.cmd_gkill" title="Permalink to this definition">¶</a></dt>
-<dd><p>Cancel a submitted job.  Given a list of jobs, try to cancel each
-one of them; exit with code 0 if all jobs were cancelled
-successfully, and 1 if some job was not.</p>
-<p>The command will print an error message if a job cannot be
-canceled because it&#8217;s in NEW or TERMINATED state, or if some other
-error occurred.</p>
-</dd></dl>
+<dl class="function">
+<dt id="gc3utils.commands.gkill">
+<tt class="descclassname">gc3utils.commands.</tt><tt class="descname">gkill</tt><big>(</big><em>*args</em>, <em>**kw</em><big>)</big><a class="headerlink" href="#gc3utils.commands.gkill" title="Permalink to this definition">¶</a></dt>
+<dd>The <cite>gkill</cite> command.
+gkill takes a list of jobids and tries to kill each of them.
+if any of the clean requests will fail, gkill will exit with exitcode 1
+gkill will try anyway to process all requests</dd></dl>
 
-<dl class="class">
-<dt id="gc3utils.commands.cmd_glist">
-<em class="property">class </em><tt class="descclassname">gc3utils.commands.</tt><tt class="descname">cmd_glist</tt><big>(</big><em>**kw</em><big>)</big><a class="headerlink" href="#gc3utils.commands.cmd_glist" title="Permalink to this definition">¶</a></dt>
-<dd>List status of computational resources.</dd></dl>
+<dl class="function">
+<dt id="gc3utils.commands.glist">
+<tt class="descclassname">gc3utils.commands.</tt><tt class="descname">glist</tt><big>(</big><em>*args</em>, <em>**kw</em><big>)</big><a class="headerlink" href="#gc3utils.commands.glist" title="Permalink to this definition">¶</a></dt>
+<dd>The <cite>glist</cite> command.</dd></dl>
 
-<dl class="class">
-<dt id="gc3utils.commands.cmd_gnotify">
-<em class="property">class </em><tt class="descclassname">gc3utils.commands.</tt><tt class="descname">cmd_gnotify</tt><big>(</big><em>**kw</em><big>)</big><a class="headerlink" href="#gc3utils.commands.cmd_gnotify" title="Permalink to this definition">¶</a></dt>
-<dd><p>Report a failed job to the GC3Libs developers.</p>
-<p>This command will not likely work on any machine other than
-the ones directly controlled by GC3 sysadmins, so just don&#8217;t
-use it and send an email to <a class="reference external" href="mailto:gc3pie&#37;&#52;&#48;googlegroups&#46;com">gc3pie<span>&#64;</span>googlegroups<span>&#46;</span>com</a> describing
-your problem instead.</p>
-</dd></dl>
+<dl class="function">
+<dt id="gc3utils.commands.gnotify">
+<tt class="descclassname">gc3utils.commands.</tt><tt class="descname">gnotify</tt><big>(</big><em>*args</em>, <em>**kw</em><big>)</big><a class="headerlink" href="#gc3utils.commands.gnotify" title="Permalink to this definition">¶</a></dt>
+<dd>The gnotify command</dd></dl>
 
-<dl class="class">
-<dt id="gc3utils.commands.cmd_gresub">
-<em class="property">class </em><tt class="descclassname">gc3utils.commands.</tt><tt class="descname">cmd_gresub</tt><big>(</big><em>**kw</em><big>)</big><a class="headerlink" href="#gc3utils.commands.cmd_gresub" title="Permalink to this definition">¶</a></dt>
-<dd><p>Resubmit an already-submitted job with (possibly) different parameters.</p>
-<p>If you resubmit a job that is not in terminal state, the existing job
-is canceled before re-submission.</p>
-</dd></dl>
+<dl class="function">
+<dt id="gc3utils.commands.gresub">
+<tt class="descclassname">gc3utils.commands.</tt><tt class="descname">gresub</tt><big>(</big><em>*args</em>, <em>**kw</em><big>)</big><a class="headerlink" href="#gc3utils.commands.gresub" title="Permalink to this definition">¶</a></dt>
+<dd>The <cite>gresub</cite> command: resubmit an already-submitted job with different parameters.</dd></dl>
 
-<dl class="class">
-<dt id="gc3utils.commands.cmd_gstat">
-<em class="property">class </em><tt class="descclassname">gc3utils.commands.</tt><tt class="descname">cmd_gstat</tt><big>(</big><em>**kw</em><big>)</big><a class="headerlink" href="#gc3utils.commands.cmd_gstat" title="Permalink to this definition">¶</a></dt>
-<dd>Print job state.</dd></dl>
+<dl class="function">
+<dt id="gc3utils.commands.gstat">
+<tt class="descclassname">gc3utils.commands.</tt><tt class="descname">gstat</tt><big>(</big><em>*args</em>, <em>**kw</em><big>)</big><a class="headerlink" href="#gc3utils.commands.gstat" title="Permalink to this definition">¶</a></dt>
+<dd>The <cite>gstat</cite> command.</dd></dl>
 
-<dl class="class">
-<dt id="gc3utils.commands.cmd_gsub">
-<em class="property">class </em><tt class="descclassname">gc3utils.commands.</tt><tt class="descname">cmd_gsub</tt><big>(</big><em>**kw</em><big>)</big><a class="headerlink" href="#gc3utils.commands.cmd_gsub" title="Permalink to this definition">¶</a></dt>
-<dd><p>Submit an application job.  Option arguments set computational job
-requirements.  Interpretation of positional arguments varies with
-the application being submitted; the application name is always
-the first non-option argument.</p>
-<p>Currently supported applications are:</p>
-<blockquote>
-<ul class="simple">
-<li><tt class="docutils literal"><span class="pre">gamess</span></tt>: Each positional argument (after the application
-name) is the path to an input file; the first one is the
-GAMESS &#8216;.inp&#8217; file and is required.</li>
-<li><tt class="docutils literal"><span class="pre">rosetta</span></tt>: The first positional argument is the name of the
-Rosetta application/protocol to run (e.g.,
-<tt class="docutils literal"><span class="pre">minirosetta.static</span></tt> or <tt class="docutils literal"><span class="pre">docking_protocol</span></tt>); after that
-comes the path to the flags file; remaining positional
-arguments are paths to input files (at least one must be
-provided).  A list of output files may additionally be
-specified after the list of input files, separated from this
-by a <tt class="docutils literal"><span class="pre">:</span></tt> character.</li>
-</ul>
-</blockquote>
-</dd></dl>
+<dl class="function">
+<dt id="gc3utils.commands.gsub">
+<tt class="descclassname">gc3utils.commands.</tt><tt class="descname">gsub</tt><big>(</big><em>*args</em>, <em>**kw</em><big>)</big><a class="headerlink" href="#gc3utils.commands.gsub" title="Permalink to this definition">¶</a></dt>
+<dd>The <cite>gsub</cite> command.</dd></dl>
 
-<dl class="class">
-<dt id="gc3utils.commands.cmd_gtail">
-<em class="property">class </em><tt class="descclassname">gc3utils.commands.</tt><tt class="descname">cmd_gtail</tt><big>(</big><em>**kw</em><big>)</big><a class="headerlink" href="#gc3utils.commands.cmd_gtail" title="Permalink to this definition">¶</a></dt>
-<dd>Display the last lines from a job&#8217;s standard output or error stream.
-Optionally, keep running and displaying the last part of the file
-as more lines are written to the given stream.</dd></dl>
+<dl class="function">
+<dt id="gc3utils.commands.gtail">
+<tt class="descclassname">gc3utils.commands.</tt><tt class="descname">gtail</tt><big>(</big><em>*args</em>, <em>**kw</em><big>)</big><a class="headerlink" href="#gc3utils.commands.gtail" title="Permalink to this definition">¶</a></dt>
+<dd>The &#8216;gtail&#8217; command.</dd></dl>
 
 </div>
 </div>
@@ -2113,8 +2117,8 @@ as more lines are written to the given stream.</dd></dl>
 <li><a class="reference external" href="#">GC3Libs modules</a><ul>
 <li><a class="reference external" href="#module-gc3libs"><cite>gc3libs</cite></a></li>
 <li><a class="reference external" href="#module-gc3libs.core"><cite>gc3libs.core</cite></a></li>
-<li><a class="reference external" href="#gc3libs-default"><cite>gc3libs.Default</cite></a></li>
-<li><a class="reference external" href="#gc3libs-exceptions"><cite>gc3libs.Exceptions</cite></a></li>
+<li><a class="reference external" href="#module-gc3libs.Default"><cite>gc3libs.Default</cite></a></li>
+<li><a class="reference external" href="#module-gc3libs.Exceptions"><cite>gc3libs.Exceptions</cite></a></li>
 <li><a class="reference external" href="#module-gc3libs.persistence"><cite>gc3libs.persistence</cite></a></li>
 <li><a class="reference external" href="#module-gc3libs.application"><cite>gc3libs.application</cite></a></li>
 <li><a class="reference external" href="#module-gc3libs.application.gamess"><cite>gc3libs.application.gamess</cite></a></li>
@@ -2135,7 +2139,7 @@ as more lines are written to the given stream.</dd></dl>
 </li>
 <li><a class="reference external" href="#gc3utils-modules">GC3Utils modules</a><ul>
 <li><a class="reference external" href="#module-gc3utils"><cite>gc3utils</cite></a></li>
-<li><a class="reference external" href="#gc3utils-gcmd"><cite>gc3utils.gcmd</cite></a></li>
+<li><a class="reference external" href="#module-gc3utils.gcmd"><cite>gc3utils.gcmd</cite></a></li>
 <li><a class="reference external" href="#module-gc3utils.commands"><cite>gc3utils.commands</cite></a></li>
 </ul>
 </li>
@@ -2172,7 +2176,7 @@ as more lines are written to the given stream.</dd></dl>
         <li class="right" >
           <a href="modindex.html" title="Global Module Index"
              >modules</a> |</li>
-        <li><a href="index.html">gc3pie v1.0rc2 documentation</a> &raquo;</li> 
+        <li><a href="index.html">gc3pie v1.0rc3 documentation</a> &raquo;</li> 
       </ul>
     </div>
     <div class="footer">
