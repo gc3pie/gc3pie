@@ -110,8 +110,10 @@ setuptools.setup(
     # additional non-Python files to be bundled in the package
     package_data = {
         'gc3libs': [
+            'etc/codeml.pl',
             'etc/gc3pie.conf.example',
-            'etc/logging.conf.example'
+            'etc/logging.conf.example',
+            'etc/rosetta.sh',
             ],
         },
 
