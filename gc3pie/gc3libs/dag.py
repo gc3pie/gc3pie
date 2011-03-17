@@ -304,7 +304,10 @@ class SequentialTaskCollection(TaskCollection):
             self.execution.state = Run.State.SUBMITTED
         elif (task.execution.state == Run.State.TERMINATED
               and self._current_task == len(self.tasks)-1):
-            self.execution.state = Run.State.TERMINATED
+            self.execution.state = self.next(self._current_task)
+            if self.execution.state not in [ Run.State.STOPPED,
+                                             Run.State.TERMINATED ]:
+                self._current_task += 1
         else:
             self.execution.state = Run.State.RUNNING
         return self.execution.state
@@ -319,6 +322,10 @@ class ParallelTaskCollection(TaskCollection):
     reached the same terminal status.
     """
 
+    def __init__(self, jobname, tasks=None, grid=None):
+        TaskCollection.__init__(self, jobname, tasks, grid)
+
+        
     def _state(self):
         """
         Return the state of the collection.

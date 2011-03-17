@@ -143,12 +143,15 @@ class Task(object):
                      implementing the same interface.
         """
         self.jobname = jobname
+        self.final_output_retrieved = False
+        self.execution = Run(attach=self)
+        # `_grid` and `_attached` are set by `attach()`/`detach()`
+        self._attached = False
+        self._grid = None
         if grid is not None:
             self.attach(grid)
         else:
             self.detach()
-        self.final_output_retrieved = False
-        self.execution = Run(attach=self)
 
     # manipulate the "grid" interface used to control the associated job
     def attach(self, grid):
@@ -156,9 +159,13 @@ class Task(object):
         Use the given Grid interface for operations on the job
         associated with this task.
         """
-        gc3libs.log.debug("Attaching %s to grid %s" % (self, grid))
-        self._grid = grid
-        self._attached = True
+        if self._grid != grid:
+            if self._attached:
+                self.detach()
+            gc3libs.log.debug("Attaching %s to %s" % (self, grid))
+            self._grid = grid
+            self._grid.add(self)
+            self._attached = True
 
     # create a class-shared fake "grid" object, that just throws a
     # DetachedFromGrid exception when any of its methods is used.  We
@@ -181,9 +188,14 @@ class Task(object):
         this, calling any method other than :meth:`attach` results in
         an exception :class:`TaskDetachedFromGridError` being thrown.
         """
-        gc3libs.log.debug("Detaching %s from grid" % self)
-        self._grid = Task.__no_grid
-        self._attached = False
+        if self._attached:
+            gc3libs.log.debug("Detaching %s from grid" % self)
+            try:
+                self._grid.remove(self)
+            except:
+                pass
+            self._grid = Task.__no_grid
+            self._attached = False
 
 
     # interface with pickle/gc3libs.persistence: do not save the
