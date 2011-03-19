@@ -845,16 +845,30 @@ class Engine(object):
 
 
     def add(self, task):
-        """Add `task` to the list of tasks managed by this Engine."""
+        """
+        Add `task` to the list of tasks managed by this Engine.
+        Adding a task that has already been added to this `Engine`
+        instance results in a no-op.
+        """
         state = task.execution.state
+        # Work around infinite recursion error when trying to compare
+        # `UserDict` instances which can contain each other.  We know
+        # that two identical tasks are the same object by
+        # construction, so let's use this to check.
+        def contained(elt, lst):
+            i = id(elt)
+            for item in lst:
+                if i == id(item):
+                    return True
+            return False
         if Run.State.NEW == state:
-            self._new.append(task)
+            if not contained(task, self._new): self._new.append(task)
         elif Run.State.SUBMITTED == state or Run.State.RUNNING == state:
-            self._in_flight.append(task)
+            if not contained(task, self._in_flight): self._in_flight.append(task)
         elif Run.State.STOPPED == state:
-            self._stopped.append(task)
+            if not contained(task, self._stopped): self._stopped.append(task)
         elif Run.State.TERMINATED == state:
-            self._terminated.append(task)
+            if not contained(task, self._terminated): self._terminated.append(task)
         else:
             raise AssertionError("Unhandled run state '%s' in gc3libs.core.Engine." % state)
         task.attach(self)
@@ -902,15 +916,17 @@ class Engine(object):
         else:
             limit_submitted = utils.PlusInfinity()
 
+        gc3libs.log.debug("Engine.progress: updating status of tasks [%s]"
+                          % str.join(', ', [str(task) for task in self._in_flight]))
         # update status of SUBMITTED/RUNNING tasks before launching
         # new ones, otherwise we would be checking the status of
         # some tasks twice...
         transitioned = []
         for index, task in enumerate(self._in_flight):
             try:
-                # let Core do the work
+                state = task.execution.state
                 self._core.update_job_state(task)
-                if self._store:
+                if self._store and state != task.execution.state:
                     self._store.save(task)
                 if task.execution.state == Run.State.SUBMITTED:
                     currently_submitted += 1
@@ -936,6 +952,8 @@ class Engine(object):
         for index in reversed(transitioned):
             del self._in_flight[index]
 
+        gc3libs.log.debug("Engine.progress: killing tasks [%s]"
+                          % str.join(', ', [str(task) for task in self._to_kill]))
         # execute kills and update count of submitted/in-flight tasks
         transitioned = []
         for index, task in enumerate(self._to_kill):
@@ -952,20 +970,23 @@ class Engine(object):
                 transitioned.append(index)
             except Exception, x:
                 gc3libs.log.error("Ignored error in killing task '%s': %s: %s"
-                                  % (task.persistent_id, x.__class__.__name__, str(x)),
+                                  % (task, x.__class__.__name__, str(x)),
                                   exc_info=True)
         # remove tasks that transitioned to other states
         for index in reversed(transitioned):
             del self._to_kill[index]
 
+        gc3libs.log.debug("Engine.progress: updating status of stopped tasks [%s]"
+                          % str.join(', ', [str(task) for task in self._stopped]))
         # update state of STOPPED tasks; again need to make before new
         # submissions, because it can alter the count of in-flight
         # tasks.
         transitioned = []
         for index, task in enumerate(self._stopped):
             try:
+                state = task.execution.state
                 self._core.update_job_state(task)
-                if self._store:
+                if self._store and state != task.execution.state:
                     self._store.save(task)
                 if task.execution.state in [Run.State.SUBMITTED, Run.State.RUNNING]:
                     currently_in_flight += 1
@@ -978,12 +999,14 @@ class Engine(object):
                     transitioned.append(index) # task changed state, mark as to remove
             except Exception, x:
                 gc3libs.log.error("Ignoring error in updating state of STOPPED task '%s': %s: %s"
-                                  % (task.persistent_id, x.__class__.__name__, str(x)),
+                                  % (task, x.__class__.__name__, str(x)),
                                   exc_info=True)
         # remove tasks that transitioned to other states
         for index in reversed(transitioned):
             del self._stopped[index]
 
+        gc3libs.log.debug("Engine.progress: submitting new tasks [%s]"
+                          % str.join(', ', [str(task) for task in self._new]))
         # now try to submit NEW tasks
         transitioned = []
         if self.can_submit:
@@ -1001,15 +1024,18 @@ class Engine(object):
                     except Exception, x:
                         sys.excepthook(*sys.exc_info()) # DEBUG
                         gc3libs.log.error("Ignored error in submitting task '%s': %s: %s"
-                                          % (task.persistent_id, x.__class__.__name__, str(x)))
+                                          % (task, x.__class__.__name__, str(x)))
                         task.execution.log("Submission failed: %s: %s" 
                                            % (x.__class__.__name__, str(x)))
         # remove tasks that transitioned to SUBMITTED state
         for index in reversed(transitioned):
             del self._new[index]
 
+        gc3libs.log.debug("Engine.progress: fetching output of tasks [%s]"
+                          % str.join(', ', [str(task) for task in self._terminated]))
         # finally, retrieve output of finished tasks
         if self.can_retrieve:
+            transitioned = []
             for index, task in enumerate(self._terminated):
                 if not task.final_output_retrieved:
                     # try to get output
@@ -1017,11 +1043,15 @@ class Engine(object):
                         self._core.fetch_output(task)
                         if task.final_output_retrieved == True:
                             self._core.free(task)
+                            transitioned.append(index)
                         if self._store:
                             self._store.save(task)
                     except Exception, x:
                         gc3libs.log.error("Ignored error in fetching output of task '%s': %s: %s" 
-                                          % (task.persistent_id, x.__class__.__name__, str(x)), exc_info=True)
+                                          % (task, x.__class__.__name__, str(x)), exc_info=True)
+            # remove tasks for which final output has been retrieved
+            for index in reversed(transitioned):
+                del self._terminated[index]
 
 
     def stats(self):

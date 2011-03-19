@@ -302,13 +302,14 @@ class SequentialTaskCollection(TaskCollection):
         if self._current_task is None:
             # it's either NEW or TERMINATED, no update
             assert self.execution.state in [ Run.State.NEW, Run.State.TERMINATED ]
+            pass
         else:
             task = self.tasks[self._current_task]
             task.update_state(**kw)
-            gc3libs.log.debug("Task #%d (%s, %s) in state %s"
-                              % (self._current_task, task, type(task), task.execution.state))
-        if task.execution.state == Run.State.SUBMITTED and self._current_task == 0:
-            self.execution.state = Run.State.SUBMITTED
+            gc3libs.log.debug("Task #%d in state %s"
+                              % (self._current_task, task.execution.state))
+        if self._current_task == 0 and task.execution.state in [ Run.State.NEW, Run.State.SUBMITTED ]:
+            self.execution.state = task.execution.state
         elif (task.execution.state == Run.State.TERMINATED
               and self._current_task == len(self.tasks)-1):
             self.execution.state = self.next(self._current_task)

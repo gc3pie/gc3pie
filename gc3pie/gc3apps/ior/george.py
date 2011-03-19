@@ -152,7 +152,7 @@ class ValueFunctionIteration(SequentialTaskCollection):
                           % (self, output_filename))
         output_file = open(output_filename, 'w+')
         output_csv = csv.writer(output_file)
-        output_csv.writerow(['I'] + [ ('Pass %d' % n)
+        output_csv.writerow(['I'] + [ ('N=%d' % n)
                                           for n in range(1, len(self.tasks)+1) ])
         for n, values in enumerate(zip(*[ task.output_values
                                           for task in self.tasks ])):
