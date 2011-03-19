@@ -117,7 +117,16 @@ class Core:
         :raise: `gc3libs.exceptions.InvalidOperation` if `app.execution.state`
                 differs from `Run.State.TERMINATED`.
         """
-
+        assert isinstance(app, Task), \
+            "Core.free: passed an `app` argument which is not a `Task` instance."
+        if isinstance(app, Application):
+            return self.__free_application(app, **kw)
+        else:
+            # must be a `Task` instance
+            return self.__free_task(app, **kw)
+        
+    def __free_application(self, app, **kw):
+        """Implementation of `free` on `Application` objects."""
         if app.execution.state != Run.State.TERMINATED:
             raise gc3libs.exceptions.InvalidOperation("Attempting to free resources of job '%s',"
                                    " which is in non-terminal state." % app)
@@ -126,7 +135,11 @@ class Core:
 
         lrms =  self.get_backend(app.execution.resource_name)
         lrms.free(app)
-        
+
+    def __free_task(self, task, **kw):
+        """Implementation of `free` on generic `Task` objects."""
+        return task.free(**kw)
+
 
     def submit(self, app, **kw):
         """
@@ -137,8 +150,18 @@ class Core:
         :raise: `gc3libs.exceptions.InputFileError` if an input file
                 does not exist or cannot otherwise be read.
         """
-        auto_enable_auth = kw.get('auto_enable_auth', self.auto_enable_auth)
+        assert isinstance(app, Task), \
+            "Core.submit: passed an `app` argument which is not a `Task` instance."
+        if isinstance(app, Application):
+            return self.__submit_application(app, **kw)
+        else:
+            # must be a `Task` instance
+            return self.__submit_task(app, **kw)
 
+    def __submit_application(self, app, **kw):
+        """Implementation of `submit` on `Application` objects."""
+        auto_enable_auth = kw.get('auto_enable_auth', self.auto_enable_auth)
+        
         # check that all input files can be read
         for local_path in app.inputs:
             if not os.path.exists(local_path):
@@ -203,22 +226,23 @@ class Core:
             raise ex
         else:
             return
-        
+
+    def __submit_task(self, task, **kw):
+        """Implementation of `submit` on generic `Task` objects."""
+        kw.setdefault('auto_enable_auth', self.auto_enable_auth)
+        task.submit(**kw)
+
 
     def update_job_state(self, *apps, **kw):
         """
-        Update state of all applications passed in as arguments,
-        and return list of updated states.
+        Update state of all applications passed in as arguments.
         
         If keyword argument `update_on_error` is `False` (default),
         then application execution state is not changed in case a
         backend error happens; it is changed to `UNKNOWN` otherwise.
 
-        If state of a job has changed, call the appropriate handler
-        method on the job object, if it's defined.  Handler methods
-        are named after the (lowercase) name of the state; e.g., if a
-        job reaches state `TERMINATED`, then `job.terminated()` is
-        called.
+        Note that if state of a job changes, the `Run.state` calls the
+        appropriate handler method on the application/task object.
 
         :raise: `gc3libs.exceptions.InvalidArgument` in case one of
                 the passed `Application` or `Task` objects is
@@ -231,10 +255,14 @@ class Core:
                 non-existing auth section).
         
         """
+        self.__update_application((app for app in apps if isinstance(app, Application)), **kw)
+        self.__update_task((app for app in apps if not isinstance(app, Application)), **kw)
+
+    def __update_application(self, apps, **kw):
+        """Implementation of `update_job_state` on `Application` objects."""
         update_on_error = kw.get('update_on_error', False)
         auto_enable_auth = kw.get('auto_enable_auth', self.auto_enable_auth)
 
-        states = [] 
         for app in apps:
             state = app.execution.state
             old_state = state
@@ -295,16 +323,19 @@ class Core:
                 gc3libs.log.warning("Ignored error in Core.update_job_state(): %s: %s",
                                     ex.__class__.__name__, str(ex))
                 continue
-            states.append(app.execution.state)
 
-        return states
+    def __update_task(self, tasks, **kw):
+        """Implementation of `update_job_state` on generic `Task` objects."""
+        for task in tasks:
+            assert isinstance(task, Task), \
+                   "Core.update_job_state: passed an argument which is not a `Task` instance."
+            task.update_state()
 
 
     def fetch_output(self, app, download_dir=None, overwrite=False, **kw):
         """
         Retrieve job output into local directory `app.output_dir`;
-        optional argument `download_dir` overrides this.  Return
-        actual download directory.
+        optional argument `download_dir` overrides this.
 
         The download directory is created if it does not exist.  If it
         already exists, and the optional argument `overwrite` is
@@ -318,7 +349,7 @@ class Core:
         defined), with the effective `download_dir` as sole argument.
 
         Job output cannot be retrieved when `app.execution` is in one
-        of the states `NEW` or `SUBMITTED`; a
+        of the states `NEW` or `SUBMITTED`; an
         `OutputNotAvailableError` exception is thrown in these cases.
 
         :raise: `gc3libs.exceptions.OutputNotAvailableError` if no
@@ -327,6 +358,16 @@ class Core:
                 state, indicating the remote job has not started
                 running).
         """
+        assert isinstance(app, Task), \
+            "Core.fetch: passed an `app` argument which is not a `Task` instance."
+        if isinstance(app, Application):
+            self.__fetch_output_application(app, download_dir, overwrite, **kw)
+        else:
+            # generic `Task` object
+            self.__fetch_output_task(app, download_dir, overwrite, **kw)
+
+    def __fetch_output_application(self, app, download_dir, overwrite, **kw):
+        """Implementation of `fetch_output` on `Application` objects."""
         job = app.execution
         if job.state in [ Run.State.NEW, Run.State.SUBMITTED ]:
             raise gc3libs.exceptions.OutputNotAvailableError("Output not available:"
@@ -384,8 +425,11 @@ class Core:
             app.final_output_retrieved = True
             app.postprocess(download_dir)
             gc3libs.log.debug("Final output of '%s' retrieved" % str(app))
-        return download_dir
-        
+
+    def __fetch_output_task(self, task, download_dir, overwrite, **kw):
+        """Implementation of `fetch_output` on generic `Task` objects."""
+        return task.fetch_output(download_dir, overwrite, **kw)
+
 
     def get_all_updated_resources(self, **kw):
         """
@@ -424,6 +468,15 @@ class Core:
         entails canceling the job with the remote execution system;
         terminating a job in the NEW or TERMINATED state is a no-op.
         """
+        assert isinstance(app, Task), \
+            "Core.kill: passed an `app` argument which is not a `Task` instance."
+        if isinstance(app, Application):
+            self.__kill_application(app, **kw)
+        else:
+            self.__kill_task(app, **kw)
+            
+    def __kill_application(self, app, **kw):
+        """Implementation of `kill` on `Application` objects."""
         job = app.execution
         auto_enable_auth = kw.get('auto_enable_auth', self.auto_enable_auth)
         lrms = self.get_backend(job.resource_name)
@@ -436,6 +489,10 @@ class Core:
         job.log.append("Cancelled.")
         app.terminated()
 
+    def __kill_task(self, task, **kw):
+        kw.setdefault('auto_enable_auth', self.auto_enable_auth)
+        task.kill(**kw)
+    
 
     def peek(self, app, what='stdout', offset=0, size=None, **kw):
         """
@@ -452,6 +509,15 @@ class Core:
         relevant section of the job's standard output resp. standard
         error should be downloaded.
         """
+        assert isinstance(app, Task), \
+            "Core.peek: passed an `app` argument which is not a `Task` instance."
+        if isinstance(app, Application):
+            return self.__peek_application(app, what, offset, size, **kw)
+        else:
+            return self.__peek_task(app, what, offset, size, **kw)
+        
+    def __peek_application(self, app, what, offset, size, **kw):
+        """Implementation of `peek` on `Application` objects."""
         job = app.execution
         if what == 'stdout':
             remote_filename = job.stdout_filename
@@ -481,6 +547,10 @@ class Core:
         
         return _local_file
 
+    def __peek_task(self, task, what, offset, size, **kw):
+        """Implementation of `peek` on generic `Task` objects."""
+        return task.peek(what. offset, size, **kw)
+    
 
     def add(self, task):
         """
@@ -679,7 +749,6 @@ def read_config(*locations):
     return (resources, auths)
 
 
-
 class Engine(object):
     """
     Submit tasks in a collection, and update their state until a
@@ -839,14 +908,8 @@ class Engine(object):
         transitioned = []
         for index, task in enumerate(self._in_flight):
             try:
-                if isinstance(task, Application):
-                    # let Core do the work
-                    self._core.update_job_state(task)
-                elif isinstance(task, Task):
-                    # `Task` objects are autonomous
-                    task.update_state()
-                else:
-                    raise InvalidArgument("Job %s is neither Application nor Task instance.")
+                # let Core do the work
+                self._core.update_job_state(task)
                 if self._store:
                     self._store.save(task)
                 if task.execution.state == Run.State.SUBMITTED:
@@ -877,12 +940,7 @@ class Engine(object):
         transitioned = []
         for index, task in enumerate(self._to_kill):
             try:
-                if isinstance(task, Application):
-                    self._core.kill(task)
-                elif isinstance(task, Task):
-                    task.kill()
-                else:
-                    raise InvalidArgument("Job %s is neither Application nor Task instance.")
+                self._core.kill(task)
                 if self._store:
                     self._store.save(task)
                 if task.execution.state == Run.State.SUBMITTED:
@@ -906,12 +964,7 @@ class Engine(object):
         transitioned = []
         for index, task in enumerate(self._stopped):
             try:
-                if isinstance(task, Application):
-                    self._core.update_job_state(task)
-                elif isinstance(task, Task):
-                    task.update_state()
-                else:
-                    raise InvalidArgument("Job %s is neither Application nor Task instance.")
+                self._core.update_job_state(task)
                 if self._store:
                     self._store.save(task)
                 if task.execution.state in [Run.State.SUBMITTED, Run.State.RUNNING]:
@@ -938,12 +991,7 @@ class Engine(object):
                 # try to submit; go to SUBMITTED if successful, FAILED if not
                 if currently_submitted < limit_submitted and currently_in_flight < limit_in_flight:
                     try:
-                        if isinstance(task, Application):
-                            self._core.submit(task)
-                        elif isinstance(task, Task):
-                            task.submit()
-                        else:
-                            raise InvalidArgument("Job %s is neither Application nor Task instance.")
+                        self._core.submit(task)
                         if self._store:
                             self._store.save(task)
                         self._in_flight.append(task)
@@ -963,9 +1011,6 @@ class Engine(object):
         # finally, retrieve output of finished tasks
         if self.can_retrieve:
             for index, task in enumerate(self._terminated):
-                # XXX: this code is `Application`-specific!!
-                if not isinstance(task, Application):
-                    continue
                 if not task.final_output_retrieved:
                     # try to get output
                     try:
@@ -1011,7 +1056,7 @@ class Engine(object):
     # implement a Core-like interface, so `Engine` objects can be used
     # as substitutes for `Core`.
 
-    def free(task):
+    def free(self, task, **kw):
         """
         Proxy for `Core.free` (which see); in addition, remove `task`
         from the list of managed tasks.
@@ -1020,7 +1065,7 @@ class Engine(object):
         self._core.free(task)
 
 
-    def submit(self, task):
+    def submit(self, task, **kw):
         """
         Submit `task` at the next invocation of `perform`.  Actually,
         the task is just added to the collection of managed tasks,
@@ -1029,17 +1074,17 @@ class Engine(object):
         return self.add(task)
 
 
-    def update_job_state(self, *tasks):
+    def update_job_state(self, *tasks, **kw):
         """
         Return list of *current* states of the given tasks.  States
         will only be updated at the next invocation of `perform`; in
         particular, no state-change handlers are called as a result of
         calling this method.
         """
-        return [task.execution.state for task in tasks]
+        pass
 
 
-    def fetch_output(self, task, output_dir=None, overwrite=False):
+    def fetch_output(self, task, output_dir=None, overwrite=False, **kw):
         """
         Proxy for `Core.fetch_output` (which see).
         """
@@ -1047,10 +1092,10 @@ class Engine(object):
             output_dir = os.path.join(self.output_dir, task.persistent_id)
         if overwrite is None:
             overwrite = self.fetch_output_overwrites
-        return self._core.fetch_output(task, output_dir, overwrite)
+        self._core.fetch_output(task, output_dir, overwrite, **kw)
 
 
-    def kill(self, task):
+    def kill(self, task, **kw):
         """
         Schedule a task for killing on the next `perform` run.
         """
@@ -1061,4 +1106,4 @@ class Engine(object):
         """
         Proxy for `Core.peek` (which see).
         """
-        return self._core.peek(task, what, offset, size, **kw)
+        self._core.peek(task, what, offset, size, **kw)

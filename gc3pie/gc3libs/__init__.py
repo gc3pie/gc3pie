@@ -215,32 +215,32 @@ class Task(object):
 
     # grid-level actions on this Task object are re-routed to the
     # grid/engine/core instance
-    def submit(self):
+    def submit(self, **kw):
         """
         Start the computational job associated with this `Task` instance.
         """
-        self._grid.submit(self)
+        self._grid.submit(self, **kw)
 
 
-    def update_state(self):
+    def update_state(self, **kw):
         """
         In-place update of the execution state of the computational
         job associated with this `Task`.  After successful completion,
         `.execution.state` will contain the new state.
         """
-        self._grid.update_job_state(self)
+        self._grid.update_job_state(self, **kw)
 
 
-    def kill(self):
+    def kill(self, **kw):
         """
         Terminate the computational job associated with this task.
 
         See :meth:`gc3libs.Core.kill` for a full explanation.
         """
-        self._grid.kill(self)
+        self._grid.kill(self, **kw)
 
 
-    def fetch_output(self, output_dir=None, overwrite=False):
+    def fetch_output(self, output_dir=None, overwrite=False, **kw):
         """
         Retrieve the outputs of the computational job associated with
         this task into directory `output_dir`, or, if that is `None`,
@@ -260,14 +260,14 @@ class Task(object):
                           % (self, output_dir, overwrite))
         if self.final_output_retrieved:
             return # FIXME: should be `self.output_dir`?
-        result = self._grid.fetch_output(self, output_dir, overwrite)
+        result = self._grid.fetch_output(self, output_dir, overwrite, **kw)
         if self.execution.state == Run.State.TERMINATED:
             self.final_output_retrieved = True
             self.postprocess(output_dir)
         return result
     
 
-    def peek(self, what='stdout', offset=0, size=None):
+    def peek(self, what='stdout', offset=0, size=None, **kw):
         """
         Download `size` bytes (at offset `offset` from the start) from
         the associated job standard output or error stream, and write them
@@ -276,7 +276,7 @@ class Task(object):
 
         See :meth:`gc3libs.Core.peek` for a full explanation.
         """
-        return self._grid.peek(self, what, offset, size)
+        return self._grid.peek(self, what, offset, size, **kw)
 
     # convenience methods, do not really add any functionality over
     # what's above
