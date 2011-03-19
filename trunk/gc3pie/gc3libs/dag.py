@@ -97,30 +97,37 @@ class TaskCollection(Task, gc3libs.utils.Struct):
     # task execution manipulation -- these methods should be overriden
     # in derived classes, to implement the desired policy.
 
-    def submit(self):
+    def submit(self, **kw):
         raise NotImplementedError("Called abstract method TaskCollection.submit() - this should be overridden in derived classes.")
 
-    def update_state(self):
+
+    def update_state(self, **kw):
         """
         Update the running state of all managed tasks.
         """
         for task in self.tasks:
-            self._grid.update_job_state(task)
+            self._grid.update_job_state(task, **kw)
 
-    def kill(self):
+
+    def kill(self, **kw):
         # XXX: provide default implementation that kills all jobs?
         raise NotImplementedError("Called abstract method TaskCollection.kill() - this should be overridden in derived classes.")
 
-    def fetch_output(self, output_dir=None, overwrite=False):
+
+    def fetch_output(self, output_dir=None, overwrite=False, **kw):
         # if `output_dir` is not None, it is interpreted as the base
         # directory where to download files; each task will get its
         # own subdir based on its `.persistent_id`
         for task in self.tasks:
             if output_dir is not None:
-                self._grid.fetch_output(task, 
-                                        os.path.join(output_dir, task.permanent_id),
-                                        overwrite)
-    def peek(self, what, offset=0, size=None):
+                self._grid.fetch_output(
+                    task, 
+                    os.path.join(output_dir, task.permanent_id),
+                    overwrite,
+                    **kw)
+    
+    
+    def peek(self, what, offset=0, size=None, **kw):
         """
         Raise a `gc3libs.exceptions.InvalidOperation` error, as there
         is no meaningful semantics that can be defined for `peek` into
@@ -198,13 +205,13 @@ class SequentialTaskCollection(TaskCollection):
         self._current_task = 0
 
 
-    def kill(self):
+    def kill(self, **kw):
         """
         Stop execution of this sequence.  Kill currently-running task
         (if any), then set collection state to TERMINATED.
         """
         if self._current_task is not None:
-            self.tasks[self._current_task].kill()
+            self.tasks[self._current_task].kill(**kw)
         self.execution.state = Run.State.TERMINATED
         self.execution.returncode = (Run.Signals.Cancelled, -1)
 
@@ -269,14 +276,14 @@ class SequentialTaskCollection(TaskCollection):
             self._current_task += 1
 
 
-    def submit(self):
+    def submit(self, **kw):
         """
         Start the current task in the collection.
         """
         if self._current_task is None:
             self._current_task = 0
         task = self.tasks[self._current_task]
-        task.submit()
+        task.submit(**kw)
         if task.execution.state == Run.State.NEW:
             # submission failed, state unchanged
             self.execution.state = Run.State.NEW
@@ -286,7 +293,7 @@ class SequentialTaskCollection(TaskCollection):
             self.execution.state = Run.State.RUNNING
 
 
-    def update_state(self):
+    def update_state(self, **kw):
         """
         Update state of the collection, based on the jobs' statuses.
         """
@@ -297,7 +304,7 @@ class SequentialTaskCollection(TaskCollection):
             assert self.execution.state in [ Run.State.NEW, Run.State.TERMINATED ]
         else:
             task = self.tasks[self._current_task]
-            task.update_state()
+            task.update_state(**kw)
             gc3libs.log.debug("Task #%d (%s, %s) in state %s"
                               % (self._current_task, task, type(task), task.execution.state))
         if task.execution.state == Run.State.SUBMITTED and self._current_task == 0:
@@ -348,13 +355,13 @@ class ParallelTaskCollection(TaskCollection):
                 return state
 
     
-    def kill(self):
+    def kill(self, **kw):
         """
         Terminate all tasks in the collection, and set collection
         state to `TERMINATED`.
         """
         for task in self.tasks:
-            task.kill()
+            task.kill(**kw)
         self.execution.state = TERMINATED
         self.execution.returncode = (Run.Signals.Cancelled, -1)
 
@@ -367,23 +374,23 @@ class ParallelTaskCollection(TaskCollection):
         return [ task.progress() for task in self.tasks ]
 
 
-    def submit(self):
+    def submit(self, **kw):
         """
         Start all tasks in the collection.
         """
         for task in self.tasks:
-            task.submit()
+            task.submit(**kw)
         self.execution.state = self._state()
 
         
-    def update_state(self):
+    def update_state(self, **kw):
         """
         Update state of all tasks in the collection.
         """
         for task in self.tasks:
             gc3libs.log.debug("Updating state of %s in collection %s ..."
                               % (task, self))
-            task.update_state()
+            task.update_state(**kw)
         self.execution.state = self._state()
         
 
