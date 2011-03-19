@@ -55,14 +55,12 @@ class Core:
         self._init_backends()
 
     def get_backend(self, resource_name):
-        lrms = [ lrms for lrms in self._lrms_list
-                 if fnmatch(lrms._resource.name, resource_name) ]
-        if lrms:
-            return lrms[0]
-        else:
-            raise gc3libs.exceptions.InvalidResourceName(
-                "Cannot find computational resource '%s'" % 
-                resource_name)
+        for lrms in self._lrms_list:
+            if fnmatch(lrms._resource.name, resource_name):
+                return lrms
+        raise gc3libs.exceptions.InvalidResourceName(
+            "Cannot find computational resource '%s'" % 
+            resource_name)
 
     def _init_backends(self):
         for _resource in self._resources:
@@ -113,7 +111,11 @@ class Core:
         files.
 
         It is an error to call this method if `app.execution.state` is
-        anything other than `TERMINATED`.
+        anything other than `TERMINATED`: an `InvalidOperation` exception
+        will be raised in this case.
+
+        :raise: `gc3libs.exceptions.InvalidOperation` if `app.execution.state`
+                differs from `Run.State.TERMINATED`.
         """
 
         if app.execution.state != Run.State.TERMINATED:
@@ -122,9 +124,7 @@ class Core:
 
         auto_enable_auth = kw.get('auto_enable_auth', self.auto_enable_auth)
 
-        #lrms = self._get_backend(app.execution.resource_name)
         lrms =  self.get_backend(app.execution.resource_name)
-        # self.auths.get(lrms._resource.auth)
         lrms.free(app)
         
 
@@ -173,7 +173,7 @@ class Core:
                               " CPU/memory/wall-clock time combination.")
 
         exs = [ ]
-        # Scheduler.do_brokering should return a sorted list of valid lrms
+        # Scheduler.do_brokering returns a sorted list of valid lrms
         for lrms in _selected_lrms_list:
             gc3libs.log.debug("Attempting submission to resource '%s'..." 
                               % lrms._resource.name)
@@ -219,6 +219,17 @@ class Core:
         are named after the (lowercase) name of the state; e.g., if a
         job reaches state `TERMINATED`, then `job.terminated()` is
         called.
+
+        :raise: `gc3libs.exceptions.InvalidArgument` in case one of
+                the passed `Application` or `Task` objects is
+                invalid. This can stop updating the state of other
+                objects in the argument list.
+
+        :raise: `gc3libs.exceptions.ConfigurationError` if the
+                configuration of this `Core` object is invalid or
+                otherwise inconsistent (e.g., a resource references a
+                non-existing auth section).
+        
         """
         update_on_error = kw.get('update_on_error', False)
         auto_enable_auth = kw.get('auto_enable_auth', self.auto_enable_auth)
@@ -278,11 +289,11 @@ class Core:
                 # Unrecoverable; no sense in continuing --
                 # pass immediately on to client code and let
                 # it handle this...
-                raise # XXX: shouldn't rather be 'continue' ?
+                raise
             # XXX: Re-enabled the catch-all clause otherwise the loop stops at the first erroneous iteration
             except Exception, ex:
-                gc3libs.log.error("Error in Core.update_job_state(), ignored: %s: %s",
-                                  ex.__class__.__name__, str(ex))
+                gc3libs.log.warning("Ignored error in Core.update_job_state(): %s: %s",
+                                    ex.__class__.__name__, str(ex))
                 continue
             states.append(app.execution.state)
 
@@ -309,6 +320,12 @@ class Core:
         Job output cannot be retrieved when `app.execution` is in one
         of the states `NEW` or `SUBMITTED`; a
         `OutputNotAvailableError` exception is thrown in these cases.
+
+        :raise: `gc3libs.exceptions.OutputNotAvailableError` if no
+                output can be fetched from the remote job (e.g., the
+                Application/Task object is in `NEW` or `SUBMITTED`
+                state, indicating the remote job has not started
+                running).
         """
         job = app.execution
         if job.state in [ Run.State.NEW, Run.State.SUBMITTED ]:
@@ -323,9 +340,10 @@ class Core:
             try:
                 download_dir = app.output_dir
             except AttributeError:
-                raise gc3libs.exceptions.InvalidArgument("`Core.fetch_output` called with no explicit download directory,"
-                                      " but `Application` object '%s' has no `output_dir` set either."
-                                      % app)
+                raise gc3libs.exceptions.InvalidArgument(
+                    "`Core.fetch_output` called with no explicit download directory,"
+                    " but object '%s' has no `output_dir` attribute set either."
+                    % (app, type(app)))
         try:
             if overwrite:
                 if not os.path.exists(download_dir):
@@ -371,11 +389,11 @@ class Core:
 
     def get_all_updated_resources(self, **kw):
         """
-        Return a list of resources known by core.
-        Core will try to update the status of resources before returning
-        If core fails updating a given resource, it will send back the same 
-        resource as created from information imported from configurartion file
-        marking it with an additional flag 'updated'.
+        Update the state of resources configured into this `Core` instance,
+        and return a list of these resources.
+
+        Each resource object in the returned list will have its `updated` attribute
+        set to `True` if the update operation succeeded, or `False` if it failed.
         """
 
         updated_resources = []
@@ -583,7 +601,7 @@ def read_config(*locations):
                                                        Run.Arch.X86_64,
         # finally, map "32-bit" and "64-bit" to i686 and x86_64
         re.compile('32[ _-]+bits?', re.I):             Run.Arch.X86_32,
-        re.compile('64[ _-]+bots?', re.I):             Run.Arch.X86_64,
+        re.compile('64[ _-]+bits?', re.I):             Run.Arch.X86_64,
         }
 
     for location in locations:
