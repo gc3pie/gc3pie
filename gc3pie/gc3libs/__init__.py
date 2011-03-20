@@ -914,8 +914,11 @@ class Application(Struct, Persistable, Task):
                         " but there is no generic way of expressing this requirement in SGE!"
                         " Ignoring request, but this will likely result in malfunctioning later on.", 
                         self.requested_cores)
-        if self.job_name:
-            qsub += " -N '%s'" % self.job_name
+        try:
+            if self.jobname:
+                qsub += " -N '%s'" % self.jobname
+        except:
+            pass
         return (qsub, self.cmdline(resource))
 
 
