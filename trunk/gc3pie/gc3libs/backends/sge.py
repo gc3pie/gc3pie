@@ -492,10 +492,11 @@ class SgeLrms(LRMS):
                             if key == 'exit_status':
                                 job.returncode = int(value)
                             elif key == 'failed':
-                                failure = int(value)
+                                # value may be, e.g., "100 : assumedly after job"
+                                failure = int(value.split()[0])
                                 if failure != 0:
                                     # XXX: is exit_status significant? should we reset it to -1?
-                                    job.signal = Job.Signals.RemoteError
+                                    job.signal = Run.Signals.RemoteError
                         except KeyError:
                             log.debug("Ignoring job information '%s=%s'"
                                                " -- no mapping defined to gc3utils.Job attributes." 
