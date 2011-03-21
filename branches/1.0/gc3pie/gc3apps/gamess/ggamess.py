@@ -40,22 +40,22 @@ from gc3libs.cmdline import SessionBasedScript
 
 class GGamessScript(SessionBasedScript):
     """
-    Scan the specified INPUT directories recursively for '.inp' files,
-    and submit a GAMESS job for each input file found; job progress is
-    monitored and, when a job is done, its '.out' and '.dat' file are
-    retrieved back into the same directory where the '.inp' file is (this
-    can be overridden with the '-o' option).
-    
-    The `ggamess` command keeps a record of jobs (submitted, executed and
-    pending) in a session file (set name with the '-s' option); at each
-    invocation of the command, the status of all recorded jobs is updated,
-    output from finished jobs is collected, and a summary table of all
-    known jobs is printed.  New jobs are added to the session if new input
-    files are added to the command line.
-    
-    Options can specify a maximum number of jobs that should be in
-    'SUBMITTED' or 'RUNNING' state; `ggamess` will delay submission
-    of newly-created jobs so that this limit is never exceeded.
+Scan the specified INPUT directories recursively for '.inp' files,
+and submit a GAMESS job for each input file found; job progress is
+monitored and, when a job is done, its '.out' and '.dat' file are
+retrieved back into the same directory where the '.inp' file is (this
+can be overridden with the '-o' option).
+
+The `ggamess` command keeps a record of jobs (submitted, executed and
+pending) in a session file (set name with the '-s' option); at each
+invocation of the command, the status of all recorded jobs is updated,
+output from finished jobs is collected, and a summary table of all
+known jobs is printed.  New jobs are added to the session if new input
+files are added to the command line.
+
+Options can specify a maximum number of jobs that should be in
+'SUBMITTED' or 'RUNNING' state; `ggamess` will delay submission
+of newly-created jobs so that this limit is never exceeded.
     """
 
     def __init__(self):

@@ -169,6 +169,18 @@ class _Script(cli.app.CommandLineApp):
                 kw['description'] = self.__doc__
             else:
                 raise AssertionError("Missing required parameter 'description'.")
+        # allow overriding command-line options in subclasses
+        def argparser_factory(*args, **kwargs):
+            # XXX: change this to 'resolve' when that has its documented
+            # behavior, i.e., override the old option with the new definition.
+            # While this is fixed, we keep the conflict handler to error
+            # so that option conflicts are not silently swallowed.
+            kwargs.setdefault('conflict_handler', 'error')
+            kwargs.setdefault('formatter_class',
+                              cli._ext.argparse.RawDescriptionHelpFormatter)
+            return cli.app.CommandLineApp.argparser_factory(*args, **kwargs)
+        self.argparser_factory = argparser_factory
+        # init superclass
         cli.app.CommandLineApp.__init__(
             self,
             # remove the '.py' extension, if any
@@ -618,7 +630,7 @@ class SessionBasedScript(_Script):
                 inputs.add(os.path.realpath(path + ext))
             else:
                 self.log.error("Cannot access input path '%s' - ignoring it.", path)
-            self.log.debug("Gathered input files: '%s'" % str.join("', '", inputs))
+        self.log.debug("Gathered input files: '%s'" % str.join("', '", inputs))
 
         def filename_sans(path):
             # return base name without the extension
@@ -865,7 +877,7 @@ class SessionBasedScript(_Script):
         # add new jobs to the session
         existing_job_names = set(task.jobname for task in self.tasks)
         random.seed()
-        for jobname, cls, args, kwargs in new_jobs:
+        for (jobname, cls, args, kwargs) in new_jobs:
             self.log.debug("SessionBasedScript.main(): considering adding new job defined by:"
                            " jobname=%s cls=%s args=%s kwargs=%s"
                            % (jobname, cls, args, kwargs))

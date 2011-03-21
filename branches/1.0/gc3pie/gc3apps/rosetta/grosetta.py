@@ -49,24 +49,24 @@ from gc3libs.cmdline import SessionBasedScript
 
 class GRosettaScript(SessionBasedScript):
     """
-    Run MiniRosetta on the specified INPUT files and fetch OUTPUT files
-    back from the execution machine; if OUTPUT is omitted, all '*.pdb',
-    '*.sc' and '*.fasc' files are retrieved.  Several instances can be run in
-    parallel, depending on the '-P' and '-p' options.
-    
-    The `grosetta` command keeps a record of jobs (submitted, executed and
-    pending) in a session file (set name with the '-s' option); at each
-    invocation of the command, the status of all recorded jobs is updated,
-    output from finished jobs is collected, and a summary table of all
-    known jobs is printed.  New jobs are added to the session if the number 
-    of wanted decoys (option '-P') is raised.
-    
-    Options can specify a maximum number of jobs that should be in
-    'SUBMITTED' or 'RUNNING' state; `grosetta` will delay submission
-    of newly-created jobs so that this limit is never exceeded.
-    
-    Note: the list of INPUT and OUTPUT files must be separated by ':'
-    (on the shell command line, put a space before and after).
+Run MiniRosetta on the specified INPUT files and fetch OUTPUT files
+back from the execution machine; if OUTPUT is omitted, all '*.pdb',
+'*.sc' and '*.fasc' files are retrieved.  Several instances can be run in
+parallel, depending on the '-P' and '-p' options.
+
+The `grosetta` command keeps a record of jobs (submitted, executed and
+pending) in a session file (set name with the '-s' option); at each
+invocation of the command, the status of all recorded jobs is updated,
+output from finished jobs is collected, and a summary table of all
+known jobs is printed.  New jobs are added to the session if the number 
+of wanted decoys (option '-P') is raised.
+
+Options can specify a maximum number of jobs that should be in
+'SUBMITTED' or 'RUNNING' state; `grosetta` will delay submission
+of newly-created jobs so that this limit is never exceeded.
+
+Note: the list of INPUT and OUTPUT files must be separated by ':'
+(on the shell command line, put a space before and after).
     """
 
     usage = "%(prog)s [options] FLAGSFILE INPUT ... [: OUTPUT ...]"
