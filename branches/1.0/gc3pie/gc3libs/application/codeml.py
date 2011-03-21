@@ -57,6 +57,8 @@ class CodemlApplication(gc3libs.Application):
 
         # need to send the binary and the PERL driver script
         inputs = [ codeml_pl, 'codeml' ]
+        # output file paths are read from the '.ctl' file below
+        outputs = [ ]
         # for each '.ctl' file, extract the referenced "seqfile" and
         # "treefile" and add them to the input list
         for ctl in ctls:
@@ -64,9 +66,11 @@ class CodemlApplication(gc3libs.Application):
                 # try getting the seqfile/treefile path before we
                 # append the '.ctl' file to inputs; if they cannot be
                 # found, we do not append the '.ctl' either...
-                for path in CodemlApplication.seqfile_and_treefile(ctl).values():
-                    if path not in inputs:
+                for (key, path) in CodemlApplication.aux_files(ctl).items():
+                    if key in ['seqfile', 'treefile'] and path not in inputs:
                         inputs.append(path)
+                    if key == 'outfile' and path not in outputs:
+                        outputs.append(path)
                 inputs.append(ctl)
             # if the phy/nwk files are not found,
             # `seqfile_and_treefile` raises an exception; catch it
@@ -80,8 +84,7 @@ class CodemlApplication(gc3libs.Application):
             executable = os.path.basename(codeml_pl),
             arguments = [ os.path.basename(ctl) for ctl in ctls ],
             inputs = inputs,
-            outputs = [ (os.path.basename(path)[:-4] + '.mlc')
-                        for path in ctls ],
+            outputs = outputs,
             stdout = 'codeml.stdout.txt',
             stderr = 'codeml.stderr.txt',
             # an estimation of wall-clock time requirements can be
@@ -94,10 +97,11 @@ class CodemlApplication(gc3libs.Application):
 
     # split a line 'key = value' around the middle '=' and ignore spaces
     _assignment_re = re.compile('\s* = \s*', re.X)
-
+    _aux_file_keys = [ 'seqfile', 'treefile', 'outfile' ]
+    
     # aux function to get thw seqfile and treefile paths
     @staticmethod
-    def seqfile_and_treefile(ctl_path):
+    def aux_files(ctl_path):
         """
         Return full path to the seqfile and treefile referenced in
         the '.ctl' file given as arguments.
@@ -119,12 +123,15 @@ class CodemlApplication(gc3libs.Application):
             if len(line) == 0:
                 continue
             key, value = CodemlApplication._assignment_re.split(line, maxsplit=1)
-            if key in [ 'seqfile', 'treefile' ]:
+            if key not in CodemlApplication._aux_file_keys:
+                continue
+            elif key in [ 'seqfile', 'treefile' ]:
                 result[key] = abspath(value)
-            # shortcut: if we already have both 'seqfile' and
-            # 'treefile', there's no need for scanning the file
-            # any more.
-            if len(result) == 2:
+            elif key == 'outfile':
+                result[key] = value
+            # shortcut: if we already have all files, there's no need
+            # for scanning the file any more.
+            if len(result) == len(CodemlApplication._aux_file_keys):
                 ctl.close()
                 return result
         # if we get to this point, the ``seqfile = ...`` and
