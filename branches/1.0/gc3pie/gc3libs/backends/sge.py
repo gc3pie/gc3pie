@@ -594,11 +594,15 @@ class SgeLrms(LRMS):
 
     @same_docstring_as(LRMS.get_results)
     def get_results(self, app, download_dir, overwrite=False):
+        if app.output_base_url is not None:
+            raise gc3libs.exceptions.DataStagingError(
+                "Retrieval of output files to non-local destinations"
+                " is not supported in the SGE backend (yet).")
 
         job = app.execution
         try:
             log.debug("Connecting to cluster frontend '%s' as user '%s' via SSH ...", 
-                           self._resource.frontend, self._ssh_username)
+                      self._resource.frontend, self._ssh_username)
             self.transport.connect()
 
             # XXX: why do we list the remote dir? `file_list` is not used ever after...
@@ -616,9 +620,11 @@ class SgeLrms(LRMS):
             for remote_path, local_path in app.outputs.items():
                 try:
                     # override the remote name if it's a known variable one...
-                    remote_path = os.path.join(job.ssh_remote_folder, 
-                                               _sge_filename_mapping(job.lrms_jobname, 
-                                                                     job.lrms_jobid, remote_path))
+                    remote_path = os.path.join(
+                        job.ssh_remote_folder, 
+                        _sge_filename_mapping(job.lrms_jobname, 
+                                              job.lrms_jobid, remote_path)
+                        )
                     # remote_path = os.path.join(job.ssh_remote_folder, filename_map[remote_path])
                 except KeyError:
                     # ...but keep it if it's not a known one
