@@ -174,23 +174,23 @@ class GDockingApplication(RosettaDockingApplication):
 
 class GDockingScript(SessionBasedScript):
     """
-    Compute decoys of specified '.pdb' files by running several
-    Rosetta 'docking_protocol' instances in parallel.
+Compute decoys of specified '.pdb' files by running several
+Rosetta 'docking_protocol' instances in parallel.
 
-    The `gdocking` command keeps a record of jobs (submitted, executed and
-    pending) in a session file; at each invocation of the command, the
-    status of all recorded jobs is updated, output from finished jobs is
-    collected, and a summary table of all known jobs is printed.
-    
-    If any INPUT argument is specified on the command line, `gdocking`
-    appends new jobs to the session file, up to the quantity needed
-    to compute the requested number of decoys.  Each of the INPUT
-    parameters can be either a single '.pdb' file, or a directory, which
-    is recursively scanned for '.pdb' files.
-    
-    Options can specify a maximum number of jobs that should be in
-    'SUBMITTED' or 'RUNNING' state; `gdocking` will delay submission
-    of newly-created jobs so that this limit is never exceeded.
+The `gdocking` command keeps a record of jobs (submitted, executed and
+pending) in a session file; at each invocation of the command, the
+status of all recorded jobs is updated, output from finished jobs is
+collected, and a summary table of all known jobs is printed.
+
+If any INPUT argument is specified on the command line, `gdocking`
+appends new jobs to the session file, up to the quantity needed
+to compute the requested number of decoys.  Each of the INPUT
+parameters can be either a single '.pdb' file, or a directory, which
+is recursively scanned for '.pdb' files.
+
+Options can specify a maximum number of jobs that should be in
+'SUBMITTED' or 'RUNNING' state; `gdocking` will delay submission
+of newly-created jobs so that this limit is never exceeded.
     """
 
     def __init__(self):

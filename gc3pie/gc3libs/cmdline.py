@@ -169,6 +169,18 @@ class _Script(cli.app.CommandLineApp):
                 kw['description'] = self.__doc__
             else:
                 raise AssertionError("Missing required parameter 'description'.")
+        # allow overriding command-line options in subclasses
+        def argparser_factory(*args, **kwargs):
+            # XXX: change this to 'resolve' when that has its documented
+            # behavior, i.e., override the old option with the new definition.
+            # While this is fixed, we keep the conflict handler to error
+            # so that option conflicts are not silently swallowed.
+            kwargs.setdefault('conflict_handler', 'error')
+            kwargs.setdefault('formatter_class',
+                              cli._ext.argparse.RawDescriptionHelpFormatter)
+            return cli.app.CommandLineApp.argparser_factory(*args, **kwargs)
+        self.argparser_factory = argparser_factory
+        # init superclass
         cli.app.CommandLineApp.__init__(
             self,
             # remove the '.py' extension, if any
