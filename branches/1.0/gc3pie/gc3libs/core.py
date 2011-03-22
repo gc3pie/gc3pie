@@ -140,12 +140,7 @@ class Core:
 
         # check that all input files can be read
         for local_path in app.inputs:
-            if not os.path.exists(local_path):
-                raise gc3libs.exceptions.InputFileError("Non-existent input file '%s'"
-                                                        % local_path)
-            if not os.access(local_path, os.R_OK):
-                raise gc3libs.exceptions.InputFileError("Cannot read input file '%s'"
-                                                        % local_path)
+            gc3libs.utils.test_file(local_path, os.R_OK, InputFileError)
 
         job = app.execution
 
@@ -326,9 +321,10 @@ class Core:
             try:
                 download_dir = app.output_dir
             except AttributeError:
-                raise gc3libs.exceptions.InvalidArgument("`Core.fetch_output` called with no explicit download directory,"
-                                      " but `Application` object '%s' has no `output_dir` set either."
-                                      % app)
+                raise gc3libs.exceptions.InvalidArgument(
+                    "`Core.fetch_output` called with no explicit download directory,"
+                    " but `Application` object '%s' has no `output_dir` set either."
+                    % app)
         try:
             if overwrite:
                 if not os.path.exists(download_dir):
