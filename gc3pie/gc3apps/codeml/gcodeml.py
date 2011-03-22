@@ -42,6 +42,7 @@ import re
 import gc3libs
 from gc3libs.application.codeml import CodemlApplication
 from gc3libs.cmdline import SessionBasedScript
+import gc3libs.exceptions
 
 
 ## the script itself
@@ -70,9 +71,51 @@ class GCodemlScript(SessionBasedScript):
         SessionBasedScript.__init__(
             self,
             version = __version__, # module version == script version
-            application = CodemlApplication,
-            input_filename_pattern = '*.ctl'
             )
+
+
+    def setup_options(self):
+        self.add_param("-O", "--output-url", action="store",
+                       dest="output_base_url", default="",
+                       help="Upload output files to this URL,"
+                       "which must be a protocol that ARC supports."
+                       "(e.g., 'gsiftp://...')")
+
+
+    def process_args(self, extra):
+        """Implement this to alter the files -> jobs mapping."""
+        inputs = set()
+
+        def contain_ctl_files(paths):
+            for path in paths:
+                if path.endswith('.ctl'):
+                    return True
+            return False
+
+        for path in self.params.args:
+            self.log.debug("Now processing input argument '%s' ..." % path)
+            if not os.path.isdir(path):
+                raise gc3libs.exceptions.InvalidUsage(
+                    "Argument '%s' is not a directory path." % path)
+            
+            # recursively scan for input files
+            for dirpath, dirnames, filenames in os.walk(path):
+                if contain_ctl_files(filenames):
+                    inputs.add(os.path.realpath(dirpath))
+
+        self.log.debug("Gathered input directories: '%s'"
+                       % str.join("', '", inputs))
+
+        for dirpath in inputs:
+            ctl_files = [ os.path.join(dirpath, filename)
+                          for filename in os.listdir(dirpath)
+                          if filename.endswith('.ctl') ]
+            kwargs = extra.copy()
+            if self.params.output_base_url != "":
+                kwargs['output_base_url'] = self.params.output_base_url
+            yield ((os.path.basename(dirpath) or dirpath) + '.out',
+                   CodemlApplication, ctl_files, kwargs)
+
 
 # run it
 if __name__ == '__main__':

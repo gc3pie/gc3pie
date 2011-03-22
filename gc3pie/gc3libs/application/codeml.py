@@ -173,30 +173,34 @@ class CodemlApplication(gc3libs.Application):
             self.execution.exitcode = 127
             return
 
-        total = len(self.outputs)
-        # form full-path to the output files
-        outputs = [ os.path.join(download_dir, filename) 
-                    for filename in fnmatch.filter(os.listdir(download_dir), '*.mlc') ]
-        if len(outputs) == 0:
-            # no output retrieved, did ``codeml`` run at all?
-            self.execution.exitcode = 127
+        # if output files were *not* uploaded to a remote server,
+        # then check if they are OK and set exit code based on this
+        if self.output_base_url is not None:
+            total = len(self.outputs)
+            # form full-path to the output files
+            outputs = [ os.path.join(download_dir, filename) 
+                        for filename in fnmatch.filter(os.listdir(download_dir), '*.mlc') ]
+            if len(outputs) == 0:
+                # no output retrieved, did ``codeml`` run at all?
+                self.execution.exitcode = 127
+                return
+            # count the number of successfully processed files
+            failed = 0
+            for mlc in outputs:
+                output_file = open(mlc, 'r')
+                last_line = output_file.readlines()[-1]
+                output_file.close()
+                if not last_line.startswith('Time used: '):
+                    failed += 1
+            # set exit code and informational message
+            if failed == 0:
+                self.execution.exitcode = 0
+                self.info = "All files processed successfully, output downloaded to '%s'" % download_dir
+            elif failed < total:
+                self.execution.exitcode = 1
+                self.info = "Some files *not* processed successfully, output downloaded to '%s'" % download_dir
+            else:
+                self.execution.exitcode = 2
+                self.info = "No files processed successfully, output downloaded to '%s'" % download_dir
             return
-        # count the number of successfully processed files
-        failed = 0
-        for mlc in outputs:
-            output_file = open(mlc, 'r')
-            last_line = output_file.readlines()[-1]
-            output_file.close()
-            if not last_line.startswith('Time used: '):
-                failed += 1
-        # set exit code and informational message
-        if failed == 0:
-            self.execution.exitcode = 0
-            self.info = "All files processed successfully, output downloaded to '%s'" % download_dir
-        elif failed < total:
-            self.execution.exitcode = 1
-            self.info = "Some files *not* processed successfully, output downloaded to '%s'" % download_dir
-        else:
-            self.execution.exitcode = 2
-            self.info = "No files processed successfully, output downloaded to '%s'" % download_dir
-        return
+            
