@@ -171,11 +171,7 @@ class _Script(cli.app.CommandLineApp):
                 raise AssertionError("Missing required parameter 'description'.")
         # allow overriding command-line options in subclasses
         def argparser_factory(*args, **kwargs):
-            # XXX: change this to 'resolve' when that has its documented
-            # behavior, i.e., override the old option with the new definition.
-            # While this is fixed, we keep the conflict handler to error
-            # so that option conflicts are not silently swallowed.
-            kwargs.setdefault('conflict_handler', 'error')
+            kwargs.setdefault('conflict_handler', 'resolve')
             kwargs.setdefault('formatter_class',
                               cli._ext.argparse.RawDescriptionHelpFormatter)
             return cli.app.CommandLineApp.argparser_factory(*args, **kwargs)
@@ -217,8 +213,6 @@ class _Script(cli.app.CommandLineApp):
         self.add_param("-v", "--verbose", action="count", dest="verbose", default=0,
                        help="Be more detailed in reporting program activity."
                        " Repeat to increase verbosity.")
-        self.setup_options()
-        self.setup_args()
         return
 
 
@@ -233,6 +227,10 @@ class _Script(cli.app.CommandLineApp):
         ignored, after which they start to lower the level of messages
         sent to standard error output.
         """
+        ## finish setup
+        self.setup_options()
+        self.setup_args()
+
         ## parse command-line
         cli.app.CommandLineApp.pre_run(self)
 
