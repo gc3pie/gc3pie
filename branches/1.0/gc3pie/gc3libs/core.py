@@ -140,7 +140,8 @@ class Core:
 
         # check that all input files can be read
         for local_path in app.inputs:
-            gc3libs.utils.test_file(local_path, os.R_OK, InputFileError)
+            gc3libs.utils.test_file(local_path, os.R_OK,
+                                    gc3libs.exceptions.InputFileError)
 
         job = app.execution
 
