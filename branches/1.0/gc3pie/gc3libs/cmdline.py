@@ -691,8 +691,8 @@ class SessionBasedScript(_Script):
         self.input_filename_pattern = 'PLEASE SET `input_filename_pattern` IN `SessionBasedScript` CONSTRUCTOR'
         def _unset_application_cls(*args, **kwargs):
             raise gc3libs.exceptions.Error("PLEASE SET `application` in `SessionBasedScript` CONSTRUCTOR")
-        ## init base classes
         self.application = _unset_application_cls
+        ## init base classes
         _Script.__init__(
             self,
             main=self._main,
@@ -758,16 +758,17 @@ class SessionBasedScript(_Script):
                            help="Allow no more than NUM concurrent jobs (default: %(default)s)"
                            " to be in SUBMITTED or RUNNING state."
                            )
-        self.add_param("-o", "--output", dest="output", default=os.getcwd(),
-                           metavar='DIRECTORY',
-                           help="Output files from all jobs will be collected in the specified"
+        self.add_param("-o", "--output",
+                       dest="output", default=os.path.join(os.getcwd(), 'NAME'),
+                       metavar='DIRECTORY',
+                       help="Output files from all jobs will be collected in the specified"
                            " DIRECTORY path; by default, output files are placed in the same"
                            " directory where the corresponding input file resides.  If the"
                            " destination directory does not exist, it is created."
                            " Some special strings will be substituted into DIRECTORY,"
                            " to specify an output location that varies with the submitted job:"
-                           " PATH is replaced by the directory where the input file resides;"
-                           " NAME is replaced by the input file name;"
+                           " PATH is replaced by the directory where the input resides;"
+                           " NAME is replaced by the input name;"
                            " DATE is replaced by the submission date in ISO format (YYYY-MM-DD);"
                            " TIME is replaced by the submission time formatted as HH:MM."
                            )
