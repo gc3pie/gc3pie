@@ -42,23 +42,29 @@ def _compatible_resources(lrms_list, application):
             continue
         gc3libs.log.debug("Checking resource '%s' for compatibility with application requirements",
                            lrms._resource.name)
-        if ( # check that Application requirements are within resource limits
-            int(application.requested_cores) > int(lrms._resource.max_cores_per_job or sys.maxint) 
-            or int(application.requested_memory) > int(lrms._resource.max_memory_per_core or sys.maxint) 
-            or int(application.requested_walltime) > int(lrms._resource.max_walltime or sys.maxint)
-           ) or ( # if architecture is specified, check that it matches the resource one
-            application.requested_architecture is not None
-            and application.requested_architecture not in lrms._resource.architecture
-            ):
-            gc3libs.log.info("Rejecting resource '%s':"
-                             " no match with application requirements"
-                             % lrms._resource.name)
+        # check that Application requirements are within resource limits
+        if int(application.requested_cores) > int(lrms._resource.max_cores_per_job or sys.maxint):
+            gc3libs.log.info("Rejecting resource '%s': requested more cores (%d) that resource provides (%d)"
+                             % (lrms._resource.name, application.requested_cores, lrms._resource.max_cores_per_job))
             continue
-        if (application.output_base_url is not None
-            and lrms._resource.type != gc3libs.Default.ARC_LRMS
-            ):
-            gc3libs.log.info("Rejecting resource '%s':"
-                             " no support for non-local output files."
+        if int(application.requested_memory) > int(lrms._resource.max_memory_per_core or sys.maxint):
+            gc3libs.log.info("Rejecting resource '%s': requested more memory per core (%d GB) that resource provides (%d GB)"
+                             % (lrms._resource.name, application.requested_memory, lrms._resource.max_memory_per_core))
+            continue
+        if int(application.requested_walltime) > int(lrms._resource.max_walltime or sys.maxint):
+            gc3libs.log.info("Rejecting resource '%s': requested a longer duration (%d s) that resource provides (%d s)"
+                             % (lrms._resource.name, application.requested_walltime, lrms._resource.max_walltime))
+            continue
+        # if architecture is specified, check that it matches the resource one
+        if (application.requested_architecture is not None
+            and application.requested_architecture not in lrms._resource.architecture):
+            gc3libs.log.info("Rejecting resource '%s': requested a different architecture (%s) than what resource provides (%s)"
+                             % (lrms._resource.name, application.requested_architecture,
+                                str.join(', ', [str(arch) for arch in lrms._resource.architecture ])))
+            continue
+        # if upload to remote site requested, check that the backend supports it
+        if (application.output_base_url is not None and lrms._resource.type != gc3libs.Default.ARC_LRMS):
+            gc3libs.log.info("Rejecting resource '%s': no support for non-local output files."
                              % lrms._resource.name)
             continue
         _selected_lrms_list.append(lrms)
