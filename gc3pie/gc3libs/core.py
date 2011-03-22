@@ -164,12 +164,8 @@ class Core:
         
         # check that all input files can be read
         for local_path in app.inputs:
-            if not os.path.exists(local_path):
-                raise gc3libs.exceptions.InputFileError("Non-existent input file '%s'"
-                                                        % local_path)
-            if not os.access(local_path, os.R_OK):
-                raise gc3libs.exceptions.InputFileError("Cannot read input file '%s'"
-                                                        % local_path)
+            gc3libs.utils.test_file(local_path, os.R_OK,
+                                    gc3libs.exceptions.InputFileError)
 
         job = app.execution
 
