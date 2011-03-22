@@ -286,11 +286,12 @@ def dirname(pathname):
     """
     Same as `os.path.dirname` but return `.` in case of path names with no directory component.
     """
-    dirname = os.path.dirname(pathname)
-    if not dirname:
-        dirname = '.'
-    # FIXME: figure out if this is a desirable outcome.  i.e. do we want dirname to be empty, or do a pwd and find out what the current dir is, or keep the "./".  I suppose this could make a difference to some of the behavior of the scripts, such as copying files around and such.
-    return dirname
+    # FIXME: figure out if this is a desirable outcome.  i.e. do we
+    # want dirname to be empty, or do a pwd and find out what the
+    # current dir is, or keep the "./".  I suppose this could make a
+    # difference to some of the behavior of the scripts, such as
+    # copying files around and such.
+    return os.path.dirname(pathname) or '.'
 
 
 class Enum(frozenset):
