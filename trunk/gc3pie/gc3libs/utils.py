@@ -687,6 +687,66 @@ class PlusInfinity(Singleton):
         return not self.__eq__(other)
 
 
+def test_file(path, mode, exception=RuntimeError, isdir=False):
+    """
+    Test for access to a path; if access is not granted, raise an
+    instance of `exception` with an appropriate error message.
+    This is a frontend to `os.access`:func:, which see for exact
+    semantics and the meaning of `path` and `mode`.
+
+    :param: path Filesystem path to test.
+    :param: mode See `os.access`:func:
+    :param: exception Class of exception to raise if test fails.
+    :param: isdir If `True` then also test that `path` points to a directory.
+
+    If the test succeeds, `True` is returned::
+
+      >>> test_file('/bin/cat', os.F_OK)
+      True
+      >>> test_file('/bin/cat', os.R_OK)
+      True
+      >>> test_file('/bin/cat', os.X_OK)
+      True
+      >>> test_file('/tmp', os.X_OK)
+      True
+
+    However, if the test fails, then an exception is raised::
+
+      >>> test_file('/bin/cat', os.W_OK)
+      Traceback (most recent call last):
+        ...
+      RuntimeError: Cannot write to file '/bin/cat'.
+
+    If the optional argument `isdir` is `True`, then additionally test
+    that `path` points to a directory inode::
+
+      >>> test_file('/tmp', os.F_OK, isdir=True)
+      True
+
+      >>> test_file('/bin/cat', os.F_OK, isdir=True)
+      Traceback (most recent call last):
+        ...
+      RuntimeError: Expected '/bin/cat' to be a directory, but it's not.
+    """
+    if not os.access(path, os.F_OK):
+        raise exception("Cannot access %s '%s'."
+                        % (ifelse(isdir, "directory", "file"), path))
+    if isdir and not os.path.isdir(path):
+        raise exception("Expected '%s' to be a directory, but it's not." % path)
+    if (mode & os.R_OK) and not os.access(path, os.R_OK):
+        raise exception("Cannot read %s '%s'."
+                        % (ifelse(isdir, "directory", "file"), path))
+    if (mode & os.W_OK) and not os.access(path, os.W_OK):
+        raise exception("Cannot write to %s '%s'."
+                        % (ifelse(isdir, "directory", "file"), path))
+    if (mode & os.X_OK) and not os.access(path, os.X_OK):
+        if isdir:
+            raise exception("Cannot traverse directory '%s':"
+                            " lacks 'x' permission." % path)
+        else:
+            raise exception("File '%s' lacks execute ('x') permission." % path)
+    return True
+
 
 def string_to_boolean(word):
     """
