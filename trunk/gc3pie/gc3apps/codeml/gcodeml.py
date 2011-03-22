@@ -26,6 +26,15 @@ See the output of ``gcodeml --help`` for program usage instructions.
 __version__ = 'development version (SVN $Revision$)'
 # summary of user-visible changes
 __changelog__ = """
+  2011-03-22:
+    * New option ``-x`` to set the path to the ``codeml`` executable.
+  2011-03-21:
+    * Changed argument processing logic: no longer submit each
+      ``.ctl`` file as a separate jobs, instead assume all the
+      files in a single directory are related and bundle them into
+      a single job.
+    * New option ``-O`` to upload output files to a GridFTP
+      server, instead of downloading them to a local destination.
   2011-02-08:
     * Initial release, forked off the ``ggamess`` sources.
 """
@@ -80,10 +89,19 @@ of newly-created jobs so that this limit is never exceeded.
                        help="Upload output files to this URL,"
                        "which must be a protocol that ARC supports."
                        "(e.g., 'gsiftp://...')")
+        self.add_param("-x", "--codeml-executable", action="store",
+                       dest="codeml", default="codeml", metavar="PATH",
+                       help="Filesystem path to the CODEML executable.")
 
 
     def process_args(self, extra):
-        """Implement this to alter the files -> jobs mapping."""
+        """Implement the argument -> jobs mapping."""
+        ## process additional options
+        if not os.path.isabs(self.params.codeml):
+            self.params.codeml = os.path.join(os.getcwd(), self.params.codeml)
+        gc3libs.utils.test_file(self.params.codeml, os.R_OK|os.X_OK)
+
+        ## do the argument -> job mapping, really
         inputs = set()
 
         def contain_ctl_files(paths):
@@ -107,12 +125,18 @@ of newly-created jobs so that this limit is never exceeded.
                        % str.join("', '", inputs))
 
         for dirpath in inputs:
+            # gather control files; other input files are
+            # automatically pulled in by CodemlApplication by parsing
+            # the '.ctl'
             ctl_files = [ os.path.join(dirpath, filename)
                           for filename in os.listdir(dirpath)
                           if filename.endswith('.ctl') ]
+            # set optional arguments (path to 'codeml' binary, output URL, etc.)
             kwargs = extra.copy()
+            kwargs.setdefault('codeml', self.params.codeml)
             if self.params.output_base_url != "":
                 kwargs['output_base_url'] = self.params.output_base_url
+            # yield new job
             yield ((os.path.basename(dirpath) or dirpath) + '.out',
                    CodemlApplication, ctl_files, kwargs)
 
