@@ -50,6 +50,8 @@ class CodemlApplication(gc3libs.Application):
     """
     
     def __init__(self, *ctls, **kw):
+        # optinal keyword argument 'codeml', defaulting to "codeml"
+        codeml = kw.get('codeml', 'codeml')
         # we're submitting CODEML jobs thorugh the support script
         # "codeml.pl", so do the specific setup tailored to this
         # script' usage
@@ -57,7 +59,7 @@ class CodemlApplication(gc3libs.Application):
                                       "gc3libs/etc/codeml.pl")
 
         # need to send the binary and the PERL driver script
-        inputs = [ codeml_pl, 'codeml' ]
+        inputs = { codeml_pl:'codeml.pl', codeml:'codeml' }
         # output file paths are read from the '.ctl' file below
         outputs = [ ]
         # for each '.ctl' file, extract the referenced "seqfile" and
@@ -69,17 +71,17 @@ class CodemlApplication(gc3libs.Application):
                 # found, we do not append the '.ctl' either...
                 for (key, path) in CodemlApplication.aux_files(ctl).items():
                     if key in ['seqfile', 'treefile'] and path not in inputs:
-                        inputs.append(path)
+                        inputs[path] = os.path.basename(path)
                     if key == 'outfile' and path not in outputs:
                         outputs.append(path)
-                inputs.append(ctl)
-            # if the phy/nwk files are not found,
-            # `seqfile_and_treefile` raises an exception; catch it
-            # here and ignore the '.ctl' file as well.
+                inputs[ctl] = os.path.basename(ctl)
+            # if the phy/nwk files are not found, `aux_files` raises
+            # an exception; catch it here and ignore the '.ctl' file
+            # as well.
             except RuntimeError, ex:
-                # FIXME: this is using the root logger to spit out messages!!
-                logging.warning("Cannot find seqfile and/or treefile referenced in '%s'"
-                                " - ignoring this input." % ctl)
+                gc3libs.log.warning("Ignoring input file '%s':"
+                                    " cannot find seqfile and/or treefile referenced in it: %s"
+                                    % (ctl, str(ex)))
         gc3libs.Application.__init__(
             self,
             executable = os.path.basename(codeml_pl),
@@ -188,8 +190,10 @@ class CodemlApplication(gc3libs.Application):
                 # no output retrieved, did ``codeml`` run at all?
                 self.execution.exitcode = 127
                 return
-        # count the number of successfully processed files
-        total = len(self.outputs) - 2
+        # count the number of successfully processed files; note that
+        # `self.outputs` contains the list of output files *plus*
+        # stdout and stderr (if distinct)
+        total = len(self.outputs) - gc3libs.utils.ifelse(self.join, 1, 2)
         failed = 0
         stdout_file = open(os.path.join(download_dir, self.stdout), 'r')
         ok_count = gc3libs.utils.count(stdout_file,
