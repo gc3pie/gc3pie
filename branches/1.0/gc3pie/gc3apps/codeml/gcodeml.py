@@ -84,6 +84,7 @@ of newly-created jobs so that this limit is never exceeded.
 
 
     def setup_options(self):
+        # add some options to the std ones
         self.add_param("-O", "--output-url", action="store",
                        dest="output_base_url", default="",
                        help="Upload output files to this URL,"
@@ -92,6 +93,8 @@ of newly-created jobs so that this limit is never exceeded.
         self.add_param("-x", "--codeml-executable", action="store",
                        dest="codeml", default="codeml", metavar="PATH",
                        help="Filesystem path to the CODEML executable.")
+        # change default for the "-o"/"--output" option
+        self.actions['output'].default = 'SESSION'
 
 
     def process_args(self, extra):
