@@ -608,6 +608,7 @@ class SessionBasedScript(_Script):
             kwargs.setdefault('requested_walltime', self.params.walltime)
             kwargs.setdefault('output_dir',                         
                               self.params.output
+                              .replace('SESSION', self.params.session + '.out')
                               .replace('PATH', os.path.dirname(args[0]) # XXX: assumes `args[0]` exists and is a path name!
                                        or os.getcwd())
                               .replace('NAME', jobname)
@@ -825,6 +826,7 @@ class SessionBasedScript(_Script):
                            " NAME is replaced by the input name;"
                            " DATE is replaced by the submission date in ISO format (YYYY-MM-DD);"
                            " TIME is replaced by the submission time formatted as HH:MM."
+                           " SESSION is replaced by the path to the session directory, with a '.out' appended."
                            )
         self.add_param("-t", "--table", action="store_true", dest="table", default=False,
                            help="Print table of all submitted jobs and their statuses."
@@ -862,6 +864,19 @@ class SessionBasedScript(_Script):
             raise cli.app.Error("Argument to option -w/--wall-clock-time must have the form 'HH:MM' or be a duration expressed in seconds.")
         self.params.walltime = int(self.params.wctime / 3600)
 
+        ## determine the session file name (and possibly create an empty index)
+        if ( os.path.exists(self.params.session)
+             and os.path.isdir(self.params.session) ):
+            self.session_dirname = os.path.realpath(self.params.session)
+            self.session_filename = os.path.join(self.session_dirname, 'index.csv')
+        else:
+            if self.params.session.endswith('.jobs'):
+                self.params.session = self.params.session[:-5]
+            elif self.params.session.endswith('.csv'):
+                self.params.session = self.params.session[:-4]
+            self.session_dirname = self.params.session + '.jobs'
+            self.session_filename = self.params.session + '.csv'
+
         # XXX: ARClib errors out if the download directory already exists, so
         # we need to make sure that each job downloads results in a new one.
         # The easiest way to do so is to append 'NAME' to the `output_dir`
@@ -886,21 +901,6 @@ class SessionBasedScript(_Script):
         classes: rather use the provided customization hooks:
         :method:`process_args`, :method:`parse_args`, :method:`setup_args`. 
         """
-
-        ## determine the session file name (and possibly create an empty index)
-        if os.path.exists(self.params.session):
-            self.session_dirname = os.path.realpath(self.params.session)
-            self.session_filename = os.path.join(self.session_dirname, 'index.csv')
-        else:
-            if self.params.session.endswith('.jobs'):
-                self.session_dirname = self.params.session[:-5]
-                self.session_filename = self.session_dirname + '.csv'
-            elif self.params.session.endswith('.csv'):
-                self.session_filename = self.params.session
-                self.session_dirname = self.session_filename[:-4] + '.jobs'
-            else:
-                self.session_dirname = self.params.session + '.jobs'
-                self.session_filename = self.params.session + '.csv'
 
         ## create a `Persistence` instance to _save_session/_load_session jobs
         self.store = gc3libs.persistence.FilesystemStore(
