@@ -35,6 +35,7 @@ import re
 from pkg_resources import Requirement, resource_filename
 
 import gc3libs
+import gc3libs.utils
 
 
 ## The CODEML application
@@ -111,7 +112,7 @@ class CodemlApplication(gc3libs.Application):
             if os.path.isabs(filename):
                 return filename
             else:
-                return os.path.realpath(os.path.join(dirname, filename))
+                return os.path.join(dirname, filename)
         result = { }
         ctl = open(ctl_path, 'r')
         for line in ctl.readlines():
@@ -140,6 +141,10 @@ class CodemlApplication(gc3libs.Application):
         ctl.close()
         raise RuntimeError("Could not extract path to seqfile and/or treefile from '%s'"
                            % ctl_path)
+
+    #def terminated(self):
+    #    if job failed because of recoverable condition:
+    #        self.submit()
 
 
     def postprocess(self, download_dir):
@@ -176,31 +181,29 @@ class CodemlApplication(gc3libs.Application):
         # if output files were *not* uploaded to a remote server,
         # then check if they are OK and set exit code based on this
         if self.output_base_url is not None:
-            total = len(self.outputs)
-            # form full-path to the output files
+            # form full-path to the stdout files
             outputs = [ os.path.join(download_dir, filename) 
                         for filename in fnmatch.filter(os.listdir(download_dir), '*.mlc') ]
             if len(outputs) == 0:
                 # no output retrieved, did ``codeml`` run at all?
                 self.execution.exitcode = 127
                 return
-            # count the number of successfully processed files
-            failed = 0
-            for mlc in outputs:
-                output_file = open(mlc, 'r')
-                last_line = output_file.readlines()[-1]
-                output_file.close()
-                if not last_line.startswith('Time used: '):
-                    failed += 1
-            # set exit code and informational message
-            if failed == 0:
-                self.execution.exitcode = 0
-                self.info = "All files processed successfully, output downloaded to '%s'" % download_dir
-            elif failed < total:
-                self.execution.exitcode = 1
-                self.info = "Some files *not* processed successfully, output downloaded to '%s'" % download_dir
-            else:
-                self.execution.exitcode = 2
-                self.info = "No files processed successfully, output downloaded to '%s'" % download_dir
-            return
+        # count the number of successfully processed files
+        total = len(self.outputs) - 2
+        failed = 0
+        stdout_file = open(os.path.join(download_dir, self.stdout), 'r')
+        ok_count = gc3libs.utils.count(stdout_file,
+                                       lambda line: line.startswith('Time used: '))
+        stdout_file.close()
+        # set exit code and informational message
+        if ok_count == total:
+            self.execution.exitcode = 0
+            self.info = "All files processed successfully, output downloaded to '%s'" % download_dir
+        elif ok_count == 0:
+            self.execution.exitcode = 2
+            self.info = "No files processed successfully, output downloaded to '%s'" % download_dir
+        else:
+            self.execution.exitcode = 1
+            self.info = "Some files *not* processed successfully, output downloaded to '%s'" % download_dir
+        return
             
