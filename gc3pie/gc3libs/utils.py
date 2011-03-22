@@ -258,6 +258,19 @@ def progressive_number(qty=None,
         return [ (id+n) for n in range(1, qty+1) ]
 
 
+def count(seq, predicate):
+    """
+    Return number of items in `seq` that match `predicate`.
+    Argument `predicate` should be a callable that accepts
+    one argument and returns a boolean.
+    """
+    count = 0
+    for item in seq:
+        if predicate(item):
+            count += 1
+    return count
+
+
 def defproperty(fn):
     """
     Decorator to define properties with a simplified syntax in Python 2.4.
