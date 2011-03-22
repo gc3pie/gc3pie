@@ -49,22 +49,22 @@ import gc3libs.exceptions
 
 class GCodemlScript(SessionBasedScript):
     """
-    Scan the specified INPUTDIR directories recursively for '.ctl' files,
-    and submit a CODEML job for each input file found; job progress is
-    monitored and, when a job is done, its '.mlc' file is retrieved back
-    into the same directory where the '.ctl' file is (this can be
-    overridden with the '-o' option).
-    
-    The `gcodeml` command keeps a record of jobs (submitted, executed and
-    pending) in a session file (set name with the '-s' option); at each
-    invocation of the command, the status of all recorded jobs is updated,
-    output from finished jobs is collected, and a summary table of all
-    known jobs is printed.  New jobs are added to the session if new input
-    files are added to the command line.
-    
-    Options can specify a maximum number of jobs that should be in
-    'SUBMITTED' or 'RUNNING' state; `gcodeml` will delay submission
-    of newly-created jobs so that this limit is never exceeded.
+Scan the specified INPUTDIR directories recursively for '.ctl' files,
+and submit a CODEML job for each input file found; job progress is
+monitored and, when a job is done, its '.mlc' file is retrieved back
+into the same directory where the '.ctl' file is (this can be
+overridden with the '-o' option).
+
+The `gcodeml` command keeps a record of jobs (submitted, executed and
+pending) in a session file (set name with the '-s' option); at each
+invocation of the command, the status of all recorded jobs is updated,
+output from finished jobs is collected, and a summary table of all
+known jobs is printed.  New jobs are added to the session if new input
+files are added to the command line.
+
+Options can specify a maximum number of jobs that should be in
+'SUBMITTED' or 'RUNNING' state; `gcodeml` will delay submission
+of newly-created jobs so that this limit is never exceeded.
     """
 
     def __init__(self):
