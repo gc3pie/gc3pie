@@ -63,16 +63,16 @@ class _BaseCmd(gc3libs.cmdline.GC3UtilsScript):
 
 class cmd_gclean(_BaseCmd):
     """
-    Permanently remove jobs from local and remote storage.
+Permanently remove jobs from local and remote storage.
 
-    In normal operation, only jobs that are in a terminal status can
-    be removed; if you want to force ``gclean`` to remove a job that
-    is not in any one of those states, add the ``-f`` option to the
-    command line. 
+In normal operation, only jobs that are in a terminal status can
+be removed; if you want to force ``gclean`` to remove a job that
+is not in any one of those states, add the ``-f`` option to the
+command line. 
 
-    If a job description cannot be successfully read, the
-    corresponding job will not be deleted; use the ``-f`` option to
-    force removal of a job regardless.
+If a job description cannot be successfully read, the
+corresponding job will not be deleted; use the ``-f`` option to
+force removal of a job regardless.
     """
 
     def setup_options(self):
@@ -148,11 +148,11 @@ class cmd_gclean(_BaseCmd):
 
 class cmd_ginfo(_BaseCmd):
     """
-    Print detailed information about a job.
+Print detailed information about a job.
 
-    A complete dump of all the information known about jobs listed on
-    the command line is printed; this will only make sense if you know
-    GC3Libs internals.
+A complete dump of all the information known about jobs listed on
+the command line is printed; this will only make sense if you know
+GC3Libs internals.
     """
 
     verbose_logging_threshold = 2
@@ -202,25 +202,25 @@ class cmd_ginfo(_BaseCmd):
 
 class cmd_gsub(_BaseCmd):
     """
-    Submit an application job.  Option arguments set computational job
-    requirements.  Interpretation of positional arguments varies with
-    the application being submitted; the application name is always
-    the first non-option argument.
+Submit an application job.  Option arguments set computational job
+requirements.  Interpretation of positional arguments varies with
+the application being submitted; the application name is always
+the first non-option argument.
 
-    Currently supported applications are:
+Currently supported applications are:
 
-      * ``gamess``: Each positional argument (after the application
-        name) is the path to an input file; the first one is the
-        GAMESS '.inp' file and is required.
-        
-      * ``rosetta``: The first positional argument is the name of the
-        Rosetta application/protocol to run (e.g.,
-        ``minirosetta.static`` or ``docking_protocol``); after that
-        comes the path to the flags file; remaining positional
-        arguments are paths to input files (at least one must be
-        provided).  A list of output files may additionally be
-        specified after the list of input files, separated from this
-        by a ``:`` character.
+  * ``gamess``: Each positional argument (after the application
+    name) is the path to an input file; the first one is the
+    GAMESS '.inp' file and is required.
+    
+  * ``rosetta``: The first positional argument is the name of the
+    Rosetta application/protocol to run (e.g.,
+    ``minirosetta.static`` or ``docking_protocol``); after that
+    comes the path to the flags file; remaining positional
+    arguments are paths to input files (at least one must be
+    provided).  A list of output files may additionally be
+    specified after the list of input files, separated from this
+    by a ``:`` character.
     """
 
     def setup_args(self):
@@ -309,10 +309,10 @@ class cmd_gsub(_BaseCmd):
 
 class cmd_gresub(_BaseCmd):
     """
-    Resubmit an already-submitted job with (possibly) different parameters.
+Resubmit an already-submitted job with (possibly) different parameters.
 
-    If you resubmit a job that is not in terminal state, the existing job
-    is canceled before re-submission.
+If you resubmit a job that is not in terminal state, the existing job
+is canceled before re-submission.
     """
 
     def setup_options(self):
@@ -376,7 +376,7 @@ class cmd_gresub(_BaseCmd):
 
 class cmd_gstat(_BaseCmd):
     """
-    Print job state.
+Print job state.
     """
     verbose_logging_threshold = 1
 
@@ -464,15 +464,15 @@ class cmd_gstat(_BaseCmd):
 
 class cmd_gget(_BaseCmd):
     """
-    Retrieve output files of a job.
+Retrieve output files of a job.
 
-    Output files can only be retrieved once a job has reached the 
-    'RUNNING' state; this command will print an error message if
-    no output files are available.
+Output files can only be retrieved once a job has reached the 
+'RUNNING' state; this command will print an error message if
+no output files are available.
 
-    Output files can be retrieved multiple times until a job reaches
-    'TERMINATED' state: after that, the remote storage will be
-    released once the output files have been fetched.
+Output files can be retrieved multiple times until a job reaches
+'TERMINATED' state: after that, the remote storage will be
+released once the output files have been fetched.
     """
     def setup_options(self):
         self.add_param("-d", "--download-dir", action="store", dest="download_dir", default=None,
@@ -524,13 +524,13 @@ class cmd_gget(_BaseCmd):
 
 class cmd_gkill(_BaseCmd):
     """
-    Cancel a submitted job.  Given a list of jobs, try to cancel each
-    one of them; exit with code 0 if all jobs were cancelled
-    successfully, and 1 if some job was not.
-    
-    The command will print an error message if a job cannot be
-    canceled because it's in NEW or TERMINATED state, or if some other
-    error occurred.
+Cancel a submitted job.  Given a list of jobs, try to cancel each
+one of them; exit with code 0 if all jobs were cancelled
+successfully, and 1 if some job was not.
+
+The command will print an error message if a job cannot be
+canceled because it's in NEW or TERMINATED state, or if some other
+error occurred.
     """
     def main(self):
         if len(self.params.args) == 0:
@@ -571,9 +571,9 @@ class cmd_gkill(_BaseCmd):
 
 class cmd_gtail(_BaseCmd):
     """
-    Display the last lines from a job's standard output or error stream.
-    Optionally, keep running and displaying the last part of the file
-    as more lines are written to the given stream.
+Display the last lines from a job's standard output or error stream.
+Optionally, keep running and displaying the last part of the file
+as more lines are written to the given stream.
     """
     def setup_args(self):
         self.add_param("jobid", nargs=1)
@@ -623,12 +623,12 @@ class cmd_gtail(_BaseCmd):
 
 class cmd_gnotify(_BaseCmd):
     """
-    Report a failed job to the GC3Libs developers.
+Report a failed job to the GC3Libs developers.
 
-    This command will not likely work on any machine other than
-    the ones directly controlled by GC3 sysadmins, so just don't
-    use it and send an email to gc3pie@googlegroups.com describing
-    your problem instead.
+This command will not likely work on any machine other than
+the ones directly controlled by GC3 sysadmins, so just don't
+use it and send an email to gc3pie@googlegroups.com describing
+your problem instead.
     """
     def setup_options(self):
         self.add_param("-s", "--sender", action="store", dest="sender", default="default_username@gc3.uzh.ch", help="Set email's sender address")
@@ -681,7 +681,7 @@ class cmd_gnotify(_BaseCmd):
 
 class cmd_glist(_BaseCmd):
     """
-    List status of computational resources.
+List status of computational resources.
     """
 
     def main(self):
