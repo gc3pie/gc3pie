@@ -557,6 +557,12 @@ class Application(Struct, Persistable, Task):
       if not `None`, equivalent to calling `Task.attach(self, grid)`;
       enables the use of the `Task`/active job control interface
 
+    `output_base_url`
+      if not `None`, this is prefixed to all output files (except
+      stdout and stderr, which are always retrieved), so, for instance,
+      having `output_base_url="gsiftp://example.org/data" will upload
+      output files into that remote directory.
+
     `stdin`
       file name of a file whose contents will be fed as
       standard input stream to the remote-executing process.
@@ -687,6 +693,8 @@ class Application(Struct, Persistable, Task):
         self.output_dir = output_dir
 
         # optional params
+        self.output_base_url = get_and_remove(kw, 'output_base_url', None)
+        
         # FIXME: should use appropriate unit classes for requested_*
         self.requested_cores = get_and_remove(kw, 'requested_cores')
         self.requested_memory = get_and_remove(kw, 'requested_memory')
@@ -821,9 +829,18 @@ class Application(Struct, Persistable, Task):
             xrsl += ('(inputFiles=%s)' 
                      % str.join(' ', [ ('("%s" "%s")' % (r,l)) for (l,r) in self.inputs.items() ]))
         if len(self.outputs) > 0:
+            # XXX: this can go away when we have the ternary operator
+            # `x = a if y else b`
+            if self.output_base_url is None:
+                def output_url(l, r):
+                    return ''
+            else:
+                def output_url(l, r):
+                    return os.path.join(self.output_base_url,
+                                        utils.ifelse(l, l, r))
             # filter out stdout/stderr (they are automatically
             # retrieved) and then check again
-            outputs_ = [ ('("%s" "")' % r) 
+            outputs_ = [ ('("%s" "%s")' % (r, output_url(l, r)))
                          for (r,l) in [ (remotename, localname)
                                         for remotename,localname 
                                         in self.outputs.iteritems() 
