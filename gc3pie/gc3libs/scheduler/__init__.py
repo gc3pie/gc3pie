@@ -43,18 +43,26 @@ def _compatible_resources(lrms_list, application):
         gc3libs.log.debug("Checking resource '%s' for compatibility with application requirements",
                            lrms._resource.name)
         if ( # check that Application requirements are within resource limits
-            int(application.requested_cores) < (int(lrms._resource.max_cores_per_job or sys.maxint))
-            and int(application.requested_memory) < (int(lrms._resource.max_memory_per_core or sys.maxint))
-            and int(application.requested_walltime) < (int(lrms._resource.max_walltime or sys.maxint))
-            ) and ( # if architecture is specified, check that it matches the resource one
-            application.requested_architecture is None
-            or application.requested_architecture in lrms._resource.architecture
+            int(application.requested_cores) > int(lrms._resource.max_cores_per_job or sys.maxint) 
+            or int(application.requested_memory) > int(lrms._resource.max_memory_per_core or sys.maxint) 
+            or int(application.requested_walltime) > int(lrms._resource.max_walltime or sys.maxint)
+           ) or ( # if architecture is specified, check that it matches the resource one
+            application.requested_architecture is not None
+            and application.requested_architecture not in lrms._resource.architecture
             ):
-            _selected_lrms_list.append(lrms)
-        else:
             gc3libs.log.info("Rejecting resource '%s':"
-                              " no match with application requirements", 
-                              lrms._resource.name)
+                             " no match with application requirements"
+                             % lrms._resource.name)
+            continue
+        if (application.output_base_url is not None
+            and lrms._resource.type != gc3libs.Default.ARC_LRMS
+            ):
+            gc3libs.log.info("Rejecting resource '%s':"
+                             " no support for non-local output files."
+                             % lrms._resource.name)
+            continue
+        _selected_lrms_list.append(lrms)
+
     return _selected_lrms_list
 
 
