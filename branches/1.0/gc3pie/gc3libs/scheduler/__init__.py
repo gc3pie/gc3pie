@@ -42,6 +42,13 @@ def _compatible_resources(lrms_list, application):
             continue
         gc3libs.log.debug("Checking resource '%s' for compatibility with application requirements",
                            lrms._resource.name)
+        # if architecture is specified, check that it matches the resource one
+        if (application.requested_architecture is not None
+            and application.requested_architecture not in lrms._resource.architecture):
+            gc3libs.log.info("Rejecting resource '%s': requested a different architecture (%s) than what resource provides (%s)"
+                             % (lrms._resource.name, application.requested_architecture,
+                                str.join(', ', [str(arch) for arch in lrms._resource.architecture ])))
+            continue
         # check that Application requirements are within resource limits
         if int(application.requested_cores) > int(lrms._resource.max_cores_per_job or sys.maxint):
             gc3libs.log.info("Rejecting resource '%s': requested more cores (%d) that resource provides (%d)"

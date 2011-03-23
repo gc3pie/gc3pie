@@ -438,6 +438,13 @@ class Application(Struct, Persistable, Task):
     specified as keyword arguments and will be given special
     treatment by the `Application` class logic:
 
+    `requested_architecture`
+      specify that this application can only be executed on a certain
+      processor architecture; see `Run.Arch`:class: for a list of
+      possible values.  The default value `None` means that any
+      architecture is valid, i.e., there are no requirements on the
+      processor architecture.
+
     `environment`
       a list of pairs `(name, value)`: the
       environment variable whose name is given by the contents of
@@ -590,7 +597,8 @@ class Application(Struct, Persistable, Task):
         self.requested_cores = get_and_remove(kw, 'requested_cores')
         self.requested_memory = get_and_remove(kw, 'requested_memory')
         self.requested_walltime = get_and_remove(kw, 'requested_walltime')
-
+        self.requested_architecture = get_and_remove(kw, 'requested_architecture', None)
+        
         self.environment = get_and_remove(kw, 'environment', dict())
         def to_env_pair(val):
             if isinstance(val, tuple):
@@ -751,6 +759,13 @@ class Application(Struct, Persistable, Task):
             xrsl += '(memory="%d")' % (1000 * self.requested_memory)
         if self.requested_cores:
             xrsl += '(count="%d")' % self.requested_cores
+        # XXX: the xRSL specification states that the "architecture" value
+        # is matched against the value reported as `uname -a` on the cluster,
+        # but different Linux distributions use "i386", "i586" and "i686"
+        # as `uname -a` values, so there is no single value that can
+        # match any x86 arch...
+        if self.requested_architecture is not None:
+            xrsl += '(architecture="%s")' % self.requested_architecture
         if self.jobname:
             xrsl += '(jobname="%s")' % self.jobname
 
@@ -1111,6 +1126,29 @@ class Run(Struct):
         'TERMINATED',# job execution finished (correctly or not) and will not be resumed
         'UNKNOWN',   # job info not found or lost track of job (e.g., network error or invalid job ID)
         )
+
+    class Arch(object):
+        """
+        Processor architectures, for use as values in the
+        `requested_architecture` field of the `Application` class
+        ctor.
+
+        The following values are currently defined:
+
+        `X86_64`
+          64-bit Intel/AMD/VIA x86 processors in 64-bit mode.
+
+        `X86_32`
+          32-bit Intel/AMD/VIA x86 processors in 32-bit mode.
+        """
+        X86_64 = "x86_64"
+        X86_32 = "i686"
+
+        # the following method makes this class read-only,
+        # thus preventing users accidentally overwriting the
+        # value of constants above...
+        def __setattr__(self, name, value):
+            raise TypeError("Cannot overwrite value of constant '%s'" % name)
 
     @defproperty
     def state():
