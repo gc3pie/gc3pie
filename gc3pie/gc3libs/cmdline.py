@@ -828,9 +828,13 @@ class SessionBasedScript(_Script):
                            " TIME is replaced by the submission time formatted as HH:MM."
                            " SESSION is replaced by the path to the session directory, with a '.out' appended."
                            )
-        self.add_param("-t", "--table", action="store_true", dest="table", default=False,
-                           help="Print table of all submitted jobs and their statuses."
-                           )
+        self.add_param("-l", "--state", action="store", nargs='?',
+                       dest="states", default='',
+                       const=str.join(',', gc3libs.Run.State),
+                       help="Print table of jobs and their statuses;"
+                       " if an optional argument STATES is given, restrict"
+                       " output to jobs in one of the specified states"
+                       " (comma-separated list).")
         return
 
 
@@ -884,7 +888,10 @@ class SessionBasedScript(_Script):
         if not 'NAME' in self.params.output:
             self.params.output = os.path.join(self.params.output, 'NAME')
 
-
+        ## parse the `states` list
+        self.params.states = self.params.states.split(',')
+    
+    
     ##
     ## INTERNAL METHODS
     ##
@@ -945,25 +952,30 @@ class SessionBasedScript(_Script):
             # advance all jobs
             controller.progress()
             # print results to user
+            print ("Status of jobs in the '%s' session: (at %s)" 
+                   % (os.path.basename(self.params.session),
+                      time.strftime('%X, %x')))
+            # summary
             stats = controller.stats()
-            if self.params.table:
-                self._print_tasks_table(sys.stdout)
+            total = len(self.tasks)
+            if total > 0:
+                table = Texttable(0) # max_width=0 => dynamically resize cells
+                table.set_deco(0)    # no decorations
+                table.set_cols_align(['r', 'c', 'c'])
+                for state in sorted(stats.keys()):
+                    table.add_row([
+                            state, 
+                            "%d/%d" % (stats[state], total),
+                            "(%.1f%%)" % (100.0 * stats[state] / total)
+                            ])
+                print (table.draw())
+                # details table
+                if self.params.states:
+                    self._print_tasks_table(sys.stdout, self.params.states)
             else:
-                print ("Status of jobs in the '%s' session: (at %s)" 
-                       % (os.path.basename(self.params.session),
-                          time.strftime('%X, %x')))
-                total = len(self.tasks)
-                if total > 0:
-                    table = Texttable(0) # max_width=0 => dynamically resize cells
-                    table.set_deco(0)    # no decorations
-                    table.set_cols_align(['r', 'c', 'c'])
-                    for state in sorted(stats.keys()):
-                        table.add_row([
-                                state, 
-                                "%d/%d" % (stats[state], total),
-                                "(%.1f%%)" % (100.0 * stats[state] / total)
-                                ])
-                    print (table.draw())
+                if self.params.session is not None:
+                    print ("  There are no jobs in session '%s'."
+                           % self.params.session)
                 else:
                     print ("  No jobs in this session.")
             # compute exitcode based on the running status of jobs
@@ -1037,25 +1049,24 @@ class SessionBasedScript(_Script):
                            % (self.params.session, str(ex)))
 
 
-    def _print_tasks_table(self, output=sys.stdout):
+    def _print_tasks_table(self, output=sys.stdout, states=gc3libs.Run.State):
         """
         Output a summary table to stream `output`.
+        Only prints jobs whose status is contained
+        in `states`.
         """
-        if len(self.tasks) == 0:
-            if self.params.session is not None:
-                print ("There are no jobs in session file '%s'." % self.params.session)
-            else:
-                print ("There are no jobs in session file.")
-        else:
-            table = Texttable(0) # max_width=0 => dynamically resize cells
-            table.set_deco(Texttable.HEADER) # also: .VLINES, .HLINES .BORDER
-            table.header(['JobID', 'Job name', 'State', 'Info'])
-            #table.set_cols_width([10, 20, 10, 35])
-            table.set_cols_align(['l', 'l', 'l', 'l'])
-            table.add_rows([ (task.persistent_id, task.jobname,
-                              task.execution.state, task.execution.info)
-                             for task in self.tasks ],
-                           header=False)
+        table = Texttable(0) # max_width=0 => dynamically resize cells
+        table.set_deco(Texttable.HEADER) # also: .VLINES, .HLINES .BORDER
+        table.header(['JobID', 'Job name', 'State', 'Info'])
+        #table.set_cols_width([10, 20, 10, 35])
+        table.set_cols_align(['l', 'l', 'l', 'l'])
+        table.add_rows([ (task.persistent_id, task.jobname,
+                          task.execution.state, task.execution.info)
+                         for task in self.tasks
+                         if task.execution.state in states ],
+                       header=False)
+        # XXX: uses texttable's internal implementation detail
+        if len(table._rows) > 0:
             output.write(table.draw())
             output.write("\n")
 
