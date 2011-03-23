@@ -307,12 +307,13 @@ class ArcLrms(LRMS):
 
         log.debug("Downloading job output into '%s' ...", download_dir)
         try:
-            arclib.JobFTPControl.DownloadDirectory(jftpc, job.lrms_jobid,download_dir)
+            arclib.JobFTPControl.DownloadDirectory(jftpc, job.lrms_jobid, download_dir)
             job.download_dir = download_dir
         except arclib.FTPControlError, ex:
             # critical error. consider job remote data as lost
-            raise gc3libs.exceptions.DataStagingError("Failed downloading remote folder '%s': %s" 
-                                   % (job.lrms_jobid, str(ex)))
+            raise gc3libs.exceptions.DataStagingError(
+                "Failed downloading remote folder '%s': %s" 
+                % (job.lrms_jobid, str(ex)))
 
         return 
 
