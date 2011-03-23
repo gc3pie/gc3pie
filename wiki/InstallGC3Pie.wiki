@@ -6,6 +6,10 @@
 
 These instructions show how to install GC3Pie from the GC3 source
 repository into a separate python environment (called "virtualenv").
+Installation into a virtualenv has two distinct advantages:
+  * All code is confined in a single directory, and can thus be easily replaced/removed.
+  * Better dependency handling: additional Python packages that GC3Pie depends upon can be installed even if they conflict with system-level packages.
+
 
 0. Install software prerequisites: 
    

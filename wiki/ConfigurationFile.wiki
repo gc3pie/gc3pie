@@ -198,7 +198,7 @@ Some keys are commmon to all resource types:
   *  `max_memory_per_core`: Max amount of memory (expressed in GBs) that a job can request
   *  `max_walltime`: Maximum job running time (in hours)
   *  `ncores`: Total number of cores provided by the resource
-  *  `architecture`: Processor architecture.  Should be one of the strings ``x86_64`` (for 64-bit Intel/AMD/VIA processors) or ``i686`` (for 32-bit Intel/AMD/VIA x86 processors)
+  *  `architecture`: Processor architecture.  Should be one of the strings `x86_64` (for 64-bit Intel/AMD/VIA processors), `i686` (for 32-bit Intel/AMD/VIA x86 processors), or `x86_64,i686` if both architectures are available on the resource.
 
 === `arc` resources ===
 The `arc_ldap` key should be defined to the LDAP URL of an ARC GIIS
@@ -207,11 +207,8 @@ If, in addition, the `frontend` key is also defined, then only queues
 belonging to the specified frontend will be considered for brokering.
 
 === `sge` resources ===
-  * `frontend`: should contain the FQDN of the SGE front-end node.
-An SSH connection will be attempted to this node, in order to submit
-jobs and retrieve status info. 
-
-  * `transport`: defines which transport layer is used to connect to the SGE LRMS. Possible values are: `ssh`, `local`.
+  * frontend: should contain the FQDN of the SGE front-end node. An SSH connection will be attempted to this node, in order to submit jobs and retrieve status info.
+  * transport: Possible values are: `ssh`, `local`.   If `ssh`, we try to connect to the host specified in `frontend` via SSH in order to execute SGE commands.  If `local`, the SGE commands are run directly on the machine where GC3Pie is installed.
 
 Since the installation path to supported applications is not known (there
 is no information system, differently from ARC), then the path must be
@@ -241,7 +238,7 @@ This way, resources can be temporarily disabled (e.g., the cluster is
 down for maintenance) without having to remove them from the
 configuration file.
 
-Users can selectively disable or enable resources that are defined in
+You can selectively disable or enable resources that are defined in
 the system-wide configuration file.  Two main use cases are supported:
 the system-wide configuration file `/etc/gc3/gc3pie.conf` lists and
 enables all available resources, and users can turn them off in their
@@ -253,7 +250,20 @@ file.
 
 === Example resource sections ====
 {{{
-[resource/gc3]
+[resource/smscg]
+# A whole ARC-based Grid
+type = arc
+auth = <voms_auth_name>
+arc_ldap = ldap://giis.smscg.ch:2135/o=grid/mds-vo-name=Switzerland
+# These values are correct as of 2011-02-28; please
+# ask on the SMSCG mailing list if unsure.
+max_cores_per_job = 256
+max_memory_per_core = 3
+max_walltime = 9999
+ncores = 1200
+architecture = x86_64, i686
+
+[resource/idgc3grid01]
 # A single cluster, accessed through the ARC middleware
 type = arc
 auth = <auth_name> # pick a `voms` type auth
