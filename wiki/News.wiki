@@ -13,6 +13,7 @@ Read carefully before upgrading!
 
   * Renamed configuration file to `gc3pie.conf`: the file `gc3utils.conf` will no longer be read!
   * SGE clusters must now have `type = sge` in the configuration file (instead of `type = ssh-sge`)
+  * All computational resource must have an `architecture = ...` line; see the ConfigurationFile wiki page for details
   * Probably more changes than it's worth to list here: check your configuration against the ConfigurationFile wiki page!
 
 === Command-line utilities changes ===
