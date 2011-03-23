@@ -109,7 +109,7 @@ force removal of a job regardless.
 
                                 app.execution.state = Run.State.TERMINATED
                         else:
-                            failed = 1
+                            failed += 1
                             self.log.error("Job '%s' not in terminal state: ignoring.", jobid)
                             continue
 
@@ -119,7 +119,7 @@ force removal of a job regardless.
                         if self.params.force:
                             pass
                         else:
-                            failed = 1
+                            failed += 1
                             self.log.warning("Freeing job '%s' failed (%s: %s);"
                                              " continuing anyway, but errors might ensue.",
                                              app, ex.__class__.__name__, str(ex))
@@ -129,7 +129,7 @@ force removal of a job regardless.
                 if self.params.force:
                     pass
                 else:
-                    failed = 1
+                    failed += 1
                     self.log.error("Could not load '%s': ignoring"
                                    " (use option '-f' to remove regardless).", jobid)
                     continue
@@ -138,12 +138,13 @@ force removal of a job regardless.
                 self._store.remove(jobid)
                 self.log.info("Removed job '%s'", jobid)
             except:
-                failed = 1
+                failed += 1
                 self.log.error("Failed removing '%s' from persistency layer."
                                    " option '-f' harmless"% jobid)
                 continue
 
-        return failed
+        # exit code is practically limited to 7 bits ...
+        return utils.ifelse(failed < 127, failed, 126)
 
 
 class cmd_ginfo(_BaseCmd):
@@ -190,14 +191,25 @@ GC3Libs internals.
 
         def cmp_by_jobid(x,y):
             return cmp(x.persistent_id, y.persistent_id)
+        ok = 0
         for app in sorted(self._get_jobs(self.params.args), cmp=cmp_by_jobid):
+            # since `_get_jobs` swallows any exception raised by
+            # invalid job IDs or corrupted files, let us determine the
+            # number of failures by counting the number of times we
+            # actually run this loop and then subtract from the number
+            # of times we *should* have run, i.e., the number of
+            # arguments we were passed.
+            ok += 1
             print(str(app.persistent_id))
             if self.params.verbose == 0:
                 utils.prettyprint(app.execution, indent=4, width=width, only_keys=only_keys)
             else:
                 # with `-v` and above, dump the whole `Application` object
                 utils.prettyprint(app, indent=4, width=width, only_keys=only_keys)
-        return 0
+        failed = len(self.params.args) - ok
+        # exit code is practically limited to 7 bits ...
+        return utils.ifelse(failed < 127, failed, 126)
+        
 
 
 class cmd_gsub(_BaseCmd):
@@ -368,10 +380,12 @@ is canceled before re-submission.
                 print("Successfully re-submitted %s; use the 'gstat' command to monitor its progress." % app)
                 self._store.replace(jobid, app)
             except Exception, ex:
-                failed = 1
+                failed += 1
                 self.log.error("Failed resubmission of job '%s': %s: %s", 
                                jobid, ex.__class__.__name__, str(ex))
-        return failed
+
+        # exit code is practically limited to 7 bits ...
+        return utils.ifelse(failed < 127, failed, 126)
 
 
 class cmd_gstat(_BaseCmd):
@@ -459,7 +473,15 @@ Print job state.
             table.header(["Job ID", "State", "Info"] + keys)
             table.add_rows(sorted(rows), header=False)
         print(table.draw())
-        return 0
+
+        # since `_get_jobs` swallows any exception raised by invalid
+        # job IDs or corrupted files, let us determine the number of
+        # failures by counting the number of times we actually run
+        # this loop and then subtract from the number of times we
+        # *should* have run, i.e., the number of arguments we were passed.
+        failed = len(self.params.args) - tot
+        # exit code is practically limited to 7 bits ...
+        return utils.ifelse(failed < 127, failed, 126)
 
 
 class cmd_gget(_BaseCmd):
@@ -492,7 +514,7 @@ released once the output files have been fetched.
                                           os.path.basename(sys.argv[0]),
                                           sys.argv[0]))
 
-        failed = False
+        failed = 0
         for jobid in self.params.args:
             try:
                 app = self._store.load(jobid)
@@ -516,10 +538,11 @@ released once the output files have been fetched.
 
             except Exception, ex:
                 print("Failed retrieving results of job '%s': %s"% (jobid, str(ex)))
-                failed = True
+                failed += 1
                 continue
 
-        return failed
+        # exit code is practically limited to 7 bits ...
+        return utils.ifelse(failed < 127, failed, 126)
 
 
 class cmd_gkill(_BaseCmd):
@@ -563,10 +586,11 @@ error occurred.
 
             except Exception, ex:
                 print("Failed canceling job '%s': %s"% (jobid, str(ex)))
-                failed = 1
+                failed += 1
                 continue
 
-        return failed
+        # exit code is practically limited to 7 bits ...
+        return utils.ifelse(failed < 127, failed, 126)
 
 
 class cmd_gtail(_BaseCmd):
@@ -676,7 +700,8 @@ your problem instead.
                                % (jobid, str(ex)))
                 failed += 1
 
-        return failed
+        # exit code is practically limited to 7 bits ...
+        return utils.ifelse(failed < 127, failed, 126)
 
 
 class cmd_glist(_BaseCmd):
