@@ -40,7 +40,7 @@ class Resource(InformationContainer):
     Statically provided, i.e., specified at construction time and changed never after:
 
       arc_ldap             string
-      architecture         string
+      architecture         list of string
       auth                 string
       frontend             string
       gamess_location      string
