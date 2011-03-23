@@ -1,12 +1,11 @@
 #summary User-visible changes in GC3Utils and GC3Libs
 
+This page summarizes the user-visible changes from
+one release of GC3Pie to another.
+Read carefully before upgrading!
 
-== 1.1 ==
 
-=== Configuration file changes ===
-
-* The `architecture` value is now required for every resource.
-
+= Released GC3Pie =
 
 == 1.0 ==
 
@@ -27,3 +26,10 @@
 == 0.10 ==
 
   * First release for public use outside of GC3
+
+
+= In-development code =
+
+=== Configuration file changes ===
+
+  * The `architecture` value is now required for every resource.
