@@ -19,7 +19,7 @@ Exceptions specific to the `gc3libs` package.
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 #
 __docformat__ = 'reStructuredText'
-__version__ = 'development version (SVN $Revision$)'
+__version__ = '1.0rc5 (SVN $Revision$)'
 
 
 import gc3libs
@@ -70,7 +70,7 @@ class ConfigurationError(FatalError):
     """
     Raised when the configuration file (or parts of it) could not be
     read/parsed.  Also used to signal that a required parameter is
-    missing or has an unknown/invalid value.
+    missing or has an unknown/invaliud value.
     """
     pass
 
@@ -175,27 +175,6 @@ class OutputNotAvailableError(Error):
     still in `NEW` or `SUBMITTED` state.
     """
     pass
-
-class TaskError(Error):
-    """
-    Generic error condition in a `Task` object.
-    """
-    pass
-
-class DetachedFromGridError(TaskError):
-    """
-    Raised when a method (other than :meth:`attach`) is called on
-    a detached `Task` instance.
-    """
-    pass
-
-class UnexpectedStateError(TaskError):
-    """
-    Raised by :meth:`Task.progress` when a job lands in `STOPPED`
-    or `TERMINATED` state.
-    """
-    pass
-
 
 class TransportError(Error):
     pass

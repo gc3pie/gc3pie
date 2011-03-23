@@ -20,7 +20,7 @@ Facade to store and retrieve Job information from permanent storage.
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 #
 __docformat__ = 'reStructuredText'
-__version__ = 'development version (SVN $Revision$)'
+__version__ = '1.0rc5 (SVN $Revision$)'
 
 
 import operator

@@ -23,7 +23,7 @@ It uses the generic `gc3libs.cmdline.SessionBasedScript` framework.
 
 See the output of ``grosetta --help`` for program usage instructions.
 """
-__version__ = 'development version (SVN $Revision$)'
+__version__ = '1.0rc5 (SVN $Revision$)'
 # summary of user-visible changes
 __changelog__ = """
   2010-12-20:
@@ -143,7 +143,7 @@ Note: the list of INPUT and OUTPUT files must be separated by ':'
         self.inputs = inputs_
         self.log.debug("Gathered input files: '%s'" % str.join("', '", inputs))
 
-    def new_tasks(self, extra):
+    def process_args(self, extra):
         ## compute number of decoys already being computed in this session
         decoys = 0
         for task in self.tasks:

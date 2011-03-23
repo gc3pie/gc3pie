@@ -20,7 +20,7 @@
 """
 Simple interface to the CODEML application.
 """
-__version__ = '1.0rc2 (SVN $Revision$)'
+__version__ = '1.0rc5 (SVN $Revision$)'
 # summary of user-visible changes
 __author__ = 'Riccardo Murri <riccardo.murri@uzh.ch>'
 __docformat__ = 'reStructuredText'
