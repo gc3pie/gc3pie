@@ -1,0 +1,188 @@
+========================================================================
+    Installation of GC3Utils
+========================================================================
+
+:Author:   Riccardo Murri <riccardo.murri@gmail.com>
+:Date:     2010-10-06
+:Revision: $Revision$
+
+
+.. This file follows reStructuredText markup syntax; see
+   http://docutils.sf.net/rst.html for more information
+
+
+Installation
+============
+
+These instructions show how to install GC3Pie from the GC3 source
+repository into a separate python environment (called "virtualenv").
+
+0. Install software prerequisites: 
+   
+   * On Debian/Ubuntu, install packages: ``subversion``,
+     ``python-dev``, ``python-profiler`` and the C/C++ compiler::
+     
+       apt-get install subversion python-dev gcc g++
+
+   * On CentOS5, install packages ``subversion`` and ``python-devel``
+     and the C/C++ compiler::
+
+       yum install subversion python-devel gcc gcc-c++
+
+   * On other Linux distributions, you will need to install:
+     - the ``svn`` command (from the SubVersion_ VCS)
+     - Python development headers and libraries (for installing 
+       extension libraries written in C/C++)
+     - the Python package ``pstats`` (it's part of the Python
+       standard library, but it's sometimes installed separately)
+     - a C/C++ compiler (this is usually installed by default).
+
+   In order to use the ARC backend (required for SMSCG), you need the
+   NorduGrid/ARC binaries and a working ``slcs-init`` command
+   installed on the same machine where GC3Pie are.  You can find
+   instructions for installing it at:
+     http://www.smscg.ch/WP/middleware/release_2_0/smscg_ui_Binary_Installation.html
+
+
+1. Choose a directory where the GC3Pie software will be installed;
+   any directory that's writable by your Linux account will be ok.
+
+   If you are installing system-wide as ``root``, we suggest you
+   install GC3Pie into ``/opt/gc3pie``.
+
+   If you are installing as a normal user, we suggest you install
+   GC3Pie into ``$HOME/gc3pie``.
+
+
+2. If it's not already installed, get the `virtualenv` Python package
+   and install it::
+
+      wget http://pypi.python.org/packages/source/v/virtualenv/virtualenv-1.5.1.tar.gz
+      tar -xzf virtualenv-1.5.1.tar.gz && rm virtualenv-1.5.1.tar.gz
+      cd virtualenv-1.5.1/
+ 
+    If you are installing as `root`, the following command is all you
+    need:
+
+      python setup.py install
+
+    If instead you are installing as a normal, unprivileged user,
+    things get more complicated::
+
+      export PYTHONPATH=$HOME/lib/python:$PYTHONPATH
+      export PATH=$PATH:$HOME/bin
+      mkdir -p $HOME/lib/python
+      python setup.py install --home $HOME
+
+    (You will also need to add the two `export` lines above to the
+    `$HOME/.bashrc` file -if using the `bash` shell- or to the
+    `$HOME/.cshrc` file -if using the `tcsh` shell.)
+
+    In any case, once `virtualenv` has been installed, you can exit
+    its directory and remove it::
+   
+      cd ..
+      rm -rf virtualenv
+
+
+3. Create a virtualenv to host the ``gc3pie`` installation at the
+   directory you chose in Step 1.::
+
+       virtualenv $HOME/gc3pie # use '/opt/gc3pie' if installing as root
+       cd $HOME/gc3pie/
+       source bin/activate
+
+
+4. Check-out the ``gc3pie`` files in a ``src/`` directory::
+     
+       svn co http://gc3pie.googlecode.com/svn/branches/1.0/gc3pie src
+   
+  
+5. Install the ``gc3pie`` in "develop" mode, so any modification
+   pulled from subversion is immediately reflected in the running environment::
+
+       cd src/
+       env CC=gcc ./setup.py develop 
+       cd .. # back into the `gc3pie` directory
+
+   This will place all the GC3Pie command into the ``gc3pie/bin/``
+   directory.
+
+
+6. GC3Pie comes with driver scripts to run and manage large families
+   of jobs from a few selected applications.  These scripts are not
+   installed by default because not everyone needs them.
+
+   Run the following commands to install the driver scripts for the
+   applications you need:: 
+
+     # if you are insterested in GAMESS, do the following
+     ln -s '../src/gc3apps/gamess/ggamess.py' bin/ggamess
+   
+     # if you are insterested in Rosetta, do the following
+     ln -s '../src/gc3apps/rosetta/gdocking.py' bin/gdocking
+     ln -s '../src/gc3apps/rosetta/grosetta.py' bin/grosetta
+
+     # if you are insterested in Codeml, do the following
+     ln -s '../src/gc3apps/codeml/gcodeml.py' bin/gcodeml
+
+
+7. Before you can actually run the GC3Pie, you need to have a
+   working configuration file; `the ConfigurationFile Wiki page
+   <http://code.google.com/p/gc3pie/wiki/ConfigurationFile>` provides
+   an explanation of the syntax to use in configuration files.
+
+   An example configuration file, enabling access to the SMSCG_
+   infrastructure can be found at:
+
+     http://gc3pie.googlecode.com/svn/branches/1.0/gc3pie/gc3libs/etc/gc3pie.conf.smscg
+
+   Before you can actually use this file, you will need to insert into
+   it three values, for which we can provide no
+   default: ``aai_username``, ``idp``, and ``vo``.
+
+   aai_username: 
+     This is the "username" you are asked for when accessing 
+     any SWITCHaai_/Shibboleth web page, e.g., https://gc3-aai01.uzh.ch/secure/
+
+   idp: 
+     Find this out with the command "slcs-info": it prints a list of
+     IdP (Identity Provider IDs) followed by the human-readable name
+     of the associated institution. Pick the one that corresponds to
+     you University.  It is always the last two components of the
+     University's Internet domain name (e.g., "uzh.ch" or "ethz.ch").
+
+   vo: 
+     In order to use SMSCG, you must sign up to a VO (Virtual
+     Organisation).  One the words "life", "earth", "atlas" or
+     "crypto" should be here.  Find out more at:
+     http://www.smscg.ch/www/user/
+  
+   .. _SMSCG: http://www.smscg.ch
+   .. _SWITCHaai: http://www.switch.ch/aai
+
+   
+Upgrade
+=======
+
+These instructions show how to upgrade the GC3Pie scripts to the
+latest version found in the GC3 svn repository.
+
+1. `cd` to the directory containing the GC3Pie virtualenv;
+   assuming it's named ``gc3pie`` as in the above installation
+   instructions, you can issue the commands::
+
+     cd gc3pie/src
+
+2. Upgrade the `gc3pie` source and run the `setup.py` script again:
+
+     svn up
+     env CC=gcc ./setup.py develop
+
+
+
+.. (for Emacs only)
+..
+  Local variables:
+  mode: rst
+  End:
