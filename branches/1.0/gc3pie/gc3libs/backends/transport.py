@@ -23,7 +23,7 @@ via SSH.
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 #
 __docformat__ = 'reStructuredText'
-__version__ = '1.0rc4 (SVN $Revision$)'
+__version__ = '1.0rc5 (SVN $Revision$)'
 
 
 import os
