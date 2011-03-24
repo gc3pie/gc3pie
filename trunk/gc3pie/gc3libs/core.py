@@ -37,6 +37,7 @@ import gc3libs
 from gc3libs import Application, Run, Task
 from gc3libs.backends.sge import SgeLrms
 from gc3libs.backends.fork import ForkLrms
+from gc3libs.backends.subprocess import SubprocessLrms
 from gc3libs.authentication import Auth
 import gc3libs.exceptions
 import gc3libs.Resource as Resource
@@ -580,18 +581,21 @@ class Core:
                         _lrms = SgeLrms(_resource, self.auths)
                     elif _resource.type == gc3libs.Default.FORK_LRMS:
                         _lrms = ForkLrms(_resource, self.auths)
+                    elif _resource.type == gc3libs.Default.SUBPROCESS_LRMS:
+                        _lrms = SubprocessLrms(_resource, self.auths)
                     else:
-                        raise gc3libs.exceptions.ConfigurationError("Unknown resource type '%s'" 
-                                                 % _resource.type)
+                        raise gc3libs.exceptions.ConfigurationError(
+                            "Unknown resource type '%s'" % _resource.type)
                 except Exception, ex:
-                    gc3libs.log.error("Error in creating resource %s: %s."
-                                      " Configuration file problem?"
-                                      % (_resource.name, str(ex)))
+                    gc3libs.log.error(
+                        "Error in creating resource %s: %s."
+                        " Configuration file problem?"
+                        % (_resource.name, str(ex)))
                     raise
 
         if _lrms is None:
-            raise gc3libs.exceptions.InvalidResourceName("Cannot find computational resource '%s'" 
-                                      % resource_name)
+            raise gc3libs.exceptions.InvalidResourceName(
+                "Cannot find computational resource '%s'" % resource_name)
 
         return _lrms
 
@@ -628,9 +632,15 @@ def get_resources(resources_list):
                               " Please check configuration file.",
                                key, str(x))
             continue
-        if not (tmpres.type == gc3libs.Default.ARC_LRMS or tmpres.type == gc3libs.Default.SGE_LRMS or tmpres.type == gc3libs.Default.FORK_LRMS):
-            gc3libs.log.error("Configuration error: '%s' is no valid resource type.", 
-                              resource['type'])
+        if tmpres.type not in [
+            gc3libs.Default.ARC_LRMS,
+            gc3libs.Default.SGE_LRMS,
+            gc3libs.Default.FORK_LRMS,
+            gc3libs.Default.SUBPROCESS_LRMS,
+            ]:
+            gc3libs.log.error(
+                "Configuration error: '%s' is no valid resource type.", 
+                resource['type'])
             continue
         gc3libs.log.debug("Created %s resource '%s' of type %s"
                           % (utils.ifelse(tmpres.is_valid, "valid", "invalid"),
