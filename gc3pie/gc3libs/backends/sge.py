@@ -24,7 +24,6 @@ __version__ = 'development version (SVN $Revision$)'
 
 
 import os
-#import paramiko
 import random
 import re
 import sys
@@ -242,10 +241,6 @@ def get_qsub_jobid(qsub_output):
                         % qsub_output.rstrip())
 
 
-# FIXME: does not work: parsing dates is locale-dependent,
-# so this won't work if the date was printed on a computer
-# that has a different locale than this one.
-#
 def _job_info_normalize(self, job):
     if job.haskey('used_cputime'):
         # convert from string to int. Also convert from float representation to int
