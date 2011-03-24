@@ -36,6 +36,7 @@ instructions for installing it at:
 
     http://www.smscg.ch/WP/middleware/release_2_0/smscg_ui_Binary_Installation.html
 
+[OSSpecificInstallDetails OS-Specific Install Details]
 
 1. Choose a directory where the GC3Pie software will be installed;
 any directory that's writable by your Linux account will be ok.
