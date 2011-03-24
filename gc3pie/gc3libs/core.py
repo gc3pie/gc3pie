@@ -208,6 +208,7 @@ class Core:
                 continue
             gc3libs.log.info('Successfully submitted process to: %s', lrms._resource.name)
             job.state = Run.State.SUBMITTED
+            app.final_output_retrieved = False
             job.resource_name = lrms._resource.name
             job.info = ("Submitted to '%s' at %s"
                         % (job.resource_name, 
