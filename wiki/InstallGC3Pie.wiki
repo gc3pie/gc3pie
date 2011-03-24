@@ -177,6 +177,12 @@ can issue the commands:
    env CC=gcc ./setup.py develop
 }}}
 
+*Note:* A major restructuring of the SVN repository took place in
+r1124 to r1126 (Feb. 15, 2011); if your sources are older than SVN
+r1124, these upgrade instructions will _not_ work, and you must
+[#Install reinstall completely].  You can check what version the SVN
+sources are, by running the `svn info` command in the `src` directory:
+watch out for the `Revision:` line.
 
 
 === HTML Documentation ===
