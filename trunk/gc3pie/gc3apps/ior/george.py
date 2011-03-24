@@ -40,8 +40,8 @@ from gc3libs.cmdline import SessionBasedScript
 from gc3libs.dag import SequentialTaskCollection, ParallelTaskCollection
 import gc3libs.utils
 
-IN_VALUES_FILE = 'Values.txt'
-OUT_VALUES_FILE = 'SolVal.txt'
+IN_VALUES_FILE = 'ValuesIn.txt'
+OUT_VALUES_FILE = 'ValuesOut.txt'
 TMPDIR = '/tmp'
 
 
@@ -152,11 +152,11 @@ class ValueFunctionIteration(SequentialTaskCollection):
                           % (self, output_filename))
         output_file = open(output_filename, 'w+')
         output_csv = csv.writer(output_file)
-        output_csv.writerow(['I'] + [ ('N=%d' % n)
-                                          for n in range(1, len(self.tasks)+1) ])
-        for n, values in enumerate(zip(*[ task.output_values
+        output_csv.writerow(['i'] + [ ('n=%d' % n)
+                                      for n in range(1, len(self.tasks)+1) ])
+        for i, values in enumerate(zip(*[ task.output_values
                                           for task in self.tasks ])):
-            output_csv.writerow([n] + list(values))
+            output_csv.writerow([i] + list(values))
         output_file.close()
         gc3libs.log.debug("  ...done.")
 
@@ -165,8 +165,8 @@ class ValueFunctionIterationPass(ParallelTaskCollection):
     """
     Compute the values taken by a certain function over a set of
     inputs.  The function to be iterated is implemented in the form of
-    an executable program, that takes a single input file IN_VALUES_FILE
-    (a list of values) and creates a single output file OUT_VALUES_FILE.
+    an executable program, that takes a single input file `IN_VALUES_FILE`
+    (a list of values) and creates a single output file `OUT_VALUES_FILE`.
 
     The computation will be split into separate independent processes,
     each working over a fraction of the input values (determined by
@@ -407,18 +407,9 @@ class GeorgeScript(SessionBasedScript):
         if self.params.slice_size < 0:
             raise RuntimeError("Argument to option -p/--slice-size must be a non-negative integer.")
 
-        if not os.path.exists(self.params.execute):
-            raise RuntimeError("Cannot find executable '%s'; use option `-x` to specify an alternate path."
-                               % self.params.execute)
-        if not os.path.isfile(self.params.execute):
-            raise RuntimeError("Given executable '%s' is not a file."
-                               % self.params.execute)
-        if not os.access(self.params.execute, os.R_OK):
-            raise RuntimeError("Cannot read executable file '%s'."
-                               % self.params.execute)
-        if not os.access(self.params.execute, os.X_OK):
-            raise RuntimeError("File '%s' lacks execute permissions."
-                               % self.params.execute)
+        gc3libs.utils.test_file(self.params.execute, os.R_OK|os.X_OK)
+        if not os.path.isabs(self.params.execute):
+            self.params.execute = os.path.realpath(self.params.execute)
 
 
     def new_tasks(self, extra):
