@@ -121,21 +121,22 @@ class GridAuth(object):
                 try:
                     p = subprocess.Popen(_cmd,stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
                     (stdout, stderr) = p.communicate()
+
                     if p.returncode != 0:
-                        # assume transient error (i.e wrong password or so)
-                        raise gc3libs.exceptions.RecoverableAuthError("Error running '%s': %s."
+                        # Assume transient error (i.e wrong password or so).
+                        raise gc3libs.exceptions.RecoverableAuthError("Error running slcs-init: %s."
                                                    " Assuming temporary failure, will retry later." 
-                                                   % (_cmd, stdout)) 
+                                                   % stdout) 
+                # Note: to avoid printing the user's password in plaintext, we do not print the whole command in the error.
                 except OSError, x:
                     if x.errno == errno.ENOENT or x.errno == errno.EPERM \
                             or x.errno == errno.EACCES:
-                        raise gc3libs.exceptions.UnrecoverableAuthError("Failed running '%s': %s."
-                                                     " Please verify that the command 'slcs-init' is"
-                                                     " available on your $PATH and that it actually works."
-                                                     % (_cmd, str(x)))
+                        raise gc3libs.exceptions.UnrecoverableAuthError("Failed running slcs-init: %s."
+                                                     " Please verify that it is available on your $PATH and that it actually works."
+                                                     % str(x))
                     else:
-                        raise gc3libs.exceptions.UnrecoverableAuthError("Failed running '%s': %s."
-                                                     % (_cmd, str(x)))
+                        raise gc3libs.exceptions.UnrecoverableAuthError("Failed running slcs-init: %s."
+                                                     % str(x))
                 except Exception, ex:
                     # Intercept any other Error that subprocess may raise
                     gc3libs.log.debug("Unexpected error in GridAuth: %s: %s" 
