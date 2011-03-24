@@ -372,7 +372,7 @@ is canceled before re-submission.
             try:
                 self._core.kill(app)
             except Exception, ex:
-                # ignore errors, but alert user...
+                # ignore errors (alert user?)
                 pass
 
             try:
