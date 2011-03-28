@@ -1066,9 +1066,11 @@ class Engine(object):
         Return a dictionary mapping each state name into the count of
         jobs in that state. In addition, the following keys are defined:
         
-        * `ok`:  count of TERMINATED jobs with return code 0
+        * `ok`:  count of TERMINATED tasks with return code 0
         
-        * `failed`: count of TERMINATED jobs with nonzero return code
+        * `failed`: count of TERMINATED tasks with nonzero return code
+
+        * `total`: total count of managed tasks, whatever their state
         """
         result = utils.defaultdict(lambda: 0)
         result[Run.State.NEW] = len(self._new)
@@ -1087,6 +1089,10 @@ class Engine(object):
                 result['ok'] += 1
             else:
                 result['failed'] += 1
+        result['total'] = (len(self._new)
+                           + len(self._in_flight)
+                           + len(self._stopped)
+                           + len(self._terminated))
         return result
 
             
