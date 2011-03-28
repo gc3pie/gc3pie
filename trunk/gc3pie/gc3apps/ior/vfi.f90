@@ -51,7 +51,7 @@ PROGRAM vfi
 	IMPLICIT NONE 
 
 	INTEGER :: OpenStatus, i, currI, N, IterNum, TotalIters, low, high
-	double precision, PARAMETER :: beta = 0.9
+	double precision :: beta
 	double precision :: d, pm1, p0, pp1
 	double precision, dimension(:), allocatable :: V, newV
 
@@ -64,16 +64,16 @@ PROGRAM vfi
         CHARACTER*200 :: buffer
 
         ! check that we have enough arguments to parse
-        if (IARGC() .ne. 5) then
-           print *, "*** Expected 5 arguments, got", IARGC(), "instead ***"
+        if (IARGC() .ne. 6) then
+           print *, "*** Expected 6 arguments, got", IARGC(), "instead ***"
            print *, ""
-           print *, "Usage: program N ITERATION TOTAL_ITERATIONS LOW HIGH"
+           print *, "Usage: program BETA ITERATION TOTAL_ITERATIONS N LOW HIGH"
            stop
         end if
 
-        ! 1st argument is number N of items in the ValuesIn.txt file
+        ! 1st argument is the discount factor
         call getarg(1, buffer)
-        read (buffer, *) N
+        read (buffer, *) beta
 
         ! 2nd argument is number of current iteration
         call getarg(2, buffer)
@@ -83,11 +83,15 @@ PROGRAM vfi
         call getarg(3, buffer)
         read (buffer, *) TotalIters
 
-        ! 4th and 5th arguments are the limits of the range
-        ! assigned to this worker
+        ! 4th argument is number N of items in the ValuesIn.txt file
         call getarg(4, buffer)
-        read (buffer, *) low
+        read (buffer, *) N
+
+        ! 5th and 6th arguments are the limits of the range
+        ! assigned to this worker
         call getarg(5, buffer)
+        read (buffer, *) low
+        call getarg(6, buffer)
         read (buffer, *) high
         
 
