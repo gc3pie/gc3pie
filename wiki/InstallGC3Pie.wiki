@@ -15,7 +15,7 @@ Installation into a virtualenv has two distinct advantages:
    
   * On Debian/Ubuntu, install packages: `subversion`, `python-dev`, `python-profiler` and the C/C++ compiler:
 {{{
-   apt-get install subversion python-dev gcc g++
+   apt-get install subversion python-dev python-profiler gcc g++
 }}}
   * On CentOS5, install packages `subversion` and `python-devel` and the C/C++ compiler:
 {{{
