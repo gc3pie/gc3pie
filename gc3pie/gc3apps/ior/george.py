@@ -24,6 +24,7 @@ __docformat__ = 'reStructuredText'
 __version__ = '$Revision$'
 
 
+import ConfigParser
 import csv
 import math
 import os
@@ -67,8 +68,9 @@ class ValueFunctionIteration(SequentialTaskCollection):
     single-core task executing the given program.
     """
     
-    def __init__(self, executable, initial_values_file, total_iterations,
-                 slice_size=0, output_dir=TMPDIR, grid=None, **kw):
+    def __init__(self, executable, initial_values_file,
+                 total_iterations, slice_size=0,
+                 output_dir=TMPDIR, grid=None, **kw):
         """
         Create a new tasks that runs `executable` over a set of values
         (initially given by `initial_values_file`, then the output of
@@ -96,7 +98,8 @@ class ValueFunctionIteration(SequentialTaskCollection):
 
         # this little piece of black magic is to ensure intermediate
         # filenames appear numerically sorted in `ls -l` output
-        self.values_filename_fmt = 'values.%%0%dd.txt' % (1 + int(math.log10(total_iterations)))
+        self.values_filename_fmt = ('values.%%0%dd.txt'
+                                    % (1 + int(math.log10(total_iterations))))
 
         # create initial task and register it
         initial_task = ValueFunctionIterationPass(executable, initial_values_file,
@@ -150,13 +153,21 @@ class ValueFunctionIteration(SequentialTaskCollection):
         gc3libs.log.debug("SequentialTaskCollection %s done,"
                           " now processing results into file '%s'..."
                           % (self, output_filename))
-        output_file = open(output_filename, 'w+')
+        output_file = open(output_filename, 'w+') # write+truncate
         output_csv = csv.writer(output_file)
         output_csv.writerow(['i'] + [ ('n=%d' % n)
                                       for n in range(1, len(self.tasks)+1) ])
         for i, values in enumerate(zip(*[ task.output_values
                                           for task in self.tasks ])):
             output_csv.writerow([i] + list(values))
+        output_file.close()
+        # same stuff, albeit in a different output format for SimpleDP compatibility
+        output_filename = gc3libs.utils.basename_sans(self.initial_values) + '.output.txt'
+        shutil.copyfile(self.initial_values, output_filename)
+        output_file = open(output_filename, 'a') # write, no truncate
+        for task in self.tasks:
+            for value in task.output_values:
+                output_file.write("%s\n" % value)
         output_file.close()
         gc3libs.log.debug("  ...done.")
 
@@ -272,8 +283,6 @@ class ValueFunctionIterationApplication(Application):
     
     def __init__(self, executable, input_values_file, iteration, total_iterations,
                  start=0, end=None, **kw):
-        """
-        """
         count = _count_input_values(input_values_file)
         if end is None:
             end = count-1 # last allowed position
@@ -283,11 +292,12 @@ class ValueFunctionIterationApplication(Application):
             executable,
             # `start` and `end` arguments to `executable` follow the
             # FORTRAN convention of being 1-based
-            arguments = [ count, iteration, total_iterations, start+1, end+1 ],
+            arguments = [ kw['discount_factor'], iteration, total_iterations,
+                          count, start+1, end+1 ],
             inputs = { input_values_file:IN_VALUES_FILE },
             outputs = { OUT_VALUES_FILE:OUT_VALUES_FILE },
             join = True,
-            stdout = 'output.txt', # stdout + stderr
+            stdout = 'job.log', # stdout + stderr
             **kw)
 
 
@@ -366,22 +376,20 @@ class GeorgeScript(SessionBasedScript):
     def __init__(self):
         SessionBasedScript.__init__(
             self,
-            version = '0.1',
+            version = '0.2',
             # only '.txt' files are considered as valid input
-            input_filename_pattern = '*.txt',
+            input_filename_pattern = '*.ini',
             )
 
     def setup_args(self):
         super(GeorgeScript, self).setup_args()
-        
-        self.add_param('-P', '--iterations', dest='iterations',
-                       type=int, default=1,
-                       metavar='NUM',
+
+        self.add_param('-P', '--iterations', metavar='NUM',
+                       dest='iterations', type=int, default=1,
                        help="Compute NUM iterations per each output file"
                        " (default: %(default)s).")
-        self.add_param('-p', '--slice-size', dest='slice_size',
-                       type=int, default=0,
-                       metavar='NUM',
+        self.add_param('-p', '--slice-size', metavar='NUM', 
+                       dest='slice_size', type=int, default=0,
                        help="Process at most NUM states in a single"
                        " computational job.  Each input file is chopped"
                        " into files that contain at most NUM elements,"
@@ -413,16 +421,47 @@ class GeorgeScript(SessionBasedScript):
 
 
     def new_tasks(self, extra):
-        inputs = self._search_for_input_files(self.params.args)
+        inis = self._search_for_input_files(self.params.args)
 
-        for path in inputs:
-            yield (gc3libs.utils.basename_sans(path),
+        p = ConfigParser.SafeConfigParser()
+        successfully_read = p.read(inis)
+        for filename in inis:
+            if filename not in successfully_read:
+                self.log.error("Could not read/parse input file '%s'. Ignoring it."
+                               % filename)
+        
+        for name in p.sections():
+            # path to the initial values file
+            if not p.has_option(name, 'initial_values_file'):
+                self.log.error("Required parameter 'initial_values_file' missing"
+                               " in input '%s'.  Ignoring."
+                               % name)
+            path = p.get(name, 'initial_values_file')
+            if not os.path.isabs(path):
+                path = os.path.join(os.getcwd(), path)
+            if not os.path.exists(path):
+                self.log.error("Input values file '%s' does not exist."
+                               " Ignoring task '%s', which depends on it."
+                               % (path, name))
+                
+            # import running parameters from cfg file
+            kw = extra.copy()
+            try:
+                kw.setdefault('discount_factor',
+                              p.getfloat(name, 'discount_factor'))
+            except (KeyError, ConfigParser.Error, ValueError), ex:
+                self.log.error("Could not read required parameter 'discount_factor'"
+                               " in input '%s': %s"
+                               % (name, str(ex)))
+        
+            yield (name,
                    ValueFunctionIteration,
                    [self.params.execute,
                     path,
                     self.params.iterations,
-                    self.params.slice_size,],
-                   extra.copy())
+                    self.params.slice_size,
+                    ],
+                   kw)
 
 
 
