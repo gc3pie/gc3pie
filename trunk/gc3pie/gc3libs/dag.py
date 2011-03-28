@@ -168,9 +168,11 @@ class TaskCollection(Task, gc3libs.utils.Struct):
         Return a dictionary mapping each state name into the count of
         jobs in that state. In addition, the following keys are defined:
         
-        * `ok`:  count of TERMINATED jobs with return code 0
+        * `ok`:  count of TERMINATED tasks with return code 0
         
-        * `failed`: count of TERMINATED jobs with nonzero return code
+        * `failed`: count of TERMINATED tasks with nonzero return code
+
+        * `total`: count of managed tasks, whatever their state
         """
         result = gc3libs.utils.defaultdict(lambda: 0)
         for task in self.tasks:
@@ -181,6 +183,7 @@ class TaskCollection(Task, gc3libs.utils.Struct):
                     result['ok'] += 1
                 else:
                     result['failed'] += 1
+        result['total'] = len(self.tasks)
         return result
 
 

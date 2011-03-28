@@ -958,7 +958,7 @@ class SessionBasedScript(_Script):
                       time.strftime('%X, %x')))
             # summary
             stats = controller.stats()
-            total = len(self.tasks)
+            total = stats['total']
             if total > 0:
                 table = Texttable(0) # max_width=0 => dynamically resize cells
                 table.set_deco(0)    # no decorations
