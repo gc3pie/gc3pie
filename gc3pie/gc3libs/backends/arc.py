@@ -20,7 +20,7 @@ Job control on ARC0 resources.
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 #
 __docformat__ = 'reStructuredText'
-__version__ = 'development version (SVN $Revision$)'
+__version__ = '1.0rc6 (SVN $Revision$)'
 
 
 import sys
@@ -90,12 +90,19 @@ class ArcLrms(LRMS):
         if (not hasattr(self, '_queues')) or (not hasattr(self, '_queues_last_accessed')) \
                 or (time.time() - self._queues_last_updated > self._queues_cache_time):
             if self._resource.has_key('arc_ldap'):
-                log.debug("Getting list of ARC resources from GIIS '%s' ...", 
+                log.debug("Acquiring cluster information form ldap '%s' ...", 
                           self._resource.arc_ldap)
                 cls = arclib.GetClusterResources(arclib.URL(self._resource.arc_ldap),True,'',1)
+                if not cls:
+                    log.warning("Empty cluster information list")
+                    # returning empty list
+                    return []
             else:
+                log.debug("Acquiring cluster information form default giis")
                 cls = arclib.GetClusterResources()
-                log.debug('Got cluster list of length %d', len(cls))
+
+            log.info('Cluster list of length %d', len(cls))
+
             self._queues = arclib.GetQueueInfo(cls,arclib.MDS_FILTER_CLUSTERINFO, True, '', 5)
             log.debug('returned valid queue information for %d queues', len(self._queues))
             self._queues_last_updated = time.time()
@@ -300,12 +307,13 @@ class ArcLrms(LRMS):
 
         log.debug("Downloading job output into '%s' ...", download_dir)
         try:
-            arclib.JobFTPControl.DownloadDirectory(jftpc, job.lrms_jobid,download_dir)
+            arclib.JobFTPControl.DownloadDirectory(jftpc, job.lrms_jobid, download_dir)
             job.download_dir = download_dir
         except arclib.FTPControlError, ex:
             # critical error. consider job remote data as lost
-            raise gc3libs.exceptions.DataStagingError("Failed downloading remote folder '%s': %s" 
-                                   % (job.lrms_jobid, str(ex)))
+            raise gc3libs.exceptions.DataStagingError(
+                "Failed downloading remote folder '%s': %s" 
+                % (job.lrms_jobid, str(ex)))
 
         return 
 

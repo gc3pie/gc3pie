@@ -23,7 +23,7 @@ It uses the generic `gc3libs.cmdline.SessionBasedScript` framework.
 
 See the output of ``gcodeml --help`` for program usage instructions.
 """
-__version__ = 'development version (SVN $Revision$)'
+__version__ = '1.0rc6 (SVN $Revision$)'
 # summary of user-visible changes
 __changelog__ = """
   2011-03-22:

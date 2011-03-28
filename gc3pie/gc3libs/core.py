@@ -19,7 +19,7 @@ Top-level interface to Grid functionality.
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 #
 __docformat__ = 'reStructuredText'
-__version__ = 'development version (SVN $Revision$)'
+__version__ = '1.0rc6 (SVN $Revision$)'
 __date__ = '$Date$'
 
 
@@ -34,10 +34,9 @@ import warnings
 warnings.simplefilter("ignore")
 
 import gc3libs
-from gc3libs import Application, Run, Task
+from gc3libs import Application, Run
 from gc3libs.backends.sge import SgeLrms
 from gc3libs.backends.fork import ForkLrms
-from gc3libs.backends.subprocess import SubprocessLrms
 from gc3libs.authentication import Auth
 import gc3libs.exceptions
 import gc3libs.Resource as Resource
@@ -56,12 +55,14 @@ class Core:
         self._init_backends()
 
     def get_backend(self, resource_name):
-        for lrms in self._lrms_list:
-            if fnmatch(lrms._resource.name, resource_name):
-                return lrms
-        raise gc3libs.exceptions.InvalidResourceName(
-            "Cannot find computational resource '%s'" % 
-            resource_name)
+        lrms = [ lrms for lrms in self._lrms_list
+                 if fnmatch(lrms._resource.name, resource_name) ]
+        if lrms:
+            return lrms[0]
+        else:
+            raise gc3libs.exceptions.InvalidResourceName(
+                "Cannot find computational resource '%s'" % 
+                resource_name)
 
     def _init_backends(self):
         for _resource in self._resources:
@@ -112,35 +113,20 @@ class Core:
         files.
 
         It is an error to call this method if `app.execution.state` is
-        anything other than `TERMINATED`: an `InvalidOperation` exception
-        will be raised in this case.
-
-        :raise: `gc3libs.exceptions.InvalidOperation` if `app.execution.state`
-                differs from `Run.State.TERMINATED`.
+        anything other than `TERMINATED`.
         """
-        assert isinstance(app, Task), \
-            "Core.free: passed an `app` argument which is not a `Task` instance."
-        if isinstance(app, Application):
-            return self.__free_application(app, **kw)
-        else:
-            # must be a `Task` instance
-            return self.__free_task(app, **kw)
-        
-    def __free_application(self, app, **kw):
-        """Implementation of `free` on `Application` objects."""
+
         if app.execution.state != Run.State.TERMINATED:
             raise gc3libs.exceptions.InvalidOperation("Attempting to free resources of job '%s',"
                                    " which is in non-terminal state." % app)
 
         auto_enable_auth = kw.get('auto_enable_auth', self.auto_enable_auth)
 
+        #lrms = self._get_backend(app.execution.resource_name)
         lrms =  self.get_backend(app.execution.resource_name)
+        # self.auths.get(lrms._resource.auth)
         lrms.free(app)
-
-    def __free_task(self, task, **kw):
-        """Implementation of `free` on generic `Task` objects."""
-        return task.free(**kw)
-
+        
 
     def submit(self, app, **kw):
         """
@@ -151,18 +137,8 @@ class Core:
         :raise: `gc3libs.exceptions.InputFileError` if an input file
                 does not exist or cannot otherwise be read.
         """
-        assert isinstance(app, Task), \
-            "Core.submit: passed an `app` argument which is not a `Task` instance."
-        if isinstance(app, Application):
-            return self.__submit_application(app, **kw)
-        else:
-            # must be a `Task` instance
-            return self.__submit_task(app, **kw)
-
-    def __submit_application(self, app, **kw):
-        """Implementation of `submit` on `Application` objects."""
         auto_enable_auth = kw.get('auto_enable_auth', self.auto_enable_auth)
-        
+
         # check that all input files can be read
         for local_path in app.inputs:
             gc3libs.utils.test_file(local_path, os.R_OK,
@@ -193,7 +169,7 @@ class Core:
                               " CPU/memory/wall-clock time combination.")
 
         exs = [ ]
-        # Scheduler.do_brokering returns a sorted list of valid lrms
+        # Scheduler.do_brokering should return a sorted list of valid lrms
         for lrms in _selected_lrms_list:
             gc3libs.log.debug("Attempting submission to resource '%s'..." 
                               % lrms._resource.name)
@@ -224,43 +200,27 @@ class Core:
             raise ex
         else:
             return
-
-    def __submit_task(self, task, **kw):
-        """Implementation of `submit` on generic `Task` objects."""
-        kw.setdefault('auto_enable_auth', self.auto_enable_auth)
-        task.submit(**kw)
-
+        
 
     def update_job_state(self, *apps, **kw):
         """
-        Update state of all applications passed in as arguments.
+        Update state of all applications passed in as arguments,
+        and return list of updated states.
         
         If keyword argument `update_on_error` is `False` (default),
         then application execution state is not changed in case a
         backend error happens; it is changed to `UNKNOWN` otherwise.
 
-        Note that if state of a job changes, the `Run.state` calls the
-        appropriate handler method on the application/task object.
-
-        :raise: `gc3libs.exceptions.InvalidArgument` in case one of
-                the passed `Application` or `Task` objects is
-                invalid. This can stop updating the state of other
-                objects in the argument list.
-
-        :raise: `gc3libs.exceptions.ConfigurationError` if the
-                configuration of this `Core` object is invalid or
-                otherwise inconsistent (e.g., a resource references a
-                non-existing auth section).
-        
+        If state of a job has changed, call the appropriate handler
+        method on the job object, if it's defined.  Handler methods
+        are named after the (lowercase) name of the state; e.g., if a
+        job reaches state `TERMINATED`, then `job.terminated()` is
+        called.
         """
-        self.__update_application((app for app in apps if isinstance(app, Application)), **kw)
-        self.__update_task((app for app in apps if not isinstance(app, Application)), **kw)
-
-    def __update_application(self, apps, **kw):
-        """Implementation of `update_job_state` on `Application` objects."""
         update_on_error = kw.get('update_on_error', False)
         auto_enable_auth = kw.get('auto_enable_auth', self.auto_enable_auth)
 
+        states = [] 
         for app in apps:
             state = app.execution.state
             old_state = state
@@ -311,29 +271,30 @@ class Core:
                                 else:
                                     app.execution.info = ("Job exited with code %d" 
                                                           % self.execution.exitcode)
+                    # call Application-specific handler
+                    handler_name = str(app.execution.state).lower()
+                    if hasattr(app, handler_name):
+                        getattr(app, handler_name)()
             except (gc3libs.exceptions.InvalidArgument, gc3libs.exceptions.ConfigurationError):
                 # Unrecoverable; no sense in continuing --
                 # pass immediately on to client code and let
                 # it handle this...
-                raise
+                raise # XXX: shouldn't rather be 'continue' ?
             # XXX: Re-enabled the catch-all clause otherwise the loop stops at the first erroneous iteration
             except Exception, ex:
-                gc3libs.log.warning("Ignored error in Core.update_job_state(): %s: %s",
-                                    ex.__class__.__name__, str(ex))
+                gc3libs.log.error("Error in Core.update_job_state(), ignored: %s: %s",
+                                  ex.__class__.__name__, str(ex))
                 continue
+            states.append(app.execution.state)
 
-    def __update_task(self, tasks, **kw):
-        """Implementation of `update_job_state` on generic `Task` objects."""
-        for task in tasks:
-            assert isinstance(task, Task), \
-                   "Core.update_job_state: passed an argument which is not a `Task` instance."
-            task.update_state()
+        return states
 
 
     def fetch_output(self, app, download_dir=None, overwrite=False, **kw):
         """
         Retrieve job output into local directory `app.output_dir`;
-        optional argument `download_dir` overrides this.
+        optional argument `download_dir` overrides this.  Return
+        actual download directory.
 
         The download directory is created if it does not exist.  If it
         already exists, and the optional argument `overwrite` is
@@ -347,29 +308,13 @@ class Core:
         defined), with the effective `download_dir` as sole argument.
 
         Job output cannot be retrieved when `app.execution` is in one
-        of the states `NEW` or `SUBMITTED`; an
+        of the states `NEW` or `SUBMITTED`; a
         `OutputNotAvailableError` exception is thrown in these cases.
-
-        :raise: `gc3libs.exceptions.OutputNotAvailableError` if no
-                output can be fetched from the remote job (e.g., the
-                Application/Task object is in `NEW` or `SUBMITTED`
-                state, indicating the remote job has not started
-                running).
         """
-        assert isinstance(app, Task), \
-            "Core.fetch: passed an `app` argument which is not a `Task` instance."
-        if isinstance(app, Application):
-            self.__fetch_output_application(app, download_dir, overwrite, **kw)
-        else:
-            # generic `Task` object
-            self.__fetch_output_task(app, download_dir, overwrite, **kw)
-
-    def __fetch_output_application(self, app, download_dir, overwrite, **kw):
-        """Implementation of `fetch_output` on `Application` objects."""
         job = app.execution
         if job.state in [ Run.State.NEW, Run.State.SUBMITTED ]:
             raise gc3libs.exceptions.OutputNotAvailableError("Output not available:"
-                                          " '%s' currently in state '%s'"
+                                          " Job '%s' currently in state '%s'"
                                           % (app, app.execution.state))
 
         auto_enable_auth = kw.get('auto_enable_auth', self.auto_enable_auth)
@@ -381,8 +326,8 @@ class Core:
             except AttributeError:
                 raise gc3libs.exceptions.InvalidArgument(
                     "`Core.fetch_output` called with no explicit download directory,"
-                    " but object '%s' has no `output_dir` attribute set either."
-                    % (app, type(app)))
+                    " but `Application` object '%s' has no `output_dir` set either."
+                    % app)
         try:
             if overwrite:
                 if not os.path.exists(download_dir):
@@ -422,20 +367,17 @@ class Core:
         if job.state == Run.State.TERMINATED:
             app.final_output_retrieved = True
             app.postprocess(download_dir)
-            gc3libs.log.debug("Final output of '%s' retrieved" % str(app))
-
-    def __fetch_output_task(self, task, download_dir, overwrite, **kw):
-        """Implementation of `fetch_output` on generic `Task` objects."""
-        return task.fetch_output(download_dir, overwrite, **kw)
-
+            gc3libs.log.debug("Final output of job '%s' retrieved" % str(job))
+        return download_dir
+        
 
     def get_all_updated_resources(self, **kw):
         """
-        Update the state of resources configured into this `Core` instance,
-        and return a list of these resources.
-
-        Each resource object in the returned list will have its `updated` attribute
-        set to `True` if the update operation succeeded, or `False` if it failed.
+        Return a list of resources known by core.
+        Core will try to update the status of resources before returning
+        If core fails updating a given resource, it will send back the same 
+        resource as created from information imported from configurartion file
+        marking it with an additional flag 'updated'.
         """
 
         updated_resources = []
@@ -457,7 +399,6 @@ class Core:
                 
         return updated_resources
 
-
     def kill(self, app, **kw):
         """
         Terminate a job.
@@ -466,15 +407,6 @@ class Core:
         entails canceling the job with the remote execution system;
         terminating a job in the NEW or TERMINATED state is a no-op.
         """
-        assert isinstance(app, Task), \
-            "Core.kill: passed an `app` argument which is not a `Task` instance."
-        if isinstance(app, Application):
-            self.__kill_application(app, **kw)
-        else:
-            self.__kill_task(app, **kw)
-            
-    def __kill_application(self, app, **kw):
-        """Implementation of `kill` on `Application` objects."""
         job = app.execution
         auto_enable_auth = kw.get('auto_enable_auth', self.auto_enable_auth)
         lrms = self.get_backend(job.resource_name)
@@ -487,10 +419,6 @@ class Core:
         job.log.append("Cancelled.")
         app.terminated()
 
-    def __kill_task(self, task, **kw):
-        kw.setdefault('auto_enable_auth', self.auto_enable_auth)
-        task.kill(**kw)
-    
 
     def peek(self, app, what='stdout', offset=0, size=None, **kw):
         """
@@ -507,15 +435,6 @@ class Core:
         relevant section of the job's standard output resp. standard
         error should be downloaded.
         """
-        assert isinstance(app, Task), \
-            "Core.peek: passed an `app` argument which is not a `Task` instance."
-        if isinstance(app, Application):
-            return self.__peek_application(app, what, offset, size, **kw)
-        else:
-            return self.__peek_task(app, what, offset, size, **kw)
-        
-    def __peek_application(self, app, what, offset, size, **kw):
-        """Implementation of `peek` on `Application` objects."""
         job = app.execution
         if what == 'stdout':
             remote_filename = job.stdout_filename
@@ -545,28 +464,8 @@ class Core:
         
         return _local_file
 
-    def __peek_task(self, task, what, offset, size, **kw):
-        """Implementation of `peek` on generic `Task` objects."""
-        return task.peek(what. offset, size, **kw)
-    
 
-    def add(self, task):
-        """
-        This method is here just to allow `Core` and `Engine` objects
-        to be used interchangeably.  It's effectively a no-op, as it makes
-        no sense in the synchronous/blocking semantics implemented by `Core`.
-        """
-        pass
-
-
-    def remove(self, task):
-        """
-        This method is here just to allow `Core` and `Engine` objects
-        to be used interchangeably.  It's effectively a no-op, as it makes
-        no sense in the synchronous/blocking semantics implemented by `Core`.
-        """
-        pass
-
+#======= Static methods =======
 
     def _get_backend(self,resource_name):
         _lrms = None
@@ -582,21 +481,18 @@ class Core:
                         _lrms = SgeLrms(_resource, self.auths)
                     elif _resource.type == gc3libs.Default.FORK_LRMS:
                         _lrms = ForkLrms(_resource, self.auths)
-                    elif _resource.type == gc3libs.Default.SUBPROCESS_LRMS:
-                        _lrms = SubprocessLrms(_resource, self.auths)
                     else:
-                        raise gc3libs.exceptions.ConfigurationError(
-                            "Unknown resource type '%s'" % _resource.type)
+                        raise gc3libs.exceptions.ConfigurationError("Unknown resource type '%s'" 
+                                                 % _resource.type)
                 except Exception, ex:
-                    gc3libs.log.error(
-                        "Error in creating resource %s: %s."
-                        " Configuration file problem?"
-                        % (_resource.name, str(ex)))
+                    gc3libs.log.error("Error in creating resource %s: %s."
+                                      " Configuration file problem?"
+                                      % (_resource.name, str(ex)))
                     raise
 
         if _lrms is None:
-            raise gc3libs.exceptions.InvalidResourceName(
-                "Cannot find computational resource '%s'" % resource_name)
+            raise gc3libs.exceptions.InvalidResourceName("Cannot find computational resource '%s'" 
+                                      % resource_name)
 
         return _lrms
 
@@ -633,15 +529,9 @@ def get_resources(resources_list):
                               " Please check configuration file.",
                                key, str(x))
             continue
-        if tmpres.type not in [
-            gc3libs.Default.ARC_LRMS,
-            gc3libs.Default.SGE_LRMS,
-            gc3libs.Default.FORK_LRMS,
-            gc3libs.Default.SUBPROCESS_LRMS,
-            ]:
-            gc3libs.log.error(
-                "Configuration error: '%s' is no valid resource type.", 
-                resource['type'])
+        if not (tmpres.type == gc3libs.Default.ARC_LRMS or tmpres.type == gc3libs.Default.SGE_LRMS or tmpres.type == gc3libs.Default.FORK_LRMS):
+            gc3libs.log.error("Configuration error: '%s' is no valid resource type.", 
+                              resource['type'])
             continue
         gc3libs.log.debug("Created %s resource '%s' of type %s"
                           % (utils.ifelse(tmpres.is_valid, "valid", "invalid"),
@@ -678,7 +568,7 @@ def read_config(*locations):
                                                        Run.Arch.X86_64,
         # finally, map "32-bit" and "64-bit" to i686 and x86_64
         re.compile('32[ _-]+bits?', re.I):             Run.Arch.X86_32,
-        re.compile('64[ _-]+bits?', re.I):             Run.Arch.X86_64,
+        re.compile('64[ _-]+bots?', re.I):             Run.Arch.X86_64,
         }
 
     for location in locations:
@@ -754,6 +644,7 @@ def read_config(*locations):
                                   % str.join("', '", locations))
 
     return (resources, auths)
+
 
 
 class Engine(object):
@@ -851,51 +742,35 @@ class Engine(object):
         self.fetch_output_overwrites = fetch_output_overwrites
 
 
-    def add(self, task):
-        """
-        Add `task` to the list of tasks managed by this Engine.
-        Adding a task that has already been added to this `Engine`
-        instance results in a no-op.
-        """
-        state = task.execution.state
-        # Work around infinite recursion error when trying to compare
-        # `UserDict` instances which can contain each other.  We know
-        # that two identical tasks are the same object by
-        # construction, so let's use this to check.
-        def contained(elt, lst):
-            i = id(elt)
-            for item in lst:
-                if i == id(item):
-                    return True
-            return False
+    def add(self, app):
+        """Add `app` to the list of tasks managed by this Engine."""
+        state = app.execution.state
         if Run.State.NEW == state:
-            if not contained(task, self._new): self._new.append(task)
+            self._new.append(app)
         elif Run.State.SUBMITTED == state or Run.State.RUNNING == state:
-            if not contained(task, self._in_flight): self._in_flight.append(task)
+            self._in_flight.append(app)
         elif Run.State.STOPPED == state:
-            if not contained(task, self._stopped): self._stopped.append(task)
+            self._stopped.append(app)
         elif Run.State.TERMINATED == state:
-            if not contained(task, self._terminated): self._terminated.append(task)
+            self._terminated.append(app)
         else:
             raise AssertionError("Unhandled run state '%s' in gc3libs.core.Engine." % state)
-        task.attach(self)
 
 
-    def remove(self, task):
-        """Remove a `task` from the list of tasks managed by this Engine."""
-        state = task.execution.state
+    def remove(self, app):
+        """Remove a `app` from the list of tasks managed by this Engine."""
+        state = app.execution.state
         if Run.State.NEW == state:
-            self._new.remove(task)
+            self._new.remove(app)
         elif Run.State.SUBMITTED == state or Run.State.RUNNING == state:
-            self._in_flight.remove(task)
+            self._in_flight.remove(app)
         elif Run.State.STOPPED == state:
-            self._stopped.remove(task)
+            self._stopped.remove(app)
         elif Run.State.TERMINATED == state:
-            self._terminated.remove(task)
+            self._terminated.remove(app)
         else:
             raise AssertionError("Unhandled run state '%s' in gc3libs.core.Engine." % state)
-        task.detach(self)
-
+        
 
     def progress(self):
         """
@@ -923,17 +798,14 @@ class Engine(object):
         else:
             limit_submitted = utils.PlusInfinity()
 
-        gc3libs.log.debug("Engine.progress: updating status of tasks [%s]"
-                          % str.join(', ', [str(task) for task in self._in_flight]))
         # update status of SUBMITTED/RUNNING tasks before launching
         # new ones, otherwise we would be checking the status of
         # some tasks twice...
         transitioned = []
         for index, task in enumerate(self._in_flight):
             try:
-                state = task.execution.state
                 self._core.update_job_state(task)
-                if self._store and state != task.execution.state:
+                if self._store:
                     self._store.save(task)
                 if task.execution.state == Run.State.SUBMITTED:
                     currently_submitted += 1
@@ -953,18 +825,16 @@ class Engine(object):
                 raise
             except Exception, x:
                 gc3libs.log.error("Ignoring error in updating state of task '%s': %s: %s"
-                                  % (task, x.__class__.__name__, str(x)),
+                                  % (task.persistent_id, x.__class__.__name__, str(x)),
                                   exc_info=True)
         # remove tasks that transitioned to other states
         for index in reversed(transitioned):
             del self._in_flight[index]
 
-        gc3libs.log.debug("Engine.progress: killing tasks [%s]"
-                          % str.join(', ', [str(task) for task in self._to_kill]))
         # execute kills and update count of submitted/in-flight tasks
         transitioned = []
         for index, task in enumerate(self._to_kill):
-            try:
+            try: 
                 self._core.kill(task)
                 if self._store:
                     self._store.save(task)
@@ -977,23 +847,20 @@ class Engine(object):
                 transitioned.append(index)
             except Exception, x:
                 gc3libs.log.error("Ignored error in killing task '%s': %s: %s"
-                                  % (task, x.__class__.__name__, str(x)),
+                                  % (task.persistent_id, x.__class__.__name__, str(x)),
                                   exc_info=True)
         # remove tasks that transitioned to other states
         for index in reversed(transitioned):
             del self._to_kill[index]
 
-        gc3libs.log.debug("Engine.progress: updating status of stopped tasks [%s]"
-                          % str.join(', ', [str(task) for task in self._stopped]))
         # update state of STOPPED tasks; again need to make before new
         # submissions, because it can alter the count of in-flight
         # tasks.
         transitioned = []
         for index, task in enumerate(self._stopped):
             try:
-                state = task.execution.state
                 self._core.update_job_state(task)
-                if self._store and state != task.execution.state:
+                if self._store:
                     self._store.save(task)
                 if task.execution.state in [Run.State.SUBMITTED, Run.State.RUNNING]:
                     currently_in_flight += 1
@@ -1006,14 +873,12 @@ class Engine(object):
                     transitioned.append(index) # task changed state, mark as to remove
             except Exception, x:
                 gc3libs.log.error("Ignoring error in updating state of STOPPED task '%s': %s: %s"
-                                  % (task, x.__class__.__name__, str(x)),
+                                  % (task.persistent_id, x.__class__.__name__, str(x)),
                                   exc_info=True)
         # remove tasks that transitioned to other states
         for index in reversed(transitioned):
             del self._stopped[index]
 
-        gc3libs.log.debug("Engine.progress: submitting new tasks [%s]"
-                          % str.join(', ', [str(task) for task in self._new]))
         # now try to submit NEW tasks
         transitioned = []
         if self.can_submit:
@@ -1031,18 +896,15 @@ class Engine(object):
                     except Exception, x:
                         sys.excepthook(*sys.exc_info()) # DEBUG
                         gc3libs.log.error("Ignored error in submitting task '%s': %s: %s"
-                                          % (task, x.__class__.__name__, str(x)))
+                                          % (task.persistent_id, x.__class__.__name__, str(x)))
                         task.execution.log("Submission failed: %s: %s" 
                                            % (x.__class__.__name__, str(x)))
         # remove tasks that transitioned to SUBMITTED state
         for index in reversed(transitioned):
             del self._new[index]
 
-        gc3libs.log.debug("Engine.progress: fetching output of tasks [%s]"
-                          % str.join(', ', [str(task) for task in self._terminated]))
         # finally, retrieve output of finished tasks
         if self.can_retrieve:
-            transitioned = []
             for index, task in enumerate(self._terminated):
                 if not task.final_output_retrieved:
                     # try to get output
@@ -1050,15 +912,11 @@ class Engine(object):
                         self._core.fetch_output(task)
                         if task.final_output_retrieved == True:
                             self._core.free(task)
-                            transitioned.append(index)
                         if self._store:
                             self._store.save(task)
                     except Exception, x:
                         gc3libs.log.error("Ignored error in fetching output of task '%s': %s: %s" 
-                                          % (task, x.__class__.__name__, str(x)), exc_info=True)
-            # remove tasks for which final output has been retrieved
-            for index in reversed(transitioned):
-                del self._terminated[index]
+                                          % (task.persistent_id, x.__class__.__name__, str(x)), exc_info=True)
 
 
     def stats(self):
@@ -1093,7 +951,7 @@ class Engine(object):
     # implement a Core-like interface, so `Engine` objects can be used
     # as substitutes for `Core`.
 
-    def free(self, task, **kw):
+    def free(task):
         """
         Proxy for `Core.free` (which see); in addition, remove `task`
         from the list of managed tasks.
@@ -1102,7 +960,7 @@ class Engine(object):
         self._core.free(task)
 
 
-    def submit(self, task, **kw):
+    def submit(self, task):
         """
         Submit `task` at the next invocation of `perform`.  Actually,
         the task is just added to the collection of managed tasks,
@@ -1111,17 +969,17 @@ class Engine(object):
         return self.add(task)
 
 
-    def update_job_state(self, *tasks, **kw):
+    def update_job_state(self, *tasks):
         """
         Return list of *current* states of the given tasks.  States
         will only be updated at the next invocation of `perform`; in
         particular, no state-change handlers are called as a result of
         calling this method.
         """
-        pass
+        return [task.execution.state for task in tasks]
 
 
-    def fetch_output(self, task, output_dir=None, overwrite=False, **kw):
+    def fetch_output(self, task, output_dir=None, overwrite=False):
         """
         Proxy for `Core.fetch_output` (which see).
         """
@@ -1129,10 +987,10 @@ class Engine(object):
             output_dir = os.path.join(self.output_dir, task.persistent_id)
         if overwrite is None:
             overwrite = self.fetch_output_overwrites
-        self._core.fetch_output(task, output_dir, overwrite, **kw)
+        return self._core.fetch_output(task, output_dir, overwrite)
 
 
-    def kill(self, task, **kw):
+    def kill(self, task):
         """
         Schedule a task for killing on the next `perform` run.
         """
@@ -1143,4 +1001,4 @@ class Engine(object):
         """
         Proxy for `Core.peek` (which see).
         """
-        self._core.peek(task, what, offset, size, **kw)
+        return self._core.peek(task, what, offset, size, **kw)

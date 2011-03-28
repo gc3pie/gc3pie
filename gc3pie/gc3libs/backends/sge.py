@@ -20,10 +20,11 @@ Job control on SGE clusters (possibly connecting to the front-end via SSH).
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 #
 __docformat__ = 'reStructuredText'
-__version__ = 'development version (SVN $Revision$)'
+__version__ = '1.0rc6 (SVN $Revision$)'
 
 
 import os
+#import paramiko
 import random
 import re
 import sys
@@ -241,6 +242,10 @@ def get_qsub_jobid(qsub_output):
                         % qsub_output.rstrip())
 
 
+# FIXME: does not work: parsing dates is locale-dependent,
+# so this won't work if the date was printed on a computer
+# that has a different locale than this one.
+#
 def _job_info_normalize(self, job):
     if job.haskey('used_cputime'):
         # convert from string to int. Also convert from float representation to int
@@ -250,16 +255,16 @@ def _job_info_normalize(self, job):
         # convert from MB to KiB. Remove 'M' or'G' charater at the end.
         job.used_memory = int(mem[:len(mem)-1]) * 1024
 
-def _sge_filename_mapping(jobname, lrms_jobid, file_name):
+def _sge_filename_mapping(job_name, lrms_jobid, file_name):
     return {
         # XXX: SGE-specific?
-        ('%s.out' % jobname) : ('%s.o%s' % (jobname, lrms_jobid)),
-        ('%s.err' % jobname) : ('%s.e%s' % (jobname, lrms_jobid)),
+        ('%s.out' % job_name) : ('%s.o%s' % (job_name, lrms_jobid)),
+        ('%s.err' % job_name) : ('%s.e%s' % (job_name, lrms_jobid)),
         # the following is definitely GAMESS-specific
-        ('%s.cosmo' % jobname) : ('%s.o%s.cosmo' % (jobname, lrms_jobid)),
-        ('%s.dat'   % jobname) : ('%s.o%s.dat'   % (jobname, lrms_jobid)),
-        ('%s.inp'   % jobname) : ('%s.o%s.inp'   % (jobname, lrms_jobid)),
-        ('%s.irc'   % jobname) : ('%s.o%s.irc'   % (jobname, lrms_jobid)),
+        ('%s.cosmo' % job_name) : ('%s.o%s.cosmo' % (job_name, lrms_jobid)),
+        ('%s.dat'   % job_name) : ('%s.o%s.dat'   % (job_name, lrms_jobid)),
+        ('%s.inp'   % job_name) : ('%s.o%s.inp'   % (job_name, lrms_jobid)),
+        ('%s.irc'   % job_name) : ('%s.o%s.irc'   % (job_name, lrms_jobid)),
         }[file_name]
 
 
@@ -331,8 +336,7 @@ class SgeLrms(LRMS):
             if exit_code == 0:
                 ssh_remote_folder = stdout.split('\n')[0]
             else:
-                raise LRMSError("Failed while executing command '%s' on resource '%s';"
-                                " exit code: %d, stderr: '%s'."
+                raise LRMSError("Failed while executing command '%s' on resource '%s'. exit code %d, stderr %s."
                                 % (_command, self._resource, exit_code, stderr))
         except gc3libs.exceptions.TransportError, x:
             raise
@@ -345,6 +349,7 @@ class SgeLrms(LRMS):
             local_path, remote_path = input
             remote_path = os.path.join(ssh_remote_folder, remote_path)
             remote_parent = os.path.dirname(remote_path)
+
             try:
                 if remote_parent not in ['', '.']:
                     log.debug("Making remote directory '%s'" % remote_parent)
