@@ -28,7 +28,7 @@ expansions generated recursviely.
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 #
 __docformat__ = 'reStructuredText'
-__version__ = '1.0rc5 (SVN $Revision$)'
+__version__ = '1.0rc6 (SVN $Revision$)'
 
 
 import string

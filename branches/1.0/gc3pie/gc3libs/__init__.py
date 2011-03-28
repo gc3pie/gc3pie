@@ -32,7 +32,7 @@ relevant aspects of the application being represented.
 
 """
 __docformat__ = 'reStructuredText'
-__version__ = '1.0rc5 (SVN $Revision$)'
+__version__ = '1.0rc6 (SVN $Revision$)'
 
 
 import copy
