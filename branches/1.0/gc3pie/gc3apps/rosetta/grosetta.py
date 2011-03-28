@@ -26,6 +26,10 @@ See the output of ``grosetta --help`` for program usage instructions.
 __version__ = '1.0rc5 (SVN $Revision$)'
 # summary of user-visible changes
 __changelog__ = """
+  2011-03-28:
+    * No longer require any input file on the command line: e.g., ``grosetta -l``
+      will just list the status of jobs in the current session.  On the other hand,
+      if the FLAGS file is given, then given must be also at least one input file.
   2010-12-20:
     * Initial release, forking off the old `grosetta`/`gdocking` sources.
 """
@@ -107,27 +111,34 @@ Note: the list of INPUT and OUTPUT files must be separated by ':'
 
         # parse positional arguments
         args = self.params.args
-        if len(args) < 2:
-            raise RuntimeError("Incorrect usage; please run '%s --help' to read instructions." % self.name)
-        try:
-            self.flags_file = args[0]
-            del args[0]
-            if ':' in args:
-                separator = args.index(':')
-                inputs = args[:separator]
-                self.outputs = args[(separator+1):]
-            else:
-                inputs = args
-                self.outputs = [ ]
-        except:
-            raise RuntimeError("Incorrect usage; please run '%s --help' to read instructions." % self.name)
+        if len(args) == 0:
+            # no args given, so no new jobs added to the session
+            self.flags_file = 'PLEASE GIVE FLAGS FILE ON THE COMMAND LINE'
+            inputs = [ ]
+            self.outputs = [ ]
+        else:
+            # if FLAGS is given, then we want at least one input file
+            if len(args) < 2:
+                raise RuntimeError("Incorrect usage; please run '%s --help' to read instructions." % self.name)
+            try:
+                self.flags_file = args[0]
+                del args[0]
+                if ':' in args:
+                    separator = args.index(':')
+                    inputs = args[:separator]
+                    self.outputs = args[(separator+1):]
+                else:
+                    inputs = args
+                    self.outputs = [ ]
+            except:
+                raise RuntimeError("Incorrect usage; please run '%s --help' to read instructions." % self.name)
 
-        # make flags file path absolute
-        if not os.path.isabs(self.flags_file):
-            self.flags_file = os.path.join(os.getcwd(), self.flags_file)
-        if not os.path.exists(self.flags_file):
-            raise RuntimeError("Flags file '%s' does not exist." % self.flags_file)
-        self.log.info("Using flags file '%s'", self.flags_file)
+            # make flags file path absolute
+            if not os.path.isabs(self.flags_file):
+                self.flags_file = os.path.join(os.getcwd(), self.flags_file)
+            if not os.path.exists(self.flags_file):
+                raise RuntimeError("Flags file '%s' does not exist." % self.flags_file)
+            self.log.info("Using flags file '%s'", self.flags_file)
 
         # massage input file list to have only absolute paths
         inputs_ = [ ]
