@@ -704,6 +704,59 @@ class SessionBasedScript(_Script):
                                    max_in_flight = self.params.max_running)
 
 
+    def print_summary_table(self, output, stats):
+        """
+        Print a text summary of the session status to `output`.
+        This is used to provide the "normal" output of the
+        script; when the ``-l`` option is given, the output
+        of the `print_tasks_table` function is appended.
+
+        Override this in subclasses to customize the report that you
+        provide to users.  By default, this prints a table with the
+        count of tasks for each possible state.
+        
+        The `output` argument is a file-like object, only the `write`
+        method of which is used.  The `stats` argument is a
+        dictionary, mapping each possible `Run.State` to the count of
+        tasks in that state; see `Engine.stats` for a detailed
+        description.
+
+        """
+        table = Texttable(0) # max_width=0 => dynamically resize cells
+        table.set_deco(0)    # no decorations
+        table.set_cols_align(['r', 'c', 'c'])
+        total = stats['total']
+        for state in sorted(stats.keys()):
+            table.add_row([
+                    state, 
+                    "%d/%d" % (stats[state], total),
+                    "(%.1f%%)" % (100.0 * stats[state] / total)
+                    ])
+        output.write(table.draw())
+        output.write("\n")
+
+
+    def print_tasks_table(self, output=sys.stdout, states=gc3libs.Run.State):
+        """
+        Output a text table to stream `output`, giving details about
+        tasks in the given states.
+        """
+        table = Texttable(0) # max_width=0 => dynamically resize cells
+        table.set_deco(Texttable.HEADER) # also: .VLINES, .HLINES .BORDER
+        table.header(['JobID', 'Job name', 'State', 'Info'])
+        #table.set_cols_width([10, 20, 10, 35])
+        table.set_cols_align(['l', 'l', 'l', 'l'])
+        table.add_rows([ (task.persistent_id, task.jobname,
+                          task.execution.state, task.execution.info)
+                         for task in self.tasks
+                         if task.execution.state in states ],
+                       header=False)
+        # XXX: uses texttable's internal implementation detail
+        if len(table._rows) > 0:
+            output.write(table.draw())
+            output.write("\n")
+
+
     ##
     ## pyCLI INTERFACE METHODS
     ##
@@ -960,25 +1013,16 @@ class SessionBasedScript(_Script):
             stats = controller.stats()
             total = stats['total']
             if total > 0:
-                table = Texttable(0) # max_width=0 => dynamically resize cells
-                table.set_deco(0)    # no decorations
-                table.set_cols_align(['r', 'c', 'c'])
-                for state in sorted(stats.keys()):
-                    table.add_row([
-                            state, 
-                            "%d/%d" % (stats[state], total),
-                            "(%.1f%%)" % (100.0 * stats[state] / total)
-                            ])
-                print (table.draw())
-                # details table
+                self.print_summary_table(sys.stdout, stats)
+                # details table, as per ``-l`` option
                 if self.params.states:
-                    self._print_tasks_table(sys.stdout, self.params.states)
+                    self.print_tasks_table(sys.stdout, self.params.states)
             else:
                 if self.params.session is not None:
-                    print ("  There are no jobs in session '%s'."
+                    print ("  There are no tasks in session '%s'."
                            % self.params.session)
                 else:
-                    print ("  No jobs in this session.")
+                    print ("  No tasks in this session.")
             # compute exitcode based on the running status of jobs
             rc = 0
             if stats['failed'] > 0:
@@ -1048,28 +1092,6 @@ class SessionBasedScript(_Script):
         except IOError, ex:
             self.log.error("Cannot save job list to session file '%s': %s"
                            % (self.params.session, str(ex)))
-
-
-    def _print_tasks_table(self, output=sys.stdout, states=gc3libs.Run.State):
-        """
-        Output a summary table to stream `output`.
-        Only prints jobs whose status is contained
-        in `states`.
-        """
-        table = Texttable(0) # max_width=0 => dynamically resize cells
-        table.set_deco(Texttable.HEADER) # also: .VLINES, .HLINES .BORDER
-        table.header(['JobID', 'Job name', 'State', 'Info'])
-        #table.set_cols_width([10, 20, 10, 35])
-        table.set_cols_align(['l', 'l', 'l', 'l'])
-        table.add_rows([ (task.persistent_id, task.jobname,
-                          task.execution.state, task.execution.info)
-                         for task in self.tasks
-                         if task.execution.state in states ],
-                       header=False)
-        # XXX: uses texttable's internal implementation detail
-        if len(table._rows) > 0:
-            output.write(table.draw())
-            output.write("\n")
 
 
     def _search_for_input_files(self, paths):
