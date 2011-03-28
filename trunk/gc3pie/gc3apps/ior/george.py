@@ -31,6 +31,7 @@ import os
 import os.path
 import shutil
 import sys
+from texttable import Texttable
 import types
 
 ## interface to Gc3libs
@@ -95,6 +96,15 @@ class ValueFunctionIteration(SequentialTaskCollection):
         self.slice_size = slice_size
         self.datadir = output_dir
         self.extra = kw
+
+        # count initial values
+        if os.path.exists(initial_values_file):
+            f = open(initial_values_file, 'r')
+            self.num_input_values = gc3libs.utils.count(f, lambda _: True)
+            f.close()
+        else:
+            # XXX: there's no good default value!
+            self.num_input_values = 0
 
         # this little piece of black magic is to ensure intermediate
         # filenames appear numerically sorted in `ls -l` output
@@ -463,6 +473,33 @@ class GeorgeScript(SessionBasedScript):
                     ],
                    kw)
 
+
+    def print_summary_table(self, output, stats):
+        output.write("* Status of given tasks:\n")
+        table = Texttable(0) # max_width=0 => dynamically resize cells
+        table.set_deco(0)    # no decorations
+        table.add_row(['Input', 'Iteration', 'Tasks Generated/Total', 'Progress'])
+        table.set_cols_align(['l', 'c', 'c', 'c'])
+        for toplevel in self.tasks:
+            current_iteration = toplevel._current_task
+            total_iterations = toplevel.total_iterations
+            if toplevel.slice_size == 0:
+                mult = 3
+            else:
+                mult = 2 + (toplevel.num_input_values / toplevel.slice_size)
+            generated_tasks = current_iteration * mult
+            total_tasks = total_iterations * mult
+            table.add_row([
+                toplevel.jobname, 
+                "%d/%d" % (1+current_iteration, 1+total_iterations),
+                "%d/%d" % (generated_tasks, total_tasks),
+                "(%.1f%%)" % (100.0 * current_iteration / total_iterations)
+                ])
+        output.write(table.draw())
+        output.write("\n")
+
+        output.write("* Overall status of tasks:\n")
+        SessionBasedScript.print_summary_table(self, output, stats)
 
 
 # run script
