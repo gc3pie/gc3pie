@@ -99,13 +99,13 @@ class SubprocessLrms(LRMS):
             self._resource.free_slots += 1
         except OSError, ex:
             if ex.errno == 10:
-                raise InvalidArgument(
+                raise gc3libs.exceptions.InvalidArgument(
                     "Job '%s' refers to non-existent local process %s"
                     % (app, app.execution.lrms_jobid))
             else:
                 raise
         except ValueError, ex:
-            raise InvalidArgument(
+            raise gc3libs.exceptions.InvalidArgument(
                 "Invalid field `lrms_jobid` in Job '%s':"
                 " should be a number, is '%s' instead"
                 % (app, app.execution.lrms_jobid))
