@@ -1,0 +1,397 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Overview &mdash; gc3pie v1.0rc4 documentation</title>
+    <link rel="stylesheet" href="_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '',
+        VERSION:     '1.0rc4',
+        COLLAPSE_MODINDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="top" title="gc3pie v1.0rc4 documentation" href="index.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="modindex.html" title="Global Module Index"
+             accesskey="M">modules</a> |</li>
+        <li><a href="index.html">gc3pie v1.0rc4 documentation</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="overview">
+<h1>Overview<a class="headerlink" href="#overview" title="Permalink to this headline">¶</a></h1>
+<p>GC3Libs takes an application-oriented approach to asynchronous
+computing. A generic <tt class="xref docutils literal"><span class="pre">Application</span></tt> class provides the basic
+operations for controlling remote computations and fetching a result;
+client code should derive specialized sub-classes to deal with a
+particular application, and to perform any application-specific
+pre- and post-processing.</p>
+<p>The generic procedure for performing computations with GC3Libs is the
+following:</p>
+<blockquote>
+<ol class="arabic simple">
+<li>Client code creates an instance of an <cite>Application</cite> sub-class.</li>
+<li>Asynchronous computation is started by submitting the application
+object; this associates the application with an actual (possibly
+remote) computational job.</li>
+<li>Client code can monitor the state of the computational job; state
+handlers are called on the application object as the state
+changes.</li>
+<li>When the job is done, the final output is retrieved and a
+post-processing method is invoked on the application object.</li>
+</ol>
+</blockquote>
+<p>At this point, results of the computation are available and can be
+used by the calling program.</p>
+<p>The <tt class="xref docutils literal"><span class="pre">Application</span></tt> class (and its sub-classes) alow client code
+to control the above process by:</p>
+<blockquote>
+<ol class="arabic">
+<li><p class="first">Specifying the characteristics (computer program to run,
+input/output files, memory/CPU/duration requirements, etc.) of the
+corresponding computational job.  This is done by passing suitable
+values to the <tt class="xref docutils literal"><span class="pre">Application</span></tt> constructor.  See the
+<tt class="xref docutils literal"><span class="pre">Application</span></tt> constructor documentation for more info.</p>
+</li>
+<li><p class="first">Providing methods to control the &#8220;life-cycle&#8221; of the associated
+computational job: start, check execution state, stop, retrieve a
+snapshot of the output files.  There are actually two different
+interfaces for this, detailed below:</p>
+<blockquote>
+<ol class="arabic">
+<li><p class="first">A <em>passive</em> interface: a <tt class="xref docutils literal"><span class="pre">Core</span></tt> or a
+<tt class="xref docutils literal"><span class="pre">Engine</span></tt> object is used to start/stop/monitor jobs
+associated with the given application.  For instance:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="n">a</span> <span class="o">=</span> <span class="n">GamessApplication</span><span class="p">(</span><span class="o">...</span><span class="p">)</span>
+
+<span class="c"># create a `Core` object; only one instance is needed</span>
+<span class="n">g</span> <span class="o">=</span> <span class="n">Core</span><span class="p">(</span><span class="o">...</span><span class="p">)</span>
+
+<span class="c"># start the remote computation</span>
+<span class="n">g</span><span class="o">.</span><span class="n">submit</span><span class="p">(</span><span class="n">a</span><span class="p">)</span>
+
+<span class="c"># periodically monitor job execution</span>
+<span class="n">g</span><span class="o">.</span><span class="n">update_job_state</span><span class="p">(</span><span class="n">a</span><span class="p">)</span>
+
+<span class="c"># retrieve output when the job is done</span>
+<span class="n">g</span><span class="o">.</span><span class="n">fetch_output</span><span class="p">(</span><span class="n">a</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>The passive interface gives client code full control over
+the lifecycle of the job, but cannot support some use cases
+(e.g., automatic application re-start).</p>
+<p>As you can see from the above example, the passive interface
+is implemented by methods in the <tt class="xref docutils literal"><span class="pre">Core</span></tt> and
+<tt class="xref docutils literal"><span class="pre">Engine</span></tt> classes (they implement the same
+interface).  See those classes documentation for more details.</p>
+</li>
+<li><p class="first">An <em>active</em> interface: this requires that the
+<tt class="xref docutils literal"><span class="pre">Application</span></tt> object be attached to a <tt class="xref docutils literal"><span class="pre">Core</span></tt>
+or <tt class="xref docutils literal"><span class="pre">Engine</span></tt> instance:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="n">a</span> <span class="o">=</span> <span class="n">GamessApplication</span><span class="p">(</span><span class="o">...</span><span class="p">)</span>
+
+<span class="c"># create a `Core` object; only one instance is needed</span>
+<span class="n">g</span> <span class="o">=</span> <span class="n">Core</span><span class="p">(</span><span class="o">...</span><span class="p">)</span>
+
+<span class="c"># tell application to use the active interface</span>
+<span class="n">a</span><span class="o">.</span><span class="n">attach</span><span class="p">(</span><span class="n">g</span><span class="p">)</span>
+
+<span class="c"># start the remote computation</span>
+<span class="n">a</span><span class="o">.</span><span class="n">submit</span><span class="p">()</span>
+
+<span class="c"># periodically monitor job execution</span>
+<span class="n">a</span><span class="o">.</span><span class="n">update_job_state</span><span class="p">()</span>
+
+<span class="c"># retrieve output when the job is done</span>
+<span class="n">a</span><span class="o">.</span><span class="n">fetch_output</span><span class="p">()</span>
+</pre></div>
+</div>
+<p>With the active interface, application objects can support
+automated restart and similar use-cases.</p>
+<p>When an <tt class="xref docutils literal"><span class="pre">Engine</span></tt> object is used instead of a
+<tt class="xref docutils literal"><span class="pre">Core</span></tt> one, the job life-cycle is automatically
+managed, providing a fully asynchronous way of executing
+computations.</p>
+<p>The active interface is implemented by the <tt class="xref docutils literal"><span class="pre">Task</span></tt>
+class and all its descendants (including <tt class="xref docutils literal"><span class="pre">Application</span></tt>).</p>
+</li>
+</ol>
+</blockquote>
+</li>
+<li><p class="first">Providing &#8220;state transition methods&#8221; that are called when a
+change in the job execution state is detected; those methods can
+implement application specific behavior, like restarting the
+computational job with changed input if the alloted duration has
+expired but the computation has not finished.  In particular, a
+<cite>postprocess</cite> method is called when the final output of an
+application is available locally for processing.</p>
+<p>The set of &#8220;state transition methods&#8221; currently implemented by
+the <tt class="xref docutils literal"><span class="pre">Application</span></tt> class are: <tt class="xref docutils literal"><span class="pre">new()</span></tt>,
+<tt class="xref docutils literal"><span class="pre">submitted()</span></tt>, <tt class="xref docutils literal"><span class="pre">running()</span></tt>, <tt class="xref docutils literal"><span class="pre">stopped()</span></tt>,
+<tt class="xref docutils literal"><span class="pre">terminated()</span></tt> and <tt class="xref docutils literal"><span class="pre">postprocess()</span></tt>.  Each method is
+called when the execution state of an application object changes
+to the corresponding state; see each method&#8217;s documentation for
+exact information.</p>
+</li>
+</ol>
+</blockquote>
+<p>In addition, GC3Libs provides <em>collection</em> classes, that expose
+interfaces <em>2.</em> and <em>3.</em> above, allowing one to control a set of
+applications as a single whole.  Collections can be nested (i.e., a
+collection can hold a mix of <tt class="xref docutils literal"><span class="pre">Application</span></tt> and
+<tt class="xref docutils literal"><span class="pre">TaskCollection</span></tt> objects), so that workflows can be implemented
+by composing collection objects.</p>
+<p>Note that the term <em>computational job</em> (or just <em>job</em>, for short) is
+used here in a quite general sense, to mean any kind of computation
+that can happen independently of the main thread of the calling
+program.  GC3Libs currently provide means to execute a job as a
+separate process on the same computer, or as a batch job on a remote
+computational cluster.</p>
+<div class="section" id="execution-model-of-gc3libs-applications">
+<h2>Execution model of GC3Libs applications<a class="headerlink" href="#execution-model-of-gc3libs-applications" title="Permalink to this headline">¶</a></h2>
+<p>An <cite>Application</cite> can be regarded as an abstraction of an independent
+asynchronous computation, i.e., a GC3Libs&#8217; <cite>Application</cite> behaves much
+like an independent UNIX process (but it can actually run on a
+separate remote computer). Indeed, GC3Libs&#8217; <cite>Application</cite> objects
+mimic the POSIX process model: <cite>Application</cite> are started by a
+parent process, run independently of it, and need to have their final
+exit code and output reaped by the calling process.</p>
+<p>The following table makes the correspondence between POSIX processes
+and GC3Libs&#8217; <cite>Application</cite> objects explicit.</p>
+<table border="1" class="docutils">
+<colgroup>
+<col width="31%" />
+<col width="32%" />
+<col width="37%" />
+</colgroup>
+<thead valign="bottom">
+<tr><th class="head"><cite>os</cite> module function</th>
+<th class="head"><cite>Core</cite> function</th>
+<th class="head">purpose</th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr><td>exec</td>
+<td>Core.submit</td>
+<td>start new job</td>
+</tr>
+<tr><td>kill(..., SIGTERM)</td>
+<td>Core.kill</td>
+<td>terminate executing job</td>
+</tr>
+<tr><td>wait(..., WNOHANG)</td>
+<td>Core.update_job_state</td>
+<td>get job status</td>
+</tr>
+<tr><td><ul class="first last simple">
+<li></li>
+</ul>
+</td>
+<td>Core.fetch_output</td>
+<td>retrieve output</td>
+</tr>
+</tbody>
+</table>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<ol class="last arabic simple">
+<li>With GC3Libs, it is not possible to send an arbitrary signal to
+a running job: jobs can only be started and stopped (killed).</li>
+<li>Since POSIX processes are always executed on the local machine,
+there is no equivalent of the GC3Libs <cite>fetch_output</cite>.</li>
+</ol>
+</div>
+<div class="section" id="application-exit-codes">
+<h3>Application exit codes<a class="headerlink" href="#application-exit-codes" title="Permalink to this headline">¶</a></h3>
+<p>POSIX encodes process termination information in the &#8220;return code&#8221;,
+which can be parsed through <cite>os.WEXITSTATUS</cite>, <cite>os.WIFSIGNALED</cite>,
+<cite>os.WTERMSIG</cite> and relative library calls.</p>
+<p>Likewise, GC3Libs provides each <tt class="xref docutils literal"><span class="pre">Application</span></tt> object with an
+<cite>execution.returncode</cite> attribute, which is a valid POSIX &#8220;return
+code&#8221;.  Client code can therefore use <cite>os.WEXITSTATUS</cite> and relatives
+to inspect it; convenience attributes <cite>execution.signal</cite> and
+<cite>execution.exitcode</cite> are available for direct access to the parts of
+the return code.  See <tt class="xref docutils literal"><span class="pre">Run.returncode()</span></tt> for more information.</p>
+<p>However, GC3Libs has to deal with error conditions that are not
+catered for by the POSIX process model: for instance, execution of an
+application may fail because of an error connecting to the remote
+execution cluster.</p>
+<p>To this purpose, GC3Libs encodes information about abnormal job
+termination using a set of pseudo-signal codes in a job&#8217;s
+<cite>execution.returncode</cite> attribute: i.e., if termination of a job is due
+to some grid/batch system/middleware error, the job&#8217;s
+<cite>os.WIFSIGNALED(app.execution.returncode)</cite> will be <cite>True</cite> and the
+signal code (as gotten from <cite>os.WTERMSIG(app.execution.returncode)</cite>)
+will be one of those listed in the <tt class="xref docutils literal"><span class="pre">Run.Signals</span></tt> documentation.</p>
+</div>
+<div class="section" id="application-execution-states">
+<h3>Application execution states<a class="headerlink" href="#application-execution-states" title="Permalink to this headline">¶</a></h3>
+<p>At any given moment, a GC3Libs job is in any one of a set of
+pre-defined states, listed in the table below.  The job state is
+always available in the <cite>.execution.state</cite> instance property of any
+<cite>Application</cite> or <cite>Task</cite> object; see <tt class="xref docutils literal"><span class="pre">Run.state()</span></tt> for detailed
+information.</p>
+<table border="1" class="docutils">
+<colgroup>
+<col width="18%" />
+<col width="61%" />
+<col width="22%" />
+</colgroup>
+<thead valign="bottom">
+<tr><th class="head">GC3Libs&#8217; Job state</th>
+<th class="head">purpose</th>
+<th class="head">can change to</th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr><td>NEW</td>
+<td>Job has not yet been submitted/started (i.e., gsub not called)</td>
+<td>SUBMITTED (by gsub)</td>
+</tr>
+<tr><td>SUBMITTED</td>
+<td>Job has been sent to execution resource</td>
+<td>RUNNING, STOPPED</td>
+</tr>
+<tr><td>STOPPED</td>
+<td>Trap state: job needs manual intervention (either user-
+or sysadmin-level) to resume normal execution</td>
+<td>TERMINATED (by gkill),
+SUBMITTED (by miracle)</td>
+</tr>
+<tr><td>RUNNING</td>
+<td>Job is executing on remote resource</td>
+<td>TERMINATED</td>
+</tr>
+<tr><td>TERMINATED</td>
+<td>Job execution is finished (correctly or not)
+and will not be resumed</td>
+<td>None: final state</td>
+</tr>
+</tbody>
+</table>
+<p>When an <tt class="xref docutils literal"><span class="pre">Application</span></tt> object is first created, its
+<cite>.execution.state</cite> attribute is assigned the state NEW.  After a
+successful start (via <cite>Core.submit()</cite> or similar), it is transitioned
+to state SUBMITTED.  Further transitions to RUNNING or STOPPED or
+TERMINATED state, happen completely independently of the creator
+program: the <cite>Core.update_job_state()</cite> call provides updates on the
+status of a job. (Somewhat like the POSIX <cite>wait(..., WNOHANG)</cite> system
+call, except that GC3Libs provide explicit RUNNING and STOPPED states,
+instead of encoding them into the return value.)</p>
+<p>The STOPPED state is a kind of generic &#8220;run time error&#8221; state: a job
+can get into the STOPPED state if its execution is stopped (e.g., a
+SIGSTOP is sent to the remote process) or delayed indefinitely (e.g.,
+the remote batch system puts the job &#8220;on hold&#8221;). There is no way a job
+can get out of the STOPPED state automatically: all transitions from the
+STOPPED state require manual intervention, either by the submitting
+user (e.g., cancel the job), or by the remote systems administrator
+(e.g., by releasing the hold).</p>
+<p>The TERMINATED state is the final state of a job: once a job reaches
+it, it cannot get back to any other state. Jobs reach TERMINATED state
+regardless of their exit code, or even if a system failure occurred
+during remote execution; actually, jobs can reach the TERMINATED
+status even if they didn&#8217;t run at all!</p>
+<p>A job that is not in the NEW or TERMINATED state is said to be a &#8220;live&#8221; job.</p>
+</div>
+<div class="section" id="computational-job-specification">
+<h3>Computational job specification<a class="headerlink" href="#computational-job-specification" title="Permalink to this headline">¶</a></h3>
+<p>One of the purposes of GC3Libs is to provide an abstraction layer
+that frees client code from dealing with the details of job execution
+on a possibly remote cluster. For this to work, it necessary to
+specify job characteristics and requirements, so that the GC3Libs
+scheduler can select an appropriate computational resource for
+executing the job.</p>
+<p>GC3Libs <cite>Application</cite> provide a way to describe computational job
+characteristics (program to run, input and output files,
+memory/duration requirements, etc.) loosely patterned after ARC&#8217;s
+<a class="reference external" href="http://www.nordugrid.org/documents/xrsl.pdf">xRSL</a> language.</p>
+<p>The description of the computational job is done through keyword
+parameters to the <tt class="xref docutils literal"><span class="pre">Application</span></tt> constructor, which see for
+details.  Changes in the job characteristics <em>after</em> an
+<tt class="xref docutils literal"><span class="pre">Application</span></tt> object has been constructed are not currently
+supported.</p>
+</div>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+            <h3><a href="index.html">Table Of Contents</a></h3>
+            <ul>
+<li><a class="reference external" href="#">Overview</a><ul>
+<li><a class="reference external" href="#execution-model-of-gc3libs-applications">Execution model of GC3Libs applications</a><ul>
+<li><a class="reference external" href="#application-exit-codes">Application exit codes</a></li>
+<li><a class="reference external" href="#application-execution-states">Application execution states</a></li>
+<li><a class="reference external" href="#computational-job-specification">Computational job specification</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+            <h3>This Page</h3>
+            <ul class="this-page-menu">
+              <li><a href="_sources/overview.txt"
+                     rel="nofollow">Show Source</a></li>
+            </ul>
+          <div id="searchbox" style="display: none">
+            <h3>Quick search</h3>
+              <form class="search" action="search.html" method="get">
+                <input type="text" name="q" size="18" />
+                <input type="submit" value="Go" />
+                <input type="hidden" name="check_keywords" value="yes" />
+                <input type="hidden" name="area" value="default" />
+              </form>
+              <p class="searchtip" style="font-size: 90%">
+              Enter search terms or a module, class or function name.
+              </p>
+          </div>
+          <script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="modindex.html" title="Global Module Index"
+             >modules</a> |</li>
+        <li><a href="index.html">gc3pie v1.0rc4 documentation</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+      &copy; Copyright 2010-2011, Grid Computing Competence Centre, University of Zurich.
+      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 0.6.6.
+    </div>
+  </body>
+</html>

@@ -1,0 +1,3 @@
+include *.txt
+recursive-include docs conf.py *.html *.txt *.js *.css *.png
+recursive-include gc3libs/etc *.sh *.pl *.example

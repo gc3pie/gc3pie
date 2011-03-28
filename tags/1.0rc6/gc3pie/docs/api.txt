@@ -1,0 +1,147 @@
+.. This file is included by `index.txt`.
+
+
++++++++++++++++++
+ GC3Libs modules
++++++++++++++++++
+
+
+`gc3libs`
+=========
+.. automodule:: gc3libs
+   :members:
+
+`gc3libs.core`
+==============
+.. automodule:: gc3libs.core
+    :members:
+
+`gc3libs.Default`
+=================
+.. warning:: 
+
+   This module is deprecated and will be removed in a future release.
+   Do not depend on it.
+
+.. automodule:: gc3libs.Default
+   :members:
+
+`gc3libs.Exceptions`
+====================
+.. automodule:: gc3libs.Exceptions
+   :members:
+
+`gc3libs.persistence`
+=====================
+.. automodule:: gc3libs.persistence
+    :members:
+
+
+`gc3libs.application`
+=====================
+.. automodule:: gc3libs.application
+    :members:
+
+`gc3libs.application.gamess`
+============================
+.. automodule:: gc3libs.application.gamess
+    :members:
+
+`gc3libs.application.rosetta`
+=============================
+.. automodule:: gc3libs.application.rosetta
+    :members:
+
+
+`gc3libs.authentication`
+========================
+.. automodule:: gc3libs.authentication
+    :members:
+
+`gc3libs.authentication.ssh`
+============================
+.. automodule:: gc3libs.authentication.ssh
+    :members:
+
+`gc3libs.authentication.grid`
+=============================
+.. automodule:: gc3libs.authentication.grid
+    :members:
+
+
+`gc3libs.backends`
+==================
+.. automodule:: gc3libs.backends
+    :members:
+
+`gc3libs.backends.arc`
+======================
+.. automodule:: gc3libs.backends.arc
+    :members:
+
+`gc3libs.backends.sge`
+======================
+.. automodule:: gc3libs.backends.sge
+    :members:
+
+`gc3libs.backends.transport`
+============================
+.. automodule:: gc3libs.backends.transport
+    :members:
+
+`gc3libs.task`
+==============
+.. automodule:: gc3libs.task
+     :members:
+
+`gc3libs.utils`
+===============
+.. automodule:: gc3libs.utils
+    :members:
+
+`gc3libs.Resource`
+==================
+.. warning:: 
+
+   This module is deprecated and will be removed in a future release.
+   Do not depend on it.
+
+.. automodule:: gc3libs.Resource
+    :members:
+
+`gc3libs.scheduler`
+===================
+.. automodule:: gc3libs.scheduler
+    :members:
+
+`gc3libs.InformationContainer`
+==============================
+
+.. warning:: 
+
+   This module is deprecated and will be removed in a future release.
+   Do not depend on it.
+
+.. automodule:: gc3libs.InformationContainer
+    :members:
+
+
+++++++++++++++++++
+ GC3Utils modules
+++++++++++++++++++
+
+`gc3utils`
+==========
+.. automodule:: gc3utils
+   :members:
+
+`gc3utils.gcmd`
+===============
+
+.. automodule:: gc3utils.gcmd
+   :members:
+
+`gc3utils.commands`
+===================
+.. automodule:: gc3utils.commands
+   :members:
