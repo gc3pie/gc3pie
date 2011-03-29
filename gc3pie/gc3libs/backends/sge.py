@@ -456,8 +456,8 @@ class SgeLrms(LRMS):
                     state = Run.State.RUNNING
                 elif job_status in ['s', 'S', 'T'] or 'qh' in job_status:
                     state = Run.State.STOPPED
-                elif job_status == 'E':
-                    state = Run.State.TERMINATED
+                elif job_status == 'E': # error condition
+                    state = Run.State.TERMINATING 
                 else:
                     log.warning("unknown SGE job status '%s', returning `UNKNOWN`", job_status)
                     state = Run.State.UNKNOWN
@@ -513,7 +513,7 @@ class SgeLrms(LRMS):
                     #     log.debug('completion_time: %s',job.completion_time)
                     #     job.completion_time = _date_normalize(job.completion_time)
                                                                                                     
-                    state = Run.State.TERMINATED
+                    state = Run.State.TERMINATING
                 else:
                     # `qacct` failed as well...
                     try:

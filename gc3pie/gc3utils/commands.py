@@ -520,12 +520,13 @@ released once the output files have been fetched.
                 app = self._store.load(jobid)
 
                 if app.execution.state == Run.State.NEW:
-                    raise gc3libs.exceptions.InvalidOperation("Job '%s' is not yet submitted. Output cannot be retrieved"
-                                           % app.persistent_id)
-
-                if app.final_output_retrieved:
-                    raise gc3libs.exceptions.InvalidOperation("Output of '%s' already downloaded to '%s'" 
-                                           % (app.persistent_id, app.output_dir))
+                    raise gc3libs.exceptions.InvalidOperation(
+                        "Job '%s' is not yet submitted. Output cannot be retrieved"
+                        % app.persistent_id)
+                elif app.execution.state == Run.State.TERMINATED:
+                    raise gc3libs.exceptions.InvalidOperation(
+                        "Output of '%s' already downloaded to '%s'" 
+                        % (app.persistent_id, app.output_dir))
 
                 if self.params.download_dir is None:
                     download_dir = os.path.join(os.getcwd(), app.persistent_id)

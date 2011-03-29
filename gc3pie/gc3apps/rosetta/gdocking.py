@@ -118,7 +118,8 @@ class GDockingApplication(RosettaDockingApplication):
         self.collect = collect, # whether to collect result PDBs into a tarfile
         self.computed = 0 # number of decoys actually computed by this job
 
-    def postprocess(self, output_dir):
+    def terminated(self):
+        output_dir = self.output_dir
         # work directory is the parent of the download directory
         work_dir = os.path.dirname(output_dir)
         # move around output files so they're easier to preprocess:
