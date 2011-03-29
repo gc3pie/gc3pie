@@ -125,11 +125,12 @@ class RosettaApplication(gc3libs.Application):
             outputs = _outputs,
             **kw)
 
-    def postprocess(self, output_dir):
+    def terminated(self):
         """
         Extract output files from the tar archive created by the
         'rosetta.sh' script.
         """
+        output_dir = self.output_dir
         tar_file_name = os.path.join(output_dir, 
                                      self.__protocol + '.tar.gz')
         if os.path.exists(tar_file_name):

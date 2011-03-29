@@ -311,10 +311,11 @@ class ValueFunctionIterationApplication(Application):
             **kw)
 
 
-    def postprocess(self, output_dir):
+    def terminated(self):
         if self.execution.returncode == 0:
             # everything ok, try to post-process results
             results = [ ]
+            output_dir = self.output_dir
             output_filename = os.path.join(output_dir, OUT_VALUES_FILE)
             try:
                 result_file = open(output_filename, 'r')
@@ -481,8 +482,8 @@ class GeorgeScript(SessionBasedScript):
         table.add_row(['Input', 'Iteration', 'Tasks Generated/Total', 'Progress'])
         table.set_cols_align(['l', 'c', 'c', 'c'])
         for toplevel in self.tasks:
-            current_iteration = toplevel._current_task
-            total_iterations = toplevel.total_iterations
+            current_iteration = toplevel._current_task + 1
+            total_iterations = toplevel.total_iterations + 1
             if toplevel.slice_size == 0:
                 mult = 3
             else:

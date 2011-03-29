@@ -343,15 +343,16 @@ class ParallelTaskCollection(TaskCollection):
 
         For a `ParallelTaskCollection`, the state of dependent jobs is
         computed by looping across the states NEW, SUBMITTED, RUNNING,
-        STOPPED, TERMINATED, UNKNOWN in the order given: the first
-        state for which there is at least one job in that state is
-        returned as the global collection state.
+        STOPPED, TERMINATING, TERMINATED, UNKNOWN in the order given:
+        the first state for which there is at least one job in that
+        state is returned as the global collection state.
         """
         stats = self.stats()
         for state in [ Run.State.NEW,
                        Run.State.SUBMITTED,
                        Run.State.RUNNING,
                        Run.State.STOPPED,
+                       Run.State.TERMINATING,
                        Run.State.TERMINATED,
                        Run.State.UNKNOWN,
                        ]:

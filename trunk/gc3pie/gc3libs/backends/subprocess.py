@@ -162,10 +162,10 @@ class SubprocessLrms(LRMS):
         # map POSIX status to GC3Libs `State`
         if posix.WIFSTOPPED(status):
             app.execution.state = Run.State.STOPPED
+            app.execution.returncode = status
         elif posix.WIFSIGNALED(status) or posix.WIFEXITED(status):
-            app.execution.state = Run.State.TERMINATED
-            app.execution.signal = posix.WTERMSIG(status)
-            app.execution.exitcode = posix.WEXITSTATUS(status)
+            app.execution.state = Run.State.TERMINATING
+            app.execution.returncode = status
             # book-keeping
             self._resource.free_slots += 1
             self._resource.user_run -= 1

@@ -120,12 +120,6 @@ class Task(object):
     After successful initialization, a `Task` instance will have the
     following attributes:
 
-    `final_output_retrieved` 
-      boolean, indicating whether job output has been fetched from the
-      remote resource; if `True`, you cannot assume that data is still
-      available remotely.  (Note: for jobs in ``TERMINATED`` state, the
-      output can be retrieved only once!)
-
     `execution`
       a `Run` instance; its state attribute is initially set to ``NEW``.
 
@@ -144,7 +138,6 @@ class Task(object):
                      implementing the same interface.
         """
         self.jobname = jobname
-        self.final_output_retrieved = False
         self.execution = Run(attach=self)
         # `_grid` and `_attached` are set by `attach()`/`detach()`
         self._attached = False
@@ -248,9 +241,8 @@ class Task(object):
         into the directory whose path is stored in instance attribute
         `.output_dir`.
 
-        If the execution state is TERMINATED, sets the attribute
-        `final_output_retrieved` to `True` and calls
-        :meth:`postprocess`.
+        If the execution state is `TERMINATING`, transition the state to
+        `TERMINATED` (which runs the appropriate hook).
 
         See :meth:`gc3libs.Core.fetch_output` for a full explanation.
 
@@ -259,12 +251,11 @@ class Task(object):
         """
         gc3libs.log.debug("In `fetch_output(%s, %s, %s)` ..."
                           % (self, output_dir, overwrite))
-        if self.final_output_retrieved:
-            return # FIXME: should be `self.output_dir`?
-        result = self._grid.fetch_output(self, output_dir, overwrite, **kw)
         if self.execution.state == Run.State.TERMINATED:
-            self.final_output_retrieved = True
-            self.postprocess(output_dir)
+            return self.output_dir
+        result = self._grid.fetch_output(self, output_dir, overwrite, **kw)
+        if self.execution.state == Run.State.TERMINATING:
+            self.execution.state = TERMINATED
         return result
     
 
@@ -294,15 +285,18 @@ class Task(object):
         An exception `TaskError` is raised if the job hits state
         `STOPPED` or `UNKNOWN` during an update in phase 2.
 
-        When the job reaches `TERMINATED` state, the output is
-        retrieved, and the return code (stored also in `.returncode`)
-        is returned; if the job is not yet in `TERMINATED` state,
-        calling `progress` returns `None`.
+        When the job reaches `TERMINATING` state, the output is
+        retrieved; if this operation is successfull, state is advanced
+        to `TERMINATED`.
+
+        oNCE the job reaches `TERMINATED` state, the return code
+        (stored also in `.returncode`) is returned; if the job is not
+        yet in `TERMINATED` state, calling `progress` returns `None`.
 
         :raises: exception :class:`UnexpectedStateError` if the
                  associated job goes into state `STOPPED` or `UNKNOWN`
 
-        :return: job final returncode, or `None` if the execution
+        :return: final returncode, or `None` if the execution
                  state is not `TERMINATED`.
 
         """
@@ -318,10 +312,10 @@ class Task(object):
         if self.execution.state in [ Run.State.STOPPED, 
                                      Run.State.UNKNOWN ]:
             raise gc3libs.exceptions.UnexpectedStateError(
-                "Job '%s' entered `%s` state." % (self, self.execution.state))
+                "Task '%s' entered `%s` state." % (self, self.execution.state))
         elif self.execution.state == Run.State.NEW:
             self.submit()
-        elif self.execution.state == Run.State.TERMINATED:
+        elif self.execution.state == Run.State.TERMINATING:
             self.fetch_output()
             return self.execution.returncode
 
@@ -376,6 +370,7 @@ class Task(object):
         """
         pass
 
+
     def running(self):
         """
         Called when the job state transitions to `RUNNING`, i.e., the
@@ -386,6 +381,7 @@ class Task(object):
         classes to implement additional behavior.
         """
         pass
+
 
     def stopped(self):
         """
@@ -398,28 +394,34 @@ class Task(object):
         """
         pass
 
+
+    def terminating(self):
+        """
+        Called when the job state transitions to `TERMINATING`, i.e.,
+        the remote job has finished execution (with whatever exit
+        status, see `returncode`) but output has not yet been
+        retrieved.
+
+        The default implementation does nothing, override in derived
+        classes to implement additional behavior.
+        """
+        pass
+
+
     def terminated(self):
         """
         Called when the job state transitions to `TERMINATED`, i.e.,
         the job has finished execution (with whatever exit status, see
-        `returncode`) and its execution cannot resume.
+        `returncode`) and the final output has been retrieved.
+
+        The location where the final output has been stored is
+        available in attribute `self.output_dir`.
 
         The default implementation does nothing, override in derived
         classes to implement additional behavior.
         """
         pass
 
-
-    def postprocess(self, dir):
-        """
-        Called when the final output of the job has been retrieved to
-        local directory `dir`.
-
-        The default implementation does nothing, override in derived
-        classes to implement additional behavior.
-        """
-        pass
-    
 
 def configure_logger(level=logging.ERROR,
                      name=None,
@@ -614,13 +616,6 @@ class Application(Struct, Persistable, Task):
       Path to the base directory where output files will be downloaded.
       Output file names are interpreted relative to this base directory.
 
-    `final_output_retrieved` 
-      boolean, indicating whether job output has been fetched from the
-      remote resource; if `True`, you cannot assume that data is still
-      available remotely.  (Note: for jobs in ``TERMINATED`` state, the
-      output can be retrieved only once!)
-      (Actually inherited from the `Task`:class:)
-
     `execution`
       a `Run` instance; its state attribute is initially set to ``NEW``
       (Actually inherited from the `Task`:class:)
@@ -729,9 +724,6 @@ class Application(Struct, Persistable, Task):
                       get_and_remove(kw, 'jobname', self.__class__.__name__),
                       get_and_remove(kw, 'grid', None))
         
-        # output management
-        self.final_output_retrieved = False
-
         # any additional param
         Struct.__init__(self, **kw)
 
@@ -831,7 +823,7 @@ class Application(Struct, Persistable, Task):
                      % str.join(' ', [ ('("%s" "%s")' % (r,l)) for (l,r) in self.inputs.items() ]))
         if len(self.outputs) > 0:
             # XXX: this can go away when we have the ternary operator
-            # `x = a if y else b`
+            # `x = a if y else b` (Python 2.5)
             if self.output_base_url is None:
                 def output_url(l, r):
                     return ''
@@ -1159,6 +1151,7 @@ class Run(Struct):
         'SUBMITTED', # Job has been sent to execution resource
         'STOPPED',   # trap state: job needs manual intervention
         'RUNNING',   # job is executing on remote resource
+        'TERMINATING', # remote job execution finished, output not yet retrieved
         'TERMINATED',# job execution finished (correctly or not) and will not be resumed
         'UNKNOWN',   # job info not found or lost track of job (e.g., network error or invalid job ID)
         )
@@ -1201,13 +1194,16 @@ class Run(Struct):
         +---------------+--------------------------------------------------------------+----------------------+
         |SUBMITTED      |Job has been sent to execution resource                       |RUNNING, STOPPED      |
         +---------------+--------------------------------------------------------------+----------------------+
-        |STOPPED        |Trap state: job needs manual intervention (either user-       |TERMINATED (by gkill),|
+        |STOPPED        |Trap state: job needs manual intervention (either user-       |TERMINATING(by gkill),|
         |               |or sysadmin-level) to resume normal execution                 |SUBMITTED (by miracle)|
         +---------------+--------------------------------------------------------------+----------------------+
-        |RUNNING        |Job is executing on remote resource                           |TERMINATED            |
+        |RUNNING        |Job is executing on remote resource                           |TERMINATING           |
+        +---------------+--------------------------------------------------------------+----------------------+
+        |TERMINATING    |Job has finished execution on remote resource;                |TERMINATED            |
+        |               |output not yet retrieved                                      |                      |
         +---------------+--------------------------------------------------------------+----------------------+
         |TERMINATED     |Job execution is finished (correctly or not)                  |None: final state     |
-        |               |and will not be resumed                                       |                      |
+        |               |and will not be resumed; output has been retrieved            |                      |
         +---------------+--------------------------------------------------------------+----------------------+
 
         When a :class:`Run` object is first created, it is assigned
@@ -1243,7 +1239,7 @@ class Run(Struct):
                 raise ValueError("Value '%s' is not a legal `gc3libs.Run.State` value." % value)
             if self._state != value:
                 self.timestamp[value] = time.time()
-                self.log.append('%s on %s' % (value, time.asctime()))
+                self.log.append('%s at %s' % (value, time.asctime()))
                 if self._ref is not None:
                     # invoke state-transition method
                     handler = value.lower()
@@ -1310,9 +1306,9 @@ class Run(Struct):
         `signal` part can *both* be significant: in case a Grid
         middleware error happened *after* the application has
         successfully completed its execution.  In other words,
-        `os.WEXITSTATUS(job.returncode)` is meaningful iff
-        `os.WTERMSIG(job.returncode)` is 0 or one of the
-        pseudo-signals listed in `Run.Signals`.
+        `os.WEXITSTATUS(returncode)` is meaningful iff
+        `os.WTERMSIG(returncode)` is 0 or one of the pseudo-signals
+        listed in `Run.Signals`.
         
         `Run.exitcode` and `Run.signal` are combined to form the
         return code 16-bit integer as follows (the convention appears

@@ -162,11 +162,11 @@ class ArcLrms(LRMS):
                     INLRMS:H        STOPPED
                     FINISHING       RUNNING
                     EXECUTED        RUNNING
-                    FINISHED        TERMINATED
-                    CANCELING       TERMINATED
-                    FINISHED        TERMINATED
+                    FINISHED        TERMINATING
+                    CANCELING       TERMINATING
+                    FINISHED        TERMINATING
+                    FAILED          TERMINATING
                     KILLED          TERMINATED
-                    FAILED          TERMINATED
                     DELETED         TERMINATED
                     ==============  ===========
 
@@ -193,11 +193,11 @@ class ArcLrms(LRMS):
                     'INLRMS:H':  Run.State.STOPPED,
                     'FINISHING': Run.State.RUNNING,
                     'EXECUTED':  Run.State.RUNNING,
-                    'FINISHED':  Run.State.TERMINATED,
-                    'CANCELING': Run.State.TERMINATED,
-                    'FINISHED':  Run.State.TERMINATED,
+                    'FINISHED':  Run.State.TERMINATING,
+                    'CANCELING': Run.State.TERMINATING,
+                    'FINISHED':  Run.State.TERMINATING,
+                    'FAILED':    Run.State.TERMINATING,
                     'KILLED':    Run.State.TERMINATED,
-                    'FAILED':    Run.State.TERMINATED,
                     'DELETED':   Run.State.TERMINATED,
                     }[status]
             except KeyError:
@@ -220,7 +220,7 @@ class ArcLrms(LRMS):
         state = map_arc_status_to_gc3job_status(arc_job.status)
         if arc_job.exitcode != -1:
             job.returncode = arc_job.exitcode
-        elif state == Run.State.TERMINATED and job.returncode is None:
+        elif state in [Run.State.TERMINATING, Run.State.TERMINATING] and job.returncode is None:
             # XXX: it seems that ARC does not report the job exit code
             # (at least in some cases); let's make one up based on
             # some crude heuristics
@@ -240,9 +240,9 @@ class ArcLrms(LRMS):
                 job.returncode = (Run.Signals.RemoteError, -1)
             # note: arc_job.used_memory is in KiB (!), app.requested_memory is in GiB
             elif app.requested_memory > 0 and arc_job.used_memory > -1 and (arc_job.used_memory / 1024) >= (app.requested_memory * 1024):
-                job.log("Job used more memory (%d GB) than requested (%d GB),"
+                job.log("Job used more memory (%d MB) than requested (%d MB),"
                         " killed by remote batch system" 
-                        % (arc_job.used_memory / 1024 / 1024, app.requested_memory))
+                        % (arc_job.used_memory / 1024, app.requested_memory * 1024))
                 job.returncode = (Run.Signals.RemoteError, -1)
             else:
                 # presume everything went well...
@@ -255,7 +255,7 @@ class ArcLrms(LRMS):
         # Common struture as described in Issue #78
         job.queue = arc_job.queue
         job.cores = arc_job.cpu_count
-        job.exit_code = arc_job.exitcode
+        job.original_exitcode = arc_job.exitcode
         job.used_walltime = arc_job.used_wall_time # exressed in sec.
         job.used_cputime = arc_job.used_cpu_time # expressed in sec.
         job.used_memory = arc_job.used_memory # expressed in KiB

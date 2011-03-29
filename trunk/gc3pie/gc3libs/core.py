@@ -128,9 +128,10 @@ class Core:
         
     def __free_application(self, app, **kw):
         """Implementation of `free` on `Application` objects."""
-        if app.execution.state != Run.State.TERMINATED:
-            raise gc3libs.exceptions.InvalidOperation("Attempting to free resources of job '%s',"
-                                   " which is in non-terminal state." % app)
+        if app.execution.state not in [ Run.State.TERMINATING, Run.State.TERMINATED ]:
+            raise gc3libs.exceptions.InvalidOperation(
+                "Attempting to free resources of job '%s',"
+                " which is in non-terminal state." % app)
 
         auto_enable_auth = kw.get('auto_enable_auth', self.auto_enable_auth)
 
@@ -171,8 +172,9 @@ class Core:
         job = app.execution
 
         if len(self._lrms_list) == 0:
-            raise gc3libs.exceptions.NoResources("Could not initialize any computational resource"
-                              " - please check log and configuration file.")
+            raise gc3libs.exceptions.NoResources(
+                "Could not initialize any computational resource"
+                " - please check log and configuration file.")
 
         # # XXX: auth should probably become part of LRMS and controlled within it
         # for _lrms in self._lrms_list:
@@ -208,7 +210,6 @@ class Core:
                 continue
             gc3libs.log.info('Successfully submitted process to: %s', lrms._resource.name)
             job.state = Run.State.SUBMITTED
-            app.final_output_retrieved = False
             job.resource_name = lrms._resource.name
             job.info = ("Submitted to '%s' at %s"
                         % (job.resource_name, 
@@ -266,7 +267,10 @@ class Core:
             old_state = state
             gc3libs.log.debug("Updating state (%s) of application: %s", state, app)
             try:
-                if state not in [ Run.State.NEW, Run.State.TERMINATED ]:
+                if state not in [ Run.State.NEW,
+                                  Run.State.TERMINATING,
+                                  Run.State.TERMINATED,
+                                  ]:
                     lrms = self.get_backend(app.execution.resource_name)
                     try:
                         # self.auths.get(lrms._resource.auth)
@@ -289,28 +293,21 @@ class Core:
                         ex = app.update_job_state_error(ex)
                         if isinstance(ex, Exception):
                             raise ex
-                    if state != Run.State.UNKNOWN or update_on_error:
-                        app.execution.state = state
-                if app.execution.state != old_state:
-                    # set log information accordingly
-                    if app.execution.state == Run.State.RUNNING:
-                        app.execution.info = ("Running at %s" 
-                                              % time.ctime(app.execution.timestamp[Run.State.RUNNING]))
-                    elif app.execution.state == Run.State.TERMINATED:
-                        if app.execution.returncode == 0:
-                            app.execution.info = ("Terminated at %s." 
-                                                  % time.ctime(app.execution.timestamp[gc3libs.Run.State.TERMINATED]))
-                        else:
+                    if state != old_state:
+                        # set log information accordingly
+                        if (app.execution.state == Run.State.TERMINATING and app.execution.returncode != 0):
                             # there was some error, try to explain
                             signal = app.execution.signal
                             if signal in Run.Signals:
                                 app.execution.info = ("Abnormal termination: %s" % signal)
                             else:
                                 if os.WIFSIGNALED(app.execution.returncode):
-                                    app.execution.info = ("Job terminated by signal %d" % signal)
+                                    app.execution.info = ("Remote job terminated by signal %d" % signal)
                                 else:
-                                    app.execution.info = ("Job exited with code %d" 
+                                    app.execution.info = ("Remote job exited with code %d" 
                                                           % self.execution.exitcode)
+                    if state != Run.State.UNKNOWN or update_on_error:
+                        app.execution.state = state
             except (gc3libs.exceptions.InvalidArgument, gc3libs.exceptions.ConfigurationError):
                 # Unrecoverable; no sense in continuing --
                 # pass immediately on to client code and let
@@ -332,21 +329,23 @@ class Core:
 
     def fetch_output(self, app, download_dir=None, overwrite=False, **kw):
         """
-        Retrieve job output into local directory `app.output_dir`;
+        Retrieve output into local directory `app.output_dir`;
         optional argument `download_dir` overrides this.
 
         The download directory is created if it does not exist.  If it
         already exists, and the optional argument `overwrite` is
-        `False`, it is renamed with a `.NUMBER` suffix and a new empty
-        one is created in its place.  By default, 'overwrite` is
-        `True`, so files are downloaded over the ones already present.
+        `False` (default), it is renamed with a `.NUMBER` suffix and a
+        new empty one is created in its place.  Otherwise, if
+        'overwrite` is `True`, files are downloaded over the ones
+        already present.
 
-        If the job is in a terminal state, the instance attribute
-        `app.final_output_retrieved` is set to `True`, and the
-        `postprocess` method is called on the `app` object (if it's
-        defined), with the effective `download_dir` as sole argument.
+        If the task is in TERMINATING state, the state is changed to
+        `TERMINATED`, attribute `output_dir`:attr: is set to the
+        absolute path to the directory where files were downloaded,
+        and the `terminated` transition method is called on the `app`
+        object.
 
-        Job output cannot be retrieved when `app.execution` is in one
+        Task output cannot be retrieved when `app.execution` is in one
         of the states `NEW` or `SUBMITTED`; an
         `OutputNotAvailableError` exception is thrown in these cases.
 
@@ -357,7 +356,7 @@ class Core:
                 running).
         """
         assert isinstance(app, Task), \
-            "Core.fetch: passed an `app` argument which is not a `Task` instance."
+            "Core.fetch_output: passed an `app` argument which is not a `Task` instance."
         if isinstance(app, Application):
             self.__fetch_output_application(app, download_dir, overwrite, **kw)
         else:
@@ -416,12 +415,11 @@ class Core:
         
         # successfully downloaded results
         job.info = ("Output downloaded to '%s'" % download_dir)
-        app.output_dir = download_dir
         gc3libs.log.debug("Downloaded output of '%s' (which is in state %s)"
-                      % (str(job), job.state))
-        if job.state == Run.State.TERMINATED:
-            app.final_output_retrieved = True
-            app.postprocess(download_dir)
+                          % (str(job), job.state))
+        if job.state == Run.State.TERMINATING:
+            app.output_dir = os.path.abspath(download_dir)
+            job.state = Run.State.TERMINATED
             gc3libs.log.debug("Final output of '%s' retrieved" % str(app))
 
     def __fetch_output_task(self, task, download_dir, overwrite, **kw):
@@ -485,7 +483,6 @@ class Core:
         job.state = Run.State.TERMINATED
         job.signal = Run.Signals.Cancelled
         job.log.append("Cancelled.")
-        app.terminated()
 
     def __kill_task(self, task, **kw):
         kw.setdefault('auto_enable_auth', self.auto_enable_auth)
@@ -526,24 +523,23 @@ class Core:
                         " 'stdout' or 'stderr', not '%s'" % what)
 
         # Check if local data available
-        # FIXME: local data could be stale!!
-        if job.state == Run.State.TERMINATED and app.final_output_retrieved:
-            _filename = os.path.join(app.output_dir, remote_filename)
-            _local_file = open(_filename)
+        if job.state == Run.State.TERMINATED:
+            # FIXME: local data could be stale!!
+            filename = os.path.join(app.output_dir, remote_filename)
+            local_file = open(filename, 'r')
         else:
-
             # Get authN
             auto_enable_auth = kw.get('auto_enable_auth', self.auto_enable_auth)
-            _lrms = self.get_backend(job.resource_name)
+            lrms = self.get_backend(job.resource_name)
             # self.auths.get(_lrms._resource.auth)
 
-            _local_file = tempfile.NamedTemporaryFile(suffix='.tmp', prefix='gc3libs.')
+            local_file = tempfile.NamedTemporaryFile(suffix='.tmp', prefix='gc3libs.')
 
-            _lrms.peek(app, remote_filename, _local_file, offset, size)
-            _local_file.flush()
-            _local_file.seek(0)
+            lrms.peek(app, remote_filename, local_file, offset, size)
+            local_file.flush()
+            local_file.seek(0)
         
-        return _local_file
+        return local_file
 
     def __peek_task(self, task, what, offset, size, **kw):
         """Implementation of `peek` on generic `Task` objects."""
@@ -836,6 +832,7 @@ class Engine(object):
         self._new = []
         self._in_flight = []
         self._stopped = []
+        self._terminating = []
         self._terminated = []
         self._to_kill = []
         self._core = grid
@@ -874,6 +871,8 @@ class Engine(object):
             if not contained(task, self._in_flight): self._in_flight.append(task)
         elif Run.State.STOPPED == state:
             if not contained(task, self._stopped): self._stopped.append(task)
+        elif Run.State.TERMINATING == state:
+            if not contained(task, self._terminating): self._terminating.append(task)
         elif Run.State.TERMINATED == state:
             if not contained(task, self._terminated): self._terminated.append(task)
         else:
@@ -890,6 +889,8 @@ class Engine(object):
             self._in_flight.remove(task)
         elif Run.State.STOPPED == state:
             self._stopped.remove(task)
+        elif Run.State.TERMINATING == state:
+            self._terminating.remove(task)
         elif Run.State.TERMINATED == state:
             self._terminated.remove(task)
         else:
@@ -906,7 +907,9 @@ class Engine(object):
 
           * the state of tasks in `SUBMITTED`, `RUNNING` or `STOPPED` state is updated;
 
-          * when a task reaches `TERMINATED` state, its output is downloaded.
+          * when a task reaches `TERMINATING` state, its output is downloaded.
+
+          * tasks in `TERMINATED` status are simply ignored.
 
         The `max_in_flight` and `max_submitted` limits (if >0) are
         taken into account when attempting submission of tasks.
@@ -943,6 +946,9 @@ class Engine(object):
                 elif task.execution.state == Run.State.STOPPED:
                     transitioned.append(index) # task changed state, mark as to remove
                     self._stopped.append(task)
+                elif task.execution.state == Run.State.TERMINATING:
+                    transitioned.append(index) # task changed state, mark as to remove
+                    self._terminating.append(task)
                 elif task.execution.state == Run.State.TERMINATED:
                     transitioned.append(index) # task changed state, mark as to remove
                     self._terminated.append(task)
@@ -1001,6 +1007,9 @@ class Engine(object):
                         currently_submitted += 1
                     self._in_flight.append(task)
                     transitioned.append(index) # task changed state, mark as to remove
+                elif task.execution.state == Run.State.TERMINATING:
+                    self._terminating.append(task)
+                    transitioned.append(index) # task changed state, mark as to remove
                 elif task.execution.state == Run.State.TERMINATED:
                     self._terminated.append(task)
                     transitioned.append(index) # task changed state, mark as to remove
@@ -1039,26 +1048,26 @@ class Engine(object):
             del self._new[index]
 
         gc3libs.log.debug("Engine.progress: fetching output of tasks [%s]"
-                          % str.join(', ', [str(task) for task in self._terminated]))
+                          % str.join(', ', [str(task) for task in self._terminating]))
         # finally, retrieve output of finished tasks
         if self.can_retrieve:
             transitioned = []
-            for index, task in enumerate(self._terminated):
-                if not task.final_output_retrieved:
-                    # try to get output
-                    try:
-                        self._core.fetch_output(task)
-                        if task.final_output_retrieved == True:
-                            self._core.free(task)
-                            transitioned.append(index)
-                        if self._store:
-                            self._store.save(task)
-                    except Exception, x:
-                        gc3libs.log.error("Ignored error in fetching output of task '%s': %s: %s" 
-                                          % (task, x.__class__.__name__, str(x)), exc_info=True)
+            for index, task in enumerate(self._terminating):
+                # try to get output
+                try:
+                    self._core.fetch_output(task)
+                    if task.execution.state == Run.State.TERMINATED:
+                        self._core.free(task)
+                        self._terminated.append(task)
+                        transitioned.append(index)
+                    if self._store:
+                        self._store.save(task)
+                except Exception, x:
+                    gc3libs.log.error("Ignored error in fetching output of task '%s': %s: %s" 
+                                      % (task, x.__class__.__name__, str(x)), exc_info=True)
             # remove tasks for which final output has been retrieved
             for index in reversed(transitioned):
-                del self._terminated[index]
+                del self._terminating[index]
 
 
     def stats(self):
@@ -1082,6 +1091,7 @@ class Engine(object):
             # XXX: presumes no task in the `_to_kill` list is TERMINATED
             state = task.execution.state
             result[state] += 1
+        result[Run.State.TERMINATING] = len(self._terminating)
         result[Run.State.TERMINATED] = len(self._terminated)
         # for TERMINATED tasks, compute the number of successes/failures
         for task in self._terminated:
@@ -1092,6 +1102,7 @@ class Engine(object):
         result['total'] = (len(self._new)
                            + len(self._in_flight)
                            + len(self._stopped)
+                           + len(self._terminating)
                            + len(self._terminated))
         return result
 
@@ -1140,7 +1151,7 @@ class Engine(object):
 
     def kill(self, task, **kw):
         """
-        Schedule a task for killing on the next `perform` run.
+        Schedule a task for killing on the next `progress` run.
         """
         self._to_kill.append(task)
 

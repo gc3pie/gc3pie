@@ -79,7 +79,7 @@ class GamessApplication(gc3libs.Application):
     _termination_re = re.compile(r'EXECUTION \s+ OF \s+ GAMESS \s+ TERMINATED \s+-?(?P<gamess_outcome>NORMALLY|ABNORMALLY)-?'
                                  r'|ddikick.x: .+ (exited|quit) \s+ (?P<ddikick_outcome>gracefully|unexpectedly)', re.X)
 
-    def postprocess(self, output_dir):
+    def terminated(self):
         """
         Append to log the termination status line as extracted from
         the GAMESS '.out' file.  According to the normal/abnormal
@@ -87,8 +87,10 @@ class GamessApplication(gc3libs.Application):
         or 2 if the fault was reported only by ``ddikick``.
         """
         gc3libs.log.debug("Running GamessApplication post-processing hook...")
-        output_filename = os.path.join(output_dir,
-                                       os.path.splitext(os.path.basename(self.inp_file_path))[0] + '.out')
+        output_dir = self.output_dir
+        output_filename = os.path.join(
+            output_dir,
+            os.path.splitext(os.path.basename(self.inp_file_path))[0] + '.out')
         if os.path.exists(output_filename):
             gc3libs.log.debug("Trying to read GAMESS termination status off output file '%s' ..." % output_filename)
             output_file = open(output_filename, 'r')
