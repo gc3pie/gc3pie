@@ -135,7 +135,7 @@ Note: the list of INPUT and OUTPUT files must be separated by ':'
 
             # make flags file path absolute
             if not os.path.isabs(self.flags_file):
-                self.flags_file = os.path.join(os.getcwd(), self.flags_file)
+                self.flags_file = os.path.abspath(self.flags_file)
             if not os.path.exists(self.flags_file):
                 raise RuntimeError("Flags file '%s' does not exist." % self.flags_file)
             self.log.info("Using flags file '%s'", self.flags_file)
@@ -149,7 +149,7 @@ Note: the list of INPUT and OUTPUT files must be separated by ':'
             else:
                 # make paths absolute
                 if not os.path.isabs(path):
-                    path = os.path.join(os.getcwd(), path)
+                    path = os.path.abspath(path)
                 inputs_.append(path)
         self.inputs = inputs_
         self.log.debug("Gathered input files: '%s'" % str.join("', '", inputs))

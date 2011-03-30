@@ -242,7 +242,7 @@ of newly-created jobs so that this limit is never exceeded.
         self.extra['collect'] = self.params.collect
 
         if not os.path.isabs(self.params.flags_file):
-            self.params.flags_file = os.path.join(os.getcwd(), self.params.flags_file)
+            self.params.flags_file = os.path.abspath(self.params.flags_file)
         if not os.path.exists(self.params.flags_file):
             raise RuntimeError("Flags file '%s' does not exist." % self.params.flags_file)
         self.extra['flags_file'] = self.params.flags_file
