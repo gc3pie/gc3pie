@@ -92,7 +92,8 @@ class GamessApplication(gc3libs.Application):
             output_dir,
             os.path.splitext(os.path.basename(self.inp_file_path))[0] + '.out')
         if os.path.exists(output_filename):
-            gc3libs.log.debug("Trying to read GAMESS termination status off output file '%s' ..." % output_filename)
+            gc3libs.log.debug("Trying to read GAMESS termination status"
+                              " off output file '%s' ..." % output_filename)
             output_file = open(output_filename, 'r')
             for line in output_file.readlines():
                 match = self._termination_re.search(line)
@@ -113,7 +114,10 @@ class GamessApplication(gc3libs.Application):
                             self.execution.exitcode = 0
                         break
                     else:
-                        raise AssertionError("Input line '%s' matched, but neither group 'gamess_outcome' nor 'ddikick_outcome' did!")
+                        raise AssertionError(
+                            "Input line '%s' matched,"
+                            " but neither group 'gamess_outcome'"
+                            " nor 'ddikick_outcome' did!")
             output_file.close()
 
                              

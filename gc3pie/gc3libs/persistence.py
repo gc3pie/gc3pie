@@ -322,7 +322,7 @@ class FilesystemStore(Store):
     @same_docstring_as(Store.load)
     def load(self, id_):
         filename = os.path.join(self._directory, id_)
-        gc3libs.log.debug("Loading object from file '%s' ...", filename)
+        #gc3libs.log.debug("Loading object from file '%s' ...", filename)
 
         if not os.path.exists(filename):
             raise gc3libs.exceptions.LoadError("No '%s' file found in directory '%s'" 
@@ -380,7 +380,7 @@ class FilesystemStore(Store):
         destination file is kept intact in case dumping `obj` fails.
         """
         filename = os.path.join(self._directory, id_)
-        gc3libs.log.debug("Storing job '%s' into file '%s'", obj, filename)
+        #gc3libs.log.debug("Storing job '%s' into file '%s'", obj, filename)
 
         if not os.path.exists(self._directory):
             try:

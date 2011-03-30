@@ -156,7 +156,7 @@ class Task(object):
         if self._grid != grid:
             if self._attached:
                 self.detach()
-            gc3libs.log.debug("Attaching %s to %s" % (self, grid))
+            #gc3libs.log.debug("Attaching %s to %s" % (self, grid))
             self._grid = grid
             self._grid.add(self)
             self._attached = True
@@ -183,7 +183,7 @@ class Task(object):
         an exception :class:`TaskDetachedFromGridError` being thrown.
         """
         if self._attached:
-            gc3libs.log.debug("Detaching %s from grid" % self)
+            #gc3libs.log.debug("Detaching %s from grid" % self)
             try:
                 self._grid.remove(self)
             except:
@@ -249,8 +249,6 @@ class Task(object):
         :return: Path to the directory where the job output has been
                  collected.
         """
-        gc3libs.log.debug("In `fetch_output(%s, %s, %s)` ..."
-                          % (self, output_dir, overwrite))
         if self.execution.state == Run.State.TERMINATED:
             return self.output_dir
         result = self._grid.fetch_output(self, output_dir, overwrite, **kw)
@@ -658,7 +656,6 @@ class Application(Struct, Persistable, Task):
         # required parameters
         self.executable = executable
         self.arguments = [ str(x) for x in arguments ]
-
         
         self.inputs = Application._io_spec_to_dict(inputs)
         # check that remote entries are all distinct
@@ -676,7 +673,8 @@ class Application(Struct, Persistable, Task):
         # ensure remote paths are not absolute
         for r_path in self.inputs.itervalues():
             if os.path.isabs(r_path):
-                raise gc3libs.exceptions.InvalidArgument("Remote paths not allowed to be absolute")
+                raise gc3libs.exceptions.InvalidArgument(
+                    "Remote paths not allowed to be absolute")
 
         self.outputs = Application._io_spec_to_dict(outputs)
         # check that local entries are all distinct
@@ -694,7 +692,8 @@ class Application(Struct, Persistable, Task):
         # ensure remote paths are not absolute
         for r_path in self.outputs.iterkeys():
             if os.path.isabs(r_path):
-                raise gc3libs.exceptions.InvalidArgument("Remote paths not allowed to be absolute")
+                raise gc3libs.exceptions.InvalidArgument(
+                    "Remote paths not allowed to be absolute")
 
         self.output_dir = output_dir
 
@@ -1253,8 +1252,9 @@ class Run(Struct):
                 if self._ref is not None:
                     # invoke state-transition method
                     handler = value.lower()
-                    gc3libs.log.debug("Calling state-transition handler '%s' on %s ..."
-                                      % (handler, self._ref))
+                    gc3libs.log.debug(
+                        "Calling state-transition handler '%s' on %s ..."
+                        % (handler, self._ref))
                     getattr(self._ref, handler)()
             self._state = value
         return locals()

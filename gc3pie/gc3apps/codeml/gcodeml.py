@@ -124,8 +124,7 @@ of newly-created jobs so that this limit is never exceeded.
                 if contain_ctl_files(filenames):
                     inputs.add(os.path.realpath(dirpath))
 
-        self.log.debug("Gathered input directories: '%s'"
-                       % str.join("', '", inputs))
+        #self.log.debug("Gathered input directories: '%s'" % str.join("', '", inputs))
 
         for dirpath in inputs:
             # gather control files; other input files are

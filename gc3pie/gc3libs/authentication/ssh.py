@@ -40,7 +40,7 @@ class SshAuth(object):
             raise gc3libs.exceptions.ConfigurationError('Erroneous configuration parameter: %s' % str(x))
 
     def check(self):
-        gc3libs.log.debug('Checking auth: ssh')
+        gc3libs.log.debug('Checking auth: SshAuth')
         return True
 
     def enable(self):

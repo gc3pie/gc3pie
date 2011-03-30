@@ -152,7 +152,7 @@ Note: the list of INPUT and OUTPUT files must be separated by ':'
                     path = os.path.abspath(path)
                 inputs_.append(path)
         self.inputs = inputs_
-        self.log.debug("Gathered input files: '%s'" % str.join("', '", inputs))
+        #self.log.debug("Gathered input files: '%s'" % str.join("', '", inputs))
 
     def new_tasks(self, extra):
         ## compute number of decoys already being computed in this session

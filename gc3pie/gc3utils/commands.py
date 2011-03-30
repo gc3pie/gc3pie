@@ -573,7 +573,8 @@ error occurred.
             try:
                 app = self._store.load(jobid)
 
-                self.log.debug("gkill: Job '%s' in state %s" % (jobid, app.execution.state))
+                self.log.debug("gkill: Job '%s' in state %s"
+                               % (jobid, app.execution.state))
                 if app.execution.state == Run.State.NEW:
                     raise gc3libs.exceptions.InvalidOperation("Job '%s' not submitted." % app)
                 if app.execution.state == Run.State.TERMINATED:

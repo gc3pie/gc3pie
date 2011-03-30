@@ -89,7 +89,7 @@ class Core:
             (`True`) or not (`False`);
 
           - or it can be a string: only resources whose name matches
-            (wildcards "*" and "?" are allowed) are retained.
+            (wildcards ``*`` and ``?`` are allowed) are retained.
         """
         try:
             self._resources = [ res for res in self._resources if match(res) ]
@@ -191,8 +191,9 @@ class Core:
         gc3libs.log.debug('Scheduler returned %d matching resources',
                            len(_selected_lrms_list))
         if 0 == len(_selected_lrms_list):
-            raise gc3libs.exceptions.NoResources("No available resource can accomodate the requested"
-                              " CPU/memory/wall-clock time combination.")
+            raise gc3libs.exceptions.NoResources(
+                "No available resource can accomodate the requested"
+                " CPU/memory/wall-clock time combination.")
 
         exs = [ ]
         # Scheduler.do_brokering returns a sorted list of valid lrms
@@ -203,9 +204,10 @@ class Core:
                 # self.auths.get(lrms._resource.auth)
                 lrms.submit_job(app)
             except Exception, ex:
-                gc3libs.log.info("Error in submitting job to resource '%s': %s: %s", 
-                                  lrms._resource.name, ex.__class__.__name__, str(ex),
-                                  exc_info=True)
+                gc3libs.log.info(
+                    "Error in submitting job to resource '%s': %s: %s", 
+                    lrms._resource.name, ex.__class__.__name__, str(ex),
+                    exc_info=True)
                 exs.append(ex) 
                 continue
             gc3libs.log.info('Successfully submitted process to: %s', lrms._resource.name)
@@ -286,8 +288,9 @@ class Core:
                     except gc3libs.exceptions.RecoverableAuthError:
                         raise
                     except Exception, ex:
-                        gc3libs.log.debug("Error getting status of application '%s': %s: %s",
-                                          app, ex.__class__.__name__, str(ex), exc_info=True)
+                        gc3libs.log.debug(
+                            "Error getting status of application '%s': %s: %s",
+                            app, ex.__class__.__name__, str(ex), exc_info=True)
                         state = Run.State.UNKNOWN
                         # run error handler if defined
                         ex = app.update_job_state_error(ex)
@@ -688,8 +691,8 @@ def read_config(*locations):
         # Config File exists; read it
         config = ConfigParser.ConfigParser()
         if location not in config.read(location):
-            gc3libs.log.debug("Configuration file '%s' is unreadable or malformed: ignoring." 
-                               % location)
+            gc3libs.log.debug("Configuration file '%s' is unreadable or malformed:"
+                              " ignoring." % location)
             continue # with next `location`
         files_successfully_read += 1
 
@@ -699,7 +702,8 @@ def read_config(*locations):
         for sectname in config.sections():
             if sectname.startswith('auth/'):
                 # handle auth section
-                gc3libs.log.debug("Core.read_config(): adding auth '%s' ", sectname)
+                gc3libs.log.debug("Core.read_config():"
+                                  " adding auth '%s' " % sectname)
                 # extract auth name and register auth dictionary
                 auth_name = sectname.split('/', 1)[1]
                 auths[auth_name].update(dict(config.items(sectname)))
@@ -707,7 +711,8 @@ def read_config(*locations):
             elif  sectname.startswith('resource/'):
                 # handle resource section
                 resource_name = sectname.split('/', 1)[1]
-                gc3libs.log.debug("Core.read_config(): adding resource '%s' ", resource_name)
+                gc3libs.log.debug("Core.read_config():"
+                                  " adding resource '%s' " % resource_name)
                 config_items = dict(config.items(sectname))
                 if config_items.has_key('enabled'):
                     config_items['enabled'] = utils.string_to_boolean(config_items['enabled'])
@@ -926,11 +931,11 @@ class Engine(object):
         else:
             limit_submitted = utils.PlusInfinity()
 
-        gc3libs.log.debug("Engine.progress: updating status of tasks [%s]"
-                          % str.join(', ', [str(task) for task in self._in_flight]))
         # update status of SUBMITTED/RUNNING tasks before launching
         # new ones, otherwise we would be checking the status of
         # some tasks twice...
+        #gc3libs.log.debug("Engine.progress: updating status of tasks [%s]"
+        #                  % str.join(', ', [str(task) for task in self._in_flight]))
         transitioned = []
         for index, task in enumerate(self._in_flight):
             try:
@@ -965,9 +970,9 @@ class Engine(object):
         for index in reversed(transitioned):
             del self._in_flight[index]
 
-        gc3libs.log.debug("Engine.progress: killing tasks [%s]"
-                          % str.join(', ', [str(task) for task in self._to_kill]))
         # execute kills and update count of submitted/in-flight tasks
+        #gc3libs.log.debug("Engine.progress: killing tasks [%s]"
+        #                  % str.join(', ', [str(task) for task in self._to_kill]))
         transitioned = []
         for index, task in enumerate(self._to_kill):
             try:
@@ -989,11 +994,11 @@ class Engine(object):
         for index in reversed(transitioned):
             del self._to_kill[index]
 
-        gc3libs.log.debug("Engine.progress: updating status of stopped tasks [%s]"
-                          % str.join(', ', [str(task) for task in self._stopped]))
         # update state of STOPPED tasks; again need to make before new
         # submissions, because it can alter the count of in-flight
         # tasks.
+        #gc3libs.log.debug("Engine.progress: updating status of stopped tasks [%s]"
+        #                  % str.join(', ', [str(task) for task in self._stopped]))
         transitioned = []
         for index, task in enumerate(self._stopped):
             try:
@@ -1021,9 +1026,9 @@ class Engine(object):
         for index in reversed(transitioned):
             del self._stopped[index]
 
-        gc3libs.log.debug("Engine.progress: submitting new tasks [%s]"
-                          % str.join(', ', [str(task) for task in self._new]))
         # now try to submit NEW tasks
+        #gc3libs.log.debug("Engine.progress: submitting new tasks [%s]"
+        #                  % str.join(', ', [str(task) for task in self._new]))
         transitioned = []
         if self.can_submit:
             for index, task in enumerate(self._new):
@@ -1047,9 +1052,9 @@ class Engine(object):
         for index in reversed(transitioned):
             del self._new[index]
 
-        gc3libs.log.debug("Engine.progress: fetching output of tasks [%s]"
-                          % str.join(', ', [str(task) for task in self._terminating]))
         # finally, retrieve output of finished tasks
+        #gc3libs.log.debug("Engine.progress: fetching output of tasks [%s]"
+        #                  % str.join(', ', [str(task) for task in self._terminating]))
         if self.can_retrieve:
             transitioned = []
             for index, task in enumerate(self._terminating):

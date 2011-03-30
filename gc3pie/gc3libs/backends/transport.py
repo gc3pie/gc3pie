@@ -265,7 +265,9 @@ class SshTransport(Transport):
     @same_docstring_as(Transport.remove_tree)
     def remove_tree(self, path):
         try:
-            gc3libs.log.debug("Running metohd: remove_tree. remote path: %s remote host: %s" % (path, self.remote_frontend))
+            gc3libs.log.debug("Running method 'remove_tree';"
+                              " remote path: %s remote host: %s"
+                              % (path, self.remote_frontend))
             # Note: At the moment rmdir does not work as expected
             # self.sftp.rmdir(path)
             # easy workaround: use SSHClient to issue an rm -rf comamnd
@@ -438,7 +440,9 @@ class LocalTransport(Transport):
             " on `Transport` instance closed / not yet open"
 
         try:
-            gc3libs.log.debug("Running metohd: put. source: %s. destination: %s" % (source, destination))
+            gc3libs.log.debug("Running method 'put';"
+                              " source: %s. destination: %s"
+                              % (source, destination))
             if source != destination:
                 return shutil.copy(source, destination)
             else:
