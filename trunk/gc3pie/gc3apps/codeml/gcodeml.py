@@ -101,7 +101,7 @@ of newly-created jobs so that this limit is never exceeded.
         """Implement the argument -> jobs mapping."""
         ## process additional options
         if not os.path.isabs(self.params.codeml):
-            self.params.codeml = os.path.join(os.getcwd(), self.params.codeml)
+            self.params.codeml = os.path.abspath(self.params.codeml)
         gc3libs.utils.test_file(self.params.codeml, os.R_OK|os.X_OK)
 
         ## do the argument -> job mapping, really
