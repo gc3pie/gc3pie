@@ -348,9 +348,10 @@ class _Script(cli.app.CommandLineApp):
             self.log.debug('Creating instance of Core ...')
             return gc3libs.core.Core(* gc3libs.core.import_config(config_file_locations, auto_enable_auth))
         except gc3libs.exceptions.NoResources:
-            raise gc3libs.exceptions.FatalError("No computational resources defined."
-                                                " Please edit the configuration file(s): '%s'." 
-                                                % (str.join("', '", config_file_locations)))
+            raise gc3libs.exceptions.FatalError(
+                "No computational resources defined."
+                " Please edit the configuration file(s): '%s'." 
+                % (str.join("', '", config_file_locations)))
         except:
             self.log.debug("Failed loading config file from '%s'", 
                            str.join("', '", config_file_locations))
@@ -595,14 +596,14 @@ class SessionBasedScript(_Script):
         existing_job_names = set(task.jobname for task in self.tasks)
         random.seed()
         for jobname, cls, args, kwargs in new_jobs:
-            self.log.debug("SessionBasedScript.process_args():"
-                           " considering adding new job defined by:"
-                           " jobname=%s cls=%s args=%s kwargs=%s ..."
-                           % (jobname, cls, args, kwargs))
+            #self.log.debug("SessionBasedScript.process_args():"
+            #               " considering adding new job defined by:"
+            #               " jobname=%s cls=%s args=%s kwargs=%s ..."
+            #               % (jobname, cls, args, kwargs))
             if jobname in existing_job_names:
-                self.log.debug("  ...already existing job, skipping it.")
+                #self.log.debug("  ...already existing job, skipping it.")
                 continue
-            self.log.debug("  ...new job, adding it to session...")
+            #self.log.debug("New job '%s', adding it to session." % jobname)
             kwargs.setdefault('jobname', jobname)
             kwargs.setdefault('requested_memory', self.params.memory_per_core)
             kwargs.setdefault('requested_cores', self.params.ncores)
@@ -619,7 +620,7 @@ class SessionBasedScript(_Script):
             try:
                 app = cls(*args, **kwargs)
                 self.tasks.append(app)
-                self.log.debug("  ...created job '%s'." % jobname)
+                self.log.debug("Added job '%s' to session." % jobname)
             except Exception, ex:
                 self.log.error("Could not create job '%s': %s."
                                % (jobname, str(ex)), exc_info=__debug__)
@@ -1110,8 +1111,8 @@ class SessionBasedScript(_Script):
             # re-check for more wildcard characters
             if '*' in ext or '?' in ext or '[' in ext:
                 ext = None
-        self.log.debug("Input files must match glob pattern '%s' or extension '%s'"
-                       % (pattern, ext))
+        #self.log.debug("Input files must match glob pattern '%s' or extension '%s'"
+        #               % (pattern, ext))
 
         def matches(name):
             return fnmatch.fnmatch(name, pattern)
@@ -1138,7 +1139,7 @@ class SessionBasedScript(_Script):
                 inputs.add(os.path.realpath(path + ext))
             else:
                 self.log.error("Cannot access input path '%s' - ignoring it.", path)
-            self.log.debug("Gathered input files: '%s'" % str.join("', '", inputs))
+            #self.log.debug("Gathered input files: '%s'" % str.join("', '", inputs))
 
         return inputs
 

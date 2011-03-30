@@ -90,12 +90,13 @@ class ArcLrms(LRMS):
         if (not hasattr(self, '_queues')) or (not hasattr(self, '_queues_last_accessed')) \
                 or (time.time() - self._queues_last_updated > self._queues_cache_time):
             if self._resource.has_key('arc_ldap'):
-                log.debug("Getting list of ARC resources from GIIS '%s' ...", 
-                          self._resource.arc_ldap)
+                log.debug("Getting list of ARC resources from GIIS '%s' ..."
+                          % self._resource.arc_ldap)
                 cls = arclib.GetClusterResources(arclib.URL(self._resource.arc_ldap),True,'',1)
             else:
                 cls = arclib.GetClusterResources()
-                log.debug('Got cluster list of length %d', len(cls))
+                log.debug("arclib.GetClusterResources() returned"
+                          " cluster list of length %d", len(cls))
             self._queues = arclib.GetQueueInfo(cls,arclib.MDS_FILTER_CLUSTERINFO, True, '', 5)
             log.debug('returned valid queue information for %d queues', len(self._queues))
             self._queues_last_updated = time.time()
@@ -111,7 +112,7 @@ class ArcLrms(LRMS):
 
         # Initialize xrsl
         xrsl = app.xrsl(self._resource)
-        log.debug('Application provided XRSL: %s' % xrsl)
+        log.debug("Application provided XRSL: %s" % xrsl)
         try:
             # ARClib cannot handle unicode strings, so convert `xrsl` to ascii
             # XXX: should this be done in Application.xrsl() instead?
@@ -462,7 +463,7 @@ class ArcLrms(LRMS):
                                       int(offset), int(size), 
                                       local_file.name)
 
-        log.debug('ArcLRMS.peek(): arclib.JobFTPControl.Download: completed')
+        log.debug("ArcLRMS.peek(): arclib.JobFTPControl.Download: completed")
 
 
 ## main: run tests

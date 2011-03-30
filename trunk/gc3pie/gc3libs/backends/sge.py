@@ -449,7 +449,7 @@ class SgeLrms(LRMS):
             if exit_code == 0:
                 # parse `qstat` output
                 job_status = stdout.split()[4]
-                log.debug("translating SGE's `qstat` code '%s' to gc3libs.Job state" % job_status)
+                log.debug("translating SGE's `qstat` code '%s' to gc3libs.Run.State" % job_status)
                 if 'qw' in job_status:
                     state = Run.State.SUBMITTED
                 elif 'r' in job_status or 'R' in job_status or 't' in job_status:
@@ -469,7 +469,6 @@ class SgeLrms(LRMS):
                 exit_code, stdout, stderr = self.transport.execute_command(_command)
                 if exit_code == 0:
                     # parse stdout and update job obect with detailed accounting information
-                    log.debug('parsing stdout to get job accounting information')
                     for line in stdout.split('\n'):
                         # skip empty and header lines
                         line = line.strip()
@@ -493,9 +492,10 @@ class SgeLrms(LRMS):
                                     # XXX: is exit_status significant? should we reset it to -1?
                                     job.signal = Run.Signals.RemoteError
                         except KeyError:
-                            log.debug("Ignoring job information '%s=%s'"
-                                               " -- no mapping defined to gc3utils.Job attributes." 
-                                               % (key,value))
+                            log.debug("Ignoring job information '%s=%s';"
+                                      " no mapping defined for it"
+                                      " in 'gc3libs/backends/sge.py'." 
+                                      % (key,value))
 
                     # FIXME: parsing dates is locale-dependent; if the
                     # locale of the local computer and the SGE
@@ -521,8 +521,8 @@ class SgeLrms(LRMS):
                             # accounting info should be there, if it's not then job is definitely lost
                             log.critical("Failed executing remote command: '%s'; exit status %d" 
                                                   % (_command,exit_code))
-                            log.debug('remote command returned stdout: %s' % stdout)
-                            log.debug('remote command returned stderr: %s' % stderr)
+                            log.debug("Remote command returned stdout: %s" % stdout)
+                            log.debug("remote command returned stderr: %s" % stderr)
                             raise paramiko.SSHException("Failed executing remote command: '%s'; exit status %d" 
                                                         % (_command,exit_code))
                         else:
@@ -556,8 +556,8 @@ class SgeLrms(LRMS):
                 # It is possible that 'qdel' fails because job has been already completed
                 # thus the cancel_job behaviour should be to 
                 log.error('Failed executing remote command: %s. exit status %d' % (_command,exit_code))
-                log.debug('remote command returned stdout: %s' % stdout)
-                log.debug('remote command returned stderr: %s' % stderr)
+                log.debug("remote command returned stdout: %s" % stdout)
+                log.debug("remote command returned stderr: %s" % stderr)
                 if exit_code == 127:
                     # failed executing remote command
                     raise LRMSError('Failed executing remote command')
@@ -625,11 +625,12 @@ class SgeLrms(LRMS):
                     # ...but keep it if it's not a known one
                     remote_path = os.path.join(job.ssh_remote_folder, remote_path)
                 local_path = os.path.join(download_dir, local_path)
-                log.debug("Downloading remote file '%s' to local file '%s'", 
-                                   remote_path, local_path)
+                log.debug("Downloading remote file '%s' to local file '%s'"
+                          % remote_path, local_path)
                 try:
                     if not os.path.exists(local_path) or overwrite:
-                        log.debug("Copying remote '%s' to local '%s'", remote_path, local_path)
+                        log.debug("Copying remote '%s' to local '%s'"
+                                  % (remote_path, local_path))
                         self.transport.get(remote_path, local_path)
                     else:
                         log.info("Local file '%s' already exists; will not be overwritten!",
@@ -727,10 +728,11 @@ class SgeLrms(LRMS):
                      )
             return self._resource
 
-        except:
+        except Exception, ex:
             self.transport.close()
-            log.error('Failure while querying remote LRMS')
-            log.debug('%s %s',sys.exc_info()[0], sys.exc_info()[1])
+            log.error("Error querying remote LRMS, see debug log for details.")
+            log.debug("Error querying LRMS: %s: %s",
+                      ex.__class__.__name__, str(ex))
             raise
         
 

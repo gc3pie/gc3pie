@@ -58,10 +58,12 @@ class GridAuth(object):
 
 
     def check(self):
-        gc3libs.log.debug('Checking auth: grid')
+        gc3libs.log.debug('Checking auth: GridAuth')
 
         if (self.validity_timestamp - int(time.time())) > gc3libs.Default.PROXY_VALIDITY_THRESHOLD:
-            gc3libs.log.debug('Grid credentials still within validity period. Will not actually check.')
+            gc3libs.log.debug(
+                "Grid credentials still within validity period."
+                " Will not actually check.")
             return True
 
         self.user_cert_valid = _user_certificate_is_valid()
@@ -115,7 +117,8 @@ class GridAuth(object):
 
                 _cmd = shlex.split("slcs-init --idp %s -u %s -p %s -k %s" 
                                    % (self.idp, self.aai_username, input_passwd, input_passwd))
-                gc3libs.log.debug("Executing slcs-init --idp %s -u %s" 
+                gc3libs.log.debug("Executing slcs-init --idp %s -u %s"
+                                  " -p ****** -k ******"
                                   % (self.idp, self.aai_username))
 
                 try:
@@ -124,25 +127,27 @@ class GridAuth(object):
 
                     if p.returncode != 0:
                         # Assume transient error (i.e wrong password or so).
-                        raise gc3libs.exceptions.RecoverableAuthError("Error running slcs-init: %s."
-                                                   " Assuming temporary failure, will retry later." 
-                                                   % stdout) 
+                        raise gc3libs.exceptions.RecoverableAuthError(
+                            "Error running slcs-init: %s."
+                            " Assuming temporary failure, will retry later." 
+                            % stdout) 
                 # Note: to avoid printing the user's password in plaintext, we do not print the whole command in the error.
                 except OSError, x:
                     if x.errno == errno.ENOENT or x.errno == errno.EPERM \
                             or x.errno == errno.EACCES:
-                        raise gc3libs.exceptions.UnrecoverableAuthError("Failed running slcs-init: %s."
-                                                     " Please verify that it is available on your $PATH and that it actually works."
-                                                     % str(x))
+                        raise gc3libs.exceptions.UnrecoverableAuthError(
+                            "Failed running slcs-init: %s."
+                            " Please verify that it is available on your $PATH and that it actually works."
+                            % str(x))
                     else:
-                        raise gc3libs.exceptions.UnrecoverableAuthError("Failed running slcs-init: %s."
-                                                     % str(x))
+                        raise gc3libs.exceptions.UnrecoverableAuthError(
+                            "Failed running slcs-init: %s." % str(x))
                 except Exception, ex:
                     # Intercept any other Error that subprocess may raise
                     gc3libs.log.debug("Unexpected error in GridAuth: %s: %s" 
-                                      % (ex.__class__.__name__, ex.message))
-                    raise gc3libs.exceptions.UnrecoverableAuthError("Error renewing SLCS certificate: %s" 
-                                                 % str(ex))
+                                      % (ex.__class__.__name__, str(ex)))
+                    raise gc3libs.exceptions.UnrecoverableAuthError(
+                        "Error renewing SLCS certificate: %s" % str(ex))
 
                 new_cert = True
                 gc3libs.log.info('Created new SLCS certificate.')
@@ -202,8 +207,8 @@ class GridAuth(object):
                 except Exception, ex:
                     # Intercept any other Error that subprocess may raise 
                     gc3libs.log.debug("Unhandled error in GridAuth: %s: %s" 
-                                      % (ex.__class__.__name__, ex.message))
-                    raise gc3libs.exceptions.UnrecoverableAuthError(str(ex.message))
+                                      % (ex.__class__.__name__, str(ex)))
+                    raise gc3libs.exceptions.UnrecoverableAuthError(str(ex))
                 
             if not self.check():
                 raise gc3libs.exceptions.RecoverableAuthError("Temporary failure in enabling Grid authentication."

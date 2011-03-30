@@ -133,7 +133,6 @@ class ValueFunctionIteration(SequentialTaskCollection):
         See: `SequentialTaskCollection.next`:meth: for a description
         of the contract that this method must implement.
         """
-        gc3libs.log.debug("ValueFunctionIteration.next(%s, %d)" % (self, iteration))
         if iteration == self.total_iterations:
             return Run.State.TERMINATED
         else:

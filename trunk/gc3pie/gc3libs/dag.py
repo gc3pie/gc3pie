@@ -308,8 +308,6 @@ class SequentialTaskCollection(TaskCollection):
         """
         Update state of the collection, based on the jobs' statuses.
         """
-        gc3libs.log.debug("Updating state of task %d in collection %s ..."
-                          % (self._current_task, self))
         if self._current_task is None:
             # it's either NEW or TERMINATED, no update
             assert self.execution.state in [ Run.State.NEW, Run.State.TERMINATED ]
@@ -318,8 +316,8 @@ class SequentialTaskCollection(TaskCollection):
             # update state of current task
             task = self.tasks[self._current_task]
             task.update_state(**kw)
-            gc3libs.log.debug("Task #%d in state %s"
-                              % (self._current_task, task.execution.state))
+            #gc3libs.log.debug("Task #%d in state %s"
+            #                  % (self._current_task, task.execution.state))
         # set state based on the state of current task
         if self._current_task == 0 and task.execution.state in [ Run.State.NEW, Run.State.SUBMITTED ]:
             self.execution.state = task.execution.state
@@ -403,8 +401,8 @@ class ParallelTaskCollection(TaskCollection):
         Update state of all tasks in the collection.
         """
         for task in self.tasks:
-            gc3libs.log.debug("Updating state of %s in collection %s ..."
-                              % (task, self))
+            #gc3libs.log.debug("Updating state of %s in collection %s ..."
+            #                  % (task, self))
             task.update_state(**kw)
         self.execution.state = self._state()
         if self.execution.state == Run.State.TERMINATED:
