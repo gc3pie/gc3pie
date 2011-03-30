@@ -111,12 +111,19 @@ class ValueFunctionIteration(SequentialTaskCollection):
         self.values_filename_fmt = ('values.%%0%dd.txt'
                                     % (1 + int(math.log10(total_iterations))))
 
+        self.jobname = kw.get('jobname',
+                              gc3libs.utils.basename_sans(initial_values_file))
+
         # create initial task and register it
         initial_task = ValueFunctionIterationPass(executable, initial_values_file,
                                                   0, total_iterations, slice_size,
-                                                  self.datadir, self.extra, grid)
-        jobname = gc3libs.utils.basename_sans(initial_values_file)
-        SequentialTaskCollection.__init__(self, jobname, [initial_task], grid)
+                                                  self.datadir, self.extra, grid,
+                                                  parent=self.jobname)
+        SequentialTaskCollection.__init__(self, self.jobname, [initial_task], grid)
+
+
+    def __str__(self):
+        return self.jobname
 
 
     def next(self, iteration):
@@ -148,6 +155,7 @@ class ValueFunctionIteration(SequentialTaskCollection):
                     self.slice_size,
                     extra=self.extra,
                     grid=self._grid,
+                    parent=self.jobname,
                     )
                 )
             return Run.State.RUNNING
@@ -199,7 +207,7 @@ class ValueFunctionIterationPass(ParallelTaskCollection):
     def __init__(self, executable, input_values_file,
                  iteration, total_iterations,
                  slice_size=0, datadir=TMPDIR, extra={ },
-                 grid=None):
+                 grid=None, parent=None):
         """
         Create a new tasks that runs `executable` over the set of
         values contained in file `input_values_file` (one
@@ -232,9 +240,12 @@ class ValueFunctionIterationPass(ParallelTaskCollection):
         # pad numbers with correct amount of zeros, so they look
         # sorted in plain `ls -l` output
         fmt = '%%0%dd' % (1 + int(math.log10(float(total_iterations))))
-        
+        self.jobname = ("%s.%s"
+                        % ((parent or gc3libs.utils.basename_sans(input_values_file)),
+                           (fmt % iteration)))
+
         # create data sub-directory
-        datasubdir = os.path.join(datadir, "pass." + (fmt % iteration))
+        datasubdir = os.path.join(datadir, self.jobname)
         if not os.path.exists(datasubdir):
             os.makedirs(datasubdir)
             
@@ -242,6 +253,8 @@ class ValueFunctionIterationPass(ParallelTaskCollection):
         tasks = [ ]
         for start in range(0, total_input_values, slice_size):
             # create new job to handle this slice of values
+            kw = extra.copy()
+            kw['parent'] = self.jobname
             tasks.append(
                 ValueFunctionIterationApplication(
                     executable,
@@ -254,22 +267,33 @@ class ValueFunctionIterationPass(ParallelTaskCollection):
                     start,
                     end=min(start + slice_size - 1, total_input_values),
                     output_dir = datasubdir,
-                    **(extra.copy())
+                    **kw
                     )
                 )
 
         # actually init jobs
-        jobname = gc3libs.utils.basename_sans(input_values_file)
-        ParallelTaskCollection.__init__(self, jobname, tasks, grid)
+        ParallelTaskCollection.__init__(self, self.jobname, tasks, grid)
 
+
+    def __str__(self):
+        return self.jobname
+    
 
     def terminated(self):
         """
         Collect all results from sub-tasks into `self.output_values`.
         """
-        gc3libs.log.debug("Pass %s terminated, now collecting return values from sub-tasks ..." % self)
+        gc3libs.log.debug(
+            "%s terminated, now collecting return values from sub-tasks ..."
+            % self)
         self.output_values = [ ]
         for task in self.tasks:
+            if task.execution.exitcode != 0:
+                self.execution.exitcode = 1
+                gc3libs.log.error(
+                    "%s: sub-task %s failed with exit code %d. Aborting."
+                    % (self, task, task.execution.exitcode))
+                return
             self.output_values.extend(task.output_values)
         gc3libs.log.debug("  ...done.")
 
@@ -292,27 +316,38 @@ class ValueFunctionIterationApplication(Application):
     """
     
     def __init__(self, executable, input_values_file, iteration, total_iterations,
-                 start=0, end=None, **kw):
+                 start=0, end=None, parent=None, **kw):
         count = _count_input_values(input_values_file)
         if end is None:
             end = count-1 # last allowed position
-        kw.setdefault('jobname', gc3libs.utils.basename_sans(input_values_file))
+        # make a readable jobname, indicating what part of the computation this is
+        kw.setdefault('jobname',
+                      '%s.%d--%d' % (
+                          parent or gc3libs.utils.basename_sans(input_values_file),
+                          start, end))
         Application.__init__(
             self,
-            executable,
+            os.path.basename(executable),
             # `start` and `end` arguments to `executable` follow the
             # FORTRAN convention of being 1-based
             arguments = [ kw['discount_factor'], iteration, total_iterations,
                           count, start+1, end+1 ],
-            inputs = { input_values_file:IN_VALUES_FILE },
+            inputs = { executable:os.path.basename(executable),
+                       input_values_file:IN_VALUES_FILE },
             outputs = { OUT_VALUES_FILE:OUT_VALUES_FILE },
             join = True,
             stdout = 'job.log', # stdout + stderr
             **kw)
 
 
+    def __str__(self):
+        return self.jobname
+
+
     def terminated(self):
+        gc3libs.log.debug("%s: TERMINATED with return code %d ..." % (self.persistent_id, self.execution.returncode))
         if self.execution.returncode == 0:
+            gc3libs.log.debug("%s: terminated correctly, now post-processing results ..." % self.persistent_id)
             # everything ok, try to post-process results
             results = [ ]
             output_dir = self.output_dir
@@ -329,17 +364,23 @@ class ValueFunctionIterationApplication(Application):
                 shutil.rmtree(output_dir, ignore_errors=True)
             except ValueError, ex:
                 # some line cannot be parsed as a floating-point number
-                self.info = ("Invalid content in file '%s' at line %d: %s"
-                             % (output_filename, lineno, str(ex)))
+                msg = ("Invalid content in file '%s' at line %d: %s"
+                       % (output_filename, lineno, str(ex)))
+                gc3libs.log.error("%s: %s" % (self.persistent_id, msg))
+                self.info = msg
                 self.exitcode = 65 # EX_DATAERR in /usr/include/sysexits.h
             except IOError, ex:
                 # error opening or reading file
-                self.info = ("I/O error processing output file '%s': %s"
-                             % (output_filename, str(ex)))
+                msg = ("I/O error processing output file '%s': %s"
+                       % (output_filename, str(ex)))
+                gc3libs.log.error("%s: %s" % (self.persistent_id, msg))
+                self.info = msg
                 self.exitcode = 74 # EX_IOERR in /usr/include/sysexits.h
             except Exception, ex:
-                self.info = ("Error processing result file '%s': %s" 
-                             % (output_filename, str(ex)))
+                msg = ("Error processing result file '%s': %s" 
+                       % (output_filename, str(ex)))
+                gc3libs.log.error("%s: %s" % (self.persistent_id, msg))
+                self.info = msg
                 self.exitcode = 70 # EX_SOFTWARE in /usr/include/sysexits.h
 
 
@@ -428,7 +469,7 @@ class GeorgeScript(SessionBasedScript):
 
         gc3libs.utils.test_file(self.params.execute, os.R_OK|os.X_OK)
         if not os.path.isabs(self.params.execute):
-            self.params.execute = os.path.realpath(self.params.execute)
+            self.params.execute = os.path.abspath(self.params.execute)
 
 
     def new_tasks(self, extra):
@@ -449,7 +490,7 @@ class GeorgeScript(SessionBasedScript):
                                % name)
             path = p.get(name, 'initial_values_file')
             if not os.path.isabs(path):
-                path = os.path.join(os.getcwd(), path)
+                path = os.path.abspath(path)
             if not os.path.exists(path):
                 self.log.error("Input values file '%s' does not exist."
                                " Ignoring task '%s', which depends on it."
@@ -457,6 +498,7 @@ class GeorgeScript(SessionBasedScript):
                 
             # import running parameters from cfg file
             kw = extra.copy()
+            kw['jobname'] = name
             try:
                 kw.setdefault('discount_factor',
                               p.getfloat(name, 'discount_factor'))
@@ -465,42 +507,63 @@ class GeorgeScript(SessionBasedScript):
                                " in input '%s': %s"
                                % (name, str(ex)))
         
-            yield (name,
-                   ValueFunctionIteration,
-                   [self.params.execute,
-                    path,
-                    self.params.iterations,
-                    self.params.slice_size,
-                    ],
-                   kw)
+            yield (name, ValueFunctionIteration, [
+                self.params.execute, path,
+                self.params.iterations,
+                self.params.slice_size
+                ], kw)
 
 
     def print_summary_table(self, output, stats):
-        output.write("* Status of given tasks:\n")
         table = Texttable(0) # max_width=0 => dynamically resize cells
         table.set_deco(0)    # no decorations
         table.add_row(['Input', 'Iteration', 'Tasks Generated/Total', 'Progress'])
         table.set_cols_align(['l', 'c', 'c', 'c'])
+        def compute_stats(collection):
+            result = collection.stats()
+            def add_stats(s1, s2):
+                for k in s2.iterkeys():
+                    s1[k] += s2[k]
+                return s1
+            for task in collection.tasks:
+                if hasattr(task, 'stats'):
+                    add_stats(result, task.stats())
+            return result
         for toplevel in self.tasks:
-            current_iteration = toplevel._current_task + 1
-            total_iterations = toplevel.total_iterations + 1
+            current_iteration = toplevel._current_task
+            total_iterations = toplevel.total_iterations
             if toplevel.slice_size == 0:
-                mult = 3
+                mult = 2
             else:
-                mult = 2 + (toplevel.num_input_values / toplevel.slice_size)
-            generated_tasks = current_iteration * mult
-            total_tasks = total_iterations * mult
+                mult = 1 + (toplevel.num_input_values / toplevel.slice_size)
+            generated_tasks = 1 + mult * (1 + current_iteration)
+            total_tasks = 1 + mult * (1 + total_iterations)
+            progresses = [ ]
+            for state in [ Run.State.NEW,
+                           Run.State.SUBMITTED,
+                           Run.State.RUNNING,
+                           Run.State.STOPPED,
+                           Run.State.TERMINATING,
+                           Run.State.TERMINATED,
+                           Run.State.UNKNOWN
+                           ]:
+                stats = compute_stats(toplevel)
+                count = stats[state]
+                if count > 0:
+                    progresses.append("%.1f%% %s"
+                                      % (100.0 * count / (total_tasks-1), state))
+                    if state == 'TERMINATED':
+                        progresses[-1] += (" (%.1f%% ok, %.1f%% failed)"
+                                           % (100.0 * stats['ok'] / count,
+                                              100.0 * stats['failed'] / count))
             table.add_row([
                 toplevel.jobname, 
                 "%d/%d" % (1+current_iteration, 1+total_iterations),
                 "%d/%d" % (generated_tasks, total_tasks),
-                "(%.1f%%)" % (100.0 * current_iteration / total_iterations)
+                str.join(", ", progresses)
                 ])
         output.write(table.draw())
         output.write("\n")
-
-        output.write("* Overall status of tasks:\n")
-        SessionBasedScript.print_summary_table(self, output, stats)
 
 
 # run script
