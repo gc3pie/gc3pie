@@ -101,16 +101,17 @@ class GamessApplication(gc3libs.Application):
                         self.execution.info = line.strip().capitalize()
                         if match.group('gamess_outcome') == 'ABNORMALLY':
                             self.execution.exitcode = 1
-                            break
+                        elif match.group('gamess_outcome') == 'NORMALLY':
+                            self.execution.exitcode = 0
+                        break
                     elif match.group('ddikick_outcome'):
                         self.execution.info = line.strip().capitalize()
                         if match.group('ddikick_outcome') == 'unexpectedly':
                             self.execution.exitcode = 2
-                            break
-                        if match.group('ddikick_outcome') == 'gracefully':
+                        elif match.group('ddikick_outcome') == 'gracefully':
                             gc3libs.log.info('Setting exit code to 0')
                             self.execution.exitcode = 0
-                            break
+                        break
                     else:
                         raise AssertionError("Input line '%s' matched, but neither group 'gamess_outcome' nor 'ddikick_outcome' did!")
             output_file.close()
