@@ -272,6 +272,14 @@ class SequentialTaskCollection(TaskCollection):
         """
         state = self.next(self._current_task)
         if state == Run.State.TERMINATED:
+            # set returncode when all tasks are terminated
+            self.execution.returncode = 0 # optimistic start...
+            # ...but override if something has gone wrong
+            for task in self.tasks:
+                if task.execution.returncode != 0:
+                    self.execution.exitcode = 1
+                    break
+            # returncode can be overridden in the `terminated()` hook
             self.execution.state = Run.State.TERMINATED
             self._current_task = None
         else:
@@ -307,10 +315,12 @@ class SequentialTaskCollection(TaskCollection):
             assert self.execution.state in [ Run.State.NEW, Run.State.TERMINATED ]
             pass
         else:
+            # update state of current task
             task = self.tasks[self._current_task]
             task.update_state(**kw)
             gc3libs.log.debug("Task #%d in state %s"
                               % (self._current_task, task.execution.state))
+        # set state based on the state of current task
         if self._current_task == 0 and task.execution.state in [ Run.State.NEW, Run.State.SUBMITTED ]:
             self.execution.state = task.execution.state
         elif (task.execution.state == Run.State.TERMINATED
@@ -397,6 +407,12 @@ class ParallelTaskCollection(TaskCollection):
                               % (task, self))
             task.update_state(**kw)
         self.execution.state = self._state()
+        if self.execution.state == Run.State.TERMINATED:
+            # set exitcode based on returncode of sub-tasks
+            for task in self.tasks:
+                if task.execution.returncode != 0:
+                    self.execution.exitcode = 1
+            self.execution.returncode = 0
         
 
 ## main: run tests
