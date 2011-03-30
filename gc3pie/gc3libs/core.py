@@ -895,7 +895,7 @@ class Engine(object):
             self._terminated.remove(task)
         else:
             raise AssertionError("Unhandled run state '%s' in gc3libs.core.Engine." % state)
-        task.detach(self)
+        task.detach()
 
 
     def progress(self):
@@ -1057,8 +1057,8 @@ class Engine(object):
                 try:
                     self._core.fetch_output(task)
                     if task.execution.state == Run.State.TERMINATED:
-                        self._core.free(task)
                         self._terminated.append(task)
+                        self._core.free(task)
                         transitioned.append(index)
                     if self._store:
                         self._store.save(task)
@@ -1112,10 +1112,8 @@ class Engine(object):
 
     def free(self, task, **kw):
         """
-        Proxy for `Core.free` (which see); in addition, remove `task`
-        from the list of managed tasks.
+        Proxy for `Core.free`, which see.
         """
-        self.remove(task)
         self._core.free(task)
 
 
