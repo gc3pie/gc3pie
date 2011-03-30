@@ -270,6 +270,16 @@ class Task(object):
         """
         return self._grid.peek(self, what, offset, size, **kw)
 
+
+    def free(self, **kw):
+        """
+        Release any remote resources associated with this task.
+
+        See :meth:`gc3libs.Core.free` for a full explanation.
+        """
+        self._grid.free(self, **kw)
+
+
     # convenience methods, do not really add any functionality over
     # what's above
     
