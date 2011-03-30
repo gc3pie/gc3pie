@@ -277,7 +277,7 @@ class Task(object):
 
         See :meth:`gc3libs.Core.free` for a full explanation.
         """
-        self._grid.free(self, **kw)
+        return
 
 
     # convenience methods, do not really add any functionality over
