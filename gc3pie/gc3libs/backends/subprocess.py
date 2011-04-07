@@ -224,14 +224,20 @@ class SubprocessLrms(LRMS):
                     stdout = open(os.devnull, 'w')
                 posix.dup2(stdout.fileno(), 1)
 
-                if app.stderr is not None:
-                    if app.join:
+                if app.join:
                         stderr = stdout
-                    else:
-                        stderr = open(app.stderr, 'w')
                 else:
-                    stderr = open(os.devnull, 'w')
-                posix.dup2(stdout.fileno(), 2)
+                    if app.stderr is not None:
+                        stderr = open(app.stderr, 'w')
+                    else:
+                        stderr = open(os.devnull, 'w')
+                posix.dup2(stderr.fileno(), 2)
+
+                # close extra fd's after duplication
+                os.close(stdin.fileno())
+                os.close(stdout.fileno())
+                if app.stderr is not None and stderr is not stdout:
+                    posix.close(stderr.fileno())
 
                 ## set up environment
                 for k,v in app.environment:
