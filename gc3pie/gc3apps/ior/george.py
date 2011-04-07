@@ -166,7 +166,10 @@ class ValueFunctionIteration(SequentialTaskCollection):
         file.
         """
         # determine output file name
-        output_filename = gc3libs.utils.basename_sans(self.initial_values) + '.csv'
+        output_filename_base = gc3libs.utils.basename_sans(self.initial_values)
+        if output_filename_base.endswith('.input'):
+            output_filename_base = output_filename_base[:-6]
+        output_filename = output_filename_base  + '.output.csv'
         gc3libs.log.debug("SequentialTaskCollection %s done,"
                           " now processing results into file '%s'..."
                           % (self, output_filename))
@@ -179,7 +182,7 @@ class ValueFunctionIteration(SequentialTaskCollection):
             output_csv.writerow([i] + list(values))
         output_file.close()
         # same stuff, albeit in a different output format for SimpleDP compatibility
-        output_filename = gc3libs.utils.basename_sans(self.initial_values) + '.output.txt'
+        output_filename = output_filename_base + '.output.txt'
         shutil.copyfile(self.initial_values, output_filename)
         output_file = open(output_filename, 'a') # write, no truncate
         for task in self.tasks:
@@ -414,12 +417,9 @@ class GeorgeScript(SessionBasedScript):
     the results of the K-th iteration of the value function.
 
     Computation of the value function on a set of values is performed
-    by a separate program ``vfi.exe``.  You can set an alternate
-    program using the ``-x`` command-line option, but any program must
-    accept exactly three command-line arguments, namely: input file
-    path, start index in the range to compute, end index in the range,
-    and produce the set of output values on standard output.
-
+    by a separate program ``vfi.exe``.  You can set an alternate path
+    to the compute program using the ``-x`` command-line option.
+    
     The number P of iterations can be set with the ``-P`` command-line
     option.
     """
@@ -427,7 +427,7 @@ class GeorgeScript(SessionBasedScript):
     def __init__(self):
         SessionBasedScript.__init__(
             self,
-            version = '0.2',
+            version = '0.3',
             # only '.txt' files are considered as valid input
             input_filename_pattern = '*.ini',
             )
