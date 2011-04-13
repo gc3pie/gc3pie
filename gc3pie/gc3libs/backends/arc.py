@@ -20,7 +20,7 @@ Job control on ARC0 resources.
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 #
 __docformat__ = 'reStructuredText'
-__version__ = 'development version (SVN $Revision$)'
+__version__ = '1.0rc7 (SVN $Revision$)'
 
 
 import sys
@@ -126,7 +126,7 @@ class ArcLrms(LRMS):
 
         # Initialize xrsl
         xrsl = app.xrsl(self._resource)
-        log.debug("Application provided XRSL: %s" % xrsl)
+        log.debug('Application provided XRSL: %s' % xrsl)
         try:
             # ARClib cannot handle unicode strings, so convert `xrsl` to ascii
             # XXX: should this be done in Application.xrsl() instead?
@@ -180,11 +180,11 @@ class ArcLrms(LRMS):
                     INLRMS:H        STOPPED
                     FINISHING       RUNNING
                     EXECUTED        RUNNING
-                    FINISHED        TERMINATING
-                    CANCELING       TERMINATING
-                    FINISHED        TERMINATING
-                    FAILED          TERMINATING
+                    FINISHED        TERMINATED
+                    CANCELING       TERMINATED
+                    FINISHED        TERMINATED
                     KILLED          TERMINATED
+                    FAILED          TERMINATED
                     DELETED         TERMINATED
                     ==============  ===========
 
@@ -211,11 +211,11 @@ class ArcLrms(LRMS):
                     'INLRMS:H':  Run.State.STOPPED,
                     'FINISHING': Run.State.RUNNING,
                     'EXECUTED':  Run.State.RUNNING,
-                    'FINISHED':  Run.State.TERMINATING,
-                    'CANCELING': Run.State.TERMINATING,
-                    'FINISHED':  Run.State.TERMINATING,
-                    'FAILED':    Run.State.TERMINATING,
+                    'FINISHED':  Run.State.TERMINATED,
+                    'CANCELING': Run.State.TERMINATED,
+                    'FINISHED':  Run.State.TERMINATED,
                     'KILLED':    Run.State.TERMINATED,
+                    'FAILED':    Run.State.TERMINATED,
                     'DELETED':   Run.State.TERMINATED,
                     }[status]
             except KeyError:
@@ -239,7 +239,7 @@ class ArcLrms(LRMS):
         state = map_arc_status_to_gc3job_status(arc_job.status)
         if arc_job.exitcode != -1:
             job.returncode = arc_job.exitcode
-        elif state in [Run.State.TERMINATING, Run.State.TERMINATING] and job.returncode is None:
+        elif state == Run.State.TERMINATED and job.returncode is None:
             # XXX: it seems that ARC does not report the job exit code
             # (at least in some cases); let's make one up based on
             # some crude heuristics
@@ -259,9 +259,9 @@ class ArcLrms(LRMS):
                 job.returncode = (Run.Signals.RemoteError, -1)
             # note: arc_job.used_memory is in KiB (!), app.requested_memory is in GiB
             elif app.requested_memory > 0 and arc_job.used_memory > -1 and (arc_job.used_memory / 1024) >= (app.requested_memory * 1024):
-                job.log("Job used more memory (%d MB) than requested (%d MB),"
+                job.log("Job used more memory (%d GB) than requested (%d GB),"
                         " killed by remote batch system" 
-                        % (arc_job.used_memory / 1024, app.requested_memory * 1024))
+                        % (arc_job.used_memory / 1024 / 1024, app.requested_memory))
                 job.returncode = (Run.Signals.RemoteError, -1)
             else:
                 # presume everything went well...
@@ -274,7 +274,7 @@ class ArcLrms(LRMS):
         # Common struture as described in Issue #78
         job.queue = arc_job.queue
         job.cores = arc_job.cpu_count
-        job.original_exitcode = arc_job.exitcode
+        job.exit_code = arc_job.exitcode
         job.used_walltime = arc_job.used_wall_time # exressed in sec.
         job.used_cputime = arc_job.used_cpu_time # expressed in sec.
         job.used_memory = arc_job.used_memory # expressed in KiB
@@ -319,12 +319,13 @@ class ArcLrms(LRMS):
 
         log.debug("Downloading job output into '%s' ...", download_dir)
         try:
-            arclib.JobFTPControl.DownloadDirectory(jftpc, job.lrms_jobid,download_dir)
+            arclib.JobFTPControl.DownloadDirectory(jftpc, job.lrms_jobid, download_dir)
             job.download_dir = download_dir
         except arclib.FTPControlError, ex:
             # critical error. consider job remote data as lost
-            raise gc3libs.exceptions.DataStagingError("Failed downloading remote folder '%s': %s" 
-                                   % (job.lrms_jobid, str(ex)))
+            raise gc3libs.exceptions.DataStagingError(
+                "Failed downloading remote folder '%s': %s" 
+                % (job.lrms_jobid, str(ex)))
 
         return 
 
@@ -475,7 +476,7 @@ class ArcLrms(LRMS):
                                       int(offset), int(size), 
                                       local_file.name)
 
-        log.debug("ArcLRMS.peek(): arclib.JobFTPControl.Download: completed")
+        log.debug('ArcLRMS.peek(): arclib.JobFTPControl.Download: completed')
 
 
 ## main: run tests

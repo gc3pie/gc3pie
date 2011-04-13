@@ -476,8 +476,8 @@ def _load_jobs(session):
     return jobs
 
 def add_extension(filename, ext):
-    if not os.path.isabs(filename):
-        filename = os.path.abspath(filename)
+    if not filename.startswith('/'):
+        filename = os.path.join(os.getcwd(), filename)
     if filename.endswith(ext):
         return filename
     if ext.startswith('.'):

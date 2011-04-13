@@ -20,7 +20,7 @@
 """
 Simple interface to the CODEML application.
 """
-__version__ = '1.0rc2 (SVN $Revision$)'
+__version__ = '1.0rc7 (SVN $Revision$)'
 # summary of user-visible changes
 __author__ = 'Riccardo Murri <riccardo.murri@uzh.ch>'
 __docformat__ = 'reStructuredText'
@@ -149,7 +149,7 @@ class CodemlApplication(gc3libs.Application):
     #        self.submit()
 
 
-    def terminated(self):
+    def postprocess(self, download_dir):
         """
         Set the exit code of a `CodemlApplication` job by inspecting its
         ``.mlc`` output files.
@@ -179,8 +179,6 @@ class CodemlApplication(gc3libs.Application):
             # submission failed, job did not run at all
             self.execution.exitcode = 127
             return
-
-        download_dir = self.output_dir
 
         # if output files were *not* uploaded to a remote server,
         # then check if they are OK and set exit code based on this

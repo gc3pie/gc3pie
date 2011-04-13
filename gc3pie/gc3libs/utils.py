@@ -25,12 +25,11 @@ sources of a different project and it would not stop working.
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 #
 __docformat__ = 'reStructuredText'
-__version__ = 'development version (SVN $Revision$)'
+__version__ = '1.0rc7 (SVN $Revision$)'
 
 
 import os
 import os.path
-import posix
 import re
 import shelve
 import sys
@@ -74,13 +73,6 @@ import gc3libs.exceptions
 #                     Generic functions
 #
 # ================================================================
-
-def basename_sans(path):
-    """
-    Return base name without the extension.
-    """
-    return os.path.splitext(os.path.basename(path))[0]
-
 
 class defaultdict(dict):
     """
@@ -662,22 +654,6 @@ def same_docstring_as(referenced_fn):
             f.__doc__ = referenced_fn.__doc__
             return f
     return decorate
-
-
-def same_file(path1, path2):
-    """
-    Return `True` if `path1` and `path2` point to the same UNIX inode.
-    If one or both paths are non-existent, return `False`.
-    """
-    if not os.path.exists(path1) or not os.path.exists(path2):
-        return False
-    if path1 == path2:
-        return True
-    st1 = posix.stat(path1)
-    st2 = posix.stat(path2)
-    if st1.st_dev == st2.st_dev and st1.st_ino == st2.st_ino:
-        return True
-    return False
 
 
 # see http://stackoverflow.com/questions/31875/is-there-a-simple-elegant-way-to-define-singletons-in-python/1810391#1810391

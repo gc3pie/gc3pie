@@ -19,7 +19,7 @@ Simple-minded scheduling for GC3Libs.
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 #
 __docformat__ = 'reStructuredText'
-__version__ = 'development version (SVN $Revision$)'
+__version__ = '1.0rc7 (SVN $Revision$)'
 
 
 import sys
@@ -40,9 +40,8 @@ def _compatible_resources(lrms_list, application):
         if not lrms.is_valid():
             gc3libs.log.debug("Ignoring invalid LRMS object '%s'" % lrms)
             continue
-        gc3libs.log.debug(
-            "Checking resource '%s' for compatibility with application requirements"
-            % lrms._resource.name)
+        gc3libs.log.debug("Checking resource '%s' for compatibility with application requirements",
+                           lrms._resource.name)
         # if architecture is specified, check that it matches the resource one
         if (application.requested_architecture is not None
             and application.requested_architecture not in lrms._resource.architecture):
@@ -103,16 +102,15 @@ def do_brokering(lrms_list, application):
     for r in rs:
         try:
             # in-place update of resource status
-            gc3libs.log.debug("Trying to update status of resource '%s' ..."
-                              % r._resource.name)
+            gc3libs.log.debug("Trying to update status of resource '%s' ...", r._resource.name)
             r.get_resource_status()
             updated_resources.append(r)
         except Exception, x:
             # ignore errors in update, assume resource has a problem
             # and just drop it
             gc3libs.log.error("Cannot update status of resource '%s', dropping it."
-                              " See log file for details."
-                              % r._resource.name)
+                              " See log file for details.",
+                              r._resource.name)
             gc3libs.log.debug("Got error from get_resource_status(): %s: %s",
                               x.__class__.__name__, x.args, exc_info=True)
     return sorted(updated_resources, cmp=_cmp_resources)

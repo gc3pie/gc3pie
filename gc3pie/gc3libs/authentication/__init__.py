@@ -19,7 +19,7 @@ Authentication support for the GC3Libs.
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 #
 __docformat__ = 'reStructuredText'
-__version__ = 'development version (SVN $Revision$)'
+__version__ = '1.0rc7 (SVN $Revision$)'
 
 import sys
 
@@ -62,9 +62,8 @@ class Auth(object):
                                           " %s: %s" % (auth_name, x.__class__.__name__, x))
                         a = x
             else:
-                a = gc3libs.exceptions.UnrecoverableAuthError(
-                    "No valid credentials of type '%s'"
-                    " and `auto_enable` not set." % auth_name)
+                a = gc3libs.exceptions.UnrecoverableAuthError("No valid credentials of type '%s'"
+                                                " and `auto_enable` not set." % auth_name)
 
         self.__auths[auth_name] = a
         return a
@@ -90,7 +89,7 @@ class NoneAuth(object):
         return True
     
     def check(self):
-        gc3libs.log.debug("Checking auth: NoneAuth (always successful).")
+        gc3libs.log.debug('Checking auth: none')
         return True
 
     def enable(self):

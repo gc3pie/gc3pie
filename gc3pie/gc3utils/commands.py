@@ -20,7 +20,7 @@ Implementation of the `core` command-line front-ends.
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 #
 __docformat__ = 'reStructuredText'
-__version__ = 'development version (SVN $Revision$)'
+__version__ = '1.0rc7 (SVN $Revision$)'
 __author__="Sergio Maffioletti <sergio.maffioletti@gc3.uzh.ch>, Riccardo Murri <riccardo.murri@uzh.ch>"
 __date__ = '$Date$'
 __copyright__="Copyright (c) 2009-2011 Grid Computing Competence Center, University of Zurich"
@@ -520,13 +520,12 @@ released once the output files have been fetched.
                 app = self._store.load(jobid)
 
                 if app.execution.state == Run.State.NEW:
-                    raise gc3libs.exceptions.InvalidOperation(
-                        "Job '%s' is not yet submitted. Output cannot be retrieved"
-                        % app.persistent_id)
-                elif app.execution.state == Run.State.TERMINATED:
-                    raise gc3libs.exceptions.InvalidOperation(
-                        "Output of '%s' already downloaded to '%s'" 
-                        % (app.persistent_id, app.output_dir))
+                    raise gc3libs.exceptions.InvalidOperation("Job '%s' is not yet submitted. Output cannot be retrieved"
+                                           % app.persistent_id)
+
+                if app.final_output_retrieved:
+                    raise gc3libs.exceptions.InvalidOperation("Output of '%s' already downloaded to '%s'" 
+                                           % (app.persistent_id, app.output_dir))
 
                 if self.params.download_dir is None:
                     download_dir = os.path.join(os.getcwd(), app.persistent_id)
@@ -573,8 +572,7 @@ error occurred.
             try:
                 app = self._store.load(jobid)
 
-                self.log.debug("gkill: Job '%s' in state %s"
-                               % (jobid, app.execution.state))
+                self.log.debug("gkill: Job '%s' in state %s" % (jobid, app.execution.state))
                 if app.execution.state == Run.State.NEW:
                     raise gc3libs.exceptions.InvalidOperation("Job '%s' not submitted." % app)
                 if app.execution.state == Run.State.TERMINATED:

@@ -101,7 +101,7 @@ Installation into a virtualenv has two distinct advantages:
 
 4. Check-out the ``gc3pie`` files in a ``src/`` directory::
      
-       svn co http://gc3pie.googlecode.com/svn/trunk/gc3pie src
+       svn co http://gc3pie.googlecode.com/svn/branches/1.0/gc3pie src
    
   
 5. Install the ``gc3pie`` in "develop" mode, so any modification
@@ -141,7 +141,7 @@ Installation into a virtualenv has two distinct advantages:
    An example configuration file, enabling access to the SMSCG_
    infrastructure can be found at:
 
-     http://gc3pie.googlecode.com/svn/trunk/gc3pie/gc3libs/etc/gc3pie.conf.smscg
+     http://gc3pie.googlecode.com/svn/branches/1.0/gc3pie/gc3libs/etc/gc3pie.conf.smscg
 
    Before you can actually use this file, you will need to insert into
    it three values, for which we can provide no
