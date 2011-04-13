@@ -16,13 +16,16 @@ Installation
 
 These instructions show how to install GC3Pie from the GC3 source
 repository into a separate python environment (called "virtualenv").
+Installation into a virtualenv has two distinct advantages:
+  * All code is confined in a single directory, and can thus be easily replaced/removed.
+  * Better dependency handling: additional Python packages that GC3Pie depends upon can be installed even if they conflict with system-level packages.
 
 0. Install software prerequisites: 
    
    * On Debian/Ubuntu, install packages: ``subversion``,
      ``python-dev``, ``python-profiler`` and the C/C++ compiler::
      
-       apt-get install subversion python-dev gcc g++
+       apt-get install subversion python-dev python-profiler gcc g++
 
    * On CentOS5, install packages ``subversion`` and ``python-devel``
      and the C/C++ compiler::
@@ -34,7 +37,7 @@ repository into a separate python environment (called "virtualenv").
      - Python development headers and libraries (for installing 
        extension libraries written in C/C++)
      - the Python package ``pstats`` (it's part of the Python
-       standard library, but it's sometimes installed separately)
+       standard library, but sometimes it needs separate installation)
      - a C/C++ compiler (this is usually installed by default).
 
    In order to use the ARC backend (required for SMSCG), you need the
@@ -42,6 +45,9 @@ repository into a separate python environment (called "virtualenv").
    installed on the same machine where GC3Pie are.  You can find
    instructions for installing it at:
      http://www.smscg.ch/WP/middleware/release_2_0/smscg_ui_Binary_Installation.html
+
+   Additional OS-specific installation details can be found at:
+     http://code.google.com/p/gc3pie/wiki/OSSpecificInstallDetails
 
 
 1. Choose a directory where the GC3Pie software will be installed;
@@ -174,11 +180,32 @@ latest version found in the GC3 svn repository.
 
      cd gc3pie/src
 
-2. Upgrade the `gc3pie` source and run the `setup.py` script again:
+2. Upgrade the `gc3pie` source and run the `setup.py` script again::
 
      svn up
      env CC=gcc ./setup.py develop
 
+*Note:* A major restructuring of the SVN repository took place in
+r1124 to r1126 (Feb. 15, 2011); if your sources are older than SVN
+r1124, these upgrade instructions will not work, and you must
+*reinstall completely*.  You can check what version the SVN sources
+are, by running the `svn info` command in the `src` directory: watch
+out for the `Revision:` line.
+
+
+HTML Documentation
+==================
+
+HTML documentation for the GC3Libs programming interface can be
+read online at:
+     
+  http://gc3pie.googlecode.com/svn/branches/1.0/docs/html/index.html
+
+Or you can generate a local copy from the sources::
+
+  cd $HOME/gc3pie # use '/opt/gc3pie' if root
+  cd docs
+  make html
 
 
 .. (for Emacs only)

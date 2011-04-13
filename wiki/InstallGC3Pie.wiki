@@ -26,7 +26,7 @@ Installation into a virtualenv has two distinct advantages:
     * [http://www.python.org Python] development headers and libraries (for installing 
       extension libraries written in C/C++)
     * the Python package `pstats` (it's part of the Python
-      standard library, but it's sometimes installed separately)
+      standard library, but it sometimes needs separate installation)
     * a C/C++ compiler (this is usually installed by default).
 
 In order to use the ARC backend (required for [http://www.smscg.ch SMSCG]), you need the
@@ -36,6 +36,7 @@ instructions for installing it at:
 
     http://www.smscg.ch/WP/middleware/release_2_0/smscg_ui_Binary_Installation.html
 
+Additional OS-specific installation details can be found on page
 [OSSpecificInstallDetails OS-Specific Install Details]
 
 1. Choose a directory where the GC3Pie software will be installed;
