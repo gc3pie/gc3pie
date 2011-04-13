@@ -13,7 +13,7 @@ import sys
 
 from optparse import OptionParser
 
-from gc3libs.utils import Template, expansions
+from gc3libs.template import Template, expansions
 
 PROG = os.path.basename(sys.argv[0])
 
