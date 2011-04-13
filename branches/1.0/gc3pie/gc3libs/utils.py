@@ -39,6 +39,31 @@ import UserDict
 
 from lockfile import FileLock
 
+# Python 2.4 lacks `functools`
+try:
+    import functools
+    _wraps = functools.wraps
+except ImportError:
+    def _wraps(original):
+        def inner(fn):
+            # see functools.WRAPPER_ASSIGNMENTS
+            for attribute in ['__module__',
+                              '__name__',
+                              '__doc__'
+                              ]:
+                setattr(fn, attribute, getattr(original, attribute))
+            # see functools.WRAPPER_UPDATES
+            for attribute in ['__dict__',
+                              ]:
+                if hasattr(fn, attribute):
+                    getattr(fn, attribute).update(getattr(original, attribute))
+                else:
+                    setattr(fn, attribute,
+                            getattr(original, attribute).copy())
+            return fn
+        return inner
+
+
 import gc3libs
 import gc3libs.exceptions
 
@@ -250,6 +275,49 @@ def progressive_number(qty=None,
     else:
         return [ (id+n) for n in range(1, qty+1) ]
 
+
+def cache_for(lapse):
+    """
+    Cache the result of a (nullary) method invocation for a given
+    amount of time. Use as a decorator on object methods whose results
+    are to be cached.
+
+    Store the result of the first invocation of the decorated
+    method; if another invocation happens before `lapse` seconds
+    have passed, return the cached value instead of calling the real
+    function again.  If a new call happens after the grace period has
+    expired, call the real function and store the result in the cache.
+
+    **Note:** Do not use with methods that take keyword arguments, as
+    they will be discarded! In addition, arguments are compared to
+    elements in the cache by *identity*, so that invoking the same
+    method with equal but distinct object will result in two separate
+    copies of the result being computed and stored in the cache.
+
+    Cache results and timestamps are stored into the objects'
+    `_cache_value` and `_cache_last_updated` attributes, so the caches
+    are destroyed with the object when it goes out of scope.
+    """
+    def decorator(fn):
+        @_wraps(fn)
+        def wrapper(obj, *args):
+            now = time.time()
+            key = (fn, tuple(id(arg) for arg in args))
+            try:
+                update = ((now - obj._cache_last_updated[fn]) > lapse)
+            except AttributeError:
+                obj._cache_last_updated = defaultdict(lambda: 0)
+                obj._cache_value = dict()
+                update = True
+            if update:    
+                obj._cache_value[key] = fn(obj, *args)
+                obj._cache_last_updated[key] = now
+            #gc3libs.log.debug("Using cached value '%s' for %s(%s, ...)",
+            #                  obj._cache_value[key], fn, obj)
+            return obj._cache_value[key]
+        return wrapper
+    return decorator
+    
 
 def count(seq, predicate):
     """
