@@ -76,8 +76,20 @@ class GamessApplication(gc3libs.Application):
                                      inp_file_path = inp_file_path,
                                      **kw)
 
-    _termination_re = re.compile(r'EXECUTION \s+ OF \s+ GAMESS \s+ TERMINATED \s+-?(?P<gamess_outcome>NORMALLY|ABNORMALLY)-?'
-                                 r'|ddikick.x: .+ (exited|quit) \s+ (?P<ddikick_outcome>gracefully|unexpectedly)', re.X)
+    _termination_re = re.compile(
+        r'EXECUTION \s+ OF \s+ GAMESS \s+ TERMINATED \s+-?(?P<gamess_outcome>NORMALLY|ABNORMALLY)-?'
+        r'|'
+        r'ddikick.x: .+ (exited|quit) \s+ (?P<ddikick_outcome>gracefully|unexpectedly)',
+        re.X)
+
+    # specific error messages that we might want to propagate to users
+    _application_error_re = re.compile(
+        r'ILLEGAL \s+ (EXTENDED|GENERAL)? \s* BASIS \s+ FUNCTION \s+ REQUESTED.'
+        r'|'
+        r'NODE \d+ \s+ ENCOUNTERED \s+ I/O \s+ ERROR',
+        re.X)
+
+    _whitespace_re = re.compile(r'\s+', re.X)
 
     def postprocess(self, output_dir):
         """
@@ -92,18 +104,25 @@ class GamessApplication(gc3libs.Application):
         if os.path.exists(output_filename):
             gc3libs.log.debug("Trying to read GAMESS termination status off output file '%s' ..." % output_filename)
             output_file = open(output_filename, 'r')
+            msgs = [ ]
             for line in output_file.readlines():
+                # search for specific error messages first
+                match = self._application_error_re.search(line)
+                if match:
+                    msgs.append(self._whitespace_re.sub(' ',
+                                                        line.strip().capitalize()))
+                    continue
                 match = self._termination_re.search(line)
                 if match:
                     if match.group('gamess_outcome'):
-                        self.execution.info = line.strip().capitalize()
+                        msgs.append(line.strip().capitalize())
                         if match.group('gamess_outcome') == 'ABNORMALLY':
                             self.execution.exitcode = 1
                         elif match.group('gamess_outcome') == 'NORMALLY':
                             self.execution.exitcode = 0
                         break
                     elif match.group('ddikick_outcome'):
-                        self.execution.info = line.strip().capitalize()
+                        msgs.append(line.strip().capitalize())
                         if match.group('ddikick_outcome') == 'unexpectedly':
                             self.execution.exitcode = 2
                         elif match.group('ddikick_outcome') == 'gracefully':
@@ -113,6 +132,7 @@ class GamessApplication(gc3libs.Application):
                     else:
                         raise AssertionError("Input line '%s' matched, but neither group 'gamess_outcome' nor 'ddikick_outcome' did!")
             output_file.close()
+            self.execution.info = str.join('; ', reversed(msgs))
 
                              
     def qgms(self, resource, **kw):
