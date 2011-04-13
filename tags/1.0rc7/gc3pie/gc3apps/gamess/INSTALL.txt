@@ -1,0 +1,4 @@
+GGamess installation instructions have been merged into the main
+GC3Pie install document; please see:
+
+  http://gc3pie.googlecode.com/svn/branches/1.0/gc3pie/INSTALL.txt

@@ -1,0 +1,197 @@
+# ~/.gc3/gc3utils.conf
+#
+#  THIS IS JUST AN EXAMPLE CONFIGURATION FILE.  No computing resources
+#  are currently defined; please edit the file and define resources
+#  available into your environment, using the supplied ones as guides.
+#
+#  Please see http://code.google.com/p/gc3pie/wiki/ConfigurationFile
+#  for details on this file format and contents.
+#
+#  You might want to check 
+#    http://gc3pie.googlecode.com/svn/branches/1.0/gc3pie/gc3libs/etc/gc3pie.conf.smscg
+#  for a configuration file template adapted to the Swiss SMSCG Grid.
+#
+
+[DEFAULT]
+# The `DEFAULT` section is entirely optional; if present, its values can
+# be used to interpolate values in other sections, using the `%(name)s` syntax.
+# See documentation of the `SafeConfigParser` object at:
+#   http://docs.python.org/library/configparser.html
+debug = 0
+
+# Auth section
+#
+# You can have as many `auth/name` sections as you want;
+# this allows you to define different auths for different resources.
+# Each `resource/***` section can reference one (and one only) auth
+# section.
+#
+# Rationale:
+# type: [voms-proxy, grid-proxy, ssh]
+# cert_renewal_method: [slcs, manual]
+#
+# Allowed combinations:
+#
+# 1) voms + slcs-generated certificate
+#
+#   type: voms-proxy
+#   cert_renewal_method: slcs
+#
+# 2) voms + manually generated certificate
+#
+#   type: voms-proxy
+#   cert_renewal_method: manual
+#
+# 3) grid-proxy + slcs-generated certificate
+#
+#   type: grid-proxy
+#   cert_renewal_method: slcs
+#
+# 4) grid-proxy + manually generated user certificate
+#
+#   type: grid-proxy
+#   cert_renewal_method: manual
+#
+# 5) ssh connection
+#
+#   type: ssh
+#
+#
+# Examples:
+#
+# [auth/smscg]
+# type = voms-proxy
+# cert_renewal_method = slcs
+# aai_username = <your_aai_user_name>
+# idp = uzh.ch
+# vo = smscg
+#
+# [auth/ssh1]
+# type = ssh
+# username = <your_ssh_user_name>
+#
+# If you have a different account name on some resources, you can create
+# another auth section with, e.g.
+#
+# [auth/ssh2]
+# type = ssh
+# username = <your_other_ssh_user_name>
+
+
+# Resource section
+# [resource/<resource_name>]
+#
+# You can have as many `resource/name` sections as you want; this
+# allows you to define many different resources.  Each `resource/***`
+# section must reference one (and one only) `auth/name`
+# section (in the `auth` key).
+# Resources currently come in two flavours, distinguished by the value of the type key:
+#
+#    * If type is arc, then the resource is accessed using the ARC grid middleware;
+#    * If type is ssh_sge, then the resource is an SGE batch system, 
+#      to be accessed by an SSH connection to its front-end node. 
+#
+# Every resource/*** section must reference a valid auth/*** section.
+# Resources of `arc` type can only reference auth sections whose type
+# is "Grid" (i.e., `voms-proxy` or `grid-proxy`); resources of `ssh`
+# type can only reference `ssh`-type auth sections.
+#
+# Some keys are commmon to all resource types:
+#
+#    * auth: the name of a valid auth/*** section; only the authentication 
+#      	     section name (after the `/`) must be specified
+#    * max_cores_per_job: Maximum number of CPU cores that a job can request; 
+#      			  a resource will be dropped during the brokering 
+#			  process if a job requests more cores than this
+#    * max_memory_per_core: Max amount of memory (expressed in GBs) 
+#      			    that a job can request
+#    * max_walltime: Maximum job running time (in hours)
+#    * name: Resource name
+#    * ncores: Total number of cores provided by the resource
+#    * type: Resource type, one of `arc` or `sge`
+#
+# arc resources
+#
+# The arc_ldap key should be defined to the LDAP URL of an ARC GIIS 
+# (if no frontend is defined) or GRIS (if a frontend is given). 
+# If, in addition, the frontend key is also defined, then only queues 
+# belonging to the specified frontend will be considered for brokering.
+#
+# ssh resources
+#
+#    * frontend: should contain the FQDN of the SGE front-end node.
+#                An SSH connection will be attempted to this node, in
+#                order to submit jobs and retrieve status info.
+#
+#    * transport: Possible values are: `ssh`, `local`.   If `ssh`, we
+#                 try to connect to the host specified in `fronted`
+#                 via SSH in order to execute SGE commands.  If `local`,
+#                 the SGE commands are run directly on the machine where
+#                 GC3Pie is installed.
+#
+# Since the installation path to supported applications is not known 
+# (there is no information system, differently from ARC), then the path must 
+# be specified here:
+#
+#    * gamess_location: UNIX path name of the directory containing a valid qgms script 
+#
+#
+# When a job has finished, the SGE batch system does not (by default) 
+# immediately write its information into the accounting database. 
+# This creates a time window during which no information is reported 
+# about the job by SGE, as if it never existed. In order not to mistake 
+# this for a "job lost" error, GC3Libs allow a "grace time": qacct job 
+# information lookups are allowed to fail for a certain time span after 
+# the first time qstat failed. The duration of this time span is set with 
+# the sge_accounting_delay parameter, whose default is 15 seconds 
+# (matches the default in SGE, as of release 6.2):
+#
+#    * sge_accounting_delay: Time (in seconds) a failure in qacct will 
+#      			     not be considered critical 
+#
+#
+# Examples:
+#
+# [resource/smscg]
+# # A whole ARC-based Grid
+# type = arc
+# auth = <voms_auth_name>
+# arc_ldap = ldap://giis.smscg.ch:2135/o=grid/mds-vo-name=Switzerland
+# # These values are correct as of 2011-02-28; please
+# # ask on the SMSCG mailing list if unsure.
+# max_cores_per_job = 256
+# max_memory_per_core = 3
+# max_walltime = 9999
+# ncores = 1200
+# architecture = x86_64, i686
+
+# [resource/idgc3grid01]
+# # A single cluster, accessed through the ARC middleware
+# type = arc
+# auth = <voms_auth_name>
+# frontend = idgc3grid01.uzh.ch
+# arc_ldap = ldap://idgc3grid01.uzh.ch:2135/mds-vo-name=resource,o=grid
+# max_cores_per_job = 32
+# max_memory_per_core = 2
+# max_walltime = 12
+# ncores = 80
+# walltime = 12
+# architecture = x86_64
+#
+#
+# [resource/ocikbpra]
+# # A single SGE cluster, accessed by SSH'ing to the front-end node
+# type = ssh_sge
+# auth = <ssh_auth_type_name>
+# transport = ssh
+# frontend = ocikbpra.uzh.ch
+# gamess_location = /share/apps/gamess
+# max_cores_per_job = 80
+# max_memory_per_core = 2
+# max_walltime = 2
+# ncores = 80
+# # see http://gridengine.info/2005/11/04/immediate-accounting-data-flushing
+# # if you need to lower this
+# sge_accounting_delay = 15
+# walltime = 2
+# architecture = i686
