@@ -86,21 +86,35 @@ class ArcLrms(LRMS):
             raise gc3libs.exceptions.LRMSError('Failed while killing job. Error type %s, message %s' % (ex.__class__,str(ex)))
 
 
+    # ARC refreshes the InfoSys every 30 seconds by default;
+    # there's no point in querying it more often than this...
+    @cache_for(gc3libs.Default.ARC_CACHE_TIME)
+    def _get_clusters(self):
+        """
+        Wrapper around `arclib.GetClusterResources()`.  Query the ARC
+        LDAP (at the address specified by the resource's ``arc_ldap``
+        attribute, or the default GIIS) and return the corresponding
+        `arclib.Cluster` object.
+        """
+        if self._resource.has_key('arc_ldap'):
+            log.debug("Getting list of ARC resources from GIIS '%s' ..."
+                      % self._resource.arc_ldap)
+            return arclib.GetClusterResources(arclib.URL(self._resource.arc_ldap),
+                                              True, '', 1)
+        else:
+            log.debug("Getting list of ARC resources from default GIIS...")
+            return arclib.GetClusterResources()
+
+            
+    # ARC refreshes the InfoSys every 30 seconds by default;
+    # there's no point in querying it more often than this...
+    @cache_for(gc3libs.Default.ARC_CACHE_TIME)
     def _get_queues(self):
-        if (not hasattr(self, '_queues')) or (not hasattr(self, '_queues_last_accessed')) \
-                or (time.time() - self._queues_last_updated > self._queues_cache_time):
-            if self._resource.has_key('arc_ldap'):
-                log.debug("Getting list of ARC resources from GIIS '%s' ..."
-                          % self._resource.arc_ldap)
-                cls = arclib.GetClusterResources(arclib.URL(self._resource.arc_ldap),True,'',1)
-            else:
-                cls = arclib.GetClusterResources()
-                log.debug("arclib.GetClusterResources() returned"
-                          " cluster list of length %d", len(cls))
-            self._queues = arclib.GetQueueInfo(cls,arclib.MDS_FILTER_CLUSTERINFO, True, '', 5)
-            log.debug('returned valid queue information for %d queues', len(self._queues))
-            self._queues_last_updated = time.time()
-        return self._queues
+        cls = self._get_clusters()
+        log.debug("arclib.GetClusterResources() returned"
+                  " cluster list of length %d", len(cls))
+        return arclib.GetQueueInfo(cls,arclib.MDS_FILTER_CLUSTERINFO,
+                                   True, '', 5)
 
             
     @same_docstring_as(LRMS.submit_job)
@@ -138,6 +152,9 @@ class ArcLrms(LRMS):
         return job
 
 
+    # ARC refreshes the InfoSys every 30 seconds by default;
+    # there's no point in querying it more often than this...
+    @cache_for(gc3libs.Default.ARC_CACHE_TIME)
     def update_job_state(self, app):
         """
         Query the state of the ARC job associated with `app` and
@@ -215,7 +232,8 @@ class ArcLrms(LRMS):
             arc_job = arclib.GetJobInfo(job.lrms_jobid)
         except AttributeError, ex:
             # `job` has no `lrms_jobid`: object is invalid
-            raise gc3libs.exceptions.InvalidArgument("Job object is invalid: %s" % str(ex))
+            raise gc3libs.exceptions.InvalidArgument("Job object is invalid: %s"
+                                                     % str(ex))
 
         # update status
         state = map_arc_status_to_gc3job_status(arc_job.status)
@@ -343,13 +361,6 @@ class ArcLrms(LRMS):
         # XXX: it is ok for an LRMS to raise an AuthError
         self.auths.get(self._resource.auth)
 
-        if self._resource.has_key('arc_ldap'):
-            log.debug("Getting cluster list from %s ...", self._resource.arc_ldap)
-            cls = arclib.GetClusterResources(arclib.URL(self._resource.arc_ldap),True,'',2)
-        else:
-            log.debug("Getting cluster list from ARC's default GIIS ...")
-            cls = arclib.GetClusterResources()
-
         total_queued = 0
         free_slots = 0
         user_running = 0
@@ -363,13 +374,13 @@ class ArcLrms(LRMS):
             else:
                 return val
 
+        cls = self._get_clusters()
         for cluster in cls:
-            queues =  arclib.GetQueueInfo(cluster,arclib.MDS_FILTER_CLUSTERINFO,True,"",1)
+            queues =  arclib.GetQueueInfo(cluster, arclib.MDS_FILTER_CLUSTERINFO,
+                                          True, '', 1)
             if len(queues) == 0:
                 log.warning('No ARC queues found for resource %s' % str(cluster))
                 continue
-
-            list_of_jobs = arclib.GetAllJobs(cluster,True,"",1)
 
             for q in queues:
                 q.grid_queued = _normalize_value(q.grid_queued)
@@ -390,6 +401,7 @@ class ArcLrms(LRMS):
                     min((q.total_cpus - q.running),\
                             (q.cluster.total_cpus - q.cluster.used_cpus))
 
+            list_of_jobs = arclib.GetAllJobs(cluster, True, '', 1)
             # user_running and user_queued
             for job in list_of_jobs:
                 if 'INLRMS:R' in job.status:
