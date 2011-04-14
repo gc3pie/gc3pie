@@ -93,7 +93,7 @@ todo
 = All Distributions =
 
 
-SLCS too:
+Install SLCS client:
 
 {{{
 mkdir ~/slcs
