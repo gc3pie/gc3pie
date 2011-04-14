@@ -66,13 +66,9 @@ export PATH=$PATH:~/slcs/bin
 export PYTHONPATH=$PYTHONPATH:/opt/nordugrid/lib64/python2.4/site-packages:/opt/nordugrid/lib/python2.4/site-packages
 }}}
 
-
-
-
-
 Setup your virtualenv:
 {{{
-virtualenv gc3pie
+virtualenv ~/gc3pie
 . ~/gc3pie/bin/activate
 }}}
 
