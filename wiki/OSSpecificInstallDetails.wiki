@@ -49,6 +49,7 @@ gpgcheck=1
 gpgkey=http://download.nordugrid.org/RPM-GPG-KEY-nordugrid
 }}}
 
+Install nordugrid python components:
 {{{
 yum install nordugrid-arc-python voms-clients ca_policy_*
 wget http://repo.smscg.ch/SMSCG_WGET_CONFIG/smscg_ui_vomses
