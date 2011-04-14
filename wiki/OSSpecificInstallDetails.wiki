@@ -80,7 +80,11 @@ todo
 
 = Debian 5 =
 
-todo
+{{{
+aptitude install python-crypto 
+aptitude install python-paramiko
+}}}
+
 
 *Now follow the instructions from the _All Distributions_ section, below.*
 
