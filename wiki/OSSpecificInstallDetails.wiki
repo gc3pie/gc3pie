@@ -2,7 +2,7 @@
 
 <wiki:toc max_depth="1" />
 
-= Rocks 5 & Centos 5 =
+= Rocks 5 =
 
 Install EPEL yum repo:
 {{{
@@ -56,6 +56,31 @@ wget http://repo.smscg.ch/SMSCG_WGET_CONFIG/smscg_ui_vomses
 mv smscg_ui_vomses /etc/vomses
 }}}
 
+Now follow the instructions from the _All Distributions_ section below.
+
+
+= CentOS 4 =
+
+Add your content here.  Format your content with:
+  * Text in *bold* or _italic_
+  * Headings, paragraphs, and lists
+  * Automatic links to other wiki pages
+
+= CentOS 5 =
+
+todo
+
+= Debian 5 =
+
+todo
+
+= Debian 6 =
+
+todo
+
+= All Distributions =
+
+
 SLCS too:
 
 {{{
@@ -82,24 +107,3 @@ svn co http://gc3pie.googlecode.com/svn/branches/1.0/gc3pie src
 cd ~/gc3pie/src
 ./setup.py develop
 }}}
-
-
-
-= CentOS 4 =
-
-Add your content here.  Format your content with:
-  * Text in *bold* or _italic_
-  * Headings, paragraphs, and lists
-  * Automatic links to other wiki pages
-
-= CentOS 5 =
-
-todo
-
-= Debian 5 =
-
-todo
-
-= Debian 6 =
-
-todo
