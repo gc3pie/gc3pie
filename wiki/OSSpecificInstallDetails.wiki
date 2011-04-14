@@ -12,6 +12,7 @@ rpm -Uvh epel-release-5-4.noarch.rpm
 
 Somehow install the CentOS yum repo also. I did it by copying from another Centos box.
 
+Install virtualenv & subversion:
 {{{
 yum install python-virtualenv
 yum install subversion
