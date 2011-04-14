@@ -2,7 +2,7 @@
 
 <wiki:toc max_depth="1" />
 
-= Rocks 5 =
+= Rocks 5 & Centos 5 =
 
 Install EPEL yum repo:
 {{{
@@ -10,7 +10,7 @@ wget http://download.fedoraproject.org/pub/epel/5/i386/epel-release-5-4.noarch.r
 rpm -Uvh epel-release-5-4.noarch.rpm 
 }}}
 
-Somehow install the CentOS yum repo also. I did it by copying from another Centos box.
+Make sure the CentOS yum repo is enabled. If you're using Centos it probably already is. In Rocks you can copy /etc/yum.repos.d/CentOS-Base.repo from another machine. 
 
 Install virtualenv & subversion:
 {{{
