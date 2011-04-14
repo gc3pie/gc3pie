@@ -21,7 +21,7 @@ yum install subversion
 Add the Nordugrid stuff:
 
 {{{
-sudo rpm --import http://download.nordugrid.org/RPM-GPG-KEY-nordugrid
+rpm --import http://download.nordugrid.org/RPM-GPG-KEY-nordugrid
 }}}
 
 {{{
