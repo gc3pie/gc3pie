@@ -56,7 +56,7 @@ wget http://repo.smscg.ch/SMSCG_WGET_CONFIG/smscg_ui_vomses
 mv smscg_ui_vomses /etc/vomses
 }}}
 
-=== Now follow the instructions from the _All Distributions_ section below. ===
+*Now follow the instructions from the _All Distributions_ section, below.*
 
 
 = CentOS 4 =
@@ -66,27 +66,29 @@ Add your content here.  Format your content with:
   * Headings, paragraphs, and lists
   * Automatic links to other wiki pages
 
-=== Now follow the instructions from the _All Distributions_ section below. ===
+*Now follow the instructions from the _All Distributions_ section, below.*
+
 
 = CentOS 5 =
 
 todo
 
-=== Now follow the instructions from the _All Distributions_ section below. ===
+*Now follow the instructions from the _All Distributions_ section, below.*
 
 
 = Debian 5 =
 
 todo
 
-=== Now follow the instructions from the _All Distributions_ section below. ===
+*Now follow the instructions from the _All Distributions_ section, below.*
 
 
 = Debian 6 =
 
 todo
 
-=== Now follow the instructions from the _All Distributions_ section below. ===
+*Now follow the instructions from the _All Distributions_ section, below.*
+
 
 = All Distributions =
 
