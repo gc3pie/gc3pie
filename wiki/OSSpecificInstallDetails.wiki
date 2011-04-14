@@ -4,7 +4,13 @@
 
 = Rocks 5 =
 
-Install EPEL repo. Somehow install the CentOS yum repo also. I did it by copying from another Centos box.
+Install EPEL yum repo:
+{{{
+wget http://download.fedoraproject.org/pub/epel/5/i386/epel-release-5-4.noarch.rpm
+rpm -Uvh epel-release-5-4.noarch.rpm 
+}}}
+
+Somehow install the CentOS yum repo also. I did it by copying from another Centos box.
 
 {{{
 yum install python-virtualenv
