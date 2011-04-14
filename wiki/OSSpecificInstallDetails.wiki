@@ -59,6 +59,7 @@ mv smscg_ui_vomses /etc/vomses
 SLCS too:
 
 {{{
+mkdir ~/slcs
 wget https://slcs.switch.ch/download/glite-slcs-ui-jdk1.5.tar.gz
 tar xvfz glite-slcs-ui-jdk1.5.tar.gz -C ~/slcs
 export PATH=$PATH:~/slcs/bin
