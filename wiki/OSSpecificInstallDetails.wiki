@@ -1,8 +1,84 @@
-#summary OS-Specific Install Details
+#summary OS-Specific Install Notes
+
+<wiki:toc max_depth="1" />
 
 = Rocks 5 =
 
-todo
+Install EPEL repo. Somehow install the CentOS yum repo also. I did it by copying from another Centos box.
+
+{{{
+yum install python-virtualenv
+yum install subversion
+}}}
+
+Add the Nordugrid stuff:
+
+{{{
+sudo rpm --import http://download.nordugrid.org/RPM-GPG-KEY-nordugrid
+}}}
+
+{{{
+cat /etc/yum.repos.d/arc.repo
+[nordugrid]
+name=NorduGrid - $basearch - stable
+baseurl=http://download.nordugrid.org/repos/redhat/el5/$basearch/stable
+enabled=1
+gpgcheck=1
+gpgkey=http://download.nordugrid.org/RPM-GPG-KEY-nordugrid
+
+[nordugrid-testing]
+name=NorduGrid - $basearch - testing
+baseurl=http://download.nordugrid.org/repos/redhat/el5/$basearch/testing
+enabled=0
+gpgcheck=1
+gpgkey=http://download.nordugrid.org/RPM-GPG-KEY-nordugrid
+
+[nordugrid-experimental]
+name=NorduGrid - $basearch - experimental
+baseurl=http://download.nordugrid.org/repos/redhat/el5/$basearch/experimental
+enabled=0
+gpgcheck=1
+gpgkey=http://download.nordugrid.org/RPM-GPG-KEY-nordugrid
+}}}
+
+{{{
+sudo yum install nordugrid-arc-python voms-clients ca_policy_*
+
+wget http://repo.smscg.ch/SMSCG_WGET_CONFIG/smscg_ui_vomses
+mv smscg_ui_vomses /etc/vomses
+}}}
+
+SLCS too:
+
+{{{
+wget https://slcs.switch.ch/download/glite-slcs-ui-jdk1.5.tar.gz
+tar xvfz glite-slcs-ui-jdk1.5.tar.gz -C ~/slcs
+export PATH=$PATH:~/slcs/bin
+export PYTHONPATH=$PYTHONPATH:/opt/nordugrid/lib64/python2.4/site-packages:/opt/nordugrid/lib/python2.4/site-packages
+}}}
+
+
+
+
+
+Setup your virtualenv:
+{{{
+virtualenv gc3pie
+. ~/gc3pie/bin/activate
+}}}
+
+
+
+Check out & install the source:
+
+{{{
+cd ~/gc3pie
+svn co http://gc3pie.googlecode.com/svn/branches/1.0/gc3pie src
+cd ~/gc3pie/src
+./setup.py develop
+}}}
+
+
 
 = CentOS 4 =
 
@@ -22,4 +98,3 @@ todo
 = Debian 6 =
 
 todo
-
