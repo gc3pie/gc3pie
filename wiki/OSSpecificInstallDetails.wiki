@@ -2,7 +2,7 @@
 
 <wiki:toc max_depth="1" />
 
-= Rocks 5 =
+= Rocks 5 & Centos 5 =
 
 Install EPEL yum repo:
 {{{
