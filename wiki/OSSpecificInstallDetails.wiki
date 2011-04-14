@@ -50,8 +50,7 @@ gpgkey=http://download.nordugrid.org/RPM-GPG-KEY-nordugrid
 }}}
 
 {{{
-sudo yum install nordugrid-arc-python voms-clients ca_policy_*
-
+yum install nordugrid-arc-python voms-clients ca_policy_*
 wget http://repo.smscg.ch/SMSCG_WGET_CONFIG/smscg_ui_vomses
 mv smscg_ui_vomses /etc/vomses
 }}}
