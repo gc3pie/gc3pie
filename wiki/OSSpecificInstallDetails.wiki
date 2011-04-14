@@ -24,8 +24,9 @@ Add the Nordugrid stuff:
 rpm --import http://download.nordugrid.org/RPM-GPG-KEY-nordugrid
 }}}
 
+Create /etc/yum.repos.d/arc.repo so it looks like this:
+
 {{{
-cat /etc/yum.repos.d/arc.repo
 [nordugrid]
 name=NorduGrid - $basearch - stable
 baseurl=http://download.nordugrid.org/repos/redhat/el5/$basearch/stable
