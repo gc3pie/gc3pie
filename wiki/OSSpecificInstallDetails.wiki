@@ -16,6 +16,8 @@ Install virtualenv & subversion:
 {{{
 yum install python-virtualenv
 yum install subversion
+yum install java-1.6.0-openjdk
+yum install gcc
 }}}
 
 Add the Nordugrid stuff:
