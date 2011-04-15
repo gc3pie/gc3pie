@@ -370,9 +370,9 @@ class Core:
         """Implementation of `fetch_output` on `Application` objects."""
         job = app.execution
         if job.state in [ Run.State.NEW, Run.State.SUBMITTED ]:
-            raise gc3libs.exceptions.OutputNotAvailableError("Output not available:"
-                                          " '%s' currently in state '%s'"
-                                          % (app, app.execution.state))
+            raise gc3libs.exceptions.OutputNotAvailableError(
+                "Output not available: '%s' currently in state '%s'"
+                % (app, app.execution.state))
 
         auto_enable_auth = kw.get('auto_enable_auth', self.auto_enable_auth)
 
@@ -417,13 +417,16 @@ class Core:
                 return
         
         # successfully downloaded results
-        job.info = ("Output downloaded to '%s'" % download_dir)
         gc3libs.log.debug("Downloaded output of '%s' (which is in state %s)"
                           % (str(job), job.state))
         if job.state == Run.State.TERMINATING:
             app.output_dir = os.path.abspath(download_dir)
+            job.info = ("Final output downloaded to '%s'" % download_dir)
             job.state = Run.State.TERMINATED
             gc3libs.log.debug("Final output of '%s' retrieved" % str(app))
+        else:
+            job.info = ("Output snapshot downloaded to '%s'" % download_dir)
+
 
     def __fetch_output_task(self, task, download_dir, overwrite, **kw):
         """Implementation of `fetch_output` on generic `Task` objects."""
