@@ -360,14 +360,16 @@ class Core:
                 return
         
         # successfully downloaded results
-        job.info = ("Output downloaded to '%s'" % download_dir)
         app.output_dir = download_dir
         gc3libs.log.debug("Downloaded output of '%s' (which is in state %s)"
                       % (str(job), job.state))
         if job.state == Run.State.TERMINATED:
             app.final_output_retrieved = True
+            job.info = ("Final output downloaded to '%s'" % download_dir)
             app.postprocess(download_dir)
             gc3libs.log.debug("Final output of job '%s' retrieved" % str(job))
+        else:
+            job.info = ("Output snapshot downloaded to '%s'" % download_dir)
         return download_dir
         
 

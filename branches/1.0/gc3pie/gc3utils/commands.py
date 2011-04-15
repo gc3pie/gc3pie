@@ -533,7 +533,10 @@ released once the output files have been fetched.
                     download_dir = self.params.download_dir
 
                 self._core.fetch_output(app, download_dir, overwrite=self.params.overwrite)
-                print("Job results successfully retrieved in '%s'" % app.output_dir)
+                if app.final_output_retrieved:
+                    print("Final job results were successfully retrieved in '%s'" % app.output_dir)
+                else:
+                    print("A snapshot of job results was successfully retrieved in '%s'" % app.output_dir)
                 self._store.replace(app.persistent_id, app)
 
             except Exception, ex:
