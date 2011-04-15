@@ -567,6 +567,47 @@ class SessionBasedScript(_Script):
                        " matching the glob pattern '%s'" 
                        % self.input_filename_pattern)
 
+
+    def make_directory_path(self, pathspec, jobname, *args):
+        """
+        Return a path to a directory, suitable for storing the output
+        of a job (named after `jobname`).  It is not required that the
+        returned path points to an existing directory.
+
+        This is called by the default `process_args`:meth: using
+        `self.params.output` (i.e., the argument to the
+        ``-o``/``--output`` option) as `pathspec`, and `jobname` and
+        `args` exactly as returned by `new_tasks`:meth:
+
+        The default implementation substitutes the following strings
+        within `pathspec`:
+          * ``SESSION`` is replaced with the name of the current session
+            (as specified by the ``-s``/``--session`` command-line option)
+            with a suffix ``.out`` appended;
+          * ``PATH`` is replaced with the path to directory containing
+            `args[0]` (if it's an existing filename), or to the
+            current directory;
+          * ``NAME`` is replaced with `jobname`;
+          * ``DATE`` is replaced with the current date, in *YYYY-MM-DD* format;
+          * ``TIME`` is replaced with the current time, in *HH:MM* format.
+          
+        """
+        if len(args) == 0:
+            path = os.getcwd()
+        else:
+            if os.path.isdir(args[0]):
+                path = args[0]
+            elif os.path.isfile(args[0]):
+                path = os.path.dirname(args[0])
+            else:
+                path = os.getcwd()
+        return (pathspec
+                .replace('SESSION', self.params.session + '.out')
+                .replace('PATH', path)
+                .replace('NAME', jobname)
+                .replace('DATE', time.strftime('%Y-%m-%d'))
+                .replace('TIME', time.strftime('%H:%M')))
+
     
     def process_args(self):
         """
@@ -608,14 +649,9 @@ class SessionBasedScript(_Script):
             kwargs.setdefault('requested_memory', self.params.memory_per_core)
             kwargs.setdefault('requested_cores', self.params.ncores)
             kwargs.setdefault('requested_walltime', self.params.walltime)
-            kwargs.setdefault('output_dir',                         
-                              self.params.output
-                              .replace('SESSION', self.params.session + '.out')
-                              .replace('PATH', os.path.dirname(args[0]) # XXX: assumes `args[0]` exists and is a path name!
-                                       or os.getcwd())
-                              .replace('NAME', jobname)
-                              .replace('DATE', time.strftime('%Y-%m-%d', time.localtime(time.time())))
-                              .replace('TIME', time.strftime('%H:%M', time.localtime(time.time()))))
+            kwargs.setdefault('output_dir',
+                              self.make_directory_path(self.params.output,
+                                                       jobname, *args))
             # create a new `Application` object
             try:
                 app = cls(*args, **kwargs)
