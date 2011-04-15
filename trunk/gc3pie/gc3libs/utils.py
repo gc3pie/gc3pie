@@ -32,7 +32,7 @@ import os
 import os.path
 import posix
 import re
-import shelve
+import shutil
 import sys
 import time
 import cStringIO as StringIO
@@ -67,6 +67,7 @@ except ImportError:
 
 import gc3libs
 import gc3libs.exceptions
+import gc3libs.debug
 
 
 # ================================================================
@@ -80,6 +81,64 @@ def basename_sans(path):
     Return base name without the extension.
     """
     return os.path.splitext(os.path.basename(path))[0]
+
+
+@gc3libs.debug.trace
+def copyfile(src, dst, overwrite=False):
+    """
+    Copy a file from `src` to `dst`; return `True` if the copy was
+    actually made.  If `overwrite` is `False` (default), an existing
+    destination entry is left unchanged and `False` is returned.
+    """
+    if os.path.exists(dst) and not overwrite:
+        return False
+    if same_file(src, dst):
+        return False
+    try:
+        dstdir = os.path.dirname(dst)
+        if not os.path.exists(dstdir):
+            os.makedirs(dstdir)
+        shutil.copy2(src, dst)
+        shutil.copystat(src, dst)
+    except shutil.WindowsError:
+        pass
+    return True
+
+
+@gc3libs.debug.trace
+def copytree(src, dst, overwrite=False):
+    """
+    Recursively copy an entire directory tree rooted at `src`.  If
+    `overwrite` is `False` (default), entries that already exist in
+    the destination tree are left unchanged and not overwritten.
+
+    See also: `shutil.copytree`.
+    """
+    errors = []
+    if not os.path.exists(dst):
+        os.makedirs(dst)
+    for name in os.listdir(src):
+        srcname = os.path.join(src, name)
+        dstname = os.path.join(dst, name)
+        try:
+            if os.path.isdir(srcname):
+                errors.extend(copytree(srcname, dstname, overwrite))
+            else:
+                copyfile(srcname, dstname)
+        except (IOError, os.error), why:
+            errors.append((srcname, dstname, why))
+    return errors
+
+
+@gc3libs.debug.trace
+def copy_recursively(src, dst, overwrite=False):
+    """
+    Copy `src` to `dst`, descending it recursively if necessary.
+    """
+    if os.path.isdir(src):
+        copytree(src, dst, overwrite)
+    else:
+        copyfile(src, dst, overwrite)
 
 
 class defaultdict(dict):
