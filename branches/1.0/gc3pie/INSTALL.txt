@@ -75,7 +75,7 @@ Installation into a virtualenv has two distinct advantages:
     If instead you are installing as a normal, unprivileged user,
     things get more complicated::
 
-      export PYTHONPATH=$HOME/lib/python:$PYTHONPATH
+      export PYTHONPATH=$HOME/lib64/python:$HOME/lib/python:$PYTHONPATH
       export PATH=$PATH:$HOME/bin
       mkdir -p $HOME/lib/python
       python setup.py install --home $HOME
@@ -88,7 +88,7 @@ Installation into a virtualenv has two distinct advantages:
     its directory and remove it::
    
       cd ..
-      rm -rf virtualenv
+      rm -rf virtualenv-1.5.1
 
 
 3. Create a virtualenv to host the ``gc3pie`` installation at the
@@ -204,7 +204,7 @@ read online at:
 Or you can generate a local copy from the sources::
 
   cd $HOME/gc3pie # use '/opt/gc3pie' if root
-  cd docs
+  cd src/docs
   make html
 
 
