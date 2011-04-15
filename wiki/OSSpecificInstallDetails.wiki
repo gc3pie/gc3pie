@@ -86,6 +86,8 @@ aptitude install python-paramiko
 }}}
 
 
+Python-stats seems to conflict with pycli, either remove it or keep it out of your PYTHONPATH.
+
 *Now follow the instructions from the _All Distributions_ section, below.*
 
 
