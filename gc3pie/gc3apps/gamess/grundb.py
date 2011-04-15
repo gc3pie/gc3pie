@@ -777,7 +777,7 @@ def get_required_argument(args, argno=1, argname='SUBSET'):
                         argname, PROG)
         raise
 def get_optional_argument(args, argno=2, argname="SESSION",
-                          default=('Run.%s' % time.strftime('%Y-%m-%d.%H.%M', time.localtime()))):
+                          default=('Run.%s' % time.strftime('%Y-%m-%d.%H.%M'))):
     try:
         return args[argno]
     except:
