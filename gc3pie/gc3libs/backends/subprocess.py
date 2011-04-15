@@ -31,24 +31,9 @@ import tempfile
 import gc3libs
 import gc3libs.exceptions
 from gc3libs import log, Run
-from gc3libs.utils import same_docstring_as, same_file
+from gc3libs.utils import same_docstring_as, same_file, copy_recursively
 from gc3libs.backends import LRMS
 
-
-
-def _hardlink_or_force_copy(src, dest):
-    if same_file(src, dest):
-        return
-    if os.path.exists(dest):
-        posix.unlink(dest)
-        gc3libs.log.debug("SubprocessLRMS: removed existing file '%s' " % (dest))
-    try:
-        posix.link(src, dest)
-        gc3libs.log.debug("SubprocessLRMS: linked '%s' to '%s' " % (src, dest))
-    except OSError:
-        shutil.copy(src, dest)
-        gc3libs.log.debug("SubprocessLRMS: copied '%s' to '%s' " % (src, dest))
-        
 
 
 class SubprocessLrms(LRMS):
@@ -128,10 +113,13 @@ class SubprocessLrms(LRMS):
 
     @same_docstring_as(LRMS.get_results)
     def get_results(self, app, download_dir, overwrite=False):
+        if app.output_base_url is not None:
+            raise gc3libs.exceptions.DataStagingError(
+                "Retrieval of output files to non-local destinations"
+                " is not supported in the SubProcess backend.")
         for r, l in app.outputs.items():
-            _hardlink_or_force_copy(
-                os.path.join(app.execution.lrms_execdir, r),
-                os.path.join(download_dir, l))
+            copy_recursively(os.path.join(app.execution.lrms_execdir, r),
+                             os.path.join(download_dir, l))
 
     
     def update_job_state(self, app):
@@ -206,7 +194,7 @@ class SubprocessLrms(LRMS):
             try:
                 ## stage inputs files into execution directory
                 for l, r in app.inputs.items():
-                    _hardlink_or_force_copy(l, os.path.join(execdir, r))
+                    copy_recursively(l, os.path.join(execdir, r))
                 
                 ## change to execution directory
                 os.chdir(execdir)
