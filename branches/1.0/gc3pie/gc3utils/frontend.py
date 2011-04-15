@@ -141,4 +141,11 @@ where command is one of these:
         sys.stderr.write("Cannot find command '%s' in gc3utils; aborting now.\n" % PROG)
         return 1
     rc = cmd().run() # (*sys.argv[1:])
+
+    # Quick and dirty fix for bug http://code.google.com/p/gc3pie/issues/detail?id=182
+    # Should try to fix for real in next release.
+    # This redirects the stderr to /dev/null so we don't see the error.
+    f = open(os.devnull, 'w')
+    os.dup2(f.fileno(), sys.stderr.fileno())
+
     return rc
