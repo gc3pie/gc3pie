@@ -310,6 +310,10 @@ class ArcLrms(LRMS):
 
     @same_docstring_as(LRMS.get_results)
     def get_results(self, app, download_dir, overwrite=False):
+        # XXX: can raise encoding/decoding error if `download_dir`
+        # is not ASCII, but the ARClib bindings don't accept
+        # Python `unicode` strings.
+        download_dir = str(download_dir)
 
         # XXX: it is ok for an LRMS to raise an AuthError
         self.auths.get(self._resource.auth)
