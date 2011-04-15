@@ -479,6 +479,12 @@ def configure_logger(level=logging.ERROR,
         logging.raiseExceptions = False
 
 
+# when used in the `output` attribute of an application,
+# it stands for "fetch the whole contents of the remote
+# directory"
+ANY_OUTPUT = '/'
+
+
 class Application(Struct, Persistable, Task):
     """
     Support for running a generic application with the GC3Libs.
@@ -493,15 +499,15 @@ class Application(Struct, Persistable, Task):
       mechanism by specifying ``./scriptname`` as `executable`.
 
     `arguments`
-      list of command-line arguments to pass to
-      `executable`; any object in the list will be converted to
-      string via Python ``str()``. Note that, in contrast with the
-      UNIX ``execvp()`` usage, the first argument in this list
-      will be passed as ``argv[1]``, i.e., ``argv[0]`` will always
-      be equal to `executable`.
+      List of command-line arguments to pass to `executable`; any
+      object in the list will be converted to string via Python's
+      `str()`. Note that, in contrast with the UNIX ``execvp()``
+      usage, the first argument in this list will be passed as
+      ``argv[1]``, i.e., ``argv[0]`` will always be equal to
+      `executable`.
 
     `inputs`
-      files that will be copied from the local computer to the remote
+      Files that will be copied from the local computer to the remote
       execution node before execution starts.
 
       There are two possible ways of specifying the `inputs` parameter:
@@ -517,13 +523,14 @@ class Application(Struct, Persistable, Task):
           an :class:`InvalidArgument` exception is thrown.
 
     `outputs`
-      list of files that will be copied back from the remote execution
-      node back to the local computer after execution has completed.
+      Files and directories that will be copied from the remote
+      execution node back to the local computer after execution has
+      completed.  Directories are copied recursively.
 
-      There are two possible ways of specifying the `outputs` parameter:
+      There are three possible ways of specifying the `outputs` parameter:
 
-      * It can be a Python dictionary: keys are local file paths, 
-        values are remote file names.
+      * It can be a Python dictionary: keys are remote file or
+        directory paths, values are corresponding local names.
 
       * It can be a Python list: each item in the list should be a
         pair `(remote_file_name, local_file_name)`; a single string
@@ -531,6 +538,14 @@ class Application(Struct, Persistable, Task):
         `local_file_name` and `remote_file_name` being equal.  If an
         absolute path name is specified as `remote_file_name`, then an
         :class:`InvalidArgument` exception is thrown.
+
+      * The constant `gc3libs.ANY_OUTPUT` which instructs GC3Libs to
+        copy every file in the remote execution directory back to the
+        local output path.
+
+      Note that no errors will be raised if an output file is not present.
+      Override the `postprocess`:meth: method to raise errors for reacting
+      on this kind of failures.
 
     `output_dir`
       Path to the base directory where output files will be downloaded.
@@ -674,7 +689,7 @@ class Application(Struct, Persistable, Task):
         for r_path in self.inputs.itervalues():
             if os.path.isabs(r_path):
                 raise gc3libs.exceptions.InvalidArgument(
-                    "Remote paths not allowed to be absolute")
+                    "Remote paths not allowed to be absolute: %s" % r_path)
 
         self.outputs = Application._io_spec_to_dict(outputs)
         # check that local entries are all distinct
@@ -765,16 +780,18 @@ class Application(Struct, Persistable, Task):
         """
         try:
             # is `spec` dict-like?
-            return dict((k, v) for k,v in spec.iteritems())
+            # XXX: might raise encoding error if any value is Unicode non-ASCII
+            return dict((str(k), str(v)) for k,v in spec.iteritems())
         except AttributeError:
             # `spec` is a list-like
             def convert_to_tuple(val):
                 if isinstance(val, types.StringTypes):
-                    l = str(val) # XXX: might throw enconding error if `val` is Unicode?
+                    # XXX: might throw enconding error if `val` is Unicode?
+                    l = str(val) 
                     r = os.path.basename(l)
                     return (l, r)
                 else: 
-                    return tuple(val)
+                    return (str(val[0]), str(val[1]))
             return dict(convert_to_tuple(x) for x in spec)
         
 

@@ -625,30 +625,29 @@ class SgeLrms(LRMS):
                     # ...but keep it if it's not a known one
                     remote_path = os.path.join(job.ssh_remote_folder, remote_path)
                 local_path = os.path.join(download_dir, local_path)
-                log.debug("Downloading remote file '%s' to local file '%s'"
-                          % remote_path, local_path)
+                log.debug("Downloading remote file '%s' to local file '%s'",
+                          remote_path, local_path)
                 try:
-                    if not os.path.exists(local_path) or overwrite:
+                    if (overwrite
+                        or not os.path.exists(local_path)
+                        or os.path.isdir(local_path)):
                         log.debug("Copying remote '%s' to local '%s'"
                                   % (remote_path, local_path))
-                        self.transport.get(remote_path, local_path)
+                        # effectively ignore missing files (this is
+                        # what ARC does too)
+                        self.transport.get(remote_path, local_path,
+                                           ignore_nonexisting=True)
                     else:
-                        log.info("Local file '%s' already exists; will not be overwritten!",
+                        log.info("Local file '%s' already exists;"
+                                 " will not be overwritten!",
                                  local_path)
-                except:
-                    log.error('Could not copy remote file: ' + remote_path)
-                    # FIXME: should we set `job.signal` to
-                    # `Job.Signals.DataStagingError`?  Does not seem a
-                    # good idea: What if one file is missing out of
-                    # several good ones?  Fetching output could be
-                    # attempted in any case, and (re)setting
-                    # `job.signal` here could mask the true error
-                    # cause.
+                except Exception:
                     raise
 
             # make jobname.stderr a link to jobname.stdout in case
             # some program relies on its existence
-            if not os.path.exists(os.path.join(download_dir, job.stderr_filename)):
+            if (not app.join
+                and not os.path.exists(os.path.join(download_dir, job.stderr_filename))):
                 os.symlink(os.path.join(download_dir, job.stdout_filename),
                            os.path.join(download_dir, job.stderr_filename))
 
