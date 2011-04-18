@@ -26,12 +26,12 @@ computational workflows in Python.
 Outline of the contents
 =======================
 
-The Overview_ section presents the main concepts behind GC3Libs
-programming.  
+The `Programming overview <overview.html>`_ section presents the main
+concepts behind GC3Libs programming.
 
-The `GC3Libs modules`_ section is a comprehensive list of
-all the modules, classes and functions comprising GC3Libs; its content
-is automatically generated from the docstrings in the source code.
+The `GC3Libs modules <api.html>`_ section is a comprehensive list of all
+the modules, classes and functions comprising GC3Libs; its content is
+automatically generated from docstrings in the source code.
 
 
 .. (for Emacs only)
