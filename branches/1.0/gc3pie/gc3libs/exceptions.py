@@ -147,7 +147,7 @@ class LoadError(Error):
     """
     pass
 
-class LRMSException(Error):
+class LRMSError(Error):
     pass    
 
 class LRMSSubmitError(Error):
