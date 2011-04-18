@@ -1,6 +1,6 @@
-========================================================================
-    Installation of GC3Utils
-========================================================================
+++++++++++++++++++++++++++
+ Installation of GC3Utils
+++++++++++++++++++++++++++
 
 :Author:   Riccardo Murri <riccardo.murri@gmail.com>
 :Date:     2010-10-06
@@ -201,11 +201,14 @@ read online at:
      
   http://gc3pie.googlecode.com/svn/branches/1.0/docs/html/index.html
 
-Or you can generate a local copy from the sources::
+You can also generate a local copy from the sources::
 
   cd $HOME/gc3pie # use '/opt/gc3pie' if root
   cd src/docs
   make html
+
+Note that you need the Python package `Sphinx <http://sphix.pocoo.org>`
+in order to build the documentation locally.
 
 
 .. (for Emacs only)
