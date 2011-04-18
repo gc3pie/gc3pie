@@ -304,7 +304,7 @@ def cache_for(lapse):
             now = time.time()
             key = (fn, tuple(id(arg) for arg in args))
             try:
-                update = ((now - obj._cache_last_updated[fn]) > lapse)
+                update = ((now - obj._cache_last_updated[key]) > lapse)
             except AttributeError:
                 obj._cache_last_updated = defaultdict(lambda: 0)
                 obj._cache_value = dict()
