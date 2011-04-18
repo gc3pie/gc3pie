@@ -19,7 +19,8 @@
     </script>
     <script type="text/javascript" src="_static/jquery.js"></script>
     <script type="text/javascript" src="_static/doctools.js"></script>
-    <link rel="top" title="gc3pie v1.0rc4 documentation" href="index.html" /> 
+    <link rel="top" title="gc3pie v1.0rc4 documentation" href="index.html" />
+    <link rel="prev" title="Programming overview" href="overview.html" /> 
   </head>
   <body>
     <div class="related">
@@ -31,6 +32,9 @@
         <li class="right" >
           <a href="modindex.html" title="Global Module Index"
              accesskey="M">modules</a> |</li>
+        <li class="right" >
+          <a href="overview.html" title="Programming overview"
+             accesskey="P">previous</a> |</li>
         <li><a href="index.html">gc3pie v1.0rc4 documentation</a> &raquo;</li> 
       </ul>
     </div>  
@@ -50,8 +54,8 @@ or batch computational job.</p>
 and batch systems, controlling their execution, persisting job
 information, and retrieving the final output.</p>
 <p>GC3Libs takes an application-oriented approach to batch computing. A
-generic <a title="gc3libs.Application" class="reference external" href="index.html#gc3libs.Application"><tt class="xref docutils literal"><span class="pre">Application</span></tt></a> class provides the basic operations for
-controlling remote computations, but different <a title="gc3libs.Application" class="reference external" href="index.html#gc3libs.Application"><tt class="xref docutils literal"><span class="pre">Application</span></tt></a>
+generic <a title="gc3libs.Application" class="reference internal" href="#gc3libs.Application"><tt class="xref docutils literal"><span class="pre">Application</span></tt></a> class provides the basic operations for
+controlling remote computations, but different <a title="gc3libs.Application" class="reference internal" href="#gc3libs.Application"><tt class="xref docutils literal"><span class="pre">Application</span></tt></a>
 subclasses can expose adapted interfaces, focusing on the most
 relevant aspects of the application being represented.</p>
 <dl class="class">
@@ -532,7 +536,7 @@ and will not be resumed</td>
 </tr>
 </tbody>
 </table>
-<p>When a <a title="gc3libs.Run" class="reference external" href="index.html#gc3libs.Run"><tt class="xref docutils literal"><span class="pre">Run</span></tt></a> object is first created, it is assigned
+<p>When a <a title="gc3libs.Run" class="reference internal" href="#gc3libs.Run"><tt class="xref docutils literal"><span class="pre">Run</span></tt></a> object is first created, it is assigned
 the state NEW.  After a successful invocation of
 <cite>Core.submit()</cite>, it is transitioned to state SUBMITTED.
 Further transitions to RUNNING or STOPPED or TERMINATED state,
@@ -579,7 +583,7 @@ inheriting from <cite>Task</cite> (and it actually is):</p>
 </pre></div>
 </div>
 <p>Each <cite>Task</cite> object has an <cite>execution</cite> attribute: it is an instance
-of class <a title="gc3libs.Run" class="reference external" href="index.html#gc3libs.Run"><tt class="xref docutils literal"><span class="pre">Run</span></tt></a>, initialized with a new instance of <cite>Run</cite>,
+of class <a title="gc3libs.Run" class="reference internal" href="#gc3libs.Run"><tt class="xref docutils literal"><span class="pre">Run</span></tt></a>, initialized with a new instance of <cite>Run</cite>,
 and at any given time it reflects the current status of the
 associated remote job.  In particular, <cite>execution.state</cite> can be
 checked for the current task status.</p>
@@ -597,7 +601,7 @@ a detached <cite>Task</cite> instance.</dd></dl>
 <dl class="exception">
 <dt id="gc3libs.Task.UnexpectedStateError">
 <em class="property">exception </em><tt class="descclassname">Task.</tt><tt class="descname">UnexpectedStateError</tt><big>(</big><em>msg</em>, <em>do_log=False</em><big>)</big><a class="headerlink" href="#gc3libs.Task.UnexpectedStateError" title="Permalink to this definition">¶</a></dt>
-<dd>Raised by <a title="gc3libs.Task.progress" class="reference external" href="index.html#gc3libs.Task.progress"><tt class="xref docutils literal"><span class="pre">Task.progress()</span></tt></a> when a job lands in <cite>STOPPED</cite>
+<dd>Raised by <a title="gc3libs.Task.progress" class="reference internal" href="#gc3libs.Task.progress"><tt class="xref docutils literal"><span class="pre">Task.progress()</span></tt></a> when a job lands in <cite>STOPPED</cite>
 or <cite>TERMINATED</cite> state.</dd></dl>
 
 <dl class="method">
@@ -610,8 +614,8 @@ associated with this task.</dd></dl>
 <dt id="gc3libs.Task.detach">
 <tt class="descclassname">Task.</tt><tt class="descname">detach</tt><big>(</big><big>)</big><a class="headerlink" href="#gc3libs.Task.detach" title="Permalink to this definition">¶</a></dt>
 <dd>Remove any reference to the current grid interface.  After
-this, calling any method other than <a title="gc3libs.Task.attach" class="reference external" href="index.html#gc3libs.Task.attach"><tt class="xref docutils literal"><span class="pre">attach()</span></tt></a> results in
-an exception <a title="gc3libs.Task.DetachedFromGridError" class="reference external" href="index.html#gc3libs.Task.DetachedFromGridError"><tt class="xref docutils literal"><span class="pre">Task.DetachedFromGridError</span></tt></a> being thrown.</dd></dl>
+this, calling any method other than <a title="gc3libs.Task.attach" class="reference internal" href="#gc3libs.Task.attach"><tt class="xref docutils literal"><span class="pre">attach()</span></tt></a> results in
+an exception <a title="gc3libs.Task.DetachedFromGridError" class="reference internal" href="#gc3libs.Task.DetachedFromGridError"><tt class="xref docutils literal"><span class="pre">Task.DetachedFromGridError</span></tt></a> being thrown.</dd></dl>
 
 <dl class="method">
 <dt id="gc3libs.Task.fetch_output">
@@ -671,7 +675,7 @@ calling <cite>progress</cite> returns <cite>None</cite>.</p>
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field"><th class="field-name">Raises:</th><td class="field-body">exception <a title="gc3libs.Task.UnexpectedStateError" class="reference external" href="index.html#gc3libs.Task.UnexpectedStateError"><tt class="xref docutils literal"><span class="pre">Task.UnexpectedStateError</span></tt></a> if the
+<tr class="field"><th class="field-name">Raises:</th><td class="field-body">exception <a title="gc3libs.Task.UnexpectedStateError" class="reference internal" href="#gc3libs.Task.UnexpectedStateError"><tt class="xref docutils literal"><span class="pre">Task.UnexpectedStateError</span></tt></a> if the
 associated job goes into state <cite>STOPPED</cite> or <cite>UNKNOWN</cite></td>
 </tr>
 <tr class="field"><th class="field-name">Returns:</th><td class="field-body">job final returncode, or <cite>None</cite> if the execution
@@ -1627,9 +1631,6 @@ execute commands and copy/move files irrespective of whether the
 destination is the local computer or a remote front-end that we access
 via SSH.</p>
 </div>
-<div class="section" id="gc3libs-task">
-<h2><cite>gc3libs.task</cite><a class="headerlink" href="#gc3libs-task" title="Permalink to this headline">¶</a></h2>
-</div>
 <div class="section" id="module-gc3libs.utils">
 <h2><cite>gc3libs.utils</cite><a class="headerlink" href="#module-gc3libs.utils" title="Permalink to this headline">¶</a></h2>
 <p>Generic Python programming utility functions.</p>
@@ -2130,7 +2131,6 @@ gkill will try anyway to process all requests</dd></dl>
 <li><a class="reference external" href="#module-gc3libs.backends.arc"><cite>gc3libs.backends.arc</cite></a></li>
 <li><a class="reference external" href="#module-gc3libs.backends.sge"><cite>gc3libs.backends.sge</cite></a></li>
 <li><a class="reference external" href="#module-gc3libs.backends.transport"><cite>gc3libs.backends.transport</cite></a></li>
-<li><a class="reference external" href="#gc3libs-task"><cite>gc3libs.task</cite></a></li>
 <li><a class="reference external" href="#module-gc3libs.utils"><cite>gc3libs.utils</cite></a></li>
 <li><a class="reference external" href="#module-gc3libs.Resource"><cite>gc3libs.Resource</cite></a></li>
 <li><a class="reference external" href="#module-gc3libs.scheduler"><cite>gc3libs.scheduler</cite></a></li>
@@ -2145,6 +2145,9 @@ gkill will try anyway to process all requests</dd></dl>
 </li>
 </ul>
 
+            <h4>Previous topic</h4>
+            <p class="topless"><a href="overview.html"
+                                  title="previous chapter">Programming overview</a></p>
             <h3>This Page</h3>
             <ul class="this-page-menu">
               <li><a href="_sources/api.txt"
@@ -2176,6 +2179,9 @@ gkill will try anyway to process all requests</dd></dl>
         <li class="right" >
           <a href="modindex.html" title="Global Module Index"
              >modules</a> |</li>
+        <li class="right" >
+          <a href="overview.html" title="Programming overview"
+             >previous</a> |</li>
         <li><a href="index.html">gc3pie v1.0rc4 documentation</a> &raquo;</li> 
       </ul>
     </div>
