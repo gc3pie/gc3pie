@@ -1,4 +1,4 @@
-]#! /usr/bin/env python
+#! /usr/bin/env python
 #
 """
 Job control on ARC0 resources.
@@ -429,7 +429,7 @@ class ArcLrms(LRMS):
         # list_of_jobs = arclib.GetAllJobs(cluster, True, '', 1)
         jobs = self._get_jobs()
         # user_running and user_queued
-        for job in jobs:
+        for job in jobs.values():
             if 'INLRMS:R' in job.status:
                 user_running = user_running + 1
             elif 'INLRMS:Q' in job.status:
