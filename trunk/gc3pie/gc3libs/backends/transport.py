@@ -43,6 +43,14 @@ class Transport(object):
         """
         raise NotImplementedError("Abstract method `Transport.connect()` called - this should have been defined in a derived class.")
 
+    def chmod(self, path, mode):
+        """
+        Change the mode (permissions) of a file. The permissions are
+        UNIX-style and identical to those used by python's `os.chmod`
+        function.
+        """
+        raise NotImplementedError("Abstract method `Transport.chmod()` called - this should have been defined in a derived class.")
+
     def execute_command(self, command):
         """
         Execute a command using the available tranport media.  
@@ -201,6 +209,16 @@ class SshTransport(Transport):
             gc3libs.log.error("Could not create ssh connection to %s" % self.remote_frontend)
             raise gc3libs.exceptions.TransportError("Failed while connecting to remote host: %s. Error type %s, %s"
                                             % (self.remote_frontend, sys.exc_info()[0], sys.exc_info()[1]))
+
+    @same_docstring_as(Transport.chmod)
+    def chmod(self, path, mode):
+        try:
+            self.sftp.chmod(path, mode)
+        except Exception, ex:
+            raise gc3libs.exceptions.TransportError(
+                "Error changing remote path '%s' mode to 0%o: %s: %s" 
+                % (path, mode, ex.__class__.__name__, str(ex)))
+
 
     @same_docstring_as(Transport.execute_command)
     def execute_command(self, command):
@@ -420,8 +438,14 @@ class LocalTransport(Transport):
     def connect(self):
         self._is_open = True
 
-    #@same_docstring_as(Transport.open)
-    #def open(self, source, mode, bufsize=-1):
+    @same_docstring_as(Transport.chmod)
+    def chmod(self, path, mode):
+        try:
+            os.chmod(path, mode)
+        except Exception, ex:
+            raise gc3libs.exceptions.TransportError(
+                "Error changing local path '%s' mode to 0%o: %s: %s" 
+                % (path, mode, ex.__class__.__name__, str(ex)))
 
     def execute_command_and_detach(self, command):
         assert self._is_open is True, \
