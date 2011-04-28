@@ -366,6 +366,7 @@ class ParallelTaskCollection(TaskCollection):
                        ]:
             if stats[state] > 0:
                 return state
+        return Run.State.UNKNOWN
 
     
     def kill(self, **kw):
