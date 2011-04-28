@@ -195,10 +195,19 @@ class SubprocessLrms(LRMS):
                 ## stage inputs files into execution directory
                 for l, r in app.inputs.items():
                     copy_recursively(l, os.path.join(execdir, r))
-                
+
                 ## change to execution directory
                 os.chdir(execdir)
-                
+
+                # try to ensure that a local executable really has
+                # execute permissions, but ignore failures (might be a
+                # link to a file we do not own)
+                if app.executable.startswith('./'):
+                    try:
+                        os.chmod(app.executable, 0755)
+                    except OSError:
+                        pass
+
                 ## set up redirection
                 if app.stdin is not None:
                     stdin = open(app.stdin, 'r')

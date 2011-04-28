@@ -358,8 +358,10 @@ class SgeLrms(LRMS):
                 raise
 
         if app.executable.startswith('./'):
-            gc3libs.log.debug("Making remote path '%s' executable.", app.executable)
-            self.transport.chmod(os.path.join(ssh_remote_folder, app.executable), 0770)
+            gc3libs.log.debug("Making remote path '%s' executable.",
+                              app.executable)
+            self.transport.chmod(os.path.join(ssh_remote_folder,
+                                              app.executable), 0755)
         
         try:
             # Try to submit it to the local queueing system.
