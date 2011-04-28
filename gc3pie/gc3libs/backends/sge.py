@@ -644,13 +644,6 @@ class SgeLrms(LRMS):
                 except Exception:
                     raise
 
-            # make jobname.stderr a link to jobname.stdout in case
-            # some program relies on its existence
-            if (not app.join
-                and not os.path.exists(os.path.join(download_dir, job.stderr_filename))):
-                os.symlink(os.path.join(download_dir, job.stdout_filename),
-                           os.path.join(download_dir, job.stderr_filename))
-
             self.transport.close()
             return # XXX: should we return list of downloaded files?
 
