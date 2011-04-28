@@ -847,10 +847,10 @@ def test_file(path, mode, exception=RuntimeError, isdir=False):
     This is a frontend to `os.access`:func:, which see for exact
     semantics and the meaning of `path` and `mode`.
 
-    :param: path Filesystem path to test.
-    :param: mode See `os.access`:func:
-    :param: exception Class of exception to raise if test fails.
-    :param: isdir If `True` then also test that `path` points to a directory.
+    :param path: Filesystem path to test.
+    :param mode: See `os.access`:func:
+    :param exception: Class of exception to raise if test fails.
+    :param isdir: If `True` then also test that `path` points to a directory.
 
     If the test succeeds, `True` is returned::
 
