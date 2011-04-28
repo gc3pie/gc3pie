@@ -89,11 +89,6 @@
 .. automodule:: gc3libs.backends.transport
     :members:
 
-`gc3libs.task`
-==============
-.. automodule:: gc3libs.task
-     :members:
-
 `gc3libs.utils`
 ===============
 .. automodule:: gc3libs.utils
@@ -101,6 +96,7 @@
 
 `gc3libs.Resource`
 ==================
+
 .. warning:: 
 
    This module is deprecated and will be removed in a future release.

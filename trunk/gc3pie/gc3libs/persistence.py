@@ -218,7 +218,7 @@ class IdFactory(object):
 
 class JobIdFactory(IdFactory):
     """
-    Override :py:class:`IdFactory` behavior and generate IDs starting with a
+    Override :class:`IdFactory` behavior and generate IDs starting with a
     lowercase ``job`` prefix.
     """
     def __init__(self, next_id_fn=None):
