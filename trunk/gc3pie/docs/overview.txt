@@ -1,9 +1,9 @@
 .. This file follows reStructuredText markup syntax; see
    http://docutils.sf.net/rst.html for more information
 
-++++++++++
- Overview
-++++++++++
+++++++++++++++++++++++
+ Programming overview
+++++++++++++++++++++++
 
 GC3Libs takes an application-oriented approach to asynchronous
 computing. A generic :class:`Application` class provides the basic

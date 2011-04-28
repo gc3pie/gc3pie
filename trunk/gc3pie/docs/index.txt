@@ -8,14 +8,11 @@
 ====================================
 
 .. toctree::
-   :maxdepth: 2
 
-
-.. include:: intro.txt
-
-.. include:: overview.txt
-
-.. include:: api.txt
+  intro
+  install
+  overview
+  api
 
 
 ++++++++++++++++++++
