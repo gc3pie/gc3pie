@@ -253,6 +253,7 @@ def update_parameter_in_file(path, varIn, paraIndex, newVal, regexIn):
     paraFileOut = open(path + '.tmp', 'w')
     for line in paraFileIn:
         (a, var, b, oldValMat, c) = re.match(regexIn, line.rstrip()).groups()
+        gc3libs.log.debug("Read variable '%s' with value '%s' ...", var, oldValMat)
         if var == varIn:
             oldValMat = str2mat(oldValMat)
             if oldValMat.shape == (1,):
@@ -269,6 +270,7 @@ def update_parameter_in_file(path, varIn, paraIndex, newVal, regexIn):
                 newValMat = oldValMat
                 newValMat[paraIndex] = newVal
                 newValMat = mat2str(newValMat)
+            gc3libs.log.debug("Will change variable '%s' to value '%s' ...", var, newValMat)
         else:
             newValMat = oldValMat
         paraFileOut.write(a + var + b + newValMat + c + '\n')
@@ -452,7 +454,7 @@ Read `.loop` files and execute the `forwardPremium` program accordingly.
         # remap group numbers so that they start at 0 and increase in
         # steps of 1
         groups = self._remap_groups(groups)
-        num_groups = len(groups)
+        num_groups = len(np.unique(groups))
 
         self.log.debug("Number of groups: %d", num_groups)
         self.log.debug('variables: %s' % variables)
@@ -579,8 +581,7 @@ Read `.loop` files and execute the `forwardPremium` program accordingly.
                 path_to_stage_dir = self.make_directory_path(
                     self.params.output, jobname, path_to_base_dir)
                 input_dir = path_to_stage_dir #os.path.join(path_to_stage_dir, 'input')
-                if not os.path.isdir(input_dir):
-                    os.makedirs(input_dir)
+                gc3libs.utils.mkdir(input_dir)
                 prefix_len = len(input_dir) + 1
                 # 1. files in the "initial" dir are copied verbatim
                 if self.params.initial is not None:
@@ -631,6 +632,21 @@ Read `.loop` files and execute the `forwardPremium` program accordingly.
     _loop_comment_re = re.compile(r'^ \s* (\#|$)', re.X)
     #  2. columns are separated by 3 or more spaces
     _loop_colsep_re = re.compile(r'\s\s\s+')
+    # 3. allowed regexps; each regexp must have exactly 5 groups
+    # (named 'a', 'var', 'b', 'val', and 'c'), of which only
+    # 'var' and 'val' are signficant; the other ones are copied verbatim.
+    _loop_regexps = {
+        'bar-separated':(r'([a-z]+[\s\|]+)'
+                         r'(\w+)' # variable name
+                         r'(\s*[\|]+\s*)' # bars and spaces
+                         r'([\w\s\.,;\[\]\-]+)' # value
+                         r'(\s*)'),
+        'space-separated':(r'(\s*)'
+                           r'(\w+)' # variable name
+                           r'(\s+)' # spaces (filler)
+                           r'([\w\s\.,;\[\]\-]+)' # values
+                           r'(\s*)'), # spaces (filler)
+        }
 
     # -- Read para.loop  --
     def _read_para(self, path):
@@ -678,7 +694,9 @@ Read `.loop` files and execute the `forwardPremium` program accordingly.
         for line in paraLoopFile:
             if GPremiumScript._loop_comment_re.match(line):
                 continue
-            columns = tuple(GPremiumScript._loop_colsep_re.split(line.rstrip()))
+            columns = list(GPremiumScript._loop_colsep_re.split(line.rstrip()))
+            columns[7] = self._loop_regexps[columns[7]]
+            columns = tuple(columns)
             self.log.debug("_read_para: got columns: %s", columns)
             data.append(np.array(columns, dtype=dt))
         params = np.array(data, dtype=dt)
