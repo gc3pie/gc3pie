@@ -676,7 +676,16 @@ def prettyprint(D, indent=0, width=0, maxdepth=None, step=4,
         output.write('\n')
 
 
-def mkdir_with_backup(path):
+def mkdir(path, mode=0777):
+    """
+    Like `os.makedirs`, but does not throw an exception if PATH
+    already exists.
+    """
+    if not os.path.exists(path):
+        os.makedirs(path, mode)
+
+    
+def mkdir_with_backup(path, mode=0777):
     """
     Like `os.makedirs`, but if `path` already exists, rename the
     existing one appending a `.NUMBER` suffix.
@@ -695,7 +704,7 @@ def mkdir_with_backup(path):
                 # ignore non-numeric suffixes
                 pass
         os.rename(path, "%s.%d" % (path, suffix))
-    os.makedirs(path)
+    os.makedirs(path, mode)
 
 
 def safe_repr(obj):
