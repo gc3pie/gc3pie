@@ -15,10 +15,15 @@ Installation
 ============
 
 These instructions show how to install GC3Pie from the GC3 source
-repository into a separate python environment (called "virtualenv").
+repository into a separate python environment (called `virtualenv`_).
 Installation into a virtualenv has two distinct advantages:
-  * All code is confined in a single directory, and can thus be easily replaced/removed.
-  * Better dependency handling: additional Python packages that GC3Pie depends upon can be installed even if they conflict with system-level packages.
+
+  * All code is confined in a single directory, 
+    and can thus be easily replaced/removed.
+
+  * Better dependency handling: additional Python packages 
+    that GC3Pie depends upon can be installed even if they 
+    conflict with system-level packages.
 
 0. Install software prerequisites: 
    
@@ -33,10 +38,11 @@ Installation into a virtualenv has two distinct advantages:
        yum install subversion python-devel gcc gcc-c++
 
    * On other Linux distributions, you will need to install:
+
      - the ``svn`` command (from the SubVersion_ VCS)
-     - Python development headers and libraries (for installing 
-       extension libraries written in C/C++)
-     - the Python package ``pstats`` (it's part of the Python
+     - Python development headers and libraries
+       (for installing extension libraries written in C/C++)
+     - the Python package ``pstats`` (it's part of the Python 
        standard library, but sometimes it needs separate installation)
      - a C/C++ compiler (this is usually installed by default).
 
@@ -44,9 +50,11 @@ Installation into a virtualenv has two distinct advantages:
    NorduGrid/ARC binaries and a working ``slcs-init`` command
    installed on the same machine where GC3Pie are.  You can find
    instructions for installing it at:
+
      http://www.smscg.ch/WP/middleware/release_2_0/smscg_ui_Binary_Installation.html
 
    Additional OS-specific installation details can be found at:
+
      http://code.google.com/p/gc3pie/wiki/OSSpecificInstallDetails
 
 
@@ -60,7 +68,7 @@ Installation into a virtualenv has two distinct advantages:
    GC3Pie into ``$HOME/gc3pie``.
 
 
-2. If it's not already installed, get the `virtualenv` Python package
+2. If it's not already installed, get the `virtualenv`_ Python package
    and install it::
 
       wget http://pypi.python.org/packages/source/v/virtualenv/virtualenv-1.5.1.tar.gz
@@ -84,7 +92,7 @@ Installation into a virtualenv has two distinct advantages:
     `$HOME/.bashrc` file -if using the `bash` shell- or to the
     `$HOME/.cshrc` file -if using the `tcsh` shell.)
 
-    In any case, once `virtualenv` has been installed, you can exit
+    In any case, once `virtualenv`_ has been installed, you can exit
     its directory and remove it::
    
       cd ..
@@ -207,8 +215,15 @@ You can also generate a local copy from the sources::
   cd src/docs
   make html
 
-Note that you need the Python package `Sphinx <http://sphix.pocoo.org>`
+Note that you need the Python package `Sphinx <http://sphinx.pocoo.org>`_
 in order to build the documentation locally.
+
+
+.. References
+
+.. _subversion: http://subversion.tigris.org/
+.. _sphinx: http://sphinx.pocoo.org/
+.. _virtualenv: http://pypi.python.org/pypi/virtualenv/1.5.1
 
 
 .. (for Emacs only)
