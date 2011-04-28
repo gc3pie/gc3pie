@@ -603,6 +603,7 @@ Read `.loop` files and execute the `forwardPremium` program accordingly.
                 kwargs['stdout'] = 'forwardPremiumOut.log'
                 kwargs['join'] = True
                 kwargs['output_dir'] = os.path.join(path_to_stage_dir, 'output')
+                kwargs['requested_architecture'] = Run.Arch.X86_64
                 # hand over job to create
                 yield (jobname, gc3libs.Application,
                        ['./' + executable, [], inputs, outputs], kwargs) 
