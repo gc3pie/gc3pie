@@ -130,7 +130,10 @@ class SubprocessLrms(LRMS):
         """
         try:
             pid = int(app.execution.lrms_jobid)
-            status = posix.waitpid(pid, posix.WNOHANG)[1]
+            (pid_, status) = posix.waitpid(pid, posix.WNOHANG)
+            if pid_ == 0:
+                gc3libs.log.debug("Child process %d not yet done." % pid)
+                return Run.State.RUNNING
             gc3libs.log.debug("Got status %d for child process PID %d" % (status, pid))
         except OSError, ex:
             if ex.errno == 10:
