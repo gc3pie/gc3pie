@@ -187,16 +187,16 @@ class BasisSweepPasses(SequentialTaskCollection):
         results will be stored.
     
         """
-        self.work_dir = work_dir
+        orb_basis = ridft_in._keywords['ORB_BASIS']
+        rijk_basis = ridft_in._keywords['RIJK_BASIS']
+        self.work_dir = os.path.join(work_dir,
+                                     'bas=%s/jkbas=%s' % (orb_basis, rijk_basis))
         gc3libs.utils.mkdir(self.work_dir)
         # need to remove this, we override it both in pass1 and pass2
         if kw.has_key('output_dir'):
             del kw['output_dir']
         # run 1st pass in the `ridft` directory
-        orb_basis = ridft_in._keywords['ORB_BASIS']
-        rijk_basis = ridft_in._keywords['RIJK_BASIS']
-        ridft_dir = os.path.join(self.work_dir,
-                                 'ridft/bas=%s/jkbas=%s' % (orb_basis, rijk_basis))
+        ridft_dir = os.path.join(self.work_dir, 'ridft')
         gc3libs.utils.mkdir(ridft_dir)
         ridft_define_in = _make_define_in(ridft_dir, ridft_in)
         pass1 = TurbomoleDefineApplication(
