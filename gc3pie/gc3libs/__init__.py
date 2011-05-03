@@ -678,7 +678,7 @@ class Application(Struct, Persistable, Task):
         if len(self.inputs.values()) != len(set(self.inputs.values())):
             # try to build an exact error message
             inv = { }
-            for l, r in self.inputs:
+            for l, r in self.inputs.itertiems():
                 if r in inv:
                     raise DuplicateEntryError("Local input files '%s' and '%s'"
                                               " map to the same remote path '%s'"
@@ -697,7 +697,7 @@ class Application(Struct, Persistable, Task):
         if len(self.outputs.values()) != len(set(self.outputs.values())):
             # try to build an exact error message
             inv = { }
-            for r, l in self.outputs:
+            for r, l in self.outputs.iteritems():
                 if l in inv:
                     raise DuplicateEntryError("Remote output files '%s' and '%s'"
                                               " map to the same local path '%s'"
