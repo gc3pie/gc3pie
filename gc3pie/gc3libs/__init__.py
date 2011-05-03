@@ -831,9 +831,14 @@ class Application(Struct, Persistable, Task):
         # treat 'arguments' separately
         if self.arguments:
             xrsl += '(arguments=%s)' % str.join(' ', [('"%s"' % x) for x in self.arguments])
-        if (os.path.basename(self.executable) in self.inputs
-            or './'+os.path.basename(self.executable) in self.inputs):
-            xrsl += '(executables="%s")' % os.path.basename(self.executable)
+        # preserve execute permission on all input files
+        executables = [ ]
+        for l, r in self.inputs.iteritems():
+            if os.access(l, os.X_OK):
+                executables.append(r)
+        if len(executables) > 0:
+            xrsl += ('(executables=%s)'
+                     % str.join(' ', [('"%s"' % x) for x in executables]))
         if self.stdin:
             xrsl += '(stdin="%s")' % self.stdin
         if self.join:
