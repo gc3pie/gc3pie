@@ -1,4 +1,4 @@
-#!/usr/bin/perl
+#!/usr/bin/env perl
 #
 # CODEML wrapper for the Grid environment
 #
@@ -21,7 +21,7 @@ else {
     $CODEML = "$pwd/$bin";
     die "ERROR: Executable '$CODEML' not found.\n" unless -e $CODEML;
     unless (-x $CODEML) { # Make the binary executable if needed
-        chmod $binmode, $CODEML or die "Error: Failed to set execution permissions on the '$CODEML' file.\n";
+       chmod $binmode, $CODEML or die "Error: Failed to set execution permissions on the '$CODEML' file.\n";
     }
 };
 
