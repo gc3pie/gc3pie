@@ -97,7 +97,7 @@ of newly-created jobs so that this limit is never exceeded.
         self.actions['output'].default = 'SESSION'
 
 
-    def process_args(self, extra):
+    def new_tasks(self, extra):
         """Implement the argument -> jobs mapping."""
         ## process additional options
         if not os.path.isabs(self.params.codeml):
