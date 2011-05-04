@@ -173,8 +173,14 @@ can issue the commands:
      cd src
 }}}
 
-2. Upgrade the `gc3pie` source and run the `setup.py` script again:
+2. Activate the Python virtualenv:
 {{{
+     source bin/activate
+}}}
+
+3. Upgrade the `gc3pie` source and run the `setup.py` script again:
+{{{
+   cd src
    svn up
    env CC=gcc ./setup.py develop
 }}}

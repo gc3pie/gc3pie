@@ -186,10 +186,15 @@ latest version found in the GC3 svn repository.
    assuming it's named ``gc3pie`` as in the above installation
    instructions, you can issue the commands::
 
-     cd gc3pie/src
+     cd $HOME/gc3pie # use '/opt/gc3pie' if root
 
-2. Upgrade the `gc3pie` source and run the `setup.py` script again::
+2. Activate the virtualenv ::
 
+     source bin/activate
+
+3. Upgrade the `gc3pie` source and run the `setup.py` script again::
+
+     cd src
      svn up
      env CC=gcc ./setup.py develop
 
