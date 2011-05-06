@@ -247,8 +247,8 @@ def _job_info_normalize(self, job):
         job.used_cputime =  int(job.used_cputime.split('.')[0])
 
     if job.haskey('used_memory'):
-        # convert from MB to KiB. Remove 'M' or'G' charater at the end.
-        job.used_memory = int(mem[:len(mem)-1]) * 1024
+        # store used memory in MiB
+        job.used_memory = utils.to_bytes(mem + 'B') / 1024
 
 def _sge_filename_mapping(jobname, lrms_jobid, file_name):
     return {
