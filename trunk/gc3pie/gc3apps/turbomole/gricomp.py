@@ -20,8 +20,23 @@ on the SMSCG infrastructure.
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 #
-__docformat__ = 'reStructuredText'
 __version__ = '$Revision$'
+__author__ = 'Riccardo Murri <riccardo.murri@uzh.ch>'
+# summary of user-visible changes
+__changelog__ = """
+  2011-05-06:
+    * Record RIDFT/RICC2 output into a `ridft.out`/`ricc2.out` file
+      in the corresponding `output/` subdirectory.
+    * Workaround for Issue 95: now we have complete interoperability
+      with GC3Utils.
+"""
+__docformat__ = 'reStructuredText'
+
+
+# ugly workaround for Issue 95,
+# see: http://code.google.com/p/gc3pie/issues/detail?id=95
+if __name__ == "__main__":
+    import gricomp
 
 
 import ConfigParser
@@ -316,14 +331,14 @@ class BasisSweep(ParallelTaskCollection):
         for ridft in expansions(ridft_define_in):
             orb_basis = ridft._keywords['ORB_BASIS']
             tasks.append(
-                BasisSweepPasses(title + '.seq', coord, ridft,
-                                 list(expansions(ricc2_define_in,
-                                                 ORB_BASIS=orb_basis)),
-                                 work_dir, **kw))
+                BasisSweepPasses(
+                    title + '.seq', coord, ridft,
+                    list(expansions(ricc2_define_in,
+                                    ORB_BASIS=orb_basis)),
+                    work_dir, **kw))
 
         ParallelTaskCollection.__init__(self, title, tasks, grid)
             
-
 
 ## main
 
@@ -377,7 +392,7 @@ controlled with the ``--bas``, ``--jkbas``, ``--cbas`` and
             # gives the unique name
             name = os.path.basename(os.path.dirname(coord))
             yield (name,
-                   BasisSweep, [
+                   gricomp.BasisSweep, [
                        name,
                        coord,
                        self.params.bas,
