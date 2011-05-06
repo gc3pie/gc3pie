@@ -190,7 +190,7 @@ class BasisSweepPasses(SequentialTaskCollection):
         orb_basis = ridft_in._keywords['ORB_BASIS']
         rijk_basis = ridft_in._keywords['RIJK_BASIS']
         self.work_dir = os.path.join(work_dir,
-                                     'bas=%s/jkbas=%s' % (orb_basis, rijk_basis))
+                                     'bas-%s/jkbas-%s' % (orb_basis, rijk_basis))
         gc3libs.utils.mkdir(self.work_dir)
         # need to remove this, we override it both in pass1 and pass2
         if kw.has_key('output_dir'):
@@ -201,7 +201,8 @@ class BasisSweepPasses(SequentialTaskCollection):
         ridft_define_in = _make_define_in(ridft_dir, ridft_in)
         pass1 = TurbomoleDefineApplication(
             'ridft', ridft_define_in, coord,
-            output_dir = os.path.join(ridft_dir, 'output'), **kw)
+            output_dir = os.path.join(ridft_dir, 'output'),
+            stdout = 'ridft.out', **kw)
         # remember for later
         self.name = name
         self.ricc2_ins = ricc2_ins
@@ -225,7 +226,7 @@ class BasisSweepPasses(SequentialTaskCollection):
                 cbas = ricc2_in._keywords['CBAS_BASIS']
                 cabs = ricc2_in._keywords['CABS_BASIS']
                 ricc2_dir = os.path.join(self.work_dir,
-                                         'ricc2/cbas=%s/cabs=%s' % (cbas, cabs))
+                                         'ricc2/cbas-%s/cabs-%s' % (cbas, cabs))
                 gc3libs.utils.mkdir(ricc2_dir)
                 ricc2_define_in = _make_define_in(ricc2_dir, ricc2_in)
                 pass2.append(
@@ -239,6 +240,7 @@ class BasisSweepPasses(SequentialTaskCollection):
                         os.path.join(self.tasks[0].output_dir, 'basis'),
                         os.path.join(self.tasks[0].output_dir, 'auxbasis'),
                         output_dir = os.path.join(ricc2_dir, 'output'),
+                        stdout = 'ricc2.out',
                         **self.extra))
                 gc3libs.log.debug("Created RICC2 task in directory '%s'",
                                   ricc2_dir)
