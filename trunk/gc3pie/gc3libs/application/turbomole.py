@@ -55,6 +55,11 @@ class TurbomoleApplication(gc3libs.Application):
         for path in others:
             inputs[path] = os.path.basename(path)
 
+        # set defaults for keyword arguments
+        kw.setdefault('join', True)
+        kw.setdefault('stdout', program + '.log')
+        kw.setdefault('output_dir', None)
+        
         # hard-coded list, according to Andreas' description
         outputs = [
             'control',
@@ -65,12 +70,6 @@ class TurbomoleApplication(gc3libs.Application):
             'auxbasis',
             ]
 
-        # set defaults for keyword arguments
-        kw.setdefault('join', False)
-        kw.setdefault('stdout', 'stdout.txt')
-        kw.setdefault('stderr', 'stderr.txt')
-        kw.setdefault('output_dir', None)
-        
         gc3libs.Application.__init__(
             self,
             executable = "./turbomole.sh",
@@ -122,9 +121,8 @@ class TurbomoleDefineApplication(gc3libs.Application):
             ]
 
         # set defaults for keyword arguments
-        kw.setdefault('join', False)
-        kw.setdefault('stdout', 'stdout.txt')
-        kw.setdefault('stderr', 'stderr.txt')
+        kw.setdefault('join', True)
+        kw.setdefault('stdout', program + '.log')
         kw.setdefault('output_dir', None)
         
         gc3libs.Application.__init__(
