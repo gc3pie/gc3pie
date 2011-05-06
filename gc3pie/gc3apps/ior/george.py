@@ -20,8 +20,21 @@ on the SMSCG infrastructure.
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 #
-__docformat__ = 'reStructuredText'
 __version__ = '$Revision$'
+__author__ = 'Riccardo Murri <riccardo.murri@uzh.ch>'
+# summary of user-visible changes
+__changelog__ = """
+  2011-05-06:
+    * Workaround for Issue 95: now we have complete interoperability
+      with GC3Utils.
+"""
+__docformat__ = 'reStructuredText'
+
+
+# ugly workaround for Issue 95,
+# see: http://code.google.com/p/gc3pie/issues/detail?id=95
+if __name__ == "__main__":
+    import george
 
 
 import ConfigParser
@@ -506,7 +519,7 @@ class GeorgeScript(SessionBasedScript):
                                " in input '%s': %s"
                                % (name, str(ex)))
         
-            yield (name, ValueFunctionIteration, [
+            yield (name, george.ValueFunctionIteration, [
                 self.params.execute, path,
                 self.params.iterations,
                 self.params.slice_size

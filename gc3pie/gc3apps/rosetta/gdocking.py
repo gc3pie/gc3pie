@@ -86,7 +86,7 @@ __docformat__ = 'reStructuredText'
 # ugly workaround for Issue 95,
 # see: http://code.google.com/p/gc3pie/issues/detail?id=95
 if __name__ == "__main__":
-  import gdocking
+    import gdocking
 
 
 import grp
