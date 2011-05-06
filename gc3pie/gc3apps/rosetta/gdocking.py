@@ -27,6 +27,9 @@ __version__ = 'development version (SVN $Revision$)'
 __author__ = 'Riccardo Murri <riccardo.murri@uzh.ch>'
 # summary of user-visible changes
 __changelog__ = """
+  2011-05-06:
+    * Workaround for Issue 95: now we have complete interoperability
+      with GC3Utils.
   2011-02-10:
     * Renamed option '-t'/'--tarfile' to '-T'/'--collect', 
       in order not to conflict with `SessionBasedScript` 
@@ -78,6 +81,12 @@ __changelog__ = """
     * Default session file is now './grosetta.csv', so it's not hidden to users.
 """
 __docformat__ = 'reStructuredText'
+
+
+# ugly workaround for Issue 95,
+# see: http://code.google.com/p/gc3pie/issues/detail?id=95
+if __name__ == "__main__":
+  import gdocking
 
 
 import grp
@@ -198,7 +207,10 @@ of newly-created jobs so that this limit is never exceeded.
         SessionBasedScript.__init__(
             self,
             version = __version__, # module version == script version
-            application = GDockingApplication,
+            # Use fully-qualified name for class,
+            # to allow GC3Utils to unpickle job instances
+            # see: http://code.google.com/p/gc3pie/issues/detail?id=95
+            application = gdocking.GDockingApplication,
             input_filename_pattern = '*.pdb'
             )
 
