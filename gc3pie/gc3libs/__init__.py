@@ -530,7 +530,8 @@ class Application(Struct, Persistable, Task):
       There are three possible ways of specifying the `outputs` parameter:
 
       * It can be a Python dictionary: keys are remote file or
-        directory paths, values are corresponding local names.
+        directory paths (relative to the execution directory), values
+        are corresponding local names.
 
       * It can be a Python list: each item in the list should be a
         pair `(remote_file_name, local_file_name)`; a single string
@@ -735,11 +736,19 @@ class Application(Struct, Persistable, Task):
         if self.stdin and (self.stdin not in self.inputs):
             self.inputs[self.stdin] = os.path.basename(self.stdin)
         self.stdout = get_and_remove(kw, 'stdout')
+        if self.stdout is not None and os.path.isabs(self.stdout):
+            raise InvalidArgument(
+                "Absolute path '%s' passed as `Application.stdout`"
+                % self.stdout)
         if self.stdout and (self.stdout not in self.outputs):
-            self.outputs[self.stdout] = os.path.basename(self.stdout)
+            self.outputs[self.stdout] = self.stdout
         self.stderr = get_and_remove(kw, 'stderr')
+        if self.stderr is not None and os.path.isabs(self.stderr):
+            raise InvalidArgument(
+                "Absolute path '%s' passed as `Application.stderr`"
+                % self.stderr)
         if self.stderr and (self.stderr not in self.outputs):
-            self.outputs[self.stderr] = os.path.basename(self.stderr)
+            self.outputs[self.stderr] = self.stderr
 
         self.tags = get_and_remove(kw, 'tags', list())
 
@@ -949,6 +958,19 @@ class Application(Struct, Persistable, Task):
         if self.requested_memory:
             # SGE uses `mem_free` for memory limits; 'G' suffix allowed for Gigabytes
             qsub += ' -l mem_free=%dG' % self.requested_memory
+        if self.join:
+            qsub += ' -j yes'
+        if self.stdout:
+            qsub += ' -o %s' % self.stdout
+        if self.stdin:
+            # `self.stdin` is the full pathname on the GC3Pie client host;
+            # it is copied to its basename on the execution host
+            qsub += ' -i %s' % os.path.basename(self.stdin)
+        if self.stderr:
+            # from the qsub(1) man page: "If both the -j y and the -e
+            # options are present, Grid Engine sets but ignores the
+            # error-path attribute."
+            qsub += ' -e %s' % self.stderr
         if self.requested_cores and not _suppress_warning:
             # XXX: should this be an error instead?
             log.warning("Application requested %d cores,"
