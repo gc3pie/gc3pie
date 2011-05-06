@@ -19,8 +19,21 @@ Driver script for running the `forwardPremium` application on SMSCG.
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 #
-__docformat__ = 'reStructuredText'
 __version__ = '$Revision$'
+__author__ = 'Riccardo Murri <riccardo.murri@uzh.ch>'
+# summary of user-visible changes
+__changelog__ = """
+  2011-05-06:
+    * Workaround for Issue 95: now we have complete interoperability
+      with GC3Utils.
+"""
+__docformat__ = 'reStructuredText'
+
+
+# ugly workaround for Issue 95,
+# see: http://code.google.com/p/gc3pie/issues/detail?id=95
+if __name__ == "__main__":
+    import gpremium
 
 
 # std module imports
@@ -40,7 +53,72 @@ import gc3libs.utils
 
 import gc3libs.debug
 
-## auxiliary functions
+
+## custom application class
+
+class GPremiumApplication(Application):
+    """
+    Custom application class to wrap the execution of the
+    `forwardPremiumOut` program by B. Jonen and S. Scheuring.
+    """
+
+    _invalid_chars = re.compile(r'[^_a-zA-Z0-9]+', re.X)
+    
+    def terminated(self):
+        """
+        Analyze the retrieved output, with a threefold purpose:
+
+        - set the exit code based on whether there is a
+          `simulation.out` file containing a value for the
+          `FamaFrenchBeta` parameter;
+
+        - parse the output file `simulation.out` (if any) and set
+          attributes on this object based on the values stored there:
+          e.g., if the `simulation.out` file contains the line
+          ``FamaFrenchBeta: 1.234567``, then set `self.FamaFrenchBeta
+          = 1.234567`.  Attribute names are gotten from the labels in
+          the output file by translating any invalid character
+          sequence to a single `_`; e.g. ``Avg. hB`` becomes `Avg_hB`.
+
+        - work around a bug in ARC where the output is stored in a
+          subdirectory of the output directory.
+        """
+        output_dir = self.output_dir
+        # if files are stored in `output/output/`, move them one level up
+        if os.path.isdir(os.path.join(output_dir, 'output')):
+            wrong_output_dir = os.path.join(output_dir, 'output')
+            for entry in os.listdir(wrong_output_dir):
+                os.rename(os.path.join(wrong_output_dir, entry),
+                          os.path.join(output_dir, entry))
+        # set the exitcode based on postprocessing the main output file
+        simulation_out = os.path.join(output_dir, 'simulation.out')
+        if os.path.exists(simulation_out):
+            ofile = open(simulation_out, 'r')
+            # parse each line of the `simulation.out` file,
+            # and try to set an attribute with its value;
+            # ignore errors - this parser is not very sophisticated!
+            for line in ofile:
+                if ':' in line:
+                    try:
+                        var, val = line.strip().split(':', 1)
+                        value = float(val)
+                        attr = self._invalid_chars.sub('_', var)
+                        setattr(self, attr, value)
+                    except:
+                        pass
+            ofile.close()
+            if self.hasattr('FamaFrenchBeta'):
+                self.execution.exitcode = 0
+                self.info = ("FamaFrenchBeta: %.6f" % self.FamaFrenchBeta)
+            elif self.execution.exitcode == 0:
+                # no FamaFrenchBeta, no fun!
+                self.execution.exitcode = 1
+        else:
+            # no `simulation.out` found, signal error
+            self.execution.exitcode = 2
+                    
+
+## auxiliary functions for the script class logic
 
 def lower(npStrAr):
     return np.fromiter((x.lower() for x in npStrAr.flat),
@@ -605,7 +683,7 @@ Read `.loop` files and execute the `forwardPremium` program accordingly.
                 kwargs['output_dir'] = os.path.join(path_to_stage_dir, 'output')
                 kwargs['requested_architecture'] = Run.Arch.X86_64
                 # hand over job to create
-                yield (jobname, gc3libs.Application,
+                yield (jobname, gpremium.GPremiumApplication,
                        ['./' + executable, [], inputs, outputs], kwargs) 
 
     ##
