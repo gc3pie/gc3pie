@@ -366,7 +366,7 @@ controlled with the ``--bas``, ``--jkbas``, ``--cbas`` and
         super(GRICompScript, self).setup_args()
 
         self.add_param("--bas", metavar="LIST", action="append",
-                       dest="bas", default=['aug-cc-pVTZ', 'aug-cc-pVQZ', 'aug-cc-pV5Z'],
+                       dest="bas", default=[],
                        help="Comma-separated list of orbital bases to sweep."
                        " (Default: %(default)s")
         self.add_param("--jkbas", metavar="LIST", action="append",
@@ -381,6 +381,48 @@ controlled with the ``--bas``, ``--jkbas``, ``--cbas`` and
                        dest="cabs", default=['aug-cc-pVTZ', 'aug-cc-pVQZ', 'aug-cc-pV5Z'],
                        help="Comma-separated list of `cabs` bases to sweep."
                        " (Default: %(default)s")
+
+
+    def parse_args(self):
+        # collect the basis set names given to the ``--bas``,
+        # ``--jkbas``, ``--cbas`` and ``--cabs`` options and make them
+        # into properly formatted lists.
+
+        if len(self.params.bas) == 0:
+            self.params.bas = basis_set_names
+        else:
+            self.params.bas = str.join(',', self.params.bas).split(',')
+        for name in self.params.bas:
+            if name not in basis_set_names:
+                raise gc3libs.exceptions.InvalidUsage(
+                    "Unknown basis set name: '%s'." % name)
+
+        if len(self.params.jkbas) == 0:
+            self.params.jkbas = jkbasis_set_names
+        else:
+            self.params.jkbas = str.join(',', self.params.jkbas).split(',')
+        for name in self.params.jkbas:
+            if name not in basis_set_names:
+                raise gc3libs.exceptions.InvalidUsage(
+                    "Unknown basis set name: '%s'." % name)
+
+        if len(self.params.cbas) == 0:
+            self.params.cbas = cbasis_set_names
+        else:
+            self.params.cbas = str.join(',', self.params.cbas).split(',')
+        for name in self.params.cbas:
+            if name not in basis_set_names:
+                raise gc3libs.exceptions.InvalidUsage(
+                    "Unknown basis set name: '%s'." % name)
+
+        if len(self.params.cabs) == 0:
+            self.params.cabs = cabsis_set_names
+        else:
+            self.params.cabs = str.join(',', self.params.cabs).split(',')
+        for name in self.params.cabs:
+            if name not in basis_set_names:
+                raise gc3libs.exceptions.InvalidUsage(
+                    "Unknown basis set name: '%s'." % name)
 
 
     def new_tasks(self, extra):
