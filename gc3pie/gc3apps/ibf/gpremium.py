@@ -324,6 +324,19 @@ def str2vals(strIn):
     else:
         return str2mat(strIn)
 
+def format_newVal(newVal):
+    if '.' in str(newVal):
+        newValMat = '%.3f' % float(newVal)
+    else:
+        try:
+            # try to convert to integer, and use decimal repr
+            newValMat = str(int(newVal))
+        except ValueError:
+            # then it's a string
+            newValMat = newVal
+    return newValMat
+     
+
 
 @gc3libs.debug.trace
 def update_parameter_in_file(path, varIn, paraIndex, newVal, regexIn):
@@ -335,15 +348,7 @@ def update_parameter_in_file(path, varIn, paraIndex, newVal, regexIn):
         if var == varIn:
             oldValMat = str2mat(oldValMat)
             if oldValMat.shape == (1,):
-                if '.' in str(newVal):
-                    newValMat = '%.3f' % float(newVal)
-                else:
-                    try:
-                        # try to convert to integer, and use decimal repr
-                        newValMat = str(int(newVal))
-                    except ValueError:
-                        # then it's a string
-                        newValMat = newVal
+                newValMat = newVal
             else:
                 newValMat = oldValMat
                 newValMat[paraIndex] = newVal
@@ -631,7 +636,7 @@ Read `.loop` files and execute the `forwardPremium` program accordingly.
                 group = groups[ixVar]
                 paraFile = paraFiles[ixVar]
                 adjustIndex = indices[ixVar]
-                val = extractVal(ixVar, vals, index)
+                val = format_newVal(extractVal(ixVar, vals, index))
                 regex = paraFileRegex[ixVar]
                 paraIndex = str2tuple(indices[ixVar])
                 self.log.debug('paraIndex: %s', paraIndex)
