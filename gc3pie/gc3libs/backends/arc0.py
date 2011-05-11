@@ -281,7 +281,7 @@ class ArcLrms(LRMS):
             elif arc_job.requested_cpu_time > -1 and arc_job.used_cpu_time > -1 and arc_job.used_cpu_time > arc_job.requested_cpu_time:
                 job.log("Job exceeded requested CPU time (%d s),"
                         " killed by remote batch system" 
-                        % arc_job.requested_wall_time)
+                        % arc_job.requested_cpu_time)
                 job.returncode = (Run.Signals.RemoteError, -1)
             # note: arc_job.used_memory is in KiB (!), app.requested_memory is in GiB
             elif app.requested_memory > -1 and arc_job.used_memory > -1 and (arc_job.used_memory / 1024) > (app.requested_memory * 1024):
