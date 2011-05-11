@@ -67,7 +67,7 @@ class GamessApplication(gc3libs.Application):
         # set job name
         kw['job_name'] = input_file_name_sans
         gc3libs.Application.__init__(self, 
-                                     executable = "$GAMESS_LOCATION/nggms",
+                                     executable = "/$GAMESS_LOCATION/nggms",
                                      arguments = arguments,
                                      inputs = [ (inp_file_path, input_file_name) ] + list(other_input_files),
                                      outputs = [ output_file_name ],

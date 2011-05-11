@@ -48,6 +48,14 @@ log = logging.getLogger("gc3.gc3libs")
 
 import gc3libs.exceptions
 
+
+# NG's default packages install arclib into /opt/nordugrid/lib/pythonX.Y/site-packages;
+# add this anyway in case users did not set their PYTHONPATH correctly
+import sys
+sys.path.append('/opt/nordugrid/lib/python%d.%d/site-packages' 
+                % sys.version_info[:2])
+
+
 # this needs to be defined before we import other GC3Libs modules, as
 # they may depend on it
 class Default(object):
@@ -67,7 +75,10 @@ class Default(object):
     JOBS_DIR = os.path.join(RCDIR, "jobs")
     
     ARC_LRMS = 'arc'
+    ARC0_LRMS = 'arc0'
+    ARC1_LRMS = 'arc1'
     ARC_CACHE_TIME = 30 #: only update ARC resources status every this seconds
+    ARC_JOBLIST_LOCATION = os.path.expandvars("$HOME/.arc/jobs.xml")
     
     SGE_LRMS = 'sge'
     # Transport information
@@ -903,7 +914,8 @@ class Application(Struct, Persistable, Task):
         if self.jobname:
             xrsl += '(jobname="%s")' % self.jobname
 
-        return xrsl
+        # force it to be ascii
+        return str(xrsl)
 
 
     def cmdline(self, resource):

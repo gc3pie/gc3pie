@@ -577,9 +577,12 @@ class Core:
             if _resource.name == resource_name:
                 # there's a matching resource
                 try:
-                    if _resource.type == gc3libs.Default.ARC_LRMS:
-                        from gc3libs.backends.arc import ArcLrms
+                    if _resource.type == gc3libs.Default.ARC0_LRMS:
+                        from gc3libs.backends.arc0 import ArcLrms
                         _lrms = ArcLrms(_resource, self.auths)
+                    if _resource.type == gc3libs.Default.ARC1_LRMS:
+                        from gc3libs.backends.arc1 import Arc1Lrms
+                        _lrms = Arc1Lrms(_resource, self.auths)
                     elif _resource.type == gc3libs.Default.SGE_LRMS:
                         _lrms = SgeLrms(_resource, self.auths)
                     elif _resource.type == gc3libs.Default.FORK_LRMS:
@@ -636,7 +639,8 @@ def get_resources(resources_list):
                                key, str(x))
             continue
         if tmpres.type not in [
-            gc3libs.Default.ARC_LRMS,
+            gc3libs.Default.ARC0_LRMS,
+            gc3libs.Default.ARC1_LRMS,
             gc3libs.Default.SGE_LRMS,
             gc3libs.Default.FORK_LRMS,
             gc3libs.Default.SUBPROCESS_LRMS,
