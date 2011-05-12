@@ -50,9 +50,9 @@ class ArcLrms(LRMS):
     """
     def __init__(self,resource, auths):
         # Normalize resource types
-        assert resource.type == gc3libs.Default.ARC_LRMS, \
-            "ArcLRMS.__init__(): Failed. Resource type expected 'arc'. Received '%s'" \
-            % resource.type
+        assert resource.type == gc3libs.Default.ARC0_LRMS, \
+            "ArcLRMS.__init__(): Failed. Resource type expected '%s'. Received '%s'" \
+            % (gc3libs.Default.ARC0_LRMS, resource.type)
 
         self._resource = resource
 
