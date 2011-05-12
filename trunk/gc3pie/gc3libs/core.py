@@ -638,6 +638,10 @@ def get_resources(resources_list):
                               " Please check configuration file.",
                                key, str(x))
             continue
+        if tmpres.type == 'arc':
+            gc3libs.log.warning("Resource type 'arc' was renamed to 'arc0',"
+                                " please update your configuration file.")
+            tmpres.type = ARC0_LRMS
         if tmpres.type not in [
             gc3libs.Default.ARC0_LRMS,
             gc3libs.Default.ARC1_LRMS,

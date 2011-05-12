@@ -64,7 +64,11 @@ def _compatible_resources(lrms_list, application):
                              % (lrms._resource.name, application.requested_walltime, lrms._resource.max_walltime))
             continue
         # if upload to remote site requested, check that the backend supports it
-        if (application.output_base_url is not None and lrms._resource.type != gc3libs.Default.ARC_LRMS):
+        if (application.output_base_url is not None
+            and lrms._resource.type not in [
+                gc3libs.Default.ARC0_LRMS,
+                gc3libs.Default.ARC1_LRMS,
+                ]):
             gc3libs.log.info("Rejecting resource '%s': no support for non-local output files."
                              % lrms._resource.name)
             continue
