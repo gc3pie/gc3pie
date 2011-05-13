@@ -74,7 +74,6 @@ class Default(object):
         ]
     JOBS_DIR = os.path.join(RCDIR, "jobs")
     
-    ARC_LRMS = 'arc'
     ARC0_LRMS = 'arc0'
     ARC1_LRMS = 'arc1'
     ARC_CACHE_TIME = 30 #: only update ARC resources status every this seconds
