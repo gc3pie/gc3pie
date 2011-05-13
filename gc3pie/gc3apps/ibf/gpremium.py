@@ -107,7 +107,7 @@ class GPremiumApplication(Application):
                     except:
                         pass
             ofile.close()
-            if self.hasattr('FamaFrenchBeta'):
+            if hasattr(self, 'FamaFrenchBeta'):
                 self.execution.exitcode = 0
                 self.info = ("FamaFrenchBeta: %.6f" % self.FamaFrenchBeta)
             elif self.execution.exitcode == 0:
