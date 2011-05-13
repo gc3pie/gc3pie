@@ -73,6 +73,8 @@ class Default(object):
         os.path.join(RCDIR, "gc3pie.conf")
         ]
     JOBS_DIR = os.path.join(RCDIR, "jobs")
+
+    ARC1_DEFAULT_INTERNAL_LOG = os.path.join(RCDIR, "arc1.log")
     
     ARC0_LRMS = 'arc0'
     ARC1_LRMS = 'arc1'

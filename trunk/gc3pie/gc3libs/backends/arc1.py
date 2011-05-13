@@ -65,14 +65,34 @@ class Arc1Lrms(LRMS):
 
         # XXX: do we need a way to setup non-default UserConfig?
         self._usercfg = arc.UserConfig("", "")
+        self._usercfg.ClearSelectedServices()
+        if not self._usercfg.AddServices([self._resource.arc_ldap], arc.COMPUTING):
+        	log.error('Failed while adding computing service [%s]' % self._resource.frontend)
 
+        # XXX: have to check whether and how to hanlde the arc logging
+        # shall we simply disable it ?
+        # several internal logging information could be usefull 
+        # for debugging as the new arc libraries
+        # do not provide exception nor detailed information
+        # about failurs
         # set up libarcclient logging
         arc_rootlogger = arc.Logger_getRootLogger()
         arc_logger = arc.Logger(arc_rootlogger, self._resource.name)
         arc_logger_dest = arc.LogStream(sys.stderr) # or open(os.devnull, 'w')
         arc_rootlogger.addDestination(arc_logger_dest)
         arc_rootlogger.setThreshold(arc.DEBUG) # or .VERBOSE, .INFO, .WARNING, .ERROR
-        
+
+        # Initialize the required ARC1 components
+        log.info('Invoking arc.JobSupervisor')
+        self._jobsupervisor = arc.JobSupervisor(self._usercfg, [])
+        # XXX: we need to get what 'middleware' each controller can control
+        log.info('Invoking arc.JobSupervisor.GetJobControllers')
+        self._controllers = self._jobsupervisor.GetJobControllers()
+        # XXX: can we also create the target ?
+        log.info('Invoking arc.TargetGenerator')
+        self._target_generator = arc.TargetGenerator(self._usercfg, 0)
+                
+        log.info('LRMS ARC1 init [ ok ]')
         self.isValid = 1
 
     def is_valid(self):
@@ -83,7 +103,15 @@ class Arc1Lrms(LRMS):
     def cancel_job(self, app):
         self.auths.get(self._resource.auth)
         controller, job = self._get_job_and_controller(app.execution.lrms_jobid)
-        controller.Cancel(job)
+        try:
+            log.info("Calling arc.JobController.Cancel(job)")
+            if not controller.Cancel(job):
+                raise gc3libs.exceptions.LRMSError('arc.JobController.Cancel returned False')
+        except Exception, ex:
+            gc3libs.log.error('Failed while killing job. Error type %s, message %s' % (ex.__class__,str(ex)))
+            raise gc3libs.exceptions.LRMSError('Failed while killing job. Error type %s, message %s' % (ex.__class__,str(ex)))
+
+
 
 
     # ARC refreshes the InfoSys every 30 seconds by default;
@@ -93,8 +121,18 @@ class Arc1Lrms(LRMS):
         """
         Wrapper around `arc.TargetGenerator.GetTargets()`.
         """
-        tg = arc.TargetGenerator(self._usercfg, 1)
-        return tg.FoundTargets()
+        # tg = arc.TargetGenerator(self._usercfg, 1)
+        # return tg.FoundTargets()
+        # This methodd should spawn the ldapsearch to update the ExecutionTager information
+        log.info('Calling arc.TargetGenerator.RetrieveExecutionTargets')
+        self._target_generator.RetrieveExecutionTargets()
+
+        log.info('Calling arc.TargetGenerator.GetExecutionTargets()')
+        return self._target_generator.GetExecutionTargets()
+        # execution_targets = self._target_generator.GetExecutionTargets()
+        # for target in execution_targets:
+        #     self._execution_targets{target.GridFlavour} = target
+	# return self._execution_targets
 
 
     # ARC refreshes the InfoSys every 30 seconds by default;
@@ -104,11 +142,13 @@ class Arc1Lrms(LRMS):
         """
         Iterate over all jobs.
         """
-        jobsuper = arc.JobSupervisor(self._usercfg, [])
-        controllers = jobsuper.GetJobControllers()
-        for c in controllers:
+        # jobsuper = arc.JobSupervisor(self._usercfg, [])
+        # controllers = jobsuper.GetJobControllers()
+        for c in self._controllers:
+            log.info("Calling JobController.GetJobInformation()")
             c.GetJobInformation()
-        return itertools.chain(* [c.GetJobs() for c in controllers])
+        log.info("Calling JobController.GetJobs() for %d times" % len(self._controllers))
+        return itertools.chain(* [c.GetJobs() for c in self._controllers])
 
 
     def _get_job(self, jobid):
@@ -125,13 +165,25 @@ class Arc1Lrms(LRMS):
         corresponding to the given `jobid` and `c` is the
         corresponding `arc.JobController`.
         """
-        jobsuper = arc.JobSupervisor(self._usercfg, [])
-        controllers = jobsuper.GetJobControllers()
+
+        """
+        jobmaster = arc.JobSupervisor(usercfg, []);
+        jobcontrollers = jobmaster.GetJobControllers();
+        """
+
+        # jobsuper = arc.JobSupervisor(self._usercfg, [])
+        # controllers = jobsuper.GetJobControllers()
         # update job information
-        for c in controllers:
-            c.GetJobInformation()
-        for c in controllers:
-            for j in c.GetJobs():
+
+        self._iterjobs()
+
+        #for c in self._controllers:
+        #    log.info("Calling JobController.GetJobInformation() in get_job_and_controller")
+        #    c.GetJobInformation()
+        for c in self._controllers:
+            log.info("Calling JobController.GetJobs in get_job_and_controller")
+            jl = c.GetJobs()
+            for j in jl:
                 if j.JobID.str() == jobid:
                     # found, clean remote job sessiondir
                     return (c, j)
@@ -149,24 +201,36 @@ class Arc1Lrms(LRMS):
         log.debug("Application provided XRSL: %s" % xrsl)
 
         jd = arc.JobDescription()
-        jd.Parse(xrsl)
+        jobdesclang = "nordugrid:xrsl"
+        log.info("Calling arc.JobDescription.Parse")
+        arc.JobDescription.Parse(jd, xrsl, jobdesclang)
+        # JobDescription::Parse(const std::string&, std::list<JobDescription>&, const std::string&, const std::string&) method instead.
+
 
         # perform brokering
-        tg = arc.TargetGenerator(self._usercfg, 1)
+        # tg = arc.TargetGenerator(self._usercfg, 1)
+        log.info("Calling arc.BrokerLoader")
         ld = arc.BrokerLoader()
         broker = ld.load("Random", self._usercfg)
-        broker.PreFilterTargets(tg.GetExecutionTargets(), jd)
+        # broker.PreFilterTargets(tg.GetExecutionTargets(), jd)
+        log.info("Calling arc.Broker.PreFilterTargets")
+        broker.PreFilterTargets(self._get_targets(), jd)
+
         
         submitted = False
         tried = 0
         j = arc.Job()
         while True:
+            log.info("Calling arc.Broker.GetBestTarget")
             target = broker.GetBestTarget()
             if not target:
                 break
+            log.info("Calling arc.ExecutionTarget.Submit")
             submitted = target.Submit(self._usercfg, jd, j)
             if not submitted:
                 continue
+            # XXX: this is necessary as the other component of arc library seems to refer to the job.xml file
+            # hopefully will be fixed soon
             j.WriteJobsToFile(gc3libs.Default.ARC_JOBLIST_LOCATION, [j])
             job.lrms_jobid = j.JobID.str()
             return jd
@@ -256,9 +320,10 @@ class Arc1Lrms(LRMS):
                 "No job found with ID: [%s]" % job.lrms_jobid)
 
         # update status
+        log.debug("Mapping on ARC1 job status %s" % arc_job.State.GetGeneralState())
         state = map_arc_status_to_gc3job_status(arc_job.State)
         if arc_job.ExitCode != -1:
-            job.returncode = arc_job.exitcode
+            job.returncode = arc_job.ExitCode
         elif state in [Run.State.TERMINATING, Run.State.TERMINATING] and job.returncode is None:
             # XXX: it seems that ARC does not report the job exit code
             # (at least in some cases); let's make one up based on
@@ -339,15 +404,32 @@ class Arc1Lrms(LRMS):
         c, j = self._get_job_and_controller(job.lrms_jobid)
         
         log.debug("Downloading job output into '%s' ...", download_dir)
-        c.GetJob(j, download_dir, True, True)
+        log.info("Calling Jobcontroller.GetJob")
+        c.GetJob(j, download_dir, False, True)
         job.download_dir = download_dir
 
+        # jobsuper = arc.JobSupervisor(self._usercfg, [])
+        # controllers = jobsuper.GetJobControllers()
+        # # update job information
+        # for c in controllers:
+        #     c.GetJobInformation()
+        # for c in controllers:
+        #     jl = c.GetJobs()
+        #     for j in jl:
+        #         if j.JobID.str() == job.lrms_jobid:
+        #             log.info('Found job %s' %j.JobID.str())
+        #             # found, clean remote job sessiondir
+        #             c.GetJob(j, download_dir, False, False)
+        #             break
+        # job.download_dir = download_dir
 
     @same_docstring_as(LRMS.free)
     def free(self, app):
         self.auths.get(self._resource.auth)
         controller, job = self._get_job_and_controller(app.execution.lrms_jobid)
-        controller.Clean(job)
+        log.info("Calling JobController.CleanJob")
+        if not controller.CleanJob(job):
+        	log.error('arc1.JobController.CleanJob returned False')
 
 
     @cache_for(gc3libs.Default.ARC_CACHE_TIME)
@@ -421,42 +503,44 @@ class Arc1Lrms(LRMS):
 
     @same_docstring_as(LRMS.peek)
     def peek(self, app, remote_filename, local_file, offset=0, size=None):
-        job = app.execution
+        pass
 
-        assert job.has_key('lrms_jobid'), \
-            "Missing attribute `lrms_jobid` on `Job` instance passed to `ArcLrms.peek`."
+        # job = app.execution
 
-        self.auths.get(self._resource.auth)
+        # assert job.has_key('lrms_jobid'), \
+        #     "Missing attribute `lrms_jobid` on `Job` instance passed to `ArcLrms.peek`."
 
-        if size is None:
-            size = sys.maxint
+        # self.auths.get(self._resource.auth)
 
-        # XXX: why on earth?
-        # if int(offset) < 1024:
-        #     offset = 0
+        # if size is None:
+        #     size = sys.maxint
 
-        _remote_filename = job.lrms_jobid + '/' + remote_filename
+        # # XXX: why on earth?
+        # # if int(offset) < 1024:
+        # #     offset = 0
 
-        # get JobFTPControl handle
-        jftpc = arclib.JobFTPControl()
+        # _remote_filename = job.lrms_jobid + '/' + remote_filename
 
-        # download file
-        log.debug("Downloading max %d bytes at offset %d of remote file '%s' into local file '%s' ..."
-                  % (size, offset, remote_filename, local_file.name))
+        # # get JobFTPControl handle
+        # jftpc = arclib.JobFTPControl()
 
-        # XXX: why this ? Because `local_file` could be a file name
-        # (string) or a file-like object, as per function docstring.
-        try:
-           local_file_name = local_file.name
-        except AttributeError:
-           local_file_name = local_file
+        # # download file
+        # log.debug("Downloading max %d bytes at offset %d of remote file '%s' into local file '%s' ..."
+        #           % (size, offset, remote_filename, local_file.name))
 
-        arclib.JobFTPControl.Download(jftpc, 
-                                      arclib.URL(_remote_filename), 
-                                      int(offset), int(size), 
-                                      local_file.name)
+        # # XXX: why this ? Because `local_file` could be a file name
+        # # (string) or a file-like object, as per function docstring.
+        # try:
+        #    local_file_name = local_file.name
+        # except AttributeError:
+        #    local_file_name = local_file
 
-        log.debug("ArcLRMS.peek(): arclib.JobFTPControl.Download: completed")
+        # arclib.JobFTPControl.Download(jftpc, 
+        #                               arclib.URL(_remote_filename), 
+        #                               int(offset), int(size), 
+        #                               local_file.name)
+
+        # log.debug("ArcLRMS.peek(): arclib.JobFTPControl.Download: completed")
 
 
 ## main: run tests
