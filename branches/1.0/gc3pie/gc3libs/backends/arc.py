@@ -247,18 +247,18 @@ class ArcLrms(LRMS):
                 job.log("ARC reported error: %s" % arc_job.errors)
                 job.returncode = (Run.Signals.RemoteError, -1)
             # XXX: we should introduce a kind of "wrong requirements" error
-            elif arc_job.requested_wall_time > -1 and arc_job.used_wall_time > -1 and arc_job.used_wall_time >= arc_job.requested_wall_time:
+            elif arc_job.requested_wall_time > -1 and arc_job.used_wall_time > -1 and arc_job.used_wall_time > arc_job.requested_wall_time:
                 job.log("Job exceeded requested wall-clock time (%d s),"
                         " killed by remote batch system" 
                         % arc_job.requested_wall_time)
                 job.returncode = (Run.Signals.RemoteError, -1)
-            elif arc_job.requested_cpu_time > -1 and arc_job.used_cpu_time > -1 and arc_job.used_cpu_time >= arc_job.requested_cpu_time:
+            elif arc_job.requested_cpu_time > -1 and arc_job.used_cpu_time > -1 and arc_job.used_cpu_time > arc_job.requested_cpu_time:
                 job.log("Job exceeded requested CPU time (%d s),"
                         " killed by remote batch system" 
                         % arc_job.requested_wall_time)
                 job.returncode = (Run.Signals.RemoteError, -1)
             # note: arc_job.used_memory is in KiB (!), app.requested_memory is in GiB
-            elif app.requested_memory > 0 and arc_job.used_memory > -1 and (arc_job.used_memory / 1024) >= (app.requested_memory * 1024):
+            elif app.requested_memory > 0 and arc_job.used_memory > -1 and (arc_job.used_memory / 1024) > (app.requested_memory * 1024):
                 job.log("Job used more memory (%d GB) than requested (%d GB),"
                         " killed by remote batch system" 
                         % (arc_job.used_memory / 1024 / 1024, app.requested_memory))
