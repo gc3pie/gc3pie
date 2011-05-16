@@ -1439,6 +1439,107 @@ class Run(Struct):
     # `Run.Signals` is an instance of global class `_Signals`
     Signals = _Signals()    
 
+
+
+class RetryableTask(Task):
+    """
+    Wrap a `Task` instance and re-submit it until a specified
+    termination condition is met.
+
+    By default, the re-submission upon failure happens iff execution
+    terminated with nonzero return code; the failed task is retried up
+    to `self.max_retries` times (indefinitely if `self.max_retries` is 0).
+
+    Override the `retry` method to implement a different retryal policy.
+
+    *Note:* The resubmission code is implemented in the
+    `terminated`:meth:, so be sure to call it if you ovverride in
+    derived classes.
+    """
+
+    def __init__(self, jobname, task, max_retries=0, **kw):
+        """
+        Wrap `task` and resubmit it until `self.retry()` returns `False`.
+
+        :param Task task: A `Task` instance that should be retried.
+
+        :param str jobname: The string identifying this `Task`
+            instance, see `Task`:class:.
+
+        :param int max_retries: Maximum number of times `task` should be
+            re-submitted; use 0 for "no limit".
+        """
+        self.max_retries = max_retries
+        self.retried = 0
+        self.task = task
+        Task.__init__(self, jobname, **kw)
+
+
+    def retry(self):
+        """
+        Return `True` or `False`, depending on whether the failed task
+        should be re-submitted or not.
+
+        The default behavior is to retry a task iff its execution
+        terminated with nonzero returncode and the maximum retry limit
+        has not been reached.  If `self.max_retries` is 0, then the
+        dependent task is retried indefinitely.
+
+        Override this method in subclasses to implement a different
+        policy.
+        """
+        if (self.task.execution.returncode != 0
+            and ((self.max_retries > 0
+                  and self.retried < self.max_retries)
+                 or self.max_retries == 0)):
+            return True
+        else:
+            return False
+
+    def attach(self, grid):
+        Task.attach(self, grid)
+        self.task.attach(grid)
+
+    def detach(self):
+        Task.detach(self)
+        self.task.detach()
+
+    def fetch_output(self, *args, **kw):
+        self.task.fetch_output(*args, **kw)
+
+    def free(self, **kw):
+        self.task.free(**kw)
+
+    def kill(self, **kw):
+        self.task.kill(**kw)
+
+    def peek(self, *args, **kw):
+        return self.task.peek(*args, **kw)
+
+    def submit(self, **kw):
+        self.task.submit(**kw)
+
+    def update_state(self):
+        """
+        Update the state of the dependent task, then resubmit it if it's
+        TERMINATED and `self.retry()` is `True`.
+        """
+        self.task.update_state()
+        state = self.task.execution.state
+        if state == Run.State.TERMINATED:
+            if self.retry():
+                self.retried += 1
+                self.task.submit()
+            self.execution.state = self.task.execution.state
+        elif state == Run.State.TERMINATING:
+            if hasattr(self, 'output_dir'):
+                self.task.fetch_output(output_dir=self.output_dir)
+            else:
+                self.task.fetch_output()
+        else:
+            self.execution.state = state
+
+        
         
 ## main: run tests
 
