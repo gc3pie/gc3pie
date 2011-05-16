@@ -66,8 +66,19 @@ class Arc1Lrms(LRMS):
         # XXX: do we need a way to setup non-default UserConfig?
         self._usercfg = arc.UserConfig("", "")
         self._usercfg.ClearSelectedServices()
-        if not self._usercfg.AddServices([self._resource.arc_ldap], arc.COMPUTING):
-        	log.error('Failed while adding computing service [%s]' % self._resource.frontend)
+        # if not self._usercfg.AddServices([self._resource.arc_ldap], arc.COMPUTING):
+        #    log.error('Failed while adding computing service [%s]' % self._resource.frontend)
+
+        if "INDEX" in self._resource.arc_ldap:
+            # add index service
+            if not self._usercfg.AddServices([self._resource.arc_ldap.split("INDEX:")[1]], arc.INDEX):
+                log.error('Failed while adding INDEX service [%s]' % self._resource.frontend)
+        elif "COMPUTING" in self._resource.arc_ldap:
+            if not self._usercfg.AddServices([self._resource.arc_ldap.split("COMPUTING:")[1]], arc.COMPUTING):
+                log.error('Failed while adding computing service [%s]' % self._resource.frontend)
+        else:
+            log.error("Unknown ARC Service type '%s'. Valid prefix are: INDEX, COMPUTING"
+                      % self._resource.arc_ldap)
 
         # XXX: have to check whether and how to hanlde the arc logging
         # shall we simply disable it ?
