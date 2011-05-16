@@ -51,15 +51,18 @@ def _compatible_resources(lrms_list, application):
                                 str.join(', ', [str(arch) for arch in lrms._resource.architecture ])))
             continue
         # check that Application requirements are within resource limits
-        if int(application.requested_cores) > int(lrms._resource.max_cores_per_job or sys.maxint):
+        if (application.requested_cores is not None
+            and int(application.requested_cores) > int(lrms._resource.max_cores_per_job or sys.maxint)):
             gc3libs.log.info("Rejecting resource '%s': requested more cores (%d) that resource provides (%d)"
                              % (lrms._resource.name, application.requested_cores, lrms._resource.max_cores_per_job))
             continue
-        if int(application.requested_memory) > int(lrms._resource.max_memory_per_core or sys.maxint):
+        if (application.requested_memory is not None
+            and int(application.requested_memory) > int(lrms._resource.max_memory_per_core or sys.maxint)):
             gc3libs.log.info("Rejecting resource '%s': requested more memory per core (%d GB) that resource provides (%d GB)"
                              % (lrms._resource.name, application.requested_memory, lrms._resource.max_memory_per_core))
             continue
-        if int(application.requested_walltime) > int(lrms._resource.max_walltime or sys.maxint):
+        if (application.requested_walltime is not None
+            and int(application.requested_walltime) > int(lrms._resource.max_walltime or sys.maxint):
             gc3libs.log.info("Rejecting resource '%s': requested a longer duration (%d s) that resource provides (%d s)"
                              % (lrms._resource.name, application.requested_walltime, lrms._resource.max_walltime))
             continue
