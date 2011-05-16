@@ -62,7 +62,7 @@ def _compatible_resources(lrms_list, application):
                              % (lrms._resource.name, application.requested_memory, lrms._resource.max_memory_per_core))
             continue
         if (application.requested_walltime is not None
-            and int(application.requested_walltime) > int(lrms._resource.max_walltime or sys.maxint):
+            and int(application.requested_walltime) > int(lrms._resource.max_walltime or sys.maxint)):
             gc3libs.log.info("Rejecting resource '%s': requested a longer duration (%d s) that resource provides (%d s)"
                              % (lrms._resource.name, application.requested_walltime, lrms._resource.max_walltime))
             continue
