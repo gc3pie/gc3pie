@@ -580,7 +580,7 @@ class Core:
                     if _resource.type == gc3libs.Default.ARC0_LRMS:
                         from gc3libs.backends.arc0 import ArcLrms
                         _lrms = ArcLrms(_resource, self.auths)
-                    if _resource.type == gc3libs.Default.ARC1_LRMS:
+                    elif _resource.type == gc3libs.Default.ARC1_LRMS:
                         from gc3libs.backends.arc1 import Arc1Lrms
                         _lrms = Arc1Lrms(_resource, self.auths)
                     elif _resource.type == gc3libs.Default.SGE_LRMS:
@@ -641,7 +641,7 @@ def get_resources(resources_list):
         if tmpres.type == 'arc':
             gc3libs.log.warning("Resource type 'arc' was renamed to 'arc0',"
                                 " please update your configuration file.")
-            tmpres.type = ARC0_LRMS
+            tmpres.type = gc3libs.Default.ARC0_LRMS
         if tmpres.type not in [
             gc3libs.Default.ARC0_LRMS,
             gc3libs.Default.ARC1_LRMS,
