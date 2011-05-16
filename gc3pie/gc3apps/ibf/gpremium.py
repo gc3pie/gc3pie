@@ -23,6 +23,8 @@ __version__ = '$Revision$'
 __author__ = 'Riccardo Murri <riccardo.murri@uzh.ch>'
 # summary of user-visible changes
 __changelog__ = """
+  2011-05-16:
+    * New "-X" command-line option for setting the binary architecture.
   2011-05-06:
     * Workaround for Issue 95: now we have complete interoperability
       with GC3Utils.
@@ -471,6 +473,10 @@ Read `.loop` files and execute the `forwardPremium` program accordingly.
                            os.getcwd(), "forwardPremiumOut"),
                        help="Path to the `forwardPremium` executable binary"
                        "(Default: %(default)s)")
+        self.add_param("-X", "--architecture", metavar="ARCH",
+                       dest="architecture", default=Run.Arch.X86_64,
+                       help="Processor architecture required by the executable"
+                       " (one of: 'i686' or 'x86_64', without quotes)")
 
 
     def parse_args(self):
@@ -686,7 +692,7 @@ Read `.loop` files and execute the `forwardPremium` program accordingly.
                 kwargs['stdout'] = 'forwardPremiumOut.log'
                 kwargs['join'] = True
                 kwargs['output_dir'] = os.path.join(path_to_stage_dir, 'output')
-                kwargs['requested_architecture'] = Run.Arch.X86_64
+                kwargs['requested_architecture'] = self.params.architecture
                 # hand over job to create
                 yield (jobname, gpremium.GPremiumApplication,
                        ['./' + executable, [], inputs, outputs], kwargs) 
