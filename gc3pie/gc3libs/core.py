@@ -308,7 +308,7 @@ class Core:
                                     app.execution.info = ("Remote job terminated by signal %d" % signal)
                                 else:
                                     app.execution.info = ("Remote job exited with code %d" 
-                                                          % self.execution.exitcode)
+                                                          % app.execution.exitcode)
                     if state != Run.State.UNKNOWN or update_on_error:
                         app.execution.state = state
             except (gc3libs.exceptions.InvalidArgument, gc3libs.exceptions.ConfigurationError):
