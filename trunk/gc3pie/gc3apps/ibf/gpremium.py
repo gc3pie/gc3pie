@@ -687,7 +687,11 @@ Read `.loop` files and execute the `forwardPremium` program accordingly.
                 for dirpath,dirnames,filenames in os.walk(input_dir):
                     for filename in filenames:
                         # cut the leading part, which is == to path_to_stage_dir
-                        remote_path = os.path.join(dirpath[prefix_len:], filename)
+                        relpath = dirpath[prefix_len:]
+                        # ignore output directory contents in resubmission
+                        if relpath.startswith('output'):
+                            continue
+                        remote_path = os.path.join(relpath, filename)
                         inputs[os.path.join(dirpath, filename)] = remote_path
                 # all contents of the `output` directory are to be fetched
                 outputs = { 'output/':'' }
