@@ -1,3 +1,24 @@
 = Presentations =
 
-* [https://gc3pie.googlecode.com/svn/wiki/ZCAM_workshop_20100923_final.pptm Slides] presented at [http://neptuno.unizar.es/events/qcdatabases2010/ Databases in Quantum Chemistry] workshop held September 22-25, 2010 in Zaragoza, Spain.
+
+== GC3Libs overview and programming examples ==
+
+The following slides focus on GC3Libs programming. (Listed in reverse
+chronological order.)
+
+  * Presentation of GC3Pie and GC3Libs ([http://gc3pie.googlecode.com/svn/wiki/slides/ng2011-2011.05/gc3pie-ng2011.pdf PDF]) at the [http://indico.hep.lu.se/conferenceDisplay.py?confId=1047 NorduGrid conference 2011].
+  * Introduction to GC3Pie and its programming model ([http://gc3pie.googlecode.com/svn/wiki/slides/grid-school-trieste-2011.04/trieste.html HTML], [http://gc3pie.googlecode.com/svn/wiki/slides/grid-school-trieste-2011.04/trieste.pdf PDF]); slides presented at the [http://cdsagenda5.ictp.trieste.it/full_display.php?ida=a10135 Advanced School on High Performance and Grid Computing] at [http://www.ictp.it ICTP Trieste].
+  * Introduction to GC3Libs programming ([http://gc3pie.googlecode.com/svn/wiki/slides/smscg-meeting-2011.03/lausanne.html HTML], [http://gc3pie.googlecode.com/svn/wiki/slides/smscg-meeting-2011.03/lausanne.pdf PDF]); slides presented at the [http://www.smscg.ch/WP/management/meetings/ SMSCG Project meeting 2011].
+  * Introduction to GC3Libs programming ([http://gc3pie.googlecode.com/svn/wiki/slides/selectome-lausanne-2011.02/lausanne.html HTML], [http://gc3pie.googlecode.com/svn/wiki/slides/selectome-lausanne-2011.02/lausanne.pdf PDF]); slides presented at a private meeting with the [http://wiki.isb-sib.ch/grid-selectome/ Selectome] developers.
+
+
+== Specific applications ==
+
+These presentations cover specific tools built on top of GC3Pie, or
+applications of GC3Pie to research in a specific domain.
+
+=== GC3Pie for computational chemistry ===
+
+  * [http://gc3pie.googlecode.com/svn/wiki/slides/kb-2011.05/gc3pie-for-compchem.pdf Three tools for high-throughput computing with GAMESS (PDF)]. Slides presented at a [http://www.oci.uzh.ch/group.pages/baldridge/index.php Baldridge Research Group] meeting, May 2011.
+  * [http://gc3pie.googlecode.com/svn/wiki/slides/sgd2010/grundb.pdf GRunDB: a tool for validating QM algorithms in GAMESS-US (PDF)]. Slides presented at the [http://www.swing-grid.ch/event/242148-swiss-grid-day-2010 Swiss Grid day 2010].
+  * Presentation of GC3Pie and related tools for high-throughput computational chemistry ([http://gc3pie.googlecode.com/svn/wiki/slides/zcam-zaragoza-2010.09/ZCAM_workshop_20100923_final.pptm PowerPoint PPT slides]) presented at [http://neptuno.unizar.es/events/qcdatabases2010/ Databases in Quantum Chemistry] workshop held September 22-25, 2010 in Zaragoza, Spain. 
