@@ -11,6 +11,7 @@ gc3libs.authentication.grid mod api.html
 gc3libs.InformationContainer mod api.html
 gc3libs mod api.html
 gc3libs.backends.transport mod api.html
+gc3libs.dag mod api.html
 gc3libs.persistence mod api.html
 gc3libs.Exceptions mod api.html
 gc3libs.backends mod api.html
@@ -34,6 +35,7 @@ gc3libs.backends.arc.ArcLrms.get_results method api.html
 gc3libs.Application class api.html
 gc3libs.Application.clone method api.html
 gc3libs.backends.LRMS class api.html
+gc3libs.dag.SequentialTaskCollection.progress method api.html
 gc3libs.backends.LRMS.get_resource_status method api.html
 gc3libs.backends.sge.SgeLrms.get_resource_status method api.html
 gc3libs.backends.LRMS.peek method api.html
@@ -53,16 +55,18 @@ gc3libs.persistence.Store.list method api.html
 gc3libs.Exceptions.OutputNotAvailableError exception api.html
 gc3utils.gcmd.main function api.html
 gc3libs.persistence.Id.reserve staticmethod api.html
-gc3libs.application.get function api.html
+gc3libs.dag.SequentialTaskCollection.kill method api.html
 gc3libs.backends.LRMS.get_results method api.html
 gc3libs.persistence.Persistable class api.html
 gc3libs.backends.sge.SgeLrms class api.html
 gc3libs.Application.update_job_state_error method api.html
 gc3libs.Exceptions.NoResources exception api.html
 gc3libs.application.gamess.GamessApplication.qgms method api.html
-gc3utils.commands.gtail function api.html
+gc3libs.dag.TaskCollection.add method api.html
 gc3utils.commands.ginfo function api.html
+gc3libs.dag.ParallelTaskCollection class api.html
 gc3libs.Task.DetachedFromGridError exception api.html
+gc3libs.dag.ParallelTaskCollection.kill method api.html
 gc3libs.persistence.Store.remove method api.html
 gc3libs.utils.same_docstring_as function api.html
 gc3libs.Exceptions.FatalError exception api.html
@@ -72,13 +76,18 @@ gc3libs.backends.LRMS.free method api.html
 gc3libs.utils.Log class api.html
 gc3libs.backends.sge.SgeLrms.update_job_state method api.html
 gc3utils.commands.gsub function api.html
+gc3libs.application.get function api.html
 gc3libs.utils.PlusInfinity class api.html
 gc3libs.backends.sge.compute_nr_of_slots function api.html
 gc3libs.Task.progress method api.html
+gc3libs.dag.TaskCollection class api.html
 gc3libs.utils.to_bytes function api.html
 gc3libs.Task.submit method api.html
+gc3libs.dag.TaskCollection.attach method api.html
 gc3libs.Application.running method api.html
+gc3libs.dag.TaskCollection.remove method api.html
 gc3libs.core.Engine.submit method api.html
+gc3libs.dag.ParallelTaskCollection.submit method api.html
 gc3libs.utils.Struct class api.html
 gc3libs.Exceptions.UnknownJobState exception api.html
 gc3libs.backends.sge.SgeLrms.peek method api.html
@@ -90,7 +99,9 @@ gc3libs.utils.Log.last method api.html
 gc3utils.commands.gclean function api.html
 gc3utils.commands.gresub function api.html
 gc3libs.Application.cmdline method api.html
+gc3libs.dag.TaskCollection.update method api.html
 gc3libs.application.gamess.GamessApplication.qsub method api.html
+gc3libs.dag.TaskCollection.peek method api.html
 gc3libs.Exceptions.InputFileError exception api.html
 gc3utils.commands.gnotify function api.html
 gc3libs.Exceptions.NoConfigurationFile exception api.html
@@ -127,6 +138,7 @@ gc3libs.persistence.FilesystemStore.remove method api.html
 gc3libs.backends.sge.SgeLrms.submit_job method api.html
 gc3libs.Run.exitcode attribute api.html
 gc3libs.Task class api.html
+gc3utils.commands.gtail function api.html
 gc3utils.commands.gkill function api.html
 gc3libs.core.Engine.update_job_state method api.html
 gc3libs.backends.LRMS.submit_job method api.html
@@ -143,6 +155,7 @@ gc3libs.Application.submit_error method api.html
 gc3libs.persistence.FilesystemStore.load method api.html
 gc3libs.persistence.Store.replace method api.html
 gc3libs.utils.deploy_configuration_file function api.html
+gc3libs.dag.SequentialTaskCollection class api.html
 gc3libs.persistence.Store.load method api.html
 gc3libs.Exceptions.ConfigurationError exception api.html
 gc3libs.configure_logger function api.html
@@ -151,6 +164,7 @@ gc3libs.core.Engine.progress method api.html
 gc3libs.Run.returncode attribute api.html
 gc3libs.persistence.FilesystemStore.list method api.html
 gc3libs.utils.from_template function api.html
+gc3libs.dag.ParallelTaskCollection.progress method api.html
 gc3libs.Exceptions.InvalidArgument exception api.html
 gc3libs.backends.sge.parse_qstat_f function api.html
 gc3libs.authentication.NoneAuth class api.html
@@ -164,6 +178,7 @@ gc3libs.Task.detach method api.html
 gc3libs.persistence.FilesystemStore.Pickler class api.html
 gc3libs.utils.defproperty function api.html
 gc3libs.Application.terminated method api.html
+gc3libs.dag.TaskCollection.wait method api.html
 gc3libs.Task.UnexpectedStateError exception api.html
 gc3libs.backends.arc.ArcLrms class api.html
 gc3libs.Exceptions.InvalidUsage exception api.html
@@ -171,3 +186,4 @@ gc3libs.Exceptions.InvalidResourceName exception api.html
 gc3libs.persistence.FilesystemStore.save method api.html
 gc3libs.backends.arc.ArcLrms.get_resource_status method api.html
 gc3libs.utils.safe_repr function api.html
+gc3libs.dag.SequentialTaskCollection.next method api.html
