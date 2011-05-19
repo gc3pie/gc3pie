@@ -90,8 +90,11 @@ class GPremiumApplication(Application):
         if os.path.isdir(os.path.join(output_dir, 'output')):
             wrong_output_dir = os.path.join(output_dir, 'output')
             for entry in os.listdir(wrong_output_dir):
-                os.rename(os.path.join(wrong_output_dir, entry),
-                          os.path.join(output_dir, entry))
+                dest_entry = os.path.join(output_dir, entry)
+                if os.path.isdir(dest_entry):
+                    # backup with numerical suffix
+                    gc3libs.utils.backup(dest_entry)
+                os.rename(os.path.join(wrong_output_dir, entry), dest_entry)
         # set the exitcode based on postprocessing the main output file
         simulation_out = os.path.join(output_dir, 'simulation.out')
         if os.path.exists(simulation_out):
