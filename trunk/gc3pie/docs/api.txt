@@ -16,6 +16,11 @@
 .. automodule:: gc3libs.core
     :members:
 
+`gc3libs.dag`
+=============
+.. automodule:: gc3libs.dag
+    :members:
+
 `gc3libs.Default`
 =================
 .. warning:: 

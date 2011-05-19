@@ -849,6 +849,143 @@ return a <cite>(defaults, resources, auths)</cite> triple that can be passed
 to the <cite>Core</cite> class constructor.</dd></dl>
 
 </div>
+<div class="section" id="module-gc3libs.dag">
+<h2><cite>gc3libs.dag</cite><a class="headerlink" href="#module-gc3libs.dag" title="Permalink to this headline">¶</a></h2>
+<p>Implementation of task collections.</p>
+<p>Tasks can be grouped into collections, which are tasks themselves,
+therefore can be controlled (started/stopped/cancelled) like a single
+whole.  Collection classes provided in this module implement the basic
+patterns of job group execution; they can be combined to form more
+complex workflows.  Hook methods are provided so that derived classes
+can implement problem-specific job control policies.</p>
+<dl class="class">
+<dt id="gc3libs.dag.ParallelTaskCollection">
+<em class="property">class </em><tt class="descclassname">gc3libs.dag.</tt><tt class="descname">ParallelTaskCollection</tt><big>(</big><em>tasks=None</em>, <em>grid=None</em><big>)</big><a class="headerlink" href="#gc3libs.dag.ParallelTaskCollection" title="Permalink to this definition">¶</a></dt>
+<dd><p>A <cite>ParallelTaskCollection</cite> runs all of its tasks concurrently.</p>
+<p>The collection state is set to <cite>TERMINATED</cite> once all tasks have
+reached the same terminal status.</p>
+<dl class="method">
+<dt id="gc3libs.dag.ParallelTaskCollection.kill">
+<tt class="descname">kill</tt><big>(</big><big>)</big><a class="headerlink" href="#gc3libs.dag.ParallelTaskCollection.kill" title="Permalink to this definition">¶</a></dt>
+<dd>Terminate all tasks in the collection, and set collection
+state to <cite>TERMINATED</cite>.</dd></dl>
+
+<dl class="method">
+<dt id="gc3libs.dag.ParallelTaskCollection.progress">
+<tt class="descname">progress</tt><big>(</big><big>)</big><a class="headerlink" href="#gc3libs.dag.ParallelTaskCollection.progress" title="Permalink to this definition">¶</a></dt>
+<dd>Try to advance all jobs in the collection to the next state in
+a normal lifecycle.  Return list of task execution states.</dd></dl>
+
+<dl class="method">
+<dt id="gc3libs.dag.ParallelTaskCollection.submit">
+<tt class="descname">submit</tt><big>(</big><big>)</big><a class="headerlink" href="#gc3libs.dag.ParallelTaskCollection.submit" title="Permalink to this definition">¶</a></dt>
+<dd>Start all tasks in the collection.</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="gc3libs.dag.SequentialTaskCollection">
+<em class="property">class </em><tt class="descclassname">gc3libs.dag.</tt><tt class="descname">SequentialTaskCollection</tt><big>(</big><em>tasks</em>, <em>grid=None</em><big>)</big><a class="headerlink" href="#gc3libs.dag.SequentialTaskCollection" title="Permalink to this definition">¶</a></dt>
+<dd><p>A <cite>SequentialTaskCollection</cite> runs its tasks one at a time.</p>
+<p>After a task has completed, the <cite>next</cite> method is called with the
+index of the finished task in the <cite>self.tasks</cite> list; the return
+value of the <cite>next</cite> method is then made the collection
+<cite>execution.state</cite>.  If the returned state is <cite>RUNNING</cite>, then the
+subsequent task is started, otherwise no action is performed.</p>
+<p>The default <cite>next</cite> implementation just runs the tasks in the order
+they were given to the constructor, and sets the state to
+<cite>TERMINATED</cite> when all tasks have been run.</p>
+<dl class="method">
+<dt id="gc3libs.dag.SequentialTaskCollection.kill">
+<tt class="descname">kill</tt><big>(</big><big>)</big><a class="headerlink" href="#gc3libs.dag.SequentialTaskCollection.kill" title="Permalink to this definition">¶</a></dt>
+<dd>Stop execution of this sequence.  Kill currently-running task
+(if any), then set collection state to TERMINATED.</dd></dl>
+
+<dl class="method">
+<dt id="gc3libs.dag.SequentialTaskCollection.next">
+<tt class="descname">next</tt><big>(</big><em>index</em><big>)</big><a class="headerlink" href="#gc3libs.dag.SequentialTaskCollection.next" title="Permalink to this definition">¶</a></dt>
+<dd><p>Called when a job is finished; if <cite>Run.State.TERMINATED</cite> is
+returned, then no other jobs will be run; otherwise, the
+return value is assigned to <cite>execution.state</cite> and the next job
+in the <cite>self.tasks</cite> list is executed.</p>
+<p>The default implmentation runs the tasks in the order they
+were given to the constructor, and sets the state to
+terminated when all tasks have been run.  This method can (and
+should) be overridden in derived classes to implement policies
+for serial job execution.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="gc3libs.dag.SequentialTaskCollection.progress">
+<tt class="descname">progress</tt><big>(</big><big>)</big><a class="headerlink" href="#gc3libs.dag.SequentialTaskCollection.progress" title="Permalink to this definition">¶</a></dt>
+<dd>Sequentially advance tasks in the collection through all steps
+of a regular lifecycle.  When the last task transitions to
+TERMINATED state, the collection&#8217;s state is set to TERMINATED
+as well and this method becomes a no-op.  If during execution,
+any of the managed jobs gets into state <cite>STOPPED</cite> or
+<cite>UNKNOWN</cite>, then an exception <cite>Task.UnexpectedExecutionState</cite>
+is raised.</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="gc3libs.dag.TaskCollection">
+<em class="property">class </em><tt class="descclassname">gc3libs.dag.</tt><tt class="descname">TaskCollection</tt><big>(</big><em>tasks=None</em>, <em>grid=None</em><big>)</big><a class="headerlink" href="#gc3libs.dag.TaskCollection" title="Permalink to this definition">¶</a></dt>
+<dd><p>Base class for all task collections. A &#8220;task collection&#8221; is a
+group of tasks, that can be managed collectively as a single one.</p>
+<p>A task collection implements the same interface as the <cite>Task</cite>
+class, so you can use a <cite>TaskCollection</cite> everywhere a <cite>Task</cite> is
+required.  A task collection has a <cite>state</cite> attribute, which is an
+instance of <cite>gc3libs.Run.State</cite>; each concrete collection class
+decides how to deduce a collective state based on the individual
+task states.</p>
+<dl class="method">
+<dt id="gc3libs.dag.TaskCollection.add">
+<tt class="descname">add</tt><big>(</big><em>task</em><big>)</big><a class="headerlink" href="#gc3libs.dag.TaskCollection.add" title="Permalink to this definition">¶</a></dt>
+<dd>Add a task to the collection.</dd></dl>
+
+<dl class="method">
+<dt id="gc3libs.dag.TaskCollection.attach">
+<tt class="descname">attach</tt><big>(</big><em>grid</em><big>)</big><a class="headerlink" href="#gc3libs.dag.TaskCollection.attach" title="Permalink to this definition">¶</a></dt>
+<dd>Use the given Grid interface for operations on the job
+associated with this task.</dd></dl>
+
+<dl class="method">
+<dt id="gc3libs.dag.TaskCollection.peek">
+<tt class="descname">peek</tt><big>(</big><em>what</em>, <em>offset=0</em>, <em>size=None</em><big>)</big><a class="headerlink" href="#gc3libs.dag.TaskCollection.peek" title="Permalink to this definition">¶</a></dt>
+<dd>Raise a <cite>gc3libs.Exceptions.InvalidOperation</cite> error, as there
+is no meaningful semantics that can be defined for <cite>peek</cite> into
+a generic collection of tasks.</dd></dl>
+
+<dl class="method">
+<dt id="gc3libs.dag.TaskCollection.remove">
+<tt class="descname">remove</tt><big>(</big><em>task</em><big>)</big><a class="headerlink" href="#gc3libs.dag.TaskCollection.remove" title="Permalink to this definition">¶</a></dt>
+<dd>Remove a task from the collection.</dd></dl>
+
+<dl class="method">
+<dt id="gc3libs.dag.TaskCollection.update">
+<tt class="descname">update</tt><big>(</big><big>)</big><a class="headerlink" href="#gc3libs.dag.TaskCollection.update" title="Permalink to this definition">¶</a></dt>
+<dd>Update the running state of all managed tasks.</dd></dl>
+
+<dl class="method">
+<dt id="gc3libs.dag.TaskCollection.wait">
+<tt class="descname">wait</tt><big>(</big><em>interval=60</em><big>)</big><a class="headerlink" href="#gc3libs.dag.TaskCollection.wait" title="Permalink to this definition">¶</a></dt>
+<dd><p>Block until execution state reaches <cite>TERMINATED</cite>, then return
+a list of return codes.  Note that this does not automatically
+fetch the output.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Parameter:</th><td class="field-body"><em>integer interval</em> &#8211; Poll job state every this number of seconds</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</dd></dl>
+
+</div>
 <div class="section" id="module-gc3libs.Default">
 <h2><cite>gc3libs.Default</cite><a class="headerlink" href="#module-gc3libs.Default" title="Permalink to this headline">¶</a></h2>
 <div class="admonition warning">
@@ -2118,6 +2255,7 @@ gkill will try anyway to process all requests</dd></dl>
 <li><a class="reference external" href="#">GC3Libs modules</a><ul>
 <li><a class="reference external" href="#module-gc3libs"><cite>gc3libs</cite></a></li>
 <li><a class="reference external" href="#module-gc3libs.core"><cite>gc3libs.core</cite></a></li>
+<li><a class="reference external" href="#module-gc3libs.dag"><cite>gc3libs.dag</cite></a></li>
 <li><a class="reference external" href="#module-gc3libs.Default"><cite>gc3libs.Default</cite></a></li>
 <li><a class="reference external" href="#module-gc3libs.Exceptions"><cite>gc3libs.Exceptions</cite></a></li>
 <li><a class="reference external" href="#module-gc3libs.persistence"><cite>gc3libs.persistence</cite></a></li>
