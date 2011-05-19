@@ -7,8 +7,9 @@
   * [HTPie HTPie]
     ** [HTPieQuick Quick Reference]
     ** [InstallHTPie Installation]
-  * [http://gc3pie.googlecode.com/svn/trunk/gc3pie/docs/html/index.html GC3Libs API documentation]
-  * [http://gc3pie.googlecode.com/svn/trunk/gc3pie/docs/html/pylint_report.html Pylint Report]
-  * [Citations Citations]
+  * GC3Libs API documentation
+    ** [http://gc3pie.googlecode.com/svn/trunk/gc3pie/docs/html/index.html development version (trunk)]
+    ** [http://gc3pie.googlecode.com/svn/trunk/gc3pie/docs/html/index.html stable release (1.0)]
+  * [SlidesEtc Presentations, slides, etc.]
 
 [http://code.google.com/p/gc3pie/w/list Full list of GC3Pie wiki pages]
