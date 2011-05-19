@@ -684,26 +684,33 @@ def mkdir(path, mode=0777):
     if not os.path.exists(path):
         os.makedirs(path, mode)
 
-    
+
+def backup(path):
+    """
+    Rename the filesystem entry at `path` by appending a unique
+    numerical suffix.
+    """
+    parent_dir = os.path.dirname(path)
+    prefix = os.path.basename(path) + '.'
+    p = len(prefix)
+    suffix = 1
+    for name in [ x for x in os.listdir(parent_dir) if x.startswith(prefix) ]:
+        try:
+            n = int(name[p:])
+            suffix = max(suffix, n+1)
+        except ValueError:
+            # ignore non-numeric suffixes
+            pass
+    os.rename(path, "%s.%d" % (path, suffix))
+
+
 def mkdir_with_backup(path, mode=0777):
     """
     Like `os.makedirs`, but if `path` already exists, rename the
     existing one appending a `.NUMBER` suffix.
     """
     if os.path.isdir(path):
-        # directory exists; find a suitable extension and rename
-        parent_dir = os.path.dirname(path)
-        prefix = os.path.basename(path) + '.'
-        p = len(prefix)
-        suffix = 1
-        for name in [ x for x in os.listdir(parent_dir) if x.startswith(prefix) ]:
-            try:
-                n = int(name[p:])
-                suffix = max(suffix, n+1)
-            except ValueError:
-                # ignore non-numeric suffixes
-                pass
-        os.rename(path, "%s.%d" % (path, suffix))
+        backup(path)
     os.makedirs(path, mode)
 
 
