@@ -913,7 +913,13 @@ class Application(Struct, Persistable, Task):
             xrsl += '(jobname="%s")' % self.jobname
 
         # force it to be ascii
-        return str(xrsl)
+        try:
+            return str(xrsl)
+        except UnicodeError, ex:
+            raise gc3libs.exceptions.InvalidArgument(
+                "Cannot create ASCII xRSL job description"
+                " (Unicode characters in the `Application` object?): %s"
+                % str(ex))
 
 
     def cmdline(self, resource):
