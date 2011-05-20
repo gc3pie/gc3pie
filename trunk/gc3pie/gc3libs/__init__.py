@@ -846,7 +846,7 @@ class Application(Struct, Persistable, Task):
         # the leading `./`, so let us just remove it and hope for the best.
         xrsl= str.join(' ', [
                 '&',
-                '(executable="%s")' % utils.ifelse(self.executable.startswith('./')
+                '(executable="%s")' % utils.ifelse(self.executable.startswith('./'),
                                                    self.executable[2:],
                                                    self.executable),
                 '(gmlog=".arc")', # FIXME: should check if conflicts with any input/output files
