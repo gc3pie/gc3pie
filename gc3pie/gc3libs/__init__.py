@@ -841,9 +841,14 @@ class Application(Struct, Persistable, Task):
         the construction parameters; you should override this method
         to produce XRSL tailored to your application.
         """
+        # XXX: ARC0 seems to behave inconsistently if './something' is
+        # given as `executable`; however, commands run fine without
+        # the leading `./`, so let us just remove it and hope for the best.
         xrsl= str.join(' ', [
                 '&',
-                '(executable="%s")' % self.executable,
+                '(executable="%s")' % utils.ifelse(self.executable.startswith('./')
+                                                   self.executable[2:],
+                                                   self.executable),
                 '(gmlog=".arc")', # FIXME: should check if conflicts with any input/output files
                 ])
         # treat 'arguments' separately
