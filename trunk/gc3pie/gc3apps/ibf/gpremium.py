@@ -327,6 +327,7 @@ def str2vals(strIn):
     else:
         return str2mat(strIn)
 
+
 def format_newVal(newVal):
     if '.' in str(newVal):
         newValMat = '%.3f' % float(newVal)
@@ -338,7 +339,6 @@ def format_newVal(newVal):
             # then it's a string
             newValMat = newVal
     return newValMat
-     
 
 
 def update_parameter_in_file(path, varIn, paraIndex, newVal, regexIn):
@@ -654,9 +654,9 @@ Read `.loop` files and execute the `forwardPremium` program accordingly.
         
 
     def new_tasks(self, extra):
-        inputs = self._search_for_input_files(self.params.args)
+        all_inputs = self._search_for_input_files(self.params.args)
 
-        for path in inputs:
+        for path in all_inputs:
             para_loop = path
             path_to_base_dir = os.path.dirname(para_loop)
             self.log.debug("Processing loop file '%s' ...", para_loop)
