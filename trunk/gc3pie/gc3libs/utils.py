@@ -706,10 +706,10 @@ def backup(path):
 
 def mkdir_with_backup(path, mode=0777):
     """
-    Like `os.makedirs`, but if `path` already exists, rename the
-    existing one appending a `.NUMBER` suffix.
+    Like `os.makedirs`, but if `path` already exists and is not empty,
+    rename the existing one appending a `.NUMBER` suffix.
     """
-    if os.path.isdir(path):
+    if os.path.isdir(path) and len(os.listdir(path)) > 0:
         backup(path)
     os.makedirs(path, mode)
 
