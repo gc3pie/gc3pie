@@ -401,6 +401,9 @@ class Core:
             lrms = self.get_backend(job.resource_name)
             # self.auths.get(lrms._resource.auth)
             lrms.get_results(app, download_dir)
+            # clear previous data staging errors
+            if job.signal == Run.Signals.DataStagingFailure:
+                job.signal = 0
         except gc3libs.exceptions.DataStagingError, ex:
             job.signal = Run.Signals.DataStagingFailure
             ex = app.fetch_output_error(ex)
