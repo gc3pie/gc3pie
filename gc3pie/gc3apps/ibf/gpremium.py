@@ -292,7 +292,6 @@ def getFullIndex(ixMeta, metaIndices, groupIndices, groups, paraProps, vals):
     return index
 
 
-@gc3libs.debug.trace
 def extractVal(ixVar, vals, index):
     """
     Return variable value to be updated. 
@@ -301,7 +300,6 @@ def extractVal(ixVar, vals, index):
     return str2vals(vals[ixVar])[index[ixVar]]
 
 
-@gc3libs.debug.trace
 def str2vals(strIn):
     """
     strIn: string containing different vals
@@ -343,7 +341,6 @@ def format_newVal(newVal):
      
 
 
-@gc3libs.debug.trace
 def update_parameter_in_file(path, varIn, paraIndex, newVal, regexIn):
     paraFileIn = open(path, 'r')
     paraFileOut = open(path + '.tmp', 'w')
@@ -397,7 +394,6 @@ def safe_eval(s):
     return str(s)
   
 
-@gc3libs.debug.trace
 def str2mat(strIn):
     """
     strIn: String containing matrix
