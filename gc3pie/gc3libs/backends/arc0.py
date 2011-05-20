@@ -147,9 +147,7 @@ class ArcLrms(LRMS):
         xrsl = app.xrsl(self._resource)
         log.debug("Application provided XRSL: %s" % xrsl)
         try:
-            # ARClib cannot handle unicode strings, so convert `xrsl` to ascii
-            # XXX: should this be done in Application.xrsl() instead?
-            xrsl = arclib.Xrsl(str(xrsl))
+            xrsl = arclib.Xrsl(xrsl)
         except Exception, ex:
             raise gc3libs.exceptions.LRMSSubmitError('Failed in getting `Xrsl` object from arclib: %s: %s'
                                   % (ex.__class__.__name__, str(ex)))
