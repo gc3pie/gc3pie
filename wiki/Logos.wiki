@@ -1,3 +1,6 @@
+#labels Deprecated
+# Test page for collecting proposed logos and artwork
+
 = Logo proposals =
 
 Use comments to vote your favorite logo!
