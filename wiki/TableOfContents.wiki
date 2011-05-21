@@ -1,12 +1,11 @@
+#summary Wiki site map
+
 [http://gc3pie.googlecode.com/ GC3Pie home page]
   * [GC3Utils GC3Utils]
     ** [GC3Utils A GC3Utils primer]
     ** [GC3UtilsQuick Quick Reference]
     ** [InstallGC3Pie Installation instructions]
     ** [ConfigurationFile Configuration]
-  * [HTPie HTPie]
-    ** [HTPieQuick Quick Reference]
-    ** [InstallHTPie Installation]
   * GC3Libs API documentation
     ** [http://gc3pie.googlecode.com/svn/trunk/gc3pie/docs/html/index.html development version (trunk)]
     ** [http://gc3pie.googlecode.com/svn/trunk/gc3pie/docs/html/index.html stable release (1.0)]
