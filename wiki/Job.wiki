@@ -1,4 +1,6 @@
-#labels Phase-Design
+#summary Details of the GC3Libs job model
+#labels Phase-Design,Deprecated
+
 This page documents the execution model that GC3Libs' `Job` object is
 meant to support, and how it is mapped onto the execution models of
 supported back-ends (ARC and SGE).
