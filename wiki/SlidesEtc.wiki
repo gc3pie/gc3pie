@@ -1,4 +1,6 @@
+#summary Presentations, posters, and other assorted material on GC3Pie
 #labels Featured
+
 = Presentations =
 
 
