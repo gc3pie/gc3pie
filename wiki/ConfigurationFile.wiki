@@ -1,3 +1,5 @@
+#summary Syntax of the `gc3pie.conf` configuration file
+
 = Configuration File = 
 
 <wiki:toc max_depth="3" />
