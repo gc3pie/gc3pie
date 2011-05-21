@@ -1,3 +1,5 @@
+#summary Tutorial for the GC3Utils command-line utilities
+
 = The `gc3utils` software =
 
 <wiki:toc max_depth="2" />
