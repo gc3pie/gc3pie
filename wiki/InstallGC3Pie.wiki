@@ -1,4 +1,5 @@
 #summary How to install GC3Pie
+#labels Featured
 
 = Installation of GC3Pie =
 
