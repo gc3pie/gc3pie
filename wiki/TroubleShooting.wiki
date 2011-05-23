@@ -1,0 +1,167 @@
+#summary A list of problems and their solution
+#labels Featured
+
+This page lists a number of errors and issues that you might run into,
+together with their solution.  Please use the
+[http://groups.google.com/group/gc3pie gc3pie mailing list] for
+further help and for any problem not reported here!
+
+Each section covers a different Python error; the section is named
+after the error name appearing in the _last line_ of the Python
+traceback.  (See section 
+[#What_is_a_Python_traceback "What is a Python traceback" below])
+
+<wiki:toc />
+
+
+== What is a Python traceback ==
+
+A "traceback" is a long Python error message, detailing the call stack
+in the code that lead to a specific error condition.
+
+Tracebacks always look like this one (the number of lines printed, the
+files involved and the actual error message will, of course, vary):
+{{{
+Traceback (most recent call last):
+ File "/home/mpackard/gc3pie/bin/gsub", line 9, in <module>
+   load_entry_point('gc3pie==1.0rc7', 'console_scripts', 'gsub')()
+ File "/home/mpackard/gc3pie/lib/python2.5/site-packages/gc3pie-1.0rc7-py2.5.egg/gc3utils/frontend.py", line 137, in main
+   import gc3utils.commands
+ File "/home/mpackard/gc3pie/lib/python2.5/site-packages/gc3pie-1.0rc7-py2.5.egg/gc3utils/commands.py", line 31, in <module>
+   import cli.app
+ File "/home/mpackard/gc3pie/lib/python2.5/site-packages/pyCLI-2.0.2-py2.5.egg/cli/app.py", line 37, in <module>
+   from cli.util import ifelse, ismethodof
+ File "/home/mpackard/gc3pie/lib/python2.5/site-packages/pyCLI-2.0.2-py2.5.egg/cli/util.py", line 28, in <module>
+   BaseStringIO = StringIO.StringIO
+AttributeError: 'module' object has no attribute 'StringIO'
+}}}
+Let's analyize how a traceback is formed, top to bottom.
+
+A traceback is _always_ started by the line:
+{{{
+Traceback (most recent call last):
+}}}
+
+Then follow a number of line pairs like this one:
+{{{
+ File "/home/mpackard/gc3pie/lib/python2.5/site-packages/gc3pie-1.0rc7-py2.5.egg/gc3utils/frontend.py", line 137, in main
+   import gc3utils.commands
+}}}
+The first line shows the file name and the line number where the
+program stopped; the second line displays the instruction that Python
+was executing when the error occurred.
+_We shall always omit this part of the traceback in the listings below._
+
+Finally, the traceback ends with the error message on the _last_ line:
+{{{
+AttributeError: 'module' object has no attribute 'StringIO'
+}}}
+Just look up this error message in the section headers below;
+if you cannot find any relevant section, please write to the 
+[http://groups.google.com/group/gc3pie GC3Pie mailing list] for help.
+
+
+== !AttributeError: `module` object has no attribute `StringIO` ==
+
+This error:
+{{{
+Traceback (most recent call last):
+ ...
+ File "/home/mpackard/gc3pie/lib/python2.5/site-packages/pyCLI-2.0.2-py2.5.egg/cli/util.py",
+line 28, in <module>
+   BaseStringIO = StringIO.StringIO
+AttributeError: 'module' object has no attribute 'StringIO'
+}}}
+is due to a conflicts of the [pyCLI library] (prior to version 2.0.3) and the
+[http://packages.debian.org/squeeze/python-stats Debian/Ubuntu package `python-stats`]
+
+There are three ways to get rid of the error:
+
+1. Uninstall the `python-stats` package (run the command `apt-get remove python-stats` as `root` user)
+
+2. Upgrade to [pyCLI version 2.0.3 at least].
+
+3. [http://code.google.com/p/gc3pie/wiki/InstallGC3Pie#Upgrade Upgrade GC3Pie], which will force an upgrade of pyCLI.
+
+
+== !DistributionNotFound ==
+
+If you get this error:
+{{{
+   Traceback (most recent call last):
+       ...
+   pkg_resources.DistributionNotFound: gc3pie==1.0rc2
+}}}
+It usually means that you didn't run 
+`source ../bin/activate; ./setup.py develop`
+when upgrading GC3Pie.
+
+Please follow the 
+[http://code.google.com/p/gc3pie/wiki/InstallGC3Pie#Upgrade Upgrade instructions]
+to fix the error.
+
+
+== !ImportError: `.../site-packages/_arclib.so`: undefined symbol: `Py_InitModule4` ==
+
+This error:
+{{{
+Traceback (most recent call last):
+  ...
+  File ".../site-packages/arclib.py", line 17, in swig_import_helper
+    import _arclib
+ImportError: .../site-packages/_arclib.so: undefined symbol: Py_InitModule4
+}}}
+Is due to a mismatch of the Python version and the [NorduGrid ARC] 
+library: it occurs when the `arclib` library has been compiled
+for a different Python version than the one you're using.
+
+The [http://www.nordugrid.org NorduGrid project] compiles their
+ARC/Python library with the default Python that comes with the Linux
+distribution; thus, if you are using a Python version different from
+the default, there's a good chance that the ARC library will not work
+with that Python.
+
+A rule of thumb to determine if you are using the default Python is to
+run the command `which python`.  If this outputs anything different
+from `/usr/bin/python` or `/bin/python`, then you are using a custom
+Python version.  You might want to ask your systems administrator 
+to install the version of `arclib` appropriate for your Python, or
+to revert to the default Python.
+
+Failing that, please ask on the 
+[http://groups.google.com/group/gc3pie GC3Pie mailing list:] 
+each case is subtly different and it's impossible to give
+universally-valid instructions.
+
+
+== !ImportError: No module named `pstats` ==
+
+{{{
+Traceback (most recent call last):
+File ".../pyCLI-2.0.2-py2.6.egg/cli/util.py", line 19, in <module>
+   import pstats
+ImportError: No module named pstats
+}}}
+This error only occurs on Debian and Ubuntu GNU/Linux.
+
+To solve the issue: install the `python-profiler` package:
+{{{
+  apt-get install python-profiler # as `root` user
+}}}
+
+
+== !NoResources: Could not initialize any computational resource - please check log and configuration file. ==
+
+This error:
+{{{
+Traceback (most recent call last):
+  ...
+  File ".../src/gc3libs/core.py", line 150, in submit
+    raise gc3libs.exceptions.NoResources("Could not initialize any computational resource"
+gc3libs.exceptions.NoResources: Could not initialize any computational resource - please check log and configuration file.
+}}}
+can have two different causes:
+
+1. You didn't create a configuration file, or you did not list any resource in it.
+
+2. Some other error prevented the resources from being initialized, or the configuration file from being properly read.
