@@ -533,7 +533,7 @@ class Log(object):
 
 
 def prettyprint(D, indent=0, width=0, maxdepth=None, step=4,
-                only_keys=None, output=sys.stdout):
+                only_keys=None, output=sys.stdout, _exclude=None):
     """
     Print dictionary instance `D` in a YAML-like format.
     Each output line consists of:
@@ -553,6 +553,10 @@ def prettyprint(D, indent=0, width=0, maxdepth=None, step=4,
     (up to `maxdepth` nesting).  Each nested instance is printed
     indented `step` spaces from the enclosing dictionary.
     """
+    # be sure we do not try to recursively dump `D`
+    if _exclude is None:
+        _exclude = set()
+    _exclude.add(id(D))
     for k,v in sorted(D.iteritems()):
         leading_spaces = indent * ' '
         if only_keys is not None:
@@ -564,6 +568,9 @@ def prettyprint(D, indent=0, width=0, maxdepth=None, step=4,
                 # no, then it must be a list of key names
                 if str(k) not in only_keys:
                     continue
+        # ignore excluded items
+        if id(v) in _exclude:
+            continue
         first = str.join('', [leading_spaces, str(k), ': '])
         if isinstance(v, (dict, UserDict.DictMixin, UserDict.UserDict)):
             if maxdepth is None or maxdepth > 0:
@@ -572,7 +579,8 @@ def prettyprint(D, indent=0, width=0, maxdepth=None, step=4,
                 else:
                     depth = maxdepth-1
                 sstream = StringIO.StringIO()
-                prettyprint(v, indent+step, width, depth, step, only_keys, sstream)
+                prettyprint(v, indent+step, width, depth, step,
+                            only_keys, sstream, _exclude)
                 second = sstream.getvalue()
                 sstream.close()
             elif maxdepth == 0:
