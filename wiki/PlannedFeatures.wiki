@@ -1,4 +1,6 @@
+#summary Discussion page for planned and proposed new features
 #labels Phase-Design,Phase-Implementation
+
 This page will be used to store detailed description of features to be implemented in the coming releases. Technical specifications, APIs, required modules as well as usecases.
 
 = Features =
