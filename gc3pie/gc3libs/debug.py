@@ -101,7 +101,7 @@ def trace(fn, log=gc3libs.log.debug):
         defaulted = [ format_arg_value((a, argdefs[a]))
                       for a in argnames[len(v):] if a not in k ]
         nameless = [ repr(val) for val in v[argcount:] ]
-        keyword = [ format_arg_value(key,val)
+        keyword = [ format_arg_value((key,val))
                     for key,val in k.items() ]
         args = positional + defaulted + nameless + keyword
         log("%s(%s)" % (name(fn), str.join(", ", args)))
