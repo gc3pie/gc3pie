@@ -328,23 +328,45 @@ class FilesystemStore(Store):
             raise gc3libs.exceptions.LoadError("No '%s' file found in directory '%s'" 
                                    % (id_, self._directory))
 
+        def load_from_file(path):
+            src = None
+            try:
+                src = open(path, 'rb')
+                unpickler = FilesystemStore.Unpickler(self, src)
+                obj = unpickler.load()
+                src.close()
+                return obj
+            except Exception, ex:
+                if src is not None:
+                    try:
+                        src.close()
+                    except:
+                        pass # ignore errors
+                raise
+                
         # XXX: this should become `with src = ...:` as soon as we stop
         # supporting Python 2.4
-        src = None
         try:
-            src = open(filename, 'rb')
-            unpickler = FilesystemStore.Unpickler(self, src)
-            obj = unpickler.load()
-            src.close()
+            obj = load_from_file(filename)
         except Exception, ex:
-            if src is not None:
+            gc3libs.log.warning("Failed loading file '%s': %s: %s",
+                                filename, ex.__class__.__name__, str(ex),
+                                exc_info=True)
+            old_copy = filename + '.OLD'
+            if os.path.exists(old_copy):
+                gc3libs.log.warning("Will try loading from backup file '%s' instead...", old_copy)
                 try:
-                    src.close()
-                except:
-                    pass # ignore errors
-            sys.excepthook(* sys.exc_info())
-            raise gc3libs.exceptions.LoadError("Failed retrieving object from file '%s': %s: %s"
-                                   % (filename, ex.__class__.__name__, str(ex)))
+                    obj = load_from_file(old_copy)
+                except Exception, ex:
+                    sys.excepthook(* sys.exc_info())
+                    raise gc3libs.exceptions.LoadError(
+                        "Failed retrieving object from file '%s': %s: %s"
+                        % (filename, ex.__class__.__name__, str(ex)))
+            else:
+                # complain loudly
+                raise gc3libs.exceptions.LoadError(
+                    "Failed retrieving object from file '%s': %s: %s"
+                    % (filename, ex.__class__.__name__, str(ex)))
         if not hasattr(obj, 'persistent_id'):
             raise gc3libs.exceptions.LoadError("Invalid format in file '%s': missing 'persistent_id' attribute"
                                    % (filename))
