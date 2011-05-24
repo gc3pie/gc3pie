@@ -716,10 +716,22 @@ def mkdir_with_backup(path, mode=0777):
     """
     Like `os.makedirs`, but if `path` already exists and is not empty,
     rename the existing one appending a `.NUMBER` suffix.
+
+    Unlike `os.makedirs`, no exception is thrown if the directory
+    already exists and is empty, but the target directory permissions
+    are not altered to reflect `mode`.
     """
-    if os.path.isdir(path) and len(os.listdir(path)) > 0:
-        backup(path)
-    os.makedirs(path, mode)
+    if os.path.isdir(path):
+        if len(os.listdir(path)) > 0:
+            # directory already exists and is non-empty; backup it and
+            # make a new one
+            backup(path)
+            os.makedirs(path, mode)
+        else:
+            # keep existing empty directory
+            pass
+    else:
+        os.makedirs(path, mode)
 
 
 def safe_repr(obj):
