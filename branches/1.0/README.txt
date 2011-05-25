@@ -69,10 +69,29 @@ release at:
   
   http://code.google.com/p/gc3pie/wiki/InstallGC3Pie
 
+
+Upgrading from previous releases
+--------------------------------
+
 Those who are using pre-release version of GC3Pie are encouraged to
 upgrade; upgrade instructions are available at:
 
   http://code.google.com/p/gc3pie/wiki/InstallGC3Pie#Upgrade
+
+Here's a brief list of the main changes; please consult the full list
+at http://code.google.com/p/gc3pie/wiki/News before upgrading.
+
+Configuration file changes
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+  * Renamed configuration file to gc3pie.conf: the file gc3utils.conf will no longer be read!
+  * SGE clusters must now have type = sge in the configuration file (instead of type = ssh-sge)
+  * All computational resource must have an architecture = ... line; see the ConfigurationFile wiki page for details
+
+Command-line utilities changes
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  * GC3Utils and GC3Apps (grosetta/ggamess/etc.) now all accept a -s/--session option for locating the job storage directory: this allows grouping jobs into folders instead of shoveling them all into ~/.gc3/jobs.
+  * GC3Apps (grosetta/ggames/etc.): replaced option -t/--table with -l/--states. The new option prints a table of submitted jobs in addition to the summary stats; if a comma-separated list of job states follows the option, only job in those states are printed.
+  * The command `gstat` will now print a summary of the job states if the list is too long to fit on screen; use the -v option to get the full job listing regardless of its length.
 
 
 Support and Contact
