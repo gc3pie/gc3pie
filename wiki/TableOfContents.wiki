@@ -6,6 +6,7 @@
     ** [GC3UtilsQuick Quick Reference]
     ** [InstallGC3Pie Installation instructions]
     ** [ConfigurationFile Configuration]
+    ** [TroubleShooting Troubleshooting known issues]    
   * GC3Libs API documentation
     ** [http://gc3pie.googlecode.com/svn/trunk/gc3pie/docs/html/index.html development version (trunk)]
     ** [http://gc3pie.googlecode.com/svn/trunk/gc3pie/docs/html/index.html stable release (1.0)]
