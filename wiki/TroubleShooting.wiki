@@ -101,6 +101,29 @@ Please follow the
 to fix the error.
 
 
+== FTPControlError: Server responded: File unavailable. ==
+
+Sample error traceback:
+{{{
+Traceback (most recent call last):
+  ...
+  File "/opt/nordugrid/lib/python2.5/site-packages/arclib.py", line 1405, in Download
+    def Download(self, *args): return _arclib.FTPControl_Download(self, *args)
+arclib.FTPControlError: Server responded: File unavailable.
+}}}
+
+This error happens when trying to view a non-existent file with the `gtail` command;
+see [http://code.google.com/p/gc3pie/issues/detail?id=111 Issue 111] for details.
+
+Once a job goes into RUNNING state, its standard output log is not
+made immediately available to the batch system.  The only solution is
+to try later; if the error persists, there might be some problem with
+the application that is not creating its output file as expected.
+This would needs further investigation and you are encouraged to
+report to the [http://groups.google.com/group/gc3pie GC3Pie mailing list]
+about it.
+
+
 == !ImportError: `.../site-packages/_arclib.so`: undefined symbol: `Py_InitModule4` ==
 
 This error:
@@ -165,3 +188,23 @@ can have two different causes:
 1. You didn't create a configuration file, or you did not list any resource in it.
 
 2. Some other error prevented the resources from being initialized, or the configuration file from being properly read.
+
+
+
+== !ValueError: I/O operation on closed file ==
+
+Sample error traceback (may be repeated multiple times over):
+{{{
+Traceback (most recent call last):
+  File "/usr/lib/python2.5/logging/__init__.py", line 750, in emit
+    self.stream.write(fs % msg)
+ValueError: I/O operation on closed file
+}}}
+
+This is discussed in [http://code.google.com/p/gc3pie/issues/detail?id=182 Issue 182];
+a fix have been committed to release 1.0, so if you are seeing this error,
+you are either running a pre-release version of GC3Pie and should
+[http://code.google.com/p/gc3pie/wiki/InstallGC3Pie#Upgrade upgrade to release 1.0], 
+or you are running the bleeding-edge version of the code, and you are welcome to 
+[http://code.google.com/p/gc3pie/issues/detail?id=182 contribute to the discussion of the fix.]
+
