@@ -227,6 +227,9 @@ class GridAuth(object):
 # add this anyway in case users did not set their PYTHONPATH correctly 
 sys.path.append('/opt/nordugrid/lib/python%d.%d/site-packages'
                 % sys.version_info[:2])
+# this is where arc0 libraries are installed from release 11.05
+sys.path.append('/usr/lib/pymodules/python%d.%d/'
+                % sys.version_info[:2])
 
 def _get_proxy_expires_time():
     import arclib
