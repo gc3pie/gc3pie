@@ -36,6 +36,10 @@ warnings.simplefilter("ignore")
 import sys
 sys.path.append('/opt/nordugrid/lib/python%d.%d/site-packages' 
                 % sys.version_info[:2])
+# this is where arc0 libraries are installed from release 11.05
+sys.path.append('/usr/lib/pymodules/python%d.%d/'
+                % sys.version_info[:2])
+
 import arclib
 from gc3libs import log, Run
 from gc3libs.backends import LRMS
@@ -349,9 +353,14 @@ class ArcLrms(LRMS):
             jftpc.DownloadDirectory(job.lrms_jobid, download_dir)
             job.download_dir = download_dir
         except arclib.FTPControlError, ex:
+            # XXX: due to issue 176, we need to check whether this is a transient error or not
+            if "Failed to allocate port for data transfer" in str(ex):
+                raise gc3libs.exceptions.RecoverableDataStagingError(
+                    "Recoverable Error: Failed downloading remote folder '%s': %s"
+                    % (job.lrms_jobid, str(ex)))
             # critical error. consider job remote data as lost
-            raise gc3libs.exceptions.DataStagingError(
-                "Failed downloading remote folder '%s': %s" 
+            raise gc3libs.exceptions.UnrecoverableDataStagingError(
+                "Unrecoverble Error: Failed downloading remote folder '%s': %s" 
                 % (job.lrms_jobid, str(ex)))
 
         return 

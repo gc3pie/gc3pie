@@ -531,7 +531,7 @@ released once the output files have been fetched.
                 if self.params.download_dir is None:
                     download_dir = os.path.join(os.getcwd(), app.persistent_id)
                 else:
-                    download_dir = self.params.download_dir
+                    download_dir = os.path.join(self.params.download_dir, app.persistent_id)
 
                 self._core.fetch_output(app, download_dir, overwrite=self.params.overwrite)
                 if app.execution.state == Run.State.TERMINATED:
@@ -717,6 +717,8 @@ List status of computational resources.
     def main(self):
         if len(self.params.args) > 0:
             self._select_resources(* self.params.args)
+            self.log.info("Retained only resources: %s",
+                          str.join(",", [res['name'] for res in self._core._resources]))
 
         resources = self._core.get_all_updated_resources()
         def cmp_by_name(x,y):

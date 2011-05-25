@@ -31,6 +31,8 @@ import os
 import time
 import tempfile
 
+sys.path.append('/usr/share/pyshared')
+
 import arc
 
 from gc3libs import log, Run
@@ -69,13 +71,17 @@ class Arc1Lrms(LRMS):
         # if not self._usercfg.AddServices([self._resource.arc_ldap], arc.COMPUTING):
         #    log.error('Failed while adding computing service [%s]' % self._resource.frontend)
 
-        if "INDEX" in self._resource.arc_ldap:
+        log.debug('ARC1 splitting self._resource.arc_ldap [%s]' % self._resource.arc_ldap)
+
+        (service, arc_version, ldap_host_endpoint) = self._resource.arc_ldap.split(':',2)
+        if service == "INDEX":
             # add index service
-            if not self._usercfg.AddServices([self._resource.arc_ldap.split("INDEX:")[1]], arc.INDEX):
-                log.error('Failed while adding INDEX service [%s]' % self._resource.frontend)
-        elif "COMPUTING" in self._resource.arc_ldap:
-            if not self._usercfg.AddServices([self._resource.arc_ldap.split("COMPUTING:")[1]], arc.COMPUTING):
-                log.error('Failed while adding computing service [%s]' % self._resource.frontend)
+            if not self._usercfg.AddServices(["%s:%s" % (arc_version,ldap_host_endpoint)], arc.INDEX):
+                log.error('Failed while adding INDEX service [%s]' % ldap_host_endpoint)
+        elif service == "COMPUTING":
+            # add computing service
+            if not self._usercfg.AddServices(["%s:%s" % (arc_version, ldap_host_endpoint)], arc.COMPUTING):
+                log.error('Failed while adding computing service [%s:%s]' % (arc_version, ldap_host_endpoint))
         else:
             log.error("Unknown ARC Service type '%s'. Valid prefix are: INDEX, COMPUTING"
                       % self._resource.arc_ldap)
@@ -116,7 +122,7 @@ class Arc1Lrms(LRMS):
         controller, job = self._get_job_and_controller(app.execution.lrms_jobid)
         try:
             log.info("Calling arc.JobController.Cancel(job)")
-            if not controller.Cancel(job):
+            if not controller.CancelJob(job):
                 raise gc3libs.exceptions.LRMSError('arc.JobController.Cancel returned False')
         except Exception, ex:
             gc3libs.log.error('Failed while killing job. Error type %s, message %s' % (ex.__class__,str(ex)))

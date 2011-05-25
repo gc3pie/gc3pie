@@ -245,3 +245,37 @@ if "__main__" == __name__:
     import doctest
     doctest.testmod(name="arc",
                     optionflags=doctest.NORMALIZE_WHITESPACE)
+
+
+
+# XXX: Notes on how to use GPG
+# 1) Requirements:
+#
+# gpg, gnupg-agent
+# 
+# 2) Generate GPG key
+#
+# gpg --gen-key
+# this is an interactive command
+# I have not found yet a way to circumvent this problem
+#
+# 3) Start gpg-agent
+# gpg-agent --daemon --enable-ssh-support \
+#               --write-env-file "${HOME}/.gc3/gpg-agent-info"
+#
+# 4) make gpg aware of gpg-agent
+# if [ -f "${HOME}/.gpg-agent-info" ]; then
+#       . "${HOME}/.gpg-agent-info"
+#       export GPG_AGENT_INFO
+#       export SSH_AUTH_SOCK
+#     fi
+#
+# 5) Encrypt data
+# gpg -r <user> --encrypt <myproxy_password_file>
+# Note: I could not find out whether it is possible to regiter a key to an gpg-agent directly
+#
+# 6) Decrypt data
+# VAL=`gpg -r <user>--decrypt <myproxy_password_file>.gpg`
+#
+# Note: probably this is an approach that should be framed within a give session
+# 

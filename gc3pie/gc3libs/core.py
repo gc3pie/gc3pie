@@ -404,7 +404,10 @@ class Core:
             # clear previous data staging errors
             if job.signal == Run.Signals.DataStagingFailure:
                 job.signal = 0
-        except gc3libs.exceptions.DataStagingError, ex:
+        except gc3libs.exceptions.RecoverableDataStagingError, rex:
+            job.info("Temporarly failure when retieving results due to: %s. Will retry" % str(rex))
+            return
+        except gc3libs.exceptions.UnrecoverableDataStagingError, ex:
             job.signal = Run.Signals.DataStagingFailure
             ex = app.fetch_output_error(ex)
             if isinstance(ex, Exception):

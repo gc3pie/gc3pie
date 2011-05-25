@@ -596,7 +596,7 @@ class SgeLrms(LRMS):
     @same_docstring_as(LRMS.get_results)
     def get_results(self, app, download_dir, overwrite=False):
         if app.output_base_url is not None:
-            raise gc3libs.exceptions.DataStagingError(
+            raise gc3libs.exceptions.UnrecoverableDataStagingError(
                 "Retrieval of output files to non-local destinations"
                 " is not supported in the SGE backend (yet).")
 

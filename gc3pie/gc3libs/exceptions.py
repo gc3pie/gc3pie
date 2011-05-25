@@ -74,7 +74,16 @@ class ConfigurationError(FatalError):
     """
     pass
 
-class DataStagingError(Error):
+class RecoverableDataStagingError(Error):
+    """
+    Raised when problems with copying data to or from the remote
+    execution site occurred.
+    This is considered to be transient.
+    """
+    pass
+
+
+class UnrecoverableDataStagingError(Error):
     """
     Raised when problems with copying data to or from the remote
     execution site occurred.
