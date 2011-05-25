@@ -175,6 +175,7 @@ class SshTransport(Transport):
             if not self._is_open:
                 self.ssh = paramiko.SSHClient()
                 self.ssh.load_system_host_keys()
+                self.ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
                 self.ssh.connect(self.remote_frontend,
                                  timeout=gc3libs.Default.SSH_CONNECT_TIMEOUT,
                                  username=self.username,
