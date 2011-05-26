@@ -20,7 +20,7 @@ Specialized support for computational jobs running simple demo.
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 #
 __docformat__ = 'reStructuredText'
-__version__ = '1.0rc7 (SVN $Revision$)'
+__version__ = '1.0 (SVN $Revision$)'
 
 
 import gc3libs

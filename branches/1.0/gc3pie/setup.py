@@ -40,7 +40,7 @@ import setuptools
 import setuptools.dist
 setuptools.setup(
     name = "gc3pie",
-    version = '1.0rc7',
+    version = '1.0',
 
     packages = setuptools.find_packages(exclude=['ez_setup']),
 
