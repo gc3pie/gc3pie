@@ -23,7 +23,7 @@ It uses the generic `gc3libs.cmdline.SessionBasedScript` framework.
 
 See the output of ``gcodeml --help`` for program usage instructions.
 """
-__version__ = 'development version (SVN $Revision$)'
+__version__ = '1.0 (SVN $Revision$)'
 # summary of user-visible changes
 __changelog__ = """
   2011-03-22:
@@ -97,11 +97,11 @@ of newly-created jobs so that this limit is never exceeded.
         self.actions['output'].default = 'SESSION'
 
 
-    def new_tasks(self, extra):
+    def process_args(self, extra):
         """Implement the argument -> jobs mapping."""
         ## process additional options
         if not os.path.isabs(self.params.codeml):
-            self.params.codeml = os.path.abspath(self.params.codeml)
+            self.params.codeml = os.path.join(os.getcwd(), self.params.codeml)
         gc3libs.utils.test_file(self.params.codeml, os.R_OK|os.X_OK)
 
         ## do the argument -> job mapping, really
@@ -124,7 +124,8 @@ of newly-created jobs so that this limit is never exceeded.
                 if contain_ctl_files(filenames):
                     inputs.add(os.path.realpath(dirpath))
 
-        #self.log.debug("Gathered input directories: '%s'" % str.join("', '", inputs))
+        self.log.debug("Gathered input directories: '%s'"
+                       % str.join("', '", inputs))
 
         for dirpath in inputs:
             # gather control files; other input files are

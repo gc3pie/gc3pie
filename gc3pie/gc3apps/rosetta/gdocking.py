@@ -23,13 +23,10 @@ It uses the generic `gc3libs.cmdline.SessionBasedScript` framework.
 
 See the output of ``gdocking --help`` for program usage instructions.
 """
-__version__ = 'development version (SVN $Revision$)'
+__version__ = '1.0 (SVN $Revision$)'
 __author__ = 'Riccardo Murri <riccardo.murri@uzh.ch>'
 # summary of user-visible changes
 __changelog__ = """
-  2011-05-06:
-    * Workaround for Issue 95: now we have complete interoperability
-      with GC3Utils.
   2011-02-10:
     * Renamed option '-t'/'--tarfile' to '-T'/'--collect', 
       in order not to conflict with `SessionBasedScript` 
@@ -83,103 +80,21 @@ __changelog__ = """
 __docformat__ = 'reStructuredText'
 
 
-# ugly workaround for Issue 95,
-# see: http://code.google.com/p/gc3pie/issues/detail?id=95
-if __name__ == "__main__":
-    import gdocking
-
-
 import grp
-import logging
 import os
 import os.path
 import pwd
 import sys
 import tarfile
-import time
 
 
 ## interface to Gc3libs
 
 import gc3libs
-from gc3libs.application.rosetta import RosettaDockingApplication
+from gc3libs.application.rosetta import GDockingApplication
 from gc3libs.cmdline import SessionBasedScript
 
 
-## The GDocking application
-
-class GDockingApplication(RosettaDockingApplication):
-    """
-    Augment a `RosettaDockingApplication` with state transition
-    methods that implement job status reporting for the UI, and data
-    post-processing.
-    """
-    def __init__(self, pdb_file_path, native_file_path=None, 
-                 number_of_decoys_to_create=1, flags_file=None, 
-                 collect=False, **kw):
-        RosettaDockingApplication.__init__(
-            self, pdb_file_path, native_file_path, 
-            number_of_decoys_to_create, flags_file, 
-            **kw)
-        # save pdb_file_path for later processing
-        self.pdb_file_path = pdb_file_path
-        # define additional attributes
-        self.collect = collect, # whether to collect result PDBs into a tarfile
-        self.computed = 0 # number of decoys actually computed by this job
-
-    def terminated(self):
-        output_dir = self.output_dir
-        # work directory is the parent of the download directory
-        work_dir = os.path.dirname(output_dir)
-        # move around output files so they're easier to preprocess:
-        #   1. All '.fasc' files land in the same directory as the input '.pdb' file
-        #   2. All generated '.pdb'/'.pdb.gz' files are collected in a '.decoys.tar'
-        #   3. Anything else is left as-is
-        input_name = os.path.basename(self.pdb_file_path)
-        input_name_sans = os.path.splitext(input_name)[0]
-        output_tar_filename = os.path.join(output_dir, 'docking_protocol.tar.gz')
-        # count: 'protocols.jobdist.main: Finished 1brs.0--1.1brs_0002 in 149 seconds.'
-        if os.path.exists(output_tar_filename):
-            output_tar = tarfile.open(output_tar_filename, 'r:gz')
-            # single tar file holding all decoy .PDB files
-            pdbs_tarfile_path = os.path.join(work_dir, input_name_sans) + '.decoys.tar'
-            if self.collect:
-                if not os.path.exists(pdbs_tarfile_path):
-                    pdbs = tarfile.open(pdbs_tarfile_path, 'w')
-                else:
-                    pdbs = tarfile.open(pdbs_tarfile_path, 'a')
-            for entry in output_tar:
-                if (entry.name.endswith('.fasc') or entry.name.endswith('.sc')):
-                    filename, extension = os.path.splitext(entry.name)
-                    scoring_file_name = (os.path.join(work_dir, input_name_sans) 
-                                         + '.' + self.jobname + extension)
-                    src = output_tar.extractfile(entry)
-                    dst = open(scoring_file_name, 'wb')
-                    dst.write(src.read())
-                    dst.close()
-                    src.close()
-                elif (self.collect and 
-                      (entry.name.endswith('.pdb.gz') or entry.name.endswith('.pdb'))):
-                    src = output_tar.extractfile(entry)
-                    dst = tarfile.TarInfo(entry.name)
-                    dst.size = entry.size
-                    dst.type = entry.type
-                    dst.mode = entry.mode
-                    dst.mtime = entry.mtime
-                    dst.uid = os.getuid()
-                    dst.gid = os.getgid()
-                    dst.uname = pwd.getpwuid(os.getuid()).pw_name
-                    dst.gname = grp.getgrgid(os.getgid()).gr_name
-                    if hasattr(entry, 'pax_headers'):
-                        dst.pax_headers = entry.pax_headers
-                    pdbs.addfile(dst, src)
-                    src.close()
-            if self.collect:
-                pdbs.close()
-        else: # no `docking_protocol.tar.gz` file
-            self.info = ("No 'docking_protocol.tar.gz' file found.")
-
-        
 ## the script class
 
 class GDockingScript(SessionBasedScript):
@@ -207,10 +122,7 @@ of newly-created jobs so that this limit is never exceeded.
         SessionBasedScript.__init__(
             self,
             version = __version__, # module version == script version
-            # Use fully-qualified name for class,
-            # to allow GC3Utils to unpickle job instances
-            # see: http://code.google.com/p/gc3pie/issues/detail?id=95
-            application = gdocking.GDockingApplication,
+            application = GDockingApplication,
             input_filename_pattern = '*.pdb'
             )
 
@@ -254,7 +166,7 @@ of newly-created jobs so that this limit is never exceeded.
         self.extra['collect'] = self.params.collect
 
         if not os.path.isabs(self.params.flags_file):
-            self.params.flags_file = os.path.abspath(self.params.flags_file)
+            self.params.flags_file = os.path.join(os.getcwd(), self.params.flags_file)
         if not os.path.exists(self.params.flags_file):
             raise RuntimeError("Flags file '%s' does not exist." % self.params.flags_file)
         self.extra['flags_file'] = self.params.flags_file

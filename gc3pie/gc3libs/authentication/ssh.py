@@ -20,7 +20,7 @@ Authentication support for accessing resources through the SSH protocol.
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 #
 __docformat__ = 'reStructuredText'
-__version__ = 'development version (SVN $Revision$)'
+__version__ = '1.0 (SVN $Revision$)'
 
 import gc3libs
 from gc3libs.authentication import Auth
@@ -40,7 +40,7 @@ class SshAuth(object):
             raise gc3libs.exceptions.ConfigurationError('Erroneous configuration parameter: %s' % str(x))
 
     def check(self):
-        gc3libs.log.debug('Checking auth: SshAuth')
+        gc3libs.log.debug('Checking auth: ssh')
         return True
 
     def enable(self):

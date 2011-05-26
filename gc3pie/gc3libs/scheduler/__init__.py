@@ -19,7 +19,7 @@ Simple-minded scheduling for GC3Libs.
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 #
 __docformat__ = 'reStructuredText'
-__version__ = 'development version (SVN $Revision$)'
+__version__ = '1.0 (SVN $Revision$)'
 
 
 import sys
@@ -40,9 +40,8 @@ def _compatible_resources(lrms_list, application):
         if not lrms.is_valid():
             gc3libs.log.debug("Ignoring invalid LRMS object '%s'" % lrms)
             continue
-        gc3libs.log.debug(
-            "Checking resource '%s' for compatibility with application requirements"
-            % lrms._resource.name)
+        gc3libs.log.debug("Checking resource '%s' for compatibility with application requirements",
+                           lrms._resource.name)
         # if architecture is specified, check that it matches the resource one
         if (application.requested_architecture is not None
             and application.requested_architecture not in lrms._resource.architecture):
@@ -51,27 +50,20 @@ def _compatible_resources(lrms_list, application):
                                 str.join(', ', [str(arch) for arch in lrms._resource.architecture ])))
             continue
         # check that Application requirements are within resource limits
-        if (application.requested_cores is not None
-            and int(application.requested_cores) > int(lrms._resource.max_cores_per_job or sys.maxint)):
+        if int(application.requested_cores) > int(lrms._resource.max_cores_per_job or sys.maxint):
             gc3libs.log.info("Rejecting resource '%s': requested more cores (%d) that resource provides (%d)"
                              % (lrms._resource.name, application.requested_cores, lrms._resource.max_cores_per_job))
             continue
-        if (application.requested_memory is not None
-            and int(application.requested_memory) > int(lrms._resource.max_memory_per_core or sys.maxint)):
+        if int(application.requested_memory) > int(lrms._resource.max_memory_per_core or sys.maxint):
             gc3libs.log.info("Rejecting resource '%s': requested more memory per core (%d GB) that resource provides (%d GB)"
                              % (lrms._resource.name, application.requested_memory, lrms._resource.max_memory_per_core))
             continue
-        if (application.requested_walltime is not None
-            and int(application.requested_walltime) > int(lrms._resource.max_walltime or sys.maxint)):
+        if int(application.requested_walltime) > int(lrms._resource.max_walltime or sys.maxint):
             gc3libs.log.info("Rejecting resource '%s': requested a longer duration (%d s) that resource provides (%d s)"
                              % (lrms._resource.name, application.requested_walltime, lrms._resource.max_walltime))
             continue
         # if upload to remote site requested, check that the backend supports it
-        if (application.output_base_url is not None
-            and lrms._resource.type not in [
-                gc3libs.Default.ARC0_LRMS,
-                gc3libs.Default.ARC1_LRMS,
-                ]):
+        if (application.output_base_url is not None and lrms._resource.type != gc3libs.Default.ARC_LRMS):
             gc3libs.log.info("Rejecting resource '%s': no support for non-local output files."
                              % lrms._resource.name)
             continue
@@ -110,16 +102,15 @@ def do_brokering(lrms_list, application):
     for r in rs:
         try:
             # in-place update of resource status
-            gc3libs.log.debug("Trying to update status of resource '%s' ..."
-                              % r._resource.name)
+            gc3libs.log.debug("Trying to update status of resource '%s' ...", r._resource.name)
             r.get_resource_status()
             updated_resources.append(r)
         except Exception, x:
             # ignore errors in update, assume resource has a problem
             # and just drop it
             gc3libs.log.error("Cannot update status of resource '%s', dropping it."
-                              " See log file for details."
-                              % r._resource.name)
+                              " See log file for details.",
+                              r._resource.name)
             gc3libs.log.debug("Got error from get_resource_status(): %s: %s",
                               x.__class__.__name__, x.args, exc_info=True)
     return sorted(updated_resources, cmp=_cmp_resources)

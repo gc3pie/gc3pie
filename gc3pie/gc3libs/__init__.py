@@ -32,7 +32,7 @@ relevant aspects of the application being represented.
 
 """
 __docformat__ = 'reStructuredText'
-__version__ = 'development version (SVN $Revision$)'
+__version__ = '1.0 (SVN $Revision$)'
 
 
 import copy
@@ -47,14 +47,6 @@ import logging.config
 log = logging.getLogger("gc3.gc3libs")
 
 import gc3libs.exceptions
-
-
-# NG's default packages install arclib into /opt/nordugrid/lib/pythonX.Y/site-packages;
-# add this anyway in case users did not set their PYTHONPATH correctly
-import sys
-sys.path.append('/opt/nordugrid/lib/python%d.%d/site-packages' 
-                % sys.version_info[:2])
-
 
 # this needs to be defined before we import other GC3Libs modules, as
 # they may depend on it
@@ -73,10 +65,9 @@ class Default(object):
         os.path.join(RCDIR, "gc3pie.conf")
         ]
     JOBS_DIR = os.path.join(RCDIR, "jobs")
-    ARC0_LRMS = 'arc0'
-    ARC1_LRMS = 'arc1'
+    
+    ARC_LRMS = 'arc'
     ARC_CACHE_TIME = 30 #: only update ARC resources status every this seconds
-    ARC_JOBLIST_LOCATION = os.path.expandvars("$HOME/.arc/jobs.xml")
     
     SGE_LRMS = 'sge'
     # Transport information
@@ -84,7 +75,6 @@ class Default(object):
     SSH_CONNECT_TIMEOUT = 30
     
     FORK_LRMS = 'fork'
-    SUBPROCESS_LRMS = 'subprocess'
 
     # Proxy
     PROXY_VALIDITY_THRESHOLD = 600 #: Proxy validity threshold in seconds. If proxy is expiring before the thresold, it will be marked as to be renewed.
@@ -93,351 +83,6 @@ class Default(object):
 from gc3libs.exceptions import *
 from gc3libs.persistence import Persistable
 from gc3libs.utils import defproperty, deploy_configuration_file, get_and_remove, Enum, Log, Struct, safe_repr
-
-
-class Task(object):
-    # XXX: alternative design: we could make Task take an additional
-    # `job` parameter, which is the controlled job (i.e., the one that
-    # `submit()` and friends act upon), defaulting to `self`.  This
-    # way, Task would become a mediator object binding a "grid" (core
-    # || engine) and a "job" (Application or whatnot).
-    """
-    Mix-in class implementing a facade for job control.
-
-    A `Task` can be described as an "active" job, in the sense that
-    all job control is done through methods on the `Task` instance
-    itself; contrast this with operating on `Application` objects
-    through a `Core` or `Engine` instance.
-
-    The following pseudo-code is an example of the usage of the `Task`
-    interface for controlling a job.  Assume that `GamessApplication` is
-    inheriting from `Task` (and it actually is)::
-
-        t = GamessApplication(input_file)
-        t.submit()
-        # ... do other stuff 
-        t.update_state()
-        # ... take decisions based on t.execution.state
-        t.wait() # blocks until task is terminated
-
-    Each `Task` object has an `execution` attribute: it is an instance
-    of class :class:`Run`, initialized with a new instance of `Run`,
-    and at any given time it reflects the current status of the
-    associated remote job.  In particular, `execution.state` can be
-    checked for the current task status.
-
-    After successful initialization, a `Task` instance will have the
-    following attributes:
-
-    `execution`
-      a `Run` instance; its state attribute is initially set to ``NEW``.
-
-    `jobname`
-      an arbitrary string associated to this task, used in the
-      `str` and `repr` methods.
-    
-    """
-
-    def __init__(self, jobname, grid=None):
-        """
-        Initialize a `Task` instance.
-
-        :param grid: A :class:`gc3libs.Engine` or
-                     :class:`gc3libs.Core` instance, or anything
-                     implementing the same interface.
-        """
-        self.jobname = jobname
-        self.execution = Run(attach=self)
-        # `_grid` and `_attached` are set by `attach()`/`detach()`
-        self._attached = False
-        self._grid = None
-        if grid is not None:
-            self.attach(grid)
-        else:
-            self.detach()
-
-    # manipulate the "grid" interface used to control the associated job
-    def attach(self, grid):
-        """
-        Use the given Grid interface for operations on the job
-        associated with this task.
-        """
-        if self._grid != grid:
-            if self._attached:
-                self.detach()
-            #gc3libs.log.debug("Attaching %s to %s" % (self, grid))
-            self._grid = grid
-            self._grid.add(self)
-            self._attached = True
-
-    # create a class-shared fake "grid" object, that just throws a
-    # DetachedFromGrid exception when any of its methods is used.  We
-    # use this as a safeguard for detached `Task` objects, in order to
-    # get sensible error reporting.
-    class __NoGrid(object):
-        # XXX: this returns a function object for whatever `name`;
-        # should be fine since a "grid" interface should just contain
-        # methods, but one never knows...
-        def __getattr__(self, name):
-            def throw_error(*args, **kwargs):
-                raise gc3libs.exceptions.DetachedFromGridError(
-                    "Task object is not attached to a Grid interface.")
-            return throw_error
-    __no_grid = __NoGrid()
-
-    def detach(self):
-        """
-        Remove any reference to the current grid interface.  After
-        this, calling any method other than :meth:`attach` results in
-        an exception :class:`TaskDetachedFromGridError` being thrown.
-        """
-        if self._attached:
-            #gc3libs.log.debug("Detaching %s from grid" % self)
-            try:
-                self._grid.remove(self)
-            except:
-                pass
-            self._grid = Task.__no_grid
-            self._attached = False
-
-
-    # interface with pickle/gc3libs.persistence: do not save the
-    # attached grid/engine/core as well: it definitely needs to be
-    # saved separately.
-
-    def __getstate__(self):
-        state = self.__dict__.copy()
-        state['_grid'] = None
-        state['_attached'] = None
-        return state
-
-    def __setstate__(self, state):
-        self.__dict__ = state
-        self.detach()
-
-
-    # grid-level actions on this Task object are re-routed to the
-    # grid/engine/core instance
-    def submit(self, **kw):
-        """
-        Start the computational job associated with this `Task` instance.
-        """
-        self._grid.submit(self, **kw)
-
-
-    def update_state(self, **kw):
-        """
-        In-place update of the execution state of the computational
-        job associated with this `Task`.  After successful completion,
-        `.execution.state` will contain the new state.
-        """
-        self._grid.update_job_state(self, **kw)
-
-
-    def kill(self, **kw):
-        """
-        Terminate the computational job associated with this task.
-
-        See :meth:`gc3libs.Core.kill` for a full explanation.
-        """
-        self._grid.kill(self, **kw)
-
-
-    def fetch_output(self, output_dir=None, overwrite=False, **kw):
-        """
-        Retrieve the outputs of the computational job associated with
-        this task into directory `output_dir`, or, if that is `None`,
-        into the directory whose path is stored in instance attribute
-        `.output_dir`.
-
-        If the execution state is `TERMINATING`, transition the state to
-        `TERMINATED` (which runs the appropriate hook).
-
-        See :meth:`gc3libs.Core.fetch_output` for a full explanation.
-
-        :return: Path to the directory where the job output has been
-                 collected.
-        """
-        if self.execution.state == Run.State.TERMINATED:
-            return self.output_dir
-        result = self._grid.fetch_output(self, output_dir, overwrite, **kw)
-        if self.execution.state == Run.State.TERMINATING:
-            self.execution.state = TERMINATED
-        return result
-    
-
-    def peek(self, what='stdout', offset=0, size=None, **kw):
-        """
-        Download `size` bytes (at offset `offset` from the start) from
-        the associated job standard output or error stream, and write them
-        into a local file.  Return a file-like object from which the
-        downloaded contents can be read. 
-
-        See :meth:`gc3libs.Core.peek` for a full explanation.
-        """
-        return self._grid.peek(self, what, offset, size, **kw)
-
-
-    def free(self, **kw):
-        """
-        Release any remote resources associated with this task.
-
-        See :meth:`gc3libs.Core.free` for a full explanation.
-        """
-        return
-
-
-    # convenience methods, do not really add any functionality over
-    # what's above
-    
-    def progress(self):
-        """
-        Advance the associated job through all states of a regular
-        lifecycle. In detail:
-
-          1. If `execution.state` is `NEW`, the associated job is started.
-          2. The state is updated until it reaches `TERMINATED`
-          3. Output is collected and the final returncode is returned.
-
-        An exception `TaskError` is raised if the job hits state
-        `STOPPED` or `UNKNOWN` during an update in phase 2.
-
-        When the job reaches `TERMINATING` state, the output is
-        retrieved; if this operation is successfull, state is advanced
-        to `TERMINATED`.
-
-        oNCE the job reaches `TERMINATED` state, the return code
-        (stored also in `.returncode`) is returned; if the job is not
-        yet in `TERMINATED` state, calling `progress` returns `None`.
-
-        :raises: exception :class:`UnexpectedStateError` if the
-                 associated job goes into state `STOPPED` or `UNKNOWN`
-
-        :return: final returncode, or `None` if the execution
-                 state is not `TERMINATED`.
-
-        """
-        # first update state, we'll submit NEW jobs last, so that the
-        # state is not updated immediately after submission as ARC
-        # does not cope well with this...
-        if self.execution.state in [ Run.State.SUBMITTED, 
-                                     Run.State.RUNNING, 
-                                     Run.State.STOPPED, 
-                                     Run.State.UNKNOWN ]:
-            self.update_state()
-        # now "do the right thing" based on actual state
-        if self.execution.state in [ Run.State.STOPPED, 
-                                     Run.State.UNKNOWN ]:
-            raise gc3libs.exceptions.UnexpectedStateError(
-                "Task '%s' entered `%s` state." % (self, self.execution.state))
-        elif self.execution.state == Run.State.NEW:
-            self.submit()
-        elif self.execution.state == Run.State.TERMINATING:
-            self.fetch_output()
-            return self.execution.returncode
-
-
-    def wait(self, interval=60):
-        """
-        Block until the associated job has reached `TERMINATED` state,
-        then return the job's return code.  Note that this does not
-        automatically fetch the output.
-
-        :param integer interval: Poll job state every this number of seconds
-        """
-        # FIXME: I'm not sure how to deal with this... Ideally, this
-        # call should suspend the current thread and wait for
-        # notifications from the Engine, but:
-        #  - there's no way to tell if we are running threaded,
-        #  - `self._grid` could be a `Core` instance, thus not capable 
-        #    of running independently.
-        # For now this is a poll+sleep loop, but we certainly need to revise it.
-        while True:
-            self.update()
-            if self.execution.state == Run.State.TERMINATED:
-                return self.returncode
-            time.sleep(interval)
-
-
-    # State transition handlers.
-    #
-    # XXX: should these be moved to the `Task` interface?
-                      
-    def new(self):
-        """
-        Called when the job state is (re)set to `NEW`.
-
-        Note this will not be called when the application object is
-        created, rather if the state is reset to `NEW` after it has
-        already been submitted.
-
-        The default implementation does nothing, override in derived
-        classes to implement additional behavior.
-        """
-        pass
-
-    def submitted(self):
-        """
-        Called when the job state transitions to `SUBMITTED`, i.e.,
-        the job has been successfully sent to a (possibly) remote
-        execution resource and is now waiting to be scheduled.
-
-        The default implementation does nothing, override in derived
-        classes to implement additional behavior.
-        """
-        pass
-
-
-    def running(self):
-        """
-        Called when the job state transitions to `RUNNING`, i.e., the
-        job has been successfully started on a (possibly) remote
-        resource.
-
-        The default implementation does nothing, override in derived
-        classes to implement additional behavior.
-        """
-        pass
-
-
-    def stopped(self):
-        """
-        Called when the job state transitions to `STOPPED`, i.e., the
-        job has been remotely suspended for an unknown reason and
-        cannot automatically resume execution.
-
-        The default implementation does nothing, override in derived
-        classes to implement additional behavior.
-        """
-        pass
-
-
-    def terminating(self):
-        """
-        Called when the job state transitions to `TERMINATING`, i.e.,
-        the remote job has finished execution (with whatever exit
-        status, see `returncode`) but output has not yet been
-        retrieved.
-
-        The default implementation does nothing, override in derived
-        classes to implement additional behavior.
-        """
-        pass
-
-
-    def terminated(self):
-        """
-        Called when the job state transitions to `TERMINATED`, i.e.,
-        the job has finished execution (with whatever exit status, see
-        `returncode`) and the final output has been retrieved.
-
-        The location where the final output has been stored is
-        available in attribute `self.output_dir`.
-
-        The default implementation does nothing, override in derived
-        classes to implement additional behavior.
-        """
-        pass
 
 
 def configure_logger(level=logging.ERROR,
@@ -488,10 +133,239 @@ def configure_logger(level=logging.ERROR,
         logging.raiseExceptions = False
 
 
-# when used in the `output` attribute of an application,
-# it stands for "fetch the whole contents of the remote
-# directory"
-ANY_OUTPUT = '/'
+class Task(object):
+    # XXX: alternative design: we could make Task take an additional
+    # `job` parameter, which is the controlled job (i.e., the one that
+    # `submit()` and friends act upon), defaulting to `self`.  This
+    # way, Task would become a mediator object binding a "grid" (core
+    # || engine) and a "job" (Application or whatnot).
+    """
+    Mix-in class implementing a facade for job control.
+
+    A `Task` can be described as an "active" job, in the sense that
+    all job control is done through methods on the `Task` instance
+    itself; contrast this with operating on `Application` objects
+    through a `Core` or `Engine` instance.
+
+    The following pseudo-code is an example of the usage of the `Task`
+    interface for controlling a job.  Assume that `GamessApplication` is
+    inheriting from `Task` (and it actually is)::
+
+        t = GamessApplication(input_file)
+        t.submit()
+        # ... do other stuff 
+        t.update()
+        # ... take decisions based on t.execution.state
+        t.wait() # blocks until task is terminated
+
+    Each `Task` object has an `execution` attribute: it is an instance
+    of class :class:`Run`, initialized with a new instance of `Run`,
+    and at any given time it reflects the current status of the
+    associated remote job.  In particular, `execution.state` can be
+    checked for the current task status.
+
+    """
+
+    def __init__(self, grid=None):
+        """
+        Initialize a `Task` instance.
+
+        :param grid: A :class:`gc3libs.Engine` or
+                     :class:`gc3libs.Core` instance, or anything
+                     implementing the same interface.
+        """
+        if grid is not None:
+            self.attach(grid)
+        else:
+            self.detach()
+        # `self.execution` could have been initialized by the
+        # `Application` class, so chek before re-initializing it.
+        if not hasattr(self, 'execution'):
+            self.execution = Run()
+
+    class Error(gc3libs.exceptions.Error):
+        """
+        Generic error condition in a `Task` object.
+        """
+        pass
+    class DetachedFromGridError(Error):
+        """
+        Raised when a method (other than :meth:`attach`) is called on
+        a detached `Task` instance.
+        """
+        pass
+    class UnexpectedStateError(Error):
+        """
+        Raised by :meth:`Task.progress` when a job lands in `STOPPED`
+        or `TERMINATED` state.
+        """
+        pass
+
+    # manipulate the "grid" interface used to control the associated job
+    def attach(self, grid):
+        """
+        Use the given Grid interface for operations on the job
+        associated with this task.
+        """
+        self._grid = grid
+        self._attached = True
+
+    # create a class-shared fake "grid" object, that just throws a
+    # DetachedFromGrid exception when any of its methods is used.  We
+    # use this as a safeguard for detached `Task` objects, in order to
+    # get sensible error reporting.
+    class __NoGrid(object):
+        # XXX: this returns a function object for whatever `name`;
+        # should be fine since a "grid" interface should just contain
+        # methods, but one never knows...
+        def __getattr__(self, name):
+            def throw_error():
+                raise DetachedFromGridError("Task object has been detached from a Grid interface.")
+            return throw_error
+    __no_grid = __NoGrid()
+
+    def detach(self):
+        """
+        Remove any reference to the current grid interface.  After
+        this, calling any method other than :meth:`attach` results in
+        an exception :class:`Task.DetachedFromGridError` being thrown.
+        """
+        self._grid = Task.__no_grid
+        self._attached = False
+
+
+    # interface with pickle/gc3libs.persistence: do not save the
+    # attached grid/engine/core as well: it definitely needs to be
+    # saved separately.
+
+    def __getstate__(self):
+        state = self.__dict__.copy()
+        state['_grid'] = None
+        state['_attached'] = None
+        return state
+
+    def __setstate__(self, state):
+        self.__dict__ = state
+        self.detach()
+
+
+    # grid-level actions on this Task object are re-routed to the
+    # grid/engine/core instance
+    def submit(self):
+        """
+        Start the computational job associated with this `Task` instance.
+        """
+        self._grid.submit(self)
+
+    def update_state(self):
+        """
+        In-place update of the execution state of the computational
+        job associated with this `Task`.  After successful completion,
+        `.execution.state` will contain the new state.
+        """
+        self._grid.update_job_state(self)
+
+    def kill(self):
+        """
+        Terminate the computational job associated with this task.
+
+        See :meth:`gc3libs.Core.kill` for a full explanation.
+        """
+        self._grid.kill(self)
+
+    def fetch_output(self, output_dir=None, overwrite=False):
+        """
+        Retrieve the outputs of the computational job associated with
+        this task into directory `output_dir`, or, if that is `None`,
+        into the directory whose path is stored in instance attribute
+        `.output_dir`.
+
+        See :meth:`gc3libs.Core.fetch_output` for a full explanation.
+
+        :return: Path to the directory where the job output has been
+                 collected.
+        """
+        return self._grid.fetch_output(self, output_dir, overwrite)
+
+    def peek(self, what='stdout', offset=0, size=None):
+        """
+        Download `size` bytes (at offset `offset` from the start) from
+        the associated job standard output or error stream, and write them
+        into a local file.  Return a file-like object from which the
+        downloaded contents can be read. 
+
+        See :meth:`gc3libs.Core.peek` for a full explanation.
+        """
+        return self._grid.peek(self, what, offset, size)
+
+    # convenience methods, do not really add any functionality over
+    # what's above
+    
+    def progress(self):
+        """
+        Advance the associated job through all states of a regular
+        lifecycle. In detail:
+
+          1. If `execution.state` is `NEW`, the associated job is started.
+          2. The state is updated until it reaches `TERMINATED`
+          3. Output is collected and the final returncode is returned.
+
+        An exception `Task.Error` is raised if the job hits state
+        `STOPPED` or `UNKNOWN` during an update in phase 2.
+
+        When the job reaches `TERMINATED` state, the output is
+        retrieved, and the return code (stored also in `.returncode`)
+        is returned; if the job is not yet in `TERMINATED` state,
+        calling `progress` returns `None`.
+
+        :raises: exception :class:`Task.UnexpectedStateError` if the
+                 associated job goes into state `STOPPED` or `UNKNOWN`
+
+        :return: job final returncode, or `None` if the execution
+                 state is not `TERMINATED`.
+
+        """
+        # first update state, we'll submit NEW jobs last, so that the
+        # state is not updated immediately after submission as ARC
+        # does not cope well with this...
+        if self.execution.state in [ Run.State.SUBMITTED, 
+                                     Run.State.RUNNING, 
+                                     Run.State.STOPPED, 
+                                     Run.State.UNKNOWN ]:
+            self.update_state()
+        # now "do the right thing" based on actual state
+        if self.execution.state in [ Run.State.STOPPED, 
+                                     Run.State.UNKNOWN ]:
+            raise Task.UnexpectedStateError("Job '%s' entered `%s` state." 
+                                            % (self, self.execution.state))
+        elif self.execution.state == Run.State.NEW:
+            self.submit()
+        elif self.execution.state == Run.State.TERMINATED:
+            self.fetch_output()
+            return self.execution.returncode
+
+
+    def wait(self, interval=60):
+        """
+        Block until the associated job has reached `TERMINATED` state,
+        then return the job's return code.  Note that this does not
+        automatically fetch the output.
+
+        :param integer interval: Poll job state every this number of seconds
+        """
+        # FIXME: I'm not sure how to deal with this... Ideally, this
+        # call should suspend the current thread and wait for
+        # notifications from the Engine, but:
+        #  - there's no way to tell if we are running threaded,
+        #  - `self._grid` could be a `Core` instance, thus not capable 
+        #    of running independently.
+        # For now this is a poll+sleep loop, but we certainly need to revise it.
+        while True:
+            self.update()
+            if self.execution.state == Run.State.TERMINATED:
+                return self.returncode
+            time.sleep(interval)
+
 
 
 class Application(Struct, Persistable, Task):
@@ -508,15 +382,15 @@ class Application(Struct, Persistable, Task):
       mechanism by specifying ``./scriptname`` as `executable`.
 
     `arguments`
-      List of command-line arguments to pass to `executable`; any
-      object in the list will be converted to string via Python's
-      `str()`. Note that, in contrast with the UNIX ``execvp()``
-      usage, the first argument in this list will be passed as
-      ``argv[1]``, i.e., ``argv[0]`` will always be equal to
-      `executable`.
+      list of command-line arguments to pass to
+      `executable`; any object in the list will be converted to
+      string via Python ``str()``. Note that, in contrast with the
+      UNIX ``execvp()`` usage, the first argument in this list
+      will be passed as ``argv[1]``, i.e., ``argv[0]`` will always
+      be equal to `executable`.
 
     `inputs`
-      Files that will be copied from the local computer to the remote
+      files that will be copied from the local computer to the remote
       execution node before execution starts.
 
       There are two possible ways of specifying the `inputs` parameter:
@@ -532,15 +406,13 @@ class Application(Struct, Persistable, Task):
           an :class:`InvalidArgument` exception is thrown.
 
     `outputs`
-      Files and directories that will be copied from the remote
-      execution node back to the local computer after execution has
-      completed.  Directories are copied recursively.
+      list of files that will be copied back from the remote execution
+      node back to the local computer after execution has completed.
 
-      There are three possible ways of specifying the `outputs` parameter:
+      There are two possible ways of specifying the `outputs` parameter:
 
-      * It can be a Python dictionary: keys are remote file or
-        directory paths (relative to the execution directory), values
-        are corresponding local names.
+      * It can be a Python dictionary: keys are local file paths, 
+        values are remote file names.
 
       * It can be a Python list: each item in the list should be a
         pair `(remote_file_name, local_file_name)`; a single string
@@ -548,14 +420,6 @@ class Application(Struct, Persistable, Task):
         `local_file_name` and `remote_file_name` being equal.  If an
         absolute path name is specified as `remote_file_name`, then an
         :class:`InvalidArgument` exception is thrown.
-
-      * The constant `gc3libs.ANY_OUTPUT` which instructs GC3Libs to
-        copy every file in the remote execution directory back to the
-        local output path.
-
-      Note that no errors will be raised if an output file is not present.
-      Override the `postprocess`:meth: method to raise errors for reacting
-      on this kind of failures.
 
     `output_dir`
       Path to the base directory where output files will be downloaded.
@@ -649,9 +513,14 @@ class Application(Struct, Persistable, Task):
       Path to the base directory where output files will be downloaded.
       Output file names are interpreted relative to this base directory.
 
+    `final_output_retrieved` 
+      boolean, indicating whether job output has been fetched from the
+      remote resource; if `True`, you cannot assume that data is still
+      available remotely.  (Note: for jobs in ``TERMINATED`` state, the
+      output can be retrieved only once!)
+
     `execution`
       a `Run` instance; its state attribute is initially set to ``NEW``
-      (Actually inherited from the `Task`:class:)
 
     `environment`
       dictionary mapping environment variable names to the requested
@@ -681,6 +550,7 @@ class Application(Struct, Persistable, Task):
         # required parameters
         self.executable = executable
         self.arguments = [ str(x) for x in arguments ]
+
         
         self.inputs = Application._io_spec_to_dict(inputs)
         # check that remote entries are all distinct
@@ -688,7 +558,7 @@ class Application(Struct, Persistable, Task):
         if len(self.inputs.values()) != len(set(self.inputs.values())):
             # try to build an exact error message
             inv = { }
-            for l, r in self.inputs.itertiems():
+            for l, r in self.inputs:
                 if r in inv:
                     raise DuplicateEntryError("Local input files '%s' and '%s'"
                                               " map to the same remote path '%s'"
@@ -698,8 +568,7 @@ class Application(Struct, Persistable, Task):
         # ensure remote paths are not absolute
         for r_path in self.inputs.itervalues():
             if os.path.isabs(r_path):
-                raise gc3libs.exceptions.InvalidArgument(
-                    "Remote paths not allowed to be absolute: %s" % r_path)
+                raise gc3libs.exceptions.InvalidArgument("Remote paths not allowed to be absolute")
 
         self.outputs = Application._io_spec_to_dict(outputs)
         # check that local entries are all distinct
@@ -707,7 +576,7 @@ class Application(Struct, Persistable, Task):
         if len(self.outputs.values()) != len(set(self.outputs.values())):
             # try to build an exact error message
             inv = { }
-            for r, l in self.outputs.iteritems():
+            for r, l in self.outputs:
                 if l in inv:
                     raise DuplicateEntryError("Remote output files '%s' and '%s'"
                                               " map to the same local path '%s'"
@@ -717,8 +586,7 @@ class Application(Struct, Persistable, Task):
         # ensure remote paths are not absolute
         for r_path in self.outputs.iterkeys():
             if os.path.isabs(r_path):
-                raise gc3libs.exceptions.InvalidArgument(
-                    "Remote paths not allowed to be absolute")
+                raise gc3libs.exceptions.InvalidArgument("Remote paths not allowed to be absolute")
 
         self.output_dir = output_dir
 
@@ -745,27 +613,23 @@ class Application(Struct, Persistable, Task):
         if self.stdin and (self.stdin not in self.inputs):
             self.inputs[self.stdin] = os.path.basename(self.stdin)
         self.stdout = get_and_remove(kw, 'stdout')
-        if self.stdout is not None and os.path.isabs(self.stdout):
-            raise InvalidArgument(
-                "Absolute path '%s' passed as `Application.stdout`"
-                % self.stdout)
         if self.stdout and (self.stdout not in self.outputs):
-            self.outputs[self.stdout] = self.stdout
+            self.outputs[self.stdout] = os.path.basename(self.stdout)
         self.stderr = get_and_remove(kw, 'stderr')
-        if self.stderr is not None and os.path.isabs(self.stderr):
-            raise InvalidArgument(
-                "Absolute path '%s' passed as `Application.stderr`"
-                % self.stderr)
         if self.stderr and (self.stderr not in self.outputs):
-            self.outputs[self.stderr] = self.stderr
+            self.outputs[self.stderr] = os.path.basename(self.stderr)
 
         self.tags = get_and_remove(kw, 'tags', list())
 
+        # job name
+        self.jobname = get_and_remove(kw, 'jobname', self.__class__.__name__)
+
         # task setup; creates the `.execution` attribute as well
-        Task.__init__(self,
-                      get_and_remove(kw, 'jobname', self.__class__.__name__),
-                      get_and_remove(kw, 'grid', None))
+        Task.__init__(self, get_and_remove(kw, 'grid', None))
         
+        # output management
+        self.final_output_retrieved = False
+
         # any additional param
         Struct.__init__(self, **kw)
 
@@ -798,18 +662,16 @@ class Application(Struct, Persistable, Task):
         """
         try:
             # is `spec` dict-like?
-            # XXX: might raise encoding error if any value is Unicode non-ASCII
-            return dict((str(k), str(v)) for k,v in spec.iteritems())
+            return dict((k, v) for k,v in spec.iteritems())
         except AttributeError:
             # `spec` is a list-like
             def convert_to_tuple(val):
                 if isinstance(val, types.StringTypes):
-                    # XXX: might throw enconding error if `val` is Unicode?
-                    l = str(val) 
+                    l = str(val) # XXX: might throw enconding error if `val` is Unicode?
                     r = os.path.basename(l)
                     return (l, r)
                 else: 
-                    return (str(val[0]), str(val[1]))
+                    return tuple(val)
             return dict(convert_to_tuple(x) for x in spec)
         
 
@@ -841,27 +703,17 @@ class Application(Struct, Persistable, Task):
         the construction parameters; you should override this method
         to produce XRSL tailored to your application.
         """
-        # XXX: ARC0 seems to behave inconsistently if './something' is
-        # given as `executable`; however, commands run fine without
-        # the leading `./`, so let us just remove it and hope for the best.
         xrsl= str.join(' ', [
                 '&',
-                '(executable="%s")' % utils.ifelse(self.executable.startswith('./'),
-                                                   self.executable[2:],
-                                                   self.executable),
+                '(executable="%s")' % self.executable,
                 '(gmlog=".arc")', # FIXME: should check if conflicts with any input/output files
                 ])
         # treat 'arguments' separately
         if self.arguments:
             xrsl += '(arguments=%s)' % str.join(' ', [('"%s"' % x) for x in self.arguments])
-        # preserve execute permission on all input files
-        executables = [ ]
-        for l, r in self.inputs.iteritems():
-            if os.access(l, os.X_OK):
-                executables.append(r)
-        if len(executables) > 0:
-            xrsl += ('(executables=%s)'
-                     % str.join(' ', [('"%s"' % x) for x in executables]))
+        if (os.path.basename(self.executable) in self.inputs
+            or './'+os.path.basename(self.executable) in self.inputs):
+            xrsl += '(executables="%s")' % os.path.basename(self.executable)
         if self.stdin:
             xrsl += '(stdin="%s")' % self.stdin
         if self.join:
@@ -877,7 +729,7 @@ class Application(Struct, Persistable, Task):
                      % str.join(' ', [ ('("%s" "%s")' % (r,l)) for (l,r) in self.inputs.items() ]))
         if len(self.outputs) > 0:
             # XXX: this can go away when we have the ternary operator
-            # `x = a if y else b` (Python 2.5)
+            # `x = a if y else b`
             if self.output_base_url is None:
                 def output_url(l, r):
                     return ''
@@ -917,14 +769,7 @@ class Application(Struct, Persistable, Task):
         if self.jobname:
             xrsl += '(jobname="%s")' % self.jobname
 
-        # force it to be ascii
-        try:
-            return str(xrsl)
-        except UnicodeError, ex:
-            raise gc3libs.exceptions.InvalidArgument(
-                "Cannot create ASCII xRSL job description"
-                " (Unicode characters in the `Application` object?): %s"
-                % str(ex))
+        return xrsl
 
 
     def cmdline(self, resource):
@@ -979,33 +824,88 @@ class Application(Struct, Persistable, Task):
         if self.requested_memory:
             # SGE uses `mem_free` for memory limits; 'G' suffix allowed for Gigabytes
             qsub += ' -l mem_free=%dG' % self.requested_memory
-        if self.join:
-            qsub += ' -j yes'
-        if self.stdout:
-            qsub += ' -o %s' % self.stdout
-        if self.stdin:
-            # `self.stdin` is the full pathname on the GC3Pie client host;
-            # it is copied to its basename on the execution host
-            qsub += ' -i %s' % os.path.basename(self.stdin)
-        if self.stderr:
-            # from the qsub(1) man page: "If both the -j y and the -e
-            # options are present, Grid Engine sets but ignores the
-            # error-path attribute."
-            qsub += ' -e %s' % self.stderr
         if self.requested_cores and not _suppress_warning:
             # XXX: should this be an error instead?
             log.warning("Application requested %d cores,"
                         " but there is no generic way of expressing this requirement in SGE!"
                         " Ignoring request, but this will likely result in malfunctioning later on.", 
                         self.requested_cores)
-        try:
-            if self.jobname:
-                qsub += " -N '%s'" % self.jobname
-        except:
-            pass
+        if self.job_name:
+            qsub += " -N '%s'" % self.job_name
         return (qsub, self.cmdline(resource))
 
 
+    # State transition handlers.
+    #
+    # XXX: should these be moved to the `Task` interface?
+                      
+    def new(self):
+        """
+        Called when the job state is (re)set to `NEW`.
+
+        Note this will not be called when the application object is
+        created, rather if the state is reset to `NEW` after it has
+        already been submitted.
+
+        The default implementation does nothing, override in derived
+        classes to implement additional behavior.
+        """
+        pass
+
+    def submitted(self):
+        """
+        Called when the job state transitions to `SUBMITTED`, i.e.,
+        the job has been successfully sent to a (possibly) remote
+        execution resource and is now waiting to be scheduled.
+
+        The default implementation does nothing, override in derived
+        classes to implement additional behavior.
+        """
+        pass
+
+    def running(self):
+        """
+        Called when the job state transitions to `RUNNING`, i.e., the
+        job has been successfully started on a (possibly) remote
+        resource.
+
+        The default implementation does nothing, override in derived
+        classes to implement additional behavior.
+        """
+        pass
+
+    def stopped(self):
+        """
+        Called when the job state transitions to `STOPPED`, i.e., the
+        job has been remotely suspended for an unknown reason and
+        cannot automatically resume execution.
+
+        The default implementation does nothing, override in derived
+        classes to implement additional behavior.
+        """
+        pass
+
+    def terminated(self):
+        """
+        Called when the job state transitions to `TERMINATED`, i.e.,
+        the job has finished execution (with whatever exit status, see
+        `returncode`) and its execution cannot resume.
+
+        The default implementation does nothing, override in derived
+        classes to implement additional behavior.
+        """
+        pass
+
+    def postprocess(self, dir):
+        """
+        Called when the final output of the job has been retrieved to
+        local directory `dir`.
+
+        The default implementation does nothing, override in derived
+        classes to implement additional behavior.
+        """
+        pass
+    
     # Operation error handlers; called when transition from one state
     # to another fails.  The names are formed by suffixing the
     # corresponding `Core` method (operation) with ``_error``.
@@ -1150,7 +1050,7 @@ class Run(Struct):
     `Run` objects support attribute lookup by both the ``[...]`` and
     the ``.`` syntax; see `gc3libs.utils.Struct` for examples.
     """
-    def __init__(self, initializer=None, attach=None, **keywd):
+    def __init__(self,initializer=None,**keywd):
         """
         Create a new Run object; constructor accepts the same
         arguments as the `dict` constructor.
@@ -1184,9 +1084,7 @@ class Run(Struct):
             '2010R1'
             
         """
-        self._ref = attach
-        if not hasattr(self, '_state'):
-            self._state = Run.State.NEW
+        if not hasattr(self, '_state'): self._state = Run.State.NEW
         self._exitcode = None
         self._signal = None
 
@@ -1225,7 +1123,6 @@ class Run(Struct):
         'SUBMITTED', # Job has been sent to execution resource
         'STOPPED',   # trap state: job needs manual intervention
         'RUNNING',   # job is executing on remote resource
-        'TERMINATING', # remote job execution finished, output not yet retrieved
         'TERMINATED',# job execution finished (correctly or not) and will not be resumed
         'UNKNOWN',   # job info not found or lost track of job (e.g., network error or invalid job ID)
         )
@@ -1268,16 +1165,13 @@ class Run(Struct):
         +---------------+--------------------------------------------------------------+----------------------+
         |SUBMITTED      |Job has been sent to execution resource                       |RUNNING, STOPPED      |
         +---------------+--------------------------------------------------------------+----------------------+
-        |STOPPED        |Trap state: job needs manual intervention (either user-       |TERMINATING(by gkill),|
+        |STOPPED        |Trap state: job needs manual intervention (either user-       |TERMINATED (by gkill),|
         |               |or sysadmin-level) to resume normal execution                 |SUBMITTED (by miracle)|
         +---------------+--------------------------------------------------------------+----------------------+
-        |RUNNING        |Job is executing on remote resource                           |TERMINATING           |
-        +---------------+--------------------------------------------------------------+----------------------+
-        |TERMINATING    |Job has finished execution on remote resource;                |TERMINATED            |
-        |               |output not yet retrieved                                      |                      |
+        |RUNNING        |Job is executing on remote resource                           |TERMINATED            |
         +---------------+--------------------------------------------------------------+----------------------+
         |TERMINATED     |Job execution is finished (correctly or not)                  |None: final state     |
-        |               |and will not be resumed; output has been retrieved            |                      |
+        |               |and will not be resumed                                       |                      |
         +---------------+--------------------------------------------------------------+----------------------+
 
         When a :class:`Run` object is first created, it is assigned
@@ -1313,14 +1207,7 @@ class Run(Struct):
                 raise ValueError("Value '%s' is not a legal `gc3libs.Run.State` value." % value)
             if self._state != value:
                 self.timestamp[value] = time.time()
-                self.log.append('%s at %s' % (value, time.asctime()))
-                if self._ref is not None:
-                    # invoke state-transition method
-                    handler = value.lower()
-                    gc3libs.log.debug(
-                        "Calling state-transition handler '%s' on %s ..."
-                        % (handler, self._ref))
-                    getattr(self._ref, handler)()
+                self.log.append('%s on %s' % (value, time.asctime()))
             self._state = value
         return locals()
 
@@ -1381,9 +1268,9 @@ class Run(Struct):
         `signal` part can *both* be significant: in case a Grid
         middleware error happened *after* the application has
         successfully completed its execution.  In other words,
-        `os.WEXITSTATUS(returncode)` is meaningful iff
-        `os.WTERMSIG(returncode)` is 0 or one of the pseudo-signals
-        listed in `Run.Signals`.
+        `os.WEXITSTATUS(job.returncode)` is meaningful iff
+        `os.WTERMSIG(job.returncode)` is 0 or one of the
+        pseudo-signals listed in `Run.Signals`.
         
         `Run.exitcode` and `Run.signal` are combined to form the
         return code 16-bit integer as follows (the convention appears
@@ -1450,107 +1337,6 @@ class Run(Struct):
     # `Run.Signals` is an instance of global class `_Signals`
     Signals = _Signals()    
 
-
-
-class RetryableTask(Task):
-    """
-    Wrap a `Task` instance and re-submit it until a specified
-    termination condition is met.
-
-    By default, the re-submission upon failure happens iff execution
-    terminated with nonzero return code; the failed task is retried up
-    to `self.max_retries` times (indefinitely if `self.max_retries` is 0).
-
-    Override the `retry` method to implement a different retryal policy.
-
-    *Note:* The resubmission code is implemented in the
-    `terminated`:meth:, so be sure to call it if you ovverride in
-    derived classes.
-    """
-
-    def __init__(self, jobname, task, max_retries=0, **kw):
-        """
-        Wrap `task` and resubmit it until `self.retry()` returns `False`.
-
-        :param Task task: A `Task` instance that should be retried.
-
-        :param str jobname: The string identifying this `Task`
-            instance, see `Task`:class:.
-
-        :param int max_retries: Maximum number of times `task` should be
-            re-submitted; use 0 for "no limit".
-        """
-        self.max_retries = max_retries
-        self.retried = 0
-        self.task = task
-        Task.__init__(self, jobname, **kw)
-
-
-    def retry(self):
-        """
-        Return `True` or `False`, depending on whether the failed task
-        should be re-submitted or not.
-
-        The default behavior is to retry a task iff its execution
-        terminated with nonzero returncode and the maximum retry limit
-        has not been reached.  If `self.max_retries` is 0, then the
-        dependent task is retried indefinitely.
-
-        Override this method in subclasses to implement a different
-        policy.
-        """
-        if (self.task.execution.returncode != 0
-            and ((self.max_retries > 0
-                  and self.retried < self.max_retries)
-                 or self.max_retries == 0)):
-            return True
-        else:
-            return False
-
-    def attach(self, grid):
-        Task.attach(self, grid)
-        self.task.attach(grid)
-
-    def detach(self):
-        Task.detach(self)
-        self.task.detach()
-
-    def fetch_output(self, *args, **kw):
-        self.task.fetch_output(*args, **kw)
-
-    def free(self, **kw):
-        self.task.free(**kw)
-
-    def kill(self, **kw):
-        self.task.kill(**kw)
-
-    def peek(self, *args, **kw):
-        return self.task.peek(*args, **kw)
-
-    def submit(self, **kw):
-        self.task.submit(**kw)
-
-    def update_state(self):
-        """
-        Update the state of the dependent task, then resubmit it if it's
-        TERMINATED and `self.retry()` is `True`.
-        """
-        self.task.update_state()
-        state = self.task.execution.state
-        if state == Run.State.TERMINATED:
-            if self.retry():
-                self.retried += 1
-                self.task.submit()
-            self.execution.state = self.task.execution.state
-        elif state == Run.State.TERMINATING:
-            if hasattr(self, 'output_dir'):
-                self.task.fetch_output(output_dir=self.output_dir)
-            else:
-                self.task.fetch_output()
-        else:
-            self.execution.state = state
-
-        
         
 ## main: run tests
 

@@ -23,7 +23,7 @@ via SSH.
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 #
 __docformat__ = 'reStructuredText'
-__version__ = 'development version (SVN $Revision$)'
+__version__ = '1.0 (SVN $Revision$)'
 
 
 import os
@@ -43,14 +43,6 @@ class Transport(object):
         """
         raise NotImplementedError("Abstract method `Transport.connect()` called - this should have been defined in a derived class.")
 
-    def chmod(self, path, mode):
-        """
-        Change the mode (permissions) of a file. The permissions are
-        UNIX-style and identical to those used by python's `os.chmod`
-        function.
-        """
-        raise NotImplementedError("Abstract method `Transport.chmod()` called - this should have been defined in a derived class.")
-
     def execute_command(self, command):
         """
         Execute a command using the available tranport media.  
@@ -65,12 +57,6 @@ class Transport(object):
         
         """
         raise NotImplementedError("Abstract method `Transport.execute_command()` called - this should have been defined in a derived class.")
-
-    def isdir(self, path):
-        """
-        Return `True` if `path` is a directory.
-        """
-        raise NotImplementedError("Abstract method `Transport.isdir()` called - this should have been defined in a derived class.")
 
     def listdir(self, path):
         """
@@ -113,38 +99,31 @@ class Transport(object):
         """
         raise NotImplementedError("Abstract method `Transport.open()` called - this should have been defined in a derived class.")
 
-    def put(self, source, destination):
+    def put(self, source, destinaton):
         """
         Copy the file source to the file or directory destination.
         If destination is a directory, a file with the same basename 
         as source is created (or overwritten) in the directory specified. 
-
-        Permission bits are copied. source and destination are path 
+        Permission bits are copied. source and destinaton are path 
         names given as strings.
-
         Any exception raised by operations will be passed through.  
         
         :param str source: the file to copy
-        :param str destination: the destination file or directory
+        :param str destinaton: the destination file or directory
         """
         raise NotImplementedError("Abstract method `Transport.put()` called - this should have been defined in a derived class.")
 
-    def get(self, source, destination, ignore_nonexisting=False):
+    def get(self, source, destinaton):
         """
-        Copy the file source to the file or directory destination.
+        Copy the file source to the file or directory destinaton.
         If destination is a directory, a file with the same basename 
         as source is created (or overwritten) in the directory specified. 
-
         Permission bits are copied. source and destination are path 
         names given as strings.
-
-        Any exception raised by operations will be passed through,
-        unless the optional third argument `ignore_nonexisting` is
-        `True`, in which case exceptions arising from a non-existing
-        source or destination path will be ignored.
+        Any exception raised by operations will be passed through.
 
         :param str source: the file to copy
-        :param str destination: the destination file or directory
+        :param str destinaton: the destination file or directory
         """
         raise NotImplementedError("Abstract method `Transport.get()` called - this should have been defined in a derived class.")
 
@@ -210,16 +189,6 @@ class SshTransport(Transport):
             raise gc3libs.exceptions.TransportError("Failed while connecting to remote host: %s. Error type %s, %s"
                                             % (self.remote_frontend, sys.exc_info()[0], sys.exc_info()[1]))
 
-    @same_docstring_as(Transport.chmod)
-    def chmod(self, path, mode):
-        try:
-            self.sftp.chmod(path, mode)
-        except Exception, ex:
-            raise gc3libs.exceptions.TransportError(
-                "Error changing remote path '%s' mode to 0%o: %s: %s" 
-                % (path, mode, ex.__class__.__name__, str(ex)))
-
-
     @same_docstring_as(Transport.execute_command)
     def execute_command(self, command):
         try:
@@ -234,22 +203,7 @@ class SshTransport(Transport):
         except Exception, ex:
             raise gc3libs.exceptions.TransportError("Failed executing remote command '%s': %s: %s" 
                                             % (command, ex.__class__.__name__, str(ex)))
-
-
-    @same_docstring_as(Transport.isdir)
-    def isdir(self, path):
-        # SFTPClient.listdir() raises IOError(errno=2) when called
-        # with a non-directory argument
-        try:
-            self.sftp.listdir(path)
-            return True
-        except IOError, ex:
-            if ex.errno == 2:
-                return False
-            else:
-                raise
-
-    
+        
     @same_docstring_as(Transport.listdir)
     def listdir(self, path):
         try:
@@ -263,65 +217,41 @@ class SshTransport(Transport):
     def makedirs(self, path, mode=0777):
         dirs = path.split('/')
         if '..' in dirs:
-            raise gc3libs.exceptions.InvalidArgument(
-                "Path component '..' not allowed in `SshTransport.makedirs()`")
+            raise gc3libs.exceptions.InvalidArgument("Path component '..' not allowed in `SshTransport.makedirs()`")
         dest = ''
         for dir in dirs:
             if dir in ['', '.']:
                 continue
-            dest += '/' + dir
             try:
-                self.sftp.mkdir(dest, mode)
+                self.sftp.listdir(dest + dir)
             except IOError:
                 # sftp.mkdir raises IOError if the directory exists;
                 # ignore error and continue
                 pass
+            dest = os.path.join(dest, dir)
 
         
     @same_docstring_as(Transport.put)
     def put(self, source, destination):
-        gc3libs.log.debug("SshTransport.put(): local source: '%s';"
-                          " remote destination: '%s'; remote host: '%s'." 
-                          % (source, destination, self.remote_frontend))
         try:
-            destdir = os.path.dirname(destination)
-            self.makedirs(destdir)
-        except Exception, ex:
-            raise gc3libs.exceptions.TransportError(
-                "Could not make directory '%s' on host '%s': %s: %s"
-                % (destdir, self.remote_frontend,
-                   ex.__class__.__name__, str(ex)))
-        try:
+            gc3libs.log.debug("SshTransport.put(): local source: %s; remote destination: %s; remote host: %s." 
+                              % (source, destination, self.remote_frontend))
             self.sftp.put(source, destination)
         except Exception, ex:
-            raise gc3libs.exceptions.TransportError(
-                "Could not upload '%s' to '%s' on host '%s': %s: %s"
-                % (source, destination, self.remote_frontend, 
-                   ex.__class__.__name__, str(ex)))
-
+            raise gc3libs.exceptions.TransportError("Could not upload '%s' to '%s' on host '%s': %s: %s"
+                                            % (source, destination, self.remote_frontend, 
+                                               ex.__class__.__name__, str(ex)))
 
     @same_docstring_as(Transport.get)
-    def get(self, source, destination, ignore_nonexisting=False):
+    def get(self, source, destination):
         try:
             gc3libs.log.debug("SshTranport.get(): remote source %s; remote host: %s; local destination: %s." 
                               % (source, self.remote_frontend, destination))
-            if self.isdir(source):
-                # recursively descend it
-                for name in self.listdir(source):
-                    # don't use `os.path.join` here, ``/`` is
-                    # the right separator to use; see
-                    # http://code.fabfile.org/issues/show/306
-                    self.get(source + '/' + name, destination + '/' + name)
-            else:
-                self.sftp.get(source, destination)
+            self.sftp.get(source, destination)
         except Exception, ex:
-            # IOError(errno=2) means the remote path is not existing
-            if not (ignore_nonexisting
-                    and isinstance(ex, IOError) and ex.errno == 2):
-                raise gc3libs.exceptions.TransportError(
-                    "Could not download '%s' on host '%s' to '%s': %s: %s"
-                    % (source, self.remote_frontend, destination, 
-                       ex.__class__.__name__, str(ex)))
+            raise gc3libs.exceptions.TransportError("Could not download '%s' on host '%s' to '%s': %s: %s"
+                                            % (source, self.remote_frontend, destination, 
+                                               ex.__class__.__name__, str(ex)))
 
     @same_docstring_as(Transport.remove)
     def remove(self, path):
@@ -336,9 +266,7 @@ class SshTransport(Transport):
     @same_docstring_as(Transport.remove_tree)
     def remove_tree(self, path):
         try:
-            gc3libs.log.debug("Running method 'remove_tree';"
-                              " remote path: %s remote host: %s"
-                              % (path, self.remote_frontend))
+            gc3libs.log.debug("Running metohd: remove_tree. remote path: %s remote host: %s" % (path, self.remote_frontend))
             # Note: At the moment rmdir does not work as expected
             # self.sftp.rmdir(path)
             # easy workaround: use SSHClient to issue an rm -rf comamnd
@@ -438,14 +366,8 @@ class LocalTransport(Transport):
     def connect(self):
         self._is_open = True
 
-    @same_docstring_as(Transport.chmod)
-    def chmod(self, path, mode):
-        try:
-            os.chmod(path, mode)
-        except Exception, ex:
-            raise gc3libs.exceptions.TransportError(
-                "Error changing local path '%s' mode to 0%o: %s: %s" 
-                % (path, mode, ex.__class__.__name__, str(ex)))
+    #@same_docstring_as(Transport.open)
+    #def open(self, source, mode, bufsize=-1):
 
     def execute_command_and_detach(self, command):
         assert self._is_open is True, \
@@ -492,11 +414,6 @@ class LocalTransport(Transport):
                                      % (command, ex.__class__.__name__, str(ex)))
 
         
-    @same_docstring_as(Transport.isdir)
-    def isdir(self, path):
-        return os.path.isdir(path)
-
-
     @same_docstring_as(Transport.listdir)
     def listdir(self, path):
         assert self._is_open is True, \
@@ -522,9 +439,7 @@ class LocalTransport(Transport):
             " on `Transport` instance closed / not yet open"
 
         try:
-            gc3libs.log.debug("Running method 'put';"
-                              " source: %s. destination: %s"
-                              % (source, destination))
+            gc3libs.log.debug("Running metohd: put. source: %s. destination: %s" % (source, destination))
             if source != destination:
                 return shutil.copy(source, destination)
             else:
@@ -537,9 +452,9 @@ class LocalTransport(Transport):
 
 
     @same_docstring_as(Transport.get)
-    def get(self, source, destination, ignore_nonexisting=False):
+    def get(self, source, destinaton):
         gc3libs.log.debug("Transport.get() implemented by Transport.put()... ")
-        self.put(source, destination)
+        self.put(source,destination)
 
 
     @same_docstring_as(Transport.remove)

@@ -20,7 +20,7 @@ Job control on ARC0 resources.
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 #
 __docformat__ = 'reStructuredText'
-__version__ = 'development version (SVN $Revision$)'
+__version__ = '1.0 (SVN $Revision$)'
 
 
 import sys
@@ -36,10 +36,6 @@ warnings.simplefilter("ignore")
 import sys
 sys.path.append('/opt/nordugrid/lib/python%d.%d/site-packages' 
                 % sys.version_info[:2])
-# this is where arc0 libraries are installed from release 11.05
-sys.path.append('/usr/lib/pymodules/python%d.%d/'
-                % sys.version_info[:2])
-
 import arclib
 from gc3libs import log, Run
 from gc3libs.backends import LRMS
@@ -54,9 +50,9 @@ class ArcLrms(LRMS):
     """
     def __init__(self,resource, auths):
         # Normalize resource types
-        assert resource.type == gc3libs.Default.ARC0_LRMS, \
-            "ArcLRMS.__init__(): Failed. Resource type expected '%s'. Received '%s'" \
-            % (gc3libs.Default.ARC0_LRMS, resource.type)
+        assert resource.type == gc3libs.Default.ARC_LRMS, \
+            "ArcLRMS.__init__(): Failed. Resource type expected 'arc'. Received '%s'" \
+            % resource.type
 
         self._resource = resource
 
@@ -101,42 +97,22 @@ class ArcLrms(LRMS):
         `arclib.Cluster` object.
         """
         if self._resource.has_key('arc_ldap'):
-            log.info("Updating ARC resource information from '%s'"
+            log.debug("Getting list of ARC resources from GIIS '%s' ..."
                       % self._resource.arc_ldap)
             return arclib.GetClusterResources(arclib.URL(self._resource.arc_ldap),
                                               True, '', 1)
         else:
-            log.info("Updating ARC resource information from 'default GIIS'")
+            log.debug("Getting list of ARC resources from default GIIS...")
             return arclib.GetClusterResources()
 
-
-    # ARC refreshes the InfoSys every 30 seconds by default;
-    # there's no point in querying it more often than this...
-    @cache_for(gc3libs.Default.ARC_CACHE_TIME)
-    def _get_jobs(self):
-        """
-        Wrapper around `arclib.GetAllJobs()`. Retrieve Jobs information from a
-        given resource. Jobs are stored into a dictionary using 
-        job.lrms_jobid as index.
-        This is supposed to speedup the access to a given job object in the
-        update_job_state() method.
-        """
-        jobs = {}
-        cls = self._get_clusters()
-        log.debug('_get_clusters returned [%d] cluster resources' % len(cls))
-        job_list = arclib.GetAllJobs(cls, True, '', 3)
-        log.info("Updating list of jobs belonging to resource '%s'. Registering '%d' jobs" % (self._resource.name, len(job_list)))
-        for job in job_list:
-            jobs[job.id] = job
-        return jobs
-
+            
     # ARC refreshes the InfoSys every 30 seconds by default;
     # there's no point in querying it more often than this...
     @cache_for(gc3libs.Default.ARC_CACHE_TIME)
     def _get_queues(self):
         cls = self._get_clusters()
-        log.debug('_get_clusters returned [%d] cluster resources' % len(cls))
-        log.info("Updating resource Queues information")
+        log.debug("arclib.GetClusterResources() returned"
+                  " cluster list of length %d", len(cls))
         return arclib.GetQueueInfo(cls,arclib.MDS_FILTER_CLUSTERINFO,
                                    True, '', 5)
 
@@ -145,13 +121,16 @@ class ArcLrms(LRMS):
     def submit_job(self, app):
         job = app.execution
 
+        # XXX: it is ok for an LRMS to raise an AuthError
         self.auths.get(self._resource.auth)
 
         # Initialize xrsl
         xrsl = app.xrsl(self._resource)
-        log.debug("Application provided XRSL: %s" % xrsl)
+        log.debug('Application provided XRSL: %s' % xrsl)
         try:
-            xrsl = arclib.Xrsl(xrsl)
+            # ARClib cannot handle unicode strings, so convert `xrsl` to ascii
+            # XXX: should this be done in Application.xrsl() instead?
+            xrsl = arclib.Xrsl(str(xrsl))
         except Exception, ex:
             raise gc3libs.exceptions.LRMSSubmitError('Failed in getting `Xrsl` object from arclib: %s: %s'
                                   % (ex.__class__.__name__, str(ex)))
@@ -201,11 +180,11 @@ class ArcLrms(LRMS):
                     INLRMS:H        STOPPED
                     FINISHING       RUNNING
                     EXECUTED        RUNNING
-                    FINISHED        TERMINATING
-                    CANCELING       TERMINATING
-                    FINISHED        TERMINATING
-                    FAILED          TERMINATING
+                    FINISHED        TERMINATED
+                    CANCELING       TERMINATED
+                    FINISHED        TERMINATED
                     KILLED          TERMINATED
+                    FAILED          TERMINATED
                     DELETED         TERMINATED
                     ==============  ===========
 
@@ -232,42 +211,35 @@ class ArcLrms(LRMS):
                     'INLRMS:H':  Run.State.STOPPED,
                     'FINISHING': Run.State.RUNNING,
                     'EXECUTED':  Run.State.RUNNING,
-                    'FINISHED':  Run.State.TERMINATING,
-                    'CANCELING': Run.State.TERMINATING,
-                    'FINISHED':  Run.State.TERMINATING,
-                    'FAILED':    Run.State.TERMINATING,
+                    'FINISHED':  Run.State.TERMINATED,
+                    'CANCELING': Run.State.TERMINATED,
+                    'FINISHED':  Run.State.TERMINATED,
                     'KILLED':    Run.State.TERMINATED,
+                    'FAILED':    Run.State.TERMINATED,
                     'DELETED':   Run.State.TERMINATED,
                     }[status]
             except KeyError:
                 raise gc3libs.exceptions.UnknownJobState("Unknown ARC job state '%s'" % status)
 
 
+        # XXX: it is ok for an LRMS to raise an AuthError
         self.auths.get(self._resource.auth)
 
         # try to intercept error conditions and translate them into
         # meaningful exceptions
         try:
             job = app.execution
-            # arc_job = arclib.GetJobInfo(job.lrms_jobid)
-
-            jobs = self._get_jobs()
-            # arc_job = [j for j in jobs if j.id == job.lrms_jobid][0]
-            arc_job = jobs[job.lrms_jobid]
+            arc_job = arclib.GetJobInfo(job.lrms_jobid)
         except AttributeError, ex:
             # `job` has no `lrms_jobid`: object is invalid
             raise gc3libs.exceptions.InvalidArgument("Job object is invalid: %s"
                                                      % str(ex))
-        except IndexError, ix:
-            # no job found.
-            # This could be caused by the InformationSystem not yet updated with the infortmation of the newly submitte job
-            raise  gc3libs.exceptions.LRMSError("No job found corresponding to the following id: [%s]" % job.lrms_jobid)
 
         # update status
         state = map_arc_status_to_gc3job_status(arc_job.status)
         if arc_job.exitcode != -1:
             job.returncode = arc_job.exitcode
-        elif state in [Run.State.TERMINATING, Run.State.TERMINATING] and job.returncode is None:
+        elif state == Run.State.TERMINATED and job.returncode is None:
             # XXX: it seems that ARC does not report the job exit code
             # (at least in some cases); let's make one up based on
             # some crude heuristics
@@ -283,13 +255,13 @@ class ArcLrms(LRMS):
             elif arc_job.requested_cpu_time > -1 and arc_job.used_cpu_time > -1 and arc_job.used_cpu_time > arc_job.requested_cpu_time:
                 job.log("Job exceeded requested CPU time (%d s),"
                         " killed by remote batch system" 
-                        % arc_job.requested_cpu_time)
+                        % arc_job.requested_wall_time)
                 job.returncode = (Run.Signals.RemoteError, -1)
             # note: arc_job.used_memory is in KiB (!), app.requested_memory is in GiB
-            elif app.requested_memory > -1 and arc_job.used_memory > -1 and (arc_job.used_memory / 1024) > (app.requested_memory * 1024):
-                job.log("Job used more memory (%d MB) than requested (%d MB),"
+            elif app.requested_memory > 0 and arc_job.used_memory > -1 and (arc_job.used_memory / 1024) > (app.requested_memory * 1024):
+                job.log("Job used more memory (%d GB) than requested (%d GB),"
                         " killed by remote batch system" 
-                        % (arc_job.used_memory / 1024, app.requested_memory * 1024))
+                        % (arc_job.used_memory / 1024 / 1024, app.requested_memory))
                 job.returncode = (Run.Signals.RemoteError, -1)
             else:
                 # presume everything went well...
@@ -302,7 +274,7 @@ class ArcLrms(LRMS):
         # Common struture as described in Issue #78
         job.queue = arc_job.queue
         job.cores = arc_job.cpu_count
-        job.original_exitcode = arc_job.exitcode
+        job.exit_code = arc_job.exitcode
         job.used_walltime = arc_job.used_wall_time # exressed in sec.
         job.used_cputime = arc_job.used_cpu_time # expressed in sec.
         job.used_memory = arc_job.used_memory # expressed in KiB
@@ -338,11 +310,8 @@ class ArcLrms(LRMS):
 
     @same_docstring_as(LRMS.get_results)
     def get_results(self, app, download_dir, overwrite=False):
-        # XXX: can raise encoding/decoding error if `download_dir`
-        # is not ASCII, but the ARClib bindings don't accept
-        # Python `unicode` strings.
-        download_dir = str(download_dir)
 
+        # XXX: it is ok for an LRMS to raise an AuthError
         self.auths.get(self._resource.auth)
 
         job = app.execution
@@ -350,17 +319,12 @@ class ArcLrms(LRMS):
 
         log.debug("Downloading job output into '%s' ...", download_dir)
         try:
-            jftpc.DownloadDirectory(job.lrms_jobid, download_dir)
+            arclib.JobFTPControl.DownloadDirectory(jftpc, job.lrms_jobid, download_dir)
             job.download_dir = download_dir
         except arclib.FTPControlError, ex:
-            # XXX: due to issue 176, we need to check whether this is a transient error or not
-            if "Failed to allocate port for data transfer" in str(ex):
-                raise gc3libs.exceptions.RecoverableDataStagingError(
-                    "Recoverable Error: Failed downloading remote folder '%s': %s"
-                    % (job.lrms_jobid, str(ex)))
             # critical error. consider job remote data as lost
-            raise gc3libs.exceptions.UnrecoverableDataStagingError(
-                "Unrecoverble Error: Failed downloading remote folder '%s': %s" 
+            raise gc3libs.exceptions.DataStagingError(
+                "Failed downloading remote folder '%s': %s" 
                 % (job.lrms_jobid, str(ex)))
 
         return 
@@ -368,6 +332,7 @@ class ArcLrms(LRMS):
     @same_docstring_as(LRMS.free)
     def free(self, app):
 
+        # XXX: it is ok for an LRMS to raise an AuthError
         self.auths.get(self._resource.auth)
 
         job = app.execution
@@ -375,13 +340,13 @@ class ArcLrms(LRMS):
 
         # Clean remote job sessiondir
         try:
-            retval = jftpc.Clean(job.lrms_jobid)
+            retval = arclib.JobFTPControl.Clean(jftpc,job.lrms_jobid)
         except arclib.FTPControlError:
             log.warning("Failed removing remote folder '%s'" % job.lrms_jobid)
             pass
 
 
-    @cache_for(gc3libs.Default.ARC_CACHE_TIME)
+    @same_docstring_as(LRMS.get_resource_status)
     def get_resource_status(self):
         # Get dynamic information out of the attached ARC subsystem 
         # (being it a single resource or a grid)
@@ -394,6 +359,7 @@ class ArcLrms(LRMS):
         # user_running
         # user_queued
 
+        # XXX: it is ok for an LRMS to raise an AuthError
         self.auths.get(self._resource.auth)
 
         total_queued = 0
@@ -409,38 +375,48 @@ class ArcLrms(LRMS):
             else:
                 return val
 
-        queues = self._get_queues()
-        
-        for q in queues:
-            q.grid_queued = _normalize_value(q.grid_queued)
-            q.local_queued = _normalize_value(q.local_queued)
-            q.prelrms_queued = _normalize_value(q.prelrms_queued)
-            q.queued = _normalize_value(q.queued)
+        cls = self._get_clusters()
+        for cluster in cls:
+            queues =  arclib.GetQueueInfo(cluster, arclib.MDS_FILTER_CLUSTERINFO,
+                                          True, '', 1)
+            if len(queues) == 0:
+                log.warning('No ARC queues found for resource %s' % str(cluster))
+                continue
 
-            q.cluster.used_cpus = _normalize_value(q.cluster.used_cpus)
-            q.cluster.total_cpus = _normalize_value(q.cluster.total_cpus)
-            
-            # total_queued
-            total_queued = total_queued +  q.grid_queued + \
-                           q.local_queued + q.prelrms_queued + q.queued
+            for q in queues:
+                q.grid_queued = _normalize_value(q.grid_queued)
+                q.local_queued = _normalize_value(q.local_queued)
+                q.prelrms_queued = _normalize_value(q.prelrms_queued)
+                q.queued = _normalize_value(q.queued)
 
-            # free_slots
-            # free_slots - free_slots + ( q.total_cpus - q.running )
-            free_slots = free_slots +\
-                         min((q.total_cpus - q.running),\
-                             (q.cluster.total_cpus - q.cluster.used_cpus))
+                q.cluster.used_cpus = _normalize_value(q.cluster.used_cpus)
+                q.cluster.total_cpus = _normalize_value(q.cluster.total_cpus)
 
-        # XXX: if cls is empty, the following method will use the default
-        # information system entries located in $NORDUGRID_LOCATION/etc/giis.
-        # This may spawn quite a lot and very long ldapsearches.
-        # list_of_jobs = arclib.GetAllJobs(cluster, True, '', 1)
-        jobs = self._get_jobs()
-        # user_running and user_queued
-        for job in jobs.values():
-            if 'INLRMS:R' in job.status:
-                user_running = user_running + 1
-            elif 'INLRMS:Q' in job.status:
-                user_queued = user_queued + 1
+                # total_queued
+                total_queued = total_queued +  q.grid_queued + \
+                    q.local_queued + q.prelrms_queued + q.queued
+
+                # free_slots
+                # free_slots - free_slots + ( q.total_cpus - q.running )
+                free_slots = free_slots +\
+                    min((q.total_cpus - q.running),\
+                            (q.cluster.total_cpus - q.cluster.used_cpus))
+
+            list_of_jobs = arclib.GetAllJobs(cluster, True, '', 1)
+            # user_running and user_queued
+            for job in list_of_jobs:
+                if 'INLRMS:R' in job.status:
+                    user_running = user_running + 1
+                elif 'INLRMS:Q' in job.status:
+                    user_queued = user_queued + 1
+
+
+        # update self._resource with:
+        # int queued
+        # int running
+        # int user_queued
+        # int user_run
+        # int used_quota = -1
 
         self._resource.queued = total_queued
         self._resource.free_slots = free_slots
@@ -469,14 +445,15 @@ class ArcLrms(LRMS):
         assert job.has_key('lrms_jobid'), \
             "Missing attribute `lrms_jobid` on `Job` instance passed to `ArcLrms.peek`."
 
+        # XXX: it is ok for an LRMS to raise an AuthError
         self.auths.get(self._resource.auth)
 
         if size is None:
             size = sys.maxint
 
         # XXX: why on earth?
-        # if int(offset) < 1024:
-        #     offset = 0
+        if int(offset) < 1024:
+            offset = 0
 
         _remote_filename = job.lrms_jobid + '/' + remote_filename
 
@@ -499,7 +476,7 @@ class ArcLrms(LRMS):
                                       int(offset), int(size), 
                                       local_file.name)
 
-        log.debug("ArcLRMS.peek(): arclib.JobFTPControl.Download: completed")
+        log.debug('ArcLRMS.peek(): arclib.JobFTPControl.Download: completed')
 
 
 ## main: run tests

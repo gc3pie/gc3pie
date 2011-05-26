@@ -348,10 +348,9 @@ class _Script(cli.app.CommandLineApp):
             self.log.debug('Creating instance of Core ...')
             return gc3libs.core.Core(* gc3libs.core.import_config(config_file_locations, auto_enable_auth))
         except gc3libs.exceptions.NoResources:
-            raise gc3libs.exceptions.FatalError(
-                "No computational resources defined."
-                " Please edit the configuration file(s): '%s'." 
-                % (str.join("', '", config_file_locations)))
+            raise gc3libs.exceptions.FatalError("No computational resources defined."
+                                                " Please edit the configuration file(s): '%s'." 
+                                                % (str.join("', '", config_file_locations)))
         except:
             self.log.debug("Failed loading config file from '%s'", 
                            str.join("', '", config_file_locations))
@@ -379,9 +378,8 @@ class _Script(cli.app.CommandLineApp):
             return False
         kept = self._core.select_resource(keep_resource_if_matches)
         if kept == 0:
-            raise gc3libs.exceptions.NoResources(
-                "No resources match the names '%s'" 
-                % str.join(',', resource_names))
+            raise gc3libs.exceptions.NoResources("No resources match the names '%s'" 
+                              % str.join(',', resource_names))
 
 
 
@@ -567,105 +565,8 @@ class SessionBasedScript(_Script):
                        " matching the glob pattern '%s'" 
                        % self.input_filename_pattern)
 
-
-    def make_directory_path(self, pathspec, jobname, *args):
-        """
-        Return a path to a directory, suitable for storing the output
-        of a job (named after `jobname`).  It is not required that the
-        returned path points to an existing directory.
-
-        This is called by the default `process_args`:meth: using
-        `self.params.output` (i.e., the argument to the
-        ``-o``/``--output`` option) as `pathspec`, and `jobname` and
-        `args` exactly as returned by `new_tasks`:meth:
-
-        The default implementation substitutes the following strings
-        within `pathspec`:
-          * ``SESSION`` is replaced with the name of the current session
-            (as specified by the ``-s``/``--session`` command-line option)
-            with a suffix ``.out`` appended;
-          * ``PATH`` is replaced with the path to directory containing
-            `args[0]` (if it's an existing filename), or to the
-            current directory;
-          * ``NAME`` is replaced with `jobname`;
-          * ``DATE`` is replaced with the current date, in *YYYY-MM-DD* format;
-          * ``TIME`` is replaced with the current time, in *HH:MM* format.
-          
-        """
-        if len(args) == 0:
-            path = os.getcwd()
-        else:
-            if os.path.isdir(args[0]):
-                path = args[0]
-            elif os.path.isfile(args[0]):
-                path = os.path.dirname(args[0])
-            else:
-                path = os.getcwd()
-        return (pathspec
-                .replace('SESSION', self.params.session + '.out')
-                .replace('PATH', path)
-                .replace('NAME', jobname)
-                .replace('DATE', time.strftime('%Y-%m-%d'))
-                .replace('TIME', time.strftime('%H:%M')))
-
     
-    def process_args(self):
-        """
-        Process command-line positional arguments and set up
-        `tasks`:attr: accordingly.  In particular, new jobs should be
-        appended to `tasks`:attr: in this method: `self.tasks` is not
-        altered elsewhere.
-
-        This method is called by the standard `_main`:meth: after
-        loading existing tasks into `self.tasks`.  New jobs should be
-        appended to `self.tasks` and it is also permitted to remove
-        existing ones.
-
-        The default implementation calls `new_tasks`:meth: and adds to
-        the session all jobs whose name does not clash with the
-        jobname of an already existing task.
-
-        See also: `new_tasks`:meth:
-        """
-        ## build job list
-        new_jobs = list(self.new_tasks(self.extra))
-        # pre-allocate Job IDs
-        if len(new_jobs) > 0:
-            self.store.idfactory.reserve(len(new_jobs))
-
-        # add new jobs to the session
-        existing_job_names = set(task.jobname for task in self.tasks)
-        random.seed()
-        for jobname, cls, args, kwargs in new_jobs:
-            #self.log.debug("SessionBasedScript.process_args():"
-            #               " considering adding new job defined by:"
-            #               " jobname=%s cls=%s args=%s kwargs=%s ..."
-            #               % (jobname, cls, args, kwargs))
-            if jobname in existing_job_names:
-                #self.log.debug("  ...already existing job, skipping it.")
-                continue
-            #self.log.debug("New job '%s', adding it to session." % jobname)
-            kwargs.setdefault('jobname', jobname)
-            kwargs.setdefault('requested_memory', self.params.memory_per_core)
-            kwargs.setdefault('requested_cores', self.params.ncores)
-            kwargs.setdefault('requested_walltime', self.params.walltime)
-            kwargs.setdefault('output_dir',
-                              self.make_directory_path(self.params.output,
-                                                       jobname, *args))
-            # create a new `Application` object
-            try:
-                app = cls(*args, **kwargs)
-                self.tasks.append(app)
-                self.log.debug("Added job '%s' to session." % jobname)
-            except Exception, ex:
-                self.log.error("Could not create job '%s': %s."
-                               % (jobname, str(ex)), exc_info=__debug__)
-                # XXX: should we raise an exception here?
-                #raise AssertionError("Could not create job '%s': %s: %s" 
-                #                     % (jobname, ex.__class__.__name__, str(ex)))
-
-
-    def new_tasks(self, extra):
+    def process_args(self, extra):
         """
         Iterate over jobs that should be added to the current session.
         Each item yielded must have the form `(jobname, cls, args,
@@ -683,7 +584,7 @@ class SessionBasedScript(_Script):
         * `kwargs` is a dictionary used to provide keyword arguments
           when calling `cls`.
 
-        This method is called by the default `process_args`:meth:, passing
+        This method is called by the default `_main`, passing
         `self.extra` as the `extra` parameter.
 
         The default implementation of this method scans the arguments
@@ -698,100 +599,53 @@ class SessionBasedScript(_Script):
         generated, where N is the quotient of
         `self.instances_per_file` by `self.instances_per_job`.
 
-        See also: `process_args`:meth:
+        
         """
-        inputs = self._search_for_input_files(self.params.args)
+        inputs = set()
 
+        pattern = self.input_filename_pattern
+        # special case for '*.ext' patterns
+        ext = None
+        if pattern.startswith('*.'):
+            ext = pattern[1:]
+            # re-check for more wildcard characters
+            if '*' in ext or '?' in ext or '[' in ext:
+                ext = None
+
+        def matches(name):
+            return fnmatch.fnmatch(name, pattern)
+        for path in self.params.args:
+            self.log.debug("Now processing input argument '%s' ..." % path)
+            if os.path.isdir(path):
+                # recursively scan for input files
+                for dirpath, dirnames, filenames in os.walk(path):
+                    for filename in filenames:
+                        if matches(filename):
+                            inputs.add(os.path.join(dirpath, filename))
+            elif matches(path) and os.path.exists(path):
+                inputs.add(path)
+            elif ext is not None and not path.endswith(ext) and os.path.exists(path + ext):
+                inputs.add(os.path.realpath(path + ext))
+            else:
+                self.log.error("Cannot access input path '%s' - ignoring it.", path)
+        self.log.debug("Gathered input files: '%s'" % str.join("', '", inputs))
+
+        def filename_sans(path):
+            # return base name without the extension
+            return os.path.splitext(os.path.basename(path))[0]
         for path in inputs:
             if self.instances_per_file > 1:
                 for seqno in range(1, 1+self.instances_per_file, self.instances_per_job):
                     if self.instances_per_job > 1:
-                        yield ("%s.%d--%s" % (gc3libs.utils.basename_sans(path),
-                                              seqno, 
+                        yield ("%s.%d--%s" % (filename_sans(path), seqno, 
                                               min(seqno + self.instances_per_job - 1,
                                                   self.instances_per_file)),
                                self.application, [path], extra.copy())
                     else:
-                        yield ("%s.%d" % (gc3libs.utils.basename_sans(path), seqno),
+                        yield ("%s.%d" % (filename_sans(path), seqno),
                                self.application, [path], extra.copy())
             else:
-                yield (gc3libs.utils.basename_sans(path),
-                       self.application, [path], extra.copy())
-
-
-    def make_task_controller(self):
-        """
-        Return a 'Controller' object to be used for progressing tasks
-        and getting statistics.  In detail, a good 'Controller' object
-        has to implement `progress` and `stats` methods with the same
-        interface as `gc3libs.core.Engine`.
-
-        By the time this method is called (from `_main`:meth:), the
-        following instance attributes are already defined:
-
-        * `self._core`: a `gc3libs.core.Core` instance;
-        * `self.tasks`: the list of `Task` instances to manage;
-        * `self.store`: the `gc3libs.persistence.Store` instance
-          that should be used to save/load jobs
-
-        In addition, any other attribute created during initialization
-        and command-line parsing is of course available.
-        """
-        return gc3libs.core.Engine(self._core, self.tasks, self.store,
-                                   max_in_flight = self.params.max_running)
-
-
-    def print_summary_table(self, output, stats):
-        """
-        Print a text summary of the session status to `output`.
-        This is used to provide the "normal" output of the
-        script; when the ``-l`` option is given, the output
-        of the `print_tasks_table` function is appended.
-
-        Override this in subclasses to customize the report that you
-        provide to users.  By default, this prints a table with the
-        count of tasks for each possible state.
-        
-        The `output` argument is a file-like object, only the `write`
-        method of which is used.  The `stats` argument is a
-        dictionary, mapping each possible `Run.State` to the count of
-        tasks in that state; see `Engine.stats` for a detailed
-        description.
-
-        """
-        table = Texttable(0) # max_width=0 => dynamically resize cells
-        table.set_deco(0)    # no decorations
-        table.set_cols_align(['r', 'c', 'c'])
-        total = stats['total']
-        for state in sorted(stats.keys()):
-            table.add_row([
-                    state, 
-                    "%d/%d" % (stats[state], total),
-                    "(%.1f%%)" % (100.0 * stats[state] / total)
-                    ])
-        output.write(table.draw())
-        output.write("\n")
-
-
-    def print_tasks_table(self, output=sys.stdout, states=gc3libs.Run.State):
-        """
-        Output a text table to stream `output`, giving details about
-        tasks in the given states.
-        """
-        table = Texttable(0) # max_width=0 => dynamically resize cells
-        table.set_deco(Texttable.HEADER) # also: .VLINES, .HLINES .BORDER
-        table.header(['JobID', 'Job name', 'State', 'Info'])
-        #table.set_cols_width([10, 20, 10, 35])
-        table.set_cols_align(['l', 'l', 'l', 'l'])
-        table.add_rows([ (task.persistent_id, task.jobname,
-                          task.execution.state, task.execution.info)
-                         for task in self.tasks
-                         if task.execution.state in states ],
-                       header=False)
-        # XXX: uses texttable's internal implementation detail
-        if len(table._rows) > 0:
-            output.write(table.draw())
-            output.write("\n")
+                yield (filename_sans(path), self.application, [path], extra.copy())
 
 
     ##
@@ -871,7 +725,7 @@ class SessionBasedScript(_Script):
                            default=None, help='Select resource destination')
         self.add_param("-w", "--wall-clock-time", dest="wctime", default=str(8), # 8 hrs
                            metavar="DURATION",
-                           help="Each job will run for at most DURATION time"
+                           help="Each CODEML job will run for at most DURATION time"
                            " (default: %(default)s hours), after which it"
                            " will be killed and considered failed. DURATION can be a whole"
                            " number, expressing duration in hours, or a string of the form HH:MM,"
@@ -1019,8 +873,43 @@ class SessionBasedScript(_Script):
         self._load_session(session_file, self.store)
         session_file.close()
 
-        ## update session based on comman-line args
-        self.process_args()
+        ## build job list
+        new_jobs = list(self.process_args(self.extra))
+        # pre-allocate Job IDs
+        if len(new_jobs) > 0:
+            self.store.idfactory.reserve(len(new_jobs))
+
+        # add new jobs to the session
+        existing_job_names = set(task.jobname for task in self.tasks)
+        random.seed()
+        for (jobname, cls, args, kwargs) in new_jobs:
+            self.log.debug("SessionBasedScript.main(): considering adding new job defined by:"
+                           " jobname=%s cls=%s args=%s kwargs=%s"
+                           % (jobname, cls, args, kwargs))
+            if jobname in existing_job_names:
+                continue
+            kwargs.setdefault('jobname', jobname)
+            kwargs.setdefault('requested_memory', self.params.memory_per_core)
+            kwargs.setdefault('requested_cores', self.params.ncores)
+            kwargs.setdefault('requested_walltime', self.params.walltime)
+            kwargs.setdefault('output_dir',                         
+                              self.params.output
+                              .replace('PATH', os.path.dirname(args[0]) # XXX: assumes `args[0]` exists and is a path name!
+                                       or os.getcwd())
+                              .replace('SESSION', self.params.session + '.out')
+                              .replace('NAME', jobname)
+                              .replace('DATE', time.strftime('%Y-%m-%d', time.localtime(time.time())))
+                              .replace('TIME', time.strftime('%H:%M', time.localtime(time.time()))))
+            # create a new `Application` object
+            try:
+                app = cls(*args, **kwargs)
+                self.tasks.append(app)
+            except Exception, ex:
+                self.log.error("Could not create job '%s': %s."
+                               % (jobname, str(ex)))
+                # XXX: should we raise an exception here?
+                #raise AssertionError("Could not create job '%s': %s: %s" 
+                #                     % (jobname, ex.__class__.__name__, str(ex)))
 
         # save the session list immediately, so newly added jobs will
         # be in it if the script is stopped here
@@ -1034,32 +923,42 @@ class SessionBasedScript(_Script):
                           self.params.resource_name)
 
         ## create an `Engine` instance to manage the job list
-        controller = self.make_task_controller()
+        engine = gc3libs.core.Engine(self._core, self.tasks, self.store,
+                                     max_in_flight = self.params.max_running)
 
         ## The main loop of the application: it is a local function so
         ## that we can call it just once or properly loop around it,
         ## as directed by the `self.params.wait` option.
         def loop():
             # advance all jobs
-            controller.progress()
+            engine.progress()
+
             # print results to user
             print ("Status of jobs in the '%s' session: (at %s)" 
                    % (os.path.basename(self.params.session),
                       time.strftime('%X, %x')))
             # summary
-            stats = controller.stats()
-            total = stats['total']
+            stats = engine.stats()
+            total = len(self.tasks)
             if total > 0:
-                self.print_summary_table(sys.stdout, stats)
-                # details table, as per ``-l`` option
+                table = Texttable(0) # max_width=0 => dynamically resize cells
+                table.set_deco(0)    # no decorations
+                table.set_cols_align(['r', 'c', 'c'])
+                for state in sorted(stats.keys()):
+                    table.add_row([
+                            state, 
+                            "%d/%d" % (stats[state], total),
+                            "(%.1f%%)" % (100.0 * stats[state] / total)
+                            ])
+                print (table.draw())
+                # details table
                 if self.params.states:
-                    self.print_tasks_table(sys.stdout, self.params.states)
+                    self._print_tasks_table(sys.stdout, self.params.states)
             else:
                 if self.params.session is not None:
-                    print ("  There are no tasks in session '%s'."
-                           % self.params.session)
+                    print ("There are no jobs in session '%s'." % self.params.session)
                 else:
-                    print ("  No tasks in this session.")
+                    print ("No jobs in this session.")
             # compute exitcode based on the running status of jobs
             rc = 0
             if stats['failed'] > 0:
@@ -1131,51 +1030,23 @@ class SessionBasedScript(_Script):
                            % (self.params.session, str(ex)))
 
 
-    def _search_for_input_files(self, paths):
+    def _print_tasks_table(self, output=sys.stdout, states=gc3libs.Run.State):
         """
-        Recursively scan each location in list `paths` for files
-        matching the `self.input_filename_pattern` glob pattern, and
-        return the set of path names to such files.
+        Output a summary table to stream `output`.
+        Only prints jobs whose status is contained
+        in `states`.
         """
-        inputs = set()
-
-        pattern = self.input_filename_pattern
-        # special case for '*.ext' patterns
-        ext = None
-        if pattern.startswith('*.'):
-            ext = pattern[1:]
-            # re-check for more wildcard characters
-            if '*' in ext or '?' in ext or '[' in ext:
-                ext = None
-        #self.log.debug("Input files must match glob pattern '%s' or extension '%s'"
-        #               % (pattern, ext))
-
-        def matches(name):
-            return fnmatch.fnmatch(name, pattern)
-        for path in paths:
-            self.log.debug("Now processing input path '%s' ..." % path)
-            if os.path.isdir(path):
-                # recursively scan for input files
-                for dirpath, dirnames, filenames in os.walk(path):
-                    for filename in filenames:
-                        if matches(filename):
-                            self.log.debug("Path '%s' matches pattern '%s',"
-                                           " adding it to input list"
-                                           % (os.path.join(dirpath, filename),
-                                              pattern))
-                            inputs.add(os.path.join(dirpath, filename))
-            elif matches(path) and os.path.exists(path):
-                self.log.debug("Path '%s' matches pattern '%s',"
-                               " adding it to input list" % (path, pattern))
-                inputs.add(path)
-            elif ext is not None and not path.endswith(ext) and os.path.exists(path + ext):
-                self.log.debug("Path '%s' matched extension '%s',"
-                               " adding to input list"
-                               % (path + ext, ext))
-                inputs.add(os.path.realpath(path + ext))
-            else:
-                self.log.error("Cannot access input path '%s' - ignoring it.", path)
-            #self.log.debug("Gathered input files: '%s'" % str.join("', '", inputs))
-
-        return inputs
-
+        table = Texttable(0) # max_width=0 => dynamically resize cells
+        table.set_deco(Texttable.HEADER) # also: .VLINES, .HLINES .BORDER
+        table.header(['JobID', 'Job name', 'State', 'Info'])
+        #table.set_cols_width([10, 20, 10, 35])
+        table.set_cols_align(['l', 'l', 'l', 'l'])
+        table.add_rows([ (task.persistent_id, task.jobname,
+                          task.execution.state, task.execution.info)
+                         for task in self.tasks
+                         if task.execution.state in states ],
+                       header=False)
+        # XXX: uses texttable's internal implementation detail
+        if len(table._rows) > 0:
+            output.write(table.draw())
+            output.write("\n")

@@ -40,7 +40,7 @@ import setuptools
 import setuptools.dist
 setuptools.setup(
     name = "gc3pie",
-    version = "1.1.dev", # see: http://packages.python.org/distribute/setuptools.html
+    version = '1.0',
 
     packages = setuptools.find_packages(exclude=['ez_setup']),
 
@@ -103,8 +103,6 @@ setuptools.setup(
         'texttable',
         # pyCLI -- object-oriented command-line app programming
         'pyCLI==2.0.2',
-        # magnitude -- represent memory, time, etc. as physical quantitites
-        'magnitude',
         ],
 
     # additional non-Python files to be bundled in the package

@@ -23,7 +23,7 @@ It uses the generic `gc3libs.cmdline.SessionBasedScript` framework.
 
 See the output of ``grosetta --help`` for program usage instructions.
 """
-__version__ = 'development version (SVN $Revision$)'
+__version__ = '1.0 (SVN $Revision$)'
 # summary of user-visible changes
 __changelog__ = """
   2011-03-28:
@@ -135,7 +135,7 @@ Note: the list of INPUT and OUTPUT files must be separated by ':'
 
             # make flags file path absolute
             if not os.path.isabs(self.flags_file):
-                self.flags_file = os.path.abspath(self.flags_file)
+                self.flags_file = os.path.join(os.getcwd(), self.flags_file)
             if not os.path.exists(self.flags_file):
                 raise RuntimeError("Flags file '%s' does not exist." % self.flags_file)
             self.log.info("Using flags file '%s'", self.flags_file)
@@ -149,12 +149,12 @@ Note: the list of INPUT and OUTPUT files must be separated by ':'
             else:
                 # make paths absolute
                 if not os.path.isabs(path):
-                    path = os.path.abspath(path)
+                    path = os.path.join(os.getcwd(), path)
                 inputs_.append(path)
         self.inputs = inputs_
-        #self.log.debug("Gathered input files: '%s'" % str.join("', '", inputs))
+        self.log.debug("Gathered input files: '%s'" % str.join("', '", inputs))
 
-    def new_tasks(self, extra):
+    def process_args(self, extra):
         ## compute number of decoys already being computed in this session
         decoys = 0
         for task in self.tasks:

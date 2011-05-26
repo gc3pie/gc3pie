@@ -20,10 +20,11 @@ Job control on SGE clusters (possibly connecting to the front-end via SSH).
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 #
 __docformat__ = 'reStructuredText'
-__version__ = 'development version (SVN $Revision$)'
+__version__ = '1.0 (SVN $Revision$)'
 
 
 import os
+#import paramiko
 import random
 import re
 import sys
@@ -241,25 +242,29 @@ def get_qsub_jobid(qsub_output):
                         % qsub_output.rstrip())
 
 
+# FIXME: does not work: parsing dates is locale-dependent,
+# so this won't work if the date was printed on a computer
+# that has a different locale than this one.
+#
 def _job_info_normalize(self, job):
     if job.haskey('used_cputime'):
         # convert from string to int. Also convert from float representation to int
         job.used_cputime =  int(job.used_cputime.split('.')[0])
 
     if job.haskey('used_memory'):
-        # store used memory in MiB
-        job.used_memory = utils.to_bytes(mem + 'B') / 1024
+        # convert from MB to KiB. Remove 'M' or'G' charater at the end.
+        job.used_memory = int(mem[:len(mem)-1]) * 1024
 
-def _sge_filename_mapping(jobname, lrms_jobid, file_name):
+def _sge_filename_mapping(job_name, lrms_jobid, file_name):
     return {
         # XXX: SGE-specific?
-        ('%s.out' % jobname) : ('%s.o%s' % (jobname, lrms_jobid)),
-        ('%s.err' % jobname) : ('%s.e%s' % (jobname, lrms_jobid)),
+        ('%s.out' % job_name) : ('%s.o%s' % (job_name, lrms_jobid)),
+        ('%s.err' % job_name) : ('%s.e%s' % (job_name, lrms_jobid)),
         # the following is definitely GAMESS-specific
-        ('%s.cosmo' % jobname) : ('%s.o%s.cosmo' % (jobname, lrms_jobid)),
-        ('%s.dat'   % jobname) : ('%s.o%s.dat'   % (jobname, lrms_jobid)),
-        ('%s.inp'   % jobname) : ('%s.o%s.inp'   % (jobname, lrms_jobid)),
-        ('%s.irc'   % jobname) : ('%s.o%s.irc'   % (jobname, lrms_jobid)),
+        ('%s.cosmo' % job_name) : ('%s.o%s.cosmo' % (job_name, lrms_jobid)),
+        ('%s.dat'   % job_name) : ('%s.o%s.dat'   % (job_name, lrms_jobid)),
+        ('%s.inp'   % job_name) : ('%s.o%s.inp'   % (job_name, lrms_jobid)),
+        ('%s.irc'   % job_name) : ('%s.o%s.irc'   % (job_name, lrms_jobid)),
         }[file_name]
 
 
@@ -331,8 +336,7 @@ class SgeLrms(LRMS):
             if exit_code == 0:
                 ssh_remote_folder = stdout.split('\n')[0]
             else:
-                raise LRMSError("Failed while executing command '%s' on resource '%s';"
-                                " exit code: %d, stderr: '%s'."
+                raise LRMSError("Failed while executing command '%s' on resource '%s'. exit code %d, stderr %s."
                                 % (_command, self._resource, exit_code, stderr))
         except gc3libs.exceptions.TransportError, x:
             raise
@@ -345,6 +349,7 @@ class SgeLrms(LRMS):
             local_path, remote_path = input
             remote_path = os.path.join(ssh_remote_folder, remote_path)
             remote_parent = os.path.dirname(remote_path)
+
             try:
                 if remote_parent not in ['', '.']:
                     log.debug("Making remote directory '%s'" % remote_parent)
@@ -357,12 +362,6 @@ class SgeLrms(LRMS):
                 self.transport.close()
                 raise
 
-        if app.executable.startswith('./'):
-            gc3libs.log.debug("Making remote path '%s' executable.",
-                              app.executable)
-            self.transport.chmod(os.path.join(ssh_remote_folder,
-                                              app.executable), 0755)
-        
         try:
             # Try to submit it to the local queueing system.
             qsub, script = app.qsub(self._resource)
@@ -455,15 +454,15 @@ class SgeLrms(LRMS):
             if exit_code == 0:
                 # parse `qstat` output
                 job_status = stdout.split()[4]
-                log.debug("translating SGE's `qstat` code '%s' to gc3libs.Run.State" % job_status)
+                log.debug("translating SGE's `qstat` code '%s' to gc3libs.Job state" % job_status)
                 if 'qw' in job_status:
                     state = Run.State.SUBMITTED
                 elif 'r' in job_status or 'R' in job_status or 't' in job_status:
                     state = Run.State.RUNNING
                 elif job_status in ['s', 'S', 'T'] or 'qh' in job_status:
                     state = Run.State.STOPPED
-                elif job_status == 'E': # error condition
-                    state = Run.State.TERMINATING 
+                elif job_status == 'E':
+                    state = Run.State.TERMINATED
                 else:
                     log.warning("unknown SGE job status '%s', returning `UNKNOWN`", job_status)
                     state = Run.State.UNKNOWN
@@ -475,6 +474,7 @@ class SgeLrms(LRMS):
                 exit_code, stdout, stderr = self.transport.execute_command(_command)
                 if exit_code == 0:
                     # parse stdout and update job obect with detailed accounting information
+                    log.debug('parsing stdout to get job accounting information')
                     for line in stdout.split('\n'):
                         # skip empty and header lines
                         line = line.strip()
@@ -498,10 +498,9 @@ class SgeLrms(LRMS):
                                     # XXX: is exit_status significant? should we reset it to -1?
                                     job.signal = Run.Signals.RemoteError
                         except KeyError:
-                            log.debug("Ignoring job information '%s=%s';"
-                                      " no mapping defined for it"
-                                      " in 'gc3libs/backends/sge.py'." 
-                                      % (key,value))
+                            log.debug("Ignoring job information '%s=%s'"
+                                               " -- no mapping defined to gc3utils.Job attributes." 
+                                               % (key,value))
 
                     # FIXME: parsing dates is locale-dependent; if the
                     # locale of the local computer and the SGE
@@ -519,7 +518,7 @@ class SgeLrms(LRMS):
                     #     log.debug('completion_time: %s',job.completion_time)
                     #     job.completion_time = _date_normalize(job.completion_time)
                                                                                                     
-                    state = Run.State.TERMINATING
+                    state = Run.State.TERMINATED
                 else:
                     # `qacct` failed as well...
                     try:
@@ -527,8 +526,8 @@ class SgeLrms(LRMS):
                             # accounting info should be there, if it's not then job is definitely lost
                             log.critical("Failed executing remote command: '%s'; exit status %d" 
                                                   % (_command,exit_code))
-                            log.debug("Remote command returned stdout: %s" % stdout)
-                            log.debug("remote command returned stderr: %s" % stderr)
+                            log.debug('remote command returned stdout: %s' % stdout)
+                            log.debug('remote command returned stderr: %s' % stderr)
                             raise paramiko.SSHException("Failed executing remote command: '%s'; exit status %d" 
                                                         % (_command,exit_code))
                         else:
@@ -562,8 +561,8 @@ class SgeLrms(LRMS):
                 # It is possible that 'qdel' fails because job has been already completed
                 # thus the cancel_job behaviour should be to 
                 log.error('Failed executing remote command: %s. exit status %d' % (_command,exit_code))
-                log.debug("remote command returned stdout: %s" % stdout)
-                log.debug("remote command returned stderr: %s" % stderr)
+                log.debug('remote command returned stdout: %s' % stdout)
+                log.debug('remote command returned stderr: %s' % stderr)
                 if exit_code == 127:
                     # failed executing remote command
                     raise LRMSError('Failed executing remote command')
@@ -596,7 +595,7 @@ class SgeLrms(LRMS):
     @same_docstring_as(LRMS.get_results)
     def get_results(self, app, download_dir, overwrite=False):
         if app.output_base_url is not None:
-            raise gc3libs.exceptions.UnrecoverableDataStagingError(
+            raise gc3libs.exceptions.DataStagingError(
                 "Retrieval of output files to non-local destinations"
                 " is not supported in the SGE backend (yet).")
 
@@ -631,24 +630,31 @@ class SgeLrms(LRMS):
                     # ...but keep it if it's not a known one
                     remote_path = os.path.join(job.ssh_remote_folder, remote_path)
                 local_path = os.path.join(download_dir, local_path)
-                log.debug("Downloading remote file '%s' to local file '%s'",
-                          remote_path, local_path)
+                log.debug("Downloading remote file '%s' to local file '%s'", 
+                                   remote_path, local_path)
                 try:
-                    if (overwrite
-                        or not os.path.exists(local_path)
-                        or os.path.isdir(local_path)):
-                        log.debug("Copying remote '%s' to local '%s'"
-                                  % (remote_path, local_path))
-                        # effectively ignore missing files (this is
-                        # what ARC does too)
-                        self.transport.get(remote_path, local_path,
-                                           ignore_nonexisting=True)
+                    if not os.path.exists(local_path) or overwrite:
+                        log.debug("Copying remote '%s' to local '%s'", remote_path, local_path)
+                        self.transport.get(remote_path, local_path)
                     else:
-                        log.info("Local file '%s' already exists;"
-                                 " will not be overwritten!",
+                        log.info("Local file '%s' already exists; will not be overwritten!",
                                  local_path)
-                except Exception:
+                except:
+                    log.error('Could not copy remote file: ' + remote_path)
+                    # FIXME: should we set `job.signal` to
+                    # `Job.Signals.DataStagingError`?  Does not seem a
+                    # good idea: What if one file is missing out of
+                    # several good ones?  Fetching output could be
+                    # attempted in any case, and (re)setting
+                    # `job.signal` here could mask the true error
+                    # cause.
                     raise
+
+            # make jobname.stderr a link to jobname.stdout in case
+            # some program relies on its existence
+            if not os.path.exists(os.path.join(download_dir, job.stderr_filename)):
+                os.symlink(os.path.join(download_dir, job.stdout_filename),
+                           os.path.join(download_dir, job.stderr_filename))
 
             self.transport.close()
             return # XXX: should we return list of downloaded files?
@@ -726,11 +732,10 @@ class SgeLrms(LRMS):
                      )
             return self._resource
 
-        except Exception, ex:
+        except:
             self.transport.close()
-            log.error("Error querying remote LRMS, see debug log for details.")
-            log.debug("Error querying LRMS: %s: %s",
-                      ex.__class__.__name__, str(ex))
+            log.error('Failure while querying remote LRMS')
+            log.debug('%s %s',sys.exc_info()[0], sys.exc_info()[1])
             raise
         
 

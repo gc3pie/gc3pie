@@ -20,7 +20,7 @@ Facade to store and retrieve Job information from permanent storage.
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 #
 __docformat__ = 'reStructuredText'
-__version__ = 'development version (SVN $Revision$)'
+__version__ = '1.0 (SVN $Revision$)'
 
 
 import operator
@@ -322,51 +322,29 @@ class FilesystemStore(Store):
     @same_docstring_as(Store.load)
     def load(self, id_):
         filename = os.path.join(self._directory, id_)
-        #gc3libs.log.debug("Loading object from file '%s' ...", filename)
+        gc3libs.log.debug("Loading object from file '%s' ...", filename)
 
         if not os.path.exists(filename):
             raise gc3libs.exceptions.LoadError("No '%s' file found in directory '%s'" 
                                    % (id_, self._directory))
 
-        def load_from_file(path):
-            src = None
-            try:
-                src = open(path, 'rb')
-                unpickler = FilesystemStore.Unpickler(self, src)
-                obj = unpickler.load()
-                src.close()
-                return obj
-            except Exception, ex:
-                if src is not None:
-                    try:
-                        src.close()
-                    except:
-                        pass # ignore errors
-                raise
-                
         # XXX: this should become `with src = ...:` as soon as we stop
         # supporting Python 2.4
+        src = None
         try:
-            obj = load_from_file(filename)
+            src = open(filename, 'rb')
+            unpickler = FilesystemStore.Unpickler(self, src)
+            obj = unpickler.load()
+            src.close()
         except Exception, ex:
-            gc3libs.log.warning("Failed loading file '%s': %s: %s",
-                                filename, ex.__class__.__name__, str(ex),
-                                exc_info=True)
-            old_copy = filename + '.OLD'
-            if os.path.exists(old_copy):
-                gc3libs.log.warning("Will try loading from backup file '%s' instead...", old_copy)
+            if src is not None:
                 try:
-                    obj = load_from_file(old_copy)
-                except Exception, ex:
-                    sys.excepthook(* sys.exc_info())
-                    raise gc3libs.exceptions.LoadError(
-                        "Failed retrieving object from file '%s': %s: %s"
-                        % (filename, ex.__class__.__name__, str(ex)))
-            else:
-                # complain loudly
-                raise gc3libs.exceptions.LoadError(
-                    "Failed retrieving object from file '%s': %s: %s"
-                    % (filename, ex.__class__.__name__, str(ex)))
+                    src.close()
+                except:
+                    pass # ignore errors
+            sys.excepthook(* sys.exc_info())
+            raise gc3libs.exceptions.LoadError("Failed retrieving object from file '%s': %s: %s"
+                                   % (filename, ex.__class__.__name__, str(ex)))
         if not hasattr(obj, 'persistent_id'):
             raise gc3libs.exceptions.LoadError("Invalid format in file '%s': missing 'persistent_id' attribute"
                                    % (filename))
@@ -402,7 +380,7 @@ class FilesystemStore(Store):
         destination file is kept intact in case dumping `obj` fails.
         """
         filename = os.path.join(self._directory, id_)
-        #gc3libs.log.debug("Storing job '%s' into file '%s'", obj, filename)
+        gc3libs.log.debug("Storing job '%s' into file '%s'", obj, filename)
 
         if not os.path.exists(self._directory):
             try:

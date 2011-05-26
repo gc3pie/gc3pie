@@ -25,14 +25,13 @@ sources of a different project and it would not stop working.
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 #
 __docformat__ = 'reStructuredText'
-__version__ = 'development version (SVN $Revision$)'
+__version__ = '1.0 (SVN $Revision$)'
 
 
 import os
 import os.path
-import posix
 import re
-import shutil
+import shelve
 import sys
 import time
 import cStringIO as StringIO
@@ -67,7 +66,6 @@ except ImportError:
 
 import gc3libs
 import gc3libs.exceptions
-import gc3libs.debug
 
 
 # ================================================================
@@ -75,71 +73,6 @@ import gc3libs.debug
 #                     Generic functions
 #
 # ================================================================
-
-def basename_sans(path):
-    """
-    Return base name without the extension.
-    """
-    return os.path.splitext(os.path.basename(path))[0]
-
-
-@gc3libs.debug.trace
-def copyfile(src, dst, overwrite=False):
-    """
-    Copy a file from `src` to `dst`; return `True` if the copy was
-    actually made.  If `overwrite` is `False` (default), an existing
-    destination entry is left unchanged and `False` is returned.
-    """
-    if os.path.exists(dst) and not overwrite:
-        return False
-    if same_file(src, dst):
-        return False
-    try:
-        dstdir = os.path.dirname(dst)
-        if not os.path.exists(dstdir):
-            os.makedirs(dstdir)
-        shutil.copy2(src, dst)
-        shutil.copystat(src, dst)
-    except shutil.WindowsError:
-        pass
-    return True
-
-
-@gc3libs.debug.trace
-def copytree(src, dst, overwrite=False):
-    """
-    Recursively copy an entire directory tree rooted at `src`.  If
-    `overwrite` is `False` (default), entries that already exist in
-    the destination tree are left unchanged and not overwritten.
-
-    See also: `shutil.copytree`.
-    """
-    errors = []
-    if not os.path.exists(dst):
-        os.makedirs(dst)
-    for name in os.listdir(src):
-        srcname = os.path.join(src, name)
-        dstname = os.path.join(dst, name)
-        try:
-            if os.path.isdir(srcname):
-                errors.extend(copytree(srcname, dstname, overwrite))
-            else:
-                copyfile(srcname, dstname)
-        except (IOError, os.error), why:
-            errors.append((srcname, dstname, why))
-    return errors
-
-
-@gc3libs.debug.trace
-def copy_recursively(src, dst, overwrite=False):
-    """
-    Copy `src` to `dst`, descending it recursively if necessary.
-    """
-    if os.path.isdir(src):
-        copytree(src, dst, overwrite)
-    else:
-        copyfile(src, dst, overwrite)
-
 
 class defaultdict(dict):
     """
@@ -684,54 +617,26 @@ def prettyprint(D, indent=0, width=0, maxdepth=None, step=4,
         output.write('\n')
 
 
-def mkdir(path, mode=0777):
+def mkdir_with_backup(path):
     """
-    Like `os.makedirs`, but does not throw an exception if PATH
-    already exists.
-    """
-    if not os.path.exists(path):
-        os.makedirs(path, mode)
-
-
-def backup(path):
-    """
-    Rename the filesystem entry at `path` by appending a unique
-    numerical suffix.
-    """
-    parent_dir = os.path.dirname(path)
-    prefix = os.path.basename(path) + '.'
-    p = len(prefix)
-    suffix = 1
-    for name in [ x for x in os.listdir(parent_dir) if x.startswith(prefix) ]:
-        try:
-            n = int(name[p:])
-            suffix = max(suffix, n+1)
-        except ValueError:
-            # ignore non-numeric suffixes
-            pass
-    os.rename(path, "%s.%d" % (path, suffix))
-
-
-def mkdir_with_backup(path, mode=0777):
-    """
-    Like `os.makedirs`, but if `path` already exists and is not empty,
-    rename the existing one appending a `.NUMBER` suffix.
-
-    Unlike `os.makedirs`, no exception is thrown if the directory
-    already exists and is empty, but the target directory permissions
-    are not altered to reflect `mode`.
+    Like `os.makedirs`, but if `path` already exists, rename the
+    existing one appending a `.NUMBER` suffix.
     """
     if os.path.isdir(path):
-        if len(os.listdir(path)) > 0:
-            # directory already exists and is non-empty; backup it and
-            # make a new one
-            backup(path)
-            os.makedirs(path, mode)
-        else:
-            # keep existing empty directory
-            pass
-    else:
-        os.makedirs(path, mode)
+        # directory exists; find a suitable extension and rename
+        parent_dir = os.path.dirname(path)
+        prefix = os.path.basename(path) + '.'
+        p = len(prefix)
+        suffix = 1
+        for name in [ x for x in os.listdir(parent_dir) if x.startswith(prefix) ]:
+            try:
+                n = int(name[p:])
+                suffix = max(suffix, n+1)
+            except ValueError:
+                # ignore non-numeric suffixes
+                pass
+        os.rename(path, "%s.%d" % (path, suffix))
+    os.makedirs(path)
 
 
 def safe_repr(obj):
@@ -757,22 +662,6 @@ def same_docstring_as(referenced_fn):
             f.__doc__ = referenced_fn.__doc__
             return f
     return decorate
-
-
-def same_file(path1, path2):
-    """
-    Return `True` if `path1` and `path2` point to the same UNIX inode.
-    If one or both paths are non-existent, return `False`.
-    """
-    if not os.path.exists(path1) or not os.path.exists(path2):
-        return False
-    if path1 == path2:
-        return True
-    st1 = posix.stat(path1)
-    st2 = posix.stat(path2)
-    if st1.st_dev == st2.st_dev and st1.st_ino == st2.st_ino:
-        return True
-    return False
 
 
 # see http://stackoverflow.com/questions/31875/is-there-a-simple-elegant-way-to-define-singletons-in-python/1810391#1810391
@@ -874,10 +763,10 @@ def test_file(path, mode, exception=RuntimeError, isdir=False):
     This is a frontend to `os.access`:func:, which see for exact
     semantics and the meaning of `path` and `mode`.
 
-    :param path: Filesystem path to test.
-    :param mode: See `os.access`:func:
-    :param exception: Class of exception to raise if test fails.
-    :param isdir: If `True` then also test that `path` points to a directory.
+    :param: path Filesystem path to test.
+    :param: mode See `os.access`:func:
+    :param: exception Class of exception to raise if test fails.
+    :param: isdir If `True` then also test that `path` points to a directory.
 
     If the test succeeds, `True` is returned::
 
