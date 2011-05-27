@@ -43,7 +43,7 @@ class CryptoApplication(gc3libs.Application):
         src_crypto_bin = resource_filename(Requirement.parse("gc3pie"), 
                                            "gc3libs/etc/gnfs-cmd")
 
-        inputs = {"input_files.tgz":"input_files.tgz", src_crypto_bin:"gnfs-cmd" }
+        inputs = {kw['input_directives']:"input_files.tgz", src_crypto_bin:"gnfs-cmd" }
 
         gc3libs.Application.__init__(
             self,
