@@ -210,7 +210,8 @@ class Core:
                     exc_info=True)
                 exs.append(ex) 
                 continue
-            gc3libs.log.info('Successfully submitted process to: %s', lrms._resource.name)
+            gc3libs.log.info("Successfully submitted %s to: %s",
+                             str(app), lrms._resource.name)
             job.state = Run.State.SUBMITTED
             job.resource_name = lrms._resource.name
             job.info = ("Submitted to '%s' at %s"
