@@ -424,7 +424,7 @@ class Core:
         
         # successfully downloaded results
         gc3libs.log.debug("Downloaded output of '%s' (which is in state %s)"
-                          % (str(job), job.state))
+                          % (str(app), job.state))
         if job.state == Run.State.TERMINATING:
             app.output_dir = os.path.abspath(download_dir)
             job.info = ("Final output downloaded to '%s'" % download_dir)
