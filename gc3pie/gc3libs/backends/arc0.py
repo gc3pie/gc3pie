@@ -268,7 +268,7 @@ class ArcLrms(LRMS):
         # update status
         state = map_arc_status_to_gc3job_status(arc_job.status)
         if arc_job.exitcode != -1:
-            job.returncode = arc_job.exitcode
+            job.exitcode = arc_job.exitcode
         elif state in [Run.State.TERMINATING, Run.State.TERMINATING] and job.returncode is None:
             # XXX: it seems that ARC does not report the job exit code
             # (at least in some cases); let's make one up based on
