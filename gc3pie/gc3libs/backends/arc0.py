@@ -348,7 +348,7 @@ class ArcLrms(LRMS):
         job = app.execution
         jftpc = arclib.JobFTPControl()
 
-        log.debug("Downloading job output into '%s' ...", download_dir)
+        log.debug("Downloading %s output into '%s' ...", app, download_dir)
         try:
             jftpc.DownloadDirectory(job.lrms_jobid, download_dir)
             job.download_dir = download_dir
