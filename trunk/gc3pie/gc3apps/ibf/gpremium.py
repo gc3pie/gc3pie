@@ -39,6 +39,7 @@ if __name__ == "__main__":
 
 
 # std module imports
+import glob
 import numpy as np
 import os
 import re
@@ -65,7 +66,7 @@ class GPremiumApplication(Application):
     """
 
     _invalid_chars = re.compile(r'[^_a-zA-Z0-9]+', re.X)
-    
+
     def terminated(self):
         """
         Analyze the retrieved output, with a threefold purpose:
@@ -121,7 +122,7 @@ class GPremiumApplication(Application):
         else:
             # no `simulation.out` found, signal error
             self.execution.exitcode = 2
-                    
+
 
 ## auxiliary functions for the script class logic
 
@@ -140,29 +141,29 @@ def flatten(lst):
 
 
 def str2tuple(strIn, conv=int):
-  """
-  Convert tuple-like strings to real tuples.
-  Example::
+    """
+    Convert tuple-like strings to real tuples.
+    Example::
 
-    >>> str2tuple('(1,2,3,4)')
-    (1, 2, 3, 4)
+      >>> str2tuple('(1,2,3,4)')
+      (1, 2, 3, 4)
 
-  Enclosing parentheses can be omitted::
+    Enclosing parentheses can be omitted::
 
-    >>> str2tuple('1,2,3')
-    (1, 2, 3)
+      >>> str2tuple('1,2,3')
+      (1, 2, 3)
 
-  An optional conversion function can be specified as second argument
-  `conv` (defaults to `int`)::
+    An optional conversion function can be specified as second argument
+    `conv` (defaults to `int`)::
 
-    >>> str2tuple('1,2,3', float)
-    (1.0, 2.0, 3.0)
-  """
-  strIn = strIn.strip()
-  if strIn.startswith('('):
-      strIn = strIn[1:-1] # removes the leading and trailing brackets
-  items = strIn.split(',')
-  return tuple(conv(x) for x in items)
+      >>> str2tuple('1,2,3', float)
+      (1.0, 2.0, 3.0)
+    """
+    strIn = strIn.strip()
+    if strIn.startswith('('):
+        strIn = strIn[1:-1] # removes the leading and trailing brackets
+    items = strIn.split(',')
+    return tuple(conv(x) for x in items)
 
 
 class getIndex(object):
@@ -233,17 +234,17 @@ class getIndex(object):
             return self.loopIndex.tolist()
 
 
-class Squares(object):
-    def __init__(self, start, stop):
-        self.value = start - 1
-        self.stop = stop
-    def __iter__(self):
-        return self
-    def next(self):
-        if self.value == self.stop:
-            raise StopIteration
-        self.value += 1
-        return self.value ** 2
+##class Squares(object):
+##    def __init__(self, start, stop):
+##        self.value = start - 1
+##        self.stop = stop
+##    def __iter__(self):
+##        return self
+##    def next(self):
+##        if self.value == self.stop:
+##            raise StopIteration
+##        self.value += 1
+##        return self.value ** 2
 
 
 def getFullIndex(ixMeta, metaIndices, groupIndices, groups, paraProps, vals):
@@ -309,20 +310,20 @@ def str2vals(strIn):
     if 'linspace' in strIn:
         out = np.array([])
         while strIn:
-          if re.match('\s*linspace', strIn):
-              (linSpacePart, strIn) = re.match('(\s*linspace\(.*?\)\s*)[,\s*]*(.*)', strIn).groups()
-              args = re.match('linspace\(([(0-9\.\s-]+),([0-9\.\s-]+),([0-9\.\s-]+)\)', linSpacePart).groups()
-              args = [ float(arg) for arg in args] # assume we always want float for linspace
-              linSpaceVec = np.linspace(args[0], args[1], args[2])
-              out = np.append(out, linSpaceVec)
-          elif re.match('\s*[0-9\.]*\s*,', strIn):
-              (valPart, strIn) = re.match('(\s*[0-9\.]*\s*)[,\s*]*(.*)', strIn).groups()
-              valPart = valPart.strip()
-              if '.' in valPart:
-                  valPart = float(valPart)
-              else:
-                  valPart = int(valPart)
-              out = np.append(out, valPart)
+            if re.match('\s*linspace', strIn):
+                (linSpacePart, strIn) = re.match('(\s*linspace\(.*?\)\s*)[,\s*]*(.*)', strIn).groups()
+                args = re.match('linspace\(([(0-9\.\s-]+),([0-9\.\s-]+),([0-9\.\s-]+)\)', linSpacePart).groups()
+                args = [ float(arg) for arg in args] # assume we always want float for linspace
+                linSpaceVec = np.linspace(args[0], args[1], args[2])
+                out = np.append(out, linSpaceVec)
+            elif re.match('\s*[0-9\.]*\s*,', strIn):
+                (valPart, strIn) = re.match('(\s*[0-9\.]*\s*)[,\s*]*(.*)', strIn).groups()
+                valPart = valPart.strip()
+                if '.' in valPart:
+                    valPart = float(valPart)
+                else:
+                    valPart = int(valPart)
+                out = np.append(out, valPart)
         return out
     else:
         return str2mat(strIn)
@@ -379,7 +380,7 @@ def safe_eval(s):
       42.0
       >>> safe_eval("forty-two")
       'forty-two'
-      
+
     """
     # must attempt conversion to `int` before we try `float`,
     # since every `int` literal is also a valid `float` literal
@@ -392,7 +393,7 @@ def safe_eval(s):
     except ValueError:
         pass
     return str(s)
-  
+
 
 def str2mat(strIn):
     """
@@ -457,7 +458,7 @@ Read `.loop` files and execute the `forwardPremium` program accordingly.
             version = '0.2',
             # only '.loop' files are considered as valid input
             input_filename_pattern = '*.loop',
-            )
+        )
 
     def setup_options(self):
         self.add_param("-b", "--initial", metavar="DIR",
@@ -492,7 +493,7 @@ Read `.loop` files and execute the `forwardPremium` program accordingly.
                                                   'forwardPremium')
         gc3libs.utils.test_file(self.params.executable, os.R_OK|os.X_OK,
                                 gc3libs.exceptions.InvalidUsage)
-        
+
 
     def process_para_file(self, path_to_para_loop):
         """
@@ -559,20 +560,20 @@ Read `.loop` files and execute the `forwardPremium` program accordingly.
         # feature of NumPy, see:
         # http://docs.scipy.org/doc/numpy/reference/arrays.indexing.html
         for group in groups:
-          groupSelector = (groups == group)
-          groupRestriction = np.unique(groupRestrs[groupSelector])
-          nGroupRestriction = len(groupRestriction)
-          nGroupVariables = sum(groupSelector)
-          nSwIndicator = sum(paraProps[groupSelector] == 'swIndicator')
-          nRelevGroupVariables = nGroupVariables - nSwIndicator
-          if nGroupRestriction != 1:
-              raise gc3libs.exceptions.InvalidUsage(
-                  "Group restrictions '%s' are inconsistent for group '%s'"
-                  % (groupRestriction, group))
-          elif nRelevGroupVariables == 1 and groupRestriction[0].lower() == 'lowertr':
-              raise gc3libs.exceptions.InvalidUsage(
-                  "No sense in using 'lower triangular' restriction"
-                  " with just one variable.")
+            groupSelector = (groups == group)
+            groupRestriction = np.unique(groupRestrs[groupSelector])
+            nGroupRestriction = len(groupRestriction)
+            nGroupVariables = sum(groupSelector)
+            nSwIndicator = sum(paraProps[groupSelector] == 'swIndicator')
+            nRelevGroupVariables = nGroupVariables - nSwIndicator
+            if nGroupRestriction != 1:
+                raise gc3libs.exceptions.InvalidUsage(
+                    "Group restrictions '%s' are inconsistent for group '%s'"
+                    % (groupRestriction, group))
+            elif nRelevGroupVariables == 1 and groupRestriction[0].lower() == 'lowertr':
+                raise gc3libs.exceptions.InvalidUsage(
+                    "No sense in using 'lower triangular' restriction"
+                    " with just one variable.")
 
         # Set up groups
         groupBase = []
@@ -651,7 +652,7 @@ Read `.loop` files and execute the `forwardPremium` program accordingly.
                         runDescription += '_'
                     runDescription += '%s=%s' % (var, val)
             yield (runDescription, substs)
-        
+
 
     def new_tasks(self, extra):
         all_inputs = self._search_for_input_files(self.params.args)
@@ -673,7 +674,8 @@ Read `.loop` files and execute the `forwardPremium` program accordingly.
                 prefix_len = len(input_dir) + 1
                 # 1. files in the "initial" dir are copied verbatim
                 if self.params.initial is not None:
-                    gc3libs.utils.copytree(self.params.initial, input_dir)
+                    self.getCtryParas()
+                    self.fillInputDir(input_dir)
                 # 2. apply substitutions to parameter files
                 for (path, changes) in substs.iteritems():
                     for (var, val, index, regex) in changes:
@@ -703,6 +705,58 @@ Read `.loop` files and execute the `forwardPremium` program accordingly.
     ##
     ## Internal methods
     ##
+    
+    def getCtryParas(self):
+        """
+        Obtain the right markov input files (``markovMatrices.in``,
+        ``markovMoments.in`` and ``markov.out``) and overwrite the
+        existing ones in the ``input/`` folder.
+        """
+        # Find Ctry pair
+        inputFolder = os.path.join(self.params.initial, 'input')
+        outputFolder = os.path.join(self.params.initial, 'output')
+        markovA_file_path = os.path.join(inputFolder, 'markovA.in')
+        markovB_file_path = os.path.join(inputFolder, 'markovB.in')
+        Ctry1 = self.getParameter(markovA_file_path, 'Ctry')
+        Ctry2 = self.getParameter(markovB_file_path, 'Ctry')
+        markov_dir = os.path.join(self.params.initial, 'markov')
+        CtryPresetPath = os.path.join(markov_dir, 'presets', Ctry1 + '-' + Ctry2)
+        filesToCopy = glob.glob(CtryPresetPath + '/*.in')
+        filesToCopy.append(os.path.join(CtryPresetPath, 'markov.out'))
+        for fileToCopy in filesToCopy:
+            shutil.copy(fileToCopy, inputFolder)
+            #if not os.path.isdir(outputFolder): 
+            #    os.mkdir(outputFolder)
+        shutil.copy(os.path.join(CtryPresetPath, 'markov.out'), inputFolder)
+        
+    def fillInputDir(self, input_dir):
+        """
+        Copy folder ``input/`` and all files in the base dir to `input_dir`. 
+        This is slightly more involved than before because we need to 
+        exclude the markov directory which contains markov information
+        for all country pairs. 
+        """
+        import glob
+        inputFolder = os.path.join(self.params.initial, 'input')
+        gc3libs.utils.copytree(inputFolder , os.path.join(input_dir, 'input'))
+        filesToCopy = glob.glob(self.params.initial + '/*')
+        for fileToCopy in filesToCopy:
+            if os.path.isdir(fileToCopy): continue
+            shutil.copy(fileToCopy, input_dir)
+
+    @staticmethod
+    def getParameter(fileIn, varIn, regexIn = '(\s*)([a-zA-Z0-9]+)(\s+)([a-zA-Z0-9\.\s,;\[\]\-]+)(\s*)'):
+        import re
+      #  print('updateParameter inputs: \n --- \n {0} \n {1} \n {2} \n {3} \n {4} \n ---'.format(fileIn, varIn, paraIndex, newVal, regexIn))
+        paraFile = open(fileIn)
+        lines = paraFile.readlines()
+        paraFile.close()
+        for ixLine, line in enumerate(lines):
+            (a, var, b, paraVal, c) = re.match(regexIn, line.rstrip()).groups()
+        #      print('var=', var)
+            if var == varIn:
+                return paraVal
+        print('variable {} not in parameter file {}'.format(varIn, fileIn))
 
     def _remap_groups(self, groups):
         """
@@ -739,7 +793,7 @@ Read `.loop` files and execute the `forwardPremium` program accordingly.
                            r'(\s+)' # spaces (filler)
                            r'([\w\s\.,;\[\]\-]+)' # values
                            r'(\s*)'), # spaces (filler)
-        }
+    }
 
     # -- Read para.loop  --
     def _read_para(self, path):
@@ -781,7 +835,7 @@ Read `.loop` files and execute the `forwardPremium` program accordingly.
                 'U100', # vals
                 'U100', # paraFileRegex
                 ],
-            }
+        }
 
         data = []
         for line in paraLoopFile:
@@ -794,7 +848,7 @@ Read `.loop` files and execute the `forwardPremium` program accordingly.
             data.append(np.array(columns, dtype=dt))
         params = np.array(data, dtype=dt)
         paraLoopFile.close()
-        
+
         # by default numpy sorts capital letters with higher priority.
         # Sorting gives me a unique position for a variable in each input vector! 
         ind = np.lexsort((lower(params['paraFiles']),
@@ -808,4 +862,3 @@ Read `.loop` files and execute the `forwardPremium` program accordingly.
 
 if __name__ == '__main__':
     GPremiumScript().run()
-
