@@ -360,7 +360,7 @@ class ArcLrms(LRMS):
                     % (job.lrms_jobid, str(ex)))
             # critical error. consider job remote data as lost
             raise gc3libs.exceptions.UnrecoverableDataStagingError(
-                "Unrecoverble Error: Failed downloading remote folder '%s': %s" 
+                "Unrecoverable Error: Failed downloading remote folder '%s': %s" 
                 % (job.lrms_jobid, str(ex)))
 
         return 
