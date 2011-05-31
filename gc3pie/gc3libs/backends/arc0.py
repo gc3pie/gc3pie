@@ -71,8 +71,11 @@ class ArcLrms(LRMS):
             
         self._queues_cache_time = gc3libs.Default.ARC_CACHE_TIME # XXX: should it be configurable?
 
+        # DEBUG: print all ARC messages to trace the failure in gpremium
         arcnotifier = arclib.Notify_getNotifier()
-        arcnotifier.SetOutStream(arcnotifier.GetNullStream())
+        arcnotifier.SetOutStream(arcnotifier.GetOutStream())
+        arcnotifier.SetNotifyLevel(arclib.VERBOSE)
+        arcnotifier.SetNotifyTimeStamp(True)
 
         self.isValid = 1
 
@@ -249,19 +252,18 @@ class ArcLrms(LRMS):
         # meaningful exceptions
         try:
             job = app.execution
-            # arc_job = arclib.GetJobInfo(job.lrms_jobid)
-
             jobs = self._get_jobs()
-            # arc_job = [j for j in jobs if j.id == job.lrms_jobid][0]
             arc_job = jobs[job.lrms_jobid]
         except AttributeError, ex:
             # `job` has no `lrms_jobid`: object is invalid
             raise gc3libs.exceptions.InvalidArgument("Job object is invalid: %s"
                                                      % str(ex))
-        except IndexError, ix:
-            # no job found.
-            # This could be caused by the InformationSystem not yet updated with the infortmation of the newly submitte job
-            raise  gc3libs.exceptions.LRMSError("No job found corresponding to the following id: [%s]" % job.lrms_jobid)
+        except KeyError, ex:
+            # No job found.  This could be caused by the
+            # information system not yet updated with the information
+            # of the newly submitted job.
+            raise  gc3libs.exceptions.LRMSError(
+                "No job found corresponding to the ID '%s'" % job.lrms_jobid)
 
         # update status
         state = map_arc_status_to_gc3job_status(arc_job.status)
@@ -353,7 +355,8 @@ class ArcLrms(LRMS):
             jftpc.DownloadDirectory(job.lrms_jobid, download_dir)
             job.download_dir = download_dir
         except arclib.FTPControlError, ex:
-            # XXX: due to issue 176, we need to check whether this is a transient error or not
+            # FIXME: parsing error messages breaks if locale is not an
+            # English-based one!
             if "Failed to allocate port for data transfer" in str(ex):
                 raise gc3libs.exceptions.RecoverableDataStagingError(
                     "Recoverable Error: Failed downloading remote folder '%s': %s"
