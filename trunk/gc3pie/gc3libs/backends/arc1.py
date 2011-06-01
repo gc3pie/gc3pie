@@ -46,6 +46,8 @@ class Arc1Lrms(LRMS):
     """
     Manage jobs through ``libarcclient``.
     """
+    arc_logger_set = False
+
     def __init__(self,resource, auths):
         # Normalize resource types
         assert resource.type == gc3libs.Default.ARC1_LRMS, \
@@ -71,7 +73,11 @@ class Arc1Lrms(LRMS):
         # if not self._usercfg.AddServices([self._resource.arc_ldap], arc.COMPUTING):
         #    log.error('Failed while adding computing service [%s]' % self._resource.frontend)
 
-        log.debug('ARC1 splitting self._resource.arc_ldap [%s]' % self._resource.arc_ldap)
+
+        # setting default service timeout
+        self._usercfg.Timeout(gc3libs.Default.ARC1_DEFAULT_SERVICE_TIMEOUT)
+
+        log.debug('Adding ARC1 Service %s for resource %s' % (self._resource.arc_ldap, self._resource.name))
 
         (service, arc_version, ldap_host_endpoint) = self._resource.arc_ldap.split(':',2)
         if service == "INDEX":
@@ -93,11 +99,15 @@ class Arc1Lrms(LRMS):
         # do not provide exception nor detailed information
         # about failurs
         # set up libarcclient logging
-        arc_rootlogger = arc.Logger_getRootLogger()
-        arc_logger = arc.Logger(arc_rootlogger, self._resource.name)
-        arc_logger_dest = arc.LogStream(sys.stderr) # or open(os.devnull, 'w')
-        arc_rootlogger.addDestination(arc_logger_dest)
-        arc_rootlogger.setThreshold(arc.DEBUG) # or .VERBOSE, .INFO, .WARNING, .ERROR
+            
+        
+        gc3libs.backends.arc1.Arc1Lrms.init_arc_logger()
+
+        # arc_rootlogger = arc.Logger_getRootLogger()
+        # arc_logger = arc.Logger(arc_rootlogger, self._resource.name)
+        # arc_logger_dest = arc.LogStream(sys.stderr) # or open(os.devnull, 'w')
+        # arc_rootlogger.addDestination(arc_logger_dest)
+        # arc_rootlogger.setThreshold(arc.DEBUG) # or .VERBOSE, .INFO, .WARNING, .ERROR
 
         # Initialize the required ARC1 components
         log.info('Invoking arc.JobSupervisor')
@@ -109,7 +119,7 @@ class Arc1Lrms(LRMS):
         log.info('Invoking arc.TargetGenerator')
         self._target_generator = arc.TargetGenerator(self._usercfg, 0)
                 
-        log.info('LRMS ARC1 init [ ok ]')
+        log.info('ARC1 resource %s init [ ok ]' % self._resource.name)
         self.isValid = 1
 
     def is_valid(self):
@@ -154,13 +164,12 @@ class Arc1Lrms(LRMS):
 
     # ARC refreshes the InfoSys every 30 seconds by default;
     # there's no point in querying it more often than this...
-    @cache_for(gc3libs.Default.ARC_CACHE_TIME)
+    # @cache_for(gc3libs.Default.ARC_CACHE_TIME)
+    @cache_for(180)
     def _iterjobs(self):
         """
         Iterate over all jobs.
         """
-        # jobsuper = arc.JobSupervisor(self._usercfg, [])
-        # controllers = jobsuper.GetJobControllers()
         for c in self._controllers:
             log.info("Calling JobController.GetJobInformation()")
             c.GetJobInformation()
@@ -194,9 +203,6 @@ class Arc1Lrms(LRMS):
 
         self._iterjobs()
 
-        #for c in self._controllers:
-        #    log.info("Calling JobController.GetJobInformation() in get_job_and_controller")
-        #    c.GetJobInformation()
         for c in self._controllers:
             log.info("Calling JobController.GetJobs in get_job_and_controller")
             jl = c.GetJobs()
@@ -413,6 +419,8 @@ class Arc1Lrms(LRMS):
         # XXX: can raise encoding/decoding error if `download_dir`
         # is not ASCII, but the ARClib bindings don't accept
         # Python `unicode` strings.
+        completed = True
+
         download_dir = str(download_dir)
         
         self.auths.get(self._resource.auth)
@@ -421,24 +429,31 @@ class Arc1Lrms(LRMS):
         c, j = self._get_job_and_controller(job.lrms_jobid)
         
         log.debug("Downloading job output into '%s' ...", download_dir)
-        log.info("Calling Jobcontroller.GetJob")
-        c.GetJob(j, download_dir, False, True)
+
+        # Get a list of downloadable files
+        download_file_list = c.GetDownloadFiles(j.JobID);
+        
+        source_url = arc.URL(j.JobID.str())
+        destination_url = arc.URL(download_dir)
+
+        source_path_prefix = source_url.Path()
+        destination_path_prefix = destination_url.Path()
+
+        for remote_file in download_file_list:
+            source_url.ChangePath(os.path.join(source_path_prefix,remote_file))
+            destination_url.ChangePath(os.path.join(destination_path_prefix,remote_file))
+
+            if not c.ARCCopyFile(source_url,destination_url):
+                log.warning("Failed downloading %s to %s" % (source_url.str(), destination_url.str()))
+                completed = False
+        
+        if not completed:
+            raise gc3libs.exceptions.UnrecoverableDataStagingError(
+                "Unrecoverble Error: Failed downloading remote folder for job '%s': into %s" 
+                % (job.lrms_jobid, download_dir))
+
         job.download_dir = download_dir
 
-        # jobsuper = arc.JobSupervisor(self._usercfg, [])
-        # controllers = jobsuper.GetJobControllers()
-        # # update job information
-        # for c in controllers:
-        #     c.GetJobInformation()
-        # for c in controllers:
-        #     jl = c.GetJobs()
-        #     for j in jl:
-        #         if j.JobID.str() == job.lrms_jobid:
-        #             log.info('Found job %s' %j.JobID.str())
-        #             # found, clean remote job sessiondir
-        #             c.GetJob(j, download_dir, False, False)
-        #             break
-        # job.download_dir = download_dir
 
     @same_docstring_as(LRMS.free)
     def free(self, app):
@@ -446,7 +461,7 @@ class Arc1Lrms(LRMS):
         controller, job = self._get_job_and_controller(app.execution.lrms_jobid)
         log.info("Calling JobController.CleanJob")
         if not controller.CleanJob(job):
-        	log.error('arc1.JobController.CleanJob returned False')
+            log.error('arc1.JobController.CleanJob returned False')
 
 
     @cache_for(gc3libs.Default.ARC_CACHE_TIME)
@@ -520,44 +535,46 @@ class Arc1Lrms(LRMS):
 
     @same_docstring_as(LRMS.peek)
     def peek(self, app, remote_filename, local_file, offset=0, size=None):
-        pass
 
-        # job = app.execution
+        job = app.execution
+        
+        assert job.has_key('lrms_jobid'), \
+            "Missing attribute `lrms_jobid` on `Job` instance passed to `ArcLrms.peek`."
 
-        # assert job.has_key('lrms_jobid'), \
-        #     "Missing attribute `lrms_jobid` on `Job` instance passed to `ArcLrms.peek`."
+        self.auths.get(self._resource.auth)
+        controller, j = self._get_job_and_controller(job.lrms_jobid) 
 
-        # self.auths.get(self._resource.auth)
+        if size is None:
+            size = sys.maxint
 
-        # if size is None:
-        #     size = sys.maxint
-
-        # # XXX: why on earth?
-        # # if int(offset) < 1024:
-        # #     offset = 0
-
-        # _remote_filename = job.lrms_jobid + '/' + remote_filename
-
-        # # get JobFTPControl handle
-        # jftpc = arclib.JobFTPControl()
-
-        # # download file
-        # log.debug("Downloading max %d bytes at offset %d of remote file '%s' into local file '%s' ..."
-        #           % (size, offset, remote_filename, local_file.name))
+        _remote_filename = job.lrms_jobid + '/' + remote_filename
+        source_url = arc.URL(_remote_filename)
 
         # # XXX: why this ? Because `local_file` could be a file name
         # # (string) or a file-like object, as per function docstring.
-        # try:
-        #    local_file_name = local_file.name
-        # except AttributeError:
-        #    local_file_name = local_file
+        try:
+            local_file_name = local_file.name
+        except AttributeError:
+            local_file_name = local_file
 
-        # arclib.JobFTPControl.Download(jftpc, 
-        #                               arclib.URL(_remote_filename), 
-        #                               int(offset), int(size), 
-        #                               local_file.name)
+        destination_url = arc.URL(local_file_name)
 
-        # log.debug("ArcLRMS.peek(): arclib.JobFTPControl.Download: completed")
+        if not controller.ARCCopyFile(source_url,destination_url):
+            log.warning("Failed downloading %s to %s" % (source_url.str(), destination_url.str()))
+
+        log.debug("ArcLRMS.peek(): arc.JobController.ARCCopyFile: completed")
+
+
+    @staticmethod
+    def init_arc_logger():
+        if not gc3libs.backends.arc1.Arc1Lrms.arc_logger_set:
+            arc_rootlogger = arc.Logger_getRootLogger()
+            arc_logger = arc.Logger(arc_rootlogger, "gc3pie")
+            # arc_logger_dest = arc.LogStream(sys.stderr) # or open(os.devnull, 'w')
+            arc_logger_dest = arc.LogStream(open(gc3libs.Default.ARC1_LOGFILE, 'w'))
+            arc_rootlogger.addDestination(arc_logger_dest)
+            arc_rootlogger.setThreshold(arc.DEBUG) # or .VERBOSE, .INFO, .WARNING, .ERROR
+            gc3libs.backends.arc1.Arc1Lrms.arc_logger_set = True
 
 
 ## main: run tests
