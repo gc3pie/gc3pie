@@ -52,8 +52,8 @@ import gc3libs.exceptions
 # NG's default packages install arclib into /opt/nordugrid/lib/pythonX.Y/site-packages;
 # add this anyway in case users did not set their PYTHONPATH correctly
 import sys
-sys.path.append('/opt/nordugrid/lib/python%d.%d/site-packages' 
-                % sys.version_info[:2])
+#sys.path.append('/opt/nordugrid/lib/python%d.%d/site-packages' 
+#                % sys.version_info[:2])
 
 
 # this needs to be defined before we import other GC3Libs modules, as
@@ -88,6 +88,9 @@ class Default(object):
 
     # Proxy
     PROXY_VALIDITY_THRESHOLD = 600 #: Proxy validity threshold in seconds. If proxy is expiring before the thresold, it will be marked as to be renewed.
+
+    ARC1_LOGFILE = os.path.join(RCDIR, "arc1.log")
+    ARC1_DEFAULT_SERVICE_TIMEOUT = 3 # 3 sec. max wait for a service top respond. Hopefully this impacts also ldapsearches
 
 
 from gc3libs.exceptions import *
