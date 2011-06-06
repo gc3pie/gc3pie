@@ -379,8 +379,8 @@ def cache_for(lapse):
             if update:    
                 obj._cache_value[key] = fn(obj, *args)
                 obj._cache_last_updated[key] = now
-            #gc3libs.log.debug("Using cached value '%s' for %s(%s, ...)",
-            #                  obj._cache_value[key], fn, obj)
+            gc3libs.log.debug("Using cached value '%s' for %s(%s, ...)",
+                              obj._cache_value[key], fn, obj)
             return obj._cache_value[key]
         return wrapper
     return decorator

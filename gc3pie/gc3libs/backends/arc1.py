@@ -109,6 +109,24 @@ class Arc1Lrms(LRMS):
         # arc_rootlogger.addDestination(arc_logger_dest)
         # arc_rootlogger.setThreshold(arc.DEBUG) # or .VERBOSE, .INFO, .WARNING, .ERROR
 
+        # # Initialize the required ARC1 components
+        # log.info('Invoking arc.JobSupervisor')
+        # self._jobsupervisor = arc.JobSupervisor(self._usercfg, [])
+        # # XXX: we need to get what 'middleware' each controller can control
+        # log.info('Invoking arc.JobSupervisor.GetJobControllers')
+        # self._controllers = self._jobsupervisor.GetJobControllers()
+        # # XXX: can we also create the target ?
+        # log.info('Invoking arc.TargetGenerator')
+        # self._target_generator = arc.TargetGenerator(self._usercfg, 0)
+                
+        log.info('ARC1 resource %s init [ ok ]' % self._resource.name)
+        self.isValid = 1
+
+    def is_valid(self):
+        return self.isValid
+
+
+    def _get_JobSupervisor_and_JobController(self):
         # Initialize the required ARC1 components
         log.info('Invoking arc.JobSupervisor')
         self._jobsupervisor = arc.JobSupervisor(self._usercfg, [])
@@ -119,11 +137,7 @@ class Arc1Lrms(LRMS):
         log.info('Invoking arc.TargetGenerator')
         self._target_generator = arc.TargetGenerator(self._usercfg, 0)
                 
-        log.info('ARC1 resource %s init [ ok ]' % self._resource.name)
-        self.isValid = 1
 
-    def is_valid(self):
-        return self.isValid
 
 
     @same_docstring_as(LRMS.cancel_job)
@@ -152,6 +166,9 @@ class Arc1Lrms(LRMS):
         # return tg.FoundTargets()
         # This methodd should spawn the ldapsearch to update the ExecutionTager information
         log.info('Calling arc.TargetGenerator.RetrieveExecutionTargets')
+
+        self._get_JobSupervisor_and_JobController()
+
         self._target_generator.RetrieveExecutionTargets()
 
         log.info('Calling arc.TargetGenerator.GetExecutionTargets()')
@@ -165,15 +182,19 @@ class Arc1Lrms(LRMS):
     # ARC refreshes the InfoSys every 30 seconds by default;
     # there's no point in querying it more often than this...
     # @cache_for(gc3libs.Default.ARC_CACHE_TIME)
-    @cache_for(180)
+    @cache_for(60)
     def _iterjobs(self):
         """
         Iterate over all jobs.
         """
+
+        self._get_JobSupervisor_and_JobController()
+
         for c in self._controllers:
             log.info("Calling JobController.GetJobInformation()")
             c.GetJobInformation()
-        log.info("Calling JobController.GetJobs() for %d times" % len(self._controllers))
+        # log.info("Calling JobController.GetJobs() for %d times" % len(self._controllers))
+            log.info('controller returned [%d] jobs' % len(c.GetJobs()))
         return itertools.chain(* [c.GetJobs() for c in self._controllers])
 
 
