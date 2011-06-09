@@ -1151,7 +1151,8 @@ class SessionBasedScript(_Script):
         #               % (pattern, ext))
 
         def matches(name):
-            return fnmatch.fnmatch(name, pattern)
+            return (fnmatch.fnmatch(os.path.basename(name), pattern)
+                    or fnmatch.fnmatch(name, pattern))
         for path in paths:
             self.log.debug("Now processing input path '%s' ..." % path)
             if os.path.isdir(path):
