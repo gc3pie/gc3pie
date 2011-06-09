@@ -71,11 +71,13 @@ class ArcLrms(LRMS):
             
         self._queues_cache_time = gc3libs.Default.ARC_CACHE_TIME # XXX: should it be configurable?
 
-        # DEBUG: print all ARC messages to trace the failure in gpremium
         arcnotifier = arclib.Notify_getNotifier()
-        arcnotifier.SetOutStream(arcnotifier.GetOutStream())
-        arcnotifier.SetNotifyLevel(arclib.VERBOSE)
-        arcnotifier.SetNotifyTimeStamp(True)
+        arcnotifier.SetOutStream(arcnotifier.GetNullStream())
+        # DEBUG: uncomment the following to print all ARC messages to
+        # trace the failure in gpremium
+        #arcnotifier.SetOutStream(arcnotifier.GetOutStream())
+        #arcnotifier.SetNotifyLevel(arclib.VERBOSE)
+        #arcnotifier.SetNotifyTimeStamp(True)
 
         self.isValid = 1
 
