@@ -27,6 +27,7 @@ __docformat__ = 'reStructuredText'
 __version__ = '$Revision$'
 
 
+import datetime
 import re
 
 import unum
@@ -192,6 +193,31 @@ def from_string(val, unit=None, allow=None):
                 pass
         raise ValueError("Unit %s is not allowed here: only %s are."
                          % (u.strUnit(), str.join(",", [a.strUnit() for a in allow])))
+
+
+def from_timedelta(td):
+    """
+    Return a duration expressing the same time amount as the Python
+    `datetime.timedelta` object `td`.
+    """
+    try:
+        # Python 2.7 onwards
+        return td.total_seconds() * _units['s']
+    except AttributeError:
+        return ((td.microseconds + (td.seconds + td.days * 24 * 3600) * 10**6) / 10**6) * _units.s
+
+
+def to_timedelta(duration):
+    """
+    Convert a duration into a Python `datetime.timedelta` object.
+
+    This is useful to operate on Python's `datetime.time` and
+    `datetime.date` objects, which can be added or subtracted to
+    `datetime.timedelta`.
+    """
+    assert duration.matchUnits(_units['s']), \
+           "gc3libs.units.to_timedelta: `duration` argument must be convertible to 'seconds'"
+    return datetime.timedelta(seconds=duration.asUnit(_units.s).value)
 
 
 ## main: run tests
