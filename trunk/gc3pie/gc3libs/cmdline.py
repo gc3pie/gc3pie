@@ -938,8 +938,8 @@ class SessionBasedScript(_Script):
         _Script.pre_run(self)
 
         ## consistency checks
-        if self.params.max_running < 1:
-            raise cli.app.Error("Argument to option -J/--max-running must be a positive integer.")
+        if self.params.max_running < 0:
+            raise cli.app.Error("Argument to option -J/--max-running must be a non-negative integer.")
         if self.params.wait < 0: 
             raise cli.app.Error("Argument to option -C/--continuous must be a positive integer.")
 
