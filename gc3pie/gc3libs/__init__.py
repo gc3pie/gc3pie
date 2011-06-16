@@ -1040,10 +1040,13 @@ class Application(Struct, Persistable, Task):
         a result of the `Core.submit()`, otherwise the return value is
         ignored and `Core.submit` returns `None`.
 
-        Default is to always return `None`; override in derived
-        classes to change this behavior.
+        Default is to always return the first exception in the list
+        (on the assumption that it is the root of all exceptions or
+        that at least it refers to the preferred resource).  Override
+        in derived classes to change this behavior.
         """
-        return None
+        return exs[0]
+
 
     # XXX: this method might be dangerous in that it can break the
     # `update_job_state` semantics; it's here for completeness, but we
@@ -1067,6 +1070,7 @@ class Application(Struct, Persistable, Task):
         change this behavior.
         """
         return None
+
 
     def fetch_output_error(self, ex):
         """
