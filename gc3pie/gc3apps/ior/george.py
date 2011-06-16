@@ -86,9 +86,9 @@ class ValueFunctionIteration(SequentialTaskCollection):
                  total_iterations, slice_size=0,
                  output_dir=TMPDIR, grid=None, **kw):
         """
-        Create a new tasks that runs `executable` over a set of values
+        Create a new task that runs `executable` over a set of values
         (initially given by `initial_values_file`, then the output of
-        a run is fed as input to the next one), riterating the process
+        a run is fed as input to the next one), iterating the process
         `total_iterations` times.
 
         If `slice_size` is a positive integer, then chop the input into
