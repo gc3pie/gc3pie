@@ -494,7 +494,7 @@ def configure_logger(level=logging.ERROR,
 # when used in the `output` attribute of an application,
 # it stands for "fetch the whole contents of the remote
 # directory"
-ANY_OUTPUT = '/'
+ANY_OUTPUT = {'':''}
 
 
 class Application(Struct, Persistable, Task):
@@ -706,7 +706,7 @@ class Application(Struct, Persistable, Task):
 
         self.outputs = Application._io_spec_to_dict(outputs)
         # check that local entries are all distinct
-        # (can happen that two remote paths apre mapped to the same local one)
+        # (can happen that two remote paths are mapped to the same local one)
         if len(self.outputs.values()) != len(set(self.outputs.values())):
             # try to build an exact error message
             inv = { }
@@ -888,9 +888,14 @@ class Application(Struct, Persistable, Task):
                 def output_url(l, r):
                     return os.path.join(self.output_base_url,
                                         utils.ifelse(l, l, r))
+            def relpath(r):
+                if r == '':
+                    return '/'
+                else:
+                    return r
             # filter out stdout/stderr (they are automatically
             # retrieved) and then check again
-            outputs_ = [ ('("%s" "%s")' % (r, output_url(l, r)))
+            outputs_ = [ ('("%s" "%s")' % (relpath(r), output_url(l, r)))
                          for (r,l) in [ (remotename, localname)
                                         for remotename,localname 
                                         in self.outputs.iteritems() 
