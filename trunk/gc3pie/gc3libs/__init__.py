@@ -1012,7 +1012,7 @@ class Application(Struct, Persistable, Task):
             # options are present, Grid Engine sets but ignores the
             # error-path attribute."
             qsub += ' -e %s' % self.stderr
-        if self.requested_cores and not _suppress_warning:
+        if self.requested_cores != 1 and not _suppress_warning:
             # XXX: should this be an error instead?
             log.warning("Application requested %d cores,"
                         " but there is no generic way of expressing this requirement in SGE!"
