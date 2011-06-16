@@ -341,8 +341,7 @@ class SgeLrms(LRMS):
             raise
 
         # Copy the input file to remote directory.
-        for input in app.inputs.items():
-            local_path, remote_path = input
+        for local_path,remote_path in app.inputs.items():
             remote_path = os.path.join(ssh_remote_folder, remote_path)
             remote_parent = os.path.dirname(remote_path)
             try:
@@ -351,6 +350,9 @@ class SgeLrms(LRMS):
                     self.transport.makedirs(remote_parent)
                 log.debug("Transferring file '%s' to '%s'" % (local_path, remote_path))
                 self.transport.put(local_path, remote_path)
+                # preserve execute permission on input files
+                if os.access(local_path, os.X_OK):
+                    self.transport.chmod(remote_path, 0755)
             except:
                 log.critical("Copying input file '%s' to remote cluster '%s' failed",
                                       local_path, self._resource.frontend)
