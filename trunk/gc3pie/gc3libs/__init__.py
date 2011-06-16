@@ -225,6 +225,9 @@ class Task(object):
         """
         Start the computational job associated with this `Task` instance.
         """
+        assert self._attached, ("Task.submit() called on detached task %s." % self)
+        assert hasattr(self._grid, 'submit'), \
+               ("Invalid `_grid` object '%s' in Task %s" % (self._grid, self))
         self._grid.submit(self, **kw)
 
 
@@ -234,6 +237,9 @@ class Task(object):
         job associated with this `Task`.  After successful completion,
         `.execution.state` will contain the new state.
         """
+        assert self._attached, ("Task.update_state() called on detached task %s." % self)
+        assert hasattr(self._grid, 'update_job_state'), \
+               ("Invalid `_grid` object '%s' in Task %s" % (self._grid, self))
         self._grid.update_job_state(self, **kw)
 
 
@@ -243,6 +249,9 @@ class Task(object):
 
         See :meth:`gc3libs.Core.kill` for a full explanation.
         """
+        assert self._attached, ("Task.kill() called on detached task %s." % self)
+        assert hasattr(self._grid, 'kill'), \
+               ("Invalid `_grid` object '%s' in Task %s" % (self._grid, self))
         self._grid.kill(self, **kw)
 
 
@@ -278,6 +287,9 @@ class Task(object):
 
         See :meth:`gc3libs.Core.peek` for a full explanation.
         """
+        assert self._attached, ("Task.peek() called on detached task %s." % self)
+        assert hasattr(self._grid, 'peek'), \
+               ("Invalid `_grid` object '%s' in Task %s" % (self._grid, self))
         return self._grid.peek(self, what, offset, size, **kw)
 
 
@@ -356,7 +368,7 @@ class Task(object):
         #    of running independently.
         # For now this is a poll+sleep loop, but we certainly need to revise it.
         while True:
-            self.update()
+            self.update_state()
             if self.execution.state == Run.State.TERMINATED:
                 return self.returncode
             time.sleep(interval)
