@@ -406,7 +406,7 @@ class Core:
             if job.signal == Run.Signals.DataStagingFailure:
                 job.signal = 0
         except gc3libs.exceptions.RecoverableDataStagingError, rex:
-            job.info("Temporarly failure when retieving results due to: %s. Will retry" % str(rex))
+            job.info = ("Temporary failure when retrieving results: %s. Ignoring error, try again." % str(rex))
             return
         except gc3libs.exceptions.UnrecoverableDataStagingError, ex:
             job.signal = Run.Signals.DataStagingFailure
