@@ -83,7 +83,6 @@ def basename_sans(path):
     return os.path.splitext(os.path.basename(path))[0]
 
 
-@gc3libs.debug.trace
 def copyfile(src, dst, overwrite=False):
     """
     Copy a file from `src` to `dst`; return `True` if the copy was
@@ -105,7 +104,6 @@ def copyfile(src, dst, overwrite=False):
     return True
 
 
-@gc3libs.debug.trace
 def copytree(src, dst, overwrite=False):
     """
     Recursively copy an entire directory tree rooted at `src`.  If
@@ -130,7 +128,6 @@ def copytree(src, dst, overwrite=False):
     return errors
 
 
-@gc3libs.debug.trace
 def copy_recursively(src, dst, overwrite=False):
     """
     Copy `src` to `dst`, descending it recursively if necessary.
