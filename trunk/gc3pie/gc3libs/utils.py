@@ -697,6 +697,28 @@ def backup(path):
     """
     Rename the filesystem entry at `path` by appending a unique
     numerical suffix; return new name.
+
+    For example,
+
+    1. create a test file:
+
+      >>> import tempfile
+      >>> path = tempfile.mkstemp()[1]
+
+    2. then make a backup of it; the backup will end in ``.~1~``:
+
+      >>> path1 = backup(path)
+      >>> os.path.exists(path + '.~1~')
+      True
+
+    3. re-create the file, and make a second backup: this time the
+    file will be renamed with a ``.~2~`` extension:
+
+      >>> open(path, 'w').close()
+      >>> path2 = backup(path)
+      >>> os.path.exists(path + '.~2~')
+      True
+      
     """
     parent_dir = os.path.dirname(path)
     prefix = os.path.basename(path) + '.~'
