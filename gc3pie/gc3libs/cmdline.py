@@ -242,7 +242,7 @@ class _Script(cli.app.CommandLineApp):
         self.log.propagate = True
 
         # interface to the GC3Libs main functionality
-        self._core = self._get_core(gc3libs.Default.CONFIG_FILE_LOCATIONS)
+        self._core = self._get_core()
 
         # call hook methods from derived classes
         self.parse_args()
@@ -324,7 +324,9 @@ class _Script(cli.app.CommandLineApp):
     ## should be no need to do so.
     ##
 
-    def _get_core(self, config_file_locations, auto_enable_auth=True):
+    def _get_core(self,
+                  config_file_locations=gc3libs.Default.CONFIG_FILE_LOCATIONS,
+                  auto_enable_auth=True):
         """
         Return a `gc3libs.core.Core` instance configured by parsing
         the configuration file(s) located at `config_file_locations`.

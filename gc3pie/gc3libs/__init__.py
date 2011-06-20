@@ -67,10 +67,11 @@ class Default(object):
     CONFIG_FILE_LOCATIONS = [
         # system-wide config file
         "/etc/gc3/gc3pie.conf",
-        # user-private virtualenv config file
-        os.path.join(os.path.expandvars("$VIRTUAL_ENV"), "etc/gc3/gc3pie.conf"),
-        # user-private config file
-        os.path.join(RCDIR, "gc3pie.conf")
+        # virtualenv config file
+        os.path.expandvars("$VIRTUAL_ENV/etc/gc3/gc3pie.conf"),
+        # user-private config file: first look into `$GC3PIE_CONF`, and
+        # fall-back to `~/.gc3/gc3pie.conf`
+        os.environ.get('GC3PIE_CONF', os.path.join(RCDIR, "gc3pie.conf"))
         ]
     JOBS_DIR = os.path.join(RCDIR, "jobs")
     ARC0_LRMS = 'arc0'
@@ -90,7 +91,7 @@ class Default(object):
     PROXY_VALIDITY_THRESHOLD = 600 #: Proxy validity threshold in seconds. If proxy is expiring before the thresold, it will be marked as to be renewed.
 
     ARC1_LOGFILE = os.path.join(RCDIR, "arc1.log")
-    ARC1_DEFAULT_SERVICE_TIMEOUT = 3 # 3 sec. max wait for a service top respond. Hopefully this impacts also ldapsearches
+    ARC1_DEFAULT_SERVICE_TIMEOUT = 3 # max wait (seconds) for a service to respond; hopefully this impacts also LDAP searches
 
 
 from gc3libs.exceptions import *
