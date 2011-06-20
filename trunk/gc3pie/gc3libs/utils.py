@@ -88,7 +88,16 @@ def copyfile(src, dst, overwrite=False):
     Copy a file from `src` to `dst`; return `True` if the copy was
     actually made.  If `overwrite` is `False` (default), an existing
     destination entry is left unchanged and `False` is returned.
+
+    An attempt at hard-linking is done first; failing that, we copy
+    the source file onto the destination one. Permission bits and
+    modification times are copied as well.
+
+    If `dst` is a directory, a file with the same basename as `src` is
+    created (or overwritten) in the directory specified.
     """
+    if os.path.isdir(dst):
+        dst = os.path.join(dst, os.path.basename(src))
     if os.path.exists(dst) and not overwrite:
         return False
     if same_file(src, dst):
@@ -97,8 +106,11 @@ def copyfile(src, dst, overwrite=False):
         dstdir = os.path.dirname(dst)
         if not os.path.exists(dstdir):
             os.makedirs(dstdir)
-        shutil.copy2(src, dst)
-        shutil.copystat(src, dst)
+        try:
+            os.link(src, dst)
+        except OSError, ex:
+            # retry with normal copy
+            shutil.copy2(src, dst)
     except shutil.WindowsError:
         pass
     return True
