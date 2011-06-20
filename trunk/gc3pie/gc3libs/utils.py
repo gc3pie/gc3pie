@@ -696,26 +696,29 @@ def mkdir(path, mode=0777):
 def backup(path):
     """
     Rename the filesystem entry at `path` by appending a unique
-    numerical suffix.
+    numerical suffix; return new name.
     """
     parent_dir = os.path.dirname(path)
-    prefix = os.path.basename(path) + '.'
+    prefix = os.path.basename(path) + '.~'
     p = len(prefix)
     suffix = 1
-    for name in [ x for x in os.listdir(parent_dir) if x.startswith(prefix) ]:
+    for name in [ entry for entry in os.listdir(parent_dir)
+                  if (entry.startswith(prefix) and entry.endswith('~')) ]:
         try:
-            n = int(name[p:])
+            n = int(name[p:-1])
             suffix = max(suffix, n+1)
         except ValueError:
             # ignore non-numeric suffixes
             pass
-    os.rename(path, "%s.%d" % (path, suffix))
+    new_path = "%s.~%d~" % (path, suffix)
+    os.rename(path, new_path)
+    return new_path
 
 
 def mkdir_with_backup(path, mode=0777):
     """
     Like `os.makedirs`, but if `path` already exists and is not empty,
-    rename the existing one appending a `.NUMBER` suffix.
+    rename the existing one to a backup name (see the `backup` function).
 
     Unlike `os.makedirs`, no exception is thrown if the directory
     already exists and is empty, but the target directory permissions
