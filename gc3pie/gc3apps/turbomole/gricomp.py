@@ -24,6 +24,9 @@ __version__ = '$Revision$'
 __author__ = 'Riccardo Murri <riccardo.murri@uzh.ch>'
 # summary of user-visible changes
 __changelog__ = """
+  2011-06-20:
+    * Copy the ``coord`` file into each generated ``ridft`` and ``ricc2`` directory.
+    * Move the ``ricc2`` directory at the leaf of the generated tree.
   2011-05-06:
     * Record RIDFT/RICC2 output into a `ridft.out`/`ricc2.out` file
       in the corresponding `output/` subdirectory.
@@ -213,6 +216,7 @@ class BasisSweepPasses(SequentialTaskCollection):
         # run 1st pass in the `ridft` directory
         ridft_dir = os.path.join(self.work_dir, 'ridft')
         gc3libs.utils.mkdir(ridft_dir)
+        gc3libs.utils.copyfile(coord, os.path.join(ridft_dir, 'coord'))
         ridft_define_in = _make_define_in(ridft_dir, ridft_in)
         pass1 = TurbomoleDefineApplication(
             'ridft', ridft_define_in, coord,
@@ -237,18 +241,20 @@ class BasisSweepPasses(SequentialTaskCollection):
                 return Run.State.TERMINATED
             # else, proceeed with 2nd pass
             pass2 = [ ]
+            ridft_coord = os.path.join(self.tasks[0].output_dir, 'coord')
             for ricc2_in in self.ricc2_ins:
                 cbas = ricc2_in._keywords['CBAS_BASIS']
                 cabs = ricc2_in._keywords['CABS_BASIS']
                 ricc2_dir = os.path.join(self.work_dir,
                                          'ricc2/cbas-%s/cabs-%s' % (cbas, cabs))
                 gc3libs.utils.mkdir(ricc2_dir)
+                gc3libs.utils.copyfile(ridft_coord, ricc2_dir)
                 ricc2_define_in = _make_define_in(ricc2_dir, ricc2_in)
                 pass2.append(
                     TurbomoleDefineApplication(
                         'ricc2', ricc2_define_in,
                         # the second pass builds on files defined in the first one
-                        os.path.join(self.tasks[0].output_dir, 'coord'),
+                        os.path.join(ricc2_dir, 'coord'),
                         os.path.join(self.tasks[0].output_dir, 'control'),
                         os.path.join(self.tasks[0].output_dir, 'energy'),
                         os.path.join(self.tasks[0].output_dir, 'mos'),
