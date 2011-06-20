@@ -24,6 +24,9 @@ __version__ = '$Revision$'
 __author__ = 'Riccardo Murri <riccardo.murri@uzh.ch>'
 # summary of user-visible changes
 __changelog__ = """
+  2011-06-20:
+    * Copy the ``coord`` file into each generated ``ridft`` and ``ricc2`` directory.
+    * Move the ``ricc2`` directory at the leaf of the generated tree.
   2011-06-09:
     * Forked off from the `gricomp.py` source code.
 """
@@ -318,6 +321,8 @@ controlled with the ``--bas``, ``--jkbas``, ``--cbas`` and
         # run 1st pass in the `ridft` directory
         ridft_dir = os.path.join(work_dir, 'ridft')
         gc3libs.utils.mkdir(ridft_dir)
+        ridft_coord = os.path.join(ridft_dir, 'coord')
+        gc3libs.utils.copyfile(coord, ridft_coord)
         ridft_define_in = self._make_define_in(ridft_dir, ridft_in)
         gc3libs.log.info("Created RIDFT input files in directory '%s'",
                          ridft_dir)
@@ -326,8 +331,9 @@ controlled with the ``--bas``, ``--jkbas``, ``--cbas`` and
             cbas = ricc2_in._keywords['CBAS_BASIS']
             cabs = ricc2_in._keywords['CABS_BASIS']
             ricc2_dir = os.path.join(work_dir,
-                                     'ricc2/cbas-%s/cabs-%s' % (cbas, cabs))
+                                     'cbas-%s/cabs-%s/ricc2' % (cbas, cabs))
             gc3libs.utils.mkdir(ricc2_dir)
+            gc3libs.utils.copyfile(ridft_coord, ricc2_dir)
             ricc2_define_in = self._make_define_in(ricc2_dir, ricc2_in)
             gc3libs.log.info("Created RICC2 input files in directory '%s'",
                              ricc2_dir)
@@ -336,6 +342,7 @@ controlled with the ``--bas``, ``--jkbas``, ``--cbas`` and
     def main(self):
         coords = self._search_for_input_files(self.params.args)
         for coord in coords:
+            gc3libs.log.info("Processing input file '%s' ..." % coord)
             # XXX: how do we get a unique name for each coord?  for
             # now, assume the directory containing the `coord` file
             # gives the unique name
