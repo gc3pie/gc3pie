@@ -275,7 +275,7 @@ class Task(object):
             return self.output_dir
         result = self._grid.fetch_output(self, output_dir, overwrite, **kw)
         if self.execution.state == Run.State.TERMINATING:
-            self.execution.state = TERMINATED
+            self.execution.state = Run.State.TERMINATED
         return result
     
 
