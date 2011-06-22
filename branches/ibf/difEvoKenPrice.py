@@ -1,3 +1,9 @@
+"""
+Driver script for performing an global optimization over the parameter space. 
+This code is a translation of the following MATLAB code: http://www.icsi.berkeley.edu/~storn/DeMat.zip
+Please refer to this web site for more information: http://www.icsi.berkeley.edu/~storn/code.html#deb1
+"""
+
 import numpy as np
 import sys
 import logbook
