@@ -1,7 +1,0 @@
-#http://www.selenic.com/mercurial/hgignore.5.html 
-#.*\.[^m][A-Za-z]*
-syntax: glob
-
-*.pyc
-*.tmp_*
-tmpPlots/*
