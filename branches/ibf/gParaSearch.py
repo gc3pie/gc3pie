@@ -84,7 +84,8 @@ class gParaSearchParallel(ParallelTaskCollection, paraLoop_fp, GPremiumTaskMods)
                  nPopulation, xVarsDom, solverVerb, output_dir = '/tmp', grid = None, **kw):
         # Remove all files in curPath
         curPath = os.getcwd()
-        if os.path.isfile(os.path.join(curPath, 'gParaSearch.csv')) or not os.listdir(curPath):
+        filesAndFolder = os.listdir(curPath)
+        if 'gParaSearch.log' in filesAndFolder: # if another paraSearch was run in here before, clean up. 
             rmFilesAndFolders(curPath)      
         
         # Set up initial variables
