@@ -19,10 +19,10 @@ class deKenPrice:
 
 
   def deopt(self, evaluator, S_struct):
-    mySH = logbook.StreamHandler(stream = sys.stdout, format_string = '{record.message}', bubble = True)
+    mySH = logbook.StreamHandler(stream = sys.stdout, level = evaluator.verbosity.upper(), format_string = '{record.message}', bubble = True)
     mySH.format_string = '{record.message}'
 #    mySH.push_application()
-    myFH = logbook.FileHandler(filename = __name__ + '.log', bubble = True)
+    myFH = logbook.FileHandler(filename = __name__ + '.log', level = 'DEBUG', bubble = True)
     myFH.format_string = '{record.message}'
 #    myFH.push_application()  
     

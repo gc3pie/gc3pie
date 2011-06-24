@@ -80,7 +80,8 @@ from difEvoKenPrice import *
 
 class gParaSearchParallel(ParallelTaskCollection, paraLoop_fp, GPremiumTaskMods):
  
-    def __init__(self, pathToExecutable, architecture, logger, baseDir, xVars, nPopulation, xVarsDom, solverVerb, output_dir = '/tmp', grid = None, **kw):
+    def __init__(self, pathToExecutable, architecture, logger, baseDir, xVars, 
+                 nPopulation, xVarsDom, solverVerb, output_dir = '/tmp', grid = None, **kw):
         # Remove all files in curPath
         curPath = os.getcwd()
         if os.path.isfile(os.path.join(curPath, 'gParaSearch.csv')) or not os.listdir(curPath):
@@ -117,8 +118,8 @@ class gParaSearchParallel(ParallelTaskCollection, paraLoop_fp, GPremiumTaskMods)
         S_struct['FVr_minbound'] = 0.5
         S_struct['FVr_maxbound'] = 0.9
         S_struct['I_bnd_constr'] = 0
-        S_struct['I_itermax']    = 100
-        S_struct['F_VTR']        = 1.e-8
+        S_struct['I_itermax']    = 50
+        S_struct['F_VTR']        = 1.e-3
         S_struct['I_strategy']   = 1
         S_struct['I_refresh']    = 1
         S_struct['I_plotting']   = 0
@@ -191,7 +192,13 @@ class gParaSearchParallel(ParallelTaskCollection, paraLoop_fp, GPremiumTaskMods)
             curState = self._state()
             logger.info('state = %s' % curState)
         print 'done submitting'
-        logger.info(self.stats())
+        taskStats = self.stats()
+        keyList = taskStats.keys()
+        keyList = [ key.lower() for key in keyList ]
+        keyList.sort()
+        for key in keyList:
+            logger.info(key + '   ' + str(taskStats[key]))
+#        logger.info(self.stats())
         
         ## Each line in the resulting table (overviewSimu) represents one paraCombo
         overviewTable = createOverviewTable(resultDir = iterationFolder, outFile = 'simulation.out', slUIPFile = 'slUIP.mat', 
@@ -317,8 +324,7 @@ Read `.loop` files and execute the `forwardPremium` program accordingly.
                                 gc3libs.exceptions.InvalidUsage)
 
     def new_tasks(self, extra):
-        jobname = 'test'
-        executable = 'echo test'
+        jobname = 'globalOptimization'
         executable = os.path.basename(self.params.executable)
         inputs = { self.params.executable:executable }
         outputs = { 'output/':'' }
@@ -337,9 +343,15 @@ Read `.loop` files and execute the `forwardPremium` program accordingly.
         # interface to the GC3Libs main functionality
         coreInstance = self._get_core(gc3libs.Default.CONFIG_FILE_LOCATIONS)
         kwargs['grid'] = coreInstance
+        # Check if number of population coincides with desired cores
+        if self.params.max_running < self.params.nPopulation:
+            self.params.max_running = self.params.nPopulation
+        
+        
         yield (jobname, gParaSearchParallel, 
                [ self.params.executable, self.params.architecture, 
-                 self.log, self.params.initial, self.params.xVars, self.params.nPopulation, self.params.xVarsDom, self.params.solverVerb], kwargs)
+                 self.log, self.params.initial, self.params.xVars, 
+                 self.params.nPopulation, self.params.xVarsDom, self.params.solverVerb], kwargs)
 
 
 
