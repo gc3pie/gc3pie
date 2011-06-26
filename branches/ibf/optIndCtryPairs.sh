@@ -50,7 +50,8 @@ for Ctry1 in ${Ctrys[@]}; do
     mkdir -p ${saveDir}
     cp -R ${pathToModel}/base/ ${saveDir}/base/
     sleep 1
-    ~/workspace/fpProj/model/code/gpremium.src/gParaSearch.py -b ${saveDir}/base -x ~/workspace/fpProj/model/bin/forwardPremiumOut -C 16 -N -NP 60 -xVars EA -xVarsDom '0.5 0.9' -sv warning &
- 
+    cd ${saveDir}
+    ~/workspace/fpProj/model/code/gPremiumScripts/gParaSearch.py -b base -x ~/workspace/fpProj/model/bin/forwardPremiumOut -C 16 -N -NP 60 -xVars EA -xVarsDom '0.5 0.9' -sv warning &
+    cd ..
   done
 done

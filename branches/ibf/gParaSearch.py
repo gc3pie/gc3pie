@@ -94,7 +94,7 @@ class gParaSearchParallel(ParallelTaskCollection, paraLoop_fp, GPremiumTaskMods)
         self.architecture = architecture
         self.baseDir = baseDir
         self.log = logger
-        self.verbosity = solverVerb
+        self.verbosity = solverVerb.upper()
         self.jobname = 'evaluateSolverGuess'
         tasks = []
         self.xVars = xVars
@@ -129,7 +129,7 @@ class gParaSearchParallel(ParallelTaskCollection, paraLoop_fp, GPremiumTaskMods)
 
     def target(self, inParaCombos):
                    
-        mySH = logbook.StreamHandler(stream = sys.stdout, level = 'DEBUG', format_string = '{record.message}', bubble = True)
+        mySH = logbook.StreamHandler(stream = sys.stdout, level = self.verbosity, format_string = '{record.message}', bubble = True)
         mySH.format_string = '{record.message}'
  #       mySH.push_application()
         myFH = logbook.FileHandler(filename = 'gParaSearch.log', level = 'DEBUG', bubble = True)
