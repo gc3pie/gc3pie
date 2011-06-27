@@ -171,7 +171,6 @@ it's named `gc3pie` as in the above installation instructions, you
 can issue the commands:
 {{{
      cd $HOME/gc3pie # use '/opt/gc3pie' if root
-     cd src
 }}}
 
 2. Activate the Python virtualenv:
