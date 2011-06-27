@@ -66,9 +66,9 @@ class GCryptoScript(SessionBasedScript):
                        "To be deployed together with the inputfiles"
                        "as part of the job.")
 
-    def parse_args(self):
-        if not os.path.isfile(self.params.directives):
-            raise RuntimeError("Directive file not found [%s]. plase check option -I" % self.params.directives)
+#    def parse_args(self):
+#        if not os.path.isfile(self.params.directives):
+#            raise RuntimeError("Directive file not found [%s]. plase check option -I" % self.params.directives)
 
 
     def new_tasks(self, extra):

@@ -119,7 +119,7 @@ class SubprocessLrms(LRMS):
                 " is not supported in the SubProcess backend.")
         for r, l in app.outputs.items():
             copy_recursively(os.path.join(app.execution.lrms_execdir, r),
-                             os.path.join(download_dir, l))
+                             os.path.join(download_dir, l.path))
 
     
     def update_job_state(self, app):
@@ -197,7 +197,7 @@ class SubprocessLrms(LRMS):
             try:
                 ## stage inputs files into execution directory
                 for l, r in app.inputs.items():
-                    copy_recursively(l, os.path.join(execdir, r))
+                    copy_recursively(l.path, os.path.join(execdir, r))
 
                 ## change to execution directory
                 os.chdir(execdir)
@@ -278,6 +278,14 @@ class SubprocessLrms(LRMS):
         """
         raise NotImplementedError("Method `SubprocessLRMS.peek()` is not yet implemented.")
     
+    def validate_data(self, data_file_list=None):
+        """
+        Supported protocols: file
+        """
+        for url in data_file_list:
+            if not url.scheme in ['file']:
+                return False
+        return True
 
 
 ## main: run tests

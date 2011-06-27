@@ -717,7 +717,7 @@ def prettyprint(D, indent=0, width=0, maxdepth=None, step=4,
         output.write(first)
         output.write(second)
         output.write('\n')
-
+        output.flush()
 
 def mkdir(path, mode=0777):
     """

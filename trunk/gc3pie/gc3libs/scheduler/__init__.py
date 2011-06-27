@@ -66,15 +66,22 @@ def _compatible_resources(lrms_list, application):
             gc3libs.log.info("Rejecting resource '%s': requested a longer duration (%d s) that resource provides (%d s)"
                              % (lrms._resource.name, application.requested_walltime, lrms._resource.max_walltime))
             continue
+        # XXX: Obsolete
+        # Now LRMS.validate_data() will check is a given LRMS can handle the data protocol specified
         # if upload to remote site requested, check that the backend supports it
-        if (application.output_base_url is not None
-            and lrms._resource.type not in [
-                gc3libs.Default.ARC0_LRMS,
-                gc3libs.Default.ARC1_LRMS,
-                ]):
-            gc3libs.log.info("Rejecting resource '%s': no support for non-local output files."
+        # if (application.output_base_url is not None
+        #     and lrms._resource.type not in [
+        #         gc3libs.Default.ARC0_LRMS,
+        #         gc3libs.Default.ARC1_LRMS,
+        #         ]):
+        #     gc3libs.log.info("Rejecting resource '%s': no support for non-local output files."
+        #                      % lrms._resource.name)
+        #     continue
+        if not lrms.validate_data(application.inputs.keys()) or not lrms.validate_data(application.outputs.values()):
+            gc3libs.log.info("Rejecting resource '%s': input/output data protocol not supported."
                              % lrms._resource.name)
             continue
+
         _selected_lrms_list.append(lrms)
 
     return _selected_lrms_list

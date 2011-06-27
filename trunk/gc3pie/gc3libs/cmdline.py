@@ -597,10 +597,10 @@ class SessionBasedScript(_Script):
         if len(args) == 0:
             path = os.getcwd()
         else:
-            if os.path.isdir(args[0]):
-                path = args[0]
-            elif os.path.isfile(args[0]):
-                path = os.path.dirname(args[0])
+            if os.path.isdir(str(args[0])):
+                path = str(args[0])
+            elif os.path.isfile(str(args[0])):
+                path = os.path.dirname(str(args[0]))
             else:
                 path = os.getcwd()
         return (pathspec
@@ -1075,6 +1075,7 @@ class SessionBasedScript(_Script):
         # ...now do a first round of submit/update/retrieve
         rc = loop()
         if self.params.wait > 0:
+            self.log.info("sleeping for %d seconds..." % self.params.wait)
             try:
                 while rc > 3:
                     # Python scripts become unresponsive during `time.sleep()`,

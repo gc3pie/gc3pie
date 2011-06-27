@@ -69,23 +69,23 @@ class CryptoApplication(gc3libs.Application):
 
 	return args
 
-    def gatherInputList(self, input='inputFiles.txt'):
-	# Load input files list and return it
-	try:
-		f = open(input, 'r')
-        except IOError:
-            print "Input files list %s doesn't exist!" % (input)
-            sys.exit(1)
+    # def gatherInputList(self, input='inputFiles.txt'):
+    #     # Load input files list and return it
+    #     try:
+    #     	f = open(input, 'r')
+    #     except IOError:
+    #         print "Input files list %s doesn't exist!" % (input)
+    #         sys.exit(1)
 
-	fileList = ["input_files.tgz"]
-	for line in f:
-		fileList.append(line.strip())
+    #     fileList = ["input_files.tgz"]
+    #     for line in f:
+    #     	fileList.append(line.strip())
 
-	f.close()
+    #     f.close()
 
-	return fileList
+    #     return fileList
 
-    def postprocess(self, download_dir):
+    def terminated(self):
         """
         Set the exit code of a `CodemlApplication` job by inspecting its
         ``.mlc`` output files.
@@ -103,37 +103,38 @@ class CryptoApplication(gc3libs.Application):
         """
         
         gc3libs.log.debug('Application terminated. postprocessing with execution.signal [%d]' % self.execution.signal)
-        if self.execution.signal == 125:
-            # submission failed, job did not run at all
-            self.execution.exitcode = 127
-            return
+        # if self.execution.signal == 125:
+        #     # submission failed, job did not run at all
+        #     self.execution.exitcode = 127
+        #     return
 
-        total = len(self.outputs)
-        # form full-path to the output files
-        outputs = [ os.path.join(download_dir, filename) 
-                    for filename in fnmatch.filter(os.listdir(download_dir), '*.mlc') ]
-        if len(outputs) == 0:
-            # no output retrieved, did ``codeml`` run at all?
-            self.execution.exitcode = 127
-            return
-        # count the number of successfully processed files
-        failed = 0
-        for mlc in outputs:
-            output_file = open(mlc, 'r')
-            last_line = output_file.readlines()[-1]
-            output_file.close()
-            if not last_line.startswith('Time used: '):
-                failed += 1
-        # set exit code and informational message
-        if failed == 0:
-            self.execution.exitcode = 0
-            self.info = "All files processed successfully, output downloaded to '%s'" % download_dir
-        elif failed < total:
-            self.execution.exitcode = 1
-            self.info = "Some files *not* processed successfully, output downloaded to '%s'" % download_dir
-        else:
-            self.execution.exitcode = 2
-            self.info = "No files processed successfully, output downloaded to '%s'" % download_dir
+        # total = len(self.outputs)
+        # # form full-path to the output files
+        # outputs = [ os.path.join(download_dir, filename) 
+        #             for filename in fnmatch.filter(os.listdir(download_dir), '*.mlc') ]
+        # if len(outputs) == 0:
+        #     # no output retrieved, did ``codeml`` run at all?
+        #     self.execution.exitcode = 127
+        #     return
+        # # count the number of successfully processed files
+        # failed = 0
+        # for mlc in outputs:
+        #     output_file = open(mlc, 'r')
+        #     last_line = output_file.readlines()[-1]
+        #     output_file.close()
+        #     if not last_line.startswith('Time used: '):
+        #         failed += 1
+        # # set exit code and informational message
+        # if failed == 0:
+        #     self.execution.exitcode = 0
+        #     self.info = "All files processed successfully, output downloaded to '%s'" % download_dir
+        # elif failed < total:
+        #     self.execution.exitcode = 1
+        #     self.info = "Some files *not* processed successfully, output downloaded to '%s'" % download_dir
+        # else:
+        #     self.execution.exitcode = 2
+        #     self.info = "No files processed successfully, output downloaded to '%s'" % download_dir
+        self.execution.exitcode = self.execution.signal
         return
 
 

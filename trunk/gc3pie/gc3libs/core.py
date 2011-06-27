@@ -162,12 +162,17 @@ class Core:
 
     def __submit_application(self, app, **kw):
         """Implementation of `submit` on `Application` objects."""
+
+        gc3libs.log.debug("Submitting %s ..." % str(app))
+
         auto_enable_auth = kw.get('auto_enable_auth', self.auto_enable_auth)
         
+        # XXX: we obsolete this check as we now move this responsibility
+        # within the LRMS
         # check that all input files can be read
-        for local_path in app.inputs:
-            gc3libs.utils.test_file(local_path, os.R_OK,
-                                    gc3libs.exceptions.InputFileError)
+        #for local_path in app.inputs:
+        #    gc3libs.utils.test_file(local_path, os.R_OK,
+        #                            gc3libs.exceptions.InputFileError)
 
         job = app.execution
 
@@ -963,10 +968,12 @@ class Engine(object):
                 if self._store and state != task.execution.state:
                     self._store.save(task)
                 if task.execution.state == Run.State.SUBMITTED:
-                    currently_submitted += 1
-                    currently_in_flight += 1
+                    if isinstance(task, Application):
+                        currently_submitted += 1
+                        currently_in_flight += 1
                 elif task.execution.state == Run.State.RUNNING:
-                    currently_in_flight += 1
+                    if isinstance(task, Application):
+                        currently_in_flight += 1
                 elif task.execution.state == Run.State.STOPPED:
                     transitioned.append(index) # task changed state, mark as to remove
                     self._stopped.append(task)
@@ -999,10 +1006,12 @@ class Engine(object):
                 if self._store:
                     self._store.save(task)
                 if task.execution.state == Run.State.SUBMITTED:
-                    currently_submitted -= 1
-                    currently_in_flight -= 1
+                    if isinstance(task, Application):
+                        currently_submitted -= 1
+                        currently_in_flight -= 1
                 elif task.execution.state == Run.State.RUNNING:
-                    currently_in_flight -= 1
+                    if isinstance(task, Application):
+                        currently_in_flight -= 1
                 self._terminated.append(task)
                 transitioned.append(index)
             except Exception, x:
@@ -1026,9 +1035,10 @@ class Engine(object):
                 if self._store and state != task.execution.state:
                     self._store.save(task)
                 if task.execution.state in [Run.State.SUBMITTED, Run.State.RUNNING]:
-                    currently_in_flight += 1
-                    if task.execution.state == Run.State.SUBMITTED:
-                        currently_submitted += 1
+                    if isinstance(task, Application):
+                        currently_in_flight += 1
+                        if task.execution.state == Run.State.SUBMITTED:
+                            currently_submitted += 1
                     self._in_flight.append(task)
                     transitioned.append(index) # task changed state, mark as to remove
                 elif task.execution.state == Run.State.TERMINATING:
@@ -1050,7 +1060,11 @@ class Engine(object):
         #                  % str.join(', ', [str(task) for task in self._new]))
         transitioned = []
         if self.can_submit:
-            for index, task in enumerate(self._new):
+            index = 0
+            while (currently_submitted < limit_submitted
+                   and currently_in_flight < limit_in_flight
+                   and index < len(self._new)):
+                task = self._new[index]
                 # try to submit; go to SUBMITTED if successful, FAILED if not
                 if currently_submitted < limit_submitted and currently_in_flight < limit_in_flight:
                     try:
@@ -1059,14 +1073,16 @@ class Engine(object):
                             self._store.save(task)
                         self._in_flight.append(task)
                         transitioned.append(index)
-                        currently_submitted += 1
-                        currently_in_flight += 1
+                        if isinstance(task, Application):
+                            currently_submitted += 1
+                            currently_in_flight += 1
                     except Exception, x:
                         sys.excepthook(*sys.exc_info()) # DEBUG
                         gc3libs.log.error("Ignored error in submitting task '%s': %s: %s"
                                           % (task, x.__class__.__name__, str(x)))
                         task.execution.log("Submission failed: %s: %s" 
                                            % (x.__class__.__name__, str(x)))
+                index += 1
         # remove tasks that transitioned to SUBMITTED state
         for index in reversed(transitioned):
             del self._new[index]
@@ -1122,6 +1138,7 @@ class Engine(object):
             if task.execution.returncode == 0:
                 result['ok'] += 1
             else:
+                gc3libs.log.debug("Task '%s' failed: signal %s, exitcode %s" % (task, task.execution.signal, task.execution.exitcode))
                 result['failed'] += 1
         result['total'] = (len(self._new)
                            + len(self._in_flight)
