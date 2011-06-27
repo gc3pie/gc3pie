@@ -83,6 +83,32 @@ def basename_sans(path):
     return os.path.splitext(os.path.basename(path))[0]
 
 
+def cat(*args, **kw):
+    """
+    Concatenate the contents of all `args` into `output`.  Both
+    `output` and each of the `args` can be a file-like object or a
+    string (indicating the path of a file to open).
+
+    If `append` is `True`, then `output` is opened in append-only
+    mode; otherwise it is overwritten.
+    """
+    output = kw.get('output', sys.stdout)
+    append = kw.get('append', True)
+    # ensure `output` is a file-like object, opened in write-mode
+    try:
+        output.write('')
+    except:
+        output = open(output, ifelse(append==True, 'a', 'w'))
+    for arg in args:
+        # ensure `arg` is a file-like object, opened in read-mode
+        try:
+            arg.read(0)
+        except:
+            arg = open(arg, 'r')
+        for line in arg:
+            output.write(line)
+
+
 def copyfile(src, dst, overwrite=False):
     """
     Copy a file from `src` to `dst`; return `True` if the copy was
