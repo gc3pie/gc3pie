@@ -297,6 +297,26 @@ class deKenPrice:
 ##    myFH.pop_application()
 ##    mySH.pop_application()
     logger.handlers = []
+    
+    def jacobianFD(x, fun):
+      '''
+        Compute jacobian for function fun. 
+        Inputs: x: vector of input values
+                fun: function returning vector of output values
+      '''
+      delta = 1.e-8
+      fval = fun(x)
+      m = len(fval)
+      n = len(x)
+      jac = np.empty( ( m, n ) )
+      for ixCol in range(n):
+        xNew = x.copy()
+        xNew[ixCol] = xNew[ixCol] + delta
+        fvalNew = fun(xNew)
+        jac[:, ixCol] = ( fvalNew - fval ) / delta
+      logger.debug(jac)
+      return jac
+
 
 
 
@@ -317,6 +337,11 @@ def left_win(S_x, S_y):
         I_z = 0
 
   return I_z
+
+    
+    
+def testFun(x):
+  return x*x
 
 class Rosenbrock:
   def __init__(self):
@@ -430,5 +455,6 @@ class Rosenbrock:
 
 
 if __name__ == '__main__':
-
-  Rosenbrock()
+  x = np.array([3., 5., 6.])
+  jacobianFD(x, testFun)
+#  Rosenbrock()

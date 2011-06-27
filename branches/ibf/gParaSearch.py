@@ -212,6 +212,13 @@ class gParaSearchParallel(ParallelTaskCollection, paraLoop_fp, GPremiumTaskMods)
         logger.info('returning result to solver')
         logger.handlers = []
         return result
+    
+    def nlc(x):
+        '''
+          Nonlinear constraint for gParaSearch. 
+          Takes x vector and adapts it to fullfill the constraint. 
+        '''
+        
 
     def print_status(self, mins,means,vector,txt):
         print txt,mins, means, list(vector)
@@ -308,6 +315,9 @@ Read `.loop` files and execute the `forwardPremium` program accordingly.
         self.add_param("-sv", "--solverVerb", metavar="ARCH",
                        dest="solverVerb", default = '0.5 0.9',
                        help="Separate verbosity level for the global optimizer ")
+        self.add_param("-t", "--probType", metavar="ARCH",
+                       dest="probType", default = 'one4eachPair',
+                       help="Problem type for gParaSearch. Must be one of: one4eachPair, one4all, one4eachCtry. ")
 
     def parse_args(self):
         """
