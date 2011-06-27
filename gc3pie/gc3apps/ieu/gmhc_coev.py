@@ -61,25 +61,35 @@ class GMhcCoevApplication(Application):
     Custom class to wrap the execution of a single step of the
     ``MHC_coev_*` program by T. Wilson.
     """
-    def __init__(self, executable, output_dir, latest_work=None, **kw):
+    def __init__(self, executable,
+                 N, p_mut_coeff, choose_or_rand, sick_or_not, off_v_last,
+                 output_dir, latest_work=None, **kw):
         kw.setdefault('requested_memory', 1)
         kw.setdefault('requested_cores', 1)
         kw.setdefault('requested_architecture', Run.Arch.X86_64)
-        bin = os.path.basename(executable)
-        inputs = { executable:bin }
+        self.executable_name = os.path.basename(executable)
+        self.p_mut_coeff = p_mut_coeff,
+        self.N = N,
+        self.choose_or_rand = choose_or_rand,
+        self.sick_or_not = sick_or_not,
+        self.off_v_last = off_v_last,
+        inputs = { executable:self.executable_name }
         if latest_work is not None:
             inputs[latest_work] = 'latest_work.mat'
         Application.__init__(self,
                              executable = '/usr/bin/env',
                              arguments = [
                                  'LD_LIBRARY_PATH=/opt/MATLAB/MATLAB_Compiler_Runtime/v713/runtime/glnxa64:$LD_LIBRARY_PATH',
-                                 './' + bin
+                                 './' + self.executable_name,
+                                 kw.get('requested_walltime')*60, # == single_run_time == ses_t
+                                 N, p_mut_coeff, choose_or_rand, sick_or_not, off_v_last,
                                  ],
                              inputs = inputs,
                              outputs = gc3libs.ANY_OUTPUT,
                              output_dir = output_dir,
-                             executables = [ bin ],
+                             executables = [ self.executable_name ],
                              stdout = 'matlab.log',
+                             stderr = 'matlab.err',
                              **kw)
 
 
@@ -92,7 +102,9 @@ class GMhcCoevTask(SequentialTaskCollection):
     `output_dir` parameter to `__init__`.
     """
 
-    def __init__(self, executable, single_run_duration, output_dir,
+    def __init__(self, executable, single_run_duration, generations_to_do,
+                 p_mut_coeff, N, choose_or_rand, sick_or_not, off_v_last,
+                 output_dir, 
                  grid=None, **kw):
 
         """
@@ -117,6 +129,12 @@ class GMhcCoevTask(SequentialTaskCollection):
         self.executable = executable
         self.output_dir = output_dir
         self.single_run_duration = single_run_duration
+        self.generations_to_do = generations_to_do
+        self.p_mut_coeff = p_mut_coeff,
+        self.N = N,
+        self.choose_or_rand = choose_or_rand,
+        self.sick_or_not = sick_or_not,
+        self.off_v_last = off_v_last,
         self.extra = kw
 
         self.generations_done = 0
@@ -126,6 +144,7 @@ class GMhcCoevTask(SequentialTaskCollection):
 
         # create initial task and register it
         initial_task = GMhcCoevApplication(executable,
+                                           N, p_mut_coeff, choose_or_rand, sick_or_not, off_v_last,
                                            output_dir = os.path.join(output_dir, 'tmp'),
                                            required_walltime = single_run_duration + 1,
                                            **kw)
@@ -143,17 +162,21 @@ class GMhcCoevTask(SequentialTaskCollection):
         task_output_dir = self.tasks[done].output_dir
         exclude = [
             os.path.basename(self.tasks[done].executable),
+            os.path.basename(self.tasks[done].executable_name),
             self.tasks[done].stdout,
+            self.tasks[done].stderr,
             ]
         # move files one level up, except the ones listed in `exclude`
         for entry in os.listdir(task_output_dir):
             src_entry = os.path.join(task_output_dir, entry)
             # concatenate all output files together
             if entry == self.tasks[done].stdout:
-                gc3libs.utils.cat(src_entry, os.path.join(self.output_dir, entry))
-            if entry in exclude:
+                gc3libs.utils.cat(src_entry, output=os.path.join(self.output_dir, entry), append=True)
+            if entry == self.tasks[done].stderr:
+                gc3libs.utils.cat(src_entry, output=os.path.join(self.output_dir, entry), append=True)
+            if entry in exclude or (entry.startswith('script.') and entry.endswith('.sh')):
                 # delete entry and continue with next one
-                os.path.unlink(src_entry)
+                os.remove(src_entry)
                 continue
             # if `entry` is a generation output file, get the
             # generation no. and update the generation count
@@ -171,9 +194,10 @@ class GMhcCoevTask(SequentialTaskCollection):
         # if a `latest_work.mat` file exists, then we need
         # more time to compute the required number of generations
         latest_work = os.path.join(self.output_dir, 'latest_work.mat')
-        if os.path.exists(latest_work):
+        if self.generations_done < self.generations_to_do:
             self.add(
                 GMhcCoevApplication(self.executable,
+                                    self.p_mut_coeff, self.N, self.choose_or_rand, self.sick_or_not, self.off_v_last,
                                     output_dir = os.path.join(self.output_dir, 'tmp'),
                                     latest_work = latest_work,
                                     required_walltime = self.single_run_duration + 1,
@@ -215,15 +239,81 @@ newly-created jobs so that this limit is never exceeded.
             input_filename_pattern = 'MHC_coev_*'
             )
 
+    def setup_options(self):
+        self.add_param("-G", "--generations", metavar="NUM",
+                       dest="generations", type=int, default=3000,
+                       help="Compute NUM generations (default: 3000).")
+
     def new_tasks(self, extra):
         inputs = self._search_for_input_files(self.params.args)
 
+        P_MUT_COEFF_RE = re.compile(r'((?P<num>[0-9]+)x)?10min(?P<exp>[0-9]+)')
+        N_RE = re.compile(r'N(?P<N>[0-9]+)')
+
         for path in inputs:
             kw = extra.copy()
-            yield (gc3libs.utils.basename_sans(path),
+
+            # parameter values are embedded into the directory name
+            name = os.path.basename(os.path.dirname(path))
+            p_mut_coeff, N, choose_or_rand, sick_or_not, off_v_last = name.split('__')
+            match = P_MUT_COEFF_RE.match(p_mut_coeff)
+            if not match:
+                self.log.warning("Cannot parse P_MUT_COEFF expression '%s'"
+                                 " - ignoring directory '%s'" % (p_mut_coeff, path))
+                continue
+            p_mut_coeff = float(match.group('num')) * 10.0**(-int(match.group('exp')))
+
+            match = N_RE.match(N)
+            if not match:
+                self.log.warning("Cannot parse N expression '%s'"
+                                 " - ignoring directory '%s'" % (N, path))
+                continue
+            N = int(match.group('N'))
+
+            if choose_or_rand == "RM":
+                choose_or_rand = 1
+            elif choose_or_rand == "DMAM":
+                choose_or_rand = 2
+            elif choose_or_rand == "DMSSGD":
+                choose_or_rand = 3
+            else:
+                self.log.warning("Cannot parse CHOOSE_OR_RAND expression '%s'"
+                                 " - ignoring directory '%s'" % (choose_or_rand, path))
+                continue
+
+            if sick_or_not == "pat_on":
+                sick_or_not = 1
+            elif sick_or_not == "pat_off":
+                sick_or_not = 0
+            else:
+                self.log.warning("Cannot parse SICK_OR_NOT expression '%s'"
+                                 " - ignoring directory '%s'" % (sick_or_not, path))
+                continue
+
+            if not off_v_last.startswith("offval_"):
+                self.log.warning("Cannot parse OFF_V_LAST expression '%s'"
+                                 " - ignoring directory '%s'" % (off_v_last, path))
+                continue
+            off_v_last = off_v_last[7:]
+            if off_v_last.startswith("0"):
+                off_v_last = float("." + off_v_last[1:])
+            elif off_v_last.startswith("1"):
+                off_v_last = 1.0
+            else:
+                self.log.warning("Cannot parse OFF_V_LAST expression '%s'"
+                                 " - ignoring directory '%s'" % (off_v_last, path))
+                continue
+
+            yield ('MHC_coev_' + name,
                    self.application,
                    [path,                    # executable
                     self.params.walltime*60, # single_run_duration
+                    self.params.generations,
+                    p_mut_coeff,
+                    N,
+                    choose_or_rand,
+                    sick_or_not,
+                    off_v_last,
                     #os.path.dirname(path),  # output_dir
                     ],
                    extra.copy())
