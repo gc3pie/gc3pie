@@ -42,6 +42,7 @@ if __name__ == "__main__":
 # std module imports
 import glob
 import os
+import re
 import shutil
 import sys
 import time
@@ -78,6 +79,7 @@ class GMhcCoevApplication(Application):
                              outputs = gc3libs.ANY_OUTPUT,
                              output_dir = output_dir,
                              executables = [ bin ],
+                             stdout = 'matlab.log',
                              **kw)
 
 
@@ -117,6 +119,8 @@ class GMhcCoevTask(SequentialTaskCollection):
         self.single_run_duration = single_run_duration
         self.extra = kw
 
+        self.generations_done = 0
+
         self.jobname = kw.get('jobname',
                               os.path.basename(self.executable))
 
@@ -127,6 +131,8 @@ class GMhcCoevTask(SequentialTaskCollection):
                                            **kw)
         SequentialTaskCollection.__init__(self, self.jobname, [initial_task], grid)
 
+    # regular expression for extracting the generation no. from an output file name
+    GENERATIONS_FILENAME_RE = re.compile(r'(?P<generation_no>[0-9]+)gen\.mat$')
         
     def next(self, done):
         """
@@ -135,8 +141,27 @@ class GMhcCoevTask(SequentialTaskCollection):
         ``latest_work.mat`` file.
         """
         task_output_dir = self.tasks[done].output_dir
-        # move files one level up
+        exclude = [
+            os.path.basename(self.tasks[done].executable),
+            self.tasks[done].stdout,
+            ]
+        # move files one level up, except the ones listed in `exclude`
         for entry in os.listdir(task_output_dir):
+            src_entry = os.path.join(task_output_dir, entry)
+            # concatenate all output files together
+            if entry == self.tasks[done].stdout:
+                gc3libs.utils.cat(src_entry, os.path.join(self.output_dir, entry))
+            if entry in exclude:
+                # delete entry and continue with next one
+                os.path.unlink(src_entry)
+                continue
+            # if `entry` is a generation output file, get the
+            # generation no. and update the generation count
+            match = GMhcCoevTask.GENERATIONS_FILENAME_RE.match(entry)
+            if match:
+                generation_no = match.group('generation_no')
+                self.generations_done = max(self.generations_done, generation_no)
+            # now really move file one level up
             dest_entry = os.path.join(self.output_dir, entry)
             if os.path.exists(dest_entry):
                 # backup with numerical suffix
@@ -195,10 +220,12 @@ newly-created jobs so that this limit is never exceeded.
 
         for path in inputs:
             kw = extra.copy()
-            kw['output_dir'] = os.path.dirname(path)
             yield (gc3libs.utils.basename_sans(path),
                    self.application,
-                   [path, self.params.walltime*60],
+                   [path,                    # executable
+                    self.params.walltime*60, # single_run_duration
+                    #os.path.dirname(path),  # output_dir
+                    ],
                    extra.copy())
         
 # run it
