@@ -30,6 +30,7 @@ import itertools
 import os
 import time
 import tempfile
+from urlparse import urlparse
 
 sys.path.append('/usr/share/pyshared')
 
@@ -193,7 +194,6 @@ class Arc1Lrms(LRMS):
         for c in self._controllers:
             log.info("Calling JobController.GetJobInformation()")
             c.GetJobInformation()
-        # log.info("Calling JobController.GetJobs() for %d times" % len(self._controllers))
             log.info('controller returned [%d] jobs' % len(c.GetJobs()))
         return itertools.chain(* [c.GetJobs() for c in self._controllers])
 
@@ -217,10 +217,6 @@ class Arc1Lrms(LRMS):
         jobmaster = arc.JobSupervisor(usercfg, []);
         jobcontrollers = jobmaster.GetJobControllers();
         """
-
-        # jobsuper = arc.JobSupervisor(self._usercfg, [])
-        # controllers = jobsuper.GetJobControllers()
-        # update job information
 
         self._iterjobs()
 
@@ -252,7 +248,6 @@ class Arc1Lrms(LRMS):
 
 
         # perform brokering
-        # tg = arc.TargetGenerator(self._usercfg, 1)
         log.info("Calling arc.BrokerLoader")
         ld = arc.BrokerLoader()
         broker = ld.load("Random", self._usercfg)
@@ -372,16 +367,17 @@ class Arc1Lrms(LRMS):
             # XXX: it seems that ARC does not report the job exit code
             # (at least in some cases); let's make one up based on
             # some crude heuristics
-            # if len(arc_job.Error) > 0:
-            #     job.log("ARC reported error: %s" % str.join(arc_job.Error))
-            #     job.returncode = (Run.Signals.RemoteError, -1)
+            if len(arc_job.Error) > 0:
+                job.log("ARC reported error: %s" % str.join(arc_job.Error))
+                job.returncode = (Run.Signals.RemoteError, -1)
             # # XXX: we should introduce a kind of "wrong requirements" error
             # elif (arc_job.RequestedTotalWallTime > -1 and arc_job.UsedTotalWallTime > -1
             #       and arc_job.UsedTotalWallTime > arc_job.RequestedTotalWallTime):
-            #     job.log("Job exceeded requested wall-clock time (%d s),"
-            #             " killed by remote batch system" 
-            #             % arc_job.RequestedTotalWallTime)
-            #     job.returncode = (Run.Signals.RemoteError, -1)
+            if arc_job.UsedTotalWallTime > arc_job.RequestedTotalWallTime:
+                job.log("Job exceeded requested wall-clock time (%d s),"
+                        " killed by remote batch system" 
+                        % arc_job.RequestedTotalWallTime)
+                job.returncode = (Run.Signals.RemoteError, -1)
             # elif (arc_job.RequestedTotalCPUTime > -1 and arc_job.UsedTotalCPUTime > -1
             #       and arc_job.UsedTotalCPUTime > arc_job.RequestedTotalCPUTime):
             #     job.log("Job exceeded requested CPU time (%d s),"
@@ -390,15 +386,17 @@ class Arc1Lrms(LRMS):
             #     job.returncode = (Run.Signals.RemoteError, -1)
             # # note: arc_job.used_memory is in KiB (!), app.requested_memory is in GiB
             # elif (app.RequestedMainMemory > -1 and arc_job.UsedMainMemory > -1
-            #       and (arc_job.UsedMainMemory / 1024) > (app.RequestedMainMemory * 1024)):
-            #     job.log("Job used more memory (%d MB) than requested (%d MB),"
-            #             " killed by remote batch system" 
-            #             % (arc_job.UsedMainMemory / 1024, app.RequestedMainMemory * 1024))
-            #     job.returncode = (Run.Signals.RemoteError, -1)
-            # else:
-            #     # presume everything went well...
-            #     job.returncode = 0
-            pass
+            elif (app.requested_memory > -1 and arc_job.UsedMainMemory > -1
+                  and (arc_job.UsedMainMemory / 1024) > (app.requested_memory * 1024)):
+                #       and (arc_job.UsedMainMemory / 1024) > (app.RequestedMainMemory * 1024)):
+                job.log("Job used more memory (%d MB) than requested (%d MB),"
+                        " killed by remote batch system" 
+                        % (arc_job.UsedMainMemory / 1024, app.requested_memory * 1024))
+                job.returncode = (Run.Signals.RemoteError, -1)
+            else:
+                # presume everything went well...
+                job.returncode = 0
+            # pass
         job.lrms_jobname = arc_job.Name
 
         job.stdout_filename = arc_job.StdOut
@@ -483,6 +481,11 @@ class Arc1Lrms(LRMS):
         log.info("Calling JobController.CleanJob")
         if not controller.CleanJob(job):
             log.error('arc1.JobController.CleanJob returned False')
+        # XXX: this is necessary as the other component of arc library seems to refer to the job.xml file
+        # hopefully will be fixed soon
+        # remove Job from job.xml file
+        log.info("Removing job from Jobfile %s" % gc3libs.Default.ARC_JOBLIST_LOCATION)
+        job.RemoveJobsFromFile(gc3libs.Default.ARC_JOBLIST_LOCATION, [job.IDFromEndpoint])
 
 
     @cache_for(gc3libs.Default.ARC_CACHE_TIME)
@@ -585,7 +588,18 @@ class Arc1Lrms(LRMS):
 
         log.debug("ArcLRMS.peek(): arc.JobController.ARCCopyFile: completed")
 
+    @same_docstring_as(LRMS.validate_data)
+    def validate_data(self, data_file_list):
+        """
+        Supported protocols: file, gsiftp, srm, http, https
+        """
+        for url in data_file_list:
+            log.debug("Resource %s. Checking URL [%s] ..." % (self._resource.name, url.geturl()))
+            if not url.scheme in ['srm', 'lfc', 'file', 'http', 'gsiftp', 'https']:
+                return False
+        return True
 
+                
     @staticmethod
     def init_arc_logger():
         if not gc3libs.backends.arc1.Arc1Lrms.arc_logger_set:

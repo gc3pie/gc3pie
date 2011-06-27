@@ -41,6 +41,7 @@ import os.path
 import sys
 import time
 import types
+from urlparse import urlparse
 
 import logging
 import logging.config
@@ -698,26 +699,48 @@ class Application(Struct, Persistable, Task):
         self.executable = executable
         self.arguments = [ str(x) for x in arguments ]
         
-        self.inputs = Application._io_spec_to_dict(inputs)
+        inputs = Application._io_spec_to_dict(inputs)
+        outputs = Application._io_spec_to_dict(outputs)
+
+        # Convert local path of inputs into urls
+        url_based_inputs = {}
+        for l_path,r_path in inputs.items():
+            url = urlparse(l_path, scheme="file")
+            if url.scheme == 'file':
+                url = urlparse(os.path.abspath(l_path), scheme='file')
+            url_based_inputs[url] = r_path
+
+        # Convert local path of outputs into urls
+        url_based_outputs = {}
+        for r_path,l_path in outputs.items():
+            url = urlparse(r_path, scheme="file")
+            if url.scheme == 'file':
+                url = urlparse(os.path.abspath(r_path), scheme='file')
+            url_based_outputs[r_path] = url
+
+        # self.inputs = Application._io_spec_to_dict(url_based_inputs)
+        self.inputs = url_based_inputs
         # check that remote entries are all distinct
-        # (can happen that two local paths apre mapped to the same remote one)
+        # (can happen that two local paths are mapped to the same remote one)
         if len(self.inputs.values()) != len(set(self.inputs.values())):
             # try to build an exact error message
             inv = { }
-            for l, r in self.inputs.itertiems():
+            for l, r in self.inputs.iteritems():
                 if r in inv:
                     raise DuplicateEntryError("Local input files '%s' and '%s'"
                                               " map to the same remote path '%s'"
                                               % (l, inv[r], r))
                 else:
                     inv[r] = l
+
         # ensure remote paths are not absolute
         for r_path in self.inputs.itervalues():
             if os.path.isabs(r_path):
                 raise gc3libs.exceptions.InvalidArgument(
                     "Remote paths not allowed to be absolute: %s" % r_path)
 
-        self.outputs = Application._io_spec_to_dict(outputs)
+        # self.outputs = Application._io_spec_to_dict(url_based_outputs)
+        self.outputs = url_based_outputs
         # check that local entries are all distinct
         # (can happen that two remote paths are mapped to the same local one)
         if len(self.outputs.values()) != len(set(self.outputs.values())):
@@ -766,14 +789,14 @@ class Application(Struct, Persistable, Task):
                 "Absolute path '%s' passed as `Application.stdout`"
                 % self.stdout)
         if self.stdout and (self.stdout not in self.outputs):
-            self.outputs[self.stdout] = self.stdout
+            self.outputs[self.stdout] = urlparse(self.stdout, scheme='file')
         self.stderr = get_and_remove(kw, 'stderr')
         if self.stderr is not None and os.path.isabs(self.stderr):
             raise InvalidArgument(
                 "Absolute path '%s' passed as `Application.stderr`"
                 % self.stderr)
         if self.stderr and (self.stderr not in self.outputs):
-            self.outputs[self.stderr] = self.stderr
+            self.outputs[self.stderr] = urlparse(self.stderr, scheme='file')
 
         self.tags = get_and_remove(kw, 'tags', list())
 
@@ -873,7 +896,7 @@ class Application(Struct, Persistable, Task):
         # preserve execute permission on all input files
         executables = [ ]
         for l, r in self.inputs.iteritems():
-            if os.access(l, os.X_OK):
+            if os.access(l.path, os.X_OK):
                 executables.append(r)
         if len(executables) > 0:
             xrsl += ('(executables=%s)'
@@ -890,7 +913,7 @@ class Application(Struct, Persistable, Task):
             xrsl += '(stderr="%s")' % self.stderr
         if len(self.inputs) > 0:
             xrsl += ('(inputFiles=%s)' 
-                     % str.join(' ', [ ('("%s" "%s")' % (r,l)) for (l,r) in self.inputs.items() ]))
+                     % str.join(' ', [ ('("%s" "%s")' % (r,l.geturl())) for (l,r) in self.inputs.items() ]))
         if len(self.outputs) > 0:
             # XXX: this can go away when we have the ternary operator
             # `x = a if y else b` (Python 2.5)
@@ -909,7 +932,7 @@ class Application(Struct, Persistable, Task):
             # filter out stdout/stderr (they are automatically
             # retrieved) and then check again
             outputs_ = [ ('("%s" "%s")' % (relpath(r), output_url(l, r)))
-                         for (r,l) in [ (remotename, localname)
+                         for (r,l) in [ (remotename, localname.geturl())
                                         for remotename,localname 
                                         in self.outputs.iteritems() 
                                         if (remotename != self.stdout 
@@ -937,6 +960,10 @@ class Application(Struct, Persistable, Task):
             xrsl += '(architecture="%s")' % self.requested_architecture
         if self.jobname:
             xrsl += '(jobname="%s")' % self.jobname
+
+        # XXX: experimental
+        # this should be harmless if cache registration would not work
+        xrsl += '(cache="yes")'
 
         # force it to be ascii
         try:
@@ -1046,6 +1073,11 @@ class Application(Struct, Persistable, Task):
         that at least it refers to the preferred resource).  Override
         in derived classes to change this behavior.
         """
+        assert len(exs) > 0, \
+            "Application.submit_error called with empty list of exceptions."
+        # XXX: should we choose the first or the last exception occurred?
+        # vote for choosing the first, on the basis that it refers to the
+        # "best" submission target
         return exs[0]
 
 

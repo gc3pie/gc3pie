@@ -348,14 +348,14 @@ class SgeLrms(LRMS):
                 if remote_parent not in ['', '.']:
                     log.debug("Making remote directory '%s'" % remote_parent)
                     self.transport.makedirs(remote_parent)
-                log.debug("Transferring file '%s' to '%s'" % (local_path, remote_path))
-                self.transport.put(local_path, remote_path)
+                log.debug("Transferring file '%s' to '%s'" % (local_path.path, remote_path))
+                self.transport.put(local_path.path, remote_path)
                 # preserve execute permission on input files
                 if os.access(local_path, os.X_OK):
                     self.transport.chmod(remote_path, 0755)
             except:
                 log.critical("Copying input file '%s' to remote cluster '%s' failed",
-                                      local_path, self._resource.frontend)
+                                      local_path.path, self._resource.frontend)
                 self.transport.close()
                 raise
 
@@ -632,23 +632,23 @@ class SgeLrms(LRMS):
                 except KeyError:
                     # ...but keep it if it's not a known one
                     remote_path = os.path.join(job.ssh_remote_folder, remote_path)
-                local_path = os.path.join(download_dir, local_path)
+                local_path = os.path.join(download_dir, local_path.path)
                 log.debug("Downloading remote file '%s' to local file '%s'",
-                          remote_path, local_path)
+                          remote_path, local_path.path)
                 try:
                     if (overwrite
-                        or not os.path.exists(local_path)
-                        or os.path.isdir(local_path)):
+                        or not os.path.exists(local_path.path)
+                        or os.path.isdir(local_path.path)):
                         log.debug("Copying remote '%s' to local '%s'"
-                                  % (remote_path, local_path))
+                                  % (remote_path, local_path.path))
                         # effectively ignore missing files (this is
                         # what ARC does too)
-                        self.transport.get(remote_path, local_path,
+                        self.transport.get(remote_path, local_path.path,
                                            ignore_nonexisting=True)
                     else:
                         log.info("Local file '%s' already exists;"
                                  " will not be overwritten!",
-                                 local_path)
+                                 local_path.path)
                 except Exception:
                     raise
 
@@ -735,6 +735,15 @@ class SgeLrms(LRMS):
                       ex.__class__.__name__, str(ex))
             raise
         
+    @same_docstring_as(LRMS.validate_data)
+    def validate_data(self, data_file_list):
+        """
+        Supported protocols: file
+        """
+        for url in data_file_list:
+            if not url.scheme in ['file']:
+                return False
+        return True
 
 
 ## main: run tests

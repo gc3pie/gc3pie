@@ -507,6 +507,18 @@ class ArcLrms(LRMS):
         log.debug("ArcLRMS.peek(): arclib.JobFTPControl.Download: completed")
 
 
+    @same_docstring_as(LRMS.validate_data)
+    def validate_data(self, data_file_list):
+        """
+        Supported protocols: file, gsiftp, srm, http, https
+        """
+        for url in data_file_list:
+            log.debug("Resource %s. Checking URL [%s] ..." % (self._resource.name, url.geturl()))
+            if not url.scheme in ['srm', 'lfc', 'file', 'http', 'gsiftp', 'https']:
+                return False
+        return True
+
+
 ## main: run tests
 
 if "__main__" == __name__:

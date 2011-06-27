@@ -116,7 +116,13 @@ class LRMS(object):
         Any exception raised by operations will be passed through.
         """
         raise NotImplementedError("Abstract method `LRMS.peek()` called - this should have been defined in a derived class.")
-    
+
+    def validate_data(self, data_file_list=None):
+        """
+        Return True if the list of files is expressed in one of the file transfer protocols the LRMS supports.
+        Return False otherwise
+        """
+        raise NotImplementedError("Abstract method 'LRMS.validate_data()' called - this should have been defined in a derived class.")
 
 
 ## main: run tests
