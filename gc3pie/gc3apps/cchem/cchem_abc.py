@@ -22,20 +22,8 @@ __version__ = '$Revision$'
 __author__ = 'Sergio Maffioletti <sergio.maffioletti@gc3.uzh.ch>'
 # summary of user-visible changes
 __changelog__ = """
-  2011-05-06:
-    * Workaround for Issue 95: now we have complete interoperability
-      with GC3Utils.
-
-[ Sequential -> [ Parallel -> Sequencial ] ] -> Parallel
-
-provided 10 parameters and 400 mzXML input files
-
-for i in range(0,9):
-	Par(400)
-	   +> Seq(4) -> Par(2) -> (3)
-			   +-> Seq(4)
-			   +-> Seq(5)
-
+  2011-06-27:
+    * Defined ABCApplication and basic SessionBasedScript
 """
 __docformat__ = 'reStructuredText'
 
@@ -43,23 +31,24 @@ __docformat__ = 'reStructuredText'
 # ugly workaround for Issue 95,
 # see: http://code.google.com/p/gc3pie/issues/detail?id=95
 #if __name__ == "__main__":
-#    import gdemo
+#    import cchem_abc
 
-#import abc
 import os
 import os.path
 import sys
 
 import cchem_abc
-## interface to Gc3libs
 
+## interface to Gc3libs
 import gc3libs
 from gc3libs import Application, Run, Task
 from gc3libs.cmdline import SessionBasedScript, _Script
-#import gc3libs.utils
 
 EXECUTABLE="/home/sergio/dev/comp.chem/xrls/abc.sh"
 ABC_EXECUTABLE="/home/sergio/dev/comp.chem/xrls/abc.x"
+
+APPPOT_IMAGE=""
+APPPOT_RUN=""
 
 class ABCApplication(Application):
     def __init__(self, executable, abc_executable, input_file, output_folder, **kw):
@@ -68,21 +57,60 @@ class ABCApplication(Application):
                                      executable = os.path.basename(executable),
                                      arguments = [os.path.basename(input_file)],
                                      executables = [abc_executable],
-                                     # inputs = {abc_executable:os.path.basename(abc_executable), input_file:os.path.basename(input_file)},
                                      inputs = [(abc_executable, os.path.basename(abc_executable)), (input_file, os.path.basename(input_file)), (executable, os.path.basename(executable))],
                                      outputs = [],
                                      # output_dir = os.path.join(output_folder,os.path.basename(input_file)),
                                      join = True,
                                      stdout = os.path.basename(input_file)+".out",
-                                     # set computational requirements. XXX this is mandatory, thus probably should become part of the Application's signature
-                                     #requested_memory = 1,
-                                     #requested_cores = 1,
-                                     #requested_walltime = 1,
                                      **kw
                                      )
 
     def terminated(self):
         pass
+
+
+
+# & (executable = "$APPPOT_STARTUP" )
+# (arguments = "--apppot" "abc.cow,abc.img")
+# (jobname = "ABC_uml")
+# (executables = "apppot-run")
+# (gmlog=".arc")
+# (join="yes")
+# (stdout=".out")
+# (inputFiles=("abc.img" "gsiftp://idgc3grid01.uzh.ch/local_repo/ABC/abc.img") ("nevpt2_cc-pV5Z.g3c" "./nevpt2_cc-pV5Z.g3c") ("apppot-run" "./gfit3c_abc.sh") ("dimensions" "./dimensions"))
+# (outputfiles=("abc.x" "abc.nevpt2_cc-pV5Z") ("nevpt2_cc-pV5Z_log.tgz" ""))
+# (runtimeenvironment = "TEST/APPPOT-0")
+# (wallTime="10")
+# (memory="2000")
+
+class Gfit3C_ABC_uml_Application(Application):
+    def __init__(self, abc_uml_image_file, abc_apppotrun_file, output_folder, g3c_input_file=None, dimension_file=None, surface_file=None, **kw):
+
+        inputs = [("abc.img", abc_uml_image_file), ("apppot-run", abc_apppotrun_file)]
+
+        if surface_file:
+            inputs.append((surface_file,os.path.basename(surface_file)))
+            abc_prefix = os.path.basename(surface_file)
+        elif g3c_input_file and dimension_file:
+            inputs.append((g3c_input_file, os.path.basename(g3c_input_file)))
+            inputs.append((dimension_file,"dimensions"))
+            abc_prefix = os.path.basename(g3c_input_file)
+        else:
+            raise gc3libs.exceptions.InvalidArgument("Missing critical argument surface file [%s], g3c_file [%s], dimension_file [%s]" % (surface_file, g3c_input_file, dimension_file))
+
+        kw['tags'] = "TEST/APPPOT-0"
+
+        gc3libs.Application.__init__(self,
+                                     executable = "$APPPOT_STARTUP",
+                                     arguments = ["--apppot", "abc.cow,abc.img"],
+                                     executables = ["apppot-run"],
+                                     # inputs = [(abc_apppotrun_file, "apppot-run"), (abc_uml_image_file, "abc.img"), (input_file, os.path.basename(input_file))],
+                                     inputs = inputs,
+                                     outputs = [ ("acb.x", "abc."+abc_prefix), os.path.basename(input_file)+"_log.tgz"],
+                                     join = True,
+                                     stdout = os.path.basename(input_file)+".log",
+                                     **kw
+                                     )
 
 class ABCWorkflow(SessionBasedScript):
     """
@@ -128,12 +156,7 @@ class ABCWorkflow(SessionBasedScript):
     def parse_args(self):
         self.input_folder = self.params.args[0]
         self.output_folder = self.params.output
-    #     self.parameters = [1,2,3,4,5,6]
 
-    #     if not os.path.isdir(self.input_folder):
-    #         raise RuntimeError("Not Valid Input folder %s" % self.input_folder)
-
-    #     self.output_folder = self.params.output
         gc3libs.log.info("input folder [%s] output folder [%s]" % (self.input_folder,self.output_folder))
 
     def new_tasks(self, extra):
@@ -141,16 +164,20 @@ class ABCWorkflow(SessionBasedScript):
          kw = extra.copy()
          name = "GC3Pie_demo"   
 
-         for input_file in os.listdir(self.input_folder):
-             name = "ABC_"+str(os.path.basename(input_file))
+         inputs = SessionBasedScript._search_for_input_files(self, self.params.args)
 
-             gc3libs.log.info("Calling ABCWorkflow.next_tastk() for param [%s] ... " % os.path.abspath(os.path.join(self.input_folder,input_file)))
+         for path in inputs:
+             name = "ABC_"+str(os.path.basename(path))
+
+             path = os.path.abspath(path)
+
+             gc3libs.log.info("Calling ABCWorkflow.next_tastk() for param [%s] ... " % path)
 
              yield (name, cchem_abc.ABCApplication, [
                      cchem_abc.EXECUTABLE,
                      cchem_abc.ABC_EXECUTABLE,
-                     os.path.abspath(os.path.join(self.input_folder,input_file)),
-                     self.output_folder,
+                     path,
+                     self.params.output,
                      ], kw)
 
 # run script
