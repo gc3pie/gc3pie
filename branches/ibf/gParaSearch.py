@@ -63,6 +63,7 @@ if not sys.path.count(path2Pymods):
 from forwardPremium import paraLoop_fp, GPremiumTaskMods
 from supportGc3 import update_parameter_in_file
 from pymods.support.support import rmFilesAndFolders
+from pymods.classes.tableDict import tableDict
 
 sys.path.append(os.path.join(os.path.dirname(__file__), '../generateResults/'))
 from createOverviewTable_gc3 import createOverviewTable
@@ -81,7 +82,16 @@ from difEvoKenPrice import *
 class gParaSearchParallel(ParallelTaskCollection, paraLoop_fp, GPremiumTaskMods):
  
     def __init__(self, pathToExecutable, architecture, logger, baseDir, xVars, 
-                 nPopulation, xVarsDom, solverVerb, output_dir = '/tmp', grid = None, **kw):
+                 nPopulation, xVarsDom, solverVerb, problemType, pathEmpirical, output_dir = '/tmp', grid = None, **kw):
+
+        # set up logger
+        mySH = logbook.StreamHandler(stream = sys.stdout, level = solverVerb.upper(), format_string = '{record.message}', bubble = True)
+        mySH.format_string = '{record.message}'
+        myFH = logbook.FileHandler(filename = 'gParaSearch.log', level = 'DEBUG', bubble = True)
+        myFH.format_string = '{record.message}' 
+        logger = logbook.Logger(name = 'target.log')
+        
+        
         # Remove all files in curPath
         curPath = os.getcwd()
         filesAndFolder = os.listdir(curPath)
@@ -89,6 +99,15 @@ class gParaSearchParallel(ParallelTaskCollection, paraLoop_fp, GPremiumTaskMods)
             rmFilesAndFolders(curPath)      
         
         # Set up initial variables
+        self.problemType = problemType
+        
+        if self.problemType == 'one4eachCtry':
+            self.gdpTable = tableDict.fromTextFile(fileIn = os.path.join(pathEmpirical, 'output/momentTable/Gdp/gdpMoments.csv'),
+                                              delim = ',', width = 20)
+            logger.debug(self.gdpTable)
+            sys.exit()
+
+        
         self.grid = grid
         self.executable = pathToExecutable
         self.architecture = architecture
@@ -128,20 +147,15 @@ class gParaSearchParallel(ParallelTaskCollection, paraLoop_fp, GPremiumTaskMods)
         deKenPrice(self, S_struct)
 
     def target(self, inParaCombos):
-                   
-        mySH = logbook.StreamHandler(stream = sys.stdout, level = self.verbosity, format_string = '{record.message}', bubble = True)
-        mySH.format_string = '{record.message}'
- #       mySH.push_application()
-        myFH = logbook.FileHandler(filename = 'gParaSearch.log', level = 'DEBUG', bubble = True)
-        myFH.format_string = '{record.message}'
-#        myFH.push_application()   
+        
         logger = logbook.Logger(name = 'target.log')
-#        list(logbook.handlers.Handler.stack_manager.iter_context_objects()))[0].pop_application()
+        
         try:
             stdErr = list(logbook.handlers.Handler.stack_manager.iter_context_objects())[0]
             stdErr.pop_application()
         except: 
             pass
+        
         logger.handlers.append(mySH)
         logger.handlers.append(myFH)
         
@@ -218,6 +232,11 @@ class gParaSearchParallel(ParallelTaskCollection, paraLoop_fp, GPremiumTaskMods)
           Nonlinear constraint for gParaSearch. 
           Takes x vector and adapts it to fullfill the constraint. 
         '''
+        if self.problemType == 'one4eachCtry':
+            
+        elif self.problemType == 'one4eachPair':
+            
+        elif self.problemType == 'one4all':
         
 
     def print_status(self, mins,means,vector,txt):
@@ -315,9 +334,12 @@ Read `.loop` files and execute the `forwardPremium` program accordingly.
         self.add_param("-sv", "--solverVerb", metavar="ARCH",
                        dest="solverVerb", default = '0.5 0.9',
                        help="Separate verbosity level for the global optimizer ")
-        self.add_param("-t", "--probType", metavar="ARCH",
-                       dest="probType", default = 'one4eachPair',
+        self.add_param("-t", "--problemType", metavar="ARCH",
+                       dest="problemType", default = 'one4eachPair',
                        help="Problem type for gParaSearch. Must be one of: one4eachPair, one4all, one4eachCtry. ")
+        self.add_param("-e", "--pathEmpirical", metavar="ARCH",
+                       dest="pathEmpirical", default = '',
+                       help="Path to empirical analysis folder")
 
     def parse_args(self):
         """
@@ -359,10 +381,12 @@ Read `.loop` files and execute the `forwardPremium` program accordingly.
             self.params.max_running = self.params.nPopulation
         
         
+
         yield (jobname, gParaSearchParallel, 
                [ self.params.executable, self.params.architecture, 
                  self.log, self.params.initial, self.params.xVars, 
-                 self.params.nPopulation, self.params.xVarsDom, self.params.solverVerb], kwargs)
+                 self.params.nPopulation, self.params.xVarsDom, self.params.solverVerb, self.params.problemType,
+                 self.params.pathEmpirical], kwargs)
 
 
 
