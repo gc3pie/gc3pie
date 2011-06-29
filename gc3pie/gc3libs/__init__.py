@@ -1234,7 +1234,7 @@ class Run(Struct):
           1. Create a new job with default parameters::
 
             >>> j1 = Run()
-            >>> j1.returncode
+            >>> print (j1.returncode)
             None
             >>> j1.state
             'NEW'
@@ -1277,6 +1277,7 @@ class Run(Struct):
 
         Setting the `info` attribute appends a message to the log::
 
+           >>> j1 = Run()
            >>> j1.info = 'a message'
            >>> j1.info = 'a second message'
 
