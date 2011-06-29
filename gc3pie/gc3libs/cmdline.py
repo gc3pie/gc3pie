@@ -963,7 +963,7 @@ class SessionBasedScript(_Script):
             self.params.wctime = hrs*60*60 + mins*60 + secs
         else:
             raise cli.app.Error("Argument to option -w/--wall-clock-time must have the form 'HH:MM' or be a duration expressed in hours.")
-        self.params.walltime = int(self.params.wctime / 3600)
+        self.params.walltime = int(self.params.wctime) / 3600
 
         ## determine the session file name (and possibly create an empty index)
         if ( os.path.exists(self.params.session)
