@@ -956,13 +956,13 @@ class SessionBasedScript(_Script):
                 raise cli.app.Error("Argument to option -w/--wall-clock-time must be a positive integer.")
             self.params.wctime = duration
         elif 1 == n: # wctime expressed as 'HH:MM'
-            hrs, mins = str.split(":", self.params.wctime)
+            hrs, mins = self.params.wctime.split(":")
             self.params.wctime = hrs*60*60 + mins*60
         elif 2 == n: # wctime expressed as 'HH:MM:SS'
-            hrs, mins, secs = str.split(":", self.params.wctime)
+            hrs, mins, secs = self.params.wctime.split(":")
             self.params.wctime = hrs*60*60 + mins*60 + secs
         else:
-            raise cli.app.Error("Argument to option -w/--wall-clock-time must have the form 'HH:MM' or be a duration expressed in seconds.")
+            raise cli.app.Error("Argument to option -w/--wall-clock-time must have the form 'HH:MM' or be a duration expressed in hours.")
         self.params.walltime = int(self.params.wctime / 3600)
 
         ## determine the session file name (and possibly create an empty index)
