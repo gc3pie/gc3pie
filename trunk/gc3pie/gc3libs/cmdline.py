@@ -211,8 +211,9 @@ class _Script(cli.app.CommandLineApp):
         cli.app.CommandLineApp.setup(self)
 
         self.add_param("-v", "--verbose", action="count", dest="verbose", default=0,
-                       help="Be more detailed in reporting program activity."
-                       " Repeat to increase verbosity.")
+                       help="Print more detailed (debugging) information about the program's activity."
+                       "The verbosity of the output can be controlled by adding/removing 'v' characters."
+                       )
         return
 
 
@@ -861,73 +862,75 @@ class SessionBasedScript(_Script):
         
         # 1. job requirements
         self.add_param("-c", "--cpu-cores", dest="ncores", type=int, default=1, # 1 core
-                           metavar="NUM",
-                           help="Require the specified number of CPU cores (default: %(default)s)"
-                           " for each CODEML job. NUM must be a whole number."
-                           )
+                       metavar="NUM",
+                       help="Set the number of CPU cores required for each job (default: %(default)s)."
+                       "NUM must be a whole number."
+                       )
         self.add_param("-m", "--memory-per-core", dest="memory_per_core", type=int, default=2, # 2 GB
-                           metavar="GIGABYTES",
-                           help="Require that at least GIGABYTES (a whole number)"
-                                " are available to each execution core. (Default: %(default)s)")
-        self.add_param("-r", "--resource", action="store", dest="resource_name", metavar="STRING",
-                           default=None, help='Select resource destination')
+                       metavar="GIGABYTES",
+                       help="Set the amount of memory required per execution core, in gigabytes (Default: %(default)s)."
+                       "Currently, GIGABYTES can only be an integer number; no fractional amounts are allowed.")
+        self.add_param("-r", "--resource", action="store", dest="resource_name", metavar="NAME",
+                       default=None,
+                       help="Select one or more computational resources;"
+                       " NAME is a reource name or comma-separated list of such names."
+                       " Use the command `glist` to list available resources")
         self.add_param("-w", "--wall-clock-time", dest="wctime", default=str(8), # 8 hrs
-                           metavar="DURATION",
-                           help="Each job will run for at most DURATION time"
-                           " (default: %(default)s hours), after which it"
-                           " will be killed and considered failed. DURATION can be a whole"
-                           " number, expressing duration in hours, or a string of the form HH:MM,"
-                           " specifying that a job can last at most HH hours and MM minutes."
-                           )
+                       metavar="DURATION",
+                       help="Set the time limit for each job (default %s for '8 hours')."
+                       " Jobs exceeding this limit will be stopped and considered as 'failed'."
+                       " The duration can be expressed as a whole number (indicating the duration in hours)"
+                       " or as STRING in the form 'hours:minutes'."
+                       )
 
         # 2. session control
         self.add_param("-s", "--session", dest="session", 
-                           default=os.path.join(os.getcwd(), self.name),
-                           metavar="PATH",
-                           help="Use PATH to store jobs (default: '%(default)s')."
-                           " If PATH is an existing directory, it will be used for storing job"
-                           " information, and an index file (with suffix '.csv') will be created"
-                           " in it.  Otherwise, the job information will be stored in a directory"
-                           " named after PATH with a suffix '.jobs' appended, and the index file"
-                           " will be named after PATH with a suffix '.csv' added."
-                           )
+                       default=os.path.join(os.getcwd(), self.name),
+                       metavar="PATH",
+                       help="Use PATH to store jobs (default: '%(default)s')."
+                       " If PATH is an existing directory, it will be used for storing job"
+                       " information, and an index file (with suffix '.csv') will be created"
+                       " in it.  Otherwise, the job information will be stored in a directory"
+                       " named after PATH with a suffix '.jobs' appended, and the index file"
+                       " will be named after PATH with a suffix '.csv' added."
+                       )
         self.add_param("-N", "--new-session", dest="new_session", action="store_true", default=False,
-                           help="Discard any information saved in the session directory (see '--session' option)"
-                           " and start a new session afresh.  Any information about previous jobs is lost.")
+                       help="Discard any information saved in the session directory (see '--session' option)"
+                       " and start a new session afresh.  Any information about previous jobs is lost.")
 
         # 3. script execution control
         self.add_param("-C", "--continuous", type=int, dest="wait", default=0,
-                           metavar="INTERVAL",
-                           help="Keep running, monitoring jobs and possibly submitting new ones or"
-                           " fetching results every INTERVAL seconds. Exit when all jobs are finished."
-                           )
+                       metavar="INTERVAL",
+                       help="Keep running, monitoring jobs and possibly submitting new ones or"
+                       " fetching results every INTERVAL seconds. Exit when all jobs are finished."
+                       )
         self.add_param("-J", "--max-running", type=int, dest="max_running", default=50,
-                           metavar="NUM",
-                           help="Allow no more than NUM concurrent jobs (default: %(default)s)"
-                           " to be in SUBMITTED or RUNNING state."
-                           )
+                       metavar="NUM",
+                       help="Set the max NUMber of jobs (default: %(default)s)"
+                       " in SUBMITTED or RUNNING state."
+                       )
         self.add_param("-o", "--output",
                        dest="output", default=os.path.join(os.getcwd(), 'NAME'),
                        metavar='DIRECTORY',
                        help="Output files from all jobs will be collected in the specified"
-                           " DIRECTORY path; by default, output files are placed in the same"
-                           " directory where the corresponding input file resides.  If the"
-                           " destination directory does not exist, it is created."
-                           " Some special strings will be substituted into DIRECTORY,"
-                           " to specify an output location that varies with the submitted job:"
-                           " PATH is replaced by the directory where the input resides;"
-                           " NAME is replaced by the input name;"
-                           " DATE is replaced by the submission date in ISO format (YYYY-MM-DD);"
-                           " TIME is replaced by the submission time formatted as HH:MM."
-                           " SESSION is replaced by the path to the session directory, with a '.out' appended."
-                           )
+                       " DIRECTORY path; by default, output files are placed in the same"
+                       " directory where the corresponding input file resides.  If the"
+                       " destination directory does not exist, it is created."
+                       " The following strings will be substituted into DIRECTORY,"
+                       " to specify an output location that varies with each submitted job:"
+                       " the string 'PATH' is replaced by the directory where the job input resides;"
+                       " the string 'NAME' is replaced by the job name;"
+                       " 'DATE' is replaced by the submission date in ISO format (YYYY-MM-DD);"
+                       " 'TIME' is replaced by the submission time formatted as HH:MM."
+                       " 'SESSION' is replaced by the path to the session directory, with a '.out' appended."
+                       )
         self.add_param("-l", "--state", action="store", nargs='?',
                        dest="states", default='',
                        const=str.join(',', gc3libs.Run.State),
-                       help="Print table of jobs and their statuses;"
-                       " if an optional argument STATES is given, restrict"
-                       " output to jobs in one of the specified states"
-                       " (comma-separated list).")
+                       help="Print a table of jobs including their status."
+                       " Optionally, restrict output to jobs with a particular STATE or STATES"
+                       " (comma-separated list)."
+                       )
         return
 
 
