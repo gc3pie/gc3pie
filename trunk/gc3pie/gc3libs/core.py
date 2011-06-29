@@ -34,6 +34,7 @@ import warnings
 warnings.simplefilter("ignore")
 
 import gc3libs
+import gc3libs.debug
 from gc3libs import Application, Run, Task
 from gc3libs.backends.sge import SgeLrms
 from gc3libs.backends.fork import ForkLrms
@@ -336,6 +337,7 @@ class Core:
             task.update_state()
 
 
+    @gc3libs.debug.trace
     def fetch_output(self, app, download_dir=None, overwrite=False, **kw):
         """
         Retrieve output into local directory `app.output_dir`;

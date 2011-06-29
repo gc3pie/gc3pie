@@ -351,7 +351,7 @@ class SgeLrms(LRMS):
                 log.debug("Transferring file '%s' to '%s'" % (local_path.path, remote_path))
                 self.transport.put(local_path.path, remote_path)
                 # preserve execute permission on input files
-                if os.access(local_path, os.X_OK):
+                if os.access(local_path.path, os.X_OK):
                     self.transport.chmod(remote_path, 0755)
             except:
                 log.critical("Copying input file '%s' to remote cluster '%s' failed",
@@ -632,23 +632,24 @@ class SgeLrms(LRMS):
                 except KeyError:
                     # ...but keep it if it's not a known one
                     remote_path = os.path.join(job.ssh_remote_folder, remote_path)
+                # REMEMBER: `local_path` becomes a string here!
                 local_path = os.path.join(download_dir, local_path.path)
                 log.debug("Downloading remote file '%s' to local file '%s'",
-                          remote_path, local_path.path)
+                          remote_path, local_path)
                 try:
                     if (overwrite
-                        or not os.path.exists(local_path.path)
-                        or os.path.isdir(local_path.path)):
+                        or not os.path.exists(local_path)
+                        or os.path.isdir(local_path)):
                         log.debug("Copying remote '%s' to local '%s'"
-                                  % (remote_path, local_path.path))
+                                  % (remote_path, local_path))
                         # effectively ignore missing files (this is
                         # what ARC does too)
-                        self.transport.get(remote_path, local_path.path,
+                        self.transport.get(remote_path, local_path,
                                            ignore_nonexisting=True)
                     else:
                         log.info("Local file '%s' already exists;"
                                  " will not be overwritten!",
-                                 local_path.path)
+                                 local_path)
                 except Exception:
                     raise
 

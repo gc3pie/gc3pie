@@ -41,7 +41,6 @@ import os.path
 import sys
 import time
 import types
-from urlparse import urlparse
 
 import logging
 import logging.config
@@ -97,6 +96,7 @@ class Default(object):
 
 from gc3libs.exceptions import *
 from gc3libs.persistence import Persistable
+import gc3libs.url
 from gc3libs.utils import defproperty, deploy_configuration_file, get_and_remove, Enum, Log, Struct, safe_repr
 
 
@@ -533,25 +533,30 @@ class Application(Struct, Persistable, Task):
       `executable`.
 
     `inputs`
-      Files that will be copied from the local computer to the remote
-      execution node before execution starts.
+      Files that will be copied to the remote execution node before
+      execution starts.
 
       There are two possible ways of specifying the `inputs` parameter:
 
-        * It can be a Python dictionary: keys are local file paths, 
-          values are remote file names.
+      * It can be a Python dictionary: keys are local file paths or
+        URLs, values are remote file names.
 
-        * It can be a Python list: each item in the list should be a
-          pair `(local_file_name, remote_file_name)`; a single string
-          `file_name` is allowed as a shortcut and will result in both
-          `local_file_name` and `remote_file_name` being equal.  If an
-          absolute path name is specified as `remote_file_name`, then
-          an :class:`InvalidArgument` exception is thrown.
+      * It can be a Python list: each item in the list should be a
+        pair `(source, remote_file_name)`: the `source` can be a
+        local file or a URL; `remote_file_name` is the path
+        (relative to the execution directory) where `source` will be
+        downloaded.  If `remote_file_name` is an absolute path, an
+        :class:`InvalidArgument` error is raised.
+        
+        A single string `file_name` is allowed instead of the pair
+        and results in the local file `file_name` being copied to
+        `file_name` on the remote host.
 
     `outputs`
       Files and directories that will be copied from the remote
-      execution node back to the local computer after execution has
-      completed.  Directories are copied recursively.
+      execution node back to the local computer (or a
+      network-accessible server) after execution has completed.
+      Directories are copied recursively.
 
       There are three possible ways of specifying the `outputs` parameter:
 
@@ -560,18 +565,22 @@ class Application(Struct, Persistable, Task):
         are corresponding local names.
 
       * It can be a Python list: each item in the list should be a
-        pair `(remote_file_name, local_file_name)`; a single string
-        `file_name` is allowed as a shortcut and will result in both
-        `local_file_name` and `remote_file_name` being equal.  If an
-        absolute path name is specified as `remote_file_name`, then an
-        :class:`InvalidArgument` exception is thrown.
-
+        pair `(remote_file_name, destination)`: the `destination`
+        can be a local file or a URL; `remote_file_name` is the path
+        (relative to the execution directory) that will be uploaded
+        to `destination`.  If `remote_file_name` is an absolute
+        path, an :class:`InvalidArgument` error is raised.
+        
+        A single string `file_name` is allowed instead of the pair
+        and results in the remote file `file_name` being copied to
+        `file_name` on the local host.
+          
       * The constant `gc3libs.ANY_OUTPUT` which instructs GC3Libs to
         copy every file in the remote execution directory back to the
-        local output path.
+        local output path (as specified by the `output_dir` attribute).
 
       Note that no errors will be raised if an output file is not present.
-      Override the `postprocess`:meth: method to raise errors for reacting
+      Override the `terminated`:meth: method to raise errors for reacting
       on this kind of failures.
 
     `output_dir`
@@ -607,13 +616,13 @@ class Application(Struct, Persistable, Task):
       a list of strings of the form "name=value".
 
     `grid`
-      if not `None`, equivalent to calling `Task.attach(self, grid)`;
-      enables the use of the `Task`/active job control interface
+      if not `None`, equivalent to calling `Task.attach(self, grid)`.
+      This enables the use of the `Task`/active job control interface
 
     `output_base_url`
       if not `None`, this is prefixed to all output files (except
       stdout and stderr, which are always retrieved), so, for instance,
-      having `output_base_url="gsiftp://example.org/data" will upload
+      having `output_base_url="gsiftp://example.org/data"` will upload
       output files into that remote directory.
 
     `stdin`
@@ -655,16 +664,17 @@ class Application(Struct, Persistable, Task):
       invocation; possibly empty
 
     `inputs`
-      dictionary mapping local file name (a string) to a remote file name (a string);
+      dictionary mapping source URL (a `gc3libs.url.Url` object) to a remote file name (a string);
       remote file names are relative paths (root directory is the remote job folder)
 
     `outputs`
-      dictionary mapping remote file name (a string) to a local file name (a string);
+      dictionary mapping remote file name (a string) to a destination (a `gc3libs.url.Url`);
       remote file names are relative paths (root directory is the remote job folder)
 
     `output_dir`
-      Path to the base directory where output files will be downloaded.
-      Output file names are interpreted relative to this base directory.
+      Path to the base directory where output files will be
+      downloaded.  Output file names (those which are not URLs) are
+      interpreted relative to this base directory.
 
     `execution`
       a `Run` instance; its state attribute is initially set to ``NEW``
@@ -699,27 +709,9 @@ class Application(Struct, Persistable, Task):
         self.executable = executable
         self.arguments = [ str(x) for x in arguments ]
         
-        inputs = Application._io_spec_to_dict(inputs)
-        outputs = Application._io_spec_to_dict(outputs)
+        self.inputs = Application._io_spec_to_dict(gc3libs.url.UrlKeyDict, inputs, True)
+        self.outputs = Application._io_spec_to_dict(gc3libs.url.UrlValueDict, outputs, False)
 
-        # Convert local path of inputs into urls
-        url_based_inputs = {}
-        for l_path,r_path in inputs.items():
-            url = urlparse(l_path, scheme="file")
-            if url.scheme == 'file':
-                url = urlparse(os.path.abspath(l_path), scheme='file')
-            url_based_inputs[url] = r_path
-
-        # Convert local path of outputs into urls
-        url_based_outputs = {}
-        for r_path,l_path in outputs.items():
-            url = urlparse(r_path, scheme="file")
-            if url.scheme == 'file':
-                url = urlparse(os.path.abspath(r_path), scheme='file')
-            url_based_outputs[r_path] = url
-
-        # self.inputs = Application._io_spec_to_dict(url_based_inputs)
-        self.inputs = url_based_inputs
         # check that remote entries are all distinct
         # (can happen that two local paths are mapped to the same remote one)
         if len(self.inputs.values()) != len(set(self.inputs.values())):
@@ -727,7 +719,7 @@ class Application(Struct, Persistable, Task):
             inv = { }
             for l, r in self.inputs.iteritems():
                 if r in inv:
-                    raise DuplicateEntryError("Local input files '%s' and '%s'"
+                    raise DuplicateEntryError("Local inputs '%s' and '%s'"
                                               " map to the same remote path '%s'"
                                               % (l, inv[r], r))
                 else:
@@ -739,8 +731,6 @@ class Application(Struct, Persistable, Task):
                 raise gc3libs.exceptions.InvalidArgument(
                     "Remote paths not allowed to be absolute: %s" % r_path)
 
-        # self.outputs = Application._io_spec_to_dict(url_based_outputs)
-        self.outputs = url_based_outputs
         # check that local entries are all distinct
         # (can happen that two remote paths are mapped to the same local one)
         if len(self.outputs.values()) != len(set(self.outputs.values())):
@@ -748,11 +738,12 @@ class Application(Struct, Persistable, Task):
             inv = { }
             for r, l in self.outputs.iteritems():
                 if l in inv:
-                    raise DuplicateEntryError("Remote output files '%s' and '%s'"
+                    raise DuplicateEntryError("Remote outputs '%s' and '%s'"
                                               " map to the same local path '%s'"
                                               % (r, inv[l], l))
                 else:
                     inv[l] = r
+
         # ensure remote paths are not absolute
         for r_path in self.outputs.iterkeys():
             if os.path.isabs(r_path):
@@ -789,14 +780,14 @@ class Application(Struct, Persistable, Task):
                 "Absolute path '%s' passed as `Application.stdout`"
                 % self.stdout)
         if self.stdout and (self.stdout not in self.outputs):
-            self.outputs[self.stdout] = urlparse(self.stdout, scheme='file')
+            self.outputs[self.stdout] = self.stdout
         self.stderr = get_and_remove(kw, 'stderr')
         if self.stderr is not None and os.path.isabs(self.stderr):
             raise InvalidArgument(
                 "Absolute path '%s' passed as `Application.stderr`"
                 % self.stderr)
         if self.stderr and (self.stderr not in self.outputs):
-            self.outputs[self.stderr] = urlparse(self.stderr, scheme='file')
+            self.outputs[self.stderr] = self.stderr
 
         self.tags = get_and_remove(kw, 'tags', list())
 
@@ -808,37 +799,61 @@ class Application(Struct, Persistable, Task):
         # any additional param
         Struct.__init__(self, **kw)
 
-    @staticmethod
-    def _io_spec_to_dict(spec):
-        """
-        Return a dictionary formed by pairs path:name.  (Only used for
-        internal processing of `input` and `output` fields.)
+        for k,v in self.outputs.iteritems():
+            gc3libs.log.debug("outputs[%s]=%s", repr(k), repr(v))
+        for k,v in self.inputs.iteritems():
+            gc3libs.log.debug("inputs[%s]=%s", repr(k), repr(v))
 
-        Argument `spec` is either a list or a Python `dict` instance,
-        in which case a copy of it is returned::
+
+    @staticmethod
+    def _io_spec_to_dict(ctor, spec, force_abs):
+        """
+        (This class is only used for internal processing of `input`
+        and `output` fields.)
+        
+        Return a dictionary formed by pairs `URL:name` or `name:URL`.
+        The `URL` part is a tuple as returned by functions `urlparse`
+        and `urlsplit` in the Python standard module
+        `urlparse`:module: -- `name` is a string that should be
+        interpreted as a filename (relative to the job execution
+        directory).
+
+        Argument `ctor` is the constructor for the dictionary class to
+        return; `gc3libs.url.UrlKeyDict` and
+        `gc3libs.url.UrlValueDict` are valid values here.
+
+        Argument `spec` is either a list or a Python `dict` instance.
+
+        If a Python `dict` is given, then it is copied into an
+        `gc3libs.url.UrlDict`, and that copy is returned::
         
           >>> d1 = { '/tmp/1':'1', '/tmp/2':'2' }
-          >>> d2 = Application._io_spec_to_dict(d1)
-          >>> d2 == d1
+          >>> d2 = Application._io_spec_to_dict(gc3libs.url.UrlKeyDict, d1, True)
+          >>> isinstance(d2, gc3libs.url.UrlKeyDict)
           True
-          >>> d2 is d1
-          False
+          >>> for key in sorted(d2.keys()): print key.path
+          /tmp/1
+          /tmp/2
 
-        If `spec` is a list, each element can be either a tuple
+        If `spec` is a list, each element can either be a tuple
         `(path, name)`, or a string `path`, which is converted to a
         tuple `(path, name)` by setting `name =
         os.path.basename(path)`::
 
           >>> l1 = [ ('/tmp/1', '1'), '/tmp/2' ]
-          >>> d3 = Application._io_spec_to_dict(l1)
+          >>> d3 = Application._io_spec_to_dict(gc3libs.url.UrlKeyDict, l1, True)
           >>> d3 == d2
           True
 
+        If `force_abs` is `True`, then all paths are converted to
+        absolute ones in the dictionary keys; otherwise they are
+        stored unchanged.
         """
         try:
             # is `spec` dict-like?
             # XXX: might raise encoding error if any value is Unicode non-ASCII
-            return dict((str(k), str(v)) for k,v in spec.iteritems())
+            return ctor(((str(k), str(v)) for k,v in spec.iteritems()),
+                        force_abs=force_abs)
         except AttributeError:
             # `spec` is a list-like
             def convert_to_tuple(val):
@@ -849,7 +864,8 @@ class Application(Struct, Persistable, Task):
                     return (l, r)
                 else: 
                     return (str(val[0]), str(val[1]))
-            return dict(convert_to_tuple(x) for x in spec)
+            return ctor((convert_to_tuple(x) for x in spec),
+                        force_abs=force_abs)
         
 
     def __str__(self):
@@ -913,7 +929,8 @@ class Application(Struct, Persistable, Task):
             xrsl += '(stderr="%s")' % self.stderr
         if len(self.inputs) > 0:
             xrsl += ('(inputFiles=%s)' 
-                     % str.join(' ', [ ('("%s" "%s")' % (r,l.geturl())) for (l,r) in self.inputs.items() ]))
+                     % str.join(' ', [ ('("%s" "%s")' % (r, l))
+                                       for (l,r) in self.inputs.items() ]))
         if len(self.outputs) > 0:
             # XXX: this can go away when we have the ternary operator
             # `x = a if y else b` (Python 2.5)
@@ -932,7 +949,7 @@ class Application(Struct, Persistable, Task):
             # filter out stdout/stderr (they are automatically
             # retrieved) and then check again
             outputs_ = [ ('("%s" "%s")' % (relpath(r), output_url(l, r)))
-                         for (r,l) in [ (remotename, localname.geturl())
+                         for (r,l) in [ (remotename, localname)
                                         for remotename,localname 
                                         in self.outputs.iteritems() 
                                         if (remotename != self.stdout 

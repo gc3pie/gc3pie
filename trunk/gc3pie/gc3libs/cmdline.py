@@ -75,10 +75,10 @@ class _Script(cli.app.CommandLineApp):
 
     By default, only the standard options ``-h``/``--help`` and
     ``-V``/``--version`` are considered; to add more, override
-    `setup_options`:method:
+    `setup_options`:meth:
 
     There is no defaults for positional arguments, you *must* override 
-    `setup_args`:method: in derived classes.
+    `setup_args`:meth: in derived classes.
     
     """
 
@@ -94,7 +94,7 @@ class _Script(cli.app.CommandLineApp):
 
         The default command line parsing considers every argument as
         an (input) path name; processing of the given path names is
-        done in `parse_args`:method:
+        done in `parse_args`:meth:
         """
         raise NotImplementedError("Abstract method `_Script.setup_args()` called,"
                                   " which should have been implemented in a derived class")
@@ -204,8 +204,8 @@ class _Script(cli.app.CommandLineApp):
         """
         Setup standard command-line parsing.
 
-        GC3Utils scripts should probably override `setup_args`:method: 
-        and `setup_options`:method: to modify command-line parsing.
+        GC3Utils scripts should probably override `setup_args`:meth: 
+        and `setup_options`:meth: to modify command-line parsing.
         """
         ## setup of base classes
         cli.app.CommandLineApp.setup(self)
@@ -251,7 +251,7 @@ class _Script(cli.app.CommandLineApp):
 
     def run(self):
         """
-        Execute `cli.app.Application.run`:method: if any exception is
+        Execute `cli.app.Application.run`:meth: if any exception is
         raised, catch it, output an error message and then exit with
         an appropriate error code.
         """
@@ -399,9 +399,9 @@ class GC3UtilsScript(_Script):
 
     By default, only the standard options ``-h``/``--help`` and
     ``-V``/``--version`` are considered; to add more, override
-    `setup_options`:method:
+    `setup_options`:meth:
     To change default positional argument parsing, override 
-    `setup_args`:method:
+    `setup_args`:meth:
     
     """
 
@@ -417,7 +417,7 @@ class GC3UtilsScript(_Script):
 
         The default command line parsing considers every argument as a
         job ID; actual processing of the IDs is done in
-        `parse_args`:method:
+        `parse_args`:meth:
         """
         self.add_param('args', nargs='*', metavar='JOBID', 
                        help="Job ID string identifying the jobs to operate upon.")
@@ -439,8 +439,8 @@ class GC3UtilsScript(_Script):
         """
         Setup standard command-line parsing.
 
-        GC3Utils scripts should probably override `setup_args`:method: 
-        and `setup_options`:method: to modify command-line parsing.
+        GC3Utils scripts should probably override `setup_args`:meth: 
+        and `setup_options`:meth: to modify command-line parsing.
         """
         ## setup of base classes (creates the argparse stuff)
         _Script.setup(self)
@@ -517,7 +517,7 @@ class SessionBasedScript(_Script):
     `self.input_file_pattern` glob string (you can set it via a
     keyword argument to the ctor).  To perform a different treatment
     of the command-line arguments, override the
-    :py:method:`process_args()` method.
+    :py:meth:`process_args()` method.
 
     Then, new jobs are added to the session, based on the results of
     the `process_args()` method above.  For each tuple of items
@@ -528,7 +528,7 @@ class SessionBasedScript(_Script):
 
     The script finally proceeds to updating the status of all jobs in
     the session, submitting new ones and retrieving output as needed.
-    When all jobs are done, the method :py:method:`done()` is called, 
+    When all jobs are done, the method :py:meth:`done()` is called, 
     and its return value is used as the script's exit code.
 
     The script's exitcode tracks job status, in the following way.
@@ -562,7 +562,7 @@ class SessionBasedScript(_Script):
 
         The default command line parsing considers every argument as
         an (input) path name; processing of the given path names is
-        done in `parse_args`:method:
+        done in `parse_args`:meth:
         """
         self.add_param('args', nargs='*', metavar='INPUT', 
                        help="Path to input file or directory."
@@ -853,7 +853,7 @@ class SessionBasedScript(_Script):
         """
         Setup standard command-line parsing.
 
-        GC3Libs scripts should probably override `setup_args`:method: 
+        GC3Libs scripts should probably override `setup_args`:meth: 
         to modify command-line parsing.
         """
         ## setup of base classes
@@ -1003,7 +1003,7 @@ class SessionBasedScript(_Script):
 
         This is a template method, that you should not override in derived
         classes: rather use the provided customization hooks:
-        :method:`process_args`, :method:`parse_args`, :method:`setup_args`. 
+        :meth:`process_args`, :meth:`parse_args`, :meth:`setup_args`. 
         """
 
         ## create a `Persistence` instance to _save_session/_load_session jobs
