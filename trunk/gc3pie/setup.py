@@ -104,7 +104,7 @@ setuptools.setup(
         # pyCLI -- object-oriented command-line app programming
         'pyCLI==2.0.2',
         # Unum -- define and manipulate quantities with units attached
-        'Unum',
+        #'Unum',
         ],
 
     # additional non-Python files to be bundled in the package
