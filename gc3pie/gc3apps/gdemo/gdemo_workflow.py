@@ -194,7 +194,8 @@ class GdemoWorkflow(SessionBasedScript):
 
     def parse_args(self):
         self.input_folder = str(self.params.args[0])
-        self.parameters = [1,2,3,4,5,6]
+        # self.parameters = [1,2,3,4,5,6]
+        self.parameters = [1]
 
         if not os.path.isdir(self.input_folder):
             raise RuntimeError("Not Valid Input folder %s" % self.input_folder)

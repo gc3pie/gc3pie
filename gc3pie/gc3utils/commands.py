@@ -535,9 +535,9 @@ released once the output files have been fetched.
 
                 self._core.fetch_output(app, download_dir, overwrite=self.params.overwrite)
                 if app.execution.state == Run.State.TERMINATED:
-                    print("Job final results were successfully retrieved in '%s'" % app.output_dir)
+                    print("Job final results were successfully retrieved in '%s'" % download_dir)
                 else:
-                    print("A snapshot of job results was successfully retrieved in '%s'" % app.output_dir)
+                    print("A snapshot of job results was successfully retrieved in '%s'" % download_dir)
                 self._store.replace(app.persistent_id, app)
 
             except Exception, ex:
