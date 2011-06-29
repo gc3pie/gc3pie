@@ -212,7 +212,7 @@ HTML Documentation
 HTML documentation for the GC3Libs programming interface can be
 read online at:
      
-  http://gc3pie.googlecode.com/svn/branches/1.0/docs/html/index.html
+  http://gc3pie.googlecode.com/svn/trunk/docs/html/index.html
 
 You can also generate a local copy from the sources::
 
