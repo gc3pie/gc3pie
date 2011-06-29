@@ -765,7 +765,7 @@ class SessionBasedScript(_Script):
         """
         table = Texttable(0) # max_width=0 => dynamically resize cells
         table.set_deco(0)    # no decorations
-        table.set_cols_align(['r', 'c', 'c'])
+        table.set_cols_align(['r', 'r', 'c'])
         total = stats['total']
         for state in sorted(stats.keys()):
             table.add_row([
