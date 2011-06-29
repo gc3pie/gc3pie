@@ -92,7 +92,7 @@ of newly-created jobs so that this limit is never exceeded.
                        "(e.g., 'gsiftp://...')")
         self.add_param("-x", "--codeml-executable", action="store",
                        dest="codeml", default="codeml", metavar="PATH",
-                       help="Filesystem path to the CODEML executable.")
+                       help="Local path to the CODEML executable.")
         # change default for the "-o"/"--output" option
         self.actions['output'].default = 'SESSION'
 
