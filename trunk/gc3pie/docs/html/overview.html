@@ -1,3 +1,5 @@
+
+
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
   "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 
@@ -12,12 +14,13 @@
       var DOCUMENTATION_OPTIONS = {
         URL_ROOT:    '',
         VERSION:     'development (SVN $Revision$)',
-        COLLAPSE_MODINDEX: false,
+        COLLAPSE_INDEX: false,
         FILE_SUFFIX: '.html',
         HAS_SOURCE:  true
       };
     </script>
     <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
     <script type="text/javascript" src="_static/doctools.js"></script>
     <link rel="top" title="gc3pie vdevelopment (SVN $Revision$) documentation" href="index.html" />
     <link rel="next" title="GC3Libs modules" href="api.html" />
@@ -31,8 +34,8 @@
           <a href="genindex.html" title="General Index"
              accesskey="I">index</a></li>
         <li class="right" >
-          <a href="modindex.html" title="Global Module Index"
-             accesskey="M">modules</a> |</li>
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
         <li class="right" >
           <a href="api.html" title="GC3Libs modules"
              accesskey="N">next</a> |</li>
@@ -51,7 +54,7 @@
   <div class="section" id="programming-overview">
 <h1>Programming overview<a class="headerlink" href="#programming-overview" title="Permalink to this headline">¶</a></h1>
 <p>GC3Libs takes an application-oriented approach to asynchronous
-computing. A generic <tt class="xref docutils literal"><span class="pre">Application</span></tt> class provides the basic
+computing. A generic <tt class="xref py py-class docutils literal"><span class="pre">Application</span></tt> class provides the basic
 operations for controlling remote computations and fetching a result;
 client code should derive specialized sub-classes to deal with a
 particular application, and to perform any application-specific
@@ -73,15 +76,15 @@ post-processing method is invoked on the application object.</li>
 </blockquote>
 <p>At this point, results of the computation are available and can be
 used by the calling program.</p>
-<p>The <tt class="xref docutils literal"><span class="pre">Application</span></tt> class (and its sub-classes) alow client code
+<p>The <tt class="xref py py-class docutils literal"><span class="pre">Application</span></tt> class (and its sub-classes) alow client code
 to control the above process by:</p>
 <blockquote>
 <ol class="arabic">
 <li><p class="first">Specifying the characteristics (computer program to run,
 input/output files, memory/CPU/duration requirements, etc.) of the
 corresponding computational job.  This is done by passing suitable
-values to the <tt class="xref docutils literal"><span class="pre">Application</span></tt> constructor.  See the
-<tt class="xref docutils literal"><span class="pre">Application</span></tt> constructor documentation for more info.</p>
+values to the <tt class="xref py py-class docutils literal"><span class="pre">Application</span></tt> constructor.  See the
+<tt class="xref py py-class docutils literal"><span class="pre">Application</span></tt> constructor documentation for more info.</p>
 </li>
 <li><p class="first">Providing methods to control the &#8220;life-cycle&#8221; of the associated
 computational job: start, check execution state, stop, retrieve a
@@ -89,8 +92,8 @@ snapshot of the output files.  There are actually two different
 interfaces for this, detailed below:</p>
 <blockquote>
 <ol class="arabic">
-<li><p class="first">A <em>passive</em> interface: a <tt class="xref docutils literal"><span class="pre">Core</span></tt> or a
-<tt class="xref docutils literal"><span class="pre">Engine</span></tt> object is used to start/stop/monitor jobs
+<li><p class="first">A <em>passive</em> interface: a <tt class="xref py py-class docutils literal"><span class="pre">Core</span></tt> or a
+<tt class="xref py py-class docutils literal"><span class="pre">Engine</span></tt> object is used to start/stop/monitor jobs
 associated with the given application.  For instance:</p>
 <div class="highlight-python"><div class="highlight"><pre><span class="n">a</span> <span class="o">=</span> <span class="n">GamessApplication</span><span class="p">(</span><span class="o">...</span><span class="p">)</span>
 
@@ -111,13 +114,13 @@ associated with the given application.  For instance:</p>
 the lifecycle of the job, but cannot support some use cases
 (e.g., automatic application re-start).</p>
 <p>As you can see from the above example, the passive interface
-is implemented by methods in the <tt class="xref docutils literal"><span class="pre">Core</span></tt> and
-<tt class="xref docutils literal"><span class="pre">Engine</span></tt> classes (they implement the same
+is implemented by methods in the <tt class="xref py py-class docutils literal"><span class="pre">Core</span></tt> and
+<tt class="xref py py-class docutils literal"><span class="pre">Engine</span></tt> classes (they implement the same
 interface).  See those classes documentation for more details.</p>
 </li>
 <li><p class="first">An <em>active</em> interface: this requires that the
-<tt class="xref docutils literal"><span class="pre">Application</span></tt> object be attached to a <tt class="xref docutils literal"><span class="pre">Core</span></tt>
-or <tt class="xref docutils literal"><span class="pre">Engine</span></tt> instance:</p>
+<tt class="xref py py-class docutils literal"><span class="pre">Application</span></tt> object be attached to a <tt class="xref py py-class docutils literal"><span class="pre">Core</span></tt>
+or <tt class="xref py py-class docutils literal"><span class="pre">Engine</span></tt> instance:</p>
 <div class="highlight-python"><div class="highlight"><pre><span class="n">a</span> <span class="o">=</span> <span class="n">GamessApplication</span><span class="p">(</span><span class="o">...</span><span class="p">)</span>
 
 <span class="c"># create a `Core` object; only one instance is needed</span>
@@ -138,12 +141,12 @@ or <tt class="xref docutils literal"><span class="pre">Engine</span></tt> instan
 </div>
 <p>With the active interface, application objects can support
 automated restart and similar use-cases.</p>
-<p>When an <tt class="xref docutils literal"><span class="pre">Engine</span></tt> object is used instead of a
-<tt class="xref docutils literal"><span class="pre">Core</span></tt> one, the job life-cycle is automatically
+<p>When an <tt class="xref py py-class docutils literal"><span class="pre">Engine</span></tt> object is used instead of a
+<tt class="xref py py-class docutils literal"><span class="pre">Core</span></tt> one, the job life-cycle is automatically
 managed, providing a fully asynchronous way of executing
 computations.</p>
-<p>The active interface is implemented by the <tt class="xref docutils literal"><span class="pre">Task</span></tt>
-class and all its descendants (including <tt class="xref docutils literal"><span class="pre">Application</span></tt>).</p>
+<p>The active interface is implemented by the <tt class="xref py py-class docutils literal"><span class="pre">Task</span></tt>
+class and all its descendants (including <tt class="xref py py-class docutils literal"><span class="pre">Application</span></tt>).</p>
 </li>
 </ol>
 </blockquote>
@@ -156,9 +159,9 @@ expired but the computation has not finished.  In particular, a
 <cite>postprocess</cite> method is called when the final output of an
 application is available locally for processing.</p>
 <p>The set of &#8220;state transition methods&#8221; currently implemented by
-the <tt class="xref docutils literal"><span class="pre">Application</span></tt> class are: <tt class="xref docutils literal"><span class="pre">new()</span></tt>,
-<tt class="xref docutils literal"><span class="pre">submitted()</span></tt>, <tt class="xref docutils literal"><span class="pre">running()</span></tt>, <tt class="xref docutils literal"><span class="pre">stopped()</span></tt>,
-<tt class="xref docutils literal"><span class="pre">terminated()</span></tt> and <tt class="xref docutils literal"><span class="pre">postprocess()</span></tt>.  Each method is
+the <tt class="xref py py-class docutils literal"><span class="pre">Application</span></tt> class are: <tt class="xref py py-meth docutils literal"><span class="pre">new()</span></tt>,
+<tt class="xref py py-meth docutils literal"><span class="pre">submitted()</span></tt>, <tt class="xref py py-meth docutils literal"><span class="pre">running()</span></tt>, <tt class="xref py py-meth docutils literal"><span class="pre">stopped()</span></tt>,
+<tt class="xref py py-meth docutils literal"><span class="pre">terminated()</span></tt> and <tt class="xref py py-meth docutils literal"><span class="pre">postprocess()</span></tt>.  Each method is
 called when the execution state of an application object changes
 to the corresponding state; see each method&#8217;s documentation for
 exact information.</p>
@@ -168,8 +171,8 @@ exact information.</p>
 <p>In addition, GC3Libs provides <em>collection</em> classes, that expose
 interfaces <em>2.</em> and <em>3.</em> above, allowing one to control a set of
 applications as a single whole.  Collections can be nested (i.e., a
-collection can hold a mix of <tt class="xref docutils literal"><span class="pre">Application</span></tt> and
-<tt class="xref docutils literal"><span class="pre">TaskCollection</span></tt> objects), so that workflows can be implemented
+collection can hold a mix of <tt class="xref py py-class docutils literal"><span class="pre">Application</span></tt> and
+<tt class="xref py py-class docutils literal"><span class="pre">TaskCollection</span></tt> objects), so that workflows can be implemented
 by composing collection objects.</p>
 <p>Note that the term <em>computational job</em> (or just <em>job</em>, for short) is
 used here in a quite general sense, to mean any kind of computation
@@ -236,12 +239,12 @@ there is no equivalent of the GC3Libs <cite>fetch_output</cite>.</li>
 <p>POSIX encodes process termination information in the &#8220;return code&#8221;,
 which can be parsed through <cite>os.WEXITSTATUS</cite>, <cite>os.WIFSIGNALED</cite>,
 <cite>os.WTERMSIG</cite> and relative library calls.</p>
-<p>Likewise, GC3Libs provides each <tt class="xref docutils literal"><span class="pre">Application</span></tt> object with an
+<p>Likewise, GC3Libs provides each <tt class="xref py py-class docutils literal"><span class="pre">Application</span></tt> object with an
 <cite>execution.returncode</cite> attribute, which is a valid POSIX &#8220;return
 code&#8221;.  Client code can therefore use <cite>os.WEXITSTATUS</cite> and relatives
 to inspect it; convenience attributes <cite>execution.signal</cite> and
 <cite>execution.exitcode</cite> are available for direct access to the parts of
-the return code.  See <tt class="xref docutils literal"><span class="pre">Run.returncode()</span></tt> for more information.</p>
+the return code.  See <tt class="xref py py-meth docutils literal"><span class="pre">Run.returncode()</span></tt> for more information.</p>
 <p>However, GC3Libs has to deal with error conditions that are not
 catered for by the POSIX process model: for instance, execution of an
 application may fail because of an error connecting to the remote
@@ -252,14 +255,14 @@ termination using a set of pseudo-signal codes in a job&#8217;s
 to some grid/batch system/middleware error, the job&#8217;s
 <cite>os.WIFSIGNALED(app.execution.returncode)</cite> will be <cite>True</cite> and the
 signal code (as gotten from <cite>os.WTERMSIG(app.execution.returncode)</cite>)
-will be one of those listed in the <tt class="xref docutils literal"><span class="pre">Run.Signals</span></tt> documentation.</p>
+will be one of those listed in the <tt class="xref py py-class docutils literal"><span class="pre">Run.Signals</span></tt> documentation.</p>
 </div>
 <div class="section" id="application-execution-states">
 <h3>Application execution states<a class="headerlink" href="#application-execution-states" title="Permalink to this headline">¶</a></h3>
 <p>At any given moment, a GC3Libs job is in any one of a set of
 pre-defined states, listed in the table below.  The job state is
 always available in the <cite>.execution.state</cite> instance property of any
-<cite>Application</cite> or <cite>Task</cite> object; see <tt class="xref docutils literal"><span class="pre">Run.state()</span></tt> for detailed
+<cite>Application</cite> or <cite>Task</cite> object; see <tt class="xref py py-meth docutils literal"><span class="pre">Run.state()</span></tt> for detailed
 information.</p>
 <table border="1" class="docutils">
 <colgroup>
@@ -299,7 +302,7 @@ and will not be resumed</td>
 </tr>
 </tbody>
 </table>
-<p>When an <tt class="xref docutils literal"><span class="pre">Application</span></tt> object is first created, its
+<p>When an <tt class="xref py py-class docutils literal"><span class="pre">Application</span></tt> object is first created, its
 <cite>.execution.state</cite> attribute is assigned the state NEW.  After a
 successful start (via <cite>Core.submit()</cite> or similar), it is transitioned
 to state SUBMITTED.  Further transitions to RUNNING or STOPPED or
@@ -336,9 +339,9 @@ characteristics (program to run, input and output files,
 memory/duration requirements, etc.) loosely patterned after ARC&#8217;s
 <a class="reference external" href="http://www.nordugrid.org/documents/xrsl.pdf">xRSL</a> language.</p>
 <p>The description of the computational job is done through keyword
-parameters to the <tt class="xref docutils literal"><span class="pre">Application</span></tt> constructor, which see for
+parameters to the <tt class="xref py py-class docutils literal"><span class="pre">Application</span></tt> constructor, which see for
 details.  Changes in the job characteristics <em>after</em> an
-<tt class="xref docutils literal"><span class="pre">Application</span></tt> object has been constructed are not currently
+<tt class="xref py py-class docutils literal"><span class="pre">Application</span></tt> object has been constructed are not currently
 supported.</p>
 </div>
 </div>
@@ -350,43 +353,43 @@ supported.</p>
       </div>
       <div class="sphinxsidebar">
         <div class="sphinxsidebarwrapper">
-            <h3><a href="index.html">Table Of Contents</a></h3>
-            <ul>
-<li><a class="reference external" href="#">Programming overview</a><ul>
-<li><a class="reference external" href="#execution-model-of-gc3libs-applications">Execution model of GC3Libs applications</a><ul>
-<li><a class="reference external" href="#application-exit-codes">Application exit codes</a></li>
-<li><a class="reference external" href="#application-execution-states">Application execution states</a></li>
-<li><a class="reference external" href="#computational-job-specification">Computational job specification</a></li>
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Programming overview</a><ul>
+<li><a class="reference internal" href="#execution-model-of-gc3libs-applications">Execution model of GC3Libs applications</a><ul>
+<li><a class="reference internal" href="#application-exit-codes">Application exit codes</a></li>
+<li><a class="reference internal" href="#application-execution-states">Application execution states</a></li>
+<li><a class="reference internal" href="#computational-job-specification">Computational job specification</a></li>
 </ul>
 </li>
 </ul>
 </li>
 </ul>
 
-            <h4>Previous topic</h4>
-            <p class="topless"><a href="install.html"
-                                  title="previous chapter">Installation of GC3Utils</a></p>
-            <h4>Next topic</h4>
-            <p class="topless"><a href="api.html"
-                                  title="next chapter">GC3Libs modules</a></p>
-            <h3>This Page</h3>
-            <ul class="this-page-menu">
-              <li><a href="_sources/overview.txt"
-                     rel="nofollow">Show Source</a></li>
-            </ul>
-          <div id="searchbox" style="display: none">
-            <h3>Quick search</h3>
-              <form class="search" action="search.html" method="get">
-                <input type="text" name="q" size="18" />
-                <input type="submit" value="Go" />
-                <input type="hidden" name="check_keywords" value="yes" />
-                <input type="hidden" name="area" value="default" />
-              </form>
-              <p class="searchtip" style="font-size: 90%">
-              Enter search terms or a module, class or function name.
-              </p>
-          </div>
-          <script type="text/javascript">$('#searchbox').show(0);</script>
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="install.html"
+                        title="previous chapter">Installation of GC3Utils</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="api.html"
+                        title="next chapter">GC3Libs modules</a></p>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="_sources/overview.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" size="18" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
         </div>
       </div>
       <div class="clearer"></div>
@@ -398,7 +401,7 @@ supported.</p>
           <a href="genindex.html" title="General Index"
              >index</a></li>
         <li class="right" >
-          <a href="modindex.html" title="Global Module Index"
+          <a href="py-modindex.html" title="Python Module Index"
              >modules</a> |</li>
         <li class="right" >
           <a href="api.html" title="GC3Libs modules"
@@ -410,8 +413,8 @@ supported.</p>
       </ul>
     </div>
     <div class="footer">
-      &copy; Copyright 2010, Grid Computing Competence Centre, University of Zurich.
-      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 0.6.6.
+        &copy; Copyright 2010, Grid Computing Competence Centre, University of Zurich.
+      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.0.1.
     </div>
   </body>
 </html>

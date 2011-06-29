@@ -11,6 +11,11 @@
 .. automodule:: gc3libs
    :members:
 
+`gc3libs.cmdline`
+=================
+.. automodule:: gc3libs.cmdline
+    :members:
+
 `gc3libs.core`
 ==============
 .. automodule:: gc3libs.core
@@ -21,24 +26,56 @@
 .. automodule:: gc3libs.dag
     :members:
 
-`gc3libs.Default`
-=================
-.. warning:: 
-
-   This module is deprecated and will be removed in a future release.
-   Do not depend on it.
-
-.. automodule:: gc3libs.Default
-   :members:
-
-`gc3libs.Exceptions`
+`gc3libs.exceptions`
 ====================
-.. automodule:: gc3libs.Exceptions
+.. automodule:: gc3libs.exceptions
    :members:
 
 `gc3libs.persistence`
 =====================
 .. automodule:: gc3libs.persistence
+    :members:
+
+`gc3libs.template`
+==================
+.. automodule:: gc3libs.template
+    :members:
+
+`gc3libs.units`
+===============
+.. automodule:: gc3libs.units
+    :members:
+
+`gc3libs.url`
+=============
+.. automodule:: gc3libs.url
+    :members:
+
+`gc3libs.utils`
+===============
+.. automodule:: gc3libs.utils
+    :members:
+
+`gc3libs.Resource`
+==================
+
+.. warning:: 
+
+   This module is deprecated and will be removed in a future release.
+   Do not depend on it.
+
+.. automodule:: gc3libs.Resource
+    :members:
+
+`gc3libs.InformationContainer`
+==============================
+
+.. warning:: 
+
+   This module is deprecated and will be removed in a future release.
+   Do not depend on it.
+
+.. automodule:: gc3libs.InformationContainer
     :members:
 
 
@@ -79,9 +116,14 @@
 .. automodule:: gc3libs.backends
     :members:
 
-`gc3libs.backends.arc`
-======================
-.. automodule:: gc3libs.backends.arc
+`gc3libs.backends.arc0`
+=======================
+.. automodule:: gc3libs.backends.arc0
+    :members:
+
+`gc3libs.backends.arc1`
+=======================
+.. automodule:: gc3libs.backends.arc1
     :members:
 
 `gc3libs.backends.sge`
@@ -89,41 +131,14 @@
 .. automodule:: gc3libs.backends.sge
     :members:
 
+`gc3libs.backends.subprocess`
+=============================
+.. automodule:: gc3libs.backends.subprocess
+    :members:
+
 `gc3libs.backends.transport`
 ============================
 .. automodule:: gc3libs.backends.transport
-    :members:
-
-`gc3libs.utils`
-===============
-.. automodule:: gc3libs.utils
-    :members:
-
-`gc3libs.Resource`
-==================
-
-.. warning:: 
-
-   This module is deprecated and will be removed in a future release.
-   Do not depend on it.
-
-.. automodule:: gc3libs.Resource
-    :members:
-
-`gc3libs.scheduler`
-===================
-.. automodule:: gc3libs.scheduler
-    :members:
-
-`gc3libs.InformationContainer`
-==============================
-
-.. warning:: 
-
-   This module is deprecated and will be removed in a future release.
-   Do not depend on it.
-
-.. automodule:: gc3libs.InformationContainer
     :members:
 
 
@@ -136,10 +151,10 @@
 .. automodule:: gc3utils
    :members:
 
-`gc3utils.gcmd`
-===============
+`gc3utils.frontend`
+===================
 
-.. automodule:: gc3utils.gcmd
+.. automodule:: gc3utils.frontend
    :members:
 
 `gc3utils.commands`

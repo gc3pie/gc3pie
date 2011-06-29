@@ -220,7 +220,7 @@ You can also generate a local copy from the sources::
   cd src/docs
   make html
 
-Note that you need the Python package `Sphinx <http://sphinx.pocoo.org>`_
+Note that you need the Python package `Sphinx <http://sphinx.pocoo.org>`
 in order to build the documentation locally.
 
 
