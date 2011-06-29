@@ -900,9 +900,9 @@ class SessionBasedScript(_Script):
 
         # 3. script execution control
         self.add_param("-C", "--continuous", type=int, dest="wait", default=0,
-                       metavar="INTERVAL",
+                       metavar="NUM",
                        help="Keep running, monitoring jobs and possibly submitting new ones or"
-                       " fetching results every INTERVAL seconds. Exit when all jobs are finished."
+                       " fetching results every NUM seconds. Exit when all jobs are finished."
                        )
         self.add_param("-J", "--max-running", type=int, dest="max_running", default=50,
                        metavar="NUM",
