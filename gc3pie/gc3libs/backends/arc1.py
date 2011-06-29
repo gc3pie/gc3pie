@@ -30,7 +30,6 @@ import itertools
 import os
 import time
 import tempfile
-from urlparse import urlparse
 
 sys.path.append('/usr/share/pyshared')
 
@@ -177,7 +176,7 @@ class Arc1Lrms(LRMS):
         # execution_targets = self._target_generator.GetExecutionTargets()
         # for target in execution_targets:
         #     self._execution_targets{target.GridFlavour} = target
-	# return self._execution_targets
+        # return self._execution_targets
 
 
     # ARC refreshes the InfoSys every 30 seconds by default;
@@ -594,7 +593,7 @@ class Arc1Lrms(LRMS):
         Supported protocols: file, gsiftp, srm, http, https
         """
         for url in data_file_list:
-            log.debug("Resource %s. Checking URL [%s] ..." % (self._resource.name, url.geturl()))
+            log.debug("Resource %s: checking URL '%s' ..." % (self._resource.name, url))
             if not url.scheme in ['srm', 'lfc', 'file', 'http', 'gsiftp', 'https']:
                 return False
         return True

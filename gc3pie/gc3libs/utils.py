@@ -5,7 +5,7 @@ Generic Python programming utility functions.
 This module collects general utility functions, not specifically
 related to GC3Libs.  A good rule of thumb for determining if a
 function or class belongs in here is the following: place a function
-or class in the :mod:`utils` if you could copy its code into the
+or class in this module if you could copy its code into the
 sources of a different project and it would not stop working.
 """
 # Copyright (C) 2009-2011 GC3, University of Zurich. All rights reserved.
@@ -36,6 +36,7 @@ import shutil
 import sys
 import time
 import cStringIO as StringIO
+import urlparse as pyurlparse
 import UserDict
 
 from lockfile import FileLock
@@ -717,7 +718,7 @@ def prettyprint(D, indent=0, width=0, maxdepth=None, step=4,
         output.write(first)
         output.write(second)
         output.write('\n')
-        output.flush()
+
 
 def mkdir(path, mode=0777):
     """
@@ -1092,7 +1093,6 @@ def send_mail(send_from, send_to, subject, text, files=[], server="localhost"):
     smtp = SMTP(server)
     smtp.sendmail(send_from, send_to, msg.as_string())
     smtp.close()
-
 
 
 ##
