@@ -598,10 +598,11 @@ class SessionBasedScript(_Script):
         if len(args) == 0:
             path = os.getcwd()
         else:
-            if os.path.isdir(str(args[0])):
-                path = str(args[0])
-            elif os.path.isfile(str(args[0])):
-                path = os.path.dirname(str(args[0]))
+            arg0 = str(args[0])
+            if os.path.isdir(arg0):
+                path = arg0
+            elif os.path.isfile(arg0):
+                path = os.path.dirname(arg0)
             else:
                 path = os.getcwd()
         return (pathspec
