@@ -92,14 +92,14 @@ class gParaSearchParallel(ParallelTaskCollection, paraLoop_fp, GPremiumTaskMods)
         self.problemType = problemType
         
         if self.problemType == 'one4eachCtry':
-            self.gdpTable = tableDict.fromTextFile(fileIn = os.path.join(pathEmpirical, 'output/momentTable/Gdp/gdpMoments.csv'),
+            self.gdpTable = tableDict.fromTextFile(fileIn = os.path.join(pathEmpirical, 'outputInput/momentTable/Gdp/gdpMoments.csv'),
                                               delim = ',', width = 20)
             self.analyzeResults = anaOne4eachCtry
             self.nlc = nlcOne4eachCtry
 
             print(self.gdpTable)
         elif self.problemType == 'one4eachPair':
-            self.gdpTable = tableDict.fromTextFile(fileIn = os.path.join(pathEmpirical, 'output/momentTable/Gdp/gdpMoments.csv'),
+            self.gdpTable = tableDict.fromTextFile(fileIn = os.path.join(pathEmpirical, 'outputInput/momentTable/Gdp/gdpMoments.csv'),
                                               delim = ',', width = 20)
             self.analyzeResults = anaOne4eachPair
             Ctry1 = getParameter(fileIn = os.path.join(baseDir, 'input/markovA.in'), varIn = 'Ctry', 
