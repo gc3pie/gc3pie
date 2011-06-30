@@ -61,13 +61,13 @@ if not sys.path.count(path2Pymods):
     sys.path.append(path2Pymods)
 
 from forwardPremium import paraLoop_fp, GPremiumTaskMods
-from supportGc3 import update_parameter_in_file
+from supportGc3 import update_parameter_in_file, getParameter
 from pymods.support.support import rmFilesAndFolders
 from pymods.classes.tableDict import tableDict
 
 sys.path.append(os.path.join(os.path.dirname(__file__), '../generateResults/'))
 from createOverviewTable_gc3 import createOverviewTable
-from analyzeOverviewTable import oneCtryPair
+from analyzeOverviewTable import anaOne4eachPair, anaOne4eachCtry, anaOne4all, nlcOne4eachCtry, nlcOne4eachPair, nlcOne4all
 from difEvoKenPrice import *
 
 # verbosity levels for logbook
@@ -84,28 +84,41 @@ class gParaSearchParallel(ParallelTaskCollection, paraLoop_fp, GPremiumTaskMods)
     def __init__(self, pathToExecutable, architecture, logger, baseDir, xVars, 
                  nPopulation, xVarsDom, solverVerb, problemType, pathEmpirical, output_dir = '/tmp', grid = None, **kw):
 
-        # set up logger
-        mySH = logbook.StreamHandler(stream = sys.stdout, level = solverVerb.upper(), format_string = '{record.message}', bubble = True)
-        mySH.format_string = '{record.message}'
-        myFH = logbook.FileHandler(filename = 'gParaSearch.log', level = 'DEBUG', bubble = True)
-        myFH.format_string = '{record.message}' 
-        logger = logbook.Logger(name = 'target.log')
         
         
-        # Remove all files in curPath
-        curPath = os.getcwd()
-        filesAndFolder = os.listdir(curPath)
-        if 'gParaSearch.log' in filesAndFolder: # if another paraSearch was run in here before, clean up. 
-            rmFilesAndFolders(curPath)      
+    
         
-        # Set up initial variables
+        # Set up initial variables and set the correct methods. 
         self.problemType = problemType
         
         if self.problemType == 'one4eachCtry':
             self.gdpTable = tableDict.fromTextFile(fileIn = os.path.join(pathEmpirical, 'output/momentTable/Gdp/gdpMoments.csv'),
                                               delim = ',', width = 20)
-            logger.debug(self.gdpTable)
-            sys.exit()
+            self.analyzeResults = anaOne4eachCtry
+            self.nlc = nlcOne4eachCtry
+
+            print(self.gdpTable)
+        elif self.problemType == 'one4eachPair':
+            self.gdpTable = tableDict.fromTextFile(fileIn = os.path.join(pathEmpirical, 'output/momentTable/Gdp/gdpMoments.csv'),
+                                              delim = ',', width = 20)
+            self.analyzeResults = anaOne4eachPair
+            Ctry1 = getParameter(fileIn = os.path.join(baseDir, 'input/markovA.in'), varIn = 'Ctry', 
+                                 regexIn = 'space-separated')
+            Ctry2 = getParameter(fileIn = os.path.join(baseDir, 'input/markovB.in'), varIn = 'Ctry', 
+                                 regexIn = 'space-separated')
+            EA = getParameter(fileIn = os.path.join(baseDir, 'input/parameters.in'), varIn = 'EA', 
+                                 regexIn = 'bar-separated')
+            EB = getParameter(fileIn = os.path.join(baseDir, 'input/parameters.in'), varIn = 'EB', 
+                                 regexIn = 'bar-separated')
+            sigmaA = getParameter(fileIn = os.path.join(baseDir, 'input/parameters.in'), varIn = 'sigmaA', 
+                                 regexIn = 'bar-separated')
+            sigmaB = getParameter(fileIn = os.path.join(baseDir, 'input/parameters.in'), varIn = 'sigmaB', 
+                                 regexIn = 'bar-separated')
+            
+            self.nlc = nlcOne4eachPair(gdpTable = self.gdpTable, ctryPair = [Ctry1, Ctry2], E = [ EA, EB ],
+                                       sigma = [sigmaA, sigmaB])
+        elif self.problemType == 'one4all':
+            pass
 
         
         self.grid = grid
@@ -148,16 +161,24 @@ class gParaSearchParallel(ParallelTaskCollection, paraLoop_fp, GPremiumTaskMods)
 
     def target(self, inParaCombos):
         
+        
+        # set up logger
+        mySH = logbook.StreamHandler(stream = sys.stdout, level = self.verbosity.upper(), format_string = '{record.message}', bubble = True)
+        mySH.format_string = '{record.message}'
+        myFH = logbook.FileHandler(filename = 'gParaSearch.log', level = 'DEBUG', bubble = True)
+        myFH.format_string = '{record.message}' 
         logger = logbook.Logger(name = 'target.log')
+
+        logger.handlers.append(mySH)
+        logger.handlers.append(myFH)        
+        
+        
         
         try:
             stdErr = list(logbook.handlers.Handler.stack_manager.iter_context_objects())[0]
             stdErr.pop_application()
         except: 
             pass
-        
-        logger.handlers.append(mySH)
-        logger.handlers.append(myFH)
         
         logger.debug('Entering target')
           
@@ -185,7 +206,11 @@ class gParaSearchParallel(ParallelTaskCollection, paraLoop_fp, GPremiumTaskMods)
             groupRestrs = [ 'diagnol', 'diagnol' ]
             vals = vals * 2
             paraCombos = [  np.append(ele, ele) for ele in inParaCombos ]
-        
+
+##        for paraCombo in paraCombos:
+##            if np.abs(paraCombo[0] - 0.5393891213) < 1.e-5:
+##              print('hello')
+            
         # Write a para.loop file to generate grid jobs
         para_loop = self.writeParaLoop(variables = variables, 
                                        groups = groups, 
@@ -220,23 +245,24 @@ class gParaSearchParallel(ParallelTaskCollection, paraLoop_fp, GPremiumTaskMods)
                                             exportFileName = 'overviewSimu', sortTable = False, 
                                             logLevel = self.verbosity, logFile = 'overTableLog.log')
 
-        result = oneCtryPair(tableIn = overviewTable, varsIn = variables, valsIn = paraCombos, 
+        result = self.analyzeResults(tableIn = overviewTable, varsIn = variables, valsIn = paraCombos, 
                              targetVar = 'normDev', logLevel = self.verbosity, 
                              logFile = os.path.join(iterationFolder, 'oneCtryPairLog.log'))
         logger.info('returning result to solver')
         logger.handlers = []
         return result
     
-    def nlc(x):
-        '''
-          Nonlinear constraint for gParaSearch. 
-          Takes x vector and adapts it to fullfill the constraint. 
-        '''
-        if self.problemType == 'one4eachCtry':
+##    def nlc(x):
+##        '''
+##          Nonlinear constraint for gParaSearch. 
+##          Takes x vector and adapts it to fullfill the constraint. 
+##        '''
+##        if self.problemType == 'one4eachCtry':
             
-        elif self.problemType == 'one4eachPair':
-            
-        elif self.problemType == 'one4all':
+##        elif self.problemType == 'one4eachPair':
+##            pass
+##        elif self.problemType == 'one4all':
+##            pass
         
 
     def print_status(self, mins,means,vector,txt):
@@ -288,16 +314,13 @@ class gParaSearchParallel(ParallelTaskCollection, paraLoop_fp, GPremiumTaskMods)
             tasks.append(Application('./' + executable, [], inputs, outputs, **kwargs)) 
         return tasks
 
-
-
-
-
 class gParaSearch(SessionBasedScript):
     """
 Read `.loop` files and execute the `forwardPremium` program accordingly.
     """
 
     def __init__(self):
+
         SessionBasedScript.__init__(
             self,
             version = '0.2',
@@ -380,8 +403,6 @@ Read `.loop` files and execute the `forwardPremium` program accordingly.
         if self.params.max_running < self.params.nPopulation:
             self.params.max_running = self.params.nPopulation
         
-        
-
         yield (jobname, gParaSearchParallel, 
                [ self.params.executable, self.params.architecture, 
                  self.log, self.params.initial, self.params.xVars, 
@@ -392,7 +413,12 @@ Read `.loop` files and execute the `forwardPremium` program accordingly.
 
 ## run script
 
-if __name__ == '__main__':
+if __name__ == '__main__':    
+    # Remove all files in curPath
+    curPath = os.getcwd()
+    filesAndFolder = os.listdir(curPath)
+    if 'gParaSearch.log' in filesAndFolder: # if another paraSearch was run in here before, clean up. 
+        rmFilesAndFolders(curPath)  
     gParaSearch().run()
     
     

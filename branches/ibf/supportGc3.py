@@ -1,4 +1,4 @@
-#! /usr/bin/env python
+    #! /usr/bin/env python
 #
 
 # Copyright (C) 2011 University of Zurich. All rights reserved.
@@ -298,6 +298,20 @@ def mat2str(matIn, fmt='%.2f '):
 
 def getParameter(fileIn, varIn, regexIn = '(\s*)([a-zA-Z0-9]+)(\s+)([a-zA-Z0-9\.\s,;\[\]\-]+)(\s*)'):
     import re
+    _loop_regexps = {
+    'bar-separated':(r'([a-z]+[\s\|]+)'
+                     r'(\w+)' # variable name
+                     r'(\s*[\|]+\s*)' # bars and spaces
+                     r'([\w\s\.,;\[\]\-]+)' # value
+                     r'(\s*)'),
+    'space-separated':(r'(\s*)'
+                       r'(\w+)' # variable name
+                       r'(\s+)' # spaces (filler)
+                       r'([\w\s\.,;\[\]\-]+)' # values
+                       r'(\s*)'), # spaces (filler)
+    }
+    if regexIn in _loop_regexps.keys():
+        regexIn = _loop_regexps[regexIn]
   #  print('updateParameter inputs: \n --- \n {0} \n {1} \n {2} \n {3} \n {4} \n ---'.format(fileIn, varIn, paraIndex, newVal, regexIn))
     paraFile = open(fileIn)
     lines = paraFile.readlines()

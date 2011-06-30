@@ -12,90 +12,82 @@ import logbook
 class deKenPrice:
 
   def __init__(self, evaluator, paraStruct):
-    #self.evaluator = evaluator
-    #self.paraStruct = paraStruct
-  #  logger.debug('hello')
-    self.deopt(evaluator, paraStruct)
+    self.evaluator = evaluator
+    self.S_struct = paraStruct
+    self.minBound = self.S_struct['FVr_minbound']
+    self.maxBound = self.S_struct['FVr_maxbound']
 
-
-  def deopt(self, evaluator, S_struct):
-    mySH = logbook.StreamHandler(stream = sys.stdout, level = evaluator.verbosity.upper(), format_string = '{record.message}', bubble = True)
+    # This is just for notational convenience and to keep the code uncluttered.--------
+    self.I_NP         = self.S_struct['I_NP']
+    self.F_weight     = self.S_struct['F_weight']
+    self.F_CR         = self.S_struct['F_CR']
+    self.I_D          = self.S_struct['I_D']
+    self.FVr_minbound = self.S_struct['FVr_minbound']
+    self.FVr_maxbound = self.S_struct['FVr_maxbound']
+    self.I_bnd_constr = self.S_struct['I_bnd_constr']
+    self.I_itermax    = self.S_struct['I_itermax']
+    self.F_VTR        = self.S_struct['F_VTR']
+    self.I_strategy   = self.S_struct['I_strategy']
+    self.I_refresh    = self.S_struct['I_refresh']
+    self.I_plotting   = self.S_struct['I_plotting']
+    self.deopt()
+    
+  def deopt(self):
+    
+    # Fix seed for debugging
+    np.random.seed(1000)
+    
+    # Set up loggers
+    mySH = logbook.StreamHandler(stream = sys.stdout, level = self.evaluator.verbosity.upper(), format_string = '{record.message}', bubble = True)
     mySH.format_string = '{record.message}'
-#    mySH.push_application()
     myFH = logbook.FileHandler(filename = __name__ + '.log', level = 'DEBUG', bubble = True)
     myFH.format_string = '{record.message}'
-#    myFH.push_application()  
-    
     logger = logbook.Logger(__name__)
     logger.handlers.append(mySH)
     logger.handlers.append(myFH)
 
-
-    # This is just for notational convenience and to keep the code uncluttered.--------
-    I_NP         = S_struct['I_NP']
-    F_weight     = S_struct['F_weight']
-    F_CR         = S_struct['F_CR']
-    I_D          = S_struct['I_D']
-    FVr_minbound = S_struct['FVr_minbound']
-    FVr_maxbound = S_struct['FVr_maxbound']
-    I_bnd_constr = S_struct['I_bnd_constr']
-    I_itermax    = S_struct['I_itermax']
-    F_VTR        = S_struct['F_VTR']
-    I_strategy   = S_struct['I_strategy']
-    I_refresh    = S_struct['I_refresh']
-    I_plotting   = S_struct['I_plotting']
-
-
     # -----Check input variables---------------------------------------------
-    if ( I_NP < 5 ):
-      I_NP = 5
+    if ( self.I_NP < 5 ):
+      self.I_NP = 5
       logger.debug(' I_NP increased to minimal value 5')
-    if ( ( F_CR < 0 ) or ( F_CR > 1 ) ):
-      F_CR = 0.5
+    if ( ( self.F_CR < 0 ) or ( self.F_CR > 1 ) ):
+      self.F_CR = 0.5
       logger.debug('F_CR should be from interval [0,1]; set to default value 0.5')
-    if (I_itermax <= 0):
-      I_itermax = 200
+    if (self.I_itermax <= 0):
+      self.I_itermax = 200
       logger.debug('I_itermax should be > 0; set to default value 200')
-    I_refresh = int(np.floor(I_refresh))
+    self.I_refresh = int(np.floor(self.I_refresh))
 
-    FM_pop = np.zeros( (I_NP, I_D ) ) #initialize FM_pop to gain speed
+    # Draw population
+    self.FM_pop = self.drawPopulation(self.I_NP, self.I_D)
+    
+    # Initialize variables
+    self.FM_popold     = np.zeros( np.size(self.FM_pop) )  # toggle population
+    self.FVr_bestmem   = np.zeros( self.I_D )# best population member ever
+    self.FVr_bestmemit = np.zeros( self.I_D )# best population member in iteration
+    self.I_nfeval      = 0                    # number of function evaluations  
 
-    #----FM_pop is a matrix of size I_NPx(I_D+1). It will be initialized------
-    #----with random values between the min and max values of the-------------
-    #----parameters-----------------------------------------------------------
-
-    for k in range(I_NP):
-      FM_pop[k,:] = FVr_minbound + np.random.random_sample( I_D ) * ( FVr_maxbound - FVr_minbound )
-
-    FM_popold     = np.zeros( np.size(FM_pop) )  # toggle population
-    FVr_bestmem   = np.zeros( I_D )# best population member ever
-    FVr_bestmemit = np.zeros( I_D )# best population member in iteration
-    I_nfeval      = 0                    # number of function evaluations  
-
+    # Check constraints and resample points to maintain population size. 
+    self.FM_pop = self.enforceConstrResample(self.FM_pop)
+    
     # Evaluate target for the first time
-    S_vals = evaluator.target(FM_pop)
+    self.S_vals = self.evaluator.target(self.FM_pop)
     # # # #  # # # # # # ##  # # ## # # 
-
-    if not isinstance(S_vals[0], dict):
-      new_S_vals = []
-      for ixS, S_val in enumerate(S_vals):
-        new_S_vals.append({'FVr_oa': [ S_val ], 'I_nc': 0, 'FVr_ca': 0, 'I_no': 1})
-      S_vals = new_S_vals
-
-
-    for k in range(I_NP):                          # check the remaining members
+    
+    # Determine bestmemit and bestvalit for random draw. 
+    for k in range(self.I_NP):                          # check the remaining members
       if k == 0:
-        S_bestval = S_vals[0]                 # best objective function value so far
-        I_nfeval  = I_nfeval + 1
-        I_best_index  = 0
-      I_nfeval  += 1
-      if ( left_win( S_vals[k], S_bestval ) == 1 ):
-        I_best_index   = k              # save its location
-        S_bestval      = S_vals[k]
-    FVr_bestmemit = FM_pop[I_best_index, :] # best member of current iteration
-    S_bestvalit   = S_bestval              # best value of current iteration
+        self.S_bestval = self.S_vals[0]                 # best objective function value so far
+        self.I_nfeval  = self.I_nfeval + 1
+        self.I_best_index  = 0
+      self.I_nfeval  += 1
+      if ( left_win( self.S_vals[k], self.S_bestval ) == 1 ):
+        self.I_best_index   = k              # save its location
+        self.S_bestval      = self.S_vals[k]
+    self.FVr_bestmemit = self.FM_pop[self.I_best_index, :] # best member of current iteration
+    self.S_bestvalit   = self.S_bestval              # best value of current iteration
 
-    FVr_bestmem = FVr_bestmemit            # best member ever
+    self.FVr_bestmem = self.FVr_bestmemit            # best member ever
 
 
   #------DE-Minimization---------------------------------------------
@@ -103,6 +95,79 @@ class deKenPrice:
   #------static through one iteration. FM_pop is the newly--------------
   #------emerging population.----------------------------------------
 
+
+    ### Iter  
+    I_iter = 0
+    while ( ( I_iter < self.I_itermax ) and ( self.S_bestval > self.F_VTR)):
+
+      self.FM_ui = self.evolvePopulation(self.FM_pop)
+
+    #-----Optional parent+child selection-----------------------------------------
+
+##    #-----Select which vectors are allowed to enter the new population------------
+##      for k in range(self.I_NP):
+
+##        #=====Only use this if boundary constraints are needed==================
+##        if ( self.I_bnd_constr == 1 ):
+##          for j in range(self.I_D): #----boundary constraints via bounce back-------
+##            if ( self.FM_ui[k, j] > self.FVr_maxbound[j] ):
+##              self.FM_ui[k,j] = self.FVr_maxbound[j] + np.random.random_sample() * ( self.FM_origin[k, j] - self.FVr_maxbound[j] )
+##            if ( self.FM_ui[k, j] < self.FVr_minbound[j] ):
+##	      self.FM_ui[k, j] = self.FVr_minbound[j] + np.random.random_sample() * ( self.FM_origin[k,j] - self.FVr_minbound[j] )
+##        #=====End boundary constraints==========================================
+
+      # Check constraints and resample points to maintain population size. 
+      self.FM_ui = self.enforceConstrReEvolve(self.FM_ui)
+    
+      # EVALUATE TARGET #
+      self.S_tempvals = self.evaluator.target(self.FM_ui)
+      # # # # # # # # # #
+
+      logger.debug('x, f(x)')
+      logger.debug([ self.FM_ui[ix].tolist() for ix in range(len(self.FM_ui)) ])
+      logger.debug([ self.S_tempvals[ix] for ix in range(len(self.S_vals)) ])
+
+      for k in range(self.I_NP):
+        self.I_nfeval  = self.I_nfeval + 1
+        if ( left_win( self.S_tempvals[k], self.S_vals[k] ) == 1 ):   
+          self.FM_pop[k,:] = self.FM_ui[k, :]                    # replace old vector with new one (for new iteration)
+          self.S_vals[k]   = self.S_tempvals[k]                      # save value in "cost array"
+
+          #----we update S_bestval only in case of success to save time-----------
+          if ( left_win( self.S_tempvals[k], self.S_bestval ) == 1 ):
+            self.S_bestval = self.S_tempvals[k]                    # new best value
+            self.FVr_bestmem = self.FM_ui[k,:]                 # new best parameter vector ever
+
+      self.FVr_bestmemit = self.FVr_bestmem       # freeze the best member of this iteration for the coming 
+                                          # iteration. This is needed for some of the strategies.
+
+    #----Output section----------------------------------------------------------
+
+      if ( self.I_refresh > 0 ):
+        if ( ( I_iter % self.I_refresh == 0 ) or I_iter == 1 ):
+          logger.debug('Iteration: %d,  Best: %f,  F_weight: %f,  F_CR: %f,  self.I_NP: %d' % 
+	               (I_iter, self.S_bestval, self.F_weight, self.F_CR, self.I_NP))
+          for n in range(self.I_D):
+            logger.debug('best(%d) = %g' % (n, self.FVr_bestmem[n]))
+          if ( self.I_plotting == 1 ):
+            pass
+      I_iter += 1
+    
+    logger.debug('exiting ' + __name__)
+##    myFH.pop_application()
+##    mySH.pop_application()
+    logger.handlers = []
+    
+  def evolvePopulation(self, pop):
+    
+    FM_popold      = pop                 # save the old population
+    F_CR           = self.F_CR
+    F_weight       = self.F_weight
+    I_NP           = self.I_NP
+    I_D            = self.I_D
+    FVr_bestmemit  = self.FVr_bestmemit
+    I_strategy     = self.I_strategy
+    
     FM_pm1   = np.zeros( (I_NP, I_D) )   # initialize population matrix 1
     FM_pm2   = np.zeros( (I_NP, I_D) )   # initialize population matrix 2
     FM_pm3   = np.zeros( (I_NP, I_D) )   # initialize population matrix 3
@@ -122,200 +187,238 @@ class deKenPrice:
     FVr_a4   = np.zeros(I_NP)                # index array
     FVr_a5   = np.zeros(I_NP)                # index array
     FVr_ind  = np.zeros(4)
-
-    FM_meanv = np.ones( (I_NP, I_D ) )
-
-
-    ### Iter  
-    I_iter = 0
-    while ( ( I_iter < I_itermax ) and ( S_bestval['FVr_oa'][0] > F_VTR)):
-      FM_popold               = FM_pop                  # save the old population
-      S_struct['FM_pop']      = FM_pop
-      S_struct['FVr_bestmem'] = FVr_bestmem
-
-      FVr_ind = np.random.permutation(4)             # index pointer array
-
-
-      #FVr_ind = [ 2,3, 1, 0]
-
-      FVr_a1  = np.random.permutation(I_NP)                   # shuffle locations of vectors
-      #FVr_a1  = np.array([ 15,   7,     8,     5,    10,    18,     6,    14,    16,    12,    13,     2,     9,    11,     4,     1,    19,     3,
-                  #20, 17 ]) - 1
-      FVr_rt  = ( FVr_rot + FVr_ind[0] ) % I_NP     # rotate indices by ind(1) positions
-      FVr_a2  = FVr_a1[FVr_rt]                 # rotate vector locations
-      FVr_rt  = ( FVr_rot + FVr_ind[1] ) % I_NP
-      FVr_a3  = FVr_a2[FVr_rt]                
-      FVr_rt  = ( FVr_rot + FVr_ind[2] ) % I_NP
-      FVr_a4  = FVr_a3[FVr_rt]                
-      FVr_rt  = ( FVr_rot + FVr_ind[3] ) % I_NP
-      FVr_a5  = FVr_a4[FVr_rt]                
-
-
-      FM_pm1 = FM_popold[FVr_a1, :]             # shuffled population 1
-      FM_pm2 = FM_popold[FVr_a2, :]             # shuffled population 2
-      FM_pm3 = FM_popold[FVr_a3, :]             # shuffled population 3
-      FM_pm4 = FM_popold[FVr_a4, :]             # shuffled population 4
-      FM_pm5 = FM_popold[FVr_a5, :]             # shuffled population 5
-
-
-      for k in range(I_NP):                              # population filled with the best member
-        FM_bm[k,:] = FVr_bestmemit                       # of the last iteration
-
-      FM_mui = np.random.random_sample( (I_NP, I_D ) ) < F_CR  # all random numbers < F_CR are 1, 0 otherwise
-
-      #----Insert this if you want exponential crossover.----------------
-      #FM_mui = sort(FM_mui')	  # transpose, collect 1's in each column
-      #for k  = 1:I_NP
-      #  n = floor(rand*I_D)
-      #  if (n > 0)
-      #     FVr_rtd     = rem(FVr_rotd+n,I_D)
-      #     FM_mui(:,k) = FM_mui(FVr_rtd+1,k) #rotate column k by n
-      #  end
-      #end
-      #FM_mui = FM_mui'			  # transpose back
-      #----End: exponential crossover------------------------------------
-
-      FM_mpo = FM_mui < 0.5    # inverse mask to FM_mui
-
-      if ( I_strategy == 1 ):                             # DE/rand/1
-        FM_ui = FM_pm3 + F_weight * ( FM_pm1 - FM_pm2 )   # differential variation
-        FM_ui = FM_popold * FM_mpo + FM_ui * FM_mui       # crossover
-        FM_origin = FM_pm3
-      elif (I_strategy == 2):                         # DE/local-to-best/1
-        FM_ui = FM_popold + F_weight * ( FM_bm - FM_popold ) + F_weight * ( FM_pm1 - FM_pm2 )
-        FM_ui = FM_popold * FM_mpo + FM_ui * FM_mui
-        FM_origin = FM_popold
-      elif (I_strategy == 3):                         # DE/best/1 with jitter
-        FM_ui = FM_bm + ( FM_pm1 - FM_pm2 ) * ( (1 - 0.9999 ) * np.random.random_sample( (I_NP, I_D ) ) +F_weight )               
-        FM_ui = FM_popold * FM_mpo + FM_ui * FM_mui
-        FM_origin = FM_bm
-      elif (I_strategy == 4):                         # DE/rand/1 with per-vector-dither
-        f1 = ( ( 1 - F_weight ) * np.random.random_sample( (I_NP, 1 ) ) + F_weight)
-        for k in range(I_D):
-          FM_pm5[:,k] = f1
-        FM_ui = FM_pm3 + (FM_pm1 - FM_pm2) * FM_pm5    # differential variation
-        FM_origin = FM_pm3
-        FM_ui = FM_popold * FM_mpo + FM_ui * FM_mui     # crossover
-      elif (I_strategy == 5):                          # DE/rand/1 with per-vector-dither
-        f1 = ( ( 1 - F_weight ) * np.random.random_sample() + F_weight )
-        FM_ui = FM_pm3 + ( FM_pm1 - FM_pm2 ) * f1         # differential variation
-        FM_origin = FM_pm3
-        FM_ui = FM_popold * FM_mpo + FM_ui * FM_mui   # crossover
-      else:                                              # either-or-algorithm
-        if (np.random.random_sample() < 0.5):                               # Pmu = 0.5
-          FM_ui = FM_pm3 + F_weight * ( FM_pm1 - FM_pm2 )# differential variation
-          FM_origin = FM_pm3
-        else:                                           # use F-K-Rule: K = 0.5(F+1)
-          FM_ui = FM_pm3 + 0.5 * ( F_weight + 1.0 ) * ( FM_pm1 + FM_pm2 - 2 * FM_pm3 )
-          FM_ui = FM_popold * FM_mpo + FM_ui * FM_mui     # crossover  
-
-
-    #-----Optional parent+child selection-----------------------------------------
-
-    #-----Select which vectors are allowed to enter the new population------------
-      for k in range(I_NP):
-
-        #=====Only use this if boundary constraints are needed==================
-        if ( I_bnd_constr == 1 ):
-          for j in range(I_D): #----boundary constraints via bounce back-------
-            if ( FM_ui[k, j] > FVr_maxbound[j] ):
-              FM_ui[k,j] = FVr_maxbound[j] + np.random.random_sample() * ( FM_origin[k, j] - FVr_maxbound[j] )
-            if ( FM_ui[k, j] < FVr_minbound[j] ):
-              FM_ui[k, j] = FVr_minbound[j] + np.random.random_sample() * ( FM_origin[k,j] - FVr_minbound[j] )
-        #=====End boundary constraints==========================================
-
-      # EVALUATE TARGET #
-      S_tempvals = evaluator.target(FM_ui)
-      # # # # # # # # # #
-
-      if not isinstance(S_tempvals[0], dict):
-        new_S_vals = []
-        for ixS, S_val in enumerate(S_tempvals):
-          new_S_vals.append({'FVr_oa': [ S_val ], 'I_nc': 0, 'FVr_ca': 0, 'I_no': 1})
-        S_tempvals = new_S_vals
-      
-      logger.debug(FM_ui)
-      logger.debug([ S_tempvals[ix]['FVr_oa'] for ix in range(len(S_vals)) ])
-
-      for k in range(I_NP):
-        I_nfeval  = I_nfeval + 1
-        if ( left_win( S_tempvals[k], S_vals[k] ) == 1 ):   
-          FM_pop[k,:] = FM_ui[k, :]                    # replace old vector with new one (for new iteration)
-          S_vals[k]   = S_tempvals[k]                      # save value in "cost array"
-
-          #----we update S_bestval only in case of success to save time-----------
-          if ( left_win( S_tempvals[k], S_bestval ) == 1 ):
-            S_bestval = S_tempvals[k]                    # new best value
-            FVr_bestmem = FM_ui[k,:]                 # new best parameter vector ever
-
-      FVr_bestmemit = FVr_bestmem       # freeze the best member of this iteration for the coming 
-                                          # iteration. This is needed for some of the strategies.
-
-    #----Output section----------------------------------------------------------
-
-      if ( I_refresh > 0 ):
-        if ( ( I_iter % I_refresh == 0 ) or I_iter == 1 ):
-#          logger.debug('Iteration: %d,  Best: %f,  F_weight: %f,  F_CR: %f,  I_NP: %d', I_iter, S_bestval['FVr_oa'][0], F_weight, F_CR, I_NP)
-#          print >> logFile, 'Iteration: %d,  Best: %f,  F_weight: %f,  F_CR: %f,  I_NP: %d' % (I_iter, S_bestval['FVr_oa'][0], F_weight, F_CR, I_NP)
-#          logFile.flush()
-          #var(FM_pop)
-          logger.debug('Iteration: %d,  Best: %f,  F_weight: %f,  F_CR: %f,  I_NP: %d' % (I_iter, S_bestval['FVr_oa'][0], F_weight, F_CR, I_NP))
-          for n in range(I_D):
-#            logger.debug('best(%d) = %g',n,FVr_bestmem[n])
-#            print >> logFile, 'best(%d) = %g' % (n,FVr_bestmem[n])
-#            logFile.flush()
-            logger.debug('best(%d) = %g' % (n,FVr_bestmem[n]))
-          if ( I_plotting == 1 ):
-            pass
-            #PlotIt(FVr_bestmem,I_iter,S_struct) 
-      I_iter += 1
     
-    logger.debug('exiting ' + __name__)
-##    myFH.pop_application()
-##    mySH.pop_application()
-    logger.handlers = []
     
-    def jacobianFD(x, fun):
-      '''
-        Compute jacobian for function fun. 
-        Inputs: x: vector of input values
-                fun: function returning vector of output values
-      '''
-      delta = 1.e-8
-      fval = fun(x)
-      m = len(fval)
-      n = len(x)
-      jac = np.empty( ( m, n ) )
-      for ixCol in range(n):
-        xNew = x.copy()
-        xNew[ixCol] = xNew[ixCol] + delta
-        fvalNew = fun(xNew)
-        jac[:, ixCol] = ( fvalNew - fval ) / delta
-      logger.debug(jac)
-      return jac
+    FVr_ind = np.random.permutation(4)             # index pointer array
+    FVr_a1  = np.random.permutation(I_NP)                   # shuffle locations of vectors
+    FVr_rt  = ( FVr_rot + FVr_ind[0] ) % I_NP     # rotate indices by ind(1) positions
+    FVr_a2  = FVr_a1[FVr_rt]                 # rotate vector locations
+    FVr_rt  = ( FVr_rot + FVr_ind[1] ) % I_NP
+    FVr_a3  = FVr_a2[FVr_rt]                
+    FVr_rt  = ( FVr_rot + FVr_ind[2] ) % I_NP
+    FVr_a4  = FVr_a3[FVr_rt]                
+    FVr_rt  = ( FVr_rot + FVr_ind[3] ) % I_NP
+    FVr_a5  = FVr_a4[FVr_rt]                
+
+
+    FM_pm1 = FM_popold[FVr_a1, :]             # shuffled population 1
+    FM_pm2 = FM_popold[FVr_a2, :]             # shuffled population 2
+    FM_pm3 = FM_popold[FVr_a3, :]             # shuffled population 3
+    FM_pm4 = FM_popold[FVr_a4, :]             # shuffled population 4
+    FM_pm5 = FM_popold[FVr_a5, :]             # shuffled population 5
+
+
+    for k in range(I_NP):                              # population filled with the best member
+      FM_bm[k,:] = FVr_bestmemit                       # of the last iteration
+
+    FM_mui = np.random.random_sample( (I_NP, I_D ) ) < F_CR  # all random numbers < F_CR are 1, 0 otherwise
+
+    #----Insert this if you want exponential crossover.----------------
+    #FM_mui = sort(FM_mui')	  # transpose, collect 1's in each column
+    #for k  = 1:I_NP
+    #  n = floor(rand*I_D)
+    #  if (n > 0)
+    #     FVr_rtd     = rem(FVr_rotd+n,I_D)
+    #     FM_mui(:,k) = FM_mui(FVr_rtd+1,k) #rotate column k by n
+    #  end
+    #end
+    #FM_mui = FM_mui'			  # transpose back
+    #----End: exponential crossover------------------------------------
+
+    FM_mpo = FM_mui < 0.5    # inverse mask to FM_mui
+
+    if ( I_strategy == 1 ):                             # DE/rand/1
+      FM_ui = FM_pm3 + F_weight * ( FM_pm1 - FM_pm2 )   # differential variation
+      FM_ui = FM_popold * FM_mpo + FM_ui * FM_mui       # crossover
+      FM_origin = FM_pm3
+    elif (I_strategy == 2):                         # DE/local-to-best/1
+      FM_ui = FM_popold + F_weight * ( FM_bm - FM_popold ) + F_weight * ( FM_pm1 - FM_pm2 )
+      FM_ui = FM_popold * FM_mpo + FM_ui * FM_mui
+      FM_origin = FM_popold
+    elif (I_strategy == 3):                         # DE/best/1 with jitter
+      FM_ui = FM_bm + ( FM_pm1 - FM_pm2 ) * ( (1 - 0.9999 ) * np.random.random_sample( (I_NP, I_D ) ) +F_weight )               
+      FM_ui = FM_popold * FM_mpo + FM_ui * FM_mui
+      FM_origin = FM_bm
+    elif (I_strategy == 4):                         # DE/rand/1 with per-vector-dither
+      f1 = ( ( 1 - F_weight ) * np.random.random_sample( (I_NP, 1 ) ) + F_weight)
+      for k in range(I_D):
+        FM_pm5[:,k] = f1
+      FM_ui = FM_pm3 + (FM_pm1 - FM_pm2) * FM_pm5    # differential variation
+      FM_origin = FM_pm3
+      FM_ui = FM_popold * FM_mpo + FM_ui * FM_mui     # crossover
+    elif (I_strategy == 5):                          # DE/rand/1 with per-vector-dither
+      f1 = ( ( 1 - F_weight ) * np.random.random_sample() + F_weight )
+      FM_ui = FM_pm3 + ( FM_pm1 - FM_pm2 ) * f1         # differential variation
+      FM_origin = FM_pm3
+      FM_ui = FM_popold * FM_mpo + FM_ui * FM_mui   # crossover
+    else:                                              # either-or-algorithm
+      if (np.random.random_sample() < 0.5):                               # Pmu = 0.5
+        FM_ui = FM_pm3 + F_weight * ( FM_pm1 - FM_pm2 )# differential variation
+        FM_origin = FM_pm3
+      else:                                           # use F-K-Rule: K = 0.5(F+1)
+        FM_ui = FM_pm3 + 0.5 * ( F_weight + 1.0 ) * ( FM_pm1 + FM_pm2 - 2 * FM_pm3 )
+        FM_ui = FM_popold * FM_mpo + FM_ui * FM_mui     # crossover 
+
+    return FM_ui
+        
+        
+####      self.S_struct['FM_pop']           = self.FM_pop
+####      self.S_struct['FVr_bestmem']      = self.FVr_bestmem
+
+##      self.FVr_ind = np.random.permutation(4)             # index pointer array
+##      self.FVr_a1  = np.random.permutation(self.I_NP)                   # shuffle locations of vectors
+##      self.FVr_rt  = ( self.FVr_rot + self.FVr_ind[0] ) % self.I_NP     # rotate indices by ind(1) positions
+##      self.FVr_a2  = self.FVr_a1[self.FVr_rt]                 # rotate vector locations
+##      self.FVr_rt  = ( self.FVr_rot + self.FVr_ind[1] ) % self.I_NP
+##      self.FVr_a3  = self.FVr_a2[self.FVr_rt]                
+##      self.FVr_rt  = ( self.FVr_rot + self.FVr_ind[2] ) % self.I_NP
+##      self.FVr_a4  = self.FVr_a3[self.FVr_rt]                
+##      self.FVr_rt  = ( self.FVr_rot + self.FVr_ind[3] ) % self.I_NP
+##      self.FVr_a5  = self.FVr_a4[self.FVr_rt]                
+
+
+##      self.FM_pm1 = self.FM_popold[self.FVr_a1, :]             # shuffled population 1
+##      self.FM_pm2 = self.FM_popold[self.FVr_a2, :]             # shuffled population 2
+##      self.FM_pm3 = self.FM_popold[self.FVr_a3, :]             # shuffled population 3
+##      self.FM_pm4 = self.FM_popold[self.FVr_a4, :]             # shuffled population 4
+##      self.FM_pm5 = self.FM_popold[self.FVr_a5, :]             # shuffled population 5
+
+
+##      for k in range(self.I_NP):                              # population filled with the best member
+##        self.FM_bm[k,:] = self.FVr_bestmemit                       # of the last iteration
+
+##      self.FM_mui = np.random.random_sample( (self.I_NP, self.I_D ) ) < self.F_CR  # all random numbers < F_CR are 1, 0 otherwise
+
+##      #----Insert this if you want exponential crossover.----------------
+##      #FM_mui = sort(FM_mui')	  # transpose, collect 1's in each column
+##      #for k  = 1:self.I_NP
+##      #  n = floor(rand*self.I_D)
+##      #  if (n > 0)
+##      #     FVr_rtd     = rem(FVr_rotd+n,self.I_D)
+##      #     FM_mui(:,k) = FM_mui(FVr_rtd+1,k) #rotate column k by n
+##      #  end
+##      #end
+##      #FM_mui = FM_mui'			  # transpose back
+##      #----End: exponential crossover------------------------------------
+
+##      self.FM_mpo = self.FM_mui < 0.5    # inverse mask to FM_mui
+
+##      if ( self.I_strategy == 1 ):                             # DE/rand/1
+##        self.FM_ui = self.FM_pm3 + self.F_weight * ( self.FM_pm1 - self.FM_pm2 )   # differential variation
+##        self.FM_ui = self.FM_popold * self.FM_mpo + self.FM_ui * self.FM_mui       # crossover
+##        self.FM_origin = self.FM_pm3
+##      elif (self.I_strategy == 2):                         # DE/local-to-best/1
+##        self.FM_ui = self.FM_popold + self.F_weight * ( self.FM_bm - self.FM_popold ) + self.F_weight * ( self.FM_pm1 - self.FM_pm2 )
+##        self.FM_ui = self.FM_popold * self.FM_mpo + self.FM_ui * self.FM_mui
+##        self.FM_origin = self.FM_popold
+##      elif (self.I_strategy == 3):                         # DE/best/1 with jitter
+##        self.FM_ui = self.FM_bm + ( self.FM_pm1 - self.FM_pm2 ) * ( (1. - 0.9999 ) * np.random.random_sample( (self.I_NP, self.I_D ) ) + self.F_weight )               
+##        self.FM_ui = self.FM_popold * self.FM_mpo + self.FM_ui * self.FM_mui
+##        self.FM_origin = self.FM_bm
+##      elif (I_strategy == 4):                         # DE/rand/1 with per-vector-dither
+##        f1 = ( ( 1 - self.F_weight ) * np.random.random_sample( (self.I_NP, 1 ) ) + self.F_weight)
+##        for k in range(self.I_D):
+##          self.FM_pm5[:,k] = f1
+##        self.FM_ui = self.FM_pm3 + ( self.FM_pm1 - self.FM_pm2 ) * self.FM_pm5    # differential variation
+##        self.FM_origin = self.FM_pm3
+##        self.FM_ui = self.FM_popold * self.FM_mpo + self.FM_ui * self.FM_mui     # crossover
+##      elif (self.I_strategy == 5):                          # DE/rand/1 with per-vector-dither
+##        f1 = ( ( 1 - self.F_weight ) * np.random.random_sample() + self.F_weight )
+##        self.FM_ui = self.FM_pm3 + ( self.FM_pm1 - self.FM_pm2 ) * f1         # differential variation
+##        self.FM_origin = self.FM_pm3
+##        self.FM_ui = self.FM_popold * self.FM_mpo + self.FM_ui * self.FM_mui   # crossover
+##      else:                                              # either-or-algorithm
+##        if (np.random.random_sample() < 0.5):                               # Pmu = 0.5
+##          self.FM_ui = self.FM_pm3 + self.F_weight * ( self.FM_pm1 - self.FM_pm2 )# differential variation
+##          self.FM_origin = self.FM_pm3
+##        else:                                           # use F-K-Rule: K = 0.5(F+1)
+##          self.FM_ui = self.FM_pm3 + 0.5 * ( self.F_weight + 1.0 ) * ( self.FM_pm1 + self.FM_pm2 - 2 * self.FM_pm3 )
+##          self.FM_ui = self.FM_popold * self.FM_mpo + self.FM_ui * self.FM_mui     # crossover  
+          
+          
+
+    
+  def drawPopulation(self, size, dim):
+    FM_pop = np.zeros( (size, dim ) ) #initialize FM_pop to gain speed
+    for k in range(size):
+      FM_pop[k,:] = self.drawPopulationMember(dim)
+    return FM_pop
+  
+  def drawPopulationMember(self, dim):
+    return self.minBound + np.random.random_sample( dim ) * ( self.maxBound - self.minBound )
+    
+  def enforceConstrResample(self, pop):
+    dim = self.I_D
+    for ixEle, ele in enumerate(pop):
+      constr = self.evaluator.nlc(ele)
+      ctr = 0
+      while not sum(constr > 0) == len(constr) and ctr < 100:
+        print('constr not satisfied')
+        print(pop[ixEle, :])
+        pop[ixEle, :] = self.drawPopulationMember(dim)
+        constr = self.evaluator.nlc(ele)
+        ctr += 1
+      if ctr >= 100: 
+        print('Couldnt sample a feasible point with 100 drwas')
+      print(ctr)
+    return pop
+
+  def checkConstraints(self, pop):
+    cSat = np.empty( ( len(pop) ), dtype = bool)
+    for ixEle, ele in enumerate(pop):
+      constr = self.evaluator.nlc(ele)
+      cSat[ixEle] = sum(constr > 0) == len(constr)
+    return cSat
+  
+  def enforceConstrReEvolve(self, pop):
+    popNew = np.zeros( (self.I_NP, self.I_D ) )
+    cSat = self.checkConstraints(pop)
+    popNew = pop[cSat, :]
+    while not len(popNew) >= self.I_NP:
+      reEvolvePop = self.evolvePopulation(pop)
+      cSat = self.checkConstraints(pop)
+      popNew = np.append(popNew, reEvolvePop[cSat, :], axis = 0)
+    return popNew[:self.I_NP, :]
+        
+def jacobianFD(x, fun):
+    '''
+      Compute jacobian for function fun. 
+      Inputs: x: vector of input values
+              fun: function returning vector of output values
+    '''
+    delta = 1.e-8
+    fval = fun(x)
+    m = len(fval)
+    n = len(x)
+    jac = np.empty( ( m, n ) )
+    for ixCol in range(n):
+      xNew = x.copy()
+      xNew[ixCol] = xNew[ixCol] + delta
+      fvalNew = fun(xNew)
+      jac[:, ixCol] = ( fvalNew - fval ) / delta
+ #   logger.debug(jac)
+    return jac
 
 
 
 
 def left_win(S_x, S_y):
-  I_z = 1  #start with I_z=1
-
-  #----deal with the constraints first. If constraints are not met------
-  #----S_x can't win.---------------------------------------------------
-  if ( S_x['I_nc'] > 0 ):
-    for k in range(1,S_x.I_nc):
-      if (S_x['FVr_ca'][k] > 0): #if constraint is not yet met
-        if (S_x['FVr_ca'][k] > S_y['FVr_ca'][k]): #if just one constraint of S_x is not improved
-          I_z = 0
-
-  if ( S_x['I_no'] > 0 ):
-    for k in range(S_x['I_no']):
-      if (S_x['FVr_oa'][k] > S_y['FVr_oa'][k]):#if just one objective of S_x is less
-        I_z = 0
-
-  return I_z
+  if (S_x > S_y):
+    return False
+  else:
+    return True
 
     
+
+
+
+
+
+
+
+
+
+
     
 def testFun(x):
   return x*x
