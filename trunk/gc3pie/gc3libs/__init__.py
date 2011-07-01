@@ -509,7 +509,7 @@ def configure_logger(level=logging.ERROR,
 # it stands for "fetch the whole contents of the remote
 # directory"
 ANY_OUTPUT = {'':''}
-
+ANY = ''
 
 class Application(Struct, Persistable, Task):
     """
@@ -559,7 +559,6 @@ class Application(Struct, Persistable, Task):
       Directories are copied recursively.
 
       There are three possible ways of specifying the `outputs` parameter:
-
       * It can be a Python dictionary: keys are remote file or
         directory paths (relative to the execution directory), values
         are corresponding local names.
@@ -779,14 +778,14 @@ class Application(Struct, Persistable, Task):
             raise InvalidArgument(
                 "Absolute path '%s' passed as `Application.stdout`"
                 % self.stdout)
-        if self.stdout and (self.stdout not in self.outputs):
+        if self.stdout and (self.stdout not in self.outputs) and not self.outputs.has_key(gc3libs.ANY):
             self.outputs[self.stdout] = self.stdout
         self.stderr = get_and_remove(kw, 'stderr')
         if self.stderr is not None and os.path.isabs(self.stderr):
             raise InvalidArgument(
                 "Absolute path '%s' passed as `Application.stderr`"
                 % self.stderr)
-        if self.stderr and (self.stderr not in self.outputs):
+        if self.stderr and (self.stderr not in self.outputs) and not self.outputs.has_key(gc3libs.ANY):
             self.outputs[self.stderr] = self.stderr
 
         self.tags = get_and_remove(kw, 'tags', list())
@@ -936,11 +935,18 @@ class Application(Struct, Persistable, Task):
             # `x = a if y else b` (Python 2.5)
             if self.output_base_url is None:
                 def output_url(l, r):
-                    return ''
+                    if l.scheme == 'file':
+                        return ''
+                    else:
+                        return l
             else:
                 def output_url(l, r):
-                    return os.path.join(self.output_base_url,
-                                        utils.ifelse(l, l, r))
+                    if l.scheme == 'file':
+                        return os.path.join(self.output_base_url,
+                                            utils.ifelse(l, l, r))
+                    else:
+                        return l
+
             def relpath(r):
                 if r == '':
                     return '/'
