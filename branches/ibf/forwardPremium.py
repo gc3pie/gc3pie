@@ -110,7 +110,7 @@ class paraLoop_fp(paraLoop):
     def getCtryParas(self, baseDir):
         '''
           Obtain the right markov input files (markovMatrices.in, markovMoments.in 
-          and markov.out) and overwrite the existing ones in the /input folder. 
+          and markov.out) and overwrite the existing ones in the baseDir/input folder. 
         '''
         import glob
         # Find Ctry pair
@@ -128,7 +128,7 @@ class paraLoop_fp(paraLoop):
             shutil.copy(fileToCopy, inputFolder)
 ##        if not os.path.isdir(outputFolder): 
 ##            os.mkdir(outputFolder)
-        shutil.copy(os.path.join(CtryPresetPath, 'markov.out'), inputFolder)
+##        shutil.copy(os.path.join(CtryPresetPath, 'markov.out'), inputFolder)
         
     def fillInputDir(self, baseDir, input_dir):
         '''

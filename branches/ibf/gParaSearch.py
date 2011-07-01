@@ -84,10 +84,6 @@ class gParaSearchParallel(ParallelTaskCollection, paraLoop_fp, GPremiumTaskMods)
     def __init__(self, pathToExecutable, architecture, logger, baseDir, xVars, 
                  nPopulation, xVarsDom, solverVerb, problemType, pathEmpirical, output_dir = '/tmp', grid = None, **kw):
 
-        
-        
-    
-        
         # Set up initial variables and set the correct methods. 
         self.problemType = problemType
         
@@ -99,9 +95,13 @@ class gParaSearchParallel(ParallelTaskCollection, paraLoop_fp, GPremiumTaskMods)
 
             print(self.gdpTable)
         elif self.problemType == 'one4eachPair':
+            # Get moments table from empirical analysis
             self.gdpTable = tableDict.fromTextFile(fileIn = os.path.join(pathEmpirical, 'outputInput/momentTable/Gdp/gdpMoments.csv'),
                                               delim = ',', width = 20)
             self.analyzeResults = anaOne4eachPair
+            # Get the correct Ctry Paras into base dir. 
+            self.getCtryParas(baseDir)
+            # Get Ctry information for this run. 
             Ctry1 = getParameter(fileIn = os.path.join(baseDir, 'input/markovA.in'), varIn = 'Ctry', 
                                  regexIn = 'space-separated')
             Ctry2 = getParameter(fileIn = os.path.join(baseDir, 'input/markovB.in'), varIn = 'Ctry', 
@@ -114,9 +114,8 @@ class gParaSearchParallel(ParallelTaskCollection, paraLoop_fp, GPremiumTaskMods)
                                  regexIn = 'bar-separated')
             sigmaB = getParameter(fileIn = os.path.join(baseDir, 'input/parameters.in'), varIn = 'sigmaB', 
                                  regexIn = 'bar-separated')
-            
-            self.nlc = nlcOne4eachPair(gdpTable = self.gdpTable, ctryPair = [Ctry1, Ctry2], E = [ EA, EB ],
-                                       sigma = [sigmaA, sigmaB])
+            # Pass ctry information to nlc
+            self.nlc = nlcOne4eachPair(gdpTable = self.gdpTable, ctryPair = [Ctry1, Ctry2])
         elif self.problemType == 'one4all':
             pass
 
@@ -131,10 +130,10 @@ class gParaSearchParallel(ParallelTaskCollection, paraLoop_fp, GPremiumTaskMods)
         tasks = []
         self.xVars = xVars
         self.xVarsDom = xVarsDom.split()
-        lowerBds = [self.xVarsDom[i] for i in range(len(self.xVarsDom)) if i % 2 == 0]
-        upperBds = [self.xVarsDom[i] for i in range(len(self.xVarsDom)) if i % 2 == 1]
+        lowerBds = np.array([self.xVarsDom[i] for i in range(len(self.xVarsDom)) if i % 2 == 0], dtype = 'float64')
+        upperBds = np.array([self.xVarsDom[i] for i in range(len(self.xVarsDom)) if i % 2 == 1], dtype = 'float64')
         self.domain = [ (x, y) for x in lowerBds for y in upperBds ]
-        self.n = len(self.xVars)
+        self.n = len(self.xVars.split())
         self.x = None
         self.iteration = 0
 #        self.domain = [ (0.5, 0.9) ] * len(self.parameters)
@@ -147,10 +146,9 @@ class gParaSearchParallel(ParallelTaskCollection, paraLoop_fp, GPremiumTaskMods)
         S_struct['I_NP']         = int(nPopulation)
         S_struct['F_weight']     = 0.85
         S_struct['F_CR']         = 1 
-        S_struct['I_D']          = 1 
-        S_struct['FVr_minbound'] = 0.5
-        S_struct['FVr_maxbound'] = 0.9
-        S_struct['I_bnd_constr'] = 0
+        S_struct['I_D']          = self.n
+        S_struct['lowerBds']     = lowerBds
+        S_struct['upperBds']     = upperBds
         S_struct['I_itermax']    = 50
         S_struct['F_VTR']        = 1.e-3
         S_struct['I_strategy']   = 1
@@ -171,9 +169,7 @@ class gParaSearchParallel(ParallelTaskCollection, paraLoop_fp, GPremiumTaskMods)
 
         logger.handlers.append(mySH)
         logger.handlers.append(myFH)        
-        
-        
-        
+
         try:
             stdErr = list(logbook.handlers.Handler.stack_manager.iter_context_objects())[0]
             stdErr.pop_application()
@@ -197,25 +193,38 @@ class gParaSearchParallel(ParallelTaskCollection, paraLoop_fp, GPremiumTaskMods)
                 varValString += str(paraCombo[ixVar])
                 if ixParaCombo < len(inParaCombos) - 1: 
                     varValString += ', '
-            vals.append(varValString)
+            vals.append( [varValString ])
             
         # Check if EA or sigmaA are alone in the specified parameters. If so make diagnol adjustments
+        writeVals = []
         if 'EA' in self.xVars and not 'EB' in self.xVars:
             variables = [ 'EA', 'EB' ]
             groups = [ '0', '0' ]
             groupRestrs = [ 'diagnol', 'diagnol' ]
-            vals = vals * 2
-            paraCombos = [  np.append(ele, ele) for ele in inParaCombos ]
-
-##        for paraCombo in paraCombos:
-##            if np.abs(paraCombo[0] - 0.5393891213) < 1.e-5:
-##              print('hello')
             
+            writeVals.append(vals[0][0])
+            writeVals.append(vals[0][0])
+            paraCombosEA = [  np.append(ele[0], ele[0]) for ele in inParaCombos ]
+        if 'sigmaA' in self.xVars and not 'sigmaB' in self.xVars:
+            variables.append( 'sigmaA')
+            variables.append('sigmaB')
+            groups.append( '0')
+            groups.append('0')
+            groupRestrs.append( 'diagnol')
+            groupRestrs.append( 'diagnol' )
+            writeVals.append(vals[1][0])
+            writeVals.append(vals[1][0])
+            paraCombosSigmaA = [  np.append(ele[1], ele[1]) for ele in inParaCombos ]
+        paraCombos = []
+        for EA,sA in zip(paraCombosEA, paraCombosSigmaA):
+            paraCombo = np.append(EA, sA)
+            paraCombos.append(paraCombo)
+#        paraCombos = [ np.append(pcombos[0], pcombos[1]) for pcombos in paraCombosEA,paraCombosSigmaA ]
         # Write a para.loop file to generate grid jobs
         para_loop = self.writeParaLoop(variables = variables, 
                                        groups = groups, 
                                        groupRestrs = groupRestrs, 
-                                       vals = vals, 
+                                       vals = writeVals, 
                                        desPath = os.path.join(iterationFolder, 'para.loopTmp'))
         
         tasks = self.generateTaskList(para_loop, iterationFolder)
