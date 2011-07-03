@@ -84,12 +84,24 @@ class getIndex(object):
         self.base = np.array(base)
         self.loopIndex = np.zeros(len(self.base), dtype=np.int16)
         self.iteration = 1
+
         if isinstance(restr, np.ndarray):
             self.restr = restr[0].lower()
         elif restr:      
             self.restr = restr.lower()
         else:
             self.restr = restr
+        diagnolStrings = ['diagnol', 'diag']
+        if self.restr in diagnolStrings:
+            getIndex.next = getIndex.nextDiag
+            
+    def nextDiag(self):
+        if self.iteration > 1:
+            self.loopIndex += 1
+        self.iteration += 1
+        if all(self.loopIndex == self.base):
+            raise StopIteration
+        return self.loopIndex.tolist()
 
     def __iter__(self):
         return getIndex(self.base, self.restr)
@@ -109,32 +121,30 @@ class getIndex(object):
         return True
 
     def diagnol(self):
-        for ix in xrange(0, len(self.base) - 1) :
-            if self.loopIndex[ix] != self.loopIndex[ix + 1]:
-                return True
-        return False    
+        isDiagnolIndex = all([x == self.loopIndex[0] for x in self.loopIndex])
+        # Skip if not diagnol
+        return not isDiagnolIndex  
 
     def next(self):
-        if self.iteration > 1:
-            self.increment()
-        if list(self.loopIndex) == [0] * len(self.base) and self.iteration > 1:
-            raise StopIteration
-        self.iteration += 1
-
-        if self.restr == 'lowertr':
-            skip = self.lowerTr()
-        elif self.restr == 'diagnol':
-            skip = self.diagnol()
-        elif self.restr == None or self.restr == 'none':
-            skip = False
-        else:
-            raise gc3libs.exceptions.InvalidArgument(
-                "Unknown restriction '%s'" % self.restr)
-
-        if skip == True:
-            return self.next()
-        else:
-            return self.loopIndex.tolist()
+        skip = True
+        while skip == True:
+            if self.iteration > 1:
+                self.increment()
+    
+            if list(self.loopIndex) == [0] * len(self.base) and self.iteration > 1:
+                raise StopIteration
+            
+            self.iteration += 1
+    
+            if self.restr == 'lowertr':
+                skip = self.lowerTr()
+            elif self.restr == None or self.restr == 'none':
+                skip = False
+            else:
+                raise gc3libs.exceptions.InvalidArgument(
+                    "Unknown restriction '%s'" % self.restr)
+      
+        return self.loopIndex.tolist()
 
 
 
@@ -322,3 +332,9 @@ def getParameter(fileIn, varIn, regexIn = '(\s*)([a-zA-Z0-9]+)(\s+)([a-zA-Z0-9\.
         if var == varIn:
             return paraVal
     print('variable {} not in parameter file {}'.format(varIn, fileIn))
+    
+    
+if __name__ == '__main__':   
+    x = getIndex([6,6], 'lowertr')
+    for i in x:
+        print(i)
