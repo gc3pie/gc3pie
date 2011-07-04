@@ -111,7 +111,8 @@ class deKenPrice:
 
     ### Iter  
     I_iter = 0
-    while ( ( I_iter < self.I_itermax ) and ( self.S_bestval > self.F_VTR)) and not self.populationConverged(self.FM_pop):
+    converged = False
+    while not converged:
 
       self.FM_ui = self.evolvePopulation(self.FM_pop)
       
@@ -152,15 +153,29 @@ class deKenPrice:
             pass
       I_iter += 1
       
-      # Plot population
-      if self.I_D == 2:
-        x = self.FM_pop[:, 0]
-        y = self.FM_pop[:, 1]
-        try:
-          plt.scatter(x, y)
-          plt.savefig(os.path.join(self.figSaveFolder, 'pop%d.svg' % (I_iter)), format = 'svg')
-        except:
-          pass
+##      # Plot population
+##      if self.I_D == 2:
+##        x = self.FM_pop[:, 0]
+##        y = self.FM_pop[:, 1]
+##        try:
+##          plt.scatter(x, y)
+##          plt.axis(xmin = self.lowerBds[0], xmax = self.upperBds[0], ymin = self.lowerBds[1], ymax = self.upperBds[1])
+##          plt.xlabel('EH')
+##          plt.ylabel('sigmaH')
+##          plt.savefig(os.path.join(self.figSaveFolder, 'pop%d.svg' % (I_iter)), format = 'svg')          
+##        except:
+##          pass
+        
+      # Check convergence
+      if I_iter > self.I_itermax:
+        converged = True
+        self.logger.info('Exiting difEvo. I_iter >self.I_itermax ')
+      if self.S_bestval < self.F_VTR:
+        converged = True
+        self.logger.info('converged')
+      if self.populationConverged(self.FM_pop):
+        converged = True
+        self.logger.info('converged')
     
     self.logger.debug('exiting ' + __name__)
     self.logger.handlers = []
