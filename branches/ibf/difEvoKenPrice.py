@@ -5,8 +5,12 @@ Please refer to this web site for more information: http://www.icsi.berkeley.edu
 """
 
 import numpy as np
-import sys
+import sys, os
 import logbook
+try:
+  import matplotlib.pyplot as plt
+except:
+  pass
 
 
 class deKenPrice:
@@ -36,6 +40,11 @@ class deKenPrice:
     self.myFH = logbook.FileHandler(filename = __name__ + '.log', level = 'DEBUG', bubble = True)
     self.myFH.format_string = '{record.message}'
     self.logger = logbook.Logger(__name__)
+    
+    # Create folder to save plots
+    self.figSaveFolder = 'difEvoFigures'
+    if not os.path.exists(self.figSaveFolder):
+      os.mkdir(self.figSaveFolder)
     
     # Call actual solver. 
     self.deopt()
@@ -102,7 +111,7 @@ class deKenPrice:
 
     ### Iter  
     I_iter = 0
-    while ( ( I_iter < self.I_itermax ) and ( self.S_bestval > self.F_VTR)):
+    while ( ( I_iter < self.I_itermax ) and ( self.S_bestval > self.F_VTR)) and not self.populationConverged(self.FM_pop):
 
       self.FM_ui = self.evolvePopulation(self.FM_pop)
       
@@ -142,11 +151,25 @@ class deKenPrice:
           if ( self.I_plotting == 1 ):
             pass
       I_iter += 1
+      
+      # Plot population
+      if self.I_D == 2:
+        x = self.FM_pop[:, 0]
+        y = self.FM_pop[:, 1]
+        try:
+          plt.scatter(x, y)
+          plt.savefig(os.path.join(self.figSaveFolder, 'pop%d.svg' % (I_iter)), format = 'svg')
+        except:
+          pass
     
     self.logger.debug('exiting ' + __name__)
-##    myFH.pop_application()
-##    mySH.pop_application()
     self.logger.handlers = []
+    
+    
+  # -- end deopt
+  
+  
+  
     
   def evolvePopulation(self, pop):
     
@@ -295,6 +318,13 @@ class deKenPrice:
       cSat = self.checkConstraints(pop)
       popNew = np.append(popNew, reEvolvePop[cSat, :], axis = 0)
     return popNew[:self.I_NP, :]
+  
+  def populationConverged(self, pop):
+    '''
+    Check if population has converged. 
+    '''
+    diff = pop[:, :] - pop[0, :]
+    return (diff <= 1.e-5).all()
         
 def jacobianFD(x, fun):
     '''

@@ -86,6 +86,22 @@ class gParaSearchParallel(ParallelTaskCollection, paraLoop_fp, GPremiumTaskMods)
 
         # Set up initial variables and set the correct methods. 
         self.problemType = problemType
+        self.grid = grid
+        self.executable = pathToExecutable
+        self.architecture = architecture
+        self.baseDir = baseDir
+        self.log = logger
+        self.verbosity = solverVerb.upper()
+        self.jobname = 'evaluateSolverGuess'
+        tasks = []
+        self.xVars = xVars
+        self.xVarsDom = xVarsDom.split()
+        lowerBds = np.array([self.xVarsDom[i] for i in range(len(self.xVarsDom)) if i % 2 == 0], dtype = 'float64')
+        upperBds = np.array([self.xVarsDom[i] for i in range(len(self.xVarsDom)) if i % 2 == 1], dtype = 'float64')
+        self.domain = zip(lowerBds, upperBds)
+        self.n = len(self.xVars.split())
+        self.x = None
+        self.iteration = 0
         
         if self.problemType == 'one4eachCtry':
             self.gdpTable = tableDict.fromTextFile(fileIn = os.path.join(pathEmpirical, 'outputInput/momentTable/Gdp/gdpMoments.csv'),
@@ -115,27 +131,12 @@ class gParaSearchParallel(ParallelTaskCollection, paraLoop_fp, GPremiumTaskMods)
             sigmaB = getParameter(fileIn = os.path.join(baseDir, 'input/parameters.in'), varIn = 'sigmaB', 
                                  regexIn = 'bar-separated')
             # Pass ctry information to nlc
-            self.nlc = nlcOne4eachPair(gdpTable = self.gdpTable, ctryPair = [Ctry1, Ctry2])
+            self.nlc = nlcOne4eachPair(gdpTable = self.gdpTable, ctryPair = [Ctry1, Ctry2], domain = self.domain)
         elif self.problemType == 'one4all':
             pass
 
         
-        self.grid = grid
-        self.executable = pathToExecutable
-        self.architecture = architecture
-        self.baseDir = baseDir
-        self.log = logger
-        self.verbosity = solverVerb.upper()
-        self.jobname = 'evaluateSolverGuess'
-        tasks = []
-        self.xVars = xVars
-        self.xVarsDom = xVarsDom.split()
-        lowerBds = np.array([self.xVarsDom[i] for i in range(len(self.xVarsDom)) if i % 2 == 0], dtype = 'float64')
-        upperBds = np.array([self.xVarsDom[i] for i in range(len(self.xVarsDom)) if i % 2 == 1], dtype = 'float64')
-        self.domain = [ (x, y) for x in lowerBds for y in upperBds ]
-        self.n = len(self.xVars.split())
-        self.x = None
-        self.iteration = 0
+
 #        self.domain = [ (0.5, 0.9) ] * len(self.parameters)
         # Call differential_evolution_optimizer, where self (gParaSearchParallel) is sent as evaluator class. 
 ##        self.optimizer =  differential_evolution_optimizer(self, population_size = 5, # pop_size must be > 3
