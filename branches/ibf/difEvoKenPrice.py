@@ -9,6 +9,7 @@ import sys, os
 import logbook
 try:
   import matplotlib.pyplot as plt
+  plt.use('AGG')
 except:
   pass
 
@@ -31,6 +32,7 @@ class deKenPrice:
     self.I_strategy   = self.S_struct['I_strategy']
     self.I_refresh    = self.S_struct['I_refresh']
     self.I_plotting   = self.S_struct['I_plotting']
+    self.xConvCrit    = self.S_struct['xConvCrit']
     
     
     
@@ -153,18 +155,19 @@ class deKenPrice:
             pass
       I_iter += 1
       
-##      # Plot population
-##      if self.I_D == 2:
-##        x = self.FM_pop[:, 0]
-##        y = self.FM_pop[:, 1]
-##        try:
-##          plt.scatter(x, y)
-##          plt.axis(xmin = self.lowerBds[0], xmax = self.upperBds[0], ymin = self.lowerBds[1], ymax = self.upperBds[1])
-##          plt.xlabel('EH')
-##          plt.ylabel('sigmaH')
-##          plt.savefig(os.path.join(self.figSaveFolder, 'pop%d.svg' % (I_iter)), format = 'svg')          
-##        except:
-##          pass
+      # Plot population
+      if self.I_D == 2:
+        x = self.FM_pop[:, 0]
+        y = self.FM_pop[:, 1]
+        try:
+          plt.scatter(x, y)
+          plt.axis(xmin = self.lowerBds[0], xmax = self.upperBds[0], ymin = self.lowerBds[1], ymax = self.upperBds[1])
+          plt.xlabel('EH')
+          plt.ylabel('sigmaH')
+          plt.savefig(os.path.join(self.figSaveFolder, 'pop%d' % (I_iter)))
+          #, format = 'svg')          
+        except:
+          pass
         
       # Check convergence
       if I_iter > self.I_itermax:
@@ -172,13 +175,13 @@ class deKenPrice:
         self.logger.info('Exiting difEvo. I_iter >self.I_itermax ')
       if self.S_bestval < self.F_VTR:
         converged = True
-        self.logger.info('converged')
+        self.logger.info('converged self.S_bestval < self.F_VTR')
       if self.populationConverged(self.FM_pop):
         converged = True
-        self.logger.info('converged')
+        self.logger.info('converged self.populationConverged(self.FM_pop)')
     
     self.logger.debug('exiting ' + __name__)
-    self.logger.handlers = []
+#    self.logger.handlers = []
     
     
   # -- end deopt
@@ -302,8 +305,6 @@ class deKenPrice:
     
   def enforceConstrResample(self, pop):
     maxDrawSize = self.I_NP * 100
- #   self.logger.handlers.append(self.mySH)
- #   self.logger.handlers.append(self.myFH)
     dim = self.I_D
     for ixEle, ele in enumerate(pop):
       constr = self.evaluator.nlc(ele)
@@ -314,7 +315,6 @@ class deKenPrice:
         ctr += 1
       if ctr >= maxDrawSize: 
         self.logger.debug('Couldnt sample a feasible point with {0} draws', maxDrawSize)
- #   self.logger.handlers = []
     return pop
 
   def checkConstraints(self, pop):
@@ -338,8 +338,8 @@ class deKenPrice:
     '''
     Check if population has converged. 
     '''
-    diff = pop[:, :] - pop[0, :]
-    return (diff <= 1.e-5).all()
+    diff = np.abs(pop[:, :] - pop[0, :])
+    return (diff <= self.xConvCrit).all()
         
 def jacobianFD(x, fun):
     '''

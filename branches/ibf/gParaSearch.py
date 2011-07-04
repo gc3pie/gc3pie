@@ -155,6 +155,7 @@ class gParaSearchParallel(ParallelTaskCollection, paraLoop_fp, GPremiumTaskMods)
         S_struct['I_strategy']   = 1
         S_struct['I_refresh']    = 1
         S_struct['I_plotting']   = 0
+        S_struct['xConvCrit']    = 1.e-6
         
         deKenPrice(self, S_struct)
 
@@ -261,18 +262,6 @@ class gParaSearchParallel(ParallelTaskCollection, paraLoop_fp, GPremiumTaskMods)
         logger.info('returning result to solver')
         logger.handlers = []
         return result
-    
-##    def nlc(x):
-##        '''
-##          Nonlinear constraint for gParaSearch. 
-##          Takes x vector and adapts it to fullfill the constraint. 
-##        '''
-##        if self.problemType == 'one4eachCtry':
-            
-##        elif self.problemType == 'one4eachPair':
-##            pass
-##        elif self.problemType == 'one4all':
-##            pass
         
 
     def print_status(self, mins,means,vector,txt):
