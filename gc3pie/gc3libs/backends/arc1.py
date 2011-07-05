@@ -570,22 +570,33 @@ class Arc1Lrms(LRMS):
         if size is None:
             size = sys.maxint
 
-        _remote_filename = job.lrms_jobid + '/' + remote_filename
-        source_url = arc.URL(_remote_filename)
+        # `local_file` could be a file name (string) or a file-like
+        # object, as per function docstring; ensure `local_file_name`
+        # is the local path
+        try:
+           local_file_name = local_file.name
+        except AttributeError:
+           local_file_name = local_file
 
-        # # XXX: why this ? Because `local_file` could be a file name
-        # # (string) or a file-like object, as per function docstring.
+        # `local_file` could be a file name (string) or a file-like
+        # object, as per function docstring; ensure `local_file_name`
+        # is the local path
         try:
             local_file_name = local_file.name
         except AttributeError:
             local_file_name = local_file
 
+        source_url = arc.URL(job.lrms_jobid + '/' + remote_filename)
         destination_url = arc.URL(local_file_name)
 
-        if not controller.ARCCopyFile(source_url,destination_url):
-            log.warning("Failed downloading %s to %s" % (source_url.str(), destination_url.str()))
+        # download file
+        log.debug("Arc1Lrms.peek(): Downloading remote file '%s' into local file '%s' ..."
+                  % (remote_filename, local_file_name))
+        if not controller.ARCCopyFile(source_url, destination_url):
+            log.warning("Failed downloading '%s' to '%s'"
+                        % (source_url.str(), destination_url.str()))
+        log.debug("Arc1LRMS.peek(): arc.JobController.ARCCopyFile: completed")
 
-        log.debug("ArcLRMS.peek(): arc.JobController.ARCCopyFile: completed")
 
     @same_docstring_as(LRMS.validate_data)
     def validate_data(self, data_file_list):
