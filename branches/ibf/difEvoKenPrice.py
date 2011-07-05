@@ -32,7 +32,6 @@ class deKenPrice:
     self.I_itermax    = self.S_struct['I_itermax']
     self.F_VTR        = self.S_struct['F_VTR']
     self.I_strategy   = self.S_struct['I_strategy']
-    self.I_refresh    = self.S_struct['I_refresh']
     self.I_plotting   = self.S_struct['I_plotting']
     self.xConvCrit    = self.S_struct['xConvCrit']
     
@@ -55,6 +54,7 @@ class deKenPrice:
     
     # Fix seed for debugging
     np.random.seed(1000)
+    self.I_iter = -1
 
     self.logger.handlers.append(self.mySH)
     self.logger.handlers.append(self.myFH)    
@@ -70,7 +70,6 @@ class deKenPrice:
     if (self.I_itermax <= 0):
       self.I_itermax = 200
       self.logger.debug('I_itermax should be > 0; set to default value 200')
-    self.I_refresh = int(np.floor(self.I_refresh))
 
     # Draw population
     self.FM_pop = self.drawPopulation(self.I_NP, self.I_D)
@@ -102,6 +101,13 @@ class deKenPrice:
     self.S_bestvalit   = self.S_bestval              # best value of current iteration
 
     self.FVr_bestmem = self.FVr_bestmemit            # best member ever
+    
+    # Stats for initial population: 
+    self.printStats()
+
+    # make plots
+    if self.I_plotting:
+          self.plotPopulation() 
 
 
   #------DE-Minimization---------------------------------------------
@@ -111,7 +117,7 @@ class deKenPrice:
 
 
     ### Iter  
-    I_iter = 0
+    self.I_iter += 1
     converged = False
     while not converged:
 
@@ -130,66 +136,30 @@ class deKenPrice:
 
       for k in range(self.I_NP):
         self.I_nfeval  = self.I_nfeval + 1
-        if ( left_win( self.S_tempvals[k], self.S_vals[k] ) == 1 ):   
+        if left_win( self.S_tempvals[k], self.S_vals[k] ):   
           self.FM_pop[k,:] = self.FM_ui[k, :]                    # replace old vector with new one (for new iteration)
           self.S_vals[k]   = self.S_tempvals[k]                      # save value in "cost array"
 
           #----we update S_bestval only in case of success to save time-----------
-          if ( left_win( self.S_tempvals[k], self.S_bestval ) == 1 ):
+          if left_win( self.S_tempvals[k], self.S_bestval ):
             self.S_bestval = self.S_tempvals[k]                    # new best value
             self.FVr_bestmem = self.FM_ui[k,:]                 # new best parameter vector ever
 
       self.FVr_bestmemit = self.FVr_bestmem       # freeze the best member of this iteration for the coming 
                                           # iteration. This is needed for some of the strategies.
 
-    #----Output section----------------------------------------------------------
+      # create output
+      self.printStats()
 
-      if ( self.I_refresh > 0 ):
-        if ( ( I_iter % self.I_refresh == 0 ) or I_iter == 1 ):
-          self.logger.debug('Iteration: %d,  Best: %f,  F_weight: %f,  F_CR: %f,  self.I_NP: %d' % 
-	               (I_iter, self.S_bestval, self.F_weight, self.F_CR, self.I_NP))
-          for n in range(self.I_D):
-            self.logger.debug('best(%d) = %g' % (n, self.FVr_bestmem[n]))
-          if ( self.I_plotting == 1 ):
-            pass
-      I_iter += 1
+      # make plots
+      if self.I_plotting:
+            self.plotPopulation()      
       
-      # Plot population
-      if self.I_D == 2:
-        x = self.FM_pop[:, 0]
-        y = self.FM_pop[:, 1]
-        if matplotLibAvailable:
-          # determine bounds
-          xDif = self.upperBds[0] - self.lowerBds[0]
-          yDif = self.upperBds[1] - self.lowerBds[1]
-          scaleFac = 0.3
-          xmin = self.lowerBds[0] - scaleFac * xDif
-          xmax = self.upperBds[0] + scaleFac * xDif
-          ymin = self.lowerBds[1] - scaleFac * yDif
-          ymax = self.upperBds[1] + scaleFac * yDif
-          
-          # make plot
-          fig = plt.figure()
-          ax = fig.add_subplot(111)
+      # increment loop index
+      self.I_iter += 1
 
-          ax.scatter(x, y)
-          # x box constraints
-          ax.plot([self.lowerBds[0], self.lowerBds[0]], [ymin, ymax])
-          ax.plot([self.upperBds[0], self.upperBds[0]], [ymin, ymax])
-          # all other linear constraints
-          c_xmin = self.evaluator.nlc.linearConstr(xmin)
-          c_xmax = self.evaluator.nlc.linearConstr(xmax)
-          for ixC in range(len(c_xmin)):
-            ax.plot([xmin, xmax], [c_xmin[ixC], c_xmax[ixC]])
-          ax.axis(xmin = xmin, xmax = xmax,  
-                   ymin = ymin, ymax = ymax)
-          ax.set_xlabel('EH')
-          ax.set_ylabel('sigmaH')
-
-          fig.savefig(os.path.join(self.figSaveFolder, 'pop%d' % (I_iter)))
-        
       # Check convergence
-      if I_iter > self.I_itermax:
+      if self.I_iter > self.I_itermax:
         converged = True
         self.logger.info('Exiting difEvo. I_iter >self.I_itermax ')
       if self.S_bestval < self.F_VTR:
@@ -235,11 +205,11 @@ class deKenPrice:
     FVr_a5   = np.zeros(I_NP)                # index array
     FVr_ind  = np.zeros(4)
     
-    
-    FVr_ind = np.random.permutation(4)             # index pointer array
-    FVr_a1  = np.random.permutation(I_NP)                   # shuffle locations of vectors
-    FVr_rt  = ( FVr_rot + FVr_ind[0] ) % I_NP     # rotate indices by ind(1) positions
-    FVr_a2  = FVr_a1[FVr_rt]                 # rotate vector locations
+    # BJ: Need to add +1 in definition of FVr_ind otherwise there is one zero index that leaves creates no shuffling. 
+    FVr_ind = np.random.permutation(4) + 1             # index pointer array. 
+    FVr_a1  = np.random.permutation(I_NP)              # shuffle locations of vectors
+    FVr_rt  = ( FVr_rot + FVr_ind[0] ) % I_NP          # rotate indices by ind(1) positions
+    FVr_a2  = FVr_a1[FVr_rt]                           # rotate vector locations
     FVr_rt  = ( FVr_rot + FVr_ind[1] ) % I_NP
     FVr_a3  = FVr_a2[FVr_rt]                
     FVr_rt  = ( FVr_rot + FVr_ind[2] ) % I_NP
@@ -310,6 +280,48 @@ class deKenPrice:
 
 
     
+  
+  def printStats(self):
+      self.logger.debug('Iteration: %d,  Best: %f,  F_weight: %f,  F_CR: %f,  self.I_NP: %d' % 
+	               (self.I_iter, self.S_bestval, self.F_weight, self.F_CR, self.I_NP))
+      for n in range(self.I_D):
+            self.logger.debug('best(%d) = %g' % (n, self.FVr_bestmem[n]))
+         
+  def plotPopulation(self):
+    # Plot population
+    if self.I_D == 2:
+      x = self.FM_pop[:, 0]
+      y = self.FM_pop[:, 1]
+      if matplotLibAvailable:
+        # determine bounds
+        xDif = self.upperBds[0] - self.lowerBds[0]
+        yDif = self.upperBds[1] - self.lowerBds[1]
+        scaleFac = 0.3
+        xmin = self.lowerBds[0] - scaleFac * xDif
+        xmax = self.upperBds[0] + scaleFac * xDif
+        ymin = self.lowerBds[1] - scaleFac * yDif
+        ymax = self.upperBds[1] + scaleFac * yDif
+        
+        # make plot
+        fig = plt.figure()
+        ax = fig.add_subplot(111)
+
+        ax.scatter(x, y)
+        # x box constraints
+        ax.plot([self.lowerBds[0], self.lowerBds[0]], [ymin, ymax])
+        ax.plot([self.upperBds[0], self.upperBds[0]], [ymin, ymax])
+        # all other linear constraints
+        c_xmin = self.evaluator.nlc.linearConstr(xmin)
+        c_xmax = self.evaluator.nlc.linearConstr(xmax)
+        for ixC in range(len(c_xmin)):
+          ax.plot([xmin, xmax], [c_xmin[ixC], c_xmax[ixC]])
+        ax.axis(xmin = xmin, xmax = xmax,  
+                 ymin = ymin, ymax = ymax)
+        ax.set_xlabel('EH')
+        ax.set_ylabel('sigmaH')
+
+        fig.savefig(os.path.join(self.figSaveFolder, 'pop%d' % (self.I_iter)))    
+  
   def drawPopulation(self, size, dim):
     FM_pop = np.zeros( (size, dim ) ) #initialize FM_pop to gain speed
     for k in range(size):
@@ -349,8 +361,8 @@ class deKenPrice:
       cSat = self.checkConstraints(reEvolvePop)
       popNew = np.append(popNew, reEvolvePop[cSat, :], axis = 0)
     reEvlolvedPop = popNew[:self.I_NP, :]
-    self.logger.debug('reEvolved population: ')
-    self.logger.debug(popNew)
+#    self.logger.debug('reEvolved population: ')
+#    self.logger.debug(popNew)
     return reEvlolvedPop
   
   def populationConverged(self, pop):

@@ -1,4 +1,4 @@
-#! /usr/bin/env python
+#! /usr/bin/env python2.6
 #
 """
 Driver script for performing an global optimization over the parameter space. 
@@ -83,7 +83,10 @@ from difEvoKenPrice import *
 class gParaSearchParallel(ParallelTaskCollection, paraLoop_fp, GPremiumTaskMods):
  
     def __init__(self, pathToExecutable, architecture, logger, baseDir, xVars, 
-                 nPopulation, xVarsDom, solverVerb, problemType, pathEmpirical, output_dir = '/tmp', grid = None, **kw):
+                 nPopulation, xVarsDom, solverVerb, problemType, pathEmpirical, 
+                 itermax, xConvCrit, yConvCrit, 
+                 makePlots, optStrategy, fWeight, fCritical,
+                 output_dir = '/tmp', grid = None, **kw):
 
         # set up logger
         self.mySH = logbook.StreamHandler(stream = sys.stdout, level = solverVerb.upper(), format_string = '{record.message}', bubble = True)
@@ -118,8 +121,11 @@ class gParaSearchParallel(ParallelTaskCollection, paraLoop_fp, GPremiumTaskMods)
         self.domain = zip(lowerBds, upperBds)
         self.n = len(self.xVars.split())
         self.x = None
-        self.iteration = 0
         
+        # First iteration with initial sample. 
+        self.iteration = - 1
+        
+        # Make problem type specific adjustments. 
         if self.problemType == 'one4eachCtry':
             self.gdpTable = tableDict.fromTextFile(fileIn = os.path.join(pathEmpirical, 'outputInput/momentTable/Gdp/gdpMoments.csv'),
                                               delim = ',', width = 20)
@@ -154,17 +160,16 @@ class gParaSearchParallel(ParallelTaskCollection, paraLoop_fp, GPremiumTaskMods)
 
         S_struct = {}
         S_struct['I_NP']         = int(nPopulation)
-        S_struct['F_weight']     = 0.85
-        S_struct['F_CR']         = 1 
+        S_struct['F_weight']     = float(fWeight)
+        S_struct['F_CR']         = float(fCritical)
         S_struct['I_D']          = self.n
         S_struct['lowerBds']     = lowerBds
         S_struct['upperBds']     = upperBds
-        S_struct['I_itermax']    = 50
-        S_struct['F_VTR']        = 1.e-3
-        S_struct['I_strategy']   = 1
-        S_struct['I_refresh']    = 1
-        S_struct['I_plotting']   = 0
-        S_struct['xConvCrit']    = 1.e-6
+        S_struct['I_itermax']    = int(itermax)
+        S_struct['F_VTR']        = float(yConvCrit)
+        S_struct['I_strategy']   = int(optStrategy)
+        S_struct['I_plotting']   = int(makePlots)
+        S_struct['xConvCrit']    = float(xConvCrit)
         
         ### Run solver ###
         deKenPrice(self, S_struct)
@@ -178,7 +183,6 @@ class gParaSearchParallel(ParallelTaskCollection, paraLoop_fp, GPremiumTaskMods)
         self.logger.debug('Entering target on %s' % dateString)
         
         # Enter an iteration specific folder
-        self.iteration += 1
         iterationFolder = os.path.join(os.getcwd(), 'Iteration-' + str(self.iteration))
         os.mkdir(iterationFolder)
         
@@ -214,11 +218,14 @@ class gParaSearchParallel(ParallelTaskCollection, paraLoop_fp, GPremiumTaskMods)
             writeVals.append(vals[1][0])
             writeVals.append(vals[1][0])
             paraCombosSigmaA = [  np.append(ele[1], ele[1]) for ele in inParaCombos ]
+            
+        # Prepare paraCombos matching to resulting table. Used in analyzeOverviewTable
+        # !!! This should be dependent on problem type or on missing variables in xvars. !!!
         paraCombos = []
         for EA,sA in zip(paraCombosEA, paraCombosSigmaA):
             paraCombo = np.append(EA, sA)
             paraCombos.append(paraCombo)
-#        paraCombos = [ np.append(pcombos[0], pcombos[1]) for pcombos in paraCombosEA,paraCombosSigmaA ]
+
         # Write a para.loop file to generate grid jobs
         para_loop = self.writeParaLoop(variables = variables, 
                                        groups = groups, 
@@ -227,10 +234,10 @@ class gParaSearchParallel(ParallelTaskCollection, paraLoop_fp, GPremiumTaskMods)
                                        desPath = os.path.join(iterationFolder, 'para.loopTmp'))
         
         tasks = self.generateTaskList(para_loop, iterationFolder)
-        ## Take list of tasks and potentially split into parts if requested. Could loop over whole block
+        # Take list of tasks and potentially split into parts if requested. Could loop over whole block
         ParallelTaskCollection.__init__(self, self.jobname, tasks, self.grid)
         
-##        self.wait()
+        # ---- ideally replace this block with self.wait(). At the moment there is a bug in dag.py. time module is used but not imported. 
         self.submit()
         curState = self._state()
         self.logger.info('state = %s' % curState)
@@ -246,9 +253,9 @@ class gParaSearchParallel(ParallelTaskCollection, paraLoop_fp, GPremiumTaskMods)
         keyList.sort()
         for key in keyList:
             self.logger.info(key + '   ' + str(taskStats[key]))
-#        self.logger.info(self.stats())
+        # --- 
         
-        ## Each line in the resulting table (overviewSimu) represents one paraCombo
+        # Each line in the resulting table (overviewSimu) represents one paraCombo
         overviewTable = createOverviewTable(resultDir = iterationFolder, outFile = 'simulation.out', slUIPFile = 'slUIP.mat', 
                                             exportFileName = 'overviewSimu', sortTable = False, 
                                             logLevel = self.verbosity, logFile = 'overTableLog.log')
@@ -256,8 +263,9 @@ class gParaSearchParallel(ParallelTaskCollection, paraLoop_fp, GPremiumTaskMods)
         result = self.analyzeResults(tableIn = overviewTable, varsIn = variables, valsIn = paraCombos, 
                              targetVar = 'normDev', logLevel = self.verbosity, 
                              logFile = os.path.join(iterationFolder, 'oneCtryPairLog.log'))
+        
         self.logger.info('returning result to solver')
-       # logger.handlers = []
+        self.iteration += 1
         return result
         
 
@@ -356,9 +364,30 @@ Read `.loop` files and execute the `forwardPremium` program accordingly.
         self.add_param("-t", "--problemType", metavar="ARCH",
                        dest="problemType", default = 'one4eachPair',
                        help="Problem type for gParaSearch. Must be one of: one4eachPair, one4all, one4eachCtry. ")
-        self.add_param("-e", "--pathEmpirical", metavar="ARCH",
+        self.add_param("-e", "--pathEmpirical", metavar="PATH",
                        dest="pathEmpirical", default = '',
                        help="Path to empirical analysis folder")
+        self.add_param("-i", "--itermax", metavar="ARCH", type = int, 
+                       dest="itermax", default = '50',
+                       help="Maximum number of iterations of solver. ")
+        self.add_param("-xC", "--xConvCrit", metavar="ARCH", type = float, 
+                       dest="xConvCrit", default = '1.e-8',
+                       help="Convergence criteria for x variables. ")
+        self.add_param("-yC", "--yConvCrit", metavar="ARCH", type = float, 
+                       dest="yConvCrit", default = '1.e-3',
+                       help="Convergence criteria for y variables. ")
+        self.add_param("-mP", "--makePlots", metavar="ARCH", type = bool, 
+                       dest="makePlots", default = True,
+                       help="Generate population plots each iteration.  ")
+        self.add_param("-oS", "--optStrategy", metavar="ARCH", type = int, 
+                       dest="optStrategy", default = '1',
+                       help="Which differential evolution technique to use. ")
+        self.add_param("-fW", "--fWeight", metavar="ARCH", type = float, 
+                       dest="fWeight", default = '0.85',
+                       help="Weight of differential vector. ")
+        self.add_param("-fC", "--fCritical", metavar="ARCH", type = float,
+                       dest="fCritical", default = '1.0',
+                       help="Fraction of new population to use.  ")
 
     def parse_args(self):
         """
@@ -403,11 +432,13 @@ Read `.loop` files and execute the `forwardPremium` program accordingly.
                [ self.params.executable, self.params.architecture, 
                  self.log, self.params.initial, self.params.xVars, 
                  self.params.nPopulation, self.params.xVarsDom, self.params.solverVerb, self.params.problemType,
-                 self.params.pathEmpirical], kwargs)
+                 self.params.pathEmpirical, self.params.itermax, self.params.xConvCrit, self.params.yConvCrit,
+                 self.params.makePlots, self.params.optStrategy, self.params.fWeight, self.params.fCritical
+               ], kwargs)
 
 
 
-## run script
+# run script
 
 if __name__ == '__main__':    
     # Remove all files in curPath

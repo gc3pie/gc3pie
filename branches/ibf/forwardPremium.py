@@ -1,4 +1,4 @@
-#! /usr/bin/env python
+#! /usr/bin/env python2.6
 #
 """
 ForwardPremium-specific methods and overloads. 
