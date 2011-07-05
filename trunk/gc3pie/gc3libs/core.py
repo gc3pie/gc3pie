@@ -553,10 +553,7 @@ class Core:
             # Get authN
             auto_enable_auth = kw.get('auto_enable_auth', self.auto_enable_auth)
             lrms = self.get_backend(job.resource_name)
-            # self.auths.get(_lrms._resource.auth)
-
             local_file = tempfile.NamedTemporaryFile(suffix='.tmp', prefix='gc3libs.')
-
             lrms.peek(app, remote_filename, local_file, offset, size)
             local_file.flush()
             local_file.seek(0)

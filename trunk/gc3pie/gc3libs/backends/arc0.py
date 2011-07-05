@@ -485,31 +485,22 @@ class ArcLrms(LRMS):
         if size is None:
             size = sys.maxint
 
-        # XXX: why on earth?
-        # if int(offset) < 1024:
-        #     offset = 0
-
-        _remote_filename = job.lrms_jobid + '/' + remote_filename
-
-        # get JobFTPControl handle
-        jftpc = arclib.JobFTPControl()
-
-        # download file
-        log.debug("Downloading max %d bytes at offset %d of remote file '%s' into local file '%s' ..."
-                  % (size, offset, remote_filename, local_file.name))
-
-        # XXX: why this ? Because `local_file` could be a file name
-        # (string) or a file-like object, as per function docstring.
+        # `local_file` could be a file name (string) or a file-like
+        # object, as per function docstring; ensure `local_file_name`
+        # is the local path
         try:
            local_file_name = local_file.name
         except AttributeError:
            local_file_name = local_file
 
-        arclib.JobFTPControl.Download(jftpc, 
-                                      arclib.URL(_remote_filename), 
-                                      int(offset), int(size), 
-                                      local_file.name)
+        # get JobFTPControl handle
+        jftpc = arclib.JobFTPControl()
+        remote_url = arclib.URL(job.lrms_jobid + '/' + remote_filename)
 
+        # download file
+        log.debug("Downloading max %d bytes at offset %d of remote file '%s' into local file '%s' ..."
+                  % (size, offset, remote_filename, local_file_name))
+        jftpc.Download(remote_url, int(offset), int(size), local_file_name)
         log.debug("ArcLRMS.peek(): arclib.JobFTPControl.Download: completed")
 
 
