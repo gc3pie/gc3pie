@@ -667,7 +667,7 @@ def prettyprint(D, indent=0, width=0, maxdepth=None, step=4,
                 # is `only_keys` a filter function?
                 if not only_keys(k):
                     continue
-            except:
+            except TypeError:
                 # no, then it must be a list of key names
                 if str(k) not in only_keys:
                     continue
