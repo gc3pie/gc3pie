@@ -513,7 +513,7 @@ class Core:
 
     def peek(self, app, what='stdout', offset=0, size=None, **kw):
         """
-        Download `size` bytes (at offset `offset` from the start) from
+        Download `size` bytes (at `offset` bytes from the start) from
         the remote job standard output or error stream, and write them
         into a local file.  Return file-like object from which the
         downloaded contents can be read.
@@ -565,7 +565,7 @@ class Core:
 
     def __peek_task(self, task, what, offset, size, **kw):
         """Implementation of `peek` on generic `Task` objects."""
-        return task.peek(what. offset, size, **kw)
+        return task.peek(what, offset, size, **kw)
     
 
     def add(self, task):
