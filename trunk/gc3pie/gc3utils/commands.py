@@ -183,7 +183,7 @@ GC3Libs internals.
         else:
             if self.params.verbose < 2:
                 def names_not_starting_with_underscore(name):
-                    return not str(name).startswith('_')
+                    return not name.startswith('_')
                 only_keys = names_not_starting_with_underscore
             else:
                 # print *all* keys if `-vv` is given
