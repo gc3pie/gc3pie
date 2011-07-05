@@ -1139,7 +1139,9 @@ class Engine(object):
             if task.execution.returncode == 0:
                 result['ok'] += 1
             else:
-                gc3libs.log.debug("Task '%s' failed: signal %s, exitcode %s" % (task, task.execution.signal, task.execution.exitcode))
+                gc3libs.log.debug("Task '%s' failed: return code %s (signal %s, exitcode %s)"
+                                  % (task, task.execution.returncode,
+                                     task.execution.signal, task.execution.exitcode))
                 result['failed'] += 1
         result['total'] = (len(self._new)
                            + len(self._in_flight)
