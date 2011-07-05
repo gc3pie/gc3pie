@@ -621,6 +621,8 @@ class SgeLrms(LRMS):
             # copy back all files, renaming them to adhere to the ArcLRMS convention
             log.debug("Downloading job output into '%s' ...", download_dir)
             for remote_path, local_path in app.outputs.items():
+                if remote_path == gc3libs.ANY_OUTPUT:
+                    remote_path = ''
                 try:
                     # override the remote name if it's a known variable one...
                     remote_path = os.path.join(

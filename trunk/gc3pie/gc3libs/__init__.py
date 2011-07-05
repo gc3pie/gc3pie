@@ -508,8 +508,7 @@ def configure_logger(level=logging.ERROR,
 # when used in the `output` attribute of an application,
 # it stands for "fetch the whole contents of the remote
 # directory"
-ANY_OUTPUT = {'':''}
-ANY = ''
+ANY_OUTPUT = '*'
 
 class Application(Struct, Persistable, Task):
     """
@@ -663,12 +662,14 @@ class Application(Struct, Persistable, Task):
       invocation; possibly empty
 
     `inputs`
-      dictionary mapping source URL (a `gc3libs.url.Url` object) to a remote file name (a string);
-      remote file names are relative paths (root directory is the remote job folder)
+      dictionary mapping source URL (a `gc3libs.url.Url`:class:
+      object) to a remote file name (a string); remote file names are
+      relative paths (root directory is the remote job folder)
 
     `outputs`
-      dictionary mapping remote file name (a string) to a destination (a `gc3libs.url.Url`);
-      remote file names are relative paths (root directory is the remote job folder)
+      dictionary mapping remote file name (a string) to a destination
+      (a `gc3libs.url.Url`:class:); remote file names are relative
+      paths (root directory is the remote job folder)
 
     `output_dir`
       Path to the base directory where output files will be
@@ -778,14 +779,18 @@ class Application(Struct, Persistable, Task):
             raise InvalidArgument(
                 "Absolute path '%s' passed as `Application.stdout`"
                 % self.stdout)
-        if self.stdout and (self.stdout not in self.outputs) and not self.outputs.has_key(gc3libs.ANY):
+        if ((self.stdout is not None)
+            and (gc3libs.ANY_OUTPUT not in self.outputs)
+            and (self.stdout not in self.outputs)):
             self.outputs[self.stdout] = self.stdout
         self.stderr = get_and_remove(kw, 'stderr')
         if self.stderr is not None and os.path.isabs(self.stderr):
             raise InvalidArgument(
                 "Absolute path '%s' passed as `Application.stderr`"
                 % self.stderr)
-        if self.stderr and (self.stderr not in self.outputs) and not self.outputs.has_key(gc3libs.ANY):
+        if ((self.stderr is not None)
+            and (gc3libs.ANY_OUTPUT not in self.outputs)
+            and (self.stderr not in self.outputs)):
             self.outputs[self.stderr] = self.stderr
 
         self.tags = get_and_remove(kw, 'tags', list())
@@ -948,7 +953,7 @@ class Application(Struct, Persistable, Task):
                         return l
 
             def relpath(r):
-                if r == '':
+                if r == gc3libs.ANY_OUTPUT:
                     return '/'
                 else:
                     return r
