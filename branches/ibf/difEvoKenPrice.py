@@ -8,8 +8,9 @@ import numpy as np
 import sys, os
 import logbook
 try:
+  import matplotlib
+  matplotlib.use('SVG')
   import matplotlib.pyplot as plt
-  plt.use('AGG')
 except:
   pass
 
@@ -160,12 +161,30 @@ class deKenPrice:
         x = self.FM_pop[:, 0]
         y = self.FM_pop[:, 1]
         try:
-          plt.scatter(x, y)
-          plt.axis(xmin = self.lowerBds[0], xmax = self.upperBds[0], ymin = self.lowerBds[1], ymax = self.upperBds[1])
-          plt.xlabel('EH')
-          plt.ylabel('sigmaH')
-          plt.savefig(os.path.join(self.figSaveFolder, 'pop%d' % (I_iter)))
-          #, format = 'svg')          
+          # determine bounds
+          xDif = self.upperBds[0] - self.lowerBds[0]
+          yDif = self.upperBds[1] - self.lowerBds[1]
+          scaleFac = 0.3
+          xmin = self.lowerBds[0] - scaleFac * xDif
+          xmax = self.upperBds[0] + scaleFac * xDif
+          ymin = self.lowerBds[1] - scaleFac * yDif
+          ymax = self.upperBds[1] + scaleFac * yDif
+          
+          # make plot
+          fig = plt.figure()
+          ax = fig.add_subplot(111)
+
+          ax.scatter(x, y)
+          ax.plot([self.lowerBds[0], self.lowerBds[0]], [ymin, ymax])
+          ax.plot([self.upperBds[0], self.upperBds[0]], [ymin, ymax])
+          ax.plot([xmin, xmax], [self.lowerBds[1], self.lowerBds[1]])
+          ax.plot([xmin, xmax], [self.upperBds[1], self.upperBds[1]])          
+          ax.axis(xmin = xmin, xmax = xmax,  
+                   ymin = ymin, ymax = ymax)
+          ax.set_xlabel('EH')
+          ax.set_ylabel('sigmaH')
+
+          fig.savefig(os.path.join(self.figSaveFolder, 'pop%d' % (I_iter)))
         except:
           pass
         
@@ -332,7 +351,10 @@ class deKenPrice:
       reEvolvePop = self.evolvePopulation(pop)
       cSat = self.checkConstraints(pop)
       popNew = np.append(popNew, reEvolvePop[cSat, :], axis = 0)
-    return popNew[:self.I_NP, :]
+    reEvlolvedPop = popNew[:self.I_NP, :]
+    self.logger.debug('reEvolved population: ')
+    self.logger.debug(popNew)
+    return reEvlolvedPop
   
   def populationConverged(self, pop):
     '''

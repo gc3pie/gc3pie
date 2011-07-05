@@ -135,14 +135,6 @@ class gParaSearchParallel(ParallelTaskCollection, paraLoop_fp, GPremiumTaskMods)
         elif self.problemType == 'one4all':
             pass
 
-        
-
-#        self.domain = [ (0.5, 0.9) ] * len(self.parameters)
-        # Call differential_evolution_optimizer, where self (gParaSearchParallel) is sent as evaluator class. 
-##        self.optimizer =  differential_evolution_optimizer(self, population_size = 5, # pop_size must be > 3
-##                                                           n_cross = self.n,
-##                                                           cr = 0.9, eps = 1e-12, 
-##                                                           show_progress = True)
         S_struct = {}
         S_struct['I_NP']         = int(nPopulation)
         S_struct['F_weight']     = 0.85
