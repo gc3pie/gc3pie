@@ -11,8 +11,9 @@ try:
   import matplotlib
   matplotlib.use('SVG')
   import matplotlib.pyplot as plt
+  matplotLibAvailable = True
 except:
-  pass
+  matplotLibAvailable = False
 
 
 class deKenPrice:
@@ -34,8 +35,6 @@ class deKenPrice:
     self.I_refresh    = self.S_struct['I_refresh']
     self.I_plotting   = self.S_struct['I_plotting']
     self.xConvCrit    = self.S_struct['xConvCrit']
-    
-    
     
     # Set up loggers
     self.mySH = logbook.StreamHandler(stream = sys.stdout, level = self.evaluator.verbosity.upper(), format_string = '{record.message}', bubble = True)
@@ -59,8 +58,7 @@ class deKenPrice:
 
     self.logger.handlers.append(self.mySH)
     self.logger.handlers.append(self.myFH)    
-    self.logger.debug('hello deopt')
-
+    self.logger.debug('entering deopt')
 
     # -----Check input variables---------------------------------------------
     if ( self.I_NP < 5 ):
@@ -160,7 +158,7 @@ class deKenPrice:
       if self.I_D == 2:
         x = self.FM_pop[:, 0]
         y = self.FM_pop[:, 1]
-        try:
+        if matplotLibAvailable:
           # determine bounds
           xDif = self.upperBds[0] - self.lowerBds[0]
           yDif = self.upperBds[1] - self.lowerBds[1]
@@ -175,18 +173,20 @@ class deKenPrice:
           ax = fig.add_subplot(111)
 
           ax.scatter(x, y)
+          # x box constraints
           ax.plot([self.lowerBds[0], self.lowerBds[0]], [ymin, ymax])
           ax.plot([self.upperBds[0], self.upperBds[0]], [ymin, ymax])
-          ax.plot([xmin, xmax], [self.lowerBds[1], self.lowerBds[1]])
-          ax.plot([xmin, xmax], [self.upperBds[1], self.upperBds[1]])          
+          # all other linear constraints
+          c_xmin = self.evaluator.nlc.linearConstr(xmin)
+          c_xmax = self.evaluator.nlc.linearConstr(xmax)
+          for ixC in range(len(c_xmin)):
+            ax.plot([xmin, xmax], [c_xmin[ixC], c_xmax[ixC]])
           ax.axis(xmin = xmin, xmax = xmax,  
                    ymin = ymin, ymax = ymax)
           ax.set_xlabel('EH')
           ax.set_ylabel('sigmaH')
 
           fig.savefig(os.path.join(self.figSaveFolder, 'pop%d' % (I_iter)))
-        except:
-          pass
         
       # Check convergence
       if I_iter > self.I_itermax:
@@ -200,9 +200,6 @@ class deKenPrice:
         self.logger.info('converged self.populationConverged(self.FM_pop)')
     
     self.logger.debug('exiting ' + __name__)
-#    self.logger.handlers = []
-    
-    
   # -- end deopt
   
   
@@ -349,7 +346,7 @@ class deKenPrice:
     popNew = pop[cSat, :]
     while not len(popNew) >= self.I_NP:
       reEvolvePop = self.evolvePopulation(pop)
-      cSat = self.checkConstraints(pop)
+      cSat = self.checkConstraints(reEvolvePop)
       popNew = np.append(popNew, reEvolvePop[cSat, :], axis = 0)
     reEvlolvedPop = popNew[:self.I_NP, :]
     self.logger.debug('reEvolved population: ')

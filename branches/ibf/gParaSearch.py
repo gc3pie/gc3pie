@@ -40,6 +40,7 @@ import re
 import shutil
 import sys
 import time
+import datetime
 
 # optimizer import
 from difEvo import differential_evolution_optimizer
@@ -84,6 +85,22 @@ class gParaSearchParallel(ParallelTaskCollection, paraLoop_fp, GPremiumTaskMods)
     def __init__(self, pathToExecutable, architecture, logger, baseDir, xVars, 
                  nPopulation, xVarsDom, solverVerb, problemType, pathEmpirical, output_dir = '/tmp', grid = None, **kw):
 
+        # set up logger
+        self.mySH = logbook.StreamHandler(stream = sys.stdout, level = solverVerb.upper(), format_string = '{record.message}', bubble = True)
+        self.mySH.format_string = '{record.message}'
+        self.myFH = logbook.FileHandler(filename = 'gParaSearch.log', level = 'DEBUG', bubble = True)
+        self.myFH.format_string = '{record.message}' 
+        self.logger = logbook.Logger(name = 'target.log')
+
+        self.logger.handlers.append(self.mySH)
+        self.logger.handlers.append(self.myFH)   
+    
+        try:
+            stdErr = list(logbook.handlers.Handler.stack_manager.iter_context_objects())[0]
+            stdErr.pop_application()
+        except: 
+            pass
+        
         # Set up initial variables and set the correct methods. 
         self.problemType = problemType
         self.grid = grid
@@ -149,35 +166,23 @@ class gParaSearchParallel(ParallelTaskCollection, paraLoop_fp, GPremiumTaskMods)
         S_struct['I_plotting']   = 0
         S_struct['xConvCrit']    = 1.e-6
         
+        ### Run solver ###
         deKenPrice(self, S_struct)
 
     def target(self, inParaCombos):
         
+        # Log activity
+        cDate = datetime.date.today()
+        cTime = datetime.datetime.time(datetime.datetime.now())
+        dateString = '{0:04d}-{1:02d}-{2:02d}-{3:02d}-{4:02d}-{5:02d}'.format(cDate.year, cDate.month, cDate.day, cTime.hour, cTime.minute, cTime.second)
+        self.logger.debug('Entering target on %s' % dateString)
         
-        # set up logger
-        mySH = logbook.StreamHandler(stream = sys.stdout, level = self.verbosity.upper(), format_string = '{record.message}', bubble = True)
-        mySH.format_string = '{record.message}'
-        myFH = logbook.FileHandler(filename = 'gParaSearch.log', level = 'DEBUG', bubble = True)
-        myFH.format_string = '{record.message}' 
-        logger = logbook.Logger(name = 'target.log')
-
-        logger.handlers.append(mySH)
-        logger.handlers.append(myFH)        
-
-        try:
-            stdErr = list(logbook.handlers.Handler.stack_manager.iter_context_objects())[0]
-            stdErr.pop_application()
-        except: 
-            pass
-        
-        logger.debug('Entering target')
-          
-        ## Enter an iteration specific folder
+        # Enter an iteration specific folder
         self.iteration += 1
         iterationFolder = os.path.join(os.getcwd(), 'Iteration-' + str(self.iteration))
         os.mkdir(iterationFolder)
         
-        ## Establish vals vector
+        # Establish vals vector
         vals = []
         nVariables = range(len(inParaCombos[0]))
         for ixVar in nVariables:
@@ -228,20 +233,20 @@ class gParaSearchParallel(ParallelTaskCollection, paraLoop_fp, GPremiumTaskMods)
 ##        self.wait()
         self.submit()
         curState = self._state()
-        logger.info('state = %s' % curState)
+        self.logger.info('state = %s' % curState)
         while curState != 'TERMINATED':
             self.progress()
             time.sleep(15)
             curState = self._state()
-            logger.info('state = %s' % curState)
+            self.logger.info('state = %s' % curState)
         print 'done submitting'
         taskStats = self.stats()
         keyList = taskStats.keys()
         keyList = [ key.lower() for key in keyList ]
         keyList.sort()
         for key in keyList:
-            logger.info(key + '   ' + str(taskStats[key]))
-#        logger.info(self.stats())
+            self.logger.info(key + '   ' + str(taskStats[key]))
+#        self.logger.info(self.stats())
         
         ## Each line in the resulting table (overviewSimu) represents one paraCombo
         overviewTable = createOverviewTable(resultDir = iterationFolder, outFile = 'simulation.out', slUIPFile = 'slUIP.mat', 
@@ -251,8 +256,8 @@ class gParaSearchParallel(ParallelTaskCollection, paraLoop_fp, GPremiumTaskMods)
         result = self.analyzeResults(tableIn = overviewTable, varsIn = variables, valsIn = paraCombos, 
                              targetVar = 'normDev', logLevel = self.verbosity, 
                              logFile = os.path.join(iterationFolder, 'oneCtryPairLog.log'))
-        logger.info('returning result to solver')
-        logger.handlers = []
+        self.logger.info('returning result to solver')
+       # logger.handlers = []
         return result
         
 
