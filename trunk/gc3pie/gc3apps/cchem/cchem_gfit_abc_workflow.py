@@ -171,7 +171,11 @@ class ABC_Application(Application):
 #
 class ABC_Workflow(SessionBasedScript):
     """
-    Affanculo i commenti
+    Main control of the ABC execution workflow.
+    Depending on the input parameters, ABC executin is preceeded by ABC binary compilation
+    Scan the specified INPUTDIR directories recursively for '.d' files,
+    and submit a ABC job for each input file found; job progress is
+    monitored and, when a job is done, its output file is retrieved back
     """
     def __init__(self):
         SessionBasedScript.__init__(
