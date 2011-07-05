@@ -63,7 +63,7 @@ def _compatible_resources(lrms_list, application):
             continue
         if (application.requested_walltime is not None
             and int(application.requested_walltime) > int(lrms._resource.max_walltime or sys.maxint)):
-            gc3libs.log.info("Rejecting resource '%s': requested a longer duration (%d s) that resource provides (%d s)"
+            gc3libs.log.info("Rejecting resource '%s': requested a longer duration (%d s) that resource provides (%s h)"
                              % (lrms._resource.name, application.requested_walltime, lrms._resource.max_walltime))
             continue
         # XXX: Obsolete
