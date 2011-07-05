@@ -118,6 +118,8 @@ class SubprocessLrms(LRMS):
                 "Retrieval of output files to non-local destinations"
                 " is not supported in the SubProcess backend.")
         for r, l in app.outputs.items():
+            if r == gc3libs.ANY_OUTPUT:
+                r = ''
             copy_recursively(os.path.join(app.execution.lrms_execdir, r),
                              os.path.join(download_dir, l.path))
 
@@ -277,6 +279,7 @@ class SubprocessLrms(LRMS):
         Any exception raised by operations will be passed through.
         """
         raise NotImplementedError("Method `SubprocessLRMS.peek()` is not yet implemented.")
+
     
     def validate_data(self, data_file_list=None):
         """
