@@ -81,7 +81,7 @@ class GMhcCoevApplication(Application):
                              arguments = [
                                  'LD_LIBRARY_PATH=/opt/MATLAB/MATLAB_Compiler_Runtime/v713/runtime/glnxa64:$LD_LIBRARY_PATH',
                                  './' + self.executable_name,
-                                 kw.get('requested_walltime')*60, # == single_run_time == ses_t
+                                 kw.get('requested_walltime')*60 - 5, # == single_run_time == ses_t
                                  N, p_mut_coeff, choose_or_rand, sick_or_not, off_v_last,
                                  ],
                              inputs = inputs,
@@ -146,7 +146,7 @@ class GMhcCoevTask(SequentialTaskCollection):
         initial_task = GMhcCoevApplication(executable,
                                            N, p_mut_coeff, choose_or_rand, sick_or_not, off_v_last,
                                            output_dir = os.path.join(output_dir, 'tmp'),
-                                           required_walltime = single_run_duration + 1,
+                                           required_walltime = max(1, single_run_duration/60),
                                            **kw)
         SequentialTaskCollection.__init__(self, self.jobname, [initial_task], grid)
 
@@ -180,9 +180,9 @@ class GMhcCoevTask(SequentialTaskCollection):
                 continue
             # if `entry` is a generation output file, get the
             # generation no. and update the generation count
-            match = GMhcCoevTask.GENERATIONS_FILENAME_RE.match(entry)
+            match = GMhcCoevTask.GENERATIONS_FILENAME_RE.search(entry)
             if match:
-                generation_no = match.group('generation_no')
+                generation_no = int(match.group('generation_no'))
                 self.generations_done = max(self.generations_done, generation_no)
             # now really move file one level up
             dest_entry = os.path.join(self.output_dir, entry)
@@ -194,16 +194,23 @@ class GMhcCoevTask(SequentialTaskCollection):
         # if a `latest_work.mat` file exists, then we need
         # more time to compute the required number of generations
         latest_work = os.path.join(self.output_dir, 'latest_work.mat')
+        if not os.path.exists(latest_work):
+            latest_work = None
         if self.generations_done < self.generations_to_do:
+            gc3libs.log.debug("Computed %s generations, %s to do; submitting another job."
+                              % (self.generations_done, self.generations_to_do))
             self.add(
                 GMhcCoevApplication(self.executable,
                                     self.N, self.p_mut_coeff, self.choose_or_rand, self.sick_or_not, self.off_v_last,
                                     output_dir = os.path.join(self.output_dir, 'tmp'),
                                     latest_work = latest_work,
-                                    required_walltime = self.single_run_duration + 1,
+                                    # XXX: need wallclock time support in minutes!!
+                                    required_walltime = max(self.single_run_duration/60, 1),
                                     **self.extra))
             return Run.State.RUNNING
         else:
+            gc3libs.log.debug("Computed %s generations, no more to do."
+                              % (self.generations_done))
             self.execution.returncode = self.tasks[done].execution.returncode
             return Run.State.TERMINATED
 
@@ -305,9 +312,9 @@ newly-created jobs so that this limit is never exceeded.
                 continue
 
             yield ('MHC_coev_' + name,
-                   self.application,
+                   gmhc_coev.GMhcCoevTask,
                    [path,                    # executable
-                    self.params.walltime*60, # single_run_duration
+                    self.params.walltime*60 - 5, # single_run_duration
                     self.params.generations,
                     N,
                     p_mut_coeff,
