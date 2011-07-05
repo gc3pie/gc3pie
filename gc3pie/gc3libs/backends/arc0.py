@@ -141,6 +141,10 @@ class ArcLrms(LRMS):
     def _get_queues(self):
         cls = self._get_clusters()
         log.debug('_get_clusters returned [%d] cluster resources' % len(cls))
+        if not cls:
+            # empty list of clusters. Not following back to system GIIS configuration
+            # returning empty list
+            return cls
         log.info("Updating resource Queues information")
         return arclib.GetQueueInfo(cls,arclib.MDS_FILTER_CLUSTERINFO,
                                    True, '', 5)
@@ -415,7 +419,9 @@ class ArcLrms(LRMS):
                 return val
 
         queues = self._get_queues()
-        
+        if len(queues) == 0:
+            raise gc3libs.exceptions.LRMSSubmitError('No ARC queues found')
+
         for q in queues:
             q.grid_queued = _normalize_value(q.grid_queued)
             q.local_queued = _normalize_value(q.local_queued)
