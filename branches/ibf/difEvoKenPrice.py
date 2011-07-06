@@ -54,7 +54,7 @@ class deKenPrice:
     
     # Fix seed for debugging
     np.random.seed(1000)
-    self.I_iter = -1
+    self.I_iter = 0
 
     self.logger.handlers.append(self.mySH)
     self.logger.handlers.append(self.myFH)    

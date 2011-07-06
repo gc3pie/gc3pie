@@ -1,4 +1,4 @@
-#! /usr/bin/env python2.6
+#! /usr/bin/env python2
 #
 """
 Driver script for performing an global optimization over the parameter space. 
@@ -62,12 +62,12 @@ if not sys.path.count(path2Pymods):
     sys.path.append(path2Pymods)
 
 from forwardPremium import paraLoop_fp, GPremiumTaskMods
-from supportGc3 import update_parameter_in_file, getParameter
+from supportGc3 import update_parameter_in_file, getParameter, getIndex
 from pymods.support.support import rmFilesAndFolders
 from pymods.classes.tableDict import tableDict
 
 sys.path.append(os.path.join(os.path.dirname(__file__), '../generateResults/'))
-from createOverviewTable_gc3 import createOverviewTable
+from createOverviewTable import createOverviewTable
 from analyzeOverviewTable import anaOne4eachPair, anaOne4eachCtry, anaOne4all, nlcOne4eachCtry, nlcOne4eachPair, nlcOne4all
 from difEvoKenPrice import *
 
@@ -85,7 +85,7 @@ class gParaSearchParallel(ParallelTaskCollection, paraLoop_fp, GPremiumTaskMods)
     def __init__(self, pathToExecutable, architecture, logger, baseDir, xVars, 
                  nPopulation, xVarsDom, solverVerb, problemType, pathEmpirical, 
                  itermax, xConvCrit, yConvCrit, 
-                 makePlots, optStrategy, fWeight, fCritical,
+                 makePlots, optStrategy, fWeight, fCritical, countryList,
                  output_dir = '/tmp', grid = None, **kw):
 
         # set up logger
@@ -113,6 +113,7 @@ class gParaSearchParallel(ParallelTaskCollection, paraLoop_fp, GPremiumTaskMods)
         self.log = logger
         self.verbosity = solverVerb.upper()
         self.jobname = 'evaluateSolverGuess'
+        self.countryList = countryList.split()
         tasks = []
         self.xVars = xVars
         self.xVarsDom = xVarsDom.split()
@@ -123,7 +124,7 @@ class gParaSearchParallel(ParallelTaskCollection, paraLoop_fp, GPremiumTaskMods)
         self.x = None
         
         # First iteration with initial sample. 
-        self.iteration = - 1
+        self.iteration = 0
         
         # Make problem type specific adjustments. 
         if self.problemType == 'one4eachCtry':
@@ -157,7 +158,12 @@ class gParaSearchParallel(ParallelTaskCollection, paraLoop_fp, GPremiumTaskMods)
             self.nlc = nlcOne4eachPair(gdpTable = self.gdpTable, ctryPair = [Ctry1, Ctry2], domain = self.domain)
         elif self.problemType == 'one4all':
             pass
-
+        
+##        ctryIndices = getIndex(base = [len(self.countryList), len(self.countryList)], restr = 'lowerTr')
+##        for ctryIndex in ctryIndices:
+##            print(self.countryList[ctryIndex[0]], self.countryList[ctryIndex[1]])
+##        print('hello')
+        
         S_struct = {}
         S_struct['I_NP']         = int(nPopulation)
         S_struct['F_weight']     = float(fWeight)
@@ -388,6 +394,9 @@ Read `.loop` files and execute the `forwardPremium` program accordingly.
         self.add_param("-fC", "--fCritical", metavar="ARCH", type = float,
                        dest="fCritical", default = '1.0',
                        help="Fraction of new population to use.  ")
+        self.add_param("-cL", "--countryList", metavar="ARCH", type = str,
+                       dest="countryList", default = 'AU UK',
+                       help="List of countries to analyze. ")
 
     def parse_args(self):
         """
@@ -433,7 +442,7 @@ Read `.loop` files and execute the `forwardPremium` program accordingly.
                  self.log, self.params.initial, self.params.xVars, 
                  self.params.nPopulation, self.params.xVarsDom, self.params.solverVerb, self.params.problemType,
                  self.params.pathEmpirical, self.params.itermax, self.params.xConvCrit, self.params.yConvCrit,
-                 self.params.makePlots, self.params.optStrategy, self.params.fWeight, self.params.fCritical
+                 self.params.makePlots, self.params.optStrategy, self.params.fWeight, self.params.fCritical, self.params.countryList
                ], kwargs)
 
 

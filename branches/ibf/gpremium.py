@@ -1,4 +1,4 @@
-#! /usr/bin/env python2.6
+#! /usr/bin/env python
 #
 """
 Driver script for running the `forwardPremium` application on SMSCG.
