@@ -1,4 +1,4 @@
-#! /usr/bin/env python2
+#! /usr/bin/env python
 #
 """
 Driver script for performing an global optimization over the parameter space. 
