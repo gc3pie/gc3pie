@@ -34,6 +34,7 @@ class deKenPrice:
     self.I_strategy   = self.S_struct['I_strategy']
     self.I_plotting   = self.S_struct['I_plotting']
     self.xConvCrit    = self.S_struct['xConvCrit']
+    self.workingDir   = self.S_struct['workingDir']
     
     # Set up loggers
     self.mySH = logbook.StreamHandler(stream = sys.stdout, level = self.evaluator.verbosity.upper(), format_string = '{record.message}', bubble = True)
@@ -41,36 +42,103 @@ class deKenPrice:
     self.myFH = logbook.FileHandler(filename = __name__ + '.log', level = 'DEBUG', bubble = True)
     self.myFH.format_string = '{record.message}'
     self.logger = logbook.Logger(__name__)
-    
-    # Create folder to save plots
-    self.figSaveFolder = 'difEvoFigures'
-    if not os.path.exists(self.figSaveFolder):
-      os.mkdir(self.figSaveFolder)
-    
-    # Call actual solver. 
-    self.deopt()
-    
-  def deopt(self):
-    
-    # Fix seed for debugging
-    np.random.seed(1000)
-    self.I_iter = 0
-
     self.logger.handlers.append(self.mySH)
-    self.logger.handlers.append(self.myFH)    
-    self.logger.debug('entering deopt')
+    self.logger.handlers.append(self.myFH)      
+    
 
-    # -----Check input variables---------------------------------------------
-    if ( self.I_NP < 5 ):
-      self.I_NP = 5
-      self.logger.debug(' I_NP increased to minimal value 5')
+    # Check input variables
+##    if ( self.I_NP < 5 ):
+##      self.I_NP = 5
+##      self.logger.debug(' I_NP increased to minimal value 5')
     if ( ( self.F_CR < 0 ) or ( self.F_CR > 1 ) ):
       self.F_CR = 0.5
       self.logger.debug('F_CR should be from interval [0,1]; set to default value 0.5')
     if (self.I_itermax <= 0):
       self.I_itermax = 200
-      self.logger.debug('I_itermax should be > 0; set to default value 200')
+      self.logger.debug('I_itermax should be > 0; set to default value 200')    
+    
+    # Fix seed for debugging
+    np.random.seed(1000)
 
+    # set initial value for iteration count
+    self.I_iter = 0
+    
+    # Create folder to save plots
+    self.figSaveFolder = os.path.join(self.workingDir, 'difEvoFigures')
+    if not os.path.exists(self.figSaveFolder):
+      os.mkdir(self.figSaveFolder)
+  
+    
+  def deopt(self):
+    self.logger.debug('entering deopt')
+    converged = False
+    while not converged:    
+      converged = self.iterate()
+    self.logger.debug('exiting ' + __name__)
+
+  def iterate(self):
+    
+    if self.I_iter == 0:
+
+      self.drawInitialSample()
+      
+      # Evaluate target for the first time
+      self.S_vals = self.evaluator.target(self.FM_pop)
+      
+      # Remember the best population members and their value. 
+      self.updatePopulation()
+
+      # Stats for initial population: 
+      self.printStats()
+  
+      # make plots
+      if self.I_plotting:
+            self.plotPopulation() 
+
+      return False
+      
+    elif self.I_iter > 0:
+      
+      self.I_iter += 1
+      self.FM_ui = self.evolvePopulation(self.FM_pop)
+      
+      # Check constraints and resample points to maintain population size. 
+      self.FM_ui = self.enforceConstrReEvolve(self.FM_ui)
+    
+      # EVALUATE TARGET #
+      self.S_tempvals = self.evaluator.target(self.FM_ui)
+
+      self.logger.debug('x, f(x)')
+      self.logger.debug([ self.FM_ui[ix].tolist() for ix in range(len(self.FM_ui)) ])
+      self.logger.debug([ self.S_tempvals[ix] for ix in range(len(self.S_vals)) ])
+
+      self.updatePopulation()
+
+      # create output
+      self.printStats()
+
+      # make plots
+      if self.I_plotting:
+            self.plotPopulation()      
+
+      self.checkConvergence()
+    
+  def checkConvergence(self):
+      # Check convergence
+      if self.I_iter > self.I_itermax:
+        converged = True
+        self.logger.info('Exiting difEvo. I_iter >self.I_itermax ')
+      if self.S_bestval < self.F_VTR:
+        converged = True
+        self.logger.info('converged self.S_bestval < self.F_VTR')
+      if self.populationConverged(self.FM_pop):
+        converged = True
+        self.logger.info('converged self.populationConverged(self.FM_pop)')
+    
+      return converged
+    
+  
+  def drawInitialSample(self):
     # Draw population
     self.FM_pop = self.drawPopulation(self.I_NP, self.I_D)
     
@@ -83,57 +151,27 @@ class deKenPrice:
     # Check constraints and resample points to maintain population size. 
     self.FM_pop = self.enforceConstrResample(self.FM_pop)
     
-    # Evaluate target for the first time
-    self.S_vals = self.evaluator.target(self.FM_pop)
-    # # # #  # # # # # # ##  # # ## # # 
-    
-    # Determine bestmemit and bestvalit for random draw. 
-    for k in range(self.I_NP):                          # check the remaining members
-      if k == 0:
-        self.S_bestval = self.S_vals[0]                 # best objective function value so far
-        self.I_nfeval  = self.I_nfeval + 1
-        self.I_best_index  = 0
-      self.I_nfeval  += 1
-      if ( left_win( self.S_vals[k], self.S_bestval ) == 1 ):
-        self.I_best_index   = k              # save its location
-        self.S_bestval      = self.S_vals[k]
-    self.FVr_bestmemit = self.FM_pop[self.I_best_index, :] # best member of current iteration
-    self.S_bestvalit   = self.S_bestval              # best value of current iteration
-
-    self.FVr_bestmem = self.FVr_bestmemit            # best member ever
-    
-    # Stats for initial population: 
-    self.printStats()
-
-    # make plots
-    if self.I_plotting:
-          self.plotPopulation() 
-
-
-  #------DE-Minimization---------------------------------------------
-  #------FM_popold is the population which has to compete. It is--------
-  #------static through one iteration. FM_pop is the newly--------------
-  #------emerging population.----------------------------------------
-
-
-    ### Iter  
-    self.I_iter += 1
-    converged = False
-    while not converged:
-
-      self.FM_ui = self.evolvePopulation(self.FM_pop)
+    return
+  
+  def updatePopulation():
+    if self.I_iter == 0:
+      # Determine bestmemit and bestvalit for random draw. 
+      for k in range(self.I_NP):                          # check the remaining members
+        if k == 0:
+          self.S_bestval = self.S_vals[0]                 # best objective function value so far
+          self.I_nfeval  = self.I_nfeval + 1
+          self.I_best_index  = 0
+        self.I_nfeval  += 1
+        if ( left_win( self.S_vals[k], self.S_bestval ) == 1 ):
+          self.I_best_index   = k              # save its location
+          self.S_bestval      = self.S_vals[k]
+      self.FVr_bestmemit = self.FM_pop[self.I_best_index, :] # best member of current iteration
+      self.S_bestvalit   = self.S_bestval              # best value of current iteration
+  
+      self.FVr_bestmem = self.FVr_bestmemit            # best member ever
       
-      # Check constraints and resample points to maintain population size. 
-      self.FM_ui = self.enforceConstrReEvolve(self.FM_ui)
-    
-      # EVALUATE TARGET #
-      self.S_tempvals = self.evaluator.target(self.FM_ui)
-      # # # # # # # # # #
-
-      self.logger.debug('x, f(x)')
-      self.logger.debug([ self.FM_ui[ix].tolist() for ix in range(len(self.FM_ui)) ])
-      self.logger.debug([ self.S_tempvals[ix] for ix in range(len(self.S_vals)) ])
-
+    elif self.I_iter > 0:
+      
       for k in range(self.I_NP):
         self.I_nfeval  = self.I_nfeval + 1
         if left_win( self.S_tempvals[k], self.S_vals[k] ):   
@@ -147,32 +185,7 @@ class deKenPrice:
 
       self.FVr_bestmemit = self.FVr_bestmem       # freeze the best member of this iteration for the coming 
                                           # iteration. This is needed for some of the strategies.
-
-      # create output
-      self.printStats()
-
-      # make plots
-      if self.I_plotting:
-            self.plotPopulation()      
-      
-      # increment loop index
-      self.I_iter += 1
-
-      # Check convergence
-      if self.I_iter > self.I_itermax:
-        converged = True
-        self.logger.info('Exiting difEvo. I_iter >self.I_itermax ')
-      if self.S_bestval < self.F_VTR:
-        converged = True
-        self.logger.info('converged self.S_bestval < self.F_VTR')
-      if self.populationConverged(self.FM_pop):
-        converged = True
-        self.logger.info('converged self.populationConverged(self.FM_pop)')
-    
-    self.logger.debug('exiting ' + __name__)
-  # -- end deopt
-  
-  
+    return 
   
     
   def evolvePopulation(self, pop):
