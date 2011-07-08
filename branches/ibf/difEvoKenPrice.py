@@ -61,7 +61,7 @@ class deKenPrice:
     np.random.seed(1000)
 
     # set initial value for iteration count
-    self.I_iter = 0
+    self.I_iter = -1
     
     # Create folder to save plots
     self.figSaveFolder = os.path.join(self.workingDir, 'difEvoFigures')
@@ -78,8 +78,11 @@ class deKenPrice:
 
   def iterate(self):
     
+    self.I_iter += 1
+    
     if self.I_iter == 0:
 
+      
       self.drawInitialSample()
       
       # Evaluate target for the first time
@@ -100,7 +103,7 @@ class deKenPrice:
       
     elif self.I_iter > 0:
       
-      self.I_iter += 1
+     # self.I_iter += 1
       self.FM_ui = self.evolvePopulation(self.FM_pop)
       
       # Check constraints and resample points to maintain population size. 
@@ -123,9 +126,12 @@ class deKenPrice:
       if self.I_plotting:
             self.plotPopulation()      
 
-      self.checkConvergence()
+      return self.checkConvergence()
+      
+    
     
   def checkConvergence(self):
+      converged = False
       # Check convergence
       if self.I_iter > self.I_itermax:
         converged = True
