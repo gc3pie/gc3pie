@@ -120,7 +120,7 @@ class gParaSearchDriver(SequentialTaskCollection):
         self.baseDir = baseDir
         self.log = logger
         self.verbosity = solverVerb.upper()
-        self.jobname = 'evaluateSolverGuess'
+        self.jobname = 'iterationSolver'
         self.countryList = countryList.split()
         tasks = []
         self.xVars = xVars
@@ -257,6 +257,10 @@ class gParaSearchParallel(ParallelTaskCollection, paraLoop_fp, GPremiumTaskMods)
         S_struct['I_plotting']   = int(makePlots)
         S_struct['xConvCrit']    = float(xConvCrit)
         S_struct['workingDir']   = self.pathToStageDir
+        
+        deSolver = deKenPrice(self, S_struct)
+        
+        deSolver.deopt()
 
     def createJobs_x(self, inParaCombos):
         
@@ -267,8 +271,8 @@ class gParaSearchParallel(ParallelTaskCollection, paraLoop_fp, GPremiumTaskMods)
         self.logger.debug('Entering target on %s' % dateString)
         
         # Enter an iteration specific folder
-        iterationFolder = os.path.join(self.pathToStageDir, 'Iteration-' + str(self.iteration))
-        os.mkdir(iterationFolder)
+        self.iterationFolder = os.path.join(self.pathToStageDir, 'Iteration-' + str(self.iteration))
+        os.mkdir(self.iterationFolder)
         
         # Establish vals vector
         vals = []
@@ -303,21 +307,24 @@ class gParaSearchParallel(ParallelTaskCollection, paraLoop_fp, GPremiumTaskMods)
             writeVals.append(vals[1][0])
             paraCombosSigmaA = [  np.append(ele[1], ele[1]) for ele in inParaCombos ]
             
+        self.variables = variables
+            
         # Prepare paraCombos matching to resulting table. Used in analyzeOverviewTable
         # !!! This should be dependent on problem type or on missing variables in xvars. !!!
         paraCombos = []
         for EA,sA in zip(paraCombosEA, paraCombosSigmaA):
             paraCombo = np.append(EA, sA)
             paraCombos.append(paraCombo)
+        self.paraCombos = paraCombos
 
         # Write a para.loop file to generate grid jobs
         para_loop = self.writeParaLoop(variables = variables, 
                                        groups = groups, 
                                        groupRestrs = groupRestrs, 
                                        vals = writeVals, 
-                                       desPath = os.path.join(iterationFolder, 'para.loopTmp'))
+                                       desPath = os.path.join(self.iterationFolder, 'para.loopTmp'))
         
-        tasks = self.generateTaskList(para_loop, iterationFolder)
+        tasks = self.generateTaskList(para_loop, self.iterationFolder)
         # Take list of tasks and potentially split into parts if requested. Could loop over whole block
         ParallelTaskCollection.__init__(self, self.jobname, tasks, self.grid)
         
@@ -325,31 +332,31 @@ class gParaSearchParallel(ParallelTaskCollection, paraLoop_fp, GPremiumTaskMods)
         
     def target(self, inParaCombos):
         # ---- ideally replace this block with self.wait(). At the moment there is a bug in dag.py. time module is used but not imported. 
-##        self.submit()
-##        curState = self._state()
-##        self.logger.info('state = %s' % curState)
-##        while curState != 'TERMINATED':
-##            self.progress()
-##            time.sleep(15)
-##            curState = self._state()
-##            self.logger.info('state = %s' % curState)
-##        print 'done submitting'
-##        taskStats = self.stats()
-##        keyList = taskStats.keys()
-##        keyList = [ key.lower() for key in keyList ]
-##        keyList.sort()
-##        for key in keyList:
-##            self.logger.info(key + '   ' + str(taskStats[key]))
-##        # --- 
+        self.submit()
+        curState = self._state()
+        self.logger.info('state = %s' % curState)
+        while curState != 'TERMINATED':
+            self.progress()
+            time.sleep(15)
+            curState = self._state()
+            self.logger.info('state = %s' % curState)
+        print 'done submitting'
+        taskStats = self.stats()
+        keyList = taskStats.keys()
+        keyList = [ key.lower() for key in keyList ]
+        keyList.sort()
+        for key in keyList:
+            self.logger.info(key + '   ' + str(taskStats[key]))
+        # --- 
         
         # Each line in the resulting table (overviewSimu) represents one paraCombo
-        overviewTable = createOverviewTable(resultDir = iterationFolder, outFile = 'simulation.out', slUIPFile = 'slUIP.mat', 
+        overviewTable = createOverviewTable(resultDir = self.iterationFolder, outFile = 'simulation.out', slUIPFile = 'slUIP.mat', 
                                             exportFileName = 'overviewSimu', sortTable = False, 
                                             logLevel = self.verbosity, logFile = 'overTableLog.log')
 
-        result = self.analyzeResults(tableIn = overviewTable, varsIn = variables, valsIn = paraCombos, 
+        result = self.analyzeResults(tableIn = overviewTable, varsIn = self.variables, valsIn = self.paraCombos, 
                              targetVar = 'normDev', logLevel = self.verbosity, 
-                             logFile = os.path.join(iterationFolder, 'oneCtryPairLog.log'))
+                             logFile = os.path.join(self.iterationFolder, 'oneCtryPairLog.log'))
         
         self.logger.info('returning result to solver')
         self.iteration += 1
@@ -508,7 +515,6 @@ Read `.loop` files and execute the `forwardPremium` program accordingly.
         ctryIndices = getIndex(base = [len(countryList), len(countryList)], restr = 'lowerTr')
         for ctryIndex in ctryIndices:
             print(countryList[ctryIndex[0]], countryList[ctryIndex[1]])
-        print('hello')
         
         # Make problem type specific adjustments. 
         if self.params.problemType == 'one4eachCtry':
@@ -552,14 +558,6 @@ Read `.loop` files and execute the `forwardPremium` program accordingly.
                 
                 
                 executable = os.path.basename(self.params.executable)
-##                inputs = { self.params.executable:executable }
-##                outputs = { 'output/':'' }
-##                kwargs = extra.copy()
-##                kwargs['stdout'] = 'forwardPremiumOut.log'
-##                kwargs['join'] = True
-##                path_to_stage_dir = '/home/benjamin/workspace/fpProj/model/results/minitest'
-##                kwargs['output_dir'] = os.path.join(path_to_stage_dir, 'output')
-##                kwargs['requested_architecture'] = self.params.architecture
                 kwargs = {}
                 kwargs['output_dir'] = path_to_stage_dir
                 # interface to the GC3Libs main functionality
@@ -569,7 +567,7 @@ Read `.loop` files and execute the `forwardPremium` program accordingly.
                 if self.params.max_running < self.params.nPopulation:
                     self.params.max_running = self.params.nPopulation
                 
-                yield (jobname, gParaSearchDriver, 
+                yield (jobname, gParaSearchParallel, 
                        [ self.params.executable, path_to_stage_dir, self.params.architecture, 
                          self.log, self.params.initial, self.params.xVars, 
                          self.params.nPopulation, self.params.xVarsDom, self.params.solverVerb, self.params.problemType,

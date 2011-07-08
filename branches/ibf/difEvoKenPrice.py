@@ -83,6 +83,7 @@ class deKenPrice:
       self.drawInitialSample()
       
       # Evaluate target for the first time
+      self.evaluator.createJobs_x(self.FM_pop)
       self.S_vals = self.evaluator.target(self.FM_pop)
       
       # Remember the best population members and their value. 
@@ -106,6 +107,7 @@ class deKenPrice:
       self.FM_ui = self.enforceConstrReEvolve(self.FM_ui)
     
       # EVALUATE TARGET #
+      self.evaluator.createJobs_x(self.FM_pop)
       self.S_tempvals = self.evaluator.target(self.FM_ui)
 
       self.logger.debug('x, f(x)')
@@ -153,7 +155,7 @@ class deKenPrice:
     
     return
   
-  def updatePopulation():
+  def updatePopulation(self):
     if self.I_iter == 0:
       # Determine bestmemit and bestvalit for random draw. 
       for k in range(self.I_NP):                          # check the remaining members
