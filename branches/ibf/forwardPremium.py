@@ -35,11 +35,11 @@ from supportGc3 import lower, flatten, str2tuple, getIndex, extractVal, str2vals
 from supportGc3 import format_newVal, update_parameter_in_file, safe_eval, str2mat, mat2str, getParameter
 from paraLoop import paraLoop
 
-
+from gc3libs import Application
 import shutil
 
 
-class GPremiumTaskMods:
+class GPremiumApplication(Application):
     _invalid_chars = re.compile(r'[^_a-zA-Z0-9]+', re.X)
 
     def terminated(self):

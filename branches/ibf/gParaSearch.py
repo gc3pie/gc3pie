@@ -193,7 +193,7 @@ class gParaSearchDriver(SequentialTaskCollection):
         return Run.State.RUNNING
         
 
-class gParaSearchParallel(ParallelTaskCollection, paraLoop_fp, GPremiumTaskMods):
+class gParaSearchParallel(ParallelTaskCollection, paraLoop_fp, GPremiumApplication):
  
     def __init__(self, pathToExecutable, pathToStageDir, architecture, logger, baseDir, xVars, 
                  nPopulation, xVarsDom, solverVerb, problemType, pathEmpirical, 
@@ -567,6 +567,10 @@ Read `.loop` files and execute the `forwardPremium` program accordingly.
                 if self.params.max_running < self.params.nPopulation:
                     self.params.max_running = self.params.nPopulation
                 
+                # !! Take out when running as SeqentialTaskCollection !!
+                path_to_stage_dir = os.getcwd()
+                
+                # yield job
                 yield (jobname, gParaSearchParallel, 
                        [ self.params.executable, path_to_stage_dir, self.params.architecture, 
                          self.log, self.params.initial, self.params.xVars, 

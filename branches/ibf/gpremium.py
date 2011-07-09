@@ -48,7 +48,7 @@ import time
 
 from supportGc3 import lower, flatten, str2tuple, getIndex, extractVal, str2vals
 from supportGc3 import format_newVal, update_parameter_in_file, safe_eval, str2mat, mat2str, getParameter
-from forwardPremium import paraLoop_fp, GPremiumTaskMods
+from forwardPremium import paraLoop_fp, GPremiumApplication
 
 # gc3 library imports
 import gc3libs
@@ -62,14 +62,11 @@ import gc3libs.debug
 
 ## custom application class
 
-class GPremiumApplication(Application, GPremiumTaskMods):
-    """
-    Custom application class to wrap the execution of the
-    `forwardPremiumOut` program by B. Jonen and S. Scheuring.
-    """
-    
-    def __init__():
-        pass
+#class GPremiumApplication(Application, GPremiumTaskMods):
+    #"""
+    #Custom application class to wrap the execution of the
+    #`forwardPremiumOut` program by B. Jonen and S. Scheuring.
+    #"""
 
 
 
