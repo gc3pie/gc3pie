@@ -48,7 +48,7 @@ import time
 
 from supportGc3 import lower, flatten, str2tuple, getIndex, extractVal, str2vals
 from supportGc3 import format_newVal, update_parameter_in_file, safe_eval, str2mat, mat2str, getParameter
-from forwardPremium import paraLoop_fp, GPremiumApplication
+from forwardPremium import paraLoop_fp, GPremiumTaskMods
 
 # gc3 library imports
 import gc3libs
@@ -68,8 +68,8 @@ import gc3libs.debug
     #`forwardPremiumOut` program by B. Jonen and S. Scheuring.
     #"""
 
-
-
+class GPremiumApplication(Application, GPremiumTaskMods):
+    pass
 ## the GPremiumScript class
 
 class GPremiumScript(SessionBasedScript, paraLoop_fp):

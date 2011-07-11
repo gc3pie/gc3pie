@@ -193,7 +193,8 @@ class gParaSearchDriver(SequentialTaskCollection):
         return Run.State.RUNNING
         
 
-class gParaSearchParallel(ParallelTaskCollection, paraLoop_fp, GPremiumApplication):
+class gParaSearchParallel(ParallelTaskCollection, paraLoop_fp, GPremiumTaskMods
+                          ):
  
     def __init__(self, pathToExecutable, pathToStageDir, architecture, logger, baseDir, xVars, 
                  nPopulation, xVarsDom, solverVerb, problemType, pathEmpirical, 

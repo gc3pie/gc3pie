@@ -39,7 +39,7 @@ from gc3libs import Application
 import shutil
 
 
-class GPremiumApplication(Application):
+class GPremiumTaskMods():
     _invalid_chars = re.compile(r'[^_a-zA-Z0-9]+', re.X)
 
     def terminated(self):
