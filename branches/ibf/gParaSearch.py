@@ -532,8 +532,8 @@ Read `.loop` files and execute the `forwardPremium` program accordingly.
                 print(country1, country2)
                 jobname = country1 + '-' + country2
                 # set stage dir. 
-                path_to_stage_dir = self.make_directory_path(self.params.output, jobname)
-                gc3libs.utils.mkdir(path_to_stage_dir)
+                #path_to_stage_dir = self.make_directory_path(self.params.output, jobname)
+                #gc3libs.utils.mkdir(path_to_stage_dir)
                 #path_to_stage_dir = os.path.join(iterationFolder, jobname)
                 # Get moments table from empirical analysis
                 gdpTable = tableDict.fromTextFile(fileIn = os.path.join(self.params.pathEmpirical, 'outputInput/momentTable/Gdp/gdpMoments.csv'),
@@ -557,6 +557,8 @@ Read `.loop` files and execute the `forwardPremium` program accordingly.
                 # Pass ctry information to nlc
                 nlc = nlcOne4eachPair(gdpTable = gdpTable, ctryPair = [Ctry1, Ctry2], domain = domain)
                 
+                # !! Take out when running as SeqentialTaskCollection !!
+                path_to_stage_dir = os.getcwd()                
                 
                 executable = os.path.basename(self.params.executable)
                 kwargs = {}
@@ -568,8 +570,7 @@ Read `.loop` files and execute the `forwardPremium` program accordingly.
                 if self.params.max_running < self.params.nPopulation:
                     self.params.max_running = self.params.nPopulation
                 
-                # !! Take out when running as SeqentialTaskCollection !!
-                path_to_stage_dir = os.getcwd()
+
                 
                 # yield job
                 yield (jobname, gParaSearchParallel, 
