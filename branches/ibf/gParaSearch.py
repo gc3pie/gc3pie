@@ -384,7 +384,7 @@ class gParaSearchParallel(ParallelTaskCollection, paraLoop_fp, GPremiumTaskMods
             gc3libs.utils.mkdir(input_dir)
             prefix_len = len(input_dir) + 1
             # 1. files in the "initial" dir are copied verbatim
-            self.getCtryParas(self.baseDir)
+            #self.getCtryParas(self.baseDir)
             self.fillInputDir( self.baseDir, input_dir)
             # 2. apply substitutions to parameter files
             for (path, changes) in substs.iteritems():
@@ -527,10 +527,10 @@ Read `.loop` files and execute the `forwardPremium` program accordingly.
             print(self.gdpTable)
         elif self.params.problemType == 'one4eachPair':
             for ctryIndex in ctryIndices:
-                country1 = countryList[ctryIndex[0]]
-                country2 = countryList[ctryIndex[1]]
-                print(country1, country2)
-                jobname = country1 + '-' + country2
+                Ctry1 = countryList[ctryIndex[0]]
+                Ctry2 = countryList[ctryIndex[1]]
+                print(Ctry1, Ctry2)
+                jobname = Ctry1 + '-' + Ctry2
                 # set stage dir. 
                 #path_to_stage_dir = self.make_directory_path(self.params.output, jobname)
                 #gc3libs.utils.mkdir(path_to_stage_dir)
@@ -539,13 +539,18 @@ Read `.loop` files and execute the `forwardPremium` program accordingly.
                 gdpTable = tableDict.fromTextFile(fileIn = os.path.join(self.params.pathEmpirical, 'outputInput/momentTable/Gdp/gdpMoments.csv'),
                                                   delim = ',', width = 20)
                 analyzeResults = anaOne4eachPair
-                # Get the correct Ctry Paras into base dir. 
-                self.getCtryParas(baseDir)
+
                 # Get Ctry information for this run. 
-                Ctry1 = getParameter(fileIn = os.path.join(baseDir, 'input/markovA.in'), varIn = 'Ctry', 
-                                     regexIn = 'space-separated')
-                Ctry2 = getParameter(fileIn = os.path.join(baseDir, 'input/markovB.in'), varIn = 'Ctry', 
-                                     regexIn = 'space-separated')
+                #Ctry1 = getParameter(fileIn = os.path.join(baseDir, 'input/markovA.in'), varIn = 'Ctry', 
+                                     #regexIn = 'space-separated')
+                #Ctry2 = getParameter(fileIn = os.path.join(baseDir, 'input/markovB.in'), varIn = 'Ctry', 
+                                     #regexIn = 'space-separated')
+                update_parameter_in_file(os.path.join(baseDir, 'input/markovA.in'), 'Ctry',
+                                          0,  Ctry1,  'space-separated')
+                update_parameter_in_file(os.path.join(baseDir, 'input/markovB.in'), 'Ctry',
+                                          0,  Ctry2,  'space-separated')
+                # Get the correct Ctry Paras into base dir. 
+                self.getCtryParas(baseDir, Ctry1, Ctry2)
                 EA = getParameter(fileIn = os.path.join(baseDir, 'input/parameters.in'), varIn = 'EA', 
                                      regexIn = 'bar-separated')
                 EB = getParameter(fileIn = os.path.join(baseDir, 'input/parameters.in'), varIn = 'EB', 

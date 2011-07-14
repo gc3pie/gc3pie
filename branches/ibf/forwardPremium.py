@@ -107,7 +107,7 @@ class paraLoop_fp(paraLoop):
       Both functions are used to prepare the input folder sent to the grid. 
     '''
     
-    def getCtryParas(self, baseDir):
+    def getCtryParas(self, baseDir, Ctry1, Ctry2):
         '''
           Obtain the right markov input files (markovMatrices.in, markovMoments.in 
           and markov.out) and overwrite the existing ones in the baseDir/input folder. 
@@ -116,10 +116,6 @@ class paraLoop_fp(paraLoop):
         # Find Ctry pair
         inputFolder = os.path.join(baseDir, 'input')
         outputFolder = os.path.join(baseDir, 'output')
-        markovA_file_path = os.path.join(inputFolder, 'markovA.in')
-        markovB_file_path = os.path.join(inputFolder, 'markovB.in')
-        Ctry1 = getParameter(markovA_file_path, 'Ctry')
-        Ctry2 = getParameter(markovB_file_path, 'Ctry')
         markov_dir = os.path.join(baseDir, 'markov')
         CtryPresetPath = os.path.join(markov_dir, 'presets', Ctry1 + '-' + Ctry2)
         filesToCopy = glob.glob(CtryPresetPath + '/*.in')

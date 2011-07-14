@@ -141,7 +141,11 @@ Read `.loop` files and execute the `forwardPremium` program accordingly.
                 prefix_len = len(input_dir) + 1
                 # 1. files in the "initial" dir are copied verbatim
                 if self.params.initial is not None:
-                    self.getCtryParas(self.params.initial)
+                    markovA_file_path = os.path.join(self.params.initial, 'markovA.in')
+                    markovB_file_path = os.path.join(self.params.initial, 'markovB.in')
+                    Ctry1 = getParameter(markovA_file_path, 'Ctry')
+                    Ctry2 = getParameter(markovB_file_path, 'Ctry')
+                    self.getCtryParas(self.params.initial, Ctry1, Ctry2)
                     self.fillInputDir(self.params.initial, input_dir)
                   #  gc3libs.utils.copytree(self.params.initial, input_dir)
                 # 2. apply substitutions to parameter files

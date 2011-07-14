@@ -76,7 +76,11 @@ class getIndex(object):
     Output: loopIndex - array of current loop index
     """    
 
-    def __init__(self, base, restr = None):
+    def __init__(self, base, restr = None, direction = 'rowWise'):
+        '''
+          Direction specifies which direction is incremented. For matrix A = [1 , 2; rowwise means (0,0), (0,1)
+          while columnwise means (0,0), (1, 0).                               3 , 4]
+        '''
         if isinstance(base, int):
             baseList = []
             baseList.append(base)
@@ -84,6 +88,7 @@ class getIndex(object):
         self.base = np.array(base)
         self.loopIndex = np.zeros(len(self.base), dtype=np.int16)
         self.iteration = 1
+        self.direction = direction
 
         if isinstance(restr, np.ndarray):
             self.restr = restr[0].lower()
@@ -94,7 +99,15 @@ class getIndex(object):
         diagnolStrings = ['diagnol', 'diag']
         if self.restr in diagnolStrings:
             getIndex.next = getIndex.nextDiag
-            
+
+        if direction.lower() == 'rowwise':
+            self.increment = self.incrementRowWise
+        elif direction.lower() == 'columnwise':
+            self.increment = self.incrementColumnWise
+        else:
+            print('cannot understand direction')
+            sys.exit()
+
     def nextDiag(self):
         if self.iteration > 1:
             self.loopIndex += 1
@@ -104,10 +117,18 @@ class getIndex(object):
         return self.loopIndex.tolist()
 
     def __iter__(self):
-        return getIndex(self.base, self.restr)
+        return getIndex(self.base, self.restr, self.direction)
 
-    def increment(self):
+    def incrementRowWise(self):
         for ix in xrange(len(self.base) - 1, -1, -1):
+            if self.loopIndex[ix] == self.base[ix] - 1:
+                self.loopIndex[ix] = 0
+            else:
+                self.loopIndex[ix] += 1
+                return
+
+    def incrementColumnWise(self):
+        for ix in xrange(0, len(self.base), +1):
             if self.loopIndex[ix] == self.base[ix] - 1:
                 self.loopIndex[ix] = 0
             else:
@@ -130,12 +151,12 @@ class getIndex(object):
         while skip == True:
             if self.iteration > 1:
                 self.increment()
-    
+
             if list(self.loopIndex) == [0] * len(self.base) and self.iteration > 1:
                 raise StopIteration
-            
+
             self.iteration += 1
-    
+
             if self.restr == 'lowertr':
                 skip = self.lowerTr()
             elif self.restr == None or self.restr == 'none':
@@ -143,7 +164,7 @@ class getIndex(object):
             else:
                 raise gc3libs.exceptions.InvalidArgument(
                     "Unknown restriction '%s'" % self.restr)
-      
+
         return self.loopIndex.tolist()
 
 
@@ -203,6 +224,20 @@ def format_newVal(newVal):
 
 @gc3libs.debug.trace
 def update_parameter_in_file(path, varIn, paraIndex, newVal, regexIn):
+    _loop_regexps = {
+        'bar-separated':(r'([a-z]+[\s\|]+)'
+                         r'(\w+)' # variable name
+                         r'(\s*[\|]+\s*)' # bars and spaces
+                         r'([\w\s\.,;\[\]\-]+)' # value
+                         r'(\s*)'),
+        'space-separated':(r'(\s*)'
+                           r'(\w+)' # variable name
+                           r'(\s+)' # spaces (filler)
+                           r'([\w\s\.,;\[\]\-]+)' # values
+                           r'(\s*)'), # spaces (filler)
+    }
+    if regexIn in _loop_regexps.keys():
+        regexIn = _loop_regexps[regexIn]
     paraFileIn = open(path, 'r')
     paraFileOut = open(path + '.tmp', 'w')
     for line in paraFileIn:
@@ -309,20 +344,20 @@ def mat2str(matIn, fmt='%.2f '):
 def getParameter(fileIn, varIn, regexIn = '(\s*)([a-zA-Z0-9]+)(\s+)([a-zA-Z0-9\.\s,;\[\]\-]+)(\s*)'):
     import re
     _loop_regexps = {
-    'bar-separated':(r'([a-z]+[\s\|]+)'
-                     r'(\w+)' # variable name
-                     r'(\s*[\|]+\s*)' # bars and spaces
-                     r'([\w\s\.,;\[\]\-]+)' # value
-                     r'(\s*)'),
-    'space-separated':(r'(\s*)'
-                       r'(\w+)' # variable name
-                       r'(\s+)' # spaces (filler)
-                       r'([\w\s\.,;\[\]\-]+)' # values
-                       r'(\s*)'), # spaces (filler)
+        'bar-separated':(r'([a-z]+[\s\|]+)'
+                         r'(\w+)' # variable name
+                         r'(\s*[\|]+\s*)' # bars and spaces
+                         r'([\w\s\.,;\[\]\-]+)' # value
+                         r'(\s*)'),
+        'space-separated':(r'(\s*)'
+                           r'(\w+)' # variable name
+                           r'(\s+)' # spaces (filler)
+                           r'([\w\s\.,;\[\]\-]+)' # values
+                           r'(\s*)'), # spaces (filler)
     }
     if regexIn in _loop_regexps.keys():
         regexIn = _loop_regexps[regexIn]
-  #  print('updateParameter inputs: \n --- \n {0} \n {1} \n {2} \n {3} \n {4} \n ---'.format(fileIn, varIn, paraIndex, newVal, regexIn))
+    #  print('updateParameter inputs: \n --- \n {0} \n {1} \n {2} \n {3} \n {4} \n ---'.format(fileIn, varIn, paraIndex, newVal, regexIn))
     paraFile = open(fileIn)
     lines = paraFile.readlines()
     paraFile.close()
@@ -332,8 +367,8 @@ def getParameter(fileIn, varIn, regexIn = '(\s*)([a-zA-Z0-9]+)(\s+)([a-zA-Z0-9\.
         if var == varIn:
             return paraVal
     print('variable {} not in parameter file {}'.format(varIn, fileIn))
-    
-    
+
+
 if __name__ == '__main__':   
     x = getIndex([6,6], 'lowertr')
     for i in x:
