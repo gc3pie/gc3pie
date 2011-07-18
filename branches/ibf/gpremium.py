@@ -141,8 +141,8 @@ Read `.loop` files and execute the `forwardPremium` program accordingly.
                 prefix_len = len(input_dir) + 1
                 # 1. files in the "initial" dir are copied verbatim
                 if self.params.initial is not None:
-                    markovA_file_path = os.path.join(self.params.initial, 'markovA.in')
-                    markovB_file_path = os.path.join(self.params.initial, 'markovB.in')
+                    markovA_file_path = os.path.join(self.params.initial, 'input', 'markovA.in')
+                    markovB_file_path = os.path.join(self.params.initial, 'input', 'markovB.in')
                     Ctry1 = getParameter(markovA_file_path, 'Ctry')
                     Ctry2 = getParameter(markovB_file_path, 'Ctry')
                     self.getCtryParas(self.params.initial, Ctry1, Ctry2)

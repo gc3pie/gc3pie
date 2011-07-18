@@ -51,7 +51,11 @@ for Ctry1 in ${Ctrys[@]}; do
     cp -R ${pathToModel}/base/ ${saveDir}/base/
     sleep 1
     cd ${saveDir}
-    ~/workspace/fpProj/model/code/gPremiumScripts/gParaSearch.py -b base -x ~/workspace/fpProj/model/bin/forwardPremiumOut -C 16 -N -NP 60 -xVars EA -xVarsDom '0.5 0.9' -sv warning &
-    cd ..
+    read -p "Execute:    /home/jonen/workspace/fpProj/model/code/gPremiumScripts/gParaSearch.py -b base -x /home/jonen/workspace/fpProj/model/bin/forwardPremiumOut -C 16 -N -NP 100 -xVars 'EA sigmaA' -xVarsDom '0.5 1.0 0.000 0.010' -sv info -t one4eachPair -e /home/jonen/workspace/fpProj/empirical/ --itermax 20 -yC 1.e-2"  --countryList "${Ctry1} ${Ctry2}" answer
+    if ! [[ ${answer} =~ "y" ]]; then
+      exit
+    fi
+    /home/jonen/workspace/fpProj/model/code/gPremiumScripts/gParaSearch.py -b base -x /home/jonen/workspace/fpProj/model/bin/forwardPremiumOut -C 16 -N -NP 60 -xVars 'EA sigmaA' -xVarsDom '0.5 1.0 0.000 0.010' -sv info -t one4eachPair -e /home/jonen/workspace/fpProj/empirical/ --itermax 20 -yC 1.e-2 --countryList "${Ctry1} ${Ctry2}"
+     cd ..
   done
 done
