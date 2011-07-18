@@ -7,6 +7,7 @@ Please refer to this web site for more information: http://www.icsi.berkeley.edu
 import numpy as np
 import sys, os
 import logbook
+from supportGc3 import StatefulStreamHandler, StatefulFileHandler
 try:
   import matplotlib
   matplotlib.use('SVG')
@@ -37,9 +38,9 @@ class deKenPrice:
     self.workingDir   = self.S_struct['workingDir']
     
     # Set up loggers
-    self.mySH = logbook.StreamHandler(stream = sys.stdout, level = self.evaluator.verbosity.upper(), format_string = '{record.message}', bubble = True)
+    self.mySH = StatefulStreamHandler(stream = sys.stdout, level = self.evaluator.verbosity.upper(), format_string = '{record.message}', bubble = True)
     self.mySH.format_string = '{record.message}'
-    self.myFH = logbook.FileHandler(filename = __name__ + '.log', level = 'DEBUG', bubble = True)
+    self.myFH = StatefulFileHandler(filename = __name__ + '.log', level = 'DEBUG', bubble = True)
     self.myFH.format_string = '{record.message}'
     self.logger = logbook.Logger(__name__)
     self.logger.handlers.append(self.mySH)

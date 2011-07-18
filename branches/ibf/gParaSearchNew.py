@@ -62,7 +62,7 @@ if not sys.path.count(path2Pymods):
     sys.path.append(path2Pymods)
 
 from forwardPremium import paraLoop_fp, GPremiumApplication
-from supportGc3 import update_parameter_in_file, getParameter, getIndex
+from supportGc3 import update_parameter_in_file, getParameter, getIndex, StatefulStreamHandler, StatefulFileHandler
 from pymods.support.support import rmFilesAndFolders
 from pymods.classes.tableDict import tableDict
 
@@ -80,10 +80,118 @@ from difEvoKenPrice import *
 ##DEBUG = 1
 ##NOTSET = 0
 
-def __getstate__(self):
-    return None
-logbook.StreamHandler.__getstate__ = __getstate__
-logbook.FileHandler.__getstate__ = __getstate__
+##def __getstate__(self):
+##    return None
+##logbook.StreamHandler.__getstate__ = __getstate__
+##logbook.FileHandler.__getstate__ = __getstate__
+
+
+
+class gParaSearchDriver(SequentialTaskCollection):
+    
+    def __init__(self, pathToExecutable, pathToStageDir, architecture, logger, baseDir, xVars, 
+                 nPopulation, xVarsDom, solverVerb, problemType, pathEmpirical, 
+                 itermax, xConvCrit, yConvCrit, 
+                 makePlots, optStrategy, fWeight, fCritical, countryList, analyzeResults, nlc, 
+                 output_dir = '/tmp', grid = None, **kw):
+        
+        self.pathToStageDir = pathToStageDir
+        # set up logger
+        self.mySH = StatefulStreamHandler(stream = sys.stdout, level = solverVerb.upper(), format_string = '{record.message}', bubble = True)
+        self.mySH.format_string = '{record.message}'
+        self.myFH = StatefulFileHandler(filename = os.path.join(self.pathToStageDir, 'gParaSearch.log'), level = 'DEBUG', bubble = True)
+        self.myFH.format_string = '{record.message}' 
+        self.logger = logbook.Logger(name = 'target.log')
+
+        self.logger.handlers.append(self.mySH)
+        self.logger.handlers.append(self.myFH)   
+    
+        try:
+            stdErr = list(logbook.handlers.Handler.stack_manager.iter_context_objects())[0]
+            stdErr.pop_application()
+        except: 
+            pass
+        
+        # Set up initial variables and set the correct methods. 
+        self.problemType = problemType
+        self.grid = grid
+        self.executable = pathToExecutable
+        self.architecture = architecture
+        self.baseDir = baseDir
+        self.log = logger
+        self.verbosity = solverVerb.upper()
+        self.jobname = 'iterationSolver'
+        self.countryList = countryList.split()
+        tasks = []
+        self.xVars = xVars
+        self.xVarsDom = xVarsDom.split()
+        lowerBds = np.array([self.xVarsDom[i] for i in range(len(self.xVarsDom)) if i % 2 == 0], dtype = 'float64')
+        upperBds = np.array([self.xVarsDom[i] for i in range(len(self.xVarsDom)) if i % 2 == 1], dtype = 'float64')
+        self.domain = zip(lowerBds, upperBds)
+        self.n = len(self.xVars.split())
+        self.x = None
+        self.nlc = nlc
+        self.analyzeResults = analyzeResults
+        
+        # First iteration with initial sample. 
+        self.iteration = 0
+        
+        
+        S_struct = {}
+        S_struct['I_NP']         = int(nPopulation)
+        S_struct['F_weight']     = float(fWeight)
+        S_struct['F_CR']         = float(fCritical)
+        S_struct['I_D']          = self.n
+        S_struct['lowerBds']     = lowerBds
+        S_struct['upperBds']     = upperBds
+        S_struct['I_itermax']    = int(itermax)
+        S_struct['F_VTR']        = float(yConvCrit)
+        S_struct['I_strategy']   = int(optStrategy)
+        S_struct['I_plotting']   = int(makePlots)
+        S_struct['xConvCrit']    = float(xConvCrit)
+        S_struct['workingDir']   = self.pathToStageDir
+        
+        self.evaluator = gParaSearchParallel(pathToExecutable, pathToStageDir, architecture, logger, baseDir, xVars, 
+                 nPopulation, xVarsDom, solverVerb, problemType, pathEmpirical, 
+                 itermax, xConvCrit, yConvCrit, 
+                 makePlots, optStrategy, fWeight, fCritical, countryList, analyzeResults, nlc, 
+                 output_dir, grid)
+        
+        
+        ### Run solver ###
+        self.deSolver = deKenPrice(self.evaluator, S_struct)
+        
+        self.converged = False
+        # create initial task and register it
+        self.deSolver.drawInitialSample()
+        self.evaluator.createJobs_x(self.deSolver.FM_pop)
+        initial_task = self.evaluator
+        SequentialTaskCollection.__init__(self, self.jobname, [initial_task], grid)
+        
+        
+    def __str__(self):
+        return self.jobname
+        
+    def __next__(self):
+        self.evaluator.target(self.deSolver.FM_pop)
+        self.evaluator.updatePopulation()
+        self.converged = deKenPrice.checkConvergence()
+        if not self.converged:
+            self.FM_ui = self.evolvePopulation(self.FM_pop)
+            
+            # Check constraints and resample points to maintain population size. 
+            self.FM_ui = self.enforceConstrReEvolve(self.FM_ui)          
+##            evaluator = gParaSearchParallel(pathToExecutable, pathToStageDir, architecture, logger, baseDir, xVars, 
+##                     nPopulation, xVarsDom, solverVerb, problemType, pathEmpirical, 
+##                     itermax, xConvCrit, yConvCrit, 
+##                     makePlots, optStrategy, fWeight, fCritical, countryList, analyzeResults, nlc, 
+##                     output_dir, grid)
+            self.evaluator.createJobs_x(self.deSolver.FM_pop)
+            self.tasks.append(self.evaluator)
+        else: 
+            return Run.State.TERMINATED
+        return Run.State.RUNNING
+        
 
 class gParaSearchParallel(ParallelTaskCollection, paraLoop_fp):
  
@@ -95,12 +203,11 @@ class gParaSearchParallel(ParallelTaskCollection, paraLoop_fp):
 
         self.pathToStageDir = pathToStageDir
         # set up logger
-        self.mySH = logbook.StreamHandler(stream = sys.stdout, level = solverVerb.upper(), format_string = '{record.message}', bubble = True)
+        self.mySH = StatefulStreamHandler(stream = sys.stdout, level = solverVerb.upper(), format_string = '{record.message}', bubble = True)
         self.mySH.format_string = '{record.message}'
-        self.myFH = logbook.FileHandler(filename = os.path.join(self.pathToStageDir, 'gParaSearch.log'), level = 'DEBUG', bubble = True)
+        self.myFH = StatefulFileHandler(filename = os.path.join(self.pathToStageDir, 'gParaSearch.log'), level = 'DEBUG', bubble = True)
         self.myFH.format_string = '{record.message}' 
         self.logger = logbook.Logger(name = 'target.log')
-        self.logger.__getstate__ = __getstate__
 
         self.logger.handlers.append(self.mySH)
         self.logger.handlers.append(self.myFH)   
@@ -469,7 +576,7 @@ Read `.loop` files and execute the `forwardPremium` program accordingly.
 
                 
                 # yield job
-                yield (jobname, gParaSearchParallel, 
+                yield (jobname, gParaSearchDriver, 
                        [ self.params.executable, path_to_stage_dir, self.params.architecture, 
                          self.log, self.params.initial, self.params.xVars, 
                          self.params.nPopulation, self.params.xVarsDom, self.params.solverVerb, self.params.problemType,
@@ -492,14 +599,7 @@ if __name__ == '__main__':
     # Remove all files in curPath
     curPath = os.getcwd()
     filesAndFolder = os.listdir(curPath)
-    if 'gParaSearch.csv' in filesAndFolder or 'gParaSearchNew.csv' in filesAndFolder:
-    # if another paraSearch was run in here before, clean up. 
+    if 'gParaSearchNew.csv' in filesAndFolder: # if another paraSearch was run in here before, clean up. 
         rmFilesAndFolders(curPath)  
     gParaSearch().run()
-    
-    
-    
-    
-    
-    
     

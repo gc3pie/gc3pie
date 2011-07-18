@@ -28,6 +28,22 @@ __docformat__ = 'reStructuredText'
 import gc3libs.debug
 import numpy as np
 import re, os
+import logbook
+
+
+class StatefulStreamHandler(logbook.StreamHandler):
+    def __getstate__(self):
+        pass
+    def __setstate__(self, state):
+        self.__dict__ = state
+        self.lock = logbook.global_output_lock
+        
+class StatefulFileHandler(logbook.FileHandler):
+    def __getstate__(self):
+        pass
+    def __setstate__(self, state):
+        self.__dict__ = state
+        self.lock = logbook.global_output_lock
 
 def lower(npStrAr):
     return np.fromiter((x.lower() for x in npStrAr.flat),
