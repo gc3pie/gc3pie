@@ -45,10 +45,10 @@ class GPremiumApplication(Application):
     
     def fetch_output_error(self, ex):
 
-        if self.execution.state == Run.State.TERMINATING:
+        if self.execution.state == self.Run.State.TERMINATING:
         # do notify task/main application that we're done
         # ignore error, let's continue
-            self.execution.state = Run.State.TERMINATED
+            self.execution.state = self.Run.State.TERMINATED
             return None
         else:
         # non-terminal state, pass on error

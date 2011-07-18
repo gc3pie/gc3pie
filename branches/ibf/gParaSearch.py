@@ -250,6 +250,8 @@ class gParaSearchParallel(ParallelTaskCollection, paraLoop_fp):
                              targetVar = 'normDev', logLevel = self.verbosity, 
                              logFile = os.path.join(self.iterationFolder, 'oneCtryPairLog.log'))
         
+        for x, fx in zip(self.paraCombos, result):
+            self.logger.debug('%s -> %s' % (x, fx))
         self.logger.info('returning result to solver')
         self.iteration += 1
         return result

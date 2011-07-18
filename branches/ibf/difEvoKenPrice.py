@@ -90,6 +90,10 @@ class deKenPrice:
       self.evaluator.createJobs_x(self.FM_pop)
       self.S_vals = self.evaluator.target(self.FM_pop)
       
+      self.logger.debug('x -> f(x)')
+      for x, fx in zip(self.FM_pop, self.S_vals):
+        self.logger.debug('%s -> %s' % (x.tolist(), fx))
+      
       # Remember the best population members and their value. 
       self.updatePopulation()
 
@@ -111,12 +115,14 @@ class deKenPrice:
       self.FM_ui = self.enforceConstrReEvolve(self.FM_ui)
     
       # EVALUATE TARGET #
-      self.evaluator.createJobs_x(self.FM_pop)
+      self.evaluator.createJobs_x(self.FM_ui)
       self.S_tempvals = self.evaluator.target(self.FM_ui)
 
-      self.logger.debug('x, f(x)')
-      self.logger.debug([ self.FM_ui[ix].tolist() for ix in range(len(self.FM_ui)) ])
-      self.logger.debug([ self.S_tempvals[ix] for ix in range(len(self.S_vals)) ])
+      self.logger.debug('x -> f(x)')
+      for x, fx in zip(self.FM_ui, self.S_tempvals):
+        self.logger.debug('%s -> %s' % (x.tolist(), fx))
+##      self.logger.debug([ self.FM_ui[ix].tolist() for ix in range(len(self.FM_ui)) ])
+##      self.logger.debug([ self.S_tempvals[ix] for ix in range(len(self.S_vals)) ])
 
       self.updatePopulation()
 
