@@ -61,7 +61,7 @@ path2Pymods = os.path.join(os.path.dirname(__file__), '../')
 if not sys.path.count(path2Pymods):
     sys.path.append(path2Pymods)
 
-from forwardPremium import paraLoop_fp, GPremiumTaskMods
+from forwardPremium import paraLoop_fp, GPremiumApplication
 from supportGc3 import update_parameter_in_file, getParameter, getIndex
 from pymods.support.support import rmFilesAndFolders
 from pymods.classes.tableDict import tableDict
@@ -193,8 +193,7 @@ class gParaSearchDriver(SequentialTaskCollection):
         return Run.State.RUNNING
         
 
-class gParaSearchParallel(ParallelTaskCollection, paraLoop_fp, GPremiumTaskMods
-                          ):
+class gParaSearchParallel(ParallelTaskCollection, paraLoop_fp):
  
     def __init__(self, pathToExecutable, pathToStageDir, architecture, logger, baseDir, xVars, 
                  nPopulation, xVarsDom, solverVerb, problemType, pathEmpirical, 
@@ -410,7 +409,7 @@ class gParaSearchParallel(ParallelTaskCollection, paraLoop_fp, GPremiumTaskMods
             kwargs['requested_architecture'] = self.architecture
             kwargs['requested_cores'] = 1
             # hand over job to create
-            tasks.append(Application('./' + executable, [], inputs, outputs, **kwargs)) 
+            tasks.append(GPremiumApplication('./' + executable, [], inputs, outputs, **kwargs)) 
         return tasks
 
 class gParaSearch(SessionBasedScript, paraLoop_fp):

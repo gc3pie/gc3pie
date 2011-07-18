@@ -39,8 +39,21 @@ from gc3libs import Application
 import shutil
 
 
-class GPremiumTaskMods():
+
+class GPremiumApplication(Application):
     _invalid_chars = re.compile(r'[^_a-zA-Z0-9]+', re.X)
+    
+    def fetch_output_error(self, ex):
+
+        if self.execution.state == Run.State.TERMINATING:
+        # do notify task/main application that we're done
+        # ignore error, let's continue
+            self.execution.state = Run.State.TERMINATED
+            return None
+        else:
+        # non-terminal state, pass on error
+            return ex
+
 
     def terminated(self):
         """
@@ -97,7 +110,7 @@ class GPremiumTaskMods():
         else:
             # no `simulation.out` found, signal error
             self.execution.exitcode = 2
-
+         
             
 class paraLoop_fp(paraLoop):
     '''
