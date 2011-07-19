@@ -35,7 +35,7 @@ from supportGc3 import lower, flatten, str2tuple, getIndex, extractVal, str2vals
 from supportGc3 import format_newVal, update_parameter_in_file, safe_eval, str2mat, mat2str, getParameter
 from paraLoop import paraLoop
 
-from gc3libs import Application
+from gc3libs import Application, Run
 import shutil
 
 
@@ -45,10 +45,10 @@ class GPremiumApplication(Application):
     
     def fetch_output_error(self, ex):
 
-        if self.execution.state == self.Run.State.TERMINATING:
+        if self.execution.state == Run.State.TERMINATING:
         # do notify task/main application that we're done
         # ignore error, let's continue
-            self.execution.state = self.Run.State.TERMINATED
+            self.execution.state = Run.State.TERMINATED
             return None
         else:
         # non-terminal state, pass on error

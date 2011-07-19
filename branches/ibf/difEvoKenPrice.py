@@ -75,6 +75,7 @@ class deKenPrice:
     converged = False
     while not converged:    
       converged = self.iterate()
+      
     self.logger.debug('exiting ' + __name__)
 
   def iterate(self):
@@ -83,7 +84,6 @@ class deKenPrice:
     
     if self.I_iter == 0:
 
-      
       self.drawInitialSample()
       
       # Evaluate target for the first time
@@ -121,8 +121,6 @@ class deKenPrice:
       self.logger.debug('x -> f(x)')
       for x, fx in zip(self.FM_ui, self.S_tempvals):
         self.logger.debug('%s -> %s' % (x.tolist(), fx))
-##      self.logger.debug([ self.FM_ui[ix].tolist() for ix in range(len(self.FM_ui)) ])
-##      self.logger.debug([ self.S_tempvals[ix] for ix in range(len(self.S_vals)) ])
 
       self.updatePopulation()
 
