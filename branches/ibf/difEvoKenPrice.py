@@ -1,6 +1,6 @@
 """
 Driver script for performing an global optimization over the parameter space. 
-This code is a translation of the following MATLAB code: http://www.icsi.berkeley.edu/~storn/DeMat.zip
+This code is an adaptation of the following MATLAB code: http://www.icsi.berkeley.edu/~storn/DeMat.zip
 Please refer to this web site for more information: http://www.icsi.berkeley.edu/~storn/code.html#deb1
 """
 
@@ -18,10 +18,23 @@ except:
 
 
 class deKenPrice:
+  '''
+    Differential evolution optimizer class. 
+    Solver iterations can be driven externally (see for ex. gParaSearchDriver) or from within the class (self.deopt()).
+    Instance needs two properties, supplied through evaluator class or set externally: 
+      1) Target function that takes x and generates f(x)
+      2) nlc function that takes x and generates constraint function values c(x) >= 0. 
+  '''
 
   def __init__(self, paraStruct, evaluator = None):
+    '''
+      Inputs: 
+        paraStruct: Dict carrying solver settings. 
+        evaluator: Class carrying target and nlc. 
+    '''
     if evaluator:
       self.evaluator = evaluator
+      self.target    = evaluator.target
       self.nlc       = evaluator.nlc
     self.S_struct = paraStruct
     self.lowerBds = self.S_struct['lowerBds']
@@ -43,7 +56,7 @@ class deKenPrice:
     # Set up loggers
     self.mySH = StatefulStreamHandler(stream = sys.stdout, level = self.verbosity, format_string = '{record.message}', bubble = True)
     self.mySH.format_string = '{record.message}'
-    self.myFH = StatefulFileHandler(filename = __name__ + '.log', level = 'DEBUG', bubble = True)
+    self.myFH = StatefulFileHandler(filename = os.path.join(self.workingDir, __name__ + '.log'), level = 'DEBUG', bubble = True)
     self.myFH.format_string = '{record.message}'
     self.logger = logbook.Logger(__name__)
     self.logger.handlers.append(self.mySH)
@@ -76,6 +89,9 @@ class deKenPrice:
 
 
   def deopt(self):
+    '''
+      Perform global optimization. 
+    '''
     self.logger.debug('entering deopt')
     converged = False
     while not converged:    
@@ -88,7 +104,7 @@ class deKenPrice:
       self.FM_pop = self.drawInitialSample()
       # Evaluate target for the first time
       self.evaluator.createJobs_x(self.FM_pop)
-      self.S_vals = self.evaluator.target(self.FM_pop)
+      self.S_vals = self.target(self.FM_pop)
       self.logger.debug('x -> f(x)')
       for x, fx in zip(self.FM_pop, self.S_vals):
         self.logger.debug('%s -> %s' % (x.tolist(), fx))
@@ -108,7 +124,7 @@ class deKenPrice:
       self.FM_ui = self.enforceConstrReEvolve(self.FM_ui)
       # EVALUATE TARGET #
       self.evaluator.createJobs_x(self.FM_ui)
-      self.S_tempvals = self.evaluator.target(self.FM_ui)
+      self.S_tempvals = self.target(self.FM_ui)
       self.logger.debug('x -> f(x)')
       for x, fx in zip(self.FM_ui, self.S_tempvals):
         self.logger.debug('%s -> %s' % (x.tolist(), fx))
@@ -152,7 +168,7 @@ class deKenPrice:
           self.I_nfeval  = self.I_nfeval + 1
           self.I_best_index  = 0
         self.I_nfeval  += 1
-        if newVals[k] > self.S_bestval == 1:
+        if newVals[k] < self.S_bestval == 1:
           self.I_best_index   = k              # save its location
           self.S_bestval      = newVals[k].copy()
       self.FVr_bestmemit = newPop[self.I_best_index, :].copy() # best member of current iteration
@@ -164,12 +180,12 @@ class deKenPrice:
 
       for k in range(self.I_NP):
         self.I_nfeval  = self.I_nfeval + 1
-        if newVals[k] > self.S_vals[k]:
+        if newVals[k] < self.S_vals[k]:
           self.FM_pop[k,:] = newPop[k, :].copy()                    # replace old vector with new one (for new iteration)
           self.S_vals[k]   = newVals[k].copy()                      # save value in "cost array"
 
           #----we update S_bestval only in case of success to save time-----------
-          if newVals[k] > self.S_bestval:
+          if newVals[k] < self.S_bestval:
             self.S_bestval = newVals[k].copy()                    # new best value
             self.FVr_bestmem = newPop[k,:].copy()                 # new best parameter vector ever
 
@@ -285,10 +301,8 @@ class deKenPrice:
 
 
   def printStats(self):
-    self.logger.debug('Iteration: %d,  Best: %f,  F_weight: %f,  F_CR: %f,  self.I_NP: %d' % 
-                      (self.I_iter, self.S_bestval, self.F_weight, self.F_CR, self.I_NP))
-    for n in range(self.I_D):
-      self.logger.debug('best(%d) = %g' % (n, self.FVr_bestmem[n]))
+    self.logger.debug('Iteration: %d,  x: %s f(x): %f' % 
+                      (self.I_iter, self.FVr_bestmem, self.S_bestval))
 
   def plotPopulation(self, pop):
     # Plot population
@@ -322,6 +336,7 @@ class deKenPrice:
                 ymin = ymin, ymax = ymax)
         ax.set_xlabel('EH')
         ax.set_ylabel('sigmaH')
+        ax.set_title('Best: x %s, f(x) %f' % (self.FVr_bestmem, self.S_bestval))
 
         fig.savefig(os.path.join(self.figSaveFolder, 'pop%d' % (self.I_iter)))    
 
@@ -394,24 +409,6 @@ def jacobianFD(x, fun):
     jac[:, ixCol] = ( fvalNew - fval ) / delta
   #   logger.debug(jac)
   return jac
-
-
-
-
-def left_win(S_x, S_y):
-  if (S_x > S_y):
-    return False
-  else:
-    return True
-
-
-
-
-
-
-
-
-
 
 
 
