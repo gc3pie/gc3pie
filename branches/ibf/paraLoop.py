@@ -38,6 +38,24 @@ from supportGc3 import format_newVal, update_parameter_in_file, safe_eval, str2m
 
 import shutil
 
+import logbook, sys
+from supportGc3 import StatefulStreamHandler, StatefulFileHandler
+
+# Set up logger for the file
+mySH = StatefulStreamHandler(stream = sys.stdout, level = 'DEBUG', format_string = '{record.message}', bubble = True)
+mySH.format_string = '{record.message}'
+myFH = StatefulFileHandler(filename = __name__ + '.log', level = 'DEBUG', bubble = True)
+myFH.format_string = '{record.message}'
+try:
+    stdErr = list(logbook.handlers.Handler.stack_manager.iter_context_objects())[0]
+    stdErr.pop_application()
+except: 
+    pass  
+
+logger = logbook.Logger(__name__)
+#logger.handlers.append(mySH)
+logger.handlers.append(myFH)
+
 class paraLoop(object):
     '''
       Main class implementing a general loop algorithm. Loop over an arbitrary number of variables and values. 
@@ -79,7 +97,7 @@ class paraLoop(object):
         """
         params = self._read_para(path_to_para_loop)
         num_params = len(params)
-        self.log.debug("Read %d parameters from file '%s'",
+        logger.debug("Read %d parameters from file '%s'",
                        num_params, path_to_para_loop)
 
         variables     = params['variables']
@@ -101,14 +119,14 @@ class paraLoop(object):
         groups = self._remap_groups(groups)
         num_groups = len(np.unique(groups))
 
-        self.log.debug("Number of groups: %d", num_groups)
-        self.log.debug('variables: %s' % variables)
-        self.log.debug('indices: %s' % indices)
-        self.log.debug('vals: %s' % vals)
-        self.log.debug('paraFiles: %s' % paraFiles)
-        self.log.debug('groups: %s' % groups)
-        self.log.debug('groupRestrs: %s' % groupRestrs)  
-        self.log.debug('paraFileRegex: %s' % paraFileRegex)
+        logger.debug("Number of groups: %d", num_groups)
+        logger.debug('variables: %s' % variables)
+        logger.debug('indices: %s' % indices)
+        logger.debug('vals: %s' % vals)
+        logger.debug('paraFiles: %s' % paraFiles)
+        logger.debug('groups: %s' % groups)
+        logger.debug('groupRestrs: %s' % groupRestrs)  
+        logger.debug('paraFileRegex: %s' % paraFileRegex)
 
         # check parameter files for consistency
         #
@@ -137,8 +155,8 @@ class paraLoop(object):
         metaBase = []
         for ixGroup, group in enumerate(np.unique(groups[groups >= 0])):
             # ixGroup is used as index for groups
-            self.log.debug('At gpremium L200, ixGroup=%s', ixGroup)
-            self.log.debug('At gpremium L201, group=%s', group)
+            logger.debug('At gpremium L200, ixGroup=%s', ixGroup)
+            logger.debug('At gpremium L201, group=%s', group)
             groupBase.append([])
             # Select vars belonging to group 'group'. Leave out switch indicator vars
             # --------------------------------
@@ -152,48 +170,48 @@ class paraLoop(object):
                     groupSelector[ix] = False
             #  -------------------------------
             groupRestr = np.unique(groupRestrs[groupSelector])
-            self.log.debug('At gpremium L%d, groupRestr=%s', 492, groupRestr)
-            self.log.debug('At gpremium L%d, groupSelector=%s', 493, groupSelector)
+            logger.debug('At gpremium L%d, groupRestr=%s', 492, groupRestr)
+            logger.debug('At gpremium L%d, groupSelector=%s', 493, groupSelector)
             if len(groupRestr) != 1:
                 raise gc3libs.exceptions.InvalidUsage(
                     "Groups have different restrictions")
             for groupVals in vals[groupSelector]:
                 values = str2vals(groupVals)
                 groupBase[group].append(len(np.array(values)))
-                self.log.debug('At gpremium L%d, groupvals=%s', 500, values)
+                logger.debug('At gpremium L%d, groupvals=%s', 500, values)
             groupIndices.append(list(getIndex(groupBase[ixGroup], groupRestr)))
-            self.log.debug('At gpremium L%d, groupIndices=%s', 503, groupIndices[ixGroup])
+            logger.debug('At gpremium L%d, groupIndices=%s', 503, groupIndices[ixGroup])
             metaBase.append(len(groupIndices[ixGroup]))
 
         # Combine groups without restriction
         metaIndices = list(getIndex(metaBase, None))
         nMetaIndices = len(metaIndices)
 
-        self.log.debug('Summary after establishing groups:')
-        self.log.debug('  groupbase: %s', groupBase)
-        self.log.debug('  groupindices: %s', groupIndices)
-        self.log.debug('  metabase: %s', metaBase)
-        self.log.debug('  metaind: %s', metaIndices)
+        logger.debug('Summary after establishing groups:')
+        logger.debug('  groupbase: %s', groupBase)
+        logger.debug('  groupindices: %s', groupIndices)
+        logger.debug('  metabase: %s', metaBase)
+        logger.debug('  metaind: %s', metaIndices)
 
-        self.log.debug("Starting enumeration of independent runs...")
+        logger.debug("Starting enumeration of independent runs...")
         for ixMeta, meta in enumerate(metaIndices):
-            self.log.debug("Loop iteration(ixMeta) %d of %d (%.2f%%)",
+            logger.debug("Loop iteration(ixMeta) %d of %d (%.2f%%)",
                            ixMeta+1, nMetaIndices,
                            100.0 * ((1+ixMeta) / nMetaIndices))
 
             index = self.getFullIndex(ixMeta, metaIndices,
                                       groupIndices, groups, paraProps, vals)
-            self.log.debug("Index before flattening: %s", index)
+            logger.debug("Index before flattening: %s", index)
             index = list(flatten(index))
-            self.log.debug('Flattened index: %s', index)
+            logger.debug('Flattened index: %s', index)
 
             for ixVar in range(0, len(variables)):
-                self.log.debug('variable #%d is %s', ixVar, variables[ixVar])
+                logger.debug('variable #%d is %s', ixVar, variables[ixVar])
 
             runDescription = os.path.basename(path_to_para_loop)[:-5]
             substs = gc3libs.utils.defaultdict(list)
             for ixVar, var in enumerate(variables):
-                self.log.debug('variable: %s', variables[ixVar])
+                logger.debug('variable: %s', variables[ixVar])
                 var = variables[ixVar]
                 group = groups[ixVar]
                 paraFile = paraFiles[ixVar]
@@ -201,7 +219,7 @@ class paraLoop(object):
                 val = format_newVal(extractVal(ixVar, vals, index))
                 regex = paraFileRegex[ixVar]
                 paraIndex = str2tuple(indices[ixVar])
-                self.log.debug('paraIndex: %s', paraIndex)
+                logger.debug('paraIndex: %s', paraIndex)
                 substs[paraFile].append((var, val, paraIndex, regex))
                 if (group >= 0) and paraProps[ixVar] != 'swIndicator': 
                     if ixVar < len(variables):
@@ -248,7 +266,7 @@ class paraLoop(object):
             else: # group == -1
                 groupMinus1 = groups < 0
                 if sum(groupMinus1) > 1:
-                    self.log.warning("more than one -1 variable not supported")
+                    logger.warning("more than one -1 variable not supported")
                 values = vals[groupMinus1][0].split(',')
                 nValues = len(values)
                 if ixMeta >= nValues:
@@ -320,7 +338,7 @@ class paraLoop(object):
             columns = list(self._loop_colsep_re.split(line.rstrip()))
             columns[7] = self._loop_regexps[columns[7]]
             columns = tuple(columns)
-            self.log.debug("_read_para: got columns: %s", columns)
+            logger.debug("_read_para: got columns: %s", columns)
             maxFieldLen = max(map(len, columns))
             if maxFieldLen > overallMaxFieldLen: 
                 overallMaxFieldLen = maxFieldLen

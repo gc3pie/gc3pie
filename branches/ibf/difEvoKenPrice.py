@@ -19,8 +19,10 @@ except:
 
 class deKenPrice:
 
-  def __init__(self, evaluator, paraStruct):
-    self.evaluator = evaluator
+  def __init__(self, paraStruct, evaluator = None):
+    if evaluator:
+      self.evaluator = evaluator
+      self.nlc       = evaluator.nlc
     self.S_struct = paraStruct
     self.lowerBds = self.S_struct['lowerBds']
     self.upperBds = self.S_struct['upperBds']
@@ -36,173 +38,148 @@ class deKenPrice:
     self.I_plotting   = self.S_struct['I_plotting']
     self.xConvCrit    = self.S_struct['xConvCrit']
     self.workingDir   = self.S_struct['workingDir']
-    
+    self.verbosity    = self.S_struct['verbosity']
+
     # Set up loggers
-    self.mySH = StatefulStreamHandler(stream = sys.stdout, level = self.evaluator.verbosity.upper(), format_string = '{record.message}', bubble = True)
+    self.mySH = StatefulStreamHandler(stream = sys.stdout, level = self.verbosity, format_string = '{record.message}', bubble = True)
     self.mySH.format_string = '{record.message}'
     self.myFH = StatefulFileHandler(filename = __name__ + '.log', level = 'DEBUG', bubble = True)
     self.myFH.format_string = '{record.message}'
     self.logger = logbook.Logger(__name__)
     self.logger.handlers.append(self.mySH)
-    self.logger.handlers.append(self.myFH)      
+    self.logger.handlers.append(self.myFH)  
     
+    # Initialize variables that needed for state retention. 
+    self.FM_popold     = np.zeros( (self.I_NP, self.I_D) )  # toggle population
+    self.FVr_bestmem   = np.zeros( self.I_D )               # best population member ever
+    self.FVr_bestmemit = np.zeros( self.I_D )               # best population member in iteration
+    self.I_nfeval      = 0                                  # number of function evaluations 
+
 
     # Check input variables
-##    if ( self.I_NP < 5 ):
-##      self.I_NP = 5
-##      self.logger.debug(' I_NP increased to minimal value 5')
     if ( ( self.F_CR < 0 ) or ( self.F_CR > 1 ) ):
       self.F_CR = 0.5
       self.logger.debug('F_CR should be from interval [0,1]; set to default value 0.5')
-    if (self.I_itermax <= 0):
-      self.I_itermax = 200
-      self.logger.debug('I_itermax should be > 0; set to default value 200')    
-    
+    if self.I_NP < 5:
+      self.logger.warning('Set I_NP >= 5 for difEvoKenPrice to work. ')
+
     # Fix seed for debugging
     np.random.seed(1000)
 
     # set initial value for iteration count
     self.I_iter = -1
-    
+
     # Create folder to save plots
     self.figSaveFolder = os.path.join(self.workingDir, 'difEvoFigures')
     if not os.path.exists(self.figSaveFolder):
       os.mkdir(self.figSaveFolder)
-  
-    
+
+
   def deopt(self):
     self.logger.debug('entering deopt')
     converged = False
     while not converged:    
       converged = self.iterate()
-      
     self.logger.debug('exiting ' + __name__)
 
   def iterate(self):
-    
     self.I_iter += 1
-    
     if self.I_iter == 0:
-
-      self.drawInitialSample()
-      
+      self.FM_pop = self.drawInitialSample()
       # Evaluate target for the first time
       self.evaluator.createJobs_x(self.FM_pop)
       self.S_vals = self.evaluator.target(self.FM_pop)
-      
       self.logger.debug('x -> f(x)')
       for x, fx in zip(self.FM_pop, self.S_vals):
         self.logger.debug('%s -> %s' % (x.tolist(), fx))
-      
       # Remember the best population members and their value. 
-      self.updatePopulation()
-
+      self.updatePopulation(self.FM_pop, self.S_vals)
       # Stats for initial population: 
       self.printStats()
-  
       # make plots
       if self.I_plotting:
-            self.plotPopulation() 
-
+        self.plotPopulation() 
       return False
-      
+
     elif self.I_iter > 0:
-      
-     # self.I_iter += 1
+      # self.I_iter += 1
       self.FM_ui = self.evolvePopulation(self.FM_pop)
-      
       # Check constraints and resample points to maintain population size. 
       self.FM_ui = self.enforceConstrReEvolve(self.FM_ui)
-    
       # EVALUATE TARGET #
       self.evaluator.createJobs_x(self.FM_ui)
       self.S_tempvals = self.evaluator.target(self.FM_ui)
-
       self.logger.debug('x -> f(x)')
       for x, fx in zip(self.FM_ui, self.S_tempvals):
         self.logger.debug('%s -> %s' % (x.tolist(), fx))
-
-      self.updatePopulation()
-
+      self.updatePopulation(self.FM_ui, self.S_tempvals)
       # create output
       self.printStats()
-
       # make plots
       if self.I_plotting:
-            self.plotPopulation()      
-
+        self.plotPopulation()      
       return self.checkConvergence()
-      
-    
-    
+
   def checkConvergence(self):
-      converged = False
-      # Check convergence
-      if self.I_iter > self.I_itermax:
-        converged = True
-        self.logger.info('Exiting difEvo. I_iter >self.I_itermax ')
-      if self.S_bestval < self.F_VTR:
-        converged = True
-        self.logger.info('converged self.S_bestval < self.F_VTR')
-      if self.populationConverged(self.FM_pop):
-        converged = True
-        self.logger.info('converged self.populationConverged(self.FM_pop)')
-    
-      return converged
-    
-  
+    converged = False
+    # Check convergence
+    if self.I_iter > self.I_itermax:
+      converged = True
+      self.logger.info('Exiting difEvo. I_iter >self.I_itermax ')
+    if self.S_bestval < self.F_VTR:
+      converged = True
+      self.logger.info('converged self.S_bestval < self.F_VTR')
+    if self.populationConverged(self.FM_pop):
+      converged = True
+      self.logger.info('converged self.populationConverged(self.FM_pop)')
+    return converged
+
+
   def drawInitialSample(self):
     # Draw population
-    self.FM_pop = self.drawPopulation(self.I_NP, self.I_D)
-    
-    # Initialize variables
-    self.FM_popold     = np.zeros( np.size(self.FM_pop) )  # toggle population
-    self.FVr_bestmem   = np.zeros( self.I_D )# best population member ever
-    self.FVr_bestmemit = np.zeros( self.I_D )# best population member in iteration
-    self.I_nfeval      = 0                    # number of function evaluations  
-
+    pop = self.drawPopulation(self.I_NP, self.I_D) 
     # Check constraints and resample points to maintain population size. 
-    self.FM_pop = self.enforceConstrResample(self.FM_pop)
-    
-    return
-  
-  def updatePopulation(self):
+    return self.enforceConstrResample(pop)
+
+  def updatePopulation(self, newPop = None, newVals = None):
     if self.I_iter == 0:
+      self.FM_pop = newPop.copy()
+      self.S_vals = newVals.copy()
       # Determine bestmemit and bestvalit for random draw. 
       for k in range(self.I_NP):                          # check the remaining members
         if k == 0:
-          self.S_bestval = self.S_vals[0]                 # best objective function value so far
+          self.S_bestval = newVals[0].copy()                # best objective function value so far
           self.I_nfeval  = self.I_nfeval + 1
           self.I_best_index  = 0
         self.I_nfeval  += 1
-        if ( left_win( self.S_vals[k], self.S_bestval ) == 1 ):
+        if newVals[k] > self.S_bestval == 1:
           self.I_best_index   = k              # save its location
-          self.S_bestval      = self.S_vals[k]
-      self.FVr_bestmemit = self.FM_pop[self.I_best_index, :] # best member of current iteration
+          self.S_bestval      = newVals[k].copy()
+      self.FVr_bestmemit = newPop[self.I_best_index, :].copy() # best member of current iteration
       self.S_bestvalit   = self.S_bestval              # best value of current iteration
-  
+
       self.FVr_bestmem = self.FVr_bestmemit            # best member ever
       
     elif self.I_iter > 0:
-      
+
       for k in range(self.I_NP):
         self.I_nfeval  = self.I_nfeval + 1
-        if left_win( self.S_tempvals[k], self.S_vals[k] ):   
-          self.FM_pop[k,:] = self.FM_ui[k, :]                    # replace old vector with new one (for new iteration)
-          self.S_vals[k]   = self.S_tempvals[k]                      # save value in "cost array"
+        if newVals[k] > self.S_vals[k]:
+          self.FM_pop[k,:] = newPop[k, :].copy()                    # replace old vector with new one (for new iteration)
+          self.S_vals[k]   = newVals[k].copy()                      # save value in "cost array"
 
           #----we update S_bestval only in case of success to save time-----------
-          if left_win( self.S_tempvals[k], self.S_bestval ):
-            self.S_bestval = self.S_tempvals[k]                    # new best value
-            self.FVr_bestmem = self.FM_ui[k,:]                 # new best parameter vector ever
+          if newVals[k] > self.S_bestval:
+            self.S_bestval = newVals[k].copy()                    # new best value
+            self.FVr_bestmem = newPop[k,:].copy()                 # new best parameter vector ever
 
       self.FVr_bestmemit = self.FVr_bestmem       # freeze the best member of this iteration for the coming 
                                           # iteration. This is needed for some of the strategies.
     return 
-  
-    
+
+
   def evolvePopulation(self, pop):
-    
+
     FM_popold      = pop                 # save the old population
     F_CR           = self.F_CR
     F_weight       = self.F_weight
@@ -210,7 +187,7 @@ class deKenPrice:
     I_D            = self.I_D
     FVr_bestmemit  = self.FVr_bestmemit
     I_strategy     = self.I_strategy
-    
+
     FM_pm1   = np.zeros( (I_NP, I_D) )   # initialize population matrix 1
     FM_pm2   = np.zeros( (I_NP, I_D) )   # initialize population matrix 2
     FM_pm3   = np.zeros( (I_NP, I_D) )   # initialize population matrix 3
@@ -230,7 +207,7 @@ class deKenPrice:
     FVr_a4   = np.zeros(I_NP)                # index array
     FVr_a5   = np.zeros(I_NP)                # index array
     FVr_ind  = np.zeros(4)
-    
+
     # BJ: Need to add +1 in definition of FVr_ind otherwise there is one zero index that leaves creates no shuffling. 
     FVr_ind = np.random.permutation(4) + 1             # index pointer array. 
     FVr_a1  = np.random.permutation(I_NP)              # shuffle locations of vectors
@@ -305,19 +282,19 @@ class deKenPrice:
     return FM_ui
 
 
-    
-  
+
+
   def printStats(self):
-      self.logger.debug('Iteration: %d,  Best: %f,  F_weight: %f,  F_CR: %f,  self.I_NP: %d' % 
-	               (self.I_iter, self.S_bestval, self.F_weight, self.F_CR, self.I_NP))
-      for n in range(self.I_D):
-            self.logger.debug('best(%d) = %g' % (n, self.FVr_bestmem[n]))
-         
-  def plotPopulation(self):
+    self.logger.debug('Iteration: %d,  Best: %f,  F_weight: %f,  F_CR: %f,  self.I_NP: %d' % 
+                      (self.I_iter, self.S_bestval, self.F_weight, self.F_CR, self.I_NP))
+    for n in range(self.I_D):
+      self.logger.debug('best(%d) = %g' % (n, self.FVr_bestmem[n]))
+
+  def plotPopulation(self, pop):
     # Plot population
     if self.I_D == 2:
-      x = self.FM_pop[:, 0]
-      y = self.FM_pop[:, 1]
+      x = pop[:, 0]
+      y = pop[:, 1]
       if matplotLibAvailable:
         # determine bounds
         xDif = self.upperBds[0] - self.lowerBds[0]
@@ -327,7 +304,7 @@ class deKenPrice:
         xmax = self.upperBds[0] + scaleFac * xDif
         ymin = self.lowerBds[1] - scaleFac * yDif
         ymax = self.upperBds[1] + scaleFac * yDif
-        
+
         # make plot
         fig = plt.figure()
         ax = fig.add_subplot(111)
@@ -337,47 +314,48 @@ class deKenPrice:
         ax.plot([self.lowerBds[0], self.lowerBds[0]], [ymin, ymax])
         ax.plot([self.upperBds[0], self.upperBds[0]], [ymin, ymax])
         # all other linear constraints
-        c_xmin = self.evaluator.nlc.linearConstr(xmin)
-        c_xmax = self.evaluator.nlc.linearConstr(xmax)
+        c_xmin = self.nlc.linearConstr(xmin)
+        c_xmax = self.nlc.linearConstr(xmax)
         for ixC in range(len(c_xmin)):
           ax.plot([xmin, xmax], [c_xmin[ixC], c_xmax[ixC]])
         ax.axis(xmin = xmin, xmax = xmax,  
-                 ymin = ymin, ymax = ymax)
+                ymin = ymin, ymax = ymax)
         ax.set_xlabel('EH')
         ax.set_ylabel('sigmaH')
 
         fig.savefig(os.path.join(self.figSaveFolder, 'pop%d' % (self.I_iter)))    
-  
+
   def drawPopulation(self, size, dim):
-    FM_pop = np.zeros( (size, dim ) ) #initialize FM_pop to gain speed
+    pop = np.zeros( (size, dim ) )
     for k in range(size):
-      FM_pop[k,:] = self.drawPopulationMember(dim)
-    return FM_pop
-  
+      pop[k,:] = self.drawPopulationMember(dim)
+    return pop
+
   def drawPopulationMember(self, dim):
     return self.lowerBds + np.random.random_sample( dim ) * ( self.upperBds - self.lowerBds )
-    
+
   def enforceConstrResample(self, pop):
     maxDrawSize = self.I_NP * 100
     dim = self.I_D
     for ixEle, ele in enumerate(pop):
-      constr = self.evaluator.nlc(ele)
+      constr = self.nlc(ele)
       ctr = 0
       while not sum(constr > 0) == len(constr) and ctr < maxDrawSize:
         pop[ixEle, :] = self.drawPopulationMember(dim)
-        constr = self.evaluator.nlc(ele)
+        constr = self.nlc(ele)
         ctr += 1
       if ctr >= maxDrawSize: 
-        self.logger.debug('Couldnt sample a feasible point with {0} draws', maxDrawSize)
+        pass
+        #self.logger.debug('Couldnt sample a feasible point with {0} draws', maxDrawSize)
     return pop
 
   def checkConstraints(self, pop):
     cSat = np.empty( ( len(pop) ), dtype = bool)
     for ixEle, ele in enumerate(pop):
-      constr = self.evaluator.nlc(ele)
+      constr = self.nlc(ele)
       cSat[ixEle] = sum(constr > 0) == len(constr)
     return cSat
-  
+
   def enforceConstrReEvolve(self, pop):
     popNew = np.zeros( (self.I_NP, self.I_D ) )
     cSat = self.checkConstraints(pop)
@@ -387,35 +365,35 @@ class deKenPrice:
       cSat = self.checkConstraints(reEvolvePop)
       popNew = np.append(popNew, reEvolvePop[cSat, :], axis = 0)
     reEvlolvedPop = popNew[:self.I_NP, :]
-#    self.logger.debug('reEvolved population: ')
-#    self.logger.debug(popNew)
+    #self.logger.debug('reEvolved population: ')
+    #self.logger.debug(popNew)
     return reEvlolvedPop
-  
+
   def populationConverged(self, pop):
     '''
     Check if population has converged. 
     '''
     diff = np.abs(pop[:, :] - pop[0, :])
     return (diff <= self.xConvCrit).all()
-        
+
 def jacobianFD(x, fun):
-    '''
-      Compute jacobian for function fun. 
-      Inputs: x: vector of input values
-              fun: function returning vector of output values
-    '''
-    delta = 1.e-8
-    fval = fun(x)
-    m = len(fval)
-    n = len(x)
-    jac = np.empty( ( m, n ) )
-    for ixCol in range(n):
-      xNew = x.copy()
-      xNew[ixCol] = xNew[ixCol] + delta
-      fvalNew = fun(xNew)
-      jac[:, ixCol] = ( fvalNew - fval ) / delta
- #   logger.debug(jac)
-    return jac
+  '''
+    Compute jacobian for function fun. 
+    Inputs: x: vector of input values
+            fun: function returning vector of output values
+  '''
+  delta = 1.e-8
+  fval = fun(x)
+  m = len(fval)
+  n = len(x)
+  jac = np.empty( ( m, n ) )
+  for ixCol in range(n):
+    xNew = x.copy()
+    xNew[ixCol] = xNew[ixCol] + delta
+    fvalNew = fun(xNew)
+    jac[:, ixCol] = ( fvalNew - fval ) / delta
+  #   logger.debug(jac)
+  return jac
 
 
 
@@ -426,7 +404,6 @@ def left_win(S_x, S_y):
   else:
     return True
 
-    
 
 
 
@@ -437,7 +414,8 @@ def left_win(S_x, S_y):
 
 
 
-    
+
+
 def testFun(x):
   return x*x
 
@@ -556,5 +534,4 @@ if __name__ == '__main__':
   x = np.array([3., 5., 6.])
   jacobianFD(x, testFun)
 #  Rosenbrock()
-
 

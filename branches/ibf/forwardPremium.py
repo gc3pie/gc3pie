@@ -38,6 +38,24 @@ from paraLoop import paraLoop
 from gc3libs import Application, Run
 import shutil
 
+import logbook, sys
+from supportGc3 import StatefulStreamHandler, StatefulFileHandler
+
+# Set up logger for the file
+mySH = StatefulStreamHandler(stream = sys.stdout, level = 'DEBUG', format_string = '{record.message}', bubble = True)
+mySH.format_string = '{record.message}'
+myFH = StatefulFileHandler(filename = __name__ + '.log', level = 'DEBUG', bubble = True)
+myFH.format_string = '{record.message}'
+try:
+    stdErr = list(logbook.handlers.Handler.stack_manager.iter_context_objects())[0]
+    stdErr.pop_application()
+except: 
+    pass  
+
+logger = logbook.Logger(__name__)
+#logger.handlers.append(mySH)
+logger.handlers.append(myFH)
+
 
 
 class GPremiumApplication(Application):
@@ -49,10 +67,15 @@ class GPremiumApplication(Application):
         # do notify task/main application that we're done
         # ignore error, let's continue
             self.execution.state = Run.State.TERMINATED
+            print 'fetch_output_error occured... continuing'
             return None
         else:
         # non-terminal state, pass on error
             return ex
+        
+    def submit_error(self, ex):
+        print 'submit_error occured... continuing'
+        return None
 
 
     def terminated(self):
