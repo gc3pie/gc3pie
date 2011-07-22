@@ -428,6 +428,31 @@ def first(seq):
     raise TypeError("Argument to `first()` method needs to be iterator or sequence.")
 
 
+def from_template(template, **kw):
+    """
+    Return the contents of `template`, substituting all occurrences
+    of Python formatting directives '%(key)s' with the corresponding values 
+    taken from dictionary `kw`.
+
+    If `template` is an object providing a `read()` method, that is
+    used to gather the template contents; else, if a file named
+    `template` exists, the template contents are read from it;
+    otherwise, `template` is treated like a string providing the
+    template contents itself.
+    """
+    if hasattr(template, 'read') and callable(template.read):
+        template_contents = template.read()
+    elif os.path.exists(template):
+        template_file = file(template, 'r')
+        template_contents = template_file.read()
+        template_file.close()
+    else:
+        # treat `template` as a string
+        template_contents = template
+    # substitute `kw` into `t` and return it
+    return (template_contents % kw)
+
+
 def get_and_remove(dictionary, key, default=None):
     """
     Return the value associated to `key` in `dictionary`, or `default`
@@ -460,31 +485,6 @@ def ifelse(test, if_true, if_false):
         return if_true
     else:
         return if_false
-
-
-def from_template(template, **kw):
-    """
-    Return the contents of `template`, substituting all occurrences
-    of Python formatting directives '%(key)s' with the corresponding values 
-    taken from dictionary `kw`.
-
-    If `template` is an object providing a `read()` method, that is
-    used to gather the template contents; else, if a file named
-    `template` exists, the template contents are read from it;
-    otherwise, `template` is treated like a string providing the
-    template contents itself.
-    """
-    if hasattr(template, 'read') and callable(template.read):
-        template_contents = template.read()
-    elif os.path.exists(template):
-        template_file = file(template, 'r')
-        template_contents = template_file.read()
-        template_file.close()
-    else:
-        # treat `template` as a string
-        template_contents = template
-    # substitute `kw` into `t` and return it
-    return (template_contents % kw)
 
 
 class Log(object):
@@ -708,10 +708,11 @@ def progressive_number(qty=None,
     seconds) while trying to acquire the lock, or raise a
     `LockTimeout` exception if this fails.
 
-    @raise LockTimeout, IOError, OSError
+    :raise: LockTimeout, IOError, OSError
     
-    @return A positive integer number, monotonically increasing with every call.
-            A list of such numbers if argument `qty` is a positive integer.
+    :returns: A positive integer number, monotonically increasing with
+            every call.  A list of such numbers if argument `qty` is a
+            positive integer.
     """
     assert qty is None or qty > 0, \
         "Argument `qty` must be a positive integer"
