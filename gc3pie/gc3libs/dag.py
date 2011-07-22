@@ -30,6 +30,9 @@ __docformat__ = 'reStructuredText'
 __version__ = 'development version (SVN $Revision$)'
 
 
+import time
+
+
 from gc3libs import log, Run, Task
 import gc3libs.exceptions
 import gc3libs.utils
