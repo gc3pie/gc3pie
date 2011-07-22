@@ -26,6 +26,8 @@ See the output of ``gmhc_coev --help`` for program usage instructions.
 __version__ = 'development version (SVN $Revision$)'
 # summary of user-visible changes
 __changelog__ = """
+  2011-07-22:
+    * Use the ``APPS/BIO/MHC_COEV-040711`` run time tag to select execution sites. 
   2011-06-15:
     * Initial release, forked off the ``ggamess`` sources.
 """
@@ -61,35 +63,40 @@ class GMhcCoevApplication(Application):
     Custom class to wrap the execution of a single step of the
     ``MHC_coev_*` program by T. Wilson.
     """
-    def __init__(self, executable,
+    def __init__(self,
                  N, p_mut_coeff, choose_or_rand, sick_or_not, off_v_last,
-                 output_dir, latest_work=None, **kw):
+                 output_dir, latest_work=None, executable=None, **kw):
         kw.setdefault('requested_memory', 1)
         kw.setdefault('requested_cores', 1)
         kw.setdefault('requested_architecture', Run.Arch.X86_64)
-        self.executable_name = os.path.basename(executable)
-        self.p_mut_coeff = p_mut_coeff
+        # command-line parameters to pass to the MHC_coev_* program
         self.N = N
+        self.p_mut_coeff = p_mut_coeff
         self.choose_or_rand = choose_or_rand
         self.sick_or_not = sick_or_not
         self.off_v_last = off_v_last
-        inputs = { executable:self.executable_name }
+        if executable is not None:
+            # use the specified executable
+            executable_name = './' + os.path.basename(executable)
+            inputs = { executable:os.path.basename(executable) }
+        else:
+            # use the default one provided by the RTE
+            executable_name = '/$MHC_COEV'
+            inputs = { }
         if latest_work is not None:
             inputs[latest_work] = 'latest_work.mat'
         Application.__init__(self,
-                             executable = '/usr/bin/env',
+                             executable = executable_name,
                              arguments = [
-                                 'LD_LIBRARY_PATH=/opt/MATLAB/MATLAB_Compiler_Runtime/v713/runtime/glnxa64:$LD_LIBRARY_PATH',
-                                 './' + self.executable_name,
                                  kw.get('requested_walltime')*60 - 5, # == single_run_time == ses_t
                                  N, p_mut_coeff, choose_or_rand, sick_or_not, off_v_last,
                                  ],
                              inputs = inputs,
                              outputs = gc3libs.ANY_OUTPUT,
                              output_dir = output_dir,
-                             executables = [ self.executable_name ],
                              stdout = 'matlab.log',
                              stderr = 'matlab.err',
+                             tags = [ 'APPS/BIO/MHC_COEV-040711' ],
                              **kw)
 
 
@@ -102,10 +109,9 @@ class GMhcCoevTask(SequentialTaskCollection):
     `output_dir` parameter to `__init__`.
     """
 
-    def __init__(self, executable, single_run_duration, generations_to_do,
+    def __init__(self, single_run_duration, generations_to_do,
                  N, p_mut_coeff, choose_or_rand, sick_or_not, off_v_last,
-                 output_dir, 
-                 grid=None, **kw):
+                 output_dir, executable=None, grid=None, **kw):
 
         """
         Create a new task running an ``MHC_coev`` binary.
@@ -116,12 +122,20 @@ class GMhcCoevTask(SequentialTaskCollection):
         executable together with the saved workspace until no file
         ``latest_work.mat`` is created.
 
-        :param str executable: Path to the ``MHC_coev`` executable binary.
-
         :param int single_run_duration: Duration of a single step in minutes.
+
+        :param N: Passed unchanged to the MHC_coev program.
+        :param p_mut_coeff: Passed unchanged to the MHC_coev program.
+        :param choose_or_rand: Passed unchanged to the MHC_coev program.
+        :param sick_or_not: Passed unchanged to the MHC_coev program.
+        :param off_v_last: Passed unchanged to the MHC_coev program.
 
         :param str output_dir: Path to a directory where output files
         from all runs should be collected.
+
+        :param str executable: Path to the ``MHC_coev`` executable
+        binary, or `None` (default) to specify that the default
+        version available on the execution site should be used.
 
         :param grid: See `TaskCollection`.
         """
@@ -140,12 +154,19 @@ class GMhcCoevTask(SequentialTaskCollection):
         self.generations_done = 0
 
         self.jobname = kw.get('jobname',
-                              os.path.basename(self.executable))
+                              gc3libs.utils.ifelse(
+                                  # if this expression evaluates to `True`...
+                                  self.executable is None,
+                                  # ...then use this value:
+                                  ('MHC_coev.%s.%s.%s.%s.%s'
+                                   % (N, p_mut_coeff, choose_or_rand, sick_or_not, off_v_last)),
+                                  # ...else (`False` result), use this one instead:
+                                  os.path.basename(self.executable)))
 
         # create initial task and register it
-        initial_task = GMhcCoevApplication(executable,
-                                           N, p_mut_coeff, choose_or_rand, sick_or_not, off_v_last,
+        initial_task = GMhcCoevApplication(N, p_mut_coeff, choose_or_rand, sick_or_not, off_v_last,
                                            output_dir = os.path.join(output_dir, 'tmp'),
+                                           executable = self.executable,
                                            required_walltime = max(1, single_run_duration/60),
                                            **kw)
         SequentialTaskCollection.__init__(self, self.jobname, [initial_task], grid)
@@ -200,10 +221,10 @@ class GMhcCoevTask(SequentialTaskCollection):
             gc3libs.log.debug("Computed %s generations, %s to do; submitting another job."
                               % (self.generations_done, self.generations_to_do))
             self.add(
-                GMhcCoevApplication(self.executable,
-                                    self.N, self.p_mut_coeff, self.choose_or_rand, self.sick_or_not, self.off_v_last,
+                GMhcCoevApplication(self.N, self.p_mut_coeff, self.choose_or_rand, self.sick_or_not, self.off_v_last,
                                     output_dir = os.path.join(self.output_dir, 'tmp'),
                                     latest_work = latest_work,
+                                    executable = self.executable,
                                     # XXX: need wallclock time support in minutes!!
                                     required_walltime = max(self.single_run_duration/60, 1),
                                     **self.extra))
@@ -311,10 +332,12 @@ newly-created jobs so that this limit is never exceeded.
                                  " - ignoring directory '%s'" % (off_v_last, path))
                 continue
 
+            kwargs = extra.copy()
+            kwargs['executable'] = path
+
             yield ('MHC_coev_' + name,
                    gmhc_coev.GMhcCoevTask,
-                   [path,                    # executable
-                    self.params.walltime*60 - 5, # single_run_duration
+                   [self.params.walltime*60 - 5, # single_run_duration
                     self.params.generations,
                     N,
                     p_mut_coeff,
@@ -323,7 +346,7 @@ newly-created jobs so that this limit is never exceeded.
                     off_v_last,
                     #os.path.dirname(path),  # output_dir
                     ],
-                   extra.copy())
+                   kwargs)
         
 # run it
 if __name__ == '__main__':
