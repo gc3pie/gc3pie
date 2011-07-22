@@ -143,7 +143,7 @@ class Task(object):
     
     """
 
-    def __init__(self, jobname, grid=None):
+    def __init__(self, name, grid=None, **kw):
         """
         Initialize a `Task` instance.
 
@@ -151,7 +151,7 @@ class Task(object):
                      :class:`gc3libs.Core` instance, or anything
                      implementing the same interface.
         """
-        self.jobname = jobname
+        self.jobname = name
         self.execution = Run(attach=self)
         # `_grid` and `_attached` are set by `attach()`/`detach()`
         self._attached = False
@@ -1554,7 +1554,7 @@ class RetryableTask(Task):
     derived classes.
     """
 
-    def __init__(self, jobname, task, max_retries=0, **kw):
+    def __init__(self, name, task, max_retries=0, **kw):
         """
         Wrap `task` and resubmit it until `self.retry()` returns `False`.
 
@@ -1569,7 +1569,7 @@ class RetryableTask(Task):
         self.max_retries = max_retries
         self.retried = 0
         self.task = task
-        Task.__init__(self, jobname, **kw)
+        Task.__init__(self, name, **kw)
 
 
     def retry(self):
@@ -1628,6 +1628,7 @@ class RetryableTask(Task):
                 self.retried += 1
                 self.task.submit()
             self.execution.state = self.task.execution.state
+            self.execution.returncode = self.task.execution.returncode
         elif state == Run.State.TERMINATING:
             if hasattr(self, 'output_dir'):
                 self.task.fetch_output(output_dir=self.output_dir)
