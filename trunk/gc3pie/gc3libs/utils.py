@@ -71,11 +71,49 @@ import gc3libs.exceptions
 import gc3libs.debug
 
 
-# ================================================================
-#
-#                     Generic functions
-#
-# ================================================================
+def backup(path):
+    """
+    Rename the filesystem entry at `path` by appending a unique
+    numerical suffix; return new name.
+
+    For example,
+
+    1. create a test file:
+
+      >>> import tempfile
+      >>> path = tempfile.mkstemp()[1]
+
+    2. then make a backup of it; the backup will end in ``.~1~``:
+
+      >>> path1 = backup(path)
+      >>> os.path.exists(path + '.~1~')
+      True
+
+    3. re-create the file, and make a second backup: this time the
+    file will be renamed with a ``.~2~`` extension:
+
+      >>> open(path, 'w').close()
+      >>> path2 = backup(path)
+      >>> os.path.exists(path + '.~2~')
+      True
+      
+    """
+    parent_dir = os.path.dirname(path)
+    prefix = os.path.basename(path) + '.~'
+    p = len(prefix)
+    suffix = 1
+    for name in [ entry for entry in os.listdir(parent_dir)
+                  if (entry.startswith(prefix) and entry.endswith('~')) ]:
+        try:
+            n = int(name[p:-1])
+            suffix = max(suffix, n+1)
+        except ValueError:
+            # ignore non-numeric suffixes
+            pass
+    new_path = "%s.~%d~" % (path, suffix)
+    os.rename(path, new_path)
+    return new_path
+
 
 def basename_sans(path):
     """
@@ -83,6 +121,49 @@ def basename_sans(path):
     """
     return os.path.splitext(os.path.basename(path))[0]
 
+
+def cache_for(lapse):
+    """
+    Cache the result of a (nullary) method invocation for a given
+    amount of time. Use as a decorator on object methods whose results
+    are to be cached.
+
+    Store the result of the first invocation of the decorated
+    method; if another invocation happens before `lapse` seconds
+    have passed, return the cached value instead of calling the real
+    function again.  If a new call happens after the grace period has
+    expired, call the real function and store the result in the cache.
+
+    **Note:** Do not use with methods that take keyword arguments, as
+    they will be discarded! In addition, arguments are compared to
+    elements in the cache by *identity*, so that invoking the same
+    method with equal but distinct object will result in two separate
+    copies of the result being computed and stored in the cache.
+
+    Cache results and timestamps are stored into the objects'
+    `_cache_value` and `_cache_last_updated` attributes, so the caches
+    are destroyed with the object when it goes out of scope.
+    """
+    def decorator(fn):
+        @_wraps(fn)
+        def wrapper(obj, *args):
+            now = time.time()
+            key = (fn, tuple(id(arg) for arg in args))
+            try:
+                update = ((now - obj._cache_last_updated[key]) > lapse)
+            except AttributeError:
+                obj._cache_last_updated = defaultdict(lambda: 0)
+                obj._cache_value = dict()
+                update = True
+            if update:    
+                obj._cache_value[key] = fn(obj, *args)
+                obj._cache_last_updated[key] = now
+            gc3libs.log.debug("Using cached value '%s' for %s(%s, ...)",
+                              obj._cache_value[key], fn, obj)
+            return obj._cache_value[key]
+        return wrapper
+    return decorator
+    
 
 def cat(*args, **kw):
     """
@@ -177,6 +258,19 @@ def copy_recursively(src, dst, overwrite=False):
         copyfile(src, dst, overwrite)
 
 
+def count(seq, predicate):
+    """
+    Return number of items in `seq` that match `predicate`.
+    Argument `predicate` should be a callable that accepts
+    one argument and returns a boolean.
+    """
+    count = 0
+    for item in seq:
+        if predicate(item):
+            count += 1
+    return count
+
+
 class defaultdict(dict):
     """
     A backport of `defaultdict` to Python 2.4
@@ -195,6 +289,116 @@ class defaultdict(dict):
         if not dict.__contains__(self, key):
             dict.__setitem__(self, key, self.__missing__(key))
         return dict.__getitem__(self, key)
+
+
+def defproperty(fn):
+    """
+    Decorator to define properties with a simplified syntax in Python 2.4.
+    See http://code.activestate.com/recipes/410698-property-decorator-for-python-24/#c6
+    for details and examples.
+    """
+    p = { 'doc':fn.__doc__ }
+    p.update(fn())
+    return property(**p)
+
+
+def deploy_configuration_file(filename, template_filename=None):
+    """
+    Ensure that configuration file `filename` exists; possibly
+    copying it from the specified `template_filename`.
+
+    Return `True` if a file with the specified name exists in the 
+    configuration directory.  If not, try to copy the template file
+    over and then return `False`; in case the copy operations fails, 
+    a `NoConfigurationFile` exception is raised.
+
+    If parameter `filename` is not an absolute path, it is interpreted
+    as relative to `gc3libs.Default.RCDIR`; if `template_filename` is
+    `None`, then it is assumed to be the same as `filename`.
+    """
+    if template_filename is None:
+        template_filename = os.path.basename(filename)
+    if not os.path.isabs(filename):
+        filename = os.path.join(gc3libs.Default.RCDIR, filename)
+    if os.path.exists(filename):
+        return True
+    else:
+        try:
+            # copy sample config file 
+            if not os.path.exists(dirname(filename)):
+                os.makedirs(dirname(filename))
+            from pkg_resources import Requirement, resource_filename, DistributionNotFound
+            sample_config = resource_filename(Requirement.parse("gc3pie"), 
+                                              "gc3libs/etc/" + template_filename)
+            import shutil
+            shutil.copyfile(sample_config, filename)
+            return False
+        except IOError, x:
+            gc3libs.log.critical("CRITICAL ERROR: Failed copying configuration file: %s" % x)
+            raise gc3libs.exceptions.NoConfigurationFile("No configuration file '%s' was found, and an attempt to create it failed. Aborting." % filename)
+        except ImportError:
+            raise gc3libs.exceptions.NoConfigurationFile("No configuration file '%s' was found. Aborting." % filename)
+        except DistributionNotFound, ex:
+            raise AssertionError("Cannot access resources for Python package: %s."
+                                 " Installation error?" % str(ex))
+
+
+def dirname(pathname):
+    """
+    Same as `os.path.dirname` but return `.` in case of path names with no directory component.
+    """
+    # FIXME: figure out if this is a desirable outcome.  i.e. do we
+    # want dirname to be empty, or do a pwd and find out what the
+    # current dir is, or keep the "./".  I suppose this could make a
+    # difference to some of the behavior of the scripts, such as
+    # copying files around and such.
+    return os.path.dirname(pathname) or '.'
+
+
+class Enum(frozenset):
+    """
+    A generic enumeration class.  Inspired by:
+    http://stackoverflow.com/questions/36932/whats-the-best-way-to-implement-an-enum-in-python/2182437#2182437
+    with some more syntactic sugar added.
+
+    An `Enum` class must be instanciated with a list of strings, that
+    make the enumeration "label"::
+
+      >>> Animal = Enum('CAT', 'DOG')
+    
+    Each label is available as an instance attribute, evaluating to
+    itself::
+
+      >>> Animal.DOG
+      'DOG'
+
+      >>> Animal.CAT == 'CAT'
+      True
+
+    As a consequence, you can test for presence of an enumeration
+    label by string value::
+
+      >>> 'DOG' in Animal
+      True
+
+    Finally, enumeration labels can also be iterated upon::
+
+      >>> for a in Animal: print a
+      DOG
+      CAT
+    """
+    def __new__(cls, *args):
+        return frozenset.__new__(cls, args)
+    def __getattr__(self, name):
+            if name in self:
+                    return name
+            else:
+                    raise AttributeError("No '%s' in enumeration '%s'"
+                                         % (name, self.__class__.__name__))
+    def __setattr__(self, name, value):
+            raise SyntaxError("Cannot assign enumeration values.")
+    def __delattr__(self, name):
+            raise SyntaxError("Cannot delete enumeration values.")
 
 
 def first(seq):
@@ -256,293 +460,6 @@ def ifelse(test, if_true, if_false):
         return if_true
     else:
         return if_false
-
-
-# In Python 2.7 still, `DictMixin` is an old-style class; thus, we need
-# to make `Struct` inherit from `object` otherwise we loose properties
-# when setting/pickling/unpickling
-class Struct(object, UserDict.DictMixin):
-    """
-    A `dict`-like object, whose keys can be accessed with the usual
-    '[...]' lookup syntax, or with the '.' get attribute syntax.
-
-    Examples::
-
-      >>> a = Struct()
-      >>> a['x'] = 1
-      >>> a.x
-      1
-      >>> a.y = 2
-      >>> a['y']
-      2
-
-    Values can also be initially set by specifying them as keyword
-    arguments to the constructor::
-
-      >>> a = Struct(z=3)
-      >>> a['z']
-      3
-      >>> a.z
-      3
-    """
-    def __init__(self, initializer=None, **kw):
-        if initializer is not None:
-            try:
-                # initializer is `dict`-like?
-                for name, value in initializer.items():
-                    self[name] = value
-            except AttributeError: 
-                # initializer is a sequence of (name,value) pairs?
-                for name, value in initializer:
-                    self[name] = value
-        for name, value in kw.items():
-            self[name] = value
-
-    # the `DictMixin` class defines all std `dict` methods, provided
-    # that `__getitem__`, `__setitem__` and `keys` are defined.
-    def __setitem__(self, name, val):
-        self.__dict__[name] = val
-    def __getitem__(self, name):
-        return self.__dict__[name]
-    def keys(self):
-        return self.__dict__.keys()
-
-
-def progressive_number(qty=None,
-                       id_filename=os.path.expanduser('~/.gc3/next_id.txt')):
-    """
-    Return a positive integer, whose value is guaranteed to
-    be monotonically increasing across different invocations
-    of this function, and also across separate instances of the
-    calling program.
-
-    Example::
-
-      >>> n = progressive_number()
-      >>> m = progressive_number()
-      >>> m > n
-      True
-
-    If you specify a positive integer as argument, then a list of
-    monotonically increasing numbers is returned.  For example::
-
-      >>> ls = progressive_number(5)
-      >>> len(ls)
-      5
-
-    In other words, `progressive_number(N)` is equivalent to::
-
-      nums = [ progressive_number() for n in range(N) ]
-
-    only more efficient, because it has to obtain and release the lock
-    only once.  
-
-    After every invocation of this function, the last returned number
-    is stored into the file passed as argument `id_filename`.  If the
-    file does not exist, an attempt to create it is made before
-    allocating an id; the method can raise an `IOError` or `OSError`
-    if `id_filename` cannot be opened for writing.
-
-    *Note:* as file-level locking is used to serialize access to the
-    counter file, this function may block (default timeout: 30
-    seconds) while trying to acquire the lock, or raise a
-    `LockTimeout` exception if this fails.
-
-    @raise LockTimeout, IOError, OSError
-    
-    @return A positive integer number, monotonically increasing with every call.
-            A list of such numbers if argument `qty` is a positive integer.
-    """
-    assert qty is None or qty > 0, \
-        "Argument `qty` must be a positive integer"
-    # ``FileLock`` requires that the to-be-locked file exists; if it
-    # does not, we create an empty one (and avoid overwriting any
-    # content, in case another process is also writing to it).  There
-    # is thus no race condition here, as we attempt to lock the file
-    # anyway, and this will stop concurrent processes.
-    if not os.path.exists(id_filename):
-        open(id_filename, "a").close()
-    lock = FileLock(id_filename, threaded=False) 
-    lock.acquire(timeout=30) # XXX: can raise 'LockTimeout'
-    id_file = open(id_filename, 'r+')
-    id = int(id_file.read(8) or "0", 16)
-    id_file.seek(0)
-    if qty is None:
-        id_file.write("%08x -- DO NOT REMOVE OR ALTER THIS FILE: it is used internally by the gc3libs\n" % (id+1))
-    else: 
-        id_file.write("%08x -- DO NOT REMOVE OR ALTER THIS FILE: it is used internally by the gc3libs\n" % (id+qty))
-    id_file.close()
-    lock.release()
-    if qty is None:
-        return id+1
-    else:
-        return [ (id+n) for n in range(1, qty+1) ]
-
-
-def cache_for(lapse):
-    """
-    Cache the result of a (nullary) method invocation for a given
-    amount of time. Use as a decorator on object methods whose results
-    are to be cached.
-
-    Store the result of the first invocation of the decorated
-    method; if another invocation happens before `lapse` seconds
-    have passed, return the cached value instead of calling the real
-    function again.  If a new call happens after the grace period has
-    expired, call the real function and store the result in the cache.
-
-    **Note:** Do not use with methods that take keyword arguments, as
-    they will be discarded! In addition, arguments are compared to
-    elements in the cache by *identity*, so that invoking the same
-    method with equal but distinct object will result in two separate
-    copies of the result being computed and stored in the cache.
-
-    Cache results and timestamps are stored into the objects'
-    `_cache_value` and `_cache_last_updated` attributes, so the caches
-    are destroyed with the object when it goes out of scope.
-    """
-    def decorator(fn):
-        @_wraps(fn)
-        def wrapper(obj, *args):
-            now = time.time()
-            key = (fn, tuple(id(arg) for arg in args))
-            try:
-                update = ((now - obj._cache_last_updated[key]) > lapse)
-            except AttributeError:
-                obj._cache_last_updated = defaultdict(lambda: 0)
-                obj._cache_value = dict()
-                update = True
-            if update:    
-                obj._cache_value[key] = fn(obj, *args)
-                obj._cache_last_updated[key] = now
-            gc3libs.log.debug("Using cached value '%s' for %s(%s, ...)",
-                              obj._cache_value[key], fn, obj)
-            return obj._cache_value[key]
-        return wrapper
-    return decorator
-    
-
-def count(seq, predicate):
-    """
-    Return number of items in `seq` that match `predicate`.
-    Argument `predicate` should be a callable that accepts
-    one argument and returns a boolean.
-    """
-    count = 0
-    for item in seq:
-        if predicate(item):
-            count += 1
-    return count
-
-
-def defproperty(fn):
-    """
-    Decorator to define properties with a simplified syntax in Python 2.4.
-    See http://code.activestate.com/recipes/410698-property-decorator-for-python-24/#c6
-    for details and examples.
-    """
-    p = { 'doc':fn.__doc__ }
-    p.update(fn())
-    return property(**p)
-
-
-def dirname(pathname):
-    """
-    Same as `os.path.dirname` but return `.` in case of path names with no directory component.
-    """
-    # FIXME: figure out if this is a desirable outcome.  i.e. do we
-    # want dirname to be empty, or do a pwd and find out what the
-    # current dir is, or keep the "./".  I suppose this could make a
-    # difference to some of the behavior of the scripts, such as
-    # copying files around and such.
-    return os.path.dirname(pathname) or '.'
-
-
-class Enum(frozenset):
-    """
-    A generic enumeration class.  Inspired by:
-    http://stackoverflow.com/questions/36932/whats-the-best-way-to-implement-an-enum-in-python/2182437#2182437
-    with some more syntactic sugar added.
-
-    An `Enum` class must be instanciated with a list of strings, that
-    make the enumeration "label"::
-
-      >>> Animal = Enum('CAT', 'DOG')
-    
-    Each label is available as an instance attribute, evaluating to
-    itself::
-
-      >>> Animal.DOG
-      'DOG'
-
-      >>> Animal.CAT == 'CAT'
-      True
-
-    As a consequence, you can test for presence of an enumeration
-    label by string value::
-
-      >>> 'DOG' in Animal
-      True
-
-    Finally, enumeration labels can also be iterated upon::
-
-      >>> for a in Animal: print a
-      DOG
-      CAT
-    """
-    def __new__(cls, *args):
-        return frozenset.__new__(cls, args)
-    def __getattr__(self, name):
-            if name in self:
-                    return name
-            else:
-                    raise AttributeError("No '%s' in enumeration '%s'"
-                                         % (name, self.__class__.__name__))
-    def __setattr__(self, name, value):
-            raise SyntaxError("Cannot assign enumeration values.")
-    def __delattr__(self, name):
-            raise SyntaxError("Cannot delete enumeration values.")
-
-
-def deploy_configuration_file(filename, template_filename=None):
-    """
-    Ensure that configuration file `filename` exists; possibly
-    copying it from the specified `template_filename`.
-
-    Return `True` if a file with the specified name exists in the 
-    configuration directory.  If not, try to copy the template file
-    over and then return `False`; in case the copy operations fails, 
-    a `NoConfigurationFile` exception is raised.
-
-    If parameter `filename` is not an absolute path, it is interpreted
-    as relative to `gc3libs.Default.RCDIR`; if `template_filename` is
-    `None`, then it is assumed to be the same as `filename`.
-    """
-    if template_filename is None:
-        template_filename = os.path.basename(filename)
-    if not os.path.isabs(filename):
-        filename = os.path.join(gc3libs.Default.RCDIR, filename)
-    if os.path.exists(filename):
-        return True
-    else:
-        try:
-            # copy sample config file 
-            if not os.path.exists(dirname(filename)):
-                os.makedirs(dirname(filename))
-            from pkg_resources import Requirement, resource_filename, DistributionNotFound
-            sample_config = resource_filename(Requirement.parse("gc3pie"), 
-                                              "gc3libs/etc/" + template_filename)
-            import shutil
-            shutil.copyfile(sample_config, filename)
-            return False
-        except IOError, x:
-            gc3libs.log.critical("CRITICAL ERROR: Failed copying configuration file: %s" % x)
-            raise gc3libs.exceptions.NoConfigurationFile("No configuration file '%s' was found, and an attempt to create it failed. Aborting." % filename)
-        except ImportError:
-            raise gc3libs.exceptions.NoConfigurationFile("No configuration file '%s' was found. Aborting." % filename)
-        except DistributionNotFound, ex:
-            raise AssertionError("Cannot access resources for Python package: %s."
-                                 " Installation error?" % str(ex))
 
 
 def from_template(template, **kw):
@@ -635,6 +552,37 @@ class Log(object):
         return str.join('\n', [record[0] for record in self._messages])
 
 
+def mkdir(path, mode=0777):
+    """
+    Like `os.makedirs`, but does not throw an exception if PATH
+    already exists.
+    """
+    if not os.path.exists(path):
+        os.makedirs(path, mode)
+
+
+def mkdir_with_backup(path, mode=0777):
+    """
+    Like `os.makedirs`, but if `path` already exists and is not empty,
+    rename the existing one to a backup name (see the `backup` function).
+
+    Unlike `os.makedirs`, no exception is thrown if the directory
+    already exists and is empty, but the target directory permissions
+    are not altered to reflect `mode`.
+    """
+    if os.path.isdir(path):
+        if len(os.listdir(path)) > 0:
+            # directory already exists and is non-empty; backup it and
+            # make a new one
+            backup(path)
+            os.makedirs(path, mode)
+        else:
+            # keep existing empty directory
+            pass
+    else:
+        os.makedirs(path, mode)
+
+
 def prettyprint(D, indent=0, width=0, maxdepth=None, step=4,
                 only_keys=None, output=sys.stdout, _exclude=None):
     """
@@ -720,79 +668,75 @@ def prettyprint(D, indent=0, width=0, maxdepth=None, step=4,
         output.write('\n')
 
 
-def mkdir(path, mode=0777):
+def progressive_number(qty=None,
+                       id_filename=os.path.expanduser('~/.gc3/next_id.txt')):
     """
-    Like `os.makedirs`, but does not throw an exception if PATH
-    already exists.
-    """
-    if not os.path.exists(path):
-        os.makedirs(path, mode)
+    Return a positive integer, whose value is guaranteed to
+    be monotonically increasing across different invocations
+    of this function, and also across separate instances of the
+    calling program.
 
+    Example::
 
-def backup(path):
-    """
-    Rename the filesystem entry at `path` by appending a unique
-    numerical suffix; return new name.
-
-    For example,
-
-    1. create a test file:
-
-      >>> import tempfile
-      >>> path = tempfile.mkstemp()[1]
-
-    2. then make a backup of it; the backup will end in ``.~1~``:
-
-      >>> path1 = backup(path)
-      >>> os.path.exists(path + '.~1~')
+      >>> n = progressive_number()
+      >>> m = progressive_number()
+      >>> m > n
       True
 
-    3. re-create the file, and make a second backup: this time the
-    file will be renamed with a ``.~2~`` extension:
+    If you specify a positive integer as argument, then a list of
+    monotonically increasing numbers is returned.  For example::
 
-      >>> open(path, 'w').close()
-      >>> path2 = backup(path)
-      >>> os.path.exists(path + '.~2~')
-      True
-      
+      >>> ls = progressive_number(5)
+      >>> len(ls)
+      5
+
+    In other words, `progressive_number(N)` is equivalent to::
+
+      nums = [ progressive_number() for n in range(N) ]
+
+    only more efficient, because it has to obtain and release the lock
+    only once.  
+
+    After every invocation of this function, the last returned number
+    is stored into the file passed as argument `id_filename`.  If the
+    file does not exist, an attempt to create it is made before
+    allocating an id; the method can raise an `IOError` or `OSError`
+    if `id_filename` cannot be opened for writing.
+
+    *Note:* as file-level locking is used to serialize access to the
+    counter file, this function may block (default timeout: 30
+    seconds) while trying to acquire the lock, or raise a
+    `LockTimeout` exception if this fails.
+
+    @raise LockTimeout, IOError, OSError
+    
+    @return A positive integer number, monotonically increasing with every call.
+            A list of such numbers if argument `qty` is a positive integer.
     """
-    parent_dir = os.path.dirname(path)
-    prefix = os.path.basename(path) + '.~'
-    p = len(prefix)
-    suffix = 1
-    for name in [ entry for entry in os.listdir(parent_dir)
-                  if (entry.startswith(prefix) and entry.endswith('~')) ]:
-        try:
-            n = int(name[p:-1])
-            suffix = max(suffix, n+1)
-        except ValueError:
-            # ignore non-numeric suffixes
-            pass
-    new_path = "%s.~%d~" % (path, suffix)
-    os.rename(path, new_path)
-    return new_path
-
-
-def mkdir_with_backup(path, mode=0777):
-    """
-    Like `os.makedirs`, but if `path` already exists and is not empty,
-    rename the existing one to a backup name (see the `backup` function).
-
-    Unlike `os.makedirs`, no exception is thrown if the directory
-    already exists and is empty, but the target directory permissions
-    are not altered to reflect `mode`.
-    """
-    if os.path.isdir(path):
-        if len(os.listdir(path)) > 0:
-            # directory already exists and is non-empty; backup it and
-            # make a new one
-            backup(path)
-            os.makedirs(path, mode)
-        else:
-            # keep existing empty directory
-            pass
+    assert qty is None or qty > 0, \
+        "Argument `qty` must be a positive integer"
+    # ``FileLock`` requires that the to-be-locked file exists; if it
+    # does not, we create an empty one (and avoid overwriting any
+    # content, in case another process is also writing to it).  There
+    # is thus no race condition here, as we attempt to lock the file
+    # anyway, and this will stop concurrent processes.
+    if not os.path.exists(id_filename):
+        open(id_filename, "a").close()
+    lock = FileLock(id_filename, threaded=False) 
+    lock.acquire(timeout=30) # XXX: can raise 'LockTimeout'
+    id_file = open(id_filename, 'r+')
+    id = int(id_file.read(8) or "0", 16)
+    id_file.seek(0)
+    if qty is None:
+        id_file.write("%08x -- DO NOT REMOVE OR ALTER THIS FILE: it is used internally by the gc3libs\n" % (id+1))
+    else: 
+        id_file.write("%08x -- DO NOT REMOVE OR ALTER THIS FILE: it is used internally by the gc3libs\n" % (id+qty))
+    id_file.close()
+    lock.release()
+    if qty is None:
+        return id+1
     else:
-        os.makedirs(path, mode)
+        return [ (id+n) for n in range(1, qty+1) ]
 
 
 def safe_repr(obj):
@@ -928,6 +872,70 @@ class PlusInfinity(Singleton):
         return not self.__eq__(other)
 
 
+# In Python 2.7 still, `DictMixin` is an old-style class; thus, we need
+# to make `Struct` inherit from `object` otherwise we loose properties
+# when setting/pickling/unpickling
+class Struct(object, UserDict.DictMixin):
+    """
+    A `dict`-like object, whose keys can be accessed with the usual
+    '[...]' lookup syntax, or with the '.' get attribute syntax.
+
+    Examples::
+
+      >>> a = Struct()
+      >>> a['x'] = 1
+      >>> a.x
+      1
+      >>> a.y = 2
+      >>> a['y']
+      2
+
+    Values can also be initially set by specifying them as keyword
+    arguments to the constructor::
+
+      >>> a = Struct(z=3)
+      >>> a['z']
+      3
+      >>> a.z
+      3
+    """
+    def __init__(self, initializer=None, **kw):
+        if initializer is not None:
+            try:
+                # initializer is `dict`-like?
+                for name, value in initializer.items():
+                    self[name] = value
+            except AttributeError: 
+                # initializer is a sequence of (name,value) pairs?
+                for name, value in initializer:
+                    self[name] = value
+        for name, value in kw.items():
+            self[name] = value
+
+    # the `DictMixin` class defines all std `dict` methods, provided
+    # that `__getitem__`, `__setitem__` and `keys` are defined.
+    def __setitem__(self, name, val):
+        self.__dict__[name] = val
+    def __getitem__(self, name):
+        return self.__dict__[name]
+    def keys(self):
+        return self.__dict__.keys()
+
+
+def string_to_boolean(word):
+    """
+    Convert `word` to a Python boolean value and return it.
+    The strings `true`, `yes`, `on`, `1` (with any
+    capitalization and any amount of leading and trailing
+    spaces) are recognized as meaning Python `True`.
+    Any other word is considered as boolean `False`.
+    """
+    if word.strip().lower() in [ 'true', 'yes', 'on', '1' ]:
+        return True
+    else:
+        return False
+
+
 def test_file(path, mode, exception=RuntimeError, isdir=False):
     """
     Test for access to a path; if access is not granted, raise an
@@ -987,20 +995,6 @@ def test_file(path, mode, exception=RuntimeError, isdir=False):
         else:
             raise exception("File '%s' lacks execute ('x') permission." % path)
     return True
-
-
-def string_to_boolean(word):
-    """
-    Convert `word` to a Python boolean value and return it.
-    The strings `true`, `yes`, `on`, `1` (with any
-    capitalization and any amount of leading and trailing
-    spaces) are recognized as meaning Python `True`.
-    Any other word is considered as boolean `False`.
-    """
-    if word.strip().lower() in [ 'true', 'yes', 'on', '1' ]:
-        return True
-    else:
-        return False
 
 
 def to_bytes(s):
