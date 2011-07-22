@@ -26,6 +26,8 @@ See the output of ``gcodeml --help`` for program usage instructions.
 __version__ = 'development version (SVN $Revision$)'
 # summary of user-visible changes
 __changelog__ = """
+  2011-07-22:
+    * Re-submit a CODEML job if it exits with nonzero exit code.
   2011-03-22:
     * New option ``-x`` to set the path to the ``codeml`` executable.
   2011-03-21:
