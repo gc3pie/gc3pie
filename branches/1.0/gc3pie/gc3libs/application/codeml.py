@@ -21,7 +21,12 @@
 Simple interface to the CODEML application.
 """
 __version__ = '1.0 (SVN $Revision$)'
-# summary of user-visible changes
+__changelog__ = """
+Summary of user-visible changes
+* 29-04-2011 HS: changed to use RTE
+* 04-05-2011 AK: import sys module
+                 print DEBUG statements (full paths of driver and application)
+"""
 __author__ = 'Riccardo Murri <riccardo.murri@uzh.ch>'
 __docformat__ = 'reStructuredText'
 
@@ -31,6 +36,7 @@ import logging
 import os
 import os.path
 import re
+import sys
 
 from pkg_resources import Requirement, resource_filename
 
@@ -50,16 +56,26 @@ class CodemlApplication(gc3libs.Application):
     """
     
     def __init__(self, *ctls, **kw):
-        # optinal keyword argument 'codeml', defaulting to "codeml"
-        codeml = kw.get('codeml', 'codeml')
+        # optional keyword argument 'codeml', defaulting to None
+        codeml = kw.get('codeml', None)
         # we're submitting CODEML jobs thorugh the support script
         # "codeml.pl", so do the specific setup tailored to this
         # script' usage
+        gc3libs.log.debug("codeml.py path %s", os.path.abspath(sys.argv[0])) # AK: DEBUG
         codeml_pl = resource_filename(Requirement.parse("gc3pie"), 
                                       "gc3libs/etc/codeml.pl")
 
-        # need to send the binary and the PERL driver script
-        inputs = { codeml_pl:'codeml.pl', codeml:'codeml' }
+        # need to send the PERL driver script, and the binary only
+        # if we're not using the RTE
+        inputs = { codeml_pl:'codeml.pl' }
+        if codeml is None:
+            # use the RTE
+            kw['tags'] = [ 'APPS/BIO/CODEML-4.4.3' ]
+        else:
+            # use provided binary
+            inputs[codeml] = 'codeml'
+        gc3libs.log.debug("codeml.pl path %s", codeml_pl) # AK: DEBUG 
+
         # output file paths are read from the '.ctl' file below
         outputs = [ ]
         # for each '.ctl' file, extract the referenced "seqfile" and
@@ -155,7 +171,7 @@ class CodemlApplication(gc3libs.Application):
         ``.mlc`` output files.
 
         An output file is valid iff its last line of each output file
-        reads ``Time used: HH:M``.
+        reads ``Time used: HH:MM``.
 
         The exit status of the whole job is set to one of these values:
 
