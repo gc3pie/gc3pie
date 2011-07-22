@@ -47,11 +47,27 @@ import logging
 import os
 import os.path
 import re
+import sys
 
 import gc3libs
 from gc3libs.application.codeml import CodemlApplication
 from gc3libs.cmdline import SessionBasedScript
 import gc3libs.exceptions
+
+
+## retry policy
+
+class CodemlRetryPolicy(gc3libs.RetryableTask, gc3libs.utils.Struct):
+
+    def retry(self):
+        # return True or False depending whether the application
+        # should be re-submitted or not.
+        # The actual CodemlApplication is available as `self.task`,
+        # so for instance `self.task.valid[0]` is `True` iff the
+        # H0.mlc file is present and processed correctly.
+        gc3libs.log.debug("CodemlRetryPolicy called!")
+        # for now, do the default (see: gc3libs/__init__.py)
+        return gc3libs.RetryableTask.retry(self)
 
 
 ## the script itself
@@ -149,9 +165,19 @@ of newly-created jobs so that this limit is never exceeded.
             if self.params.output_base_url != "":
                kwargs['output_base_url'] = self.params.output_base_url
 
+            # create new CODEML application instance
+            jobname = (os.path.basename(dirpath) or dirpath) + '.out'
+            #kwargs.setdefault('jobname', jobname)
+            kwargs.setdefault('requested_memory', self.params.memory_per_core)
+            kwargs.setdefault('requested_cores', self.params.ncores)
+            kwargs.setdefault('requested_walltime', self.params.walltime)
+            kwargs.setdefault('output_dir',
+                              self.make_directory_path(self.params.output, jobname))
+            app = CodemlApplication(*ctl_files, **kwargs)
+
             # yield new job
-            yield ((os.path.basename(dirpath) or dirpath) + '.out',
-                   CodemlApplication, ctl_files, kwargs)
+            yield (jobname, CodemlRetryPolicy, [jobname, app, 3], dict())
+
         self.log.debug("Total number of control files: %d", total_n_ctl_files) # AK: DEBUG
 
 # run it
