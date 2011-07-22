@@ -28,6 +28,10 @@ __version__ = 'development version (SVN $Revision$)'
 __changelog__ = """
   2011-07-22:
     * Re-submit a CODEML job if it exits with nonzero exit code.
+    * If no option ``-x``/``--codeml-executable`` is given on the
+      command-line, `gcodeml` will now search for the
+      ``APPS/BIO/CODEML-4.4.3`` application tag and use the remotely
+      provided executable.
   2011-03-22:
     * New option ``-x`` to set the path to the ``codeml`` executable.
   2011-03-21:
@@ -110,7 +114,9 @@ of newly-created jobs so that this limit is never exceeded.
                        "(e.g., 'gsiftp://...')")
         self.add_param("-x", "--codeml-executable", action="store",
                        dest="codeml", default="codeml", metavar="PATH",
-                       help="Local path to the CODEML executable.")
+                       help="Local path to the CODEML executable."
+                       " By default, request the CODEML-4.4.3 run time tag"
+                       " and use the remotely-provided application.")
         # change default for the "-o"/"--output" option
         self.actions['output'].default = 'PATH/NAME'
 
