@@ -39,7 +39,8 @@ import cStringIO as StringIO
 import urlparse as pyurlparse
 import UserDict
 
-from lockfile import FileLock
+import lockfile
+
 
 # Python 2.4 lacks `functools`
 try:
@@ -487,6 +488,43 @@ def ifelse(test, if_true, if_false):
         return if_false
 
 
+def lock(path, timeout, create=True):
+    """
+    Lock the file at `path`.  Raise a `LockTimeout` error if the lock
+    cannot be acquired within `timeout` seconds.
+
+    Return a `lock` object that should be passed unchanged to the
+    `gc3libs.utils.unlock` function.
+
+    If no `path` points to a non-existent location, an empty file is
+    created before attempting to lock (unless `create` is `False`).
+    An attempt is made to remove the file in case an error happens.
+
+    See also: `gc3libs.utils.unlock`:func:
+    """
+    # ``FileLock`` requires that the to-be-locked file exists; if it
+    # does not, we create an empty one (and avoid overwriting any
+    # content, in case another process is also writing to it).  There
+    # is thus no race condition here, as we attempt to lock the file
+    # anyway, and this will stop concurrent processes.
+    if not os.path.exists(path) and create:
+        open(path, "a").close()
+        created = True
+    else:
+        created = False
+    try:
+        lck = lockfile.FileLock(path, threaded=False)
+        lck.acquire(timeout=timeout)
+    except Exception, ex:
+        if created:
+            try:
+                os.remove(path)
+            except:
+                pass
+        raise
+    return lck
+
+
 class Log(object):
     """
     A list of messages with timestamps and (optional) tags.
@@ -716,15 +754,7 @@ def progressive_number(qty=None,
     """
     assert qty is None or qty > 0, \
         "Argument `qty` must be a positive integer"
-    # ``FileLock`` requires that the to-be-locked file exists; if it
-    # does not, we create an empty one (and avoid overwriting any
-    # content, in case another process is also writing to it).  There
-    # is thus no race condition here, as we attempt to lock the file
-    # anyway, and this will stop concurrent processes.
-    if not os.path.exists(id_filename):
-        open(id_filename, "a").close()
-    lock = FileLock(id_filename, threaded=False) 
-    lock.acquire(timeout=30) # XXX: can raise 'LockTimeout'
+    lck = lock(id_filename, timeout=30, create=True) # XXX: can raise 'LockTimeout'
     id_file = open(id_filename, 'r+')
     id = int(id_file.read(8) or "0", 16)
     id_file.seek(0)
@@ -733,7 +763,7 @@ def progressive_number(qty=None,
     else: 
         id_file.write("%08x -- DO NOT REMOVE OR ALTER THIS FILE: it is used internally by the gc3libs\n" % (id+qty))
     id_file.close()
-    lock.release()
+    unlock(lck)
     if qty is None:
         return id+1
     else:
@@ -1088,6 +1118,18 @@ def send_mail(send_from, send_to, subject, text, files=[], server="localhost"):
     smtp = SMTP(server)
     smtp.sendmail(send_from, send_to, msg.as_string())
     smtp.close()
+
+
+def unlock(lock):
+    """
+    Release a previously-acquired lock.
+
+    Argument `lock` should be the return value of a previous
+    `gc3libs.utils.lock` call.
+
+    See also: `gc3libs.utils.lock`:func:
+    """
+    lock.release()
 
 
 ##
