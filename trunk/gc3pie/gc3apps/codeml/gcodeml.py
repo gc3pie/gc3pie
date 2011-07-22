@@ -100,48 +100,59 @@ of newly-created jobs so that this limit is never exceeded.
     def new_tasks(self, extra):
         """Implement the argument -> jobs mapping."""
         ## process additional options
-        if not os.path.isabs(self.params.codeml):
-            self.params.codeml = os.path.abspath(self.params.codeml)
-        gc3libs.utils.test_file(self.params.codeml, os.R_OK|os.X_OK)
+        if self.params.codeml is not None:
+            if not os.path.isabs(self.params.codeml):
+                self.params.codeml = os.path.abspath(self.params.codeml)
+            gc3libs.utils.test_file(self.params.codeml, os.R_OK|os.X_OK)
 
-        ## do the argument -> job mapping, really
-        inputs = set()
-
+        ## collect input directories/files
         def contain_ctl_files(paths):
             for path in paths:
                 if path.endswith('.ctl'):
                     return True
             return False
 
+        input_dirs = set()
+        total_n_ctl_files = 0
+        
         for path in self.params.args:
             self.log.debug("Now processing input argument '%s' ..." % path)
             if not os.path.isdir(path):
                 raise gc3libs.exceptions.InvalidUsage(
                     "Argument '%s' is not a directory path." % path)
-            
+
             # recursively scan for input files
             for dirpath, dirnames, filenames in os.walk(path):
                 if contain_ctl_files(filenames):
-                    inputs.add(os.path.realpath(dirpath))
+                    input_dirs.add(os.path.realpath(dirpath))
 
-        #self.log.debug("Gathered input directories: '%s'" % str.join("', '", inputs))
-
-        for dirpath in inputs:
-            # gather control files; other input files are
-            # automatically pulled in by CodemlApplication by parsing
-            # the '.ctl'
+        self.log.debug("Gathered input directories: '%s'"
+                       % str.join("', '", input_dirs))
+        
+        for dirpath in input_dirs:
+            # gather control files; other input files are automatically
+            # pulled in by CodemlApplication by parsing the '.ctl'
             ctl_files = [ os.path.join(dirpath, filename)
                           for filename in os.listdir(dirpath)
                           if filename.endswith('.ctl') ]
+           
+            total_n_ctl_files += len(ctl_files) # AK: DEBUG
+            # check if the dir contains exactly two control files (*.H0.ctl and *.H1.ctl)
+            if len(ctl_files) != 2:
+                raise gc3libs.exceptions.InvalidUsage(
+                    "The input directory '%s' must contain exactly two control files." % dirpath)
+                  
+            self.log.debug("Gathered control files: '%s':" % str.join("', '", ctl_files)) 
             # set optional arguments (path to 'codeml' binary, output URL, etc.)
             kwargs = extra.copy()
             kwargs.setdefault('codeml', self.params.codeml)
             if self.params.output_base_url != "":
-                kwargs['output_base_url'] = self.params.output_base_url
+               kwargs['output_base_url'] = self.params.output_base_url
+
             # yield new job
             yield ((os.path.basename(dirpath) or dirpath) + '.out',
                    CodemlApplication, ctl_files, kwargs)
-
+        self.log.debug("Total number of control files: %d", total_n_ctl_files) # AK: DEBUG
 
 # run it
 if __name__ == '__main__':

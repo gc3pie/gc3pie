@@ -20,8 +20,13 @@
 """
 Simple interface to the CODEML application.
 """
-__version__ = '1.0rc2 (SVN $Revision$)'
-# summary of user-visible changes
+__version__ = '1.1 (SVN $Revision$)'
+__changelog__ = """
+Summary of user-visible changes
+* 29-04-2011 HS: changed to use RTE
+* 04-05-2011 AK: import sys module
+                 print DEBUG statements (full paths of driver and application)
+"""
 __author__ = 'Riccardo Murri <riccardo.murri@uzh.ch>'
 __docformat__ = 'reStructuredText'
 
@@ -31,6 +36,7 @@ import logging
 import os
 import os.path
 import re
+import sys
 
 from pkg_resources import Requirement, resource_filename
 
@@ -50,16 +56,26 @@ class CodemlApplication(gc3libs.Application):
     """
     
     def __init__(self, *ctls, **kw):
-        # optinal keyword argument 'codeml', defaulting to "codeml"
-        codeml = kw.get('codeml', 'codeml')
+        # optional keyword argument 'codeml', defaulting to None
+        codeml = kw.get('codeml', None)
         # we're submitting CODEML jobs thorugh the support script
         # "codeml.pl", so do the specific setup tailored to this
         # script' usage
+        gc3libs.log.debug("codeml.py path %s", os.path.abspath(sys.argv[0])) # AK: DEBUG
         codeml_pl = resource_filename(Requirement.parse("gc3pie"), 
                                       "gc3libs/etc/codeml.pl")
 
-        # need to send the binary and the PERL driver script
-        inputs = { codeml_pl:'codeml.pl', codeml:'codeml' }
+        # need to send the PERL driver script, and the binary only
+        # if we're not using the RTE
+        inputs = { codeml_pl:'codeml.pl' }
+        if codeml is None:
+            # use the RTE
+            kw['tags'] = [ 'APPS/BIO/CODEML-4.4.3' ]
+        else:
+            # use provided binary
+            inputs[codeml] = 'codeml'
+        gc3libs.log.debug("codeml.pl path %s", codeml_pl) # AK: DEBUG 
+
         # output file paths are read from the '.ctl' file below
         outputs = [ ]
         # for each '.ctl' file, extract the referenced "seqfile" and
@@ -97,6 +113,18 @@ class CodemlApplication(gc3libs.Application):
             #required_walltime = ...,
             **kw
             )
+
+        # these attributes will get their actual value after
+        # `terminated()` has run; pre-set them here to an invalid
+        # value so they show up in `ginfo` output.
+        self.hostname = None
+        self.cpuinfo = None
+        self.time_used = None
+
+        self.exists = [None] * len(ctls)
+        self.valid = [None] * len(ctls)
+        self.time_used = [None] * len(ctls)
+        
 
     # split a line 'key = value' around the middle '=' and ignore spaces
     _assignment_re = re.compile('\s* = \s*', re.X)
@@ -144,33 +172,45 @@ class CodemlApplication(gc3libs.Application):
         raise RuntimeError("Could not extract path to seqfile and/or treefile from '%s'"
                            % ctl_path)
 
-    #def terminated(self):
-    #    if job failed because of recoverable condition:
-    #        self.submit()
+    # stdout starts with `HOST: ...` and `CPU: ` lines, but there's a
+    # variable number of spaces so we need a regexp to match
+    _KEY_VALUE_SEP = re.compile(r':\s*')
 
+    _TIME_USED_RE = re.compile(r'Time \s+ used:\s+ (?P<minutes>[0-9]+):(?P<seconds>[0-9]+)', re.X)
+    _H_WHICH_RE = re.compile(r'H(?P<n>[01]).mlc')
 
+    # perform the post-processing and set exit code.
+    # This is the final result verification of a single codeml H0/H1 tuple (job)
     def terminated(self):
         """
         Set the exit code of a `CodemlApplication` job by inspecting its
         ``.mlc`` output files.
 
         An output file is valid iff its last line of each output file
-        reads ``Time used: HH:M``.
+        reads ``Time used: HH:MM``.
 
-        The exit status of the whole job is set to one of these values:
+        The exit status of the whole job is a bit field composed as follows:
 
-        *  0 -- all files processed successfully
-        *  1 -- some files were *not* processed successfully
-        *  2 -- no files processed successfully
-        * 127 -- the ``codeml`` application did not run at all.
-         
+        =======  ====================
+        bit no.  meaning
+        =======  ====================
+        0        H1.mlc valid (0=valid, 1=invalid)
+        1        H1.mlc present (0=present, 1=no file)
+        2        H0.mlc valid (0=valid, 1=invalid)
+        3        H0.mlc present (0=present, 1=not present)
+        7        error running codeml (1=error, 0=ok)
+        =======  ====================
+
+        The special value 127 is returned in case ``codeml`` did not
+        run at all (Grid or remote cluster error).
+
+        So, exit code 0 means that all files processed successfully,
+        code 1 means that ``H0.mlc`` has not been downloaded (for whatever reason).
+
+        TODO:
+          * Check if the stderr is empty.
+          * check what happens to 'Time used' when exec time exceeds 1 hr or 1 day.
         """
-        # XXX: when should we consider an application "successful" here?
-        # In the Rosetta ``docking_protocol`` application, the aim is to get
-        # at least *some* decoys generated: as long as there are a few decoys
-        # in the output, we do not care about the rest.  Is this approach ok
-        # in Codeml/Selectome as well?
-        
         # Except for "signal 125" (submission to batch system failed),
         # any other error condition may result in some output files having
         # been computed/generated, so let us continue in those cases and
@@ -180,36 +220,80 @@ class CodemlApplication(gc3libs.Application):
             self.execution.exitcode = 127
             return
 
+        # form full-path to the stdout files
         download_dir = self.output_dir
+        outputs = [ os.path.join(download_dir, filename) 
+                    for filename in fnmatch.filter(os.listdir(download_dir), '*.mlc') ]
+        if len(outputs) == 0:
+            # no output retrieved, did ``codeml`` run at all?
+            self.execution.exitcode = 127
+            return
+
+        def parse_output_file(path):
+            if not os.path.exists(path):
+                return 'no file'
+            output_file = open(path, 'r')
+            time_used_found = False
+            for line in output_file:
+                match = CodemlApplication._TIME_USED_RE.match(line)
+                if match:
+                    minutes = int(match.group('minutes'))
+                    seconds = int(match.group('seconds'))
+                    time_used_found = True
+                    break
+            if time_used_found:
+                return (minutes*60 + seconds)
+            else:
+                return 'invalid'
 
         # if output files were *not* uploaded to a remote server,
         # then check if they are OK and set exit code based on this
-        if self.output_base_url is not None:
-            # form full-path to the stdout files
-            outputs = [ os.path.join(download_dir, filename) 
-                        for filename in fnmatch.filter(os.listdir(download_dir), '*.mlc') ]
-            if len(outputs) == 0:
-                # no output retrieved, did ``codeml`` run at all?
-                self.execution.exitcode = 127
-                return
-        # count the number of successfully processed files; note that
-        # `self.outputs` contains the list of output files *plus*
-        # stdout and stderr (if distinct)
-        total = len(self.outputs) - gc3libs.utils.ifelse(self.join, 1, 2)
-        failed = 0
-        stdout_file = open(os.path.join(download_dir, self.stdout), 'r')
-        ok_count = gc3libs.utils.count(stdout_file,
-                                       lambda line: line.startswith('Time used: '))
-        stdout_file.close()
+        if self.output_base_url is None:
+            failed = 0
+            for output_path in outputs:
+                match = CodemlApplication._H_WHICH_RE.search(output_path)
+                if match:
+                    n = int(match.group('n'))
+                else:
+                    gc3libs.log.debug("Output file '%s' does not match pattern 'H*.mlc' -- ignoring.")
+                    continue # with next output_path
+                duration = parse_output_file(output_path)
+                if duration == 'no file':
+                    self.exists[n] = False
+                    self.valid[n] = False
+                    failed += 1
+                elif duration == 'invalid':
+                    self.exists[n] = True
+                    self.valid[n] = False
+                    failed += 1
+                else:
+                    self.exists[n] = True
+                    self.valid[n] = True
+                    self.time_used[n] = duration
+            
+        stdout_path = os.path.join(download_dir, self.stdout)
+        if os.path.exists(stdout_path):
+            stdout_file = open(stdout_path, 'r')
+            for line in stdout_file:
+                line = line.strip()
+                if line.startswith('HOST:'):
+                    tag, self.hostname = CodemlApplication._KEY_VALUE_SEP.split(line, maxsplit=1)
+                elif line.startswith('CPU:'):
+                    tag, self.cpuinfo = CodemlApplication._KEY_VALUE_SEP.split(line, maxsplit=1)
+                    break
+            stdout_file.close()
+
         # set exit code and informational message
-        if ok_count == total:
-            self.execution.exitcode = 0
-            self.info = "All files processed successfully, output downloaded to '%s'" % download_dir
-        elif ok_count == 0:
-            self.execution.exitcode = 2
-            self.info = "No files processed successfully, output downloaded to '%s'" % download_dir
-        else:
-            self.execution.exitcode = 1
-            self.info = "Some files *not* processed successfully, output downloaded to '%s'" % download_dir
+        rc = 0
+        for n in range(len(self.exists)):
+            if not self.exists[n]:
+                rc |= 1
+            rc *= 2
+            if not self.valid[n]:
+                rc |= 1
+            rc *= 2
+        self.execution.exitcode = rc
+
+        # all done
         return
             
