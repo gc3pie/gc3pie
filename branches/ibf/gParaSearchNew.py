@@ -181,6 +181,8 @@ class gParaSearchDriver(SequentialTaskCollection):
             if self.deSolver.I_plotting:
                 combineOverviews.plot(tablePath = os.path.join(self.pathToStageDir, 'agTable'), savePath = os.path.join(self.pathToStageDir, '3dscatter.svg'))
             open('jobDone', 'w')
+            # report success of sequential task
+            self.execution.returncode = 0
             return Run.State.TERMINATED
         return Run.State.RUNNING
         
@@ -506,6 +508,9 @@ Read `.loop` files and execute the `forwardPremium` program accordingly.
                                           0,  Ctry2,  'space-separated')
                 # Get the correct Ctry Paras into base dir. 
                 self.getCtryParas(baseDir, Ctry1, Ctry2)
+                # Copy base dir
+                ctryBaseDir = os.path.join(path_to_stage_dir, 'base')
+                shutil.copytree(baseDir, ctryBaseDir)
                 EA = getParameter(fileIn = os.path.join(baseDir, 'input/parameters.in'), varIn = 'EA', 
                                      regexIn = 'bar-separated')
                 EB = getParameter(fileIn = os.path.join(baseDir, 'input/parameters.in'), varIn = 'EB', 
@@ -521,13 +526,13 @@ Read `.loop` files and execute the `forwardPremium` program accordingly.
                 kwargs = extra.copy()
                 kwargs['output_dir'] = path_to_stage_dir
                 # Check if number of population coincides with desired cores
-##                if self.params.max_running < self.params.nPopulation:
-##                    self.params.max_running = self.params.nPopulation
+                if self.params.max_running < self.params.nPopulation:
+                    self.params.max_running = self.params.nPopulation
                 
                 # yield job
                 yield (jobname, gParaSearchDriver, 
                        [ self.params.executable, path_to_stage_dir, self.params.architecture, 
-                         self.params.initial, self.params.xVars, 
+                         ctryBaseDir, self.params.xVars, 
                          self.params.nPopulation, self.params.xVarsDom, self.params.solverVerb, self.params.problemType,
                          self.params.pathEmpirical, self.params.itermax, self.params.xConvCrit, self.params.yConvCrit,
                          self.params.makePlots, self.params.optStrategy, self.params.fWeight, self.params.fCritical, self.params.countryList,
