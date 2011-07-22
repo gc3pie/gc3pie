@@ -91,7 +91,7 @@ of newly-created jobs so that this limit is never exceeded.
                        "which must be a protocol that ARC supports."
                        "(e.g., 'gsiftp://...')")
         self.add_param("-x", "--codeml-executable", action="store",
-                       dest="codeml", default="codeml", metavar="PATH",
+                       dest="codeml", default=None, metavar="PATH",
                        help="Filesystem path to the CODEML executable.")
         # change default for the "-o"/"--output" option
         self.actions['output'].default = 'SESSION'
