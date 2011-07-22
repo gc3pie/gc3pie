@@ -94,7 +94,7 @@ of newly-created jobs so that this limit is never exceeded.
                        dest="codeml", default="codeml", metavar="PATH",
                        help="Local path to the CODEML executable.")
         # change default for the "-o"/"--output" option
-        self.actions['output'].default = 'SESSION'
+        self.actions['output'].default = 'PATH/NAME'
 
 
     def new_tasks(self, extra):
