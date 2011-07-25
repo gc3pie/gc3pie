@@ -742,6 +742,7 @@ class SessionBasedScript(_Script):
         and command-line parsing is of course available.
         """
         return gc3libs.core.Engine(self._core, self.tasks, self.store,
+                                   max_submitted = self.params.max_running,
                                    max_in_flight = self.params.max_running)
 
 
