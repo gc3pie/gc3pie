@@ -24,7 +24,8 @@ __version__ = '$Revision$'
 
 
 import os
-import urlparse
+
+import gc3libs.compat.urlparse
 
 
 # XXX: rewrite using `collections.namedtuple` when we no longer
