@@ -48,6 +48,13 @@ __author__ = 'Riccardo Murri <riccardo.murri@uzh.ch>'
 __docformat__ = 'reStructuredText'
 
 
+# workaround for Issue 95,
+# see: http://code.google.com/p/gc3pie/issues/detail?id=95
+if __name__ == "__main__":
+    import gcodeml
+
+
+# std module imports
 import fnmatch
 import logging
 import os
@@ -55,6 +62,7 @@ import os.path
 import re
 import sys
 
+# gc3 lubrary imports
 import gc3libs
 from gc3libs.application.codeml import CodemlApplication
 from gc3libs.cmdline import SessionBasedScript
