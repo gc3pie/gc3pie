@@ -158,7 +158,7 @@ class ValueFunctionIteration(SequentialTaskCollection):
                 last_values_file.write('%f\n' % value)
             last_values_file.close()
             ## now create new task for computing the next pass
-            self.tasks.append(
+            self.add(
                 ValueFunctionIterationPass(
                     self.executable,
                     last_values_filename,
