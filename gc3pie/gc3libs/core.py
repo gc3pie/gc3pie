@@ -1116,31 +1116,57 @@ class Engine(object):
                 del self._terminating[index]
 
 
-    def stats(self):
+    def stats(self, only=None):
         """
         Return a dictionary mapping each state name into the count of
-        jobs in that state. In addition, the following keys are defined:
+        tasks in that state. In addition, the following keys are defined:
         
         * `ok`:  count of TERMINATED tasks with return code 0
         
         * `failed`: count of TERMINATED tasks with nonzero return code
 
         * `total`: total count of managed tasks, whatever their state
+
+        If the optional argument `only` is not None, tasks whose
+        class is not contained in `only` are ignored.
+
+        :param tuple only: Restrict counting to tasks of these classes.
+        
         """
+        if only:
+            gc3libs.log.debug("Engine.stats: Restricting to object of class %s", only)
         result = defaultdict(lambda: 0)
-        result[Run.State.NEW] = len(self._new)
+        if only:
+            result[Run.State.NEW] = len([task for task in self._new
+                                                       if isinstance(task, only)])
+        else:
+            result[Run.State.NEW] = len(self._new)
         for task in self._in_flight:
+            if only and not isinstance(task, only):
+                continue
             state = task.execution.state
             result[state] += 1
         result[Run.State.STOPPED] = len(self._stopped)
         for task in self._to_kill:
+            if only and not isinstance(task, only):
+                continue
             # XXX: presumes no task in the `_to_kill` list is TERMINATED
             state = task.execution.state
             result[state] += 1
-        result[Run.State.TERMINATING] = len(self._terminating)
-        result[Run.State.TERMINATED] = len(self._terminated)
+        if only:
+            result[Run.State.TERMINATING] = len([task for task in self._terminating
+                                                               if isinstance(task, only)])
+        else:
+            result[Run.State.TERMINATING] = len(self._terminating)
+        if only:
+            result[Run.State.TERMINATED] = len([task for task in self._terminated
+                                                               if isinstance(task, only)])
+        else:
+            result[Run.State.TERMINATED] = len(self._terminated)
         # for TERMINATED tasks, compute the number of successes/failures
         for task in self._terminated:
+            if only and not isinstance(task, only):
+                continue
             if task.execution.returncode == 0:
                 result['ok'] += 1
             else:
@@ -1148,11 +1174,12 @@ class Engine(object):
                                   % (task, task.execution.returncode,
                                      task.execution.signal, task.execution.exitcode))
                 result['failed'] += 1
-        result['total'] = (len(self._new)
-                           + len(self._in_flight)
-                           + len(self._stopped)
-                           + len(self._terminating)
-                           + len(self._terminated))
+        result['total'] = (result[Run.State.NEW]
+                           + result[Run.State.SUBMITTED]
+                           + result[Run.State.RUNNING]
+                           + result[Run.State.STOPPED]
+                           + result[Run.State.TERMINATING]
+                           + result[Run.State.TERMINATED])
         return result
 
             
