@@ -33,6 +33,8 @@ import tempfile
 import warnings
 warnings.simplefilter("ignore")
 
+from gc3libs.compat.collections import defaultdict
+
 import gc3libs
 import gc3libs.debug
 from gc3libs import Application, Run, Task
@@ -683,8 +685,8 @@ def read_config(*locations):
     """
     files_successfully_read = 0
     defaults = { }
-    resources = gc3libs.utils.defaultdict(lambda: dict())
-    auths = gc3libs.utils.defaultdict(lambda: dict())
+    resources = defaultdict(lambda: dict())
+    auths = defaultdict(lambda: dict())
 
     # map values for the `architecture=...` configuration item
     # into internal constants
@@ -1122,7 +1124,7 @@ class Engine(object):
 
         * `total`: total count of managed tasks, whatever their state
         """
-        result = utils.defaultdict(lambda: 0)
+        result = defaultdict(lambda: 0)
         result[Run.State.NEW] = len(self._new)
         for task in self._in_flight:
             state = task.execution.state

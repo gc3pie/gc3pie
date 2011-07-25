@@ -31,31 +31,9 @@ import inspect
 import itertools
 import sys
 
-import gc3libs
+import gc3libs.compat.functools as functools
 
-# Python 2.4 lacks `functools`
-try:
-    import functools
-    _wraps = functools.wraps
-except ImportError:
-    def _wraps(original):
-        def inner(fn):
-            # see functools.WRAPPER_ASSIGNMENTS
-            for attribute in ['__module__',
-                              '__name__',
-                              '__doc__'
-                              ]:
-                setattr(fn, attribute, getattr(original, attribute))
-            # see functools.WRAPPER_UPDATES
-            for attribute in ['__dict__',
-                              ]:
-                if hasattr(fn, attribute):
-                    getattr(fn, attribute).update(getattr(original, attribute))
-                else:
-                    setattr(fn, attribute,
-                            getattr(original, attribute).copy())
-            return fn
-        return inner
+import gc3libs
 
 
 def name(item):
@@ -115,7 +93,7 @@ def trace(fn, log=gc3libs.log.debug):
     fn_defaults = fn.func_defaults or list()
     argdefs = dict(zip(argnames[-len(fn_defaults):], fn_defaults))
     
-    @_wraps(fn)
+    @functools.wraps(fn)
     def wrapped(*v, **k):
         # Collect function arguments by chaining together positional,
         # defaulted, extra positional and keyword arguments.
