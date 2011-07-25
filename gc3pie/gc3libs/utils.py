@@ -36,7 +36,6 @@ import shutil
 import sys
 import time
 import cStringIO as StringIO
-import urlparse as pyurlparse
 import UserDict
 
 import lockfile
