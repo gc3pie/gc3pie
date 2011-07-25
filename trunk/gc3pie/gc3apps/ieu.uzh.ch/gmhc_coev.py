@@ -263,8 +263,13 @@ newly-created jobs so that this limit is never exceeded.
         SessionBasedScript.__init__(
             self,
             version = __version__, # module version == script version
-            application = gmhc_coev.GMhcCoevTask,
             input_filename_pattern = 'MHC_coev_*'
+            application = gmhc_coev.GMhcCoevTask,
+            # only display stats for the top-level policy objects
+            # (which correspond to the processed files) omit counting
+            # actual applications because their number varies over
+            # time as checkpointing and re-submission takes place.
+            stats_only_for = gmhc_coev.GMhcCoevTask,
             )
 
     def setup_options(self):

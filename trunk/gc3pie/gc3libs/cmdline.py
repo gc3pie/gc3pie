@@ -808,6 +808,10 @@ class SessionBasedScript(_Script):
     ## the pyCLI docs before :-)
     ##
 
+    def __unset_application_cls(*args, **kwargs):
+        """Raise an error if users did not set `application` in `SessionBasedScript` initialization."""
+        raise gc3libs.exceptions.Error("PLEASE SET `application` in `SessionBasedScript` CONSTRUCTOR")
+
     def __init__(self, **kw):
         """
         Perform initialization and set the version, help and usage
@@ -835,14 +839,13 @@ class SessionBasedScript(_Script):
         corresponding instance attribute on this Python object.
         """
         self.tasks = [ ]
+        self.stats_only_for = None #: by default, print stats of all kind of jobs
         self.instances_per_file = 1
         self.instances_per_job = 1
         self.extra = { } #: extra kw arguments passed to `parse_args`
         # use bogus values that should point ppl to the right place
         self.input_filename_pattern = 'PLEASE SET `input_filename_pattern` IN `SessionBasedScript` CONSTRUCTOR'
-        def _unset_application_cls(*args, **kwargs):
-            raise gc3libs.exceptions.Error("PLEASE SET `application` in `SessionBasedScript` CONSTRUCTOR")
-        self.application = _unset_application_cls
+        self.application = SessionBasedScript.__unset_application_cls
         ## init base classes
         _Script.__init__(
             self,
@@ -1054,7 +1057,7 @@ class SessionBasedScript(_Script):
                    % (os.path.basename(self.params.session),
                       time.strftime('%X, %x')))
             # summary
-            stats = controller.stats()
+            stats = controller.stats(self.stats_only_for)
             total = stats['total']
             if total > 0:
                 self.print_summary_table(sys.stdout, stats)

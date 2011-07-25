@@ -167,19 +167,27 @@ class TaskCollection(Task, gc3libs.utils.Struct):
             time.sleep(interval)
 
 
-    def stats(self):
+    def stats(self, only=None):
         """
         Return a dictionary mapping each state name into the count of
-        jobs in that state. In addition, the following keys are defined:
+        tasks in that state. In addition, the following keys are defined:
         
         * `ok`:  count of TERMINATED tasks with return code 0
         
         * `failed`: count of TERMINATED tasks with nonzero return code
 
         * `total`: count of managed tasks, whatever their state
+
+        If the optional argument `only` is not None, tasks whose
+        class is not contained in `only` are ignored.
+
+        :param tuple only: Restrict counting to tasks of these classes.
+        
         """
         result = defaultdict(lambda: 0)
         for task in self.tasks:
+            if only and not isinstance(task, only):
+                continue
             state = task.execution.state
             result[state] += 1
             if state == Run.State.TERMINATED:
@@ -187,7 +195,11 @@ class TaskCollection(Task, gc3libs.utils.Struct):
                     result['ok'] += 1
                 else:
                     result['failed'] += 1
-        result['total'] = len(self.tasks)
+        if only:
+            result['total'] = len([task for task in self.tasks
+                                                 if isinstance(task, only)])
+        else:
+            result['total'] = len(self.tasks)
         return result
 
 
