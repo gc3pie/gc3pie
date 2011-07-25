@@ -110,7 +110,7 @@ class Url(tuple):
     """
     __slots__ = ( )
 
-    _fields = ('scheme', 'netloc', 'path', 'hostname', 'port', 'username', 'password')
+    _fields = ['scheme', 'netloc', 'path', 'hostname', 'port', 'username', 'password']
 
     def __new__(cls, urlstring=None, force_abs=True,
                 scheme='file', netloc='', path='',
