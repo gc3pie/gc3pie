@@ -30,10 +30,12 @@ import sys
 import tempfile
 import time
 
+from gc3libs.compat.collections import defaultdict
+
 from gc3libs import log, Run
 from gc3libs.backends import LRMS
 import gc3libs.exceptions
-import gc3libs.utils as utils # first, defaultdict, to_bytes
+import gc3libs.utils as utils # first, to_bytes
 from gc3libs.utils import same_docstring_as
 
 import transport
@@ -89,9 +91,9 @@ def parse_qstat_f(qstat_output):
     _property_line_re = re.compile(r'^[a-z]{2}:([a-z_]+)=(.+)', re.I|re.X)
     def dzdict():
         def zdict():
-            return utils.defaultdict(lambda: 0)
-        return utils.defaultdict(zdict)
-    result = utils.defaultdict(dzdict)
+            return defaultdict(lambda: 0)
+        return defaultdict(zdict)
+    result = defaultdict(dzdict)
     qname = None
     for line in qstat_output.split('\n'):
         # strip leading and trailing whitespace
@@ -146,8 +148,8 @@ def compute_nr_of_slots(qstat_output):
     def zero_initializer():
         return 0
     def dict_with_zero_initializer():
-        return utils.defaultdict(zero_initializer)
-    result = utils.defaultdict(dict_with_zero_initializer)
+        return defaultdict(zero_initializer)
+    result = defaultdict(dict_with_zero_initializer)
     for q in qstat.iterkeys():
         for host in qstat[q].iterkeys():
             r = result[host]
@@ -172,7 +174,7 @@ def parse_qhost_f(qhost_output):
     Parse SGE's ``qhost -F`` output (as contained in string `qhost_output`)
     and return a `dict` instance, mapping each host name to its attributes.
     """
-    result = utils.defaultdict(dict)
+    result = defaultdict(dict)
     n = 0
     for line in qhost_output.split('\n'):
         # skip header lines

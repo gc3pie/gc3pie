@@ -32,6 +32,7 @@ __version__ = 'development version (SVN $Revision$)'
 
 import time
 
+from gc3libs.compat.collections import defaultdict
 
 from gc3libs import log, Run, Task
 import gc3libs.exceptions
@@ -177,7 +178,7 @@ class TaskCollection(Task, gc3libs.utils.Struct):
 
         * `total`: count of managed tasks, whatever their state
         """
-        result = gc3libs.utils.defaultdict(lambda: 0)
+        result = defaultdict(lambda: 0)
         for task in self.tasks:
             state = task.execution.state
             result[state] += 1

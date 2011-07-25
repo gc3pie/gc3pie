@@ -41,31 +41,8 @@ import UserDict
 
 import lockfile
 
-
-# Python 2.4 lacks `functools`
-try:
-    import functools
-    _wraps = functools.wraps
-except ImportError:
-    def _wraps(original):
-        def inner(fn):
-            # see functools.WRAPPER_ASSIGNMENTS
-            for attribute in ['__module__',
-                              '__name__',
-                              '__doc__'
-                              ]:
-                setattr(fn, attribute, getattr(original, attribute))
-            # see functools.WRAPPER_UPDATES
-            for attribute in ['__dict__',
-                              ]:
-                if hasattr(fn, attribute):
-                    getattr(fn, attribute).update(getattr(original, attribute))
-                else:
-                    setattr(fn, attribute,
-                            getattr(original, attribute).copy())
-            return fn
-        return inner
-
+from gc3libs.compat.collections import defaultdict
+import gc3libs.compat.functools as functools
 
 import gc3libs
 import gc3libs.exceptions
@@ -146,7 +123,7 @@ def cache_for(lapse):
     are destroyed with the object when it goes out of scope.
     """
     def decorator(fn):
-        @_wraps(fn)
+        @functools.wraps(fn)
         def wrapper(obj, *args):
             now = time.time()
             key = (fn, tuple(id(arg) for arg in args))
@@ -270,26 +247,6 @@ def count(seq, predicate):
         if predicate(item):
             count += 1
     return count
-
-
-class defaultdict(dict):
-    """
-    A backport of `defaultdict` to Python 2.4
-    See http://docs.python.org/library/collections.html
-    """
-    def __new__(cls, default_factory=None):
-        return dict.__new__(cls)
-    def __init__(self, default_factory):
-        self.default_factory = default_factory
-    def __missing__(self, key):
-        try:
-            return self.default_factory()
-        except:
-            raise KeyError("Key '%s' not in dictionary" % key)
-    def __getitem__(self, key):
-        if not dict.__contains__(self, key):
-            dict.__setitem__(self, key, self.__missing__(key))
-        return dict.__getitem__(self, key)
 
 
 def defproperty(fn):

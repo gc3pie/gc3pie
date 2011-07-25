@@ -56,14 +56,17 @@ class CodemlApplication(gc3libs.Application):
     """
     
     def __init__(self, *ctls, **kw):
+        gc3libs.log.debug("codeml.py path %s", os.path.abspath(sys.argv[0])) # AK: DEBUG
+
         # optional keyword argument 'codeml', defaulting to None
         codeml = kw.get('codeml', None)
+
         # we're submitting CODEML jobs thorugh the support script
         # "codeml.pl", so do the specific setup tailored to this
         # script' usage
-        gc3libs.log.debug("codeml.py path %s", os.path.abspath(sys.argv[0])) # AK: DEBUG
         codeml_pl = resource_filename(Requirement.parse("gc3pie"), 
                                       "gc3libs/etc/codeml.pl")
+        gc3libs.log.debug("codeml.pl path %s", codeml_pl) # AK: DEBUG 
 
         # need to send the PERL driver script, and the binary only
         # if we're not using the RTE
@@ -74,7 +77,6 @@ class CodemlApplication(gc3libs.Application):
         else:
             # use provided binary
             inputs[codeml] = 'codeml'
-        gc3libs.log.debug("codeml.pl path %s", codeml_pl) # AK: DEBUG 
 
         # output file paths are read from the '.ctl' file below
         outputs = [ ]
