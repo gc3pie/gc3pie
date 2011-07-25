@@ -1005,14 +1005,15 @@ class Engine(object):
         transitioned = []
         for index, task in enumerate(self._to_kill):
             try:
+                state = task.execution.state
                 self._core.kill(task)
                 if self._store:
                     self._store.save(task)
-                if task.execution.state == Run.State.SUBMITTED:
+                if state == Run.State.SUBMITTED:
                     if isinstance(task, Application):
                         currently_submitted -= 1
                         currently_in_flight -= 1
-                elif task.execution.state == Run.State.RUNNING:
+                elif state == Run.State.RUNNING:
                     if isinstance(task, Application):
                         currently_in_flight -= 1
                 self._terminated.append(task)
