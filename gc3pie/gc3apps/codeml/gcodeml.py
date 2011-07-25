@@ -113,7 +113,7 @@ of newly-created jobs so that this limit is never exceeded.
                        "which must be a protocol that ARC supports."
                        "(e.g., 'gsiftp://...')")
         self.add_param("-x", "--codeml-executable", action="store",
-                       dest="codeml", default="codeml", metavar="PATH",
+                       dest="codeml", default=None, metavar="PATH",
                        help="Local path to the CODEML executable."
                        " By default, request the CODEML-4.4.3 run time tag"
                        " and use the remotely-provided application.")
