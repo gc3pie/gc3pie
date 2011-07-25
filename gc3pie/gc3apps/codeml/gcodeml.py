@@ -184,7 +184,7 @@ of newly-created jobs so that this limit is never exceeded.
             app = CodemlApplication(*ctl_files, **kwargs)
 
             # yield new job
-            yield (jobname, CodemlRetryPolicy, [jobname, app, 3], dict())
+            yield (jobname, gcodeml.CodemlRetryPolicy, [jobname, app, 3], dict())
 
         self.log.debug("Total number of control files: %d", total_n_ctl_files) # AK: DEBUG
 
