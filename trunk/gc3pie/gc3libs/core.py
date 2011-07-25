@@ -966,24 +966,25 @@ class Engine(object):
         transitioned = []
         for index, task in enumerate(self._in_flight):
             try:
-                state = task.execution.state
+                old_state = task.execution.state
                 self._core.update_job_state(task)
-                if self._store and state != task.execution.state:
+                state = task.execution.state
+                if self._store and state != old_state:
                     self._store.save(task)
-                if task.execution.state == Run.State.SUBMITTED:
+                if state == Run.State.SUBMITTED:
                     if isinstance(task, Application):
                         currently_submitted += 1
                         currently_in_flight += 1
-                elif task.execution.state == Run.State.RUNNING:
+                elif state == Run.State.RUNNING:
                     if isinstance(task, Application):
                         currently_in_flight += 1
-                elif task.execution.state == Run.State.STOPPED:
+                elif state == Run.State.STOPPED:
                     transitioned.append(index) # task changed state, mark as to remove
                     self._stopped.append(task)
-                elif task.execution.state == Run.State.TERMINATING:
+                elif state == Run.State.TERMINATING:
                     transitioned.append(index) # task changed state, mark as to remove
                     self._terminating.append(task)
-                elif task.execution.state == Run.State.TERMINATED:
+                elif state == Run.State.TERMINATED:
                     transitioned.append(index) # task changed state, mark as to remove
                     self._terminated.append(task)
             except gc3libs.exceptions.ConfigurationError:
@@ -1005,15 +1006,15 @@ class Engine(object):
         transitioned = []
         for index, task in enumerate(self._to_kill):
             try:
-                state = task.execution.state
+                old_state = task.execution.state
                 self._core.kill(task)
                 if self._store:
                     self._store.save(task)
-                if state == Run.State.SUBMITTED:
+                if old_state == Run.State.SUBMITTED:
                     if isinstance(task, Application):
                         currently_submitted -= 1
                         currently_in_flight -= 1
-                elif state == Run.State.RUNNING:
+                elif old_state == Run.State.RUNNING:
                     if isinstance(task, Application):
                         currently_in_flight -= 1
                 self._terminated.append(task)
@@ -1034,21 +1035,22 @@ class Engine(object):
         transitioned = []
         for index, task in enumerate(self._stopped):
             try:
-                state = task.execution.state
+                old_state = task.execution.state
                 self._core.update_job_state(task)
-                if self._store and state != task.execution.state:
+                state = task.execution.state
+                if self._store and state != old_state:
                     self._store.save(task)
-                if task.execution.state in [Run.State.SUBMITTED, Run.State.RUNNING]:
+                if state in [Run.State.SUBMITTED, Run.State.RUNNING]:
                     if isinstance(task, Application):
                         currently_in_flight += 1
                         if task.execution.state == Run.State.SUBMITTED:
                             currently_submitted += 1
                     self._in_flight.append(task)
                     transitioned.append(index) # task changed state, mark as to remove
-                elif task.execution.state == Run.State.TERMINATING:
+                elif state == Run.State.TERMINATING:
                     self._terminating.append(task)
                     transitioned.append(index) # task changed state, mark as to remove
-                elif task.execution.state == Run.State.TERMINATED:
+                elif state == Run.State.TERMINATED:
                     self._terminated.append(task)
                     transitioned.append(index) # task changed state, mark as to remove
             except Exception, x:
