@@ -28,6 +28,7 @@ __docformat__ = 'reStructuredText'
 __version__ = 'development version (SVN $Revision$)'
 
 
+import itertools
 import os
 import os.path
 import posix
@@ -1074,6 +1075,16 @@ def send_mail(send_from, send_to, subject, text, files=[], server="localhost"):
     smtp = SMTP(server)
     smtp.sendmail(send_from, send_to, msg.as_string())
     smtp.close()
+
+
+def uniq(seq):
+    """
+    Iterate over all unique elements in sequence `seq`.
+
+    Distinct values are returned in a sorted fashion.
+    """
+    for value, grouper in itertools.groupby(sorted(seq)):
+        yield value
 
 
 def unlock(lock):
