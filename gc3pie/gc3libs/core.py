@@ -504,7 +504,14 @@ class Core:
         lrms.cancel_job(app)
         gc3libs.log.debug("Setting job '%s' status to TERMINATED"
                           " and returncode to SIGCANCEL" % job)
-        job.state = Run.State.TERMINATED
+        # setting the state runs the state-transition handlers,
+        # which may raise an error -- ignore them, but log nonetheless
+        try:
+            job.state = Run.State.TERMINATED
+        except Exception, ex:
+            gc3libs.log.info("Ignoring error in state transition"
+                             " since task is being killed: %s",
+                             str(ex))
         job.signal = Run.Signals.Cancelled
         job.log.append("Cancelled.")
 
