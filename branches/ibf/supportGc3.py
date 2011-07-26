@@ -85,7 +85,9 @@ def str2tuple(strIn, conv=int):
     return tuple(conv(x) for x in items)
 
 
-class getIndex(object):
+class getIndex():
+# Python bug http://stackoverflow.com/questions/1152238/python-iterators-how-to-dynamically-assign-self-next-within-a-new-style-class
+# Cannot use new type class, that is: class getIndex(object) does not allow setting next method on the fly. 
     """
     Iterator that yields loop indices for an arbitrary nested loop.
     Inputs: base - array of elements in each dimension
@@ -114,7 +116,11 @@ class getIndex(object):
             self.restr = restr
         diagnolStrings = ['diagnol', 'diag']
         if self.restr in diagnolStrings:
-            getIndex.next = getIndex.nextDiag
+ #           getIndex.next = self.nextDiag
+            self.next = self.nextDiag
+        else:
+#            getIndex.next = self.nextStd
+            self.next = self.nextStd
 
         if direction.lower() == 'rowwise':
             self.increment = self.incrementRowWise
@@ -128,12 +134,13 @@ class getIndex(object):
         if self.iteration > 1:
             self.loopIndex += 1
         self.iteration += 1
-        if all(self.loopIndex == self.base):
+        if all(self.loopIndex == min(self.base)):
             raise StopIteration
         return self.loopIndex.tolist()
 
     def __iter__(self):
-        return getIndex(self.base, self.restr, self.direction)
+        return self
+    #getIndex(self.base, self.restr, self.direction)
 
     def incrementRowWise(self):
         for ix in xrange(len(self.base) - 1, -1, -1):
@@ -162,7 +169,7 @@ class getIndex(object):
         # Skip if not diagnol
         return not isDiagnolIndex  
 
-    def next(self):
+    def nextStd(self):
         skip = True
         while skip == True:
             if self.iteration > 1:
@@ -252,6 +259,7 @@ def update_parameter_in_file(path, varIn, paraIndex, newVal, regexIn):
                            r'([\w\s\.,;\[\]\-]+)' # values
                            r'(\s*)'), # spaces (filler)
     }
+    isfound = False
     if regexIn in _loop_regexps.keys():
         regexIn = _loop_regexps[regexIn]
     paraFileIn = open(path, 'r')
@@ -260,6 +268,7 @@ def update_parameter_in_file(path, varIn, paraIndex, newVal, regexIn):
         (a, var, b, oldValMat, c) = re.match(regexIn, line.rstrip()).groups()
         gc3libs.log.debug("Read variable '%s' with value '%s' ...", var, oldValMat)
         if var == varIn:
+            isfound = True
             oldValMat = str2mat(oldValMat)
             if oldValMat.shape == (1,):
                 newValMat = newVal
@@ -275,6 +284,8 @@ def update_parameter_in_file(path, varIn, paraIndex, newVal, regexIn):
     paraFileIn.close()
     # move new modified content over the old
     os.rename(path + '.tmp', path)
+    if not isfound:
+        gc3libs.log.critical('update_parameter_in_file could not find parameter in sepcified file')
 
 
 def safe_eval(s):
@@ -386,6 +397,6 @@ def getParameter(fileIn, varIn, regexIn = '(\s*)([a-zA-Z0-9]+)(\s+)([a-zA-Z0-9\.
 
 
 if __name__ == '__main__':   
-    x = getIndex([6,6], 'lowertr')
+    x = getIndex([2,6], 'diag')
     for i in x:
         print(i)
