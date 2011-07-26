@@ -87,8 +87,20 @@ force removal of a job regardless.
     
         if self.params.all:
             args = self._store.list()
+            if len(args) == 0:
+                self.log.info("No jobs in session: nothing to do.")
         else:
             args = self.params.args
+            if len(args) == 0:
+                self.log.warning("No job IDs given on command line: nothing to do."
+                                 " Type '%s --help' for usage help." 
+                                 # if we were called with an absolute path,
+                                 # presume the command has been found by the
+                                 # shell through PATH and just print the command name,
+                                 # otherwise print the exact path name.
+                                 % utils.ifelse(os.path.isabs(sys.argv[0]),
+                                                os.path.basename(sys.argv[0]),
+                                                sys.argv[0]))
 
         failed = 0
         for jobid in args:
@@ -575,15 +587,15 @@ error occurred.
         else:
             args = self.params.args
             if len(args) == 0:
-                self.log.error("No job IDs given on command line: nothing to do."
-                               " Type '%s --help' for usage help." 
-                               # if we were called with an absolute path,
-                               # presume the command has been found by the
-                               # shell through PATH and just print the command name,
-                               # otherwise print the exact path name.
-                               % utils.ifelse(os.path.isabs(sys.argv[0]),
-                                              os.path.basename(sys.argv[0]),
-                                              sys.argv[0]))
+                self.log.warning("No job IDs given on command line: nothing to do."
+                                 " Type '%s --help' for usage help." 
+                                 # if we were called with an absolute path,
+                                 # presume the command has been found by the
+                                 # shell through PATH and just print the command name,
+                                 # otherwise print the exact path name.
+                                 % utils.ifelse(os.path.isabs(sys.argv[0]),
+                                                os.path.basename(sys.argv[0]),
+                                                sys.argv[0]))
 
         failed = 0
         for jobid in args:
