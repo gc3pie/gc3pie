@@ -182,22 +182,25 @@ of newly-created jobs so that this limit is never exceeded.
             if self.params.output_base_url != "":
                kwargs['output_base_url'] = self.params.output_base_url
 
-            # create new CODEML application instance
-            jobname = (os.path.basename(dirpath) or dirpath) + '.out'
+            ## create new CODEML application instance
 
-            app = CodemlApplication(*ctl_files,
-                codeml = self.params.codeml,
-                requested_memory = self.params.memory_per_core,
-                requested_cores = self.params.ncores,
-                requested_walltime = self.params.walltime,
-                # Use the `make_directory_path` method (from
-                # `SessionBasedScript`) to expand strings like ``PATH``,
-                # ``NAME``, etc. in the template.  The ``PATH`` will be
-                # set from the directory containing the first ``.ctl``
-                # file.
-                output_dir = self.make_directory_path(self.params.output, jobname, *ctl_files),
-               # any other parameter
-               **kwargs)
+            # Python 2.4 does not allow named arguments after a
+            # variable-length positional argument list (*args), so we
+            # need to pass the named arguments as part of the `kw`
+            # dictionary.
+            kwargs['codeml'] = self.params.codeml
+            kwargs['requested_memory'] = self.params.memory_per_core
+            kwargs['requested_cores'] = self.params.ncores
+            kwargs['requested_walltime'] = self.params.walltime
+            # Use the `make_directory_path` method (from
+            # `SessionBasedScript`) to expand strings like ``PATH``,
+            # ``NAME``, etc. in the template.  The ``PATH`` will be
+            # set from the directory containing the first ``.ctl``
+            # file.
+            jobname = (os.path.basename(dirpath) or dirpath) + '.out'
+            kwargs['output_dir'] = self.make_directory_path(self.params.output, jobname, *ctl_files)
+
+            app = CodemlApplication(*ctl_files, **kwargs)
 
             # yield new job
             yield (jobname, gcodeml.CodemlRetryPolicy, [jobname, app, 3], dict())
