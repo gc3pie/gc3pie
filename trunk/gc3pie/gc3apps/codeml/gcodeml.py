@@ -55,8 +55,6 @@ if __name__ == "__main__":
 
 
 # std module imports
-import fnmatch
-import logging
 import os
 import os.path
 import re
@@ -67,6 +65,7 @@ import gc3libs
 from gc3libs.application.codeml import CodemlApplication
 from gc3libs.cmdline import SessionBasedScript
 import gc3libs.exceptions
+import gc3libs.utils
 
 
 ## retry policy
@@ -180,19 +179,25 @@ of newly-created jobs so that this limit is never exceeded.
             self.log.debug("Gathered control files: '%s':" % str.join("', '", ctl_files)) 
             # set optional arguments (path to 'codeml' binary, output URL, etc.)
             kwargs = extra.copy()
-            kwargs.setdefault('codeml', self.params.codeml)
             if self.params.output_base_url != "":
                kwargs['output_base_url'] = self.params.output_base_url
 
             # create new CODEML application instance
             jobname = (os.path.basename(dirpath) or dirpath) + '.out'
-            #kwargs.setdefault('jobname', jobname)
-            kwargs.setdefault('requested_memory', self.params.memory_per_core)
-            kwargs.setdefault('requested_cores', self.params.ncores)
-            kwargs.setdefault('requested_walltime', self.params.walltime)
-            kwargs.setdefault('output_dir',
-                              self.make_directory_path(self.params.output, jobname))
-            app = CodemlApplication(*ctl_files, **kwargs)
+
+            app = CodemlApplication(*ctl_files,
+                codeml = self.params.codeml,
+                requested_memory = self.params.memory_per_core,
+                requested_cores = self.params.ncores,
+                requested_walltime = self.params.walltime,
+                # Use the `make_directory_path` method (from
+                # `SessionBasedScript`) to expand strings like ``PATH``,
+                # ``NAME``, etc. in the template.  The ``PATH`` will be
+                # set from the directory containing the first ``.ctl``
+                # file.
+                output_dir = self.make_directory_path(self.params.output, jobname, *ctl_files),
+               # any other parameter
+               **kwargs)
 
             # yield new job
             yield (jobname, gcodeml.CodemlRetryPolicy, [jobname, app, 3], dict())
