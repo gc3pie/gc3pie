@@ -207,21 +207,27 @@ def sepjobs(cmdline):
             inputfile.seek(btpos, 0)         # going to byte position in file
             content = inputfile.read(btrng)  # reading byte range from byte pos. file  
 
+            def act_on_file(filepath):
+                """Actions to perform when a file matches a classification keyword."""
+                index[foldername].add(filepath)
+                unknown.remove(filepath)
+                if cmdline.params.move:
+                    if not os.path.exists(foldername):
+                        os.makedirs(foldername)
+                    os.rename(filepath,
+                              os.path.join(foldername, os.path.basename(filepath)))
+                
             match = regexp.search(content)
             if match :
                 hitrt += 1
-                # move the file, etc.
-                index[foldername].add(filepath)
-                unknown.remove(filepath)
+                act_on_file(filepath)
             else:
                 # retry with whole file
                 content = inputfile.read()
                 match = regexp.search(content)
                 if match:
                     failrt += 1
-                    # move the file, etc.
-                    index[foldername].add(filepath)
-                    unknown.remove(filepath)
+                    act_on_file(filepath)
                     
     # print summary
     for foldername, filenames in index.iteritems():
@@ -243,6 +249,9 @@ sepjobs.add_param('-e', '--extension', '--ext',
                   dest='ext', metavar='EXT', default='out',
                   help="Restrict search to file with this extension."
                   " (default: %(default)s)")
+sepjobs.add_param('-m', '--move',
+                  dest='move', action='store_true', default=False,
+                  help="Move files into folders named after their classification keyword.")
 sepjobs.add_param('-S', '--search-root',
                   dest='search_root', default=None, metavar='DIR',
                   help="Search for input directories under the directory tree rooted at DIR."
