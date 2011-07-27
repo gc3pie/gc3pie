@@ -26,7 +26,7 @@ __changelog__ = """
   2011-07-27:
     * Initial release.
 """
-__author__ = 'Timm Reumann <timm.reumann@uzh.ch>'
+__author__ = 'Timm Reumann <timm.reumann@uzh.ch>, Riccardo Murri <riccardo.murri@gmail.com>'
 __docformat__ = 'reStructuredText'
 
 
@@ -41,50 +41,6 @@ import shutil
 
 # pyCLI
 import cli.log
-
-
-def CLEANLIST(itmlst, delstr) :
-#   print 'dirlist =',dirlist
-#   dellist = []
-    delpos = []; p = 0                                      # list of deleting position, position
-    for itm in itmlst :
-            if re.match(delstr, itm) :              # "\" to suppress interpret. of "." by python
-#                   dellist.append(singdir)
-                    delpos.append(p)
-            p += 1
-#   print 'dellist=',dellist
-#   print 'delpos=',delpos
-    ndp = 0                                                         # no. of deleted positions
-    for p in delpos :                       
-            p -= ndp                                # convert. pos. in old dirlist to pos. in current one
-            itmlst.pop(p)
-#           del dirlist(p)                  # gives error "can't delete function call"
-            ndp += 1
-#   print 'cleaned dirlist =',dirlist       
-    return itmlst
-
-
-def SEARCHINPUT(rootdir, inpdirs, fltype):
-    fltype = '*.' + fltype
-    pthlst = []
-    inpfllst = []
-    print 'file type =',fltype 
-    for root, dirlist, filelist in os.walk(rootdir) :
-    #       print 'root =',root
-    #       if os.path.basename(root) == inpdir :
-    # pattern matching in dirlist, recusion depth with count '/' in root
-    # inherit search state to next loop
-            if re.search(inpdir, root) : 
-                CLEANLIST(filelist, '\.')
-                lst = fnmatch.filter(filelist, fltype)
-                if lst != [] :
-                    pthlst.append(root)
-                    inpfllst.append(lst)
-            CLEANLIST(dirlist, '\.')
-    for p in range(0,len(pthlst)) :
-            print 'specified directory found\n',pthlst[p]
-#           print 'input files found\n',inpfllst[p]
-    return pthlst, inpfllst
 
 
 def search_for_input_directories(root, names):
