@@ -1,6 +1,7 @@
 #! /usr/bin/env python
 #
 """
+Extract parameters from a GAMESS output file and report them in CSV format.
 """
 # Copyright (C) 2009-2011 GC3, University of Zurich. All rights reserved.
 #
@@ -30,7 +31,7 @@ import fnmatch
 
 
 regexps = {
-#		'title':re.compile(r'INPUT CARD>(?P<title>[A-Z]?)'),		# how to read in title INPUT CARD>C4H10
+#               'title':re.compile(r'INPUT CARD>(?P<title>[A-Z]?)'),            # how to read in title INPUT CARD>C4H10
     'nbasis':re.compile(r'NUMBER OF CARTESIAN GAUSSIAN BASIS FUNCTIONS *= *(?P<nbasis>[0-9]+)'),
 #    'parall':re.compile(r'PARALL *= *(?P<parall>[TF])'),
     'wctime':re.compile(r'TOTAL WALL CLOCK TIME *= *(?P<wctime>[0-9]+\.[0-9]+) *SECONDS'),
