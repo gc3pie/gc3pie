@@ -1,0 +1,10 @@
+# sample classifier file for sepjobs.py
+#
+# Each line has this form:
+#    
+#   foldername:literal|regexp:searchstring:[start:end]
+#
+
+gracefully:regexp:gracefully:90.0
+
+io_error:regexp:I/O ERROR
