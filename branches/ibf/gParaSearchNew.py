@@ -82,17 +82,6 @@ from difEvoKenPrice import *
 ##NOTSET = 0
 
 class gParaSearchDriver(SequentialTaskCollection):
-    #def __getstate__(self):
-        #state = self.__dict__.copy()
-        ## forget about this attributes on save; re-create them on
-        ## restore (__setstate__)
-        #for attr in ['logger', 'myFH', 'mySH']:
-            #del state[attr]
-        #return state
-
-    #def __setstate__(self, state):
-        #self.__dict__ = state
-        #self._setup_logging()
     
     def __init__(self, pathToExecutable, pathToStageDir, architecture, baseDir, xVars, 
                  nPopulation, xVarsDom, solverVerb, problemType, pathEmpirical, 
@@ -100,23 +89,6 @@ class gParaSearchDriver(SequentialTaskCollection):
                  makePlots, optStrategy, fWeight, fCritical, ctryList, analyzeResults, nlc, plot3dTable, combOverviews,
                  output_dir = '/tmp', grid = None, **kw):
         
-        ## set up logger
-        #self.mySH = StatefulStreamHandler(stream = sys.stdout, level = solverVerb.upper(), format_string = '{record.message}', bubble = True)
-        #self.mySH.format_string = '{record.message}'
-        #self.myFH = StatefulFileHandler(filename = os.path.join(pathToStageDir, 'gParaSearchDriver.log'), level = 'DEBUG', bubble = True)
-        #self.myFH.format_string = '{record.message}' 
-        #self.logger = logbook.Logger(name = 'target.log')
-
-        #self.logger.handlers.append(self.mySH)
-        #self.logger.handlers.append(self.myFH)   
-
-        #try:
-            #stdErr = list(logbook.handlers.Handler.stack_manager.iter_context_objects())[0]
-            #stdErr.pop_application()
-        #except: 
-            #pass
-        #self.logger = getLogger(solverVerb, os.path.join(pathToStageDir, 'gParaSearchDriver.log'))
-        #self.logger.debug('entering gParaSearchDriver')
         
         # Set up initial variables and set the correct methods. 
         self.pathToStageDir = pathToStageDir
@@ -215,27 +187,8 @@ class gParaSearchParallel(ParallelTaskCollection, paraLoop_fp):
                  solverVerb, problemType, analyzeResults, ctryList, **kw):
 
         
-        ## set up logger
-        #self.mySH = StatefulStreamHandler(stream = sys.stdout, level = solverVerb.upper(), format_string = '{record.message}', bubble = True)
-        #self.mySH.format_string = '{record.message}'
-        #self.myFH = StatefulFileHandler(filename = os.path.join(pathToStageDir, 'gParaSearch.log'), level = 'DEBUG', bubble = True)
-        #self.myFH.format_string = '{record.message}' 
-        #self.logger = logbook.Logger(name = 'target.log')
-
-        #self.logger.handlers.append(self.mySH)
-        #self.logger.handlers.append(self.myFH)   
-    
-        #try:
-            #stdErr = list(logbook.handlers.Handler.stack_manager.iter_context_objects())[0]
-            #stdErr.pop_application()
-        #except: 
-            #pass
-        
-        
-        
         self.streamVerb = solverVerb
         self.logFile = os.path.join(pathToStageDir, 'gParaSearch.log')
-#        self.logger = getLogger(streamVerb = solverVerb, logFile = os.path.join(pathToStageDir, 'gParaSearch.log'))
         self.logger = wrapLogger(loggerName = 'gParaSearchParallelLogger', streamVerb = solverVerb, logFile = os.path.join(pathToStageDir, 'gParaSearch.log'))
         
         self.logger.debug('entering gParaSearch')
@@ -342,22 +295,7 @@ class gParaSearchParallel(ParallelTaskCollection, paraLoop_fp):
                                        paraFileRegex = paraFileRegex)
         
         tasks = self.generateTaskList(para_loop, self.iterationFolder)
-        ParallelTaskCollection.__init__(self, self.jobname, tasks)
-        
-##    def __getstate__(self):
-##        state = self.__dict__.copy()
-##        # forget about this attributes on save; re-create them on
-##        # restore (__setstate__)
-##        try: 
-##            for attr in ['_grid', 'mySH', 'myFH', 'logger']:
-##                del state[attr]
-##        except:
-##            pass
-##        return state
-
-##    def __setstate__(self, state):
-##        self.__dict__ = state
-##        self.logger = getLogger(streamVerb = 'DEBUG', logFile = 'gParaSearchParallel')     
+        ParallelTaskCollection.__init__(self, self.jobname, tasks)   
         
         
     def target(self, inParaCombos):

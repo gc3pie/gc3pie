@@ -40,8 +40,7 @@ class wrapLogger():
         self.wrappedLog = logger
 
     def __getstate__(self):
-        state = self.__dict__.copy()
-        return state
+        return self.__dict__
     def __setstate__(self, state):
         self.__dict__ = state
         logger = getLogger(loggerName = self.loggerName, streamVerb = self.streamVerb, logFile = self.logFile)
@@ -55,6 +54,11 @@ class wrapLogger():
             # this object has it
             return getattr(self, attr)
         # proxy to the wrapped object
+        return getattr(self.wrappedLog, attr)
+    
+    def __hasattr__(self, attr):
+        if attr in self.__dict__:
+            return getattr(self, attr)
         return getattr(self.wrappedLog, attr)
     
 

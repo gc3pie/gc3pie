@@ -39,24 +39,9 @@ from gc3libs import Application, Run
 import shutil
 
 import logbook, sys
-from supportGc3 import StatefulStreamHandler, StatefulFileHandler
+from supportGc3 import StatefulStreamHandler, StatefulFileHandler, wrapLogger
 
-# Set up logger for the file
-mySH = StatefulStreamHandler(stream = sys.stdout, level = 'DEBUG', format_string = '{record.message}', bubble = True)
-mySH.format_string = '{record.message}'
-myFH = StatefulFileHandler(filename = __name__ + '.log', level = 'DEBUG', bubble = True)
-myFH.format_string = '{record.message}'
-try:
-    stdErr = list(logbook.handlers.Handler.stack_manager.iter_context_objects())[0]
-    stdErr.pop_application()
-except: 
-    pass  
-
-logger = logbook.Logger(__name__)
-#logger.handlers.append(mySH)
-logger.handlers.append(myFH)
-
-
+logger = wrapLogger(loggerName = __name__ + 'logger', streamVerb = 'DEBUG', logFile = __name__ + '.log')
 
 class GPremiumApplication(Application):
     _invalid_chars = re.compile(r'[^_a-zA-Z0-9]+', re.X)
@@ -66,15 +51,23 @@ class GPremiumApplication(Application):
         if self.execution.state == Run.State.TERMINATING:
         # do notify task/main application that we're done
         # ignore error, let's continue
-            self.execution.state = Run.State.TERMINATED
-            print 'fetch_output_error occured... continuing'
+            self.execution.state = Run.State.TERMINATED            
+            logger.debug('fetch_output_error occured... continuing')
+            if self.lrms_jobid:
+                logger.debug('jobid: %s info: %s exception: %s' % (self.lrms_jobid, self.info, str(ex)))
+            else: 
+                logger.debug('info: %s exception: %s' % (self.info, str(ex)))
             return None
         else:
         # non-terminal state, pass on error
             return ex
         
     def submit_error(self, ex):
-        print 'submit_error occured... continuing'
+        logger.debug('submit_error occured... continuing')
+        if self.lrms_jobid:
+            logger.debug('jobid: %s info: %s exception: %s' % (self.lrms_jobid, self.info, str(ex)))
+        else: 
+            logger.debug('info: %s exception: %s' % (self.info, str(ex)))
         return None
 
 

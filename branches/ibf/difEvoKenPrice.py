@@ -54,13 +54,6 @@ class deKenPrice:
     self.verbosity    = self.S_struct['verbosity']
 
     # Set up loggers
-##    self.mySH = StatefulStreamHandler(stream = sys.stdout, level = self.verbosity, format_string = '{record.message}', bubble = True)
-##    self.mySH.format_string = '{record.message}'
-##    self.myFH = StatefulFileHandler(filename = os.path.join(self.workingDir, __name__ + '.log'), level = 'DEBUG', bubble = True)
-##    self.myFH.format_string = '{record.message}'
-##    self.logger = logbook.Logger(__name__)
-##    self.logger.handlers.append(self.mySH)
-##    self.logger.handlers.append(self.myFH) 
     self.logger = wrapLogger(loggerName = __name__, streamVerb = self.verbosity, logFile = os.path.join(self.workingDir, __name__ + '.log'))
     
     # Initialize variables that needed for state retention. 
