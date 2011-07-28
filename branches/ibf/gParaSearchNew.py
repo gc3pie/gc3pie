@@ -97,7 +97,7 @@ class gParaSearchDriver(SequentialTaskCollection):
         self.architecture = architecture
         self.baseDir = baseDir
         self.verbosity = solverVerb.upper()
-        self.jobname = 'iterationSolver'
+        self.jobname = kw['jobname']
         self.ctryList = ctryList.split()
         self.xVars = xVars
         self.xVarsDom = xVarsDom.split()
@@ -173,7 +173,7 @@ class gParaSearchDriver(SequentialTaskCollection):
             if self.deSolver.I_plotting:
                 self.plot3dTable()
             
-            open('jobDone', 'w')
+            open(os.path.join(self.pathToStageDir, 'jobDone'), 'w')
             # report success of sequential task
             self.execution.returncode = 0
             return Run.State.TERMINATED
