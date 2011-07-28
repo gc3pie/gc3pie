@@ -7,7 +7,7 @@ Please refer to this web site for more information: http://www.icsi.berkeley.edu
 import numpy as np
 import sys, os
 import logbook
-from supportGc3 import StatefulStreamHandler, StatefulFileHandler
+from supportGc3 import StatefulStreamHandler, StatefulFileHandler, wrapLogger
 try:
   import matplotlib
   matplotlib.use('SVG')
@@ -54,13 +54,14 @@ class deKenPrice:
     self.verbosity    = self.S_struct['verbosity']
 
     # Set up loggers
-    self.mySH = StatefulStreamHandler(stream = sys.stdout, level = self.verbosity, format_string = '{record.message}', bubble = True)
-    self.mySH.format_string = '{record.message}'
-    self.myFH = StatefulFileHandler(filename = os.path.join(self.workingDir, __name__ + '.log'), level = 'DEBUG', bubble = True)
-    self.myFH.format_string = '{record.message}'
-    self.logger = logbook.Logger(__name__)
-    self.logger.handlers.append(self.mySH)
-    self.logger.handlers.append(self.myFH)  
+##    self.mySH = StatefulStreamHandler(stream = sys.stdout, level = self.verbosity, format_string = '{record.message}', bubble = True)
+##    self.mySH.format_string = '{record.message}'
+##    self.myFH = StatefulFileHandler(filename = os.path.join(self.workingDir, __name__ + '.log'), level = 'DEBUG', bubble = True)
+##    self.myFH.format_string = '{record.message}'
+##    self.logger = logbook.Logger(__name__)
+##    self.logger.handlers.append(self.mySH)
+##    self.logger.handlers.append(self.myFH) 
+    self.logger = wrapLogger(loggerName = __name__, streamVerb = self.verbosity, logFile = os.path.join(self.workingDir, __name__ + '.log'))
     
     # Initialize variables that needed for state retention. 
     self.FM_popold     = np.zeros( (self.I_NP, self.I_D) )  # toggle population

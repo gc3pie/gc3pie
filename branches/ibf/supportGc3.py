@@ -27,23 +27,77 @@ __docformat__ = 'reStructuredText'
 
 import gc3libs.debug
 import numpy as np
-import re, os
+import re, os, sys
 import logbook
+from threading import Lock
 
+class wrapLogger():
+    def __init__(self, loggerName = 'myLogger', streamVerb = 'DEBUG', logFile = 'logFile'):
+        self.loggerName = loggerName
+        self.streamVerb = streamVerb
+        self.logFile    = logFile
+        logger = getLogger(loggerName = self.loggerName, streamVerb = self.streamVerb, logFile = self.logFile)
+        self.wrappedLog = logger
+
+    def __getstate__(self):
+        state = self.__dict__.copy()
+        return state
+    def __setstate__(self, state):
+        self.__dict__ = state
+        logger = getLogger(loggerName = self.loggerName, streamVerb = self.streamVerb, logFile = self.logFile)
+        self.wrappedLog = logger
+        
+    def __getattr__(self, attr):
+        # see if this object has attr
+        # NOTE do not use hasattr, it goes into
+        # infinite recurrsion
+        if attr in self.__dict__:
+            # this object has it
+            return getattr(self, attr)
+        # proxy to the wrapped object
+        return getattr(self.wrappedLog, attr)
+    
+
+
+def getLogger(loggerName, streamVerb = 'DEBUG', logFile = 'log'):
+    # set up logger
+    mySH = StatefulStreamHandler(stream = sys.stdout, level = streamVerb.upper(), format_string = '{record.message}', bubble = True)
+    mySH.format_string = '{record.message}'
+    myFH = StatefulFileHandler(filename = logFile, level = 'DEBUG', bubble = True)
+    myFH.format_string = '{record.message}' 
+    logger = logbook.Logger(name = 'target.log')
+    
+    logger.handlers.append(mySH)
+    logger.handlers.append(myFH)   
+    
+    try:
+        stdErr = list(logbook.handlers.Handler.stack_manager.iter_context_objects())[0]
+        stdErr.pop_application()
+    except: 
+        pass
+    return logger
 
 class StatefulStreamHandler(logbook.StreamHandler):
     def __getstate__(self):
-        pass
+        result = self.__dict__.copy()
+        if 'lock' in result:
+            del result['lock']
+        return result
     def __setstate__(self, state):
         self.__dict__ = state
-        self.lock = logbook.global_output_lock
+        self.lock = Lock()
+#        self.lock = logbook.global_output_lock
         
 class StatefulFileHandler(logbook.FileHandler):
     def __getstate__(self):
-        pass
+        result = self.__dict__.copy()
+        if 'lock' in result:
+            del result['lock']
+        return result
     def __setstate__(self, state):
         self.__dict__ = state
-        self.lock = logbook.global_output_lock
+        self.lock = Lock()
+ #       self.lock = logbook.global_output_lock
 
 def lower(npStrAr):
     return np.fromiter((x.lower() for x in npStrAr.flat),
