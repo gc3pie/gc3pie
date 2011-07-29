@@ -53,8 +53,8 @@ class GPremiumApplication(Application):
         # ignore error, let's continue
             self.execution.state = Run.State.TERMINATED            
             logger.debug('fetch_output_error occured... continuing')
-            if self.lrms_jobid:
-                logger.debug('jobid: %s info: %s exception: %s' % (self.lrms_jobid, self.info, str(ex)))
+            if self.persistent_id:
+                logger.debug('jobid: %s info: %s exception: %s' % (self.persistent_id, self.info, str(ex)))
             else: 
                 logger.debug('info: %s exception: %s' % (self.info, str(ex)))
             return None
