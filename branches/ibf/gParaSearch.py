@@ -27,11 +27,22 @@ __changelog__ = """
 """
 __docformat__ = 'reStructuredText'
 
-
-
+# Remove all files in curPath if -N option specified. 
+if __name__ == '__main__':    
+    import sys
+    if '-N' in sys.argv:
+        import os
+        path2Pymods = os.path.join(os.path.dirname(__file__), '../')
+        if not sys.path.count(path2Pymods):
+            sys.path.append(path2Pymods)
+        from pymods.support.support import rmFilesAndFolders
+        curPath = os.getcwd()
+        filesAndFolder = os.listdir(curPath)
+        if 'gParaSearch.csv' in filesAndFolder: # if another paraSearch was run in here before, clean up. 
+            rmFilesAndFolders(curPath) 
+            
 if __name__ == "__main__":
     import gpremium
-
 
 # std module imports
 import numpy as np
@@ -60,7 +71,7 @@ from forwardPremium import paraLoop_fp, GPremiumApplication
 from supportGc3 import update_parameter_in_file, getParameter, getIndex
 from supportGc3 import getLogger, wrapLogger
 
-from pymods.support.support import rmFilesAndFolders
+
 from pymods.classes.tableDict import tableDict
 
 sys.path.append(os.path.join(os.path.dirname(__file__), '../generateResults/'))
@@ -180,6 +191,48 @@ class gParaSearchDriver(SequentialTaskCollection):
 
 class gParaSearchParallel(ParallelTaskCollection, paraLoop_fp):    
 
+    def update_state(self, **kw):
+        """
+        Update state of all tasks in the collection.
+        """
+        for task in self.tasks:
+            #gc3libs.log.debug("Updating state of %s in collection %s ..."
+            #                  % (task, self))
+            task.update_state(**kw)
+        self.execution.state = self._state()
+        if self.execution.state == Run.State.TERMINATED:
+            # set exitcode based on returncode of sub-tasks
+            for task in self.tasks:
+                if task.execution.returncode != 0:
+                    self.execution.exitcode = 1
+            self.execution.returncode = 0
+            
+            
+
+    def stats(self):
+        """
+        Return a dictionary mapping each state name into the count of
+        jobs in that state. In addition, the following keys are defined:
+        
+        * `ok`:  count of TERMINATED tasks with return code 0
+        
+        * `failed`: count of TERMINATED tasks with nonzero return code
+
+        * `total`: count of managed tasks, whatever their state
+        """
+        result = gc3libs.utils.defaultdict(lambda: 0)
+        for task in self.tasks:
+            state = task.execution.state
+            print 'task %s state %s' % (task, state)
+            result[state] += 1
+            if state == Run.State.TERMINATED:
+                if task.execution.returncode == 0:
+                    result['ok'] += 1
+                else:
+                    result['failed'] += 1
+        result['total'] = len(self.tasks)
+        return result
+    
  
     def __init__(self, inParaCombos, iteration, pathToExecutable, pathToStageDir, architecture, baseDir, xVars, 
                  solverVerb, problemType, analyzeResults, ctryList, **kw):
@@ -555,22 +608,10 @@ Read `.loop` files and execute the `forwardPremium` program accordingly.
         elif self.params.problemType == 'one4all':
             pass        
         
-def adjustBaseDirOne4all():
-    pass
-    
-
-
-
 
 # run script
 
 if __name__ == '__main__':    
-    # Remove all files in curPath
-    if '-N' in sys.argv:
-        curPath = os.getcwd()
-        filesAndFolder = os.listdir(curPath)
-        if 'gParaSearchNew.csv' in filesAndFolder: # if another paraSearch was run in here before, clean up. 
-            rmFilesAndFolders(curPath)  
     gParaSearch().run()
     print 'done'
     
