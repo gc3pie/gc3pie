@@ -42,9 +42,6 @@ import sys
 import time
 import datetime
 
-# optimizer import
-from difEvo import differential_evolution_optimizer
-
 # gc3 library imports
 import gc3libs
 from gc3libs import Application, Run, Task
@@ -55,20 +52,21 @@ import gc3libs.utils
 # import logger
 import logbook
 
-#import gc3libs.debug
-
 path2Pymods = os.path.join(os.path.dirname(__file__), '../')
 if not sys.path.count(path2Pymods):
     sys.path.append(path2Pymods)
 
 from forwardPremium import paraLoop_fp, GPremiumApplication
 from supportGc3 import update_parameter_in_file, getParameter, getIndex
+from supportGc3 import getLogger, wrapLogger
+
 from pymods.support.support import rmFilesAndFolders
 from pymods.classes.tableDict import tableDict
 
 sys.path.append(os.path.join(os.path.dirname(__file__), '../generateResults/'))
 from createOverviewTable import createOverviewTable
 from analyzeOverviewTable import anaOne4eachPair, anaOne4eachCtry, anaOne4all, nlcOne4eachCtry, nlcOne4eachPair, nlcOne4all
+import combineOverviews
 from difEvoKenPrice import *
 
 # verbosity levels for logbook
@@ -80,62 +78,36 @@ from difEvoKenPrice import *
 ##DEBUG = 1
 ##NOTSET = 0
 
-def __getstate__(self):
-    return None
-logbook.StreamHandler.__getstate__ = __getstate__
-logbook.FileHandler.__getstate__ = __getstate__
-
-class gParaSearchParallel(ParallelTaskCollection, paraLoop_fp):
- 
-    def __init__(self, pathToExecutable, pathToStageDir, architecture, logger, baseDir, xVars, 
+class gParaSearchDriver(SequentialTaskCollection):
+    
+    def __init__(self, pathToExecutable, pathToStageDir, architecture, baseDir, xVars, 
                  nPopulation, xVarsDom, solverVerb, problemType, pathEmpirical, 
                  itermax, xConvCrit, yConvCrit, 
-                 makePlots, optStrategy, fWeight, fCritical, countryList, analyzeResults, nlc, 
+                 makePlots, optStrategy, fWeight, fCritical, ctryList, analyzeResults, nlc, plot3dTable, combOverviews,
                  output_dir = '/tmp', grid = None, **kw):
-
-        self.pathToStageDir = pathToStageDir
-        # set up logger
-        self.mySH = logbook.StreamHandler(stream = sys.stdout, level = solverVerb.upper(), format_string = '{record.message}', bubble = True)
-        self.mySH.format_string = '{record.message}'
-        self.myFH = logbook.FileHandler(filename = os.path.join(self.pathToStageDir, 'gParaSearch.log'), level = 'DEBUG', bubble = True)
-        self.myFH.format_string = '{record.message}' 
-        self.logger = logbook.Logger(name = 'target.log')
-        self.logger.__getstate__ = __getstate__
-
-        self.logger.handlers.append(self.mySH)
-        self.logger.handlers.append(self.myFH)   
-    
-        try:
-            stdErr = list(logbook.handlers.Handler.stack_manager.iter_context_objects())[0]
-            stdErr.pop_application()
-        except: 
-            pass
+        
         
         # Set up initial variables and set the correct methods. 
+        self.pathToStageDir = pathToStageDir
         self.problemType = problemType
-        self.grid = grid
-        self.executable = pathToExecutable
+        self.pathToExecutable = pathToExecutable
         self.architecture = architecture
         self.baseDir = baseDir
-        self.log = logger
         self.verbosity = solverVerb.upper()
-        self.jobname = 'evaluateSolverGuess'
-        self.countryList = countryList.split()
-        tasks = []
+        self.jobname = kw['jobname']
+        self.ctryList = ctryList.split()
         self.xVars = xVars
         self.xVarsDom = xVarsDom.split()
         lowerBds = np.array([self.xVarsDom[i] for i in range(len(self.xVarsDom)) if i % 2 == 0], dtype = 'float64')
         upperBds = np.array([self.xVarsDom[i] for i in range(len(self.xVarsDom)) if i % 2 == 1], dtype = 'float64')
         self.domain = zip(lowerBds, upperBds)
         self.n = len(self.xVars.split())
-        self.x = None
-        self.nlc = nlc
+        self.kw = kw
         self.analyzeResults = analyzeResults
-        
-        # First iteration with initial sample. 
-        self.iteration = 0
-        
-        
+        self.plot3dTable    = plot3dTable
+        self.combOverviews = combOverviews
+          
+        # Set solver options
         S_struct = {}
         S_struct['I_NP']         = int(nPopulation)
         S_struct['F_weight']     = float(fWeight)
@@ -148,25 +120,110 @@ class gParaSearchParallel(ParallelTaskCollection, paraLoop_fp):
         S_struct['I_strategy']   = int(optStrategy)
         S_struct['I_plotting']   = int(makePlots)
         S_struct['xConvCrit']    = float(xConvCrit)
-        S_struct['workingDir']   = self.pathToStageDir
-        
-        deSolver = deKenPrice(self, S_struct)
-        
-        deSolver.deopt()
+        S_struct['workingDir']   = pathToStageDir
+        S_struct['verbosity']    = self.verbosity
 
-    def createJobs_x(self, inParaCombos):
+        # Initialize solver 
+        self.deSolver = deKenPrice(S_struct) 
+        
+        # Set constraint function in solver. 
+        self.deSolver.nlc = nlc
+        
+        # create initial task and register it
+        self.deSolver.newPop = self.deSolver.drawInitialSample()
+        
+        self.deSolver.I_iter += 1
+        self.evaluator = gParaSearchParallel(self.deSolver.newPop, self.deSolver.I_iter, self.pathToExecutable, self.pathToStageDir, 
+                                             self.architecture, self.baseDir, self.xVars, self.verbosity, self.problemType, self.analyzeResults, 
+                                             self.ctryList, **self.kw)
+        
+        initial_task = self.evaluator
+        
+        SequentialTaskCollection.__init__(self, self.jobname, [initial_task], grid)
+        
+        
+    def __str__(self):
+        return self.jobname
+        
+    def next(self, *args): 
+        newVals = self.evaluator.target(self.deSolver.newPop)
+        self.deSolver.updatePopulation(self.deSolver.newPop, newVals)
+        # Stats for initial population: 
+        self.deSolver.printStats() 
+        # make full overview table
+        self.combOverviews(runDir = self.pathToStageDir, tablePath = self.pathToStageDir)	
+        # make plots
+        if self.deSolver.I_plotting:
+            self.deSolver.plotPopulation(self.deSolver.FM_pop) 
+            self.plot3dTable()
+            
+        if not self.deSolver.checkConvergence():
+            self.deSolver.newPop = self.deSolver.evolvePopulation(self.deSolver.FM_pop)
+            # Check constraints and resample points to maintain population size. 
+            self.deSolver.newPop = self.deSolver.enforceConstrReEvolve(self.deSolver.newPop)    
+            self.deSolver.I_iter += 1
+            self.evaluator = gParaSearchParallel(self.deSolver.newPop, self.deSolver.I_iter, self.pathToExecutable, self.pathToStageDir, 
+                                             self.architecture, self.baseDir, self.xVars, self.verbosity, self.problemType, self.analyzeResults, 
+                                             self.ctryList, **self.kw)
+            self.add(self.evaluator)
+        else: 
+            # post processing
+            if self.deSolver.I_plotting:
+                self.plot3dTable()
+            
+            open(os.path.join(self.pathToStageDir, 'jobDone'), 'w')
+            # report success of sequential task
+            self.execution.returncode = 0
+            return Run.State.TERMINATED
+        return Run.State.RUNNING
+        
+
+class gParaSearchParallel(ParallelTaskCollection, paraLoop_fp):    
+
+ 
+    def __init__(self, inParaCombos, iteration, pathToExecutable, pathToStageDir, architecture, baseDir, xVars, 
+                 solverVerb, problemType, analyzeResults, ctryList, **kw):
+
+        
+        self.streamVerb = solverVerb
+        self.logFile = os.path.join(pathToStageDir, 'gParaSearch.log')
+        self.logger = wrapLogger(loggerName = 'gParaSearchParallelLogger', streamVerb = solverVerb, logFile = os.path.join(pathToStageDir, 'gParaSearch.log'))
+        
+        self.logger.debug('entering gParaSearch')
+        
+        # Set up initial variables and set the correct methods. 
+        self.pathToStageDir = pathToStageDir
+        self.problemType = problemType
+        self.executable = pathToExecutable
+        self.architecture = architecture
+        self.baseDir = baseDir
+        self.verbosity = solverVerb.upper()
+        self.xVars = xVars
+        self.n = len(self.xVars.split())
+        self.analyzeResults = analyzeResults        
+        self.ctryList = ctryList
+        self.iteration = iteration
+        self.jobname = 'evalSolverGuess' + '-' + kw['jobname'] + '-' + str(self.iteration)
+        self.kw = kw
+        tasks = []
+
+        # --- createJobs_x ---
         
         # Log activity
         cDate = datetime.date.today()
         cTime = datetime.datetime.time(datetime.datetime.now())
         dateString = '{0:04d}-{1:02d}-{2:02d}-{3:02d}-{4:02d}-{5:02d}'.format(cDate.year, cDate.month, cDate.day, cTime.hour, cTime.minute, cTime.second)
-        self.logger.debug('Entering target on %s' % dateString)
+        self.logger.debug('Establishing parallel task on %s' % dateString)
         
         # Enter an iteration specific folder
         self.iterationFolder = os.path.join(self.pathToStageDir, 'Iteration-' + str(self.iteration))
-        os.mkdir(self.iterationFolder)
-        
-        # Establish vals vector
+        try: 
+            os.mkdir(self.iterationFolder)
+        except OSError:
+            print '%s already exists' % self.iterationFolder
+
+        # Take the list of parameter combinations and translate them in a comma separated list of values for each variable to be fed into paraLoop file. 
+        # This can be done much more elegantly with ','.join() but it works... 
         vals = []
         nVariables = range(len(inParaCombos[0]))
         for ixVar in nVariables:
@@ -176,82 +233,82 @@ class gParaSearchParallel(ParallelTaskCollection, paraLoop_fp):
                 varValString += str(paraCombo[ixVar])
                 if ixParaCombo < len(inParaCombos) - 1: 
                     varValString += ', '
-            vals.append( [varValString ])
+            vals.append( varValString )
+        
+        
+        # Make problem specific adjustments to the paraLoop file. 
+        if self.problemType == 'one4all':
+            variables = ['Ctry', 'Ctry', 'EA', 'EB', 'sigmaA', 'sigmaB']
+            groups    = [ 0, 0, 1, 1, 1, 1 ]
+            groupRestrs = [ 'lowerTr', 'lowerTr', 'diagnol', 'diagnol', 'diagnol', 'diagnol' ]
+            writeVals = [ ", ".join(self.ctryList), ", ".join(self.ctryList), vals[0], vals[0], vals[1], vals[1] ]
+            self.variables = ['EA','sigmaA']
+            self.paraCombos = inParaCombos
+            paraFiles = [ 'input/markovA.in', 'input/markovB.in', 'input/parameters.in', 'input/parameters.in', 'input/parameters.in', 'input/parameters.in' ]
+            paraFileRegex = [ 'space-separated', 'space-separated', 'bar-separated', 'bar-separated' , 'bar-separated' , 'bar-separated'  ]
+            self.analyzeResults.tablePath = self.iterationFolder
             
-        # Check if EA or sigmaA are alone in the specified parameters. If so make diagnol adjustments
-        writeVals = []
-        if 'EA' in self.xVars and not 'EB' in self.xVars:
-            variables = [ 'EA', 'EB' ]
-            groups = [ '0', '0' ]
-            groupRestrs = [ 'diagnol', 'diagnol' ]
-            
-            writeVals.append(vals[0][0])
-            writeVals.append(vals[0][0])
-            paraCombosEA = [  np.append(ele[0], ele[0]) for ele in inParaCombos ]
-        if 'sigmaA' in self.xVars and not 'sigmaB' in self.xVars:
-            variables.append( 'sigmaA')
-            variables.append('sigmaB')
-            groups.append( '0')
-            groups.append('0')
-            groupRestrs.append( 'diagnol')
-            groupRestrs.append( 'diagnol' )
-            writeVals.append(vals[1][0])
-            writeVals.append(vals[1][0])
-            paraCombosSigmaA = [  np.append(ele[1], ele[1]) for ele in inParaCombos ]
-            
-        self.variables = variables
-            
-        # Prepare paraCombos matching to resulting table. Used in analyzeOverviewTable
-        # !!! This should be dependent on problem type or on missing variables in xvars. !!!
-        paraCombos = []
-        for EA,sA in zip(paraCombosEA, paraCombosSigmaA):
-            paraCombo = np.append(EA, sA)
-            paraCombos.append(paraCombo)
-        self.paraCombos = paraCombos
+        elif self.problemType == 'one4eachPair':
+                
+            # Check if EA or sigmaA are alone in the specified parameters. If so make diagnol adjustments
+            writeVals = []
+            if 'EA' in self.xVars and not 'EB' in self.xVars:
+                variables = [ 'EA', 'EB' ]
+                groups = [ '0', '0' ]
+                groupRestrs = [ 'diagnol', 'diagnol' ]
+                
+                writeVals.append(vals[0])
+                writeVals.append(vals[0])
+                paraCombosEA = [  np.append(ele[0], ele[0]) for ele in inParaCombos ]
+            if 'sigmaA' in self.xVars and not 'sigmaB' in self.xVars:
+                variables.append( 'sigmaA')
+                variables.append('sigmaB')
+                groups.append( '0')
+                groups.append('0')
+                groupRestrs.append( 'diagnol')
+                groupRestrs.append( 'diagnol' )
+                writeVals.append(vals[1])
+                writeVals.append(vals[1])
+                paraCombosSigmaA = [  np.append(ele[1], ele[1]) for ele in inParaCombos ]
+                
+            self.variables = variables
+                
+            # Prepare paraCombos matching to resulting table. Used in analyzeOverviewTable
+            # !!! This should be dependent on problem type or on missing variables in xvars. !!!
+            paraCombos = []
+            for EA,sA in zip(paraCombosEA, paraCombosSigmaA):
+                paraCombo = np.append(EA, sA)
+                paraCombos.append(paraCombo)
+            self.paraCombos = paraCombos
+            paraFiles = [ 'input/parameters.in', 'input/parameters.in', 'input/parameters.in', 'input/parameters.in' ]
+            paraFileRegex = [  'bar-separated', 'bar-separated' , 'bar-separated' , 'bar-separated'  ]
 
         # Write a para.loop file to generate grid jobs
         para_loop = self.writeParaLoop(variables = variables, 
                                        groups = groups, 
                                        groupRestrs = groupRestrs, 
                                        vals = writeVals, 
-                                       desPath = os.path.join(self.iterationFolder, 'para.loopTmp'))
+                                       desPath = os.path.join(self.iterationFolder, 'para.loopTmp'), 
+                                       paraFiles = paraFiles,
+                                       paraFileRegex = paraFileRegex)
         
+        paraLoop_fp.__init__(self, verbosity = self.verbosity)
         tasks = self.generateTaskList(para_loop, self.iterationFolder)
-        # Take list of tasks and potentially split into parts if requested. Could loop over whole block
-        ParallelTaskCollection.__init__(self, self.jobname, tasks, self.grid)
-        
+        ParallelTaskCollection.__init__(self, self.jobname, tasks)
+
         
         
     def target(self, inParaCombos):
-        # ---- ideally replace this block with self.wait(). At the moment there is a bug in dag.py. time module is used but not imported. 
-        self.submit()
-        curState = self._state()
-        self.logger.info('state = %s' % curState)
-        while curState != 'TERMINATED':
-            self.progress()
-            time.sleep(15)
-            curState = self._state()
-            self.logger.info('state = %s' % curState)
-        print 'done submitting'
-        taskStats = self.stats()
-        keyList = taskStats.keys()
-        keyList = [ key.lower() for key in keyList ]
-        keyList.sort()
-        for key in keyList:
-            self.logger.info(key + '   ' + str(taskStats[key]))
-        # --- 
-        
+     
         # Each line in the resulting table (overviewSimu) represents one paraCombo
         overviewTable = createOverviewTable(resultDir = self.iterationFolder, outFile = 'simulation.out', slUIPFile = 'slUIP.mat', 
                                             exportFileName = 'overviewSimu', sortTable = False, 
-                                            logLevel = self.verbosity, logFile = 'overTableLog.log')
+                                            logLevel = self.verbosity, logFile = os.path.join(self.pathToStageDir, 'createOverviewTable.log'))
 
         result = self.analyzeResults(tableIn = overviewTable, varsIn = self.variables, valsIn = self.paraCombos, 
                              targetVar = 'normDev', logLevel = self.verbosity, 
-                             logFile = os.path.join(self.iterationFolder, 'oneCtryPairLog.log'))
-        
-        for x, fx in zip(self.paraCombos, result):
-            self.logger.debug('%s -> %s' % (x, fx))
+                             logFile = os.path.join(self.iterationFolder, os.path.join(self.pathToStageDir, 'analyzeOverview.log')))
+        #result = [ ele[0] for ele in inParaCombos ]
         self.logger.info('returning result to solver')
         self.iteration += 1
         return result
@@ -264,8 +321,6 @@ class gParaSearchParallel(ParallelTaskCollection, paraLoop_fp):
         # Fill the task list
         tasks = []
         for jobname, substs in self.process_para_file(para_loop):
-            self.log.debug("Job '%s' defined by substitutions: %s.",
-                       jobname, substs)
             executable = os.path.basename(self.executable)
             # start the inputs dictionary with syntax: client_path: server_path
             inputs = { self.executable:executable }
@@ -282,6 +337,7 @@ class gParaSearchParallel(ParallelTaskCollection, paraLoop_fp):
             # 2. apply substitutions to parameter files
             for (path, changes) in substs.iteritems():
                 for (var, val, index, regex) in changes:
+                    # new. make adjustments in the base dir itself. 
                     update_parameter_in_file(os.path.join(input_dir, path),
                                              var, index, val, regex)
             # 3. build input file list
@@ -296,7 +352,8 @@ class gParaSearchParallel(ParallelTaskCollection, paraLoop_fp):
                     inputs[os.path.join(dirpath, filename)] = remote_path
             # all contents of the `output` directory are to be fetched
             outputs = { 'output/':'' }
-            kwargs = {}
+            #kwargs = extra.copy()
+            kwargs = self.kw
             kwargs['stdout'] = 'forwardPremiumOut.log'
             kwargs['join'] = True
             kwargs['output_dir'] = os.path.join(path_to_stage_dir, 'output')
@@ -411,13 +468,34 @@ Read `.loop` files and execute the `forwardPremium` program accordingly.
             print(countryList[ctryIndex[0]], countryList[ctryIndex[1]])
         
         # Make problem type specific adjustments. 
-        if self.params.problemType == 'one4eachCtry':
-            self.gdpTable = tableDict.fromTextFile(fileIn = os.path.join(self.params.pathEmpirical, 'outputInput/momentTable/Gdp/gdpMoments.csv'),
+        if self.params.problemType == 'one4all':
+            gdpTable = tableDict.fromTextFile(fileIn = os.path.join(self.params.pathEmpirical, 'outputInput/momentTable/Gdp/gdpMoments.csv'),
                                               delim = ',', width = 20)
-            self.analyzeResults = anaOne4eachCtry
-            self.nlc = nlcOne4eachCtry
 
-            print(self.gdpTable)
+            jobname = 'one4all'
+            path_to_stage_dir = os.getcwd()
+            executable = os.path.basename(self.params.executable)
+            analyzeResults = anaOne4all(len(list(ctryIndices)))
+            nlc            = nlcOne4all(gdpTable = gdpTable, ctryList = countryList, domain = domain, logFile = os.path.join(path_to_stage_dir, 'nlc.log'))
+            combOverviews = combineOverviews.combineOverviews(overviewSimuFile = 'eSigmaTable', tableName = 'ag_eSigmaTable', sortKeys = ['norm'])
+            plot3dTable    = combineOverviews.plotTable(tablePath =os.path.join(path_to_stage_dir, 'ag_eSigmaTable'), savePath = os.path.join(path_to_stage_dir, 'scatter3d'))
+            plot3dTable.columnNames = ['E', 'sigma', 'norm']
+            
+            kwargs = extra.copy()
+            kwargs['output_dir'] = path_to_stage_dir
+                
+            # yield job
+            yield (jobname, gParaSearchDriver, 
+                   [ self.params.executable, path_to_stage_dir, self.params.architecture, 
+                     baseDir, self.params.xVars, 
+                     self.params.nPopulation, self.params.xVarsDom, self.params.solverVerb, self.params.problemType,
+                     self.params.pathEmpirical, self.params.itermax, self.params.xConvCrit, self.params.yConvCrit,
+                     self.params.makePlots, self.params.optStrategy, self.params.fWeight, self.params.fCritical, self.params.countryList,
+                     analyzeResults, nlc, plot3dTable, combOverviews
+                   ], kwargs)
+            
+            
+
         elif self.params.problemType == 'one4eachPair':
             for ctryIndex in ctryIndices:
                 Ctry1 = countryList[ctryIndex[0]]
@@ -425,25 +503,26 @@ Read `.loop` files and execute the `forwardPremium` program accordingly.
                 print(Ctry1, Ctry2)
                 jobname = Ctry1 + '-' + Ctry2
                 # set stage dir. 
-                #path_to_stage_dir = self.make_directory_path(self.params.output, jobname)
-                #gc3libs.utils.mkdir(path_to_stage_dir)
+                path_to_stage_dir = self.make_directory_path(self.params.output, jobname)
+                gc3libs.utils.mkdir(path_to_stage_dir)
                 #path_to_stage_dir = os.path.join(iterationFolder, jobname)
                 # Get moments table from empirical analysis
                 gdpTable = tableDict.fromTextFile(fileIn = os.path.join(self.params.pathEmpirical, 'outputInput/momentTable/Gdp/gdpMoments.csv'),
                                                   delim = ',', width = 20)
-                analyzeResults = anaOne4eachPair
-
-                # Get Ctry information for this run. 
-                #Ctry1 = getParameter(fileIn = os.path.join(baseDir, 'input/markovA.in'), varIn = 'Ctry', 
-                                     #regexIn = 'space-separated')
-                #Ctry2 = getParameter(fileIn = os.path.join(baseDir, 'input/markovB.in'), varIn = 'Ctry', 
-                                     #regexIn = 'space-separated')
+                
+                # Set Ctry information for this run. 
                 update_parameter_in_file(os.path.join(baseDir, 'input/markovA.in'), 'Ctry',
                                           0,  Ctry1,  'space-separated')
                 update_parameter_in_file(os.path.join(baseDir, 'input/markovB.in'), 'Ctry',
                                           0,  Ctry2,  'space-separated')
                 # Get the correct Ctry Paras into base dir. 
                 self.getCtryParas(baseDir, Ctry1, Ctry2)
+                # Copy base dir
+                ctryBaseDir = os.path.join(path_to_stage_dir, 'base')
+                try: 
+                    shutil.copytree(baseDir, ctryBaseDir)
+                except:
+                    print '%s already exists' % baseDir                
                 EA = getParameter(fileIn = os.path.join(baseDir, 'input/parameters.in'), varIn = 'EA', 
                                      regexIn = 'bar-separated')
                 EB = getParameter(fileIn = os.path.join(baseDir, 'input/parameters.in'), varIn = 'EB', 
@@ -453,36 +532,31 @@ Read `.loop` files and execute the `forwardPremium` program accordingly.
                 sigmaB = getParameter(fileIn = os.path.join(baseDir, 'input/parameters.in'), varIn = 'sigmaB', 
                                      regexIn = 'bar-separated')
                 # Pass ctry information to nlc
-                nlc = nlcOne4eachPair(gdpTable = gdpTable, ctryPair = [Ctry1, Ctry2], domain = domain)
-                
-                # !! Take out when running as SeqentialTaskCollection !!
-                path_to_stage_dir = os.getcwd()                
+                analyzeResults = anaOne4eachPair
+                nlc = nlcOne4eachPair(gdpTable = gdpTable, ctryPair = [Ctry1, Ctry2], domain = domain, logFile = os.path.join(path_to_stage_dir, 'nlc.log'))
+                combOverviews = combineOverviews.combineOverviews(overviewSimuFile = 'overviewSimu', tableName = 'agTable', sortKeys = ['normDev'])
+                plot3dTable    = combineOverviews.plotTable(tablePath =os.path.join(path_to_stage_dir, 'agTable'), savePath = os.path.join(path_to_stage_dir, 'scatter3d'))
+                plot3dTable.columnNames = ['EA', 'sigmaA', 'normDev']
                 
                 executable = os.path.basename(self.params.executable)
-                kwargs = {}
+                kwargs = extra.copy()
                 kwargs['output_dir'] = path_to_stage_dir
-                # interface to the GC3Libs main functionality
-                coreInstance = self._get_core(gc3libs.Default.CONFIG_FILE_LOCATIONS)
-                kwargs['grid'] = coreInstance
-                # Check if number of population coincides with desired cores
-                if self.params.max_running < self.params.nPopulation:
-                    self.params.max_running = self.params.nPopulation
-                
-
                 
                 # yield job
-                yield (jobname, gParaSearchParallel, 
+                yield (jobname, gParaSearchDriver, 
                        [ self.params.executable, path_to_stage_dir, self.params.architecture, 
-                         self.log, self.params.initial, self.params.xVars, 
+                         ctryBaseDir, self.params.xVars, 
                          self.params.nPopulation, self.params.xVarsDom, self.params.solverVerb, self.params.problemType,
                          self.params.pathEmpirical, self.params.itermax, self.params.xConvCrit, self.params.yConvCrit,
                          self.params.makePlots, self.params.optStrategy, self.params.fWeight, self.params.fCritical, self.params.countryList,
-                         analyzeResults, nlc
+                         analyzeResults, nlc, plot3dTable, combOverviews
                        ], kwargs)
         
         elif self.params.problemType == 'one4all':
             pass        
         
+def adjustBaseDirOne4all():
+    pass
     
 
 
@@ -492,16 +566,11 @@ Read `.loop` files and execute the `forwardPremium` program accordingly.
 
 if __name__ == '__main__':    
     # Remove all files in curPath
-    curPath = os.getcwd()
-    filesAndFolder = os.listdir(curPath)
-    if 'gParaSearch.csv' in filesAndFolder or 'gParaSearchNew.csv' in filesAndFolder:
-    # if another paraSearch was run in here before, clean up. 
-        rmFilesAndFolders(curPath)  
+    if '-N' in sys.argv:
+        curPath = os.getcwd()
+        filesAndFolder = os.listdir(curPath)
+        if 'gParaSearchNew.csv' in filesAndFolder: # if another paraSearch was run in here before, clean up. 
+            rmFilesAndFolders(curPath)  
     gParaSearch().run()
-    
-    
-    
-    
-    
-    
+    print 'done'
     

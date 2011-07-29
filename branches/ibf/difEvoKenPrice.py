@@ -7,7 +7,7 @@ Please refer to this web site for more information: http://www.icsi.berkeley.edu
 import numpy as np
 import sys, os
 import logbook
-from supportGc3 import StatefulStreamHandler, StatefulFileHandler, wrapLogger
+from supportGc3 import wrapLogger
 try:
   import matplotlib
   matplotlib.use('SVG')

@@ -39,7 +39,7 @@ from gc3libs import Application, Run
 import shutil
 
 import logbook, sys
-from supportGc3 import StatefulStreamHandler, StatefulFileHandler, wrapLogger
+from supportGc3 import wrapLogger
 
 logger = wrapLogger(loggerName = __name__ + 'logger', streamVerb = 'DEBUG', logFile = __name__ + '.log')
 
@@ -135,6 +135,8 @@ class paraLoop_fp(paraLoop):
       2) fillInputDir. 
       Both functions are used to prepare the input folder sent to the grid. 
     '''
+    def __init__(self, verbosity):
+        paraLoop.__init__(self, verbosity)
     
     def getCtryParas(self, baseDir, Ctry1, Ctry2):
         '''

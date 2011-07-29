@@ -40,7 +40,9 @@ class wrapLogger():
         self.wrappedLog = logger
 
     def __getstate__(self):
-        return self.__dict__
+        state = self.__dict__.copy()
+        del state['wrappedLog']
+        return state
     def __setstate__(self, state):
         self.__dict__ = state
         logger = getLogger(loggerName = self.loggerName, streamVerb = self.streamVerb, logFile = self.logFile)
@@ -65,9 +67,9 @@ class wrapLogger():
 
 def getLogger(loggerName, streamVerb = 'DEBUG', logFile = 'log'):
     # set up logger
-    mySH = StatefulStreamHandler(stream = sys.stdout, level = streamVerb.upper(), format_string = '{record.message}', bubble = True)
+    mySH = logbook.StreamHandler(stream = sys.stdout, level = streamVerb.upper(), format_string = '{record.message}', bubble = True)
     mySH.format_string = '{record.message}'
-    myFH = StatefulFileHandler(filename = logFile, level = 'DEBUG', bubble = True)
+    myFH = logbook.FileHandler(filename = logFile, level = 'DEBUG', bubble = True)
     myFH.format_string = '{record.message}' 
     logger = logbook.Logger(name = 'target.log')
     
@@ -80,28 +82,6 @@ def getLogger(loggerName, streamVerb = 'DEBUG', logFile = 'log'):
     except: 
         pass
     return logger
-
-class StatefulStreamHandler(logbook.StreamHandler):
-    def __getstate__(self):
-        result = self.__dict__.copy()
-        if 'lock' in result:
-            del result['lock']
-        return result
-    def __setstate__(self, state):
-        self.__dict__ = state
-        self.lock = Lock()
-#        self.lock = logbook.global_output_lock
-        
-class StatefulFileHandler(logbook.FileHandler):
-    def __getstate__(self):
-        result = self.__dict__.copy()
-        if 'lock' in result:
-            del result['lock']
-        return result
-    def __setstate__(self, state):
-        self.__dict__ = state
-        self.lock = Lock()
- #       self.lock = logbook.global_output_lock
 
 def lower(npStrAr):
     return np.fromiter((x.lower() for x in npStrAr.flat),
