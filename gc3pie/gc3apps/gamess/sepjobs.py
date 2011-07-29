@@ -40,8 +40,9 @@ import fnmatch
 import shutil
 
 # pyCLI
+#import cli.app
 import cli.log
-
+#import pstats
 
 def search_for_input_directories(root, names):
     """
@@ -50,32 +51,31 @@ def search_for_input_directories(root, names):
     """
     result = [ ]
     for rootpath, dirs, files in os.walk(root):
-        # skip hidden directories
-        dirs = [ d for d in dirs if not d.startswith('.') ]
+        found_dirname = [ ]
+        # removing hidden directories from directory list
+        dirs = [ d for d in dirs if not d.startswith(r'.') ]
         for dirname in dirs:
-            # skip hidden folders
-            if dirname.startswith('.'):
-                continue
             if dirname in names:
                 result.append(os.path.join(rootpath, dirname))
+                found_dirname.append(dirname)
+        # removing assigned directories from directory list
+        for dirname in found_dirname:
+            dirs.remove(dirname)	
     return result
 
 
-def search_for_input_files(dir, ext):
+def search_for_input_files(root, ext):
     """
     Return list of files under `dir` (or any if its subdirectories)
     that match extension `ext`.
     """
     result = [ ]
-    for root, dirs, files in os.walk(dir):
-        # skip hidden directories
+    for rootpath, dirs, files in os.walk(root):
+        # removing hidden directories from directory list
         dirs = [ d for d in dirs if not d.startswith('.') ]
         for filename in files:
-            # skip hidden files
-            if filename.startswith('.'):
-                continue
             if filename.endswith(ext):
-                result.append(os.path.join(root, filename))
+                result.append(os.path.join(rootpath, filename))
     return result
 
 
@@ -96,6 +96,7 @@ def parse_kwfile(filename):
             log.error("Incorrect line %d in file '%s', ignoring.", lineno, filename)
             continue
         foldername, searchtype, what_to_search = parts[0:3]
+        print "parts:", foldername, searchtype, what_to_search
         if len(parts) == 4:
             start = float(parts[3]) / 100.0
         else:
@@ -121,25 +122,23 @@ def sepjobs(cmdline):
 
     # parse classification file
     searches = parse_kwfile(cmdline.params.kwfile)
+    cmdline.log.debug("Searching keywords: %s", searches)
 
     # create indexes
     index = { }
     for foldername in searches.iterkeys():
         index[foldername] = set()
-
+    cmdline.log.debug("index: %s", index)
     # look for directory names under the search root (if given)
-    if cmdline.params.search_root:
-        dirs = search_for_input_directories(cmdline.params.search_root,
-                                            cmdline.params.inpdirs)
-    else:
-        dirs = cmdline.params.inpdir
+    dirs = search_for_input_directories(cmdline.params.search_root,
+                                            cmdline.params.inpdir)
     cmdline.log.debug("Searching directories: %s", dirs)
 
     # look for input files
     files = [ ]
     for dirpath in dirs:
         files.extend(search_for_input_files(dirpath, cmdline.params.ext))
-    cmdline.log.debug("List of input files: %s", files)
+#    cmdline.log.debug("List of input files: %s", files)
 
     # let's rock!
     failrt = 0
@@ -147,7 +146,7 @@ def sepjobs(cmdline):
     unknown = set(files)
     
     for filepath in files:
-        cmdline.log.info("Now processing file '%s' ...", filepath)
+#        cmdline.log.info("Now processing file '%s' ...", filepath)
         inputfile = open(filepath, 'r')
 
         for foldername, spec in searches.iteritems():
@@ -156,27 +155,27 @@ def sepjobs(cmdline):
             # compute range
             flsize = os.path.getsize(filepath)
             btpos = int(flsize * start)
-            btrng = int(flsize * (end -start)) + 1
+            btrng = int(flsize * (end - start)) + 1
 
             # read content
-            
             inputfile.seek(btpos, 0)         # going to byte position in file
             content = inputfile.read(btrng)  # reading byte range from byte pos. file  
 
             def act_on_file(filepath):
                 """Actions to perform when a file matches a classification keyword."""
-                index[foldername].add(filepath)
+                index[foldername].add(filepath) 
                 unknown.remove(filepath)
                 if cmdline.params.move:
                     if not os.path.exists(foldername):
                         os.makedirs(foldername)
                     os.rename(filepath,
-                              os.path.join(foldername, os.path.basename(filepath)))
+                        os.path.join(foldername, os.path.basename(filepath)))
                 
             match = regexp.search(content)
             if match :
                 hitrt += 1
                 act_on_file(filepath)
+                break
             else:
                 # retry with whole file
                 content = inputfile.read()
@@ -184,13 +183,14 @@ def sepjobs(cmdline):
                 if match:
                     failrt += 1
                     act_on_file(filepath)
+                    break
                     
     # print summary
     for foldername, filenames in index.iteritems():
-        print ("== %s ==" % foldername)
+        print "== %s ==" % foldername, "no. of files:", len(index[foldername])
         for filename in sorted(filenames):
             print ("    " + filename)
-    print("== unknown ==")
+    print "== unknown ==", "no. of files:", len(unknown)
     for filename in sorted(unknown):
         print ("    " + filename)
     cmdline.log.info("failure rate = %d, hit rate = %d", failrt, hitrt)
@@ -209,8 +209,8 @@ sepjobs.add_param('-m', '--move',
                   dest='move', action='store_true', default=False,
                   help="Move files into folders named after their classification keyword.")
 sepjobs.add_param('-S', '--search-root',
-                  dest='search_root', default=None, metavar='DIR',
-                  help="Search for input directories under the directory tree rooted at DIR."
+                  dest='search_root', default=os.path.expanduser('~'), metavar='DIR',
+                  help="Search for input directories under the directory tree rooted at DIR. Must be a COMPLETE PATH e.g. ~/Desktop/Project"
                   "  (Default: '%(default)s')")
 
 
