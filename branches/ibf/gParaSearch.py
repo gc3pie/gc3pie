@@ -386,8 +386,15 @@ class gParaSearchParallel(ParallelTaskCollection, paraLoop_fp):
             gc3libs.utils.mkdir(input_dir)
             prefix_len = len(input_dir) + 1
             # 1. files in the "initial" dir are copied verbatim
-            #self.getCtryParas(self.baseDir)
-            self.fillInputDir( self.baseDir, input_dir)
+            # ugly work around to determine the correct base dir in case of one4all. 
+            baseDir = 'base'
+            for (path, changes) in substs.iteritems():
+                for (var, val, index, regex) in changes:
+                    if var == 'Ctry':
+                        baseDir += val
+            if baseDir == 'base':
+                baseDir = self.baseDir
+            self.fillInputDir( baseDir, input_dir)
             # 2. apply substitutions to parameter files
             for (path, changes) in substs.iteritems():
                 for (var, val, index, regex) in changes:
@@ -638,11 +645,11 @@ Read `.loop` files and execute the `forwardPremium` program accordingly.
         in the session is also saved to it.
         """
         import csv
-        print 'saving session'
+#        print 'saving session'
         try:
             session_file = file(self.session_filename, "wb")
             for task in self.tasks:
-                print 'storing %s' % task
+#                print 'storing %s' % task
                 if store is not None:
                     store.save(task)
                 csv.DictWriter(session_file, 
@@ -676,9 +683,25 @@ Read `.loop` files and execute the `forwardPremium` program accordingly.
             executable = os.path.basename(self.params.executable)
             analyzeResults = anaOne4all(len(list(ctryIndices)))
             nlc            = nlcOne4all(gdpTable = gdpTable, ctryList = countryList, domain = domain, logFile = os.path.join(path_to_stage_dir, 'nlc.log'))
-            combOverviews = combineOverviews.combineOverviews(overviewSimuFile = 'eSigmaTable', tableName = 'ag_eSigmaTable', sortKeys = ['norm'])
+            combOverviews  = combineOverviews.combineOverviews(overviewSimuFile = 'eSigmaTable', tableName = 'ag_eSigmaTable', sortKeys = ['norm'])
             plot3dTable    = combineOverviews.plotTable(tablePath =os.path.join(path_to_stage_dir, 'ag_eSigmaTable'), savePath = os.path.join(path_to_stage_dir, 'scatter3d'))
             plot3dTable.columnNames = ['E', 'sigma', 'norm']
+            for ctryIndex in ctryIndices:
+                Ctry1 = countryList[ctryIndex[0]]
+                Ctry2 = countryList[ctryIndex[1]]
+                # Set Ctry information for this run. 
+                update_parameter_in_file(os.path.join(baseDir, 'input/markovA.in'), 'Ctry',
+                                          0,  Ctry1,  'space-separated')
+                update_parameter_in_file(os.path.join(baseDir, 'input/markovB.in'), 'Ctry',
+                                          0,  Ctry2,  'space-separated')
+                # Get the correct Ctry Paras into base dir. 
+                self.getCtryParas(baseDir, Ctry1, Ctry2)
+                # Copy base dir
+                ctryBaseDir = os.path.join(path_to_stage_dir, 'base' + Ctry1 + Ctry2)
+                try: 
+                    shutil.copytree(baseDir, ctryBaseDir)
+                except:
+                    print '%s already exists' % baseDir 
             
             kwargs = extra.copy()
             kwargs['output_dir'] = path_to_stage_dir
