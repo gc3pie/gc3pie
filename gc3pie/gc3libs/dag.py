@@ -233,9 +233,10 @@ class SequentialTaskCollection(TaskCollection):
             self.tasks[self._current_task].kill(**kw)
         self.execution.state = Run.State.TERMINATED
         self.execution.returncode = (Run.Signals.Cancelled, -1)
+        self.changed = True
 
  
-    def next(self, index):
+    def next(self, done):
         """
         Called by :meth:`progress` when a job is finished; if
         `Run.State.TERMINATED` is returned then no other jobs will be
@@ -243,13 +244,13 @@ class SequentialTaskCollection(TaskCollection):
         `execution.state` and the next job in the `self.tasks` list is
         executed.
 
-        The default implmentation runs tasks in the order they were
+        The default implementation runs tasks in the order they were
         given to the constructor, and sets the state to TERMINATED
         when all tasks have been run.  This method can (and should) be
         overridden in derived classes to implement policies for serial
         job execution.
         """
-        if index == len(self.tasks) - 1:
+        if done == len(self.tasks) - 1:
             return Run.State.TERMINATED
         else:
             return Run.State.RUNNING
@@ -301,6 +302,7 @@ class SequentialTaskCollection(TaskCollection):
         else:
             self.execution.state = state
             self._current_task += 1
+        self.changed = True
 
 
     def submit(self, **kw):
@@ -318,7 +320,8 @@ class SequentialTaskCollection(TaskCollection):
             self.execution.state = Run.State.SUBMITTED
         else:
             self.execution.state = Run.State.RUNNING
-
+        self.changed = True
+        
 
     def update_state(self, **kw):
         """
@@ -343,6 +346,7 @@ class SequentialTaskCollection(TaskCollection):
             if self.execution.state not in [ Run.State.STOPPED,
                                              Run.State.TERMINATED ]:
                 self._current_task += 1
+                self.changed = True
         else:
             self.execution.state = Run.State.RUNNING
         return self.execution.state
@@ -394,6 +398,7 @@ class ParallelTaskCollection(TaskCollection):
             task.kill(**kw)
         self.execution.state = TERMINATED
         self.execution.returncode = (Run.Signals.Cancelled, -1)
+        self.changed = True
 
 
     def progress(self):
@@ -423,11 +428,13 @@ class ParallelTaskCollection(TaskCollection):
             task.update_state(**kw)
         self.execution.state = self._state()
         if self.execution.state == Run.State.TERMINATED:
+            self.execution.returncode = 0
             # set exitcode based on returncode of sub-tasks
             for task in self.tasks:
                 if task.execution.returncode != 0:
                     self.execution.exitcode = 1
-            self.execution.returncode = 0
+            # FIXME: incorrectly sets `changed` each time it's called!
+            self.changed = True
         
 
 ## main: run tests
