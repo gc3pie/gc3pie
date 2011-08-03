@@ -55,6 +55,10 @@ class GamessRetryPolicy(gc3libs.RetryableTask, gc3libs.utils.Struct):
 
     def __init__(self, inp_file_path, *other_input_files, **kw):
         """Constructor. Interface compatible with `GamessApplication`:class:"""
+        if kw.has_key('tags'):
+            kw['tags'].append('ENV/CPU/OPTERON-2350')
+        else:
+            kw['tags'] = [ 'ENV/CPU/OPTERON-2350' ]
         task = GamessApplication(inp_file_path, *other_input_files, **kw)
         gc3libs.RetryableTask.__init__(self, task.jobname, task, max_retries=3, **kw)
         gc3libs.utils.Struct.__init__(self, **kw)
