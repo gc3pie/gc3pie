@@ -60,7 +60,7 @@ import os.path
 import re
 import sys
 
-# gc3 lubrary imports
+# gc3 library imports
 import gc3libs
 from gc3libs.application.codeml import CodemlApplication
 from gc3libs.cmdline import SessionBasedScript
