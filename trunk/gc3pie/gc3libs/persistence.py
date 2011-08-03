@@ -354,7 +354,8 @@ class FilesystemStore(Store):
                                 exc_info=True)
             old_copy = filename + '.OLD'
             if os.path.exists(old_copy):
-                gc3libs.log.warning("Will try loading from backup file '%s' instead...", old_copy)
+                gc3libs.log.warning(
+                    "Will try loading from backup file '%s' instead...", old_copy)
                 try:
                     obj = load_from_file(old_copy)
                 except Exception, ex:
@@ -368,11 +369,13 @@ class FilesystemStore(Store):
                     "Failed retrieving object from file '%s': %s: %s"
                     % (filename, ex.__class__.__name__, str(ex)))
         if not hasattr(obj, 'persistent_id'):
-            raise gc3libs.exceptions.LoadError("Invalid format in file '%s': missing 'persistent_id' attribute"
-                                   % (filename))
+            raise gc3libs.exceptions.LoadError(
+                "Invalid format in file '%s': missing 'persistent_id' attribute"
+                % (filename))
         if str(obj.persistent_id) != str(id_):
-            raise gc3libs.exceptions.LoadError("Retrieved persistent ID '%s' does not match given ID '%s'" 
-                                   % (obj.persistent_id, id_))
+            raise gc3libs.exceptions.LoadError(
+                "Retrieved persistent ID '%s' does not match given ID '%s'" 
+                % (obj.persistent_id, id_))
         return obj
 
 

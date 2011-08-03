@@ -225,6 +225,7 @@ class Core:
             job.info = ("Submitted to '%s' at %s"
                         % (job.resource_name, 
                            time.ctime(job.timestamp[Run.State.SUBMITTED])))
+            app.changed = True
             app.submitted()
             # job submitted; return to caller
             return
@@ -306,6 +307,7 @@ class Core:
                         if isinstance(ex, Exception):
                             raise ex
                     if state != old_state:
+                        app.changed = True
                         # set log information accordingly
                         if (app.execution.state == Run.State.TERMINATING and app.execution.returncode != 0):
                             # there was some error, try to explain
@@ -437,6 +439,7 @@ class Core:
                           % (str(app), job.state))
 
         app.output_dir = os.path.abspath(download_dir)
+        app.changed = True
 
         if job.state == Run.State.TERMINATING:
             job.info = ("Final output downloaded to '%s'" % download_dir)
@@ -504,6 +507,7 @@ class Core:
         lrms.cancel_job(app)
         gc3libs.log.debug("Setting job '%s' status to TERMINATED"
                           " and returncode to SIGCANCEL" % job)
+        app.changed = True
         # setting the state runs the state-transition handlers,
         # which may raise an error -- ignore them, but log nonetheless
         try:
@@ -973,10 +977,9 @@ class Engine(object):
         transitioned = []
         for index, task in enumerate(self._in_flight):
             try:
-                old_state = task.execution.state
                 self._core.update_job_state(task)
                 state = task.execution.state
-                if self._store and state != old_state:
+                if self._store and task.changed:
                     self._store.save(task)
                 if state == Run.State.SUBMITTED:
                     if isinstance(task, Application):
@@ -1042,10 +1045,9 @@ class Engine(object):
         transitioned = []
         for index, task in enumerate(self._stopped):
             try:
-                old_state = task.execution.state
                 self._core.update_job_state(task)
                 state = task.execution.state
-                if self._store and state != old_state:
+                if self._store and task.changed:
                     self._store.save(task)
                 if state in [Run.State.SUBMITTED, Run.State.RUNNING]:
                     if isinstance(task, Application):

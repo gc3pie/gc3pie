@@ -116,7 +116,7 @@ class Task(object):
 
     The following pseudo-code is an example of the usage of the `Task`
     interface for controlling a job.  Assume that `GamessApplication` is
-    inheriting from `Task` (and it actually is)::
+    inheriting from `Task` (it actually is)::
 
         t = GamessApplication(input_file)
         t.submit()
@@ -134,18 +134,27 @@ class Task(object):
     After successful initialization, a `Task` instance will have the
     following attributes:
 
+    `changed`
+      evaluates to `True` if the `Task` has been changed since last
+      time it has been saved to persistent storage (see
+      :module:`gclibs.persistence`)
+
     `execution`
       a `Run` instance; its state attribute is initially set to ``NEW``.
 
     `jobname`
       an arbitrary string associated to this task, used in the
       `str` and `repr` methods.
-    
+
     """
 
     def __init__(self, name, grid=None, **kw):
         """
         Initialize a `Task` instance.
+
+        The following attributes are defined on a valid `Task` instance:
+
+        * `execution`: a `gc3libs.Run`:class: instance
 
         :param grid: A :class:`gc3libs.Engine` or
                      :class:`gc3libs.Core` instance, or anything
@@ -160,6 +169,7 @@ class Task(object):
             self.attach(grid)
         else:
             self.detach()
+        self.changed = True
 
     # manipulate the "grid" interface used to control the associated job
     def attach(self, grid):
@@ -214,6 +224,7 @@ class Task(object):
         state = self.__dict__.copy()
         state['_grid'] = None
         state['_attached'] = None
+        state['changed'] = False
         return state
 
     def __setstate__(self, state):
@@ -378,7 +389,6 @@ class Task(object):
 
     # State transition handlers.
     #
-    # XXX: should these be moved to the `Task` interface?
                       
     def new(self):
         """
@@ -680,7 +690,7 @@ class Application(Struct, Persistable, Task):
       a `Run` instance; its state attribute is initially set to ``NEW``
       (Actually inherited from the `Task`:class:)
 
-    `environment`
+     `environment`
       dictionary mapping environment variable names to the requested
       value (string); possibly empty
 
@@ -1401,6 +1411,8 @@ class Run(Struct):
                 self.timestamp[value] = time.time()
                 self.log.append('%s at %s' % (value, time.asctime()))
                 if self._ref is not None:
+                    # mark as changed
+                    self._ref.changed = True
                     # invoke state-transition method
                     handler = value.lower()
                     gc3libs.log.debug(
@@ -1626,6 +1638,7 @@ class RetryableTask(Task):
         if state == Run.State.TERMINATED:
             if self.retry():
                 self.retried += 1
+                self.changed = True
                 self.task.submit()
             self.execution.state = self.task.execution.state
             self.execution.returncode = self.task.execution.returncode
