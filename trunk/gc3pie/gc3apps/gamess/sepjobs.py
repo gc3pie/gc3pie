@@ -23,6 +23,8 @@ Classify GAMESS output files according to keyword matches.
 __version__ = 'development version (SVN $Revision$)'
 # summary of user-visible changes
 __changelog__ = """
+  2011-08-03:
+    * Use `.csv` file for configuration.
   2011-07-27:
     * Initial release.
 """
@@ -33,6 +35,7 @@ __docformat__ = 'reStructuredText'
 
 # TAKES 106 MIN. FOR SEPARATING ~2100 OUTPUT FILES
 
+import csv
 import os
 import re
 import sys
@@ -60,7 +63,7 @@ def search_for_input_directories(root, names):
                 found_dirname.append(dirname)
         # removing assigned directories from directory list
         for dirname in found_dirname:
-            dirs.remove(dirname)	
+            dirs.remove(dirname)        
     return result
 
 
@@ -79,37 +82,51 @@ def search_for_input_files(root, ext):
     return result
 
 
+class StringAdaptor(str):
+    """
+    Augment a `str` object with `search` and `match` methods with
+    interface compatible with that exposed by the `re` objects.
+    """
+    def search(self, container):
+        return (self in container)
+    def match(self, container):
+        return container.startswith(self)
+
+
 def parse_kwfile(filename):
     """
     Read `filename` and return a dictionary mapping a folder name into
     a corresponding regular expression to search for.
     """
-    input = open(filename, 'r')
+    csvfile = open(filename, 'r')
+    sample = csvfile.read(1024)
+    csvfile.seek(0)
+    dialect = csv.Sniffer().sniff(sample)
+    has_header = csv.Sniffer().has_header(sample)
+    reader = csv.reader(csvfile, dialect)
     result = { }
-    for lineno, line in enumerate(input):
-        line = line.strip()
-        # ignore comments and empty lines
-        if line == '' or line.startswith('#'):
-            continue
-        parts = line.split(':')
-        if len(parts) < 3:
-            log.error("Incorrect line %d in file '%s', ignoring.", lineno, filename)
-            continue
-        foldername, searchtype, what_to_search = parts[0:3]
-        print "parts:", foldername, searchtype, what_to_search
-        if len(parts) == 4:
-            start = float(parts[3]) / 100.0
+    for rownum, row in enumerate(reader):
+        if has_header and rownum == 0:
+            continue # skip header
+        if len(row) == 0:
+            continue # skip empty lines
+        foldername, searchtype, what_to_search = row[0:3]
+        #print "DEBUG: read row %r"% row
+        if len(row) >= 4:
+            start = float(row[3]) / 100.0
         else:
             start = 0.0
-        if len(parts) == 5:
-            end = float(parts[4]) / 100.0
+        if len(row) >= 5:
+            end = float(row[4]) / 100.0
         else:
             end = 1.0
         if searchtype in ('regexp', 're'):
             result[foldername] = (re.compile(what_to_search), start, end)
         else:
             # literal string search
-            result[foldername] = (what_to_search, start, end)
+            result[foldername] = (StringAdaptor(what_to_search), start, end)
+    #print "DEBUG: parse_kwfile result is '%s'" % result
+    csvfile.close()
     return result
 
 
@@ -146,7 +163,7 @@ def sepjobs(cmdline):
     unknown = set(files)
     
     for filepath in files:
-#        cmdline.log.info("Now processing file '%s' ...", filepath)
+        cmdline.log.info("Now processing file '%s' ...", filepath)
         inputfile = open(filepath, 'r')
 
         for foldername, spec in searches.iteritems():
