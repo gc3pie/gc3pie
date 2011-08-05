@@ -433,6 +433,19 @@ def getParameter(fileIn, varIn, regexIn = '(\s*)([a-zA-Z0-9]+)(\s+)([a-zA-Z0-9\.
             return paraVal
     print('variable {} not in parameter file {}'.format(varIn, fileIn))
 
+def walklevel(some_dir, level=1):
+    '''
+    from http://stackoverflow.com/questions/229186/os-walk-without-digging-into-directories-below
+    '''
+    some_dir = some_dir.rstrip(os.path.sep)
+    assert os.path.isdir(some_dir)
+    num_sep = some_dir.count(os.path.sep)
+    for root, dirs, files in os.walk(some_dir):
+        yield root, dirs, files
+        num_sep_this = root.count(os.path.sep)
+        if num_sep + level <= num_sep_this:
+            del dirs[:]
+
 
 if __name__ == '__main__':   
     x = getIndex([2,6], 'diag')

@@ -82,6 +82,7 @@ Read `.loop` files and execute the `forwardPremium` program accordingly.
             # only '.loop' files are considered as valid input
             input_filename_pattern = '*.loop',
         )
+        paraLoop_fp.__init__(self, verbosity = 'INFO')
 
     def setup_options(self):
         self.add_param("-b", "--initial", metavar="DIR",
@@ -125,10 +126,10 @@ Read `.loop` files and execute the `forwardPremium` program accordingly.
         for path in inputs:
             para_loop = path
             path_to_base_dir = os.path.dirname(para_loop)
-            self.log.debug("Processing loop file '%s' ...", para_loop)
+#            self.log.debug("Processing loop file '%s' ...", para_loop)
             for jobname, substs in self.process_para_file(para_loop):
-                self.log.debug("Job '%s' defined by substitutions: %s.",
-                               jobname, substs)
+##                self.log.debug("Job '%s' defined by substitutions: %s.",
+##                               jobname, substs)
                 executable = os.path.basename(self.params.executable)
                 inputs = { self.params.executable:executable }
                 # make a "stage" directory where input files are collected
@@ -137,20 +138,33 @@ Read `.loop` files and execute the `forwardPremium` program accordingly.
                 input_dir = path_to_stage_dir #os.path.join(path_to_stage_dir, 'input')
                 gc3libs.utils.mkdir(input_dir)
                 prefix_len = len(input_dir) + 1
+                # Determine if ctry is in parameters
+                isCtryInParaLoop = False
+                for (path, changes) in substs.iteritems():
+                    for (var, val, index, regex) in changes:
+                        if var == 'Ctry':
+                            isCtryInParaLoop = True
                 # 1. files in the "initial" dir are copied verbatim
-                if self.params.initial is not None:
-                    markovA_file_path = os.path.join(self.params.initial, 'input', 'markovA.in')
-                    markovB_file_path = os.path.join(self.params.initial, 'input', 'markovB.in')
-                    Ctry1 = getParameter(markovA_file_path, 'Ctry')
-                    Ctry2 = getParameter(markovB_file_path, 'Ctry')
-                    self.getCtryParas(self.params.initial, Ctry1, Ctry2)
-                    self.fillInputDir(self.params.initial, input_dir)
-                  #  gc3libs.utils.copytree(self.params.initial, input_dir)
+##                if self.params.initial is not None:
+##                    if not isCtryInParaLoop:
+##                        markovA_file_path = os.path.join(self.params.initial, 'input', 'markovA.in')
+##                        markovB_file_path = os.path.join(self.params.initial, 'input', 'markovB.in')
+##                        Ctry1 = getParameter(markovA_file_path, 'Ctry')
+##                        Ctry2 = getParameter(markovB_file_path, 'Ctry')
+##                        self.getCtryParas(self.params.initial, Ctry1, Ctry2)
+##                    self.fillInputDir(self.params.initial, input_dir)
+##                  #  gc3libs.utils.copytree(self.params.initial, input_dir)
                 # 2. apply substitutions to parameter files
                 for (path, changes) in substs.iteritems():
                     for (var, val, index, regex) in changes:
-                        update_parameter_in_file(os.path.join(input_dir, path),
+                        update_parameter_in_file(os.path.join(self.params.initial, path),
                                                  var, index, val, regex)
+                markovA_file_path = os.path.join(self.params.initial, 'input', 'markovA.in')
+                markovB_file_path = os.path.join(self.params.initial, 'input', 'markovB.in')
+                Ctry1 = getParameter(markovA_file_path, 'Ctry')
+                Ctry2 = getParameter(markovB_file_path, 'Ctry')
+                self.getCtryParas(self.params.initial, Ctry1, Ctry2)
+                self.fillInputDir(self.params.initial, input_dir)
                 # 3. build input file list
                 for dirpath,dirnames,filenames in os.walk(input_dir):
                     for filename in filenames:

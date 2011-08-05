@@ -42,7 +42,7 @@ if __name__ == '__main__':
             rmFilesAndFolders(curPath) 
             
 if __name__ == "__main__":
-    import gpremium
+    import gParaSearch
 
 # std module imports
 import numpy as np
@@ -157,6 +157,7 @@ class gParaSearchDriver(SequentialTaskCollection):
         return self.jobname
         
     def next(self, *args): 
+        self.changed = True
         newVals = self.evaluator.target(self.deSolver.newPop)
         self.deSolver.updatePopulation(self.deSolver.newPop, newVals)
         # Stats for initial population: 
@@ -173,7 +174,7 @@ class gParaSearchDriver(SequentialTaskCollection):
             # Check constraints and resample points to maintain population size. 
             self.deSolver.newPop = self.deSolver.enforceConstrReEvolve(self.deSolver.newPop)    
             self.deSolver.I_iter += 1
-            self.evaluator = gParaSearchParallel(self.deSolver.newPop, self.deSolver.I_iter, self.pathToExecutable, self.pathToStageDir, 
+            self.evaluator = gParaSearch.gParaSearchParallel(self.deSolver.newPop, self.deSolver.I_iter, self.pathToExecutable, self.pathToStageDir, 
                                              self.architecture, self.baseDir, self.xVars, self.verbosity, self.problemType, self.analyzeResults, 
                                              self.ctryList, **self.kw)
             self.add(self.evaluator)
@@ -193,48 +194,6 @@ class gParaSearchParallel(ParallelTaskCollection, paraLoop_fp):
     
     def __str__(self):
         return self.jobname
-
-    def update_state(self, **kw):
-        """
-        Update state of all tasks in the collection.
-        """
-        for task in self.tasks:
-            #gc3libs.log.debug("Updating state of %s in collection %s ..."
-            #                  % (task, self))
-            task.update_state(**kw)
-        self.execution.state = self._state()
-        if self.execution.state == Run.State.TERMINATED:
-            # set exitcode based on returncode of sub-tasks
-            for task in self.tasks:
-                if task.execution.returncode != 0:
-                    self.execution.exitcode = 1
-            self.execution.returncode = 0
-            
-            
-
-    def stats(self):
-        """
-        Return a dictionary mapping each state name into the count of
-        jobs in that state. In addition, the following keys are defined:
-        
-        * `ok`:  count of TERMINATED tasks with return code 0
-        
-        * `failed`: count of TERMINATED tasks with nonzero return code
-
-        * `total`: count of managed tasks, whatever their state
-        """
-        result = gc3libs.utils.defaultdict(lambda: 0)
-        for task in self.tasks:
-            state = task.execution.state
- #           print 'task %s state %s' % (task, state)
-            result[state] += 1
-            if state == Run.State.TERMINATED:
-                if task.execution.returncode == 0:
-                    result['ok'] += 1
-                else:
-                    result['failed'] += 1
-        result['total'] = len(self.tasks)
-        return result
     
  
     def __init__(self, inParaCombos, iteration, pathToExecutable, pathToStageDir, architecture, baseDir, xVars, 
@@ -387,7 +346,7 @@ class gParaSearchParallel(ParallelTaskCollection, paraLoop_fp):
             prefix_len = len(input_dir) + 1
             # 1. files in the "initial" dir are copied verbatim
             # ugly work around to determine the correct base dir in case of one4all. 
-            baseDir = 'base'
+            baseDir = os.path.join(os.getcwd(), 'base')
             for (path, changes) in substs.iteritems():
                 for (var, val, index, regex) in changes:
                     if var == 'Ctry':
@@ -424,7 +383,7 @@ class gParaSearchParallel(ParallelTaskCollection, paraLoop_fp):
             tasks.append(GPremiumApplication('./' + executable, [], inputs, outputs, **kwargs)) 
         return tasks
 
-class gParaSearch(SessionBasedScript, paraLoop_fp):
+class gParaSearchScript(SessionBasedScript, paraLoop_fp):
     """
 Read `.loop` files and execute the `forwardPremium` program accordingly.
     """
@@ -514,151 +473,7 @@ Read `.loop` files and execute the `forwardPremium` program accordingly.
                                                   'forwardPremium')
         gc3libs.utils.test_file(self.params.executable, os.R_OK|os.X_OK,
                                 gc3libs.exceptions.InvalidUsage)
-        
-    def _main(self, *args):
-        """
-        Implementation of the main logic in the `SessionBasedScript`.
 
-        This is a template method, that you should not override in derived
-        classes: rather use the provided customization hooks:
-        :method:`process_args`, :method:`parse_args`, :method:`setup_args`. 
-        """
-
-        ## create a `Persistence` instance to _save_session/_load_session jobs
-        self.store = gc3libs.persistence.FilesystemStore(
-            self.session_dirname, 
-            idfactory=gc3libs.persistence.JobIdFactory()
-            )
-
-        ## load the session index file
-        try:
-            if os.path.exists(self.session_filename) and not self.params.new_session:
-                session_file = file(self.session_filename, "r+b")
-            else:
-                session_file = file(self.session_filename, "w+b")
-        except IOError, ex:
-            self.log.critical("Cannot open session file '%s' in read+write mode: %s. Aborting."
-                              % (self.params.session, str(ex)))
-            return 1
-        self._load_session(session_file, self.store)
-        session_file.close()
-
-        ## update session based on comman-line args
-        self.process_args()
-
-        # save the session list immediately, so newly added jobs will
-        # be in it if the script is stopped here
-        self._save_session(self.store)
-
-        # obey the ``-r`` command-line option
-        if self.params.resource_name:
-            self._select_resources(self.params.resource_name)
-            self.log.info("Retained only resources: %s (restricted by command-line option '-r %s')",
-                          str.join(",", [res['name'] for res in self._core._resources]),
-                          self.params.resource_name)
-
-        ## create an `Engine` instance to manage the job list
-        controller = self.make_task_controller()
-
-        ## The main loop of the application: it is a local function so
-        ## that we can call it just once or properly loop around it,
-        ## as directed by the `self.params.wait` option.
-        def loop():
-            # advance all jobs
-            controller.progress()
-            # save state of all tasks
-            self._save_session(self.store)
-            # print results to user
-            print ("Status of jobs in the '%s' session: (at %s)" 
-                   % (os.path.basename(self.params.session),
-                      time.strftime('%X, %x')))
-            # summary
-            stats = controller.stats()
-            total = stats['total']
-            if total > 0:
-                self.print_summary_table(sys.stdout, stats)
-                # details table, as per ``-l`` option
-                if self.params.states:
-                    self.print_tasks_table(sys.stdout, self.params.states)
-            else:
-                if self.params.session is not None:
-                    print ("  There are no tasks in session '%s'."
-                           % self.params.session)
-                else:
-                    print ("  No tasks in this session.")
-            # compute exitcode based on the running status of jobs
-            rc = 0
-            if stats['failed'] > 0:
-                rc |= 2
-            if stats[gc3libs.Run.State.RUNNING] > 0 or stats[gc3libs.Run.State.SUBMITTED] > 0:
-                rc |= 4
-            if stats[gc3libs.Run.State.NEW] > 0:
-                rc |= 8
-            return rc
-
-        # ...now do a first round of submit/update/retrieve
-        rc = loop()
-        if self.params.wait > 0:
-            try:
-                while rc > 3:
-                    # Python scripts become unresponsive during `time.sleep()`,
-                    # so we just do the wait in small steps, to allow the interpreter
-                    # to process interrupts in the breaks.  Ugly, but works...
-                    for x in xrange(self.params.wait):
-                        time.sleep(1)
-                    rc = loop()
-            except KeyboardInterrupt: # gracefully intercept Ctrl+C
-                pass
-        # save the session again before exiting, so the file reflects
-        # jobs' statuses
-        self._save_session()
-        return rc
-
-        
-    def _load_session(self, session_file, store):
-        """
-        Load all jobs from a previously-saved session file into `self.tasks`.
-        The `session_file` argument can be any file-like object suitable
-        for passing to Python's stdlib `csv.DictReader`.
-        """
-        import csv
-        for row in csv.DictReader(session_file,
-                                  ['jobname', 'persistent_id', 'state', 'info']):
-            row['jobname'] = row['jobname'].strip()
-            row['persistent_id'] = row['persistent_id'].strip()
-            if (row['jobname'] == '' or row['persistent_id'] == ''):
-                # invalid row, skip
-                continue 
-            # resurrect saved state
-            task = store.load(row['persistent_id'])
-            print 'loading task %s' % task
-            # append to this list
-            self.tasks.append(task)
-        
-    def _save_session(self, store=None):
-        """
-        Save tasks into a given session file.  The `session`
-        argument can be any file-like object suitable for passing to
-        Python's standard library `csv.DictWriter`.
-
-        If `store` is different from the default `None`, then each job
-        in the session is also saved to it.
-        """
-        import csv
-#        print 'saving session'
-        try:
-            session_file = file(self.session_filename, "wb")
-            for task in self.tasks:
-#                print 'storing %s' % task
-                if store is not None:
-                    store.save(task)
-                csv.DictWriter(session_file, 
-                               ['jobname', 'persistent_id', 'state', 'info'], 
-                               extrasaction='ignore').writerow(task)
-            session_file.close()
-        except IOError, ex:
-            self.log.error("Cannot save job list to session file '%s': %s"
-                           % (self.params.session, str(ex)))
 
     def new_tasks(self, extra):
         
@@ -781,6 +596,6 @@ Read `.loop` files and execute the `forwardPremium` program accordingly.
 # run script
 
 if __name__ == '__main__':    
-    gParaSearch().run()
+    gParaSearchScript().run()
     print 'done'
     
