@@ -458,6 +458,9 @@ Read `.loop` files and execute the `forwardPremium` program accordingly.
         self.add_param("-cL", "--countryList", metavar="ARCH", type = str,
                        dest="countryList", default = 'AU UK',
                        help="List of countries to analyze. ")
+        self.add_param("-nN", "--norm", metavar="ARCH", type = str,
+                       dest="norm", default = 2,
+                       help="Which norm to apply for one4all and one4eachCtry")
 
     def parse_args(self):
         """
@@ -494,9 +497,14 @@ Read `.loop` files and execute the `forwardPremium` program accordingly.
                                               delim = ',', width = 20)
 
             jobname = 'one4all'
+            norm = self.params.norm
+            if norm == "np.inf" or "inf": 
+                norm = np.inf
+            else:
+                norm = int(norm)
             path_to_stage_dir = os.getcwd()
             executable = os.path.basename(self.params.executable)
-            analyzeResults = anaOne4all(len(list(ctryIndices)))
+            analyzeResults = anaOne4all(len(list(ctryIndices)), norm = norm)
             nlc            = nlcOne4all(gdpTable = gdpTable, ctryList = countryList, domain = domain, logFile = os.path.join(path_to_stage_dir, 'nlc.log'))
             combOverviews  = combineOverviews.combineOverviews(overviewSimuFile = 'eSigmaTable', tableName = 'ag_eSigmaTable', sortKeys = ['norm'])
             plot3dTable    = combineOverviews.plotTable(tablePath =os.path.join(path_to_stage_dir, 'ag_eSigmaTable'), savePath = os.path.join(path_to_stage_dir, 'scatter3d'))
@@ -589,8 +597,8 @@ Read `.loop` files and execute the `forwardPremium` program accordingly.
                          analyzeResults, nlc, plot3dTable, combOverviews
                        ], kwargs)
         
-        elif self.params.problemType == 'one4all':
-            pass        
+        elif self.params.problemType == 'one4eachCtry':
+            pass
         
 
 # run script
