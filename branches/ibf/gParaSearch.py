@@ -286,6 +286,11 @@ class gParaSearchParallel(ParallelTaskCollection, paraLoop_fp):
                 writeVals.append(vals[1])
                 paraCombosSigmaA = [  np.append(ele[1], ele[1]) for ele in inParaCombos ]
                 
+            # match ctry with val
+            ctryVals = {}
+            for ixCtry, ctry in enumerate(ctryList):
+                ctryVals[ctry] = vals
+                
             self.variables = variables
                 
             # Prepare paraCombos matching to resulting table. Used in analyzeOverviewTable
@@ -297,6 +302,55 @@ class gParaSearchParallel(ParallelTaskCollection, paraLoop_fp):
             self.paraCombos = paraCombos
             paraFiles = [ 'input/parameters.in', 'input/parameters.in', 'input/parameters.in', 'input/parameters.in' ]
             paraFileRegex = [  'bar-separated', 'bar-separated' , 'bar-separated' , 'bar-separated'  ]
+                
+        elif self.problemType == 'one4eachCtry':
+            ctry1List  = []
+            ctry2List  = []
+            EAList     = []
+            EBList     = []
+            sigmaAList = []
+            sigmaBList = []
+            self.paraCombos = []
+            
+            ctryIndices = getIndex([len(ctryList), len(ctryList)], 'lowerTr')
+            for ixCombo in range(len(inParaCombos)):
+                ctry1ListCombo = []
+                ctry2ListCombo = []
+                EAListCombo    = []
+                EBListCombo    = []
+                sigmaAListCombo = []
+                sigmaBListCombo = []
+                for ctryIndex in ctryIndices:
+                    ctry1ListCombo.append(ctryList[ctryIndex[0]])
+                    ctry2ListCombo.append(ctryList[ctryIndex[1]])
+                    EAListCombo.append(inParaCombos[ixCombo][0 + 2 * ctryIndex[0]])
+                    sigmaAListCombo.append(inParaCombos[ixCombo][1 + 2 * ctryIndex[0]])
+                    EBListCombo.append(inParaCombos[ixCombo][0 + 2 *ctryIndex[1]])
+                    sigmaBListCombo.append(inParaCombos[ixCombo][1 + 2 * ctryIndex[1]])
+                self.paraCombos.append(zip(ctry1ListCombo, ctry2ListCombo, EAListCombo, sigmaAListCombo, EBListCombo, sigmaBListCombo))
+                ctry1List.extend(ctry1ListCombo)
+                ctry2List.extend(ctry2ListCombo)
+                EAList.extend(map(str, EAListCombo))
+                EBList.extend(map(str, EBListCombo))
+                sigmaAList.extend(map(str, sigmaAListCombo))
+                sigmaBList.extend(map(str, sigmaBListCombo))
+                
+            
+                    
+            variables = ['Ctry', 'Ctry', 'EA', 'EB', 'sigmaA', 'sigmaB']
+            groups    = [ 0, 0, 0, 0, 0, 0 ]
+            groupRestrs = [ 'diagnol', 'diagnol', 'diagnol', 'diagnol', 'diagnol', 'diagnol' ]
+            writeVals = [ ", ".join(ctry1List), ", ".join(ctry2List), ", ".join(EAList), ", ".join(EBList), ", ".join(sigmaAList),", ".join(sigmaBList)]
+            paraFiles = [ 'input/markovA.in', 'input/markovB.in', 'input/parameters.in', 'input/parameters.in', 'input/parameters.in', 'input/parameters.in' ]
+            paraFileRegex = [ 'space-separated', 'space-separated', 'bar-separated', 'bar-separated' , 'bar-separated' , 'bar-separated'  ]
+            #self.paraCombos = inParaCombos
+            self.analyzeResults.tablePath = self.iterationFolder
+            # variable list passed to analyzeOverviewTables
+            self.variables = ['EA', 'sigmaA', 'EB', 'sigmaB']
+            print 'done'
+                
+                
+
 
         # Write a para.loop file to generate grid jobs
         para_loop = self.writeParaLoop(variables = variables, 
@@ -598,7 +652,52 @@ Read `.loop` files and execute the `forwardPremium` program accordingly.
                        ], kwargs)
         
         elif self.params.problemType == 'one4eachCtry':
-            pass
+            gdpTable = tableDict.fromTextFile(fileIn = os.path.join(self.params.pathEmpirical, 'outputInput/momentTable/Gdp/gdpMoments.csv'),
+                                              delim = ',', width = 20)
+
+            jobname = 'one4eachCtry'
+            norm = self.params.norm
+            if norm == "np.inf" or "inf": 
+                norm = np.inf
+            else:
+                norm = int(norm)
+            path_to_stage_dir = os.getcwd()
+            executable = os.path.basename(self.params.executable)
+            analyzeResults = anaOne4eachCtry(countryList, len(list(ctryIndices)), norm = norm)
+            nlc            = nlcOne4eachCtry(gdpTable = gdpTable, ctryList = countryList, domain = domain, logFile = os.path.join(path_to_stage_dir, 'nlc.log'))
+            combOverviews  = combineOverviews.combineOverviews(overviewSimuFile = 'eSigmaTable', tableName = 'ag_eSigmaTable', sortKeys = ['norm'])
+            plot3dTable    = lambda: 'empty'
+#            plot3dTable    = combineOverviews.plotTable(tablePath =os.path.join(path_to_stage_dir, 'ag_eSigmaTable'), savePath = os.path.join(path_to_stage_dir, 'scatter3d'))
+#            plot3dTable.columnNames = ['E', 'sigma', 'norm']
+            for ctryIndex in ctryIndices:
+                Ctry1 = countryList[ctryIndex[0]]
+                Ctry2 = countryList[ctryIndex[1]]
+                # Set Ctry information for this run. 
+                update_parameter_in_file(os.path.join(baseDir, 'input/markovA.in'), 'Ctry',
+                                          0,  Ctry1,  'space-separated')
+                update_parameter_in_file(os.path.join(baseDir, 'input/markovB.in'), 'Ctry',
+                                          0,  Ctry2,  'space-separated')
+                # Get the correct Ctry Paras into base dir. 
+                self.getCtryParas(baseDir, Ctry1, Ctry2)
+                # Copy base dir
+                ctryBaseDir = os.path.join(path_to_stage_dir, 'base' + Ctry1 + Ctry2)
+                try: 
+                    shutil.copytree(baseDir, ctryBaseDir)
+                except:
+                    print '%s already exists' % baseDir 
+            
+            kwargs = extra.copy()
+            kwargs['output_dir'] = path_to_stage_dir
+                
+            # yield job
+            yield (jobname, gParaSearchDriver, 
+                   [ self.params.executable, path_to_stage_dir, self.params.architecture, 
+                     baseDir, self.params.xVars, 
+                     self.params.nPopulation, self.params.xVarsDom, self.params.solverVerb, self.params.problemType,
+                     self.params.pathEmpirical, self.params.itermax, self.params.xConvCrit, self.params.yConvCrit,
+                     self.params.makePlots, self.params.optStrategy, self.params.fWeight, self.params.fCritical, self.params.countryList,
+                     analyzeResults, nlc, plot3dTable, combOverviews
+                   ], kwargs)
         
 
 # run script

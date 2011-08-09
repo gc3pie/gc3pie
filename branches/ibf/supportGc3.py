@@ -66,15 +66,18 @@ class wrapLogger():
 
 
 def getLogger(loggerName, streamVerb = 'DEBUG', logFile = 'log'):
+
+    # Get a logger instance.
+    logger = logbook.Logger(name = 'target.log')
+    
     # set up logger
     mySH = logbook.StreamHandler(stream = sys.stdout, level = streamVerb.upper(), format_string = '{record.message}', bubble = True)
     mySH.format_string = '{record.message}'
-    myFH = logbook.FileHandler(filename = logFile, level = 'DEBUG', bubble = True)
-    myFH.format_string = '{record.message}' 
-    logger = logbook.Logger(name = 'target.log')
-    
     logger.handlers.append(mySH)
-    logger.handlers.append(myFH)   
+    if logFile:
+        myFH = logbook.FileHandler(filename = logFile, level = 'DEBUG', bubble = True)
+        myFH.format_string = '{record.message}' 
+        logger.handlers.append(myFH)   
     
     try:
         stdErr = list(logbook.handlers.Handler.stack_manager.iter_context_objects())[0]
@@ -82,6 +85,8 @@ def getLogger(loggerName, streamVerb = 'DEBUG', logFile = 'log'):
     except: 
         pass
     return logger
+
+
 
 def lower(npStrAr):
     return np.fromiter((x.lower() for x in npStrAr.flat),
@@ -448,6 +453,6 @@ def walklevel(some_dir, level=1):
 
 
 if __name__ == '__main__':   
-    x = getIndex([2,6], 'diag')
+    x = getIndex([3,3], 'lowerTr')
     for i in x:
         print(i)
