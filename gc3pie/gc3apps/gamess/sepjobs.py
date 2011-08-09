@@ -23,6 +23,11 @@ Classify GAMESS output files according to keyword matches.
 __version__ = 'development version (SVN $Revision$)'
 # summary of user-visible changes
 __changelog__ = """
+  2011-08-09:
+    * moving files into subfolders for key strings now works
+    * automatic distinct. between new and old search by subfolder "none_found" now works
+    * added working dir. and source dir. to handle new and old search
+    * still problem with writing to config.file
   2011-08-08:
     * removed support for several input dir.s
     * default search rootpath now is current path of script
@@ -148,42 +153,47 @@ def parse_kwfile(filename, old_search):
     number = re.compile(r'[0-9]+\.?[0-9]*')
     done = re.compile(r'done[ ,]*')
     folder_exists = False
-    file = open(filename, 'rw')
+ #   configfile = open(filename, 'r')
     result = { } ; newlns = []
-    for line in file:
-       
-    	newlns.append(line)
-        if line == '\n' or line.startswith('#') or line.isspace():
-#            print "DEBUG: ignoring line %r"% line
-            continue        			# skip empty or comment lines
-        if done.search(line.rsplit(':', 1)[1]):
-            if old_search:
-#                print "DEBUG: ignoring line %r"% line
-                continue            # skip lines already used for separation
-        else:
-            newlns[len(newlns)-1] = newlns[len(newlns)-1].rstrip(' \n') + ', done\n'
-#        print "DEBUG: processing line %r"% line
-#        print "DEBUG: new lines %r"% newlns[len(newlns)-1]
-        what_to_search, rest = line.rsplit(':', 1)
- #       print "DEBUG: search string:", str(what_to_search)
-        start = 0.0 ; end = 1.0
-        rest = rest.replace(' ', '').rstrip('\n') + ',,,'
-        field = rest.split(',')
-        searchtype = field[0]
-        foldername = field[1]
-        if number.match(field[2]):
-            start = float(field[2]) / 100.0
-        if number.match(field[3]):
-            end = float(field[3]) / 100.0
-#        print "DEBUG: search string, searchtype, foldername, start, end:\n", '"', what_to_search, '"', searchtype, foldername, start, end
-        if searchtype in ('regexp', 're'):
-            result[foldername] = (re.compile(what_to_search), start, end, folder_exists)
-        else:
-            # literal string search
-            result[foldername] = (StringAdaptor(what_to_search), start, end,
-                                  folder_exists)
-#    file.writelines(newlns)
-    file.close()
+    with open(filename, 'r') as configfile:
+        for line in configfile: #file:
+           
+            newlns.append(line)
+            if line == '\n' or line.startswith('#') or line.isspace():
+                print "DEBUG: ignoring line %r"% line
+                continue        		# skip empty or comment lines
+            if done.search(line.rsplit(':', 1)[1]):
+                if old_search:
+                    print "DEBUG: ignoring line %r"% line
+                    continue            # skip lines already used for separation
+            else:
+                newlns[len(newlns)-1] = newlns[len(newlns)-1].rstrip(' \n') + ', done\n'
+            print "DEBUG: processing line %r"% line
+            print "DEBUG: new lines %r"% newlns[len(newlns)-1]
+            what_to_search, rest = line.rsplit(':', 1)
+            print "DEBUG: search string:", str(what_to_search)
+            start = 0.0 ; end = 1.0
+            rest = rest.replace(' ', '').rstrip('\n') + ',,,'
+            field = rest.split(',')
+            searchtype = field[0]
+            foldername = field[1]
+            if number.match(field[2]):
+                start = float(field[2]) / 100.0
+            if number.match(field[3]):
+                end = float(field[3]) / 100.0
+            print "DEBUG: search string, searchtype, foldername, start, end:\n", '"', what_to_search, '"', searchtype, foldername, start, end
+            if searchtype in ('regexp', 're'):
+                result[foldername] = (re.compile(what_to_search), start, end, folder_exists)
+            else:
+                # literal string search
+                result[foldername] = (StringAdaptor(what_to_search), start, end,
+                                      folder_exists)
+        configfile.seek(0, 0)
+        configfile.close()
+    with open(filename, 'w') as configfile:
+        print "DEBUG: writing new lines to config.file\n", str(configfile)
+        configfile.writelines(newlns)
+        configfile.close()
     return result
 
 
@@ -197,24 +207,26 @@ def sepjobs(cmdline):
     # look for directory name under the search root (if given)
     dirs = search_for_input_directories(cmdline.params.search_root,
                                             cmdline.params.inpdir)
+    wrkdir = dirs[0]
     """
     # expand output dir. to complete path
     if cmdline.params.outdir == '':
-        outdir = dirs[0]
+        outdir = wrkdir
     else:
         outdir = os.path.join(cmdline.params.search_root, cmdline.params.outdir)
     outdir, old_search = search_for_none_found(outdir)
     """
-    dirs[0], old_search = search_for_none_found(dirs[0])
-    cmdline.log.debug("Searching directories: %s", dirs)
-
+    srcdir, old_search = search_for_none_found(wrkdir)
+    cmdline.log.debug("Source directory: %s", srcdir)
+    none_found_exists = old_search
+    
     # look for input files
     """
     files = [ ]
     for dirpath in dirs:
         files.extend(search_for_input_files(dirpath, cmdline.params.ext))
     """
-    files = search_for_input_files(dirs[0], cmdline.params.ext)
+    files = search_for_input_files(srcdir, cmdline.params.ext)
     cmdline.log.debug("List of input files: %s", files)
 
     # parse classification file
@@ -231,15 +243,14 @@ def sepjobs(cmdline):
     failrt = 0
     hitrt = 0
     for filepath in files:
-        cmdline.log.info("Now processing file '%s' ...", filepath)
+   #     cmdline.log.info("Now processing file '%s' ...", filepath)
         inputfile = open(filepath, 'r')
         start0 = 1.0 ; end0 = 0.0
         assigned = False
         
         for foldername, spec in searches.iteritems():
-            cmdline.log.info("Now looking for '%s' ...", foldername)
+   #         cmdline.log.info("Now looking for '%s' ...", foldername)
             regexp, start, end, folder_exists = spec
-          #  folder_exists = folder_exists0
             if start != start0 or end != end0: 
                 # compute range
                 flsize = os.path.getsize(filepath)
@@ -249,55 +260,56 @@ def sepjobs(cmdline):
                 inputfile.seek(btpos, 0)         # going to byte position in file
                 content = inputfile.read(btrng)  # reading byte range from byte pos.  
 
-            def act_on_file(filepath, foldername, assigned, searches): #folder_exists): 
+            def act_on_file(filepath, foldername, assigned, folder_exists, old_search): 
                 """Actions to perform when a file matches a classification keyword."""
                 assigned = True
- #               cmdline.log.info("assigned in act_on_file ='%s'", assigned)
                 index[foldername].add(filepath) 
                 index['none_found'].remove(filepath)
                 if cmdline.params.move:
-                    cmdline.log.info("Going to move file")
-                    if not searches[foldername]: #folder_exists:
-                        cmdline.log.info("Creating Folder '%s'", foldername)
-                        os.mkdir(os.path.join(dirs[0], foldername))
-  #                      folder_exists = True
-                        searches[foldername][3] = True
-                    cmdline.log.info("Moving file")
+      #              cmdline.log.info("Going to move file")
+                    if not folder_exists: 
+                        os.mkdir(os.path.join(wrkdir, foldername))
+                        folder_exists = True
+      #              cmdline.log.info("Moving file")
                     os.rename(filepath,
-                        os.path.join(dirs[0], foldername, os.path.basename(filepath)))
-                return assigned, searches[foldername][3] #folder_exists
+                        os.path.join(wrkdir, foldername, os.path.basename(filepath)))
+                return assigned, folder_exists    
                 
             match = regexp.search(content)
             if match:
-                cmdline.log.info("Found match, folder_exists='%s'", searches[foldername][3]) #folder_exists)
+     #           cmdline.log.info("Found match, folder_exists='%s'", folder_exists)
                 hitrt += 1
-                assigned, searches[foldername][3] = act_on_file(filepath, foldername, assigned, searches[foldername][3])  
+                assigned, folder_exists = act_on_file(filepath, foldername, assigned, folder_exists, old_search) 
+                searches[foldername] = (regexp, start, end, folder_exists)
                 break
-        if not assigned:               # retry with whole file
+        # retry search with whole file
+        if not assigned:               
             content = inputfile.read()
             for foldername, spec in searches.iteritems():
                 regexp, start, end, folder_exists = spec
                 match = regexp.search(content)
                 if match:
                     failrt += 1
-                    assigned, searches[foldername][3] = act_on_file(filepath, foldername, assigned, searches[foldername][3]) 
+                    assigned, folder_exists = act_on_file(filepath, foldername, assigned, folder_exists, old_search)
+                    # how to avoid copying regexp back to searches ?  
+                    searches[foldername] = (regexp, start, end, folder_exists)
                     break
-        
-        cmdline.log.info("ASSIGNED = '%s'", assigned)
+   #     cmdline.log.info("ASSIGNED = '%s'", assigned)
         if (not assigned) and cmdline.params.move:
             if not old_search:
-                cmdline.log.info("Creating 'none_found'")
-                os.mkdir(os.path.join(dirs[0], 'none_found'))
-                old_search = True
-            os.rename(filepath,
-                      os.path.join(dirs[0], 'none_found', os.path.basename(filepath)))
+                if not none_found_exists:
+   #                 cmdline.log.info("Creating 'none_found'")
+   #                 os.mkdir(os.path.join(wrkdir, 'none_found'))
+                    none_found_exists = True
+                os.rename(filepath, os.path.join(wrkdir, 'none_found', 
+                          os.path.basename(filepath)))
         inputfile.close()
         
     # print summary
     for foldername, filenames in index.iteritems():
         print "== %s ==" % foldername, "no. of files:", len(index[foldername])
-        for filename in sorted(filenames):
-            print ("    " + filename)
+#        for filename in sorted(filenames):
+#            print ("    " + filename)
 #    print "== none_found ==", "no. of files:", len(index['none_found'])
 #    for filename in sorted(unknown):
 #        print ("    " + filename)
@@ -338,9 +350,13 @@ config file for sepjobs.py:
 #   searchstring: literal|regexp, foldername, [start, end], ['done']
 #
                
-gracefully: regexp, gracefully, 90.0, done         
+gracefully: regexp, gracefully, 90.0, , done         
 
-I/O ERROR: literal, io_error, 80, 90, done, ,      
-ddikick.x: Timed out: literal, timed_out, 90, 99 , , ,
-Failed creating: literal, failed_creat, 20,,,,,,,
+#I/O ERROR: literal, io_error, 80,, done, ,      
+#ddikick.x: Timed out: literal, timed_out,, , , ,
+#Failed creating: literal, failed_creat, 90,,,,,,,
+#ILLEGAL GENERAL  BASIS FUNCTION REQUESTED: literal, ILLEGAL_BASISFUNC, 80,    
+#ILLEGAL EXTENDED BASIS FUNCTION REQUESTED.: literal, ILLEGAL_EXTBASISFUNC, 80  , 
+#JACOBI DIAGONALIZATION FAILS: literal, JACOBI_DIAG_FAILS, 80  , done
+#ILLEGAL          BASIS FUNCTION REQUESTED: literal, ILLEGAL_____BASISFUNC, 80  
 """
