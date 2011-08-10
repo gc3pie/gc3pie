@@ -1627,27 +1627,32 @@ class RetryableTask(Task):
 
     def submit(self, **kw):
         self.task.submit(**kw)
+        # immediately reflect state change
+        if self.task.execution.state != Run.State.NEW:
+            self.execution.state = self.task.execution.state
+            self.changed = True
 
     def update_state(self):
         """
         Update the state of the dependent task, then resubmit it if it's
         TERMINATED and `self.retry()` is `True`.
         """
-        self.task.update_state()
         state = self.task.execution.state
-        if state == Run.State.TERMINATED:
-            if self.retry():
-                self.retried += 1
-                self.changed = True
-                self.task.submit()
-            self.execution.state = self.task.execution.state
-            self.execution.returncode = self.task.execution.returncode
-        elif state == Run.State.TERMINATING:
-            if hasattr(self, 'output_dir'):
-                self.task.fetch_output(output_dir=self.output_dir)
-            else:
-                self.task.fetch_output()
-        else:
+        self.task.update_state()
+        if state != self.task.execution.state:
+            self.changed = True
+            state = self.task.execution.state
+            if state == Run.State.TERMINATED:
+                if self.retry():
+                    self.retried += 1
+                    self.changed = True
+                    self.task.submit()
+                self.execution.returncode = self.task.execution.returncode
+            elif state == Run.State.TERMINATING:
+                if hasattr(self, 'output_dir'):
+                    self.task.fetch_output(output_dir=self.output_dir)
+                else:
+                    self.task.fetch_output()
             self.execution.state = state
 
         
