@@ -551,11 +551,20 @@ Read `.loop` files and execute the `forwardPremium` program accordingly.
                                               delim = ',', width = 20)
 
             jobname = 'one4all'
+
+            print '%s' % self.params.norm
             norm = self.params.norm
-            if norm == "np.inf" or "inf": 
-                norm = np.inf
-            else:
+            try: 
                 norm = int(norm)
+            except ValueError:
+                 if norm == "np.inf" or norm == "inf": 
+                     norm = np.inf
+                 else:
+                     pass # in particular custom norms
+
+            print 'using norm %s' % (norm)
+
+
             path_to_stage_dir = os.getcwd()
             executable = os.path.basename(self.params.executable)
             analyzeResults = anaOne4all(len(list(ctryIndices)), norm = norm)
@@ -656,11 +665,18 @@ Read `.loop` files and execute the `forwardPremium` program accordingly.
                                               delim = ',', width = 20)
 
             jobname = 'one4eachCtry'
+
             norm = self.params.norm
-            if norm == "np.inf" or "inf": 
-                norm = np.inf
-            else:
+            try: 
                 norm = int(norm)
+            except ValueError:
+                 if norm == "np.inf" or norm == "inf": 
+                     norm = np.inf
+                 else:
+                     pass # in particular custom norms
+
+            print 'using norm %s' % (norm)
+
             path_to_stage_dir = os.getcwd()
             executable = os.path.basename(self.params.executable)
             analyzeResults = anaOne4eachCtry(countryList, len(list(ctryIndices)), norm = norm)
