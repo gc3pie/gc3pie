@@ -69,14 +69,14 @@ if not sys.path.count(path2Pymods):
 
 from forwardPremium import paraLoop_fp, GPremiumApplication
 from supportGc3 import update_parameter_in_file, getParameter, getIndex
-from supportGc3 import getLogger, wrapLogger
+from supportGc3 import getLogger, wrapLogger, emptyFun
 
 
 from pymods.classes.tableDict import tableDict
 
 sys.path.append(os.path.join(os.path.dirname(__file__), '../generateResults/'))
 from createOverviewTable import createOverviewTable
-from analyzeOverviewTable import anaOne4eachPair, anaOne4eachCtry, anaOne4all, nlcOne4eachCtry, nlcOne4eachPair, nlcOne4all
+from analyzeOverviewTable import anaOne4eachPair, anaOne4eachCtry, anaOne4all, nlcOne4eachCtry, nlcOne4eachPair, nlcOne4all, plotPopOne4eachCtry
 import combineOverviews
 from difEvoKenPrice import *
 
@@ -92,7 +92,7 @@ from difEvoKenPrice import *
 class gParaSearchDriver(SequentialTaskCollection):
     
     def __init__(self, pathToExecutable, pathToStageDir, architecture, baseDir, xVars, 
-                 nPopulation, xVarsDom, solverVerb, problemType, pathEmpirical, 
+                 nPopulation, domain, solverVerb, problemType, pathEmpirical, 
                  itermax, xConvCrit, yConvCrit, 
                  makePlots, optStrategy, fWeight, fCritical, ctryList, analyzeResults, nlc, plot3dTable, combOverviews,
                  output_dir = '/tmp', grid = None, **kw):
@@ -108,10 +108,7 @@ class gParaSearchDriver(SequentialTaskCollection):
         self.jobname = kw['jobname']
         self.ctryList = ctryList.split()
         self.xVars = xVars
-        self.xVarsDom = xVarsDom.split()
-        lowerBds = np.array([self.xVarsDom[i] for i in range(len(self.xVarsDom)) if i % 2 == 0], dtype = 'float64')
-        upperBds = np.array([self.xVarsDom[i] for i in range(len(self.xVarsDom)) if i % 2 == 1], dtype = 'float64')
-        self.domain = zip(lowerBds, upperBds)
+        self.domain = domain
         self.n = len(self.xVars.split())
         self.kw = kw
         self.analyzeResults = analyzeResults
@@ -124,8 +121,8 @@ class gParaSearchDriver(SequentialTaskCollection):
         S_struct['F_weight']     = float(fWeight)
         S_struct['F_CR']         = float(fCritical)
         S_struct['I_D']          = self.n
-        S_struct['lowerBds']     = lowerBds
-        S_struct['upperBds']     = upperBds
+        S_struct['lowerBds']     = np.array([ element[0] for element in domain ], dtype = 'float64')
+        S_struct['upperBds']     = np.array([ element[1] for element in domain ], dtype = 'float64')
         S_struct['I_itermax']    = int(itermax)
         S_struct['F_VTR']        = float(yConvCrit)
         S_struct['I_strategy']   = int(optStrategy)
@@ -142,7 +139,7 @@ class gParaSearchDriver(SequentialTaskCollection):
         
         # create initial task and register it
         self.deSolver.newPop = self.deSolver.drawInitialSample()
-        
+        #self.deSolver.plotPopulation(self.deSolver.newPop)
         self.deSolver.I_iter += 1
         self.evaluator = gParaSearchParallel(self.deSolver.newPop, self.deSolver.I_iter, self.pathToExecutable, self.pathToStageDir, 
                                              self.architecture, self.baseDir, self.xVars, self.verbosity, self.problemType, self.analyzeResults, 
@@ -535,10 +532,8 @@ Read `.loop` files and execute the `forwardPremium` program accordingly.
     def new_tasks(self, extra):
         
         baseDir = self.params.initial
-        xVarsDom = self.params.xVarsDom.split()
-        lowerBds = np.array([xVarsDom[i] for i in range(len(xVarsDom)) if i % 2 == 0], dtype = 'float64')
-        upperBds = np.array([xVarsDom[i] for i in range(len(xVarsDom)) if i % 2 == 1], dtype = 'float64')
-        domain = zip(lowerBds, upperBds)
+        xVars    = self.params.xVars
+
         countryList = self.params.countryList.split()
         
         ctryIndices = getIndex(base = [len(countryList), len(countryList)], restr = 'lowerTr')
@@ -547,6 +542,10 @@ Read `.loop` files and execute the `forwardPremium` program accordingly.
         
         # Make problem type specific adjustments. 
         if self.params.problemType == 'one4all':
+            xVarsDom = self.params.xVarsDom.split()
+            lowerBds = np.array([xVarsDom[i] for i in range(len(xVarsDom)) if i % 2 == 0], dtype = 'float64')
+            upperBds = np.array([xVarsDom[i] for i in range(len(xVarsDom)) if i % 2 == 1], dtype = 'float64')
+            domain = zip(lowerBds, upperBds)
             gdpTable = tableDict.fromTextFile(fileIn = os.path.join(self.params.pathEmpirical, 'outputInput/momentTable/Gdp/gdpMoments.csv'),
                                               delim = ',', width = 20)
 
@@ -596,7 +595,7 @@ Read `.loop` files and execute the `forwardPremium` program accordingly.
             yield (jobname, gParaSearchDriver, 
                    [ self.params.executable, path_to_stage_dir, self.params.architecture, 
                      baseDir, self.params.xVars, 
-                     self.params.nPopulation, self.params.xVarsDom, self.params.solverVerb, self.params.problemType,
+                     self.params.nPopulation, domain, self.params.solverVerb, self.params.problemType,
                      self.params.pathEmpirical, self.params.itermax, self.params.xConvCrit, self.params.yConvCrit,
                      self.params.makePlots, self.params.optStrategy, self.params.fWeight, self.params.fCritical, self.params.countryList,
                      analyzeResults, nlc, plot3dTable, combOverviews
@@ -605,6 +604,10 @@ Read `.loop` files and execute the `forwardPremium` program accordingly.
             
 
         elif self.params.problemType == 'one4eachPair':
+            xVarsDom = self.params.xVarsDom.split()
+            lowerBds = np.array([xVarsDom[i] for i in range(len(xVarsDom)) if i % 2 == 0], dtype = 'float64')
+            upperBds = np.array([xVarsDom[i] for i in range(len(xVarsDom)) if i % 2 == 1], dtype = 'float64')
+            domain = zip(lowerBds, upperBds)
             for ctryIndex in ctryIndices:
                 Ctry1 = countryList[ctryIndex[0]]
                 Ctry2 = countryList[ctryIndex[1]]
@@ -654,7 +657,7 @@ Read `.loop` files and execute the `forwardPremium` program accordingly.
                 yield (jobname, gParaSearchDriver, 
                        [ self.params.executable, path_to_stage_dir, self.params.architecture, 
                          ctryBaseDir, self.params.xVars, 
-                         self.params.nPopulation, self.params.xVarsDom, self.params.solverVerb, self.params.problemType,
+                         self.params.nPopulation, domain, self.params.solverVerb, self.params.problemType,
                          self.params.pathEmpirical, self.params.itermax, self.params.xConvCrit, self.params.yConvCrit,
                          self.params.makePlots, self.params.optStrategy, self.params.fWeight, self.params.fCritical, self.params.countryList,
                          analyzeResults, nlc, plot3dTable, combOverviews
@@ -664,6 +667,24 @@ Read `.loop` files and execute the `forwardPremium` program accordingly.
             gdpTable = tableDict.fromTextFile(fileIn = os.path.join(self.params.pathEmpirical, 'outputInput/momentTable/Gdp/gdpMoments.csv'),
                                               delim = ',', width = 20)
 
+            if len(countryList) > len(self.params.xVars.split()) / 2 and len(xVars.split()) == 2:
+                if self.params.xVars[-1:] != " ":
+                    xVars = ( self.params.xVars + ' ' ) * len(countryList)
+                    xVars = xVars[:-1]
+                else:
+                    xVars = self.params.xVars * len(countryList)                    
+                if self.params.xVarsDom[-1:] != " ":
+                    xVarsDom = ( self.params.xVarsDom + ' ' ) * len(countryList)
+                    xVarsDom = xVarsDom[:-1].split()
+                else:
+                    xVarsDom = self.params.xVarsDom * len(countryList)
+                    xVarsDom = xVarsDom.split()
+            else:
+                xVars = self.params.xVars
+                xVarsDom = self.params.xVarsDom[:-1].split()
+            lowerBds = np.array([xVarsDom[i] for i in range(len(xVarsDom)) if i % 2 == 0], dtype = 'float64')
+            upperBds = np.array([xVarsDom[i] for i in range(len(xVarsDom)) if i % 2 == 1], dtype = 'float64')
+            domain = zip(lowerBds, upperBds)
             jobname = 'one4eachCtry'
 
             norm = self.params.norm
@@ -682,7 +703,9 @@ Read `.loop` files and execute the `forwardPremium` program accordingly.
             analyzeResults = anaOne4eachCtry(countryList, len(list(ctryIndices)), norm = norm)
             nlc            = nlcOne4eachCtry(gdpTable = gdpTable, ctryList = countryList, domain = domain, logFile = os.path.join(path_to_stage_dir, 'nlc.log'))
             combOverviews  = combineOverviews.combineOverviews(overviewSimuFile = 'eSigmaTable', tableName = 'ag_eSigmaTable', sortKeys = ['norm'])
-            plot3dTable    = lambda: 'empty'
+            deKenPrice.plotPopulation = plotPopOne4eachCtry(None, countryList)
+
+            plot3dTable    = emptyFun
 #            plot3dTable    = combineOverviews.plotTable(tablePath =os.path.join(path_to_stage_dir, 'ag_eSigmaTable'), savePath = os.path.join(path_to_stage_dir, 'scatter3d'))
 #            plot3dTable.columnNames = ['E', 'sigma', 'norm']
             for ctryIndex in ctryIndices:
@@ -706,10 +729,11 @@ Read `.loop` files and execute the `forwardPremium` program accordingly.
             kwargs['output_dir'] = path_to_stage_dir
                 
             # yield job
+
             yield (jobname, gParaSearchDriver, 
                    [ self.params.executable, path_to_stage_dir, self.params.architecture, 
-                     baseDir, self.params.xVars, 
-                     self.params.nPopulation, self.params.xVarsDom, self.params.solverVerb, self.params.problemType,
+                     baseDir, xVars, 
+                     self.params.nPopulation, domain, self.params.solverVerb, self.params.problemType,
                      self.params.pathEmpirical, self.params.itermax, self.params.xConvCrit, self.params.yConvCrit,
                      self.params.makePlots, self.params.optStrategy, self.params.fWeight, self.params.fCritical, self.params.countryList,
                      analyzeResults, nlc, plot3dTable, combOverviews

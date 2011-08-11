@@ -450,6 +450,9 @@ def walklevel(some_dir, level=1):
         num_sep_this = root.count(os.path.sep)
         if num_sep + level <= num_sep_this:
             del dirs[:]
+            
+def emptyFun():
+    return None 
 
 
 if __name__ == '__main__':   

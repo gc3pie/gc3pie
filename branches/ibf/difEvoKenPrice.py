@@ -15,6 +15,8 @@ try:
   matplotLibAvailable = True
 except:
   matplotLibAvailable = False
+  
+np.set_printoptions(linewidth = 150, precision = 8, suppress = True)
 
 
 class deKenPrice:
@@ -39,6 +41,7 @@ class deKenPrice:
     self.S_struct = paraStruct
     self.lowerBds = self.S_struct['lowerBds']
     self.upperBds = self.S_struct['upperBds']
+    self.matplotLibAvailable = matplotLibAvailable
 
     # This is just for notational convenience and to keep the code uncluttered.--------
     self.I_NP         = self.S_struct['I_NP']
@@ -261,6 +264,8 @@ class deKenPrice:
       FM_ui = FM_pm3 + F_weight * ( FM_pm1 - FM_pm2 )   # differential variation
       FM_ui = FM_popold * FM_mpo + FM_ui * FM_mui       # crossover
       FM_origin = FM_pm3
+      if np.any(FM_ui > 1.3):
+        print 'below zero'
     elif (I_strategy == 2):                         # DE/local-to-best/1
       FM_ui = FM_popold + F_weight * ( FM_bm - FM_popold ) + F_weight * ( FM_pm1 - FM_pm2 )
       FM_ui = FM_popold * FM_mpo + FM_ui * FM_mui
@@ -370,7 +375,7 @@ class deKenPrice:
     cSat = self.checkConstraints(pop)
     popNew = pop[cSat, :]
     while not len(popNew) >= self.I_NP:
-      reEvolvePop = self.evolvePopulation(pop)
+      reEvolvePop = self.evolvePopulation(self.FM_pop)
       cSat = self.checkConstraints(reEvolvePop)
       popNew = np.append(popNew, reEvolvePop[cSat, :], axis = 0)
     reEvlolvedPop = popNew[:self.I_NP, :]
