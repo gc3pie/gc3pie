@@ -24,18 +24,18 @@
      borderopacity="1.0"
      inkscape:pageopacity="0.0"
      inkscape:pageshadow="2"
-     inkscape:zoom="1.3010923"
-     inkscape:cx="1363.8768"
-     inkscape:cy="3096.9679"
+     inkscape:zoom="0.65054615"
+     inkscape:cx="733.20908"
+     inkscape:cy="1733.6735"
      inkscape:document-units="px"
      inkscape:current-layer="layer1"
      showgrid="false"
      inkscape:snap-center="true"
-     inkscape:window-width="1918"
-     inkscape:window-height="1154"
+     inkscape:window-width="1680"
+     inkscape:window-height="977"
      inkscape:window-x="0"
-     inkscape:window-y="20"
-     inkscape:window-maximized="0">
+     inkscape:window-y="26"
+     inkscape:window-maximized="1">
     <inkscape:grid
        snapvisiblegridlinesonly="true"
        enabled="true"
@@ -6750,45 +6750,53 @@
            style="font-style:normal;-inkscape-font-specification:URW Palladio L Medium"
            y="982.59674"
            x="45.651619"
-           height="2112.4915"
-           width="761.87"
+           height="2851.8701"
+           width="748.03546"
            id="rect4404" /></flowRegion><flowPara
          style="font-size:48px;font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;text-align:center;text-anchor:middle;font-family:URW Palladio L;-inkscape-font-specification:URW Palladio L Medium"
          id="flowPara4406">Workflows with GC3Pie</flowPara><flowPara
          style="font-size:36px;font-style:normal;font-variant:normal;font-weight:500;font-stretch:normal;text-align:start;text-anchor:start;font-family:URW Palladio L;-inkscape-font-specification:URW Palladio L Medium"
-         id="flowPara4410">GC3Pie encourages a compositional approach to building workflows: the basic unit in a workflow is called a <flowSpan
-   id="flowSpan6174"
-   style="font-style:italic;-inkscape-font-specification:URW Palladio L Italic">Task</flowSpan>; tasks can be grouped into collections, which prescribe the order in which tasks are executed. </flowPara><flowPara
+         id="flowPara4410">GC3Pie encourages a compositional approach to building workflows: the basic unit in a workflow is called a Task; tasks can be grouped into collections, which prescribe the order in which tasks are executed. </flowPara><flowPara
          id="flowPara6143"
          style="font-size:22px;font-style:normal;font-variant:normal;font-weight:500;font-stretch:normal;text-align:start;text-anchor:start;font-family:URW Palladio L;-inkscape-font-specification:URW Palladio L Medium"> </flowPara><flowPara
          id="flowPara6127"
-         style="font-size:36px;font-style:normal;font-variant:normal;font-weight:500;font-stretch:normal;text-align:start;text-anchor:start;font-family:URW Palladio L;-inkscape-font-specification:URW Palladio L Medium">The classes <flowSpan
-   id="flowSpan6176"
-   style="font-style:italic;-inkscape-font-specification:URW Palladio L Italic">SequentialTaskCollection</flowSpan> and <flowSpan
-   id="flowSpan6178"
-   style="font-style:italic;-inkscape-font-specification:URW Palladio L Italic">ParallelTaskCollection</flowSpan> are the basic compositions of <flowSpan
-   id="flowSpan6180"
-   style="font-style:italic;-inkscape-font-specification:URW Palladio L Italic">Task</flowSpan>s; by subclassing them you define how to coordinate the execution of <flowSpan
-   id="flowSpan6182"
-   style="font-style:italic;-inkscape-font-specification:URW Palladio L Italic">Task</flowSpan>s. For example, retry the execution of a certain step in a sequence, or stop a parallel parameter sweep when a certain percentage of the tasks in it are successfully done.</flowPara><flowPara
+         style="font-size:36px;font-style:normal;font-variant:normal;font-weight:500;font-stretch:normal;text-align:start;text-anchor:start;font-family:URW Palladio L;-inkscape-font-specification:URW Palladio L Medium">The classes SequentialTaskCollection and ParallelTaskCollection are the basic compositions of Tasks; by subclassing them you define how to coordinate the execution of Tasks. For example, retry the execution of a certain step in a sequence, or stop a parallel parameter sweep when a certain percentage of the tasks in it are successfully done.</flowPara><flowPara
          id="flowPara6170"
          style="font-size:22px;font-style:normal;font-variant:normal;font-weight:500;font-stretch:normal;text-align:start;text-anchor:start;font-family:URW Palladio L;-inkscape-font-specification:URW Palladio L Medium"> </flowPara><flowPara
          id="flowPara6172"
-         style="font-size:36px;font-style:normal;font-variant:normal;font-weight:500;font-stretch:normal;text-align:start;text-anchor:start;font-family:URW Palladio L;-inkscape-font-specification:URW Palladio L Medium"><flowSpan
-   id="flowSpan6184"
-   style="font-style:italic;-inkscape-font-specification:URW Palladio L Italic">TaskCollection</flowSpan>s are mutable objects, so Python code can alter them on the fly, while a composition is running. This allows the creation of dynamic workflows, whose structure is not fixed in advance, rather built in response to external events.</flowPara><flowPara
+         style="font-size:36px;font-style:normal;font-variant:normal;font-weight:500;font-stretch:normal;text-align:start;text-anchor:start;font-family:URW Palladio L;-inkscape-font-specification:URW Palladio L Medium">TaskCollections are mutable objects, so Python code can alter them on the fly, while a composition is running. This allows the creation of dynamic workflows, whose structure is not fixed in advance, rather built in response to external events.</flowPara><flowPara
          id="flowPara12565"
          style="font-size:36px;font-style:normal;font-variant:normal;font-weight:500;font-stretch:normal;text-align:start;text-anchor:start;font-family:URW Palladio L;-inkscape-font-specification:URW Palladio L Medium" /><flowPara
          id="flowPara12567"
-         style="font-size:48px;font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;text-align:center;text-anchor:middle;font-family:URW Palladio L;-inkscape-font-specification:URW Palladio L Bold">A real-world example</flowPara><flowPara
+         style="font-size:48px;font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;text-align:center;text-anchor:middle;font-family:URW Palladio L;-inkscape-font-specification:URW Palladio L Medium">A real-world example</flowPara><flowPara
          id="flowPara12569"
          style="font-size:22px;font-style:normal;font-variant:normal;font-weight:500;font-stretch:normal;text-align:start;text-anchor:start;font-family:URW Palladio L;-inkscape-font-specification:URW Palladio L Medium"> </flowPara><flowPara
          id="flowPara12571"
          style="font-size:36px;font-style:normal;font-variant:normal;font-weight:500;font-stretch:normal;text-align:start;text-anchor:start;font-family:URW Palladio L;-inkscape-font-specification:URW Palladio L Medium">This workflow shows how a genetic algorithm optimizer has been implemented with the GC3Pie library.</flowPara><flowPara
          id="flowPara12573"
-         style="font-size:22px;font-style:normal;font-variant:normal;font-weight:500;font-stretch:normal;text-align:start;text-anchor:start;font-family:URW Palladio L;-inkscape-font-specification:URW Palladio L Medium"> </flowPara><flowPara
+         style="font-size:22px;font-style:normal;font-variant:normal;font-weight:500;font-stretch:normal;text-align:start;text-anchor:start;font-family:URW Palladio L;-inkscape-font-specification:URW Palladio L Medium" /><flowPara
+         style="font-size:36px;font-style:normal;font-variant:normal;font-weight:500;font-stretch:normal;text-align:start;text-anchor:start;font-family:URW Palladio L;-inkscape-font-specification:URW Palladio L Medium"
+         id="flowPara4622">The aim of the study is to understand the comovement of interest rates and exchange rates. An economic model is created and calibrated with data for the five largest world economies. To illustrate the explanatory power of the model, the countrys' preference paramters have to be chosen to bring the simulated economies close to the data. This amounts to a 10-dimensional optimization problem. </flowPara><flowPara
+         style="font-size:36px;font-style:normal;font-variant:normal;font-weight:500;font-stretch:normal;text-align:start;text-anchor:start;font-family:URW Palladio L;-inkscape-font-specification:URW Palladio L Medium"
+         id="flowPara4659">A differntial evolution optimizer is implemented as a <flowSpan
+   style="font-style:italic;-inkscape-font-specification:URW Palladio L Italic"
+   id="flowSpan4642">SequentialTaskCollection</flowSpan>. </flowPara><flowPara
+         style="font-size:36px;font-style:normal;font-variant:normal;font-weight:500;font-stretch:normal;text-align:start;text-anchor:start;font-family:URW Palladio L;-inkscape-font-specification:URW Palladio L Medium"
+         id="flowPara4638">The optimizer starts by sampling an initial population (of parameters combinations). The entire population is combined into a <flowSpan
+   style="font-style:italic;-inkscape-font-specification:URW Palladio L Italic"
+   id="flowSpan4644">ParalellTaskCollection</flowSpan> and run simultaniously. Each task within the collection is an Application(Unix process), a C++ implementation of an economic model that simulates the interaction of two economies. After all Applications have completed the optimizer evaluates the results and decides whether to exit because the population is converged or to evolve the current population and continue with the next iteration. </flowPara><flowPara
+         style="font-size:36px;font-style:normal;font-variant:normal;font-weight:500;font-stretch:normal;text-align:start;text-anchor:start;font-family:URW Palladio L;-inkscape-font-specification:URW Palladio L Medium"
+         id="flowPara4634" /><flowPara
+         style="font-size:36px;font-style:normal;font-variant:normal;font-weight:500;font-stretch:normal;text-align:start;text-anchor:start;font-family:URW Palladio L;-inkscape-font-specification:URW Palladio L Medium"
+         id="flowPara4630"> </flowPara><flowPara
+         style="font-size:22px;font-style:normal;font-variant:normal;font-weight:500;font-stretch:normal;text-align:start;text-anchor:start;font-family:URW Palladio L;-inkscape-font-specification:URW Palladio L Medium"
+         id="flowPara4618"> </flowPara><flowPara
          id="flowPara12575"
-         style="font-size:36px;font-style:italic;font-variant:normal;font-weight:bold;font-stretch:normal;text-align:start;text-anchor:start;font-family:URW Palladio L;-inkscape-font-specification:URW Palladio L Bold Italic">A cursory description of the workflow and its purposes goes here.</flowPara><flowPara
+         style="font-size:36px;font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;text-align:start;text-anchor:start;font-family:URW Palladio L;-inkscape-font-specification:URW Palladio L Medium" /><flowPara
+         style="font-size:36px;font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;text-align:start;text-anchor:start;font-family:URW Palladio L;-inkscape-font-specification:URW Palladio L Medium"
+         id="flowPara4614" /><flowPara
+         style="font-size:36px;font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;text-align:start;text-anchor:start;font-family:URW Palladio L;-inkscape-font-specification:URW Palladio L Medium"
+         id="flowPara4616" /><flowPara
          id="flowPara4446"
          style="font-size:36px;font-style:normal;font-variant:normal;font-weight:500;font-stretch:normal;text-align:start;text-anchor:start;font-family:URW Palladio L;-inkscape-font-specification:URW Palladio L Medium" /></flowRoot>    <text
        sodipodi:linespacing="125%"
@@ -7229,7 +7237,7 @@
        inkscape:connector-curvature="0"
        inkscape:connector-type="polyline"
        id="path11937"
-       d="m 1467.9191,2461.8401 -1.2023,183.4964"
+       d="m 1467.9191,2461.8401 0.3348,189.6451"
        style="color:#000000;fill:none;stroke:#000000;stroke-width:3;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;stroke-dashoffset:0;marker:none;marker-end:url(#Arrow2Mend-7);visibility:visible;display:inline;overflow:visible;enable-background:accumulate"
        sodipodi:nodetypes="cc" />
     <path
@@ -7286,7 +7294,7 @@
        inkscape:connector-curvature="0"
        inkscape:connector-type="polyline"
        id="path12366"
-       d="m 1400.846,1612.5093 -218.2232,138.2954"
+       d="m 1408.5318,1602.5177 -225.909,158.2786"
        style="color:#000000;fill:none;stroke:#000000;stroke-width:3;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;stroke-dashoffset:0;marker:none;marker-end:url(#Arrow2Mend-7);visibility:visible;display:inline;overflow:visible;enable-background:accumulate" />
     <path
        transform="translate(0,-3160.6299)"
@@ -7297,7 +7305,7 @@
        inkscape:connector-curvature="0"
        inkscape:connector-type="polyline"
        id="path12368"
-       d="m 1424.315,1613.0707 -129.179,136.4095"
+       d="m 1424.315,1613.0707 -101.51,137.9467"
        style="color:#000000;fill:none;stroke:#000000;stroke-width:3;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;stroke-dashoffset:0;marker:none;marker-end:url(#Arrow2Mend-7);visibility:visible;display:inline;overflow:visible;enable-background:accumulate"
        sodipodi:nodetypes="cc" />
     <path
@@ -7310,7 +7318,7 @@
        inkscape:connector-curvature="0"
        inkscape:connector-type="polyline"
        id="path12370"
-       d="m 1512.9009,1613.3611 221.3008,137.2148"
+       d="m 1505.215,1601.8324 229.7553,159.5037"
        style="color:#000000;fill:none;stroke:#000000;stroke-width:3;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;stroke-dashoffset:0;marker:none;marker-end:url(#Arrow2Mend-7);visibility:visible;display:inline;overflow:visible;enable-background:accumulate" />
     <path
        sodipodi:nodetypes="cc"
@@ -7322,7 +7330,7 @@
        inkscape:connector-curvature="0"
        inkscape:connector-type="polyline"
        id="path12372"
-       d="m 1185.2772,2208.8091 225.3617,161.6637"
+       d="m 1183.74,2108.8931 243.0392,263.8855"
        style="color:#000000;fill:none;stroke:#000000;stroke-width:3;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;stroke-dashoffset:0;marker:none;marker-end:url(#Arrow2Mend-7);visibility:visible;display:inline;overflow:visible;enable-background:accumulate" />
     <path
        sodipodi:nodetypes="cc"
@@ -7334,7 +7342,7 @@
        inkscape:connector-curvature="0"
        inkscape:connector-type="polyline"
        id="path12374"
-       d="m 1340.0939,2208.4695 104.4266,160.4002"
+       d="m 1338.5568,2152.3628 107.5009,220.3498"
        style="color:#000000;fill:none;stroke:#000000;stroke-width:3;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;stroke-dashoffset:0;marker:none;marker-end:url(#Arrow2Mend-7);visibility:visible;display:inline;overflow:visible;enable-background:accumulate" />
     <path
        sodipodi:nodetypes="cc"
@@ -7346,7 +7354,7 @@
        inkscape:connector-curvature="0"
        inkscape:connector-type="polyline"
        id="path12376"
-       d="m 1741.0445,2201.3643 -215.4862,169.6023"
+       d="m 1735.6644,2111.4399 -228.5521,261.0639"
        style="color:#000000;fill:none;stroke:#000000;stroke-width:3;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;stroke-dashoffset:0;marker:none;marker-end:url(#Arrow2Mend-7);visibility:visible;display:inline;overflow:visible;enable-background:accumulate" />
     <text
        sodipodi:linespacing="125%"
@@ -7759,5 +7767,17 @@
          id="tspan25029"
          x="593.81042"
          y="222.29051" /></text>
+    <text
+       xml:space="preserve"
+       style="font-size:40px;font-style:normal;font-weight:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;font-family:Sans"
+       x="58.412457"
+       y="2293.0669"
+       id="text4624"
+       sodipodi:linespacing="125%"
+       transform="translate(0,-3160.6299)"><tspan
+         sodipodi:role="line"
+         id="tspan4626"
+         x="58.412457"
+         y="2293.0669" /></text>
   </g>
 </svg>
