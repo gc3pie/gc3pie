@@ -46,6 +46,9 @@ logger = wrapLogger(loggerName = __name__ + 'logger', streamVerb = 'DEBUG', logF
 class GPremiumApplication(Application):
     _invalid_chars = re.compile(r'[^_a-zA-Z0-9]+', re.X)
     
+    def __init__(self, executable, arguments, inputs, outputs, output_dir, **kw):
+        Application.__init__(self, executable, arguments, inputs, outputs, output_dir, requested_walltime = 1)
+    
     def fetch_output_error(self, ex):
 
         if self.execution.state == Run.State.TERMINATING:

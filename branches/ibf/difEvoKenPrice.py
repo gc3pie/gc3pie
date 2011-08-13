@@ -16,7 +16,7 @@ try:
 except:
   matplotLibAvailable = False
   
-np.set_printoptions(linewidth = 150, precision = 8, suppress = True)
+np.set_printoptions(linewidth = 300, precision = 8, suppress = True)
 
 
 class deKenPrice:

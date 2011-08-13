@@ -556,10 +556,10 @@ Read `.loop` files and execute the `forwardPremium` program accordingly.
             try: 
                 norm = int(norm)
             except ValueError:
-                 if norm == "np.inf" or norm == "inf": 
-                     norm = np.inf
-                 else:
-                     pass # in particular custom norms
+                if norm == "np.inf" or norm == "inf": 
+                    norm = np.inf
+                else:
+                    pass # in particular custom norms
 
             print 'using norm %s' % (norm)
 
@@ -691,10 +691,10 @@ Read `.loop` files and execute the `forwardPremium` program accordingly.
             try: 
                 norm = int(norm)
             except ValueError:
-                 if norm == "np.inf" or norm == "inf": 
-                     norm = np.inf
-                 else:
-                     pass # in particular custom norms
+                if norm == "np.inf" or norm == "inf": 
+                    norm = np.inf
+                else:
+                    pass # in particular custom norms
 
             print 'using norm %s' % (norm)
 
@@ -703,7 +703,7 @@ Read `.loop` files and execute the `forwardPremium` program accordingly.
             analyzeResults = anaOne4eachCtry(countryList, len(list(ctryIndices)), norm = norm)
             nlc            = nlcOne4eachCtry(gdpTable = gdpTable, ctryList = countryList, domain = domain, logFile = os.path.join(path_to_stage_dir, 'nlc.log'))
             combOverviews  = combineOverviews.combineOverviews(overviewSimuFile = 'eSigmaTable', tableName = 'ag_eSigmaTable', sortKeys = ['norm'])
-            deKenPrice.plotPopulation = plotPopOne4eachCtry(None, countryList)
+            deKenPrice.plotPopulation = plotPopOne4eachCtry(countryList)
 
             plot3dTable    = emptyFun
 #            plot3dTable    = combineOverviews.plotTable(tablePath =os.path.join(path_to_stage_dir, 'ag_eSigmaTable'), savePath = os.path.join(path_to_stage_dir, 'scatter3d'))
