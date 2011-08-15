@@ -122,6 +122,13 @@ Read `.loop` files and execute the `forwardPremium` program accordingly.
 
     def new_tasks(self, extra):
         inputs = self._search_for_input_files(self.params.args)
+        
+        # Copy base dir
+        localBaseDir = os.path.join(os.getcwd(), 'localBaseDir')
+        try: 
+            shutil.copytree(self.params.initial, localBaseDir)
+        except:
+            print '%s already exists' % localBaseDir 
 
         for path in inputs:
             para_loop = path
@@ -157,14 +164,14 @@ Read `.loop` files and execute the `forwardPremium` program accordingly.
                 # 2. apply substitutions to parameter files
                 for (path, changes) in substs.iteritems():
                     for (var, val, index, regex) in changes:
-                        update_parameter_in_file(os.path.join(self.params.initial, path),
+                        update_parameter_in_file(os.path.join(localBaseDir, path),
                                                  var, index, val, regex)
-                markovA_file_path = os.path.join(self.params.initial, 'input', 'markovA.in')
-                markovB_file_path = os.path.join(self.params.initial, 'input', 'markovB.in')
+                markovA_file_path = os.path.join(localBaseDir, 'input', 'markovA.in')
+                markovB_file_path = os.path.join(localBaseDir, 'input', 'markovB.in')
                 Ctry1 = getParameter(markovA_file_path, 'Ctry')
                 Ctry2 = getParameter(markovB_file_path, 'Ctry')
-                self.getCtryParas(self.params.initial, Ctry1, Ctry2)
-                self.fillInputDir(self.params.initial, input_dir)
+                self.getCtryParas(localBaseDir, Ctry1, Ctry2)
+                self.fillInputDir(localBaseDir, input_dir)
                 # 3. build input file list
                 for dirpath,dirnames,filenames in os.walk(input_dir):
                     for filename in filenames:

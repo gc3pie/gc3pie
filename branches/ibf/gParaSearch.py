@@ -250,6 +250,7 @@ class gParaSearchParallel(ParallelTaskCollection, paraLoop_fp):
         
         # Make problem specific adjustments to the paraLoop file. 
         if self.problemType == 'one4all':
+            print 'one4all'
             variables = ['Ctry', 'Ctry', 'EA', 'EB', 'sigmaA', 'sigmaB']
             groups    = [ 0, 0, 1, 1, 1, 1 ]
             groupRestrs = [ 'lowerTr', 'lowerTr', 'diagnol', 'diagnol', 'diagnol', 'diagnol' ]
@@ -261,7 +262,7 @@ class gParaSearchParallel(ParallelTaskCollection, paraLoop_fp):
             self.analyzeResults.tablePath = self.iterationFolder
             
         elif self.problemType == 'one4eachPair':
-                
+            print 'one4eachPair'
             # Check if EA or sigmaA are alone in the specified parameters. If so make diagnol adjustments
             writeVals = []
             if 'EA' in self.xVars and not 'EB' in self.xVars:
@@ -301,6 +302,8 @@ class gParaSearchParallel(ParallelTaskCollection, paraLoop_fp):
             paraFileRegex = [  'bar-separated', 'bar-separated' , 'bar-separated' , 'bar-separated'  ]
                 
         elif self.problemType == 'one4eachCtry':
+            print 'one4eachCtry'
+            
             ctry1List  = []
             ctry2List  = []
             EAList     = []
