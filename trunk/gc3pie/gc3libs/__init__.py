@@ -1627,33 +1627,76 @@ class RetryableTask(Task):
 
     def submit(self, **kw):
         self.task.submit(**kw)
-        # immediately reflect state change
-        if self.task.execution.state != Run.State.NEW:
-            self.execution.state = self.task.execution.state
-            self.changed = True
 
+    def _recompute_state(self):
+        """
+        Determine and return the state based on the current state and
+        the state of the wrapped task.
+        """
+        own_state = self.execution.state
+        task_state = self.task.execution.state
+        if own_state == task_state:
+            return own_state
+        elif own_state == Run.State.NEW:
+            if task_state == Run.State.NEW:
+                return own_state
+            elif task_state in [ Run.State.STOPPED,
+                                 Run.State.UNKNOWN ]:
+                return task_state
+            else:
+                return Run.State.RUNNING
+        elif own_state == Run.State.SUBMITTED:
+            if task_state == Run.State.SUBMITTED:
+                return own_state
+            elif task_state in [ Run.State.RUNNING,
+                                 Run.State.TERMINATING,
+                                 Run.State.TERMINATED ]:
+                return Run.State.RUNNING
+            else:
+                # XXX: in case `task_state` is NEW, this rewinds the state back!
+                return task_state
+        elif own_state == Run.State.RUNNING:
+            if task_state in [ Run.State.STOPPED, Run.State.UNKNOWN ]:
+                return task_state
+            else:
+                # if task is NEW, SUBMITTED, RUNNING, etc. -- keep our stat
+                return own_state
+        elif own_state in [ Run.State.TERMINATING, Run.State.TERMINATED ]:
+            assert task_state == Run.State.TERMINATED
+            return Run.State.TERMINATED
+        elif own_state in [ Run.State.STOPPED, Run.State.UNKNOWN ]:
+            if task_state in [ Run.State.SUBMITTED,
+                               Run.State.RUNNING,
+                               Run.State.TERMINATING,
+                               Run.State.TERMINATED ]:
+                return Run.State.RUNNING
+            else:
+                return own_state
+        else:
+            # should not happen!
+            raise AssertionError("Unhandled own state '%s'"
+                                 " in RetryableTask._recompute_state()", own_state)
+        
     def update_state(self):
         """
         Update the state of the dependent task, then resubmit it if it's
         TERMINATED and `self.retry()` is `True`.
         """
-        state = self.task.execution.state
+        own_state_old = self.execution.state
         self.task.update_state()
-        if state != self.task.execution.state:
+        own_state_new = self._recompute_state()
+        if (self.task.execution.state == Run.State.TERMINATED and own_state_old != Run.State.TERMINATED):
+            self.execution.returncode = self.task.execution.returncode
+            if self.retry():
+                self.retried += 1
+                self.task.submit()
+                own_state_new = Run.State.RUNNING
+            else:
+                own_state_new = Run.State.TERMINATED
             self.changed = True
-            state = self.task.execution.state
-            if state == Run.State.TERMINATED:
-                if self.retry():
-                    self.retried += 1
-                    self.changed = True
-                    self.task.submit()
-                self.execution.returncode = self.task.execution.returncode
-            elif state == Run.State.TERMINATING:
-                if hasattr(self, 'output_dir'):
-                    self.task.fetch_output(output_dir=self.output_dir)
-                else:
-                    self.task.fetch_output()
-            self.execution.state = state
+        if own_state_new != own_state_old:
+            self.execution.state = own_state_new
+            self.changed = True
 
         
         
