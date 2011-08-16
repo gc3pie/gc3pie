@@ -121,6 +121,26 @@ def cache_for(lapse):
     Cache results and timestamps are stored into the objects'
     `_cache_value` and `_cache_last_updated` attributes, so the caches
     are destroyed with the object when it goes out of scope.
+
+    The working of the cached method can be demonstrated by the
+    following simple code::
+
+        >>> class X(object):
+        ...     def __init__(self):
+        ...         self.times = 0
+        ...     @cache_for(2)
+        ...     def foo(self):
+        ...             self.times += 1
+        ...             return ("times effectively run: %d" % self.times)
+        >>> x = X()
+        >>> x.foo()
+        'times effectively run: 1'
+        >>> x.foo()
+        'times effectively run: 1'
+        >>> time.sleep(3)
+        >>> x.foo()
+        'times effectively run: 2'
+    
     """
     def decorator(fn):
         @functools.wraps(fn)
@@ -136,8 +156,8 @@ def cache_for(lapse):
             if update:    
                 obj._cache_value[key] = fn(obj, *args)
                 obj._cache_last_updated[key] = now
-            gc3libs.log.debug("Using cached value '%s' for %s(%s, ...)",
-                              obj._cache_value[key], fn, obj)
+            #gc3libs.log.debug("Using cached value '%s' for %s(%s, ...)",
+            #                  obj._cache_value[key], fn, obj)
             return obj._cache_value[key]
         return wrapper
     return decorator
