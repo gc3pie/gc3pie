@@ -31,12 +31,11 @@ __changelog__ = """
 """
 __docformat__ = 'reStructuredText'
 
-
 # Remove all files in curPath if -N option specified. 
 if __name__ == '__main__':    
     import sys
     if '-N' in sys.argv:
-        import os, shutil
+        import os
         path2Pymods = os.path.join(os.path.dirname(__file__), '../')
         if not sys.path.count(path2Pymods):
             sys.path.append(path2Pymods)
@@ -50,7 +49,6 @@ if __name__ == '__main__':
                 shutil.copyfile(os.path.join('/tmp', 'para.loop'), os.path.join(curPath, 'para.loop'))
             else: 
                 rmFilesAndFolders(curPath)
-
 
 
 # ugly workaround for Issue 95,
