@@ -978,9 +978,9 @@ class Engine(object):
         for index, task in enumerate(self._in_flight):
             try:
                 self._core.update_job_state(task)
-                state = task.execution.state
                 if self._store and task.changed:
                     self._store.save(task)
+                state = task.execution.state
                 if state == Run.State.SUBMITTED:
                     if isinstance(task, Application):
                         currently_submitted += 1
@@ -1046,9 +1046,9 @@ class Engine(object):
         for index, task in enumerate(self._stopped):
             try:
                 self._core.update_job_state(task)
-                state = task.execution.state
                 if self._store and task.changed:
                     self._store.save(task)
+                state = task.execution.state
                 if state in [Run.State.SUBMITTED, Run.State.RUNNING]:
                     if isinstance(task, Application):
                         currently_in_flight += 1
@@ -1115,7 +1115,7 @@ class Engine(object):
                         self._terminated.append(task)
                         self._core.free(task)
                         transitioned.append(index)
-                    if self._store:
+                    if self._store and task.changed:
                         self._store.save(task)
                 except Exception, x:
                     gc3libs.log.error("Ignored error in fetching output of task '%s': %s: %s" 
