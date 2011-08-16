@@ -130,7 +130,7 @@ class ArcLrms(LRMS):
         cls = self._get_clusters()
         log.debug('Arc0LRMS._get_clusters() returned %d cluster resources.' % len(cls))
         job_list = arclib.GetAllJobs(cls, True, '', 3)
-        log.info("Updating list of jobs belonging to resource '%s': got %d' jobs."
+        log.info("Updating list of jobs belonging to resource '%s': got %d jobs."
                  % (self._resource.name, len(job_list)))
         for job in job_list:
             jobs[job.id] = job
