@@ -65,17 +65,17 @@ class GPremiumApplication(Application):
         # non-terminal state, pass on error
             return ex
         
-    def submit_error(self, ex):
-        logger.debug('submit_error occured... continuing')
+    # def submit_error(self, ex):
+    #     logger.debug('submit_error occured... continuing')
         
-        try: 
-            if self.lrms_jobid:
-                logger.debug('jobid: %s info: %s exception: %s' % (self.lrms_jobid, self.info, str(ex)))
-            else: 
-                logger.debug('info: %s exception: %s' % (self.info, str(ex)))
-        except AttributeError:
-            logger.debug('no `lrms_jobid` hence submission didnt happen')
-        return None
+    #     try: 
+    #         if self.lrms_jobid:
+    #             logger.debug('jobid: %s info: %s exception: %s' % (self.lrms_jobid, self.info, str(ex)))
+    #         else: 
+    #             logger.debug('info: %s exception: %s' % (self.info, str(ex)))
+    #     except AttributeError:
+    #         logger.debug('no `lrms_jobid` hence submission didnt happen')
+    #     return None
 
 
     def terminated(self):

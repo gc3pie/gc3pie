@@ -32,6 +32,27 @@ __changelog__ = """
 __docformat__ = 'reStructuredText'
 
 
+# Remove all files in curPath if -N option specified. 
+if __name__ == '__main__':    
+    import sys
+    if '-N' in sys.argv:
+        import os, shutil
+        path2Pymods = os.path.join(os.path.dirname(__file__), '../')
+        if not sys.path.count(path2Pymods):
+            sys.path.append(path2Pymods)
+        from pymods.support.support import rmFilesAndFolders
+        curPath = os.getcwd()
+        filesAndFolder = os.listdir(curPath)
+        if 'gpremium.csv' in filesAndFolder: # if another paraSearch was run in here before, clean up. 
+            if 'para.loop' in os.listdir(os.getcwd()):
+                shutil.copyfile(os.path.join(curPath, 'para.loop'), os.path.join('/tmp', 'para.loop'))
+                rmFilesAndFolders(curPath)
+                shutil.copyfile(os.path.join('/tmp', 'para.loop'), os.path.join(curPath, 'para.loop'))
+            else: 
+                rmFilesAndFolders(curPath)
+
+
+
 # ugly workaround for Issue 95,
 # see: http://code.google.com/p/gc3pie/issues/detail?id=95
 if __name__ == "__main__":
