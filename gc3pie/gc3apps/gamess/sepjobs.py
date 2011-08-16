@@ -23,6 +23,9 @@ Classify GAMESS output files according to keyword matches.
 __version__ = 'development version (SVN $Revision$)'
 # summary of user-visible changes
 __changelog__ = """
+  2011-08-15:
+    * witing new lines to config.file now seems to work (although I don't know why)
+    * now moving folder of each job instead of moving files if each inspected file resides in its own folder, autom. determing common path part of file paths
   2011-08-09:
     * moving files into subfolders for key strings now works
     * automatic distinct. between new and old search by subfolder "none_found" now works
@@ -84,19 +87,20 @@ def search_for_input_directories(root, name):
     for rootpath, dirs, files in os.walk(root):
         matching_dirs = []
         # removing hidden directories from directory list
+        """
         if os.path.basename(rootpath).startswith(r'.'):
             print "DEBUG: current path:\n", rootpath
         if rootpath == root: 
             print "DEBUG: rootpath:\n", rootpath
             print "DEBUG: raw dirs:\n", dirs
-        """
+        
         dirs = [ d for d in dirs if not d.startswith(r'.') ]
         This produces the correct output according to print, but os.walk
         somehow ignores it - still goes into .dirname
         """
         dirs = CLEANLIST(dirs, '\.')
-        if rootpath == root: 
-            print "DEBUG: cleaned dirs:\n", dirs
+#        if rootpath == root: 
+#            print "DEBUG: cleaned dirs:\n", dirs
         for dirname in dirs:
 #            if dirname in names:  # support of several input folders undesirable
             if dirname == name:
@@ -105,7 +109,7 @@ def search_for_input_directories(root, name):
         # removing assigned directories from directory list
         for dirname in matching_dirs:
             dirs.remove(dirname)
-    print "DEBUG: dirs matching", name, ":\n", result    
+#    print "DEBUG: dirs matching", name, ":\n", result    
     return result
 
 
@@ -160,18 +164,18 @@ def parse_kwfile(filename, old_search):
            
             newlns.append(line)
             if line == '\n' or line.startswith('#') or line.isspace():
-                print "DEBUG: ignoring line %r"% line
+#                print "DEBUG: ignoring line %r"% line
                 continue        		# skip empty or comment lines
             if done.search(line.rsplit(':', 1)[1]):
                 if old_search:
-                    print "DEBUG: ignoring line %r"% line
+#                    print "DEBUG: ignoring line %r"% line
                     continue            # skip lines already used for separation
             else:
                 newlns[len(newlns)-1] = newlns[len(newlns)-1].rstrip(' \n') + ', done\n'
-            print "DEBUG: processing line %r"% line
-            print "DEBUG: new lines %r"% newlns[len(newlns)-1]
+#            print "DEBUG: processing line %r"% line
+#            print "DEBUG: new lines %r"% newlns[len(newlns)-1]
             what_to_search, rest = line.rsplit(':', 1)
-            print "DEBUG: search string:", str(what_to_search)
+#            print "DEBUG: search string:", str(what_to_search)
             start = 0.0 ; end = 1.0
             rest = rest.replace(' ', '').rstrip('\n') + ',,,'
             field = rest.split(',')
@@ -208,6 +212,7 @@ def sepjobs(cmdline):
     dirs = search_for_input_directories(cmdline.params.search_root,
                                             cmdline.params.inpdir)
     wrkdir = dirs[0]
+    cmdline.log.debug("Working directory: %s", wrkdir)
     """
     # expand output dir. to complete path
     if cmdline.params.outdir == '':
@@ -217,39 +222,68 @@ def sepjobs(cmdline):
     outdir, old_search = search_for_none_found(outdir)
     """
     srcdir, old_search = search_for_none_found(wrkdir)
-    cmdline.log.debug("Source directory: %s", srcdir)
     none_found_exists = old_search
-    
-    # look for input files
-    """
-    files = [ ]
-    for dirpath in dirs:
-        files.extend(search_for_input_files(dirpath, cmdline.params.ext))
-    """
-    files = search_for_input_files(srcdir, cmdline.params.ext)
-    cmdline.log.debug("List of input files: %s", files)
-
+    # look for input files and common path of all files
+    files = search_for_input_files(srcdir, cmdline.params.file)
+#    cmdline.log.debug("List of input files: %s", files)
+        # conditioning by cmdln argument "-m" + number later
+#    if cmdline.params.dirlvl == -1:
+    commonpath = os.path.commonprefix(files).rsplit('/',1)[0]
+#    else if cmdline.params.dirlvl == 0:
+        
+#    else:
+#        commonpath = os.path.commonprefix(files).rsplit('/',cmdline.params.dirlvl)[0]
+    cmdline.log.debug("common prefix input file paths:\n %s", commonpath)
     # parse classification file
     searches = parse_kwfile(cmdline.params.kwfile, old_search)
     cmdline.log.debug("Searching keywords: %s", searches)
-    # create indexes
+    # create indices
     index = { }
     for foldername in searches.iterkeys():
         index[foldername] = set()
     cmdline.log.debug("index: %s", index)
     index['none_found'] = set(files)
     
+    def act_on_file(filepath, foldername, assigned, folder_exists, old_search): 
+        """Actions to perform when a file matches a classification keyword."""
+        assigned = True
+        index[foldername].add(filepath) 
+        index['none_found'].remove(filepath)
+        """
+        dirpth0 = os.path.dirname(filepath)
+        print dirpth0.replace(commonpath, 
+            os.path.join(wrkdir, foldername), 1)
+        """
+        if cmdline.params.move:
+#              cmdline.log.info("Going to move file")
+            if not folder_exists: 
+                os.mkdir(os.path.join(wrkdir, foldername))
+                folder_exists = True
+#              cmdline.log.info("Moving file")
+            dirpath0 = os.path.dirname(filepath)
+            dirpath1 = dirpath0.replace(commonpath, 
+                            os.path.join(wrkdir, foldername), 1)
+            try:
+                os.makedirs(dirpath1)
+            except OSError:
+                print '\r'
+            os.rename(dirpath0, dirpath1)
+            """
+            os.rename(filepath, os.path.join(wrkdir, foldername, 
+                os.path.basename(filepath)))
+            """
+        return assigned, folder_exists    
+    
     # let's rock!
     failrt = 0
     hitrt = 0
     for filepath in files:
-   #     cmdline.log.info("Now processing file '%s' ...", filepath)
+  #      cmdline.log.info("Now processing file '%s' ...", filepath)
         inputfile = open(filepath, 'r')
         start0 = 1.0 ; end0 = 0.0
         assigned = False
-        
         for foldername, spec in searches.iteritems():
-   #         cmdline.log.info("Now looking for '%s' ...", foldername)
+  #          cmdline.log.info("Now looking for '%s' ...", foldername)
             regexp, start, end, folder_exists = spec
             if start != start0 or end != end0: 
                 # compute range
@@ -258,30 +292,15 @@ def sepjobs(cmdline):
                 btrng = int(flsize * (end - start)) + 1
                 # read content
                 inputfile.seek(btpos, 0)         # going to byte position in file
-                content = inputfile.read(btrng)  # reading byte range from byte pos.  
-
-            def act_on_file(filepath, foldername, assigned, folder_exists, old_search): 
-                """Actions to perform when a file matches a classification keyword."""
-                assigned = True
-                index[foldername].add(filepath) 
-                index['none_found'].remove(filepath)
-                if cmdline.params.move:
-      #              cmdline.log.info("Going to move file")
-                    if not folder_exists: 
-                        os.mkdir(os.path.join(wrkdir, foldername))
-                        folder_exists = True
-      #              cmdline.log.info("Moving file")
-                    os.rename(filepath,
-                        os.path.join(wrkdir, foldername, os.path.basename(filepath)))
-                return assigned, folder_exists    
-                
-            match = regexp.search(content)
+                content = inputfile.read(btrng)  # reading byte range from byte pos.
+            match = regexp.search(content)       
             if match:
-     #           cmdline.log.info("Found match, folder_exists='%s'", folder_exists)
+      #          cmdline.log.info("Found match, folder_exists='%s'", folder_exists)
                 hitrt += 1
                 assigned, folder_exists = act_on_file(filepath, foldername, assigned, folder_exists, old_search) 
                 searches[foldername] = (regexp, start, end, folder_exists)
                 break
+                
         # retry search with whole file
         if not assigned:               
             content = inputfile.read()
@@ -298,8 +317,8 @@ def sepjobs(cmdline):
         if (not assigned) and cmdline.params.move:
             if not old_search:
                 if not none_found_exists:
-   #                 cmdline.log.info("Creating 'none_found'")
-   #                 os.mkdir(os.path.join(wrkdir, 'none_found'))
+                    cmdline.log.info("Creating 'none_found'")
+                    os.mkdir(os.path.join(wrkdir, 'none_found'))
                     none_found_exists = True
                 os.rename(filepath, os.path.join(wrkdir, 'none_found', 
                           os.path.basename(filepath)))
@@ -310,9 +329,6 @@ def sepjobs(cmdline):
         print "== %s ==" % foldername, "no. of files:", len(index[foldername])
 #        for filename in sorted(filenames):
 #            print ("    " + filename)
-#    print "== none_found ==", "no. of files:", len(index['none_found'])
-#    for filename in sorted(unknown):
-#        print ("    " + filename)
     cmdline.log.info("failure rate = %d, hit rate = %d", failrt, hitrt)
 
 
@@ -320,26 +336,43 @@ def sepjobs(cmdline):
 
 sepjobs.add_param('kwfile', 
                   help="Path to the file containing foldername to string search mappings.")
-sepjobs.add_param('inpdir', #nargs='+',     # no support of several input dir.s
+sepjobs.add_param('inpdir',                  # no support of several input dir.s
                   help="Directory where files to analyze are located.")
-#sepjobs.add_param('-o', dest='outdir', metavar='DIR', default='', 
-#                  help="Directory where analysed files are to store.")
-sepjobs.add_param('-e', '--extension', '--ext',
-                  dest='ext', metavar='EXT', default='out',
+sepjobs.add_param('-f', '--file', '--fl',
+                  dest='file', metavar='EXT', default='.out',
                   help="Restrict search to file with this extension."
                   " (default: %(default)s)")
+"""
+sepjobs.add_param('-m', '--move',
+                  dest='dirlvl', default=-1,
+                  help="Move files with their folders accord. to classification. Optionally with directory level (0 for pure file moving, 3 for moving file with folders up to 3rd level")
+"""
 sepjobs.add_param('-m', '--move',
                   dest='move', action='store_true', default=False,
                   help="Move files into folders named after their classification keyword.")
+                  
 sepjobs.add_param('-S', '--search-root',
                   dest='search_root', default=os.getcwd(), metavar='DIR',
                   help="Search for input directories under the directory tree rooted at DIR. Must be a COMPLETE PATH e.g. ~/Desktop/Project"
                   "  (Default: '%(default)s')")
 
-
+import cProfile
+import profile
+import pstats
 if __name__ == '__main__':
-        sepjobs.run()
-        
+    # determining overhead of cProfiler
+    pr = profile.Profile()
+    cumovrhd = 0.0
+    for i in range(5):
+        ovrhd = pr.calibrate(10000)
+        print 'overhead', i, '=', ovrhd 
+        cumovrhd += ovrhd
+    print 'average overhead =', cumovrhd / 5.0
+    profile.Profile.bias = cumovrhd / 5.0
+    cProfile.run('sepjobs.run()', 'sepjobs.prfl')
+    p = pstats.Stats('sepjobs.prfl')
+    p.sort_stats('time', 'calls').print_stats(10)
+       
 """ 
 config file for sepjobs.py:
 
