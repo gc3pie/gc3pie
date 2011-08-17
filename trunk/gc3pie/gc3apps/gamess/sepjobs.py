@@ -23,9 +23,12 @@ Classify GAMESS output files according to keyword matches.
 __version__ = 'development version (SVN $Revision$)'
 # summary of user-visible changes
 __changelog__ = """
+  2011-08-16:
+    * added profiling
   2011-08-15:
     * witing new lines to config.file now seems to work (although I don't know why)
     * now moving folder of each job instead of moving files if each inspected file resides in its own folder, autom. determing common path part of file paths
+    * added profiling
   2011-08-09:
     * moving files into subfolders for key strings now works
     * automatic distinct. between new and old search by subfolder "none_found" now works
@@ -62,6 +65,7 @@ import fnmatch
 import shutil
 import cli.log
 
+sys.setcheckinterval(1000)    # interpret. check interval for threads and signals
 
 def CLEANLIST(itmlst, delstr) :
 	delpos = []; p = 0					# list of deleting position, position
@@ -160,8 +164,7 @@ def parse_kwfile(filename, old_search):
  #   configfile = open(filename, 'r')
     result = { } ; newlns = []
     with open(filename, 'r') as configfile:
-        for line in configfile: #file:
-           
+        for line in configfile: 
             newlns.append(line)
             if line == '\n' or line.startswith('#') or line.isspace():
 #                print "DEBUG: ignoring line %r"% line
@@ -213,14 +216,6 @@ def sepjobs(cmdline):
                                             cmdline.params.inpdir)
     wrkdir = dirs[0]
     cmdline.log.debug("Working directory: %s", wrkdir)
-    """
-    # expand output dir. to complete path
-    if cmdline.params.outdir == '':
-        outdir = wrkdir
-    else:
-        outdir = os.path.join(cmdline.params.search_root, cmdline.params.outdir)
-    outdir, old_search = search_for_none_found(outdir)
-    """
     srcdir, old_search = search_for_none_found(wrkdir)
     none_found_exists = old_search
     # look for input files and common path of all files
