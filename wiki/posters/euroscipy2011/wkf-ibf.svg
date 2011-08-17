@@ -15,7 +15,7 @@
    id="svg2"
    version="1.1"
    inkscape:version="0.48.1 r9760"
-   sodipodi:docname="wkf-ibf_sm.svg"
+   sodipodi:docname="wkf-ibf.svg"
    style="display:inline;enable-background:new">
   <sodipodi:namedview
      id="base"
@@ -24,18 +24,18 @@
      borderopacity="1.0"
      inkscape:pageopacity="0.0"
      inkscape:pageshadow="2"
-     inkscape:zoom="0.4600056"
-     inkscape:cx="1179.8626"
-     inkscape:cy="3391.9203"
+     inkscape:zoom="0.42630034"
+     inkscape:cx="1898.0827"
+     inkscape:cy="692.97947"
      inkscape:document-units="px"
      inkscape:current-layer="layer1"
-     showgrid="false"
+     showgrid="true"
      inkscape:snap-center="true"
-     inkscape:window-width="1918"
-     inkscape:window-height="1178"
-     inkscape:window-x="1280"
-     inkscape:window-y="20"
-     inkscape:window-maximized="0"
+     inkscape:window-width="1920"
+     inkscape:window-height="1121"
+     inkscape:window-x="0"
+     inkscape:window-y="25"
+     inkscape:window-maximized="1"
      inkscape:snap-grids="true"
      inkscape:snap-to-guides="false">
     <inkscape:grid
@@ -5866,6 +5866,34 @@
          id="path8805-9-76"
          inkscape:connector-curvature="0" />
     </marker>
+    <marker
+       style="overflow:visible"
+       id="Arrow2Mend-7-0"
+       refX="0"
+       refY="0"
+       orient="auto"
+       inkscape:stockid="Arrow2Mend">
+      <path
+         transform="scale(-0.6,-0.6)"
+         d="M 8.7185878,4.0337352 -2.2072895,0.01601326 8.7185884,-4.0017078 c -1.7454984,2.3720609 -1.7354408,5.6174519 -6e-7,8.035443 z"
+         style="font-size:12px;fill-rule:evenodd;stroke-width:0.625;stroke-linejoin:round"
+         id="path8805-9-450"
+         inkscape:connector-curvature="0" />
+    </marker>
+    <marker
+       style="overflow:visible"
+       id="Arrow2Mend-7-767"
+       refX="0"
+       refY="0"
+       orient="auto"
+       inkscape:stockid="Arrow2Mend">
+      <path
+         transform="scale(-0.6,-0.6)"
+         d="M 8.7185878,4.0337352 -2.2072895,0.01601326 8.7185884,-4.0017078 c -1.7454984,2.3720609 -1.7354408,5.6174519 -6e-7,8.035443 z"
+         style="font-size:12px;fill-rule:evenodd;stroke-width:0.625;stroke-linejoin:round"
+         id="path8805-9-35"
+         inkscape:connector-curvature="0" />
+    </marker>
   </defs>
   <metadata
      id="metadata7">
@@ -5875,7 +5903,7 @@
         <dc:format>image/svg+xml</dc:format>
         <dc:type
            rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
-        <dc:title></dc:title>
+        <dc:title />
       </cc:Work>
     </rdf:RDF>
   </metadata>
@@ -5890,37 +5918,23 @@
      id="layer6"
      inkscape:groupmode="layer">
     <path
-       inkscape:transform-center-y="291.71681"
-       inkscape:transform-center-x="-195.04322"
-       style="fill:#ffe6d5;fill-opacity:1;stroke:#ffe6d5;stroke-width:5.32399511000000025;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;stroke-dashoffset:0"
-       d="m 1105.6608,990.71473 260.8493,0 0,131.21557 c -94.6578,-12.2312 -175.1257,84.1795 -262.0756,24.3725 z"
-       id="rect4810-0-3-5-7-0"
-       inkscape:connector-curvature="0"
-       sodipodi:nodetypes="ccccc" />
-    <path
-       style="fill:#ffe6d5;fill-opacity:1;stroke:#ffe6d5;stroke-width:5.32399511000000025;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;stroke-dashoffset:0"
-       d="m 1619.9715,988.93471 c 63.1131,48.30919 161.8302,-33.0897 269.7061,0 l 0,115.33539 c -116.5487,-31.0419 -182.0466,41.2193 -269.7061,0 z"
-       id="rect4870-9-8-6"
-       inkscape:connector-curvature="0"
-       sodipodi:nodetypes="ccccc" />
-    <path
-       inkscape:connection-end-point="d4"
-       inkscape:connection-end="#path4960-6-5"
        inkscape:connection-start-point="d4"
        inkscape:connection-start="#rect4870-9"
        inkscape:connector-curvature="0"
        inkscape:connector-type="polyline"
        id="path6212"
-       d="m 1647.3502,1161.3903 -172.1441,151.0785"
-       style="fill:none;stroke:#000000;stroke-width:0;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;marker-mid:url(#Arrow2Mend-7-2)" />
+       d="M 1654.2551,1048.1941 0,0"
+       style="fill:none;stroke:#000000;stroke-width:0;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;marker-mid:url(#Arrow2Mend-7-2)"
+       inkscape:connection-end-point="d4"
+       inkscape:connection-end="#path4960-6-5" />
     <path
-       inkscape:connection-start-point="d4"
-       inkscape:connection-start="#path4960-6-5"
        inkscape:connector-curvature="0"
        inkscape:connector-type="polyline"
        id="path10575"
-       d="m 1458.0806,1373.0484 4.7553,226.858"
-       style="fill:none;stroke:#000000;stroke-width:0;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;marker-end:url(#marker7631)" />
+       d="M 0,0 1462.8359,1599.9064"
+       style="fill:none;stroke:#000000;stroke-width:0;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;marker-end:url(#marker7631)"
+       inkscape:connection-start-point="d4"
+       inkscape:connection-start="#path4960-6-5" />
     <path
        sodipodi:type="star"
        style="color:#000000;fill:#ffe6d5;fill-opacity:1;fill-rule:nonzero;stroke:#ffe6d5;stroke-width:6.68229150999999977;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;stroke-dashoffset:0;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:new"
@@ -5946,20 +5960,6 @@
      id="layer5"
      inkscape:groupmode="layer">
     <path
-       inkscape:transform-center-y="291.71681"
-       inkscape:transform-center-x="-195.04322"
-       style="fill:#ffccaa;fill-opacity:1;stroke:#ffccaa;stroke-width:5.32399511;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;stroke-dashoffset:0"
-       d="m 1085.6608,1010.7147 260.8493,0 0,131.2156 c -94.6578,-12.2312 -175.1257,84.1795 -262.0756,24.3725 z"
-       id="rect4810-0-3-5-7"
-       inkscape:connector-curvature="0"
-       sodipodi:nodetypes="ccccc" />
-    <path
-       style="fill:#ffccaa;fill-opacity:1;stroke:#ffccaa;stroke-width:5.32399511;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;stroke-dashoffset:0"
-       d="m 1606.0602,1012.5912 c 63.1131,48.3092 161.8302,-33.08973 269.7061,0 l 0,115.3354 c -116.5487,-31.0419 -182.0466,41.2193 -269.7061,0 z"
-       id="rect4870-9-8"
-       inkscape:connector-curvature="0"
-       sodipodi:nodetypes="ccccc" />
-    <path
        sodipodi:type="star"
        style="color:#000000;fill:#ffccaa;fill-opacity:1;fill-rule:nonzero;stroke:#ffccaa;stroke-width:6.68229151;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;stroke-dashoffset:0;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:new"
        id="path4960-6-5-7"
@@ -5981,8 +5981,8 @@
        sodipodi:nodetypes="cccc"
        inkscape:connector-curvature="0"
        id="path12505"
-       d="m 1330.6666,2632.9922 -370.00003,0 0,-1080 480.00003,0"
-       style="color:#000000;fill:none;stroke:#000000;stroke-width:5.31496048;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;stroke-dashoffset:0;marker:none;marker-end:url(#Arrow2Mend-7);visibility:visible;display:inline;overflow:visible;enable-background:accumulate" />
+       d="m 1325,2627.9922 -361.77783,0 0,-1080 471.96653,0.1386"
+       style="color:#000000;fill:none;stroke:#000000;stroke-width:5.25557423;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;stroke-dashoffset:0;marker:none;marker-end:url(#Arrow2Mend-7);visibility:visible;display:inline;overflow:visible;enable-background:accumulate" />
   </g>
   <g
      style="display:inline"
@@ -5990,13 +5990,78 @@
      id="layer1"
      inkscape:groupmode="layer"
      inkscape:label="Livello 1">
+    <path
+       sodipodi:nodetypes="cc"
+       inkscape:connector-curvature="0"
+       inkscape:connector-type="polyline"
+       id="path12374-0"
+       d="m 1179.5853,-958.4154 230.9772,156.73181"
+       style="color:#000000;fill:none;stroke:#000000;stroke-width:5.59279871;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;stroke-dashoffset:0;marker:none;marker-end:url(#Arrow2Mend-7);visibility:visible;display:inline;overflow:visible;enable-background:accumulate" />
+    <rect
+       transform="matrix(0,1,-1,0,0,0)"
+       y="-1183.74"
+       x="-1248.5217"
+       height="90.188492"
+       width="293.76791"
+       id="rect8498-9-2"
+       style="color:#000000;fill:#ff9955;fill-opacity:1;fill-rule:nonzero;stroke:#0028a6;stroke-width:5;stroke-linecap:butt;stroke-linejoin:round;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:15, 15;stroke-dashoffset:6.99999989;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:accumulate" />
+    <path
+       inkscape:connector-curvature="3"
+       inkscape:connector-type="polyline"
+       id="path5520"
+       d="m 1258.1213,-1990.4246 171.8842,132.8973"
+       style="fill:none;stroke:#000000;stroke-width:5.04390287;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;marker-end:url(#Arrow2Mend-7)" />
+    <g
+       id="g7180">
+      <path
+         transform="translate(0,-3160.6299)"
+         sodipodi:nodetypes="ccccc"
+         inkscape:connector-curvature="0"
+         id="rect4810-0-3-5-7-0"
+         d="m 1105.6608,990.71473 260.8493,0 0,131.21557 c -94.6578,-12.2312 -175.1257,84.1795 -262.0756,24.3725 z"
+         style="display:inline;enable-background:new;filter:url(#filter8460);fill:#ffe6d5;fill-opacity:1;stroke:#ffe6d5;stroke-width:5.32399511000000025;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;stroke-dashoffset:0"
+         inkscape:transform-center-x="-195.04322"
+         inkscape:transform-center-y="291.71681" />
+      <path
+         transform="translate(0,-3160.6299)"
+         sodipodi:nodetypes="ccccc"
+         inkscape:connector-curvature="0"
+         id="rect4810-0-3-5-7"
+         d="m 1085.6608,1010.7147 260.8493,0 0,131.2156 c -94.6578,-12.2312 -175.1257,84.1795 -262.0756,24.3725 z"
+         style="display:inline;enable-background:new;fill:#ffccaa;fill-opacity:1;stroke:#ffccaa;stroke-width:5.32399511000000025;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;stroke-dashoffset:0"
+         inkscape:transform-center-x="-195.04322"
+         inkscape:transform-center-y="291.71681" />
+      <path
+         sodipodi:nodetypes="ccccc"
+         inkscape:connector-curvature="0"
+         id="rect4810-0-3-5"
+         d="m 1061.2263,-2123.2258 260.8493,0 0,131.2156 c -94.6578,-12.2312 -175.1257,84.1795 -262.0756,24.3725 z"
+         style="color:#000000;fill:#ff9955;fill-opacity:1;fill-rule:nonzero;stroke:#ff9955;stroke-width:5;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;stroke-dashoffset:0;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:new"
+         inkscape:transform-center-x="-195.04322"
+         inkscape:transform-center-y="291.71681" />
+    </g>
+    <path
+       inkscape:connector-curvature="0"
+       inkscape:connector-type="polyline"
+       id="path11263"
+       d="M 1459.6875,-466.24984 1460,-367.63771"
+       style="color:#000000;fill:none;stroke:#000000;stroke-width:4.55755043;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;stroke-dashoffset:0;marker:none;marker-end:url(#Arrow2Mend-7);visibility:visible;display:inline;overflow:visible;enable-background:accumulate"
+       sodipodi:nodetypes="cc" />
+    <rect
+       style="fill:#ff9955;fill-opacity:1;stroke:none;display:inline;enable-background:new"
+       id="rect6725"
+       width="163.08775"
+       height="163.88824"
+       x="1323.5315"
+       y="156.27023"
+       transform="matrix(0.8890912,-0.45773009,0.88474849,0.46606879,0,0)" />
     <rect
        y="-1813.1738"
        x="892.32184"
        height="1525.5361"
        width="1129.6425"
        id="rect8349-4"
-       style="fill:none;stroke:#b675b1;stroke-width:9.9318018;stroke-linecap:butt;stroke-linejoin:round;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:19.8636031, 9.93180155;stroke-dashoffset:0" />
+       style="fill:none;stroke:#b675b1;stroke-width:5;stroke-linecap:butt;stroke-linejoin:round;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:15,15;stroke-dashoffset:6.99999989" />
     <g
        transform="translate(902.87754,-4718.0514)"
        style="display:none"
@@ -6552,41 +6617,6 @@
        id="image13048"
        x="-500.67474"
        y="-2779.3291" />
-    <path
-       style="color:#000000;fill:#ff9955;fill-opacity:1;fill-rule:nonzero;stroke:#ff9955;stroke-width:5;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;stroke-dashoffset:0;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:new"
-       d="m 1590.2939,-2127.6377 c 63.1131,48.3092 161.8302,-33.0897 269.7061,0 l 0,115.3354 c -116.5487,-31.0419 -182.0466,41.2193 -269.7061,0 z"
-       id="rect4870-9"
-       inkscape:connector-curvature="0"
-       sodipodi:nodetypes="ccccc" />
-    <text
-       sodipodi:linespacing="125%"
-       id="text13247"
-       y="-2039.3926"
-       x="1102.9778"
-       style="font-size:29.88661957px;font-style:normal;font-weight:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;font-family:Sans"
-       xml:space="preserve"><tspan
-         style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-family:Sans;-inkscape-font-specification:Sans"
-         y="-2039.3926"
-         x="1102.9778"
-         id="tspan13249"
-         sodipodi:role="line">Input Files</tspan></text>
-    <text
-       sodipodi:linespacing="125%"
-       id="text13251"
-       y="-2075.0535"
-       x="1627.0961"
-       style="font-size:29.88661957px;font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;text-indent:0;text-align:start;text-decoration:none;line-height:125%;letter-spacing:0px;word-spacing:0px;text-transform:none;direction:ltr;block-progression:tb;writing-mode:lr-tb;text-anchor:start;baseline-shift:baseline;color:#000000;fill:#000000;fill-opacity:1;fill-rule:nonzero;stroke:none;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:accumulate;font-family:Sans;-inkscape-font-specification:Sans Bold"
-       xml:space="preserve"><tspan
-         style="font-size:28px"
-         id="tspan13255"
-         y="-2075.0535"
-         x="1627.0961"
-         sodipodi:role="line">Parameter</tspan><tspan
-         style="font-size:28px"
-         id="tspan7253"
-         y="-2040.0535"
-         x="1627.0961"
-         sodipodi:role="line">Range</tspan></text>
     <text
        transform="scale(1.2800704,0.78120703)"
        sodipodi:linespacing="125%"
@@ -6619,7 +6649,7 @@
          id="tspan14070"
          sodipodi:role="line" /></text>
     <flowRoot
-       transform="translate(20.71875,-3192.2176)"
+       transform="translate(20.71875,-3192.7491)"
        style="font-size:40px;font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;text-align:start;line-height:125%;letter-spacing:0px;word-spacing:0px;text-anchor:start;fill:#000000;fill-opacity:1;stroke:none;font-family:URW Palladio L;-inkscape-font-specification:Sans Bold"
        id="flowRoot14060"
        xml:space="preserve"><flowRegion
@@ -6633,7 +6663,7 @@
          style="font-size:48px;font-weight:bold;text-align:center;text-anchor:middle;-inkscape-font-specification:URW Palladio L Bold"
          id="flowPara14066">What is GC3Pie?</flowPara><flowPara
          id="flowPara4338"
-         style="font-size:36px;font-weight:500;text-align:justify;text-anchor:start;-inkscape-font-specification:URW Palladio L Medium">GC3Pie is a library of Python classes to submit and control batch jobs to clusters and grid resources seamlessly. </flowPara><flowPara
+         style="font-size:36px;font-weight:500;text-align:justify;text-anchor:start;-inkscape-font-specification:URW Palladio L Medium">GC3Pie is a library of Python classes to execute and control applications on distributed computing resources (e.g., SGE clusters and ARC-based grids). </flowPara><flowPara
          id="flowPara4360"
          style="font-size:22px;font-weight:500;text-align:justify;text-anchor:start;-inkscape-font-specification:URW Palladio L Medium"> </flowPara><flowPara
          id="flowPara4364"
@@ -6642,7 +6672,7 @@
          style="font-size:22px;font-weight:500;text-align:justify;text-anchor:start;-inkscape-font-specification:URW Palladio L Medium"> </flowPara><flowPara
          id="flowPara4354"
          style="font-size:36px;font-weight:500;text-align:justify;text-anchor:start;-inkscape-font-specification:URW Palladio L Medium">GC3Pie is a toolkit: it provides the building blocks to write Python scripts to run large computational campaigns (e.g., to analyze a vast dataset or explore a parameter space), and to combine several tasks into a dynamic workflow.</flowPara></flowRoot>    <flowRoot
-       transform="translate(0,-3195.4121)"
+       transform="translate(-3080.1263,-2710.8776)"
        style="font-size:36px;font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;text-align:justify;line-height:125%;letter-spacing:0px;word-spacing:0px;text-anchor:start;fill:#000000;fill-opacity:1;stroke:none;font-family:URW Palladio L;-inkscape-font-specification:URW Palladio L Medium"
        id="flowRoot14072"
        xml:space="preserve"><flowRegion
@@ -6656,21 +6686,17 @@
          style="font-size:48px;font-style:normal;font-weight:bold;text-align:center;text-anchor:middle;-inkscape-font-specification:URW Palladio L Medium"
          id="flowPara14078">How is GC3Pie different?</flowPara><flowPara
          id="flowPara4324"
-         style="font-style:normal;font-weight:500;text-align:justify;text-anchor:start;-inkscape-font-specification:URW Palladio L Medium">Most execution engines represent workflows as <flowSpan
-   id="flowSpan4432"
-   style="font-style:italic;-inkscape-font-specification:URW Palladio L Italic">data</flowSpan> (e.g., some XML format). GC3Pie lets you write <flowSpan
+         style="font-style:normal;font-weight:500;text-align:justify;text-anchor:start;-inkscape-font-specification:URW Palladio L Medium">Most execution engines represent workflows as data (e.g., some XML format). GC3Pie lets you write <flowSpan
    id="flowSpan4434"
    style="font-style:italic;-inkscape-font-specification:URW Palladio L Italic">Python code</flowSpan> instead: you write your workflow as a set of Python classes so the entire workflow logic is expressed in a plain programming language. This means that it is easy to create loops and conditionally branch execution, for example.</flowPara><flowPara
          id="flowPara4422"
-         style="font-style:normal;font-weight:500;text-align:justify;text-anchor:start;-inkscape-font-specification:URW Palladio L Medium;font-size:22px"> </flowPara><flowPara
+         style="font-size:22px;font-style:normal;font-weight:500;text-align:justify;text-anchor:start;-inkscape-font-specification:URW Palladio L Medium"> </flowPara><flowPara
          id="flowPara4424"
          style="font-style:normal;font-weight:500;text-align:justify;text-anchor:start;-inkscape-font-specification:URW Palladio L Medium">Unlike other Python frameworks for distributing computation, e.g., Celery or Pyro, GC3Pie is designed to coordinate the execution of independent <flowSpan
    id="flowSpan4436"
-   style="font-style:italic;-inkscape-font-specification:URW Palladio L Italic">Applications</flowSpan> (often pre-existing and written in another language): with GC3Pie you write Python code to <flowSpan
+   style="font-style:normal;font-weight:bold;fill:#0028a5;fill-opacity:1;-inkscape-font-specification:URW Palladio L Bold">Applications</flowSpan> (often pre-existing and written in another language): with GC3Pie you write Python code to <flowSpan
    id="flowSpan4428"
-   style="font-style:italic;-inkscape-font-specification:URW Palladio L Italic">steer</flowSpan> the computation, not to <flowSpan
-   id="flowSpan4430"
-   style="font-style:italic;-inkscape-font-specification:URW Palladio L Italic">perform</flowSpan> it.</flowPara><flowPara
+   style="font-style:italic;-inkscape-font-specification:URW Palladio L Italic">steer</flowSpan> the computation, not to perform it.</flowPara><flowPara
          id="flowPara4322"
          style="font-style:normal;font-weight:500;text-align:justify;text-anchor:start;-inkscape-font-specification:URW Palladio L Medium" /></flowRoot>    <flowRoot
        style="font-size:36px;font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;text-align:center;line-height:125%;letter-spacing:0px;word-spacing:0px;text-anchor:middle;fill:#000000;fill-opacity:1;stroke:none;font-family:Nimbus Mono L;-inkscape-font-specification:Nimbus Mono L Bold"
@@ -6683,43 +6709,7 @@
            height="756.51251"
            width="741.29535"
            id="rect14098" /></flowRegion><flowPara
-         id="flowPara14100" /></flowRoot>    <path
-       inkscape:transform-center-y="291.71681"
-       inkscape:transform-center-x="-195.04322"
-       style="color:#000000;fill:#ff9955;fill-opacity:1;fill-rule:nonzero;stroke:#ff9955;stroke-width:5;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;stroke-dashoffset:0;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:new"
-       d="m 1061.2263,-2123.2258 260.8493,0 0,131.2156 c -94.6578,-12.2312 -175.1257,84.1795 -262.0756,24.3725 z"
-       id="rect4810-0-3-5"
-       inkscape:connector-curvature="0"
-       sodipodi:nodetypes="ccccc" />
-    <path
-       sodipodi:type="star"
-       style="color:#000000;fill:#ff9955;fill-opacity:1;fill-rule:nonzero;stroke:#2c85e2;stroke-width:18.94096184;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:37.88192487, 18.94096243;stroke-dashoffset:0;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:new"
-       id="path4960-6-5"
-       sodipodi:sides="3"
-       sodipodi:cx="1471.054"
-       sodipodi:cy="517.67877"
-       sodipodi:r1="109.87697"
-       sodipodi:r2="54.938484"
-       sodipodi:arg1="-0.52724113"
-       sodipodi:arg2="0.51995642"
-       inkscape:flatsided="true"
-       inkscape:rounded="0"
-       inkscape:randomized="0"
-       d="m 1566.0095,462.39406 -94.5553,165.16095 -95.756,-164.46777 z"
-       transform="matrix(0.57911939,0,0,-0.54386105,605.34308,-1535.9181)"
-       inkscape:transform-center-x="0.15508761"
-       inkscape:transform-center-y="-19.868681" />
-    <path
-       inkscape:connection-end-point="d4"
-       inkscape:connection-end="#path4960-6-5"
-       inkscape:connection-start-point="d4"
-       inkscape:connection-start="#rect4810-0-3-5"
-       inkscape:connector-curvature="3"
-       inkscape:connector-type="polyline"
-       id="path5520"
-       d="m 1256.2569,-1985.7514 182.2262,139.1899"
-       style="fill:none;stroke:#000000;stroke-width:5.31496048;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;marker-end:url(#Arrow2Mend-7)" />
-    <text
+         id="flowPara14100" /></flowRoot>    <text
        transform="translate(0,-3160.6299)"
        sodipodi:linespacing="125%"
        id="text5948"
@@ -6773,34 +6763,27 @@
          style="font-size:48px;font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;text-align:center;text-anchor:middle;font-family:URW Palladio L;-inkscape-font-specification:URW Palladio L Medium"
          id="flowPara4406">Workflows with GC3Pie</flowPara><flowPara
          style="font-size:36px;font-style:normal;font-variant:normal;font-weight:500;font-stretch:normal;text-align:justify;text-anchor:start;font-family:URW Palladio L;-inkscape-font-specification:URW Palladio L Medium"
-         id="flowPara4410">GC3Pie encourages a compositional approach to building workflows: the basic unit in a workflow is called a Task; tasks can be grouped into collections, which prescribe the order in which tasks are executed. </flowPara><flowPara
+         id="flowPara4410">GC3Pie encourages a compositional approach to building workflows: the basic unit in a workflow is called a <flowSpan
+   style="font-weight:bold;-inkscape-font-specification:URW Palladio L Bold"
+   id="flowSpan6683">Task</flowSpan>; tasks can be grouped into collections, which prescribe the order in which tasks are executed. </flowPara><flowPara
          id="flowPara6143"
          style="font-size:22px;font-style:normal;font-variant:normal;font-weight:500;font-stretch:normal;text-align:justify;text-anchor:start;font-family:URW Palladio L;-inkscape-font-specification:URW Palladio L Medium"> </flowPara><flowPara
          id="flowPara6127"
-         style="font-size:36px;font-style:normal;font-variant:normal;font-weight:500;font-stretch:normal;text-align:justify;text-anchor:start;font-family:URW Palladio L;-inkscape-font-specification:URW Palladio L Medium">The classes SequentialTaskCollection and ParallelTaskCollection are the basic compositions of Tasks; by subclassing them you define how to coordinate the execution of Tasks. For example, retry the execution of a certain step in a sequence, or stop a parallel parameter sweep when a certain percentage of the tasks in it are successfully done.</flowPara><flowPara
+         style="font-size:36px;font-style:normal;font-variant:normal;font-weight:500;font-stretch:normal;text-align:justify;text-anchor:start;font-family:URW Palladio L;-inkscape-font-specification:URW Palladio L Medium">The classes <flowSpan
+   style="fill:#b675b1;fill-opacity:1;font-weight:bold;-inkscape-font-specification:URW Palladio L Bold"
+   id="flowSpan6685">SequentialTaskCollection</flowSpan> and <flowSpan
+   style="fill:#688000;fill-opacity:1;font-weight:bold;-inkscape-font-specification:URW Palladio L Bold"
+   id="flowSpan6701">ParallelTaskCollection</flowSpan> are the basic compositions of <flowSpan
+   style="font-weight:bold;-inkscape-font-specification:URW Palladio L Bold"
+   id="flowSpan6721">Tasks</flowSpan>; by subclassing them you define how to coordinate the execution of <flowSpan
+   style="font-weight:bold;-inkscape-font-specification:URW Palladio L Bold"
+   id="flowSpan6723">Tasks</flowSpan>. For example, retry the execution of a certain step in a sequence, or stop a parallel parameter sweep when a certain percentage of the tasks in it are successfully done.</flowPara><flowPara
          id="flowPara6170"
          style="font-size:22px;font-style:normal;font-variant:normal;font-weight:500;font-stretch:normal;text-align:justify;text-anchor:start;font-family:URW Palladio L;-inkscape-font-specification:URW Palladio L Medium"> </flowPara><flowPara
          id="flowPara6172"
          style="font-size:36px;font-style:normal;font-variant:normal;font-weight:500;font-stretch:normal;text-align:justify;text-anchor:start;font-family:URW Palladio L;-inkscape-font-specification:URW Palladio L Medium">TaskCollections are mutable objects, so Python code can alter them on the fly, while a composition is running. This allows the creation of dynamic workflows, whose structure is not fixed in advance, rather built in response to external events.</flowPara><flowPara
          id="flowPara4446"
          style="font-size:36px;font-style:normal;font-variant:normal;font-weight:500;font-stretch:normal;text-align:justify;text-anchor:start;font-family:URW Palladio L;-inkscape-font-specification:URW Palladio L Medium" /></flowRoot>    <text
-       sodipodi:linespacing="125%"
-       id="text13251-0"
-       y="-2047.6377"
-       x="1180"
-       style="font-size:29.88661957px;font-style:normal;font-weight:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;font-family:Sans"
-       xml:space="preserve"><tspan
-         style="font-size:28px;font-weight:bold;text-align:center;text-anchor:middle;-inkscape-font-specification:Sans Bold"
-         id="tspan13255-4"
-         y="-2047.6377"
-         x="1180"
-         sodipodi:role="line">Template</tspan><tspan
-         id="tspan12530"
-         style="font-size:28px;font-weight:bold;text-align:center;text-anchor:middle;-inkscape-font-specification:Sans Bold"
-         y="-2012.6377"
-         x="1180"
-         sodipodi:role="line">Input Files</tspan></text>
-    <text
        sodipodi:linespacing="125%"
        id="text13251-0-6"
        y="-2039.3926"
@@ -6958,70 +6941,22 @@
        height="832.16504"
        width="840.78949"
        id="rect8405-5-6"
-       style="fill:none;stroke:#553aa8;stroke-width:10.62992096;stroke-linecap:butt;stroke-linejoin:round;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:21.25984192, 10.62992096;stroke-dashoffset:0" />
-    <path
-       style="fill:#ff9955;fill-opacity:1;stroke:#ff9955;stroke-width:1.50471902;stroke-miterlimit:4;stroke-opacity:1;stroke-dashoffset:0;display:inline;enable-background:new"
-       d="m 1735.0296,-1409.6125 89.7061,0 0,61.8999 c -32.5528,-5.77 -60.2258,39.711 -90.1278,11.4975 z"
-       id="rect4810-5-3-0"
-       inkscape:connector-curvature="0"
-       sodipodi:nodetypes="ccccc" />
-    <text
-       sodipodi:linespacing="80.000001%"
-       id="text7259"
-       y="-1241.9744"
-       x="1139.8262"
-       style="font-size:40px;font-style:normal;font-weight:normal;line-height:80.00000119%;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;font-family:Sans"
-       xml:space="preserve"><tspan
-         style="font-size:24px;font-weight:bold;line-height:80.00000119%;writing-mode:tb-rl;-inkscape-font-specification:Sans Bold"
-         y="1357.2147"
-         x="-1459.3629"
-         id="tspan7261"
-         sodipodi:role="line">simulation</tspan></text>
-    <text
-       sodipodi:linespacing="80.000001%"
-       id="text7259-6"
-       y="-1241.9744"
-       x="1293.4274"
-       style="font-size:40px;font-style:normal;font-weight:normal;line-height:80.00000119%;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;font-family:Sans"
-       xml:space="preserve"><tspan
-         style="font-size:24px;font-weight:bold;line-height:80.00000119%;writing-mode:tb-rl;-inkscape-font-specification:Sans Bold"
-         y="1510.8159"
-         x="-1459.3629"
-         id="tspan7261-1"
-         sodipodi:role="line">simulation</tspan></text>
-    <text
-       sodipodi:linespacing="80.000001%"
-       id="text7259-6-7"
-       y="-1241.9744"
-       x="1781.465"
-       style="font-size:40px;font-style:normal;font-weight:normal;line-height:80.00000119%;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;font-family:Sans"
-       xml:space="preserve"><tspan
-         style="font-size:24px;font-weight:bold;line-height:80.00000119%;writing-mode:tb-rl;-inkscape-font-specification:Sans Bold"
-         y="1998.8535"
-         x="-1459.3629"
-         id="tspan7261-1-5"
-         sodipodi:role="line">simulation</tspan></text>
+       style="fill:none;stroke:#668000;stroke-width:5;stroke-linecap:butt;stroke-linejoin:round;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:15, 15;stroke-dashoffset:6.99999988999999978;color:#000000;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:accumulate" />
     <path
        inkscape:connector-curvature="0"
        id="path7338"
        d="m 1385.4386,-1180.5245 311.2665,-0.6309"
        style="fill:none;stroke:#a3adb7;stroke-width:12.45829868;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:12.45829868, 37.37489605;stroke-dashoffset:0" />
-    <path
-       style="fill:#ff9955;fill-opacity:1;stroke:#ff9955;stroke-width:3.59969687;stroke-miterlimit:4;stroke-opacity:1;stroke-dashoffset:0;display:inline;enable-background:new"
-       d="m 1327.2196,-527.76021 126.6411,-86.09359 133.2059,85.54204 -131.1768,86.89013 z"
-       id="rect4816-0"
-       inkscape:connector-curvature="0"
-       sodipodi:nodetypes="ccccc" />
     <text
        sodipodi:linespacing="125%"
        id="text10106"
-       y="-520.02246"
-       x="1366.314"
+       y="-525.02246"
+       x="1364.1709"
        style="font-size:24px;font-style:normal;font-weight:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;font-family:Sans"
        xml:space="preserve"><tspan
          style="font-size:28px;font-weight:bold;-inkscape-font-specification:Sans Bold"
-         y="-520.02246"
-         x="1366.314"
+         y="-525.02246"
+         x="1364.1709"
          id="tspan10108"
          sodipodi:role="line">converged?</tspan></text>
     <path
@@ -7033,21 +6968,10 @@
        sodipodi:rx="120.69649"
        sodipodi:ry="120.69649"
        d="m -313.18897,1008.6102 a 120.69649,120.69649 0 1 1 0.008,0.4907"
-       transform="matrix(0.53866999,0,0,0.53866999,1560.8406,-834.93565)"
+       transform="matrix(0.53866999,0,0,0.53866999,1562.8406,-834.93565)"
        sodipodi:start="3.1262954"
        sodipodi:end="9.4054142"
        sodipodi:open="true" />
-    <path
-       transform="translate(0,-3160.6299)"
-       inkscape:connection-end-point="d4"
-       inkscape:connection-end="#path4825-4-6"
-       inkscape:connection-start-point="d4"
-       inkscape:connection-start="#rect4816-0"
-       inkscape:connector-curvature="0"
-       inkscape:connector-type="polyline"
-       id="path11263"
-       d="m 1457.1431,2718.3781 0,84.6139"
-       style="color:#000000;fill:none;stroke:#000000;stroke-width:5.31496048;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;stroke-dashoffset:0;marker:none;marker-end:url(#Arrow2Mend-7);visibility:visible;display:inline;overflow:visible;enable-background:accumulate" />
     <text
        sodipodi:linespacing="125%"
        id="text11481"
@@ -7063,39 +6987,27 @@
     <text
        sodipodi:linespacing="125%"
        id="text11485"
-       y="-403.41312"
-       x="1405.1444"
+       y="-423.41312"
+       x="1409.4922"
        style="font-size:40px;font-style:normal;font-weight:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;font-family:Sans"
        xml:space="preserve"><tspan
          style="font-size:24px"
-         y="-403.41312"
-         x="1405.1444"
+         y="-423.41312"
+         x="1409.4922"
          id="tspan11487"
          sodipodi:role="line">yes</tspan></text>
     <text
        sodipodi:linespacing="125%"
        id="text11489"
-       y="-549.60553"
+       y="-543.60553"
        x="1252.2125"
        style="font-size:40px;font-style:normal;font-weight:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;font-family:Sans"
        xml:space="preserve"><tspan
          style="font-size:24px"
-         y="-549.60553"
+         y="-543.60553"
          x="1252.2125"
          id="tspan11491"
          sodipodi:role="line">no</tspan></text>
-    <text
-       sodipodi:linespacing="125%"
-       id="text11493"
-       y="-269.32333"
-       x="-1378.9347"
-       style="font-size:40px;font-style:normal;font-weight:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;font-family:Sans"
-       xml:space="preserve"><tspan
-         style="font-size:24px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;text-align:end;text-anchor:end;font-family:LMMono8;-inkscape-font-specification:LMMono8"
-         y="-269.32333"
-         x="-1378.9347"
-         sodipodi:role="line"
-         id="tspan6109">SequentialTaskCollection.next()</tspan></text>
     <text
        sodipodi:linespacing="125%"
        id="text11499"
@@ -7107,7 +7019,7 @@
          y="-1626.4052"
          x="964.77026"
          id="tspan11501"
-         sodipodi:role="line">adjust parameters</tspan></text>
+         sodipodi:role="line">new population</tspan></text>
     <text
        sodipodi:linespacing="125%"
        id="text11503"
@@ -7119,7 +7031,7 @@
          y="-1725.6281"
          x="1484.2223"
          id="tspan11505"
-         sodipodi:role="line">initial parameter set</tspan></text>
+         sodipodi:role="line">initial population</tspan></text>
     <rect
        y="408.89185"
        x="3030.3979"
@@ -7142,205 +7054,71 @@
        id="rect13348-3-6"
        style="color:#000000;fill:#ffe6d5;fill-opacity:1;fill-rule:nonzero;stroke:#ffe6d5;stroke-width:5;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;stroke-dashoffset:0;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:new" />
     <path
-       sodipodi:type="star"
-       style="color:#000000;fill:#ff9955;fill-opacity:1;fill-rule:nonzero;stroke:#ff9955;stroke-width:6.68229151;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;stroke-dashoffset:0;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:new"
-       id="path4960-6-5-1"
-       sodipodi:sides="3"
-       sodipodi:cx="1471.054"
-       sodipodi:cy="517.67877"
-       sodipodi:r1="109.87697"
-       sodipodi:r2="54.938484"
-       sodipodi:arg1="-0.52724113"
-       sodipodi:arg2="0.51995642"
-       inkscape:flatsided="true"
-       inkscape:rounded="0"
-       inkscape:randomized="0"
-       d="m 1566.0095,462.39406 -94.5553,165.16095 -95.756,-164.46777 z"
-       transform="matrix(0.57911939,0,0,0.54386105,605.34308,-1039.6584)"
-       inkscape:transform-center-x="0.15508761"
-       inkscape:transform-center-y="19.868648" />
-    <path
-       sodipodi:type="star"
-       style="color:#000000;fill:#ff9955;fill-opacity:1;fill-rule:nonzero;stroke:#ff9955;stroke-width:6.68229151;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;stroke-dashoffset:0;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:new"
-       id="path4960-6-5-3"
-       sodipodi:sides="3"
-       sodipodi:cx="1471.054"
-       sodipodi:cy="517.67877"
-       sodipodi:r1="109.87697"
-       sodipodi:r2="54.938484"
-       sodipodi:arg1="-0.52724113"
-       sodipodi:arg2="0.51995642"
-       inkscape:flatsided="true"
-       inkscape:rounded="0"
-       inkscape:randomized="0"
-       d="m 1566.0095,462.39406 -94.5553,165.16095 -95.756,-164.46777 z"
-       transform="matrix(0.57911939,0,0,-0.54386105,605.34308,-1295.7803)"
-       inkscape:transform-center-x="0.15508761"
-       inkscape:transform-center-y="-19.868681" />
-    <rect
-       transform="matrix(0,1,-1,0,0,0)"
-       y="-1183.74"
-       x="-1247.5829"
-       height="90.188492"
-       width="293.76791"
-       id="rect8498-9-2"
-       style="color:#000000;fill:#ff9955;fill-opacity:1;fill-rule:nonzero;stroke:#0028a5;stroke-width:10.62992095999999975;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:21.25984191999999950, 10.62992095999999975;stroke-dashoffset:0;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:new" />
-    <rect
-       transform="matrix(0,1,-1,0,0,0)"
-       y="-1338.5568"
-       x="-1247.5829"
-       height="90.188492"
-       width="293.76791"
-       id="rect8498-9-2-9"
-       style="color:#000000;fill:#ff9955;fill-opacity:1;fill-rule:nonzero;stroke:#ff9955;stroke-width:5;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;stroke-dashoffset:0;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:new" />
-    <rect
-       transform="matrix(0,1,-1,0,0,0)"
-       y="-1825.8529"
-       x="-1247.5829"
-       height="90.188492"
-       width="293.76791"
-       id="rect8498-9-2-9-7"
-       style="color:#000000;fill:#ff9955;fill-opacity:1;fill-rule:nonzero;stroke:#ff9955;stroke-width:5;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;stroke-dashoffset:0;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:new" />
-    <path
-       style="fill:#ff9955;fill-opacity:1;stroke:#ff9955;stroke-width:1.50471902;stroke-miterlimit:4;stroke-opacity:1;stroke-dashoffset:0;display:inline;enable-background:new"
-       d="m 1092.9167,-1409.6125 89.7061,0 0,61.8999 c -32.5528,-5.77 -60.2258,39.711 -90.1278,11.4975 z"
-       id="rect4810-5"
-       inkscape:connector-curvature="0"
-       sodipodi:nodetypes="ccccc" />
-    <path
-       style="fill:#ff9955;fill-opacity:1;stroke:#ff9955;stroke-width:1.50471902;stroke-miterlimit:4;stroke-opacity:1;stroke-dashoffset:0;display:inline;enable-background:new"
-       d="m 1247.7334,-1409.6125 89.7061,0 0,61.8999 c -32.5528,-5.77 -60.2258,39.711 -90.1278,11.4975 z"
-       id="rect4810-5-3"
-       inkscape:connector-curvature="0"
-       sodipodi:nodetypes="ccccc" />
-    <path
-       transform="translate(0,-3160.6299)"
-       inkscape:connection-end-point="d4"
-       inkscape:connection-end="#rect4816-0"
-       inkscape:connection-start-point="d4"
-       inkscape:connection-start="#path4960-6-5-1"
        inkscape:connector-curvature="0"
        inkscape:connector-type="polyline"
        id="path11937"
-       d="m 1457.1431,2461.7135 0,87.1705"
-       style="color:#000000;fill:none;stroke:#000000;stroke-width:5.31496048;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;stroke-dashoffset:0;marker:none;marker-end:url(#Arrow2Mend-7);visibility:visible;display:inline;overflow:visible;enable-background:accumulate"
+       d="m 1459.9464,-711.41372 0,95.77601"
+       style="color:#000000;fill:none;stroke:#000000;stroke-width:5.57113409;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;stroke-dashoffset:0;marker:none;marker-end:url(#Arrow2Mend-7);visibility:visible;display:inline;overflow:visible;enable-background:accumulate"
        sodipodi:nodetypes="cc" />
     <path
-       transform="translate(0,-3160.6299)"
-       inkscape:connection-end-point="d4"
-       inkscape:connection-end="#rect8498-9-2-9-7"
-       inkscape:connection-start-point="d4"
-       inkscape:connection-start="#rect4810-5-3-0"
        inkscape:connector-curvature="0"
        inkscape:connector-type="polyline"
        id="path12173"
-       d="m 1779.8106,1826.5295 0.3514,86.5175"
-       style="color:#000000;fill:none;stroke:#000000;stroke-width:5.31496048;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;stroke-dashoffset:0;marker:none;marker-end:url(#Arrow2Mend-7);visibility:visible;display:inline;overflow:visible;enable-background:accumulate" />
+       d="m 1779.8106,-1355.6581 0.3514,96.0752"
+       style="color:#000000;fill:none;stroke:#000000;stroke-width:5.60084724;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;stroke-dashoffset:0;marker:none;marker-end:url(#Arrow2Mend-7);visibility:visible;display:inline;overflow:visible;enable-background:accumulate" />
     <path
-       transform="translate(0,-3160.6299)"
-       inkscape:connection-end-point="d4"
-       inkscape:connection-end="#rect8498-9-2-9"
-       inkscape:connection-start-point="d4"
-       inkscape:connection-start="#rect4810-5-3"
        inkscape:connector-curvature="0"
        inkscape:connector-type="polyline"
        id="path12175"
-       d="m 1292.5144,1826.5295 0.3514,86.5175"
+       d="m 1292.5144,-1346.1004 0.3514,86.5175"
        style="color:#000000;fill:none;stroke:#000000;stroke-width:5.31496048;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;stroke-dashoffset:0;marker:none;marker-end:url(#Arrow2Mend-7);visibility:visible;display:inline;overflow:visible;enable-background:accumulate" />
     <path
-       transform="translate(0,-3160.6299)"
-       inkscape:connection-end-point="d4"
-       inkscape:connection-end="#rect8498-9-2"
-       inkscape:connection-start-point="d4"
-       inkscape:connection-start="#rect4810-5"
        inkscape:connector-curvature="0"
        inkscape:connector-type="polyline"
        id="path12177"
-       d="m 1137.6977,1826.5295 0.3514,86.5175"
+       d="m 1137.6977,-1346.1004 0.3514,86.5175"
        style="color:#000000;fill:none;stroke:#000000;stroke-width:5.31496048;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;stroke-dashoffset:0;marker:none;marker-end:url(#Arrow2Mend-7);visibility:visible;display:inline;overflow:visible;enable-background:accumulate" />
     <path
-       transform="translate(0,-3160.6299)"
-       inkscape:connection-end-point="d4"
-       inkscape:connection-end="#path4960-6-5-3"
-       inkscape:connection-start-point="d4"
-       inkscape:connection-start="#path4960-6-5"
        inkscape:connector-curvature="0"
        inkscape:connector-type="polyline"
        id="path12183"
-       d="m 1457.1431,1373.0452 0,151.0624"
+       d="m 1459.7938,-1800.3597 0,151.0624"
        style="color:#000000;fill:none;stroke:#000000;stroke-width:5.31496048;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;stroke-dashoffset:0;marker:none;marker-end:url(#Arrow2Mend-7);visibility:visible;display:inline;overflow:visible;enable-background:accumulate" />
     <path
        sodipodi:nodetypes="cc"
-       transform="translate(0,-3160.6299)"
-       inkscape:connection-end-point="d4"
-       inkscape:connection-end="#rect4810-5"
-       inkscape:connection-start-point="d4"
-       inkscape:connection-start="#path4960-6-5-3"
        inkscape:connector-curvature="0"
        inkscape:connector-type="polyline"
        id="path12366"
-       d="m 1408.5318,1602.5177 -225.909,158.2786"
-       style="color:#000000;fill:none;stroke:#000000;stroke-width:5.31496048;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;stroke-dashoffset:0;marker:none;marker-end:url(#Arrow2Mend-7);visibility:visible;display:inline;overflow:visible;enable-background:accumulate" />
+       d="m 1419.0599,-1564.4084 -273.1291,148.4942"
+       style="color:#000000;fill:none;stroke:#000000;stroke-width:5.55937195;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;stroke-dashoffset:0;marker:none;marker-end:url(#Arrow2Mend-7);visibility:visible;display:inline;overflow:visible;enable-background:accumulate" />
     <path
-       transform="translate(0,-3160.6299)"
-       inkscape:connection-end-point="d4"
-       inkscape:connection-end="#rect4810-5-3"
-       inkscape:connection-start-point="d4"
-       inkscape:connection-start="#path4960-6-5-3"
        inkscape:connector-curvature="0"
        inkscape:connector-type="polyline"
        id="path12368"
-       d="M 1424.3151,1613.0707 1322.805,1751.0174"
-       style="color:#000000;fill:none;stroke:#000000;stroke-width:5.31496048;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;stroke-dashoffset:0;marker:none;marker-end:url(#Arrow2Mend-7);visibility:visible;display:inline;overflow:visible;enable-background:accumulate"
+       d="M 1426.5298,-1547.8966 1300,-1417.6377"
+       style="color:#000000;fill:none;stroke:#000000;stroke-width:5.7098217;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;stroke-dashoffset:0;marker:none;marker-end:url(#Arrow2Mend-7);visibility:visible;display:inline;overflow:visible;enable-background:accumulate"
        sodipodi:nodetypes="cc" />
     <path
        sodipodi:nodetypes="cc"
-       transform="translate(0,-3160.6299)"
-       inkscape:connection-end-point="d4"
-       inkscape:connection-end="#rect4810-5-3-0"
-       inkscape:connection-start-point="d4"
-       inkscape:connection-start="#path4960-6-5-3"
        inkscape:connector-curvature="0"
        inkscape:connector-type="polyline"
        id="path12370"
-       d="m 1505.2151,1601.8324 229.7552,159.5037"
-       style="color:#000000;fill:none;stroke:#000000;stroke-width:5.31496048;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;stroke-dashoffset:0;marker:none;marker-end:url(#Arrow2Mend-7);visibility:visible;display:inline;overflow:visible;enable-background:accumulate" />
+       d="m 1500.0316,-1562.6061 268.2099,146.5878"
+       style="color:#000000;fill:none;stroke:#000000;stroke-width:5.55171919;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;stroke-dashoffset:0;marker:none;marker-end:url(#Arrow2Mend-7);visibility:visible;display:inline;overflow:visible;enable-background:accumulate" />
     <path
        sodipodi:nodetypes="cc"
-       transform="translate(0,-3160.6299)"
-       inkscape:connection-end-point="d4"
-       inkscape:connection-end="#path4960-6-5-1"
-       inkscape:connection-start-point="d4"
-       inkscape:connection-start="#rect8498-9-2"
-       inkscape:connector-curvature="0"
-       inkscape:connector-type="polyline"
-       id="path12372"
-       d="m 1183.74,2110.5376 233.672,262.2364"
-       style="color:#000000;fill:none;stroke:#000000;stroke-width:5.31496048;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;stroke-dashoffset:0;marker:none;marker-end:url(#Arrow2Mend-7);visibility:visible;display:inline;overflow:visible;enable-background:accumulate" />
-    <path
-       sodipodi:nodetypes="cc"
-       transform="translate(0,-3160.6299)"
-       inkscape:connection-end-point="d4"
-       inkscape:connection-end="#path4960-6-5-1"
-       inkscape:connection-start-point="d4"
-       inkscape:connection-start="#rect8498-9-2-9"
        inkscape:connector-curvature="0"
        inkscape:connector-type="polyline"
        id="path12374"
-       d="m 1338.5568,2158.4038 98.1377,214.3043"
-       style="color:#000000;fill:none;stroke:#000000;stroke-width:5.31496048;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;stroke-dashoffset:0;marker:none;marker-end:url(#Arrow2Mend-7);visibility:visible;display:inline;overflow:visible;enable-background:accumulate" />
+       d="m 1291.8669,-955.84521 148.12,153.0224"
+       style="color:#000000;fill:none;stroke:#000000;stroke-width:5.55419922;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;stroke-dashoffset:0;marker:none;marker-end:url(#Arrow2Mend-7);visibility:visible;display:inline;overflow:visible;enable-background:accumulate" />
     <path
        sodipodi:nodetypes="cc"
-       transform="translate(0,-3160.6299)"
-       inkscape:connection-end-point="d4"
-       inkscape:connection-end="#path4960-6-5-1"
-       inkscape:connection-start-point="d4"
-       inkscape:connection-start="#rect8498-9-2-9-7"
        inkscape:connector-curvature="0"
        inkscape:connector-type="polyline"
        id="path12376"
-       d="m 1735.6644,2109.7372 -237.9029,262.762"
-       style="color:#000000;fill:none;stroke:#000000;stroke-width:5.31496048;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;stroke-dashoffset:0;marker:none;marker-end:url(#Arrow2Mend-7);visibility:visible;display:inline;overflow:visible;enable-background:accumulate" />
+       d="M 1787.0495,-954.31334 1496.125,-800.70625"
+       style="color:#000000;fill:none;stroke:#000000;stroke-width:4.8912611;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;stroke-dashoffset:0;marker:none;marker-end:url(#Arrow2Mend-7);visibility:visible;display:inline;overflow:visible;enable-background:accumulate" />
     <text
        sodipodi:linespacing="125%"
        id="text12532"
@@ -7353,29 +7131,13 @@
          x="1364.1139"
          id="tspan12534"
          sodipodi:role="line">actual input files</tspan></text>
-    <text
-       sodipodi:linespacing="125%"
-       id="text12536"
-       y="-1087.2781"
-       x="1415.2002"
-       style="font-size:40px;font-style:normal;font-weight:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;font-family:Sans"
-       xml:space="preserve"><tspan
-         style="font-size:36px;font-weight:bold;-inkscape-font-specification:Sans Bold"
-         y="-1087.2781"
-         x="1415.2002"
-         id="tspan12538"
-         sodipodi:role="line">simulations</tspan></text>
     <path
-       transform="translate(0,-3160.6299)"
-       inkscape:connection-end-point="d4"
-       inkscape:connection-end="#path4960-6-5"
-       inkscape:connection-start-point="d4"
-       inkscape:connection-start="#rect4870-9"
        inkscape:connector-curvature="0"
        inkscape:connector-type="polyline"
        id="path12540"
-       d="m 1647.3502,1161.3903 -172.1441,151.0785"
-       style="color:#000000;fill:none;stroke:#000000;stroke-width:5.31496048;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;stroke-dashoffset:0;marker:none;marker-end:url(#Arrow2Mend-7);visibility:visible;display:inline;overflow:visible;enable-background:accumulate" />
+       d="m 1657.3502,-2007.2396 -172.1441,151.0785"
+       style="color:#000000;fill:none;stroke:#000000;stroke-width:5.31496048;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;stroke-dashoffset:0;marker:none;marker-end:url(#Arrow2Mend-7);visibility:visible;display:inline;overflow:visible;enable-background:accumulate"
+       sodipodi:nodetypes="cc" />
     <g
        id="g10807"
        transform="translate(-69.56437,-8.6955463)">
@@ -7422,7 +7184,7 @@
            sodipodi:role="line"
            x="1523.7316"
            y="1015.7681"
-           style="font-style:normal;font-variant:normal;font-weight:500;font-stretch:normal;text-align:center;text-anchor:middle;font-family:URW Palladio L;-inkscape-font-specification:URW Palladio L Medium">http://www.gc3.uzh.ch/</tspan><tspan
+           style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;text-align:center;text-anchor:middle;font-family:URW Palladio L;-inkscape-font-specification:URW Palladio L Bold">http://www.gc3.uzh.ch/</tspan><tspan
            sodipodi:role="line"
            x="1523.7316"
            y="1065.7681"
@@ -7455,7 +7217,7 @@
            sodipodi:role="line"
            x="2265.2092"
            y="1013.8159"
-           style="font-style:normal;font-variant:normal;font-weight:500;font-stretch:normal;text-align:center;text-anchor:middle;font-family:URW Palladio L;-inkscape-font-specification:URW Palladio L Medium"
+           style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;text-align:center;text-anchor:middle;font-family:URW Palladio L;-inkscape-font-specification:URW Palladio L Bold"
            id="tspan4348-4">http://www.ibf.uzh.ch/</tspan></text>
     </g>
     <text
@@ -7470,97 +7232,88 @@
          x="2939.0688"
          id="tspan15378"
          sodipodi:role="line" /></text>
-    <flowRoot
-       transform="matrix(0.96063507,0,0,1,95.435187,-3108.1377)"
-       style="font-size:32px;font-style:normal;font-variant:normal;font-weight:500;font-stretch:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;font-family:URW Palladio L;-inkscape-font-specification:URW Palladio L Medium"
-       id="flowRoot13413"
-       xml:space="preserve"><flowRegion
-         id="flowRegion13415"><rect
-           style="font-size:32px;font-style:normal;font-variant:normal;font-weight:500;font-stretch:normal;font-family:URW Palladio L;-inkscape-font-specification:URW Palladio L Medium"
-           y="992.62115"
-           x="2141.2778"
-           height="607.87885"
-           width="766.70007"
-           id="rect13417" /></flowRegion><flowPara
-         id="flowPara13419"
-         style="font-size:28px;text-align:justify;text-anchor:start">For each optimization, a workflow is started.</flowPara><flowPara
-         style="font-size:28px;font-style:normal;font-variant:normal;font-weight:500;font-stretch:normal;text-align:justify;text-anchor:start;font-family:URW Palladio L;-inkscape-font-specification:URW Palladio L Medium"
-         id="flowPara15338"> </flowPara><flowPara
-         id="flowPara15340"
-         style="font-size:28px;text-align:justify;text-anchor:start">A driver script class <flowSpan
-   id="flowSpan7371"
-   style="font-size:28px;font-style:normal;font-weight:bold;text-align:justify;text-anchor:start;fill:#ff6600;fill-opacity:1;-inkscape-font-specification:URW Palladio L Bold">SessionBasedScript</flowSpan> provides  support for running several <flowSpan
-   id="flowSpan7373"
-   style="font-size:28px;font-style:normal;font-weight:bold;text-align:justify;text-anchor:start;fill:#d40000;-inkscape-font-specification:URW Palladio L Bold">Tasks</flowSpan> in parallel:</flowPara><flowPara
-         style="font-size:28px;font-style:normal;font-variant:normal;font-weight:500;font-stretch:normal;font-family:URW Palladio L;-inkscape-font-specification:URW Palladio L Medium"
-         id="flowPara7600"> </flowPara><flowPara
-         style="font-size:28px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-family:LMMono8;-inkscape-font-specification:LMMono8"
-         id="flowPara15348"><flowSpan
-   style="font-size:28px;fill:#000080"
-   id="flowSpan7604">class</flowSpan><flowSpan
-   style="font-size:28px;fill:#800080"
-   id="flowSpan7606"> MyScript</flowSpan>(<flowSpan
-   id="flowSpan7381"
-   style="font-size:28px;font-style:normal;font-weight:bold;fill:#800080;-inkscape-font-specification:LMMono8 Bold">SessionBasedScript</flowSpan>):</flowPara><flowPara
-         style="font-size:28px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-family:LMMono8;-inkscape-font-specification:LMMono8"
-         id="flowPara15350"><flowSpan
-   style="font-size:28px;fill:#000080"
-   id="flowSpan7610">  def</flowSpan> new_tasks(self):</flowPara><flowPara
-         style="font-size:28px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-family:LMMono8;-inkscape-font-specification:LMMono8"
-         id="flowPara15352"><flowSpan
-   style="font-size:28px;fill:#000080"
-   id="flowSpan7612">    for</flowSpan> ctry1, ctry2 in self.country_pairs:</flowPara><flowPara
-         style="font-size:28px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;fill:#00ff00;font-family:LMMono8;-inkscape-font-specification:LMMono8"
-         id="flowPara15344">      # add tasks to the session</flowPara><flowPara
-         style="font-size:28px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-family:LMMono8;-inkscape-font-specification:LMMono8"
-         id="flowPara15368"><flowSpan
-   style="font-size:28px;fill:#000080"
-   id="flowSpan7616">      yield</flowSpan> (jobname, <flowSpan
-   style="font-size:28px;fill:#00ff00"
-   id="flowSpan7618"># unique identifier</flowSpan></flowPara><flowPara
-         style="font-size:28px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-family:LMMono8;-inkscape-font-specification:LMMono8"
-         id="flowPara15370"><flowSpan
-   style="font-size:28px;fill:#800080"
-   id="flowSpan7626">             GParaSearchDriver</flowSpan>, <flowSpan
-   style="font-size:28px;fill:#00ff00"
-   id="flowSpan7620"># task class</flowSpan></flowPara><flowPara
-         style="font-size:28px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-family:LMMono8;-inkscape-font-specification:LMMono8"
-         id="flowPara15372">             [ <flowSpan
-   style="font-size:28px;font-style:italic;font-variant:normal;font-weight:normal;font-stretch:normal;font-family:LMMono8;-inkscape-font-specification:LMMono8 Italic"
-   id="flowSpan17233">args</flowSpan> ],  <flowSpan
-   style="font-size:28px;fill:#00ff00"
-   id="flowSpan7622"># creation arguments</flowSpan></flowPara><flowPara
-         style="font-size:28px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-family:LMMono8;-inkscape-font-specification:LMMono8"
-         id="flowPara15374">             { <flowSpan
-   style="font-size:28px;font-style:italic;font-variant:normal;font-weight:normal;font-stretch:normal;font-family:LMMono8;-inkscape-font-specification:LMMono8 Italic"
-   id="flowSpan17237">kwargs</flowSpan> })<flowSpan
-   style="font-size:28px;fill:#00ff00"
-   id="flowSpan7624"># creation keywords</flowSpan></flowPara><flowPara
-         id="flowPara7363"
-         style="font-size:28px;font-style:normal;font-variant:normal;font-weight:500;font-stretch:normal;font-family:URW Palladio L;-inkscape-font-specification:URW Palladio L Medium"> </flowPara><flowPara
-         id="flowPara7367"
-         style="font-size:28px;font-style:normal;font-variant:normal;font-weight:500;font-stretch:normal;text-align:justify;text-anchor:start;font-family:URW Palladio L;-inkscape-font-specification:URW Palladio L Medium">The <flowSpan
-   id="flowSpan7375"
-   style="font-size:28px;font-style:normal;font-weight:bold;text-align:justify;text-anchor:start;fill:#ff6600;-inkscape-font-specification:URW Palladio L Bold">SessionBasedScript</flowSpan> class implements a command line interface to manage a session consisting of the tasks so created.</flowPara></flowRoot>    <rect
-       y="-2167.6377"
-       x="2105.6785"
-       height="700"
-       width="830"
-       id="rect7369"
-       style="fill:none;stroke:#2c85e2;stroke-width:10.69454098;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;stroke-dashoffset:0" />
-    <path
-       sodipodi:nodetypes="ccc"
-       transform="translate(0,-3160.6299)"
-       inkscape:connector-curvature="0"
-       id="path12609"
-       d="m 1460,1292.9922 0,-80 640,0"
-       style="fill:none;stroke:#2c85e2;stroke-width:7.08661413;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;marker-start:url(#DotMd);marker-end:url(#DotMt)" />
-    <path
-       inkscape:connector-curvature="0"
-       id="path7389"
-       d="m 2100,-1077.6377 -223.5022,0.2571"
-       style="fill:#9d4cab;fill-opacity:1;stroke:#553aa8;stroke-width:7.08699989;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;marker-start:url(#DotMOkE);marker-end:url(#DotMeeK)"
-       sodipodi:nodetypes="cc" />
+    <g
+       id="g7741"
+       transform="translate(7.3893127,0)">
+      <rect
+         style="fill:#edf5fc;fill-opacity:1;stroke:#2c85e2;stroke-width:10.69454098;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;stroke-dashoffset:0"
+         id="rect7369"
+         width="830"
+         height="700"
+         x="2105.6785"
+         y="-2167.6377" />
+      <flowRoot
+         xml:space="preserve"
+         id="flowRoot13413"
+         style="font-size:32px;font-style:normal;font-variant:normal;font-weight:500;font-stretch:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;font-family:URW Palladio L;-inkscape-font-specification:URW Palladio L Medium"
+         transform="matrix(0.96063507,0,0,1,95.435187,-3108.1377)"><flowRegion
+           id="flowRegion13415"><rect
+             id="rect13417"
+             width="766.70007"
+             height="607.87885"
+             x="2141.2778"
+             y="992.62115"
+             style="font-size:32px;font-style:normal;font-variant:normal;font-weight:500;font-stretch:normal;font-family:URW Palladio L;-inkscape-font-specification:URW Palladio L Medium" /></flowRegion><flowPara
+           style="font-size:28px;text-align:justify;text-anchor:start"
+           id="flowPara13419">For each optimization, a workflow is started.</flowPara><flowPara
+           id="flowPara15338"
+           style="font-size:28px;font-style:normal;font-variant:normal;font-weight:500;font-stretch:normal;text-align:justify;text-anchor:start;font-family:URW Palladio L;-inkscape-font-specification:URW Palladio L Medium"> </flowPara><flowPara
+           style="font-size:28px;text-align:justify;text-anchor:start"
+           id="flowPara15340">A driver script class <flowSpan
+   style="font-size:28px;font-style:normal;font-weight:bold;text-align:justify;text-anchor:start;fill:#2c85e2;fill-opacity:1;-inkscape-font-specification:URW Palladio L Bold"
+   id="flowSpan7371">SessionBasedScript</flowSpan> provides  support for running several <flowSpan
+   style="font-size:28px;font-style:normal;font-weight:bold;text-align:justify;text-anchor:start;fill:#000000;-inkscape-font-specification:URW Palladio L Bold"
+   id="flowSpan7373">Tasks</flowSpan> in parallel:</flowPara><flowPara
+           id="flowPara7600"
+           style="font-size:28px;font-style:normal;font-variant:normal;font-weight:500;font-stretch:normal;font-family:URW Palladio L;-inkscape-font-specification:URW Palladio L Medium"> </flowPara><flowPara
+           id="flowPara15348"
+           style="font-size:28px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-family:LMMono8;-inkscape-font-specification:LMMono8"><flowSpan
+   id="flowSpan7604"
+   style="font-size:28px;fill:#502d16">class</flowSpan><flowSpan
+   id="flowSpan7606"
+   style="font-size:28px;fill:#0b2f55;fill-opacity:1"> GFPScript</flowSpan>(<flowSpan
+   style="font-size:28px;font-style:normal;font-weight:bold;fill:#2c85e2;fill-opacity:1;-inkscape-font-specification:LMMono8 Bold"
+   id="flowSpan7381">SessionBasedScript</flowSpan>):</flowPara><flowPara
+           id="flowPara15350"
+           style="font-size:28px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-family:LMMono8;-inkscape-font-specification:LMMono8"><flowSpan
+   id="flowSpan7610"
+   style="font-size:28px;fill:#502d16">  def</flowSpan> new_tasks(self):</flowPara><flowPara
+           id="flowPara15352"
+           style="font-size:28px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-family:LMMono8;-inkscape-font-specification:LMMono8"><flowSpan
+   id="flowSpan7612"
+   style="font-size:28px;fill:#502d16">    for</flowSpan> ctry1, ctry2 in self.country_pairs:</flowPara><flowPara
+           id="flowPara15344"
+           style="font-size:28px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;fill:#782121;font-family:LMMono8;-inkscape-font-specification:LMMono8">      # add tasks to the session</flowPara><flowPara
+           id="flowPara15368"
+           style="font-size:28px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-family:LMMono8;-inkscape-font-specification:LMMono8"><flowSpan
+   id="flowSpan7616"
+   style="font-size:28px;fill:#502d16">      yield</flowSpan> (jobname,<flowSpan
+   id="flowSpan7618"
+   style="font-size:28px;fill:#782121"># unique identifier </flowSpan></flowPara><flowPara
+           id="flowPara15370"
+           style="font-size:28px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-family:LMMono8;-inkscape-font-specification:LMMono8"><flowSpan
+             id="flowSpan7620"
+             style="font-size:28px;fill:#782121"><flowSpan
+   id="flowSpan6792"
+   style="fill:#3f213d;fill-opacity:1">             GFPSequence</flowSpan>  # task class</flowSpan></flowPara><flowPara
+           id="flowPara15372"
+           style="font-size:28px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-family:LMMono8;-inkscape-font-specification:LMMono8">             [ <flowSpan
+   id="flowSpan17233"
+   style="font-size:28px;font-style:italic;font-variant:normal;font-weight:normal;font-stretch:normal;font-family:LMMono8;-inkscape-font-specification:LMMono8 Italic">args</flowSpan> ],  <flowSpan
+   id="flowSpan7622"
+   style="font-size:28px;fill:#782121"># creation arguments </flowSpan></flowPara><flowPara
+           id="flowPara15374"
+           style="font-size:28px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-family:LMMono8;-inkscape-font-specification:LMMono8">             { <flowSpan
+   id="flowSpan17237"
+   style="font-size:28px;font-style:italic;font-variant:normal;font-weight:normal;font-stretch:normal;font-family:LMMono8;-inkscape-font-specification:LMMono8 Italic">kwargs</flowSpan> })<flowSpan
+   id="flowSpan7624"
+   style="font-size:28px;fill:#782121"># creation keywords</flowSpan></flowPara><flowPara
+           style="font-size:28px;font-style:normal;font-variant:normal;font-weight:500;font-stretch:normal;fill:#008080;font-family:URW Palladio L;-inkscape-font-specification:URW Palladio L Medium"
+           id="flowPara7363"> </flowPara><flowPara
+           style="font-size:28px;font-style:normal;font-variant:normal;font-weight:500;font-stretch:normal;text-align:justify;text-anchor:start;font-family:URW Palladio L;-inkscape-font-specification:URW Palladio L Medium"
+           id="flowPara7367">The <flowSpan
+   style="font-size:28px;font-style:normal;font-weight:bold;text-align:justify;text-anchor:start;fill:#2c85e2;fill-opacity:1;-inkscape-font-specification:URW Palladio L Bold"
+   id="flowSpan7375">SessionBasedScript</flowSpan> class implements a command line interface to manage a session consisting of the tasks so created.</flowPara></flowRoot>    </g>
     <text
        xml:space="preserve"
        style="font-size:40px;font-style:normal;font-weight:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;font-family:Sans"
@@ -7584,69 +7337,67 @@
            x="2131.4958"
            y="1722.8052"
            style="-inkscape-font-specification:URW Palladio L Medium;font-family:URW Palladio L;font-weight:500;font-style:normal;font-stretch:normal;font-variant:normal;font-size:32px" /></flowRegion><flowPara
-         id="flowPara17209" /></flowRoot>    <rect
-       y="-1356.5914"
-       x="2105.6416"
-       height="557.90753"
-       width="829.99994"
-       id="rect7387"
-       style="fill:none;stroke:#553aa8;stroke-width:10.76863098;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;stroke-dashoffset:0" />
-    <flowRoot
-       xml:space="preserve"
-       id="flowRoot17211"
-       style="font-size:40px;font-style:normal;font-weight:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;font-family:Sans"
-       transform="translate(22.610232,-3049.3312)"><flowRegion
-         id="flowRegion17213"><rect
-           id="rect17215"
-           width="735.24396"
-           height="491.27441"
-           x="2130.4089"
-           y="1723.8921" /></flowRegion><flowPara
-         id="flowPara17217"
-         style="font-size:28px;font-style:normal;font-variant:normal;font-weight:500;font-stretch:normal;text-align:justify;text-anchor:start;font-family:URW Palladio L;-inkscape-font-specification:URW Palladio L Medium">Several simulations are run in parallel, one for each combination of input parameters; input files for each simulations are created using a templating mechanism.</flowPara><flowPara
-         style="font-size:28px;font-style:normal;font-variant:normal;font-weight:500;font-stretch:normal;text-align:justify;text-anchor:start;font-family:URW Palladio L;-inkscape-font-specification:URW Palladio L Medium"
-         id="flowPara17219"> </flowPara><flowPara
-         style="font-size:28px;font-style:normal;font-variant:normal;font-weight:500;font-stretch:normal;text-align:justify;text-anchor:start;font-family:URW Palladio L;-inkscape-font-specification:URW Palladio L Medium"
-         id="flowPara17221">The <flowSpan
-   style="font-size:28px;font-style:normal;font-weight:bold;text-align:justify;text-anchor:start;fill:#ff6600;-inkscape-font-specification:URW Palladio L Bold"
-   id="flowSpan17251">ParallelTaskCollection</flowSpan> class is used to manage concurrent <flowSpan
-   style="font-size:28px;font-style:normal;font-weight:bold;text-align:justify;text-anchor:start;fill:#d40000;-inkscape-font-specification:URW Palladio L Bold"
-   id="flowSpan17253">Tasks</flowSpan>; subclass it to create specialized collections:</flowPara><flowPara
-         style="font-size:28px;font-style:normal;font-variant:normal;font-weight:500;font-stretch:normal;font-family:URW Palladio L;-inkscape-font-specification:URW Palladio L Medium"
-         id="flowPara17223"> </flowPara><flowPara
-         style="font-size:28px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-family:LMMono8;-inkscape-font-specification:LMMono8"
-         id="flowPara17225"><flowSpan
-   style="font-size:28px;fill:#000080"
-   id="flowSpan7672">class</flowSpan><flowSpan
-   style="font-size:28px;fill:#800080"
-   id="flowSpan7674"> MyParallel</flowSpan>(<flowSpan
-   style="font-size:28px;fill:#800080"
-   id="flowSpan7676">ParallelTaskCollection</flowSpan>):</flowPara><flowPara
-         style="font-size:28px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-family:LMMono8;-inkscape-font-specification:LMMono8"
-         id="flowPara17229"><flowSpan
-   style="font-size:28px;fill:#000080"
-   id="flowSpan7678">  def</flowSpan> __init__(self, params..., **kwargs):</flowPara><flowPara
-         style="font-size:28px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;fill:#00ff00;font-family:LMMono8;-inkscape-font-specification:LMMono8"
-         id="flowPara17227">    # create Task collection from parameters</flowPara><flowPara
-         style="font-size:28px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-family:LMMono8;-inkscape-font-specification:LMMono8"
-         id="flowPara17247">    tasks = [ <flowSpan
-   style="font-size:28px;fill:#800080"
-   id="flowSpan7684">Application</flowSpan>(...) ]</flowPara><flowPara
-         style="font-size:28px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-family:LMMono8;-inkscape-font-specification:LMMono8"
-         id="flowPara17249"><flowSpan
-   style="font-size:28px;fill:#800080"
-   id="flowSpan7682">    ParallelTaskCollection</flowSpan>.__init__(</flowPara><flowPara
-         style="font-size:28px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-family:LMMono8;-inkscape-font-specification:LMMono8"
-         id="flowPara17255">      self, tasks, **kwargs)</flowPara><flowPara
-         style="font-size:28px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-family:LMMono8;-inkscape-font-specification:LMMono8"
-         id="flowPara17231" /></flowRoot>    <path
-       style="fill:none;stroke:#0028a5;stroke-width:7.08661413;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;marker-start:url(#DotMk);marker-end:url(#DotMm)"
-       d="m 1140.5392,-956.10053 -0.5392,308.46282 -320,0"
-       id="path17259"
-       inkscape:connector-curvature="0"
-       sodipodi:nodetypes="ccc" />
+         id="flowPara17209" /></flowRoot>    <g
+       id="g7777"
+       transform="translate(7.389194,0)">
+      <rect
+         style="fill:#fbffeb;fill-opacity:1;stroke:#668000;stroke-width:10.76863098;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;stroke-dashoffset:0"
+         id="rect7387"
+         width="829.99994"
+         height="557.90753"
+         x="2105.6416"
+         y="-1356.5914" />
+      <flowRoot
+         transform="translate(22.610232,-3049.3312)"
+         style="font-size:40px;font-style:normal;font-weight:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;font-family:Sans"
+         id="flowRoot17211"
+         xml:space="preserve"><flowRegion
+           id="flowRegion17213"><rect
+             y="1723.8921"
+             x="2130.4089"
+             height="491.27441"
+             width="735.24396"
+             id="rect17215" /></flowRegion><flowPara
+           style="font-size:28px;font-style:normal;font-variant:normal;font-weight:500;font-stretch:normal;text-align:justify;text-anchor:start;font-family:URW Palladio L;-inkscape-font-specification:URW Palladio L Medium"
+           id="flowPara17217">Several simulations are run in parallel, one for each combination of input parameters; input files for each simulations are created using a templating mechanism.</flowPara><flowPara
+           id="flowPara17219"
+           style="font-size:28px;font-style:normal;font-variant:normal;font-weight:500;font-stretch:normal;text-align:justify;text-anchor:start;font-family:URW Palladio L;-inkscape-font-specification:URW Palladio L Medium"> </flowPara><flowPara
+           id="flowPara17221"
+           style="font-size:28px;font-style:normal;font-variant:normal;font-weight:500;font-stretch:normal;text-align:justify;text-anchor:start;font-family:URW Palladio L;-inkscape-font-specification:URW Palladio L Medium">The <flowSpan
+   id="flowSpan17251"
+   style="font-size:28px;font-style:normal;font-weight:bold;text-align:justify;text-anchor:start;fill:#668000;fill-opacity:1;-inkscape-font-specification:URW Palladio L Bold">ParallelTaskCollection </flowSpan>class is used to manage concurrent <flowSpan
+   id="flowSpan17253"
+   style="font-size:28px;font-style:normal;font-weight:bold;text-align:justify;text-anchor:start;fill:#000000;-inkscape-font-specification:URW Palladio L Bold">Tasks</flowSpan>; subclass it to create specialized collections:</flowPara><flowPara
+           id="flowPara17223"
+           style="font-size:28px;font-style:normal;font-variant:normal;font-weight:500;font-stretch:normal;font-family:URW Palladio L;-inkscape-font-specification:URW Palladio L Medium"> </flowPara><flowPara
+           id="flowPara17225"
+           style="font-size:28px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-family:LMMono8;-inkscape-font-specification:LMMono8"><flowSpan
+   id="flowSpan7672"
+   style="font-size:28px;fill:#502d16">class</flowSpan><flowSpan
+   id="flowSpan7674"
+   style="font-size:28px;fill:#4e6000;fill-opacity:0.94117647"> GFPParallel</flowSpan>(<flowSpan
+   id="flowSpan7676"
+   style="font-size:28px;fill:#668000;fill-opacity:1">ParallelTaskCollection</flowSpan>):</flowPara><flowPara
+           id="flowPara17229"
+           style="font-size:28px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-family:LMMono8;-inkscape-font-specification:LMMono8"><flowSpan
+   id="flowSpan7678"
+   style="font-size:28px;fill:#502d16">  def</flowSpan> __init__(self, params..., **kwargs):</flowPara><flowPara
+           id="flowPara17227"
+           style="font-size:28px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;fill:#782121;font-family:LMMono8;-inkscape-font-specification:LMMono8">    # create Task collection from parameters</flowPara><flowPara
+           id="flowPara17247"
+           style="font-size:28px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-family:LMMono8;-inkscape-font-specification:LMMono8">    tasks = [ <flowSpan
+   id="flowSpan7684"
+   style="font-size:28px;fill:#001760;fill-opacity:1">GFPApplication</flowSpan>(...) ]</flowPara><flowPara
+           id="flowPara17249"
+           style="font-size:28px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-family:LMMono8;-inkscape-font-specification:LMMono8"><flowSpan
+   id="flowSpan7682"
+   style="font-size:28px;fill:#688000;fill-opacity:1">    ParallelTaskCollection</flowSpan>.__init__(</flowPara><flowPara
+           id="flowPara17255"
+           style="font-size:28px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-family:LMMono8;-inkscape-font-specification:LMMono8">      self, tasks, **kwargs)</flowPara><flowPara
+           id="flowPara17231"
+           style="font-size:28px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-family:LMMono8;-inkscape-font-specification:LMMono8" /></flowRoot>    </g>
     <rect
-       style="fill:none;stroke:#0028a5;stroke-width:11.21942329;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;stroke-dashoffset:0"
+       style="fill:#ebf0ff;stroke:#0028a5;stroke-width:11.21942328999999994;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;stroke-dashoffset:0;fill-opacity:0.39215687"
        id="rect17257"
        width="741.53607"
        height="863.45361"
@@ -7665,82 +7416,62 @@
            id="rect21019" /></flowRegion><flowPara
          style="font-size:28px;font-style:normal;font-variant:normal;font-weight:500;font-stretch:normal;text-align:justify;text-anchor:start;font-family:URW Palladio L;-inkscape-font-specification:URW Palladio L Medium"
          id="flowPara21021">Applications are the basic <flowSpan
-   style="font-size:28px;font-weight:bold;text-align:justify;text-anchor:start;fill:#aa0000;-inkscape-font-specification:URW Palladio L Bold"
+   style="font-size:28px;font-weight:bold;text-align:justify;text-anchor:start;fill:#000000;-inkscape-font-specification:URW Palladio L Bold"
    id="flowSpan7686">Tasks</flowSpan> that comprise a workflow in GC3Pie. An <flowSpan
    id="flowSpan21075"
-   style="font-size:28px;font-style:normal;font-weight:bold;text-align:justify;text-anchor:start;fill:#ff6600;-inkscape-font-specification:URW Palladio L Bold">Application</flowSpan> is just a UNIX process, i.e., any command that can be run from the shell command line.  The <flowSpan
+   style="font-size:28px;font-style:normal;font-weight:bold;text-align:justify;text-anchor:start;fill:#0028a5;fill-opacity:1;-inkscape-font-specification:URW Palladio L Bold">Application</flowSpan> is just a UNIX process, i.e., any command that can be run from the shell command line.  The <flowSpan
    id="flowSpan21077"
-   style="font-size:28px;font-style:normal;font-weight:bold;text-align:justify;text-anchor:start;fill:#ff6600;-inkscape-font-specification:URW Palladio L Bold">Application</flowSpan> class should be subclassed to specify error-checking policies and post-processing of output files:</flowPara><flowPara
+   style="font-size:28px;font-style:normal;font-weight:bold;text-align:justify;text-anchor:start;fill:#0028a5;fill-opacity:1;-inkscape-font-specification:URW Palladio L Bold">Application</flowSpan> class should be subclassed to specify error-checking policies and post-processing of output files:</flowPara><flowPara
          id="flowPara21023"
          style="font-size:28px;font-style:normal;font-variant:normal;font-weight:500;font-stretch:normal;font-family:URW Palladio L;-inkscape-font-specification:URW Palladio L Medium" /><flowPara
          id="flowPara21025"
          style="font-size:28px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-family:LMMono8;-inkscape-font-specification:LMMono8"><flowSpan
-   style="font-size:28px;fill:#000080"
+   style="font-size:28px;fill:#502d16"
    id="flowSpan7702">class</flowSpan><flowSpan
-   style="font-size:28px;fill:#800080"
-   id="flowSpan7704"> MyApplication</flowSpan>(<flowSpan
-   style="font-size:28px;fill:#800080"
+   style="font-size:28px;fill:#001a60;fill-opacity:1"
+   id="flowSpan7704"> GFPApplication</flowSpan>(<flowSpan
+   style="font-size:28px;font-weight:bold;fill:#0028a5;fill-opacity:1;-inkscape-font-specification:LMMono8 Bold"
    id="flowSpan7706">Application</flowSpan>):</flowPara><flowPara
          id="flowPara21027"
          style="font-size:28px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-family:LMMono8;-inkscape-font-specification:LMMono8"><flowSpan
-   style="font-size:28px;fill:#000080"
+   style="font-size:28px;fill:#502d16"
    id="flowSpan7708">  def</flowSpan> __init__(self, ...):</flowPara><flowPara
          id="flowPara21029"
          style="font-size:28px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-family:LMMono8;-inkscape-font-specification:LMMono8"><flowSpan
-   style="font-size:28px;fill:#800080"
+   style="font-size:28px;fill:#0028a5;fill-opacity:1"
    id="flowSpan7710">    Application</flowSpan>.__init__(</flowPara><flowPara
          id="flowPara21031"
-         style="font-size:28px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-family:LMMono8;-inkscape-font-specification:LMMono8">      executable=&quot;<flowSpan
-   style="font-size:28px;fill:#00ff00"
-   id="flowSpan7714">./forwardPremiumOut</flowSpan>&quot;,</flowPara><flowPara
+         style="font-size:28px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;fill:#000000;font-family:LMMono8;-inkscape-font-specification:LMMono8">      executable=&quot;./forwardPremiumOut&quot;,</flowPara><flowPara
          id="flowPara21033"
-         style="font-size:28px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-family:LMMono8;-inkscape-font-specification:LMMono8">      arguments=[ &quot;<flowSpan
-   style="font-size:28px;fill:#00ff00"
-   id="flowSpan7716">1</flowSpan>&quot;, &quot;<flowSpan
-   style="font-size:28px;fill:#00ff00"
-   id="flowSpan7718">2</flowSpan>&quot;, &quot;<flowSpan
-   style="font-size:28px;fill:#00ff00"
-   id="flowSpan7720">3</flowSpan>&quot; ],</flowPara><flowPara
+         style="font-size:28px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;fill:#000000;font-family:LMMono8;-inkscape-font-specification:LMMono8">      arguments=[ &quot;1&quot;, &quot;2&quot;, &quot;3&quot; ],</flowPara><flowPara
          id="flowPara21035"
-         style="font-size:28px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-family:LMMono8;-inkscape-font-specification:LMMono8">      inputs=[ &quot;<flowSpan
-   style="font-size:28px;fill:#00ff00"
-   id="flowSpan7722">input.file.name</flowSpan>&quot; ],</flowPara><flowPara
+         style="font-size:28px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;fill:#000000;font-family:LMMono8;-inkscape-font-specification:LMMono8">      inputs=[ &quot;input.file.name&quot; ],</flowPara><flowPara
          id="flowPara21037"
-         style="font-size:28px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-family:LMMono8;-inkscape-font-specification:LMMono8">      outputs=[ &quot;<flowSpan
-   style="font-size:28px;fill:#00ff00"
-   id="flowSpan7724">out.file</flowSpan>&quot;, &quot;<flowSpan
-   style="font-size:28px;fill:#00ff00"
-   id="flowSpan7726">out.directory</flowSpan>&quot; ])</flowPara><flowPara
+         style="font-size:28px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;fill:#000000;font-family:LMMono8;-inkscape-font-specification:LMMono8">      outputs=[ &quot;out.file&quot;, &quot;out.directory&quot; ])</flowPara><flowPara
          id="flowPara21047"
-         style="font-size:28px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-family:LMMono8;-inkscape-font-specification:LMMono8" /><flowPara
+         style="font-size:28px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;fill:#000000;font-family:LMMono8;-inkscape-font-specification:LMMono8" /><flowPara
          id="flowPara21049"
-         style="font-size:28px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-family:LMMono8;-inkscape-font-specification:LMMono8">  def terminated(self):</flowPara><flowPara
+         style="font-size:28px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-family:LMMono8;-inkscape-font-specification:LMMono8"><flowSpan
+   style="fill:#502d16"
+   id="flowSpan6317">  def</flowSpan> terminated(self):</flowPara><flowPara
          id="flowPara21051"
-         style="font-size:28px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;fill:#00ff00;font-family:LMMono8;-inkscape-font-specification:LMMono8">    # this gets called once the Task is done</flowPara><flowPara
+         style="font-size:28px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;fill:#782121;font-family:LMMono8;-inkscape-font-specification:LMMono8">    # this gets called once the Task is done</flowPara><flowPara
          id="flowPara21055"
          style="font-size:28px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-family:LMMono8;-inkscape-font-specification:LMMono8"><flowSpan
-   style="font-size:28px;fill:#000080"
-   id="flowSpan7790">    if</flowSpan> &quot;<flowSpan
-   style="font-size:28px;fill:#00ff00"
-   id="flowSpan7728">simulation.out</flowSpan>&quot; in self.outputs:</flowPara><flowPara
+   style="font-size:28px;fill:#502d16"
+   id="flowSpan7790">    if</flowSpan> &quot;simulation.out&quot; in self.outputs:</flowPara><flowPara
          id="flowPara21057"
          style="font-size:28px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-family:LMMono8;-inkscape-font-specification:LMMono8">      self.execution.returncode = 0 <flowSpan
-   style="font-size:28px;fill:#00ff00"
+   style="font-size:28px;fill:#782121"
    id="flowSpan7730"># success</flowSpan></flowPara><flowPara
          id="flowPara21059"
          style="font-size:28px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-family:LMMono8;-inkscape-font-specification:LMMono8"><flowSpan
-   style="font-size:28px;fill:#000080"
+   style="font-size:28px;fill:#502d16"
    id="flowSpan7792">    else</flowSpan>:</flowPara><flowPara
          id="flowPara21061"
          style="font-size:28px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-family:LMMono8;-inkscape-font-specification:LMMono8">      self.execution.returncode = 1 <flowSpan
-   style="font-size:28px;fill:#00ff00"
-   id="flowSpan7732"># fail!</flowSpan></flowPara></flowRoot>    <path
-       inkscape:connector-curvature="0"
-       id="path21145"
-       d="m 3200.4204,895.39405 50,0 0,530.00005 50,0"
-       style="fill:none;stroke:#b675b1;stroke-width:7.08661413;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;marker-start:url(#DotMv);marker-end:url(#DotM8)"
-       sodipodi:nodetypes="cccc" />
-    <flowRoot
+   style="font-size:28px;fill:#782121"
+   id="flowSpan7732"># fail!</flowSpan></flowPara></flowRoot>    <flowRoot
        xml:space="preserve"
        id="flowRoot25003"
        style="font-size:40px;font-style:normal;font-weight:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;font-family:Sans"
@@ -7819,7 +7550,7 @@
          x="2806.8723"
          y="1231.6931" /></text>
     <flowRoot
-       transform="translate(35.945546,-1024.8425)"
+       transform="translate(35.945546,-1058.8425)"
        style="font-size:40px;font-style:normal;font-weight:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;opacity:0.98000004;fill:#000000;fill-opacity:1;stroke:none;display:inline;enable-background:new;font-family:Sans;-inkscape-font-specification:URW Palladio L Medium"
        id="flowRoot4400-9"
        xml:space="preserve"><flowRegion
@@ -7832,7 +7563,9 @@
            id="rect4404-7"
            ry="2.1738892" /></flowRegion><flowPara
          id="flowPara12567-9"
-         style="font-size:48px;font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;text-align:center;text-anchor:middle;font-family:URW Palladio L;-inkscape-font-specification:URW Palladio L Medium">A real-world example</flowPara><flowPara
+         style="font-size:48px;font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;text-align:center;text-anchor:middle;font-family:URW Palladio L;-inkscape-font-specification:URW Palladio L Medium">A real-world example: </flowPara><flowPara
+         style="font-size:48px;font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;text-align:center;text-anchor:middle;font-family:URW Palladio L;-inkscape-font-specification:URW Palladio L Medium"
+         id="flowPara7640">(Economic) Model calibration using Global Optimization</flowPara><flowPara
          id="flowPara12569-4"
          style="font-size:22px;font-style:normal;font-variant:normal;font-weight:500;font-stretch:normal;text-align:start;text-anchor:start;font-family:URW Palladio L;-inkscape-font-specification:URW Palladio L Medium"> </flowPara><flowPara
          style="font-size:36px;font-style:normal;font-variant:normal;font-weight:500;font-stretch:normal;text-align:justify;text-anchor:start;font-family:URW Palladio L;-inkscape-font-specification:URW Palladio L Medium"
@@ -7842,13 +7575,21 @@
          style="font-size:22px;font-style:normal;font-variant:normal;font-weight:500;font-stretch:normal;text-align:justify;text-anchor:start;font-family:URW Palladio L;-inkscape-font-specification:URW Palladio L Medium"
          id="flowPara4868"> </flowPara><flowPara
          style="font-size:36px;font-style:normal;font-variant:normal;font-weight:500;font-stretch:normal;text-align:justify;text-anchor:start;font-family:URW Palladio L;-inkscape-font-specification:URW Palladio L Medium"
-         id="flowPara4635-2">To illustrate the explanatory power of the model, the countrys' preference paramters are chosen to bring the simulated economies close to the real world. The resulting 10-dimensional optimization problem of a nonconvex function is undertaken with the help of the GC3Pie library. </flowPara><flowPara
+         id="flowPara4635-2">To illustrate the explanatory power of the model, the countries' preference parameters are chosen to bring the simulated economies close to the real world. The resulting 10-dimensional optimization problem of a nonconvex function is undertaken with the help of the GC3Pie library. </flowPara><flowPara
          style="font-size:22px;font-style:normal;font-variant:normal;font-weight:500;font-stretch:normal;text-align:justify;text-anchor:start;font-family:URW Palladio L;-inkscape-font-specification:URW Palladio L Medium"
-         id="flowPara4653-9"> </flowPara><flowPara
+         id="flowPara6876"> </flowPara><flowPara
          style="font-size:36px;font-style:normal;font-variant:normal;font-weight:500;font-stretch:normal;text-align:justify;text-anchor:start;font-family:URW Palladio L;-inkscape-font-specification:URW Palladio L Medium"
-         id="flowPara4870">The optimizer is broken up into a <flowSpan
-   style="font-weight:bold;text-align:justify;text-anchor:start;fill:#fb8b00;fill-opacity:1;-inkscape-font-specification:URW Palladio L Bold"
-   id="flowSpan6317-3">SequentialTaskCollection</flowSpan>, where each optimization iteration is one sequential task. When initialized, the optimizer generates a first guess (population) for the parameters. </flowPara><flowPara
+         id="flowPara4870">In the above example <flowSpan
+   style="font-weight:bold;fill:#b676b1;fill-opacity:1;-inkscape-font-specification:URW Palladio L Bold"
+   id="flowSpan6899">GFPSequence</flowSpan>, a <flowSpan
+   style="font-weight:bold;fill:#b675b1;fill-opacity:1;-inkscape-font-specification:URW Palladio L Bold"
+   id="flowSpan6883">SequentialTaskCollection</flowSpan>, implements the differential evolution optimizer: each optimization iteration is one sequential task. When initialized, the optimizer generates an initial population of size <flowSpan
+   style="font-style:italic;-inkscape-font-specification:URW Palladio L Italic"
+   id="flowSpan7088">n</flowSpan> for the <flowSpan
+   style="font-style:italic;-inkscape-font-specification:URW Palladio L Italic"
+   id="flowSpan7138">N</flowSpan>-dimensional parameters (<flowSpan
+   style="font-style:italic;-inkscape-font-specification:URW Palladio L Italic"
+   id="flowSpan7140">N</flowSpan>=10). </flowPara><flowPara
          id="flowPara4446-3"
          style="font-size:36px;font-style:normal;font-variant:normal;font-weight:500;font-stretch:normal;text-align:justify;text-anchor:start;font-family:URW Palladio L;-inkscape-font-specification:URW Palladio L Medium"> </flowPara></flowRoot>    <text
        xml:space="preserve"
@@ -7862,99 +7603,7 @@
          id="tspan4881"
          x="-799.32837"
          y="1449.1606" /></text>
-    <rect
-       ry="0"
-       y="-680.02814"
-       x="1629.4006"
-       height="522.10712"
-       width="1306.6487"
-       id="rect21065"
-       style="fill:#ffffff;fill-opacity:1;stroke:#b675b1;stroke-width:9.95290279;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;stroke-dashoffset:0" />
     <flowRoot
-       transform="translate(211.84197,-3856.2348)"
-       style="font-size:40px;font-style:normal;font-weight:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;font-family:Sans"
-       id="flowRoot21067"
-       xml:space="preserve"><flowRegion
-         id="flowRegion21069"><rect
-           y="3222.7869"
-           x="2129.3218"
-           height="472.09973"
-           width="549.22034"
-           id="rect21071" /></flowRegion><flowPara
-         style="font-size:28px;font-style:normal;font-variant:normal;font-weight:500;font-stretch:normal;text-align:justify;text-anchor:start;font-family:URW Palladio L;-inkscape-font-specification:URW Palladio L Medium"
-         id="flowPara21073">A succession of <flowSpan
-   style="font-size:28px;font-weight:bold;text-align:justify;text-anchor:start;fill:#aa0000;-inkscape-font-specification:URW Palladio L Bold"
-   id="flowSpan7734">Tasks</flowSpan> is implemented through a <flowSpan
-   id="flowSpan21099"
-   style="font-size:28px;font-style:normal;font-weight:bold;text-align:justify;text-anchor:start;fill:#ff6600;-inkscape-font-specification:URW Palladio L Bold">SequentialTaskCollection</flowSpan>.  Tasks in the collection are executed one after the other; after one of them completes, the <flowSpan
-   id="flowSpan21105"
-   style="font-size:28px;font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;text-align:justify;text-anchor:start;fill:#000080;font-family:LMMono8;-inkscape-font-specification:LMMono8 Bold">next()</flowSpan> method is called to determine what step to take: continue execution with another task, or stop.</flowPara><flowPara
-         id="flowPara21079"
-         style="font-size:28px;font-style:normal;font-variant:normal;font-weight:500;font-stretch:normal;text-align:justify;text-anchor:start;font-family:URW Palladio L;-inkscape-font-specification:URW Palladio L Medium"> </flowPara><flowPara
-         id="flowPara21125"
-         style="font-size:28px;font-style:normal;font-variant:normal;font-weight:500;font-stretch:normal;text-align:justify;text-anchor:start;font-family:URW Palladio L;-inkscape-font-specification:URW Palladio L Medium">The <flowSpan
-   id="flowSpan21107"
-   style="font-size:28px;font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;text-align:justify;text-anchor:start;fill:#000080;font-family:LMMono8;-inkscape-font-specification:LMMono8 Bold">next()</flowSpan> method can modify the collection, or re-run tasks already run. It is thus possible to implement indefinite loops, that repeat until a certain condition is met. </flowPara></flowRoot>    <flowRoot
-       transform="translate(-465.8484,-3881.822)"
-       style="font-size:40px;font-style:normal;font-weight:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;display:inline;enable-background:new;font-family:Sans"
-       id="flowRoot21067-3"
-       xml:space="preserve"><flowRegion
-         id="flowRegion21069-9"><rect
-           y="3222.7869"
-           x="2129.3218"
-           height="465.94641"
-           width="660.03558"
-           id="rect21071-6" /></flowRegion><flowPara
-         id="flowPara21083-3"
-         style="font-size:22px;font-style:normal;font-variant:normal;font-weight:500;font-stretch:normal;font-family:URW Palladio L;-inkscape-font-specification:URW Palladio L Medium" /><flowPara
-         id="flowPara21085-8"
-         style="font-size:28px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-family:LMMono8;-inkscape-font-specification:LMMono8"><flowSpan
-   style="font-size:28px;fill:#000080"
-   id="flowSpan7756-0">class</flowSpan><flowSpan
-   style="font-size:28px;fill:#800080"
-   id="flowSpan7760-7"> MySequence</flowSpan>(<flowSpan
-   style="font-size:28px;fill:#800080"
-   id="flowSpan7762-7">SequentialTaskCollection</flowSpan>):</flowPara><flowPara
-         id="flowPara21087-3"
-         style="font-size:28px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-family:LMMono8;-inkscape-font-specification:LMMono8"><flowSpan
-   style="font-size:28px;fill:#000080"
-   id="flowSpan7758-4">  def</flowSpan> __init__(self, ...):</flowPara><flowPara
-         id="flowPara21089-6"
-         style="font-size:28px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-family:LMMono8;-inkscape-font-specification:LMMono8"><flowSpan
-   style="font-size:28px;fill:#800080"
-   id="flowSpan7764-5">    SequentialsTaskCollection</flowSpan>.__init__(</flowPara><flowPara
-         id="flowPara21127-5"
-         style="font-size:28px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-family:LMMono8;-inkscape-font-specification:LMMono8">      self, [ tasks ], ...)</flowPara><flowPara
-         id="flowPara21091-5"
-         style="font-size:28px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-family:LMMono8;-inkscape-font-specification:LMMono8"><flowSpan
-   style="font-size:28px;fill:#000080"
-   id="flowSpan7766-8">  def</flowSpan> next(self, done):</flowPara><flowPara
-         id="flowPara21093-9"
-         style="font-size:28px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-family:LMMono8;-inkscape-font-specification:LMMono8"><flowSpan
-   style="font-size:28px;fill:#000080"
-   id="flowSpan7768-3">    if</flowSpan> self.tasks[done].converged == <flowSpan
-   style="font-size:28px;fill:#000080"
-   id="flowSpan7788-9">True</flowSpan>:</flowPara><flowPara
-         id="flowPara21095-6"
-         style="font-size:28px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-family:LMMono8;-inkscape-font-specification:LMMono8"><flowSpan
-   style="font-size:28px;fill:#000080"
-   id="flowSpan7784-6">      return</flowSpan><flowSpan
-   style="font-size:28px;fill:#800080"
-   id="flowSpan7786-4"> Run.State</flowSpan>.TERMINATED</flowPara><flowPara
-         id="flowPara21097-1"
-         style="font-size:28px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-family:LMMono8;-inkscape-font-specification:LMMono8"><flowSpan
-   style="font-size:28px;fill:#000080"
-   id="flowSpan7770-5">    else</flowSpan>:</flowPara><flowPara
-         id="flowPara21129-0"
-         style="font-size:28px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;fill:#00ff00;font-family:LMMono8;-inkscape-font-specification:LMMono8">      # run another optimization step,</flowPara><flowPara
-         id="flowPara21131-7"
-         style="font-size:28px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;fill:#00ff00;font-family:LMMono8;-inkscape-font-specification:LMMono8">      # with altered parameters</flowPara><flowPara
-         id="flowPara21123-6"
-         style="font-size:28px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-family:LMMono8;-inkscape-font-specification:LMMono8">      new_params = ...</flowPara><flowPara
-         id="flowPara21125-6"
-         style="font-size:28px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-family:LMMono8;-inkscape-font-specification:LMMono8">      self.tasks.add(<flowSpan
-   style="font-size:28px;fill:#800080"
-   id="flowSpan7780-8">MyParallel</flowSpan>(new_params))</flowPara></flowRoot>    <flowRoot
        xml:space="preserve"
        id="flowRoot6623"
        style="fill:black;stroke:none;stroke-opacity:1;stroke-width:1px;stroke-linejoin:miter;stroke-linecap:butt;fill-opacity:1;font-family:Sans;font-style:normal;font-weight:normal;font-size:40px;line-height:125%;letter-spacing:0px;word-spacing:0px"><flowRegion
@@ -7964,7 +7613,7 @@
            height="965.20563"
            x="1584.7633"
            y="2991.2678" /></flowRegion><flowPara
-         id="flowPara6629"></flowPara></flowRoot>    <flowRoot
+         id="flowPara6629" /></flowRoot>    <flowRoot
        xml:space="preserve"
        id="flowRoot6631"
        style="fill:black;stroke:none;stroke-opacity:1;stroke-width:1px;stroke-linejoin:miter;stroke-linecap:butt;fill-opacity:1;font-family:Sans;font-style:normal;font-weight:normal;font-size:40px;line-height:125%;letter-spacing:0px;word-spacing:0px"><flowRegion
@@ -7974,41 +7623,7 @@
            height="932.59735"
            x="1580.4155"
            y="2991.2678" /></flowRegion><flowPara
-         id="flowPara6637"></flowPara></flowRoot>    <flowRoot
-       transform="translate(1487.25,-1022.2213)"
-       style="font-size:40px;font-style:normal;font-weight:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;opacity:0.98000004;fill:#000000;fill-opacity:1;stroke:none;display:inline;enable-background:new;font-family:Sans;-inkscape-font-specification:URW Palladio L Medium"
-       id="flowRoot4400-9-3"
-       xml:space="preserve"><flowRegion
-         id="flowRegion4402-7-3"><rect
-           style="font-style:normal;-inkscape-font-specification:URW Palladio L Medium"
-           y="982.59674"
-           x="45.651619"
-           height="722.18042"
-           width="1386.4761"
-           id="rect4404-7-2"
-           ry="2.1738892" /></flowRegion><flowPara
-         style="font-size:36px;font-style:normal;font-variant:normal;font-weight:500;font-stretch:normal;text-align:justify;text-anchor:start;font-family:URW Palladio L;-inkscape-font-specification:URW Palladio L Medium"
-         id="flowPara4873-0">The entire population is packaged into a ParallelTaskCollection. Each task within the collection is an Application, a C++ implementation of the economic model that simulates the interaction of two economies. The whole population is evaluated in parallel, but controlled as one task by the optimizer. </flowPara><flowPara
-         style="font-size:22px;font-style:normal;font-variant:normal;font-weight:500;font-stretch:normal;text-align:justify;text-anchor:start;font-family:URW Palladio L;-inkscape-font-specification:URW Palladio L Medium"
-         id="flowPara10803"> </flowPara><flowPara
-         style="font-size:36px;font-style:normal;font-variant:normal;font-weight:500;font-stretch:normal;text-align:justify;text-anchor:start;font-family:URW Palladio L;-inkscape-font-specification:URW Palladio L Medium"
-         id="flowPara10805">After the parallel task has completed, the sequential task's next() method checks for convergence, otherwise generates and evaluates a new guess for the model parameters. </flowPara><flowPara
-         style="font-size:22px;font-style:normal;font-variant:normal;font-weight:500;font-stretch:normal;text-align:justify;text-anchor:start;font-family:URW Palladio L;-inkscape-font-specification:URW Palladio L Medium"
-         id="flowPara4726-9-9"> </flowPara><flowPara
-         style="font-size:36px;font-style:normal;font-variant:normal;font-weight:500;font-stretch:normal;text-align:justify;text-anchor:start;font-family:URW Palladio L;-inkscape-font-specification:URW Palladio L Medium"
-         id="flowPara4876-5">The <flowSpan
-   style="font-style:normal;font-weight:bold;text-align:justify;text-anchor:start;fill:#fdca01;fill-opacity:1;-inkscape-font-specification:URW Palladio L Medium"
-   id="flowSpan4742-6-3">SessionBasedScript</flowSpan> serves as command line interface and permits running several optimizations in parallel.</flowPara><flowPara
-         style="font-size:36px;font-style:normal;font-variant:normal;font-weight:500;font-stretch:normal;text-align:justify;text-anchor:start;font-family:URW Palladio L;-inkscape-font-specification:URW Palladio L Medium"
-         id="flowPara6808" /><flowPara
-         style="font-size:36px;font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;text-align:justify;text-anchor:start;font-family:URW Palladio L;-inkscape-font-specification:URW Palladio L Medium"
-         id="flowPara6810">References</flowPara><flowPara
-         style="font-size:22px;font-style:normal;font-variant:normal;font-weight:500;font-stretch:normal;text-align:justify;text-anchor:start;font-family:URW Palladio L;-inkscape-font-specification:URW Palladio L Medium"
-         id="flowPara6812"> </flowPara><flowPara
-         style="font-size:36px;font-style:normal;font-variant:normal;font-weight:500;font-stretch:normal;text-align:justify;text-anchor:start;font-family:URW Palladio L;-inkscape-font-specification:URW Palladio L Medium"
-         id="flowPara6820">Jonen, B., Scheuring, S.: Time-Varying International Diversification and the Forward Premium (working paper), 2011. Institut für Banking und Finance, University of Zurich. </flowPara><flowPara
-         id="flowPara4446-3-8"
-         style="font-size:36px;font-style:normal;font-variant:normal;font-weight:500;font-stretch:normal;text-align:justify;text-anchor:start;font-family:URW Palladio L;-inkscape-font-specification:URW Palladio L Medium" /></flowRoot>    <text
+         id="flowPara6637" /></flowRoot>    <text
        xml:space="preserve"
        style="font-size:40px;font-style:normal;font-weight:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;font-family:Sans"
        x="2822.2439"
@@ -8020,5 +7635,458 @@
          id="tspan6874"
          x="2822.2439"
          y="4480.46" /></text>
-  </g>
+    <rect
+       style="fill:#ffffff;fill-opacity:1;stroke:none"
+       id="rect5914"
+       width="434.77731"
+       height="423.9079"
+       x="1635.4641"
+       y="-673.63989" />
+    <g
+       id="g7802">
+      <rect
+         style="fill:#f8f2f8;fill-opacity:0.39215687;stroke:#b675b1;stroke-width:9.95290278999999956;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;stroke-dashoffset:0"
+         id="rect21065"
+         width="1306.6487"
+         height="522.10712"
+         x="1636.7899"
+         y="-671.07208"
+         ry="0" />
+      <flowRoot
+         xml:space="preserve"
+         id="flowRoot21067"
+         style="font-size:40px;font-style:normal;font-weight:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;font-family:Sans"
+         transform="translate(211.84197,-3856.2348)"><flowRegion
+           id="flowRegion21069"><rect
+             id="rect21071"
+             width="549.22034"
+             height="472.09973"
+             x="2129.3218"
+             y="3222.7869" /></flowRegion><flowPara
+           id="flowPara21073"
+           style="font-size:28px;font-style:normal;font-variant:normal;font-weight:500;font-stretch:normal;text-align:justify;text-anchor:start;font-family:URW Palladio L;-inkscape-font-specification:URW Palladio L Medium">A succession of <flowSpan
+   id="flowSpan7734"
+   style="font-size:28px;font-weight:bold;text-align:justify;text-anchor:start;fill:#000000;-inkscape-font-specification:URW Palladio L Bold">Tasks</flowSpan> is implemented through a <flowSpan
+   style="font-size:28px;font-style:normal;font-weight:bold;text-align:justify;text-anchor:start;fill:#b675b1;fill-opacity:1;-inkscape-font-specification:URW Palladio L Bold"
+   id="flowSpan21099">SequentialTaskCollection</flowSpan>. </flowPara><flowPara
+           id="flowPara6182"
+           style="font-size:28px;font-style:normal;font-variant:normal;font-weight:500;font-stretch:normal;text-align:justify;text-anchor:start;font-family:URW Palladio L;-inkscape-font-specification:URW Palladio L Medium">Tasks in the collection are executed one after the other; after one of them completes, the <flowSpan
+   style="font-size:28px;font-style:italic;font-variant:normal;font-weight:normal;font-stretch:normal;text-align:justify;text-anchor:start;fill:#000000;font-family:LMMono8;-inkscape-font-specification:LMMono8 Italic"
+   id="flowSpan21105">next()</flowSpan> method is called to determine what step to take: continue execution with another task, or stop.</flowPara><flowPara
+           style="font-size:28px;font-style:normal;font-variant:normal;font-weight:500;font-stretch:normal;text-align:justify;text-anchor:start;font-family:URW Palladio L;-inkscape-font-specification:URW Palladio L Medium"
+           id="flowPara21079"> </flowPara><flowPara
+           style="font-size:28px;font-style:normal;font-variant:normal;font-weight:500;font-stretch:normal;text-align:justify;text-anchor:start;font-family:URW Palladio L;-inkscape-font-specification:URW Palladio L Medium"
+           id="flowPara21125">The <flowSpan
+   style="font-size:28px;font-style:italic;font-variant:normal;font-weight:normal;font-stretch:normal;text-align:justify;text-anchor:start;fill:#000000;font-family:LMMono8;-inkscape-font-specification:LMMono8 Italic"
+   id="flowSpan21107">next()</flowSpan> method can modify the collection, or re-run tasks already run. It is thus possible to implement indefinite loops, that repeat until a certain condition is met. </flowPara></flowRoot>      <flowRoot
+         xml:space="preserve"
+         id="flowRoot21067-3"
+         style="font-size:40px;font-style:normal;font-weight:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;display:inline;enable-background:new;font-family:Sans"
+         transform="translate(-465.8484,-3881.822)"><flowRegion
+           id="flowRegion21069-9"><rect
+             id="rect21071-6"
+             width="660.03558"
+             height="465.94641"
+             x="2129.3218"
+             y="3222.7869" /></flowRegion><flowPara
+           style="font-size:22px;font-style:normal;font-variant:normal;font-weight:500;font-stretch:normal;font-family:URW Palladio L;-inkscape-font-specification:URW Palladio L Medium"
+           id="flowPara21083-3" /><flowPara
+           style="font-size:28px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-family:LMMono8;-inkscape-font-specification:LMMono8"
+           id="flowPara21085-8"><flowSpan
+   id="flowSpan7756-0"
+   style="font-size:28px;fill:#502d16">class</flowSpan><flowSpan
+   id="flowSpan7760-7"
+   style="font-size:28px;fill:#3f213d;fill-opacity:1"> GFPSequence</flowSpan>(<flowSpan
+   id="flowSpan7762-7"
+   style="font-size:28px;fill:#b675b1;fill-opacity:1">SequentialTaskCollection</flowSpan>):</flowPara><flowPara
+           style="font-size:28px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-family:LMMono8;-inkscape-font-specification:LMMono8"
+           id="flowPara21087-3"><flowSpan
+   id="flowSpan7758-4"
+   style="font-size:28px;fill:#502d16">  def</flowSpan> __init__(self, ...):</flowPara><flowPara
+           style="font-size:28px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-family:LMMono8;-inkscape-font-specification:LMMono8"
+           id="flowPara21089-6"><flowSpan
+   id="flowSpan7764-5"
+   style="font-size:28px;fill:#b675b1;fill-opacity:1">    SequentialsTaskCollection</flowSpan>.__init__(</flowPara><flowPara
+           style="font-size:28px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-family:LMMono8;-inkscape-font-specification:LMMono8"
+           id="flowPara21127-5">      self, [ tasks ], ...)</flowPara><flowPara
+           style="font-size:28px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-family:LMMono8;-inkscape-font-specification:LMMono8"
+           id="flowPara21091-5"><flowSpan
+   id="flowSpan7766-8"
+   style="font-size:28px;fill:#502d16">  def</flowSpan> next(self, done):</flowPara><flowPara
+           style="font-size:28px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-family:LMMono8;-inkscape-font-specification:LMMono8"
+           id="flowPara21093-9"><flowSpan
+   id="flowSpan7768-3"
+   style="font-size:28px;fill:#502d16">    if</flowSpan> self.tasks[done].converged == <flowSpan
+   id="flowSpan7788-9"
+   style="font-size:28px;fill:#502d16">True</flowSpan>:</flowPara><flowPara
+           style="font-size:28px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-family:LMMono8;-inkscape-font-specification:LMMono8"
+           id="flowPara21095-6"><flowSpan
+   id="flowSpan7784-6"
+   style="font-size:28px;fill:#502d16">      return</flowSpan> Run.State.TERMINATED</flowPara><flowPara
+           style="font-size:28px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-family:LMMono8;-inkscape-font-specification:LMMono8"
+           id="flowPara21097-1"><flowSpan
+   id="flowSpan7770-5"
+   style="font-size:28px;fill:#502d16">    else</flowSpan>:</flowPara><flowPara
+           style="font-size:28px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;fill:#782121;font-family:LMMono8;-inkscape-font-specification:LMMono8"
+           id="flowPara21129-0">      # run another optimization step,</flowPara><flowPara
+           style="font-size:28px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;fill:#782121;font-family:LMMono8;-inkscape-font-specification:LMMono8"
+           id="flowPara21131-7">      # with altered parameters</flowPara><flowPara
+           style="font-size:28px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-family:LMMono8;-inkscape-font-specification:LMMono8"
+           id="flowPara21123-6">      new_params = ...</flowPara><flowPara
+           style="font-size:28px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-family:LMMono8;-inkscape-font-specification:LMMono8"
+           id="flowPara21125-6">      self.tasks.add(<flowSpan
+   id="flowSpan7780-8"
+   style="font-size:28px;fill:#4f6000;fill-opacity:1">GFParallel</flowSpan>(new_params))</flowPara></flowRoot>    </g>
+    <path
+       sodipodi:type="star"
+       style="color:#000000;fill:#ff9955;fill-opacity:1;fill-rule:nonzero;stroke:#2c85e2;stroke-width:8.90926696999999912;stroke-linecap:butt;stroke-linejoin:round;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:26.72780089999999831, 26.72780089999999831;stroke-dashoffset:12.47297355999999979;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:accumulate"
+       id="path4960-6-5"
+       sodipodi:sides="3"
+       sodipodi:cx="1471.054"
+       sodipodi:cy="517.67877"
+       sodipodi:r1="109.87697"
+       sodipodi:r2="54.938484"
+       sodipodi:arg1="-0.52724113"
+       sodipodi:arg2="0.51995642"
+       inkscape:flatsided="true"
+       inkscape:rounded="0"
+       inkscape:randomized="0"
+       d="m 1566.0095,462.39406 -94.5553,165.16095 -95.756,-164.46777 z"
+       transform="matrix(0.57911939,0,0,-0.54386105,605.34308,-1535.9181)"
+       inkscape:transform-center-x="0.15508761"
+       inkscape:transform-center-y="-19.868681" />
+    <path
+       style="fill:#ff9955;fill-opacity:1;stroke:#ff9955;stroke-width:1.50471902;stroke-miterlimit:4;stroke-opacity:1;stroke-dashoffset:0;display:inline;enable-background:new"
+       d="m 1734.1165,-1409.6125 89.7061,0 0,61.8999 c -32.5528,-5.77 -60.2258,39.711 -90.1278,11.4975 z"
+       id="rect4810-5-3-0"
+       inkscape:connector-curvature="0"
+       sodipodi:nodetypes="ccccc" />
+    <path
+       style="fill:#ff9955;fill-opacity:1;stroke:#ff9955;stroke-width:1.50471902;stroke-miterlimit:4;stroke-opacity:1;stroke-dashoffset:0;display:inline;enable-background:new"
+       d="m 1094.0035,-1409.6125 89.7061,0 0,61.8999 c -32.5528,-5.77 -60.2258,39.711 -90.1278,11.4975 z"
+       id="rect4810-5"
+       inkscape:connector-curvature="0"
+       sodipodi:nodetypes="ccccc" />
+    <path
+       style="fill:#ff9955;fill-opacity:1;stroke:#ff9955;stroke-width:1.50471902;stroke-miterlimit:4;stroke-opacity:1;stroke-dashoffset:0;display:inline;enable-background:new"
+       d="m 1250.978,-1409.6125 89.7061,0 0,61.8999 c -32.5528,-5.77 -60.2258,39.711 -90.1278,11.4975 z"
+       id="rect4810-5-3"
+       inkscape:connector-curvature="0"
+       sodipodi:nodetypes="ccccc" />
+    <rect
+       transform="matrix(0,1,-1,0,0,0)"
+       y="-1340.7145"
+       x="-1248.5217"
+       height="90.188492"
+       width="293.76791"
+       id="rect8498-9-2-9"
+       style="color:#000000;fill:#ff9955;fill-opacity:1;fill-rule:nonzero;stroke:#ff9955;stroke-width:5;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;stroke-dashoffset:0;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:new" />
+    <path
+       inkscape:connector-curvature="0"
+       id="path7389"
+       d="m 2105,-1077.6377 -228.5022,0.2571"
+       style="fill:#9d4cab;fill-opacity:1;stroke:#668000;stroke-width:7.16583346999999993;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;marker-start:url(#DotMOkE);marker-end:url(#DotMeeK)"
+       sodipodi:nodetypes="cc" />
+    <path
+       style="fill:none;stroke:#0028a5;stroke-width:7.04672432;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;marker-start:url(#DotMk);marker-end:url(#DotMm)"
+       d="m 1140,-953.69837 0,306.06066 -320,0"
+       id="path17259"
+       inkscape:connector-curvature="0"
+       sodipodi:nodetypes="ccc" />
+    <path
+       sodipodi:nodetypes="ccc"
+       inkscape:connector-curvature="0"
+       id="path12609"
+       d="m 1457,-1877.8872 0,-69.7505 648,0"
+       style="fill:none;stroke:#2c85e2;stroke-width:6.65832329;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;marker-start:url(#DotMd);marker-end:url(#DotMt)" />
+    <path
+       sodipodi:type="star"
+       style="fill:#ff9955;fill-opacity:1;stroke:none"
+       id="path6976"
+       sodipodi:sides="3"
+       sodipodi:cx="1383.7196"
+       sodipodi:cy="2367.2666"
+       sodipodi:r1="12.72915"
+       sodipodi:r2="6.3645749"
+       sodipodi:arg1="0.52359878"
+       sodipodi:arg2="1.5707963"
+       inkscape:flatsided="false"
+       inkscape:rounded="0"
+       inkscape:randomized="0"
+       d="m 1394.7434,2373.6312 -11.0238,0 -11.0238,0 5.5119,-9.5469 5.5119,-9.5468 5.5119,9.5468 z"
+       transform="matrix(-5.0099916,0,0,-5.0099916,8392.4235,11094.347)"
+       inkscape:transform-center-y="15.942086"
+       inkscape:transform-center-x="4.5382665e-05" />
+    <path
+       sodipodi:type="star"
+       style="fill:#ff9955;fill-opacity:1;stroke:none;display:inline;enable-background:new"
+       id="path6976-9"
+       sodipodi:sides="3"
+       sodipodi:cx="1383.7196"
+       sodipodi:cy="2367.2666"
+       sodipodi:r1="12.72915"
+       sodipodi:r2="6.3645749"
+       sodipodi:arg1="0.52359878"
+       sodipodi:arg2="1.5707963"
+       inkscape:flatsided="false"
+       inkscape:rounded="0"
+       inkscape:randomized="0"
+       d="m 1394.7434,2373.6312 -11.0238,0 -11.0238,0 5.5119,-9.5469 5.5119,-9.5468 5.5119,9.5468 z"
+       transform="matrix(5.0099916,0,0,5.0099916,-5472.6847,-13438.339)"
+       inkscape:transform-center-y="-15.941975"
+       inkscape:transform-center-x="-3.5624321e-05" />
+    <g
+       transform="translate(520.61523,-10.224627)"
+       style="display:inline;enable-background:new"
+       id="g7185-1">
+      <g
+         id="g7238">
+        <g
+           id="g7192"
+           style="display:inline;enable-background:new"
+           transform="translate(-520.61523,10.224627)">
+          <path
+             style="display:inline;enable-background:new;filter:url(#filter8460);fill:#ffe6d5;fill-opacity:1;stroke:#ffe6d5;stroke-width:5.32399511000000025;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;stroke-dashoffset:0"
+             d="m 1619.9715,988.93471 c 63.1131,48.30919 161.8302,-33.0897 269.7061,0 l 0,115.33539 c -116.5487,-31.0419 -182.0466,41.2193 -269.7061,0 z"
+             id="rect4870-9-8-6"
+             inkscape:connector-curvature="0"
+             sodipodi:nodetypes="ccccc"
+             transform="translate(0,-3160.6299)" />
+          <path
+             style="display:inline;enable-background:new;fill:#ffccaa;fill-opacity:1;stroke:#ffccaa;stroke-width:5.32399511000000025;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;stroke-dashoffset:0"
+             d="m 1606.0602,1012.5912 c 63.1131,48.3092 161.8302,-33.08973 269.7061,0 l 0,115.3354 c -116.5487,-31.0419 -182.0466,41.2193 -269.7061,0 z"
+             id="rect4870-9-8"
+             inkscape:connector-curvature="0"
+             sodipodi:nodetypes="ccccc"
+             transform="translate(0,-3160.6299)" />
+          <text
+             sodipodi:linespacing="125%"
+             id="text13251"
+             y="-2075.0535"
+             x="1627.0961"
+             style="font-size:29.88661957px;font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;text-indent:0;text-align:start;text-decoration:none;line-height:125%;letter-spacing:0px;word-spacing:0px;text-transform:none;direction:ltr;block-progression:tb;writing-mode:lr-tb;text-anchor:start;baseline-shift:baseline;color:#000000;fill:#000000;fill-opacity:1;fill-rule:nonzero;stroke:none;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:accumulate;font-family:Sans;-inkscape-font-specification:Sans Bold"
+             xml:space="preserve"><tspan
+               style="font-size:28px"
+               id="tspan13255"
+               y="-2075.0535"
+               x="1627.0961"
+               sodipodi:role="line">Parameter</tspan><tspan
+               style="font-size:28px"
+               id="tspan7253"
+               y="-2040.0535"
+               x="1627.0961"
+               sodipodi:role="line">Range</tspan></text>
+          <path
+             style="color:#000000;fill:#ff9955;fill-opacity:1;fill-rule:nonzero;stroke:#ff9955;stroke-width:5;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;stroke-dashoffset:0;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:new"
+             d="m 1590.2939,-2127.6377 c 63.1131,48.3092 161.8302,-33.0897 269.7061,0 l 0,115.3354 c -116.5487,-31.0419 -182.0466,41.2193 -269.7061,0 z"
+             id="rect4870-9"
+             inkscape:connector-curvature="0"
+             sodipodi:nodetypes="ccccc" />
+        </g>
+        <text
+           sodipodi:linespacing="125%"
+           id="text13251-0-0"
+           y="-2061.4131"
+           x="1199.3848"
+           style="font-size:29.88661957px;font-style:normal;font-weight:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;font-family:Sans"
+           xml:space="preserve"><tspan
+             id="tspan12530-1"
+             style="font-size:28px;font-weight:bold;text-align:center;text-anchor:middle;-inkscape-font-specification:Sans Bold"
+             y="-2061.4131"
+             x="1199.3848"
+             sodipodi:role="line">Parameter</tspan><tspan
+             id="tspan7229"
+             style="font-size:28px;font-weight:bold;text-align:center;text-anchor:middle;-inkscape-font-specification:Sans Bold"
+             y="-2026.4131"
+             x="1199.3848"
+             sodipodi:role="line">Range</tspan></text>
+      </g>
+    </g>
+    <g
+       id="g7185">
+      <text
+         xml:space="preserve"
+         style="font-size:29.88661957px;font-style:normal;font-weight:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;font-family:Sans"
+         x="1179.3848"
+         y="-2057.4131"
+         id="text13251-0"
+         sodipodi:linespacing="125%"><tspan
+           sodipodi:role="line"
+           x="1179.3848"
+           y="-2057.4131"
+           id="tspan13255-4"
+           style="font-size:28px;font-weight:bold;text-align:center;text-anchor:middle;-inkscape-font-specification:Sans Bold">Template</tspan><tspan
+           sodipodi:role="line"
+           x="1179.3848"
+           y="-2022.4131"
+           style="font-size:28px;font-weight:bold;text-align:center;text-anchor:middle;-inkscape-font-specification:Sans Bold"
+           id="tspan12530">Input Files</tspan></text>
+    </g>
+    <g
+       id="g7629"
+       transform="translate(-2.0000005,-0.93884277)">
+      <rect
+         style="color:#000000;fill:#ff9955;fill-opacity:1;fill-rule:nonzero;stroke:#ff9955;stroke-width:5;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;stroke-dashoffset:0;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:new"
+         id="rect8498-9-2-9-7"
+         width="293.76791"
+         height="90.188492"
+         x="-1247.5829"
+         y="-1825.8529"
+         transform="matrix(0,1,-1,0,0,0)" />
+      <text
+         transform="matrix(0,-1,1,0,0,0)"
+         xml:space="preserve"
+         style="font-size:40px;font-style:normal;font-weight:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;font-family:Sans"
+         x="967.60645"
+         y="1788.8281"
+         id="text12536"
+         sodipodi:linespacing="125%"><tspan
+           sodipodi:role="line"
+           id="tspan12538"
+           x="967.60645"
+           y="1788.8281"
+           style="font-size:32px;font-weight:bold;-inkscape-font-specification:Sans Bold">GFPApplication</tspan></text>
+    </g>
+    <path
+       sodipodi:type="arc"
+       style="fill:#668000;fill-opacity:1;stroke:#668000;stroke-width:8.85826778;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;stroke-dashoffset:13.81889725"
+       id="path7287"
+       sodipodi:cx="1860"
+       sodipodi:cy="2072.9922"
+       sodipodi:rx="20"
+       sodipodi:ry="20"
+       d="m 1840.0023,2073.2981 a 20,20 0 1 1 0,0.081"
+       transform="matrix(0.70378885,0,0,0.70378885,567.53978,-2536.6802)"
+       sodipodi:start="3.1262954"
+       sodipodi:end="9.4054142"
+       sodipodi:open="true" />
+    <path
+       sodipodi:type="arc"
+       style="fill:#668000;fill-opacity:1;stroke:#668000;stroke-width:8.85826778;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;stroke-dashoffset:13.81889725;display:inline;enable-background:new"
+       id="path7287-2"
+       sodipodi:cx="1860"
+       sodipodi:cy="2072.9922"
+       sodipodi:rx="20"
+       sodipodi:ry="20"
+       d="m 1840.0023,2073.2981 a 20,20 0 1 1 0,0.081"
+       transform="matrix(0.70378885,0,0,0.70378885,796.67956,-2537.5353)"
+       sodipodi:start="3.1262954"
+       sodipodi:end="9.4054142"
+       sodipodi:open="true" />
+    <g
+       id="g8054">
+      <flowRoot
+         xml:space="preserve"
+         id="flowRoot4400-9-3"
+         style="font-size:40px;font-style:normal;font-weight:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;opacity:0.98000004;fill:#000000;fill-opacity:1;stroke:none;display:inline;enable-background:new;font-family:Sans;-inkscape-font-specification:URW Palladio L Medium"
+         transform="translate(1491.876,-973.78686)"><flowRegion
+           id="flowRegion4402-7-3"><rect
+             ry="2.1738892"
+             id="rect4404-7-2"
+             width="1406.3805"
+             height="742.08484"
+             x="45.651619"
+             y="982.59674"
+             style="font-style:normal;-inkscape-font-specification:URW Palladio L Medium" /></flowRegion><flowPara
+           id="flowPara7502"
+           style="font-size:36px;font-style:normal;font-variant:normal;font-weight:500;font-stretch:normal;text-align:justify;text-anchor:start;font-family:URW Palladio L;-inkscape-font-specification:URW Palladio L Medium">The whole population is evaluated in parallel as a <flowSpan
+   id="flowSpan5916"
+   style="font-style:normal;font-weight:bold;fill:#688000;fill-opacity:1;-inkscape-font-specification:URW Palladio L Medium">ParallelTaskCollection</flowSpan> (see the     box). Each of the <flowSpan
+   id="flowSpan7092"
+   style="font-style:italic;-inkscape-font-specification:URW Palladio L Italic">n</flowSpan> tasks within the collection is an <flowSpan
+   id="flowSpan5920"
+   style="font-style:normal;font-weight:bold;fill:#0028a5;fill-opacity:1;-inkscape-font-specification:URW Palladio L Medium">Application</flowSpan> instance (<flowSpan
+   id="flowSpan7104"
+   style="font-weight:bold;fill:#0028a5;fill-opacity:1;-inkscape-font-specification:URW Palladio L Bold">GFPApplication<flowSpan
+   id="flowSpan7504"
+   style="fill:#000000">, <flowSpan
+   id="flowSpan7538"
+   style="font-weight:500;-inkscape-font-specification:URW Palladio L Medium">see the     box</flowSpan></flowSpan></flowSpan>), a C++ implementation of the economic model that simulates the interaction of two economies. </flowPara><flowPara
+           id="flowPara10803"
+           style="font-size:22px;font-style:normal;font-variant:normal;font-weight:500;font-stretch:normal;text-align:justify;text-anchor:start;font-family:URW Palladio L;-inkscape-font-specification:URW Palladio L Medium"> </flowPara><flowPara
+           id="flowPara10805"
+           style="font-size:36px;font-style:normal;font-variant:normal;font-weight:500;font-stretch:normal;text-align:justify;text-anchor:start;font-family:URW Palladio L;-inkscape-font-specification:URW Palladio L Medium">After the <flowSpan
+   id="flowSpan7120"
+   style="font-weight:bold;fill:#688000;fill-opacity:1;-inkscape-font-specification:URW Palladio L Bold">GFPParallel</flowSpan> has completed, the <flowSpan
+   id="flowSpan6946"
+   style="font-style:normal;font-weight:bold;fill:#b676b1;fill-opacity:1;-inkscape-font-specification:URW Palladio L Medium">GFPSequence</flowSpan>.next() method checks for convergence, otherwise generates  a new population of size <flowSpan
+   id="flowSpan7136"
+   style="font-style:italic;-inkscape-font-specification:URW Palladio L Italic">n</flowSpan> and evaluates it </flowPara><flowPara
+           id="flowPara7170"
+           style="font-size:36px;font-style:normal;font-variant:normal;font-weight:500;font-stretch:normal;text-align:justify;text-anchor:start;font-family:URW Palladio L;-inkscape-font-specification:URW Palladio L Medium">(see the     box) </flowPara><flowPara
+           id="flowPara4726-9-9"
+           style="font-size:22px;font-style:normal;font-variant:normal;font-weight:500;font-stretch:normal;text-align:justify;text-anchor:start;font-family:URW Palladio L;-inkscape-font-specification:URW Palladio L Medium"> </flowPara><flowPara
+           id="flowPara4876-5"
+           style="font-size:36px;font-style:normal;font-variant:normal;font-weight:500;font-stretch:normal;text-align:justify;text-anchor:start;font-family:URW Palladio L;-inkscape-font-specification:URW Palladio L Medium">The <flowSpan
+   id="flowSpan4742-6-3"
+   style="font-style:normal;font-weight:bold;text-align:justify;text-anchor:start;fill:#2c85e2;fill-opacity:1;-inkscape-font-specification:URW Palladio L Medium">SessionBasedScript</flowSpan> class provides a command line interface and allows running several optimizations in parallel (see the     box).</flowPara><flowPara
+           id="flowPara6808"
+           style="font-size:36px;font-style:normal;font-variant:normal;font-weight:500;font-stretch:normal;text-align:justify;text-anchor:start;font-family:URW Palladio L;-inkscape-font-specification:URW Palladio L Medium" /><flowPara
+           id="flowPara6810"
+           style="font-size:28px;font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;text-align:justify;text-anchor:start;font-family:URW Palladio L;-inkscape-font-specification:URW Palladio L Medium">References</flowPara><flowPara
+           id="flowPara6812"
+           style="font-size:22px;font-style:normal;font-variant:normal;font-weight:500;font-stretch:normal;text-align:justify;text-anchor:start;font-family:URW Palladio L;-inkscape-font-specification:URW Palladio L Medium"> </flowPara><flowPara
+           id="flowPara6820"
+           style="font-size:28px;font-style:normal;font-variant:normal;font-weight:500;font-stretch:normal;text-align:justify;text-anchor:start;font-family:URW Palladio L;-inkscape-font-specification:URW Palladio L Medium">Jonen B., Scheuring S. <flowSpan
+   id="flowSpan7084"
+   style="font-size:28px;font-style:italic;-inkscape-font-specification:URW Palladio L Italic">Time-Varying International Diversification and the Forward Premium</flowSpan> (working paper). Institut für Banking und Finance, University of Zurich, 2011. </flowPara><flowPara
+           id="flowPara7086"
+           style="font-size:22px;font-style:normal;font-variant:normal;font-weight:500;font-stretch:normal;text-align:justify;text-anchor:start;font-family:URW Palladio L;-inkscape-font-specification:URW Palladio L Medium"> </flowPara><flowPara
+           id="flowPara7055"
+           style="font-size:28px;font-style:normal;font-variant:normal;font-weight:500;font-stretch:normal;text-align:justify;text-anchor:start;font-family:URW Palladio L;-inkscape-font-specification:URW Palladio L Medium">Price K.V., Storn R.M., Lampinen J.A. <flowSpan
+   id="flowSpan7081"
+   style="font-size:28px;font-style:italic;-inkscape-font-specification:URW Palladio L Italic">Differential evolution: a practical approach to global optimization</flowSpan>. Springer, 2005.  </flowPara><flowPara
+           id="flowPara7057"
+           style="font-size:24px;font-style:normal;font-variant:normal;font-weight:500;font-stretch:normal;text-align:justify;text-anchor:start;font-family:URW Palladio L;-inkscape-font-specification:URW Palladio L Medium" /></flowRoot>      <rect
+         y="316.16428"
+         x="1665.802"
+         height="28.197996"
+         width="28.197996"
+         id="rect7168"
+         style="fill:#f7f2f7;fill-opacity:0.39215686;stroke:#b675b1;stroke-width:8.85826778;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none" />
+      <rect
+         y="15.333427"
+         x="2907.6121"
+         height="28.197996"
+         width="28.197996"
+         id="rect7168-8"
+         style="fill:#fbffeb;fill-opacity:1;stroke:#668000;stroke-width:8.85826778;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;display:inline;enable-background:new" />
+      <rect
+         y="107.73288"
+         x="1969.225"
+         height="28.197996"
+         width="28.197996"
+         id="rect7168-8-8"
+         style="fill:#ebf0ff;fill-opacity:0.39215686;stroke:#0028a5;stroke-width:8.85826778;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;display:inline;enable-background:new" />
+      <rect
+         y="433.52176"
+         x="2186.0273"
+         height="28.197996"
+         width="28.197996"
+         id="rect7168-8-0"
+         style="fill:#edf5fc;fill-opacity:1;stroke:#2c85e2;stroke-width:8.85826778;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;display:inline;enable-background:new" />
+    </g>
+    <flowRoot
+       transform="translate(1491.876,-3744.9053)"
+       style="font-size:40px;font-style:normal;font-weight:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;opacity:0.98000004;fill:#000000;fill-opacity:1;stroke:none;display:inline;enable-background:new;font-family:Sans;-inkscape-font-specification:URW Palladio L Medium"
+       id="flowRoot4400-9-3-1"
+       xml:space="preserve"><flowRegion
+         id="flowRegion4402-7-3-4"><rect
+           style="font-style:normal;-inkscape-font-specification:URW Palladio L Medium"
+           y="982.59674"
+           x="45.651619"
+           height="742.08484"
+           width="1406.3805"
+           id="rect4404-7-2-6"
+           ry="2.1738892" /></flowRegion><flowPara
+         style="font-size:48px;font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;text-align:center;text-anchor:middle;font-family:URW Palladio L;-inkscape-font-specification:URW Palladio L Bold"
+         id="flowPara7057-8">How is GC3Pie different?</flowPara><flowPara
+         style="font-size:36px;font-style:normal;font-variant:normal;font-weight:500;font-stretch:normal;text-align:justify;text-anchor:start;font-family:URW Palladio L;-inkscape-font-specification:URW Palladio L Medium"
+         id="flowPara8046">Most execution engines represent workflows as data (e.g., some XML format). GC3Pie lets you write Python code instead: you write your workflow as a set of Python classes so the entire workflow logic is expressed in a plain programming language. This means that it is easy to create loops and conditionally branch execution, for example.</flowPara><flowPara
+         style="font-size:22px;font-style:normal;font-variant:normal;font-weight:500;font-stretch:normal;text-align:justify;text-anchor:start;font-family:URW Palladio L;-inkscape-font-specification:URW Palladio L Medium"
+         id="flowPara8048"> </flowPara><flowPara
+         style="font-size:36px;font-style:normal;font-variant:normal;font-weight:500;font-stretch:normal;text-align:justify;text-anchor:start;font-family:URW Palladio L;-inkscape-font-specification:URW Palladio L Medium"
+         id="flowPara8050">Unlike other Python frameworks for distributing computation, e.g., Celery or Pyro, GC3Pie is designed to coordinate the execution of independent Applications (often pre-existing and written in another language): with GC3Pie you write Python code to steer the computation, not to perform it.</flowPara><flowPara
+         style="font-size:36px;font-style:normal;font-variant:normal;font-weight:500;font-stretch:normal;text-align:justify;text-anchor:start;font-family:URW Palladio L;-inkscape-font-specification:URW Palladio L Medium"
+         id="flowPara8052" /></flowRoot>  </g>
 </svg>
