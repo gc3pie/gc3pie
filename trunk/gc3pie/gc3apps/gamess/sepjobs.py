@@ -23,6 +23,9 @@ Classify GAMESS output files according to keyword matches.
 __version__ = 'development version (SVN $Revision$)'
 # summary of user-visible changes
 __changelog__ = """
+  2011-08-18:
+    * update of config.file now after file inspection and job assignment
+    * worked up movement of unassigned jobs to "none-found"
   2011-08-16:
     * added profiling
   2011-08-15:
@@ -87,6 +90,8 @@ def search_for_input_directories(root, name):
     Return list of directories under `root` (at any nesting level)
     whose with user specified input dir. `name`.
     """
+    name = name.strip('/')
+    print 'DEBUG: stripped name of input folder:', name
     result = []
     for rootpath, dirs, files in os.walk(root):
         matching_dirs = []
@@ -195,13 +200,8 @@ def parse_kwfile(filename, old_search):
                 # literal string search
                 result[foldername] = (StringAdaptor(what_to_search), start, end,
                                       folder_exists)
-        configfile.seek(0, 0)
         configfile.close()
-    with open(filename, 'w') as configfile:
-        print "DEBUG: writing new lines to config.file\n", str(configfile)
-        configfile.writelines(newlns)
-        configfile.close()
-    return result
+    return result, newlns
 
 
 ## main function
@@ -230,7 +230,7 @@ def sepjobs(cmdline):
 #        commonpath = os.path.commonprefix(files).rsplit('/',cmdline.params.dirlvl)[0]
     cmdline.log.debug("common prefix input file paths:\n %s", commonpath)
     # parse classification file
-    searches = parse_kwfile(cmdline.params.kwfile, old_search)
+    searches, newlns = parse_kwfile(cmdline.params.kwfile, old_search)
     cmdline.log.debug("Searching keywords: %s", searches)
     # create indices
     index = { }
@@ -241,9 +241,9 @@ def sepjobs(cmdline):
     
     def act_on_file(filepath, foldername, assigned, folder_exists, old_search): 
         """Actions to perform when a file matches a classification keyword."""
-        assigned = True
-        index[foldername].add(filepath) 
-        index['none_found'].remove(filepath)
+        if assigned:
+            index[foldername].add(filepath) 
+            index['none_found'].remove(filepath)
         """
         dirpth0 = os.path.dirname(filepath)
         print dirpth0.replace(commonpath, 
@@ -256,17 +256,17 @@ def sepjobs(cmdline):
                 folder_exists = True
 #              cmdline.log.info("Moving file")
             dirpath0 = os.path.dirname(filepath)
-            dirpath1 = dirpath0.replace(commonpath, 
-                            os.path.join(wrkdir, foldername), 1)
-            try:
-                os.makedirs(dirpath1)
-            except OSError:
-                print '\r'
-            os.rename(dirpath0, dirpath1)
-            """
-            os.rename(filepath, os.path.join(wrkdir, foldername, 
-                os.path.basename(filepath)))
-            """
+            if dirpath0 != commonpath:
+                dirpath1 = dirpath0.replace(commonpath, 
+                           os.path.join(wrkdir, foldername), 1)
+                try:
+                    os.makedirs(dirpath1)
+                except OSError:
+                    print '\r'
+                os.rename(dirpath0, dirpath1)
+            else:
+                os.rename(filepath, os.path.join(wrkdir, foldername, 
+                    os.path.basename(filepath)))
         return assigned, folder_exists    
     
     # let's rock!
@@ -292,10 +292,10 @@ def sepjobs(cmdline):
             if match:
       #          cmdline.log.info("Found match, folder_exists='%s'", folder_exists)
                 hitrt += 1
-                assigned, folder_exists = act_on_file(filepath, foldername, assigned, folder_exists, old_search) 
+                assigned, folder_exists = act_on_file(filepath, foldername, True, 
+                                                      folder_exists, old_search) 
                 searches[foldername] = (regexp, start, end, folder_exists)
                 break
-                
         # retry search with whole file
         if not assigned:               
             content = inputfile.read()
@@ -304,21 +304,19 @@ def sepjobs(cmdline):
                 match = regexp.search(content)
                 if match:
                     failrt += 1
-                    assigned, folder_exists = act_on_file(filepath, foldername, assigned, folder_exists, old_search)
+                    assigned, folder_exists = act_on_file(filepath, foldername, True, 
+                                                          folder_exists, old_search)
                     # how to avoid copying regexp back to searches ?  
                     searches[foldername] = (regexp, start, end, folder_exists)
                     break
-   #     cmdline.log.info("ASSIGNED = '%s'", assigned)
-        if (not assigned) and cmdline.params.move:
-            if not old_search:
-                if not none_found_exists:
-                    cmdline.log.info("Creating 'none_found'")
-                    os.mkdir(os.path.join(wrkdir, 'none_found'))
-                    none_found_exists = True
-                os.rename(filepath, os.path.join(wrkdir, 'none_found', 
-                          os.path.basename(filepath)))
+        if not assigned:
+            assigned, none_found_exists = act_on_file(filepath, 'none_found', False, 
+                                                      none_found_exists, old_search)
         inputfile.close()
-        
+    with open(cmdline.params.kwfile, 'w') as configfile:
+        print "DEBUG: writing new lines to config.file"
+        configfile.writelines(newlns)
+        configfile.close()
     # print summary
     for foldername, filenames in index.iteritems():
         print "== %s ==" % foldername, "no. of files:", len(index[foldername])
@@ -355,6 +353,8 @@ import cProfile
 import profile
 import pstats
 if __name__ == '__main__':
+    sepjobs.run()
+    """
     # determining overhead of cProfiler
     pr = profile.Profile()
     cumovrhd = 0.0
@@ -367,6 +367,7 @@ if __name__ == '__main__':
     cProfile.run('sepjobs.run()', 'sepjobs.prfl')
     p = pstats.Stats('sepjobs.prfl')
     p.sort_stats('time', 'calls').print_stats(10)
+    """
        
 """ 
 config file for sepjobs.py:
