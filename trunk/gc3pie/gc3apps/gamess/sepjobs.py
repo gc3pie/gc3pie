@@ -58,9 +58,6 @@ __author__ = 'Timm Reumann <timm.reumann@uzh.ch>, Riccardo Murri <riccardo.murri
 __docformat__ = 'reStructuredText'
 
 
-
-# OLD VERSION TOOKE 106 MIN. FOR SEPARATING ~2100 OUTPUT FILES
-
 import os
 import re
 import sys
@@ -167,7 +164,7 @@ def parse_kwfile(filename, old_search):
     done = re.compile(r'done[ ,]*')
     folder_exists = False
  #   configfile = open(filename, 'r')
-    result = { } ; newlns = []
+    result = [] ; newlns = []
     with open(filename, 'r') as configfile:
         for line in configfile: 
             newlns.append(line)
@@ -195,11 +192,11 @@ def parse_kwfile(filename, old_search):
                 end = float(field[3]) / 100.0
             print "DEBUG: search string, searchtype, foldername, start, end:\n", '"', what_to_search, '"', searchtype, foldername, start, end
             if searchtype in ('regexp', 're'):
-                result[foldername] = (re.compile(what_to_search), start, end, folder_exists)
-            else:
-                # literal string search
-                result[foldername] = (StringAdaptor(what_to_search), start, end,
-                                      folder_exists)
+                result.append([foldername, re.compile(what_to_search), start, end, 
+                               folder_exists])
+            else:                                   # literal string search
+                result.append([foldername, re.compile(what_to_search), start, end, 
+                               folder_exists])
         configfile.close()
     return result, newlns
 
@@ -230,12 +227,12 @@ def sepjobs(cmdline):
 #        commonpath = os.path.commonprefix(files).rsplit('/',cmdline.params.dirlvl)[0]
     cmdline.log.debug("common prefix input file paths:\n %s", commonpath)
     # parse classification file
-    searches, newlns = parse_kwfile(cmdline.params.kwfile, old_search)
-    cmdline.log.debug("Searching keywords: %s", searches)
+    srchkey, newlns = parse_kwfile(cmdline.params.kwfile, old_search)
+    cmdline.log.debug("Searching keywords: %s", srchkey)
     # create indices
     index = { }
-    for foldername in searches.iterkeys():
-        index[foldername] = set()
+    for i in xrange(0, len(srchkey)):
+        index[srchkey[i][0]] = set()
     cmdline.log.debug("index: %s", index)
     index['none_found'] = set(files)
     
@@ -272,42 +269,41 @@ def sepjobs(cmdline):
     # let's rock!
     failrt = 0
     hitrt = 0
+    Nsrchkeys = len(srchkey)
     for filepath in files:
-  #      cmdline.log.info("Now processing file '%s' ...", filepath)
+#        cmdline.log.info("Now processing file '%s' ...", filepath)
         inputfile = open(filepath, 'r')
         start0 = 1.0 ; end0 = 0.0
         assigned = False
-        for foldername, spec in searches.iteritems():
-  #          cmdline.log.info("Now looking for '%s' ...", foldername)
-            regexp, start, end, folder_exists = spec
-            if start != start0 or end != end0: 
+        for i in xrange(0, Nsrchkeys):
+#            cmdline.log.info("Now looking for '%s' ...", srchkey[i][4])
+            if srchkey[i][2] < start0 or srchkey[i][3] > end0: 
                 # compute range
                 flsize = os.path.getsize(filepath)
-                btpos = int(flsize * start)
-                btrng = int(flsize * (end - start)) + 1
+                btpos = int(flsize * srchkey[i][2])
+                btrng = int(flsize * (srchkey[i][3] - srchkey[i][2])) + 1
                 # read content
                 inputfile.seek(btpos, 0)         # going to byte position in file
                 content = inputfile.read(btrng)  # reading byte range from byte pos.
-            match = regexp.search(content)       
+                start0 = srchkey[i][2]
+                end0 = srchkey[i][3]
+            match = srchkey[i][1].search(content)       
             if match:
-      #          cmdline.log.info("Found match, folder_exists='%s'", folder_exists)
+#                cmdline.log.info("Found match, folder_exists='%s'", srchkey[i][4])
                 hitrt += 1
-                assigned, folder_exists = act_on_file(filepath, foldername, True, 
-                                                      folder_exists, old_search) 
-                searches[foldername] = (regexp, start, end, folder_exists)
+                assigned, srchkey[i][4] = act_on_file(filepath, srchkey[i][0], True, 
+                                                      srchkey[i][4], old_search)
                 break
         # retry search with whole file
         if not assigned:               
             content = inputfile.read()
-            for foldername, spec in searches.iteritems():
-                regexp, start, end, folder_exists = spec
-                match = regexp.search(content)
+            for i in xrange(0, Nsrchkeys):
+                match = srchkey[i][1].search(content)
                 if match:
                     failrt += 1
-                    assigned, folder_exists = act_on_file(filepath, foldername, True, 
-                                                          folder_exists, old_search)
-                    # how to avoid copying regexp back to searches ?  
-                    searches[foldername] = (regexp, start, end, folder_exists)
+                    assigned, srchkey[i][4] = act_on_file(filepath, srchkey[i][0], True, 
+                                                          srchkey[i][4], old_search)
+                    # how to avoid copying regexp back to srchkey ?  
                     break
         if not assigned:
             assigned, none_found_exists = act_on_file(filepath, 'none_found', False, 
