@@ -3,3 +3,9 @@
 = Introduction =
 
 Apps build on top of gc3pie.
+
+  * [grundb]
+  * [ggamess]
+  * [gdocking]
+  * [grosetta]
+  * [gcodeml]
