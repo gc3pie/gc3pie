@@ -25,3 +25,9 @@ applications of GC3Pie to research in a specific domain.
   * [http://gc3pie.googlecode.com/svn/wiki/slides/kb2011.05/gc3pie-for-compchem.pdf Three tools for high-throughput computing with GAMESS (PDF)]. Slides presented at a [http://www.oci.uzh.ch/group.pages/baldridge/index.php Baldridge Research Group] meeting, May 2011.
   * [http://gc3pie.googlecode.com/svn/wiki/slides/sgd2010/grundb.pdf GRunDB: a tool for validating QM algorithms in GAMESS-US (PDF)]. Slides presented at the [http://www.swing-grid.ch/event/242148-swiss-grid-day-2010 Swiss Grid day 2010].
   * Presentation of GC3Pie and related tools for high-throughput computational chemistry ([http://gc3pie.googlecode.com/svn/wiki/slides/zcam-zaragoza-2010.09/ZCAM_workshop_20100923_final.pptm PowerPoint PPT slides]) presented at [http://neptuno.unizar.es/events/qcdatabases2010/ Databases in Quantum Chemistry] workshop held September 22-25, 2010 in Zaragoza, Spain. 
+
+
+= Posters =
+
+  * [http://gc3pie.googlecode.com/svn/wiki/posters/euroscipy2011/gc3pie-euroscipy2011.pdf Computational workflows with GC3Pie (PDF)].  Poster presented at the [http://www.euroscipy.org/conference/euroscipy2011 EuroSciPy2011 conference].
+  * [http://gc3pie.googlecode.com/svn/wiki/posters/egi-user-forum-2011/GC3Pie_EGI-UF2011.pdf  Enabling High-Throughput Computational Chemistry on the Grid (PDF)].  Poster presented at the [http://uf2011.egi.eu/ EGI User Forum 2011].
