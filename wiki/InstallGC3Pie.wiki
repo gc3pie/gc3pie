@@ -116,14 +116,14 @@ installed by default because not everyone needs them.
 Run the following commands to install the driver scripts for the
 applications you need::
 {{{
-   # if you are insterested in GAMESS, do the following
+   # if you are interested in GAMESS, do the following
    ln -s '../src/gc3apps/gamess/ggamess.py' bin/ggamess
    
-   # if you are insterested in Rosetta, do the following
+   # if you are interested in Rosetta, do the following
    ln -s '../src/gc3apps/rosetta/gdocking.py' bin/gdocking
    ln -s '../src/gc3apps/rosetta/grosetta.py' bin/grosetta
 
-   # if you are insterested in Codeml, do the following
+   # if you are interested in Codeml, do the following
    ln -s '../src/gc3apps/codeml/gcodeml.py' bin/gcodeml
 }}}
 
