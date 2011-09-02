@@ -62,19 +62,21 @@ class ArcLrms(LRMS):
 
         self.auths = auths
 
-        self._resource.ncores = int(self._resource.ncores)
-        self._resource.max_memory_per_core = int(self._resource.max_memory_per_core) * 1000
-        self._resource.max_walltime = int(self._resource.max_walltime)
+        self._resource.ncores = int(resource.ncores)
+        self._resource.max_memory_per_core = int(resource.max_memory_per_core) * 1000
+        self._resource.max_walltime = int(resource.max_walltime)
         if self._resource.max_walltime > 0:
             # Convert from hours to minutes
             self._resource.max_walltime = self._resource.max_walltime * 60
             
-        self._queues_cache_time = gc3libs.Default.ARC_CACHE_TIME # XXX: should it be configurable?
+        if hasattr(resource, 'lost_job_timeout'):
+            self._resource.lost_job_timeout = int(resource.lost_job_timeout)
+        else:
+            self._resource.lost_job_timeout = gc3libs.Default.ARC_LOST_JOB_TIMEOUT
 
         arcnotifier = arclib.Notify_getNotifier()
         arcnotifier.SetOutStream(arcnotifier.GetNullStream())
-        # DEBUG: uncomment the following to print all ARC messages to
-        # trace the failure in gpremium
+        # DEBUG: uncomment the following to print all ARC messages
         #arcnotifier.SetOutStream(arcnotifier.GetOutStream())
         #arcnotifier.SetNotifyLevel(arclib.VERBOSE)
         #arcnotifier.SetNotifyTimeStamp(True)
@@ -183,44 +185,44 @@ class ArcLrms(LRMS):
         return job
 
 
-        @staticmethod
-        def _map_arc0_status_to_gc3pie_state(status):
-            """
-            Return the GC3Pie state corresponding to the given ARC status.
+    @staticmethod
+    def _map_arc0_status_to_gc3pie_state(status):
+        """
+        Return the GC3Pie state corresponding to the given ARC status.
 
-            See `update_job_state`:meth: for a complete table of the
-            correspondence.
+        See `update_job_state`:meth: for a complete table of the
+        correspondence.
 
-            :param str status: ARC0 job status.
+        :param str status: ARC0 job status.
 
-            :raise gc3libs.exceptions.UnknownJobState: If there is no
-            mapping of `status` to a GC3Pie state.
-            """
-            try:
-                return {
-                    'ACCEPTED':  Run.State.SUBMITTED,
-                    'ACCEPTING': Run.State.SUBMITTED,
-                    'SUBMITTING':Run.State.SUBMITTED,
-                    'PREPARING': Run.State.SUBMITTED,
-                    'PREPARED':  Run.State.SUBMITTED,
-                    'INLRMS:Q':  Run.State.SUBMITTED,
-                    'INLRMS:R':  Run.State.RUNNING,
-                    'INLRMS:O':  Run.State.RUNNING,
-                    'INLRMS:E':  Run.State.RUNNING,
-                    'INLRMS:X':  Run.State.RUNNING,
-                    'INLRMS:S':  Run.State.STOPPED,
-                    'INLRMS:H':  Run.State.STOPPED,
-                    'FINISHING': Run.State.RUNNING,
-                    'EXECUTED':  Run.State.RUNNING,
-                    'FINISHED':  Run.State.TERMINATING,
-                    'CANCELING': Run.State.TERMINATING,
-                    'FINISHED':  Run.State.TERMINATING,
-                    'FAILED':    Run.State.TERMINATING,
-                    'KILLED':    Run.State.TERMINATED,
-                    'DELETED':   Run.State.TERMINATED,
-                }[status]
-            except KeyError:
-                raise gc3libs.exceptions.UnknownJobState("Unknown ARC0 job state '%s'" % status)
+        :raise gc3libs.exceptions.UnknownJobState: If there is no
+        mapping of `status` to a GC3Pie state.
+        """
+        try:
+            return {
+                'ACCEPTED':  Run.State.SUBMITTED,
+                'ACCEPTING': Run.State.SUBMITTED,
+                'SUBMITTING':Run.State.SUBMITTED,
+                'PREPARING': Run.State.SUBMITTED,
+                'PREPARED':  Run.State.SUBMITTED,
+                'INLRMS:Q':  Run.State.SUBMITTED,
+                'INLRMS:R':  Run.State.RUNNING,
+                'INLRMS:O':  Run.State.RUNNING,
+                'INLRMS:E':  Run.State.RUNNING,
+                'INLRMS:X':  Run.State.RUNNING,
+                'INLRMS:S':  Run.State.STOPPED,
+                'INLRMS:H':  Run.State.STOPPED,
+                'FINISHING': Run.State.RUNNING,
+                'EXECUTED':  Run.State.RUNNING,
+                'FINISHED':  Run.State.TERMINATING,
+                'CANCELING': Run.State.TERMINATING,
+                'FINISHED':  Run.State.TERMINATING,
+                'FAILED':    Run.State.TERMINATING,
+                'KILLED':    Run.State.TERMINATED,
+                'DELETED':   Run.State.TERMINATED,
+            }[status]
+        except KeyError:
+            raise gc3libs.exceptions.UnknownJobState("Unknown ARC0 job state '%s'" % status)
 
 
     # ARC refreshes the InfoSys every 30 seconds by default;
@@ -275,14 +277,27 @@ class ArcLrms(LRMS):
             arc_job = jobs[job.lrms_jobid]
         except AttributeError, ex:
             # `job` has no `lrms_jobid`: object is invalid
-            raise gc3libs.exceptions.InvalidArgument("Job object is invalid: %s"
-                                                     % str(ex))
+            raise gc3libs.exceptions.InvalidArgument(
+                "Job object is invalid: %s" % str(ex))
         except KeyError, ex:
             # No job found.  This could be caused by the
             # information system not yet updated with the information
             # of the newly submitted job.
-            raise  gc3libs.exceptions.LRMSError(
-                "No job found corresponding to the ID '%s'" % job.lrms_jobid)
+            try:
+                last_update = job.state_last_changed
+                now = time.time()
+                if job.state == Run.State.SUBMITTED and now - last_update < self._resource.lost_job_timeout:
+                    # assume the job was recently submitted, hence the
+                    # information system knows nothing about it; just
+                    # ignore the error and return the object unchanged
+                    return job.state
+                else:
+                    raise  gc3libs.exceptions.UnknownJob(
+                        "No job found corresponding to the ID '%s'" % job.lrms_jobid)
+            except AttributeError: 
+                # XXX: compatibility with running sessions, remove before release
+                job.state_last_changed = time.time()
+                return job.state
 
         # update status
         state = self._map_arc0_status_to_gc3pie_state(arc_job.status)

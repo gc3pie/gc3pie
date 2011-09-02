@@ -77,6 +77,7 @@ class Default(object):
     ARC0_LRMS = 'arc0'
     ARC1_LRMS = 'arc1'
     ARC_CACHE_TIME = 30 #: only update ARC resources status every this seconds
+    ARC_LOST_JOB_TIMEOUT = 4*ARC_CACHE_TIME #: consider a submitted job lost if it does not show up in the information system after this duration
     ARC_JOBLIST_LOCATION = os.path.expandvars("$HOME/.arc/jobs.xml")
     
     SGE_LRMS = 'sge'
@@ -1191,6 +1192,7 @@ class _Signals(object):
 
     """
 
+    Lost = _Signal(120, "Remote site reports no information about the job")
     Cancelled = _Signal(121, "Job canceled by user")
     RemoteKill = _Signal(122, "Job killed by batch system or sysadmin")
     DataStagingFailure = _Signal(123, "Data staging failure")
@@ -1413,6 +1415,7 @@ class Run(Struct):
                 if self._ref is not None:
                     # mark as changed
                     self._ref.changed = True
+                    self._ref.state_last_changed = time.time()
                     # invoke state-transition method
                     handler = value.lower()
                     gc3libs.log.debug(

@@ -44,7 +44,7 @@ from gc3libs.Resource import Resource
 
 class Arc1Lrms(LRMS):
     """
-    Manage jobs through ``libarcclient``.
+    Manage jobs through ARC's ``libarcclient``.
     """
     arc_logger_set = False
 
@@ -58,14 +58,17 @@ class Arc1Lrms(LRMS):
 
         self.auths = auths
 
-        self._resource.ncores = int(self._resource.ncores)
-        self._resource.max_memory_per_core = int(self._resource.max_memory_per_core) * 1000
-        self._resource.max_walltime = int(self._resource.max_walltime)
+        self._resource.ncores = int(resource.ncores)
+        self._resource.max_memory_per_core = int(resource.max_memory_per_core) * 1000
+        self._resource.max_walltime = int(resource.max_walltime)
         if self._resource.max_walltime > 0:
             # Convert from hours to minutes
             self._resource.max_walltime = self._resource.max_walltime * 60
             
-        self._queues_cache_time = gc3libs.Default.ARC_CACHE_TIME # XXX: should it be configurable?
+        if hasattr(resource, 'lost_job_timeout'):
+            self._resource.lost_job_timeout = int(resource.lost_job_timeout)
+        else:
+            self._resource.lost_job_timeout = gc3libs.Default.ARC_LOST_JOB_TIMEOUT
 
         # XXX: do we need a way to setup non-default UserConfig?
         self._usercfg = arc.UserConfig("", "")
@@ -92,17 +95,16 @@ class Arc1Lrms(LRMS):
             log.error("Unknown ARC Service type '%s'. Valid prefix are: INDEX, COMPUTING"
                       % self._resource.arc_ldap)
 
-        # XXX: have to check whether and how to hanlde the arc logging
-        # shall we simply disable it ?
-        # several internal logging information could be usefull 
-        # for debugging as the new arc libraries
-        # do not provide exception nor detailed information
-        # about failurs
+        # XXX: have to check whether and how to handle the arc
+        # logging: shall we simply disable it?  some internal logging
+        # information could be useful for debugging as the new arc
+        # libraries do not provide exceptions nor detailed information
+        # about failures...
+
         # set up libarcclient logging
-            
-        
         gc3libs.backends.arc1.Arc1Lrms.init_arc_logger()
 
+        # DEBUG: use the following to enable fully verbose ARC1 logging:
         # arc_rootlogger = arc.Logger_getRootLogger()
         # arc_logger = arc.Logger(arc_rootlogger, self._resource.name)
         # arc_logger_dest = arc.LogStream(sys.stderr) # or open(os.devnull, 'w')
@@ -365,13 +367,27 @@ class Arc1Lrms(LRMS):
             arc_job = self._get_job(job.lrms_jobid)
         except AttributeError, ex:
             # `job` has no `lrms_jobid`: object is invalid
-            raise gc3libs.exceptions.InvalidArgument("Job object is invalid: %s"
-                                                     % str(ex))
-        except IndexError, ix:
-            # no job found.
-            # This could be caused by the InformationSystem not yet updated with the infortmation of the newly submitte job
-            raise  gc3libs.exceptions.LRMSError(
-                "No job found with ID: [%s]" % job.lrms_jobid)
+            raise gc3libs.exceptions.InvalidArgument(
+                "Job object is invalid: %s" % str(ex))
+        except IndexError, ex:
+            # No job found.  This could be caused by the
+            # information system not yet updated with the information
+            # of the newly submitted job.
+            try:
+                last_update = job.state_last_changed
+                now = time.time()
+                if job.state == Run.State.SUBMITTED and now - last_update < self._resource.lost_job_timeout:
+                    # assume the job was recently submitted, hence the
+                    # information system knows nothing about it; just
+                    # ignore the error and return the object unchanged
+                    return job.state
+                else:
+                    raise  gc3libs.exceptions.UnknownJob(
+                        "No job found corresponding to the ID '%s'" % job.lrms_jobid)
+            except AttributeError: 
+                # XXX: compatibility with running sessions, remove before release
+                job.state_last_changed = time.time()
+                return job.state
 
         # update status
         state = self._map_arc1_status_to_gc3pie_state(arc_job.State)

@@ -313,6 +313,7 @@ class Core:
                                                           % app.execution.exitcode)
                     if state != Run.State.UNKNOWN or update_on_error:
                         app.execution.state = state
+
             except (gc3libs.exceptions.InvalidArgument, 
                     gc3libs.exceptions.ConfigurationError,
                     gc3libs.exceptions.UnrecoverableAuthError,
@@ -321,6 +322,14 @@ class Core:
                 # pass immediately on to client code and let
                 # it handle this...
                 raise
+
+            except gc3libs.exceptions.UnknownJob:
+                # information about the job is lost, mark it as failed
+                app.execution.state = TERMINATED
+                app.execution.returncode = (Run.Signals.Lost, -1)
+                app.changed = True
+                continue
+
             # XXX: Re-enabled the catch-all clause otherwise the loop stops at the first erroneous iteration
             except Exception, ex:
                 gc3libs.log.warning("Ignored error in Core.update_job_state(): %s: %s",
