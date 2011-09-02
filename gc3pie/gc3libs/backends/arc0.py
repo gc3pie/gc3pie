@@ -284,18 +284,18 @@ class ArcLrms(LRMS):
                 job.log("ARC reported error: %s" % arc_job.errors)
                 job.returncode = (Run.Signals.RemoteError, -1)
             # XXX: we should introduce a kind of "wrong requirements" error
-            elif arc_job.requested_wall_time > -1 and arc_job.used_wall_time > -1 and arc_job.used_wall_time > arc_job.requested_wall_time:
+            elif arc_job.requested_wall_time != -1 and arc_job.used_wall_time != -1 and arc_job.used_wall_time > arc_job.requested_wall_time:
                 job.log("Job exceeded requested wall-clock time (%d s),"
                         " killed by remote batch system" 
                         % arc_job.requested_wall_time)
                 job.returncode = (Run.Signals.RemoteError, -1)
-            elif arc_job.requested_cpu_time > -1 and arc_job.used_cpu_time > -1 and arc_job.used_cpu_time > arc_job.requested_cpu_time:
+            elif arc_job.requested_cpu_time != -1 and arc_job.used_cpu_time != -1 and arc_job.used_cpu_time > arc_job.requested_cpu_time:
                 job.log("Job exceeded requested CPU time (%d s),"
                         " killed by remote batch system" 
                         % arc_job.requested_cpu_time)
                 job.returncode = (Run.Signals.RemoteError, -1)
             # note: arc_job.used_memory is in KiB (!), app.requested_memory is in GiB
-            elif app.requested_memory > -1 and arc_job.used_memory > -1 and (arc_job.used_memory / 1024) > (app.requested_memory * 1024):
+            elif app.requested_memory != -1 and arc_job.used_memory != -1 and (arc_job.used_memory / 1024) > (app.requested_memory * 1024):
                 job.log("Job used more memory (%d MB) than requested (%d MB),"
                         " killed by remote batch system" 
                         % (arc_job.used_memory / 1024, app.requested_memory * 1024))
@@ -305,6 +305,7 @@ class ArcLrms(LRMS):
                 job.returncode = 0
         job.lrms_jobname = arc_job.job_name # XXX: `lrms_jobname` is the name used in `sge.py`
 
+        # XXX: do we need these?  they're already in `Application.stdout` and `Application.stderr`
         job.stdout_filename = arc_job.sstdout
         job.stderr_filename = arc_job.sstderr
 
@@ -334,9 +335,9 @@ class ArcLrms(LRMS):
         job.arc_used_memory = arc_job.used_memory
         job.arc_used_wall_time = arc_job.used_wall_time
         # FIXME: use Python's `datetime` types (RM)
-        if arc_job.submission_time.GetTime() > -1:
+        if arc_job.submission_time.GetTime() != -1:
             job.arc_submission_time = str(arc_job.submission_time)
-        if arc_job.completion_time.GetTime() > -1:
+        if arc_job.completion_time.GetTime() != -1:
             job.arc_completion_time = str(arc_job.completion_time)
         else:
             job.arc_completion_time = ""
