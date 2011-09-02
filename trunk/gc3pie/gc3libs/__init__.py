@@ -1124,24 +1124,22 @@ class Application(Struct, Persistable, Task):
     # `update_job_state` semantics; it's here for completeness, but we
     # should consider removing...
     def update_job_state_error(self, ex):
+        """Handle exceptions that occurred during a `Core.update_job_state` call.
+
+        If this method returns an exception object, that exception is
+        processed in `Core.update_job_state()` instead of the original
+        one.  Any other return value is ignored and
+        `Core.update_job_state` proceeds as if no exception had
+        happened.
+
+        Argument `ex` is the exception that was raised by the backend
+        during job state update.
+
+        Default is to return `ex` unchanged; override in derived
+        classes to change this behavior.
+
         """
-        Invocation of `Core.update_job_state()` on this object failed;
-        `ex` is the `Exception` that describes the error.
-
-        If this method returns an exception object, that is raised as
-        a result of the `Core.update_job_state()`, otherwise the
-        return value is ignored and `Core.update_job_state` returns
-        `None`.
-
-        Note that returning an `Exception` instance interrupts the
-        normal flow of `Core.update_job_state`: in particular, the
-        execution state is not updated and state transition methods
-        will not be called.
-
-        Default is to return `None`; override in derived classes to
-        change this behavior.
-        """
-        return None
+        return ex
 
 
     def fetch_output_error(self, ex):
