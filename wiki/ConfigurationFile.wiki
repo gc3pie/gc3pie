@@ -183,34 +183,67 @@ allows you to define many different resources.  Each `resource/***`
 section must reference one (and one only) `auth/name`
 section (in the `auth` key).
 
-Resources currently come in two flavours, distinguished by the value
-of the `type` key:
-  * If `type` is `arc`, then the resource is accessed using the ARC grid middleware;
+Resources currently come in several flavours, distinguished by the
+value of the `type` key:
+  * If `type` is `arc1`, then the resource is accessed using the ARC grid middleware (version 1.0.x);
+  * If `type` is `arc0`, then the resource is accessed using the ARC grid middleware (version 0.8.x);
   * If `type` is `sge`, then the resource is an SGE batch system, to be accessed by an SSH connection to its front-end node.
-#
-Every `resource/***` section must reference a valid
-`auth/***` section. Resources of `arc` type can only
-reference `voms` type auth sections; resources of `sge` type can
-only reference `ssh` type sections.
+  * If `type` is `subprocess`, then the resource is the computer where the GC3Pie script is running and applications are executed by just spawning a local UNIX process.
+
+The `resource/***` sections whose type is not `subprocess` _must_
+reference a valid `auth/***` section. Resources of `arc0` and `arc1`
+type can only reference `voms` type auth sections; resources of `sge`
+type can only reference `ssh` type sections.
 
 Some keys are commmon to all resource types:
-  *  `type`: Resource type, one of `arc` or `sge_ssh`
-  *  `auth`: the name of a valid `auth/***` section; only the authentication section name (after the `/` must be specified)
+  *  `type`: Resource type, see above
+  *  `auth`: the name of a valid `auth/***` section; only the authentication section name (after the `/`) must be specified
   *  `max_cores_per_job`: Maximum number of CPU cores that a job can request; a resource will be dropped during the brokering process if a job requests more cores than this
   *  `max_memory_per_core`: Max amount of memory (expressed in GBs) that a job can request
   *  `max_walltime`: Maximum job running time (in hours)
   *  `ncores`: Total number of cores provided by the resource
   *  `architecture`: Processor architecture.  Should be one of the strings `x86_64` (for 64-bit Intel/AMD/VIA processors), `i686` (for 32-bit Intel/AMD/VIA x86 processors), or `x86_64,i686` if both architectures are available on the resource.
 
-=== `arc` resources ===
+
+=== `arc0` resources ===
 The `arc_ldap` key should be defined to the LDAP URL of an ARC GIIS
 (if no `frontend` is defined) or GRIS (if a `frontend` is given).
+
 If, in addition, the `frontend` key is also defined, then only queues 
 belonging to the specified frontend will be considered for brokering.
 
+When a job has just been submitted, the ARC information system does
+not immediately report about it: the job will appear at the next cache
+update.  This creates a time window during which no information is
+reported about the job by ARC, as if it never existed.  In order not
+to mistake this for a "job lost" error, GC3Libs allow a "grace time":
+job information lookups are allowed to fail for a certain time span
+after submission. The duration of this time span is set with the optional
+`lost_job_timeout` parameter, whose default is 4 times the ARC default
+cache time; this parameter should not be lower than twice the
+information system update frequency.
+  * `lost_job_timeout`: Time (in seconds) a failure in job lookup in the information system will *not* be considered critical
+
+
+=== `arc1` resources ===
+The `arc_ldap` key should be defined to a valid ARC1 information system URL.
+
+When a job has just been submitted, the ARC information system does
+not immediately report about it: the job will appear at the next cache
+update.  This creates a time window during which no information is
+reported about the job by ARC, as if it never existed.  In order not
+to mistake this for a "job lost" error, GC3Libs allow a "grace time":
+job information lookups are allowed to fail for a certain time span
+after submission. The duration of this time span is set with the optional
+`lost_job_timeout` parameter, whose default is 4 times the ARC default
+cache time; this parameter should not be lower than twice the
+information system update frequency.
+  * `lost_job_timeout`: Time (in seconds) a failure in job lookup in the information system will *not* be considered critical
+
+
 === `sge` resources ===
-  * frontend: should contain the FQDN of the SGE front-end node. An SSH connection will be attempted to this node, in order to submit jobs and retrieve status info.
-  * transport: Possible values are: `ssh`, `local`.   If `ssh`, we try to connect to the host specified in `frontend` via SSH in order to execute SGE commands.  If `local`, the SGE commands are run directly on the machine where GC3Pie is installed.
+  * `frontend`: should contain the FQDN of the SGE front-end node. An SSH connection will be attempted to this node, in order to submit jobs and retrieve status info.
+  * `transport`: Possible values are: `ssh`, `local`.   If `ssh`, we try to connect to the host specified in `frontend` via SSH in order to execute SGE commands.  If `local`, the SGE commands are run directly on the machine where GC3Pie is installed.
 
 Since the installation path to supported applications is not known (there
 is no information system, differently from ARC), then the path must be
