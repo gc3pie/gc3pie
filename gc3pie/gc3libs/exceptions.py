@@ -1,6 +1,23 @@
 #! /usr/bin/env python
-"""
-Exceptions specific to the `gc3libs` package.
+"""Exceptions specific to the `gc3libs` package.
+
+In addition to the exceptions listed here, `gc3libs`:module: functions
+try to use Python builtin exceptions with the same meaning they have
+in core Python, namely:
+
+* `TypeError`: raised when an argument to a function or method has an
+  incompatible type or does not implement the required protocol (e.g.,
+  a number is given where a sequence is expected).
+
+* `ValueError`: raised when an argument to a function or method has
+  the correct type, but fails to satisfy other constraints in the
+  function contract (e.g., a positive number is required, and `-1` is
+  passed instead).
+
+* `AssertionError`: raised when some internal assumption regarding
+  state or function/method calling contract is violated.  Informally,
+  this indicates a bug in the software.
+
 """
 # Copyright (C) 2009-2011 GC3, University of Zurich. All rights reserved.
 #
@@ -66,6 +83,7 @@ class RecoverableAuthError(Error):
 class UnrecoverableAuthError(Error):
     pass
 
+
 class ConfigurationError(FatalError):
     """
     Raised when the configuration file (or parts of it) could not be
@@ -73,6 +91,7 @@ class ConfigurationError(FatalError):
     missing or has an unknown/invalid value.
     """
     pass
+
 
 class RecoverableDataStagingError(Error):
     """
@@ -90,12 +109,14 @@ class UnrecoverableDataStagingError(Error):
     """
     pass
 
+
 class InputFileError(FatalError):
     """
     Raised when an input file is specified, which does not exist or
     cannot be read.
     """
     pass
+
 
 class InternalError(Error):
     """
@@ -106,13 +127,15 @@ class InternalError(Error):
     """
     pass
 
-class InvalidArgument(Error): # XXX: should this be fatal? should it be a descendant of `AssertionError`?
+
+class InvalidArgument(Error, AssertionError): # XXX: should this be fatal?
     """
     Raised when the arguments passed to a function do not honor some
     required contract.  For instance, either one of two optional
     arguments must be provided, but none of them was.
     """
     pass
+
 
 class DuplicateEntryError(InvalidArgument):
     """
@@ -121,8 +144,10 @@ class DuplicateEntryError(InvalidArgument):
     """
     pass
 
+
 class InvalidInformationContainerError(Error):
     pass
+
 
 class InvalidOperation(Error):
     """
@@ -132,7 +157,7 @@ class InvalidOperation(Error):
     """
     pass
 
-class InvalidResourceName(Error):
+class InvalidResourceName(Error, ValueError):
     """
     Raised to signal that no computational resource with the given
     name is defined in the configuration file.
@@ -209,7 +234,16 @@ class UnexpectedStateError(TaskError):
 class TransportError(Error):
     pass
 
-class UnknownJobState(Error):
+
+class UnknownJob(Error, ValueError):
+    """
+    Raised when an operation is attempted on a task, which is
+    unknown to the remote server or backend.
+    """
+    pass
+
+
+class UnknownJobState(Error, AssertionError):
     """
     Raised when a job state is gotten from the Grid middleware, that
     is not handled by the GC3Libs code.  Might actually mean that
