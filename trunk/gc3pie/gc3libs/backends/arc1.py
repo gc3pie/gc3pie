@@ -277,6 +277,53 @@ class Arc1Lrms(LRMS):
             raise gc3libs.exceptions.LRMSSubmitError('No ARC targets found')
 
 
+    @staticmethod
+    def _map_arc1_status_to_gc3pie_state(status):
+        """
+        Return the GC3Pie state corresponding to the given ARC status.
+
+        See `update_job_state`:meth: for a complete table of the
+        correspondence.
+
+        :param status: ARC's `arc.JobState` object.
+
+        :raise gc3libs.exceptions.UnknownJobState: If there is no
+        mapping of `status` to a GC3Pie state.
+        """
+        # we cannot use a dictionary lookup because the `arc.JobState`
+        # objects are not strings and won't compare equal in
+        # dictionary key lookup... (bug in ARC1 SWIG wrappers?)
+        if arc.JobState.ACCEPTED == status:
+            return Run.State.SUBMITTED
+        elif arc.JobState.PREPARING == status:
+            return Run.State.SUBMITTED
+        elif arc.JobState.SUBMITTING == status:
+            return Run.State.SUBMITTED
+        elif arc.JobState.QUEUING == status:
+            return Run.State.SUBMITTED
+        elif arc.JobState.RUNNING == status:
+            return Run.State.RUNNING
+        elif arc.JobState.FINISHING == status:
+            return Run.State.RUNNING
+        elif arc.JobState.FINISHED == status:
+            return Run.State.TERMINATING
+        elif arc.JobState.FAILED == status:
+            return Run.State.TERMINATING
+        elif arc.JobState.KILLED == status:
+            return Run.State.TERMINATED
+        elif arc.JobState.DELETED == status:
+            return Run.State.TERMINATED
+        elif arc.JobState.HOLD == status:
+            return Run.State.STOPPED
+        elif arc.JobState.OTHER == status:
+            return Run.State.UNKNOWN
+        elif arc.JobState.UNDEFINED == status:
+            return Run.State.UNKNOWN
+        else:
+            raise gc3libs.exceptions.UnknownJobState(
+                "Unknown ARC1 job state '%s'" % status.GetGeneralState())
+
+
     # ARC refreshes the InfoSys every 30 seconds by default;
     # there's no point in querying it more often than this...
     @cache_for(gc3libs.Default.ARC_CACHE_TIME)
@@ -307,37 +354,6 @@ class Arc1Lrms(LRMS):
 
         Any other ARC job status is mapped to `Run.State.UNKNOWN`.
         """
-        def map_arc_status_to_gc3job_status(status):
-            if arc.JobState.ACCEPTED == status:
-                return Run.State.SUBMITTED
-            elif arc.JobState.PREPARING == status:
-                return Run.State.SUBMITTED
-            elif arc.JobState.SUBMITTING == status:
-                return Run.State.SUBMITTED
-            elif arc.JobState.QUEUING == status:
-                return Run.State.SUBMITTED
-            elif arc.JobState.RUNNING == status:
-                return Run.State.RUNNING
-            elif arc.JobState.FINISHING == status:
-                return Run.State.RUNNING
-            elif arc.JobState.FINISHED == status:
-                return Run.State.TERMINATING
-            elif arc.JobState.FAILED == status:
-                return Run.State.TERMINATING
-            elif arc.JobState.KILLED == status:
-                return Run.State.TERMINATED
-            elif arc.JobState.DELETED == status:
-                return Run.State.TERMINATED
-            elif arc.JobState.HOLD == status:
-                return Run.State.STOPPED
-            elif arc.JobState.OTHER == status:
-                return Run.State.UNKNOWN
-            elif arc.JobState.UNDEFINED == status:
-                return Run.State.UNKNOWN
-            else:
-                raise gc3libs.exceptions.UnknownJobState(
-                    "Unknown ARC job state '%s'" % status.GetGeneralState())
-
         self.auths.get(self._resource.auth)
 
         # try to intercept error conditions and translate them into
@@ -358,8 +374,9 @@ class Arc1Lrms(LRMS):
                 "No job found with ID: [%s]" % job.lrms_jobid)
 
         # update status
-        log.debug("Mapping on ARC1 job status %s" % arc_job.State.GetGeneralState())
-        state = map_arc_status_to_gc3job_status(arc_job.State)
+        state = self._map_arc1_status_to_gc3pie_state(arc_job.State)
+        log.debug("ARC1 job status '%s' mapped to GC3Pie state '%s'",
+                  arc_job.State.GetGeneralState(), state)
         if arc_job.ExitCode != -1:
             job.returncode = arc_job.ExitCode
         elif state in [Run.State.TERMINATING, Run.State.TERMINATING] and job.returncode is None:
@@ -398,6 +415,7 @@ class Arc1Lrms(LRMS):
             # pass
         job.lrms_jobname = arc_job.Name
 
+        # XXX: do we need these?  they're already in `Application.stdout` and `Application.stderr`
         job.stdout_filename = arc_job.StdOut
         job.stderr_filename = arc_job.StdErr
 

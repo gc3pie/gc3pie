@@ -183,16 +183,56 @@ class ArcLrms(LRMS):
         return job
 
 
+        @staticmethod
+        def _map_arc0_status_to_gc3pie_state(status):
+            """
+            Return the GC3Pie state corresponding to the given ARC status.
+
+            See `update_job_state`:meth: for a complete table of the
+            correspondence.
+
+            :param str status: ARC0 job status.
+
+            :raise gc3libs.exceptions.UnknownJobState: If there is no
+            mapping of `status` to a GC3Pie state.
+            """
+            try:
+                return {
+                    'ACCEPTED':  Run.State.SUBMITTED,
+                    'ACCEPTING': Run.State.SUBMITTED,
+                    'SUBMITTING':Run.State.SUBMITTED,
+                    'PREPARING': Run.State.SUBMITTED,
+                    'PREPARED':  Run.State.SUBMITTED,
+                    'INLRMS:Q':  Run.State.SUBMITTED,
+                    'INLRMS:R':  Run.State.RUNNING,
+                    'INLRMS:O':  Run.State.RUNNING,
+                    'INLRMS:E':  Run.State.RUNNING,
+                    'INLRMS:X':  Run.State.RUNNING,
+                    'INLRMS:S':  Run.State.STOPPED,
+                    'INLRMS:H':  Run.State.STOPPED,
+                    'FINISHING': Run.State.RUNNING,
+                    'EXECUTED':  Run.State.RUNNING,
+                    'FINISHED':  Run.State.TERMINATING,
+                    'CANCELING': Run.State.TERMINATING,
+                    'FINISHED':  Run.State.TERMINATING,
+                    'FAILED':    Run.State.TERMINATING,
+                    'KILLED':    Run.State.TERMINATED,
+                    'DELETED':   Run.State.TERMINATED,
+                }[status]
+            except KeyError:
+                raise gc3libs.exceptions.UnknownJobState("Unknown ARC0 job state '%s'" % status)
+
+
     # ARC refreshes the InfoSys every 30 seconds by default;
     # there's no point in querying it more often than this...
     @cache_for(gc3libs.Default.ARC_CACHE_TIME)
     def update_job_state(self, app):
         """
-        Query the state of the ARC job associated with `app` and
+        Query the state of the ARC0 job associated with `app` and
         update `app.execution.state` accordingly.  Return the
         corresponding `Run.State`; see `Run.State` for more details.
 
-        The mapping of ARC job statuses to `Run.State` is as follows: 
+        The mapping of ARC0 job statuses to `Run.State` is as follows: 
 
                     ==============  ===========
                     ARC job status  `Run.State`
@@ -225,34 +265,6 @@ class ArcLrms(LRMS):
         querying a job that has just been submitted and has not yet
         found its way to the infosys.
         """
-        def map_arc_status_to_gc3job_status(status):
-            try:
-                return {
-                    'ACCEPTED':  Run.State.SUBMITTED,
-                    'ACCEPTING': Run.State.SUBMITTED,
-                    'SUBMITTING':Run.State.SUBMITTED,
-                    'PREPARING': Run.State.SUBMITTED,
-                    'PREPARED':  Run.State.SUBMITTED,
-                    'INLRMS:Q':  Run.State.SUBMITTED,
-                    'INLRMS:R':  Run.State.RUNNING,
-                    'INLRMS:O':  Run.State.RUNNING,
-                    'INLRMS:E':  Run.State.RUNNING,
-                    'INLRMS:X':  Run.State.RUNNING,
-                    'INLRMS:S':  Run.State.STOPPED,
-                    'INLRMS:H':  Run.State.STOPPED,
-                    'FINISHING': Run.State.RUNNING,
-                    'EXECUTED':  Run.State.RUNNING,
-                    'FINISHED':  Run.State.TERMINATING,
-                    'CANCELING': Run.State.TERMINATING,
-                    'FINISHED':  Run.State.TERMINATING,
-                    'FAILED':    Run.State.TERMINATING,
-                    'KILLED':    Run.State.TERMINATED,
-                    'DELETED':   Run.State.TERMINATED,
-                    }[status]
-            except KeyError:
-                raise gc3libs.exceptions.UnknownJobState("Unknown ARC job state '%s'" % status)
-
-
         self.auths.get(self._resource.auth)
 
         # try to intercept error conditions and translate them into
@@ -273,7 +285,7 @@ class ArcLrms(LRMS):
                 "No job found corresponding to the ID '%s'" % job.lrms_jobid)
 
         # update status
-        state = map_arc_status_to_gc3job_status(arc_job.status)
+        state = self._map_arc0_status_to_gc3pie_state(arc_job.status)
         if arc_job.exitcode != -1:
             job.exitcode = arc_job.exitcode
         elif state in [Run.State.TERMINATING, Run.State.TERMINATING] and job.returncode is None:
