@@ -277,7 +277,7 @@ class Core:
         for app in apps:
             state = app.execution.state
             old_state = state
-            gc3libs.log.debug("Updating state (%s) of application: %s", state, app)
+            gc3libs.log.debug("About to update state of application: %s (currently: %s)", app, state)
             try:
                 if state not in [ Run.State.NEW,
                                   Run.State.TERMINATING,
@@ -287,16 +287,6 @@ class Core:
                     try:
                         # self.auths.get(lrms._resource.auth)
                         state = lrms.update_job_state(app)
-                    except (gc3libs.exceptions.InvalidArgument,
-                            gc3libs.exceptions.ConfigurationError):
-                        # Unrecoverable; no sense in continuing --
-                        # pass immediately on to client code and let
-                        # it handle this...
-                        raise
-                    except gc3libs.exceptions.UnrecoverableAuthError:
-                        raise
-                    except gc3libs.exceptions.RecoverableAuthError:
-                        raise
                     except Exception, ex:
                         gc3libs.log.debug(
                             "Error getting status of application '%s': %s: %s",
@@ -309,7 +299,8 @@ class Core:
                     if state != old_state:
                         app.changed = True
                         # set log information accordingly
-                        if (app.execution.state == Run.State.TERMINATING and app.execution.returncode != 0):
+                        if (app.execution.state == Run.State.TERMINATING 
+                            and app.execution.returncode != 0):
                             # there was some error, try to explain
                             signal = app.execution.signal
                             if signal in Run.Signals:
@@ -322,7 +313,10 @@ class Core:
                                                           % app.execution.exitcode)
                     if state != Run.State.UNKNOWN or update_on_error:
                         app.execution.state = state
-            except (gc3libs.exceptions.InvalidArgument, gc3libs.exceptions.ConfigurationError):
+            except (gc3libs.exceptions.InvalidArgument, 
+                    gc3libs.exceptions.ConfigurationError,
+                    gc3libs.exceptions.UnrecoverableAuthError,
+                    gc3libs.exceptions.FatalError):
                 # Unrecoverable; no sense in continuing --
                 # pass immediately on to client code and let
                 # it handle this...
