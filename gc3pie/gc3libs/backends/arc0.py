@@ -329,30 +329,30 @@ class ArcLrms(LRMS):
         job.used_cputime = arc_job.used_cpu_time # expressed in sec.
         job.used_memory = arc_job.used_memory # expressed in KiB
 
-        if (arc_job.status == 'FAILED'):
-            job.error_log = arc_job.errors
+        # if (arc_job.status == 'FAILED'):
+        #     job.error_log = arc_job.errors
 
-        # update ARC-specific info
-        job.arc_cluster = arc_job.cluster
-        job.arc_cpu_count = arc_job.cpu_count
-        job.arc_job_name = arc_job.job_name
-        job.arc_queue = arc_job.queue
-        job.arc_queue_rank = arc_job.queue_rank
-        job.arc_requested_cpu_time = arc_job.requested_cpu_time
-        job.arc_requested_wall_time = arc_job.requested_wall_time
-        job.arc_sstderr = arc_job.sstderr
-        job.arc_sstdin = arc_job.sstdin
-        job.arc_sstdout = arc_job.sstdout
-        job.arc_used_cpu_time = arc_job.used_cpu_time
-        job.arc_used_memory = arc_job.used_memory
-        job.arc_used_wall_time = arc_job.used_wall_time
-        # FIXME: use Python's `datetime` types (RM)
-        if arc_job.submission_time.GetTime() != -1:
-            job.arc_submission_time = str(arc_job.submission_time)
-        if arc_job.completion_time.GetTime() != -1:
-            job.arc_completion_time = str(arc_job.completion_time)
-        else:
-            job.arc_completion_time = ""
+        # # update ARC-specific info
+        # job.arc_cluster = arc_job.cluster
+        # job.arc_cpu_count = arc_job.cpu_count
+        # job.arc_job_name = arc_job.job_name
+        # job.arc_queue = arc_job.queue
+        # job.arc_queue_rank = arc_job.queue_rank
+        # job.arc_requested_cpu_time = arc_job.requested_cpu_time
+        # job.arc_requested_wall_time = arc_job.requested_wall_time
+        # job.arc_sstderr = arc_job.sstderr
+        # job.arc_sstdin = arc_job.sstdin
+        # job.arc_sstdout = arc_job.sstdout
+        # job.arc_used_cpu_time = arc_job.used_cpu_time
+        # job.arc_used_memory = arc_job.used_memory
+        # job.arc_used_wall_time = arc_job.used_wall_time
+        # # FIXME: use Python's `datetime` types (RM)
+        # if arc_job.submission_time.GetTime() != -1:
+        #     job.arc_submission_time = str(arc_job.submission_time)
+        # if arc_job.completion_time.GetTime() != -1:
+        #     job.arc_completion_time = str(arc_job.completion_time)
+        # else:
+        #     job.arc_completion_time = ""
 
         job.state = state
         return state
