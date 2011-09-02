@@ -1407,8 +1407,8 @@ class Run(Struct):
         def fget(self):
             return self._state
         def fset(self, value):
-            if value not in Run.State:
-                raise ValueError("Value '%s' is not a legal `gc3libs.Run.State` value." % value)
+            assert value in Run.State, \
+                ("Value '%s' is not a legal `gc3libs.Run.State` value." % value)
             if self._state != value:
                 self.state_last_changed = time.time()
                 self.timestamp[value] = time.time()
