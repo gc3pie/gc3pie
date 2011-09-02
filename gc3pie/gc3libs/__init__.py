@@ -1410,12 +1410,12 @@ class Run(Struct):
             if value not in Run.State:
                 raise ValueError("Value '%s' is not a legal `gc3libs.Run.State` value." % value)
             if self._state != value:
+                self.state_last_changed = time.time()
                 self.timestamp[value] = time.time()
                 self.log.append('%s at %s' % (value, time.asctime()))
                 if self._ref is not None:
                     # mark as changed
                     self._ref.changed = True
-                    self._ref.state_last_changed = time.time()
                     # invoke state-transition method
                     handler = value.lower()
                     gc3libs.log.debug(
