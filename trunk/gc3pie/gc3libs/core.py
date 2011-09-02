@@ -669,6 +669,12 @@ def get_resources(resources_list):
                                 " please change all occurrences of 'type=arc' to 'type=arc0'"
                                 " in your configuration file.")
             tmpres.type = gc3libs.Default.ARC0_LRMS
+        elif tmpres.type == 'ssh':
+            gc3libs.log.warning("Resource type 'ssh' was renamed to '%s',"
+                                " please change all occurrences of 'type=ssh' to 'type=%s'"
+                                " in your configuration file.",
+                                gc3libs.Default.SGE_LRMS, gc3libs.Default.SGE_LRMS)
+            tmpres.type = gc3libs.Default.SGE_LRMS
         if tmpres.type not in [
             gc3libs.Default.ARC0_LRMS,
             gc3libs.Default.ARC1_LRMS,
