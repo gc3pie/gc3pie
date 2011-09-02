@@ -325,8 +325,8 @@ class Core:
 
             except gc3libs.exceptions.UnknownJob:
                 # information about the job is lost, mark it as failed
-                app.execution.state = TERMINATED
                 app.execution.returncode = (Run.Signals.Lost, -1)
+                app.execution.state = TERMINATED
                 app.changed = True
                 continue
 
