@@ -174,7 +174,7 @@ class GMhcCoevTask(SequentialTaskCollection):
                                            output_dir = os.path.join(output_dir, 'tmp'),
                                            executable = self.executable,
                                            # XXX: rounds to the nearest hour in excess
-                                           required_walltime = (single_run_duration + 60) / 60),
+                                           required_walltime = (single_run_duration + 60) / 60,
                                            **kw)
         SequentialTaskCollection.__init__(self, self.jobname, [initial_task], grid)
 
