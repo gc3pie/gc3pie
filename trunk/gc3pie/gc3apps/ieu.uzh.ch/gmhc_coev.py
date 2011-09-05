@@ -190,7 +190,6 @@ class GMhcCoevTask(SequentialTaskCollection):
         task_output_dir = self.tasks[done].output_dir
         exclude = [
             os.path.basename(self.tasks[done].executable),
-            os.path.basename(self.tasks[done].executable_name),
             self.tasks[done].stdout,
             self.tasks[done].stderr,
             ]
