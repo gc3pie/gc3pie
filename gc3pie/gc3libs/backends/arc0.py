@@ -273,8 +273,8 @@ class ArcLrms(LRMS):
         # meaningful exceptions
         try:
             job = app.execution
-            jobs = self._get_jobs()
-            arc_job = jobs[job.lrms_jobid]
+            arc_jobs_info = self._get_jobs()
+            arc_job = arc_jobs_info[job.lrms_jobid]
         except AttributeError, ex:
             # `job` has no `lrms_jobid`: object is invalid
             raise gc3libs.exceptions.InvalidArgument(
@@ -310,19 +310,27 @@ class ArcLrms(LRMS):
             if arc_job.errors != '':
                 job.log("ARC reported error: %s" % arc_job.errors)
                 job.returncode = (Run.Signals.RemoteError, -1)
-            # XXX: we should introduce a kind of "wrong requirements" error
-            elif arc_job.requested_wall_time != -1 and arc_job.used_wall_time != -1 and arc_job.used_wall_time > arc_job.requested_wall_time:
+            # FIXME: we should introduce a kind of "wrong requirements" error
+            elif (arc_job.requested_walltime is not None
+                  and arc_job.requested_wall_time != -1 
+                  and arc_job.used_wall_time != -1 
+                  and arc_job.used_wall_time > arc_job.requested_wall_time):
                 job.log("Job exceeded requested wall-clock time (%d s),"
                         " killed by remote batch system" 
                         % arc_job.requested_wall_time)
                 job.returncode = (Run.Signals.RemoteError, -1)
-            elif arc_job.requested_cpu_time != -1 and arc_job.used_cpu_time != -1 and arc_job.used_cpu_time > arc_job.requested_cpu_time:
+            elif (arc_job.requested_cpu_time is not None
+                  and arc_job.requested_cpu_time != -1 
+                  and arc_job.used_cpu_time != -1 
+                  and arc_job.used_cpu_time > arc_job.requested_cpu_time):
                 job.log("Job exceeded requested CPU time (%d s),"
                         " killed by remote batch system" 
                         % arc_job.requested_cpu_time)
                 job.returncode = (Run.Signals.RemoteError, -1)
             # note: arc_job.used_memory is in KiB (!), app.requested_memory is in GiB
-            elif app.requested_memory != -1 and arc_job.used_memory != -1 and (arc_job.used_memory / 1024) > (app.requested_memory * 1024):
+            elif (app.requested_memory is not None 
+                  and app.requested_memory != -1 and arc_job.used_memory != -1 
+                  and (arc_job.used_memory / 1024) > (app.requested_memory * 1024)):
                 job.log("Job used more memory (%d MB) than requested (%d MB),"
                         " killed by remote batch system" 
                         % (arc_job.used_memory / 1024, app.requested_memory * 1024))
@@ -474,9 +482,9 @@ class ArcLrms(LRMS):
         # information system entries located in $NORDUGRID_LOCATION/etc/giis.
         # This may spawn quite a lot and very long ldapsearches.
         # list_of_jobs = arclib.GetAllJobs(cluster, True, '', 1)
-        jobs = self._get_jobs()
+        arc_jobs_info = self._get_jobs()
         # user_running and user_queued
-        for job in jobs.values():
+        for job in arc_jobs_info.values():
             if 'INLRMS:R' in job.status:
                 user_running = user_running + 1
             elif 'INLRMS:Q' in job.status:
