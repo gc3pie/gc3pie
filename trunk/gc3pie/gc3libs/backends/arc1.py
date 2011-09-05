@@ -402,25 +402,27 @@ class Arc1Lrms(LRMS):
             if len(arc_job.Error) > 0:
                 job.log("ARC reported error: %s" % str.join(arc_job.Error))
                 job.returncode = (Run.Signals.RemoteError, -1)
-            # # XXX: we should introduce a kind of "wrong requirements" error
-            # elif (arc_job.RequestedTotalWallTime > -1 and arc_job.UsedTotalWallTime > -1
-            #       and arc_job.UsedTotalWallTime > arc_job.RequestedTotalWallTime):
-            if arc_job.UsedTotalWallTime > arc_job.RequestedTotalWallTime:
+            # FIXME: we should introduce a kind of "wrong requirements" error
+            elif (arc_job.RequestedTotalWallTime is not None
+                  and arc_job.RequestedTotalWallTime.GetPeriod() != -1
+                  and arc_job.UsedTotalWallTime.GetPeriod() != -1
+                  and arc_job.UsedTotalWallTime.GetPeriod() > arc_job.RequestedTotalWallTime.GetPeriod()):
                 job.log("Job exceeded requested wall-clock time (%d s),"
                         " killed by remote batch system" 
-                        % arc_job.RequestedTotalWallTime)
+                        % arc_job.RequestedTotalWallTime.GetPeriod())
                 job.returncode = (Run.Signals.RemoteError, -1)
-            # elif (arc_job.RequestedTotalCPUTime > -1 and arc_job.UsedTotalCPUTime > -1
-            #       and arc_job.UsedTotalCPUTime > arc_job.RequestedTotalCPUTime):
-            #     job.log("Job exceeded requested CPU time (%d s),"
-            #             " killed by remote batch system" 
-            #             % arc_job.RequestedTotalCPUTime)
-            #     job.returncode = (Run.Signals.RemoteError, -1)
-            # # note: arc_job.used_memory is in KiB (!), app.requested_memory is in GiB
-            # elif (app.RequestedMainMemory > -1 and arc_job.UsedMainMemory > -1
-            elif (app.requested_memory > -1 and arc_job.UsedMainMemory > -1
+            elif (arc_job.RequestedTotalCPUTime is not None
+                  and arc_job.RequestedTotalCPUTime.GetPeriod() != -1
+                  and arc_job.UsedTotalCPUTime.GetPeriod() != -1
+                  and arc_job.UsedTotalCPUTime.GetPeriod() > arc_job.RequestedTotalCPUTime.GetPeriod()):
+                job.log("Job exceeded requested CPU time (%d s),"
+                        " killed by remote batch system" 
+                        % arc_job.RequestedTotalWallTime.GetPeriod())
+                job.returncode = (Run.Signals.RemoteError, -1)
+            # note: arc_job.used_memory is in KiB (!), app.requested_memory is in GiB
+            elif (app.requested_memory is not None 
+                  and arc_job.UsedMainMemory > -1
                   and (arc_job.UsedMainMemory / 1024) > (app.requested_memory * 1024)):
-                #       and (arc_job.UsedMainMemory / 1024) > (app.RequestedMainMemory * 1024)):
                 job.log("Job used more memory (%d MB) than requested (%d MB),"
                         " killed by remote batch system" 
                         % (arc_job.UsedMainMemory / 1024, app.requested_memory * 1024))
