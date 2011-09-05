@@ -88,7 +88,12 @@ class GMhcCoevApplication(Application):
         Application.__init__(self,
                              executable = executable_name,
                              arguments = [
-                                 kw.get('requested_walltime')*60 - 5, # == single_run_time == ses_t
+                                 # use `single_run_time` as the
+                                 # maximum allowed time before saving
+                                 # the MatLab workspace, but allow 5
+                                 # minutes for I/O before the job is
+                                 # killed forcibly by the batch system
+                                 kw.get('requested_walltime')*60 - 5, 
                                  N, p_mut_coeff, choose_or_rand, sick_or_not, off_v_last,
                                  ],
                              inputs = inputs,
@@ -102,33 +107,33 @@ class GMhcCoevApplication(Application):
 
 class GMhcCoevTask(SequentialTaskCollection):
     """
-    Custom class to wrap the execution of the ``MHC_coev_*` program by
-    T. Wilson.  Execution continues in stepf of predefined duration
-    until no ``latest_work.mat`` files are produced.  All the output
-    files ever produced are collected in the path specified by the
-    `output_dir` parameter to `__init__`.
+    Custom class to wrap the execution of the ``MHC_coev_*` program
+    by T. Wilson.  Execution continues in stepf of predefined duration
+    until a specified number of generations have been computed and
+    saved.  All the output files ever produced are collected in the
+    path specified by the `output_dir` parameter to `__init__`.
+
     """
 
     def __init__(self, single_run_duration, generations_to_do,
                  N, p_mut_coeff, choose_or_rand, sick_or_not, off_v_last,
                  output_dir, executable=None, grid=None, **kw):
 
-        """
-        Create a new task running an ``MHC_coev`` binary.
+        """Create a new task running an ``MHC_coev`` binary.
 
         Each binary is expected to run for `single_run_duration`
         minutes and dump its state in file ``latest_work.mat`` if it's
         not finished. This task will continue re-submitting the same
-        executable together with the saved workspace until no file
-        ``latest_work.mat`` is created.
+        executable together with the saved workspace until
+        `generations_to_do` generations have been computed.
 
         :param int single_run_duration: Duration of a single step in minutes.
 
-        :param N: Passed unchanged to the MHC_coev program.
-        :param p_mut_coeff: Passed unchanged to the MHC_coev program.
+        :param              N: Passed unchanged to the MHC_coev program.
+        :param    p_mut_coeff: Passed unchanged to the MHC_coev program.
         :param choose_or_rand: Passed unchanged to the MHC_coev program.
-        :param sick_or_not: Passed unchanged to the MHC_coev program.
-        :param off_v_last: Passed unchanged to the MHC_coev program.
+        :param    sick_or_not: Passed unchanged to the MHC_coev program.
+        :param     off_v_last: Passed unchanged to the MHC_coev program.
 
         :param str output_dir: Path to a directory where output files
         from all runs should be collected.
@@ -138,6 +143,7 @@ class GMhcCoevTask(SequentialTaskCollection):
         version available on the execution site should be used.
 
         :param grid: See `TaskCollection`.
+
         """
         # remember values for later use
         self.executable = executable
@@ -167,7 +173,8 @@ class GMhcCoevTask(SequentialTaskCollection):
         initial_task = GMhcCoevApplication(N, p_mut_coeff, choose_or_rand, sick_or_not, off_v_last,
                                            output_dir = os.path.join(output_dir, 'tmp'),
                                            executable = self.executable,
-                                           required_walltime = max(1, single_run_duration/60),
+                                           # XXX: rounds to the nearest hour in excess
+                                           required_walltime = (single_run_duration + 60) / 60),
                                            **kw)
         SequentialTaskCollection.__init__(self, self.jobname, [initial_task], grid)
 
@@ -342,7 +349,7 @@ newly-created jobs so that this limit is never exceeded.
 
             yield ('MHC_coev_' + name,
                    gmhc_coev.GMhcCoevTask,
-                   [self.params.walltime*60 - 5, # single_run_duration
+                   [self.params.walltime*60, # single_run_duration
                     self.params.generations,
                     N,
                     p_mut_coeff,
