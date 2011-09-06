@@ -25,9 +25,10 @@ EOF
 
 
 # FIXME: This is only needed to have TURBOMOLE running on idgc3grid01...
-export TURBODIR=/home/oci/mpackard/apps/TURBOMOLE
+export TURBODIR=/home/mpackard/apps/TURBOMOLE
 export PATH=$TURBODIR/scripts:$PATH
-export PATH=$TURBODIR/bin/`sysname`:$PATH
+export PATH=$TURBODIR/bin/x86_64-unknown-linux-gnu:$PATH
+
 
 ## helper functions
 die () {
