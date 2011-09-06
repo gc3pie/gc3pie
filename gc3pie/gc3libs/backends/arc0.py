@@ -478,10 +478,6 @@ class ArcLrms(LRMS):
                          min((q.total_cpus - q.running),\
                              (q.cluster.total_cpus - q.cluster.used_cpus))
 
-        # XXX: if cls is empty, the following method will use the default
-        # information system entries located in $NORDUGRID_LOCATION/etc/giis.
-        # This may spawn quite a lot and very long ldapsearches.
-        # list_of_jobs = arclib.GetAllJobs(cluster, True, '', 1)
         arc_jobs_info = self._get_jobs()
         # user_running and user_queued
         for job in arc_jobs_info.values():

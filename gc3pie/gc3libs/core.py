@@ -457,33 +457,11 @@ class Core:
         return task.fetch_output(download_dir, overwrite, **kw)
 
 
-    def get_all_updated_resources(self, **kw):
+    def get_resources(self, **kw):
         """
-        Update the state of resources configured into this `Core` instance,
-        and return a list of these resources.
-
-        Each resource object in the returned list will have its `updated` attribute
-        set to `True` if the update operation succeeded, or `False` if it failed.
+        Return list of resources configured into this `Core` instance.
         """
-
-        updated_resources = []
-
-        # for resource in self._resources:
-        for lrms in self._lrms_list:
-            try:
-                auto_enable_auth = kw.get('auto_enable_auth', self.auto_enable_auth)
-                # lrms = self.get_backend(resource.name)
-                # self.auths.get(lrms._resource.auth)
-                resource = lrms.get_resource_status()
-                resource.updated = True
-                updated_resources.append(resource)
-            except Exception, ex:
-                gc3libs.log.error("Got error while updating resource '%s': %s."
-                                  % (lrms._resource.name, str(ex)))
-                lrms._resource.updated = False
-                updated_resources.append(lrms._resource)
-                
-        return updated_resources
+        return [ lrms._resource for lrms in self._lrms_list ]
 
 
     def kill(self, app, **kw):
@@ -581,6 +559,26 @@ class Core:
         return task.peek(what, offset, size, **kw)
     
 
+    def update_resources(self, **kw):
+        """
+        Update the state of resources configured into this `Core` instance.
+
+        Each resource object in the returned list will have its `updated` attribute
+        set to `True` if the update operation succeeded, or `False` if it failed.
+        """
+        for lrms in self._lrms_list:
+            try:
+                auto_enable_auth = kw.get('auto_enable_auth', self.auto_enable_auth)
+                resource = lrms.get_resource_status()
+                resource.updated = True
+            except Exception, ex:
+                gc3libs.log.error("Got error while updating resource '%s': %s."
+                                  % (lrms._resource.name, str(ex)))
+                lrms._resource.updated = False
+
+
+    ## compatibility with the `Engine` interface
+    
     def add(self, task):
         """
         This method is here just to allow `Core` and `Engine` objects
@@ -598,6 +596,8 @@ class Core:
         """
         pass
 
+
+    ## internal methods
 
     def _get_backend(self,resource_name):
         _lrms = None
