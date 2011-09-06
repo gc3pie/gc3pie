@@ -58,7 +58,7 @@ import gc3libs
 from gc3libs import Application, Run, Task
 from gc3libs.application.turbomole import TurbomoleApplication, TurbomoleDefineApplication
 from gc3libs.cmdline import SessionBasedScript
-from gc3libs.dag import SequentialTaskCollection, ParallelTaskCollection
+from gc3libs.dag import StagedTaskCollection, ParallelTaskCollection
 from gc3libs.template import Template, expansions
 import gc3libs.utils
 
@@ -177,7 +177,7 @@ def _make_define_in(path, contents):
     return define_in_filename
 
 
-class BasisSweepPasses(SequentialTaskCollection):
+class BasisSweepPasses(StagedTaskCollection):
     """
     Build a two-step sequence:
       - first task is RIDFT with given coordinates and ``define.in`` file;
@@ -205,73 +205,82 @@ class BasisSweepPasses(SequentialTaskCollection):
         results will be stored.
     
         """
-        orb_basis = ridft_in._keywords['ORB_BASIS']
-        rijk_basis = ridft_in._keywords['RIJK_BASIS']
-        self.work_dir = os.path.join(work_dir,
-                                     'bas-%s/jkbas-%s' % (orb_basis, rijk_basis))
-        gc3libs.utils.mkdir(self.work_dir)
         # need to remove this, we override it both in pass1 and pass2
         if kw.has_key('output_dir'):
             del kw['output_dir']
-        # run 1st pass in the `ridft` directory
-        ridft_dir = os.path.join(self.work_dir, 'ridft')
-        gc3libs.utils.mkdir(ridft_dir)
-        gc3libs.utils.copyfile(coord, os.path.join(ridft_dir, 'coord'))
-        ridft_define_in = _make_define_in(ridft_dir, ridft_in)
-        pass1 = TurbomoleDefineApplication(
-            'ridft', ridft_define_in, coord,
-            output_dir = os.path.join(ridft_dir, 'output'),
-            stdout = 'ridft.out', **kw)
         # remember for later
+        self.orb_basis = ridft_in._keywords['ORB_BASIS']
+        self.rijk_basis = ridft_in._keywords['RIJK_BASIS']
+        self.work_dir = os.path.join(work_dir, 'bas-%s/jkbas-%s' 
+                                     % (self.orb_basis, self.rijk_basis))
         self.name = name
+        self.coord = coord
+        self.ridft_in = ridft_in
         self.ricc2_ins = ricc2_ins
         self.extra = kw
         # init superclass
-        SequentialTaskCollection.__init__(self, name, [pass1], grid)
-        gc3libs.log.debug("Created RIDFT task '%s' (bas=%s, jkbas=%s) in directory '%s'",
-                          name, orb_basis, rijk_basis, ridft_dir)
+        StagedTaskCollection.__init__(self, name, grid)
 
 
-    def next(self, done):
-        if done == 0:
-            if self.tasks[0].execution.returncode != 0:
-                rc = self.tasks[0].execution.returncode
-                if rc is not None:
-                    self.execution.returncode = rc
-                return Run.State.TERMINATED
-            # else, proceeed with 2nd pass
-            pass2 = [ ]
-            ridft_coord = os.path.join(self.tasks[0].output_dir, 'coord')
-            for ricc2_in in self.ricc2_ins:
-                cbas = ricc2_in._keywords['CBAS_BASIS']
-                cabs = ricc2_in._keywords['CABS_BASIS']
-                ricc2_dir = os.path.join(self.work_dir,
-                                         'ricc2/cbas-%s/cabs-%s' % (cbas, cabs))
-                gc3libs.utils.mkdir(ricc2_dir)
-                gc3libs.utils.copyfile(ridft_coord, ricc2_dir)
-                ricc2_define_in = _make_define_in(ricc2_dir, ricc2_in)
-                pass2.append(
-                    TurbomoleDefineApplication(
-                        'ricc2', ricc2_define_in,
-                        # the second pass builds on files defined in the first one
-                        os.path.join(ricc2_dir, 'coord'),
-                        os.path.join(self.tasks[0].output_dir, 'control'),
-                        os.path.join(self.tasks[0].output_dir, 'energy'),
-                        os.path.join(self.tasks[0].output_dir, 'mos'),
-                        os.path.join(self.tasks[0].output_dir, 'basis'),
-                        os.path.join(self.tasks[0].output_dir, 'auxbasis'),
-                        output_dir = os.path.join(ricc2_dir, 'output'),
-                        stdout = 'ricc2.out',
-                        **self.extra))
-                gc3libs.log.debug("Created RICC2 task in directory '%s'",
-                                  ricc2_dir)
-            self.tasks.append(ParallelTaskCollection(self.name + '.pass2',
-                                                     pass2, grid=self._grid))
-            return Run.State.RUNNING
-        else:
-            # final exit status reflects the 2nd pass exit status
-            self.execution.returncode = self.tasks[1].execution.returncode
-            return self.tasks[1].execution.state
+    def stage0(self):
+        """
+        Run a RIDFT job for the BAS/JKBAS combination given by the
+        keywords ``ORB_BASIS`` and ``RIJK_BASIS`` in
+        `self.ridft_in`.
+
+        """
+        # run 1st pass in the `ridft` directory
+        gc3libs.utils.mkdir(self.work_dir)
+        ridft_dir = os.path.join(self.work_dir, 'ridft')
+        gc3libs.utils.mkdir(ridft_dir)
+        gc3libs.utils.copyfile(self.coord, os.path.join(ridft_dir, 'coord'))
+        ridft_define_in = _make_define_in(ridft_dir, self.ridft_in)
+        # application to run in pass 1
+        gc3libs.log.debug("Creating RIDFT task '%s' (bas=%s, jkbas=%s) in directory '%s'",
+                          self.name, self.orb_basis, self.rijk_basis, ridft_dir)
+        return TurbomoleDefineApplication(
+            'ridft', ridft_define_in, self.coord,
+            output_dir = os.path.join(ridft_dir, 'output'),
+            stdout = 'ridft.out', **self.extra)
+
+
+    def stage1(self):
+        """
+        Run a RICC2 job for each valid CBAS/CABS basis combination,
+        re-using the results from RIDFT in `stage0`.
+
+        If RIDFT failed, exit immediately.
+        """
+        # terminate if first stage was unsuccessful
+        rc = self.tasks[0].execution.returncode
+        if rc is not None and rc != 0:
+            return rc
+        # else, proceeed with 2nd pass
+        pass2 = [ ]
+        ridft_coord = os.path.join(self.tasks[0].output_dir, 'coord')
+        for ricc2_in in self.ricc2_ins:
+            cbas = ricc2_in._keywords['CBAS_BASIS']
+            cabs = ricc2_in._keywords['CABS_BASIS']
+            ricc2_dir = os.path.join(self.work_dir,
+                                     'ricc2/cbas-%s/cabs-%s' % (cbas, cabs))
+            gc3libs.utils.mkdir(ricc2_dir)
+            gc3libs.utils.copyfile(ridft_coord, ricc2_dir)
+            ricc2_define_in = _make_define_in(ricc2_dir, ricc2_in)
+            pass2.append(
+                TurbomoleDefineApplication(
+                    'ricc2', ricc2_define_in,
+                    # the second pass builds on files defined in the first one
+                    os.path.join(ricc2_dir, 'coord'),
+                    os.path.join(self.tasks[0].output_dir, 'control'),
+                    os.path.join(self.tasks[0].output_dir, 'energy'),
+                    os.path.join(self.tasks[0].output_dir, 'mos'),
+                    os.path.join(self.tasks[0].output_dir, 'basis'),
+                    os.path.join(self.tasks[0].output_dir, 'auxbasis'),
+                    output_dir = os.path.join(ricc2_dir, 'output'),
+                    stdout = 'ricc2.out',
+                    **self.extra))
+            gc3libs.log.debug("Created RICC2 task in directory '%s'", ricc2_dir)
+        return (ParallelTaskCollection(self.name + '.pass2', pass2, grid=self._grid))
 
 
 class BasisSweep(ParallelTaskCollection):
