@@ -753,13 +753,27 @@ class cmd_glist(_BaseCmd):
 List status of computational resources.
     """
 
+    def setup_options(self):
+        self.add_param("-n", "--no-update", action="store_false",
+                       dest="update", default=True,
+                       help="Do not update resource statuses;"
+                       " only print what's in the local database.")
+        self.add_param("-p", "--print", action="store", dest="keys", 
+                       metavar="LIST", default=None, 
+                       help="Only print resource attributes whose name appears in"
+                       " this comma-separated list. (Attribute name is as given in"
+                       " the configuration file, or listed in the middle column"
+                       " in `glist` output.)")
+
     def main(self):
         if len(self.params.args) > 0:
             self._select_resources(* self.params.args)
             self.log.info("Retained only resources: %s",
                           str.join(",", [res['name'] for res in self._core._resources]))
 
-        resources = self._core.get_all_updated_resources()
+        if self.params.update:
+            self._core.update_resources()
+        resources = self._core.get_resources()
         def cmp_by_name(x,y):
             return cmp(x.name, y.name)
         for resource in sorted(resources, cmp=cmp_by_name):
@@ -770,8 +784,8 @@ List status of computational resources.
 
             # not all resources support the same keys...
             def output_if_exists(name, print_name):
-                if hasattr(resource, name):
-                    table.add_row((print_name, getattr(resource, name)))
+                if hasattr(resource, name) and ((not self.params.keys) or name in self.params.keys):
+                    table.add_row((("%s / %s" % (print_name, name)), getattr(resource, name)))
             output_if_exists('frontend', "Frontend host name")
             output_if_exists('type', "Access mode")
             output_if_exists('auth', "Authorization name")
