@@ -350,7 +350,65 @@ class SequentialTaskCollection(TaskCollection):
         else:
             self.execution.state = Run.State.RUNNING
         return self.execution.state
-        
+
+
+class StagedTaskCollection(SequentialTaskCollection):
+    """Simplified interface for creating a sequence of Tasks.
+    This can be used when the number of Tasks to run is
+    fixed and known at program writing time.
+
+    A `StagedTaskCollection` subclass should define methods `stage0`,
+    `stage2`, ... up to `stageN` (for some arbitrary value of N positive
+    integer).  Each of these `stageN` must return a `Task`:class:
+    instance; the task returned by the `stage0` method will be executed
+    first, followed by the task returned by `stage1`, and so on.
+    The sequence stops at the first N such that `stageN` is not defined.
+
+    The exit status of the whole sequence is the exit status of the
+    last `Task` instance run.  However, if any of the `stageX` methods
+    returns an integer value instead of a `Task` instance, then the
+    sequence stops and that number is used as the sequence exit
+    code.
+
+    """
+    def __init__(self, jobname, grid=None, **kw):
+        try:
+            first_stage = self.stage0()
+            if isinstance(first_stage, Task):
+                # init parent class with the initial task
+                SequentialTaskCollection.__init__(self, jobname, [first_stage], grid, **kw)
+            elif isinstance(first_stage, (int, long, tuple)):
+                # init parent class with no tasks, an dimmediately set the exitcode
+                SequentialTaskCollection.__init__(self, jobname, [], grid, **kw)
+                self.execution.returncode = first_stage
+                self.execution.state = Run.State.TERMINATED
+            else:
+                raise AssertionError("Invalid return value from method `stage0()` of"
+                                     " `StagedTaskCollection` object %r:"
+                                     " must return `Task` instance or number" % self)
+        except AttributeError, ex:
+            raise AssertionError("Invalid `StagedTaskCollection` instance %r: %s"
+                                 % (self, str(ex)))
+
+
+    def next(self, done):
+        try:
+            next_stage_fn = getattr(self, "stage%d" % (done+1))
+            next_stage = next_stage_fn()
+            if isinstance(next_stage, Task):
+                self.add(next_stage)
+                return Run.State.RUNNING
+            elif isinstance(next_stage, (int, long, tuple)):
+                self.execution.returncode = next_stage
+                return Run.State.TERMINATED
+            else:
+                raise AssertionError("Invalid return value from method `stage%d()` of"
+                                     " `StagedTaskCollection` object %r:"
+                                     " must return `Task` instance or number" 
+                                     % (done+1, self))
+        except AttributeError:
+            self.execution.returncode = self.tasks[done].execution.returncode
+            return Run.State.TERMINATED
 
 
 class ParallelTaskCollection(TaskCollection):
