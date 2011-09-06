@@ -106,6 +106,7 @@ force removal of a job regardless.
         for jobid in args:
             try:
                 app = self._store.load(jobid)
+                app.attach(self._core)
 
                 if app.execution.state != Run.State.NEW:
                     if app.execution.state != Run.State.TERMINATED:
@@ -374,6 +375,7 @@ is canceled before re-submission.
         failed = 0
         for jobid in self.params.args:
             app = self._store.load(jobid.strip())
+            app.attach(self._core)
             try:
                 self._core.update_job_state(app) # update state
             except Exception, ex:
@@ -457,6 +459,7 @@ Print job state.
         rows = [ ]
         for app in self._get_jobs(self.params.args):
             if self.params.update:
+                app.attach(self._core)
                 self._core.update_job_state(app)
                 self._store.replace(app.persistent_id, app)
             if states is None or app.execution.state in states:
@@ -530,6 +533,7 @@ released once the output files have been fetched.
         for jobid in self.params.args:
             try:
                 app = self._store.load(jobid)
+                app.attach(self._core)
 
                 if app.execution.state == Run.State.NEW:
                     raise gc3libs.exceptions.InvalidOperation(
@@ -601,6 +605,7 @@ error occurred.
         for jobid in args:
             try:
                 app = self._store.load(jobid)
+                app.attach(self._core)
 
                 self.log.debug("gkill: Job '%s' in state %s"
                                % (jobid, app.execution.state))
@@ -649,11 +654,12 @@ as more lines are written to the given stream.
         else:
             stream = 'stdout'
 
-        app = self._store.load(jobid)
+        app = self._store.load(jobid)        
         if app.execution.state == Run.State.UNKNOWN \
                 or app.execution.state == Run.State.SUBMITTED \
                 or app.execution.state == Run.State.NEW:
             raise RuntimeError('Job output not yet available')
+        app.attach(self._core)
 
         if self.params.follow:
             where = 0
@@ -700,6 +706,7 @@ your problem instead.
         for jobid in self.params.args:
             try:
                 app = self._store.load(jobid)
+                app.attach(self._core)
 
                 # create tgz with job information
                 tar_filename = os.path.join(_tmp_folder,jobid + '.tgz')
