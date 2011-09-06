@@ -661,23 +661,29 @@ as more lines are written to the given stream.
             raise RuntimeError('Job output not yet available')
         app.attach(self._core)
 
-        if self.params.follow:
-            where = 0
-            while True:
+        try:
+            if self.params.follow:
+                where = 0
+                while True:
+                    file_handle = self._core.peek(app, stream)
+                    self.log.debug("Seeking position %d in stream %s" % (where, stream))
+                    file_handle.seek(where)
+                    for line in file_handle.readlines():
+                        print line.strip()
+                    where = file_handle.tell()
+                    self.log.debug("Read up to position %d in stream %s" % (where, stream))
+                    file_handle.close()
+                    time.sleep(5)
+            else:
                 file_handle = self._core.peek(app, stream)
-                self.log.debug("Seeking position %d in stream %s" % (where, stream))
-                file_handle.seek(where)
-                for line in file_handle.readlines():
+                for line in file_handle.readlines()[-(self.params.num_lines):]:
                     print line.strip()
-                where = file_handle.tell()
-                self.log.debug("Read up to position %d in stream %s" % (where, stream))
                 file_handle.close()
-                time.sleep(5)
-        else:
-            file_handle = self._core.peek(app, stream)
-            for line in file_handle.readlines()[-(self.params.num_lines):]:
-                print line.strip()
-            file_handle.close()
+
+        except gc3libs.exceptions.InvalidOperation: # Cannot `peek()` on a task collection
+            self.log.error("Task '%s' (of class '%s') has no defined output/error streams."
+                           " Ignoring.", app.persistent_id, app.__class__.__name__)
+            return 1
 
         return 0
 
