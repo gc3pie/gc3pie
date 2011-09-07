@@ -55,31 +55,36 @@ class TurbomoleApplication(gc3libs.Application):
         for path in others:
             inputs[path] = os.path.basename(path)
 
+        self.program = program
+
         # set defaults for keyword arguments
         kw.setdefault('join', True)
         kw.setdefault('stdout', program + '.log')
         kw.setdefault('output_dir', None)
         
-        # hard-coded list, according to Andreas' description
-        # outputs = [
-        #     'control',
-        #     'coord',
-        #     'mos',
-        #     'energy',
-        #     'basis',
-        #     'auxbasis',
-        #     ]
-        outputs = gc3libs.ANY_OUTPUT
-
         gc3libs.Application.__init__(
             self,
             executable = "./turbomole.sh",
             arguments = [ program ],
             inputs = inputs,
-            outputs = outputs,
+            outputs = gc3libs.ANY_OUTPUT,
             **kw
             )
 
+    def terminated(self):
+        output_filename = os.path.join(self.output_dir, self.program + '.out')
+        if not os.path.exists(output_filename):
+            self.execution.exitcode = 1 # FAIL
+            return
+        ok = self.program + " ended normally\n"
+        output_file = open(output_filename, 'r')
+        output_file.seek(-len(ok), os.SEEK_END)
+        if ok != output_file.read():
+            self.execution.exitcode = 1 # FAIL
+            return
+        self.execution.exitcode = 0 # SUCCESS
+        return
+        
 
 class TurbomoleDefineApplication(gc3libs.Application):
     """
@@ -111,17 +116,6 @@ class TurbomoleDefineApplication(gc3libs.Application):
         for path in others:
             inputs[path] = os.path.basename(path)
 
-        # hard-coded list, according to Andreas' description
-        # outputs = [
-        #     'control',
-        #     'coord',
-        #     'mos',
-        #     'energy',
-        #     'basis',
-        #     'auxbasis',
-        #     ]
-        outputs = gc3libs.ANY_OUTPUT
-
         # set defaults for keyword arguments
         kw.setdefault('join', True)
         kw.setdefault('stdout', program + '.log')
@@ -132,10 +126,24 @@ class TurbomoleDefineApplication(gc3libs.Application):
             executable = "./turbomole.sh",
             arguments = [ program ],
             inputs = inputs,
-            outputs = outputs,
+            outputs = gc3libs.ANY_OUTPUT,
             **kw
             )
 
+
+    def terminated(self):
+        output_filename = os.path.join(self.output_dir, self.program + '.out')
+        if not os.path.exists(output_filename):
+            self.execution.exitcode = 1 # FAIL
+            return
+        ok = self.program + " ended normally\n"
+        output_file = open(output_filename, 'r')
+        output_file.seek(-len(ok), os.SEEK_END)
+        if ok != output_file.read():
+            self.execution.exitcode = 1 # FAIL
+            return
+        self.execution.exitcode = 0 # SUCCESS
+        return
 
 
 gc3libs.application.register(TurbomoleApplication, 'turbomole')
