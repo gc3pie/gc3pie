@@ -311,7 +311,7 @@ class ArcLrms(LRMS):
                 job.log("ARC reported error: %s" % arc_job.errors)
                 job.returncode = (Run.Signals.RemoteError, -1)
             # FIXME: we should introduce a kind of "wrong requirements" error
-            elif (arc_job.requested_walltime is not None
+            elif (arc_job.requested_wall_time is not None
                   and arc_job.requested_wall_time != -1 
                   and arc_job.used_wall_time != -1 
                   and arc_job.used_wall_time > arc_job.requested_wall_time):
