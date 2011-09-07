@@ -729,10 +729,14 @@ def read_config(*locations):
 
     for location in locations:
         location = os.path.expandvars(location)
-        if os.path.exists(location) and os.access(location, os.R_OK):
-            gc3libs.log.debug("Core.read_config(): reading file '%s'" % location)
+        if os.path.exists(location):
+            if os.access(location, os.R_OK):
+                gc3libs.log.debug("Core.read_config(): Reading file '%s'" % location)
+            else:
+                gc3libs.log.debug("Core.read_config(): File '%s' cannot be read, ignoring." % location)
+                continue # with next `location`
         else:
-            gc3libs.log.debug("Core.read_config(): ignoring non-existent file '%s'" % location)
+            gc3libs.log.debug("Core.read_config(): File '%s' does not exist, ignoring." % location)
             continue # with next `location`
 
         # Config File exists; read it
@@ -750,7 +754,7 @@ def read_config(*locations):
             if sectname.startswith('auth/'):
                 # handle auth section
                 gc3libs.log.debug("Core.read_config():"
-                                  " adding auth '%s' " % sectname)
+                                  " Read configuration stanza for auth '%s'." % sectname)
                 # extract auth name and register auth dictionary
                 auth_name = sectname.split('/', 1)[1]
                 auths[auth_name].update(dict(config.items(sectname)))
@@ -759,7 +763,7 @@ def read_config(*locations):
                 # handle resource section
                 resource_name = sectname.split('/', 1)[1]
                 gc3libs.log.debug("Core.read_config():"
-                                  " adding resource '%s' " % resource_name)
+                                  " Read configuration stanza for resource '%s'." % resource_name)
                 config_items = dict(config.items(sectname))
                 if config_items.has_key('enabled'):
                     config_items['enabled'] = utils.string_to_boolean(config_items['enabled'])
