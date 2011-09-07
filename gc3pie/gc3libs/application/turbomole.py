@@ -61,14 +61,15 @@ class TurbomoleApplication(gc3libs.Application):
         kw.setdefault('output_dir', None)
         
         # hard-coded list, according to Andreas' description
-        outputs = [
-            'control',
-            'coord',
-            'mos',
-            'energy',
-            'basis',
-            'auxbasis',
-            ]
+        # outputs = [
+        #     'control',
+        #     'coord',
+        #     'mos',
+        #     'energy',
+        #     'basis',
+        #     'auxbasis',
+        #     ]
+        outputs = gc3libs.ANY_OUTPUT
 
         gc3libs.Application.__init__(
             self,
@@ -111,14 +112,15 @@ class TurbomoleDefineApplication(gc3libs.Application):
             inputs[path] = os.path.basename(path)
 
         # hard-coded list, according to Andreas' description
-        outputs = [
-            'control',
-            'coord',
-            'mos',
-            'energy',
-            'basis',
-            'auxbasis',
-            ]
+        # outputs = [
+        #     'control',
+        #     'coord',
+        #     'mos',
+        #     'energy',
+        #     'basis',
+        #     'auxbasis',
+        #     ]
+        outputs = gc3libs.ANY_OUTPUT
 
         # set defaults for keyword arguments
         kw.setdefault('join', True)
