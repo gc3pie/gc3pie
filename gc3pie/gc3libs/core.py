@@ -344,7 +344,6 @@ class Core:
             task.update_state()
 
 
-    @gc3libs.debug.trace
     def fetch_output(self, app, download_dir=None, overwrite=False, **kw):
         """
         Retrieve output into local directory `app.output_dir`;
