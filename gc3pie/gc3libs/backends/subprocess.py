@@ -118,10 +118,12 @@ class SubprocessLrms(LRMS):
                 "Retrieval of output files to non-local destinations"
                 " is not supported in the SubProcess backend.")
         for r, l in app.outputs.items():
+            relative_dest_path = l.path
             if r == gc3libs.ANY_OUTPUT:
                 r = ''
+                relative_dest_path = ''
             copy_recursively(os.path.join(app.execution.lrms_execdir, r),
-                             os.path.join(download_dir, l.path))
+                             os.path.join(download_dir, relative_dest_path))
 
     
     def update_job_state(self, app):
