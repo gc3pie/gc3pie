@@ -337,7 +337,7 @@ class deKenPrice:
         ax.set_ylabel('sigmaH')
         ax.set_title('Best: x %s, f(x) %f' % (self.FVr_bestmem, self.S_bestval))
 
-        fig.savefig(os.path.join(self.figSaveFolder, 'pop%d' % (self.I_iter)))    
+        fig.savefig(os.path.join(self.figSaveFolder, 'pop%d' % (self.I_iter)))
 
   def drawPopulation(self, size, dim):
     pop = np.zeros( (size, dim ) )

@@ -31,6 +31,8 @@ __changelog__ = """
 """
 __docformat__ = 'reStructuredText'
 
+import shutil
+
 # Remove all files in curPath if -N option specified. 
 if __name__ == '__main__':    
     import sys
@@ -61,7 +63,6 @@ if __name__ == "__main__":
 import numpy as np
 import os
 import re
-import shutil
 import sys
 import time
 
@@ -144,10 +145,8 @@ Read `.loop` files and execute the `forwardPremium` program accordingly.
         
         # Copy base dir
         localBaseDir = os.path.join(os.getcwd(), 'localBaseDir')
-        try: 
-            shutil.copytree(self.params.initial, localBaseDir)
-        except:
-            print '%s already exists' % localBaseDir 
+        gc3libs.utils.copytree(self.params.initial, '/mnt/shareOffice/ForwardPremium/Results/sensitivity/wGridSize/dfs')
+        gc3libs.utils.copytree(self.params.initial, localBaseDir)
 
         for path in inputs:
             para_loop = path

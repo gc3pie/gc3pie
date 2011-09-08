@@ -65,10 +65,10 @@ class wrapLogger():
     
 
 
-def getLogger(loggerName, streamVerb = 'DEBUG', logFile = 'log'):
+def getLogger(loggerName = 'mylogger.log', streamVerb = 'DEBUG', logFile = 'log'):
 
     # Get a logger instance.
-    logger = logbook.Logger(name = 'target.log')
+    logger = logbook.Logger(name = loggerName)
     
     # set up logger
     mySH = logbook.StreamHandler(stream = sys.stdout, level = streamVerb.upper(), format_string = '{record.message}', bubble = True)
@@ -85,7 +85,6 @@ def getLogger(loggerName, streamVerb = 'DEBUG', logFile = 'log'):
     except: 
         pass
     return logger
-
 
 
 def lower(npStrAr):
