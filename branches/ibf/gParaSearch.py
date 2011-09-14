@@ -709,10 +709,11 @@ Read `.loop` files and execute the `forwardPremium` program accordingly.
             deKenPrice.plotPopulation = plotPopOne4eachCtry(countryList)
             
             # Set solver variables
+            nXvars = len(xVars.split())
             deKenPrice.I_NP         = int(self.params.nPopulation)
             deKenPrice.F_weight     = float(self.params.fWeight)
             deKenPrice.F_CR         = float(self.params.fCritical)
-            deKenPrice.I_D          = int(self.params.nPopulation)
+            deKenPrice.I_D          = int(nXvars)
             deKenPrice.lowerBds     = np.array([ element[0] for element in domain ], dtype = 'float64')
             deKenPrice.upperBds     = np.array([ element[1] for element in domain ], dtype = 'float64')
             deKenPrice.I_itermax    = int(self.params.itermax)
