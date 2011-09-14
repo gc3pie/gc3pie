@@ -39,22 +39,11 @@ class deKenPrice:
       self.target    = evaluator.target
       self.nlc       = evaluator.nlc
     self.S_struct = paraStruct
-    self.lowerBds = self.S_struct['lowerBds']
-    self.upperBds = self.S_struct['upperBds']
+
     self.matplotLibAvailable = matplotLibAvailable
 
-    # This is just for notational convenience and to keep the code uncluttered.--------
-    self.I_NP         = self.S_struct['I_NP']
-    self.F_weight     = self.S_struct['F_weight']
-    self.F_CR         = self.S_struct['F_CR']
-    self.I_D          = self.S_struct['I_D']
-    self.I_itermax    = self.S_struct['I_itermax']
-    self.F_VTR        = self.S_struct['F_VTR']
-    self.I_strategy   = self.S_struct['I_strategy']
-    self.I_plotting   = self.S_struct['I_plotting']
-    self.xConvCrit    = self.S_struct['xConvCrit']
-    self.workingDir   = self.S_struct['workingDir']
-    self.verbosity    = self.S_struct['verbosity']
+    #self.setOptions(paraStruct)
+
 
     # Set up loggers
     self.logger = wrapLogger(loggerName = __name__, streamVerb = self.verbosity, logFile = os.path.join(self.workingDir, __name__ + '.log'))
@@ -83,6 +72,22 @@ class deKenPrice:
     self.figSaveFolder = os.path.join(self.workingDir, 'difEvoFigures')
     if not os.path.exists(self.figSaveFolder):
       os.mkdir(self.figSaveFolder)
+      
+  def setOptions(self, struct):
+    # This is just for notational convenience and to keep the code uncluttered.--------
+    self.lowerBds     = self.S_struct['lowerBds']
+    self.upperBds     = self.S_struct['upperBds']
+    self.I_NP         = self.S_struct['I_NP']
+    self.F_weight     = self.S_struct['F_weight']
+    self.F_CR         = self.S_struct['F_CR']
+    self.I_D          = self.S_struct['I_D']
+    self.I_itermax    = self.S_struct['I_itermax']
+    self.F_VTR        = self.S_struct['F_VTR']
+    self.I_strategy   = self.S_struct['I_strategy']
+    self.I_plotting   = self.S_struct['I_plotting']
+    self.xConvCrit    = self.S_struct['xConvCrit']
+    self.workingDir   = self.S_struct['workingDir']
+    self.verbosity    = self.S_struct['verbosity']
 
 
   def deopt(self):

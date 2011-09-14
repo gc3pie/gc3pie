@@ -347,7 +347,7 @@ class gParaSearchParallel(ParallelTaskCollection, paraLoop_fp):
             self.analyzeResults.tablePath = self.iterationFolder
             # variable list passed to analyzeOverviewTables
             self.variables = ['EA', 'sigmaA', 'EB', 'sigmaB']
-            print 'done'
+            print 'Done setting up one4eachCtry. '
                 
                 
 
@@ -707,6 +707,21 @@ Read `.loop` files and execute the `forwardPremium` program accordingly.
             nlc            = nlcOne4eachCtry(gdpTable = gdpTable, ctryList = countryList, domain = domain, logFile = os.path.join(path_to_stage_dir, 'nlc.log'))
             combOverviews  = combineOverviews.combineOverviews(overviewSimuFile = 'eSigmaTable', tableName = 'ag_eSigmaTable', sortKeys = ['norm'])
             deKenPrice.plotPopulation = plotPopOne4eachCtry(countryList)
+            
+            # Set solver variables
+            deKenPrice.I_NP         = int(self.params.nPopulation)
+            deKenPrice.F_weight     = float(self.params.fWeight)
+            deKenPrice.F_CR         = float(self.params.fCritical)
+            deKenPrice.I_D          = int(self.params.nPopulation)
+            deKenPrice.lowerBds     = np.array([ element[0] for element in domain ], dtype = 'float64')
+            deKenPrice.upperBds     = np.array([ element[1] for element in domain ], dtype = 'float64')
+            deKenPrice.I_itermax    = int(self.params.itermax)
+            deKenPrice.F_VTR        = float(self.params.yConvCrit)
+            deKenPrice.I_strategy   = int(self.params.optStrategy)
+            deKenPrice.I_plotting   = int(self.params.makePlots)
+            deKenPrice.xConvCrit    = float(self.params.xConvCrit)
+            deKenPrice.workingDir   = path_to_stage_dir
+            deKenPrice.verbosity    = self.params.solverVerb
 
             plot3dTable    = emptyFun
 #            plot3dTable    = combineOverviews.plotTable(tablePath =os.path.join(path_to_stage_dir, 'ag_eSigmaTable'), savePath = os.path.join(path_to_stage_dir, 'scatter3d'))
