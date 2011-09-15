@@ -621,7 +621,7 @@ class gParaSearchScript(SessionBasedScript, paraLoop_fp):
             # yield job
             yield (jobname, gParaSearchDriver, 
                    [ self.params.executable, path_to_stage_dir, self.params.architecture, 
-                     baseDir, self.params.xVars, 
+                     baseDir, self.params.xVars, self.params.initialPop, 
                      self.params.nPopulation, domain, self.params.solverVerb, self.params.problemType,
                      self.params.pathEmpirical, self.params.itermax, self.params.xConvCrit, self.params.yConvCrit,
                      self.params.makePlots, self.params.optStrategy, self.params.fWeight, self.params.fCritical, self.params.countryList,
@@ -683,7 +683,7 @@ class gParaSearchScript(SessionBasedScript, paraLoop_fp):
                 # yield job
                 yield (jobname, gParaSearchDriver, 
                        [ self.params.executable, path_to_stage_dir, self.params.architecture, 
-                         ctryBaseDir, self.params.xVars, 
+                         ctryBaseDir, self.params.xVars, self.params.initialPop, 
                          self.params.nPopulation, domain, self.params.solverVerb, self.params.problemType,
                          self.params.pathEmpirical, self.params.itermax, self.params.xConvCrit, self.params.yConvCrit,
                          self.params.makePlots, self.params.optStrategy, self.params.fWeight, self.params.fCritical, self.params.countryList,
@@ -785,7 +785,14 @@ class gParaSearchScript(SessionBasedScript, paraLoop_fp):
 
 # run script
 
-if __name__ == '__main__':    
+if __name__ == '__main__':
+    logger.info('Starting: \n%s' % ' '.join(sys.argv))
     gParaSearchScript().run()
     logger.info('main done')
+    
+
+    
+    
+    
+    
     
