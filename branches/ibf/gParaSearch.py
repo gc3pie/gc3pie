@@ -89,14 +89,20 @@ from difEvoKenPrice import *
 ##DEBUG = 1
 ##NOTSET = 0
 
+# Set up logger
+#self.streamVerb = solverVerb
+logger = wrapLogger(loggerName = 'gParaSearchLogger', streamVerb = 'INFO', logFile = os.path.join(os.getcwd(), 'gParaSearch.log'))
+
+
 class gParaSearchDriver(SequentialTaskCollection):
     
-    def __init__(self, pathToExecutable, pathToStageDir, architecture, baseDir, xVars, 
+    def __init__(self, pathToExecutable, pathToStageDir, architecture, baseDir, xVars, initialPop, 
                  nPopulation, domain, solverVerb, problemType, pathEmpirical, 
                  itermax, xConvCrit, yConvCrit, 
                  makePlots, optStrategy, fWeight, fCritical, ctryList, analyzeResults, nlc, plot3dTable, combOverviews,
                  output_dir = '/tmp', grid = None, **kw):
         
+        logger.debug('entering gParaSearchDriver.__init__')
         
         # Set up initial variables and set the correct methods. 
         self.pathToStageDir = pathToStageDir
@@ -138,7 +144,10 @@ class gParaSearchDriver(SequentialTaskCollection):
         self.deSolver.nlc = nlc
         
         # create initial task and register it
-        self.deSolver.newPop = self.deSolver.drawInitialSample()
+        if initialPop:
+            self.deSolver.newPop = np.loadtxt(initialPop, delimiter = '  ')
+        else:
+            self.deSolver.newPop = self.deSolver.drawInitialSample()
         #self.deSolver.plotPopulation(self.deSolver.newPop)
         self.deSolver.I_iter += 1
         self.evaluator = gParaSearchParallel(self.deSolver.newPop, self.deSolver.I_iter, self.pathToExecutable, self.pathToStageDir, 
@@ -154,13 +163,16 @@ class gParaSearchDriver(SequentialTaskCollection):
         return self.jobname
         
     def next(self, *args): 
+        logger.debug('entering gParaSearchDriver.next')
+        
         self.changed = True
         newVals = self.evaluator.target(self.deSolver.newPop)
         self.deSolver.updatePopulation(self.deSolver.newPop, newVals)
         # Stats for initial population: 
         self.deSolver.printStats() 
         # make full overview table
-        self.combOverviews(runDir = self.pathToStageDir, tablePath = self.pathToStageDir)	
+        self.combOverviews(runDir = self.pathToStageDir, tablePath = self.pathToStageDir)
+
         # make plots
         if self.deSolver.I_plotting:
             self.deSolver.plotPopulation(self.deSolver.FM_pop) 
@@ -196,12 +208,8 @@ class gParaSearchParallel(ParallelTaskCollection, paraLoop_fp):
     def __init__(self, inParaCombos, iteration, pathToExecutable, pathToStageDir, architecture, baseDir, xVars, 
                  solverVerb, problemType, analyzeResults, ctryList, **kw):
 
-        
-        self.streamVerb = solverVerb
-        self.logFile = os.path.join(pathToStageDir, 'gParaSearch.log')
-        self.logger = wrapLogger(loggerName = 'gParaSearchParallelLogger', streamVerb = solverVerb, logFile = os.path.join(pathToStageDir, 'gParaSearch.log'))
-        
-        self.logger.debug('entering gParaSearch')
+        logger.debug('entering gParaSearchParalell.__init__')
+
         
         # Set up initial variables and set the correct methods. 
         self.pathToStageDir = pathToStageDir
@@ -225,7 +233,7 @@ class gParaSearchParallel(ParallelTaskCollection, paraLoop_fp):
         cDate = datetime.date.today()
         cTime = datetime.datetime.time(datetime.datetime.now())
         dateString = '{0:04d}-{1:02d}-{2:02d}-{3:02d}-{4:02d}-{5:02d}'.format(cDate.year, cDate.month, cDate.day, cTime.hour, cTime.minute, cTime.second)
-        self.logger.debug('Establishing parallel task on %s' % dateString)
+        logger.debug('Establishing parallel task on %s' % dateString)
         
         # Enter an iteration specific folder
         self.iterationFolder = os.path.join(self.pathToStageDir, 'Iteration-' + str(self.iteration))
@@ -233,6 +241,9 @@ class gParaSearchParallel(ParallelTaskCollection, paraLoop_fp):
             os.mkdir(self.iterationFolder)
         except OSError:
             print '%s already exists' % self.iterationFolder
+            
+        # save population to file
+        np.savetxt(os.path.join(self.iterationFolder, 'curPopulation'), inParaCombos, delimiter = '  ')
 
         # Take the list of parameter combinations and translate them in a comma separated list of values for each variable to be fed into paraLoop file. 
         # This can be done much more elegantly with ','.join() but it works... 
@@ -367,6 +378,7 @@ class gParaSearchParallel(ParallelTaskCollection, paraLoop_fp):
         
     def target(self, inParaCombos):
      
+        logger.debug('entering gParaSearchParallel.target')
         # Each line in the resulting table (overviewSimu) represents one paraCombo
         overviewTable = createOverviewTable(resultDir = self.iterationFolder, outFile = 'simulation.out', slUIPFile = 'slUIP.mat', 
                                             exportFileName = 'overviewSimu', sortTable = False, 
@@ -376,7 +388,7 @@ class gParaSearchParallel(ParallelTaskCollection, paraLoop_fp):
                              targetVar = 'normDev', logLevel = self.verbosity, 
                              logFile = os.path.join(self.iterationFolder, os.path.join(self.pathToStageDir, 'analyzeOverview.log')))
         #result = [ ele[0] for ele in inParaCombos ]
-        self.logger.info('returning result to solver')
+        logger.info('Computed target: Returning result to solver')
         self.iteration += 1
         return result
         
@@ -439,7 +451,7 @@ class gParaSearchParallel(ParallelTaskCollection, paraLoop_fp):
 
 class gParaSearchScript(SessionBasedScript, paraLoop_fp):
     """
-Read `.loop` files and execute the `forwardPremium` program accordingly.
+    Read `.loop` files and execute the `forwardPremium` program accordingly.
     """
 
     def __init__(self):
@@ -515,6 +527,9 @@ Read `.loop` files and execute the `forwardPremium` program accordingly.
         self.add_param("-nN", "--norm", metavar="ARCH", type = str,
                        dest="norm", default = 2,
                        help="Which norm to apply for one4all and one4eachCtry")
+        self.add_param("-iP", "--initialPop", metavar="ARCH", type = str,
+                       dest="initialPop", default = 2,
+                       help="File name that contains a space separated list of initial pop. ")
 
     def parse_args(self):
         """
@@ -534,6 +549,15 @@ Read `.loop` files and execute the `forwardPremium` program accordingly.
 
     def new_tasks(self, extra):
         
+        logger.info('entering new_tasks')
+        
+        # Adjust logging level for stream handler. Could be extracted into a general function. 
+        for handler in logger.handlers:
+            if not isinstance(handler, logbook.FileHandler):
+                logger.handlers.remove(handler)
+        mySH = logbook.StreamHandler(stream = sys.stdout, level = self.params.solverVerb.upper(), format_string = '{record.message}', bubble = True)
+        logger.handlers.append(mySH)
+        
         baseDir = self.params.initial
         xVars    = self.params.xVars
 
@@ -541,7 +565,7 @@ Read `.loop` files and execute the `forwardPremium` program accordingly.
         
         ctryIndices = getIndex(base = [len(countryList), len(countryList)], restr = 'lowerTr')
         for ctryIndex in ctryIndices:
-            print(countryList[ctryIndex[0]], countryList[ctryIndex[1]])
+            logger.info(countryList[ctryIndex[0]] + countryList[ctryIndex[1]])
         
         # Make problem type specific adjustments. 
         if self.params.problemType == 'one4all':
@@ -554,7 +578,7 @@ Read `.loop` files and execute the `forwardPremium` program accordingly.
 
             jobname = 'one4all'
 
-            print '%s' % self.params.norm
+            logger.info('%s' % self.params.norm)
             norm = self.params.norm
             try: 
                 norm = int(norm)
@@ -564,7 +588,7 @@ Read `.loop` files and execute the `forwardPremium` program accordingly.
                 else:
                     pass # in particular custom norms
 
-            print 'using norm %s' % (norm)
+            logger.info('using norm %s' % (norm))
 
 
             path_to_stage_dir = os.getcwd()
@@ -589,7 +613,7 @@ Read `.loop` files and execute the `forwardPremium` program accordingly.
                 try: 
                     shutil.copytree(baseDir, ctryBaseDir)
                 except:
-                    print '%s already exists' % baseDir 
+                    logger.info('%s already exists' % baseDir)
             
             kwargs = extra.copy()
             kwargs['output_dir'] = path_to_stage_dir
@@ -614,7 +638,7 @@ Read `.loop` files and execute the `forwardPremium` program accordingly.
             for ctryIndex in ctryIndices:
                 Ctry1 = countryList[ctryIndex[0]]
                 Ctry2 = countryList[ctryIndex[1]]
-                print(Ctry1, Ctry2)
+                logger.info(Ctry1 + Ctry2)
                 jobname = Ctry1 + '-' + Ctry2
                 # set stage dir. 
                 path_to_stage_dir = self.make_directory_path(self.params.output, jobname)
@@ -636,7 +660,7 @@ Read `.loop` files and execute the `forwardPremium` program accordingly.
                 try: 
                     shutil.copytree(baseDir, ctryBaseDir)
                 except:
-                    print '%s already exists' % baseDir                
+                    logger.info('%s already exists' % baseDir)
                 EA = getParameter(fileIn = os.path.join(baseDir, 'input/parameters.in'), varIn = 'EA', 
                                      regexIn = 'bar-separated')
                 EB = getParameter(fileIn = os.path.join(baseDir, 'input/parameters.in'), varIn = 'EB', 
@@ -699,7 +723,7 @@ Read `.loop` files and execute the `forwardPremium` program accordingly.
                 else:
                     pass # in particular custom norms
 
-            print 'using norm %s' % (norm)
+            logger.info('using norm %s' % (norm))
 
             path_to_stage_dir = os.getcwd()
             executable = os.path.basename(self.params.executable)
@@ -742,7 +766,7 @@ Read `.loop` files and execute the `forwardPremium` program accordingly.
                 try: 
                     shutil.copytree(baseDir, ctryBaseDir)
                 except:
-                    print '%s already exists' % baseDir 
+                    logger.info('%s already exists' % baseDir)
             
             kwargs = extra.copy()
             kwargs['output_dir'] = path_to_stage_dir
@@ -751,7 +775,7 @@ Read `.loop` files and execute the `forwardPremium` program accordingly.
 
             yield (jobname, gParaSearchDriver, 
                    [ self.params.executable, path_to_stage_dir, self.params.architecture, 
-                     baseDir, xVars, 
+                     baseDir, xVars, self.params.initialPop, 
                      self.params.nPopulation, domain, self.params.solverVerb, self.params.problemType,
                      self.params.pathEmpirical, self.params.itermax, self.params.xConvCrit, self.params.yConvCrit,
                      self.params.makePlots, self.params.optStrategy, self.params.fWeight, self.params.fCritical, self.params.countryList,
@@ -763,5 +787,5 @@ Read `.loop` files and execute the `forwardPremium` program accordingly.
 
 if __name__ == '__main__':    
     gParaSearchScript().run()
-    print 'done'
+    logger.info('main done')
     
