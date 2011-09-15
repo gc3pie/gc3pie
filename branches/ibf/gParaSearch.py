@@ -566,6 +566,24 @@ class gParaSearchScript(SessionBasedScript, paraLoop_fp):
         ctryIndices = getIndex(base = [len(countryList), len(countryList)], restr = 'lowerTr')
         for ctryIndex in ctryIndices:
             logger.info(countryList[ctryIndex[0]] + countryList[ctryIndex[1]])
+            
+            
+        # Set solver variables
+        nXvars = len(xVars.split())
+        deKenPrice.I_NP         = int(self.params.nPopulation)
+        deKenPrice.F_weight     = float(self.params.fWeight)
+        deKenPrice.F_CR         = float(self.params.fCritical)
+        deKenPrice.I_D          = int(nXvars)
+        deKenPrice.lowerBds     = np.array([ element[0] for element in domain ], dtype = 'float64')
+        deKenPrice.upperBds     = np.array([ element[1] for element in domain ], dtype = 'float64')
+        deKenPrice.I_itermax    = int(self.params.itermax)
+        deKenPrice.F_VTR        = float(self.params.yConvCrit)
+        deKenPrice.I_strategy   = int(self.params.optStrategy)
+        deKenPrice.I_plotting   = int(self.params.makePlots)
+        deKenPrice.xConvCrit    = float(self.params.xConvCrit)
+        deKenPrice.workingDir   = path_to_stage_dir
+        deKenPrice.verbosity    = self.params.solverVerb
+
         
         # Make problem type specific adjustments. 
         if self.params.problemType == 'one4all':
@@ -732,21 +750,6 @@ class gParaSearchScript(SessionBasedScript, paraLoop_fp):
             combOverviews  = combineOverviews.combineOverviews(overviewSimuFile = 'eSigmaTable', tableName = 'ag_eSigmaTable', sortKeys = ['norm'])
             deKenPrice.plotPopulation = plotPopOne4eachCtry(countryList)
             
-            # Set solver variables
-            nXvars = len(xVars.split())
-            deKenPrice.I_NP         = int(self.params.nPopulation)
-            deKenPrice.F_weight     = float(self.params.fWeight)
-            deKenPrice.F_CR         = float(self.params.fCritical)
-            deKenPrice.I_D          = int(nXvars)
-            deKenPrice.lowerBds     = np.array([ element[0] for element in domain ], dtype = 'float64')
-            deKenPrice.upperBds     = np.array([ element[1] for element in domain ], dtype = 'float64')
-            deKenPrice.I_itermax    = int(self.params.itermax)
-            deKenPrice.F_VTR        = float(self.params.yConvCrit)
-            deKenPrice.I_strategy   = int(self.params.optStrategy)
-            deKenPrice.I_plotting   = int(self.params.makePlots)
-            deKenPrice.xConvCrit    = float(self.params.xConvCrit)
-            deKenPrice.workingDir   = path_to_stage_dir
-            deKenPrice.verbosity    = self.params.solverVerb
 
             plot3dTable    = emptyFun
 #            plot3dTable    = combineOverviews.plotTable(tablePath =os.path.join(path_to_stage_dir, 'ag_eSigmaTable'), savePath = os.path.join(path_to_stage_dir, 'scatter3d'))
