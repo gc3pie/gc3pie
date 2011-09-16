@@ -37,7 +37,7 @@ import shutil
 if __name__ == '__main__':    
     import sys
     if '-N' in sys.argv:
-        import os
+        import os, shutil
         path2Pymods = os.path.join(os.path.dirname(__file__), '../')
         if not sys.path.count(path2Pymods):
             sys.path.append(path2Pymods)
