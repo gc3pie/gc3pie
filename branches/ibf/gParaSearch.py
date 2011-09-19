@@ -148,6 +148,7 @@ class gParaSearchDriver(SequentialTaskCollection):
             self.deSolver.newPop = np.loadtxt(initialPop, delimiter = '  ')
         else:
             self.deSolver.newPop = self.deSolver.drawInitialSample()
+        
         #self.deSolver.plotPopulation(self.deSolver.newPop)
         self.deSolver.I_iter += 1
         self.evaluator = gParaSearchParallel(self.deSolver.newPop, self.deSolver.I_iter, self.pathToExecutable, self.pathToStageDir, 

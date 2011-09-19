@@ -170,7 +170,7 @@ class deKenPrice:
           self.I_nfeval  = self.I_nfeval + 1
           self.I_best_index  = 0
         self.I_nfeval  += 1
-        if newVals[k] < self.S_bestval == 1:
+        if newVals[k] < self.S_bestval:
           self.I_best_index   = k              # save its location
           self.S_bestval      = newVals[k].copy()
       self.FVr_bestmemit = newPop[self.I_best_index, :].copy() # best member of current iteration
