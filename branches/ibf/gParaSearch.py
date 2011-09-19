@@ -574,9 +574,7 @@ class gParaSearchScript(SessionBasedScript, paraLoop_fp):
         upperBds = np.array([xVarsDom[i] for i in range(len(xVarsDom)) if i % 2 == 1], dtype = 'float64')
         domain = zip(lowerBds, upperBds)
             
-            
-
-        
+ 
         # Make problem type specific adjustments. 
         if self.params.problemType == 'one4all':
             gdpTable = tableDict.fromTextFile(fileIn = os.path.join(self.params.pathEmpirical, 'outputInput/momentTable/Gdp/gdpMoments.csv'),
@@ -712,6 +710,10 @@ class gParaSearchScript(SessionBasedScript, paraLoop_fp):
                 xVars = self.params.xVars
                 xVarsDom = self.params.xVarsDom[:-1].split()
             jobname = 'one4eachCtry'
+            
+            lowerBds = np.array([xVarsDom[i] for i in range(len(xVarsDom)) if i % 2 == 0], dtype = 'float64')		
+            upperBds = np.array([xVarsDom[i] for i in range(len(xVarsDom)) if i % 2 == 1], dtype = 'float64')		
+            domain = zip(lowerBds, upperBds)
 
             norm = self.params.norm
             try: 
@@ -730,6 +732,23 @@ class gParaSearchScript(SessionBasedScript, paraLoop_fp):
             nlc            = nlcOne4eachCtry(gdpTable = gdpTable, ctryList = countryList, domain = domain, logFile = os.path.join(path_to_stage_dir, 'nlc.log'))
             combOverviews  = combineOverviews.combineOverviews(overviewSimuFile = 'eSigmaTable', tableName = 'ag_eSigmaTable', sortKeys = ['norm'])
             deKenPrice.plotPopulation = plotPopOne4eachCtry(countryList)
+            
+            
+##            # Set solver variables		
+##            nXvars = len(xVars.split())		
+##            deKenPrice.I_NP         = int(self.params.nPopulation)		
+##            deKenPrice.F_weight     = float(self.params.fWeight)		
+##            deKenPrice.F_CR         = float(self.params.fCritical)		
+##            deKenPrice.I_D          = int(nXvars)		
+##            deKenPrice.lowerBds     = np.array([ element[0] for element in domain ], dtype = 'float64')		
+##            deKenPrice.upperBds     = np.array([ element[1] for element in domain ], dtype = 'float64')		
+##            deKenPrice.I_itermax    = int(self.params.itermax)		
+##            deKenPrice.F_VTR        = float(self.params.yConvCrit)		
+##            deKenPrice.I_strategy   = int(self.params.optStrategy)		
+##            deKenPrice.I_plotting   = int(self.params.makePlots)		
+##            deKenPrice.xConvCrit    = float(self.params.xConvCrit)		
+##            deKenPrice.workingDir   = path_to_stage_dir		
+##            deKenPrice.verbosity    = self.params.solverVerb
             
 
             plot3dTable    = emptyFun
@@ -772,8 +791,12 @@ class gParaSearchScript(SessionBasedScript, paraLoop_fp):
         deKenPrice.F_weight     = float(self.params.fWeight)
         deKenPrice.F_CR         = float(self.params.fCritical)
         deKenPrice.I_D          = int(nXvars)
-        deKenPrice.lowerBds     = np.array([ element[0] for element in domain ], dtype = 'float64')
-        deKenPrice.upperBds     = np.array([ element[1] for element in domain ], dtype = 'float64')
+        if self.params.problemType == 'one4eachCtry':
+            deKenPrice.lowerBds = np.array([xVarsDom[i] for i in range(len(xVarsDom)) if i % 2 == 0], dtype = 'float64')		
+            deKenPrice.upperBds = np.array([xVarsDom[i] for i in range(len(xVarsDom)) if i % 2 == 1], dtype = 'float64')		
+        else:
+            deKenPrice.lowerBds     = np.array([ element[0] for element in domain ], dtype = 'float64')
+            deKenPrice.upperBds     = np.array([ element[1] for element in domain ], dtype = 'float64')
         deKenPrice.I_itermax    = int(self.params.itermax)
         deKenPrice.F_VTR        = float(self.params.yConvCrit)
         deKenPrice.I_strategy   = int(self.params.optStrategy)
