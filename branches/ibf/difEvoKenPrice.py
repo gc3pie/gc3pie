@@ -160,25 +160,40 @@ class deKenPrice:
     return self.enforceConstrResample(pop)
 
   def updatePopulation(self, newPop = None, newVals = None):
+    self.logger.debug('entering updatePopulation')
     if self.I_iter == 0:
       self.FM_pop = newPop.copy()
       self.S_vals = newVals.copy()
       # Determine bestmemit and bestvalit for random draw. 
-      for k in range(self.I_NP):                          # check the remaining members
-        if k == 0:
-          self.S_bestval = newVals[0].copy()                # best objective function value so far
-          self.I_nfeval  = self.I_nfeval + 1
-          self.I_best_index  = 0
-        self.I_nfeval  += 1
-        if newVals[k] < self.S_bestval:
-          self.I_best_index   = k              # save its location
-          self.S_bestval      = newVals[k].copy()
-      self.FVr_bestmemit = newPop[self.I_best_index, :].copy() # best member of current iteration
-      self.S_bestvalit   = self.S_bestval              # best value of current iteration
+      self.I_best_index = np.argmin(self.S_vals)
+      self.S_bestval = self.S_vals[self.I_best_index].copy()
+      self.FVr_bestmemit = newPop[self.I_best_index, :].copy()
+      self.FVr_bestmemit = newPop[self.I_best_index, :].copy()
+      self.S_bestvalit = self.S_bestval.copy()
+      self.FVr_bestmem = self.FVr_bestmemit.copy()
 
-      self.FVr_bestmem = self.FVr_bestmemit            # best member ever
+
+      # for k in range(self.I_NP):                          # check the remaining members
+      #   if k == 0:
+      #     self.S_bestval = newVals[0].copy()                # best objective function value so far
+      #     self.I_nfeval  = self.I_nfeval + 1
+      #     self.I_best_index  = 0
+      #   self.I_nfeval  += 1
+      #   if newVals[k] < self.S_bestval:
+      #     self.I_best_index   = k              # save its location
+      #     self.S_bestval      = newVals[k].copy()
+      # self.FVr_bestmemit = newPop[self.I_best_index, :].copy() # best member of current iteration
+      # self.S_bestvalit   = self.S_bestval              # best value of current iteration
+
+      # self.FVr_bestmem = self.FVr_bestmemit            # best member ever
       
     elif self.I_iter > 0:
+
+      best_index = np.argmin(newVals)
+      if newVals[best_index] < self.S_bestval:
+        self.S_bestval   = newVals[best_index].copy()                    # new best value
+        self.FVr_bestmem = newPop[best_index, :].copy()                 # new best parameter vector ever
+        
 
       for k in range(self.I_NP):
         self.I_nfeval  = self.I_nfeval + 1
@@ -186,12 +201,17 @@ class deKenPrice:
           self.FM_pop[k,:] = newPop[k, :].copy()                    # replace old vector with new one (for new iteration)
           self.S_vals[k]   = newVals[k].copy()                      # save value in "cost array"
 
-          #----we update S_bestval only in case of success to save time-----------
-          if newVals[k] < self.S_bestval:
-            self.S_bestval = newVals[k].copy()                    # new best value
-            self.FVr_bestmem = newPop[k,:].copy()                 # new best parameter vector ever
+          # #----we update S_bestval only in case of success to save time-----------
+          # if newVals[k] < self.S_bestval:
+          #   self.S_bestval = newVals[k].copy()                    # new best value
+          #   self.FVr_bestmem = newPop[k,:].copy()                 # new best parameter vector ever
 
-      self.FVr_bestmemit = self.FVr_bestmem       # freeze the best member of this iteration for the coming 
+      self.FVr_bestmemit = self.FVr_bestmem.copy()       # freeze the best member of this iteration for the coming 
+
+    self.logger.debug('new values %s' % newVals)
+    self.logger.debug('best value %s' % self.S_bestval)
+
+
                                           # iteration. This is needed for some of the strategies.
     return 
 
