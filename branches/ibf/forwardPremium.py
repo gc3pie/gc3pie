@@ -110,26 +110,27 @@ class GPremiumApplication(Application):
         # set the exitcode based on postprocessing the main output file
         simulation_out = os.path.join(output_dir, 'simulation.out')
         if os.path.exists(simulation_out):
-            ofile = open(simulation_out, 'r')
-            # parse each line of the `simulation.out` file,
-            # and try to set an attribute with its value;
-            # ignore errors - this parser is not very sophisticated!
-            for line in ofile:
-                if ':' in line:
-                    try:
-                        var, val = line.strip().split(':', 1)
-                        value = float(val)
-                        attr = self._invalid_chars.sub('_', var)
-                        setattr(self, attr, value)
-                    except:
-                        pass
-            ofile.close()
-            if hasattr(self, 'FamaFrenchBeta'):
-                self.execution.exitcode = 0
-                self.info = ("FamaFrenchBeta: %.6f" % self.FamaFrenchBeta)
-            elif self.execution.exitcode == 0:
-                # no FamaFrenchBeta, no fun!
-                self.execution.exitcode = 1
+            self.execution.exitcode = 0
+##            ofile = open(simulation_out, 'r')
+##            # parse each line of the `simulation.out` file,
+##            # and try to set an attribute with its value;
+##            # ignore errors - this parser is not very sophisticated!
+##            for line in ofile:
+##                if ':' in line:
+##                    try:
+##                        var, val = line.strip().split(':', 1)
+##                        value = float(val)
+##                        attr = self._invalid_chars.sub('_', var)
+##                        setattr(self, attr, value)
+##                    except:
+##                        pass
+##            ofile.close()
+##            if hasattr(self, 'FamaFrenchBeta'):
+##                self.execution.exitcode = 0
+##                self.info = ("FamaFrenchBeta: %.6f" % self.FamaFrenchBeta)
+##            elif self.execution.exitcode == 0:
+##                # no FamaFrenchBeta, no fun!
+##                self.execution.exitcode = 1
         else:
             # no `simulation.out` found, signal error
             self.execution.exitcode = 2
