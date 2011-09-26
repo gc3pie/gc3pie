@@ -145,7 +145,7 @@ Read `.loop` files and execute the `forwardPremium` program accordingly.
         
         # Copy base dir
         localBaseDir = os.path.join(os.getcwd(), 'localBaseDir')
-        gc3libs.utils.copytree(self.params.initial, '/mnt/shareOffice/ForwardPremium/Results/sensitivity/wGridSize/dfs')
+#        gc3libs.utils.copytree(self.params.initial, '/mnt/shareOffice/ForwardPremium/Results/sensitivity/wGridSize/dfs')
         gc3libs.utils.copytree(self.params.initial, localBaseDir)
 
         for path in inputs:
