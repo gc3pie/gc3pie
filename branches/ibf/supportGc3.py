@@ -307,6 +307,8 @@ def update_parameter_in_file(path, varIn, paraIndex, newVal, regexIn):
     paraFileIn = open(path, 'r')
     paraFileOut = open(path + '.tmp', 'w')
     for line in paraFileIn:
+        print "Read line '%s' " % line
+        if not line.rstrip(): continue
         (a, var, b, oldValMat, c) = re.match(regexIn, line.rstrip()).groups()
         gc3libs.log.debug("Read variable '%s' with value '%s' ...", var, oldValMat)
         if var == varIn:
