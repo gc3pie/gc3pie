@@ -153,6 +153,11 @@ class _Script(cli.app.CommandLineApp):
 
         Any additional keyword argument will be used to set a
         corresponding instance attribute on this Python object.
+
+        XXX: version if not documented to be a required attribute
+        XXX: why description and version are not declared as argument to be
+        passed to the __init__ method even if they are treated as compulsory
+        arguments ?
         """
         # use keyword arguments to set additional instance attrs
         for k,v in kw.items():
@@ -808,6 +813,7 @@ class SessionBasedScript(_Script):
     ## the pyCLI docs before :-)
     ##
 
+    # XXX: please explain this.
     def __unset_application_cls(*args, **kwargs):
         """Raise an error if users did not set `application` in `SessionBasedScript` initialization."""
         raise gc3libs.exceptions.Error("PLEASE SET `application` in `SessionBasedScript` CONSTRUCTOR")
@@ -845,6 +851,7 @@ class SessionBasedScript(_Script):
         self.extra = { } #: extra kw arguments passed to `parse_args`
         # use bogus values that should point ppl to the right place
         self.input_filename_pattern = 'PLEASE SET `input_filename_pattern` IN `SessionBasedScript` CONSTRUCTOR'
+        # XXX: what does the following call is for ?
         self.application = SessionBasedScript.__unset_application_cls
         ## init base classes
         _Script.__init__(

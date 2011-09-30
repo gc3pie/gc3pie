@@ -49,7 +49,7 @@ class RosettaApplication(gc3libs.Application):
       * `database`: (local) path to the Rosetta DB; if this is not specified, then it is assumed that the correct location will be available at the remote execution site as environment variable ``ROSETTA_DB_LOCATION``
       * `arguments`: If present, they will be appended to the Rosetta application command line.
     """
-    def __init__(self, application, inputs, outputs=[], 
+    def __init__(self, application, application_release, inputs, outputs=[], 
                  flags_file=None, database=None, arguments=[], **kw):
 
         # we're submitting Rosetta jobs thorugh the support script
@@ -68,8 +68,11 @@ class RosettaApplication(gc3libs.Application):
         # remember the protocol name for event methods
         self.__protocol = application
 
-        _inputs = gc3libs.Application._io_spec_to_dict(inputs)
+        # _inputs = gc3libs.Application._io_spec_to_dict(inputs)
+        # _inputs = inputs
+        _inputs = gc3libs.Application._io_spec_to_dict(gc3libs.url.UrlKeyDict, inputs, True)
 
+        
         # since ARC/xRSL does not allow wildcards in the "outputFiles"
         # line, and Rosetta can create ouput files whose number/name
         # is not known in advance, the support script will create a
@@ -106,10 +109,11 @@ class RosettaApplication(gc3libs.Application):
             _arguments.extend(arguments)
 
         kw['application_tag'] = 'rosetta'
+        application_release = "APPS/BIO/ROSETTA-%s" % application_release
         if kw.has_key('tags'):
-            kw['tags'].append("APPS/BIO/ROSETTA-3.1")
+            kw['tags'].append(application_release)
         else:
-            kw['tags'] = [ "APPS/BIO/ROSETTA-3.1" ]
+            kw['tags'] = [ application_release ]
 
         kw.setdefault('stdout', application+'.stdout.txt')
         kw.setdefault('stderr', application+'.stderr.txt')
