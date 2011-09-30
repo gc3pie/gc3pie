@@ -149,6 +149,8 @@ class Task(object):
 
     """
 
+    # XXX: Why considering the possibility of init a Task with a core instance already ?
+    # XXX: why don't we just allow Tasks to be attached throught Task.attach(grid) ?
     def __init__(self, name, grid=None, **kw):
         """
         Initialize a `Task` instance.
@@ -1606,6 +1608,7 @@ class RetryableTask(Task):
         else:
             return False
 
+    # XXX: explain this (and detach as well)
     def attach(self, grid):
         Task.attach(self, grid)
         self.task.attach(grid)

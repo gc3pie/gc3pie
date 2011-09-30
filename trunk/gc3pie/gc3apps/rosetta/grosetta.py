@@ -98,6 +98,13 @@ Note: the list of INPUT and OUTPUT files must be separated by ':'
         self.add_param("-x", "--protocol", dest="protocol", default="minirosetta.static",
                        metavar="PROTOCOL",
                        help="Run the specified Rosetta protocol/application; default: %(default)s")
+        self.add_param("-e", "--release", type=str, dest="rosetta_release", 
+                       default="3.1",
+                       metavar="NAME",
+                       help="Numerical suffix to identify which version of Rosetta should be requested."
+                       " (example: '-e 20110622' will request rosetta-svn20110622)"
+                       " (default: %(default)s)"
+                       )
 
     def parse_args(self):
         if self.params.total_decoys < 1:
@@ -177,7 +184,7 @@ Note: the list of INPUT and OUTPUT files must be separated by ':'
                 yield (
                     jobname, RosettaApplication, 
                     # args
-                    (self.params.protocol, self.inputs, self.outputs),
+                    (self.params.protocol, self.params.rosetta_release, self.inputs, self.outputs),
                     # kwargs
                     {'arguments':[ '-out:nstruct', str(self.params.decoys_per_job) ],
                      'flags_file':self.flags_file,

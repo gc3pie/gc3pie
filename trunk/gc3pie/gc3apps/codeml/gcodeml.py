@@ -111,7 +111,8 @@ of newly-created jobs so that this limit is never exceeded.
             version = __version__, # module version == script version
             # `CodemlRetryPolicy` is the top-level object here,
             # so only print information about it.
-            stats_only_for = gcodeml.CodemlRetryPolicy, 
+#            stats_only_for = gcodeml.CodemlRetryPolicy,
+             stats_only_for = gc3libs.application.codeml.CodemlApplication,
             )
 
 
