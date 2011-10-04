@@ -25,6 +25,7 @@ __date__ = '$Date$'
 
 from fnmatch import fnmatch
 import os
+import posix
 import re
 import sys
 import time
@@ -1123,15 +1124,25 @@ class Engine(object):
                 # try to get output
                 try:
                     self._core.fetch_output(task)
-                    if task.execution.state == Run.State.TERMINATED:
-                        self._terminated.append(task)
-                        self._core.free(task)
-                        transitioned.append(index)
-                    if self._store and task.changed:
-                        self._store.save(task)
+                except UnrecoverableDataStagingError, ex:
+                    gc3libs.log.error("Error in fetching output of task '%s',"
+                                      " will mark it as TERMINATED"
+                                      " (with error exit code %d): %s: %s",
+                                      task, posix.EX_IOERR,
+                                      ex.__class__.__name__, str(ex), exc_info=True)
+                    task.execution.returncode = (Run.Signals.DataStagingFailure,
+                                                 posix.EX_IOERR)
+                    task.execution.state = Run.State.TERMINATED
+                    task.changed = True
                 except Exception, x:
                     gc3libs.log.error("Ignored error in fetching output of task '%s': %s: %s" 
                                       % (task, x.__class__.__name__, str(x)), exc_info=True)
+                if task.execution.state == Run.State.TERMINATED:
+                    self._terminated.append(task)
+                    self._core.free(task)
+                    transitioned.append(index)
+                if self._store and task.changed:
+                    self._store.save(task)
             # remove tasks for which final output has been retrieved
             for index in reversed(transitioned):
                 del self._terminating[index]
