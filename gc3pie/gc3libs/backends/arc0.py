@@ -181,7 +181,10 @@ class ArcLrms(LRMS):
         except arclib.JobSubmissionError, ex:
             raise gc3libs.exceptions.LRMSSubmitError('Got error from arclib.SubmitJob(): %s' % str(ex))
 
+        # save job ID for future reference
         job.lrms_jobid = lrms_jobid
+        # state is known at this point, so mark this as a successful update
+        job._arc0_state_last_checked = time.time()
         return job
 
 
@@ -267,12 +270,12 @@ class ArcLrms(LRMS):
         querying a job that has just been submitted and has not yet
         found its way to the infosys.
         """
+        job = app.execution
         self.auths.get(self._resource.auth)
 
         # try to intercept error conditions and translate them into
         # meaningful exceptions
         try:
-            job = app.execution
             arc_jobs_info = self._get_jobs()
             arc_job = arc_jobs_info[job.lrms_jobid]
         except AttributeError, ex:
@@ -283,22 +286,29 @@ class ArcLrms(LRMS):
             # No job found.  This could be caused by the
             # information system not yet updated with the information
             # of the newly submitted job.
-            try:
-                last_update = job.state_last_changed
-                now = time.time()
-                if job.state == Run.State.SUBMITTED and now - last_update < self._resource.lost_job_timeout:
-                    # assume the job was recently submitted, hence the
-                    # information system knows nothing about it; just
-                    # ignore the error and return the object unchanged
-                    return job.state
-                else:
-                    raise  gc3libs.exceptions.UnknownJob(
-                        "No job found corresponding to the ID '%s'" % job.lrms_jobid)
-            except AttributeError: 
+            if not hasattr(job, 'state_last_changed'):
                 # XXX: compatibility with running sessions, remove before release
                 job.state_last_changed = time.time()
+            if not hasattr(job, '_arc0_state_last_checked'):
+                # XXX: compatibility with running sessions, remove before release
+                job._arc0_state_last_checked = time.time()
+            now = time.time()
+            if (job.state == Run.State.SUBMITTED
+                and now - job.state_last_changed < self._resource.lost_job_timeout):
+                # assume the job was recently submitted, hence the
+                # information system knows nothing about it; just
+                # ignore the error and return the object unchanged
                 return job.state
-
+            elif (job.state in [ Run.State.SUBMITTED, Run.State.RUNNING ]
+                  and now - job._arc0_state_last_checked < self._resource.lost_job_timeout):
+                # assume transient information system failure;
+                # ignore the error and return object unchanged
+                return job.state
+            else:
+                raise  gc3libs.exceptions.UnknownJob(
+                    "No job found corresponding to the ID '%s'" % job.lrms_jobid)
+        job._arc0_state_last_checked = time.time()
+        
         # update status
         state = self._map_arc0_status_to_gc3pie_state(arc_job.status)
         if arc_job.exitcode != -1:

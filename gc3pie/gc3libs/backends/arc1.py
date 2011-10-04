@@ -256,7 +256,6 @@ class Arc1Lrms(LRMS):
         log.info("Calling arc.Broker.PreFilterTargets")
         broker.PreFilterTargets(self._get_targets(), jd)
 
-        
         submitted = False
         tried = 0
         j = arc.Job()
@@ -272,7 +271,10 @@ class Arc1Lrms(LRMS):
             # XXX: this is necessary as the other component of arc library seems to refer to the job.xml file
             # hopefully will be fixed soon
             j.WriteJobsToFile(gc3libs.Default.ARC_JOBLIST_LOCATION, [j])
+            # save job ID for future reference
             job.lrms_jobid = j.JobID.str()
+            # state is known at this point, so mark this as a successful update
+            job._arc1_state_last_checked = time.time()
             return jd
 
         if not submitted and tried == 0:
@@ -357,13 +359,11 @@ class Arc1Lrms(LRMS):
         Any other ARC job status is mapped to `Run.State.UNKNOWN`.
         """
         self.auths.get(self._resource.auth)
+        job = app.execution
 
         # try to intercept error conditions and translate them into
         # meaningful exceptions
         try:
-            job = app.execution
-            # arc_job = arclib.GetJobInfo(job.lrms_jobid)
-
             arc_job = self._get_job(job.lrms_jobid)
         except AttributeError, ex:
             # `job` has no `lrms_jobid`: object is invalid
@@ -373,21 +373,28 @@ class Arc1Lrms(LRMS):
             # No job found.  This could be caused by the
             # information system not yet updated with the information
             # of the newly submitted job.
-            try:
-                last_update = job.state_last_changed
-                now = time.time()
-                if job.state == Run.State.SUBMITTED and now - last_update < self._resource.lost_job_timeout:
-                    # assume the job was recently submitted, hence the
-                    # information system knows nothing about it; just
-                    # ignore the error and return the object unchanged
-                    return job.state
-                else:
-                    raise  gc3libs.exceptions.UnknownJob(
-                        "No job found corresponding to the ID '%s'" % job.lrms_jobid)
-            except AttributeError: 
+            if not hasattr(job, 'state_last_changed'):
                 # XXX: compatibility with running sessions, remove before release
                 job.state_last_changed = time.time()
+            if not hasattr(job, '_arc1_state_last_checked'):
+                # XXX: compatibility with running sessions, remove before release
+                job._arc1_state_last_checked = time.time()
+            now = time.time()
+            if (job.state == Run.State.SUBMITTED
+                and now - job.state_last_changed < self._resource.lost_job_timeout):
+                # assume the job was recently submitted, hence the
+                # information system knows nothing about it; just
+                # ignore the error and return the object unchanged
                 return job.state
+            elif (job.state in [ Run.State.SUBMITTED, Run.State.RUNNING ]
+                  and now - job._arc1_state_last_checked < self._resource.lost_job_timeout):
+                # assume transient information system failure;
+                # ignore the error and return object unchanged
+                return job.state
+            else:
+                raise  gc3libs.exceptions.UnknownJob(
+                    "No job found corresponding to the ID '%s'" % job.lrms_jobid)
+        job._arc1_state_last_checked = time.time()
 
         # update status
         state = self._map_arc1_status_to_gc3pie_state(arc_job.State)
