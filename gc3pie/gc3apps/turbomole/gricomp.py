@@ -177,6 +177,133 @@ def _make_define_in(path, contents):
     return define_in_filename
 
 
+class XmlLintApplication(Application):
+    # xmllint --schema /links/xml-recources/xml-validation/CML3scheme.xsd ./control_*.xml 1>/dev/null 2>validation.log
+    def __init__(self, turbomole_output_dir, output_dir,
+                 validation_log='validation.log',
+                 schema='/links/xml-recources/xml-validation/CML3scheme.xsd',
+                 **kw):
+        self.validation_log = validation_log
+        # find the control_*.xml in the TURBOMOLE output directory
+        control_xml = None
+        for filename in os.listdir(turbomole_output_dir):
+            if filename.startswith('control_') and filename.endswith('.xml'):
+                control_xml = os.path.join(turbomole_output_dir, filename)
+                break
+        if control_xml is None:
+            raise ValueError("Cannot find a 'control_*.xml' file in directory '%s'" 
+                             % turbomole_output_dir)
+        gc3libs.Application.__init__(
+            self,
+            executable='xmllint',
+            arguments = [ '--schema', schema, control_xml ],
+            inputs = [ control_xml ],
+            outputs = [ validation_log ],
+            output_dir = output_dir, 
+            stdout = None,
+            stderr = validation_log,
+            **kw)
+
+    def terminated(self):
+        validation_logfile = open(os.path.join(self.output_dir, self.validation_log), 'r')
+        validation_log_contents = validation_logfile.read()
+        validation_logfile.close()
+        if 'validates' in validation_log_contents:
+            self.execution.returncode = 0 # SUCCESS
+        else:
+            self.execution.returncode = 1 # FAIL
+
+
+class XmlDbApplication(Application):
+    # /opt/eXist/bin/client.sh -u fox -m "/db/home/fox/${projectdir}" -p control_* -P 'tueR!?05' -s 1>/dev/null 2>&1
+    def __init__(self, turbomole_output_dir, output_dir, db_dir, db_user, db_pass, **kw):
+        # find the control_*.xml in the TURBOMOLE output directory
+        control_xml = None
+        for filename in os.listdir(turbomole_output_dir):
+            if filename.startswith('control_') and filename.endswith('.xml'):
+                control_xml = os.path.join(turbomole_output_dir, filename)
+                break
+        if control_xml is None:
+            raise ValueError("Cannot find a 'control_*.xml' file in directory '%s'" 
+                             % turbomole_output_dir)
+        # pre-process control_*.xml to remove the 'xmlns' part,
+        # which confuses eXist
+        to_remove = 'xmlns="http://www.xml-cml.org/schema"'
+        os.rename(control_xml, control_xml + '.orig')
+        control_xml_file_in = open(control_xml + '.orig', 'r')
+        control_xml_file_out = open(control_xml, 'w')
+        for line in control_xml_file_in:
+            line = line.replace(to_remove, '')
+            control_xml_file_out.write(line)
+        control_xml_file_in.close()
+        control_xml_file_out.close()
+        
+        gc3libs.Application.__init__(
+            self,
+            executable='/opt/eXist/bin/client.sh',
+            arguments = [ 
+                '-u', db_user,
+                '-P', db_pass,
+                '-m', db_dir,
+                '-p', control_xml,
+                '-s',
+            ],
+            inputs = [ control_xml ],
+            outputs = [ ],
+            output_dir = output_dir, 
+            stdout = None,
+            stderr = None,
+            **kw)
+
+
+class TurbomoleAndXmlProcessingPass(StagedTaskCollection):
+    """
+    Run a TURBOMOLE application, then validate the 'control_*.xml'
+    file produced, and store it into an eXist database.
+
+    """
+    def __init__(self, name, turbomole_application, output_dir,
+                 db_dir, db_user, db_pass,
+                 grid, **kw):
+        self.turbomole_application = turbomole_application
+        self.output_dir = output_dir
+        self.db_dir = db_dir
+        self.db_user = db_user
+        self.db_pass = db_pass
+        self.extra = kw
+        # init superclass
+        StagedTaskCollection.__init__(self, name, grid)
+
+
+    def stage0(self):
+        """Run the TURBOMOLE application specified to the constructor."""
+        return self.turbomole_application
+
+
+    def stage1(self):
+        """Run 'xmllint'."""
+        # terminate if first stage was unsuccessful
+        rc = self.tasks[0].execution.returncode
+        if rc is not None and rc != 0:
+            return rc
+        self.turbomole_output_dir = self.tasks[0].output_dir
+        return XmlLintApplication(self.turbomole_output_dir,
+                                  os.path.join(self.output_dir, 'xmllint'),
+                                  **self.extra)
+
+
+    def stage2(self):
+        """Run 'eXist/client.sh'."""
+        # terminate if first stage was unsuccessful
+        rc = self.tasks[1].execution.returncode
+        if rc is not None and rc != 0:
+            return rc
+        return XmlDbApplication(self.turbomole_output_dir,
+                                os.path.join(self.output_dir, 'eXist'),
+                                self.db_dir, self.db_user, self.db_pass,
+                                **self.extra)
+
+
 class BasisSweepPasses(StagedTaskCollection):
     """
     Build a two-step sequence:
@@ -218,6 +345,8 @@ class BasisSweepPasses(StagedTaskCollection):
         self.ridft_in = ridft_in
         self.ricc2_ins = ricc2_ins
         self.extra = kw
+        # XXX: `stage0` gets called before the class initialization is completed
+        self._grid = grid
         # init superclass
         StagedTaskCollection.__init__(self, name, grid)
 
@@ -235,13 +364,25 @@ class BasisSweepPasses(StagedTaskCollection):
         gc3libs.utils.mkdir(ridft_dir)
         gc3libs.utils.copyfile(self.coord, os.path.join(ridft_dir, 'coord'))
         ridft_define_in = _make_define_in(ridft_dir, self.ridft_in)
+        ridft_output_dir =  os.path.join(ridft_dir, 'output')
         # application to run in pass 1
         gc3libs.log.debug("Creating RIDFT task '%s' (bas=%s, jkbas=%s) in directory '%s'",
                           self.name, self.orb_basis, self.rijk_basis, ridft_dir)
-        return TurbomoleDefineApplication(
-            'ridft', ridft_define_in, self.coord,
-            output_dir = os.path.join(ridft_dir, 'output'),
-            stdout = 'ridft.out', **self.extra)
+        return TurbomoleAndXmlProcessingPass(
+            # job name
+            ('ridft-%s-%s-%s' % (self.name, self.orb_basis, self.rijk_basis)),
+            # TURBOMOLE application to run
+            TurbomoleDefineApplication(
+                'ridft', ridft_define_in, self.coord,
+                output_dir = ridft_output_dir,
+                stdout = 'ridft.out', **self.extra),
+            # base output directory for xmllint and eXist jobs
+            os.path.join(ridft_output_dir, 'xml-processing'),
+            # DB parameters
+            # FIXME: make these settable on the command-line
+            db_dir='/db/home/fox/gricomp', db_user='fox', db_pass='tueR!?05',
+            # TaskCollection required params
+            grid=self._grid, **self.extra)
 
 
     def stage1(self):
@@ -257,7 +398,7 @@ class BasisSweepPasses(StagedTaskCollection):
             return rc
         # else, proceeed with 2nd pass
         pass2 = [ ]
-        ridft_coord = os.path.join(self.tasks[0].output_dir, 'coord')
+        ridft_coord = os.path.join(self.tasks[0].turbomole_output_dir, 'coord')
         for ricc2_in in self.ricc2_ins:
             cbas = ricc2_in._keywords['CBAS_BASIS']
             cabs = ricc2_in._keywords['CABS_BASIS']
@@ -266,19 +407,30 @@ class BasisSweepPasses(StagedTaskCollection):
             gc3libs.utils.mkdir(ricc2_dir)
             gc3libs.utils.copyfile(ridft_coord, ricc2_dir)
             ricc2_define_in = _make_define_in(ricc2_dir, ricc2_in)
+            ricc2_output_dir = os.path.join(ricc2_dir, 'output')
             pass2.append(
-                TurbomoleDefineApplication(
-                    'ricc2', ricc2_define_in,
-                    # the second pass builds on files defined in the first one
-                    os.path.join(ricc2_dir, 'coord'),
-                    os.path.join(self.tasks[0].output_dir, 'control'),
-                    os.path.join(self.tasks[0].output_dir, 'energy'),
-                    os.path.join(self.tasks[0].output_dir, 'mos'),
-                    os.path.join(self.tasks[0].output_dir, 'basis'),
-                    os.path.join(self.tasks[0].output_dir, 'auxbasis'),
-                    output_dir = os.path.join(ricc2_dir, 'output'),
-                    stdout = 'ricc2.out',
-                    **self.extra))
+                TurbomoleAndXmlProcessingPass(
+                    # job name
+                    ('ricc2-%s-%s-%s' % (self.name, cbas, cabs)),
+                    # TURBOMOLE application to run
+                    TurbomoleDefineApplication(
+                        'ricc2', ricc2_define_in,
+                        # the second pass builds on files defined in the first one
+                        os.path.join(ricc2_dir, 'coord'),
+                        os.path.join(self.tasks[0].turbomole_output_dir, 'control'),
+                        os.path.join(self.tasks[0].turbomole_output_dir, 'energy'),
+                        os.path.join(self.tasks[0].turbomole_output_dir, 'mos'),
+                        os.path.join(self.tasks[0].turbomole_output_dir, 'basis'),
+                        os.path.join(self.tasks[0].turbomole_output_dir, 'auxbasis'),
+                        output_dir = ricc2_output_dir,
+                        stdout = 'ricc2.out',
+                        **self.extra),
+                    os.path.join(ricc2_output_dir, 'xml-processing'),
+                    # DB parameters
+                    # FIXME: make these settable on the command-line
+                    db_dir='/db/home/fox/gricomp', db_user='fox', db_pass='tueR!?05',
+                    # TaskCollection required params
+                    grid=self._grid, **self.extra))
             gc3libs.log.debug("Created RICC2 task in directory '%s'", ricc2_dir)
         return (ParallelTaskCollection(self.name + '.pass2', pass2, grid=self._grid))
 
@@ -351,7 +503,6 @@ class BasisSweep(ParallelTaskCollection):
                     list(expansions(ricc2_define_in,
                                     ORB_BASIS=orb_basis)),
                     work_dir, **kw))
-
         ParallelTaskCollection.__init__(self, title, tasks, grid)
             
 

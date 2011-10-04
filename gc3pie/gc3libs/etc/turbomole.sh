@@ -25,9 +25,13 @@ EOF
 
 
 # FIXME: This is only needed to have TURBOMOLE running on idgc3grid01...
-export TURBODIR=/home/mpackard/apps/TURBOMOLE
+if [ -z "$TURBODIR" ]; then
+	export TURBODIR=/home/mpackard/apps/TURBOMOLE
+fi
+echo "DEBUG: TURBODIR='$TURBODIR'"
 export PATH=$TURBODIR/scripts:$PATH
-export PATH=$TURBODIR/bin/x86_64-unknown-linux-gnu:$PATH
+export PATH=$TURBODIR/bin/$(sysname):$PATH
+echo "DEBUG: PATH='$PATH'"
 
 
 ## helper functions
@@ -87,8 +91,12 @@ done
 
 if [ -r define.in ]; then
     $verbose "Found 'define.in', now running TURBOMOLE's 'define' ..."
-    require_command define
-    $maybe define < define.in \
+    if [ -z "$TURBOMOLE_DEFINE" ]; then	    
+	require_command define
+	TURBOMOLE_DEFINE='define'
+    fi
+    echo "DEBUG: Using define from `which $TURBOMOLE_DEFINE`"
+    $maybe "$TURBOMOLE_DEFINE" < define.in \
         || die $? "Failed running 'define'."
 fi
 
