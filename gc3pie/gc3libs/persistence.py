@@ -319,6 +319,23 @@ class FilesystemStore(Store):
                  if not id_.endswith('.OLD') ]
 
 
+    def _load_from_file(self, path):
+        """Auxiliary method for `load`."""
+        src = None
+        try:
+            src = open(path, 'rb')
+            unpickler = FilesystemStore.Unpickler(self, src)
+            obj = unpickler.load()
+            src.close()
+            return obj
+        except Exception, ex:
+            if src is not None:
+                try:
+                    src.close()
+                except:
+                    pass # ignore errors
+            raise
+                
     @same_docstring_as(Store.load)
     def load(self, id_):
         filename = os.path.join(self._directory, id_)
@@ -328,26 +345,10 @@ class FilesystemStore(Store):
             raise gc3libs.exceptions.LoadError("No '%s' file found in directory '%s'" 
                                    % (id_, self._directory))
 
-        def load_from_file(path):
-            src = None
-            try:
-                src = open(path, 'rb')
-                unpickler = FilesystemStore.Unpickler(self, src)
-                obj = unpickler.load()
-                src.close()
-                return obj
-            except Exception, ex:
-                if src is not None:
-                    try:
-                        src.close()
-                    except:
-                        pass # ignore errors
-                raise
-                
         # XXX: this should become `with src = ...:` as soon as we stop
         # supporting Python 2.4
         try:
-            obj = load_from_file(filename)
+            obj = self._load_from_file(filename)
         except Exception, ex:
             gc3libs.log.warning("Failed loading file '%s': %s: %s",
                                 filename, ex.__class__.__name__, str(ex),
@@ -357,7 +358,7 @@ class FilesystemStore(Store):
                 gc3libs.log.warning(
                     "Will try loading from backup file '%s' instead...", old_copy)
                 try:
-                    obj = load_from_file(old_copy)
+                    obj = self._load_from_file(old_copy)
                 except Exception, ex:
                     sys.excepthook(* sys.exc_info())
                     raise gc3libs.exceptions.LoadError(
