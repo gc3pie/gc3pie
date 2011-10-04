@@ -73,14 +73,48 @@ class Error(Exception):
         if do_log: 
             gc3libs.log.error(msg)
         Exception.__init__(self, msg)
-        
+
+
+## mark errors as "Recoverable" (meaning that a retry a ta later time
+## could succeed), or "Unrecoverable" (meaning there's no point in
+## retrying).
+
+class RecoverableError(Error):
+    """
+    Used to mark transient errors: retrying the same action at a later
+    time could succeed.
+
+    This exception should *never* be instanciated: it is only to be used
+    in `except` clauses to catch "try again" situations.
+    """
+    pass
+
+class UnrecoverableError(Error):
+    """
+    Used to mark permanent errors: there's no point in retrying the same
+    action at a later time, because it will yield the same error again.
+
+    This exception should *never* be instanciated: it is only to be used
+    in `except` clauses to exclude "try again" situations.
+    """
+    pass
+
 
 ## derived exceptions
 
-class RecoverableAuthError(Error):
+class AuthError(Error):
+    """
+    Base class for Auth-related errors.
+
+    Should *never* be instanciated: create a specific error class
+    describing the actual error condition.
+    """
     pass
 
-class UnrecoverableAuthError(Error):
+class RecoverableAuthError(AuthError, RecoverableError):
+    pass
+
+class UnrecoverableAuthError(AuthError, UnrecoverableError):
     pass
 
 
@@ -93,16 +127,27 @@ class ConfigurationError(FatalError):
     pass
 
 
-class RecoverableDataStagingError(Error):
+class DataStagingError(Error):
     """
-    Raised when problems with copying data to or from the remote
-    execution site occurred.
-    This is considered to be transient.
+    Base class for data staging and movement errors.
+
+    Should *never* be instanciated: create a specific error class
+    describing the actual error condition.
     """
     pass
 
+class RecoverableDataStagingError(DataStagingError, RecoverableError):
+    """
+    Raised when transient problems with copying data to or from the
+    remote execution site occurred.
 
-class UnrecoverableDataStagingError(Error):
+    This error is considered to be transient (e.g., network
+    connectivity interruption), so trying again at a later time could
+    solve the problem.
+    """
+    pass
+
+class UnrecoverableDataStagingError(DataStagingError, UnrecoverableError):
     """
     Raised when problems with copying data to or from the remote
     execution site occurred.
@@ -157,12 +202,14 @@ class InvalidOperation(Error):
     """
     pass
 
+
 class InvalidResourceName(Error, ValueError):
     """
     Raised to signal that no computational resource with the given
     name is defined in the configuration file.
     """
     pass
+
 
 class InvalidUsage(FatalError):
     """
@@ -175,17 +222,21 @@ class InvalidUsage(FatalError):
     """
     pass
 
+
 class LoadError(Error):
     """
     Raised upon errors loading a job from the persistent storage.
     """
     pass
 
+
 class LRMSError(Error):
     pass    
 
+
 class LRMSSubmitError(Error):
     pass
+
 
 class NoConfigurationFile(FatalError):
     """
@@ -195,6 +246,7 @@ class NoConfigurationFile(FatalError):
     """
     pass
 
+
 class NoResources(Error):
     """
     Raised to signal that no resources are defined, or that none are
@@ -203,12 +255,14 @@ class NoResources(Error):
     # FIXME: should we have a separate `NoCompatibleResources` exception?
     pass
 
-class OutputNotAvailableError(Error):
+
+class OutputNotAvailableError(InvalidOperation):
     """
     Raised upon attempts to retrieve the output for jobs that are
     still in `NEW` or `SUBMITTED` state.
     """
     pass
+
 
 class TaskError(Error):
     """
@@ -216,12 +270,14 @@ class TaskError(Error):
     """
     pass
 
+
 class DetachedFromGridError(TaskError):
     """
     Raised when a method (other than :meth:`attach`) is called on
     a detached `Task` instance.
     """
     pass
+
 
 class UnexpectedStateError(TaskError):
     """
