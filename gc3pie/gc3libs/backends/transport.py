@@ -197,18 +197,25 @@ class SshTransport(Transport):
                 self.ssh = paramiko.SSHClient()
                 self.ssh.load_system_host_keys()
                 self.ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+                gc3libs.log.debug(
+                    "Connecting to host '%s' as user '%s' via SSH ...", 
+                    self.remote_frontend, self.username)
                 self.ssh.connect(self.remote_frontend,
                                  timeout=gc3libs.Default.SSH_CONNECT_TIMEOUT,
                                  username=self.username,
                                  allow_agent=True)
                 self.sftp = self.ssh.open_sftp()
                 self._is_open = True
-                gc3libs.log.debug("SshTransport: connected to '%s' on port %d with username '%s'" 
-                                  % (self.remote_frontend, self.port, self.username))
-        except:
-            gc3libs.log.error("Could not create ssh connection to %s" % self.remote_frontend)
-            raise gc3libs.exceptions.TransportError("Failed while connecting to remote host: %s. Error type %s, %s"
-                                            % (self.remote_frontend, sys.exc_info()[0], sys.exc_info()[1]))
+                gc3libs.log.debug(
+                    "connected to '%s' on port %d with username '%s'",
+                    self.remote_frontend, self.port, self.username)
+        except Exception, ex:
+            gc3libs.log.error(
+                "Could not create ssh connection to %s: %s: %s",
+                self.remote_frontend, ex.__class__.__name__, str(ex))
+            raise gc3libs.exceptions.TransportError(
+                "Failed while connecting to remote host '%s': %s"
+                % (self.remote_frontend, str(ex)))
 
     @same_docstring_as(Transport.chmod)
     def chmod(self, path, mode):
