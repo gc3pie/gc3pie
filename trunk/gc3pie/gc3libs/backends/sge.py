@@ -644,8 +644,6 @@ class SgeLrms(LRMS):
 
         job = app.execution
         try:
-            log.debug("Connecting to cluster frontend '%s' as user '%s' via SSH ...", 
-                      self._resource.frontend, self._ssh_username)
             self.transport.connect()
 
             # Make list of files to copy, in the form of (remote_path, local_path) pairs.
@@ -653,10 +651,12 @@ class SgeLrms(LRMS):
             # and directory references.
             stageout = [ ]
             for remote_relpath, local_url in app.outputs.iteritems():
+                local_relpath = local_url.path
                 if remote_relpath == gc3libs.ANY_OUTPUT:
                     remote_relpath = ''
+                    local_relpath = ''
                 stageout += _make_remote_and_local_path_pair(
-                    self.transport, job, remote_relpath, download_dir, local_url.path)
+                    self.transport, job, remote_relpath, download_dir, local_relpath)
 
             # copy back all files, renaming them to adhere to the ArcLRMS convention
             log.debug("Downloading job output into '%s' ...", download_dir)
