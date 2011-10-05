@@ -24,6 +24,7 @@ __version__ = 'development version (SVN $Revision$)'
 
 
 import os
+import posixpath
 import random
 import re
 import sys
@@ -252,17 +253,54 @@ def _job_info_normalize(self, job):
         # store used memory in MiB
         job.used_memory = utils.to_bytes(mem + 'B') / 1024
 
-def _sge_filename_mapping(jobname, lrms_jobid, file_name):
-    return {
-        # XXX: SGE-specific?
-        ('%s.out' % jobname) : ('%s.o%s' % (jobname, lrms_jobid)),
-        ('%s.err' % jobname) : ('%s.e%s' % (jobname, lrms_jobid)),
-        # the following is definitely GAMESS-specific
-        ('%s.cosmo' % jobname) : ('%s.o%s.cosmo' % (jobname, lrms_jobid)),
-        ('%s.dat'   % jobname) : ('%s.o%s.dat'   % (jobname, lrms_jobid)),
-        ('%s.inp'   % jobname) : ('%s.o%s.inp'   % (jobname, lrms_jobid)),
-        ('%s.irc'   % jobname) : ('%s.o%s.irc'   % (jobname, lrms_jobid)),
-        }[file_name]
+
+# FIXME: I think this function is completely wrong and only exists to
+# support GAMESS' ``qgms``, which does not allow users to specify the
+# name of STDOUT/STDERR files.  When we have a standard flexible
+# submission mechanism for all applications, we should remove it!
+def _sge_filename_mapping(jobname, jobid, file_name):
+    """
+    Map STDOUT/STDERR filenames (as recorded in `Application.outputs`)
+    to SGE/OGS default STDOUT/STDERR file names (e.g.,
+    ``<jobname>.o<jobid>``).
+    """
+    try:
+        return {
+            # XXX: SGE-specific?
+            ('%s.out' % jobname) : ('%s.o%s' % (jobname, jobid)),
+            ('%s.err' % jobname) : ('%s.e%s' % (jobname, jobid)),
+            # FIXME: the following is definitely GAMESS-specific
+            ('%s.cosmo' % jobname) : ('%s.o%s.cosmo' % (jobname, jobid)),
+            ('%s.dat'   % jobname) : ('%s.o%s.dat'   % (jobname, jobid)),
+            ('%s.inp'   % jobname) : ('%s.o%s.inp'   % (jobname, jobid)),
+            ('%s.irc'   % jobname) : ('%s.o%s.irc'   % (jobname, jobid)),
+            }[file_name]
+    except KeyError:
+        return file_name
+
+
+def _make_remote_and_local_path_pair(transport, job, remote_relpath, local_root_dir, local_relpath):
+    """
+    Return list of (remote_path, local_path) pairs corresponding to 
+    """
+    # see https://github.com/fabric/fabric/issues/306 about why it is
+    # correct to use `posixpath.join` for remote paths (instead of `os.path.join`)
+    remote_path = posixpath.join(job.ssh_remote_folder,
+                                 _sge_filename_mapping(job.lrms_jobname, job.lrms_jobid,
+                                                       remote_relpath))
+    local_path = os.path.join(local_root_dir, local_relpath)
+    if transport.isdir(remote_path):
+        # recurse, accumulating results
+        result = [ ]
+        for entry in transport.listdir(remote_path):
+            result += _make_remote_and_local_path_pair(
+                transport, job,
+                posixpath.join(remote_relpath, entry),
+                local_path, entry)
+        return result
+    else:
+        return [(remote_path, local_path)]
+
 
 
 class SgeLrms(LRMS):
@@ -610,52 +648,33 @@ class SgeLrms(LRMS):
                       self._resource.frontend, self._ssh_username)
             self.transport.connect()
 
-            # XXX: why do we list the remote dir? `file_list` is not used ever after...
-            try:
-                files_list = self.transport.listdir(job.ssh_remote_folder)
-            except Exception, x:
-                self.transport.close()
-                log.error("Could not read remote job directory '%s': %s: %s" 
-                                  % (job.ssh_remote_folder, x.__class__.__name__, str(x)), 
-                                  exc_info=True)
-                return
+            # Make list of files to copy, in the form of (remote_path, local_path) pairs.
+            # This entails walking the `Application.outputs` list to expand wildcards
+            # and directory references.
+            stageout = [ ]
+            for remote_relpath, local_url in app.outputs.iteritems():
+                if remote_relpath == gc3libs.ANY_OUTPUT:
+                    remote_relpath = ''
+                stageout += _make_remote_and_local_path_pair(
+                    self.transport, job, remote_relpath, download_dir, local_url.path)
 
             # copy back all files, renaming them to adhere to the ArcLRMS convention
             log.debug("Downloading job output into '%s' ...", download_dir)
-            for remote_path, local_path in app.outputs.items():
-                if remote_path == gc3libs.ANY_OUTPUT:
-                    remote_path = ''
-                try:
-                    # override the remote name if it's a known variable one...
-                    remote_path = os.path.join(
-                        job.ssh_remote_folder, 
-                        _sge_filename_mapping(job.lrms_jobname, 
-                                              job.lrms_jobid, remote_path)
-                        )
-                    # remote_path = os.path.join(job.ssh_remote_folder, filename_map[remote_path])
-                except KeyError:
-                    # ...but keep it if it's not a known one
-                    remote_path = os.path.join(job.ssh_remote_folder, remote_path)
-                # REMEMBER: `local_path` becomes a string here!
-                local_path = os.path.join(download_dir, local_path.path)
+            for remote_path, local_path in stageout:
                 log.debug("Downloading remote file '%s' to local file '%s'",
                           remote_path, local_path)
-                try:
-                    if (overwrite
-                        or not os.path.exists(local_path)
-                        or os.path.isdir(local_path)):
-                        log.debug("Copying remote '%s' to local '%s'"
-                                  % (remote_path, local_path))
-                        # effectively ignore missing files (this is
-                        # what ARC does too)
-                        self.transport.get(remote_path, local_path,
-                                           ignore_nonexisting=True)
-                    else:
-                        log.info("Local file '%s' already exists;"
-                                 " will not be overwritten!",
-                                 local_path)
-                except Exception:
-                    raise
+                if (overwrite
+                    or not os.path.exists(local_path)
+                    or os.path.isdir(local_path)):
+                    log.debug("Copying remote '%s' to local '%s'"
+                              % (remote_path, local_path))
+                    # ignore missing files (this is what ARC does too)
+                    self.transport.get(remote_path, local_path,
+                                       ignore_nonexisting=True)
+                else:
+                    log.info("Local file '%s' already exists;"
+                             " will not be overwritten!",
+                             local_path)
 
             self.transport.close()
             return # XXX: should we return list of downloaded files?
