@@ -1124,7 +1124,7 @@ class Engine(object):
                 # try to get output
                 try:
                     self._core.fetch_output(task)
-                except UnrecoverableDataStagingError, ex:
+                except gc3libs.exceptions.UnrecoverableDataStagingError, ex:
                     gc3libs.log.error("Error in fetching output of task '%s',"
                                       " will mark it as TERMINATED"
                                       " (with error exit code %d): %s: %s",
