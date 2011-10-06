@@ -1569,7 +1569,7 @@ class RetryableTask(Task):
     Override the `retry` method to implement a different retryal policy.
 
     *Note:* The resubmission code is implemented in the
-    `terminated`:meth:, so be sure to call it if you ovverride in
+    `terminated`:meth:, so be sure to call it if you override in
     derived classes.
     """
 
