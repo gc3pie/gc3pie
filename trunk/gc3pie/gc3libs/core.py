@@ -333,8 +333,9 @@ class Core:
 
             # XXX: Re-enabled the catch-all clause otherwise the loop stops at the first erroneous iteration
             except Exception, ex:
-                gc3libs.log.warning("Ignored error in Core.update_job_state(): %s: %s",
-                                    ex.__class__.__name__, str(ex))
+                gc3libs.log.warning("Ignored error in Core.update_job_state(): %s", str(ex))
+                gc3libs.log.debug("Ignored error in Core.update_job_state(): %s: %s",
+                                  ex.__class__.__name__, str(ex), exc_info=True)
                 continue
 
     def __update_task(self, tasks, **kw):
