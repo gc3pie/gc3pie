@@ -51,8 +51,9 @@ class GridAuth(object):
             
             self.user_cert_valid = False
             self.proxy_valid = False
+            self._expiration_time = 0 # initially set expiration time way back in the past
             self.__dict__.update(auth)
-            self.validity_timestamp = 0 # Default init value for auth enalbed validity. 
+
         except AssertionError, x:
             raise gc3libs.exceptions.ConfigurationError('Erroneous configuration parameter: %s' % str(x))
 
@@ -60,15 +61,16 @@ class GridAuth(object):
     def check(self):
         gc3libs.log.debug('Checking auth: GridAuth')
 
-        if (self.validity_timestamp - int(time.time())) > gc3libs.Default.PROXY_VALIDITY_THRESHOLD:
+        remaining = int(self._expiration_time - time.time())
+        if remaining > gc3libs.Default.PROXY_VALIDITY_THRESHOLD:
             gc3libs.log.debug(
-                "Grid credentials still within validity period."
-                " Will not actually check.")
+                "Grid credentials assumed valid for another %d seconds,"
+                " will not actually check.", remaining)
             return True
 
-        self.user_cert_valid = _user_certificate_is_valid()
-        self.proxy_valid = _voms_proxy_is_valid()
-        self.validity_timestamp = _get_proxy_expires_time()
+        self.user_cert_valid = (0 != _user_certificate_expiration_time())
+        self._expiration_time = _proxy_expiration_time()
+        self.proxy_valid = (0 != self._expiration_time)
 
         return ( self.user_cert_valid and self.proxy_valid )
 
@@ -169,21 +171,18 @@ class GridAuth(object):
                     _cmd = shlex.split("grid-proxy-init -valid 24:00 -q -pwstdin")
 
                 try:
-
-                    _echo_cmd = shlex.split("echo %s" % input_passwd)
-                    p1 = subprocess.Popen(_echo_cmd, stdout=subprocess.PIPE)
-                    p2 = subprocess.Popen(_cmd,
-                                          stdin=p1.stdout,
+                    p1 = subprocess.Popen(_cmd,
+                                          stdin=subprocess.PIPE,
                                           stdout=subprocess.PIPE,
                                           stderr=subprocess.STDOUT)
-                    (stdout, stderr) = p2.communicate()
+                    (stdout, stderr) = p1.communicate("%s\n" % input_passwd)
 
                     # dispose content of password
                     input_passwd = None
 
-                    if p2.returncode != 0:
+                    if p1.returncode != 0:
                         gc3libs.log.warning("Command 'voms-proxy-init' exited with code %d: %s."
-                                            % (p2.returncode, stdout))
+                                            % (p1.returncode, stdout))
 
                 except ValueError, x:
                     # FIXME: is this more a programming error ?
@@ -219,7 +218,7 @@ class GridAuth(object):
                                               gc3libs.utils.ifelse(self.user_cert_valid,
                                                                    "valid", "invalid")))
             
-            self.validity_timestamp = _get_proxy_expires_time()
+            self._expiration_time = _proxy_expiration_time()
             return True
 
 
@@ -231,33 +230,44 @@ sys.path.append('/opt/nordugrid/lib/python%d.%d/site-packages'
 sys.path.append('/usr/lib/pymodules/python%d.%d/'
                 % sys.version_info[:2])
 
-def _get_proxy_expires_time():
+def _proxy_expiration_time():
+    """
+    Return the proxy expiration time (as UNIX epoch), or 0 if the
+    proxy is already expired or not available at all.
+    """
     import arclib
-
     try:
-        c = arclib.Certificate(arclib.PROXY)
-        return c.Expires().GetTime()
-    except:
+        pxy = arclib.Certificate(arclib.PROXY)
+        expires = pxy.Expires().GetTime()
+        if expires < time.time():
+            gc3libs.log.info("VOMS proxy '%s' is expired.", pxy.GetCertFilename())
+            return 0
+        else:
+            gc3libs.log.info("VOMS proxy '%s' valid until %s.", pxy.GetCertFilename(),
+                             time.strftime("%a, %d %b %Y %H:%M:%S (local time)",
+                                           time.localtime(expires)))
+            return expires
+    except arclib.CertificateError, ex:
+        gc3libs.log.debug("Checking Grid proxy expiration time: %s", str(ex))
         return 0
 
-def _voms_proxy_is_valid():
+
+def _user_certificate_expiration_time():
     import arclib
-
     try:
-        c = arclib.Certificate(arclib.PROXY)
-        return not c.IsExpired()
-    except:
-        return False
-
-
-def _user_certificate_is_valid():
-    import arclib
-
-    try:
-        c = arclib.Certificate(arclib.USERCERT)
-        return not c.IsExpired()
-    except:
-        return False
+        crt = arclib.Certificate(arclib.USERCERT)
+        expires = crt.Expires().GetTime()
+        if expires < time.time():
+            gc3libs.log.info("Grid certificate '%s' is expired.", crt.GetCertFilename())
+            return 0
+        else:
+            gc3libs.log.info("Grid certificate '%s' valid until %s.", crt.GetCertFilename(),
+                             time.strftime("%a, %d %b %Y %H:%M:%S (local time)",
+                                           time.localtime(expires)))
+            return expires
+    except arclib.CertificateError, ex:
+        gc3libs.log.debug("Checking Grid certificate expiration time: %s", str(ex))
+        return 0
 
 
 Auth.register('grid-proxy', GridAuth)
