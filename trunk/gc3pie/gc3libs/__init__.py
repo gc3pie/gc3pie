@@ -1536,16 +1536,20 @@ class Run(Struct):
                 signal = self.signal
             return (exitcode << 8) | signal
         def fset(self, value):
-            try:
-                # `value` can be a tuple `(signal, exitcode)`
-                self.signal = int(value[0])
-                self.exitcode = int(value[1])
-            except (TypeError, ValueError):
-                self.exitcode = (int(value) >> 8) & 0xff
-                self.signal = int(value) & 0x7f
-            # ensure values are within allowed range
-            self.exitcode &= 0xff
-            self.signal &= 0x7f
+            if value is None:
+                self.signal = None
+                self.exitcode = None
+            else:
+                try:
+                    # `value` can be a tuple `(signal, exitcode)`
+                    self.signal = int(value[0])
+                    self.exitcode = int(value[1])
+                except (TypeError, ValueError):
+                    self.exitcode = (int(value) >> 8) & 0xff
+                    self.signal = int(value) & 0x7f
+                # ensure values are within allowed range
+                self.exitcode &= 0xff
+                self.signal &= 0x7f
         return (locals())
 
     # `Run.Signals` is an instance of global class `_Signals`
