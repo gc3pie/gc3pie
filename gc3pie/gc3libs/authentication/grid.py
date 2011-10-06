@@ -48,10 +48,17 @@ class GridAuth(object):
             assert auth['cert_renewal_method'] == 'manual' or auth['cert_renewal_method'] == 'slcs',  \
                 "Configuration error: Unknown cert_renewal_method: %s. Valid types: [voms-proxy, grid-proxy]" \
                 % auth.cert_renewal_method
+
+            # read `keep_password` setting; default to 'False'
+            if auth.has_key('keep_password'):
+                auth['keep_password'] = gc3libs.utils.string_to_boolean(auth['keep_password'])
+            else:
+                auth['keep_password'] = False
             
             self.user_cert_valid = False
             self.proxy_valid = False
             self._expiration_time = 0 # initially set expiration time way back in the past
+            self._passwd = None
             self.__dict__.update(auth)
 
         except AssertionError, x:
@@ -107,7 +114,8 @@ class GridAuth(object):
                 else:
                     message = 'Insert grid proxy password: '
 
-            input_passwd = getpass.getpass(message)
+            if self._passwd is None:
+                self._passwd = getpass.getpass(message)
             
             # Start renewing credential
             new_cert = False
@@ -118,7 +126,8 @@ class GridAuth(object):
                     raise gc3libs.exceptions.UnrecoverableAuthError("User certificate expired, please renew it.")
 
                 _cmd = shlex.split("slcs-init --idp %s -u %s -p %s -k %s" 
-                                   % (self.idp, self.aai_username, input_passwd, input_passwd))
+                                   % (self.idp, self.aai_username,
+                                      self._passwd, self._passwd))
                 gc3libs.log.debug("Executing slcs-init --idp %s -u %s"
                                   " -p ****** -k ******"
                                   % (self.idp, self.aai_username))
@@ -175,10 +184,11 @@ class GridAuth(object):
                                           stdin=subprocess.PIPE,
                                           stdout=subprocess.PIPE,
                                           stderr=subprocess.STDOUT)
-                    (stdout, stderr) = p1.communicate("%s\n" % input_passwd)
+                    (stdout, stderr) = p1.communicate("%s\n" % self._passwd)
 
                     # dispose content of password
-                    input_passwd = None
+                    if not self.keep_password:
+                        self._passwd = None
 
                     if p1.returncode != 0:
                         gc3libs.log.warning("Command 'voms-proxy-init' exited with code %d: %s."
