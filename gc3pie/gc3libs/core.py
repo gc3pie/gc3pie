@@ -996,6 +996,9 @@ class Engine(object):
                     self._store.save(task)
                 state = task.execution.state
                 if state == Run.State.SUBMITTED:
+                    # only real applications need to be counted
+                    # against the limit; policy tasks are exempt
+                    # (this applies to all similar clause below)
                     if isinstance(task, Application):
                         currently_submitted += 1
                         currently_in_flight += 1
