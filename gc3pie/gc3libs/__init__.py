@@ -1202,7 +1202,7 @@ class _Signals(object):
     SubmissionFailed = _Signal(125, "Submission to batch system failed.")
 
     def __contains__(self, signal):
-        if 121 <= int(signal) <= 125:
+        if (signal is not None and 121 <= int(signal) <= 125):
             return True
         else:
             return False
