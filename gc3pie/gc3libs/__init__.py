@@ -1612,12 +1612,16 @@ class RetryableTask(Task):
         else:
             return False
 
-    # XXX: explain this (and detach as well)
     def attach(self, grid):
+        # here `Task.attach` is the invocation of the superclass'
+        # `attach` method (which attaches *this* object to a grid),
+        # while `self.task.attach` is the propagation of the `attach`
+        # method to the wrapped task. (Same for `detach` below.)
         Task.attach(self, grid)
         self.task.attach(grid)
 
     def detach(self):
+        # see comment in `attach` above
         Task.detach(self)
         self.task.detach()
 
