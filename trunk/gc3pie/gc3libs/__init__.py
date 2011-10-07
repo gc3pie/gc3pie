@@ -1651,33 +1651,35 @@ class RetryableTask(Task):
             return own_state
         elif own_state == Run.State.NEW:
             if task_state == Run.State.NEW:
-                return own_state
-            elif task_state in [ Run.State.STOPPED,
+                return Run.State.NEW
+            elif task_state in [ Run.State.SUBMITTED,
+                                 Run.State.RUNNING,
+                                 Run.State.STOPPED,
                                  Run.State.UNKNOWN ]:
                 return task_state
             else:
                 return Run.State.RUNNING
         elif own_state == Run.State.SUBMITTED:
-            if task_state == Run.State.SUBMITTED:
-                return own_state
+            if task_state in [ Run.State.NEW, Run.State.SUBMITTED ]:
+                return Run.State.SUBMITTED
             elif task_state in [ Run.State.RUNNING,
                                  Run.State.TERMINATING,
                                  Run.State.TERMINATED ]:
                 return Run.State.RUNNING
             else:
-                # XXX: in case `task_state` is NEW, this rewinds the state back!
                 return task_state
         elif own_state == Run.State.RUNNING:
             if task_state in [ Run.State.STOPPED, Run.State.UNKNOWN ]:
                 return task_state
             else:
-                # if task is NEW, SUBMITTED, RUNNING, etc. -- keep our stat
+                # if task is NEW, SUBMITTED, RUNNING, etc. -- keep our state
                 return own_state
         elif own_state in [ Run.State.TERMINATING, Run.State.TERMINATED ]:
             assert task_state == Run.State.TERMINATED
             return Run.State.TERMINATED
         elif own_state in [ Run.State.STOPPED, Run.State.UNKNOWN ]:
-            if task_state in [ Run.State.SUBMITTED,
+            if task_state in [ Run.State.NEW,
+                               Run.State.SUBMITTED,
                                Run.State.RUNNING,
                                Run.State.TERMINATING,
                                Run.State.TERMINATED ]:
