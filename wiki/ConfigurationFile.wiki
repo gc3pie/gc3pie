@@ -97,13 +97,13 @@ For the `voms-proxy` type auth, the following keys must be provided:
     `voms-proxy-init` as argument to the `--vo` command-line
     switch)
   * `cert_renewal_method`: see below.
-  * `keep_password`: see below.
+  * `remember_password`: see below.
 Any other key/value pair will be ignored.
 
 For the `grid-proxy` type auth, the following keys must be provided:
   * `type`: must be `grid-proxy`
   * `cert_renewal_method`: see below.
-  * `keep_password`: see below.
+  * `remember_password`: see below.
 Any other key/value pair will be ignored.
 
 For the `voms-proxy` and `grid-proxy` authentication types, the
@@ -123,10 +123,10 @@ For the `slcs` certificate renewal method, the  following keys must be provided:
 
 For the `manual` certificate renewal method, no additional keys are required.
 
-The `keep_password` entry must be set to a boolean value (the strings
+The `remember_password` entry must be set to a boolean value (the strings
 `1`, `yes`, `true` and `on` are interpreted as boolean "true"; any
 other value counts as "false").  If set to a true value, the
-`keep_password` entry instructs GC3Pie to keep the password used for
+`remember_password` entry instructs GC3Pie to keep the password used for
 this authentication in the program's main memory; this implies that
 you will be asked for the password at most once per program
 invocation.  Keeping passwords in memory is bad security practice; do
