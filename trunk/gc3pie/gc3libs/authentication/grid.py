@@ -49,11 +49,11 @@ class GridAuth(object):
                 "Configuration error: Unknown cert_renewal_method: %s. Valid types: [voms-proxy, grid-proxy]" \
                 % auth.cert_renewal_method
 
-            # read `keep_password` setting; default to 'False'
-            if auth.has_key('keep_password'):
-                auth['keep_password'] = gc3libs.utils.string_to_boolean(auth['keep_password'])
+            # read `remember_password` setting; default to 'False'
+            if auth.has_key('remember_password'):
+                auth['remember_password'] = gc3libs.utils.string_to_boolean(auth['remember_password'])
             else:
-                auth['keep_password'] = False
+                auth['remember_password'] = False
             
             self.user_cert_valid = False
             self.proxy_valid = False
@@ -187,7 +187,7 @@ class GridAuth(object):
                     (stdout, stderr) = p1.communicate("%s\n" % self._passwd)
 
                     # dispose content of password
-                    if not self.keep_password:
+                    if not self.remember_password:
                         self._passwd = None
 
                     if p1.returncode != 0:
