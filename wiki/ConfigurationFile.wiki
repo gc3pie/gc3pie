@@ -41,7 +41,7 @@ The following sections are used by the GC3Libs/GC3Utils programs:
 Sections with a different name are allowed but will be ignored.
 
 
-= 3 Types of Sections =
+= Three types of Sections =
 
 There are 3 types of sections. 
 
