@@ -42,7 +42,7 @@ import cchem_abc_uml
 ## interface to Gc3libs
 import gc3libs
 from gc3libs import Application, Run, Task
-from gc3libs.cmdline import SessionBasedScript, _Script
+from gc3libs.cmdline import SessionBasedScript, _Script, existing_file
 
 EXECUTABLE="/home/sergio/dev/comp.chem/xrls/abc.sh"
 ABC_EXECUTABLE="/home/sergio/dev/comp.chem/xrls/abc.x"
@@ -109,10 +109,14 @@ class ABC_uml_Workflow(SessionBasedScript):
     def setup_options(self):
         # _Script.setup(self)
 
-        self.add_param("-g", "--g3c", action="store", dest="g3cfile", default=None,
-                        help="G3C input file.")
+        self.add_param("-g", "--g3c",
+                       action="store", dest="g3cfile",
+                       type=existing_file, default=None,
+                       help="G3C input file.")
 
-        self.add_param("-d", "--dimensions", action="store", dest="dimensions", default=None,
+        self.add_param("-d", "--dimensions",
+                       action="store", dest="dimensions",
+                       type=existing_file, default=None,
                        help="Surface file."
                        )
     #     self.add_param("-C", "--continuous", type=int, dest="wait", default=0,

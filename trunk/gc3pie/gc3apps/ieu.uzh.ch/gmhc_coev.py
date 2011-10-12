@@ -52,7 +52,7 @@ import time
 # gc3 library imports
 import gc3libs
 from gc3libs import Application, Run, Task
-from gc3libs.cmdline import SessionBasedScript
+from gc3libs.cmdline import SessionBasedScript, positive_int
 from gc3libs.dag import SequentialTaskCollection
 
 
@@ -280,7 +280,7 @@ newly-created jobs so that this limit is never exceeded.
 
     def setup_options(self):
         self.add_param("-G", "--generations", metavar="NUM",
-                       dest="generations", type=int, default=3000,
+                       dest="generations", type=positive_int, default=3000,
                        help="Compute NUM generations (default: 3000).")
 
     def new_tasks(self, extra):

@@ -103,7 +103,7 @@ import time
 
 import gc3libs
 from gc3libs.application.rosetta import RosettaDockingApplication
-from gc3libs.cmdline import SessionBasedScript
+from gc3libs.cmdline import SessionBasedScript, existing_file, positive_int
 
 
 ## The GDocking application
@@ -215,19 +215,19 @@ of newly-created jobs so that this limit is never exceeded.
             )
 
     def setup_options(self):
-        self.add_param("-f", "--flags-file", dest="flags_file", 
+        self.add_param("-f", "--flags-file", dest="flags_file", type=existing_file,
                        default=os.path.join(gc3libs.Default.RCDIR, 'docking_protocol.flags'),
                        metavar="PATH",
                        help="Pass the specified flags file to Rosetta 'docking_protocol'"
                        " Default: '%(default)s'"
                        )
-        self.add_param("-P", "--decoys-per-file", type=int, dest="decoys_per_file", 
-                       default=1,
+        self.add_param("-P", "--decoys-per-file", dest="decoys_per_file", 
+                       type=positive_int, default=1,
                        metavar="NUM",
                        help="Compute NUM decoys per input file (default: %(default)s)."
                        )
-        self.add_param("-p", "--decoys-per-job", type=int, dest="decoys_per_job", 
-                       default=1,
+        self.add_param("-p", "--decoys-per-job", dest="decoys_per_job", 
+                       type=positive_int, default=1,
                        metavar="NUM",
                        help="Compute NUM decoys in a single job (default: %(default)s)."
                        " This parameter should be tuned so that the running time"
@@ -242,23 +242,13 @@ of newly-created jobs so that this limit is never exceeded.
                        )
 
     def parse_args(self):
-        if self.params.decoys_per_file < 1:
-            raise RuntimeError("Argument to option -P/--decoys-per-file must be a positive integer.")
         self.instances_per_file = self.params.decoys_per_file
-
-        if self.params.decoys_per_job < 1:
-            raise RuntimeError("Argument to option -p/--decoys-per-job must be a positive integer.")
         self.instances_per_job = self.params.decoys_per_job
 
         self.extra['number_of_decoys_to_create'] = self.params.decoys_per_job
         self.extra['collect'] = self.params.collect
-
-        if not os.path.isabs(self.params.flags_file):
-            self.params.flags_file = os.path.abspath(self.params.flags_file)
-        if not os.path.exists(self.params.flags_file):
-            raise RuntimeError("Flags file '%s' does not exist." % self.params.flags_file)
-        self.extra['flags_file'] = self.params.flags_file
-        self.log.info("Using flags file '%s'", self.params.flags_file)
+        self.extra['flags_file'] = os.path.abspath(self.params.flags_file)
+        self.log.info("Using flags file '%s'", self.extra['flags_file'])
 
 
 ## run it
