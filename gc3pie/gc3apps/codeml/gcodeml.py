@@ -63,7 +63,7 @@ import sys
 # gc3 library imports
 import gc3libs
 from gc3libs.application.codeml import CodemlApplication
-from gc3libs.cmdline import SessionBasedScript
+from gc3libs.cmdline import SessionBasedScript, executable_file
 import gc3libs.exceptions
 import gc3libs.utils
 
@@ -123,8 +123,9 @@ of newly-created jobs so that this limit is never exceeded.
                        help="Upload output files to this URL,"
                        "which must be a protocol that ARC supports."
                        "(e.g., 'gsiftp://...')")
-        self.add_param("-x", "--codeml-executable", action="store",
-                       dest="codeml", default=None, metavar="PATH",
+        self.add_param("-x", "--codeml-executable", metavar="PATH",
+                       action="store", dest="codeml",
+                       type=executable_file, default=None, 
                        help="Local path to the CODEML executable."
                        " By default, request the CODEML-4.4.3 run time tag"
                        " and use the remotely-provided application.")

@@ -65,21 +65,25 @@ import fnmatch
 import shutil
 import cli.log
 
+
+from gc3libs.cmdline import existing_file, existing_directory
+
+
 sys.setcheckinterval(1000)    # interpret. check interval for threads and signals
 
 def CLEANLIST(itmlst, delstr) :
-	delpos = []; p = 0					# list of deleting position, position
-	for itm in itmlst :
-		if re.match(delstr, itm) :		# "\" to suppress interpret. of "." by python
-			delpos.append(p)
-		p += 1
-	ndp = 0								# no. of deleted positions
-	for p in delpos :			
-		p -= ndp				# convert. pos. in old dirlist to pos. in current one
-		itmlst.pop(p)
-#		del dirlist(p)			# gives error "can't delete function call"
-		ndp += 1
-	return itmlst
+        delpos = []; p = 0                                      # list of deleting position, position
+        for itm in itmlst :
+                if re.match(delstr, itm) :              # "\" to suppress interpret. of "." by python
+                        delpos.append(p)
+                p += 1
+        ndp = 0                                                         # no. of deleted positions
+        for p in delpos :                       
+                p -= ndp                                # convert. pos. in old dirlist to pos. in current one
+                itmlst.pop(p)
+#               del dirlist(p)                  # gives error "can't delete function call"
+                ndp += 1
+        return itmlst
 
 
 def search_for_input_directories(root, name):
@@ -170,7 +174,7 @@ def parse_kwfile(filename, old_search):
             newlns.append(line)
             if line == '\n' or line.startswith('#') or line.isspace():
 #                print "DEBUG: ignoring line %r"% line
-                continue        		# skip empty or comment lines
+                continue                        # skip empty or comment lines
             if done.search(line.rsplit(':', 1)[1]):
                 if old_search:
 #                    print "DEBUG: ignoring line %r"% line
@@ -323,25 +327,24 @@ def sepjobs(cmdline):
 
 ## command-line parameters
 
-sepjobs.add_param('kwfile', 
+sepjobs.add_param('kwfile', type=existing_file,
                   help="Path to the file containing foldername to string search mappings.")
-sepjobs.add_param('inpdir',                  # no support of several input dir.s
+sepjobs.add_param('inpdir', type=existing_directory, # no support of several input dir.s
                   help="Directory where files to analyze are located.")
 sepjobs.add_param('-f', '--file', '--fl',
                   dest='file', metavar='EXT', default='.out',
                   help="Restrict search to file with this extension."
                   " (default: %(default)s)")
-"""
-sepjobs.add_param('-m', '--move',
-                  dest='dirlvl', default=-1,
-                  help="Move files with their folders accord. to classification. Optionally with directory level (0 for pure file moving, 3 for moving file with folders up to 3rd level")
-"""
+# sepjobs.add_param('-m', '--move',
+#                   dest='dirlvl', default=-1,
+#                   help="Move files with their folders accord. to classification. Optionally with directory level (0 for pure file moving, 3 for moving file with folders up to 3rd level")
 sepjobs.add_param('-m', '--move',
                   dest='move', action='store_true', default=False,
                   help="Move files into folders named after their classification keyword.")
                   
-sepjobs.add_param('-S', '--search-root',
-                  dest='search_root', default=os.getcwd(), metavar='DIR',
+sepjobs.add_param('-S', '--search-root', metavar='DIR',
+                  dest='search_root',
+                  type=existing_directory, default=os.getcwd(), 
                   help="Search for input directories under the directory tree rooted at DIR. Must be a COMPLETE PATH e.g. ~/Desktop/Project"
                   "  (Default: '%(default)s')")
 

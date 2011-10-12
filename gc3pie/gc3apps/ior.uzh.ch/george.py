@@ -51,7 +51,7 @@ import types
 
 import gc3libs
 from gc3libs import Application, Run, Task
-from gc3libs.cmdline import SessionBasedScript
+from gc3libs.cmdline import SessionBasedScript, executable_file, nonnegative_int, positive_int
 from gc3libs.dag import SequentialTaskCollection, ParallelTaskCollection
 import gc3libs.utils
 
@@ -449,11 +449,11 @@ class GeorgeScript(SessionBasedScript):
         super(GeorgeScript, self).setup_args()
 
         self.add_param('-P', '--iterations', metavar='NUM',
-                       dest='iterations', type=int, default=1,
+                       dest='iterations', type=positive_int, default=1,
                        help="Compute NUM iterations per each output file"
                        " (default: %(default)s).")
         self.add_param('-p', '--slice-size', metavar='NUM', 
-                       dest='slice_size', type=int, default=0,
+                       dest='slice_size', type=nonnegative_int, default=0,
                        help="Process at most NUM states in a single"
                        " computational job.  Each input file is chopped"
                        " into files that contain at most NUM elements,"
@@ -465,7 +465,7 @@ class GeorgeScript(SessionBasedScript):
                        " If 0 (default), no chopping takes place and one job"
                        " only is used for each pass of the computation.")
         self.add_param("-x", "--execute", dest="execute",
-                       default="vfi.exe",
+                       type=executable_file, default="vfi.exe",
                        metavar="EXECUTABLE",
                        help="Run the specified EXECUTABLE program"
                        " to compute one step of values;"
@@ -473,13 +473,6 @@ class GeorgeScript(SessionBasedScript):
 
 
     def parse_args(self):
-        if self.params.iterations < 1:
-            raise RuntimeError("Argument to option -P/--iterations must be a positive integer.")
-
-        if self.params.slice_size < 0:
-            raise RuntimeError("Argument to option -p/--slice-size must be a non-negative integer.")
-
-        gc3libs.utils.test_file(self.params.execute, os.R_OK|os.X_OK)
         if not os.path.isabs(self.params.execute):
             self.params.execute = os.path.abspath(self.params.execute)
 

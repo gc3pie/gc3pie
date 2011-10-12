@@ -23,7 +23,7 @@ import re
 import sys
 
 import gc3libs
-from gc3libs.cmdline import SessionBasedScript
+from gc3libs.cmdline import SessionBasedScript, existing_file
 from gc3libs.application.crypto import CryptoApplication
 import gc3libs.exceptions
 
@@ -59,8 +59,9 @@ class GCryptoScript(SessionBasedScript):
 
     def setup_options(self):
         # add some options to the std ones
-        self.add_param("-I", "--input-directive-file", action="store",
-                       dest="directives", default="input_files.tgz",
+        self.add_param("-I", "--input-directive-file", metavar="FILE",
+                       action="store", dest="directives",
+                       type=existing_file, default="input_files.tgz",
                        help="Input file archive containing Mxxxx.st, Mxxxx," 
                        "Mxx_yyyy, gnfs-lasieve6, tdsievemt."
                        "To be deployed together with the inputfiles"

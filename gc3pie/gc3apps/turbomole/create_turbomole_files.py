@@ -42,7 +42,7 @@ import sys
 ## interface to Gc3libs
 
 import gc3libs
-from gc3libs.cmdline import GC3UtilsScript
+from gc3libs.cmdline import GC3UtilsScript, positive_int, valid_directory
 from gc3libs.template import Template, expansions
 import gc3libs.utils
 
@@ -194,10 +194,10 @@ controlled with the ``--bas``, ``--jkbas``, ``--cbas`` and
                        help="Comma-separated list of `cabs` bases to sweep."
                        " (Default: %(default)s")
         self.add_param("-m", "--memory",
-                       dest="memory", type=int, default=2000,
+                       dest="memory", type=positive_int, default=2000,
                        help="Memory (in MB) to set for TURBOMOLE jobs.")
         self.add_param("-o", "--output-directory", metavar='PATH',
-                       dest="output_dir", default=os.getcwd(),
+                       dest="output_dir", type=valid_directory, default=os.getcwd(),
                        help="Create output files into directories rooted at PATH")
         # positional (mandatory) arguments
         self.add_param('args', nargs='+', metavar='COORDFILE',

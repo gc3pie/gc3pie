@@ -43,6 +43,7 @@ __docformat__ = 'reStructuredText'
 
 import cli # pyCLI
 import cli.app
+import cli._ext.argparse as argparse
 import csv
 import fnmatch
 import lockfile
@@ -65,9 +66,56 @@ import gc3libs.persistence
 import gc3libs.utils
 
 
-## parse command-line
+## types for command-line parsing; see http://docs.python.org/dev/library/argparse.html#type
+
+def nonnegative_int(num):
+    try:
+        value = int(num)
+        if value < 0:
+            raise argparse.ArgumentTypeError(
+                "'%s' is not a non-negative integer number." % (num,))
+        return value
+    except ValueError:
+        raise argparse.ArgumentTypeError(
+            "'%s' is not a non-negative integer number." % (num,))
 
 
+def positive_int(num):
+    try:
+        value = int(num)
+        if value <= 0:
+            raise argparse.ArgumentTypeError(
+                "'%s' is not a positive integer number." % (num,))
+        return value
+    except ValueError:
+        raise argparse.ArgumentTypeError(
+            "'%s' is not a positive integer number." % (num,))
+
+
+def existing_file(path):
+    gc3libs.utils.test_file(path, os.F_OK|os.R_OK, argparse.ArgumentTypeError)
+    return path
+
+
+def executable_file(path):
+    gc3libs.utils.test_file(path, os.F_OK|os.R_OK|os.X_OK, argparse.ArgumentTypeError)
+    return path
+
+
+def existing_directory(path):
+    gc3libs.utils.test_file(path, os.F_OK|os.R_OK|os.X_OK, argparse.ArgumentTypeError, isdir=True)
+    return path
+
+
+def valid_directory(path):
+    if os.path.exists(path) and not os.path.isdir(path):
+        raise argparse.ArgumentTypeError(
+            "path '%s' already exists but is not a directory."
+            % (path,))
+    return path
+
+
+## script classes
 
 class _Script(cli.app.CommandLineApp):
     """
@@ -873,12 +921,14 @@ class SessionBasedScript(_Script):
         ## add own "standard options"
         
         # 1. job requirements
-        self.add_param("-c", "--cpu-cores", dest="ncores", type=int, default=1, # 1 core
+        self.add_param("-c", "--cpu-cores", dest="ncores",
+                       type=positive_int, default=1, # 1 core
                        metavar="NUM",
                        help="Set the number of CPU cores required for each job (default: %(default)s)."
                        "NUM must be a whole number."
                        )
-        self.add_param("-m", "--memory-per-core", dest="memory_per_core", type=int, default=2, # 2 GB
+        self.add_param("-m", "--memory-per-core", dest="memory_per_core",
+                       type=positive_int, default=2, # 2 GB
                        metavar="GIGABYTES",
                        help="Set the amount of memory required per execution core, in gigabytes (Default: %(default)s)."
                        "Currently, GIGABYTES can only be an integer number; no fractional amounts are allowed.")
@@ -911,18 +961,20 @@ class SessionBasedScript(_Script):
                        " and start a new session afresh.  Any information about previous jobs is lost.")
 
         # 3. script execution control
-        self.add_param("-C", "--continuous", type=int, dest="wait", default=0,
+        self.add_param("-C", "--continuous",
+                       type=positive_int, dest="wait", default=0,
                        metavar="NUM",
                        help="Keep running, monitoring jobs and possibly submitting new ones or"
                        " fetching results every NUM seconds. Exit when all jobs are finished."
                        )
-        self.add_param("-J", "--max-running", type=int, dest="max_running", default=50,
+        self.add_param("-J", "--max-running",
+                       type=positive_int, dest="max_running", default=50,
                        metavar="NUM",
                        help="Set the max NUMber of jobs (default: %(default)s)"
                        " in SUBMITTED or RUNNING state."
                        )
-        self.add_param("-o", "--output",
-                       dest="output", default=os.path.join(os.getcwd(), 'NAME'),
+        self.add_param("-o", "--output", dest="output",
+                       type=valid_directory, default=os.path.join(os.getcwd(), 'NAME'),
                        metavar='DIRECTORY',
                        help="Output files from all jobs will be collected in the specified"
                        " DIRECTORY path; by default, output files are placed in the same"
@@ -955,11 +1007,6 @@ class SessionBasedScript(_Script):
         _Script.pre_run(self)
 
         ## consistency checks
-        if self.params.max_running < 0:
-            raise cli.app.Error("Argument to option -J/--max-running must be a non-negative integer.")
-        if self.params.wait < 0: 
-            raise cli.app.Error("Argument to option -C/--continuous must be a positive integer.")
-
         n = self.params.wctime.count(":")
         if 0 == n: # wctime expressed in hours
             duration = int(self.params.wctime)*60*60

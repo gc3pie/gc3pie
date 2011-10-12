@@ -45,7 +45,7 @@ import sys
 
 import gc3libs
 from gc3libs.application.rosetta import RosettaApplication
-from gc3libs.cmdline import SessionBasedScript
+from gc3libs.cmdline import SessionBasedScript, positive_int
 
 
 
@@ -83,23 +83,24 @@ Note: the list of INPUT and OUTPUT files must be separated by ':'
             )
 
     def setup_options(self):
-        self.add_param("-P", "--total_decoys", type=int, dest="total_decoys", 
-                       default=1,
+        self.add_param("-P", "--total_decoys", dest="total_decoys", 
+                       type=positive_int, default=1,
                        metavar="NUM",
                        help="Compute NUM decoys per input file (default: %(default)s)."
                        )
-        self.add_param("-p", "--decoys-per-job", type=int, dest="decoys_per_job", 
-                       default=1,
+        self.add_param("-p", "--decoys-per-job", dest="decoys_per_job", 
+                       type=positive_int, default=1,
                        metavar="NUM",
                        help="Compute NUM decoys in a single job (default: %(default)s)."
                        " This parameter should be tuned so that the running time"
                        " of a single job does not exceed the maximum wall-clock time."
                        )
-        self.add_param("-x", "--protocol", dest="protocol", default="minirosetta.static",
+        self.add_param("-x", "--protocol", dest="protocol",
+                       type=str, default="minirosetta.static",
                        metavar="PROTOCOL",
                        help="Run the specified Rosetta protocol/application; default: %(default)s")
-        self.add_param("-e", "--release", type=str, dest="rosetta_release", 
-                       default="3.1",
+        self.add_param("-e", "--release",
+                       type=str, dest="rosetta_release", default="3.1",
                        metavar="NAME",
                        help="Numerical suffix to identify which version of Rosetta should be requested."
                        " (example: '-e 20110622' will request rosetta-svn20110622)"
@@ -107,12 +108,7 @@ Note: the list of INPUT and OUTPUT files must be separated by ':'
                        )
 
     def parse_args(self):
-        if self.params.total_decoys < 1:
-            raise RuntimeError("Argument to option -P/--total-decoys must be a positive integer.")
         self.instances_per_file = self.params.total_decoys
-
-        if self.params.decoys_per_job < 1:
-            raise RuntimeError("Argument to option -p/--decoys-per-job must be a positive integer.")
         self.instances_per_job = self.params.decoys_per_job
         self.extra['number_of_decoys_to_create'] = self.params.decoys_per_job
 
