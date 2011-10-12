@@ -177,6 +177,9 @@ class SubprocessLrms(LRMS):
 
         :see: `LRMS.submit_job`
         """
+        gc3libs.log.debug("Executing local command '%s %s' ..."
+                          % (app.executable, str.join(" ", app.arguments)))
+        
         # We cannot use `subprocess` or other front-end modules that
         # hide the differences between UNIX and Windows, exactly
         # because we need to get the PID of the submitted process.
