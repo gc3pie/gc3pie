@@ -26,6 +26,8 @@ See the output of ``ggamess --help`` for program usage instructions.
 __version__ = 'development version (SVN $Revision$)'
 # summary of user-visible changes
 __changelog__ = """
+  2011-10-11:
+    * Allow running GAMESS from an AppPot container.
   2010-12-20:
     * Initial release, forked off the ``grosetta`` sources.
 """
@@ -34,8 +36,8 @@ __docformat__ = 'reStructuredText'
 
 
 import gc3libs
-from gc3libs.application.gamess import GamessApplication
-from gc3libs.cmdline import SessionBasedScript
+from gc3libs.application.gamess import GamessApplication, GamessAppPotApplication
+from gc3libs.cmdline import SessionBasedScript, existing_file
 
 
 class GGamessScript(SessionBasedScript):
@@ -58,13 +60,69 @@ Options can specify a maximum number of jobs that should be in
 of newly-created jobs so that this limit is never exceeded.
     """
 
+    def setup_options(self):
+        self.add_param("-A", "--apppot", metavar="PATH",
+                       dest="apppot",
+                       type=existing_file, default=None,
+                       help="Use an AppPot image to run GAMESS."
+                       " PATH can point either to a complete AppPot system image"
+                       " file, or to a `.changes` file generated with the"
+                       " `apppot-snap` utility.")
+        self.add_param("-R", "--verno", metavar="VERNO",
+                       dest="verno", default=None,
+                       help="Request using the specified version of GAMESS;"
+                       " (will be used as second argument to the localgms/rungms script).")
+
+
     def __init__(self):
         SessionBasedScript.__init__(
             self,
             version = __version__, # module version == script version
-            application = GamessApplication,
             input_filename_pattern = '*.inp'
             )
+
+
+    def new_tasks(self, extra):
+        # setup AppPot parameters
+        use_apppot = False
+        apppot_img = None
+        apppot_changes = None
+        if self.params.apppot:
+            use_apppot = True
+            if self.params.apppot.endswith('changes.tar.gz'):
+                apppot_changes = self.params.apppot
+            else:
+                apppot_img = self.params.apppot
+        # create tasks
+        inputs = self._search_for_input_files(self.params.args)
+        for path in inputs:
+            parameters = [ path ]
+            kwargs = extra.copy()
+            kwargs['verno'] = self.params.verno
+            if use_apppot:
+                if apppot_img:
+                    kwargs['apppot_img'] = apppot_img
+                if apppot_changes:
+                    # add `.changes` file to stage-in list; we use the
+                    # fact that additional parameters to
+                    # `GamessApplication` ctor are just input files,
+                    # but are not processed in any way by the
+                    # application.
+                    parameters.append(apppot_changes)
+                cls = GamessAppPotApplication
+            else:
+                cls = GamessApplication
+            # construct GAMESS job
+            yield (
+                # job name
+                gc3libs.utils.basename_sans(path),
+                # application class
+                cls,
+                # parameters to `cls` constructor, see `GamessApplication.__init__`
+                parameters,
+                # keyword arguments, see `GamessApplication.__init__`
+                kwargs)
+
 
 # run it
 if __name__ == '__main__':
