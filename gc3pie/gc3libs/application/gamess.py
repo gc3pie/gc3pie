@@ -25,6 +25,7 @@ __version__ = 'development version (SVN $Revision$)'
 
 import gc3libs
 import gc3libs.application
+import gc3libs.application.apppot
 import gc3libs.exceptions
 from gc3libs.InformationContainer import *
 import os
@@ -37,11 +38,15 @@ class GamessApplication(gc3libs.Application):
     Specialized `Application` object to submit computational jobs running GAMESS-US.
 
     The only required parameter for construction is the input file
-    name; any other argument names an additional input file, that
-    is added to the `Application.inputs` list, but not otherwise 
+    name; subsequent positional arguments are additional input files,
+    that are added to the `Application.inputs` list, but not otherwise
     treated specially.
 
-    Any other kyword parameter that is valid in the `Application`
+    The `verno` parameter is used to request a specific version of
+    GAMESS-US; if the default value ``None`` is used, the default
+    version of GAMESS-US at the executing site is run.
+
+    Any other keyword parameter that is valid in the `Application`
     class can be used here as well, with the exception of `input` and
     `output`.  Note that a GAMESS-US job is *always* submitted with
     `join = True`, therefore any `stderr` setting is ignored.
@@ -51,21 +56,23 @@ class GamessApplication(gc3libs.Application):
         input_file_name_sans = os.path.splitext(input_file_name)[0]
         output_file_name = input_file_name_sans + '.dat'
         # add defaults to `kw` if not already present
-        def set_if_unset(key, value):
-            if not kw.has_key(key):
-                kw[key] = value
-        set_if_unset('stdout', input_file_name_sans + '.out')
-        set_if_unset('application_tag', "gamess")
-        if kw.has_key('tags'):
-            kw['tags'].append("APPS/CHEM/GAMESS-2010")
-        else:
-            kw['tags'] = [ "APPS/CHEM/GAMESS-2010" ]
-        arguments = [ input_file_name ] + (kw.get('arguments') or [ ])
-        if kw.has_key('arguments'):
-            del kw['arguments']
-        # build generic `Application` obj
-        # set job name
+        kw.setdefault('stdout', input_file_name_sans + '.out')
+        kw.setdefault('application_tag', "gamess")
+        kw.setdefault('tags', [ ])
+        # FIXME: should be APPS/CHEM/GAMESS-${verno}
+        kw['tags'].append("APPS/CHEM/GAMESS-2010")
+        arguments = [ input_file_name ]
+        # FIXME: enable when the GAMESS invocation script conforms to
+        # the `rungms` interface; see Issue 3.
+        #verno = kw.get('verno', None)
+        #if verno is not None:
+        #    arguments.append(verno)
+        #if kw.has_key('requested_cores'):
+        #    # NCPUS argument to `rungms`
+        #    arguments.append(str(kw['requested_cores']))
+        #set job name
         kw['job_name'] = input_file_name_sans
+        # build generic `Application` obj
         gc3libs.Application.__init__(self, 
                                      executable = "/$GAMESS_LOCATION/nggms",
                                      arguments = arguments,
@@ -95,7 +102,7 @@ class GamessApplication(gc3libs.Application):
             gc3libs.log.debug("Trying to read GAMESS termination status"
                               " off output file '%s' ..." % output_filename)
             output_file = open(output_filename, 'r')
-            for line in output_file.readlines():
+            for line in output_file:
                 match = self._termination_re.search(line)
                 if match:
                     if match.group('gamess_outcome'):
@@ -158,11 +165,76 @@ class GamessApplication(gc3libs.Application):
 
     
     def cmdline(self, resource, **kw):
-        raise NotImplementedError("There is currently no way of running GAMESS directly from the command-line."
-                                  " GAMESS invocation requires too many deployment-specific parameters"
-                                  " to make a generic invocation script possible.")
+        raise NotImplementedError(
+            "There is currently no way of running GAMESS directly from the command-line."
+            " GAMESS invocation requires too many deployment-specific parameters"
+            " to make a generic invocation script possible.")
 
 gc3libs.application.register(GamessApplication, 'gamess')
+
+
+class GamessAppPotApplication(GamessApplication,
+                              gc3libs.application.apppot.AppPotApplication):
+    """
+    Specialized `AppPotApplication` object to submit computational
+    jobs running GAMESS-US.
+
+    This class makes no check or guarantee that a GAMESS-US executable
+    will be available in the executing AppPot instance: the
+    `apppot_img` and `apppot_tag` keyword arguments can be used to
+    select the AppPot system image to run this application; see the
+    `AppPotApplication`:class: for information.
+
+    The `__init__` construction interface is compatible with the one
+    used in `GamessApplication`:class:. The only required parameter for
+    construction is the input file name; any other argument names an
+    additional input file, that is added to the `Application.inputs`
+    list, but not otherwise treated specially.
+
+    Any other keyword parameter that is valid in the `Application`
+    class can be used here as well, with the exception of `input` and
+    `output`.  Note that a GAMESS-US job is *always* submitted with
+    `join = True`, therefore any `stderr` setting is ignored.
+    """
+    def __init__(self, inp_file_path, *other_input_files, **kw):
+        input_file_name = os.path.basename(inp_file_path)
+        input_file_name_sans = os.path.splitext(input_file_name)[0]
+        output_file_name = input_file_name_sans + '.dat'
+        # add defaults to `kw` if not already present
+        kw.setdefault('stdout', input_file_name_sans + '.out')
+        kw.setdefault('application_tag', "gamess")
+        kw.setdefault('tags', list())
+        kw['tags'].append("APPS/CHEM/GAMESS-APPPOT-0.11.10.12")
+        arguments = [ input_file_name ]
+        verno = kw.get('verno', None)
+        if verno is not None:
+            arguments.append(verno)
+        if kw.has_key('requested_cores'):
+            # NCPUS argument to `rungms`
+            arguments.append(str(kw['requested_cores']))
+        # set job name
+        kw['job_name'] = input_file_name_sans
+        # init superclass
+        gc3libs.application.apppot.AppPotApplication.__init__(
+            self, 
+            executable = "localgms",
+            arguments = arguments,
+            inputs = [ (inp_file_path, input_file_name) ] + list(other_input_files),
+            outputs = [ output_file_name ],
+            join = True,
+            # needed by `ggamess`
+            inp_file_path = inp_file_path,
+            **kw)
+
+    # XXX: need to override the `qgms`, `qsub` and `cmdline`
+    # definitions made by `GamessApplication`.  This can go away
+    # once `GamessApplication` has a sane interface for running
+    # GAMESS (see Issue 3 on the web site).
+    qsub = gc3libs.Application.qsub
+    cmdline = gc3libs.Application.cmdline
+
+
+gc3libs.application.register(GamessAppPotApplication, 'gamess/apppot')
 
 
 
