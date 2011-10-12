@@ -88,8 +88,8 @@ class Url(tuple):
         >>> u.path
         'foo'
 
-      Any other keyword argument is used if the URL does not
-      specify the corresponding part::
+      Other keyword arguments can specify defaults for missing parts
+      of the URL::
 
         >>> u = Url('/tmp/foo', scheme='file', netloc='localhost')
         >>> u.scheme
@@ -120,19 +120,31 @@ class Url(tuple):
         for invocation syntax.
         """
         if urlstring is not None:
-            # parse `urlstring` and use kwd arguments as default values
-            urldata = urlparse.urlsplit(urlstring, scheme=scheme, allow_fragments=False)
-            if urldata.scheme == 'file' and not os.path.isabs(urldata.path) and force_abs:
-                urldata = urlparse.urlsplit('file://' + os.path.abspath(urldata.path))
-            return tuple.__new__(cls, (
-                urldata.scheme or scheme,
-                urldata.netloc or netloc,
-                urldata.path or path,
-                urldata.hostname or hostname,
-                urldata.port or port,
-                urldata.username or username,
-                urldata.password or password,
-                ))
+            if isinstance(urlstring, Url):
+                # copy constructor
+                return tuple.__new__(cls, (
+                    urlstring.scheme, urlstring.netloc, urlstring.path,
+                    urlstring.hostname, urlstring.port,
+                    urlstring.username, urlstring.password,
+                    ))
+            else:
+                # parse `urlstring` and use kwd arguments as default values
+                try:
+                    urldata = urlparse.urlsplit(urlstring, scheme=scheme, allow_fragments=False)
+                    if urldata.scheme == 'file' and not os.path.isabs(urldata.path) and force_abs:
+                        urldata = urlparse.urlsplit('file://' + os.path.abspath(urldata.path))
+                    return tuple.__new__(cls, (
+                        urldata.scheme or scheme,
+                        urldata.netloc or netloc,
+                        urldata.path or path,
+                        urldata.hostname or hostname,
+                        urldata.port or port,
+                        urldata.username or username,
+                        urldata.password or password,
+                        ))
+                except (ValueError, TypeError, AttributeError), ex:
+                    raise ValueError("Cannot parse string '%s' as a URL: %s: %s"
+                                     % (urlstring, ex.__class__.__name__, str(ex)))
         else:
             # no `urlstring`, use kwd arguments
             return tuple.__new__(cls, (
@@ -151,6 +163,7 @@ class Url(tuple):
     
 
     def __getnewargs__(self):
+        """Support pickling/unpickling `Url` class objects."""
         return (None, False, # urlstring, force_abs
                 self.scheme, self.netloc, self.path, self.hostname, self.port, self.username, self.password)
 
@@ -190,6 +203,53 @@ class Url(tuple):
             url = self.scheme + ':' + url
         return url    
 
+
+    def __eq__(self, other):
+        """
+        Return `True` if `self` and `other` are equal `Url` objects,
+        or if their string representations match.
+
+        Examples:
+
+          >>> u = Url('/tmp/foo')
+          >>> u == Url('/tmp/foo')
+          True
+          >>> u == Url('file:///tmp/foo')
+          True
+          >>> u == Url('http://example.org/')
+          False
+          
+          >>> u == str(u)
+          True
+          >>> u == '/tmp/foo'
+          True
+          >>> u == 'file:///tmp/foo'
+          True
+          >>> u == 'http://example.org'
+          False
+
+          >>> u == 42
+          False
+        
+        """
+        try:
+            # The `tuple.__eq__` call can only be used if both `self`
+            # and `other` are `tuple` subclasses; we know that `self`
+            # is, but we need to check `other`.
+            return ((isinstance(other, tuple) and tuple.__eq__(self, other))
+                    or str(self) == str(other)
+                    or tuple.__eq__(self, Url(other)))
+        except ValueError, ex:
+            # `other` is not a URL and cannot be made into one
+            return False
+    
+    def __ne__(self, other):
+        """
+        The opposite of `__eq__`.
+        """
+        return not self.__eq__(other)
+    
+    
     def adjoin(self, relpath):
         """
         Return a new `Url`, constructed by appending `relpath` to the
@@ -209,7 +269,7 @@ class Url(tuple):
         Even if `relpath` starts with `/`, it is still appended to the
         path in the base URL::
 
-            >>> u3 = u2.adjoin('evenmore')
+            >>> u3 = u2.adjoin('/evenmore')
             >>> str(u3)
             'http://www.example.org/data/moredata/evenmore'
         
@@ -242,6 +302,17 @@ class UrlKeyDict(dict):
         1
         >>> d[Url('/tmp/foo')]
         1
+
+    Key lookup can use both the string or the `Url` value as well:
+
+        >>> '/tmp/foo' in d
+        True
+        >>> Url('/tmp/foo') in d
+        True
+        >>> 'file:///tmp/foo' in d
+        True
+        >>> 'http://example.org' in d
+        False
 
     Class `UrlKeyDict` supports initialization by copying items from
     another `dict` instance or from an iterable of (key, value)
@@ -293,6 +364,11 @@ class UrlKeyDict(dict):
                 for k,v in iter_or_dict:
                     self[k] = v
 
+    def __contains__(self, key):
+        # this is necessary to have key-lookup work with strings as well
+        return (dict.__contains__(self, key)
+                or key in self.keys())
+
     def __getitem__(self, key):
         try:
             return dict.__getitem__(self, key)
@@ -302,6 +378,7 @@ class UrlKeyDict(dict):
                 return dict.__getitem__(self, Url(key, self._force_abs))
             except:
                 raise ex
+
     def __setitem__(self, key, value):
         try:
             dict.__setitem__(self, Url(key, self._force_abs), value)
