@@ -89,7 +89,7 @@ of newly-created jobs so that this limit is never exceeded.
         apppot_changes = None
         if self.params.apppot:
             use_apppot = True
-            if self.params.apppot.endswith('changes.tar.gz'):
+            if self.params.apppot.endswith('.changes.tar.gz'):
                 apppot_changes = self.params.apppot
             else:
                 apppot_img = self.params.apppot
@@ -100,15 +100,10 @@ of newly-created jobs so that this limit is never exceeded.
             kwargs = extra.copy()
             kwargs['verno'] = self.params.verno
             if use_apppot:
-                if apppot_img:
+                if apppot_img is not None:
                     kwargs['apppot_img'] = apppot_img
-                if apppot_changes:
-                    # add `.changes` file to stage-in list; we use the
-                    # fact that additional parameters to
-                    # `GamessApplication` ctor are just input files,
-                    # but are not processed in any way by the
-                    # application.
-                    parameters.append(apppot_changes)
+                if apppot_changes is not None:
+                    kwargs['apppot_changes'] = apppot_changes
                 cls = GamessAppPotApplication
             else:
                 cls = GamessApplication
