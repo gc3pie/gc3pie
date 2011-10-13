@@ -43,21 +43,15 @@ class AppPotApplication(gc3libs.Application):
       on the remote system is used.
     """
     def __init__(self, executable, arguments, inputs, outputs, output_dir,
-                 apppot_img=None, apppot_tag='ENV/APPPOT-0.21', **kw):
+                 apppot_img=None, apppot_changes=None, apppot_tag='ENV/APPPOT-0.21', **kw):
         # AppPot-specific setup
         apppot_start_args = [] 
         if apppot_img is not None:
+            AppPotApplication._add_to_inputs(inputs, apppot_img, 'apppot.img')
             apppot_start_args += ['--apppot', 'apppot.img']
-            # XXX: Need to deal with the two possibilities for
-            # initializing the `inputs` list.  Can this be simplified
-            # by making `inputs` a writeable property of an
-            # `Application` object?
-            if isinstance(inputs, dict):
-                inputs[apppot_img] = 'apppot.img'
-            elif isinstance(inputs, list):
-                inputs.append( (apppot_img, 'apppot.img') )
-            else:
-                raise TypeError("Unexpected type for `inputs` parameter: need `dict` or `list`.")
+        if apppot_changes is not None:
+            AppPotApplication._add_to_inputs(inputs, apppot_changes, 'apppot.changes.tar.gz')
+            apppot_start_args += ['--changes', 'apppot.changes.tar.gz']
         if kw.has_key('requested_memory'):
             apppot_start_args += ['--mem', ("%dM" % (int(kw['requested_memory']) * 1000))]
             # FIXME: we need to remove the memory limit because batch
@@ -72,13 +66,34 @@ class AppPotApplication(gc3libs.Application):
         # init base class
         gc3libs.Application.__init__(
             self,
-            # FIXME: this is needed for ARC submissions,
+            'apppot-start.sh', # executable
+            apppot_start_args, # arguments
+            inputs, outputs, output_dir, **kw)
+
+    @staticmethod
+    def _add_to_inputs(inputs, localpath, remotepath):
+        # XXX: Need to deal with the two possibilities for
+        # initializing the `inputs` list.  Can this be simplified
+        # by making `inputs` a writeable property of an
+        # `Application` object?
+        if isinstance(inputs, dict):
+            inputs[localpath] = remotepath
+        elif isinstance(inputs, list):
+            inputs.append( (localpath, remotepath) )
+        else:
+            raise TypeError("Unexpected type for `inputs` parameter: need `dict` or `list`.")
+
+    def xrsl(self, resource):
+            # FIXME: for ARC submissions, replace `executable` with
+            # the value of a (remotely defined) environment variable,
             # because otherwise ARC insists that 'apppot-start.sh'
             # should be included in "inputFiles", but it obviously
             # breaks all other submission schemes...
-            '/$APPPOT_STARTUP', #'apppot-start.sh', # executable
-            apppot_start_args, # arguments
-            inputs, outputs, output_dir, **kw)
+            original_executable = self.executable
+            self.executable = '/$APPPOT_STARTUP'
+            jobdesc = Application.xrsl(self, resource)
+            self.executable = original_executable
+            return jobdesc
 
 
 ## main: run tests
