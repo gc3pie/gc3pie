@@ -204,7 +204,7 @@ class GamessAppPotApplication(GamessApplication,
         kw.setdefault('stdout', input_file_name_sans + '.out')
         kw.setdefault('application_tag', "gamess")
         kw.setdefault('tags', list())
-        kw['tags'].append("APPS/CHEM/GAMESS-APPPOT-0.11.10.12")
+        kw['tags'].append("APPS/CHEM/GAMESS-APPPOT-0.11.10.13")
         arguments = [ input_file_name ]
         verno = kw.get('verno', None)
         if verno is not None:

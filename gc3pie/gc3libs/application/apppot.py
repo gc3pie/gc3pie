@@ -43,7 +43,7 @@ class AppPotApplication(gc3libs.Application):
       on the remote system is used.
     """
     def __init__(self, executable, arguments, inputs, outputs, output_dir,
-                 apppot_img=None, apppot_tag='ENV/APPPOT-0.18', **kw):
+                 apppot_img=None, apppot_tag='ENV/APPPOT-0.21', **kw):
         # AppPot-specific setup
         apppot_start_args = [] 
         if apppot_img is not None:
@@ -72,6 +72,10 @@ class AppPotApplication(gc3libs.Application):
         # init base class
         gc3libs.Application.__init__(
             self,
+            # FIXME: this is needed for ARC submissions,
+            # because otherwise ARC insists that 'apppot-start.sh'
+            # should be included in "inputFiles", but it obviously
+            # breaks all other submission schemes...
             '/$APPPOT_STARTUP', #'apppot-start.sh', # executable
             apppot_start_args, # arguments
             inputs, outputs, output_dir, **kw)
