@@ -91,7 +91,7 @@ class AppPotApplication(gc3libs.Application):
             # breaks all other submission schemes...
             original_executable = self.executable
             self.executable = '/$APPPOT_STARTUP'
-            jobdesc = Application.xrsl(self, resource)
+            jobdesc = gc3libs.Application.xrsl(self, resource)
             self.executable = original_executable
             return jobdesc
 
