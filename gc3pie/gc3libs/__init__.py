@@ -1426,6 +1426,31 @@ class Run(Struct):
         return locals()
 
 
+    def in_state(self, *names):
+        """
+        Return `True` if the `Run` state matches any of the given names.
+
+        In addition to the states from `Run.State`:class:, the two
+        additional names ``ok`` and ``failed`` are also accepted, with
+        the following meaning:
+
+        * ``ok``: state is `TERMINATED` and `returncode` is 0.
+
+        * ``failed``: state is `TERMINATED` and `returncode` is non-zero.
+        """
+        state = self.state
+        if state in names:
+            return True
+        elif ('ok' in names
+              and state == Run.State.TERMINATED and self.returncode == 0):
+            return True
+        elif ('failed' in names
+              and state == Run.State.TERMINATED and self.returncode != 0):
+            return True
+        else:
+            return False
+
+
     @defproperty
     def signal():
         """

@@ -462,7 +462,7 @@ Print job state.
                 app.attach(self._core)
                 self._core.update_job_state(app)
                 self._store.replace(app.persistent_id, app)
-            if states is None or app.execution.state in states:
+            if states is None or app.execution.in_state(*states):
                 rows.append([app.persistent_id, app.execution.state, app.execution.info] +
                             [ app.execution.get(name, "N/A") for name in keys ])
             stats[app.execution.state] += 1
