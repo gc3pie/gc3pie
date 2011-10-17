@@ -844,7 +844,7 @@ class SessionBasedScript(_Script):
         table.add_rows([ (task.persistent_id, task.jobname,
                           task.execution.state, task.execution.info)
                          for task in self.tasks
-                         if task.execution.state in states ],
+                         if task.execution.in_state(states) ],
                        header=False)
         # XXX: uses texttable's internal implementation detail
         if len(table._rows) > 0:
@@ -993,7 +993,9 @@ class SessionBasedScript(_Script):
                        const=str.join(',', gc3libs.Run.State),
                        help="Print a table of jobs including their status."
                        " Optionally, restrict output to jobs with a particular STATE or STATES"
-                       " (comma-separated list)."
+                       " (comma-separated list).  The pseudo-states `ok` and `failed`"
+                       " are also allowed for selecting jobs in TERMINATED state with"
+                       " exitcode 0 or nonzero, resp."
                        )
         return
 
