@@ -844,7 +844,7 @@ class SessionBasedScript(_Script):
         table.add_rows([ (task.persistent_id, task.jobname,
                           task.execution.state, task.execution.info)
                          for task in self.tasks
-                         if task.execution.in_state(states) ],
+                         if task.execution.in_state(*states) ],
                        header=False)
         # XXX: uses texttable's internal implementation detail
         if len(table._rows) > 0:

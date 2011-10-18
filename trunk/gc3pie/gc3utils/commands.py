@@ -466,6 +466,11 @@ Print job state.
                 rows.append([app.persistent_id, app.execution.state, app.execution.info] +
                             [ app.execution.get(name, "N/A") for name in keys ])
             stats[app.execution.state] += 1
+            if app.execution.state == Run.State.TERMINATED:
+                if app.execution.returncode == 0:
+                    stats['ok'] += 1
+                else:
+                    stats['failed'] += 1
             tot += 1
 
         if len(rows) > capacity and self.params.verbose == 0:
