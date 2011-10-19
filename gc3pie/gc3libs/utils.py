@@ -189,15 +189,15 @@ def cat(*args, **kw):
             output.write(line)
 
 
-def copyfile(src, dst, overwrite=False):
+def copyfile(src, dst, overwrite=False, link=False):
     """
     Copy a file from `src` to `dst`; return `True` if the copy was
     actually made.  If `overwrite` is `False` (default), an existing
     destination entry is left unchanged and `False` is returned.
 
-    An attempt at hard-linking is done first; failing that, we copy
-    the source file onto the destination one. Permission bits and
-    modification times are copied as well.
+    If `link` is `True`, an attempt at hard-linking is done first;
+    failing that, we copy the source file onto the destination
+    one. Permission bits and modification times are copied as well.
 
     If `dst` is a directory, a file with the same basename as `src` is
     created (or overwritten) in the directory specified.
@@ -212,10 +212,13 @@ def copyfile(src, dst, overwrite=False):
         dstdir = os.path.dirname(dst)
         if not os.path.exists(dstdir):
             os.makedirs(dstdir)
-        try:
-            os.link(src, dst)
-        except OSError, ex:
-            # retry with normal copy
+        if link:
+            try:
+                os.link(src, dst)
+            except OSError, ex:
+                # retry with normal copy
+                shutil.copy2(src, dst)
+        else:
             shutil.copy2(src, dst)
     except shutil.WindowsError:
         pass
