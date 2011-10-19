@@ -42,7 +42,9 @@ if __name__ == "__main__":
 
 
 # std module imports
+import csv
 import glob
+import math
 import os
 import re
 import shutil
@@ -52,7 +54,8 @@ import time
 # gc3 library imports
 import gc3libs
 from gc3libs import Application, Run, Task
-from gc3libs.cmdline import SessionBasedScript, positive_int
+from gc3libs.cmdline import SessionBasedScript
+from gc3libs.compat.collections import defaultdict
 from gc3libs.dag import SequentialTaskCollection
 
 
@@ -93,7 +96,7 @@ class GMhcCoevApplication(Application):
                                  # the MatLab workspace, but allow 5
                                  # minutes for I/O before the job is
                                  # killed forcibly by the batch system
-                                 kw.get('requested_walltime')*60 - 5, 
+                                 kw.get('requested_walltime')*60 - 20, 
                                  N, p_mut_coeff, choose_or_rand, sick_or_not, off_v_last,
                                  ],
                              inputs = inputs,
@@ -159,15 +162,14 @@ class GMhcCoevTask(SequentialTaskCollection):
 
         self.generations_done = 0
 
-        self.jobname = kw.get('jobname',
-                              gc3libs.utils.ifelse(
-                                  # if this expression evaluates to `True`...
-                                  self.executable is None,
-                                  # ...then use this value:
-                                  ('MHC_coev.%s.%s.%s.%s.%s'
-                                   % (N, p_mut_coeff, choose_or_rand, sick_or_not, off_v_last)),
-                                  # ...else (`False` result), use this one instead:
-                                  os.path.basename(self.executable)))
+        if kw.has_key('jobname'):
+            self.jobname = kw['jobname']
+        else:
+            if self.executable is None:
+                self.jobname = ('MHC_coev.%s.%s.%s.%s.%s'
+                                   % (N, p_mut_coeff, choose_or_rand, sick_or_not, off_v_last))
+            else:
+                os.path.basename(self.executable)
 
         # create initial task and register it
         initial_task = GMhcCoevApplication(N, p_mut_coeff, choose_or_rand, sick_or_not, off_v_last,
@@ -280,85 +282,255 @@ newly-created jobs so that this limit is never exceeded.
 
     def setup_options(self):
         self.add_param("-G", "--generations", metavar="NUM",
-                       dest="generations", type=positive_int, default=3000,
+                       dest="generations", type=int, default=3000,
                        help="Compute NUM generations (default: 3000).")
+        self.add_param("-x", "--executable", metavar="PATH",
+                       dest="executable", default=None,
+                       help="Path to the MHC_coev_* executable file.")
+        # change default for the "-o"/"--output" option
+        self.actions['output'].default = 'NPOPSIZE/PARAMS/ITERATION'
 
+
+    def make_directory_path(self, pathspec, jobname, *args):
+        """
+        Return a path to a directory, suitable for storing the output
+        of a job (named after `jobname`).  It is not required that the
+        returned path points to an existing directory.
+
+        Adds the following expansions to the default implementation (which see):
+          * ``POPSIZE``: replaced with the value of the N parameter;
+          * ``PARAMS``: replaced with the ``__``-separated list of all 6 parameters;
+          * ``ITERATION``: replaced with the current iteration number.
+          
+        """
+        basename, iteration = jobname.split('#')
+        basename = basename[9:] # strip initial 'MHC_coev_'
+        N, p_mut_coeff, choose_or_rand, sick_or_not, off_v_last = GMhcCoevScript._string_to_params(basename)
+        return SessionBasedScript.make_directory_path(self, 
+            pathspec
+            .replace('POPSIZE', str(N))
+            .replace('PARAMS', basename)
+            .replace('ITERATION', iteration),
+            jobname, *args)
+
+    
     def new_tasks(self, extra):
-        inputs = self._search_for_input_files(self.params.args)
+        # how many iterations are we already computing (per parameter set)?
+        iters = defaultdict(lambda: 0)
+        for task in self.tasks:
+            name, instance = task.jobname.split('#')
+            iters[name] = max(iters[name], int(instance))
 
-        P_MUT_COEFF_RE = re.compile(r'((?P<num>[0-9]+)x)?10min(?P<exp>[0-9]+)')
-        N_RE = re.compile(r'N(?P<N>[0-9]+)')
+        for path in self.params.args:
+            if path.endswith('.csv'):
+                try:
+                    inputfile = open(path, 'r')
+                except (OSError, IOError), ex:
+                    self.log.warning("Cannot open input file '%s': %s: %s",
+                                     path, ex.__class__.__name__, str(ex))
+                for row in csv.reader(inputfile):
+                    (iterno, N_str, p_mut_coeff_str, choose_or_rand_str, sick_or_not_str, off_v_last_str) = row
+                    # ignore comment lines (those that start with '#')
+                    if iterno.startswith('#'):
+                        continue
+                    # extract parameter values
+                    try:
+                        iterno = int(iterno)
+                        N = GMhcCoevScript._parse_N(N_str)
+                        p_mut_coeff = GMhcCoevScript._parse_p_mut_coeff(p_mut_coeff_str)
+                        choose_or_rand = GMhcCoevScript._parse_choose_or_rand(choose_or_rand_str)
+                        sick_or_not = GMhcCoevScript._parse_sick_or_not(sick_or_not_str)
+                        off_v_last = GMhcCoevScript._parse_off_v_last(off_v_last_str)
+                    except ValueError, ex:
+                        self.log.warning("Ignoring line '%s' in input file '%s': %s",
+                                         str.join(',', row), path, str(ex))
+                        continue
+                    basename = ('MHC_coev_' + 
+                                GMhcCoevScript._params_to_str(
+                                    N, p_mut_coeff, choose_or_rand,
+                                    sick_or_not, off_v_last))
 
-        for path in inputs:
-            kw = extra.copy()
+                    # prepare job(s) to submit
+                    if (iterno > iters[basename]):
+                        self.log.info(
+                                "Requested %d iterations for %s: %d already in session, preparing %d more",
+                                iterno, basename, iters[basename], iterno - iters[basename])
+                        for iter in range(iters[basename]+1, iterno+1):
+                            kwargs = extra.copy()
+                            kwargs['executable'] = None #FIXME: need commmand-line option!
+                            yield (('%s#%d' % (basename, iter)),
+                                   gmhc_coev.GMhcCoevTask,
+                                   [self.params.walltime*60, # single_run_duration
+                                    self.params.generations,
+                                    N,
+                                    p_mut_coeff,
+                                    choose_or_rand,
+                                    sick_or_not,
+                                    off_v_last,
+                                    #('N%s/%s/%03d' % (N, basename, iter)),  # output_dir
+                                    ],
+                                   kwargs)
 
-            # parameter values are embedded into the directory name
-            name = os.path.basename(os.path.dirname(path))
-            p_mut_coeff, N, choose_or_rand, sick_or_not, off_v_last = name.split('__')
-            match = P_MUT_COEFF_RE.match(p_mut_coeff)
-            if not match:
-                self.log.warning("Cannot parse P_MUT_COEFF expression '%s'"
-                                 " - ignoring directory '%s'" % (p_mut_coeff, path))
-                continue
-            p_mut_coeff = float(match.group('num')) * 10.0**(-int(match.group('exp')))
-
-            match = N_RE.match(N)
-            if not match:
-                self.log.warning("Cannot parse N expression '%s'"
-                                 " - ignoring directory '%s'" % (N, path))
-                continue
-            N = int(match.group('N'))
-
-            if choose_or_rand == "RM":
-                choose_or_rand = 1
-            elif choose_or_rand == "DMAM":
-                choose_or_rand = 2
-            elif choose_or_rand == "DMSSGD":
-                choose_or_rand = 3
             else:
-                self.log.warning("Cannot parse CHOOSE_OR_RAND expression '%s'"
-                                 " - ignoring directory '%s'" % (choose_or_rand, path))
-                continue
+                self.log.error("Ignoring input file '%s': not a CSV file.", path)
 
-            if sick_or_not == "pat_on":
-                sick_or_not = 1
-            elif sick_or_not == "pat_off":
-                sick_or_not = 0
-            else:
-                self.log.warning("Cannot parse SICK_OR_NOT expression '%s'"
-                                 " - ignoring directory '%s'" % (sick_or_not, path))
-                continue
+        
+    ##
+    ## INTERNAL METHODS
+    ##
 
+    _P_MUT_COEFF_RE = re.compile(r'((?P<num>[0-9]+)x)?10min(?P<exp>[0-9]+)')
+
+    @staticmethod
+    def _parse_p_mut_coeff(p_mut_coeff_str):
+        try:
+            return float(p_mut_coeff_str)
+        except ValueError:
+            match = GMhcCoevScript._P_MUT_COEFF_RE.match(p_mut_coeff_str)
+            if not match:
+                raise ValueError("Cannot parse P_MUT_COEFF expression '%s'" % p_mut_coeff_str)
+            return float(match.group('num')) * 10.0**(-int(match.group('exp')))
+
+    _N_RE = re.compile(r'N(?P<N>[0-9]+)')
+
+    @staticmethod
+    def _parse_N(N_str):
+        try:
+            return int(N_str)
+        except ValueError:
+            match = GMhcCoevScript._N_RE.match(N_str)
+            if not match:
+                raise ValueError("Cannot parse N expression '%s'" % N_str)
+            return int(match.group('N'))
+
+    @staticmethod
+    def _parse_choose_or_rand(choose_or_rand_str):
+        if choose_or_rand_str == "RM":
+            return 1
+        elif choose_or_rand_str == "DMAM":
+            return 2
+        elif choose_or_rand_str == "DMSSGD":
+            return 3
+        else:
+            raise ValueError("Cannot parse CHOOSE_OR_RAND expression '%s'" % choose_or_rand_str)
+
+    @staticmethod
+    def _parse_sick_or_not(sick_or_not):
+        if sick_or_not == "pat_on":
+            return 1
+        elif sick_or_not == "pat_off":
+            return 0
+        else:
+            raise ValueError("Cannot parse SICK_OR_NOT expression '%s'" % sick_or_not)
+
+    @staticmethod
+    def _parse_off_v_last(off_v_last):
+        try:
+            return float(off_v_last)
+        except ValueError:
             if not off_v_last.startswith("offval_"):
-                self.log.warning("Cannot parse OFF_V_LAST expression '%s'"
-                                 " - ignoring directory '%s'" % (off_v_last, path))
-                continue
+                raise ValueError("Cannot parse OFF_V_LAST expression '%s'" % off_v_last)
             off_v_last = off_v_last[7:]
             if off_v_last.startswith("0"):
-                off_v_last = float("." + off_v_last[1:])
+                return float("0." + off_v_last[1:])
             elif off_v_last.startswith("1"):
-                off_v_last = 1.0
+                return 1.0
             else:
-                self.log.warning("Cannot parse OFF_V_LAST expression '%s'"
-                                 " - ignoring directory '%s'" % (off_v_last, path))
-                continue
+                raise ValueError("Cannot parse OFF_V_LAST expression '%s'" % off_v_last)
 
-            kwargs = extra.copy()
-            kwargs['executable'] = path
+    @staticmethod
+    def _string_to_params(s):
+        """
+        Return a tuple (N, p_mut_coeff, choose_or_rand, sick_or_not, off_v_last)
+        obtained by parsing the string `s`.
+        """
+        p_mut_coeff, N, choose_or_rand, sick_or_not, off_v_last = s.split('__')
 
-            yield ('MHC_coev_' + name,
-                   gmhc_coev.GMhcCoevTask,
-                   [self.params.walltime*60, # single_run_duration
-                    self.params.generations,
-                    N,
-                    p_mut_coeff,
-                    choose_or_rand,
-                    sick_or_not,
-                    off_v_last,
-                    #os.path.dirname(path),  # output_dir
-                    ],
-                   kwargs)
+        return (GMhcCoevScript._parse_N(N), 
+                GMhcCoevScript._parse_p_mut_coeff(p_mut_coeff), 
+                GMhcCoevScript._parse_choose_or_rand(choose_or_rand), 
+                GMhcCoevScript._parse_sick_or_not(sick_or_not), 
+                GMhcCoevScript._parse_off_v_last(off_v_last))
+
+    @staticmethod
+    def _N_to_str(N):
+        return ("N%d" % N)
+    
+    @staticmethod
+    def _p_mut_coeff_to_str(p_mut_coeff):
+        """
+        Print the floating-point number `p_mut_coeff` as ``1x10min3``
+        instead of the usual ``1e-3``.
+
+        Examples::
+
+          >>> _p_mut_coeff_to_str(0.005)
+          '5x10min3'
+          >>> _p_mut_coeff_to_str(10)
+          '1x10plus1'
+          >>> _p_mut_coeff_to_str(0.1234)
+          '1.234x10min1'
+          
+        """
+        exponent = math.log10(p_mut_coeff)
+        mantissa = p_mut_coeff * (10 ** math.ceil(-exponent))
+        # format output string
+        if (mantissa == int(mantissa)):
+            # no fractional part
+            result = str(int(mantissa))
+        else:
+            result = str(mantissa)
+        if exponent != 0:
+            if exponent < 0:
+                result += ('x10min%d' % (-int(exponent),))
+            else:
+                result += ('x10plus%d' % (int(exponent),))
+        return result
         
+    @staticmethod
+    def _choose_or_rand_to_str(choose_or_rand):
+        if choose_or_rand == 1:
+            return "RM"
+        elif choose_or_rand == 2:
+            return "DMAM"
+        elif choose_or_rand == 3:
+            return "DMSSGD"
+        else:
+            raise ValueError("Valid values for `choose_or_rand` are: 1,2,3;"
+                             " got '%s' instead" % choose_or_rand)
+
+    @staticmethod
+    def _sick_or_not_to_str(sick_or_not):
+        if sick_or_not:
+            return "pat_on"
+        else:
+            return "pat_off"
+
+    @staticmethod
+    def _off_v_last_to_str(off_v_last):
+        if off_v_last < 0.0 or off_v_last > 1.0:
+            raise ValueError("Parameter `off_v_last` must be in range 0.0 to 1.0;"
+                             " got `%s`instead." % off_v_last)
+        if off_v_last == 1.0:
+            return "offval_1"
+        else:
+            # off_v_last == 0.xxxx
+            off_v_last_str = str(off_v_last)
+            return ('offval_0' + off_v_last_str[2:])
+
+    @staticmethod
+    def _params_to_str(N, p_mut_coeff, choose_or_rand, sick_or_not, off_v_last):
+        gc3libs.log.debug("_params_to_str(%r,%r,%r,%r,%r)"
+                          % (N, p_mut_coeff, choose_or_rand, sick_or_not, off_v_last))
+        return str.join('__', [
+            GMhcCoevScript._p_mut_coeff_to_str(p_mut_coeff),
+            GMhcCoevScript._N_to_str(N),
+            GMhcCoevScript._choose_or_rand_to_str(choose_or_rand),
+            GMhcCoevScript._sick_or_not_to_str(sick_or_not),
+            GMhcCoevScript._off_v_last_to_str(off_v_last),
+            ])
+
+
 # run it
 if __name__ == '__main__':
     GMhcCoevScript().run()
