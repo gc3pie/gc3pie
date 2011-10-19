@@ -211,12 +211,12 @@ class Task(object):
         """
         if self._attached:
             #gc3libs.log.debug("Detaching %s from grid" % self)
+            self._attached = False
             try:
                 self._grid.remove(self)
             except:
                 pass
             self._grid = Task.__no_grid
-            self._attached = False
 
 
     # interface with pickle/gc3libs.persistence: do not save the
@@ -1093,6 +1093,62 @@ class Application(Struct, Persistable, Task):
         except:
             pass
         return (qsub, self.cmdline(resource))
+
+
+    def bsub(self, resource, _suppress_warning=False, **kw):
+        # XXX: the `_suppress_warning` switch is only provided for
+        # some applications to make use of this generic method without
+        # logging the user-level warning, because, e.g., it has already
+        # been taken care in some other way (cf. GAMESS' `qgms`).
+        # Use with care and don't depend on it!
+        """
+        Get an LSF ``qsub`` command-line invocation for submitting an
+        instance of this application.  Return a pair `(cmd, script)`,
+        where `cmd` is the command to run to submit an instance of
+        this application to the LSF batch system, and `script` --if
+        it's not `None`-- is written to a new file, whose name is then
+        appended to `cmd`.
+
+        In the construction of the command-line invocation, one should
+        assume that all the input files (as named in `Application.inputs`)
+        have been copied to the current working directory, and that output
+        files should be created in this same directory.
+
+        The default implementation just prefixes any output from the
+        `cmdline` method with an SGE ``bsub`` invocation of the form
+        ``bsub -L /bin/sh`` + resource limits.
+
+        Override this method in application-specific classes to
+        provide appropriate invocation templates.
+        """
+        bsub = ('bsub -L /bin/sh -n %d' % self.requested_cores)
+        if self.requested_walltime:
+            # LSF wants walltime as HH:MM (days expressed as many hours)
+            bsub += ' -W %02d:00' % self.requested_walltime
+        if self.requested_memory:
+            # LSF uses `rusage[mem=...]` for memory limits (number of MBs)
+            bsub += (' -R rusage[mem=%d]' % 1000*self.requested_memory)
+        if self.join:
+            log.warning("Application requested joining STDOUT/STDERR into a single file"
+                        " but this feature is not supported by LSF."
+                        " Ignoring requirement.")
+        if self.stdout:
+            bsub += ' -oo %s' % self.stdout
+        if self.stdin:
+            # `self.stdin` is the full pathname on the GC3Pie client host;
+            # it is copied to its basename on the execution host
+            bsub += ' -i %s' % os.path.basename(self.stdin)
+        if self.stderr:
+            # from the bsub(1) man page: "If both the -j y and the -e
+            # options are present, Grid Engine sets but ignores the
+            # error-path attribute."
+            bsub += ' -eo %s' % self.stderr
+        try:
+            if self.jobname:
+                bsub += " -J '%s'" % self.jobname
+        except:
+            pass
+        return (bsub, self.cmdline(resource))
 
 
     # Operation error handlers; called when transition from one state
