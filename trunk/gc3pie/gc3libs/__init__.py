@@ -84,6 +84,8 @@ class Default(object):
     # Transport information
     SSH_PORT = 22
     SSH_CONNECT_TIMEOUT = 30
+
+    LSF_LRMS = 'lsf'
     
     FORK_LRMS = 'fork'
     SUBPROCESS_LRMS = 'subprocess'
