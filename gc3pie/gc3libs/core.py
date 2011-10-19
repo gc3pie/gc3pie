@@ -69,6 +69,9 @@ class Core:
 
     def _init_backends(self):
         for _resource in self._resources:
+            if not _resource.enabled:
+                gc3libs.log.info("Ignoring disabled resource '%s'.", resource_name)
+                continue
             try:
                 _lrms = self._get_backend(_resource.name)
                 # self.auths.get(_lrms._resource.auth)
@@ -615,6 +618,8 @@ class Core:
                         _lrms = Arc1Lrms(_resource, self.auths)
                     elif _resource.type == gc3libs.Default.SGE_LRMS:
                         _lrms = SgeLrms(_resource, self.auths)
+                    elif _resource.type == gc3libs.Default.LSF_LRMS:
+                        _lrms = LsfLrms(_resource, self.auths)
                     elif _resource.type == gc3libs.Default.FORK_LRMS:
                         _lrms = ForkLrms(_resource, self.auths)
                     elif _resource.type == gc3libs.Default.SUBPROCESS_LRMS:
