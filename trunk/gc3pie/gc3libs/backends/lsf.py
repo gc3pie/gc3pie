@@ -351,9 +351,7 @@ def _make_remote_and_local_path_pair(transport, job, remote_relpath, local_root_
     """
     # see https://github.com/fabric/fabric/issues/306 about why it is
     # correct to use `posixpath.join` for remote paths (instead of `os.path.join`)
-    remote_path = posixpath.join(job.ssh_remote_folder,
-                                 _sge_filename_mapping(job.lrms_jobname, job.lrms_jobid,
-                                                       remote_relpath))
+    remote_path = posixpath.join(job.ssh_remote_folder, remote_relpath)
     local_path = os.path.join(local_root_dir, local_relpath)
     if transport.isdir(remote_path):
         # recurse, accumulating results
@@ -389,7 +387,6 @@ class LsfLrms(LRMS):
             % resource.type
 
         # checking mandatory resource attributes
-        resource.name
         resource.frontend
         resource.transport
 
@@ -397,7 +394,6 @@ class LsfLrms(LRMS):
 
         # set defaults
         auth = auths.get(resource.auth)
-
         self._ssh_username = auth.username
 
         if resource.transport == 'local':
@@ -472,7 +468,7 @@ class LsfLrms(LRMS):
         
         try:
             # Try to submit it to the local queueing system.
-            qsub, script = app.bsub(self._resource)
+            bsub, script = app.bsub(self._resource)
             if script is not None:
                 # save script to a temporary file and submit that one instead
                 local_script_file = tempfile.NamedTemporaryFile()
@@ -538,19 +534,6 @@ class LsfLrms(LRMS):
         def map_lsf_names_to_local_ones(name):
             return 'lsf_' + name
 
-        mapping = {
-            'qname':         'queue',
-            'jobname':       'job_name',
-            'slots':         'cores',
-            'exit_status':   'exit_code',
-            'failed':        'lsf_system_failed',
-            'cpu':           'used_cpu_time',
-            'ru_wallclock':  'used_walltime',
-            'maxvmem':       'used_memory',
-            'end_time':      'lsf_completion_time',
-            'qsub_time':     'lsf_submission_time',
-            }
-
         try:
             self.transport.connect()
 
@@ -560,7 +543,7 @@ class LsfLrms(LRMS):
             exit_code, stdout, stderr = self.transport.execute_command(_command)
             if exit_code == 0:
                 # 1st line in STDOUT is header line, 2nd one is real info
-                status_line = stdout.split('\n')[1]:
+                status_line = stdout.split('\n')[1]
                 # 
                 fields = status_line.split()
                 assert fields[0] == job.lrms_jobid, \
@@ -582,10 +565,9 @@ class LsfLrms(LRMS):
             else:
                 # only good test for job termination is the presence of the "lsf.o<JobID>"
                 # file on the filesystem; it is created after the job has finished
-                lsf_output_file = ('lsf.o%s' % job.lrms_jobid)
                 found = False
-                for entry in self.transport.listdir(...):
-                    if entry == lsf_output_file:
+                for entry in self.transport.listdir(job.ssh_remote_folder):
+                    if entry == app.stdout:
                         found = True
                         state = Run.State.TERMINATING
                         break
@@ -614,7 +596,7 @@ class LsfLrms(LRMS):
             _command = ('bkill %s' % job.lrms_jobid)
             exit_code, stdout, stderr = self.transport.execute_command(_command)
             if exit_code != 0 and ('Job has already finished' not in stderr):
-                log.error('Failed executing remote LSF command '%s'; exit status: %d' % (_command,exit_code))
+                log.error("Failed executing remote LSF command '%s'; exit status: %d" % (_command,exit_code))
                 log.debug("Remote LSF command returned stdout: %s" % stdout)
                 log.debug("Remote LSF command returned stderr: %s" % stderr)
                 if exit_code == 127:
@@ -744,7 +726,7 @@ class LsfLrms(LRMS):
             # self.transport.close()
 
             log.info("Not updated resource '%s' status (see `backends/lsf.py`),"
-                     "using hardcoded defaults!!")
+                     "using hardcoded defaults!!", self._resource.name)
             self._resource.user_run = 0
             self._resource.user_queued = 0
             self._resource.free_slots = 800
