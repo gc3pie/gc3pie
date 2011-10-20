@@ -329,10 +329,10 @@ newly-created jobs so that this limit is never exceeded.
                     self.log.warning("Cannot open input file '%s': %s: %s",
                                      path, ex.__class__.__name__, str(ex))
                 for row in csv.reader(inputfile):
-                    (iterno, N_str, p_mut_coeff_str, choose_or_rand_str, sick_or_not_str, off_v_last_str) = row
-                    # ignore comment lines (those that start with '#')
-                    if iterno.startswith('#'):
+                    # ignore blank and comment lines (those that start with '#')
+                    if len(row) == 0 or row[0].startswith('#'):
                         continue
+                    (iterno, N_str, p_mut_coeff_str, choose_or_rand_str, sick_or_not_str, off_v_last_str) = row
                     # extract parameter values
                     try:
                         iterno = int(iterno)
