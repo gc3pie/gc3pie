@@ -432,7 +432,7 @@ class LsfLrms(LRMS):
             if exit_code == 0:
                 ssh_remote_folder = stdout.split('\n')[0]
             else:
-                raise LRMSError("Failed while executing command '%s' on resource '%s';"
+                raise gc3libs.exceptions.LRMSError("Failed while executing command '%s' on resource '%s';"
                                 " exit code: %d, stderr: '%s'."
                                 % (_command, self._resource, exit_code, stderr))
         except gc3libs.exceptions.TransportError, x:
@@ -541,7 +541,7 @@ class LsfLrms(LRMS):
             _command = "bjobs -w -W %s" % job.lrms_jobid
             log.debug("checking remote job status with '%s'" % _command)
             exit_code, stdout, stderr = self.transport.execute_command(_command)
-            if exit_code == 0:
+            if exit_code == 0 and stdout:
                 # 1st line in STDOUT is header line, 2nd one is real info
                 status_line = stdout.split('\n')[1]
                 # 
@@ -565,11 +565,14 @@ class LsfLrms(LRMS):
             else:
                 # only good test for job termination is the presence of the "lsf.o<JobID>"
                 # file on the filesystem; it is created after the job has finished
+                # XXX: is this systematic ? or depends on the LSF directives for stdout ? 
                 found = False
                 for entry in self.transport.listdir(job.ssh_remote_folder):
                     if entry == app.stdout:
                         found = True
                         state = Run.State.TERMINATING
+                        # XXX: assume returncode 0. need to 
+                        job.returncode = 0
                         break
                 if not found:
                     # job was lost??
@@ -601,7 +604,7 @@ class LsfLrms(LRMS):
                 log.debug("Remote LSF command returned stderr: %s" % stderr)
                 if exit_code == 127:
                     # failed executing remote command
-                    raise LRMSError('Failed executing remote command')
+                    raise gc3libs.exceptions.LRMSError('Failed executing remote command')
 
             self.transport.close()
             return job
@@ -712,25 +715,170 @@ class LsfLrms(LRMS):
     @same_docstring_as(LRMS.get_resource_status)
     def get_resource_status(self):
         try:
-            # self.transport.connect()
+            self.transport.connect()
 
             # username = self._ssh_username
-            # log.debug("Running `qstat -U %s`...", username)
-            # _command = "qstat -U "+username
-            # exit_code, qstat_stdout, stderr = self.transport.execute_command(_command)
 
-            # log.debug("Running `qstat -F -U %s`...", username)
-            # _command = "qstat -F -U "+username
-            # exit_code, qstat_F_stdout, stderr = self.transport.execute_command(_command)
+            # Run lhosts to get the list of available nodes and their
+            # related number of cores
+            # used to compute self._resource.total_slots
+            # lhost output format:
+            # ($nodeid,$OStype,$model,$cpuf,$ncpus,$maxmem,$maxswp)
+            log.debug("Running `lshosts -w`... ")
+            _command = "lshosts -w" 
+            exit_code, stdout, stderr = self.transport.execute_command(_command)
+            if exit_code != 0:
+                # Stop and do not continue
+                # XXX: raise LRMSError here
+                raise gc3libs.exceptions.LRMSError("LSF backend failed while executing [%s]."
+                                    "Exit code: [%d]. Stdout: [%s]. Stderr: [%s]" %
+                                    (_command, exit_code, stdout, stderr))
 
-            # self.transport.close()
+            lhosts_output = []
+            if stdout:
+                # Remove Header
+                lhosts_output = stdout.strip().split('\n')
+                lhosts_output.pop(0)
+            
+            # Run bhosts to get information about the number of
+            # occupied slots for each node
+            # used to compute self._resource.free_slots
+            # bhosts output format:
+            # HOST_NAME          STATUS          JL/U    MAX  NJOBS    RUN  SSUSP  USUSP    RSV 
+            # a3000              closed_Full     -      4      4      4      0      0      0
+            # log.debug("Running `bhosts -w`... ")
+            # _command = "bhosts -w"
+            # exit_code, stdout, stderr = self.transport.execute_command(_command)
 
-            log.info("Not updated resource '%s' status (see `backends/lsf.py`),"
-                     "using hardcoded defaults!!", self._resource.name)
+            # if exit_code != 0:
+            #     # Stop and do not continue
+            #     # XXX: raise LRMSError here
+            #     raise gc3libs.exceptions.LRMSError("LSF backend failed while executing [%s]."
+            #                         "Exit code: [%d]. Stdout: [%s]. Stderr: [%s]" %
+            #                         (_command, exit_code, stdout, stderr))
+
+            # bhosts_output = []
+            # if stdout:
+            #     # Remove Header
+            #     bhosts_output = stdout.strip().split('\n')
+            #     bhosts_output.pop(0)
+
+            # QUEUE_NAME      PRIO STATUS          MAX JL/U JL/P JL/H NJOBS  PEND   RUN  SUSP
+            log.debug("Running `bqueues`... ")
+            _command = "bqueues"
+            exit_code, stdout, stderr = self.transport.execute_command(_command)
+
+            if exit_code != 0:
+                # Stop and do not continue
+                # XXX: raise LRMSError here
+                raise gc3libs.exceptions.LRMSError("LSF backend failed while executing [%s]."
+                                    "Exit code: [%d]. Stdout: [%s]. Stderr: [%s]" %
+                                    (_command, exit_code, stdout, stderr))
+
+            bqueues_output = []
+            if stdout:
+                bqueues_output = stdout.strip().split('\n')
+                bqueues_output.pop(0)
+
+            # Run bjobs to get information about the jobs for a given user
+            # used to compute  self._resource.user_run and self._resource.user_queued
+            # bjobs output format:
+            # JOBID   USER    STAT  QUEUE      FROM_HOST   EXEC_HOST   JOB_NAME   SUBMIT_TIME
+            log.debug("Runing 'bjobs '... ")
+            _command = "bjobs"
+            exit_code, stdout, stderr = self.transport.execute_command(_command)
+
+            if exit_code != 0:
+                # Stop and do not continue
+                # XXX: raise LRMSError here
+                raise gc3libs.exceptions.LRMSError("LSF backend failed while executing [%s]."
+                                    "Exit code: [%d]. Stdout: [%s]. Stderr: [%s]" %
+                                    (_command, exit_code, stdout, stderr))
+            
+            bjobs_output = []
+            if stdout:
+                # Remove Header
+                bjobs_output = stdout.strip().split('\n')
+                bjobs_output.pop(0)
+
+            self.transport.close()
+
+            # compute self._resource.total_slots
+            self._resource.ncores = 0
+            for line in lhosts_output:
+                # HOST_NAME      type    model  cpuf ncpus maxmem maxswp server RESOURCES
+                (hostname, h_type, h_model, h_cpuf, h_ncpus) = line.strip().split()[0:5]
+                try:
+                    self._resource.ncores +=  int(h_ncpus)
+                except ValueError:
+                    # h_ncpus == '-'
+                    pass
+
+            # compute total queued
+            self._resource.queued = 0
+            running_jobs = 0
+            for line in bqueues_output:
+                # QUEUE_NAME      PRIO STATUS          MAX JL/U JL/P JL/H NJOBS  PEND   RUN  SUSP 
+                (queue_name, priority, status, max_j, jlu, jlp, jlh, n_jobs, j_pend, j_run, j_susp) = line.split()
+                self._resource.queued += int(j_pend)
+                running_jobs += int(j_run)
+
+            self._resource.free_slots = self._resource.ncores - running_jobs
+
+            # # compute self._resource.free_slots
+            # total_jobs = 0
+
+            # for line in bhosts_output:
+            #     # HOST_NAME          STATUS          JL/U    MAX  NJOBS    RUN  SSUSP  USUSP    RSV 
+            #     # a3000              closed_Full     -      4      4      4      0      0      0
+            #     njobs = line.strip().split()[4]
+            #     try:
+            #         total_jobs += int(njobs)
+            #     except ValueError:
+            #         # njobs == '-'
+            #         pass
+
+
+            # self._resource.free_slots = self._resource.ncores - total_jobs
+
+            # user runing/queued
             self._resource.user_run = 0
             self._resource.user_queued = 0
-            self._resource.free_slots = 800
-            self._resource.used_quota = -1
+            
+            queued_status = ['PEND', 'PSUSP', 'USUSP', 'SSUSP', 'WAIT', 'ZOMBI']
+
+            for line in bjobs_output:
+                # JOBID   USER    STAT  QUEUE      FROM_HOST   EXEC_HOST   JOB_NAME   SUBMIT_TIME
+                (jobid, user, stat, queue, from_h, exec_h) = line.strip().split()[0:6]
+                # to compute the number of cores allocated per each job
+                # we use the output format of EXEC_HOST field
+                # e.g.: 1*cpt178:2*cpt151
+                per_node_allocated_cores_list = exec_h.split(':')
+                for node in per_node_allocated_cores_list:
+                    try:
+                        # mutli core
+                        (cores, n_name) = node.split('*')
+                    except ValueError:
+                        # single core
+                        cores = 1
+                        n_name = node
+                try:
+                    if stat in queued_status:
+                        self._resource.user_queued += int(cores)
+                    else:
+                        self._resource.user_run += int(cores)
+                except ValueError:
+                    # core == '-'
+                    pass
+
+            # log.info("Not updated resource '%s' status (see `backends/lsf.py`),"
+            #          "using hardcoded defaults!!", self._resource.name)
+            # self._resource.user_run = 0
+            # self._resource.user_queued = 0
+            # self._resource.free_slots = 800
+            # self._resource.used_quota = -1
+            # self._resource.queued = 0
+            
             return self._resource
 
         except Exception, ex:

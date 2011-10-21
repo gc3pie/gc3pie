@@ -102,7 +102,8 @@ class CodemlApplication(gc3libs.Application):
                                     % (ctl, str(ex)))
         gc3libs.Application.__init__(
             self,
-            executable = os.path.basename(codeml_pl),
+            # executable = os.path.basename(codeml_pl),
+            executable = "./codeml.pl",
             arguments = [ os.path.basename(ctl) for ctl in ctls ],
             inputs = inputs,
             outputs = outputs,
@@ -128,9 +129,12 @@ class CodemlApplication(gc3libs.Application):
         self.time_used = [None] * len(ctls)
         
 
+
+
     # split a line 'key = value' around the middle '=' and ignore spaces
     _assignment_re = re.compile('\s* = \s*', re.X)
     _aux_file_keys = [ 'seqfile', 'treefile', 'outfile' ]
+
     
     # aux function to get thw seqfile and treefile paths
     @staticmethod
