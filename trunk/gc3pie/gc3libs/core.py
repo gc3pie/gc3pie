@@ -800,8 +800,12 @@ def read_config(*locations):
     # remove disabled resources
     disabled_resources = [ ]
     for resource in resources.values():
-        if resource.has_key('enabled') and not resource['enabled']:
-            disabled_resources.append(resource['name'])
+        if resource.has_key('enabled'):
+            if not resource['enabled']:
+                disabled_resources.append(resource['name'])
+        else:
+            # by default, resources are enabled
+            resource['enabled'] = True
     for resource_name in disabled_resources:
         gc3libs.log.info("Ignoring computational resource '%s'"
                          " because of 'enabled=False' setting"
