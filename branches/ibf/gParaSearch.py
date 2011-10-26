@@ -387,7 +387,8 @@ class gParaSearchParallel(ParallelTaskCollection, paraLoop_fp):
 
         result = self.analyzeResults(tableIn = overviewTable, varsIn = self.variables, valsIn = self.paraCombos, 
                              targetVar = 'normDev', logLevel = self.verbosity, 
-                             logFile = os.path.join(self.iterationFolder, os.path.join(self.pathToStageDir, 'analyzeOverview.log')))
+                             logFile = os.path.join(self.iterat
+                                                    ionFolder, os.path.join(self.pathToStageDir, 'analyzeOverview.log')))
         #result = [ ele[0] for ele in inParaCombos ]
         logger.info('Computed target: Returning result to solver')
         self.iteration += 1

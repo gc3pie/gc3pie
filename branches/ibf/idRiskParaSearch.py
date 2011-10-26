@@ -39,6 +39,9 @@ import numpy as np
 import os, sys
 import shutil
 
+from supportGc3 import lower, flatten, str2tuple, getIndex, extractVal, str2vals
+from supportGc3 import format_newVal, update_parameter_in_file, safe_eval, str2mat, mat2str, getParameter
+
 # import personal libraries
 path2Pymods = os.path.join(os.path.dirname(__file__), '../')
 if not sys.path.count(path2Pymods):
@@ -55,7 +58,7 @@ if __name__ == '__main__':
         from pymods.support.support import rmFilesAndFolders
         curPath = os.getcwd()
         filesAndFolder = os.listdir(curPath)
-        if 'idRiskParaSearch.csv' in filesAndFolder: # if another paraSearch was run in here before, clean up. 
+        if 'gc3IdRisk.csv' in filesAndFolder or 'idRiskParaSearch.csv' in filesAndFolder: # if another paraSearch was run in here before, clean up. 
             if 'para.loop' in os.listdir(os.getcwd()):
                 shutil.copyfile(os.path.join(curPath, 'para.loop'), os.path.join('/tmp', 'para.loop'))
                 rmFilesAndFolders(curPath)
@@ -71,8 +74,7 @@ if __name__ == "__main__":
 
 
 # superclasses
-import forwardPremium.paraLoop
-import forwardPremium.GPremiumApplication
+import forwardPremium
 
 # gc3 library imports
 import gc3libs
@@ -85,6 +87,7 @@ import gc3libs.debug
 
 # logger
 from pymods.support.support import wrapLogger
+import pymods.support.support as support
 
 # Set up logger
 #self.streamVerb = solverVerb
@@ -92,11 +95,11 @@ logger = wrapLogger(loggerName = 'idRiskParaSearchLogger', streamVerb = 'INFO', 
 
 class idRiskParaSearchDriver(SequentialTaskCollection):
 
-    def __init__(self, executable, architecture, jobname, localBaseDir, substs, **kw):
+    def __init__(self, pathToExecutable, architecture, localBaseDir, substs, **kw):
 
         logger.debug('entering gParaSearchDriver.__init__')
 
-
+        self.jobname = kw['jobname'] + 'driver'
 ##        # Initialize solver 
 ##        self.deSolver = deKenPrice(S_struct) 
 
@@ -116,11 +119,11 @@ class idRiskParaSearchDriver(SequentialTaskCollection):
 ##                                             self.ctryList, **self.kw)
         xVar = 'beta'
         xVals = [ 0.95, 0.96 ]
-        self.evaluator = idRiskParaSearchParallel(xVar, xVals, executable, architecture, jobname, localBaseDir, substs, kw)
+        self.evaluator = idRiskParaSearchParallel(xVar, xVals, pathToExecutable, architecture, localBaseDir, substs, **kw)
 
-##        initial_task = self.evaluator
+        initial_task = self.evaluator
 
-##        SequentialTaskCollection.__init__(self, self.jobname, [initial_task], grid)
+        SequentialTaskCollection.__init__(self, self.jobname, [initial_task])
 
         logger.debug('done gParaSearchDriver.__init__')
 
@@ -165,19 +168,21 @@ class idRiskParaSearchDriver(SequentialTaskCollection):
 
 
 
-class idRiskParaSearchParallel(ParallelTaskCollection, paraLoop_fp):    
+class idRiskParaSearchParallel(ParallelTaskCollection, forwardPremium.paraLoop_fp):    
 
     def __str__(self):
         return self.jobname
 
 
-    def __init__(self, xVar, xVals, executable, architecture, jobname, localBaseDir, substs, **kw):
+    def __init__(self, xVar, xVals, pathToExecutable, architecture, localBaseDir, substs, **kw):
 
         logger.debug('entering gParaSearchParalell.__init__')
 
-
+        self.jobname = 'evalSolverGuess' + '-' + kw['jobname'] + '-' + xVar + '-' + str(xVals)
+        self.verbosity = 'DEBUG'
+        self.kw = kw
         forwardPremium.paraLoop_fp.__init__(self, verbosity = self.verbosity)
-        tasks = self.generateTaskList(xVar, xVals, executable, architecture, jobname, localBaseDir, substs)
+        tasks = self.generateTaskList(xVar, xVals, pathToExecutable, architecture, kw['jobname'], localBaseDir, substs)
         ParallelTaskCollection.__init__(self, self.jobname, tasks)
 
 ##    def target(self, inParaCombos):
@@ -200,23 +205,24 @@ class idRiskParaSearchParallel(ParallelTaskCollection, paraLoop_fp):
     def print_status(self, mins,means,vector,txt):
         print txt,mins, means, list(vector)
 
-    def generateTaskList(self, xVar, xVals, executable, architecture, jobname, localBaseDir, substs):
+    def generateTaskList(self, xVar, xVals, pathToExecutable, architecture, jobname, localBaseDir, substs):
         # Fill the task list
         tasks = []
-        inputs = { executable:os.path.basename(executable) }
-        # make a "stage" directory where input files are collected
-        path_to_stage_dir = os.path.join(os.getcwd(), jobname + xVar)
-        gc3libs.utils.mkdir(path_to_stage_dir)
-        prefix_len = len(path_to_stage_dir) + 1
         for xVal in xVals:
+            executable = os.path.basename(pathToExecutable)
+            inputs = { pathToExecutable:executable }        
+            # make a "stage" directory where input files are collected
+            path_to_stage_dir = os.path.join(os.getcwd(), jobname + xVar + '_' + str(xVal))
+            gc3libs.utils.mkdir(path_to_stage_dir)
+            prefix_len = len(path_to_stage_dir) + 1
             # 2. apply substitutions to parameter files in local base dir
             for (path, changes) in substs.iteritems():
                 for (var, val, index, regex) in changes:
-                    update_parameter_in_file(os.path.join(localBaseDir, path), var, index, val, regex)
+                    support.update_parameter_in_file(os.path.join(localBaseDir, path), var, index, val, regex)
                 # adjust xVar in parameter file
                 index = 0
                 regex = 'bar-separated'
-                update_parameter_in_file(os.path.join(localBaseDir, path), xVar, 0, xVal, regex)
+                support.update_parameter_in_file(os.path.join(localBaseDir, path), xVar, 0, xVal, regex)
             # fill stage dir
             self.fillInputDir(localBaseDir, path_to_stage_dir)
             # 3. build input file list
@@ -231,18 +237,25 @@ class idRiskParaSearchParallel(ParallelTaskCollection, paraLoop_fp):
                     inputs[os.path.join(dirpath, filename)] = remote_path
             # all contents of the `output` directory are to be fetched
             outputs = { 'output/':'' }
-            kwargs = extra.copy()
+            kwargs = self.kw.copy()
+            kwargs['jobname'] = self.jobname
+            kwargs.pop('requested_memory')
+            kwargs.pop('requested_walltime')
+            kwargs.pop('requested_cores')
             kwargs['stdout'] = 'forwardPremiumOut.log'
             kwargs['join'] = True
             kwargs['output_dir'] = os.path.join(path_to_stage_dir, 'output')
-            kwargs['requested_architecture'] = self.params.architecture
+            kwargs['requested_architecture'] = architecture
+            print 'kwargs = %s' % kwargs
+            print 'inputs = %s' % inputs
+            print 'outputs = %s' % outputs
 
             # hand over job to create
             tasks.append(forwardPremium.GPremiumApplication('./' + executable, [], inputs, outputs, **kwargs)) 
         return tasks
 
 
-class idRiskParaSearchScript(SessionBasedScript, paraLoop_fp):
+class idRiskParaSearchScript(SessionBasedScript, forwardPremium.paraLoop_fp):
     """
       Read `.loop` files and execute the `forwardPremium` program accordingly.
     """
@@ -254,7 +267,7 @@ class idRiskParaSearchScript(SessionBasedScript, paraLoop_fp):
             # only '.loop' files are considered as valid input
             input_filename_pattern = '*.loop',
         )
-        paraLoop_fp.__init__(self, verbosity = 'INFO')
+        forwardPremium.paraLoop_fp.__init__(self, verbosity = 'INFO')
 
     def setup_options(self):
         self.add_param("-b", "--initial", metavar="DIR",
@@ -293,16 +306,68 @@ class idRiskParaSearchScript(SessionBasedScript, paraLoop_fp):
 
 
     def new_tasks(self, extra):
+##        inputs = self._search_for_input_files(self.params.args)
+        
+##        # Copy base dir
+##        localBaseDir = os.path.join(os.getcwd(), 'localBaseDir')
+###        gc3libs.utils.copytree(self.params.initial, '/mnt/shareOffice/ForwardPremium/Results/sensitivity/wGridSize/dfs')
+##        gc3libs.utils.copytree(self.params.initial, localBaseDir)
+
+##        for path in inputs:
+##            para_loop = path
+##            path_to_base_dir = os.path.dirname(para_loop)
+###            self.log.debug("Processing loop file '%s' ...", para_loop)
+##            for jobname, substs in self.process_para_file(para_loop):
+####                self.log.debug("Job '%s' defined by substitutions: %s.",
+####                               jobname, substs)
+##                executable = os.path.basename(self.params.executable)
+##                inputs = { self.params.executable:executable }
+##                # make a "stage" directory where input files are collected
+##                path_to_stage_dir = self.make_directory_path(
+##                    self.params.output, jobname, path_to_base_dir)
+##                input_dir = path_to_stage_dir #os.path.join(path_to_stage_dir, 'input')
+##                gc3libs.utils.mkdir(input_dir)
+##                prefix_len = len(input_dir) + 1
+##                # 2. apply substitutions to parameter files
+##                for (path, changes) in substs.iteritems():
+##                    for (var, val, index, regex) in changes:
+##                        update_parameter_in_file(os.path.join(localBaseDir, path),
+##                                                 var, index, val, regex)
+##                self.fillInputDir(localBaseDir, input_dir)
+##                # 3. build input file list
+##                for dirpath,dirnames,filenames in os.walk(input_dir):
+##                    for filename in filenames:
+##                        # cut the leading part, which is == to path_to_stage_dir
+##                        relpath = dirpath[prefix_len:]
+##                        # ignore output directory contents in resubmission
+##                        if relpath.startswith('output'):
+##                            continue
+##                        remote_path = os.path.join(relpath, filename)
+##                        inputs[os.path.join(dirpath, filename)] = remote_path
+##                # all contents of the `output` directory are to be fetched
+##                outputs = { 'output/':'' }
+##                kwargs = extra.copy()
+##                kwargs['stdout'] = 'forwardPremiumOut.log'
+##                kwargs['join'] = True
+##                kwargs['output_dir'] = os.path.join(path_to_stage_dir, 'output')
+##                kwargs['requested_architecture'] = self.params.architecture
+##                # hand over job to create
+##                yield (jobname, forwardPremium.GPremiumApplication,
+##                       ['./' + executable, [], inputs, outputs], kwargs) 
+        
+        
+        
         paraLoopFile = self._search_for_input_files(self.params.args).pop()  # search_... returns set.
 
         # Copy base dir
         localBaseDir = os.path.join(os.getcwd(), 'localBaseDir')
         gc3libs.utils.copytree(self.params.initial, localBaseDir)
 
+
         for jobname, substs in self.process_para_file(paraLoopFile):
-            # yield job
-            kwargs = {}
-            yield (jobname, idRiskParaSearchDriver, [ self.params.executable, self.params.architecture, jobname, localBaseDir, substs ], kwargs)
+            # yield job            
+            kwargs = {'jobname': jobname}
+            yield (jobname, idRiskParaSearchDriver, [ self.params.executable, self.params.architecture, localBaseDir, substs ], kwargs)
 
 
 

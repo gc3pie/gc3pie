@@ -35,7 +35,7 @@ import shutil
 
 
 # Calls: -x /home/benjamin/workspace/fpProj/model/bin/forwardPremiumOut -b ../base/ para.loop  -C 1 -N -X i686
-# -x /home/benjamin/workspace/idrisk/bin/idRiskOut -b ../base/ para.loop  -C 1 -N -X i686
+# 5-x /home/benjamin/workspace/idrisk/bin/idRiskOut -b ../base/ para.loop  -C 1 -N -X i686
 
 # Remove all files in curPath if -N option specified. 
 if __name__ == '__main__':    
@@ -48,7 +48,7 @@ if __name__ == '__main__':
         from pymods.support.support import rmFilesAndFolders
         curPath = os.getcwd()
         filesAndFolder = os.listdir(curPath)
-        if 'gc3IdRisk.csv' in filesAndFolder: # if another paraSearch was run in here before, clean up. 
+        if 'gc3IdRisk.csv' in filesAndFolder or 'idRiskParaSearch.csv' in filesAndFolder: # if another paraSearch was run in here before, clean up. 
             if 'para.loop' in os.listdir(os.getcwd()):
                 shutil.copyfile(os.path.join(curPath, 'para.loop'), os.path.join('/tmp', 'para.loop'))
                 rmFilesAndFolders(curPath)
@@ -189,6 +189,9 @@ Read `.loop` files and execute the `forwardPremium` program accordingly.
                 kwargs['join'] = True
                 kwargs['output_dir'] = os.path.join(path_to_stage_dir, 'output')
                 kwargs['requested_architecture'] = self.params.architecture
+                print 'kwargs = %s' % kwargs
+                print 'inputs = %s' % inputs
+                print 'outputs = %s' % outputs
                 # hand over job to create
                 yield (jobname, gc3IdRisk.GPremiumApplication,
                        ['./' + executable, [], inputs, outputs], kwargs) 
