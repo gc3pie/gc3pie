@@ -97,6 +97,60 @@ import pymods.support.support as support
 #self.streamVerb = solverVerb
 logger = wrapLogger(loggerName = 'idRiskParaSearchLogger', streamVerb = 'INFO', logFile = os.path.join(os.getcwd(), 'idRiskParaSearch.log'))
 
+
+class solveParaCombination(SequentialTaskCollection):
+
+    def __init__(self, pathToExecutable, architecture, localBaseDir, substs, solverParas, **kw):
+
+        logger.debug('entering gParaSearchDriver.__init__')
+
+        self.jobname = kw['jobname'] + 'solveParaCombination'
+        self.iter    = 0
+        self.pathToExecutable = pathToExecutable
+        self.architecture  = architecture
+        self.localBaseDir = localBaseDir
+        self.substs = substs
+        self.solverParas = solverParas
+        self.kw = kw
+
+        # First loop over beta
+        xVar = 'beta'
+        xInitialGuess = [0.9, 0.99]
+        targetVar = 'eR_b'
+        solverParas = {}
+        solverParas['plotting'] = False
+        solverParas['target_fx'] = 1.01
+        solverParas['convCrit'] = 1.e-4
+        self.beta_task = idRiskParaSearchDriver(xVar, xInitialGuess, targetVar, self.pathToExecutable, self.architecture, self.localBaseDir, self.substs, solverParas, **self.kw)
+
+        SequentialTaskCollection.__init__(self, self.jobname, [self.beta_task])
+
+        logger.debug('done gParaSearchDriver.__init__')
+
+    def __str__(self):
+        return self.jobname
+
+    def next(self, *args): 
+        logger.debug('entering gParaSearchDriver.next')
+        betaVal = self.beta_task.costlyOptimizer.best_x
+        self.substs['input/parameters.in'].append(('beta', betaVal, '(0,)', 'bar-separated'))
+        self.iter += 1
+        if self.iter == 1:
+            # then loop over wbar
+            xVar = 'wBarLower'
+            xInitialGuess = [-0.1, -0.04]
+            targetVar = 'iBar_Shock0Agent0'
+            solverParas = {}
+            solverParas['plotting'] = False
+            solverParas['target_fx'] = -0.1
+            solverParas['convCrit'] = 1.e-4
+            self.wBarLower_task = idRiskParaSearchDriver(xVar, xInitialGuess, targetVar, self.pathToExecutable, self.architecture, self.localBaseDir, self.substs, solverParas, **self.kw)
+            self.add(self.wBarLower_task)       
+        else:
+            return Run.State.TERMINATED
+        return Run.State.RUNNING
+
+
 class idRiskParaSearchDriver(SequentialTaskCollection):
 
     def __init__(self, xVar, xInitialGues, targetVar, pathToExecutable, architecture, localBaseDir, substs, solverParas, **kw):
@@ -113,10 +167,14 @@ class idRiskParaSearchDriver(SequentialTaskCollection):
         self.xVar             = xVar
         self.xGuess           = xInitialGues
         self.targetVar        = targetVar
+        
+        # create a subfolder for optim over xVar
+        self.optimFolder = os.path.join(os.getcwd(), 'optim' + xVar)
+        gc3libs.utils.mkdir(self.optimFolder)
 
         self.costlyOptimizer = costlyOptimization.costlyOptimization(solverParas)
    
-        self.evaluator = idRiskParaSearchParallel(self.xVar, self.xGuess, self.targetVar, pathToExecutable, architecture, localBaseDir, substs, **kw)
+        self.evaluator = idRiskParaSearchParallel(self.xVar, self.xGuess, self.targetVar, pathToExecutable, architecture, localBaseDir, substs, self.optimFolder, **kw)
 
         initial_task = self.evaluator
 
@@ -137,7 +195,7 @@ class idRiskParaSearchDriver(SequentialTaskCollection):
         if not self.costlyOptimizer.checkConvergence():
             self.costlyOptimizer.updateApproximation()
             self.xGuess = self.costlyOptimizer.generateNewGuess()
-            self.evaluator = idRiskParaSearchParallel(self.xVar, self.xGuess, self.targetVar, self.pathToExecutable, self.architecture, self.localBaseDir, self.substs, **self.kw)
+            self.evaluator = idRiskParaSearchParallel(self.xVar, self.xGuess, self.targetVar, self.pathToExecutable, self.architecture, self.localBaseDir, self.substs, self.optimFolder, **self.kw)
             self.add(self.evaluator)
         else:
             self.execution.returncode = 0
@@ -155,7 +213,7 @@ class idRiskParaSearchParallel(ParallelTaskCollection, forwardPremium.paraLoop_f
         return self.jobname
 
 
-    def __init__(self, xVar, xVals, targetVar, pathToExecutable, architecture, localBaseDir, substs, **kw):
+    def __init__(self, xVar, xVals, targetVar, pathToExecutable, architecture, localBaseDir, substs, optimFolder, **kw):
 
         logger.debug('entering gParaSearchParalell.__init__')
 
@@ -163,6 +221,7 @@ class idRiskParaSearchParallel(ParallelTaskCollection, forwardPremium.paraLoop_f
         self.verbosity = 'DEBUG'
         self.kw = kw
         self.targetVar = targetVar
+        self.optimFolder = optimFolder
         forwardPremium.paraLoop_fp.__init__(self, verbosity = self.verbosity)
         tasks = self.generateTaskList(xVar, xVals, pathToExecutable, architecture, kw['jobname'], localBaseDir, substs)
         ParallelTaskCollection.__init__(self, self.jobname, tasks)
@@ -171,7 +230,7 @@ class idRiskParaSearchParallel(ParallelTaskCollection, forwardPremium.paraLoop_f
 
         logger.debug('entering gParaSearchParallel.target')
         # Each line in the resulting table (overviewSimu) represents one paraCombo
-        overviewTable = createOverviewTable(resultDir = os.getcwd(), outFile = 'simulation.out', exportFileName = 'overviewSimu', sortCols = [], orderCols = [], verb = 'INFO')
+        overviewTable = createOverviewTable(resultDir = self.optimFolder, outFile = 'simulation.out', exportFileName = 'overviewSimu', sortCols = [], orderCols = [], verb = 'INFO')
         logger.info(overviewTable)
         if xVar == 'beta':
             xVarAdj = 'beta_disc'
@@ -202,7 +261,7 @@ class idRiskParaSearchParallel(ParallelTaskCollection, forwardPremium.paraLoop_f
             executable = os.path.basename(pathToExecutable)
             inputs = { pathToExecutable:executable }        
             # make a "stage" directory where input files are collected
-            path_to_stage_dir = os.path.join(os.getcwd(), jobname + '_' + xVar + '=' + str(xVal))
+            path_to_stage_dir = os.path.join(self.optimFolder, jobname + '_' + xVar + '=' + str(xVal))
             gc3libs.utils.mkdir(path_to_stage_dir)
             prefix_len = len(path_to_stage_dir) + 1
             # 2. apply substitutions to parameter files in local base dir
@@ -313,8 +372,8 @@ class idRiskParaSearchScript(SessionBasedScript, forwardPremium.paraLoop_fp):
             xInitialGuess = [-0.1, -0.04]
             targetVar = 'eR_b'
             targetVar = 'iBar_Shock0Agent0'
-            yield (jobname, idRiskParaSearchDriver, [ xVar, xInitialGuess, targetVar, self.params.executable, self.params.architecture, localBaseDir, substs, solverParas ], kwargs)
-
+#            yield (jobname, idRiskParaSearchDriver, [ xVar, xInitialGuess, targetVar, self.params.executable, self.params.architecture, localBaseDir, substs, solverParas ], kwargs)
+            yield (jobname, solveParaCombination, [ self.params.executable, self.params.architecture, localBaseDir, substs, solverParas ], kwargs)
 
 
 if __name__ == '__main__':
