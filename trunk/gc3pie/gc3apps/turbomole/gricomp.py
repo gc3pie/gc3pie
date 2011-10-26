@@ -405,6 +405,9 @@ class BasisSweepPasses(StagedTaskCollection):
         # application to run in pass 1
         gc3libs.log.debug("Creating RIDFT task '%s' (bas=%s, jkbas=%s) in directory '%s'",
                           self.name, self.orb_basis, self.rijk_basis, ridft_dir)
+        # RIDFT expected to complete in 1 hour regardless
+        extra = self.extra.copy()
+        extra.setdefault('requested_walltime', 1) # 1 hour
         return TurbomoleAndXmlProcessingPass(
             # job name
             ('ridft-%s-%s-%s' % (self.name, self.orb_basis, self.rijk_basis)),
@@ -413,9 +416,7 @@ class BasisSweepPasses(StagedTaskCollection):
                 'ridft', ridft_define_in, self.coord,
                 output_dir = ridft_output_dir,
                 stdout = 'ridft.out',
-                # RIDFT expected to complete in 1 hour regardless
-                requested_walltime = 1, # 1 hour
-                **self.extra),
+                **extra),
             # base output directory for xmllint and eXist jobs
             ridft_dir,
             # DB parameters
@@ -449,13 +450,14 @@ class BasisSweepPasses(StagedTaskCollection):
             ricc2_define_in = _make_define_in(ricc2_dir, ricc2_in)
             ricc2_output_dir = os.path.join(ricc2_dir, 'output')
             # guess duration of the RICC2 job
+            extra = self.extra.copy()
             if ('aug-cc-pV5Z' == self.orb_basis
                 or 'aug-cc-pV5Z' == self.rijk_basis
                 or 'aug-cc-pV5Z' == cbas
                 or 'aug-cc-pV5Z' == cabs):
-                expected_walltime = 4 # 4 hours
+                extra.setdefault('requested_walltime', 4) # 4 hours
             else:
-                expected_walltime = 1 # 1 hour
+                extra.setdefault('requested_walltime', 1) # 1 hour
             pass2.append(
                 TurbomoleAndXmlProcessingPass(
                     # job name
@@ -472,7 +474,7 @@ class BasisSweepPasses(StagedTaskCollection):
                         os.path.join(self.tasks[0].turbomole_output_dir, 'auxbasis'),
                         output_dir = ricc2_output_dir,
                         stdout = 'ricc2.out',
-                        **self.extra),
+                        **extra),
                     os.path.join(ricc2_output_dir, 'xml-processing'),
                     # DB parameters
                     # FIXME: make these settable on the command-line
