@@ -177,7 +177,43 @@ def _make_define_in(path, contents):
     return define_in_filename
 
 
-class XmlLintApplication(Application):
+class LocalApplication(Application):
+    """
+    Force an Application to run on `localhost`.
+    """
+    def compatible_resources(self, resources):
+        """
+        Only `localhost` matches.
+        """
+        return [ lrms for lrms in resources if lrms._resource.name == 'localhost' ]
+
+
+class NonLocalApplication(Application):
+    """
+    Force an Application *not* to run on `localhost`.
+    """
+    def compatible_resources(self, resources):
+        """
+        Only `localhost` does not match.
+        """
+        return [ lrms for lrms in resources if lrms._resource.name != 'localhost' ]
+
+
+class NonLocalTurbomoleApplication(NonLocalApplication, TurbomoleApplication):
+    """
+    Like `TurbomoleApplication`, but force it *not* to run on `localhost`.
+    """
+    pass
+
+
+class NonLocalTurbomoleDefineApplication(NonLocalApplication, TurbomoleDefineApplication):
+    """
+    Like `TurbomoleDefineApplication`, but force it *not* to run on `localhost`.
+    """
+    pass
+
+
+class XmlLintApplication(LocalApplication):
     # xmllint --schema /links/xml-recources/xml-validation/CML3scheme.xsd ./control_*.xml 1>/dev/null 2>validation.log
     def __init__(self, turbomole_output_dir, output_dir,
                  validation_log='validation.log',
@@ -204,12 +240,6 @@ class XmlLintApplication(Application):
             stderr = validation_log,
             **kw)
 
-    def compatible_resources(self, resources):
-        """
-        Only `localhost` matches.
-        """
-        return [ rs for rs in resources if rs.name == 'localhost' ]
-
     def terminated(self):
         validation_logfile = open(os.path.join(self.output_dir, self.validation_log), 'r')
         validation_log_contents = validation_logfile.read()
@@ -220,7 +250,7 @@ class XmlLintApplication(Application):
             self.execution.returncode = 1 # FAIL
 
 
-class XmlDbApplication(Application):
+class XmlDbApplication(LocalApplication):
     # /opt/eXist/bin/client.sh -u fox -m "/db/home/fox/${projectdir}" -p control_* -P 'tueR!?05' -s 1>/dev/null 2>&1
     def __init__(self, turbomole_output_dir, output_dir, db_dir, db_user, db_pass, **kw):
         # find the control_*.xml in the TURBOMOLE output directory
@@ -260,12 +290,6 @@ class XmlDbApplication(Application):
             stdout = None,
             stderr = None,
             **kw)
-
-    def compatible_resources(self, resources):
-        """
-        Only `localhost` matches.
-        """
-        return [ rs for rs in resources if rs.name == 'localhost' ]
 
 
 class TurbomoleAndXmlProcessingPass(StagedTaskCollection):
@@ -384,7 +408,7 @@ class BasisSweepPasses(StagedTaskCollection):
             # job name
             ('ridft-%s-%s-%s' % (self.name, self.orb_basis, self.rijk_basis)),
             # TURBOMOLE application to run
-            TurbomoleDefineApplication(
+            gricomp.NonLocalTurbomoleDefineApplication(
                 'ridft', ridft_define_in, self.coord,
                 output_dir = ridft_output_dir,
                 stdout = 'ridft.out', **self.extra),
@@ -425,7 +449,7 @@ class BasisSweepPasses(StagedTaskCollection):
                     # job name
                     ('ricc2-%s-%s-%s' % (self.name, cbas, cabs)),
                     # TURBOMOLE application to run
-                    TurbomoleDefineApplication(
+                    gricomp.NonLocalTurbomoleDefineApplication(
                         'ricc2', ricc2_define_in,
                         # the second pass builds on files defined in the first one
                         os.path.join(ricc2_dir, 'coord'),
