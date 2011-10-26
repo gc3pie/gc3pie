@@ -204,6 +204,12 @@ class XmlLintApplication(Application):
             stderr = validation_log,
             **kw)
 
+    def compatible_resources(self, resources):
+        """
+        Only `localhost` matches.
+        """
+        return [ rs for rs in resources if rs.name == 'localhost' ]
+
     def terminated(self):
         validation_logfile = open(os.path.join(self.output_dir, self.validation_log), 'r')
         validation_log_contents = validation_logfile.read()
@@ -254,6 +260,12 @@ class XmlDbApplication(Application):
             stdout = None,
             stderr = None,
             **kw)
+
+    def compatible_resources(self, resources):
+        """
+        Only `localhost` matches.
+        """
+        return [ rs for rs in resources if rs.name == 'localhost' ]
 
 
 class TurbomoleAndXmlProcessingPass(StagedTaskCollection):
@@ -377,7 +389,7 @@ class BasisSweepPasses(StagedTaskCollection):
                 output_dir = ridft_output_dir,
                 stdout = 'ridft.out', **self.extra),
             # base output directory for xmllint and eXist jobs
-            os.path.join(ridft_output_dir, 'xml-processing'),
+            ridft_dir,
             # DB parameters
             # FIXME: make these settable on the command-line
             db_dir='/db/home/fox/gricomp', db_user='fox', db_pass='tueR!?05',

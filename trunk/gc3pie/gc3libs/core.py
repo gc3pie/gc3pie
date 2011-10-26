@@ -200,13 +200,37 @@ class Core:
         gc3libs.log.debug('Performing brokering ...')
         # decide which resource to use
         # (Resource)[] = (Scheduler).PerformBrokering((Resource)[],(Application))
-        _selected_lrms_list = scheduler.do_brokering(self._lrms_list,app)
-        gc3libs.log.debug('Scheduler returned %d matching resources',
+        _selected_lrms_list = app.compatible_resources(self._lrms_list)
+        gc3libs.log.debug('Application scheduler returned %d matching resources',
                            len(_selected_lrms_list))
         if 0 == len(_selected_lrms_list):
             raise gc3libs.exceptions.NoResources(
-                "No available resource can accomodate the requested"
-                " CPU/memory/wall-clock time combination.")
+                "No available resource can accomodate the application requirements")
+
+        if len(_selected_lrms_list) <= 1:
+            # shortcut: no brokering to do, just use what we've got
+            updated_resources = _selected_lrms_list
+        else:
+            # update status of selected resources
+            updated_resources = []
+            for r in _selected_lrms_list:
+                try:
+                    # in-place update of resource status
+                    gc3libs.log.debug("Trying to update status of resource '%s' ..."
+                                      % r._resource.name)
+                    r.get_resource_status()
+                    updated_resources.append(r)
+                except Exception, x:
+                    # ignore errors in update, assume resource has a problem
+                    # and just drop it
+                    gc3libs.log.error("Cannot update status of resource '%s', dropping it."
+                                      " See log file for details."
+                                      % r._resource.name)
+                    gc3libs.log.debug("Got error from get_resource_status(): %s: %s",
+                                      x.__class__.__name__, x.args, exc_info=True)
+
+        # sort resources according to Application's preferences
+        _selected_lrms_list = app.rank_resources(updated_resources)
 
         exs = [ ]
         # Scheduler.do_brokering returns a sorted list of valid lrms

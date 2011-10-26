@@ -905,6 +905,82 @@ class Application(Struct, Persistable, Task):
         return new
 
 
+    def compatible_resources(self, resources):
+        """
+        Return a list of compatible resources.
+        """
+        selected = [ ]
+        for lrms in resources:
+            assert (lrms is not None), \
+                "Application.compatible_resources():" \
+                " expected `LRMS` object, got `None` instead."
+            if not lrms.is_valid():
+                gc3libs.log.debug("Ignoring invalid LRMS object '%s'" % lrms)
+                continue
+            gc3libs.log.debug(
+                "Checking resource '%s' for compatibility with application requirements"
+                % lrms._resource.name)
+            # if architecture is specified, check that it matches the resource one
+            if (self.requested_architecture is not None
+                and self.requested_architecture not in lrms._resource.architecture):
+                gc3libs.log.info("Rejecting resource '%s': requested a different architecture (%s) than what resource provides (%s)"
+                                 % (lrms._resource.name, self.requested_architecture,
+                                    str.join(', ', [str(arch) for arch in lrms._resource.architecture ])))
+                continue
+            # check that Application requirements are within resource limits
+            if (self.requested_cores is not None
+                and int(self.requested_cores) > int(lrms._resource.max_cores_per_job or sys.maxint)):
+                gc3libs.log.info("Rejecting resource '%s': requested more cores (%d) that resource provides (%d)"
+                                 % (lrms._resource.name, self.requested_cores, lrms._resource.max_cores_per_job))
+                continue
+            if (self.requested_memory is not None
+                and int(self.requested_memory) > int(lrms._resource.max_memory_per_core or sys.maxint)):
+                gc3libs.log.info("Rejecting resource '%s': requested more memory per core (%d GB) that resource provides (%d GB)"
+                                 % (lrms._resource.name, self.requested_memory, lrms._resource.max_memory_per_core))
+                continue
+            if (self.requested_walltime is not None
+                and int(self.requested_walltime) > int(lrms._resource.max_walltime or sys.maxint)):
+                gc3libs.log.info("Rejecting resource '%s': requested a longer duration (%d s) that resource provides (%s h)"
+                                 % (lrms._resource.name, self.requested_walltime, lrms._resource.max_walltime))
+                continue
+            if not lrms.validate_data(self.inputs.keys()) or not lrms.validate_data(self.outputs.values()):
+                gc3libs.log.info("Rejecting resource '%s': input/output data protocol not supported."
+                                 % lrms._resource.name)
+                continue
+
+            selected.append(lrms)
+
+        return selected
+
+
+    @staticmethod
+    def _cmp_resources(a,b):
+        """
+        Compare resources `a` and `b` and return -1,0,1 accordingly
+        (see doc for the Python standard function `cmp`).
+
+        Computational resource `a` is preferred over `b` if it has less
+        queued jobs from the same user; failing that, if it has more free
+        slots; failing that, if it has less queued jobs (in total);
+        finally, should all preceding parameters compare equal, `a` is
+        preferred over `b` if it has less running jobs from the same user.
+        """
+        a_ = (a._resource.user_queued, -a._resource.free_slots, 
+              a._resource.queued, a._resource.user_run)
+        b_ = (b._resource.user_queued, -b._resource.free_slots, 
+              b._resource.queued, b._resource.user_run)
+        return cmp(a_, b_)
+
+    def rank_resources(self, resources):
+        """
+        Sort the given resources in order of preference.
+
+        By default, less-loaded resources come first;
+        see `_cmp_resources`.
+        """
+        return sorted(resources, cmp=self._cmp_resources)
+
+
     def xrsl(self, resource):
         """
         Return a string containing an xRSL sequence, suitable for
