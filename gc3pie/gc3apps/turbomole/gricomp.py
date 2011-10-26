@@ -252,7 +252,7 @@ class XmlLintApplication(LocalApplication):
 
 class XmlDbApplication(LocalApplication):
     # /opt/eXist/bin/client.sh -u fox -m "/db/home/fox/${projectdir}" -p control_* -P 'tueR!?05' -s 1>/dev/null 2>&1
-    def __init__(self, turbomole_output_dir, output_dir, db_dir, db_user, db_pass, **kw):
+    def __init__(self, turbomole_output_dir, output_dir, db_dir, db_user, db_pass, db_log='db.log', **kw):
         # find the control_*.xml in the TURBOMOLE output directory
         control_xml = None
         for filename in os.listdir(turbomole_output_dir):
@@ -285,10 +285,11 @@ class XmlDbApplication(LocalApplication):
                 '-s',
             ],
             inputs = [ control_xml ],
-            outputs = [ ],
+            outputs = [ db_log ],
             output_dir = output_dir, 
-            stdout = None,
-            stderr = None,
+            stdout = db_log,
+            stderr = db_log,
+            join=True,
             **kw)
 
 
@@ -408,10 +409,13 @@ class BasisSweepPasses(StagedTaskCollection):
             # job name
             ('ridft-%s-%s-%s' % (self.name, self.orb_basis, self.rijk_basis)),
             # TURBOMOLE application to run
-            gricomp.NonLocalTurbomoleDefineApplication(
+            NonLocalTurbomoleDefineApplication(
                 'ridft', ridft_define_in, self.coord,
                 output_dir = ridft_output_dir,
-                stdout = 'ridft.out', **self.extra),
+                stdout = 'ridft.out',
+                # RIDFT expected to complete in 1 hour regardless
+                requested_walltime = 1, # 1 hour
+                **self.extra),
             # base output directory for xmllint and eXist jobs
             ridft_dir,
             # DB parameters
@@ -439,17 +443,25 @@ class BasisSweepPasses(StagedTaskCollection):
             cbas = ricc2_in._keywords['CBAS_BASIS']
             cabs = ricc2_in._keywords['CABS_BASIS']
             ricc2_dir = os.path.join(self.work_dir,
-                                     'ricc2/cbas-%s/cabs-%s' % (cbas, cabs))
+                                     'cbas-%s/cabs-%s/ricc2' % (cbas, cabs))
             gc3libs.utils.mkdir(ricc2_dir)
             gc3libs.utils.copyfile(ridft_coord, ricc2_dir)
             ricc2_define_in = _make_define_in(ricc2_dir, ricc2_in)
             ricc2_output_dir = os.path.join(ricc2_dir, 'output')
+            # guess duration of the RICC2 job
+            if ('aug-cc-pV5Z' == self.orb_basis
+                or 'aug-cc-pV5Z' == self.rijk_basis
+                or 'aug-cc-pV5Z' == cbas
+                or 'aug-cc-pV5Z' == cabs):
+                expected_walltime = 4 # 4 hours
+            else:
+                expected_walltime = 1 # 1 hour
             pass2.append(
                 TurbomoleAndXmlProcessingPass(
                     # job name
                     ('ricc2-%s-%s-%s' % (self.name, cbas, cabs)),
                     # TURBOMOLE application to run
-                    gricomp.NonLocalTurbomoleDefineApplication(
+                    NonLocalTurbomoleDefineApplication(
                         'ricc2', ricc2_define_in,
                         # the second pass builds on files defined in the first one
                         os.path.join(ricc2_dir, 'coord'),
