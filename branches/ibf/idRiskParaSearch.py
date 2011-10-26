@@ -39,6 +39,9 @@ import numpy as np
 import os, sys
 import shutil
 
+from supportGc3 import lower, flatten, str2tuple, getIndex, extractVal, str2vals
+from supportGc3 import format_newVal, update_parameter_in_file, safe_eval, str2mat, mat2str, getParameter
+
 # import personal libraries
 path2Pymods = os.path.join(os.path.dirname(__file__), '../')
 if not sys.path.count(path2Pymods):
@@ -134,6 +137,7 @@ class solveParaCombination(SequentialTaskCollection):
         logger.debug('entering gParaSearchDriver.next')
         betaVal = self.beta_task.costlyOptimizer.best_x
         self.substs['input/parameters.in'].append(('beta', betaVal, '(0,)', 'bar-separated'))
+        self.kw['jobname'] = self.kw['jobname'] + '_' + 'beta' + '=' + str(betaVal)
         self.iter += 1
         if self.iter == 1:
             # then loop over wbar
@@ -145,8 +149,9 @@ class solveParaCombination(SequentialTaskCollection):
             solverParas['target_fx'] = -0.1
             solverParas['convCrit'] = 1.e-4
             self.wBarLower_task = idRiskParaSearchDriver(xVar, xInitialGuess, targetVar, self.pathToExecutable, self.architecture, self.localBaseDir, self.substs, solverParas, **self.kw)
-            self.add(self.wBarLower_task)       
+            self.add(self.wBarLower_task)
         else:
+            
             return Run.State.TERMINATED
         return Run.State.RUNNING
 
@@ -352,6 +357,57 @@ class idRiskParaSearchScript(SessionBasedScript, forwardPremium.paraLoop_fp):
 
 
     def new_tasks(self, extra):
+##        inputs = self._search_for_input_files(self.params.args)
+        
+##        # Copy base dir
+##        localBaseDir = os.path.join(os.getcwd(), 'localBaseDir')
+###        gc3libs.utils.copytree(self.params.initial, '/mnt/shareOffice/ForwardPremium/Results/sensitivity/wGridSize/dfs')
+##        gc3libs.utils.copytree(self.params.initial, localBaseDir)
+
+##        for path in inputs:
+##            para_loop = path
+##            path_to_base_dir = os.path.dirname(para_loop)
+###            self.log.debug("Processing loop file '%s' ...", para_loop)
+##            for jobname, substs in self.process_para_file(para_loop):
+####                self.log.debug("Job '%s' defined by substitutions: %s.",
+####                               jobname, substs)
+##                executable = os.path.basename(self.params.executable)
+##                inputs = { self.params.executable:executable }
+##                # make a "stage" directory where input files are collected
+##                path_to_stage_dir = self.make_directory_path(
+##                    self.params.output, jobname, path_to_base_dir)
+##                input_dir = path_to_stage_dir #os.path.join(path_to_stage_dir, 'input')
+##                gc3libs.utils.mkdir(input_dir)
+##                prefix_len = len(input_dir) + 1
+##                # 2. apply substitutions to parameter files
+##                for (path, changes) in substs.iteritems():
+##                    for (var, val, index, regex) in changes:
+##                        update_parameter_in_file(os.path.join(localBaseDir, path),
+##                                                 var, index, val, regex)
+##                self.fillInputDir(localBaseDir, input_dir)
+##                # 3. build input file list
+##                for dirpath,dirnames,filenames in os.walk(input_dir):
+##                    for filename in filenames:
+##                        # cut the leading part, which is == to path_to_stage_dir
+##                        relpath = dirpath[prefix_len:]
+##                        # ignore output directory contents in resubmission
+##                        if relpath.startswith('output'):
+##                            continue
+##                        remote_path = os.path.join(relpath, filename)
+##                        inputs[os.path.join(dirpath, filename)] = remote_path
+##                # all contents of the `output` directory are to be fetched
+##                outputs = { 'output/':'' }
+##                kwargs = extra.copy()
+##                kwargs['stdout'] = 'forwardPremiumOut.log'
+##                kwargs['join'] = True
+##                kwargs['output_dir'] = os.path.join(path_to_stage_dir, 'output')
+##                kwargs['requested_architecture'] = self.params.architecture
+##                # hand over job to create
+##                yield (jobname, forwardPremium.GPremiumApplication,
+##                       ['./' + executable, [], inputs, outputs], kwargs) 
+        
+        
+        
         paraLoopFile = self._search_for_input_files(self.params.args).pop()  # search_... returns set.
 
         # Copy base dir
