@@ -18,6 +18,7 @@ class costlyOptimization(object):
     self.fx = np.array([])
     self.convCrit = paras['convCrit']
     self.target_fx = paras['target_fx']
+    self.converged = False
     
     
   def updateInterpolationPoints(self, x, fx):
@@ -33,9 +34,10 @@ class costlyOptimization(object):
   def checkConvergence(self):
     distance = self.__computeNormedDistance(self.best_fx)
     if distance < self.convCrit: 
-      return True
+      self.converged = True
     else: 
-      return False
+      self.converged = False
+    return self.converged
     
   def updateApproximation(self):
     self.gx = si.lagrange(self.x, self.fx)
