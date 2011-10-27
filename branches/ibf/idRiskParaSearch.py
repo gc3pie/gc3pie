@@ -36,8 +36,8 @@ import numpy as np
 import os, sys
 import shutil
 
-from supportGc3 import lower, flatten, str2tuple, getIndex, extractVal, str2vals
-from supportGc3 import format_newVal, update_parameter_in_file, safe_eval, str2mat, mat2str, getParameter
+sys.path.append('/home/benjamin/workspace/idrisk/model/code/gPremiumScripts')
+sys.path.append('/home/benjamin/workspace/idrisk/model/code/')
 
 # import personal libraries
 path2Pymods = os.path.join(os.path.dirname(__file__), '../')
@@ -98,6 +98,8 @@ from pymods.classes.tableDict import tableDict
 logger = wrapLogger(loggerName = 'idRiskParaSearchLogger', streamVerb = 'DEBUG', logFile = os.path.join(os.getcwd(), 'idRiskParaSearch.log'))
 
 
+np.seterr(over='raise')
+
 class solveParaCombination(SequentialTaskCollection):
 
     def __init__(self, pathToExecutable, architecture, localBaseDir, substs, solverParas, **kw):
@@ -135,6 +137,9 @@ class solveParaCombination(SequentialTaskCollection):
 	self.iter += 1
         logger.debug('entering solveParaCombination.next in iteration %s' % self.iter)
 	self.changed = True
+        logger.debug('check whether beta worked')
+        if self.beta_task.failed == True:
+            return Run.State.TERMINATED
         betaVal = self.beta_task.costlyOptimizer.best_x
         self.substs['input/parameters.in'].append(('beta', betaVal, '(0,)', 'bar-separated'))
         if self.iter == 1:
@@ -150,6 +155,8 @@ class solveParaCombination(SequentialTaskCollection):
             self.wBarLower_task = idRiskParaSearchDriver(xVar, xInitialGuess, targetVar, self.paraFolder, self.pathToExecutable, self.architecture, self.localBaseDir, self.substs, solverParas, **self.kw)
             self.add(self.wBarLower_task)
         else:
+            if self.wBarLower_task.failed == True:
+                return Run.State.TERMINATED
             logger.debug('converged for beta and wBarLower for job %s' % self.kw['jobname'])
        	    wBarTable = tableDict.fromTextFile(os.path.join(self.paraFolder, 'optimwBarLower', 'overviewSimu'), width = 20, prec = 10)
 	    optimalRunTable = wBarTable.getSubset( np.abs(wBarTable['wBarLower'] - self.wBarLower_task.costlyOptimizer.best_x) < 1.e-7 )
@@ -177,6 +184,7 @@ class idRiskParaSearchDriver(SequentialTaskCollection):
         self.targetVar        = targetVar
         self.paraFolder       = paraFolder
 	self.iter             = 0
+        self.failed           = False
         
         # create a subfolder for optim over xVar
         self.optimFolder = os.path.join(paraFolder, 'optim' + xVar)
@@ -203,6 +211,10 @@ class idRiskParaSearchDriver(SequentialTaskCollection):
 	    return Run.State.TERMINATED
         self.changed = True
         newVals = self.evaluator.target(self.xVar, self.xGuess)
+        if newVals is None:
+            logger.critical('optimizatio failed bc one job could not be finished')
+            self.failed = True
+            return Run.State.TERMINATED
                 
         self.costlyOptimizer.updateInterpolationPoints(self.xGuess, newVals)
         if not self.costlyOptimizer.checkConvergence():
@@ -244,6 +256,9 @@ class idRiskParaSearchParallel(ParallelTaskCollection, forwardPremium.paraLoop_f
         logger.debug('entering idRiskParaSearchParallel.target. Computing target for xVar = %s, xVals = %s' % (xVar, xVals))
         # Each line in the resulting table (overviewSimu) represents one paraCombo
         overviewTable = createOverviewTable(resultDir = self.optimFolder, outFile = 'simulation.out', exportFileName = 'overviewSimu', sortCols = [], orderCols = [], verb = 'INFO')
+        if overviewTable == None:
+            logger.critical('overviewTable empty. Check if pythonpath is set. Seems like all jobs are failing. Exiting.. ')
+            os._exit(1)
 	logger.info('table for job: %s' % self.jobname)
         logger.info(overviewTable)
         if xVar == 'beta':
@@ -254,11 +269,15 @@ class idRiskParaSearchParallel(ParallelTaskCollection, forwardPremium.paraLoop_f
         # Could replace this with a check that every xVar value is in the table, then output the two relevant columns. 
         for xVal in xVals:
             overviewTableSub = overviewTable.getSubset( np.abs( overviewTable[xVarAdj] - xVal ) < 1.e-8 )
-            if len(overviewTableSub) == 1:
+            if len(overviewTableSub)   == 0:
+                logger.critical('job failed. Didnt get simulation.out')
+                return None
+            elif len(overviewTableSub) == 1:
                 result.append(overviewTableSub[self.targetVar][0])
-            else:
+            elif len(overviewTableSub) > 1:
+                result.append(overviewTableSub[self.targetVar][0])
                 logger.critical('Cannot find unique value for xVal %s' % xVal)
-                sys.exit()
+#                os._exit(1)
         logger.info('Computed target: Returning result to solver\n')
         return result
         #return result

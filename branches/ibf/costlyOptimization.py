@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 
+import os
 import numpy as np
 import scipy.optimize
 import scipy.interpolate as si
@@ -9,10 +10,19 @@ import matplotlib
 import matplotlib.pyplot as plt
 import matplotlib.mlab as mlab
 
+from pymods.support.support import wrapLogger
 
+# Set up logger
+logger = wrapLogger(loggerName = 'costlyOptimizationLogger', streamVerb = 'DEBUG', logFile = os.path.join(os.getcwd(), 'costlyOpt.log'))
+
+np.seterr(over='raise')
 
 class costlyOptimization(object):
+  '''
+    Simple optimizer with the goal to minimize (expensive) function evaluations. 
+  '''
   def __init__(self, paras):
+    logger.debug('initializing new instance of costlyOptimization')
     self.plotting = paras['plotting']
     self.x = np.array([])
     self.fx = np.array([])
@@ -27,12 +37,12 @@ class costlyOptimization(object):
     indices = np.argsort(self.x)
     self.x = self.x[indices]
     self.fx = self.fx[indices]
-    bestIndex = np.argmin(self.__computeNormedDistance(self.fx))
+    bestIndex = np.argmin(self._computeNormedDistance(self.fx))
     self.best_x = self.x[bestIndex]
     self.best_fx  = self.fx[bestIndex]
     
   def checkConvergence(self):
-    distance = self.__computeNormedDistance(self.best_fx)
+    distance = self._computeNormedDistance(self.best_fx)
     if distance < self.convCrit: 
       self.converged = True
     else: 
@@ -47,10 +57,22 @@ class costlyOptimization(object):
     def target(x):
       distance = self.__computeNormedDistance(self.gx(x))
       return distance
-    xhat = scipy.optimize.newton_krylov(target, x0)
+    logger.debug('generating new guess: ')
+    logger.debug('current x points: %s' % self.x)
+    logger.debug('current fx points: %s' % self.fx)
+    try: 
+      logger.debug('trying newton')
+      xhat = scipy.optimize.newton_krylov(target, x0)
+    except: 
+      logger.debug('newton failed, trying naive method')
+      xGrid = np.linspace(np.min(self.x), np.max(self.x), 1000)
+      fxGrid = self.gx(xGrid)
+      bestIndex = np.argmin(self._computeNormedDistance(fxGrid))
+      xhat = xGrid[bestIndex]
+    logger.debug('sending back optimal value given gx: xhat = %s' % xhat)
     return np.array([xhat])
   
-  def __computeNormedDistance(self, fx):
+  def _computeNormedDistance(self, fx):
     return np.abs(fx - self.target_fx)
 
 
