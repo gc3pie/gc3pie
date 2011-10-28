@@ -15,7 +15,7 @@ from pymods.support.support import wrapLogger
 # Set up logger
 logger = wrapLogger(loggerName = 'costlyOptimizationLogger', streamVerb = 'DEBUG', logFile = os.path.join(os.getcwd(), 'costlyOpt.log'))
 
-np.seterr(over='raise')
+np.seterr(all='raise')
 
 class costlyOptimization(object):
   '''
@@ -32,7 +32,10 @@ class costlyOptimization(object):
     
     
   def updateInterpolationPoints(self, x, fx):
-    self.x  = np.append(self.x, np.asarray(x))
+    if not x in self.x:
+      self.x  = np.append(self.x, np.asarray(x))
+    else: 
+      logger.critical('x = %s already in self.x = %s' % (x, self.x))
     self.fx = np.append(self.fx, np.asarray(fx))
     indices = np.argsort(self.x)
     self.x = self.x[indices]
@@ -50,26 +53,37 @@ class costlyOptimization(object):
     return self.converged
     
   def updateApproximation(self):
+    logger.debug('updating approximation')
     self.gx = si.lagrange(self.x, self.fx)
+    logger.debug('done updating approximation')
     
   def generateNewGuess(self):
     x0 = self.best_x
     def target(x):
-      distance = self.__computeNormedDistance(self.gx(x))
+      distance = self.gx(x) - self.target_fx
       return distance
     logger.debug('generating new guess: ')
     logger.debug('current x points: %s' % self.x)
     logger.debug('current fx points: %s' % self.fx)
+    distance = self.fx - self.target_fx
+    if np.all(distance > 0) or np.all(distance < 0):
+      logger.critical('the initial points %s do not contain the zero')  
     try: 
-      logger.debug('trying newton')
-      xhat = scipy.optimize.newton_krylov(target, x0)
-    except: 
-      logger.debug('newton failed, trying naive method')
+      logger.debug('trying brentq')
+      #xhat = scipy.optimize.newton_krylov(target, x0)
+      xhat = scipy.optimize.brentq(f = target, a = np.min(self.x), b = np.max(self.x))
+      fxhat = self.gx(xhat)
+    except ValueError: 
+      logger.debug('brentq failed, trying naive method')
       xGrid = np.linspace(np.min(self.x), np.max(self.x), 1000)
       fxGrid = self.gx(xGrid)
       bestIndex = np.argmin(self._computeNormedDistance(fxGrid))
       xhat = xGrid[bestIndex]
-    logger.debug('sending back optimal value given gx: xhat = %s' % xhat)
+      fxhat = fxGrid[bestIndex]
+    logger.debug('sending back optimal value given gx: xhat = %s fxhat = %s' % (xhat, fxhat))
+    if xhat in self.x:
+      logger.critical('xhat = %s already in self.x = %s' % (x, self.x))
+      os._exit(1)
     return np.array([xhat])
   
   def _computeNormedDistance(self, fx):
