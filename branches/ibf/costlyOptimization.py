@@ -20,26 +20,30 @@ np.seterr(all='raise')
 class costlyOptimization(object):
   '''
     Simple optimizer with the goal to minimize (expensive) function evaluations. 
+    x are para combos
   '''
   def __init__(self, paras):
     logger.debug('initializing new instance of costlyOptimization')
-    self.plotting = paras['plotting']
-    self.x = np.array([])
-    self.fx = np.array([])
-    self.convCrit = paras['convCrit']
-    self.target_fx = paras['target_fx']
-    self.converged = False
-    
+    self.xVars         = paras['xVars']
+    self.xInitialGuess = paras['xInitialParaCombo']
+    self.targetVar     = paras['targetVar']
+    self.target_fx     = paras['target_fx']
+    self.convCrit      = paras['convCrit'] 
+    self.converged     = False
+
+    self.x             = self.xInitialGuess
+    self.fx            = np.array([[]])    
     
   def updateInterpolationPoints(self, x, fx):
-    if not x in self.x:
-      self.x  = np.append(self.x, np.asarray(x))
-    else: 
-      logger.critical('x = %s already in self.x = %s' % (x, self.x))
+    for paraCombo in x:
+      if not paraCombo in self.x:
+        self.x  = np.append(self.x, np.asarray(paraCombo), 0)
+      else: 
+        logger.critical('x = %s already in self.x = %s' % (x, self.x))
     self.fx = np.append(self.fx, np.asarray(fx))
-    indices = np.argsort(self.x)
-    self.x = self.x[indices]
-    self.fx = self.fx[indices]
+##    indices = np.argsort(self.x)
+##    self.x = self.x[indices]
+##    self.fx = self.fx[indices]
     bestIndex = np.argmin(self._computeNormedDistance(self.fx))
     self.best_x = self.x[bestIndex]
     self.best_fx  = self.fx[bestIndex]

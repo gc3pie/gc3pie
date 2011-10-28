@@ -35,6 +35,7 @@ __docformat__ = 'reStructuredText'
 import numpy as np
 import os, sys
 import shutil
+import copy
 
 # set some ugly paths
 # export PYTHONPATH=$PYTHONPATH:/home/benjamin/workspace/idrisk/model/code
@@ -104,103 +105,106 @@ logger = wrapLogger(loggerName = 'idRiskParaSearchLogger', streamVerb = 'DEBUG',
 
 class solveParaCombination(SequentialTaskCollection):
 
-    def __init__(self, pathToExecutable, architecture, localBaseDir, substs, solverParas, **kw):
+    def __init__(self, substs, **sessionParas):
 
-        logger.debug('entering solveParaCombination.__init__ for job %s' % kw['jobname'])
-
-        self.jobname = kw['jobname'] + 'solveParaCombination'
+        logger.debug('entering solveParaCombination.__init__ for job %s' % sessionParas['jobname'])
         self.iter    = 0
-        self.pathToExecutable = pathToExecutable
-        self.architecture  = architecture
-        self.localBaseDir = localBaseDir
+
+        self.jobname = sessionParas['jobname']
         self.substs = substs
-        self.solverParas = solverParas
-        self.kw = kw
-        self.paraFolder = os.path.join(os.getcwd(), kw['jobname'])
-        self.failed = False
+
+        self.sessionParas     = sessionParas
+        self.pathToExecutable = sessionParas['pathToExecutable']
+        self.architecture     = sessionParas['architecture']
+        self.localBaseDir     = sessionParas['localBaseDir']
+        
+        self.paraFolder = os.path.join(os.getcwd(), sessionParas['jobname'])
 
         # First loop over beta
-        xVar = 'beta'
-        xInitialGuess = [0.8, 1.1]
-        targetVar = 'eR_b'
         solverParas = {}
+        solverParas['xVars'] = ['beta']
+        solverParas['xInitialParaCombo'] = np.array([[0.8], [1.1]])
+        solverParas['targetVar'] = ['eR_b']
+        solverParas['target_fx'] = [1.01]
         solverParas['plotting'] = False
-        solverParas['target_fx'] = 1.01
         solverParas['convCrit'] = 1.e-4
-        self.beta_task = idRiskParaSearchDriver(xVar, xInitialGuess, targetVar, self.paraFolder, self.pathToExecutable, self.architecture, self.localBaseDir, self.substs, solverParas, **self.kw)
+        
+        self.beta_task = idRiskParaSearchDriver(self.paraFolder, self.substs, solverParas, **sessionParas)
 
         SequentialTaskCollection.__init__(self, self.jobname, [self.beta_task])
 
-        logger.debug('done gParaSearchDriver.__init__ for job %s' % kw['jobname'])
+        logger.debug('done gParaSearchDriver.__init__ for job %s' % sessionParas['jobname'])
 
     def __str__(self):
         return self.jobname
 
     def next(self, *args): 
         self.iter += 1
-        if self.beta_task.execution.returncode == 13:
-            logger.critical('beta failed. terminating para combo')
-            self.execution.returncode = 13
-            self.failed = True
-            return Run.State.TERMINATED
-        logger.debug('entering solveParaCombination.next in iteration %s' % self.iter)
-        self.changed = True
-        betaVal = self.beta_task.costlyOptimizer.best_x
-        self.substs['input/parameters.in'].append(('beta', betaVal, '(0,)', 'bar-separated'))
-        if self.iter == 1:
-            # then loop over wbar
-            self.kw['jobname'] = self.kw['jobname'] + '_' + 'beta' + '=' + str(self.beta_task.costlyOptimizer.best_x)
-            xVar = 'wBarLower'
-            xInitialGuess = [-0.15, 0.15]
-            targetVar = 'iBar_Shock0Agent0'
-            solverParas = {}
-            solverParas['plotting'] = False
-            solverParas['target_fx'] = -0.1
-            solverParas['convCrit'] = 1.e-4
-            self.wBarLower_task = idRiskParaSearchDriver(xVar, xInitialGuess, targetVar, self.paraFolder, self.pathToExecutable, self.architecture, self.localBaseDir, self.substs, solverParas, **self.kw)
-            self.add(self.wBarLower_task)
-        else:
-            if self.wBarLower_task.execution.returncode == 13:
-                logger.critical('beta failed. terminating para combo')
-                self.execution.returncode = 13
-                self.failed = True
-                return Run.State.TERMINATED
-            logger.debug('converged for beta and wBarLower for job %s' % self.kw['jobname'])
-            wBarTable = tableDict.fromTextFile(os.path.join(self.paraFolder, 'optimwBarLower', 'overviewSimu'), width = 20, prec = 10)
-            optimalRunTable = wBarTable.getSubset( np.abs(wBarTable['wBarLower'] - self.wBarLower_task.costlyOptimizer.best_x) < 1.e-7 )
-            optimalRunFile = open(os.path.join(self.paraFolder, 'optimalRun'), 'w')
-            print >> optimalRunFile, optimalRunTable
-            return Run.State.TERMINATED
+##        if self.beta_task.execution.returncode == 13:
+##            logger.critical('beta failed. terminating para combo')
+##            self.execution.returncode = 13
+##            self.failed = True
+##            return Run.State.TERMINATED
+##        logger.debug('entering solveParaCombination.next in iteration %s' % self.iter)
+##        self.changed = True
+##        betaVal = self.beta_task.costlyOptimizer.best_x
+##        self.substs['input/parameters.in'].append(('beta', betaVal, '(0,)', 'bar-separated'))
+##        if self.iter == 1:
+##            # then loop over wbar
+##            self.kw['jobname'] = self.kw['jobname'] + '_' + 'beta' + '=' + str(self.beta_task.costlyOptimizer.best_x)
+##            xVar = 'wBarLower'
+##            xInitialGuess = [-0.15, 0.15]
+##            targetVar = 'iBar_Shock0Agent0'
+##            solverParas = {}
+##            solverParas['plotting'] = False
+##            solverParas['target_fx'] = -0.1
+##            solverParas['convCrit'] = 1.e-4
+##            self.wBarLower_task = idRiskParaSearchDriver(xVar, xInitialGuess, targetVar, self.paraFolder, self.pathToExecutable, self.architecture, self.localBaseDir, self.substs, solverParas, **self.kw)
+##            self.add(self.wBarLower_task)
+##        else:
+##            if self.wBarLower_task.execution.returncode == 13:
+##                logger.critical('beta failed. terminating para combo')
+##                self.execution.returncode = 13
+##                self.failed = True
+##                return Run.State.TERMINATED
+##            logger.debug('converged for beta and wBarLower for job %s' % self.kw['jobname'])
+##            wBarTable = tableDict.fromTextFile(os.path.join(self.paraFolder, 'optimwBarLower', 'overviewSimu'), width = 20, prec = 10)
+##            optimalRunTable = wBarTable.getSubset( np.abs(wBarTable['wBarLower'] - self.wBarLower_task.costlyOptimizer.best_x) < 1.e-7 )
+##            optimalRunFile = open(os.path.join(self.paraFolder, 'optimalRun'), 'w')
+##            print >> optimalRunFile, optimalRunTable
+##            return Run.State.TERMINATED
         return Run.State.RUNNING
 
 
 class idRiskParaSearchDriver(SequentialTaskCollection):
+    '''
+      Script that executes optimization/solving. Each self.next is one iteration in the solver. 
+    '''
 
-    def __init__(self, xVar, xInitialGues, targetVar, paraFolder, pathToExecutable, architecture, localBaseDir, substs, solverParas, **kw):
+    def __init__(self, paraFolder, substs, solverParas, **sessionParas):
 
         logger.debug('entering gParaSearchDriver.__init__')
 
-        self.jobname = kw['jobname'] + 'driver'
-
-        self.pathToExecutable = pathToExecutable
-        self.architecture     = architecture
-        self.localBaseDir     = localBaseDir
+        self.jobname = sessionParas['jobname'] + 'driver'
+        
+        self.sessionParas     = sessionParas
+        self.solverParas      = solverParas
         self.substs           = substs
-        self.kw               = kw
-        self.xVar             = xVar
-        self.xGuess           = xInitialGues
-        self.targetVar        = targetVar
+ 
         self.paraFolder       = paraFolder
         self.iter             = 0
-        self.failed           = False
 
         # create a subfolder for optim over xVar
-        self.optimFolder = os.path.join(paraFolder, 'optim' + xVar)
+        self.optimFolder = os.path.join(paraFolder, 'optim' + str(solverParas['xVars'][0]))
         gc3libs.utils.mkdir(self.optimFolder)
 
         self.costlyOptimizer = costlyOptimization.costlyOptimization(solverParas)
+        
+        self.xVars       = solverParas['xVars']
+        self.xParaCombos = solverParas['xInitialParaCombo']
+        self.targetVar   = solverParas['targetVar']
 
-        self.evaluator = idRiskParaSearchParallel(self.xVar, self.xGuess, self.targetVar, pathToExecutable, architecture, localBaseDir, substs, self.optimFolder, **kw)
+        self.evaluator = idRiskParaSearchParallel(self.xVars, self.xParaCombos, substs, self.optimFolder, solverParas , **sessionParas)
 
         initial_task = self.evaluator
 
@@ -213,7 +217,7 @@ class idRiskParaSearchDriver(SequentialTaskCollection):
 
     def next(self, *args): 
         self.iter += 1
-        logger.debug('entering idRiskParaSearchDriver.next in iteration %s for variable %s' % (self.iter, self.xVar))
+        logger.debug('entering idRiskParaSearchDriver.next in iteration %s for variables %s' % (self.iter, self.solverParas['xVars']))
         # sometimes next is called even though run state is terminated. In this case simply return. 
         if self.costlyOptimizer.converged:
             return Run.State.TERMINATED
@@ -221,13 +225,13 @@ class idRiskParaSearchDriver(SequentialTaskCollection):
         if  self.execution.state == 'TERMINATED':
             logger.debug('idRiskParaSearchDriver.next already terminated. Returning.. ')
             return Run.State.TERMINATED
-        newVals = self.evaluator.target(self.xVar, self.xGuess)
+        newVals = self.evaluator.target(self.xVars, self.xParaCombos, self.targetVar)
         if newVals is None:
             logger.critical('evaluating variable %s at guess %s failed' % (self.xVar, self.xGuess))	
             self.execution.returncode = 13
             self.failed = True
             return Run.State.TERMINATED
-        self.costlyOptimizer.updateInterpolationPoints(self.xGuess, newVals)
+        self.costlyOptimizer.updateInterpolationPoints(self.xParaCombos, newVals)
         if not self.costlyOptimizer.checkConvergence():
             self.costlyOptimizer.updateApproximation()
             self.xGuess = self.costlyOptimizer.generateNewGuess()
@@ -242,52 +246,63 @@ class idRiskParaSearchDriver(SequentialTaskCollection):
 
 
 
-class idRiskParaSearchParallel(ParallelTaskCollection, forwardPremium.paraLoop_fp):    
+class idRiskParaSearchParallel(ParallelTaskCollection, forwardPremium.paraLoop_fp):
+    '''
+      When initialized generates a number of Applications that are distributed on the grid. 
+    '''
 
     def __str__(self):
         return self.jobname
 
 
-    def __init__(self, xVar, xVals, targetVar, pathToExecutable, architecture, localBaseDir, substs, optimFolder, **kw):
+    def __init__(self, xVars, paraCombos, substs, optimFolder, solverParas, **sessionParas):
 
         logger.debug('entering idRiskParaSearchParallel.__init__')
-
-        self.jobname = 'evalSolverGuess' + '_' + kw['jobname'] + '-' + xVar + '=' + str(xVals)
-        self.verbosity = 'DEBUG'
-        self.kw = kw
-        self.targetVar = targetVar
-        self.optimFolder = optimFolder
-        forwardPremium.paraLoop_fp.__init__(self, verbosity = self.verbosity)
-        tasks = self.generateTaskList(xVar, xVals, pathToExecutable, architecture, kw['jobname'], localBaseDir, substs)
+        # create jobname
+        self.jobname = 'evalSolverGuess' + '_' + sessionParas['jobname']
+        for paraCombo in paraCombos:
+            self.jobname += str(paraCombo)
+            
+        self.substs       = substs
+        self.optimFolder  = optimFolder
+        self.solverParas  = solverParas
+        self.sessionParas = sessionParas
+        forwardPremium.paraLoop_fp.__init__(self, verbosity = 'INFO')
+        tasks = self.generateTaskList(xVars, paraCombos, substs, sessionParas)
         ParallelTaskCollection.__init__(self, self.jobname, tasks)
 
         logger.debug('done idRiskParaSearchParallel.__init__')
 
-    def target(self, xVar, xVals):
-
-        logger.debug('entering idRiskParaSearchParallel.target. Computing target for xVar = %s, xVals = %s' % (xVar, xVals))
+    def target(self, xVars, xParaCombos, targetVars):
+        '''
+          Method that builds an overview table for the jobs that were run and then returns the values. 
+        '''
+        logger.debug('entering idRiskParaSearchParallel.target. Computing target for xVar = %s, xVals = %s' % (xVars, xParaCombos))
         # Each line in the resulting table (overviewSimu) represents one paraCombo
-        if xVar == 'wBarLower' and xVals[0] == -0.10085714:
-            print 'here'
+##        if xVar == 'wBarLower' and xVals[0] == -0.10085714:
+##            print 'here'
         overviewTable = createOverviewTable(resultDir = self.optimFolder, outFile = 'simulation.out', exportFileName = 'overviewSimu', sortCols = [], orderCols = [], verb = 'INFO')
         if overviewTable == None:
             logger.critical('overviewTable empty')
             os._exit(1)
         logger.info('table for job: %s' % self.jobname)
         logger.info(overviewTable)
-        if xVar == 'beta':
-            xVarAdj = 'beta_disc'
-        else:
-            xVarAdj = xVar
+        for ixVar, xVar in enumerate(xVars):
+            if xVar == 'beta':
+                xVars[ixVar] = 'beta_disc'
+            else:
+                xVars[ixVar] = xVar
+        # Could replace this with a check that every xVar value is in the table, then output the two relevant columns.
         result = []
-        # Could replace this with a check that every xVar value is in the table, then output the two relevant columns. 
-        for xVal in xVals:
-            overviewTableSub = overviewTable.getSubset( np.abs( overviewTable[xVarAdj] - xVal ) < 1.e-8 )
+        for xParaCombo in xParaCombos:
+            overviewTableSub = copy.deepcopy(overviewTable)        
+            for xVar, xVal in zip(xVars, xParaCombo):
+                overviewTableSub = overviewTableSub.getSubset( np.abs( overviewTableSub[xVar] - xVal ) < 1.e-8 )
             if len(overviewTableSub) == 0:
                 logger.critical('Cannot find value for xVal %s, i.e. overviewTableSub empty' % xVal)
                 return None
             elif len(overviewTableSub) == 1:
-                result.append(overviewTableSub[self.targetVar][0])
+                result.append(np.linalg.norm(np.array([ overviewTableSub[targetVars[ixVar]][0] for ixVar, var in enumerate(xVars) ])))
             else:
                 logger.critical('Cannot find unique value for xVal %s' % xVal)
                 os._exit(1)
@@ -299,16 +314,19 @@ class idRiskParaSearchParallel(ParallelTaskCollection, forwardPremium.paraLoop_f
     def print_status(self, mins,means,vector,txt):
         print txt,mins, means, list(vector)
 
-    def generateTaskList(self, xVar, xVals, pathToExecutable, architecture, jobname, localBaseDir, substs):
+    def generateTaskList(self, xVars, paraCombos, substs, sessionParas):
+        pathToExecutable = sessionParas['pathToExecutable']
+        localBaseDir     = sessionParas['localBaseDir']
+        architecture     = sessionParas['architecture']
+        jobname          = sessionParas['jobname']
         # Fill the task list
         tasks = []
-        for xVal in xVals:
+        for paraCombo in paraCombos:
             executable = os.path.basename(pathToExecutable)
             inputs = { pathToExecutable:executable }        
             # make a "stage" directory where input files are collected
-            path_to_stage_dir = os.path.join(self.optimFolder, jobname + '_' + xVar + '=' + str(xVal))
-            gc3libs.utils.mkdir(path_to_stage_dir)
-            prefix_len = len(path_to_stage_dir) + 1
+            path_to_stage_dir = os.path.join(self.optimFolder, jobname)
+            
             # 2. apply substitutions to parameter files in local base dir
             for (path, changes) in substs.iteritems():
                 for (var, val, index, regex) in changes:
@@ -316,7 +334,11 @@ class idRiskParaSearchParallel(ParallelTaskCollection, forwardPremium.paraLoop_f
                 # adjust xVar in parameter file
                 index = 0
                 regex = 'bar-separated'
-                support.update_parameter_in_file(os.path.join(localBaseDir, path), xVar, 0, xVal, regex)
+                for xVar, xVal in zip(xVars, paraCombo):
+                    support.update_parameter_in_file(os.path.join(localBaseDir, path), xVar, 0, xVal, regex)
+                    path_to_stage_dir += '_' + xVar + '=' + str(xVal)
+            gc3libs.utils.mkdir(path_to_stage_dir)
+            prefix_len = len(path_to_stage_dir) + 1 
             # fill stage dir
             self.fillInputDir(localBaseDir, path_to_stage_dir)
             # 3. build input file list
@@ -331,11 +353,12 @@ class idRiskParaSearchParallel(ParallelTaskCollection, forwardPremium.paraLoop_f
                     inputs[os.path.join(dirpath, filename)] = remote_path
             # all contents of the `output` directory are to be fetched
             outputs = { 'output/':'' }
-            kwargs = self.kw.copy()
+            #kwargs = sessionParas.copy()
+            kwargs = {}
             kwargs['jobname'] = self.jobname
-            kwargs.pop('requested_memory')
-            kwargs.pop('requested_walltime')
-            kwargs.pop('requested_cores')
+##            kwargs.pop('requested_memory')
+##            kwargs.pop('requested_walltime')
+##            kwargs.pop('requested_cores')
             kwargs['stdout'] = 'forwardPremiumOut.log'
             kwargs['join'] = True
             kwargs['output_dir'] = os.path.join(path_to_stage_dir, 'output')
@@ -406,20 +429,14 @@ class idRiskParaSearchScript(SessionBasedScript, forwardPremium.paraLoop_fp):
 
 
         for jobname, substs in self.process_para_file(paraLoopFile):
-            solverParas = {}
-            solverParas['plotting'] = False
-            solverParas['target_fx'] = -0.1
-            solverParas['convCrit'] = 1.e-4
             # yield job            
-            kwargs = {'jobname': jobname}
-            xVar = 'beta'
-            xVar = 'wBarLower'
-            xInitialGuess = [0.9, 0.99]
-            xInitialGuess = [-0.1, -0.04]
-            targetVar = 'eR_b'
-            targetVar = 'iBar_Shock0Agent0'
-#            yield (jobname, idRiskParaSearchDriver, [ xVar, xInitialGuess, targetVar, self.params.executable, self.params.architecture, localBaseDir, substs, solverParas ], kwargs)
-            yield (jobname, solveParaCombination, [ self.params.executable, self.params.architecture, localBaseDir, substs, solverParas ], kwargs)
+            kwargs = {}
+            sessionParas = {}
+            sessionParas['pathToExecutable'] = self.params.executable
+            sessionParas['architecture'] = self.params.architecture
+            sessionParas['localBaseDir'] = localBaseDir
+            sessionParas['jobname'] = jobname 
+            yield (jobname, solveParaCombination, [ substs ], sessionParas)
 
 
 if __name__ == '__main__':
