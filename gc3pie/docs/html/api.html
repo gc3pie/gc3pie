@@ -677,7 +677,7 @@ following attributes:</p>
 <dt><cite>changed</cite></dt>
 <dd>evaluates to <cite>True</cite> if the <cite>Task</cite> has been changed since last
 time it has been saved to persistent storage (see
-<a href="#id1"><span class="problematic" id="id2">:module:`gclibs.persistence`</span></a>)</dd>
+<tt class="xref py py-mod docutils literal"><span class="pre">gclibs.persistence</span></tt>)</dd>
 <dt><cite>execution</cite></dt>
 <dd>a <cite>Run</cite> instance; its state attribute is initially set to <tt class="docutils literal"><span class="pre">NEW</span></tt>.</dd>
 <dt><cite>jobname</cite></dt>
@@ -1113,7 +1113,7 @@ description.</p>
 
 <dl class="method">
 <dt id="gc3libs.cmdline.SessionBasedScript.print_tasks_table">
-<tt class="descname">print_tasks_table</tt><big>(</big><em>output=&lt;open file '&lt;stdout&gt;'</em>, <em>mode 'w' at 0x2b423bc551e0&gt;</em>, <em>states=Enum(</em><span class="optional">[</span>, <em>'TERMINATED'</em>, <em>'UNKNOWN'</em>, <em>'SUBMITTED'</em>, <em>'RUNNING'</em>, <em>'TERMINATING'</em>, <em>'STOPPED'</em>, <em>'NEW'</em><span class="optional">]</span>, <em>)</em><big>)</big><a class="headerlink" href="#gc3libs.cmdline.SessionBasedScript.print_tasks_table" title="Permalink to this definition">¶</a></dt>
+<tt class="descname">print_tasks_table</tt><big>(</big><em>output=&lt;open file '&lt;stdout&gt;'</em>, <em>mode 'w' at 0x2b5672a721e0&gt;</em>, <em>states=Enum(</em><span class="optional">[</span>, <em>'TERMINATED'</em>, <em>'UNKNOWN'</em>, <em>'SUBMITTED'</em>, <em>'RUNNING'</em>, <em>'TERMINATING'</em>, <em>'STOPPED'</em>, <em>'NEW'</em><span class="optional">]</span>, <em>)</em><big>)</big><a class="headerlink" href="#gc3libs.cmdline.SessionBasedScript.print_tasks_table" title="Permalink to this definition">¶</a></dt>
 <dd><p>Output a text table to stream <cite>output</cite>, giving details about
 tasks in the given states.</p>
 </dd></dl>
@@ -1423,7 +1423,7 @@ is raised.</p>
 This can be used when the number of Tasks to run is
 fixed and known at program writing time.</p>
 <p>A <cite>StagedTaskCollection</cite> subclass should define methods <cite>stage0</cite>,
-<cite>stage2</cite>, ... up to <cite>stageN</cite> (for some arbitrary value of N positive
+<cite>stage1</cite>, ... up to <cite>stageN</cite> (for some arbitrary value of N positive
 integer).  Each of these <cite>stageN</cite> must return a <tt class="xref py py-class docutils literal"><span class="pre">Task</span></tt>
 instance; the task returned by the <cite>stage0</cite> method will be executed
 first, followed by the task returned by <cite>stage1</cite>, and so on.
@@ -1529,7 +1529,7 @@ fetch the output.</p>
 <div class="section" id="module-gc3libs.exceptions">
 <span id="gc3libs-exceptions"></span><h2><cite>gc3libs.exceptions</cite><a class="headerlink" href="#module-gc3libs.exceptions" title="Permalink to this headline">¶</a></h2>
 <p>Exceptions specific to the <cite>gc3libs</cite> package.</p>
-<p>In addition to the exceptions listed here, <a href="#id3"><span class="problematic" id="id4">`gc3libs`:module:</span></a> functions
+<p>In addition to the exceptions listed here, <a class="reference internal" href="#module-gc3libs"><tt class="xref py py-mod docutils literal"><span class="pre">gc3libs</span></tt></a> functions
 try to use Python builtin exceptions with the same meaning they have
 in core Python, namely:</p>
 <ul class="simple">
@@ -1749,7 +1749,7 @@ in <cite>except</cite> clauses to exclude &#8220;try again&#8221; situations.</p
 <p>Facade to store and retrieve Job information from permanent storage.</p>
 <dl class="class">
 <dt id="gc3libs.persistence.FilesystemStore">
-<em class="property">class </em><tt class="descclassname">gc3libs.persistence.</tt><tt class="descname">FilesystemStore</tt><big>(</big><em>directory='/home/rmurri/.gc3/jobs'</em>, <em>idfactory=&lt;gc3libs.persistence.IdFactory object at 0x250e790&gt;</em>, <em>protocol=2</em><big>)</big><a class="headerlink" href="#gc3libs.persistence.FilesystemStore" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><tt class="descclassname">gc3libs.persistence.</tt><tt class="descname">FilesystemStore</tt><big>(</big><em>directory='/home/rmurri/.gc3/jobs'</em>, <em>idfactory=&lt;gc3libs.persistence.IdFactory object at 0x33ed790&gt;</em>, <em>protocol=2</em><big>)</big><a class="headerlink" href="#gc3libs.persistence.FilesystemStore" title="Permalink to this definition">¶</a></dt>
 <dd><p>Save and load objects in a given directory.  Uses Python&#8217;s
 standard <cite>pickle</cite> module to serialize objects onto files.</p>
 <p>All objects are saved as files in the given directory (default:
@@ -1925,7 +1925,7 @@ texts coming from the same template.  Templates can be nested, and
 expansions generated recursviely.</p>
 <dl class="class">
 <dt id="gc3libs.template.Template">
-<em class="property">class </em><tt class="descclassname">gc3libs.template.</tt><tt class="descname">Template</tt><big>(</big><em>template</em>, <em>validator=&lt;function &lt;lambda&gt; at 0x28c3398&gt;</em>, <em>**kw</em><big>)</big><a class="headerlink" href="#gc3libs.template.Template" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><tt class="descclassname">gc3libs.template.</tt><tt class="descname">Template</tt><big>(</big><em>template</em>, <em>validator=&lt;function &lt;lambda&gt; at 0x488d488&gt;</em>, <em>**kw</em><big>)</big><a class="headerlink" href="#gc3libs.template.Template" title="Permalink to this definition">¶</a></dt>
 <dd><p>A template object is a pair <cite>(obj, keywords)</cite>.  Methods are
 provided to substitute the keyword values into <cite>obj</cite>, and to
 iterate over expansions of the given keywords (optionally
@@ -2801,7 +2801,7 @@ are not altered to reflect <cite>mode</cite>.</p>
 
 <dl class="function">
 <dt id="gc3libs.utils.prettyprint">
-<tt class="descclassname">gc3libs.utils.</tt><tt class="descname">prettyprint</tt><big>(</big><em>D</em>, <em>indent=0</em>, <em>width=0</em>, <em>maxdepth=None</em>, <em>step=4</em>, <em>only_keys=None</em>, <em>output=&lt;open file '&lt;stdout&gt;'</em>, <em>mode 'w' at 0x2b423bc551e0&gt;</em>, <em>_exclude=None</em><big>)</big><a class="headerlink" href="#gc3libs.utils.prettyprint" title="Permalink to this definition">¶</a></dt>
+<tt class="descclassname">gc3libs.utils.</tt><tt class="descname">prettyprint</tt><big>(</big><em>D</em>, <em>indent=0</em>, <em>width=0</em>, <em>maxdepth=None</em>, <em>step=4</em>, <em>only_keys=None</em>, <em>output=&lt;open file '&lt;stdout&gt;'</em>, <em>mode 'w' at 0x2b5672a721e0&gt;</em>, <em>_exclude=None</em><big>)</big><a class="headerlink" href="#gc3libs.utils.prettyprint" title="Permalink to this definition">¶</a></dt>
 <dd><p>Print dictionary instance <cite>D</cite> in a YAML-like format.
 Each output line consists of:</p>
 <blockquote>
@@ -3076,6 +3076,28 @@ with <cite>tag</cite>.  Example:</p>
 <dd><p>Register an application class with name <cite>tag</cite>.
 After registration, application factories can be retrieved
 by tag name with <tt class="docutils literal"><span class="pre">gc3libs.application.get('tag')</span></tt>.</p>
+</dd></dl>
+
+</div>
+<div class="section" id="module-gc3libs.application.apppot">
+<span id="gc3libs-application-apppot"></span><h2><cite>gc3libs.application.apppot</cite><a class="headerlink" href="#module-gc3libs.application.apppot" title="Permalink to this headline">¶</a></h2>
+<p>Support for AppPot-hosted applications.</p>
+<p>For more details about AppPot, visit:
+&lt;<a class="reference external" href="http://apppot.googlecode.com">http://apppot.googlecode.com</a>&gt;</p>
+<dl class="class">
+<dt id="gc3libs.application.apppot.AppPotApplication">
+<em class="property">class </em><tt class="descclassname">gc3libs.application.apppot.</tt><tt class="descname">AppPotApplication</tt><big>(</big><em>executable</em>, <em>arguments</em>, <em>inputs</em>, <em>outputs</em>, <em>output_dir</em>, <em>apppot_img=None</em>, <em>apppot_changes=None</em>, <em>apppot_tag='ENV/APPPOT-0.21'</em>, <em>**kw</em><big>)</big><a class="headerlink" href="#gc3libs.application.apppot.AppPotApplication" title="Permalink to this definition">¶</a></dt>
+<dd><p>Base class for AppPot-hosted applications.
+Provides the same interface as the base <tt class="xref py py-class docutils literal"><span class="pre">Application</span></tt>
+and runs the specified command in an AppPot instance.</p>
+<p>In addition to the standard <tt class="xref py py-class docutils literal"><span class="pre">Application</span></tt> keyword
+arguments, the following ones can be given to steer the AppPot
+execution:</p>
+<ul class="simple">
+<li><cite>apppot_img</cite>: Path or URL to the AppPot system image to use.
+If <tt class="xref docutils literal"><span class="pre">None</span></tt> (default), then the default AppPot system image
+on the remote system is used.</li>
+</ul>
 </dd></dl>
 
 </div>
@@ -3651,6 +3673,106 @@ Return False otherwise</p>
 </dd></dl>
 
 </div>
+<div class="section" id="module-gc3libs.backends.lsf">
+<span id="gc3libs-backends-lsf"></span><h2><cite>gc3libs.backends.lsf</cite><a class="headerlink" href="#module-gc3libs.backends.lsf" title="Permalink to this headline">¶</a></h2>
+<p>Job control on SGE clusters (possibly connecting to the front-end via SSH).</p>
+<dl class="class">
+<dt id="gc3libs.backends.lsf.LsfLrms">
+<em class="property">class </em><tt class="descclassname">gc3libs.backends.lsf.</tt><tt class="descname">LsfLrms</tt><big>(</big><em>resource</em>, <em>auths</em><big>)</big><a class="headerlink" href="#gc3libs.backends.lsf.LsfLrms" title="Permalink to this definition">¶</a></dt>
+<dd><p>Job control on LSF clusters (possibly by connecting via SSH to a submit node).</p>
+<dl class="method">
+<dt id="gc3libs.backends.lsf.LsfLrms.cancel_job">
+<tt class="descname">cancel_job</tt><big>(</big><em>app</em><big>)</big><a class="headerlink" href="#gc3libs.backends.lsf.LsfLrms.cancel_job" title="Permalink to this definition">¶</a></dt>
+<dd><p>Cancel a running job.  If <cite>app</cite> is associated to a queued or
+running remote job, tell the execution middleware to cancel
+it.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="gc3libs.backends.lsf.LsfLrms.free">
+<tt class="descname">free</tt><big>(</big><em>app</em><big>)</big><a class="headerlink" href="#gc3libs.backends.lsf.LsfLrms.free" title="Permalink to this definition">¶</a></dt>
+<dd><p>Free up any remote resources used for the execution of <cite>app</cite>.
+In particular, this should delete any remote directories and
+files.</p>
+<p>Call this method when <cite>app.execution.state</cite> is anything other
+than <cite>TERMINATED</cite> results in undefined behavior and will
+likely be the cause of errors later on.  Be cautious.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="gc3libs.backends.lsf.LsfLrms.get_resource_status">
+<tt class="descname">get_resource_status</tt><big>(</big><big>)</big><a class="headerlink" href="#gc3libs.backends.lsf.LsfLrms.get_resource_status" title="Permalink to this definition">¶</a></dt>
+<dd><p>Update the status of the resource associated with this <cite>LRMS</cite>
+instance in-place.  Return updated <cite>Resource</cite> object.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="gc3libs.backends.lsf.LsfLrms.get_results">
+<tt class="descname">get_results</tt><big>(</big><em>app</em>, <em>download_dir</em>, <em>overwrite=False</em><big>)</big><a class="headerlink" href="#gc3libs.backends.lsf.LsfLrms.get_results" title="Permalink to this definition">¶</a></dt>
+<dd><p>Retrieve job output files into local directory <cite>download_dir</cite>
+(which must already exists).  Will not overwrite existing
+files, unless the optional argument <cite>overwrite</cite> is <cite>True</cite>.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="gc3libs.backends.lsf.LsfLrms.peek">
+<tt class="descname">peek</tt><big>(</big><em>app</em>, <em>remote_filename</em>, <em>local_file</em>, <em>offset=0</em>, <em>size=None</em><big>)</big><a class="headerlink" href="#gc3libs.backends.lsf.LsfLrms.peek" title="Permalink to this definition">¶</a></dt>
+<dd><p>Download <cite>size</cite> bytes (at offset <cite>offset</cite> from the start) from
+remote file <cite>remote_filename</cite> and write them into
+<cite>local_file</cite>.  If <cite>size</cite> is <cite>None</cite> (default), then snarf
+contents of remote file from <cite>offset</cite> unto the end.</p>
+<p>Argument <cite>local_file</cite> is either a local path name (string), or
+a file-like object supporting a <cite>.write()</cite> method.  If
+<cite>local_file</cite> is a path name, it is created if not existent,
+otherwise overwritten.</p>
+<p>Argument <cite>remote_filename</cite> is the name of a file in the remote job
+&#8220;sandbox&#8221;.</p>
+<p>Any exception raised by operations will be passed through.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="gc3libs.backends.lsf.LsfLrms.submit_job">
+<tt class="descname">submit_job</tt><big>(</big><em>app</em><big>)</big><a class="headerlink" href="#gc3libs.backends.lsf.LsfLrms.submit_job" title="Permalink to this definition">¶</a></dt>
+<dd><p>Submit an <cite>Application</cite> instance to the configured
+computational resource; return a <cite>gc3libs.Job</cite> instance for
+controlling the submitted job.</p>
+<p>This method only returns if the job is successfully submitted;
+upon any failure, an exception is raised.</p>
+<p><em>Note:</em></p>
+<blockquote>
+<ol class="arabic simple">
+<li><cite>job.state</cite> is <em>not</em> altered; it is the caller&#8217;s
+responsibility to update it.</li>
+<li>the <cite>job</cite> object may be updated with any information that
+is necessary for this LRMS to perform further operations on it.</li>
+</ol>
+</blockquote>
+</dd></dl>
+
+<dl class="method">
+<dt id="gc3libs.backends.lsf.LsfLrms.update_job_state">
+<tt class="descname">update_job_state</tt><big>(</big><em>app</em><big>)</big><a class="headerlink" href="#gc3libs.backends.lsf.LsfLrms.update_job_state" title="Permalink to this definition">¶</a></dt>
+<dd><p>Query the state of the remote job associated with <cite>app</cite> and
+update <cite>app.execution.state</cite> accordingly.  Return the
+corresponding <cite>Run.State</cite>; see <cite>Run.State</cite> for more details.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="gc3libs.backends.lsf.LsfLrms.validate_data">
+<tt class="descname">validate_data</tt><big>(</big><em>data_file_list</em><big>)</big><a class="headerlink" href="#gc3libs.backends.lsf.LsfLrms.validate_data" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return True if the list of files is expressed in one of the file transfer protocols the LRMS supports.
+Return False otherwise</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="function">
+<dt id="gc3libs.backends.lsf.get_bsub_jobid">
+<tt class="descclassname">gc3libs.backends.lsf.</tt><tt class="descname">get_bsub_jobid</tt><big>(</big><em>bsub_output</em><big>)</big><a class="headerlink" href="#gc3libs.backends.lsf.get_bsub_jobid" title="Permalink to this definition">¶</a></dt>
+<dd><p>Parse the <tt class="docutils literal"><span class="pre">bsub</span></tt> output for the local jobid.</p>
+</dd></dl>
+
+</div>
 <div class="section" id="module-gc3libs.backends.sge">
 <span id="gc3libs-backends-sge"></span><h2><cite>gc3libs.backends.sge</cite><a class="headerlink" href="#module-gc3libs.backends.sge" title="Permalink to this headline">¶</a></h2>
 <p>Job control on SGE clusters (possibly connecting to the front-end via SSH).</p>
@@ -4048,6 +4170,7 @@ as more lines are written to the given stream.</p>
 <li><a class="reference internal" href="#gc3libs-resource"><cite>gc3libs.Resource</cite></a></li>
 <li><a class="reference internal" href="#gc3libs-informationcontainer"><cite>gc3libs.InformationContainer</cite></a></li>
 <li><a class="reference internal" href="#module-gc3libs.application"><cite>gc3libs.application</cite></a></li>
+<li><a class="reference internal" href="#module-gc3libs.application.apppot"><cite>gc3libs.application.apppot</cite></a></li>
 <li><a class="reference internal" href="#module-gc3libs.application.gamess"><cite>gc3libs.application.gamess</cite></a></li>
 <li><a class="reference internal" href="#module-gc3libs.application.rosetta"><cite>gc3libs.application.rosetta</cite></a></li>
 <li><a class="reference internal" href="#module-gc3libs.authentication"><cite>gc3libs.authentication</cite></a></li>
@@ -4056,6 +4179,7 @@ as more lines are written to the given stream.</p>
 <li><a class="reference internal" href="#module-gc3libs.backends"><cite>gc3libs.backends</cite></a></li>
 <li><a class="reference internal" href="#module-gc3libs.backends.arc0"><cite>gc3libs.backends.arc0</cite></a></li>
 <li><a class="reference internal" href="#module-gc3libs.backends.arc1"><cite>gc3libs.backends.arc1</cite></a></li>
+<li><a class="reference internal" href="#module-gc3libs.backends.lsf"><cite>gc3libs.backends.lsf</cite></a></li>
 <li><a class="reference internal" href="#module-gc3libs.backends.sge"><cite>gc3libs.backends.sge</cite></a></li>
 <li><a class="reference internal" href="#module-gc3libs.backends.subprocess"><cite>gc3libs.backends.subprocess</cite></a></li>
 <li><a class="reference internal" href="#module-gc3libs.backends.transport"><cite>gc3libs.backends.transport</cite></a></li>

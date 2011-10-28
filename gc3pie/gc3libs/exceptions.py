@@ -1,7 +1,7 @@
 #! /usr/bin/env python
 """Exceptions specific to the `gc3libs` package.
 
-In addition to the exceptions listed here, `gc3libs`:module: functions
+In addition to the exceptions listed here, `gc3libs`:mod: functions
 try to use Python builtin exceptions with the same meaning they have
 in core Python, namely:
 
