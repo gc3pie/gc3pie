@@ -84,6 +84,11 @@
 .. automodule:: gc3libs.application
     :members:
 
+`gc3libs.application.apppot`
+============================
+.. automodule:: gc3libs.application.apppot
+    :members:
+
 `gc3libs.application.gamess`
 ============================
 .. automodule:: gc3libs.application.gamess
@@ -124,6 +129,11 @@
 `gc3libs.backends.arc1`
 =======================
 .. automodule:: gc3libs.backends.arc1
+    :members:
+
+`gc3libs.backends.lsf`
+======================
+.. automodule:: gc3libs.backends.lsf
     :members:
 
 `gc3libs.backends.sge`

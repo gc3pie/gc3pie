@@ -358,7 +358,7 @@ class StagedTaskCollection(SequentialTaskCollection):
     fixed and known at program writing time.
 
     A `StagedTaskCollection` subclass should define methods `stage0`,
-    `stage2`, ... up to `stageN` (for some arbitrary value of N positive
+    `stage1`, ... up to `stageN` (for some arbitrary value of N positive
     integer).  Each of these `stageN` must return a `Task`:class:
     instance; the task returned by the `stage0` method will be executed
     first, followed by the task returned by `stage1`, and so on.

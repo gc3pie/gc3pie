@@ -140,7 +140,7 @@ class Task(object):
     `changed`
       evaluates to `True` if the `Task` has been changed since last
       time it has been saved to persistent storage (see
-      :module:`gclibs.persistence`)
+      :mod:`gclibs.persistence`)
 
     `execution`
       a `Run` instance; its state attribute is initially set to ``NEW``.
