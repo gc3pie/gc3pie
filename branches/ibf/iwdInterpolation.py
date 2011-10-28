@@ -22,20 +22,12 @@ class iwdInterpolation(object):
     '''
     Inverse weighted density interpolation
     '''
-    def __init__(self):
+    def __init__(self, x, fx):
         logger.debug('initializing new instance of iwdInterpolation')
-        self.x = np.array( np.array([]))
-        self.fx = np.array( [])
-
-    def addPoint(self, x, fx):
-        self.x = np.append(self.x, np.asarray(x))
-        self.fx = np.append(self.fx, np.asarray(fx))
-
-    def setPoints(self, x, fx):
         self.x = x
         self.fx = fx
 
-    def eval(self, x0):
+    def __call__(self, x0):
         sum_f0 = 0
         sum_d = 0
         for ix in range(0,len(self.x)):
@@ -49,8 +41,6 @@ class iwdInterpolation(object):
         return 1.0 / np.linalg.norm(x1 - x2)
 
 if __name__ == '__main__':            
-    iwd = iwdInterpolation()
-
     fun = lambda x: np.sum(np.log(x))
     x1  = np.array([1, 2])
     x2  = np.array([3, 5])
@@ -63,10 +53,10 @@ if __name__ == '__main__':
     print x
     print fx
 
-    iwd.setPoints(x,fx)
+    iwd = iwdInterpolation(x,fx)
 
     print 'evaluation:'
-    print iwd.eval([2,4])
+    print iwd([2,4])
  
     print 'exact value' 
     print fun([2,4])
