@@ -96,6 +96,8 @@ from pymods.support.support import wrapLogger
 import pymods.support.support as support
 from pymods.classes.tableDict import tableDict
 
+from makePlots import momentPlots
+
 # Set up logger
 logger = wrapLogger(loggerName = 'idRiskParaSearchLogger', streamVerb = 'DEBUG', logFile = os.path.join(os.getcwd(), 'idRiskParaSearch.log'))
 
@@ -136,8 +138,9 @@ class solveParaCombination(SequentialTaskCollection):
 
     def next(self, *args): 
         self.iter += 1
-        if self.beta_task.failed:
-            logger.critical('beta failed. terminating para combo')	
+        if self.beta_task.execution.returncode == 13:
+            logger.critical('beta failed. terminating para combo')
+            self.execution.returncode = 13
             self.failed = True
             return Run.State.TERMINATED
         logger.debug('entering solveParaCombination.next in iteration %s' % self.iter)
@@ -157,8 +160,9 @@ class solveParaCombination(SequentialTaskCollection):
             self.wBarLower_task = idRiskParaSearchDriver(xVar, xInitialGuess, targetVar, self.paraFolder, self.pathToExecutable, self.architecture, self.localBaseDir, self.substs, solverParas, **self.kw)
             self.add(self.wBarLower_task)
         else:
-            if self.wBarLower_task.failed:
-                logger.critical('beta failed. terminating para combo')	
+            if self.wBarLower_task.execution.returncode == 13:
+                logger.critical('beta failed. terminating para combo')
+                self.execution.returncode = 13
                 self.failed = True
                 return Run.State.TERMINATED
             logger.debug('converged for beta and wBarLower for job %s' % self.kw['jobname'])
@@ -214,9 +218,13 @@ class idRiskParaSearchDriver(SequentialTaskCollection):
         if self.costlyOptimizer.converged:
             return Run.State.TERMINATED
         self.changed = True
+        if  self.execution.state == 'TERMINATED':
+            logger.debug('idRiskParaSearchDriver.next already terminated. Returning.. ')
+            return Run.State.TERMINATED
         newVals = self.evaluator.target(self.xVar, self.xGuess)
         if newVals is None:
-            logger.critical('evaluating variable %s at guess %s' % (self.xVar, self.xGuess))	
+            logger.critical('evaluating variable %s at guess %s failed' % (self.xVar, self.xGuess))	
+            self.execution.returncode = 13
             self.failed = True
             return Run.State.TERMINATED
         self.costlyOptimizer.updateInterpolationPoints(self.xGuess, newVals)
@@ -420,16 +428,26 @@ if __name__ == '__main__':
     logger.debug('combine resulting tables')    
     tableList = [ os.path.join(os.getcwd(), folder, 'optimalRun') for folder in os.listdir(os.getcwd()) if os.path.isdir(folder) and not folder == 'localBaseDir' and not folder == 'idRiskParaSearch.jobs' ]
     tableDicts = [ tableDict.fromTextFile(table, width = 20, prec = 10) for table in tableList if os.path.isfile(table)]
-    optimalRuns = tableDicts[0]
-    for ixTable, table in enumerate(tableDicts):
-        if ixTable == 0: continue
-        optimalRuns = optimalRuns.getAppended(table)
-    optimalRuns.order(['dy', 'beta_disc', 'wBarLower'])
-    optimalRuns.sort(['dy'])
-    logger.info(optimalRuns)
-    f = open(os.path.join(os.getcwd(), 'optimalRuns'), 'w')  
-    print >> f, optimalRuns
+    if tableDicts:
+        optimalRuns = tableDicts[0]
+        for ixTable, table in enumerate(tableDicts):
+            if ixTable == 0: continue
+            optimalRuns = optimalRuns.getAppended(table)
+        optimalRuns.order(['dy', 'beta_disc', 'wBarLower'])
+        optimalRuns.sort(['dy'])
+        logger.info(optimalRuns)
+        f = open(os.path.join(os.getcwd(), 'optimalRuns'), 'w')  
+        print >> f, optimalRuns
+        f.flush()
+    logger.info('Generating plot')
+    baseName = 'moments'
+    path = os.getcwd()
+    conditions = {}
+    overlay = {'EP': True, 'e_rs': True, 'e_rb': True, 'sigma_rs': True, 'sigma_rb': True}
+    tableFile = os.path.join(os.getcwd(), 'optimalRuns')
+    figureFile = os.path.join(os.getcwd(), 'optimalRunsPlot.eps')
+    momentPlots(baseName = baseName, path = path, xVar = 'dy', overlay = overlay, conditions = conditions, tableFile = tableFile, figureFile = figureFile)
     logger.info('main done')
 
 
-print 'done'
+logger.info('done')
