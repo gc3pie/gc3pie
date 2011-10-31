@@ -205,6 +205,7 @@ class ArcLrms(LRMS):
             return {
                 'ACCEPTED':  Run.State.SUBMITTED,
                 'ACCEPTING': Run.State.SUBMITTED,
+                'SUBMIT':    Run.State.SUBMITTED,
                 'SUBMITTING':Run.State.SUBMITTED,
                 'PREPARING': Run.State.SUBMITTED,
                 'PREPARED':  Run.State.SUBMITTED,
@@ -219,6 +220,7 @@ class ArcLrms(LRMS):
                 'EXECUTED':  Run.State.RUNNING,
                 'FINISHED':  Run.State.TERMINATING,
                 'CANCELING': Run.State.TERMINATING,
+                'KILLING':   Run.State.TERMINATING,
                 'FINISHED':  Run.State.TERMINATING,
                 'FAILED':    Run.State.TERMINATING,
                 'KILLED':    Run.State.TERMINATED,
