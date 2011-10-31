@@ -1,0 +1,158 @@
+#!/usr/bin/env python
+
+import numpy as n, pylab as p, time
+import os
+
+from pymods.support.support import wrapLogger
+
+logger = wrapLogger(loggerName = 'convexHullLogger', streamVerb = 'DEBUG', logFile = os.path.join(os.getcwd(), 'convexHull.log'))
+
+
+def angle_to_point(point, centre):
+    '''calculate angle in 2-D between points and x axis'''
+    delta = point - centre
+    res = n.arctan(delta[1] / delta[0])
+    if delta[0] < 0:
+        res += n.pi
+    return res
+
+
+def _angle_to_point(point, centre):
+    '''calculate angle in 2-D between points and x axis'''
+    delta = point - centre
+    res = n.arctan(delta[1] / delta[0])
+    if delta[0] < 0:
+        res += n.pi
+    return res
+
+
+def _draw_triangle(p1, p2, p3, **kwargs):
+    tmp = n.vstack((p1,p2,p3))
+    x,y = [x[0] for x in zip(tmp.transpose())]
+    p.fill(x,y, **kwargs)
+    #time.sleep(0.2)
+
+
+def area_of_triangle(p1, p2, p3):
+    '''calculate area of any triangle given co-ordinates of the corners'''
+    return n.linalg.norm(n.cross((p2 - p1), (p3 - p1)))/2.
+
+
+def convex_hull(points, graphic=True, smidgen=0.0075):
+    '''Calculate subset of points that make a convex hull around points
+
+Recursively eliminates points that lie inside two neighbouring points until only convex hull is remaining.
+
+:Parameters:
+    points : ndarray (2 x m)
+        array of points for which to find hull
+    graphic : bool
+        use pylab to show progress?
+    smidgen : float
+        offset for graphic number labels - useful values depend on your data range
+
+:Returns:
+    hull_points : ndarray (2 x n)
+        convex hull surrounding points
+'''
+    logger.debug('start convex hull')
+
+    if graphic:
+        p.clf()
+        p.plot(points[0], points[1], 'ro')
+    n_pts = points.shape[1]
+    assert(n_pts > 1)
+    centre = points.mean(1)
+    if graphic: p.plot((centre[0],),(centre[1],),'bo')
+    angles = n.apply_along_axis(_angle_to_point, 0, points, centre)
+
+    logger.debug('angles: %s' %angles)
+
+    pts_ord = points[:,angles.argsort()]
+    logger.debug('pts_ord: %s' %pts_ord)
+
+    if graphic:
+        for i in xrange(n_pts):
+            p.text(pts_ord[0,i] + smidgen, pts_ord[1,i] + smidgen, '%d' % i)
+    pts = [x[0] for x in zip(pts_ord.transpose())]
+    logger.debug('pts: %s' %pts)
+    prev_pts = len(pts) + 1
+    k = 0
+    while prev_pts > n_pts:
+        logger.debug(' ')
+        logger.debug('new round of points')
+        logger.debug('current # of points %d' %n_pts )
+        prev_pts = n_pts
+        n_pts = len(pts)
+        if graphic: p.gca().patches = []
+        i = -2
+        while i < (n_pts - 2):
+            logger.debug('i: %d' % i)
+            Aij = area_of_triangle(centre, pts[i],     pts[(i + 1) % n_pts])
+            logger.debug('Aij: %s' % Aij)
+            Ajk = area_of_triangle(centre, pts[(i + 1) % n_pts], pts[(i + 2) % n_pts])
+            logger.debug('Aik: %s' % Ajk)
+            Aik = area_of_triangle(centre, pts[i],     pts[(i + 2) % n_pts])
+            logger.debug('Aik: %s' % Aik)
+            if graphic:
+                _draw_triangle(centre, pts[i], pts[(i + 1) % n_pts], facecolor='blue', alpha = 0.2)
+                _draw_triangle(centre, pts[(i + 1) % n_pts], pts[(i + 2) % n_pts], facecolor='green', alpha = 0.2)
+                _draw_triangle(centre, pts[i], pts[(i + 2) % n_pts], facecolor='red', alpha = 0.2)
+            if Aij + Ajk < Aik:
+                if graphic: 
+                    p.plot((pts[i + 1][0],),(pts[i + 1][1],),'go')
+                del pts[i+1]
+            i += 1
+            n_pts = len(pts)
+        k += 1
+    return n.asarray(pts).transpose()
+
+
+def project_point_to_line_segment(A,B,p):
+    # returns q the closest point to p on the line segment from A to B 
+
+    # vector from A to B
+    AB = (B-A)
+    # squared distance from A to B
+    AB_squared = n.dot(AB,AB)
+    if AB_squared == 0:
+        # A and B are the same point
+        q = A
+    else:
+        # vector from A to p
+        Ap = (p-A)
+        # from http://stackoverflow.com/questions/849211/
+        # Consider the line extending the segment, parameterized as A + t (B - A)
+        # We find projection of point p onto the line.
+        # It falls where t = [(p-A) . (B-A)] / |B-A|^2
+        t = n.dot(Ap,AB)/AB_squared;
+        if t < 0.0:
+        # "Before" A on the line, just return A
+            q = A
+        elif t > 1.0:
+            # "After" B on the line, just return B
+            q = B
+        else:
+            # projection lines "inbetween" A and B on the line
+            q = A + t * AB;
+    return q
+
+
+if __name__ == "__main__":
+    print 'entered main'
+    points = n.random.random_sample((2,40))
+    print points
+    hull_pts = convex_hull(points)
+
+#    p.show()
+    # p.clf()
+    # p.plot(points[0], points[1], 'ro')
+
+
+#    pylab.savefig('simple_plot3') # 
+#    p.show() 
+
+    # print hull_pts
+    print 'done'
+
+
