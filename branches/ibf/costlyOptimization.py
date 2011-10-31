@@ -11,6 +11,7 @@ import matplotlib.pyplot as plt
 import matplotlib.mlab as mlab
 
 from pymods.support.support import wrapLogger
+from iwdInterpolation import iwdInterpolation
 
 # Set up logger
 logger = wrapLogger(loggerName = 'costlyOptimizationLogger', streamVerb = 'DEBUG', logFile = os.path.join(os.getcwd(), 'costlyOpt.log'))
@@ -27,7 +28,7 @@ class costlyOptimization(object):
     self.xVars         = paras['xVars']
     self.xInitialGuess = paras['xInitialParaCombo']
     self.targetVar     = paras['targetVar']
-    self.target_fx     = paras['target_fx']
+    self.target_fx     = np.array(paras['target_fx'])
     self.convCrit      = paras['convCrit'] 
     self.converged     = False
 
@@ -37,7 +38,7 @@ class costlyOptimization(object):
   def updateInterpolationPoints(self, x, fx):
     for paraCombo in x:
       if not paraCombo in self.x:
-        self.x  = np.append(self.x, np.asarray(paraCombo), 0)
+        self.x  = np.append(self.x, np.array([paraCombo]), 0)
       else: 
         logger.critical('x = %s already in self.x = %s' % (x, self.x))
     self.fx = np.append(self.fx, np.asarray(fx))
@@ -58,7 +59,8 @@ class costlyOptimization(object):
     
   def updateApproximation(self):
     logger.debug('updating approximation')
-    self.gx = si.lagrange(self.x, self.fx)
+    #self.gx = si.lagrange(self.x, self.fx)
+    self.gx = iwdInterpolation(self.x, self.fx)
     logger.debug('done updating approximation')
     
   def generateNewGuess(self):
@@ -74,8 +76,8 @@ class costlyOptimization(object):
       logger.critical('the initial points %s do not contain the zero')  
     try: 
       logger.debug('trying brentq')
-      #xhat = scipy.optimize.newton_krylov(target, x0)
-      xhat = scipy.optimize.brentq(f = target, a = np.min(self.x), b = np.max(self.x))
+      xhat = scipy.optimize.newton_krylov(target, x0)
+      #xhat = scipy.optimize.brentq(f = target, a = np.min(self.x), b = np.max(self.x))
       fxhat = self.gx(xhat)
     except ValueError: 
       logger.debug('brentq failed, trying naive method')

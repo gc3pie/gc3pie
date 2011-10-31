@@ -233,14 +233,16 @@ class idRiskParaSearchDriver(SequentialTaskCollection):
             return Run.State.TERMINATED
         self.costlyOptimizer.updateInterpolationPoints(self.xParaCombos, newVals)
         if not self.costlyOptimizer.checkConvergence():
+            logger.debug('not converged yet. Building new guess and reevaluating. ')
             self.costlyOptimizer.updateApproximation()
-            self.xGuess = self.costlyOptimizer.generateNewGuess()
-            self.evaluator = idRiskParaSearchParallel(self.xVar, self.xGuess, self.targetVar, self.pathToExecutable, self.architecture, self.localBaseDir, self.substs, self.optimFolder, **self.kw)
+            self.xParaCombos = self.costlyOptimizer.generateNewGuess()
+            self.evaluator = idRiskParaSearchParallel(self.xVars, self.xParaCombos, self.substs, self.optimFolder, self.solverParas, **self.sessionParas)
             self.add(self.evaluator)
         else:
+            logger.debug('converged idRiskParaSearchDriver.next in iteration %s for variables %s. Returning exit code 0. ' % (self.iter, self.solverParas['xVars']))
             self.execution.returncode = 0
             return Run.State.TERMINATED
-        logger.debug('done idRiskParaSearchDriver.next in iteration %s for variable %s' % (self.iter, self.xVar))
+        logger.debug('done idRiskParaSearchDriver.next in iteration %s for variables %s' % (self.iter, self.solverParas['xVars']))
         return Run.State.RUNNING
 
 
@@ -285,13 +287,17 @@ class idRiskParaSearchParallel(ParallelTaskCollection, forwardPremium.paraLoop_f
         if overviewTable == None:
             logger.critical('overviewTable empty')
             os._exit(1)
-        logger.info('table for job: %s' % self.jobname)
-        logger.info(overviewTable)
+        xVars = copy.deepcopy(xVars)
         for ixVar, xVar in enumerate(xVars):
             if xVar == 'beta':
                 xVars[ixVar] = 'beta_disc'
             else:
                 xVars[ixVar] = xVar
+        # print table
+        overviewTable.order(['dy'] + xVars)
+        overviewTable.sort(['dy'] + xVars)
+        logger.info('table for job: %s' % self.jobname)
+        logger.info(overviewTable) 
         # Could replace this with a check that every xVar value is in the table, then output the two relevant columns.
         result = []
         for xParaCombo in xParaCombos:
