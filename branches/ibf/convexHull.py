@@ -157,6 +157,37 @@ def project_point_to_line_segment(A, B, points):
     return qOut
 
 
+def lineFromTwoPoints(point1, point2):
+    ''' creates line, specified as: a * x + b * y = c '''
+    x1 = point1[0]
+    y1 = point1[1]
+    x2 = point2[0]
+    y2 = point2[1]
+    # a = point2[1] - point1[1]
+    # b = point1[0] - point2[0]
+    # c = a * point1[0] + b * point1[0]
+    a = y2 - y1
+    b = x1 - x2
+    c = a * x1 + b * y1
+    
+    return n.array([a,b,c])
+    
+
+def lineLineIntersection(line1, line2):
+    ''' from http://community.topcoder.com/tc?module=Static&d1=tutorials&d2=geometry2'''
+    A = n.array([line1[0], line2[0]])
+    B = n.array([line1[1], line2[1]])
+    C = n.array([line1[2], line2[2]])
+                
+    det = A[0] * B[1] - A[1] * B[0]
+    if (det == 0):
+        return False
+    else:
+        x = (B[1] * C[0] - B[0] * C[1]) / det
+        y = (A[0] * C[1] - A[1] * C[0]) / det
+        return n.array([x,y])
+        
+
 if __name__ == "__main__":
     print 'entered main'
     #points = n.random.random_sample((2,40))
@@ -182,5 +213,6 @@ if __name__ == "__main__":
     _angle_to_point(n.array([[1, 4], [1, 6]]), n.array([2, 4]))
     
     print 'done'
+
 
 

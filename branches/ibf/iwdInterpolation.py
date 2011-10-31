@@ -65,10 +65,17 @@ class iwdInterpolation(object):
                     p.plot(projected_x0[0], projected_x0[1], 'ro')
                 
                 q1 = projected_x0 - 1e-14 * (x0Ele - projected_x0) #be safely inside
+                
+                exitPoint = self.findExit(x0Ele,q1)
+                
+                if self.makePlot:
+                    p.plot(exitPoint[0], exitPoint[1], 'go')
+
                 logger.debug('q1: %s' % q1)
                 # logger.debug('x0Ele - q1 %s' % (x0Ele - q1))
                 # logger.debug('norm %s' % np.linalg.norm(x0Ele - q1) )
-                q2 = q1 - self.dx * (x0Ele - q1) / np.linalg.norm(x0Ele - q1) 
+#                q2 = q1 - self.dx * (x0Ele - q1) / np.linalg.norm(x0Ele - q1) 
+                q2 = (q1 + exitPoint) / 2
                 logger.debug('q2: %s' % q2)
                 
                 f_q1 = self.__call__(q1)
@@ -81,6 +88,33 @@ class iwdInterpolation(object):
                 logger.debug('fx0: %s' % fx0)
                 gxList.append(fx0[0])
         return np.array(gxList)     
+
+    def findExit(self,x0,q1):
+        logger.debug('entered find exit')
+        lineX0 = convexHull.lineFromTwoPoints(x0,q1)
+        logger.debug('lineX0: %s' % lineX0)
+
+        for pos in range(0, self.hullPoints):
+            logger.debug('pos: %s' % pos)
+            if pos == 0:
+                lineHull = convexHull.lineFromTwoPoints(self.hullMat[self.hullPoints-1], self.hullMat[pos])
+            else:
+                lineHull = convexHull.lineFromTwoPoints(self.hullMat[pos-1], self.hullMat[pos])
+            exitPoint = convexHull.lineLineIntersection(lineX0, lineHull)
+            logger.debug('exitPoint: %s' % exitPoint)
+#            p.plot(exitPoint[0], exitPoint[1], 'ro')
+            
+            # p.plot(self.hullMat[self.hullPoints-1,0],self.hullMat[self.hullPoints-1,0],'go')
+            # p.plot(self.hullMat[pos,0],self.hullMat[pos,1],'go')
+            # p.show()
+            # exit()
+            if (np.linalg.norm(exitPoint - q1) > 1e-10):
+                if (self.check_is_inside(exitPoint)):
+                    return exitPoint
+        print 'trouble --- no exit found'
+        exit()
+            
+
 
     def closest_hull_points(self, x0Ele):
         ''' finds the previous and next point on the hull'''
@@ -125,7 +159,7 @@ class iwdInterpolation(object):
         A_prev_x0 = convexHull.area_of_triangle(self.center, hullPointPrev, x0)
         A_next_x0 = convexHull.area_of_triangle(self.center, hullPointNext, x0)
 
-        if A_prev_next > A_prev_x0 + A_next_x0:
+        if A_prev_next + 1e-4 > A_prev_x0 + A_next_x0:
             isInside = True
         else:
             isInside = False
@@ -136,8 +170,8 @@ class iwdInterpolation(object):
 
 if __name__ == '__main__':   
     np.random.seed(123)
-    nPoints = 20
-    makePlot = False
+    nPoints = 5
+    makePlot = True
     normExp = 4
     dx = 1e-7
     
@@ -164,9 +198,10 @@ if __name__ == '__main__':
     print 'exact value' 
     print fun(testVec)
 
-    exit()
     if makePlot:
         p.show()
+
+    exit()
 
     print 'evaluation with point inside:'
     testVec = np.array([0.5, 0.6])
