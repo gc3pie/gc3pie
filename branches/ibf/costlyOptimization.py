@@ -11,7 +11,7 @@ import matplotlib.pyplot as plt
 import matplotlib.mlab as mlab
 
 from pymods.support.support import wrapLogger
-from iwdInterpolation import iwdInterpolation
+from iwdInterpolationNew import iwdInterpolation
 
 # Set up logger
 logger = wrapLogger(loggerName = 'costlyOptimizationLogger', streamVerb = 'DEBUG', logFile = os.path.join(os.getcwd(), 'costlyOpt.log'))
@@ -33,7 +33,8 @@ class costlyOptimization(object):
     self.converged     = False
 
     self.x             = self.xInitialGuess
-    self.fx            = np.array([[]])    
+    self.fx            = np.empty( ( 0, len(self.x)) )
+    #np.array([[]])    
     
   def updateInterpolationPoints(self, x, fx):
     for paraCombo in x:
@@ -41,7 +42,7 @@ class costlyOptimization(object):
         self.x  = np.append(self.x, np.array([paraCombo]), 0)
       else: 
         logger.critical('x = %s already in self.x = %s' % (x, self.x))
-    self.fx = np.append(self.fx, np.asarray(fx))
+    self.fx = np.append(self.fx, np.array([fx]), 0)
 ##    indices = np.argsort(self.x)
 ##    self.x = self.x[indices]
 ##    self.fx = self.fx[indices]
@@ -51,7 +52,7 @@ class costlyOptimization(object):
     
   def checkConvergence(self):
     distance = self._computeNormedDistance(self.best_fx)
-    if distance < self.convCrit: 
+    if np.all(distance < self.convCrit): 
       self.converged = True
     else: 
       self.converged = False
@@ -93,6 +94,7 @@ class costlyOptimization(object):
     return np.array([xhat])
   
   def _computeNormedDistance(self, fx):
+    fx = np.asanyarray(fx)
     return np.abs(fx - self.target_fx)
 
 

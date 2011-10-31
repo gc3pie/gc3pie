@@ -122,10 +122,10 @@ class solveParaCombination(SequentialTaskCollection):
 
         # First loop over beta
         solverParas = {}
-        solverParas['xVars'] = ['beta']
-        solverParas['xInitialParaCombo'] = np.array([[0.8], [1.1]])
-        solverParas['targetVar'] = ['eR_b']
-        solverParas['target_fx'] = [1.01]
+        solverParas['xVars'] = ['beta', 'wBarLower']
+        solverParas['xInitialParaCombo'] = np.array([[0.9, -0.2], [1., -0.05]])
+        solverParas['targetVar'] = ['eR_b', 'iBar_Shock0Agent0']
+        solverParas['target_fx'] = [1.01, -0.1]
         solverParas['plotting'] = False
         solverParas['convCrit'] = 1.e-4
         
@@ -140,6 +140,7 @@ class solveParaCombination(SequentialTaskCollection):
 
     def next(self, *args): 
         self.iter += 1
+        return Run.State.TERMINATED
 ##        if self.beta_task.execution.returncode == 13:
 ##            logger.critical('beta failed. terminating para combo')
 ##            self.execution.returncode = 13
@@ -305,7 +306,7 @@ class idRiskParaSearchParallel(ParallelTaskCollection, forwardPremium.paraLoop_f
             for xVar, xVal in zip(xVars, xParaCombo):
                 overviewTableSub = overviewTableSub.getSubset( np.abs( overviewTableSub[xVar] - xVal ) < 1.e-8 )
             if len(overviewTableSub) == 0:
-                logger.critical('Cannot find value for xVal %s, i.e. overviewTableSub empty' % xVal)
+                logger.critical('Cannot find value for xVal %s, i.e. overviewTableSub empty. Did you set the pythonPath?' % xVal)
                 return None
             elif len(overviewTableSub) == 1:
                 result.append(np.linalg.norm(np.array([ overviewTableSub[targetVars[ixVar]][0] for ixVar, var in enumerate(xVars) ])))

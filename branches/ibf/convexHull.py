@@ -5,17 +5,19 @@ import os
 
 from pymods.support.support import wrapLogger
 
-logger = wrapLogger(loggerName = 'convexHullLogger', streamVerb = 'DEBUG', logFile = os.path.join(os.getcwd(), 'convexHull.log'))
+logger = wrapLogger(loggerName = 'convexHullLogger', streamVerb = 'INFO', logFile = os.path.join(os.getcwd(), 'convexHull.log'))
 
 
-def angle_to_point(point, centre):
+def _angle_to_points(points, centre):
     '''calculate angle in 2-D between points and x axis'''
-    delta = point - centre
-    res = n.arctan(delta[1] / delta[0])
-    if delta[0] < 0:
-        res += n.pi
-    return res
-
+    resOut = []
+    for point in points:
+        delta = point - centre
+        res = n.arctan(delta[1] / delta[0])
+        if delta[0] < 0:
+            res += n.pi
+        resOut.append(res)
+    return n.array(resOut)
 
 def _angle_to_point(point, centre):
     '''calculate angle in 2-D between points and x axis'''
@@ -108,41 +110,56 @@ Recursively eliminates points that lie inside two neighbouring points until only
     return n.asarray(pts).transpose()
 
 
-def project_point_to_line_segment(A,B,p):
-    # returns q the closest point to p on the line segment from A to B 
+def project_point_to_line_segment(A, B, points):
+    '''
+      A: Vector of beginning line points
+      B: Vector of ending line points
+      points: The points for which the projection is to be done. 
+    '''
+    # returns q the closest point to p on the line segment from A to B
+    if A.ndim == 1:
+        A = n.array([A])
+        B = n.array([B])
+        points = n.array([points])
 
-    # vector from A to B
-    AB = (B-A)
-    # squared distance from A to B
-    AB_squared = n.dot(AB,AB)
-    if AB_squared == 0:
-        # A and B are the same point
-        q = A
-    else:
-        # vector from A to p
-        Ap = (p-A)
-        # from http://stackoverflow.com/questions/849211/
-        # Consider the line extending the segment, parameterized as A + t (B - A)
-        # We find projection of point p onto the line.
-        # It falls where t = [(p-A) . (B-A)] / |B-A|^2
-        t = n.dot(Ap,AB)/AB_squared;
-        if t < 0.0:
-        # "Before" A on the line, just return A
-            q = A
-        elif t > 1.0:
-            # "After" B on the line, just return B
-            q = B
+    qOut = n.empty( (0, 2) )
+    for a, b, point in zip(A,B, points):
+        # vector from A to B
+        AB = (b-a)
+        # squared distance from A to B
+        AB_squared = n.dot(AB,AB)
+
+        if AB_squared == 0:
+            # A and B are the same point
+            q = a
         else:
-            # projection lines "inbetween" A and B on the line
-            q = A + t * AB;
-    return q
+            # vector from A to p
+            Ap = (point-a)
+            # from http://stackoverflow.com/questions/849211/
+            # Consider the line extending the segment, parameterized as A + t (B - A)
+            # We find projection of point p onto the line.
+            # It falls where t = [(p-A) . (B-A)] / |B-A|^2
+            t = n.dot(Ap,AB)/AB_squared
+            if t < 0.0:
+            # "Before" A on the line, just return A
+                q = a
+            elif t > 1.0:
+                # "After" B on the line, just return B
+                q = b
+            else:
+                # projection lines "inbetween" A and B on the line
+                q = a + t * AB
+            #q = q[:, n.newaxis]
+            q = n.array([q])
+        qOut = n.append(qOut, q, 0)
+    return qOut
 
 
 if __name__ == "__main__":
     print 'entered main'
-    points = n.random.random_sample((2,40))
-    print points
-    hull_pts = convex_hull(points)
+    #points = n.random.random_sample((2,40))
+    #print points
+    #hull_pts = convex_hull(points)
 
 #    p.show()
     # p.clf()
@@ -153,6 +170,15 @@ if __name__ == "__main__":
 #    p.show() 
 
     # print hull_pts
+
+    A = n.array([[1, 2], [2, 4]])
+    B = n.array([[3, 4], [1, 2]])
+    p = n.array([[3.5, 10], [3,4]])
+    q = project_point_to_line_segment(A, B, p)
+    print q
+    
+    _angle_to_point(n.array([[1, 4], [1, 6]]), n.array([2, 4]))
+    
     print 'done'
 
 
