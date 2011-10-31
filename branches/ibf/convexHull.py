@@ -43,20 +43,20 @@ def area_of_triangle(p1, p2, p3):
 def convex_hull(points, graphic=True, smidgen=0.0075):
     '''Calculate subset of points that make a convex hull around points
 
-Recursively eliminates points that lie inside two neighbouring points until only convex hull is remaining.
+    Recursively eliminates points that lie inside two neighbouring points until only convex hull is remaining.
+    
+    :Parameters:
+        points : ndarray (2 x m) 
+            array of points for which to find hull
+        graphic : bool
+            use pylab to show progress?
+        smidgen : float
+            offset for graphic number labels - useful values depend on your data range
 
-:Parameters:
-    points : ndarray (2 x m)
-        array of points for which to find hull
-    graphic : bool
-        use pylab to show progress?
-    smidgen : float
-        offset for graphic number labels - useful values depend on your data range
-
-:Returns:
-    hull_points : ndarray (2 x n)
-        convex hull surrounding points
-'''
+    :Returns:
+        hull_points : ndarray (2 x n)
+            convex hull surrounding points
+    '''
     logger.debug('start convex hull')
 
     if graphic:
@@ -112,11 +112,13 @@ Recursively eliminates points that lie inside two neighbouring points until only
 
 def project_point_to_line_segment(A, B, points):
     '''
+    Parameters:
       A: Vector of beginning line points
       B: Vector of ending line points
       points: The points for which the projection is to be done. 
+    Returns:
+      qOut: the closest points (projections) on the line segment
     '''
-    # returns q the closest point to p on the line segment from A to B
     if A.ndim == 1:
         A = n.array([A])
         B = n.array([B])
