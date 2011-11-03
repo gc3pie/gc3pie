@@ -602,7 +602,7 @@ def mkdir_with_backup(path, mode=0777):
 
 
 def prettyprint(D, indent=0, width=0, maxdepth=None, step=4,
-                only_keys=None, output=sys.stdout, _exclude=None):
+                only_keys=None, output=sys.stdout, _key_prefix='', _exclude=None):
     """
     Print dictionary instance `D` in a YAML-like format.
     Each output line consists of:
@@ -629,13 +629,24 @@ def prettyprint(D, indent=0, width=0, maxdepth=None, step=4,
     for k,v in sorted(D.iteritems()):
         leading_spaces = indent * ' '
         if only_keys is not None:
+            full_name = "%s%s" % (_key_prefix, k)
             try:
                 # is `only_keys` a filter function?
-                if not only_keys(str(k)):
+                if not only_keys(str(full_name)):
                     continue
             except TypeError:
-                # no, then it must be a list of key names
-                if str(k) not in only_keys:
+                # no, then it must be a list of key names, check for
+                # keys having the same number of dots as in the prefix
+                level = _key_prefix.count('.')
+                found = False
+                for name in only_keys:
+                    # take only the initial segment, up to a "level" dots
+                    dots = min(name.count('.'), level) + 1
+                    prefix = str.join('.', name.split('.')[:dots])
+                    if str(full_name) == prefix:
+                        found = True
+                        break
+                if not found:
                     continue
         # ignore excluded items
         if id(v) in _exclude:
@@ -649,7 +660,7 @@ def prettyprint(D, indent=0, width=0, maxdepth=None, step=4,
                     depth = maxdepth-1
                 sstream = StringIO.StringIO()
                 prettyprint(v, indent+step, width, depth, step,
-                            only_keys, sstream, _exclude)
+                            only_keys, sstream, full_name+'.', _exclude)
                 second = sstream.getvalue()
                 sstream.close()
             elif maxdepth == 0:
