@@ -31,9 +31,11 @@ class costlyOptimization(object):
     self.target_fx     = np.array(paras['target_fx'])
     self.convCrit      = paras['convCrit'] 
     self.converged     = False
+    self.makePlots          = True
 
     self.x             = self.xInitialGuess
-    self.fx            = np.empty( ( 0, len(self.x)) )
+    self.fx            = np.array([])
+    #np.empty( ( 0, len(self.x)) )
     #np.array([[]])    
     
   def updateInterpolationPoints(self, x, fx):
@@ -42,56 +44,73 @@ class costlyOptimization(object):
         self.x  = np.append(self.x, np.array([paraCombo]), 0)
       else: 
         logger.critical('x = %s already in self.x = %s' % (x, self.x))
-    self.fx = np.append(self.fx, np.array([fx]), 0)
-##    indices = np.argsort(self.x)
-##    self.x = self.x[indices]
-##    self.fx = self.fx[indices]
+    self.fx = np.append(self.fx, fx)
     bestIndex = np.argmin(self._computeNormedDistance(self.fx))
     self.best_x = self.x[bestIndex]
     self.best_fx  = self.fx[bestIndex]
     
   def checkConvergence(self):
+    logger.debug('checking convergence...')
     distance = self._computeNormedDistance(self.best_fx)
-    if np.all(distance < self.convCrit): 
+    if np.all(distance < self.convCrit):
+      logger.debug('converged at fx %s with target %s to precision %s' % (self.best_fx, self.target_fx, self.convCrit))
       self.converged = True
     else: 
+      logger.debug('not converged at fx %s with target %s to precision %s' % (self.best_fx, self.target_fx, self.convCrit))
       self.converged = False
     return self.converged
     
   def updateApproximation(self):
     logger.debug('updating approximation')
-    #self.gx = si.lagrange(self.x, self.fx)
-    self.gx = iwdInterpolation(self.x, self.fx)
+    if len(self.x[0]) == 1: # we are dealing with the one-dimensional case
+      self.gx = si.lagrange(self.x[:, 0], self.fx)
+    #self.gx = iwdInterpolation(self.x, self.fx)
     logger.debug('done updating approximation')
     
   def generateNewGuess(self):
-    x0 = self.best_x
     def target(x):
       distance = self.gx(x) - self.target_fx
-      return distance
+      return distance[0]
     logger.debug('generating new guess: ')
     logger.debug('current x points: %s' % self.x)
     logger.debug('current fx points: %s' % self.fx)
-    distance = self.fx - self.target_fx
-    if np.all(distance > 0) or np.all(distance < 0):
+    if np.all(self.fx > 0) or np.all(self.fx < 0):
       logger.critical('the initial points %s do not contain the zero')  
     try: 
-      logger.debug('trying brentq')
-      xhat = scipy.optimize.newton_krylov(target, x0)
-      #xhat = scipy.optimize.brentq(f = target, a = np.min(self.x), b = np.max(self.x))
-      fxhat = self.gx(xhat)
+      raise ValueError
+      #logger.debug('trying brentq')
+      #x0 = self.best_x
+      #xhat = scipy.optimize.newton_krylov(target, x0)
+      ##xhat = scipy.optimize.brentq(f = target, a = np.min(self.x), b = np.max(self.x))
+      #fxhat = self.gx(xhat)
     except ValueError: 
       logger.debug('brentq failed, trying naive method')
-      xGrid = np.linspace(np.min(self.x), np.max(self.x), 1000)
-      fxGrid = self.gx(xGrid)
+##      min_x = np.min(self.x[:, 0])
+##      max_x = np.max(self.x[:, 0])
+##      min_y = np.min(self.x[:, 1])
+##      max_y = np.max(self.x[:, 1])
+##      xGrid = np.linspace(0.5, 1.3, 100)
+##      YGrid = np.linspace(-1., 2, 100)
+##      X, Y = np.meshgrid(xGrid, YGrid)
+##      xMat = zip(X.flatten(), Y.flatten())
+      xMat = np.linspace(-2, 2, 1.e6)
+      fxGrid = self.gx(xMat)
+      if self.makePlots:
+          # make plot
+        fig = plt.figure()
+        ax = fig.add_subplot(111)
+        ax.plot(xMat, fxGrid)
+        figureFile = 'lagrangeApprox.eps'
+        fig.savefig(figureFile)
+        os.system('chmod 660 ' + figureFile)
       bestIndex = np.argmin(self._computeNormedDistance(fxGrid))
-      xhat = xGrid[bestIndex]
+      xhat = xMat[bestIndex]
       fxhat = fxGrid[bestIndex]
     logger.debug('sending back optimal value given gx: xhat = %s fxhat = %s' % (xhat, fxhat))
     if xhat in self.x:
-      logger.critical('xhat = %s already in self.x = %s' % (x, self.x))
+      logger.critical('xhat = %s already in self.x = %s' % (xhat, self.x))
       os._exit(1)
-    return np.array([xhat])
+    return np.array([[xhat]])
   
   def _computeNormedDistance(self, fx):
     fx = np.asanyarray(fx)

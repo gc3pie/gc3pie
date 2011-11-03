@@ -45,6 +45,7 @@ class iwdInterpolation(object):
             x0 = np.array([x0])
         gxList = []
         for x0Ele in x0:
+            x0Ele = np.array(x0Ele)
             isInside = self.check_is_inside(x0Ele)
             logger.debug('isInside: %s' % isInside)
             if isInside:
