@@ -11,7 +11,6 @@ import matplotlib.pyplot as plt
 import matplotlib.mlab as mlab
 
 from pymods.support.support import wrapLogger
-from iwdInterpolationNew import iwdInterpolation
 
 # Set up logger
 logger = wrapLogger(loggerName = 'costlyOptimizationLogger', streamVerb = 'DEBUG', logFile = os.path.join(os.getcwd(), 'costlyOpt.log'))
@@ -27,7 +26,7 @@ class costlyOptimization(object):
     logger.debug('initializing new instance of costlyOptimization')
     self.xVars         = paras['xVars']
     self.xInitialGuess = paras['xInitialParaCombo']
-    self.targetVar     = paras['targetVar']
+    self.targetVars     = paras['targetVars']
     self.target_fx     = np.array(paras['target_fx'])
     self.convCrit      = paras['convCrit'] 
     self.converged     = False

@@ -72,6 +72,9 @@ if __name__ == '__main__':
                 os.remove(os.path.join('/tmp', 'para.loop'))
             else: 
                 rmFilesAndFolders(curPath)
+# Call: 
+# -x /home/benjamin/workspace/idrisk/model/bin/idRiskOut -b /home/benjamin/workspace/idrisk/model/base para.loop -xVars 'wBarLower' -xVarsDom '-0.2 0.2 ' -target_fx '-0.1' -convCrit '4.9e-2 -sv info  -C 10 -N
+
 
 
 # ugly workaround for Issue 95,
@@ -109,7 +112,7 @@ logger = wrapLogger(loggerName = 'idRiskParaSearchLogger', streamVerb = 'DEBUG',
 
 class solveParaCombination(SequentialTaskCollection):
 
-    def __init__(self, substs, **sessionParas):
+    def __init__(self, substs, solverParas, **sessionParas):
 
         logger.debug('entering solveParaCombination.__init__ for job %s' % sessionParas['jobname'])
         self.iter    = 0
@@ -123,15 +126,6 @@ class solveParaCombination(SequentialTaskCollection):
         self.localBaseDir     = sessionParas['localBaseDir']
         
         self.paraFolder = os.path.join(os.getcwd(), sessionParas['jobname'])
-
-        # First loop over beta
-        solverParas = {}
-        solverParas['xVars'] = ['wBarLower']
-        solverParas['xInitialParaCombo'] = np.array([[-0.2], [0.2]])
-        solverParas['targetVar'] = ['iBar_Shock0Agent0']
-        solverParas['target_fx'] = [-0.1]
-        solverParas['plotting'] = False
-        solverParas['convCrit'] = 1.e-2
         
         self.wBarLower_task = idRiskParaSearchDriver(self.paraFolder, self.substs, solverParas, **sessionParas)
 
@@ -219,7 +213,7 @@ class idRiskParaSearchDriver(SequentialTaskCollection):
         
         self.xVars       = solverParas['xVars']
         self.xParaCombos = solverParas['xInitialParaCombo']
-        self.targetVar   = solverParas['targetVar']
+        self.targetVars   = solverParas['targetVars']
         self.target_fx   = solverParas['target_fx']
 
         self.evaluator = idRiskParaSearchParallel(self.xVars, self.xParaCombos, substs, self.optimFolder, solverParas , **sessionParas)
@@ -426,7 +420,28 @@ class idRiskParaSearchScript(SessionBasedScript, forwardPremium.paraLoop_fp):
                        dest="architecture", default=Run.Arch.X86_64,
                        help="Processor architecture required by the executable"
                        " (one of: 'i686' or 'x86_64', without quotes)")
-
+        self.add_param("-mP", "--makePlots", metavar="ARCH", type = bool, 
+                       dest="makePlots", default = True,
+                       help="Generate population plots each iteration.  ")
+        self.add_param("-xVars", "--xVars", metavar="ARCH",
+                       dest="xVars", default = 'EA',
+                       help="x variables over which to optimize")
+        self.add_param("-xVarsDom", "--xVarsDom", metavar="ARCH",
+                       dest="xVarsDom", default = '0.5 0.9',
+                       help="Domain to sample x values from. Space separated list. ")
+        self.add_param("-targetVars", "--target_fx", metavar="ARCH",
+                       dest="targetVars", default = '0.1',
+                       help="Domain to sample x values from. Space separated list. ")
+        self.add_param("-target_fx", "--target_fx", metavar="ARCH",
+                       dest="target_fx", default = '0.1',
+                       help="Domain to sample x values from. Space separated list. ")
+        self.add_param("-sv", "--solverVerb", metavar="ARCH",
+                       dest="solverVerb", default = 'DEBUG',
+                       help="Separate verbosity level for the global optimizer ")
+        self.add_param("-yC", "--yConvCrit", metavar="ARCH", type = float, 
+                       dest="convCrit", default = '1.e-2',
+                       help="Convergence criteria for y variables. ")
+#-x /home/benjamin/workspace/idrisk/model/bin/idRiskOut -b /home/benjamin/workspace/idrisk/model/base para.loop -xVars 'wBarLower' -xVarsDom '-0.2 0.2 ' -target_fx '-0.1' -yC '4.9e-2' -sv info  -C 10 -N
 
     def parse_args(self):
         """
@@ -455,14 +470,25 @@ class idRiskParaSearchScript(SessionBasedScript, forwardPremium.paraLoop_fp):
 
 
         for jobname, substs in self.process_para_file(paraLoopFile):
-            # yield job            
-            kwargs = {}
+            # yield job
             sessionParas = {}
             sessionParas['pathToExecutable'] = self.params.executable
             sessionParas['architecture'] = self.params.architecture
             sessionParas['localBaseDir'] = localBaseDir
-            sessionParas['jobname'] = jobname 
-            yield (jobname, solveParaCombination, [ substs ], sessionParas)
+            sessionParas['jobname'] = jobname
+            # Compute domain
+            xVarsDom = self.params.xVarsDom.split()
+            lowerBds = np.array([xVarsDom[i] for i in range(len(xVarsDom)) if i % 2 == 0], dtype = 'float64')
+            upperBds = np.array([xVarsDom[i] for i in range(len(xVarsDom)) if i % 2 == 1], dtype = 'float64')
+            domain = zip(lowerBds, upperBds)
+            solverParas = {}
+            solverParas['xVars'] = self.params.xVars.split()
+            solverParas['xInitialParaCombo'] = np.array([lowerBds, upperBds])
+            solverParas['targetVars'] = self.params.xVars.split()
+            solverParas['target_fx'] = self.params.target_fx.split()
+            solverParas['plotting'] = False
+            solverParas['convCrit'] = self.params.convCrit
+            yield (jobname, solveParaCombination, [ substs, solverParas ], sessionParas)
 
 
 if __name__ == '__main__':
