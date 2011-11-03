@@ -176,15 +176,20 @@ GC3Libs internals.
                        metavar="LIST", default='', 
                        help="Only print job attributes whose name appears in"
                        " this comma-separated list.")
-
+        self.add_param("-t", "--tabular", action="store_true", dest="tabular",
+                       default=False,
+                       help="Print attributes in table format."
+                       " Must be used together with '--print'.")
+        
     def main(self):
         if len(self.params.args) == 0:
             # if no arguments, operate on all known jobs
             try:
                 self.params.args = self._store.list()
             except NotImplementedError, ex:
-                raise NotImplementedError("Job storage module does not allow listing all jobs."
-                                          " Please specify the job IDs you wish to operate on.")
+                raise NotImplementedError(
+                    "Job storage module does not allow listing all jobs."
+                    " Please specify the job IDs you wish to operate on.")
 
         try:
             width = int(os.environ['COLUMNS'])
@@ -202,6 +207,15 @@ GC3Libs internals.
                 # print *all* keys if `-vv` is given
                 only_keys = None
 
+        if self.params.tabular:
+            if len(self.params.keys) == 0:
+                raise gc3libs.exceptions.InvalidUsage("Option '--tabular' only makes sense in conjuction with '--print'.")
+            # print table of job status
+            table = Texttable(0) # max_width=0 => dynamically resize cells
+            table.set_deco(Texttable.HEADER) # also: .VLINES, .HLINES .BORDER
+            table.set_cols_align(['l'] * (1 + len(only_keys)))
+            table.header(["Job ID"] + only_keys)
+
         def cmp_by_jobid(x,y):
             return cmp(x.persistent_id, y.persistent_id)
         ok = 0
@@ -213,12 +227,24 @@ GC3Libs internals.
             # of times we *should* have run, i.e., the number of
             # arguments we were passed.
             ok += 1
-            print(str(app.persistent_id))
-            if self.params.verbose == 0:
-                utils.prettyprint(app.execution, indent=4, width=width, only_keys=only_keys)
+            if self.params.tabular:
+                row = [str(app)]
+                for key in only_keys:
+                    try:
+                        row.append(gc3libs.utils.getattr_nested(app, key))
+                    except AttributeError:
+                        row.append("N/A")
+                table.add_row(row)
             else:
-                # with `-v` and above, dump the whole `Application` object
-                utils.prettyprint(app, indent=4, width=width, only_keys=only_keys)
+                # usual YAML-like output
+                print(str(app.persistent_id))
+                if self.params.verbose == 0:
+                    utils.prettyprint(app.execution, indent=4, width=width, only_keys=only_keys)
+                else:
+                    # with `-v` and above, dump the whole `Application` object
+                    utils.prettyprint(app, indent=4, width=width, only_keys=only_keys)
+        if self.params.tabular:
+            print(table.draw())
         failed = len(self.params.args) - ok
         # exit code is practically limited to 7 bits ...
         return utils.ifelse(failed < 127, failed, 126)
