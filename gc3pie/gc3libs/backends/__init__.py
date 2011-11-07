@@ -124,6 +124,13 @@ class LRMS(object):
         """
         raise NotImplementedError("Abstract method 'LRMS.validate_data()' called - this should have been defined in a derived class.")
 
+    def close(self):
+        """
+        Implement gracefully close on LRMS dependent resources
+        e.g. transport
+        """
+        raise NotImplementedError("Abstract method 'LRMS.close()' called - this should have been defined in a derived class.")
+
 
 ## main: run tests
 

@@ -182,6 +182,7 @@ class SshTransport(Transport):
     ssh = None
     sftp = None
     _is_open = False
+    transport_channel = None
 
     def __init__(self, remote_frontend,
                  port=gc3libs.Default.SSH_PORT,
@@ -189,12 +190,14 @@ class SshTransport(Transport):
         self.remote_frontend = remote_frontend
         self.port = port
         self.username = username
+        self.ssh = paramiko.SSHClient()
 
     @same_docstring_as(Transport.connect)
     def connect(self):
         try:
-            if not self._is_open:
-                self.ssh = paramiko.SSHClient()
+            self.transport_channel = self.ssh.get_transport()
+            if not self._is_open or self.transport_channel == None or not self.transport_channel.is_active():
+                gc3libs.log.info("Opening SshTransport... ")
                 self.ssh.load_system_host_keys()
                 self.ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
                 gc3libs.log.debug(
@@ -206,20 +209,21 @@ class SshTransport(Transport):
                                  allow_agent=True)
                 self.sftp = self.ssh.open_sftp()
                 self._is_open = True
-                gc3libs.log.debug(
-                    "connected to '%s' on port %d with username '%s'",
-                    self.remote_frontend, self.port, self.username)
         except Exception, ex:
             gc3libs.log.error(
                 "Could not create ssh connection to %s: %s: %s",
                 self.remote_frontend, ex.__class__.__name__, str(ex))
+            self._is_open = False
             raise gc3libs.exceptions.TransportError(
                 "Failed while connecting to remote host '%s': %s"
                 % (self.remote_frontend, str(ex)))
 
+
     @same_docstring_as(Transport.chmod)
     def chmod(self, path, mode):
         try:
+            # check connection first
+            self.connect()
             self.sftp.chmod(path, mode)
         except Exception, ex:
             raise gc3libs.exceptions.TransportError(
@@ -230,6 +234,8 @@ class SshTransport(Transport):
     @same_docstring_as(Transport.execute_command)
     def execute_command(self, command):
         try:
+            # check connection first
+            self.connect()
             stdin_stream, stdout_stream, stderr_stream = self.ssh.exec_command(command)
             stdout = stdout_stream.read()
             stderr = stderr_stream.read()
@@ -248,6 +254,8 @@ class SshTransport(Transport):
         # SFTPClient.listdir() raises IOError(errno=2) when called
         # with a non-directory argument
         try:
+            # check connection first
+            self.connect()
             self.sftp.listdir(path)
             return True
         except IOError, ex:
@@ -260,6 +268,8 @@ class SshTransport(Transport):
     @same_docstring_as(Transport.listdir)
     def listdir(self, path):
         try:
+            # check connection first
+            self.connect()
             return self.sftp.listdir(path)
         except Exception, ex:
             raise gc3libs.exceptions.TransportError("Could not list directory '%s' on host '%s': %s: %s"
@@ -278,6 +288,8 @@ class SshTransport(Transport):
                 continue
             dest += '/' + dir
             try:
+                # check connection first
+                self.connect()
                 self.sftp.mkdir(dest, mode)
             except IOError:
                 # sftp.mkdir raises IOError if the directory exists;
@@ -299,6 +311,8 @@ class SshTransport(Transport):
                 % (destdir, self.remote_frontend,
                    ex.__class__.__name__, str(ex)))
         try:
+            # check connection first
+            self.connect()
             self.sftp.put(source, destination)
         except Exception, ex:
             raise gc3libs.exceptions.TransportError(
@@ -320,6 +334,8 @@ class SshTransport(Transport):
                     # http://code.fabfile.org/issues/show/306
                     self.get(source + '/' + name, destination + '/' + name)
             else:
+                # check connection first
+                self.connect()
                 self.sftp.get(source, destination)
         except Exception, ex:
             # IOError(errno=2) means the remote path is not existing
@@ -334,6 +350,8 @@ class SshTransport(Transport):
     def remove(self, path):
         try:
             gc3libs.log.debug("SshTransport.remove(): path: %s; remote host: %s" % (path, self.remote_frontend))
+            # check connection first
+            self.connect()
             self.sftp.remove(path)
         except IOError, ex:
             raise gc3libs.exceptions.TransportError("Could not remove '%s' on host '%s': %s: %s"
@@ -362,6 +380,8 @@ class SshTransport(Transport):
     @same_docstring_as(Transport.open)
     def open(self, source, mode, bufsize=-1):
         try:
+            # check connection first
+            self.connect()
             return self.sftp.open(source, mode, bufsize)
         except Exception, ex:
             raise gc3libs.exceptions.TransportError("Could not open file '%s' on host '%s': %s: %s"
@@ -373,14 +393,15 @@ class SshTransport(Transport):
         """
         Close the transport channel
         """
-        # gc3libs.log.debug("Closing sftp and ssh connections... ")
+        gc3libs.log.info("Closing SshTransport to host '%s'... " % self.remote_frontend)
+
         if self.sftp is not None:
             self.sftp.close()
         if self.ssh is not None:
             self.ssh.close()
         self._is_open = False
-        gc3libs.log.debug("Closed SshTransport to host '%s'"
-                          % self.remote_frontend)
+        # gc3libs.log.debug("Closed SshTransport to host '%s'"
+        # % self.remote_frontend)
 
 
 # -----------------------------------------------------------------------------
@@ -443,6 +464,7 @@ class LocalTransport(Transport):
 
     @same_docstring_as(Transport.connect)
     def connect(self):
+        gc3libs.log.info("Opening LocalTransport... ")
         self._is_open = True
 
     @same_docstring_as(Transport.chmod)
@@ -580,6 +602,6 @@ class LocalTransport(Transport):
 
     @same_docstring_as(Transport.close)
     def close(self):
+        gc3libs.log.info("Closing LocalTransport... ")
         self._is_open = False
-        gc3libs.log.debug("Closed LocalTransport instance.")
 

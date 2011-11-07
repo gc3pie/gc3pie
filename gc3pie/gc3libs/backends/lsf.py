@@ -37,7 +37,7 @@ from gc3libs import log, Run
 from gc3libs.backends import LRMS
 import gc3libs.exceptions
 import gc3libs.utils as utils # first, to_bytes
-from gc3libs.utils import same_docstring_as
+from gc3libs.utils import *
 
 import transport
 
@@ -438,9 +438,9 @@ class LsfLrms(LRMS):
                                 % (_command, self._resource, exit_code, stderr))
         except gc3libs.exceptions.TransportError, x:
             raise
-        except:
-            self.transport.close()
-            raise
+        # except:
+        #     self.transport.close()
+        #     raise
 
         # Copy the input file to remote directory.
         for local_path,remote_path in app.inputs.items():
@@ -458,7 +458,7 @@ class LsfLrms(LRMS):
             except:
                 log.critical("Copying input file '%s' to remote cluster '%s' failed",
                                       local_path.path, self._resource.frontend)
-                self.transport.close()
+                # self.transport.close()
                 raise
 
         if app.executable.startswith('./'):
@@ -490,7 +490,7 @@ class LsfLrms(LRMS):
                 % (ssh_remote_folder, bsub, script_name))
             jobid = get_bsub_jobid(stdout)
             log.debug('Job submitted with jobid: %s', jobid)
-            self.transport.close()
+            # self.transport.close()
 
             job.lrms_jobid = jobid
             if app.has_key('stdout'):
@@ -516,7 +516,7 @@ class LsfLrms(LRMS):
             return job
 
         except:
-            self.transport.close()
+            # self.transport.close()
             log.critical("Failure submitting job to resource '%s' - see log file for errors"
                                   % self._resource.name)
             raise
@@ -580,12 +580,12 @@ class LsfLrms(LRMS):
                     state = Run.State.UNKNOWN
 
         except Exception, ex:
-            self.transport.close()
+            # self.transport.close()
             log.error("Error in querying LSF resource '%s': %s: %s",
                               self._resource.name, ex.__class__.__name__, str(ex))
             raise
         
-        self.transport.close()
+        # self.transport.close()
 
         job.state = state
         return state
@@ -607,11 +607,11 @@ class LsfLrms(LRMS):
                     # failed executing remote command
                     raise gc3libs.exceptions.LRMSError('Failed executing remote command')
 
-            self.transport.close()
+            # self.transport.close()
             return job
 
         except:
-            self.transport.close()
+            # self.transport.close()
             log.critical('Failure in checking status')
             raise
         
@@ -673,11 +673,11 @@ class LsfLrms(LRMS):
                              " will not be overwritten!",
                              local_path)
 
-            self.transport.close()
+            # self.transport.close()
             return # XXX: should we return list of downloaded files?
 
         except: 
-            self.transport.close()
+            # self.transport.close()
             raise 
 
 
@@ -698,9 +698,9 @@ class LsfLrms(LRMS):
             remote_handler = self.transport.open(_remote_filename, mode='r', bufsize=-1)
             remote_handler.seek(offset)
             data = remote_handler.read(size)
-            self.transport.close()
+            # self.transport.close()
         except Exception, ex:
-            self.transport.close()
+            # self.transport.close()
             log.error("Could not read remote file '%s': %s: %s",
                               _remote_filename, ex.__class__.__name__, str(ex))
 
@@ -712,9 +712,20 @@ class LsfLrms(LRMS):
             output_file.close()
         log.debug('... Done.')
 
-                
-    @same_docstring_as(LRMS.get_resource_status)
+    @cache_for(gc3libs.Default.ARC_CACHE_TIME)    
     def get_resource_status(self):
+        """
+        Get dynamic information out of the LSF subsystem.
+
+        return self._resource
+
+        dynamic information required (at least those):
+        total_queued
+        free_slots
+        user_running
+        user_queued
+        """
+
         try:
             self.transport.connect()
 
@@ -764,7 +775,9 @@ class LsfLrms(LRMS):
             #     bhosts_output = stdout.strip().split('\n')
             #     bhosts_output.pop(0)
 
-            # QUEUE_NAME      PRIO STATUS          MAX JL/U JL/P JL/H NJOBS  PEND   RUN  SUSP
+
+            # Run bqueues to get information about the status of system queues
+            # used to build running_jobs and queued
             log.debug("Running `bqueues`... ")
             _command = "bqueues"
             exit_code, stdout, stderr = self.transport.execute_command(_command)
@@ -802,7 +815,7 @@ class LsfLrms(LRMS):
                 bjobs_output = stdout.strip().split('\n')
                 bjobs_output.pop(0)
 
-            self.transport.close()
+            # self.transport.close()
 
             # compute self._resource.total_slots
             self._resource.ncores = 0
@@ -883,11 +896,15 @@ class LsfLrms(LRMS):
             return self._resource
 
         except Exception, ex:
-            self.transport.close()
+            # self.transport.close()
             log.error("Error querying remote LRMS, see debug log for details.")
             log.debug("Error querying LRMS: %s: %s",
                       ex.__class__.__name__, str(ex))
             raise
+
+    @same_docstring_as(LRMS.validate_data)
+    def close(self):
+        self.transport.close()
         
     @same_docstring_as(LRMS.validate_data)
     def validate_data(self, data_file_list):

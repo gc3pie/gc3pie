@@ -377,7 +377,7 @@ class SgeLrms(LRMS):
         except gc3libs.exceptions.TransportError, x:
             raise
         except:
-            self.transport.close()
+            # self.transport.close()
             raise
 
         # Copy the input file to remote directory.
@@ -396,7 +396,7 @@ class SgeLrms(LRMS):
             except:
                 log.critical("Copying input file '%s' to remote cluster '%s' failed",
                                       local_path.path, self._resource.frontend)
-                self.transport.close()
+                # self.transport.close()
                 raise
 
         if app.executable.startswith('./'):
@@ -428,7 +428,7 @@ class SgeLrms(LRMS):
                                                                       % (ssh_remote_folder, qsub))
             jobid, jobname = get_qsub_jobid(stdout)
             log.debug('Job submitted with jobid: %s', jobid)
-            self.transport.close()
+            # self.transport.close()
 
             job.lrms_jobid = jobid
             job.lrms_jobname = jobname
@@ -455,7 +455,7 @@ class SgeLrms(LRMS):
             return job
 
         except:
-            self.transport.close()
+            # self.transport.close()
             log.critical("Failure submitting job to resource '%s' - see log file for errors"
                                   % self._resource.name)
             raise
@@ -581,12 +581,12 @@ class SgeLrms(LRMS):
                         job.sge_qstat_failed_at = time.time()
 
         except Exception, ex:
-            self.transport.close()
+            # self.transport.close()
             log.error("Error in querying SGE resource '%s': %s: %s",
                               self._resource.name, ex.__class__.__name__, str(ex))
             raise
         
-        self.transport.close()
+        # self.transport.close()
 
         job.state = state
         return state
@@ -610,11 +610,11 @@ class SgeLrms(LRMS):
                     # failed executing remote command
                     raise LRMSError('Failed executing remote command')
 
-            self.transport.close()
+            # self.transport.close()
             return job
 
         except:
-            self.transport.close()
+            # self.transport.close()
             log.critical('Failure in checking status')
             raise
         
@@ -676,11 +676,11 @@ class SgeLrms(LRMS):
                              " will not be overwritten!",
                              local_path)
 
-            self.transport.close()
+            # self.transport.close()
             return # XXX: should we return list of downloaded files?
 
         except: 
-            self.transport.close()
+            # self.transport.close()
             raise 
 
 
@@ -701,9 +701,9 @@ class SgeLrms(LRMS):
             remote_handler = self.transport.open(_remote_filename, mode='r', bufsize=-1)
             remote_handler.seek(offset)
             data = remote_handler.read(size)
-            self.transport.close()
+            # self.transport.close()
         except Exception, ex:
-            self.transport.close()
+            # self.transport.close()
             log.error("Could not read remote file '%s': %s: %s",
                               _remote_filename, ex.__class__.__name__, str(ex))
 
@@ -730,7 +730,7 @@ class SgeLrms(LRMS):
             _command = "qstat -F -U "+username
             exit_code, qstat_F_stdout, stderr = self.transport.execute_command(_command)
 
-            self.transport.close()
+            # self.transport.close()
 
             log.debug("Computing updated values for total/available slots ...")
             (total_running, self._resource.queued, 
@@ -753,7 +753,7 @@ class SgeLrms(LRMS):
             return self._resource
 
         except Exception, ex:
-            self.transport.close()
+            # self.transport.close()
             log.error("Error querying remote LRMS, see debug log for details.")
             log.debug("Error querying LRMS: %s: %s",
                       ex.__class__.__name__, str(ex))
@@ -769,7 +769,10 @@ class SgeLrms(LRMS):
                 return False
         return True
 
-
+    @same_docstring_as(LRMS.validate_data)
+    def close(self):
+        self.transport.close()
+        
 ## main: run tests
 
 if "__main__" == __name__:

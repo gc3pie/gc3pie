@@ -20,6 +20,16 @@ my $CODEML;
 my @temp_files  = qw/rub rst rst1 4fold.nuc lnf 2NG.t 2NG.dS 2NG.dN/;
 my $failed = 0;
 
+print "----- start of DEBUG info ----\n";
+print "host: [$host]\n";
+foreach my $key (sort keys %ENV) {
+  print "$key=$ENV{$key}\n";
+};
+
+print "------\n[$RTE]\n";
+
+print "----- end of DEBUG info ----\n";
+
 # Prepend fullpath to codeml binary and check the run-time environment (RTE) is set
 if ($RTE) {
     $CODEML = "$RTE/$bin";
