@@ -1154,6 +1154,11 @@ class SessionBasedScript(_Script):
         # save the session again before exiting, so the file reflects
         # jobs' statuses
         self._save_session()
+
+        # XXX: shall we call the termination on the controller here ?
+        # or rather as a post_run method in the SessionBasedScript ?
+        controller.close()
+
         return rc
 
 

@@ -560,6 +560,9 @@ class ArcLrms(LRMS):
                 return False
         return True
 
+    @same_docstring_as(LRMS.validate_data)
+    def close(self):
+        pass
 
 ## main: run tests
 

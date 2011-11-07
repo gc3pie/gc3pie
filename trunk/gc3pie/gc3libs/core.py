@@ -606,6 +606,15 @@ class Core:
                 lrms._resource.updated = False
 
 
+    def close(self):
+        """
+        Used to invoke explicitly the distructor on objects
+        e.g. LRMS
+        """
+        for lrms in self._lrms_list:
+            lrms.close()
+
+
     ## compatibility with the `Engine` interface
     
     def add(self, task):
@@ -1306,3 +1315,10 @@ class Engine(object):
         Proxy for `Core.peek` (which see).
         """
         self._core.peek(task, what, offset, size, **kw)
+
+    def close(self):
+        """
+        Call explicilty finalize methods on relevant objects
+        e.g. LRMS
+        """
+        self._core.close()

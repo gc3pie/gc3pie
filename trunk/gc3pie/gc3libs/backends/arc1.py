@@ -664,6 +664,9 @@ class Arc1Lrms(LRMS):
             arc_rootlogger.setThreshold(arc.DEBUG) # or .VERBOSE, .INFO, .WARNING, .ERROR
             gc3libs.backends.arc1.Arc1Lrms.arc_logger_set = True
 
+    @same_docstring_as(LRMS.validate_data)
+    def close(self):
+        pass
 
 ## main: run tests
 
