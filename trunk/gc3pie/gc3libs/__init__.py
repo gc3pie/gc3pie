@@ -981,6 +981,10 @@ class Application(Struct, Persistable, Task):
         return sorted(resources, cmp=self._cmp_resources)
 
 
+    ##
+    ## backend interface methods
+    ##
+    
     def xrsl(self, resource):
         """
         Return a string containing an xRSL sequence, suitable for
