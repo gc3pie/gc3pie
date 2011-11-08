@@ -70,13 +70,16 @@ class GamessApplication(gc3libs.Application):
         #if kw.has_key('requested_cores'):
         #    # NCPUS argument to `rungms`
         #    arguments.append(str(kw['requested_cores']))
+        #if kw.has_key('extbas') is not None:
+        #    other_input_files += extbas
+        #    arguments.extend(['--extbas', os.path.basename(extbas)])
         #set job name
         kw['job_name'] = input_file_name_sans
         # build generic `Application` obj
         gc3libs.Application.__init__(self, 
                                      executable = "/$GAMESS_LOCATION/nggms",
                                      arguments = arguments,
-                                     inputs = [ (inp_file_path, input_file_name) ] + list(other_input_files),
+                                     inputs = [ inp_file_path ] + list(other_input_files),
                                      outputs = [ output_file_name ],
                                      join = True,
                                      # needed by `ggamess`
@@ -204,7 +207,7 @@ class GamessAppPotApplication(GamessApplication,
         kw.setdefault('stdout', input_file_name_sans + '.out')
         kw.setdefault('application_tag', "gamess")
         kw.setdefault('tags', list())
-        kw['tags'].append("APPS/CHEM/GAMESS-APPPOT-0.11.10.13")
+        kw['tags'].append("APPS/CHEM/GAMESS-APPPOT-0.11.11.08")
         arguments = [ input_file_name ]
         verno = kw.get('verno', None)
         if verno is not None:
@@ -212,6 +215,9 @@ class GamessAppPotApplication(GamessApplication,
         if kw.has_key('requested_cores'):
             # NCPUS argument to `rungms`
             arguments.append(str(kw['requested_cores']))
+        if kw.has_key('extbas') is not None:
+            other_input_files += extbas
+            arguments.extend(['--extbas', os.path.basename(extbas)])
         # set job name
         kw['job_name'] = input_file_name_sans
         # init superclass
@@ -219,7 +225,7 @@ class GamessAppPotApplication(GamessApplication,
             self, 
             executable = "localgms",
             arguments = arguments,
-            inputs = [ (inp_file_path, input_file_name) ] + list(other_input_files),
+            inputs = [ inp_file_path ] + list(other_input_files),
             outputs = [ output_file_name ],
             join = True,
             # needed by `ggamess`
