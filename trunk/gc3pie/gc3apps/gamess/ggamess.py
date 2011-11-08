@@ -26,6 +26,9 @@ See the output of ``ggamess --help`` for program usage instructions.
 __version__ = 'development version (SVN $Revision$)'
 # summary of user-visible changes
 __changelog__ = """
+  2011-11-08:
+    * New command line option ``--extbasis`` for using an
+      external basis definition with GAMESS.
   2011-10-11:
     * Allow running GAMESS from an AppPot container.
   2010-12-20:
@@ -72,6 +75,10 @@ of newly-created jobs so that this limit is never exceeded.
                        dest="verno", default=None,
                        help="Request using the specified version of GAMESS;"
                        " (will be used as second argument to the localgms/rungms script).")
+        self.add_param("-e", "--extbas", metavar='FILE',
+                       dest='extbas',
+                       type=existing_file, default=None,
+                       help="Make the specified external basis file available to jobs.")
 
 
     def __init__(self):
@@ -99,6 +106,8 @@ of newly-created jobs so that this limit is never exceeded.
             parameters = [ path ]
             kwargs = extra.copy()
             kwargs['verno'] = self.params.verno
+            if self.params.extbas is not None:
+                kwargs['extbas'] = self.params.extbas
             if use_apppot:
                 if apppot_img is not None:
                     kwargs['apppot_img'] = apppot_img
