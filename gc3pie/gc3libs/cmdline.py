@@ -1204,21 +1204,15 @@ class SessionBasedScript(_Script):
                            % (self.params.session, str(ex)))
 
 
-    def _search_for_input_files(self, paths, matches=None, pattern=None):
+    def _search_for_input_files(self, paths, pattern=None):
         """
-        Recursively scan each location in list `paths` for files, and
-        return the set of path names to such files.
+        Recursively scan each location in list `paths` for files
+        matching a glob pattern, and return the set of path names to
+        such files.
 
-        If `matches` is ``None`` (default), then valid input
-        files/directories are selected by a glob-style match against
-        `pattern`.  The default the glob pattern is given by the value
-        of the `self.input_filename_pattern` attribute, but can be
-        overridden by the `pattern` argument.
-
-        If argument `matches` is not ``None``, then it must be a
-        callable, which is passed a path name (either file or
-        directory), and returns a boolean value indicating whether
-        that path name is a valid input (``True``) or not (``False``).
+        By default, the value of `self.input_filename_pattern` is used
+        as the glob pattern to match file names against, but this can
+        be overridden by specifying an explicit argument `pattern`.
         """
         inputs = set()
 
@@ -1234,11 +1228,9 @@ class SessionBasedScript(_Script):
             #self.log.debug("Input files must match glob pattern '%s' or extension '%s'"
             #               % (pattern, ext))
 
-        if matches is None:
-            def matches(name):
-                return (fnmatch.fnmatch(os.path.basename(name), pattern)
-                        or fnmatch.fnmatch(name, pattern))
-            
+        def matches(name):
+            return (fnmatch.fnmatch(os.path.basename(name), pattern)
+                    or fnmatch.fnmatch(name, pattern))
         for path in paths:
             self.log.debug("Now processing input path '%s' ..." % path)
             if os.path.isdir(path):
@@ -1265,4 +1257,3 @@ class SessionBasedScript(_Script):
             #self.log.debug("Gathered input files: '%s'" % str.join("', '", inputs))
 
         return inputs
-
