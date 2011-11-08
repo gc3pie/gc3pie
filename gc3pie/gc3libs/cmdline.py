@@ -1074,7 +1074,7 @@ class SessionBasedScript(_Script):
             )
 
         ## zero out the session index if `-N` was given
-        if os.path.exists(self.session_filename) and self.params.new_session:
+        if self.params.new_session or not os.path.exists(self.session_filename):
             # XXX: we should abort existing jobs here...
             open(self.session_filename, 'w+b').close()
 
