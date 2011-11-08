@@ -76,7 +76,7 @@ def backup(path):
       True
       
     """
-    parent_dir = os.path.dirname(path)
+    parent_dir = (os.path.dirname(path) or os.getcwd())
     prefix = os.path.basename(path) + '.~'
     p = len(prefix)
     suffix = 1
