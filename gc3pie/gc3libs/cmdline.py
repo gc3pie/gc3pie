@@ -1251,11 +1251,11 @@ class SessionBasedScript(_Script):
                 for dirpath, dirnames, filenames in os.walk(path):
                     for filename in filenames:
                         if matches(filename):
+                            pathname = os.path.join(dirpath, filename)
                             self.log.debug("Path '%s' matches pattern '%s',"
                                            " adding it to input list"
-                                           % (os.path.join(dirpath, filename),
-                                              pattern))
-                            inputs.add(os.path.join(dirpath, filename))
+                                           % (pathname, pattern))
+                            inputs.add(pathname)
             elif matches(path) and os.path.exists(path):
                 self.log.debug("Path '%s' matches pattern '%s',"
                                " adding it to input list" % (path, pattern))
