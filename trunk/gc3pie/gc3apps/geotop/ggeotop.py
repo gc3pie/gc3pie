@@ -53,9 +53,8 @@ import time
 # gc3 library imports
 import gc3libs
 from gc3libs import Application, Run, Task, RetryableTask
-from gc3libs.cmdline import SessionBasedScript
-from gc3libs.compat.collections import defaultdict
-from gc3libs.dag import SequentialTaskCollection
+from gc3libs.cmdline import SessionBasedScript, executable_file
+import gc3libs.utils
 
 
 ## custom application class
@@ -70,7 +69,8 @@ class GeotopApplication(Application):
         # remember for later
         self.simulation_dir = simulation_dir
         # stage all (non-hidden) files in the simulation directory for input
-        inputs = dict(entry for entry in os.listdir(simulation_dir)
+        inputs = dict((os.path.join(simulation_dir, entry), entry)
+                      for entry in os.listdir(simulation_dir)
                       if not entry.startswith('.'))
         if executable is not None:
             # use the specified executable
@@ -80,9 +80,11 @@ class GeotopApplication(Application):
             raise NotImplementedError("No RTE for GEOtop defined; please specify an executable!")
             # use the default one provided by the RTE
             executable_name = '/$GEOTOP'
-        # set some execution defaults
+        # set some execution defaults...
         kw.setdefault('requested_cores', 1)
         kw.setdefault('requested_architecture', Run.Arch.X86_64)
+        # ...and remove excess ones
+        kw.pop('output_dir', None)
         Application.__init__(
             self,
             executable = executable_name,
@@ -144,7 +146,7 @@ class GeotopApplication(Application):
         os.removedirs(tmp_output_dir)
 
 
-class GeotopTask(RetryableTask):
+class GeotopTask(RetryableTask, gc3libs.utils.Struct):
 
     def __init__(self, simulation_dir, executable=None, **kw):
         RetryableTask.__init__(
@@ -206,33 +208,51 @@ newly-created jobs so that this limit is never exceeded.
             )
 
     def setup_options(self):
-        self.add_param("-x", "--executable", metavar="PATH",
+        self.add_param("-x", "--executable", metavar="PATH", #type=executable_file,
                        dest="executable", default=None,
                        help="Path to the GEOtop executable file.")
         # change default for the "-o"/"--output" option
         #self.actions['output'].default = 'NPOPSIZE/PARAMS/ITERATION'
 
 
-    @staticmethod
-    def _valid_simulation_dir(path):
-        """Return ``True`` if `path` is a valid GEOtop simulation directory."""
-        return (os.path.isdir(path)
-                and os.path.exists(os.path.join(path, 'geotop.inpts')))
-    
+    def parse_args(self):
+        """
+        Check validity and consistency of command-line options.
+        """
+        if self.params.executable is None:
+            raise gc3libs.exceptions.InvalidUsage(
+                "Use the '-x' option to specify a valid path to the GEOtop executable.")
+        if not os.path.exists(self.params.executable):
+            raise gc3libs.exceptions.InvalidUsage(
+                "Path '%s' to the GEOtop executable does not exist;"
+                " use the '-x' option to specify a valid one."
+                % self.params.executable)
+        gc3libs.utils.test_file(self.params.executable, os.R_OK|os.X_OK,
+                                gc3libs.exceptions.InvalidUsage)
+
+
     def new_tasks(self, extra):
-        inputs = self._search_for_input_files(self.params.args,
-                                              matches=self._valid_simulation_dir)
-        for path in inputs:
+        input_files = self._search_for_input_files(self.params.args, 'geotop.inpts')
+
+        # the real input to GEOtop are the directories containing `geotop.inpts`
+        input_dirs = [ (os.path.dirname(path) or os.getcwd())
+                       for path in input_files ]
+
+        for path in input_dirs:
             # construct GEOtop job
             yield (
                 # job name
                 gc3libs.utils.basename_sans(path),
-                # application class
-                GeotopTask,
-                # parameters to `cls` constructor, see `GeotopTask.__init__`
-                [ path, self.params.executable ],
-                # keyword arguments, see `GeotopTask.__init__`
-                extra.copy())
+                # task constructor
+                ggeotop.GeotopTask,
+                [ # parameters passed to the constructor, see `GeotopTask.__init__`
+                    path,                   # path to the directory containing input files
+                    self.params.executable, # path to the GEOtop executable
+                ],
+                # extra keyword arguments passed to the constructor,
+                # see `GeotopTask.__init__`
+                extra.copy()
+                )
 
         
 
