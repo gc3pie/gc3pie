@@ -1073,18 +1073,18 @@ class SessionBasedScript(_Script):
             idfactory=gc3libs.persistence.JobIdFactory()
             )
 
+        ## zero out the session index if `-N` was given
+        if os.path.exists(self.session_filename) and self.params.new_session:
+            # XXX: we should abort existing jobs here...
+            open(self.session_filename, 'w+b').close()
+
         ## load the session index file
         try:
-            if os.path.exists(self.session_filename) and not self.params.new_session:
-                session_file = file(self.session_filename, "r+b")
-            else:
-                session_file = file(self.session_filename, "w+b")
+            self._load_session(self.session_filename, self.store)
         except IOError, ex:
-            self.log.critical("Cannot open session file '%s' in read+write mode: %s. Aborting."
-                              % (self.params.session, str(ex)))
+            self.log.critical("Cannot open session index file '%s' in read+write mode: %s."
+                              " Aborting." % (self.session_filename, str(ex)))
             return 1
-        self._load_session(session_file, self.store)
-        session_file.close()
 
         ## update session based on comman-line args
         self.process_args()
@@ -1162,12 +1162,19 @@ class SessionBasedScript(_Script):
         return rc
 
 
-    def _load_session(self, session_file, store):
+    def _load_session(self, session_filename, store):
         """
         Load all jobs from a previously-saved session file into `self.tasks`.
         The `session_file` argument can be any file-like object suitable
         for passing to Python's stdlib `csv.DictReader`.
         """
+        if not os.path.exists(session_filename):
+            # try older copy, if present
+            if os.path.exists(session_filename + '.OLD'):
+                session_filename += '.OLD'
+            else:
+                raise IOError(2, "No such file or directory: '%s'" % session_filename)
+        session_file = open(session_filename, 'r+b')
         for row in csv.DictReader(session_file,
                                   ['jobname', 'persistent_id', 'state', 'info']):
             row['jobname'] = row['jobname'].strip()
@@ -1179,7 +1186,8 @@ class SessionBasedScript(_Script):
             task = store.load(row['persistent_id'])
             # append to this list
             self.tasks.append(task)
-
+        session_file.close()
+        
 
     def _save_session(self, store=None):
         """
@@ -1190,8 +1198,10 @@ class SessionBasedScript(_Script):
         If `store` is different from the default `None`, then each job
         in the session is also saved to it.
         """
+        # save to a temporary file
+        session_filename_new = self.session_filename + '.NEW'
         try:
-            session_file = file(self.session_filename, "wb")
+            session_file = file(session_filename_new, "wb")
             for task in self.tasks:
                 if store is not None:
                     store.save(task)
@@ -1202,6 +1212,9 @@ class SessionBasedScript(_Script):
         except IOError, ex:
             self.log.error("Cannot save job list to session file '%s': %s"
                            % (self.params.session, str(ex)))
+        # move it to final location
+        os.rename(self.session_filename, self.session_filename + '.OLD')
+        os.rename(session_filename_new, self.session_filename)
 
 
     def _search_for_input_files(self, paths, pattern=None):
