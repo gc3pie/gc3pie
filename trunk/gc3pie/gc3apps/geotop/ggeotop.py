@@ -57,6 +57,9 @@ from gc3libs.cmdline import SessionBasedScript, executable_file
 import gc3libs.utils
 
 
+GC3PIE_PLACEHOLDER_FILENAME = ".gc3pie_placeholder"
+
+
 ## custom application class
 
 class GeotopApplication(Application):
@@ -69,9 +72,28 @@ class GeotopApplication(Application):
         # remember for later
         self.simulation_dir = simulation_dir
         # stage all (non-hidden) files in the simulation directory for input
-        inputs = dict((os.path.join(simulation_dir, entry), entry)
-                      for entry in os.listdir(simulation_dir)
-                      if not entry.startswith('.'))
+
+        def fill_empty_folder(simulation_dir):
+            for dirpath, dirnames, filenames in os.walk(simulation_dir):
+                entry = os.path.basename(dirpath)
+                if not dirnames and not filenames:
+                    try:
+                        f = open(os.path.join(dirpath, GC3PIE_PLACEHOLDER_FILENAME),"w+")
+                        f.close()
+                        yield ((os.path.join(dirpath, GC3PIE_PLACEHOLDER_FILENAME),
+                                os.path.join(entry, GC3PIE_PLACEHOLDER_FILENAME)))
+                    except IOError:
+                        raise
+                else:
+                    for f in filenames:
+                        if dirpath == simulation_dir:
+                            yield(os.path.join(dirpath,f),f)
+                        else:
+                            yield (os.path.join(dirpath,f),os.path.join(entry,f))
+
+
+        inputs = dict((a,b) for (a,b) in fill_empty_folder(simulation_dir))
+
         if executable is not None:
             # use the specified executable
             executable_name = './' + os.path.basename(executable)
@@ -123,9 +145,13 @@ class GeotopApplication(Application):
             # concatenate all output files together
             if entry == self.stdout:
                 gc3libs.utils.cat(src_entry, output=os.path.join(self.simulation_dir, entry), append=True)
+                # try remove it
+                os.remove(src_entry)
                 continue
             if entry == self.stderr:
                 gc3libs.utils.cat(src_entry, output=os.path.join(self.simulation_dir, entry), append=True)
+                # try remove it
+                os.remove(src_entry)
                 continue
             if entry in exclude or (entry.startswith('script.') and entry.endswith('.sh')):
                 # delete entry and continue with next one
@@ -143,7 +169,8 @@ class GeotopApplication(Application):
                 # backup with numerical suffix
                 gc3libs.utils.backup(dest_entry)
             os.rename(os.path.join(tmp_output_dir, entry), dest_entry)
-        os.removedirs(tmp_output_dir)
+        # os.removedirs(tmp_output_dir)
+        shutil.rmtree(tmp_output_dir, ignore_errors=True)
 
 
 class GeotopTask(RetryableTask, gc3libs.utils.Struct):
@@ -204,7 +231,7 @@ newly-created jobs so that this limit is never exceeded.
             # (which correspond to the processed files) omit counting
             # actual applications because their number varies over
             # time as checkpointing and re-submission takes place.
-            stats_only_for = ggeotop.GeotopTask,
+            stats_only_for = ggeotop.GeotopApplication,
             )
 
     def setup_options(self):

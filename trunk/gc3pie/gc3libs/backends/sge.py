@@ -371,7 +371,7 @@ class SgeLrms(LRMS):
             if exit_code == 0:
                 ssh_remote_folder = stdout.split('\n')[0]
             else:
-                raise LRMSError("Failed while executing command '%s' on resource '%s';"
+                raise gc3libs.exceptions.LRMSError("Failed while executing command '%s' on resource '%s';"
                                 " exit code: %d, stderr: '%s'."
                                 % (_command, self._resource, exit_code, stderr))
         except gc3libs.exceptions.TransportError, x:
@@ -424,8 +424,14 @@ class SgeLrms(LRMS):
                     os.unlink(local_script_file.name)
                 # submit it
                 qsub += ' ' + script_name
-            exitcode, stdout, stderr = self.transport.execute_command("/bin/sh -c 'cd %s && %s'" 
+            exit_code, stdout, stderr = self.transport.execute_command("/bin/sh -c 'cd %s && %s'" 
                                                                       % (ssh_remote_folder, qsub))
+
+            if exit_code != 0:
+                raise gc3libs.exceptions.LRMSError("Failed while executing command '%s' on resource '%s';"
+                                " exit code: %d, stderr: '%s'."
+                                % (_command, self._resource, exit_code, stderr))
+            
             jobid, jobname = get_qsub_jobid(stdout)
             log.debug('Job submitted with jobid: %s', jobid)
             # self.transport.close()
@@ -608,7 +614,7 @@ class SgeLrms(LRMS):
                 log.debug("remote command returned stderr: %s" % stderr)
                 if exit_code == 127:
                     # failed executing remote command
-                    raise LRMSError('Failed executing remote command')
+                    raise gc3libs.exceptions.LRMSError('Failed executing remote command')
 
             # self.transport.close()
             return job

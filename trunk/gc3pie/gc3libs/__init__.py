@@ -32,6 +32,7 @@ relevant aspects of the application being represented.
 
 """
 __docformat__ = 'reStructuredText'
+
 __version__ = 'development version (SVN $Revision$)'
 
 
@@ -81,13 +82,13 @@ class Default(object):
     ARC_JOBLIST_LOCATION = os.path.expandvars("$HOME/.arc/jobs.xml")
     
     SGE_LRMS = 'sge'
+    LSF_LRMS = 'lsf'
+
     # Transport information
     SSH_PORT = 22
     SSH_CONNECT_TIMEOUT = 30
 
-    LSF_LRMS = 'lsf'
-    
-    FORK_LRMS = 'fork'
+    # FORK_LRMS = 'fork'
     SUBPROCESS_LRMS = 'subprocess'
 
     # Proxy
@@ -723,7 +724,7 @@ class Application(Struct, Persistable, Task):
         # required parameters
         self.executable = executable
         self.arguments = [ str(x) for x in arguments ]
-        
+
         self.inputs = Application._io_spec_to_dict(gc3libs.url.UrlKeyDict, inputs, True)
         self.outputs = Application._io_spec_to_dict(gc3libs.url.UrlValueDict, outputs, False)
 
