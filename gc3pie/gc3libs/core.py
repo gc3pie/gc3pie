@@ -41,7 +41,7 @@ import gc3libs.debug
 from gc3libs import Application, Run, Task
 from gc3libs.backends.sge import SgeLrms
 from gc3libs.backends.lsf import LsfLrms
-from gc3libs.backends.fork import ForkLrms
+# from gc3libs.backends.fork import ForkLrms
 from gc3libs.backends.subprocess import SubprocessLrms
 from gc3libs.authentication import Auth
 import gc3libs.exceptions
@@ -654,8 +654,9 @@ class Core:
                         _lrms = SgeLrms(_resource, self.auths)
                     elif _resource.type == gc3libs.Default.LSF_LRMS:
                         _lrms = LsfLrms(_resource, self.auths)
-                    elif _resource.type == gc3libs.Default.FORK_LRMS:
-                        _lrms = ForkLrms(_resource, self.auths)
+                    # ForkLrms is deprecated. Use subprocess instead
+                    # elif _resource.type == gc3libs.Default.FORK_LRMS:
+                    #     _lrms = ForkLrms(_resource, self.auths)
                     elif _resource.type == gc3libs.Default.SUBPROCESS_LRMS:
                         _lrms = SubprocessLrms(_resource, self.auths)
                     else:
@@ -723,7 +724,7 @@ def get_resources(resources_list):
             gc3libs.Default.ARC1_LRMS,
             gc3libs.Default.SGE_LRMS,
             gc3libs.Default.LSF_LRMS,
-            gc3libs.Default.FORK_LRMS,
+            # gc3libs.Default.FORK_LRMS,
             gc3libs.Default.SUBPROCESS_LRMS,
             ]:
             gc3libs.log.error(

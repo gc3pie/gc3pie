@@ -46,7 +46,6 @@ class ForkLrms(object):
 
         # checking mandatory resource attributes
         resource.name
-        resource.frontend
         resource.transport
 
         self._resource = resource
@@ -57,7 +56,7 @@ class ForkLrms(object):
         # We only support fork with 'local' transport
         if resource.transport == 'local':
             self.transport = transport.LocalTransport()
-        elif resource.transport == 'ssh':
+        else:
             raise gc3libs.exceptions.TransportError("Unsuported transport '%s'. fork only supports transport of type: 'local'", resource.transport)
         
         self.isValid = 1

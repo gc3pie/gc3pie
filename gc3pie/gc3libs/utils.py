@@ -640,8 +640,9 @@ def prettyprint(D, indent=0, width=0, maxdepth=None, step=4,
     _exclude.add(id(D))
     for k,v in sorted(D.iteritems()):
         leading_spaces = indent * ' '
+        full_name = "%s%s" % (_key_prefix, k)
         if only_keys is not None:
-            full_name = "%s%s" % (_key_prefix, k)
+            # full_name = "%s%s" % (_key_prefix, k)
             try:
                 # is `only_keys` a filter function?
                 if not only_keys(str(full_name)):
