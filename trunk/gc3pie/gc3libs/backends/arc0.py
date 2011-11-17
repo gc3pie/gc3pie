@@ -129,9 +129,9 @@ class ArcLrms(LRMS):
         update_job_state() method.
         """
         jobs = {}
-        cls = self._get_clusters()
-        log.debug('Arc0LRMS._get_clusters() returned %d cluster resources.' % len(cls))
-        job_list = arclib.GetAllJobs(cls, True, '', 3)
+        clusters = self._get_clusters()
+        log.debug('Arc0LRMS._get_clusters() returned %d cluster resources.' % len(clusters))
+        job_list = arclib.GetAllJobs(clusters, True, '', 3)
         log.info("Updating list of jobs belonging to resource '%s': got %d jobs."
                  % (self._resource.name, len(job_list)))
         for job in job_list:
@@ -142,14 +142,14 @@ class ArcLrms(LRMS):
     # there's no point in querying it more often than this...
     @cache_for(gc3libs.Default.ARC_CACHE_TIME)
     def _get_queues(self):
-        cls = self._get_clusters()
-        log.debug('_get_clusters returned [%d] cluster resources' % len(cls))
-        if not cls:
+        clusters = self._get_clusters()
+        log.debug('_get_clusters returned [%d] cluster resources' % len(clusters))
+        if not clusters:
             # empty list of clusters. Not following back to system GIIS configuration
             # returning empty list
-            return cls
+            return clusters
         log.info("Updating resource Queues information")
-        return arclib.GetQueueInfo(cls,arclib.MDS_FILTER_CLUSTERINFO,
+        return arclib.GetQueueInfo(clusters, arclib.MDS_FILTER_CLUSTERINFO,
                                    True, '', 5)
 
             
