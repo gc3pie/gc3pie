@@ -83,13 +83,11 @@ class Default(object):
     
     SGE_LRMS = 'sge'
     LSF_LRMS = 'lsf'
+    SUBPROCESS_LRMS = 'subprocess'
 
     # Transport information
     SSH_PORT = 22
     SSH_CONNECT_TIMEOUT = 30
-
-    # FORK_LRMS = 'fork'
-    SUBPROCESS_LRMS = 'subprocess'
 
     # Proxy
     PROXY_VALIDITY_THRESHOLD = 600 #: Proxy validity threshold in seconds. If proxy is expiring before the thresold, it will be marked as to be renewed.
