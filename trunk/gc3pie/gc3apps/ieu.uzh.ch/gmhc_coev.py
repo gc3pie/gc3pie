@@ -104,8 +104,7 @@ class GMhcCoevApplication(Application):
                              output_dir = output_dir,
                              stdout = 'matlab.log',
                              stderr = 'matlab.err',
-                             # tags = [ 'APPS/BIO/MHC_COEV-040711' ],
-                             tags = ['TEST/MHC_COEV-040711'],
+                             tags = [ 'APPS/BIO/MHC_COEV-040711' ],
                              **kw)
 
 class GMhcCoevTask(SequentialTaskCollection):
@@ -357,7 +356,7 @@ newly-created jobs so that this limit is never exceeded.
                                 iterno, basename, iters[basename], iterno - iters[basename])
                         for iter in range(iters[basename]+1, iterno+1):
                             kwargs = extra.copy()
-                            kwargs['executable'] = self.params.executable # None #FIXME: need commmand-line option!
+                            kwargs['executable'] = self.params.executable
                             yield (('%s#%d' % (basename, iter)),
                                    gmhc_coev.GMhcCoevTask,
                                    [self.params.walltime*60, # single_run_duration
