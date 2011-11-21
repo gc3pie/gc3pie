@@ -110,9 +110,9 @@ def trace(fn, log=gc3libs.log.debug):
     return wrapped
 
 
-def trace_instancemethod(klass, method, log=gc3libs.log.debug):
+def trace_instancemethod(cls, method, log=gc3libs.log.debug):
     """
-    Change an instancemethod so that calls to it are traceed.
+    Change an instancemethod so that calls to it are traced.
     
     Replacing a classmethod is a little more tricky.
     See: http://www.python.org/doc/current/ref/types.html
@@ -122,19 +122,19 @@ def trace_instancemethod(klass, method, log=gc3libs.log.debug):
     if mname in never_echo:
         pass
     elif is_classmethod(method):
-        setattr(klass, mname, classmethod(trace(method.im_func, log)))
+        setattr(cls, mname, classmethod(trace(method.im_func, log)))
     else:
-        setattr(klass, mname, trace(method, log))
+        setattr(cls, mname, trace(method, log))
 
 
-def trace_class(klass, log=gc3libs.log.debug):
+def trace_class(cls, log=gc3libs.log.debug):
     """
     Trace calls to class methods and static functions
     """
-    for _, method in inspect.getmembers(klass, inspect.ismethod):
-        trace_instancemethod(klass, method, log)
-    for _, fn in inspect.getmembers(klass, inspect.isfunction):
-        setattr(klass, name(fn), staticmethod(trace(fn, log)))
+    for _, method in inspect.getmembers(cls, inspect.ismethod):
+        trace_instancemethod(cls, method, log)
+    for _, fn in inspect.getmembers(cls, inspect.isfunction):
+        setattr(cls, name(fn), staticmethod(trace(fn, log)))
 
     
 def trace_module(mod, log=gc3libs.log.debug):
@@ -143,8 +143,8 @@ def trace_module(mod, log=gc3libs.log.debug):
     """
     for fname, fn in inspect.getmembers(mod, inspect.isfunction):
         setattr(mod, fname, trace(fn, log))
-    for _, klass in inspect.getmembers(mod, inspect.isclass):
-        trace_class(klass, log)
+    for _, cls in inspect.getmembers(mod, inspect.isclass):
+        trace_class(cls, log)
 
 
 
