@@ -20,9 +20,10 @@
 """
 Simple interface to the CODEML application.
 """
-__version__ = '1.1 (SVN $Revision$)'
+__version__ = '1.2 (SVN $Revision$)'
 __changelog__ = """
-Summary of user-visible changes
+Summary of user-visible changes:
+* 21-11-2011 RM: Mark job as successful if the output file parses OK
 * 29-04-2011 HS: changed to use RTE
 * 04-05-2011 AK: import sys module
                  print DEBUG statements (full paths of driver and application)
@@ -178,6 +179,26 @@ class CodemlApplication(gc3libs.Application):
         raise RuntimeError("Could not extract path to seqfile and/or treefile from '%s'"
                            % ctl_path)
 
+
+    @staticmethod
+    def parse_output_file(path):
+        if not os.path.exists(path):
+            return 'no file'
+        output_file = open(path, 'r')
+        time_used_found = False
+        for line in output_file:
+            match = CodemlApplication._TIME_USED_RE.match(line)
+            if match:
+                minutes = int(match.group('minutes'))
+                seconds = int(match.group('seconds'))
+                time_used_found = True
+                break
+        if time_used_found:
+            return (minutes*60 + seconds)
+        else:
+            return 'invalid'
+
+
     # stdout starts with `HOST: ...` and `CPU: ` lines, but there's a
     # variable number of spaces so we need a regexp to match
     _KEY_VALUE_SEP = re.compile(r':\s*')
@@ -235,23 +256,6 @@ class CodemlApplication(gc3libs.Application):
             self.execution.exitcode = 127
             return
 
-        def parse_output_file(path):
-            if not os.path.exists(path):
-                return 'no file'
-            output_file = open(path, 'r')
-            time_used_found = False
-            for line in output_file:
-                match = CodemlApplication._TIME_USED_RE.match(line)
-                if match:
-                    minutes = int(match.group('minutes'))
-                    seconds = int(match.group('seconds'))
-                    time_used_found = True
-                    break
-            if time_used_found:
-                return (minutes*60 + seconds)
-            else:
-                return 'invalid'
-
         # if output files were *not* uploaded to a remote server,
         # then check if they are OK and set exit code based on this
         if self.output_base_url is None:
@@ -263,7 +267,7 @@ class CodemlApplication(gc3libs.Application):
                 else:
                     gc3libs.log.debug("Output file '%s' does not match pattern 'H*.mlc' -- ignoring.")
                     continue # with next output_path
-                duration = parse_output_file(output_path)
+                duration = CodemlApplication.parse_output_file(output_path)
                 if duration == 'no file':
                     self.exists[n] = False
                     self.valid[n] = False
@@ -276,7 +280,13 @@ class CodemlApplication(gc3libs.Application):
                     self.exists[n] = True
                     self.valid[n] = True
                     self.time_used[n] = duration
-            
+                    
+        # if output files parsed OK, then override the exit code and
+        # mark the job as successful
+        if failed == 0:
+            self.execution.returncode = 0
+        
+        # set object attributes based on tag lines in the output
         stdout_path = os.path.join(download_dir, self.stdout)
         if os.path.exists(stdout_path):
             stdout_file = open(stdout_path, 'r')
