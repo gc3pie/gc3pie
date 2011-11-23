@@ -110,6 +110,7 @@ class RosettaApplication(gc3libs.Application):
 
         kw['application_tag'] = 'rosetta'
         application_release = "APPS/BIO/ROSETTA-%s" % application_release
+        # application_release = "TEST/BIO/ROSETTA-%s"  % application_release
         if kw.has_key('tags'):
             kw['tags'].append(application_release)
         else:

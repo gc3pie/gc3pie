@@ -77,6 +77,7 @@ class GeotopApplication(Application):
             for dirpath, dirnames, filenames in os.walk(simulation_dir):
                 entry = os.path.basename(dirpath)
                 if not dirnames and not filenames:
+                    # Folder is empty; fill it with a 'placeholder' file
                     try:
                         f = open(os.path.join(dirpath, GC3PIE_PLACEHOLDER_FILENAME),"w+")
                         f.close()

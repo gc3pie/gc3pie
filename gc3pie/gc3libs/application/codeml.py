@@ -75,6 +75,7 @@ class CodemlApplication(gc3libs.Application):
         if codeml is None:
             # use the RTE
             kw['tags'] = [ 'APPS/BIO/CODEML-4.4.3' ]
+            # kw['tags'] = [ 'APPS/BIO/CODEML-TEST' ]
         else:
             # use provided binary
             inputs[codeml] = 'codeml'

@@ -315,7 +315,10 @@ class ArcLrms(LRMS):
         state = self._map_arc0_status_to_gc3pie_state(arc_job.status)
         if arc_job.exitcode != -1:
             job.exitcode = arc_job.exitcode
-        elif state in [Run.State.TERMINATING, Run.State.TERMINATING] and job.returncode is None:
+
+        
+
+        elif state in [Run.State.TERMINATING, Run.State.TERMINATED] and job.returncode is None:
             # XXX: it seems that ARC does not report the job exit code
             # (at least in some cases); let's make one up based on
             # some crude heuristics
@@ -541,6 +544,12 @@ class ArcLrms(LRMS):
         # get JobFTPControl handle
         jftpc = arclib.JobFTPControl()
         remote_url = arclib.URL(job.lrms_jobid + '/' + remote_filename)
+
+        # check remote file size
+        remote_file_size = jftpc.Size(remote_url)
+        if offset < 0:
+            # consider this as 'starts from bottom'
+            offset = remote_file_size + offset
 
         # download file
         log.debug("Downloading max %d bytes at offset %d of remote file '%s' into local file '%s' ..."
