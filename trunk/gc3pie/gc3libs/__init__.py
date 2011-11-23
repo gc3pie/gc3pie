@@ -95,6 +95,7 @@ class Default(object):
     ARC1_LOGFILE = os.path.join(RCDIR, "arc1.log")
     ARC1_DEFAULT_SERVICE_TIMEOUT = 3 # max wait (seconds) for a service to respond; hopefully this impacts also LDAP searches
 
+    PEEK_FILE_SIZE = 120 # expressed in bytes
 
 from gc3libs.exceptions import *
 from gc3libs.persistence import Persistable

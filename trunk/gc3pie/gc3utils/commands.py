@@ -706,7 +706,8 @@ as more lines are written to the given stream.
                     file_handle.close()
                     time.sleep(5)
             else:
-                file_handle = self._core.peek(app, stream)
+                estimated_size = gc3libs.Default.PEEK_FILE_SIZE * self.params.num_lines
+                file_handle = self._core.peek(app, stream, offset=-estimated_size, size=estimated_size)
                 for line in file_handle.readlines()[-(self.params.num_lines):]:
                     print line.strip()
                 file_handle.close()
