@@ -514,7 +514,13 @@ newly-created jobs so that this limit is never exceeded.
             return "offval_1"
         else:
             # off_v_last == 0.xxxx
-            off_v_last_str = str(off_v_last)
+            
+            # XXX: Python switches to scientific notation for
+            # N<0.00001; the funny %-hack below ensures that the
+            # dot+digits notation is used instead; starting Python
+            # 2.6, the `format` function is available and should be
+            # preferred:: off_v_last_str = format(off_v_last, 'f')
+            off_v_last_str = ("%.16f" % off_v_last).rstrip('0')
             return ('offval_0' + off_v_last_str[2:])
 
     @staticmethod
