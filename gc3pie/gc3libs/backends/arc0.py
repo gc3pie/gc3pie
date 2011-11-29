@@ -113,7 +113,7 @@ class ArcLrms(LRMS):
             return arclib.GetClusterResources(arclib.URL(self._resource.arc_ldap),
                                               True, '', 1)
         else:
-            log.info("Updating ARC resource information from 'default GIIS'")
+            log.info("Updating ARC resource information from default GIIS")
             return arclib.GetClusterResources()
 
 
