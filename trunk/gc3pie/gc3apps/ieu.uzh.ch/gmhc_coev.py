@@ -327,11 +327,18 @@ newly-created jobs so that this limit is never exceeded.
                 except (OSError, IOError), ex:
                     self.log.warning("Cannot open input file '%s': %s: %s",
                                      path, ex.__class__.__name__, str(ex))
-                for row in csv.reader(inputfile):
+                for lineno, row in enumerate(csv.reader(inputfile)):
                     # ignore blank and comment lines (those that start with '#')
                     if len(row) == 0 or row[0].startswith('#'):
                         continue
-                    (iterno, N_str, p_mut_coeff_str, choose_or_rand_str, sick_or_not_str, off_v_last_str) = row
+                    try:
+                        (iterno, N_str, p_mut_coeff_str, choose_or_rand_str, sick_or_not_str, off_v_last_str) = row
+                    except ValueError:
+                        self.log.error("Wrong format in line %d of file '%s':"
+                                       " need 6 comma-separated values, but only got %d ('%s')."
+                                       " Ignoring input line, fix it and re-run.",
+                                       lineno, path, len(row), str.join(',', (str(x) for x in row)))
+                        continue # with next `row`
                     # extract parameter values
                     try:
                         iterno = int(iterno)
