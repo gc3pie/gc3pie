@@ -327,7 +327,29 @@ newly-created jobs so that this limit is never exceeded.
                 except (OSError, IOError), ex:
                     self.log.warning("Cannot open input file '%s': %s: %s",
                                      path, ex.__class__.__name__, str(ex))
-                for lineno, row in enumerate(csv.reader(inputfile)):
+                try:
+                    # the `csv.sniff()` function is confused by blank and comment lines,
+                    # so we need to filter the input to build a correct sample
+                    sample_lines = [ ]
+                    while len(sample_lines) < 5:
+                        line = inputfile.readline()
+                        # exit at end of file
+                        if line == '':
+                            break
+                        # ignore comment lines as they confuse `csv.sniff`
+                        if line.startswith('#') or line.strip() == '':
+                            continue
+                        sample_lines.append(line)
+                    csv_dialect = csv.Sniffer().sniff(str.join('', sample_lines))
+                    self.log.debug("Detected CSV delimiter '%s'", csv_dialect.delimiter)
+                except csv.Error:
+                    # in case of any auto-detection failure, fall back to the default
+                    self.log.warning("Could not determine field delimiter in file '%s',"
+                                     " assuming it's a comma character (',').",
+                                     path)
+                    csv_dialect = 'excel'
+                inputfile.seek(0)
+                for lineno, row in enumerate(csv.reader(inputfile, csv_dialect)):
                     # ignore blank and comment lines (those that start with '#')
                     if len(row) == 0 or row[0].startswith('#'):
                         continue
@@ -337,7 +359,7 @@ newly-created jobs so that this limit is never exceeded.
                         self.log.error("Wrong format in line %d of file '%s':"
                                        " need 6 comma-separated values, but only got %d ('%s')."
                                        " Ignoring input line, fix it and re-run.",
-                                       lineno, path, len(row), str.join(',', (str(x) for x in row)))
+                                       lineno+1, path, len(row), str.join(',', (str(x) for x in row)))
                         continue # with next `row`
                     # extract parameter values
                     try:
@@ -384,6 +406,7 @@ newly-created jobs so that this limit is never exceeded.
     ##
     ## INTERNAL METHODS
     ##
+
 
     _P_MUT_COEFF_RE = re.compile(r'((?P<num>[0-9]+)x)?10min(?P<exp>[0-9]+)')
 
