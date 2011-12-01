@@ -81,6 +81,8 @@ class ArcLrms(LRMS):
         #arcnotifier.SetNotifyLevel(arclib.VERBOSE)
         #arcnotifier.SetNotifyTimeStamp(True)
 
+        self.targets_blacklist = []
+
         self.isValid = 1
 
     def is_valid(self):
@@ -95,6 +97,31 @@ class ArcLrms(LRMS):
         except Exception, ex:
             gc3libs.log.error('Failed while killing job. Error type %s, message %s' % (ex.__class__,str(ex)))
             raise gc3libs.exceptions.LRMSError('Failed while killing job. Error type %s, message %s' % (ex.__class__,str(ex)))
+
+
+    # excluded_targets is the list of targets hostnames where the application
+    # has been already running; thus to be excluded for the next submission
+    # candidate_queues is the list of available queues
+    # this method simply returns a 
+    def _filter_queues(self, candidate_queues, job):
+        """
+        Excludes from the list of candidate queuse those corresponding to hosts
+        where a given job has been already running.
+        If all queues have been already tried, clear execution_targets list and
+        start again.
+        """
+        excluded_targets = job.execution_targets
+        queues = candidate_queues
+        # use queue.cluster.hostname to match entries from job.execution_targets list
+        for queue in queues:
+            if queue.cluster.hostname in excluded_targets:
+                queues.remove(queue)
+        if not queues:
+            # assume all available targes have been tried. Clean list and start over again
+            queues = candidate_queues
+            del job.execution_targets[:]
+
+        return queues
 
 
     # ARC refreshes the InfoSys every 30 seconds by default;
@@ -157,6 +184,14 @@ class ArcLrms(LRMS):
     def submit_job(self, app):
         job = app.execution
 
+        # try:
+        #     # job.execution_target
+        #     self.target_blacklist = job.execution_target
+        # except AttributeError:
+        #     # no execution_target, this is the first submission
+        #     # ignore and continue
+        #     pass
+
         self.auths.get(self._resource.auth)
 
         # Initialize xrsl
@@ -168,7 +203,8 @@ class ArcLrms(LRMS):
             raise gc3libs.exceptions.LRMSSubmitError('Failed in getting `Xrsl` object from arclib: %s: %s'
                                   % (ex.__class__.__name__, str(ex)))
 
-        queues = self._get_queues()
+        # queues = self._get_queues()
+        queues = self._filter_queues(self._get_queues(), job)
         if len(queues) == 0:
             raise gc3libs.exceptions.LRMSSubmitError('No ARC queues found')
 
@@ -183,6 +219,13 @@ class ArcLrms(LRMS):
 
         # save job ID for future reference
         job.lrms_jobid = lrms_jobid
+
+        # extract target name from lrms_jobid
+        # this will be attached to the job object.
+        # see Issue 227
+        url = arclib.URL(lrms_jobid)
+        job.execution_targets.append(url.Host())
+        
         # state is known at this point, so mark this as a successful update
         job._arc0_state_last_checked = time.time()
         return job

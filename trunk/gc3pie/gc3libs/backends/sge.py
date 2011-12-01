@@ -436,6 +436,8 @@ class SgeLrms(LRMS):
             log.debug('Job submitted with jobid: %s', jobid)
             # self.transport.close()
 
+            job.execution_target = self._resource.frontend
+            
             job.lrms_jobid = jobid
             job.lrms_jobname = jobname
             if app.has_key('stdout'):
