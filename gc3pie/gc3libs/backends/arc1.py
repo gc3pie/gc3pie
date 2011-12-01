@@ -401,7 +401,7 @@ class Arc1Lrms(LRMS):
         log.debug("ARC1 job status '%s' mapped to GC3Pie state '%s'",
                   arc_job.State.GetGeneralState(), state)
         if arc_job.ExitCode != -1:
-            job.returncode = arc_job.ExitCode
+            job.returncode = gc3libs.Run.shellexit_to_returncode(arc_job.ExitCode)
         elif state in [Run.State.TERMINATING, Run.State.TERMINATING] and job.returncode is None:
             # XXX: it seems that ARC does not report the job exit code
             # (at least in some cases); let's make one up based on
@@ -436,7 +436,7 @@ class Arc1Lrms(LRMS):
                 job.returncode = (Run.Signals.RemoteError, -1)
             else:
                 # presume everything went well...
-                job.returncode = 0
+                job.returncode = (0, 0)
             # pass
         job.lrms_jobname = arc_job.Name
 

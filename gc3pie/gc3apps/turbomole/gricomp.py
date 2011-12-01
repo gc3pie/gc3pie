@@ -245,9 +245,9 @@ class XmlLintApplication(LocalApplication):
         validation_log_contents = validation_logfile.read()
         validation_logfile.close()
         if 'validates' in validation_log_contents:
-            self.execution.returncode = 0 # SUCCESS
+            self.execution.returncode = (0, 0) # SUCCESS
         else:
-            self.execution.returncode = 1 # FAIL
+            self.execution.returncode = (0, 1) # FAIL
 
 
 class XmlDbApplication(LocalApplication):
