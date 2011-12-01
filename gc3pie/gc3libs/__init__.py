@@ -1428,6 +1428,8 @@ class Run(Struct):
         self._exitcode = None
         self._signal = None
 
+        self.execution_targets = []
+
         Struct.__init__(self, initializer, **keywd)
 
         if 'log' not in self: self.log = Log()

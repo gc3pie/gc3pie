@@ -76,21 +76,22 @@ class GeotopApplication(Application):
         def fill_empty_folder(simulation_dir):
             for dirpath, dirnames, filenames in os.walk(simulation_dir):
                 entry = os.path.basename(dirpath)
-                if not dirnames and not filenames:
-                    # Folder is empty; fill it with a 'placeholder' file
-                    try:
-                        f = open(os.path.join(dirpath, GC3PIE_PLACEHOLDER_FILENAME),"w+")
-                        f.close()
-                        yield ((os.path.join(dirpath, GC3PIE_PLACEHOLDER_FILENAME),
-                                os.path.join(entry, GC3PIE_PLACEHOLDER_FILENAME)))
-                    except IOError:
-                        raise
-                else:
-                    for f in filenames:
-                        if dirpath == simulation_dir:
-                            yield(os.path.join(dirpath,f),f)
-                        else:
-                            yield (os.path.join(dirpath,f),os.path.join(entry,f))
+                if not entry.endswith('~'):
+                    if not dirnames and not filenames:
+                        # Folder is empty; fill it with a 'placeholder' file
+                        try:
+                            f = open(os.path.join(dirpath, GC3PIE_PLACEHOLDER_FILENAME),"w+")
+                            f.close()
+                            yield ((os.path.join(dirpath, GC3PIE_PLACEHOLDER_FILENAME),
+                                    os.path.join(entry, GC3PIE_PLACEHOLDER_FILENAME)))
+                        except IOError:
+                            raise
+                    else:
+                        for f in filenames:
+                            if dirpath == simulation_dir:
+                                yield(os.path.join(dirpath,f),f)
+                            else:
+                                yield (os.path.join(dirpath,f),os.path.join(entry,f))
 
 
         inputs = dict((a,b) for (a,b) in fill_empty_folder(simulation_dir))
