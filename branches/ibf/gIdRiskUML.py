@@ -1,7 +1,7 @@
 #! /usr/bin/env python
 #
 """
-Driver script for running the `forwardPremium` application on SMSCG.
+Driver script for running the `idRisk` application on SMSCG.
 """
 # Copyright (C) 2011 University of Zurich. All rights reserved.
 #
@@ -20,7 +20,7 @@ Driver script for running the `forwardPremium` application on SMSCG.
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 #
 __version__ = '$Revision$'
-__author__ = 'Riccardo Murri <riccardo.murri@uzh.ch>'
+__author__ = 'Riccardo Murri <riccardo.murri@uzh.ch>, Benjamin Jonen < benjamin.jonen@bf.uzh.ch>'
 # summary of user-visible changes
 __changelog__ = """
   2011-05-16:
@@ -36,6 +36,7 @@ import shutil
 
 # Calls: -x /home/benjamin/workspace/fpProj/model/bin/forwardPremiumOut -b ../base/ para.loop  -C 1 -N -X i686
 # 5-x /home/benjamin/workspace/idrisk/bin/idRiskOut -b ../base/ para.loop  -C 1 -N -X i686
+# -x /home/benjamin/workspace/idrisk/model/bin/idRiskOut -b ../base/ para.loop  -C 1 -N
 
 # Remove all files in curPath if -N option specified. 
 if __name__ == '__main__':    
@@ -48,7 +49,7 @@ if __name__ == '__main__':
         from pymods.support.support import rmFilesAndFolders
         curPath = os.getcwd()
         filesAndFolder = os.listdir(curPath)
-        if 'gc3IdRisk.csv' in filesAndFolder or 'idRiskParaSearch.csv' in filesAndFolder: # if another paraSearch was run in here before, clean up. 
+        if 'gIdRiskUML.csv' in filesAndFolder or 'idRiskParaSearch.csv' in filesAndFolder: # if another paraSearch was run in here before, clean up. 
             if 'para.loop' in os.listdir(os.getcwd()):
                 shutil.copyfile(os.path.join(curPath, 'para.loop'), os.path.join('/tmp', 'para.loop'))
                 rmFilesAndFolders(curPath)
@@ -60,7 +61,7 @@ if __name__ == '__main__':
 # ugly workaround for Issue 95,
 # see: http://code.google.com/p/gc3pie/issues/detail?id=95
 if __name__ == "__main__":
-    import gc3IdRisk
+    import gIdRiskUML
 
 # std module imports
 import numpy as np
@@ -71,7 +72,17 @@ import time
 
 from supportGc3 import lower, flatten, str2tuple, getIndex, extractVal, str2vals
 from supportGc3 import format_newVal, update_parameter_in_file, safe_eval, str2mat, mat2str, getParameter
-from forwardPremium import paraLoop_fp, GPremiumApplication
+#from forwardPremium import GPremiumApplication
+from idRisk import idRiskApplication, idRiskApppotApplication
+from paraLoop import paraLoop
+
+path2Pymods = os.path.join(os.path.dirname(__file__), '../')
+if not sys.path.count(path2Pymods):
+    sys.path.append(path2Pymods)
+
+from pymods.support.support import fillInputDir
+from pymods.support.support import wrapLogger
+
 
 # gc3 library imports
 import gc3libs
@@ -79,21 +90,18 @@ from gc3libs import Application, Run, Task
 from gc3libs.cmdline import SessionBasedScript
 #from gc3libs.dag import SequentialTaskCollection, ParallelTaskCollection
 import gc3libs.utils
+import gc3libs.application
+import gc3libs.application.apppot
+
 
 import gc3libs.debug
 
 
 ## custom application class
 
-#class GPremiumApplication(Application, GPremiumTaskMods):
-    #"""
-    #Custom application class to wrap the execution of the
-    #`forwardPremiumOut` program by B. Jonen and S. Scheuring.
-    #"""
+logger = wrapLogger(loggerName = 'gIdRisk.log', streamVerb = 'INFO', logFile = os.path.join(os.getcwd(), 'gParaSearch.log'))
 
-
-
-class GPremiumScript(SessionBasedScript, paraLoop_fp):
+class gIdRiskScript(SessionBasedScript, paraLoop):
     """
 Read `.loop` files and execute the `forwardPremium` program accordingly.
     """
@@ -105,7 +113,7 @@ Read `.loop` files and execute the `forwardPremium` program accordingly.
             # only '.loop' files are considered as valid input
             input_filename_pattern = '*.loop',
         )
-        paraLoop_fp.__init__(self, verbosity = 'INFO')
+        paraLoop.__init__(self, 'INFO')
 
     def setup_options(self):
         self.add_param("-b", "--initial", metavar="DIR",
@@ -171,7 +179,7 @@ Read `.loop` files and execute the `forwardPremium` program accordingly.
                     for (var, val, index, regex) in changes:
                         update_parameter_in_file(os.path.join(localBaseDir, path),
                                                  var, index, val, regex)
-                self.fillInputDir(localBaseDir, input_dir)
+                fillInputDir(localBaseDir, input_dir)
                 # 3. build input file list
                 for dirpath,dirnames,filenames in os.walk(input_dir):
                     for filename in filenames:
@@ -192,8 +200,18 @@ Read `.loop` files and execute the `forwardPremium` program accordingly.
                 print 'kwargs = %s' % kwargs
                 print 'inputs = %s' % inputs
                 print 'outputs = %s' % outputs
+                # adaptions for uml
+                #cls = gIdRisk.idRiskApplication #before
+                cls = idRiskApppotApplication
+                #cls = gc3libs.application.apppot.AppPotApplication
+                kwargs['apppot_img'] = '/home/benjamin/workspace/apppot0+ben.disk.img'
+                kwargs['linux'] = '/home/benjamin/workspace/kernel64-3.0.8'
+                kwargs['uml'] = '/home/benjamin/workspace/kernel64-3.0.8'
+                #kwargs['tags'] = []
+                kwargs.setdefault('tags', [ ])
+                
                 # hand over job to create
-                yield (jobname, gc3IdRisk.GPremiumApplication,
+                yield (jobname, cls,
                        ['./' + executable, [], inputs, outputs], kwargs) 
 
 
@@ -201,4 +219,7 @@ Read `.loop` files and execute the `forwardPremium` program accordingly.
 ## run script
 
 if __name__ == '__main__':
-    GPremiumScript().run()
+    logger.info('Starting: \n%s' % ' '.join(sys.argv))
+    gIdRiskScript().run()
+    logger.info('main done')
+

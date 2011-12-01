@@ -468,7 +468,6 @@ class idRiskParaSearchScript(SessionBasedScript, forwardPremium.paraLoop_fp):
         localBaseDir = os.path.join(os.getcwd(), 'localBaseDir')
         gc3libs.utils.copytree(self.params.initial, localBaseDir)
 
-
         for jobname, substs in self.process_para_file(paraLoopFile):
             # yield job
             sessionParas = {}
@@ -489,6 +488,18 @@ class idRiskParaSearchScript(SessionBasedScript, forwardPremium.paraLoop_fp):
             solverParas['plotting'] = False
             solverParas['convCrit'] = self.params.convCrit
             yield (jobname, solveParaCombination, [ substs, solverParas ], sessionParas)
+            
+def extractLinspace(strIn):
+    import re
+    if re.match('\s*linspace', strIn):
+        (linSpacePart, strIn) = re.match('(\s*linspace\(.*?\)\s*)[,\s*]*(.*)', strIn).groups()
+        args = re.match('linspace\(([(0-9\.\s-]+),([0-9\.\s-]+),([0-9\.\s-]+)\)', linSpacePart).groups()
+        args = [ float(arg) for arg in args] # assume we always want float for linspace
+        linSpaceVec = np.linspace(args[0], args[1], args[2])
+        return linSpaceVec
+    else: 
+        print 'cannot find linspace in string'
+        os._exit()
 
 
 if __name__ == '__main__':
