@@ -232,7 +232,7 @@ newly-created jobs so that this limit is never exceeded.
             # (which correspond to the processed files) omit counting
             # actual applications because their number varies over
             # time as checkpointing and re-submission takes place.
-            stats_only_for = ggeotop.GeotopApplication,
+            stats_only_for = ggeotop.GeotopTask,
             )
 
     def setup_options(self):
