@@ -139,7 +139,7 @@ class GeotopApplication(Application):
         # provisionally set exit code to 99 (resubmit), will override
         # later if the tag files ``_SUCCESSFUL_RUN`` or
         # ``_FAILED_RUN`` are found.
-        self.execution.returncode = 99
+        self.execution.returncode = (0, 99)
         # move files one level up, except the ones listed in `exclude`
         for entry in os.listdir(tmp_output_dir):
             src_entry = os.path.join(tmp_output_dir, entry)
@@ -160,10 +160,10 @@ class GeotopApplication(Application):
                 continue
             # special files indicate successful or unsuccessful completion
             if entry in [ '_SUCCESSFUL_RUN', '_SUCCESSFUL_RUN.old' ]:
-                self.execution.returncode = posix.EX_OK
+                self.execution.returncode = (0, posix.EX_OK)
             elif entry in [ '_FAILED_RUN', '_FAILED_RUN.old' ]:
                 # use exit code 100 to indicate total failure
-                self.execution.returncode = 100
+                self.execution.returncode = (0, 100)
             # now really move file one level up
             dest_entry = os.path.join(self.simulation_dir, entry)
             if os.path.exists(dest_entry):

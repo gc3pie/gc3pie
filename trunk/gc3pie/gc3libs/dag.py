@@ -486,7 +486,7 @@ class ParallelTaskCollection(TaskCollection):
             task.update_state(**kw)
         self.execution.state = self._state()
         if self.execution.state == Run.State.TERMINATED:
-            self.execution.returncode = 0
+            self.execution.returncode = (0, 0)
             # set exitcode based on returncode of sub-tasks
             for task in self.tasks:
                 if task.execution.returncode != 0:

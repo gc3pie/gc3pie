@@ -90,7 +90,7 @@ class ParallelABC(ParallelTaskCollection):
                 ParallelTaskCollection.__init__(self, name, parallel_task, grid)
 
         def terminated(self):
-                self.execution.returncode = 0
+                self.execution.returncode = (0, 0)
 
 
 

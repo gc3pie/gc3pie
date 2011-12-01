@@ -352,7 +352,7 @@ class ArcLrms(LRMS):
                 job.returncode = (Run.Signals.RemoteError, -1)
             else:
                 # presume everything went well...
-                job.returncode = 0
+                job.returncode = (0, 0)
         job.lrms_jobname = arc_job.job_name # XXX: `lrms_jobname` is the name used in `sge.py`
 
         # XXX: do we need these?  they're already in `Application.stdout` and `Application.stderr`

@@ -1722,6 +1722,29 @@ class Run(Struct):
     Signals = _Signals()    
 
 
+    @staticmethod
+    def shellexit_to_returncode(rc):
+        """
+        Convert a shell exit code to a POSIX process return code.
+
+        A POSIX shell represents the return code of the last-run
+        program within its exit code as follows:
+
+        * If the program was terminated by signal `N`, the shell exits
+          with code 128+N,
+        
+        * otherwise, if the program terminated with exit code C, the
+          shell exits with code C.
+        """
+        # only the less significant 8 bits matter
+        rc &= 0xff
+        if rc > 128:
+            # terminated by signal N is encoded as 128+N
+            return (rc-128, -1)
+        else:
+            # regular exit
+            return (0, rc)
+
 
 class RetryableTask(Task):
     """

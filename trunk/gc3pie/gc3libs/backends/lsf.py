@@ -573,7 +573,7 @@ class LsfLrms(LRMS):
                         found = True
                         state = Run.State.TERMINATING
                         # XXX: assume returncode 0. need to 
-                        job.returncode = 0
+                        job.returncode = (0, 0)
                         break
                 if not found:
                     # job was lost??

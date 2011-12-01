@@ -285,7 +285,7 @@ class CodemlApplication(gc3libs.Application):
         # if output files parsed OK, then override the exit code and
         # mark the job as successful
         if failed == 0:
-            self.execution.returncode = 0
+            self.execution.returncode = (0, 0)
         
         # set object attributes based on tag lines in the output
         stdout_path = os.path.join(download_dir, self.stdout)
