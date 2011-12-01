@@ -34,7 +34,8 @@ __docformat__ = 'reStructuredText'
 import shutil
 
 
-# Calls: -x /home/benjamin/workspace/fpProj/model/bin/forwardPremiumOut -b ../base/ para.loop  -C 1 -N -X i686
+# Calls: 
+# -x /home/benjamin/workspace/fpProj/model/bin/forwardPremiumOut -b ../base/ para.loop  -C 1 -N -X i686
 # 5-x /home/benjamin/workspace/idrisk/bin/idRiskOut -b ../base/ para.loop  -C 1 -N -X i686
 # -x /home/benjamin/workspace/idrisk/model/bin/idRiskOut -b ../base/ para.loop  -C 1 -N
 
@@ -211,8 +212,9 @@ Read `.loop` files and execute the `forwardPremium` program accordingly.
                 kwargs.setdefault('tags', [ ])
                 
                 # hand over job to create
-                yield (jobname, cls,
-                       ['./' + executable, [], inputs, outputs], kwargs) 
+                #yield (jobname, cls, ['./' + executable, [], inputs, outputs], kwargs) 
+                yield (jobname, cls, ['ls', [], inputs, outputs], kwargs) 
+                #yield (jobname, cls, ['cd /home/user/job && ./' + executable, [], inputs, outputs], kwargs) 
 
 
 
