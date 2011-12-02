@@ -156,6 +156,11 @@ class Core:
         successful submission, call the `submitted` method on the
         `app` object.
 
+        At the beginning of the submission process, the
+        `app.execution` state is reset to ``NEW``; if submission is
+        successfull, the task will be in ``SUBMITTED`` or ``RUNNING``
+        state when this call returns.
+
         :raise: `gc3libs.exceptions.InputFileError` if an input file
                 does not exist or cannot otherwise be read.
         """
@@ -182,7 +187,8 @@ class Core:
         #                            gc3libs.exceptions.InputFileError)
 
         job = app.execution
-
+        job.state = Run.State.NEW
+        
         if len(self._lrms_list) == 0:
             raise gc3libs.exceptions.NoResources(
                 "Could not initialize any computational resource"
@@ -1271,10 +1277,12 @@ class Engine(object):
 
     def submit(self, task, **kw):
         """
-        Submit `task` at the next invocation of `perform`.  Actually,
-        the task is just added to the collection of managed tasks,
-        regardless of its state.
+        Submit `task` at the next invocation of `perform`.
+
+        The `task` state is reset to ``NEW`` and then added to the
+        collection of managed tasks.
         """
+        task.execution.state = Run.State.NEW
         return self.add(task)
 
 
