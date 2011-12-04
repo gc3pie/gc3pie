@@ -212,8 +212,8 @@ Read `.loop` files and execute the `forwardPremium` program accordingly.
                 kwargs.setdefault('tags', [ ])
                 
                 # hand over job to create
-                #yield (jobname, cls, ['./' + executable, [], inputs, outputs], kwargs) 
-                yield (jobname, cls, ['ls', [], inputs, outputs], kwargs) 
+                yield (jobname, cls, ['./' + executable, [], inputs, outputs], kwargs) 
+                #yield (jobname, cls, ['ls', [], inputs, outputs], kwargs) 
                 #yield (jobname, cls, ['cd /home/user/job && ./' + executable, [], inputs, outputs], kwargs) 
 
 
