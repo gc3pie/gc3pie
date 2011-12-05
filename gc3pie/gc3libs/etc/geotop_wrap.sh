@@ -77,6 +77,9 @@ if [ -x ./$GEOTOP_EXE ]; then
     echo "Start the code execution"
     ./$GEOTOP_EXE .
     RET=$? 
+    rm ./$GEOTOP_EXE
+    # Create output archive 
+    tar -czf output.tar.gz ./* 
     exit $RET
 else
     echo "$GEOTOP_EXE not found"
