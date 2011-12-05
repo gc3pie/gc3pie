@@ -60,7 +60,7 @@ INPUT_ARCHIVE=$1
 
 echo "Untar the input file"
 
-tar $OVERWRITE -xzvf $INPUT_ARCHIVE -C .
+tar $OVERWRITE -xzf $INPUT_ARCHIVE -C .
 RET=$?
 rm $INPUT_ARCHIVE
 
