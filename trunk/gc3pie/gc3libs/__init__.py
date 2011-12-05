@@ -1830,6 +1830,13 @@ class RetryableTask(Task):
 
     def submit(self, **kw):
         self.task.submit(**kw)
+        # immediately update state if submission of managed task was successful;
+        # otherwise this task may remain in ``NEW`` state which causes an
+        # unwanted resubmission if the managing programs ends or is interrupted
+        # just after the submission...
+        # XXX: this is a case for a generic publish/subscribe mechanism!
+        if self.task.execution.state != Run.State.NEW:
+            self.execution.state = self._recompute_state()
 
     def _recompute_state(self):
         """
