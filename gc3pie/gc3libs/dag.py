@@ -428,19 +428,28 @@ class ParallelTaskCollection(TaskCollection):
         Return the state of the collection.
 
         For a `ParallelTaskCollection`, the state of dependent jobs is
-        computed by looping across the states NEW, SUBMITTED, RUNNING,
-        STOPPED, TERMINATING, TERMINATED, UNKNOWN in the order given:
-        the first state for which there is at least one job in that
-        state is returned as the global collection state.
+        computed by looping across the states STOPPED, RUNNING,
+        SUBMITTED, TERMINATING, UNKNOWN, TERMINATED, NEW in the order
+        given: the first state for which there is at least one job in
+        that state is returned as the overall collection state.  As an
+        exception, if the collection is a mixture of NEW and
+        TERMINATED jobs, then the global state is RUNNING (presuming
+        we're in the middle of a computation).
         """
         stats = self.stats()
-        for state in [ Run.State.NEW,
-                       Run.State.SUBMITTED,
+        if stats[Run.State.NEW] + stats[Run.State.TERMINATED] == len(self.tasks):
+            # we're in the middle of a computation (there's a mixture
+            # of unsubmitted and finished tasks), so let's chalk this
+            # up to ``RUNNING`` state
+            return Run.State.RUNNING
+        for state in [ Run.State.STOPPED,
                        Run.State.RUNNING,
-                       Run.State.STOPPED,
-                       Run.State.TERMINATING,
-                       Run.State.TERMINATED,
+                       Run.State.SUBMITTED,
                        Run.State.UNKNOWN,
+                       Run.State.TERMINATING,
+                       # if we get here, then all jobs are TERMINATED or all NEW
+                       Run.State.TERMINATED,
+                       Run.State.NEW,
                        ]:
             if stats[state] > 0:
                 return state
