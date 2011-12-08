@@ -229,7 +229,7 @@ class idRiskParaSearchDriver(SequentialTaskCollection):
 
     def next(self, *args): 
         self.iter += 1
-        logger.debug('entering idRiskParaSearchDriver.next in iteration %s for variables %s' % (self.iter, self.solverParas['xVars']))
+        logger.debug('entering idRiskParaSearchDriver.next in iteration %s for variables %s and paraCombo %s' % (self.iter, self.solverParas['xVars'], self.jobname))
         # sometimes next is called even though run state is terminated. In this case simply return. 
         if self.costlyOptimizer.converged:
             return Run.State.TERMINATED
@@ -237,7 +237,7 @@ class idRiskParaSearchDriver(SequentialTaskCollection):
         if  self.execution.state == 'TERMINATED':
             logger.debug('idRiskParaSearchDriver.next already terminated. Returning.. ')
             return Run.State.TERMINATED
-        newVals = self.evaluator.target(self.xVars, self.xParaCombos, self.targetVar, self.target_fx)
+        newVals = self.evaluator.target(self.xVars, self.xParaCombos, self.targetVars, self.target_fx)
         if newVals is None:
             logger.critical('evaluating variable %s at guess %s failed' % (self.xVars, self.xParaCombos))	
             self.execution.returncode = 13
@@ -307,8 +307,8 @@ class idRiskParaSearchParallel(ParallelTaskCollection, forwardPremium.paraLoop_f
             else:
                 xVars[ixVar] = xVar
         # print table
-        overviewTable.order(['dy'] + xVars)
-        overviewTable.sort(['dy'] + xVars)
+        #overviewTable.order(['dy'] + xVars)
+        #overviewTable.sort(['dy'] + xVars)
         logger.info('table for job: %s' % self.jobname)
         logger.info(overviewTable) 
         # Could replace this with a check that every xVar value is in the table, then output the two relevant columns.
@@ -484,7 +484,7 @@ class idRiskParaSearchScript(SessionBasedScript, forwardPremium.paraLoop_fp):
             solverParas['xVars'] = self.params.xVars.split()
             solverParas['xInitialParaCombo'] = np.array([lowerBds, upperBds])
             solverParas['targetVars'] = self.params.xVars.split()
-            solverParas['target_fx'] = self.params.target_fx.split()
+            solverParas['target_fx'] = map(float, self.params.target_fx.split())
             solverParas['plotting'] = False
             solverParas['convCrit'] = self.params.convCrit
             yield (jobname, solveParaCombination, [ substs, solverParas ], sessionParas)
@@ -513,20 +513,20 @@ if __name__ == '__main__':
         for ixTable, table in enumerate(tableDicts):
             if ixTable == 0: continue
             optimalRuns = optimalRuns.getAppended(table)
-        optimalRuns.order(['dy', 'wBarLower'])
-        optimalRuns.sort(['dy'])
+        #optimalRuns.order(['dy', 'wBarLower'])
+        #optimalRuns.sort(['dy'])
         logger.info(optimalRuns)
         f = open(os.path.join(os.getcwd(), 'optimalRuns'), 'w')  
         print >> f, optimalRuns
         f.flush()
-    logger.info('Generating plot')
-    baseName = 'moments'
-    path = os.getcwd()
-    conditions = {}
-    overlay = {'EP': True, 'e_rs': True, 'e_rb': True, 'sigma_rs': True, 'sigma_rb': True}
-    tableFile = os.path.join(os.getcwd(), 'optimalRuns')
-    figureFile = os.path.join(os.getcwd(), 'optimalRunsPlot.eps')
-    momentPlots(baseName = baseName, path = path, xVar = 'dy', overlay = overlay, conditions = conditions, tableFile = tableFile, figureFile = figureFile)
+    #logger.info('Generating plot')
+    #baseName = 'moments'
+    #path = os.getcwd()
+    # conditions = {}
+    # overlay = {'EP': True, 'e_rs': True, 'e_rb': True, 'sigma_rs': True, 'sigma_rb': True}
+    # tableFile = os.path.join(os.getcwd(), 'optimalRuns')
+    # figureFile = os.path.join(os.getcwd(), 'optimalRunsPlot.eps')
+    # momentPlots(baseName = baseName, path = path, xVar = 'dy', overlay = overlay, conditions = conditions, tableFile = tableFile, figureFile = figureFile)
     logger.info('main done')
 
 

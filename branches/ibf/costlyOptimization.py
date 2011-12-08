@@ -24,16 +24,17 @@ class costlyOptimization(object):
   '''
   def __init__(self, paras):
     logger.debug('initializing new instance of costlyOptimization')
-    self.xVars         = paras['xVars']
-    self.xInitialGuess = paras['xInitialParaCombo']
-    self.targetVars     = paras['targetVars']
-    self.target_fx     = np.array(paras['target_fx'])
-    self.convCrit      = paras['convCrit'] 
-    self.converged     = False
-    self.makePlots          = True
+    self.xVars           = paras['xVars']
+    self.xInitialGuess   = paras['xInitialParaCombo']
+    self.targetVars      = paras['targetVars']
+    self.target_fx       = np.array(paras['target_fx'])
+    self.convCrit        = paras['convCrit'] 
+    self.converged       = False
+    self.makePlots       = True
+    self.nUpdates        = 0
 
-    self.x             = self.xInitialGuess
-    self.fx            = np.array([])
+    self.x               = self.xInitialGuess
+    self.fx              = np.array([])
     #np.empty( ( 0, len(self.x)) )
     #np.array([[]])    
     
@@ -41,18 +42,21 @@ class costlyOptimization(object):
     for paraCombo in x:
       if not paraCombo in self.x:
         self.x  = np.append(self.x, np.array([paraCombo]), 0)
-      else: 
+      elif self.nUpdates > 0:
         logger.critical('x = %s already in self.x = %s' % (x, self.x))
+      else: 
+        pass
     self.fx = np.append(self.fx, fx)
     bestIndex = np.argmin(self._computeNormedDistance(self.fx))
     self.best_x = self.x[bestIndex]
     self.best_fx  = self.fx[bestIndex]
+    self.nUpdates += 1
     
   def checkConvergence(self):
     logger.debug('checking convergence...')
     distance = self._computeNormedDistance(self.best_fx)
     if np.all(distance < self.convCrit):
-      logger.debug('converged at fx %s with target %s to precision %s' % (self.best_fx, self.target_fx, self.convCrit))
+      logger.debug('SUCCESS: converged at fx %s with target %s to precision %s' % (self.best_fx, self.target_fx, self.convCrit))
       self.converged = True
     else: 
       logger.debug('not converged at fx %s with target %s to precision %s' % (self.best_fx, self.target_fx, self.convCrit))
@@ -113,6 +117,11 @@ class costlyOptimization(object):
   
   def _computeNormedDistance(self, fx):
     fx = np.asanyarray(fx)
+    # print fx
+    # print self.target_fx
+    # print type(fx)
+    # print type(self.target_fx)
+    # print fx - self.target_fx
     return np.abs(fx - self.target_fx)
 
 
