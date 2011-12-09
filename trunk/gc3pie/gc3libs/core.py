@@ -150,7 +150,7 @@ class Core:
         return task.free(**kw)
 
 
-    def submit(self, app, **kw):
+    def submit(self, app, resubmit=False, **kw):
         """
         Submit a job running an instance of the given `app`.  Upon
         successful submission, call the `submitted` method on the
@@ -167,12 +167,12 @@ class Core:
         assert isinstance(app, Task), \
             "Core.submit: passed an `app` argument which is not a `Task` instance."
         if isinstance(app, Application):
-            return self.__submit_application(app, **kw)
+            return self.__submit_application(app, resubmit, **kw)
         else:
             # must be a `Task` instance
-            return self.__submit_task(app, **kw)
+            return self.__submit_task(app, resubmit, **kw)
 
-    def __submit_application(self, app, **kw):
+    def __submit_application(self, app, resubmit, **kw):
         """Implementation of `submit` on `Application` objects."""
 
         gc3libs.log.debug("Submitting %s ..." % str(app))
@@ -187,7 +187,10 @@ class Core:
         #                            gc3libs.exceptions.InputFileError)
 
         job = app.execution
-        job.state = Run.State.NEW
+        if resubmit:
+            job.state = Run.State.NEW
+        elif job.state != Run.State.NEW:
+            return
         
         if len(self._lrms_list) == 0:
             raise gc3libs.exceptions.NoResources(
@@ -272,10 +275,10 @@ class Core:
         else:
             return
 
-    def __submit_task(self, task, **kw):
+    def __submit_task(self, task, resubmit, **kw):
         """Implementation of `submit` on generic `Task` objects."""
         kw.setdefault('auto_enable_auth', self.auto_enable_auth)
-        task.submit(**kw)
+        task.submit(resubmit, **kw)
 
 
     def update_job_state(self, *apps, **kw):
@@ -1275,14 +1278,15 @@ class Engine(object):
         self._core.free(task)
 
 
-    def submit(self, task, **kw):
+    def submit(self, task, resubmit=False, **kw):
         """
         Submit `task` at the next invocation of `perform`.
 
         The `task` state is reset to ``NEW`` and then added to the
         collection of managed tasks.
         """
-        task.execution.state = Run.State.NEW
+        if resubmit:
+            task.execution.state = Run.State.NEW
         return self.add(task)
 
 

@@ -1228,7 +1228,7 @@ class SessionBasedScript(_Script):
         be overridden by specifying an explicit argument `pattern`.
         """
         inputs = set()
-
+        ext = None
         if pattern is None:
             pattern = self.input_filename_pattern
             # special case for '*.ext' patterns

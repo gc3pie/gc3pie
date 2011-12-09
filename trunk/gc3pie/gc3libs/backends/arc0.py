@@ -111,11 +111,11 @@ class ArcLrms(LRMS):
         start again.
         """
         excluded_targets = job.execution_targets
-        queues = candidate_queues
+        queues = []
         # use queue.cluster.hostname to match entries from job.execution_targets list
-        for queue in queues:
-            if queue.cluster.hostname in excluded_targets:
-                queues.remove(queue)
+        for queue in candidate_queues:
+            if not queue.cluster.hostname in excluded_targets:
+                queues.append(queue)
         if not queues:
             # assume all available targes have been tried. Clean list and start over again
             queues = candidate_queues

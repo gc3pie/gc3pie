@@ -101,7 +101,7 @@ class TaskCollection(Task, gc3libs.utils.Struct):
     # task execution manipulation -- these methods should be overriden
     # in derived classes, to implement the desired policy.
 
-    def submit(self, **kw):
+    def submit(self, resubmit=False, **kw):
         raise NotImplementedError("Called abstract method TaskCollection.submit() - this should be overridden in derived classes.")
 
 
@@ -305,14 +305,14 @@ class SequentialTaskCollection(TaskCollection):
         self.changed = True
 
 
-    def submit(self, **kw):
+    def submit(self, resubmit=False, **kw):
         """
         Start the current task in the collection.
         """
         if self._current_task is None:
             self._current_task = 0
         task = self.tasks[self._current_task]
-        task.submit(**kw)
+        task.submit(resubmit, **kw)
         if task.execution.state == Run.State.NEW:
             # submission failed, state unchanged
             self.execution.state = Run.State.NEW
@@ -476,12 +476,12 @@ class ParallelTaskCollection(TaskCollection):
         return [ task.progress() for task in self.tasks ]
 
 
-    def submit(self, **kw):
+    def submit(self, resubmit=False, **kw):
         """
         Start all tasks in the collection.
         """
         for task in self.tasks:
-            task.submit(**kw)
+            task.submit(resubmit, **kw)
         self.execution.state = self._state()
 
         

@@ -40,9 +40,9 @@ class Resource(InformationContainer):
     Statically provided, i.e., specified at construction time and changed never after:
 
       arc_ldap             string
-      architecture         list of string
-      auth                 string
-      frontend             string
+      architecture         list of string *
+      auth                 string  *
+      frontend             string  *
       gamess_location      string
       max_cores_per_job    int     *
       max_memory_per_core  int     *
@@ -71,12 +71,3 @@ class Resource(InformationContainer):
             return True
         else:
             return False
-
-    # def __getattr__(self, key):
-    #     name = Struct.__getattr__(self, 'name')
-    #     gc3libs.log.debug("Resource '%s': query for attribute '%s'" % (name, key))
-    #     return Struct.__getattr__(self, key)
-    # def __getitem__(self, key):
-    #     name = Struct.__getitem__(self, 'name')
-    #     gc3libs.log.debug("Resource '%s': query for attribute '%s'" % (name, key))
-    #     return dict.__getitem__(self, key)
