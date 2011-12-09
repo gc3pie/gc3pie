@@ -80,9 +80,10 @@ class CodemlRetryPolicy(gc3libs.RetryableTask, gc3libs.utils.Struct):
         # H0.mlc file is present and processed correctly.
         # gc3libs.log.debug("CodemlRetryPolicy called!")
         # for now, do the default (see: gc3libs/__init__.py)
-        to_rety = gc3libs.RetryableTask.retry(self)
-        gc3libs.log.debug("CodemlRetryPolicy called with retry [%s]" % str(to_rety))
-        return gc3libs.RetryableTask.retry(self)
+        to_retry = gc3libs.RetryableTask.retry(self)
+        gc3libs.log.debug("CodemlRetryPolicy called with retry [%s]" % str(to_retry))
+        # return gc3libs.RetryableTask.retry(self)
+        return to_retry
 
 
 ## the script itself

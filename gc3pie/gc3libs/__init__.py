@@ -239,14 +239,14 @@ class Task(object):
 
     # grid-level actions on this Task object are re-routed to the
     # grid/engine/core instance
-    def submit(self, **kw):
+    def submit(self, resubmit=False, **kw):
         """
         Start the computational job associated with this `Task` instance.
         """
         assert self._attached, ("Task.submit() called on detached task %s." % self)
         assert hasattr(self._grid, 'submit'), \
                ("Invalid `_grid` object '%s' in Task %s" % (self._grid, self))
-        self._grid.submit(self, **kw)
+        self._grid.submit(self, resubmit, **kw)
 
 
     def update_state(self, **kw):
@@ -949,7 +949,7 @@ class Application(Struct, Persistable, Task):
                 continue
 
             selected.append(lrms)
-
+        
         return selected
 
 
@@ -978,8 +978,20 @@ class Application(Struct, Persistable, Task):
         By default, less-loaded resources come first;
         see `_cmp_resources`.
         """
-        return sorted(resources, cmp=self._cmp_resources)
-
+        # return sorted(resources, cmp=self._cmp_resources)
+        
+        # shift lrms that are already in application.execution_targets
+        # to the bottom of the list
+        selected = sorted(resources, cmp=self._cmp_resources)
+        
+        if self.execution.has_key('execution_targets'):
+            for lrms in selected:
+                if lrms._resource.frontend in self.execution.execution_targets:
+                    # append resource to the bottom of the list
+                    selected.remove(lrms)
+                    selected.append(lrms)
+            
+        return selected 
 
     ##
     ## backend interface methods
@@ -1828,7 +1840,7 @@ class RetryableTask(Task):
     def peek(self, *args, **kw):
         return self.task.peek(*args, **kw)
 
-    def submit(self, **kw):
+    def submit(self, resubmit=False, **kw):
         self.task.submit(**kw)
         # immediately update state if submission of managed task was successful;
         # otherwise this task may remain in ``NEW`` state which causes an
@@ -1901,7 +1913,7 @@ class RetryableTask(Task):
             self.execution.returncode = self.task.execution.returncode
             if self.retry():
                 self.retried += 1
-                self.task.submit()
+                self.task.submit(resubmit=True)
                 own_state_new = Run.State.RUNNING
             else:
                 own_state_new = Run.State.TERMINATED
