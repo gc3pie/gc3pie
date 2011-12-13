@@ -88,7 +88,7 @@ from pymods.support.support import wrapLogger
 # gc3 library imports
 import gc3libs
 from gc3libs import Application, Run, Task
-from gc3libs.cmdline import SessionBasedScript
+from gc3libs.cmdline import SessionBasedScript, existing_file
 #from gc3libs.dag import SequentialTaskCollection, ParallelTaskCollection
 import gc3libs.utils
 import gc3libs.application
@@ -133,6 +133,13 @@ Read `.loop` files and execute the `forwardPremium` program accordingly.
                        dest="architecture", default=Run.Arch.X86_64,
                        help="Processor architecture required by the executable"
                        " (one of: 'i686' or 'x86_64', without quotes)")
+        self.add_param("-A", "--apppot", metavar="PATH",
+                       dest="apppot",
+                       type=existing_file, default=None,
+                       help="Use an AppPot image to run idRisk."
+                       " PATH can point either to a complete AppPot system image"
+                       " file, or to a `.changes` file generated with the"
+                       " `apppot-snap` utility.")
 
 
     def parse_args(self):
@@ -153,6 +160,17 @@ Read `.loop` files and execute the `forwardPremium` program accordingly.
 
 
     def new_tasks(self, extra):
+        # setup AppPot parameters
+        use_apppot = False
+        apppot_img = None
+        apppot_changes = None
+        if self.params.apppot:
+            use_apppot = True
+            if self.params.apppot.endswith('.changes.tar.gz'):
+                apppot_changes = self.params.apppot
+            else:
+                apppot_img = self.params.apppot
+
         inputs = self._search_for_input_files(self.params.args)
         
         # Copy base dir
@@ -201,18 +219,24 @@ Read `.loop` files and execute the `forwardPremium` program accordingly.
                 print 'kwargs = %s' % kwargs
                 print 'inputs = %s' % inputs
                 print 'outputs = %s' % outputs
+
                 # adaptions for uml
-                #cls = gIdRisk.idRiskApplication #before
-                cls = idRiskApppotApplication
-                #cls = gc3libs.application.apppot.AppPotApplication
-                kwargs['apppot_img'] = '/home/benjamin/workspace/apppot0+ben.disk.img'
-                kwargs['linux'] = '/home/benjamin/workspace/kernel64-3.0.8'
-                kwargs['uml'] = '/home/benjamin/workspace/kernel64-3.0.8'
+                if use_apppot:
+                    if apppot_img is not None:
+                        kwargs['apppot_img'] = apppot_img
+                    if apppot_changes is not None:
+                        kwargs['apppot_changes'] = apppot_changes
+                    cls = idRiskApppotApplication
+                else:
+                    cls = idRiskApplication 
+                #kwargs['apppot_img'] = '/home/benjamin/workspace/apppot0+ben.disk.img'
+                #kwargs['linux'] = '/home/benjamin/workspace/kernel64-3.0.8'
+                #kwargs['uml'] = '/home/benjamin/workspace/kernel64-3.0.8'
                 #kwargs['tags'] = []
                 kwargs.setdefault('tags', [ ])
                 
                 # hand over job to create
-                yield (jobname, cls, ['./' + executable, [], inputs, outputs], kwargs) 
+                yield (jobname, cls, ['/home/user/job/' + executable, [], inputs, outputs], kwargs) 
                 #yield (jobname, cls, ['ls', [], inputs, outputs], kwargs) 
                 #yield (jobname, cls, ['cd /home/user/job && ./' + executable, [], inputs, outputs], kwargs) 
 
