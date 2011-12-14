@@ -10,15 +10,15 @@
 use strict;
 use warnings;
 
-my $bin = 'codeml';                     # CODEML binary
-my $pwd = $ENV{PWD};                    # current path
-my $RTE = $ENV{'CODEML_LOCATION'};      # CODEML Runtime Environment (RTE)
-my $host = GetHostname();               # get hostname 
-my $cpuinfo = GetCPUinfo();             # get CPU information
-my $binmode = 0555;                     # file permissions
+my $bin         = 'codeml';                 # CODEML binary
+my $pwd         = $ENV{'PWD'};              # current path
+my $RTE         = $ENV{'CODEML_LOCATION'};  # CODEML Runtime Environment (RTE)
+my $host        = GetHostname();            # get hostname 
+my $cpuinfo     = GetCPUinfo();             # get CPU information
+my $binmode     = 0555;                     # file permissions
 my $CODEML;
 my @temp_files  = qw/rub rst rst1 4fold.nuc lnf 2NG.t 2NG.dS 2NG.dN/;
-my $failed = 0;
+my $exit_status = 0;
 
 print "----- start of DEBUG info ----\n";
 print "host: [$host]\n";
@@ -40,6 +40,7 @@ if ($RTE) {
         chmod $binmode, $CODEML or die "Error: Failed to set execution permissions on the '$CODEML' file.\n";
     }
 };
+
 
 # Run CODEML sequentially for all control files specified on the
 # command line; this could be used, e.g., for testing the null (H0)
@@ -63,17 +64,19 @@ foreach my $ctl (@ARGV) {
                 # when trying to run a command that cannot be found
                 exit 127;
         } elsif ($? != 0) {
-                $failed++;
+                $exit_status++;
                 warn "ERROR: Cannot run $CODEML on file '$ctl'.\n";
         }
 }
 
+
 # exitcode tracks number of failed invocations;
 # so exit code 0 means "everything OK".
-exit $failed;
+exit $exit_status;
+
 
 sub GetCPUinfo {
-        my $cpuinfo = `grep "model name" /proc/cpuinfo|cut -f 2 -d :|sort -u`;
+        my $cpuinfo = `grep "model name" /proc/cpuinfo | cut -f 2 -d : | sort -u`;
         chomp $cpuinfo;
         return $cpuinfo;
 }
