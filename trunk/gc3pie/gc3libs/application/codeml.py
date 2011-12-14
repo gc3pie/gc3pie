@@ -23,6 +23,7 @@ Simple interface to the CODEML application.
 __version__ = '1.2 (SVN $Revision$)'
 __changelog__ = """
 Summary of user-visible changes:
+* 14-12-2011 SM: Parse `Time used:` line with hours now
 * 21-11-2011 RM: Mark job as successful if the output file parses OK
 * 29-04-2011 HS: changed to use RTE
 * 04-05-2011 AK: import sys module
@@ -190,12 +191,16 @@ class CodemlApplication(gc3libs.Application):
         for line in output_file:
             match = CodemlApplication._TIME_USED_RE.match(line)
             if match:
+                if match.group('hours') is not None:
+                    hours = int(match.group('hours'))
+                else:
+                    hours = 0
                 minutes = int(match.group('minutes'))
                 seconds = int(match.group('seconds'))
                 time_used_found = True
                 break
         if time_used_found:
-            return (minutes*60 + seconds)
+            return (hours*3600 + minutes*60 + seconds)
         else:
             return 'invalid'
 
@@ -204,7 +209,7 @@ class CodemlApplication(gc3libs.Application):
     # variable number of spaces so we need a regexp to match
     _KEY_VALUE_SEP = re.compile(r':\s*')
 
-    _TIME_USED_RE = re.compile(r'Time \s+ used:\s+ (?P<minutes>[0-9]+):(?P<seconds>[0-9]+)', re.X)
+    _TIME_USED_RE = re.compile(r'Time \s+ used:\s+ ((?P<hours>[0-9]*):)?(?P<minutes>[0-9]+):(?P<seconds>[0-9]+)', re.X)
     _H_WHICH_RE = re.compile(r'H(?P<n>[01]).mlc')
 
     # perform the post-processing and set exit code.
@@ -215,7 +220,7 @@ class CodemlApplication(gc3libs.Application):
         ``.mlc`` output files.
 
         An output file is valid iff its last line of each output file
-        reads ``Time used: HH:MM``.
+        reads ``Time used: MM:SS`` *or* ``Time used: HH:MM:SS``
 
         The exit status of the whole job is a bit field composed as follows:
 
@@ -237,7 +242,6 @@ class CodemlApplication(gc3libs.Application):
 
         TODO:
           * Check if the stderr is empty.
-          * check what happens to 'Time used' when exec time exceeds 1 hr or 1 day.
         """
         # Except for "signal 125" (submission to batch system failed),
         # any other error condition may result in some output files having
