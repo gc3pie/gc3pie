@@ -82,6 +82,7 @@ class GeotopApplication(Application):
             def geotop_exclude(filename):
                 return filename.endswith('~') \
                        or filename.endswith('ggeotop.log') \
+                       or filename.endswith('_static') \
                        or filename.endswith('geotop.log') \
                        or filename.endswith(GEOTOP_OUTPUT_ARCHIVE) \
                        or filename.endswith(GEOTOP_INPUT_ARCHIVE) \
