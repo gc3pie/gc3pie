@@ -131,8 +131,6 @@ def do_brokering(lrms_list, application):
                               x.__class__.__name__, x.args, exc_info=True)
     return sorted(updated_resources, cmp=_cmp_resources)
 
-
-
 ## main: run tests
 
 if "__main__" == __name__:

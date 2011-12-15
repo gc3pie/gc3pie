@@ -444,11 +444,13 @@ class ArcLrms(LRMS):
         # XXX: can raise encoding/decoding error if `download_dir`
         # is not ASCII, but the ARClib bindings don't accept
         # Python `unicode` strings.
+
         download_dir = str(download_dir)
 
         self.auths.get(self._resource.auth)
 
         job = app.execution
+
         jftpc = arclib.JobFTPControl()
 
         log.debug("Downloading %s output into '%s' ...", app, download_dir)
