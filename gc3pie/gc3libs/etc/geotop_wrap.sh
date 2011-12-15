@@ -23,10 +23,10 @@
 
 ## Prepare the environment for the execution. Untar the input.tgz file ##
 
-#export LOG_FILE=GTLog 
-export WORK_DIR=`pwd`
 OVERWRITE="--keep-old-files"
 GEOTOP_EXEC="GEOtop_1.223_static"
+OUTPUT_ARCHIVE="output.tgz"
+TAR_EXCLUDE_PATTERN="--exclude .arc --exclude ./in --exclude ggeotop.log"
 
 #=============
 
@@ -58,34 +58,55 @@ fi
 
 INPUT_ARCHIVE=$1
 
-echo "Untar the input file"
+# Check INPUT_ARCHIVE
+echo -n "Checking input archive [$INPUT_ARCHIVE] ... "
+if [ ! -r $INPUT_ARCHIVE ]; then
+    echo "[failed]"
+    exit 1
+else
+    echo "[ok]"
+fi
 
-tar $OVERWRITE -xzf $INPUT_ARCHIVE -C .
+echo -n "Running: tar $OVERWRITE -xzf $INPUT_ARCHIVE ... "
+tar $OVERWRITE -xzf $INPUT_ARCHIVE
 RET=$?
 rm $INPUT_ARCHIVE
 
 if [ $RET -ne 0 ]; then
- echo "[failed]"
- exit $RET
-fi 
+    echo "[failed]"
+    exit $RET
+else
+    echo "[ok]"
+fi
 
 ## Execute the GEOTOP code ##
 
-# check whether executable is there
+echo -n "Checking executable [./$GEOTOP_EXEC] ... "
 
-if [ -x ./$GEOTOP_EXE ]; then
-    echo "Start the code execution"
-    ./$GEOTOP_EXE .
-    RET=$? 
-    rm ./$GEOTOP_EXE
+if [ -x ./$GEOTOP_EXEC ]; then
+    echo "[ok]"
+    echo "Start execution... "
+    # why is it not redirecting to stdout/stderr ?
+    ./$GEOTOP_EXEC .
+    RET=$?
+    echo "GEOTop execution termianted with [$RET]"
+    rm ./$GEOTOP_EXEC
     # Create output archive 
-    tar -czf output.tar.gz ./* 
+    echo -n "Creating output archive... "
+    tar -czf $OUTPUT_ARCHIVE ./* $TAR_EXCLUDE_PATTERN
+    if [ $? -eq 0 ]; then
+        # Remove everything else if tar has been created successfully
+	echo "[ok]"
+	echo "Cleaning... "
+	ls | grep -v output.tgz | grep -v .log | grep -v .arc | grep -v cleanup | xargs --replace rm -rf {}
+    else
+	echo "[failed]"
+    fi
     exit $RET
 else
-    echo "$GEOTOP_EXE not found"
+    echo "[failed]"
     exit 1
 fi
-
 
 
 

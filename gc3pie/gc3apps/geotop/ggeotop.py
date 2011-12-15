@@ -50,6 +50,10 @@ import shutil
 import sys
 import time
 
+import tarfile
+
+from pkg_resources import Requirement, resource_filename
+
 # gc3 library imports
 import gc3libs
 from gc3libs import Application, Run, Task, RetryableTask
@@ -58,7 +62,8 @@ import gc3libs.utils
 
 
 GC3PIE_PLACEHOLDER_FILENAME = ".gc3pie_placeholder"
-
+GEOTOP_INPUT_ARCHIVE = "input.tgz"
+GEOTOP_OUTPUT_ARCHIVE = "output.tgz"
 
 ## custom application class
 
@@ -73,28 +78,79 @@ class GeotopApplication(Application):
         self.simulation_dir = simulation_dir
         # stage all (non-hidden) files in the simulation directory for input
 
-        def fill_empty_folder(simulation_dir):
-            for dirpath, dirnames, filenames in os.walk(simulation_dir):
-                entry = os.path.basename(dirpath)
-                if not entry.endswith('~'):
-                    if not dirnames and not filenames:
-                        # Folder is empty; fill it with a 'placeholder' file
-                        try:
-                            f = open(os.path.join(dirpath, GC3PIE_PLACEHOLDER_FILENAME),"w+")
-                            f.close()
-                            yield ((os.path.join(dirpath, GC3PIE_PLACEHOLDER_FILENAME),
-                                    os.path.join(entry, GC3PIE_PLACEHOLDER_FILENAME)))
-                        except IOError:
-                            raise
-                    else:
-                        for f in filenames:
-                            if dirpath == simulation_dir:
-                                yield(os.path.join(dirpath,f),f)
-                            else:
-                                yield (os.path.join(dirpath,f),os.path.join(entry,f))
+        def scan_and_tar(simulation_dir):
+            def geotop_exclude(filename):
+                return filename.endswith('~') \
+                       or filename.endswith('ggeotop.log') \
+                       or filename.endswith('geotop.log') \
+                       or filename.endswith(GEOTOP_OUTPUT_ARCHIVE) \
+                       or filename.endswith(GEOTOP_INPUT_ARCHIVE) \
+                       or filename.startswith('./.arc')        
+
+            try:
+                gc3libs.log.debug("Compressing input folder '%s'" % simulation_dir)
+                cwd = os.getcwd()
+                os.chdir(simulation_dir)
+                # check if input archive already present. If so, remove it
+                if os.path.isfile(GEOTOP_INPUT_ARCHIVE):
+                    try:
+                        os.remove(GEOTOP_INPUT_ARCHIVE)
+                    except OSError as x:
+                        gc3libs.log.error("Failed while removing %s. Type %s. Message %s" % (GEOTOP_INPUT_ARCHIVE, x.__class__, x.message))
+                        pass
+
+                tar = tarfile.open(GEOTOP_INPUT_ARCHIVE, "w:gz")
+                tar.add('.',recursive=True,exclude=geotop_exclude)
+                tar.close()
+                os.chdir(cwd)
+                yield (tar.name, GEOTOP_INPUT_ARCHIVE)
+            except:
+                raise
+
+        # def walk_input_folder(simulation_dir):
+        #     exclude_patterns = ['~','.arc','/in']
+        #     for r,d,f in os.walk(simulation_dir):
+        #         if r.endswith('~') or r.endswith('.arc') or r.endswith('/in'):
+        #             continue
+        #         for filename in f:
+        #             # full_filename = os.path.join(r,filename)
+        #             # remote_entry_filename = full_filename.split(simulation_dir)[1]
+        #             yield (os.path.join(r,filename),"")
+            
+        # def fill_empty_folder(simulation_dir):
+        #     for dirpath, dirnames, filenames in os.walk(simulation_dir):
+        #         entry = os.path.basename(dirpath)
+        #         if not entry.endswith('~'):
+        #             if not dirnames and not filenames:
+        #                 # Folder is empty; fill it with a 'placeholder' file
+        #                 try:
+        #                     f = open(os.path.join(dirpath, GC3PIE_PLACEHOLDER_FILENAME),"w+")
+        #                     f.close()
+        #                     yield ((os.path.join(dirpath, GC3PIE_PLACEHOLDER_FILENAME),
+        #                             os.path.join(entry, GC3PIE_PLACEHOLDER_FILENAME)))
+        #                 except IOError:
+        #                     raise
+        #             else:
+        #                 for f in filenames:
+        #                     if dirpath == simulation_dir:
+        #                         yield(os.path.join(dirpath,f),f)
+        #                     else:
+        #                         yield (os.path.join(dirpath,f),os.path.join(entry,f))
 
 
-        inputs = dict((a,b) for (a,b) in fill_empty_folder(simulation_dir))
+        # inputs = dict((a,b) for (a,b) in fill_empty_folder(simulation_dir))
+
+        inputs = dict((a,b) for (a,b) in scan_and_tar(simulation_dir))
+
+        ## XXX: convention is that 'in' folder contains only input values that should not
+        ## be retrieved as part of the output
+        # outputs = {}
+        # outputs[GEOTOP_OUTPUT_ARCHIVE] = GEOTOP_OUTPUT_ARCHIVE
+        
+        geotop_wrapper_sh = resource_filename(Requirement.parse("gc3pie"),
+                                              "gc3libs/etc/geotop_wrap.sh")
+
+        inputs[geotop_wrapper_sh] = os.path.basename(geotop_wrapper_sh)
 
         if executable is not None:
             # use the specified executable
@@ -104,6 +160,9 @@ class GeotopApplication(Application):
             raise NotImplementedError("No RTE for GEOtop defined; please specify an executable!")
             # use the default one provided by the RTE
             executable_name = '/$GEOTOP'
+
+        # outputs = {}
+        # outputs[GEOTOP_OUTPUT_ARCHIVE] = GEOTOP_OUTPUT_ARCHIVE
         # set some execution defaults...
         kw.setdefault('requested_cores', 1)
         kw.setdefault('requested_architecture', Run.Arch.X86_64)
@@ -111,14 +170,16 @@ class GeotopApplication(Application):
         kw.pop('output_dir', None)
         Application.__init__(
             self,
-            executable = executable_name,
+            # executable = executable_name,
+            executable = os.path.basename(geotop_wrapper_sh),
             # GEOtop requires only one argument: the simulation directory
             # In our case, since all input files are staged to the
             # execution directory, the only argument is fixed to ``.``
-            arguments = [ '.' ],
+            arguments = [ 'input.tgz' ],
             inputs = inputs,
             outputs = gc3libs.ANY_OUTPUT,
-            output_dir = os.path.join(simulation_dir, 'tmp'),
+            # outputs = outputs,
+            output_dir = os.path.join(simulation_dir, 'out'),
             stdout = 'ggeotop.log',
             join=True,
             #tags = [ 'APPS/GEOTOP-1.223' ],
@@ -131,16 +192,37 @@ class GeotopApplication(Application):
         another run or not, depending on whether tag files named
         ``_SUCCESSFUL_RUN`` or ``_FAILED_RUN`` are found.
         """
+
+        
+        # provisionally set exit code to 99 (resubmit), will override
+        # later if the tag files ``_SUCCESSFUL_RUN`` or
+        # ``_FAILED_RUN`` are found.
+        self.execution.returncode = (0, 99)
+
+        full_tarname = os.path.join(self.output_dir,GEOTOP_OUTPUT_ARCHIVE)
+
+        # check and unpack output archive
+        if os.path.isfile(full_tarname):
+            # execution should have been completed sucessfully
+            # untar archive
+            gc3libs.log.info("Expected output archive found in %s" % full_tarname)
+            
+            try:
+                tar = tarfile.open(full_tarname)
+                tar.extractall(path=self.output_dir)
+                tar.close()
+                os.remove(full_tarname)
+            except Exception, ex:
+                gc3libs.log.error("Failed while opening archive. Error type %s. Message %s" % (x.__class__, x.message))
+                pass
+        
         tmp_output_dir = self.output_dir
         exclude = [
             os.path.basename(self.executable),
             self.stdout,
             self.stderr,
             ]
-        # provisionally set exit code to 99 (resubmit), will override
-        # later if the tag files ``_SUCCESSFUL_RUN`` or
-        # ``_FAILED_RUN`` are found.
-        self.execution.returncode = (0, 99)
+
         # move files one level up, except the ones listed in `exclude`
         for entry in os.listdir(tmp_output_dir):
             src_entry = os.path.join(tmp_output_dir, entry)
@@ -161,6 +243,8 @@ class GeotopApplication(Application):
                 continue
             # special files indicate successful or unsuccessful completion
             if entry in [ '_SUCCESSFUL_RUN', '_SUCCESSFUL_RUN.old' ]:
+                # if .R then run 'R CMD <filename>.R' on the .R
+                # self._execute_postprocess()
                 self.execution.returncode = (0, posix.EX_OK)
             elif entry in [ '_FAILED_RUN', '_FAILED_RUN.old' ]:
                 # use exit code 100 to indicate total failure
@@ -173,6 +257,9 @@ class GeotopApplication(Application):
             os.rename(os.path.join(tmp_output_dir, entry), dest_entry)
         # os.removedirs(tmp_output_dir)
         shutil.rmtree(tmp_output_dir, ignore_errors=True)
+
+        # Clean-up and preparation for resubmission
+        # e.g. remove: input and output archives, execution binary, logs ?
 
 
 class GeotopTask(RetryableTask, gc3libs.utils.Struct):
