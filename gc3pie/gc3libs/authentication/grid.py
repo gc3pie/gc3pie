@@ -77,7 +77,12 @@ class GridAuth(object):
 
         self.user_cert_valid = (0 != _user_certificate_expiration_time())
         self._expiration_time = _proxy_expiration_time()
-        self.proxy_valid = (0 != self._expiration_time)
+
+        # if 'remember_password' force at least proxy renewal to store password
+        if self.remember_password and self._passwd is None:
+            self.proxy_valid = False
+        else:
+            self.proxy_valid = (0 != self._expiration_time)
 
         return ( self.user_cert_valid and self.proxy_valid )
 
@@ -246,6 +251,7 @@ def _proxy_expiration_time():
     proxy is already expired or not available at all.
     """
     import arclib
+
     try:
         pxy = arclib.Certificate(arclib.PROXY)
         expires = pxy.Expires().GetTime()
