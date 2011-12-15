@@ -30,7 +30,20 @@ TAR_EXCLUDE_PATTERN="--exclude .arc --exclude ./in --exclude ggeotop.log"
 
 #=============
 
-USAGE="Usage: `basename $0` [-w] args"
+function gracefull_exit {
+    echo -n "Creating output archive... "
+    tar -czf $OUTPUT_ARCHIVE ./* $TAR_EXCLUDE_PATTERN
+    if [ $? -eq 0 ]; then
+        # Remove everything else if tar has been created successfully
+	echo "[ok]"
+	echo "Cleaning... "
+	ls | grep -v output.tgz | grep -v .log | grep -v .arc | xargs --replace rm -rf {}
+    else
+	echo "[failed]"
+    fi
+}
+
+USAGE="Usage: `basename $0` [-w] <input archive> <GEOTop executable>"
 
 # Parse command line options.
 while getopts w OPT; do
@@ -41,6 +54,7 @@ while getopts w OPT; do
         \?)
             # getopts issues an error message
             echo $USAGE >&2
+	    gracefull_exit
             exit 1
             ;;
     esac
@@ -53,15 +67,18 @@ shift `expr $OPTIND - 1`
 # Remove this block if you don't need it.
 if [ $# -eq 0 ]; then
     echo $USAGE >&2
+    gracefull_exit
     exit 1
 fi
 
 INPUT_ARCHIVE=$1
+GEOTOP_EXEC=$2
 
 # Check INPUT_ARCHIVE
 echo -n "Checking input archive [$INPUT_ARCHIVE] ... "
 if [ ! -r $INPUT_ARCHIVE ]; then
     echo "[failed]"
+    gracefull_exit
     exit 1
 else
     echo "[ok]"
@@ -74,6 +91,7 @@ rm $INPUT_ARCHIVE
 
 if [ $RET -ne 0 ]; then
     echo "[failed]"
+    gracefull_exit
     exit $RET
 else
     echo "[ok]"
@@ -81,32 +99,20 @@ fi
 
 ## Execute the GEOTOP code ##
 
-echo -n "Checking executable [./$GEOTOP_EXEC] ... "
+echo -n "Checking executable [$GEOTOP_EXEC] ... "
 
-if [ -x ./$GEOTOP_EXEC ]; then
+if [ -x $GEOTOP_EXEC ]; then
     echo "[ok]"
     echo "Start execution... "
     # why is it not redirecting to stdout/stderr ?
-    ./$GEOTOP_EXEC .
+    $GEOTOP_EXEC .
     RET=$?
     echo "GEOTop execution termianted with [$RET]"
-    rm ./$GEOTOP_EXEC
-    # Create output archive 
-    echo -n "Creating output archive... "
-    tar -czf $OUTPUT_ARCHIVE ./* $TAR_EXCLUDE_PATTERN
-    if [ $? -eq 0 ]; then
-        # Remove everything else if tar has been created successfully
-	echo "[ok]"
-	echo "Cleaning... "
-	ls | grep -v output.tgz | grep -v .log | grep -v .arc | grep -v cleanup | xargs --replace rm -rf {}
-    else
-	echo "[failed]"
-    fi
+    rm $GEOTOP_EXEC
+    gracefull_exit
     exit $RET
 else
     echo "[failed]"
+    gracefull_exit
     exit 1
 fi
-
-
-

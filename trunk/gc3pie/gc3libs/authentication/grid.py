@@ -173,7 +173,8 @@ class GridAuth(object):
             if new_cert or not self.proxy_valid:
                 if self.type == 'voms-proxy':
                     # first make sure exsing proxy is properly removed
-                    # run voms-proxy-destroy
+                    # run voms-proxy-destroy. This guarantees that the renewal
+                    # takes the recorded password into account
                     _cmd = shlex.split("voms-proxy-destroy")
                     gc3libs.log.debug("Executing voms-proxy-destroy")
                     try:
