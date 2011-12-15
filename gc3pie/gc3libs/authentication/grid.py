@@ -172,6 +172,17 @@ class GridAuth(object):
             # renew proxy if cert has changed or proxy expired
             if new_cert or not self.proxy_valid:
                 if self.type == 'voms-proxy':
+                    # first make sure exsing proxy is properly removed
+                    # run voms-proxy-destroy
+                    _cmd = shlex.split("voms-proxy-destroy")
+                    gc3libs.log.debug("Executing voms-proxy-destroy")
+                    try:
+                        p = subprocess.Popen(_cmd,stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+                        (stdout, stderr) = p.communicate()
+                    except Exception, x:
+                        gc3libs.log.error("Failed. Error type %s. Message %s" % (x.__class__,x.message))
+                        pass
+
                     # Try renew voms credential; another interactive command
                     gc3libs.log.debug("No valid proxy found; trying to get "
                                       " a new one by 'voms-proxy-init' ...")
