@@ -252,9 +252,9 @@ class GeotopApplication(Application):
                 self.execution.returncode = (0, 100)
             # now really move file one level up
             dest_entry = os.path.join(self.simulation_dir, entry)
-            if os.path.exists(dest_entry):
+            # if os.path.exists(dest_entry):
                 # backup with numerical suffix
-                gc3libs.utils.backup(dest_entry)
+                # gc3libs.utils.backup(dest_entry)
             os.rename(os.path.join(tmp_output_dir, entry), dest_entry)
         # os.removedirs(tmp_output_dir)
         shutil.rmtree(tmp_output_dir, ignore_errors=True)
