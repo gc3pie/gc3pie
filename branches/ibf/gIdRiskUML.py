@@ -13,7 +13,7 @@ Driver script for running the `idRisk` application on SMSCG.
 # This program is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
+# GNU General Public License for more details.sjp
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with this program; if not, write to the Free Software
@@ -23,11 +23,6 @@ __version__ = '$Revision$'
 __author__ = 'Riccardo Murri <riccardo.murri@uzh.ch>, Benjamin Jonen < benjamin.jonen@bf.uzh.ch>'
 # summary of user-visible changes
 __changelog__ = """
-  2011-05-16:
-    * New "-X" command-line option for setting the binary architecture.
-  2011-05-06:
-    * Workaround for Issue 95: now we have complete interoperability
-      with GC3Utils.
 """
 __docformat__ = 'reStructuredText'
 
@@ -38,6 +33,7 @@ import shutil
 # -x /home/benjamin/workspace/fpProj/model/bin/forwardPremiumOut -b ../base/ para.loop  -C 1 -N -X i686
 # 5-x /home/benjamin/workspace/idrisk/bin/idRiskOut -b ../base/ para.loop  -C 1 -N -X i686
 # -x /home/benjamin/workspace/idrisk/model/bin/idRiskOut -b ../base/ para.loop  -C 1 -N
+# Need to set path to linux kernel and apppot, e.g.: export PATH=$PATH:~/workspace/apppot:~/workspace/
 
 # Remove all files in curPath if -N option specified. 
 if __name__ == '__main__':    
@@ -73,7 +69,6 @@ import time
 
 from supportGc3 import lower, flatten, str2tuple, getIndex, extractVal, str2vals
 from supportGc3 import format_newVal, update_parameter_in_file, safe_eval, str2mat, mat2str, getParameter
-#from forwardPremium import GPremiumApplication
 from idRisk import idRiskApplication, idRiskApppotApplication
 from paraLoop import paraLoop
 
@@ -89,9 +84,7 @@ from pymods.support.support import wrapLogger
 import gc3libs
 from gc3libs import Application, Run, Task
 from gc3libs.cmdline import SessionBasedScript, existing_file
-#from gc3libs.dag import SequentialTaskCollection, ParallelTaskCollection
 import gc3libs.utils
-import gc3libs.application
 import gc3libs.application.apppot
 
 
@@ -127,7 +120,7 @@ Read `.loop` files and execute the `forwardPremium` program accordingly.
         self.add_param("-x", "--executable", metavar="PATH",
                        dest="executable", default=os.path.join(
                            os.getcwd(), "forwardPremiumOut"),
-                       help="Path to the `forwardPremium` executable binary"
+                       help="Path to the `idRisk` executable binary"
                        "(Default: %(default)s)")
         self.add_param("-X", "--architecture", metavar="ARCH",
                        dest="architecture", default=Run.Arch.X86_64,
@@ -205,14 +198,14 @@ Read `.loop` files and execute the `forwardPremium` program accordingly.
                         # cut the leading part, which is == to path_to_stage_dir
                         relpath = dirpath[prefix_len:]
                         # ignore output directory contents in resubmission
-                        if relpath.startswith('output'):
+                        if relpath. startswith('output'):
                             continue
                         remote_path = os.path.join(relpath, filename)
                         inputs[os.path.join(dirpath, filename)] = remote_path
                 # all contents of the `output` directory are to be fetched
                 outputs = { 'output/':'' }
                 kwargs = extra.copy()
-                kwargs['stdout'] = 'forwardPremiumOut.log'
+                kwargs['stdout'] = 'idRisk.log'
                 kwargs['join'] = True
                 kwargs['output_dir'] = os.path.join(path_to_stage_dir, 'output')
                 kwargs['requested_architecture'] = self.params.architecture
