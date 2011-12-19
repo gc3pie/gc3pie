@@ -20,7 +20,7 @@ Driver script for running the `forwardPremium` application on SMSCG.
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 #
 __version__ = '$Revision$'
-__author__ = 'Benjamin Jonen <benjamin.jonen@bf.uzh.ch'
+__author__ = 'Benjamin Jonen <benjamin.jonen@bf.uzh.ch>'
 # summary of user-visible changes
 __changelog__ = """
 
@@ -28,27 +28,18 @@ __changelog__ = """
 __docformat__ = 'reStructuredText'
 
 # Call: 
-# -x /home/benjamin/workspace/idrisk/model/bin/idRiskOut -b /home/benjamin/workspace/idrisk/model/base para.loop  -C 1 -N
-
+# -x /home/benjamin/workspace/idrisk/model/bin/idRiskOut -b /home/benjamin/workspace/idrisk/model/base para.loop -xVars 'wBarLower' -xVarsDom '-0.5 -0.35' -targetVars 'iBar_Shock0Agent0' --makePlots False -target_fx -0.5 -yC 4.9e-3 -sv info -C 10 -N -A '/home/benjamin/apppot0+ben.diskUpd.img'
 
 # std module imports
 import numpy as np
 import os, sys
-import shutil
 import copy
-import scipy.optimize
-
-#scipy.optimize.fmin_powell
-#scipy.optimize.fmin
 
 # set some ugly paths
 # export PYTHONPATH=$PYTHONPATH:/home/benjamin/workspace/idrisk/model/code
-sys.path.append('/home/benjamin/workspace/idrisk/model/code')
+sys.path.append('~/workspace/idrisk/model/code')
 
 # import personal libraries
-path2Pymods = os.path.join(os.path.dirname(__file__), '../')
-if not sys.path.count(path2Pymods):
-    sys.path.append(path2Pymods)
 path2Src = os.path.join(os.path.dirname(__file__), '../src')
 if not sys.path.count(path2Src):
     sys.path.append(path2Src)
@@ -72,10 +63,6 @@ if __name__ == '__main__':
                 os.remove(os.path.join('/tmp', 'para.loop'))
             else: 
                 rmFilesAndFolders(curPath)
-# Call: 
-# -x /home/benjamin/workspace/idrisk/model/bin/idRiskOut -b /home/benjamin/workspace/idrisk/model/base para.loop -xVars 'wBarLower' -xVarsDom '-0.2 0.2 ' -target_fx '-0.1' -convCrit '4.9e-2 -sv info  -C 10 -N
-
-
 
 # ugly workaround for Issue 95,
 # see: http://code.google.com/p/gc3pie/issues/detail?id=95
@@ -151,44 +138,11 @@ class solveParaCombination(SequentialTaskCollection):
             optimalRunTable = wBarTable.getSubset( np.abs(wBarTable['wBarLower'] - self.wBarLower_task.costlyOptimizer.best_x) < 1.e-7 )
             optimalRunFile = open(os.path.join(self.paraFolder, 'optimalRun'), 'w')
             print >> optimalRunFile, optimalRunTable
+            self.execution.returncode = 0
             return Run.State.TERMINATED
         else:
             print 'unknown return code'
             os._exit
-##        if self.beta_task.execution.returncode == 13:
-##            logger.critical('beta failed. terminating para combo')
-##            self.execution.returncode = 13
-##            self.failed = True
-##            return Run.State.TERMINATED
-##        logger.debug('entering solveParaCombination.next in iteration %s' % self.iter)
-##        self.changed = True
-##        betaVal = self.beta_task.costlyOptimizer.best_x
-##        self.substs['input/parameters.in'].append(('beta', betaVal, '(0,)', 'bar-separated'))
-##        if self.iter == 1:
-##            # then loop over wbar
-##            self.kw['jobname'] = self.kw['jobname'] + '_' + 'beta' + '=' + str(self.beta_task.costlyOptimizer.best_x)
-##            xVar = 'wBarLower'
-##            xInitialGuess = [-0.15, 0.15]
-##            targetVar = 'iBar_Shock0Agent0'
-##            solverParas = {}
-##            solverParas['plotting'] = False
-##            solverParas['target_fx'] = -0.1
-##            solverParas['convCrit'] = 1.e-4
-##            self.wBarLower_task = idRiskParaSearchDriver(xVar, xInitialGuess, targetVar, self.paraFolder, self.pathToExecutable, self.architecture, self.localBaseDir, self.substs, solverParas, **self.kw)
-##            self.add(self.wBarLower_task)
-##        else:
-##            if self.wBarLower_task.execution.returncode == 13:
-##                logger.critical('beta failed. terminating para combo')
-##                self.execution.returncode = 13
-##                self.failed = True
-##                return Run.State.TERMINATED
-##            logger.debug('converged for beta and wBarLower for job %s' % self.kw['jobname'])
-##            wBarTable = tableDict.fromTextFile(os.path.join(self.paraFolder, 'optimwBarLower', 'overviewSimu'), width = 20, prec = 10)
-##            optimalRunTable = wBarTable.getSubset( np.abs(wBarTable['wBarLower'] - self.wBarLower_task.costlyOptimizer.best_x) < 1.e-7 )
-##            optimalRunFile = open(os.path.join(self.paraFolder, 'optimalRun'), 'w')
-##            print >> optimalRunFile, optimalRunTable
-##            return Run.State.TERMINATED
-##        return Run.State.RUNNING
 
 
 class idRiskParaSearchDriver(SequentialTaskCollection):
@@ -296,13 +250,10 @@ class idRiskParaSearchParallel(ParallelTaskCollection, paraLoop):
         '''
         logger.debug('entering idRiskParaSearchParallel.target. Computing target for xVar = %s, xVals = %s' % (xVars, xParaCombos))
         # Each line in the resulting table (overviewSimu) represents one paraCombo
-##        if xVar == 'wBarLower' and xVals[0] == -0.10085714:
-##            print 'here'
         overviewTable = createOverviewTable(resultDir = self.optimFolder, outFile = 'simulation.out', exportFileName = 'overviewSimu', sortCols = [], orderCols = [], verb = 'INFO')
         if overviewTable == None:
             logger.critical('overviewTable empty')
             return None
-#            os._exit(1)
         xVars = copy.deepcopy(xVars)
         for ixVar, xVar in enumerate(xVars):
             if xVar == 'beta':
@@ -331,7 +282,6 @@ class idRiskParaSearchParallel(ParallelTaskCollection, paraLoop):
                 os._exit(1)
         logger.info('Computed target: Returning result to solver\n')
         return result
-        #return result
 
 
     def print_status(self, mins,means,vector,txt):
@@ -391,9 +341,6 @@ class idRiskParaSearchParallel(ParallelTaskCollection, paraLoop):
             #kwargs = sessionParas.copy()
             kwargs = {}
             kwargs['jobname'] = self.jobname
-##            kwargs.pop('requested_memory')
-##            kwargs.pop('requested_walltime')
-##            kwargs.pop('requested_cores')
             kwargs['stdout'] = 'forwardPremiumOut.log'
             kwargs['join'] = True
             kwargs['output_dir'] = os.path.join(path_to_stage_dir, 'output')
@@ -411,7 +358,8 @@ class idRiskParaSearchParallel(ParallelTaskCollection, paraLoop):
             kwargs.setdefault('tags', [ ])
 
             # hand over job to create
-            tasks.append(cls('/home/user/job/' + executable, [], inputs, outputs, **kwargs))
+            curApplication = cls('./' + executable, [], inputs, outputs, **kwargs)
+            tasks.append(curApplication)
         return tasks
 
 
@@ -428,7 +376,6 @@ class idRiskParaSearchScript(SessionBasedScript, paraLoop):
             input_filename_pattern = '*.loop',
         )
         paraLoop.__init__(self, 'INFO')        
-        #forwardPremium.paraLoop_fp.__init__(self, verbosity = 'INFO')
 
     def setup_options(self):
         self.add_param("-b", "--initial", metavar="DIR",
@@ -483,12 +430,12 @@ class idRiskParaSearchScript(SessionBasedScript, paraLoop):
         """
         if not os.path.exists(self.params.executable):
             raise gc3libs.exceptions.InvalidUsage(
-                "Path '%s' to the 'forwardPremium' executable does not exist;"
+                "Path '%s' to the 'idrisk' executable does not exist;"
                 " use the '-x' option to specify a valid one."
                 % self.params.executable)
         if os.path.isdir(self.params.executable):
             self.params.executable = os.path.join(self.params.executable,
-                                                  'forwardPremium')
+                                                  'idrisk')
         gc3libs.utils.test_file(self.params.executable, os.R_OK|os.X_OK,
                                 gc3libs.exceptions.InvalidUsage)
 
@@ -524,17 +471,17 @@ class idRiskParaSearchScript(SessionBasedScript, paraLoop):
             solverParas['convCrit'] = self.params.convCrit
             yield (jobname, solveParaCombination, [ substs, solverParas ], sessionParas)
             
-def extractLinspace(strIn):
-    import re
-    if re.match('\s*linspace', strIn):
-        (linSpacePart, strIn) = re.match('(\s*linspace\(.*?\)\s*)[,\s*]*(.*)', strIn).groups()
-        args = re.match('linspace\(([(0-9\.\s-]+),([0-9\.\s-]+),([0-9\.\s-]+)\)', linSpacePart).groups()
-        args = [ float(arg) for arg in args] # assume we always want float for linspace
-        linSpaceVec = np.linspace(args[0], args[1], args[2])
-        return linSpaceVec
-    else: 
-        print 'cannot find linspace in string'
-        os._exit()
+#def extractLinspace(strIn):
+    #import re
+    #if re.match('\s*linspace', strIn):
+        #(linSpacePart, strIn) = re.match('(\s*linspace\(.*?\)\s*)[,\s*]*(.*)', strIn).groups()
+        #args = re.match('linspace\(([(0-9\.\s-]+),([0-9\.\s-]+),([0-9\.\s-]+)\)', linSpacePart).groups()
+        #args = [ float(arg) for arg in args] # assume we always want float for linspace
+        #linSpaceVec = np.linspace(args[0], args[1], args[2])
+        #return linSpaceVec
+    #else: 
+        #print 'cannot find linspace in string'
+        #os._exit()
 
 
 if __name__ == '__main__':

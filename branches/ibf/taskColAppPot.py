@@ -28,6 +28,7 @@ __changelog__ = """
 __docformat__ = 'reStructuredText'
 
 import os, sys
+import numpy as np
 
 # import personal libraries
 path2Pymods = os.path.join(os.path.dirname(__file__), '../')
@@ -86,14 +87,59 @@ from pymods.classes.tableDict import tableDict
 # Set up logger
 logger = wrapLogger(loggerName = 'idRiskParaSearchLogger', streamVerb = 'DEBUG', logFile = os.path.join(os.getcwd(), 'idRiskParaSearch.log'))
 
-class sequentialParaLoop(SequentialTaskCollection):
+# call -x /home/benjamin/workspace/idrisk/model/bin/idRiskOut -b /home/benjamin/workspace/idrisk/model/base para.loop -C 10 -N -A '/home/benjamin/apppot0+ben.diskUpd.img'
 
-    def __init__(self, substs, **sessionParas):
+class solveParaCombination(SequentialTaskCollection):
+
+    def __init__(self, substs, solverParas, **sessionParas):
 
         logger.debug('entering solveParaCombination.__init__ for job %s' % sessionParas['jobname'])
         self.iter    = 0
 
-        self.jobname = sessionParas['jobname']
+        self.jobname = 'solverParacombination' + sessionParas['jobname']
+        self.substs = substs
+
+        self.sessionParas     = sessionParas
+        self.pathToExecutable = sessionParas['pathToExecutable']
+        self.architecture     = sessionParas['architecture']
+        self.localBaseDir     = sessionParas['localBaseDir']
+        
+        self.paraFolder = os.path.join(os.getcwd(), sessionParas['jobname'])
+        
+        self.wBarLower_task = idRiskParaSearchDriver(self.paraFolder, self.substs, solverParas, **sessionParas)
+
+        SequentialTaskCollection.__init__(self, self.jobname, [self.wBarLower_task])
+
+        logger.debug('done gParaSearchDriver.__init__ for job %s' % sessionParas['jobname'])
+
+    def __str__(self):
+        return self.jobname
+
+    def next(self, *args): 
+        self.iter += 1
+        if self.wBarLower_task.execution.returncode == 13:
+            logger.critical('wBarLower failed. terminating para combo')
+            self.execution.returncode = 13
+            return Run.State.TERMINATED
+        elif self.wBarLower_task.execution.returncode == 0:
+            #wBarTable = tableDict.fromTextFile(os.path.join(self.paraFolder, 'optimwBarLower', 'overviewSimu'), width = 20, prec = 10)
+            #optimalRunTable = wBarTable.getSubset( np.abs(wBarTable['wBarLower'] - self.wBarLower_task.costlyOptimizer.best_x) < 1.e-7 )
+            #optimalRunFile = open(os.path.join(self.paraFolder, 'optimalRun'), 'w')
+            #print >> optimalRunFile, optimalRunTable
+            self.execution.returncode = 0
+            return Run.State.TERMINATED
+        else:
+            print 'unknown return code'
+            os._exit
+
+class idRiskParaSearchDriver(SequentialTaskCollection):
+
+    def __init__(self, paraFolder, substs, solverParas, **sessionParas):
+
+        logger.debug('entering solveParaCombination.__init__ for job %s' % sessionParas['jobname'])
+        self.iter    = 0
+
+        self.jobname = 'idRiskParaSearchDriver' + sessionParas['jobname']
         self.substs = substs
 
         self.sessionParas     = sessionParas
@@ -104,7 +150,7 @@ class sequentialParaLoop(SequentialTaskCollection):
         self.paraFolder = os.path.join(os.getcwd(), sessionParas['jobname'])
         # setup AppPot parameters
         use_apppot = False
-        apppot_img = None
+        apppot_img = None  
         apppot_changes = None
         apppot_file = sessionParas['AppPotFile']
         if apppot_file:
@@ -159,7 +205,8 @@ class sequentialParaLoop(SequentialTaskCollection):
         kwargs.setdefault('tags', [ ])
 
         # hand over job to create
-        self.curApplication = cls('/home/user/job/' + executable, [], inputs, outputs, **kwargs)
+#        self.curApplication = cls('/home/user/job/' + executable, [], inputs, outputs, **kwargs)
+        self.curApplication = cls('./' + executable, [], inputs, outputs, **kwargs)
 
         SequentialTaskCollection.__init__(self, self.jobname, [ self.curApplication ])
 
@@ -220,6 +267,27 @@ class taskColAppPotScript(SessionBasedScript, paraLoop):
                        " PATH can point either to a complete AppPot system image"
                        " file, or to a `.changes` file generated with the"
                        " `apppot-snap` utility.")
+        self.add_param("-mP", "--makePlots", metavar="ARCH", type = bool, 
+                       dest="makePlots", default = True,
+                       help="Generate population plots each iteration.  ")
+        self.add_param("-xVars", "--xVars", metavar="ARCH",
+                       dest="xVars", default = 'EA',
+                       help="x variables over which to optimize")
+        self.add_param("-xVarsDom", "--xVarsDom", metavar="ARCH",
+                       dest="xVarsDom", default = '0.5 0.9',
+                       help="Domain to sample x values from. Space separated list. ")
+        self.add_param("-targetVars", "--target_fx", metavar="ARCH",
+                       dest="targetVars", default = '0.1',
+                       help="Domain to sample x values from. Space separated list. ")
+        self.add_param("-target_fx", "--target_fx", metavar="ARCH",
+                       dest="target_fx", default = '0.1',
+                       help="Domain to sample x values from. Space separated list. ")
+        self.add_param("-sv", "--solverVerb", metavar="ARCH",
+                       dest="solverVerb", default = 'DEBUG',
+                       help="Separate verbosity level for the global optimizer ")
+        self.add_param("-yC", "--yConvCrit", metavar="ARCH", type = float, 
+                       dest="convCrit", default = '1.e-2',
+                       help="Convergence criteria for y variables. ")
 
     def parse_args(self):
         """
@@ -254,7 +322,19 @@ class taskColAppPotScript(SessionBasedScript, paraLoop):
             sessionParas['architecture'] = self.params.architecture
             sessionParas['localBaseDir'] = localBaseDir
             sessionParas['jobname'] = jobname
-            yield (jobname, sequentialParaLoop, [ substs ], sessionParas)
+            # Compute domain
+            xVarsDom = self.params.xVarsDom.split()
+            lowerBds = np.array([xVarsDom[i] for i in range(len(xVarsDom)) if i % 2 == 0], dtype = 'float64')
+            upperBds = np.array([xVarsDom[i] for i in range(len(xVarsDom)) if i % 2 == 1], dtype = 'float64')
+            domain = zip(lowerBds, upperBds)
+            solverParas = {}
+            solverParas['xVars'] = self.params.xVars.split()
+            solverParas['xInitialParaCombo'] = np.array([lowerBds, upperBds])
+            solverParas['targetVars'] = self.params.xVars.split()
+            solverParas['target_fx'] = map(float, self.params.target_fx.split())
+            solverParas['plotting'] = False
+            solverParas['convCrit'] = self.params.convCrit
+            yield (jobname, solveParaCombination, [ substs, solverParas ], sessionParas)
             
             
 if __name__ == '__main__':
