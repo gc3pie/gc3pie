@@ -92,6 +92,10 @@ def backup(path):
     os.rename(path, new_path)
     return new_path
 
+def data_merge(source_path, destination_path):
+    # mv --update -v in/* ../in/
+    pass
+    
 
 def basename_sans(path):
     """

@@ -167,6 +167,7 @@ class GeotopApplication(Application):
         # set some execution defaults...
         kw.setdefault('requested_cores', 1)
         kw.setdefault('requested_architecture', Run.Arch.X86_64)
+        kw.setdefault('requested_walltime',16)
         # ...and remove excess ones
         kw.pop('output_dir', None)
         Application.__init__(
@@ -210,7 +211,7 @@ class GeotopApplication(Application):
             
             try:
                 tar = tarfile.open(full_tarname)
-                tar.extractall(path=self.output_dir)
+                tar.extractall(path=self.simulation_dir)
                 tar.close()
                 os.remove(full_tarname)
             except Exception, ex:
@@ -224,6 +225,18 @@ class GeotopApplication(Application):
             self.stderr,
             ]
 
+        # # move files one level up
+        # # subprocess.call(args, *, stdin=None, stdout=None, stderr=None, shell=False)
+        # try:
+        #     for entry in os.listdir(tmp_output_dir):
+        #         dest_entry = os.path.join(self.simulation_dir, entry)
+        #         _command = "mv --update %s/* %s/" % (entry,dest_dir)
+        #         _command = shlex.split(_command)
+        #         subprocess.call(_command)
+        # except Exception, x:
+        #     gc3libs.log.error("Failed running %s. Error type %s. Message %s" % (_command,x.__class__,x.message))
+        #     pass
+    
         # move files one level up, except the ones listed in `exclude`
         for entry in os.listdir(tmp_output_dir):
             src_entry = os.path.join(tmp_output_dir, entry)
@@ -242,25 +255,30 @@ class GeotopApplication(Application):
                 # delete entry and continue with next one
                 os.remove(src_entry)
                 continue
-            # special files indicate successful or unsuccessful completion
-            if entry in [ '_SUCCESSFUL_RUN', '_SUCCESSFUL_RUN.old' ]:
-                # if .R then run 'R CMD <filename>.R' on the .R
-                # self._execute_postprocess()
-                self.execution.returncode = (0, posix.EX_OK)
-            elif entry in [ '_FAILED_RUN', '_FAILED_RUN.old' ]:
-                # use exit code 100 to indicate total failure
-                self.execution.returncode = (0, 100)
+            # # special files indicate successful or unsuccessful completion
+            # if entry in [ '_SUCCESSFUL_RUN', '_SUCCESSFUL_RUN.old' ]:
+            #     # if .R then run 'R CMD <filename>.R' on the .R
+            #     # self._execute_postprocess()
+            #     self.execution.returncode = (0, posix.EX_OK)
+            # elif entry in [ '_FAILED_RUN', '_FAILED_RUN.old' ]:
+            #     # use exit code 100 to indicate total failure
+            #     self.execution.returncode = (0, 100)
             # now really move file one level up
             dest_entry = os.path.join(self.simulation_dir, entry)
-            # if os.path.exists(dest_entry):
+            if os.path.exists(dest_entry):
                 # backup with numerical suffix
                 # gc3libs.utils.backup(dest_entry)
+                shutil.rmtree(dest_entry, ignore_errors=True)
             os.rename(os.path.join(tmp_output_dir, entry), dest_entry)
         # os.removedirs(tmp_output_dir)
         shutil.rmtree(tmp_output_dir, ignore_errors=True)
 
-        # Clean-up and preparation for resubmission
-        # e.g. remove: input and output archives, execution binary, logs ?
+        # search for termination files
+        if os.path.isfile(os.path.join(self.simulation_dir,'_SUCCESSFUL_RUN')) or os.path.isfile(os.path.join(self.simulation_dir,'_SUCCESSFUL_RUN.old')):
+            self.execution.returncode = (0, posix.EX_OK)
+        elif os.path.isfile(os.path.join(self.simulation_dir,'_FAILED_RUN')) or os.path.isfile(os.path.join(self.simulation_dir,'_FAILED_RUN.old')):
+            # use exit code 100 to indicate total failure
+            self.execution.returncode = (0, 100)
 
 
 class GeotopTask(RetryableTask, gc3libs.utils.Struct):
