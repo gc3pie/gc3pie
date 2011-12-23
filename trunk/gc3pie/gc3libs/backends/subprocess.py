@@ -96,6 +96,11 @@ class SubprocessLrms(LRMS):
                 % (app, app.execution.lrms_jobid))
 
 
+    def close(self):
+        # XXX: free any resources in use?
+        pass
+
+
     def free(self, app):
         """
         Delete the temporary directory where a child process has run,
@@ -232,7 +237,7 @@ class SubprocessLrms(LRMS):
                 posix.dup2(stdout.fileno(), 1)
 
                 if app.join:
-                        stderr = stdout
+                    stderr = stdout
                 else:
                     if app.stderr is not None:
                         stderr = open(app.stderr, 'w')
@@ -240,11 +245,27 @@ class SubprocessLrms(LRMS):
                         stderr = open(os.devnull, 'w')
                 posix.dup2(stderr.fileno(), 2)
 
-                # close extra fd's after duplication
-                os.close(stdin.fileno())
-                os.close(stdout.fileno())
-                if app.stderr is not None and stderr is not stdout:
-                    posix.close(stderr.fileno())
+                # close extra fd's after duplication; for this we need
+                # to determine highest-numbered fd in use (which could
+                # have been opened by user-level code).  Apparently
+                # there's no portable way of doing it, see:
+                # http://stackoverflow.com/questions/899038/getting-the-highest-allocated-file-descriptor
+                maxfd = 3
+                try:
+                    for entry in os.listdir('/proc/%s/fd' % os.getpid()):
+                        try:
+                            maxfd = max(maxfd, int(entry))
+                        except ValueError:
+                            pass
+                except OSError:
+                    # /proc not mounted? fall-back to the maximum theoretical fd
+                    maxfd = posix.sysconf(posix.sysconf_names['SC_OPEN_MAX'])
+                # XXX: since Python 2.6, there's `os.closerange()` for this
+                for fd in xrange(3, maxfd):
+                    try:
+                        posix.close(fd)
+                    except OSError:
+                        pass
 
                 ## set up environment
                 for k,v in app.environment:
