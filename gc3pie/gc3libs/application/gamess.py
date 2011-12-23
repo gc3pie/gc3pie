@@ -64,12 +64,14 @@ class GamessApplication(gc3libs.Application):
         arguments = [ input_file_name ]
         # FIXME: enable when the GAMESS invocation script conforms to
         # the `rungms` interface; see Issue 3.
-        #verno = kw.get('verno', None)
-        #if verno is not None:
-        #    arguments.append(verno)
-        #if kw.has_key('requested_cores'):
-        #    # NCPUS argument to `rungms`
-        #    arguments.append(str(kw['requested_cores']))
+        # # `rungms` has a fixed structure for positional arguments:
+        # # INPUT VERNO NCPUS; if one of them is to be omitted,
+        # # we use the empty string instead.
+        # arguments = [
+        #     input_file_name,
+        #     str(kw.get('verno') or ""),
+        #     str(kw.get('requested_cores') or "")
+        #     ],
         #if kw.has_key('extbas') is not None:
         #    other_input_files += extbas
         #    arguments.extend(['--extbas', os.path.basename(extbas)])
@@ -208,15 +210,8 @@ class GamessAppPotApplication(GamessApplication,
         kw.setdefault('application_tag', "gamess")
         kw.setdefault('tags', list())
         kw['tags'].append("APPS/CHEM/GAMESS-APPPOT-0.11.11.08")
-        arguments = [ input_file_name ]
-        verno = kw.get('verno', None)
-        if verno is not None:
-            arguments.append(verno)
-        if kw.has_key('requested_cores'):
-            # NCPUS argument to `rungms`
-            arguments.append(str(kw['requested_cores']))
-        if kw.has_key('extbas') is not None:
-            other_input_files += extbas
+        if kw.has_key('extbas') and kw['extbas'] is not None:
+            other_input_files += kw['extbas']
             arguments.extend(['--extbas', os.path.basename(extbas)])
         # set job name
         kw['job_name'] = input_file_name_sans
@@ -224,7 +219,16 @@ class GamessAppPotApplication(GamessApplication,
         gc3libs.application.apppot.AppPotApplication.__init__(
             self, 
             executable = "localgms",
-            arguments = arguments,
+            # `rungms` has a fixed structure for positional arguments:
+            # INPUT VERNO NCPUS; if one of them is to be omitted,
+            # we cannot use the empty string instead because `apppot-start`
+            # cannot detect it from the kernel command line, so we have to
+            # hard-code default values here...
+            arguments = [
+                input_file_name,
+                str(kw.get('verno') or "00"),
+                str(kw.get('requested_cores') or "")
+                ],
             inputs = [ inp_file_path ] + list(other_input_files),
             outputs = [ output_file_name ],
             join = True,
