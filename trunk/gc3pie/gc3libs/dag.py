@@ -437,7 +437,9 @@ class ParallelTaskCollection(TaskCollection):
         we're in the middle of a computation).
         """
         stats = self.stats()
-        if stats[Run.State.NEW] + stats[Run.State.TERMINATED] == len(self.tasks):
+        if (stats[Run.State.NEW] > 0
+            and stats[Run.State.TERMINATED] > 0
+            and stats[Run.State.NEW] + stats[Run.State.TERMINATED] == len(self.tasks)):
             # we're in the middle of a computation (there's a mixture
             # of unsubmitted and finished tasks), so let's chalk this
             # up to ``RUNNING`` state
