@@ -96,6 +96,7 @@ class SubprocessLrms(LRMS):
                 % (app, app.execution.lrms_jobid))
 
 
+    @same_docstring_as(LRMS.close)
     def close(self):
         # XXX: free any resources in use?
         pass
