@@ -248,7 +248,7 @@ class idRiskParaSearchParallel(ParallelTaskCollection, paraLoop):
         '''
           Method that builds an overview table for the jobs that were run and then returns the values. 
         '''
-        logger.debug('entering idRiskParaSearchParallel.target. Computing target for xVar = %s, xVals = %s' % (xVars, xParaCombos))
+        logger.debug('entering idRiskParaSearchParallel.target. Computing target for xVar = %s, xVals = %s, targetVars = %s' % (xVars, xParaCombos, targetVars))
         # Each line in the resulting table (overviewSimu) represents one paraCombo
         overviewTable = createOverviewTable(resultDir = self.optimFolder, outFile = 'simulation.out', exportFileName = 'overviewSimu', sortCols = [], orderCols = [], verb = 'INFO')
         if overviewTable == None:
@@ -281,6 +281,7 @@ class idRiskParaSearchParallel(ParallelTaskCollection, paraLoop):
                 logger.critical('Cannot find unique value for xVal %s' % xVal)
                 os._exit(1)
         logger.info('Computed target: Returning result to solver\n')
+        logger.info('result for variables %s is %s' % (xVars, result))
         return result
 
 
@@ -465,7 +466,7 @@ class idRiskParaSearchScript(SessionBasedScript, paraLoop):
             solverParas = {}
             solverParas['xVars'] = self.params.xVars.split()
             solverParas['xInitialParaCombo'] = np.array([lowerBds, upperBds])
-            solverParas['targetVars'] = self.params.xVars.split()
+            solverParas['targetVars'] = self.params.targetVars.split()
             solverParas['target_fx'] = map(float, self.params.target_fx.split())
             solverParas['plotting'] = False
             solverParas['convCrit'] = self.params.convCrit

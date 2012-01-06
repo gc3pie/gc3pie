@@ -30,7 +30,7 @@ class costlyOptimization(object):
     self.target_fx       = np.array(paras['target_fx'])
     self.convCrit        = paras['convCrit'] 
     self.converged       = False
-    self.makePlots       = True
+    self.makePlots       = paras['plotting']
     self.nUpdates        = 0
 
     self.x               = self.xInitialGuess
@@ -39,17 +39,26 @@ class costlyOptimization(object):
     #np.array([[]])    
     
   def updateInterpolationPoints(self, x, fx):
-    for paraCombo in x:
-      if not paraCombo in self.x:
-        self.x  = np.append(self.x, np.array([paraCombo]), 0)
-      elif self.nUpdates > 0:
-        logger.critical('x = %s already in self.x = %s' % (x, self.x))
-      else: 
-        pass
-    self.fx = np.append(self.fx, fx)
+    if self.nUpdates == 0:
+      logger.debug('storing initial fx values %s corresponding to inital guess %s' % (fx, self.xInitialGuess))
+      for paraCombo,paraComboFx in zip(x, fx):
+        self.fx = np.append(self.fx, paraComboFx)
+    else:
+      for paraCombo,paraComboFx in zip(x, fx):
+        logger.debug('checking if paracombo %s already exists' % paraCombo)
+        if not paraCombo in self.x:
+          logger.debug('appending para combo %s' % paraCombo)
+          self.x  = np.append(self.x, np.array([paraCombo]), 0)
+          self.fx = np.append(self.fx, paraComboFx)
+        elif self.nUpdates > 0:
+          logger.critical('x = %s already in self.x = %s' % (x, self.x))
+        else: 
+          pass
     bestIndex = np.argmin(self._computeNormedDistance(self.fx))
     self.best_x = self.x[bestIndex]
     self.best_fx  = self.fx[bestIndex]
+    logger.debug('done updating interpolation points. x = %s, fx = %s' % (self.x, self.fx))
+    logger.debug('best points: best_x = %s, best_fx = %s' % (self.best_x, self.best_fx))
     self.nUpdates += 1
     
   def checkConvergence(self):
