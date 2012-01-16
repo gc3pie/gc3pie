@@ -485,10 +485,7 @@ class idRiskParaSearchScript(SessionBasedScript, paraLoop):
         #os._exit()
 
 
-if __name__ == '__main__':
-    logger.info('Starting: \n%s' % ' '.join(sys.argv))
-    idRiskParaSearchScript().run()
-    logger.debug('combine resulting tables')    
+def combineTables():
     tableList = [ os.path.join(os.getcwd(), folder, 'optimalRun') for folder in os.listdir(os.getcwd()) if os.path.isdir(folder) and not folder == 'localBaseDir' and not folder == 'idRiskParaSearch.jobs' ]
     tableDicts = [ tableDict.fromTextFile(table, width = 20, prec = 10) for table in tableList if os.path.isfile(table)]
     if tableDicts:
@@ -510,6 +507,34 @@ if __name__ == '__main__':
     # tableFile = os.path.join(os.getcwd(), 'optimalRuns')
     # figureFile = os.path.join(os.getcwd(), 'optimalRunsPlot.eps')
     # momentPlots(baseName = baseName, path = path, xVar = 'dy', overlay = overlay, conditions = conditions, tableFile = tableFile, figureFile = figureFile)
+
+
+if __name__ == '__main__':
+    logger.info('Starting: \n%s' % ' '.join(sys.argv))
+    idRiskParaSearchScript().run()
+    logger.debug('combine resulting tables')    
+    combineTables()
+    # tableList = [ os.path.join(os.getcwd(), folder, 'optimalRun') for folder in os.listdir(os.getcwd()) if os.path.isdir(folder) and not folder == 'localBaseDir' and not folder == 'idRiskParaSearch.jobs' ]
+    # tableDicts = [ tableDict.fromTextFile(table, width = 20, prec = 10) for table in tableList if os.path.isfile(table)]
+    # if tableDicts:
+    #     optimalRuns = tableDicts[0]
+    #     for ixTable, table in enumerate(tableDicts):
+    #         if ixTable == 0: continue
+    #         optimalRuns = optimalRuns.getAppended(table)
+    #     #optimalRuns.order(['dy', 'wBarLower'])
+    #     #optimalRuns.sort(['dy'])
+    #     logger.info(optimalRuns)
+    #     f = open(os.path.join(os.getcwd(), 'optimalRuns'), 'w')  
+    #     print >> f, optimalRuns
+    #     f.flush()
+    # #logger.info('Generating plot')
+    # #baseName = 'moments'
+    # #path = os.getcwd()
+    # # conditions = {}
+    # # overlay = {'EP': True, 'e_rs': True, 'e_rb': True, 'sigma_rs': True, 'sigma_rb': True}
+    # # tableFile = os.path.join(os.getcwd(), 'optimalRuns')
+    # # figureFile = os.path.join(os.getcwd(), 'optimalRunsPlot.eps')
+    # # momentPlots(baseName = baseName, path = path, xVar = 'dy', overlay = overlay, conditions = conditions, tableFile = tableFile, figureFile = figureFile)
     logger.info('main done')
 
 
