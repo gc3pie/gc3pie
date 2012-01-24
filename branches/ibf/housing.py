@@ -44,7 +44,7 @@ from supportGc3 import wrapLogger
 
 logger = wrapLogger(loggerName = __name__ + 'logger', streamVerb = 'DEBUG', logFile = __name__ + '.log')
 
-class hougingApplication(Application):
+class housingApplication(Application):
     _invalid_chars = re.compile(r'[^_a-zA-Z0-9]+', re.X)
     
     def __init__(self, executable, arguments, inputs, outputs, output_dir, **kw):
@@ -109,7 +109,7 @@ class hougingApplication(Application):
                     gc3libs.utils.backup(dest_entry)
                 os.rename(os.path.join(wrong_output_dir, entry), dest_entry)
         # set the exitcode based on postprocessing the main output file
-        simulation_out = os.path.join(output_dir, 'simulation.out')
+        simulation_out = os.path.join(output_dir, 'aggregate.out')
         if os.path.exists(simulation_out):
             self.execution.exitcode = 0
         else:

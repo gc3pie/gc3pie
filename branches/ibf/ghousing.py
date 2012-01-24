@@ -69,14 +69,13 @@ import time
 
 from supportGc3 import lower, flatten, str2tuple, getIndex, extractVal, str2vals
 from supportGc3 import format_newVal, update_parameter_in_file, safe_eval, str2mat, mat2str, getParameter
-from idRisk import idRiskApplication, idRiskApppotApplication
+from housing import housingApplication, housingApppotApplication
 from paraLoop import paraLoop
 
 path2Pymods = os.path.join(os.path.dirname(__file__), '../')
 if not sys.path.count(path2Pymods):
     sys.path.append(path2Pymods)
 
-from pymods.support.support import fillInputDir
 from pymods.support.support import wrapLogger
 
 # gc3 library imports
@@ -103,6 +102,7 @@ Read `.loop` files and execute the `housingOut` program accordingly.
             version = '0.2',
             # only '.loop' files are considered as valid input
             input_filename_pattern = '*.loop',
+            stats_only_for = Application,
         )
         paraLoop.__init__(self, 'INFO')
 
@@ -207,6 +207,8 @@ Read `.loop` files and execute the `housingOut` program accordingly.
                 print 'inputs = %s' % inputs
                 print 'outputs = %s' % outputs
 
+                kwargs.setdefault('tags', [ ])	
+
                 # adaptions for uml
                 if use_apppot:
                     if apppot_img is not None:
@@ -214,17 +216,28 @@ Read `.loop` files and execute the `housingOut` program accordingly.
                     if apppot_changes is not None:
                         kwargs['apppot_changes'] = apppot_changes
                     cls = housingApppotApplication
+                    pathToExecutable = '/home/user/job/' + executable
                 else:
-                    cls = housingApplication 
-                kwargs.setdefault('tags', [ ])
+                    cls = housingApplication
+                    pathToExecutable = executable
+
                 
                 # hand over job to create
-                yield (jobname, cls, ['/home/user/job/' + executable, [], inputs, outputs], kwargs) 
+                yield (jobname, cls, [pathToExecutable, [], inputs, outputs], kwargs)                
+                
+def fillInputDir(baseDir, input_dir):
+    '''
+      Copy folder /input and all files in the base dir to input_dir. 
+      This is slightly more involved than before because we need to 
+      exclude the markov directory which contains markov information
+      for all country pairs. 
+    '''
+    gc3libs.utils.copytree(baseDir , input_dir)
 
 ## run script
 
 if __name__ == '__main__':
     logger.info('Starting: \n%s' % ' '.join(sys.argv))
-    gIdRiskScript().run()
+    ghousing().run()
     logger.info('main done')
 
