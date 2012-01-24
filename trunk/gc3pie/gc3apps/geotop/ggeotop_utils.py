@@ -28,7 +28,7 @@ def main():
     out/
     *~
     """
-    parser = OptionParser(usage="%prog [clean|list] [INPUT FOLDER]")
+    parser = OptionParser(usage="%prog [clean|list] [INPUT FOLDERs]")
     parser.add_option("-s", "--simulate", action="store_true", dest="simulate",
                       metavar="LEVEL",
                       help="Execute scrit in simulation mode"
@@ -40,17 +40,19 @@ def main():
 
     (options, args) = parser.parse_args(sys.argv[1:])
 
-    if not len(args) == 2:
+    if len(args) < 2:
         print parser.usage
         return 1
 
     command = args[0]
-    input_folder = args[1]
+    input_folders = args[1:]
     
     if command == "list":
-        search_and_list(input_folder)
+        for folder in input_folders:
+            search_and_list(folder)
     elif command == "clean":
-        clean_folder(input_folder, simulate=options.simulate, rec_also=options.rec_also)
+        for folder in input_folders:
+            clean_folder(folder, simulate=options.simulate, rec_also=options.rec_also)
     else:
         print parser.usage
 
