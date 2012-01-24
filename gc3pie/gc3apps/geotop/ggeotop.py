@@ -146,10 +146,7 @@ class GeotopApplication(Application):
         # set some execution defaults...
         kw.setdefault('requested_cores', 1)
         kw.setdefault('requested_architecture', Run.Arch.X86_64)
-
-        # XXX: this will have to be adjusted
-        # this should come from the command line interface
-        kw.setdefault('requested_walltime',16)
+        kw.setdefault('requested_walltime',8)
         # ...and remove excess ones
         kw.pop('output_dir', None)
         Application.__init__(
