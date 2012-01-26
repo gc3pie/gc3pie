@@ -6,20 +6,42 @@ import os
 from optparse import OptionParser
 import shutil
 
-dirs = ["in", "maps", "rec", "rad"]
-files = ["svf.asc","slp.asc", "asp.asc", "dem.asc"]
+"""
+1. new simulation: just generated
+2. was already running: mixed with some results
+3. pooluted by ggeotop
+
+take *.asc as valid inputs also for job submission
+folder pattern:
+ggeotop.inpts
+in/
+out/
+
+retrieve only out/
+in/ remain unchaged
+
+"""
+
+dirs = ["in", "maps" "rec", "rad"]
+# files = ["svf.asc","slp.asc", "asp.asc", "dem.asc"]
 
 def search_and_list(input_folder):
-
+    # agreed vlid input folder format:
+    # ggeotop.inpts
+    # in/
+    # out/
+    #
     for r,d,f in os.walk(input_folder):
-        if "geotop.inpts" in f:
-            v = [missing for missing in dirs if not missing in d]
-            if not v:
-                # all required folders in there
-                v = [missing for missing in files if not missing in f]
-                if not v:
-                    # all required files in there
-                    print r
+        if "geotop.inpts" in f and "in" in d and "out" in d:
+            print r
+            
+            # v = [missing for missing in dirs if not missing in d]
+            # if not v:
+            #     # all required folders in there
+            #     v = [missing for missing in files if not missing in f]
+            #     if not v:
+            #         # all required files in there
+            #         print r
 
 def main():
     """
@@ -58,8 +80,8 @@ def main():
 
 def clean_folder(input_folder, simulate, rec_also):
     
-    filename_patterns = ["N0*.asc", "*~", "*.tgz"]
-    dirname_patterns = ["out","*~"]
+    filename_patterns = ["*~", "*.tgz"]
+    dirname_patterns = ["tmp","*~"]
 
     if rec_also:
         dirname_patterns.append("rec")
