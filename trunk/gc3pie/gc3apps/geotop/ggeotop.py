@@ -107,15 +107,16 @@ class GeotopApplication(Application):
                     pass
         
             tar = tarfile.open(GEOTOP_INPUT_ARCHIVE, "w:gz")
-            tar.add('./in')
-            tar.add('./maps')
-            tar.add('./rec')
-            tar.add('./rad')
             tar.add('./geotop.inpts')
-            tar.add('./svf.asc')
-            tar.add('./slp.asc')
-            tar.add('./asp.asc')
-            tar.add('./dem.asc')
+            tar.add('./in')
+            tar.add('./out')
+            # tar.add('./maps')
+            # tar.add('./rec')
+            # tar.add('./rad')
+            # tar.add('./svf.asc')
+            # tar.add('./slp.asc')
+            # tar.add('./asp.asc')
+            # tar.add('./dem.asc')
             tar.close()
             os.chdir(cwd)
             yield (tar.name, GEOTOP_INPUT_ARCHIVE)
@@ -160,10 +161,10 @@ class GeotopApplication(Application):
             inputs = inputs,
             outputs = gc3libs.ANY_OUTPUT,
             # outputs = outputs,
-            output_dir = os.path.join(simulation_dir, 'out'),
+            output_dir = os.path.join(simulation_dir, 'tmp'),
             stdout = 'ggeotop.log',
             join=True,
-            #tags = [ 'APPS/GEOTOP-1.223' ],
+            tags = [ 'APPS/EARTH/GEOTOP-1.224' ],
             **kw)
 
 
@@ -246,7 +247,8 @@ class GeotopApplication(Application):
             # XXX: To consider a better way of handling this
             # at the moment the entire input archive is recreated
             gc3libs.log.info("Updating tar archive for resubmission")
-            self._scan_and_tar(self.simulation_dir)
+            inputs = dict((a,b) for (a,b) in self._scan_and_tar(self.simulation_dir))
+            # self._scan_and_tar(self.simulation_dir)
 
 class GeotopTask(RetryableTask, gc3libs.utils.Struct):
 
@@ -313,8 +315,6 @@ newly-created jobs so that this limit is never exceeded.
         self.add_param("-x", "--executable", metavar="PATH", #type=executable_file,
                        dest="executable", default=None,
                        help="Path to the GEOtop executable file.")
-        self.add_param("-q", "--query", action="store_true", dest="query_only",
-                       help="Do not submit jobs, just validate input folders.")
 
         # change default for the "-o"/"--output" option
         #self.actions['output'].default = 'NPOPSIZE/PARAMS/ITERATION'
@@ -340,45 +340,34 @@ newly-created jobs so that this limit is never exceeded.
         input_files = self._search_for_input_files(self.params.args, 'geotop.inpts')
 
         # the real input to GEOtop are the directories containing `geotop.inpts`
-        # input_dirs = [ (os.path.dirname(path) or os.getcwd())
-        #               for path in input_files ]
-
+        # as well as 'in' and 'out' fodlers
         for path in self._validate_input_folder(input_files):
-            if self.params.query_only:
-                print("Valid input folder '%s'" % path)
-            else:
-                # construct GEOtop job
-                yield (
-                    # job name
-                    gc3libs.utils.basename_sans(path),
-                    # task constructor
-                    ggeotop.GeotopTask,
-                    [ # parameters passed to the constructor, see `GeotopTask.__init__`
-                        path,                   # path to the directory containing input files
-                        self.params.executable, # path to the GEOtop executable
-                    ],
-                    # extra keyword arguments passed to the constructor,
-                    # see `GeotopTask.__init__`
-                    extra.copy()
-                    )
+            # construct GEOtop job
+            yield (
+                # job name
+                gc3libs.utils.basename_sans(path),
+                # task constructor
+                ggeotop.GeotopTask,
+                [ # parameters passed to the constructor, see `GeotopTask.__init__`
+                    path,                   # path to the directory containing input files
+                    self.params.executable, # path to the GEOtop executable
+                ],
+                # extra keyword arguments passed to the constructor,
+                # see `GeotopTask.__init__`
+                extra.copy()
+                )
 
     def _validate_input_folder(self, inputfiles):
         """
         Checks if, provided a valida input filename of type
         'geotop.inpts', the corresponding folder contains the required
         additional files and folders:
-        
-        ./in
-        ./maps
-        ./rec
-        ./rad
-        ./geotop.inpts
-        ./svf.asc
-        ./slp.asc
-        ./asp.asc
-        ./dem.asc
 
-        /out folders are excluded
+        ./out/
+        ./in/
+        ./geotop.inpts
+
+        /tmp folders are excluded
 
         @input: list of filenamens
         @output: iterator of 'valid' input_dirs
@@ -389,15 +378,8 @@ newly-created jobs so that this limit is never exceeded.
             # extract folder name from input_filename
             dirname = os.path.dirname(input_filename)
             if os.path.isdir(os.path.join(dirname,"in")) and \
-                   os.path.isdir(os.path.join(dirname,"maps")) and \
-                   os.path.isdir(os.path.join(dirname,"rec")) and \
-                   os.path.isdir(os.path.join(dirname,"rad")) and \
-                   os.path.isfile(os.path.join(dirname,"geotop.inpts")) and \
-                   os.path.isfile(os.path.join(dirname,"svf.asc")) and \
-                   os.path.isfile(os.path.join(dirname,"slp.asc")) and \
-                   os.path.isfile(os.path.join(dirname,"asp.asc")) and \
-                   os.path.isfile(os.path.join(dirname,"dem.asc")) and \
-                   not dirname.endswith("/out") and \
+                   os.path.isdir(os.path.join(dirname,"out")) and \
+                   not dirname.endswith("/tmp") and \
                    not dirname.endswith("~"):
                 yield dirname
             else:
