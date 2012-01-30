@@ -32,67 +32,64 @@ class CryptoApplication(gc3libs.Application):
     Run a Crypto job 
     """
     
-    def __init__(self, *inp, **kw):
+    def __init__(self, inp, **kw):
 	# Get the list of input files to send to the grid
+
         #inputs = self.gatherInputList()
-	arguments = self.parse_args(inp)
-	# Append 1 (for 1 core)
-	arguments.append('1')
-        arguments.append('input_files.tgz')
+	arguments = self.read_inp(inp)
+
+	# Append # cores
+        if kw.has_key('requested_cores'):
+            arguments.append(kw['requested_cores'])
+        else:
+            # default 1 core
+            arguments.append('1')
+
+        # append reference to archive containing static input files
+        if not kw.has_key('input_directives'):
+            # set a default
+            kw['input_directives'] = 'input_files.tgz'
+            
+        arguments.append(kw['input_directives'])
 
         src_crypto_bin = resource_filename(Requirement.parse("gc3pie"), 
                                            "gc3libs/etc/gnfs-cmd")
 
         inputs = {kw['input_directives']:"input_files.tgz", src_crypto_bin:"gnfs-cmd" }
 
+        kw['tags'] = [ 'TEST/CRYPTO-1.0' ]
+
         gc3libs.Application.__init__(
             self,
             executable =  os.path.basename(src_crypto_bin),
             arguments = arguments, 
             inputs = inputs,
-            outputs = [ '@output.files' ],
-            stdout = 'crypto.stdout.txt',
-            stderr = 'crypto.stderr.txt',
+            # outputs = [ '@output.files' ],
+            outputs = gc3libs.ANY_OUTPUT,
+            stdout = 'gcrypto.log',
+            join=True,
             **kw
             )
 
-    def parse_args(self, argFile):
+    def read_inp(self, inFile):
+        # format of expected input file
+        # 1 line with two numbers separated by blank space:
+        # 2200000400 100
+        # should be treated as two separate arguments
 	try:
-		f = open(argFile[0], 'r')
+            f = open(inFile, 'r')
+            line = f.readline().strip()
+            f.close()
+            args = line.split(" ")
+            return args
 	except IOError:
-            print "Argument file %s doesn't exist!" % (argFile[0])
-            sys.exit(1)
-
-	line = f.readline().strip()
-	args = line.split(" ")
-	f.close()
-
-	return args
-
-    # def gatherInputList(self, input='inputFiles.txt'):
-    #     # Load input files list and return it
-    #     try:
-    #     	f = open(input, 'r')
-    #     except IOError:
-    #         print "Input files list %s doesn't exist!" % (input)
-    #         sys.exit(1)
-
-    #     fileList = ["input_files.tgz"]
-    #     for line in f:
-    #     	fileList.append(line.strip())
-
-    #     f.close()
-
-    #     return fileList
+            gc3libs.log.error("Argument file '%s' not found" % inFile)
 
     def terminated(self):
         """
-        Set the exit code of a `CodemlApplication` job by inspecting its
-        ``.mlc`` output files.
-
-        An output file is valid iff its last line of each output file
-        reads ``Time used: HH:M``.
-
+        Checks whether M*.gz files have been created
+        Checks 'done' pattern in stdout
+        
         The exit status of the whole job is set to one of these values:
 
         *  0 -- all files processed successfully
@@ -102,7 +99,7 @@ class CryptoApplication(gc3libs.Application):
          
         """
         
-        gc3libs.log.debug('Application terminated. postprocessing with execution.signal [%d]' % self.execution.signal)
+        gc3libs.log.debug('Application terminated. postprocessing with execution.signal [%d]' % self.execution.exitcode)
         # if self.execution.signal == 125:
         #     # submission failed, job did not run at all
         #     self.execution.exitcode = 127
@@ -134,7 +131,7 @@ class CryptoApplication(gc3libs.Application):
         # else:
         #     self.execution.exitcode = 2
         #     self.info = "No files processed successfully, output downloaded to '%s'" % download_dir
-        self.execution.exitcode = self.execution.signal
+        # self.execution.exitcode = self.execution.signal
         return
 
 
