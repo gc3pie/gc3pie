@@ -32,12 +32,16 @@ TAR_EXCLUDE_PATTERN="--exclude .arc --exclude ./in --exclude ggeotop.log"
 
 function gracefull_exit {
     echo -n "Creating output archive... "
-    tar -czf $OUTPUT_ARCHIVE ./* $TAR_EXCLUDE_PATTERN
+    # tar czf $OUTPUT_ARCHIVE ./* $TAR_EXCLUDE_PATTERN
+    tar czf $OUTPUT_ARCHIVE out
     if [ $? -eq 0 ]; then
         # Remove everything else if tar has been created successfully
 	echo "[ok]"
 	echo "Cleaning... "
-	ls | grep -v output.tgz | grep -v .log | grep -v .arc | xargs --replace rm -rf {}
+	# ls | grep -v output.tgz | grep -v .log | grep -v .arc | xargs --replace rm -rf {}
+	rm -rf in
+	rm -rf out
+	ls | grep -v $OUTPUT_ARCHIVE | grep -v .log | grep -v .arc | xargs --replace rm {}
     else
 	echo "[failed]"
     fi
@@ -104,7 +108,6 @@ echo -n "Checking executable [$GEOTOP_EXEC] ... "
 if [ -x $GEOTOP_EXEC ]; then
     echo "[ok]"
     echo "Start execution... "
-    # why is it not redirecting to stdout/stderr ?
     $GEOTOP_EXEC .
     RET=$?
     echo "GEOTop execution termianted with [$RET]"
