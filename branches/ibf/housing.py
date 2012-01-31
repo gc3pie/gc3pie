@@ -41,6 +41,12 @@ import shutil
 
 import logbook, sys
 from supportGc3 import wrapLogger
+# import personal libraries
+path2SrcPy = os.path.join(os.path.dirname(__file__), '../srcPy')
+if not sys.path.count(path2SrcPy):
+    sys.path.append(path2SrcPy)
+from plotSimulation import plotSimulation
+from pymods.classes.tableDict import tableDict
 
 logger = wrapLogger(loggerName = __name__ + 'logger', streamVerb = 'DEBUG', logFile = __name__ + '.log')
 
@@ -83,20 +89,10 @@ class housingApplication(Application):
         """
         Analyze the retrieved output, with a threefold purpose:
 
-        - set the exit code based on whether there is a
-          `simulation.out` file containing a value for the
-          `FamaFrenchBeta` parameter;
-
-        - parse the output file `simulation.out` (if any) and set
-          attributes on this object based on the values stored there:
-          e.g., if the `simulation.out` file contains the line
-          ``FamaFrenchBeta: 1.234567``, then set `self.FamaFrenchBeta
-          = 1.234567`.  Attribute names are gotten from the labels in
-          the output file by translating any invalid character
-          sequence to a single `_`; e.g. ``Avg. hB`` becomes `Avg_hB`.
-
         - work around a bug in ARC where the output is stored in a
           subdirectory of the output directory.
+          
+        - make plots for post-analysis
         """
         output_dir = self.output_dir
         # if files are stored in `output/output/`, move them one level up
@@ -108,13 +104,46 @@ class housingApplication(Application):
                     # backup with numerical suffix
                     gc3libs.utils.backup(dest_entry)
                 os.rename(os.path.join(wrong_output_dir, entry), dest_entry)
+                
         # set the exitcode based on postprocessing the main output file
-        simulation_out = os.path.join(output_dir, 'aggregate.out')
-        if os.path.exists(simulation_out):
+        aggregateOut = os.path.join(output_dir, 'aggregate.out')
+        empOwnershipFile = os.path.join(os.path.split(output_dir)[0], 'input', 'PSIDOwnershipProfilealleduc.out')
+        ownershipTableFile = os.path.join(output_dir, 'ownershipTable.out')
+        if os.path.exists(aggregateOut):
             self.execution.exitcode = 0
+            # make plot of predicted vs empirical ownership profile
+            aggregateOutTable = tableDict.fromTextFile(aggregateOut, width = 20, prec = 10)
+            aggregateOutTable.keep(['age', 'owner'])
+            aggregateOutTable.rename('owner', 'thOwnership')
+            empOwnershipTable = tableDict.fromTextFile(empOwnershipFile, width = 20, prec = 10)
+            empOwnershipTable.rename('PrOwnership', 'empOwnership')
+            ownershipTable = aggregateOutTable.merged(empOwnershipTable, 'age')
+            ownershipTable.drop('_merge')
+            yVars = ['thOwnership', 'empOwnership']
+            # add the individual simulations
+            for profile in [ '1', '2', '3' ]:
+                profileOwnershipFile = os.path.join(output_dir, 'simulation_' + profile + '.out')
+                if not os.path.exists(profileOwnershipFile): continue
+                profileOwnershipTable = tableDict.fromTextFile(profileOwnershipFile, width = 20, prec = 10)
+                profileOwnershipTable.keep(['age', 'owner'])
+                profileOwnershipTable.rename('owner', 'thOwnership_' + profile)
+                ownershipTable.merge(profileOwnershipTable, 'age')
+                ownershipTable.drop('_merge')  
+                yVars.append('thOwnership_' + profile)
+            f = open(ownershipTableFile, 'w')
+            print >> f, ownershipTable
+            f.close()
+            plotSimulation(path = ownershipTableFile, xVar = 'age', yVars = yVars, yVarRange = (0., 1.), figureFile = os.path.join(self.output_dir, 'ownership.eps'), verb = 'CRITICAL')
+            
+            # make plot of life-cycle simulation (all variables)
+            plotSimulation(path = os.path.join(output_dir, 'aggregate.out'), xVar = 'age', yVars = [], figureFile = os.path.join(self.output_dir, 'aggregate.eps'), verb = 'CRITICAL' )
+            if os.path.exists('ownershipThreshold_1.out'):
+                plotSimulation(path = os.path.join(output_dir, 'ownershipThreshold_1.out'), xVar = 'age', yVars = [ 'Yst1', 'Yst4' ], figureFile = os.path.join(self.output_dir, 'ownershipThreshold_1.eps'), verb = 'CRITICAL' )
+                plotSimulation(path = os.path.join(output_dir, 'ownershipThreshold_1.out'), xVar = 'age', yVars = [ 'yst1', 'yst4' ], figureFile = os.path.join(self.output_dir, 'normownershipThreshold_1.eps'), verb = 'CRITICAL' )
         else:
             # no `simulation.out` found, signal error
             self.execution.exitcode = 2
+        
             
             
             

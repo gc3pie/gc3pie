@@ -77,6 +77,7 @@ if not sys.path.count(path2Pymods):
     sys.path.append(path2Pymods)
 
 from pymods.support.support import wrapLogger
+from pymods.classes.tableDict import tableDict
 
 # gc3 library imports
 import gc3libs
@@ -86,6 +87,13 @@ import gc3libs.utils
 import gc3libs.application.apppot
 
 import gc3libs.debug
+
+# import personal libraries
+path2SrcPy = os.path.join(os.path.dirname(__file__), '../srcPy')
+if not sys.path.count(path2SrcPy):
+    sys.path.append(path2SrcPy)
+from plotSimulation import plotSimulation
+
 
 ## custom application class
 
@@ -199,7 +207,7 @@ Read `.loop` files and execute the `housingOut` program accordingly.
                 # all contents of the `output` directory are to be fetched
                 outputs = { 'output/':'' }
                 kwargs = extra.copy()
-                kwargs['stdout'] = 'housing.log'
+                kwargs['stdout'] = os.path.join('housingStdOut.log')
                 kwargs['join'] = True
                 kwargs['output_dir'] = os.path.join(path_to_stage_dir, 'output')
                 kwargs['requested_architecture'] = self.params.architecture
@@ -221,7 +229,6 @@ Read `.loop` files and execute the `housingOut` program accordingly.
                     cls = housingApplication
                     pathToExecutable = executable
 
-                
                 # hand over job to create
                 yield (jobname, cls, [pathToExecutable, [], inputs, outputs], kwargs)                
                 
@@ -233,11 +240,74 @@ def fillInputDir(baseDir, input_dir):
       for all country pairs. 
     '''
     gc3libs.utils.copytree(baseDir , input_dir)
+    
+def combinedThresholdPlot():
+    import copy
+    folders = [folder for folder in os.listdir(os.getcwd()) if os.path.isdir(folder) and not folder == 'localBaseDir' and not folder == 'ghousing.jobs']
+    tableList = [ (folder, os.path.join(os.getcwd(), folder, 'output', 'ownershipThreshold_1.out')) for folder in folders ]
+    tableDicts = dict([ (folder, tableDict.fromTextFile(table, width = np.max([len(folder) for folder in folders]) + 5, prec = 10)) for folder, table in tableList if os.path.isfile(table)])
+    tableKeys = tableDicts.keys()
+    tableKeys.sort()
+    if tableDicts:
+        for ixTable, tableKey in enumerate(tableKeys):
+#            print tableKey
+#            print tableDicts[tableKey]
+            table = copy.deepcopy(tableDicts[tableKey])
+            table.keep(['age', 'yst1'])
+            table.rename('yst1', tableKey)
+            if ixTable == 0: 
+                fullTable = copy.deepcopy(table)
+            else: 
+                fullTable.merge(table, 'age')
+                if '_merge' in fullTable.cols:
+                    fullTable.drop('_merge')
+                logger.info(fullTable)
+        logger.info(fullTable)
+        f = open(os.path.join(os.getcwd(), 'ownerThresholds'), 'w')  
+        print >> f, fullTable
+        f.flush() 
+        plotSimulation(path = os.path.join(os.getcwd(), 'ownerThresholds'), xVar = 'age', yVars = list(fullTable.cols), figureFile = os.path.join(os.getcwd(), 'ownerThresholds.eps'), verb = 'CRITICAL' )
+
+def combinedOwnerSimuPlot():
+    import copy
+    folders = [folder for folder in os.listdir(os.getcwd()) if os.path.isdir(folder) and not folder == 'localBaseDir' and not folder == 'ghousing.jobs']
+    tableList = [ (folder, os.path.join(os.getcwd(), folder, 'output', 'aggregate.out')) for folder in folders ]
+    tableDicts = dict([ (folder, tableDict.fromTextFile(table, width = np.max([len(folder) for folder in folders]) + 5, prec = 10)) for folder, table in tableList if os.path.isfile(table)])
+    tableKeys = tableDicts.keys()
+    tableKeys.sort()
+    if tableDicts:
+        for ixTable, tableKey in enumerate(tableKeys):
+            table = copy.deepcopy(tableDicts[tableKey])
+            table.keep(['age', 'owner'])
+            table.rename('owner', tableKey)
+            if ixTable == 0: 
+                fullTable = copy.deepcopy(table)
+            else: 
+                fullTable.merge(table, 'age')
+                fullTable.drop('_merge')
+            logger.info(fullTable)
+
+        empOwnershipFile = os.path.join(os.getcwd(), 'localBaseDir', 'input', 'PSIDOwnershipProfilealleduc.out')
+        empOwnershipTable = tableDict.fromTextFile(empOwnershipFile, width = 20, prec = 10)
+        empOwnershipTable.rename('PrOwnership', 'empOwnership') 
+        fullTable.merge(empOwnershipTable, 'age')
+        fullTable.drop('_merge')
+        logger.info(fullTable)
+        f = open(os.path.join(os.getcwd(), 'ownerSimu'), 'w')  
+        print >> f, fullTable
+        f.flush()       
+        
+        plotSimulation(path = os.path.join(os.getcwd(), 'ownerSimu'), xVar = 'age', yVars = list(fullTable.cols), yVarRange = (0., 1.), figureFile = os.path.join(os.getcwd(), 'ownerSimu.eps'), verb = 'CRITICAL' )
+
+
 
 ## run script
 
 if __name__ == '__main__':
     logger.info('Starting: \n%s' % ' '.join(sys.argv))
     ghousing().run()
+    # create overview plots across parameter combinations
+    combinedThresholdPlot()
+    combinedOwnerSimuPlot()
     logger.info('main done')
 
