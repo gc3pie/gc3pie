@@ -1,13 +1,12 @@
 #!/bin/bash
 
-OUTFILES_LIST="output.list"
-
-echo Start
+echo [`date`] Start
 
 # add . as valid PATH 
 export PATH=.:$PATH
 
-touch $OUTFILE_LIST
+OUTFILES_LIST="output.list"
+touch $OUTFILES_LIST
 
 if [ $# -ne 4 ]; then
     echo "Wrong number of input paramenters. Expected 4, got $#" 
@@ -32,23 +31,15 @@ else
     echo "[ ok ]"
 fi
 
-chmod u+x gnfs-lasieve6
-chmod u+x tdsievemt
+# DEBUG
+ls -la
 
-LASVIEW6=`which gnfs-lasieve6`
-TDSVIEW=`which tdsievemt`
+LASVIEW6="./gnfs-lasieve6"
+TDSVIEW="./tdsievemt"
 GZIP=`which gzip`
 
-echo -n "Checking required commands... "
-if [ ! -e "$LASVIEW6" ] || [ ! -e "$TDSVIEW" ] || [ ! -e "$GZIP" ]; then
-    echo "[failed]"
-    echo "LASVIEW6: $LASVIEW6"
-    echo "TDSVIEW: $TDSVIEW"
-    echo "GZIP: $GZIP"
-    exit 1
-fi
-
-# chmod u+x $LASVIEW6 $TDSVIEW
+chmod +x $LASVIEW6
+chmod +x $TDSVIEW
 
 mkdir pprod
 
@@ -129,13 +120,22 @@ rm $iname
 rm $name.lasieve-0.$f-$j.ab.nb??
 rm -r pprod
 
+echo -n "local verification: check produced gzip files.... "
+
+# simple local validation
+ZIP_FILE_COUNT=`cat $OUTFILES_LIST | wc -l`
+
+if [ $ZIP_FILE_COUNT -eq 9 ]; then
+    echo [passed]
+    RET=0
+else
+    echo [failed]
+    RET=1
+fi
+
 # additional cleanup
-ls * | grep -v gz$ | grep -v log$ | xargs --replace rm {}
+ls * | grep -v gz$ | grep -v log$ | grep -v $OUTFILES_LIST | xargs --replace rm {}
 
-#echo "Collecting results to output file... "
-#for i in *.gz
-#do
-#    echo $i \"\" >> output.files
-#done
+echo [`date`] Done
 
-echo Done
+exit $RET
