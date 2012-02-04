@@ -299,6 +299,31 @@ def combinedOwnerSimuPlot():
         
         plotSimulation(path = os.path.join(os.getcwd(), 'ownerSimu'), xVar = 'age', yVars = list(fullTable.cols), yVarRange = (0., 1.), figureFile = os.path.join(os.getcwd(), 'ownerSimu.eps'), verb = 'CRITICAL' )
 
+def combineRunningTimes():
+    folders = [folder for folder in os.listdir(os.getcwd()) if os.path.isdir(folder) and not folder == 'localBaseDir' and not folder == 'ghousing.jobs']
+    runTimeFileList = [ (folder, os.path.join(os.getcwd(), folder, 'output', 'runningTime.out')) for folder in folders ]
+    print runTimeFileList
+    runTimes = {} # in minutes
+    for folder, fle in runTimeFileList:
+        if not os.path.isfile(fle): continue
+        runningTimeFile = open(fle)
+        lines = runningTimeFile.readlines()
+        for line in lines:
+            if line.find('Full running'):
+                match = re.match('(.*=)([0-9\.\s]*)(.*)', line.rstrip()).groups()
+                if not match: 
+                    runTimeSec = 0.
+                else:
+                    runTimeSec = float(match [1].strip()) # in seconds
+        runTimes[folder] = runTimeSec / 60.
+    logger.info('running times are \n %s' % runTimes)
+    f = open(os.path.join(os.getcwd(), 'runTimes.out'), 'w')
+    folderKeys = runTimes.keys()
+    folderKeys.sort()
+    for key in folderKeys:
+        print >> f, key + ' = ' + str(runTimes[key])
+    f.flush()
+    f.close()
 
 
 ## run script
@@ -307,7 +332,17 @@ if __name__ == '__main__':
     logger.info('Starting: \n%s' % ' '.join(sys.argv))
     ghousing().run()
     # create overview plots across parameter combinations
-    combinedThresholdPlot()
-    combinedOwnerSimuPlot()
+    try:
+        combinedThresholdPlot()
+    except:
+        logger.critical('problem creating combinedThresholdPlot. Investigate...')
+    try: 
+        combinedOwnerSimuPlot()
+    except:
+        logger.critical('problem creating combinedOwnerSimuPlot. Investigate...')
+    try: 
+        combineRunningTimes()
+    except:
+        logger.critical('problem creating combineRunningTimes. Investigate...')
     logger.info('main done')
 
