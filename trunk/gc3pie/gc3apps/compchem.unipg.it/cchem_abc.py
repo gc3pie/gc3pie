@@ -2,7 +2,7 @@
 #
 """
 """
-# Copyright (C) 2011 GC3, University of Zurich. All rights reserved.
+# Copyright (C) 2011-2012 GC3, University of Zurich. All rights reserved.
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
@@ -19,9 +19,11 @@
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 #
 __version__ = '$Revision$'
-__author__ = 'Sergio Maffioletti <sergio.maffioletti@gc3.uzh.ch>'
+__author__ = 'Sergio Maffioletti <sergio.maffioletti@gc3.uzh.ch>, Riccardo Murri <riccardo.murri@gmail.com>'
 # summary of user-visible changes
 __changelog__ = """
+  2012-02-06:
+    * Support parameter studies from the command-line.
   2011-06-27:
     * Defined ABCApplication and basic SessionBasedScript
 """
@@ -30,155 +32,153 @@ __docformat__ = 'reStructuredText'
 
 # ugly workaround for Issue 95,
 # see: http://code.google.com/p/gc3pie/issues/detail?id=95
-#if __name__ == "__main__":
-#    import cchem_abc
+if __name__ == "__main__":
+    import cchem_abc
 
+import itertools
 import os
 import os.path
+import string
 import sys
 
-import cchem_abc
 
 ## interface to Gc3libs
 import gc3libs
 from gc3libs import Application, Run, Task
-from gc3libs.cmdline import SessionBasedScript, _Script
+import gc3libs.exceptions
+from gc3libs.cmdline import SessionBasedScript, executable_file
+import gc3libs.utils
 
-EXECUTABLE="/home/sergio/dev/comp.chem/xrls/abc.sh"
-ABC_EXECUTABLE="/home/sergio/dev/comp.chem/xrls/abc.x"
 
-APPPOT_IMAGE=""
-APPPOT_RUN=""
 
 class ABCApplication(Application):
-    def __init__(self, executable, abc_executable, input_file, output_folder, **kw):
+    def __init__(self, abc_executable, *input_files, **kw):
 
-        gc3libs.Application.__init__(self,
-                                     executable = os.path.basename(executable),
-                                     arguments = [os.path.basename(input_file)],
-                                     executables = [abc_executable],
-                                     inputs = [(abc_executable, os.path.basename(abc_executable)), (input_file, os.path.basename(input_file)), (executable, os.path.basename(executable))],
-                                     outputs = [],
-                                     # output_dir = os.path.join(output_folder,os.path.basename(input_file)),
-                                     join = True,
-                                     stdout = os.path.basename(input_file)+".out",
-                                     **kw
-                                     )
+        gc3libs.Application.__init__(
+            self,
+            executable = os.path.basename(abc_executable),
+            arguments = [ ], # ABC should find files on its own(??)
+            inputs = [abc_executable] + list(input_files),
+            outputs = gc3libs.ANY_OUTPUT,
+            join = True,
+            stdout = 'abc.log',
+            **kw
+            )
 
-    def terminated(self):
-        pass
-
-
-
-# & (executable = "$APPPOT_STARTUP" )
-# (arguments = "--apppot" "abc.cow,abc.img")
-# (jobname = "ABC_uml")
-# (executables = "apppot-run")
-# (gmlog=".arc")
-# (join="yes")
-# (stdout=".out")
-# (inputFiles=("abc.img" "gsiftp://idgc3grid01.uzh.ch/local_repo/ABC/abc.img") ("nevpt2_cc-pV5Z.g3c" "./nevpt2_cc-pV5Z.g3c") ("apppot-run" "./gfit3c_abc.sh") ("dimensions" "./dimensions"))
-# (outputfiles=("abc.x" "abc.nevpt2_cc-pV5Z") ("nevpt2_cc-pV5Z_log.tgz" ""))
-# (runtimeenvironment = "TEST/APPPOT-0")
-# (wallTime="10")
-# (memory="2000")
-
-class Gfit3C_ABC_uml_Application(Application):
-    def __init__(self, abc_uml_image_file, abc_apppotrun_file, output_folder, g3c_input_file=None, dimension_file=None, surface_file=None, **kw):
-
-        inputs = [("abc.img", abc_uml_image_file), ("apppot-run", abc_apppotrun_file)]
-
-        if surface_file:
-            inputs.append((surface_file,os.path.basename(surface_file)))
-            abc_prefix = os.path.basename(surface_file)
-        elif g3c_input_file and dimension_file:
-            inputs.append((g3c_input_file, os.path.basename(g3c_input_file)))
-            inputs.append((dimension_file,"dimensions"))
-            abc_prefix = os.path.basename(g3c_input_file)
-        else:
-            raise gc3libs.exceptions.InvalidArgument("Missing critical argument surface file [%s], g3c_file [%s], dimension_file [%s]" % (surface_file, g3c_input_file, dimension_file))
-
-        kw['tags'] = "TEST/APPPOT-0"
-
-        gc3libs.Application.__init__(self,
-                                     executable = "$APPPOT_STARTUP",
-                                     arguments = ["--apppot", "abc.cow,abc.img"],
-                                     executables = ["apppot-run"],
-                                     # inputs = [(abc_apppotrun_file, "apppot-run"), (abc_uml_image_file, "abc.img"), (input_file, os.path.basename(input_file))],
-                                     inputs = inputs,
-                                     outputs = [ ("acb.x", "abc."+abc_prefix), os.path.basename(input_file)+"_log.tgz"],
-                                     join = True,
-                                     stdout = os.path.basename(input_file)+".log",
-                                     **kw
-                                     )
 
 class ABCWorkflow(SessionBasedScript):
     """
-    gdemo
+    Sample parameter-study script.
     """
 
     def __init__(self):
         SessionBasedScript.__init__(
             self,
             version = __version__,
-            application = ABCApplication,
-            input_filename_pattern = '*.d',
             )
 
 
-    # def _setup(self):
-    #     _Script.setup(self)
+    def setup_options(self):
+        self.add_param("-D", "--parameter", "--substitute",
+                       action="append", dest="subst", default=[],
+                       help="Parameters to substitute in input files."
+                       " Each parameter substitution has the form 'NAME=LOW:HIGH:STEP'"
+                       " where NAME is the parameter name to be substituted"
+                       " in the input files, LOW and HIGH are the minimum"
+                       " and the maximum values, and STEP is the increment."
+                       " The ':STEP' part can be omitted if STEP is 1.")
 
-    #     self.add_param("-v", "--verbose", action="count", dest="verbose", default=0,
-    #                    help="Be more detailed in reporting program activity."
-    #                    " Repeat to increase verbosity.")
-
-    #     self.add_param("-J", "--max-running", type=int, dest="max_running", default=50,
-    #                    metavar="NUM",
-    #                    help="Allow no more than NUM concurrent jobs (default: %(default)s)"
-    #                    " to be in SUBMITTED or RUNNING state."
-    #                    )
-    #     self.add_param("-C", "--continuous", type=int, dest="wait", default=0,
-    #                    metavar="INTERVAL",
-    #                    help="Keep running, monitoring jobs and possibly submitting new ones or"
-    #                    " fetching results every INTERVAL seconds. Exit when all jobs are finished."
-    #                    )
-    #     self.add_param("-w", "--wall-clock-time", dest="wctime", default=str(8), # 8 hrs
-    #                    metavar="DURATION",
-    #                    help="Each job will run for at most DURATION time"
-    #                    " (default: %(default)s hours), after which it"
-    #                    " will be killed and considered failed. DURATION can be a whole"
-    #                    " number, expressing duration in hours, or a string of the form HH:MM,"
-    #                    " specifying that a job can last at most HH hours and MM minutes."
-    #                    )
-    #     return
 
     def parse_args(self):
-        self.input_folder = self.params.args[0]
-        self.output_folder = self.params.output
+        self.subst_names = [ ]
+        self.subst_values = [ ]
+        for subst in self.params.subst:
+            try:
+                name, spec = subst.split('=')
+                if spec.count(':') == 2:
+                    low, high, step = spec.split(':')
+                elif spec.count(':') == 1:
+                    low, high = spec.split(':')
+                    step = '1' # parsed to int or float later on
+                else:
+                    raise ValueError()
+                # are low, high, step to floats or ints?
+                if ('.' in low) or ('.' in high) or ('.' in step):
+                    low = float(low)
+                    high = float(high)
+                    step = float(step)
+                else:
+                    low = int(low)
+                    high = int(high)
+                    step = int(step)
+            except ValueError:
+                raise gc3libs.exceptions.InvalidUsage(
+                    "Invalid argument '%s' after -D/--parameter option."
+                    " Parameter substitutions must have the form 'NAME=LOW:HIGH:STEP',"
+                    " where LOW, HIGH and STEP are (integer or floating-point) numbers."
+                    % (subst,))
+            self.subst_names.append(name)
+            self.subst_values.append(gc3libs.utils.irange(low, high, step))
+            gc3libs.log.info(
+                "Parameter %s ranges from %s (incl.) to %s (excl.) in increments of %s",
+                name, low, high, step)
 
-        gc3libs.log.info("input folder [%s] output folder [%s]" % (self.input_folder,self.output_folder))
+        self.abc_executable = self.params.args[0]
+        if not os.path.isabs(self.abc_executable):
+            self.abc_executable = os.path.abspath(self.abc_executable)
+        gc3libs.utils.test_file(self.abc_executable, os.R_OK|os.X_OK,
+                                gc3libs.exceptions.InvalidUsage)
+
+        # build list of input files (w/ absolute path names)
+        self.input_files = [ ]
+        for path in self.params.args[1:]:
+            if not os.path.isabs(path):
+                path = os.path.abspath(path)
+            gc3libs.utils.test_file(path, os.R_OK)
+            if os.path.isdir(path):
+                raise gc3libs.exceptions.InvalidUsage(
+                    "Argument '%s' should be a file, but is a directory instead."
+                    % (path,))
+            self.input_files.append(path)
+
 
     def new_tasks(self, extra):
 
-         kw = extra.copy()
-         name = "GC3Pie_demo"   
+        # use the name of the ABC executable as job name
+        basename = "ABC_" + os.path.basename(self.abc_executable)
+        if '.' in basename:
+            r = basename.rindex('.')
+            basename = basename[:r]
 
-         inputs = SessionBasedScript._search_for_input_files(self, self.params.args)
+        # create a set of input files for each combination of the
+        # substitution parameters
+        for values in itertools.product(* self.subst_values):
+            subst = dict((name, value)
+                         for name,value in zip(self.subst_names, values))
+            jobname = str.join('_', [basename] + [
+                ("%s=%s" % (name, value)) for name,value in subst.iteritems() ])
 
-         for path in inputs:
-             name = "ABC_"+str(os.path.basename(path))
-
-             path = os.path.abspath(path)
-
-             gc3libs.log.info("Calling ABCWorkflow.next_tastk() for param [%s] ... " % path)
-
-             yield (name, cchem_abc.ABCApplication, [
-                     cchem_abc.EXECUTABLE,
-                     cchem_abc.ABC_EXECUTABLE,
-                     path,
-                     self.params.output,
-                     ], kw)
+            if os.path.isdir(jobname):
+                # assume job has already been created
+                gc3libs.log.info("Directory '%s' already exists;"
+                                 " assuming job has already been created.", jobname)
+            else:
+                inputs = [ ]
+                # create copy of the input files, performing substitutions
+                gc3libs.log.info("Creating input files for job '%s' ...", jobname)
+                gc3libs.utils.mkdir(jobname)
+                for path in self.input_files:
+                    template_text = gc3libs.utils.contents(path)
+                    text = string.Template(template_text).safe_substitute(subst)
+                    abc_input_filename = os.path.join(jobname, os.path.basename(path))
+                    w = open(abc_input_filename, 'w')
+                    w.write(text)
+                    w.close()
+                    inputs.append(abc_input_filename)
+                    gc3libs.log.debug("  ... written file '%s'", abc_input_filename)
+                    
+                yield (jobname, cchem_abc.ABCApplication,
+                       [self.abc_executable, inputs], extra.copy())
 
 # run script
 if __name__ == '__main__':
