@@ -484,6 +484,54 @@ def ifelse(test, if_true, if_false):
         return if_false
 
 
+def irange(start, stop, step=1):
+    """
+    Iterate over all values greater or equal than `start` and less than `stop`.
+    (Or the reverse, if `step < 0`.)
+
+    Example::
+
+      >>> list(irange(1, 5))
+      [1, 2, 3, 4]
+      >>> list(irange(0, 8, 3))
+      [0, 3, 6]
+      >>> list(irange(8, 0, -2))
+      [8, 6, 4, 2]
+
+    Unlike the built-in `range` function, `irange` also accepts
+    floating-point values::
+
+      >>> list(irange(0.0, 1.0, 0.5))
+      [0.0, 0.5]
+
+    Also unlike the built-in `range`, *both* `start` and `stop` have
+    to be specified::
+
+      >>> irange(42)
+      Traceback (most recent call last):
+        ...
+      TypeError: irange() takes at least 2 arguments (1 given)
+
+    Of course, a null `step` is not allowed::
+
+      >>> list(irange(1, 2, 0))
+      Traceback (most recent call last):
+        ...
+      AssertionError: Null step in irange.
+
+    """
+    assert float(step) != 0.0, "Null step in irange."
+    value = start
+    if step > 0:
+        while value < stop:
+            yield value
+            value += step
+    else: # step < 0
+        while value > stop:
+            yield value
+            value += step
+    
+
 def lock(path, timeout, create=True):
     """
     Lock the file at `path`.  Raise a `LockTimeout` error if the lock
@@ -1157,4 +1205,5 @@ def unlock(lock):
 
 if __name__ == '__main__':
     import doctest
-    doctest.testmod()
+    doctest.testmod(name='utils',
+                    optionflags=doctest.NORMALIZE_WHITESPACE)
