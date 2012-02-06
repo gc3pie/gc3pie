@@ -41,11 +41,6 @@
 .. automodule:: gc3libs.template
     :members:
 
-`gc3libs.units`
-===============
-.. automodule:: gc3libs.units
-    :members:
-
 `gc3libs.url`
 =============
 .. automodule:: gc3libs.url

@@ -3,7 +3,7 @@
 """
 Job control on SGE clusters (possibly connecting to the front-end via SSH).
 """
-# Copyright (C) 2009-2011 GC3, University of Zurich. All rights reserved.
+# Copyright (C) 2009-2012 GC3, University of Zurich. All rights reserved.
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
@@ -197,6 +197,7 @@ def count_jobs(qstat_output, whoami):
     """
     Parse SGE's ``qstat`` output (as contained in string `qstat_output`)
     and return a quadruple `(R, Q, r, q)` where:
+
       * `R` is the total number of running jobs in the SGE cell (from any user);
       * `Q` is the total number of queued jobs in the SGE cell (from any user);
       * `r` is the number of running jobs submitted by user `whoami`;

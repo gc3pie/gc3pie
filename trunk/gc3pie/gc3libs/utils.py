@@ -8,7 +8,7 @@ function or class belongs in here is the following: place a function
 or class in this module if you could copy its code into the
 sources of a different project and it would not stop working.
 """
-# Copyright (C) 2009-2011 GC3, University of Zurich. All rights reserved.
+# Copyright (C) 2009-2012 GC3, University of Zurich. All rights reserved.
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
@@ -622,10 +622,12 @@ def prettyprint(D, indent=0, width=0, maxdepth=None, step=4,
     """
     Print dictionary instance `D` in a YAML-like format.
     Each output line consists of:
+
       * `indent` spaces,
       * the key name,
       * a colon character ``:``,
       * the associated value.
+
     If the total line length exceeds `width`, the value is printed
     on the next line, indented by further `step` spaces; a value of 0 for
     `width` disables this line wrapping.

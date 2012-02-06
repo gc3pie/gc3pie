@@ -2,7 +2,7 @@
 #
 #   cmdline.py -- Prototypes for GC3Libs-based scripts
 #
-#   Copyright (C) 2010, 2011 GC3, University of Zurich
+#   Copyright (C) 2010, 2011, 2012 GC3, University of Zurich
 #
 #   This program is free software: you can redistribute it and/or modify
 #   it under the terms of the GNU General Public License as published by
@@ -561,7 +561,7 @@ class SessionBasedScript(_Script):
     Implements a long-running script to submit and manage a large number
     of jobs grouped into a "session".
 
-    The generic scripts implements a command-line like the following:
+    The generic scripts implements a command-line like the following::
 
       PROG [options] INPUT [INPUT ...]
 
@@ -587,6 +587,7 @@ class SessionBasedScript(_Script):
     The script's exitcode tracks job status, in the following way.
     The exitcode is a bitfield; only the 4 least-significant bits 
     are used, with the following meaning:
+
        ===  ============================================================
        Bit  Meaning
        ===  ============================================================
@@ -595,6 +596,7 @@ class SessionBasedScript(_Script):
          2  Set if there are jobs in `RUNNING` or `SUBMITTED` state
          3  Set if there are jobs in `NEW` state
        ===  ============================================================
+
     This boils down to the following rules:
        * exitcode == 0: all jobs terminated successfully, no further action
        * exitcode == 1: an error interrupted script execution
@@ -637,6 +639,7 @@ class SessionBasedScript(_Script):
 
         The default implementation substitutes the following strings
         within `pathspec`:
+
           * ``SESSION`` is replaced with the name of the current session
             (as specified by the ``-s``/``--session`` command-line option)
             with a suffix ``.out`` appended;

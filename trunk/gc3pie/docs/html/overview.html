@@ -62,7 +62,7 @@ pre- and post-processing.</p>
 <p>The generic procedure for performing computations with GC3Libs is the
 following:</p>
 <blockquote>
-<ol class="arabic simple">
+<div><ol class="arabic simple">
 <li>Client code creates an instance of an <cite>Application</cite> sub-class.</li>
 <li>Asynchronous computation is started by submitting the application
 object; this associates the application with an actual (possibly
@@ -73,13 +73,13 @@ changes.</li>
 <li>When the job is done, the final output is retrieved and a
 post-processing method is invoked on the application object.</li>
 </ol>
-</blockquote>
+</div></blockquote>
 <p>At this point, results of the computation are available and can be
 used by the calling program.</p>
 <p>The <tt class="xref py py-class docutils literal"><span class="pre">Application</span></tt> class (and its sub-classes) alow client code
 to control the above process by:</p>
 <blockquote>
-<ol class="arabic">
+<div><ol class="arabic">
 <li><p class="first">Specifying the characteristics (computer program to run,
 input/output files, memory/CPU/duration requirements, etc.) of the
 corresponding computational job.  This is done by passing suitable
@@ -91,7 +91,7 @@ computational job: start, check execution state, stop, retrieve a
 snapshot of the output files.  There are actually two different
 interfaces for this, detailed below:</p>
 <blockquote>
-<ol class="arabic">
+<div><ol class="arabic">
 <li><p class="first">A <em>passive</em> interface: a <tt class="xref py py-class docutils literal"><span class="pre">Core</span></tt> or a
 <tt class="xref py py-class docutils literal"><span class="pre">Engine</span></tt> object is used to start/stop/monitor jobs
 associated with the given application.  For instance:</p>
@@ -149,7 +149,7 @@ computations.</p>
 class and all its descendants (including <tt class="xref py py-class docutils literal"><span class="pre">Application</span></tt>).</p>
 </li>
 </ol>
-</blockquote>
+</div></blockquote>
 </li>
 <li><p class="first">Providing &#8220;state transition methods&#8221; that are called when a
 change in the job execution state is detected; those methods can
@@ -167,7 +167,7 @@ to the corresponding state; see each method&#8217;s documentation for
 exact information.</p>
 </li>
 </ol>
-</blockquote>
+</div></blockquote>
 <p>In addition, GC3Libs provides <em>collection</em> classes, that expose
 interfaces <em>2.</em> and <em>3.</em> above, allowing one to control a set of
 applications as a single whole.  Collections can be nested (i.e., a
@@ -414,7 +414,7 @@ supported.</p>
     </div>
     <div class="footer">
         &copy; Copyright 2010, Grid Computing Competence Centre, University of Zurich.
-      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.0.1.
+      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.0.7.
     </div>
   </body>
 </html>
