@@ -321,12 +321,13 @@ def combineRunningTimes():
     folderKeys = runTimes.keys()
     folderKeys.sort()
     for key in folderKeys:
-        print >> f, key + ' = ' + str(runTimes[key])
+        print >> f, '%s = %f12.1' % (key, runTimes[key])
     f.flush()
     f.close()
 
 
-## run script
+## run scriptfg
+
 
 if __name__ == '__main__':
     logger.info('Starting: \n%s' % ' '.join(sys.argv))
