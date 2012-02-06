@@ -163,7 +163,7 @@ class ABCWorkflow(SessionBasedScript):
                 gc3libs.log.info("Directory '%s' already exists;"
                                  " assuming job has already been created.", jobname)
             else:
-                inputs = [ ]
+                inputs = [ self.abc_executable ]
                 # create copy of the input files, performing substitutions
                 gc3libs.log.info("Creating input files for job '%s' ...", jobname)
                 gc3libs.utils.mkdir(jobname)
@@ -177,8 +177,7 @@ class ABCWorkflow(SessionBasedScript):
                     inputs.append(abc_input_filename)
                     gc3libs.log.debug("  ... written file '%s'", abc_input_filename)
                     
-                yield (jobname, cchem_abc.ABCApplication,
-                       [self.abc_executable, inputs], extra.copy())
+                yield (jobname, cchem_abc.ABCApplication, inputs, extra.copy())
 
 # run script
 if __name__ == '__main__':
