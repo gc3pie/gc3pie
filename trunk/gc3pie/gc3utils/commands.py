@@ -3,7 +3,7 @@
 """
 Implementation of the `core` command-line front-ends.
 """
-# Copyright (C) 2009-2011 GC3, University of Zurich. All rights reserved.
+# Copyright (C) 2009-2012 GC3, University of Zurich. All rights reserved.
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
@@ -249,113 +249,6 @@ GC3Libs internals.
         # exit code is practically limited to 7 bits ...
         return utils.ifelse(failed < 127, failed, 126)
         
-
-
-class cmd_gsub(_BaseCmd):
-    """
-Submit an application job.  Option arguments set computational job
-requirements.  Interpretation of positional arguments varies with
-the application being submitted; the application name is always
-the first non-option argument.
-
-Currently supported applications are:
-
-  * ``gamess``: Each positional argument (after the application
-    name) is the path to an input file; the first one is the
-    GAMESS '.inp' file and is required.
-    
-  * ``rosetta``: The first positional argument is the name of the
-    Rosetta application/protocol to run (e.g.,
-    ``minirosetta.static`` or ``docking_protocol``); after that
-    comes the path to the flags file; remaining positional
-    arguments are paths to input files (at least one must be
-    provided).  A list of output files may additionally be
-    specified after the list of input files, separated from this
-    by a ``:`` character.
-    """
-
-    def setup_args(self):
-        self.add_param("application", nargs=1,
-                       help="Application to run (either ``gamess`` or ``rosetta``)")
-        self.add_param("args", nargs='+',
-                       help="Input files for the application.")
-
-    def setup_options(self):
-        self.add_param("-r", "--resource", action="store", dest="resource_name", 
-                       metavar="NAME", default=None, 
-                       help='Select execution resource by name')
-        self.add_param("-c", "--cores", action="store", dest="ncores", type=int,
-                       metavar="NUM", default=1, 
-                       help='Request running job on this number of CPU cores')
-        self.add_param("-m", "--memory", action="store", dest="memory_per_core", type=int, 
-                       metavar="NUM", default=1, 
-                       help='Request at least this memory per core (GB) on execution site')
-        self.add_param("-w", "--walltime", action="store", dest="walltime", type=int,
-                       metavar="HOURS", default=1, 
-                       help='Guaranteed minimal duration of job, in hours.')
-
-    def main(self):
-        # argparse seems to return a list, regardless of the value of `nargs`
-        application_tag = self.params.application[0] 
-        args = self.params.args
-        if application_tag == 'gamess':
-            if len(args) < 1:
-                raise gc3libs.exceptions.InvalidUsage("Wrong number of arguments:"
-                                   " at least an '.inp' file argument should be specified"
-                                   " for the 'gamess' application.")
-            self.log.debug("Submitting GAMESS application with arguments: %s" % args)
-            app = gamess.GamessApplication(
-                 *args, # 1st arg is .INP file path, rest are (optional) additional inputs
-                 **{
-                    'requested_memory'  : self.params.memory_per_core,
-                    'requested_cores'   : self.params.ncores,
-                    'requested_walltime': self.params.walltime,
-                    # for command-line submissions, `output_dir` is always
-                    # overwritten by `gget`, so we just set a bogus value here
-                    'output_dir':'/tmp',
-                    }
-                 )
-        elif application_tag == 'rosetta':
-            if len(args) < 3:
-                raise gc3libs.exceptions.InvalidUsage("Wrong number of arguments for the 'rosetta' application")
-            if ':' in args:
-                colon = args.index(':')
-                inputs = args[2:colon]
-                outputs = args[(colon+1):]
-            else:
-                inputs = args[2:]
-                outputs = [ '*.pdb', '*.sc', '*.fasc' ]
-            app = rosetta.RosettaApplication(
-                application = args[0],
-                flags_file= args[1],
-                inputs = inputs,
-                outputs = outputs,
-                # computational requirements
-                requested_memory = self.params.memory_per_core,
-                requested_cores = self.params.ncores,
-                requested_walltime = self.params.walltime,
-                )
-        else:
-            raise gc3libs.exceptions.InvalidUsage("Unknown application '%s'" % application_tag)
-
-        if self.params.resource_name:
-            self._select_resources(self.params.resource_name)
-            self.log.info("Retained only resources: %s "
-                          "(restricted by command-line option '-r %s')",
-                          str.join(",", [res['name'] for res in self._core._resources]), 
-                          self.params.resource_name)
-
-        self._core.submit(app)
-        if app.execution.state is Run.State.SUBMITTED:
-            self._store.save(app)
-            print("Successfully submitted %s;"
-                  " use the 'gstat' command to monitor its progress." % app)
-            return 0
-        else:
-            self.log.error("Could not submit computational job."
-                           " Please check log file or re-run with"
-                           " higher verbosity ('-vvvv' option)")
-            return 1
 
 
 class cmd_gresub(_BaseCmd):
@@ -718,66 +611,6 @@ as more lines are written to the given stream.
             return 1
 
         return 0
-
-
-class cmd_gnotify(_BaseCmd):
-    """
-Report a failed job to the GC3Libs developers.
-
-This command will not likely work on any machine other than
-the ones directly controlled by GC3 sysadmins, so just don't
-use it and send an email to gc3pie@googlegroups.com describing
-your problem instead.
-    """
-    def setup_options(self):
-        self.add_param("-s", "--sender", action="store", dest="sender", default="default_username@gc3.uzh.ch", help="Set email's sender address")
-        self.add_param("-r", "--receiver", action="store", dest="receiver", default="root@localhost", help="Set email's receiver  address")
-        self.add_param("-m", "--subject", action="store", dest="subject", default="Job notification", help="Set email's subject")
-        self.add_param("-t", "--text", action="store", dest="message", default="This is an automatic generated email.", help="Set email's body text")
-        self.add_param("-i", "--include", action="store_true", dest="include_job_results", default=False, help="Include Job's results in notification package")
-
-    def main(self):
-        # this should be probably specified in the configuration file
-        _tmp_folder = '/tmp'
-
-        failed = 0
-        for jobid in self.params.args:
-            try:
-                app = self._store.load(jobid)
-                app.attach(self._core)
-
-                # create tgz with job information
-                tar_filename = os.path.join(_tmp_folder,jobid + '.tgz')
-                tar = tarfile.open(tar_filename, "w:gz")
-                if self.params.include_job_results:
-                    try:
-                        for filename in os.listdir(app.output_dir):
-                            tar.add(os.path.join(app.output_dir,filename))
-                    except Exception, ex:
-                        gc3libs.log.error("Could not add file '%s/%s' to tar file '%s': %s: %s", 
-                                          app.output_dir, filename, tar_filename,
-                                          ex.__class__.__name__, str(ex))
-                # FIXME: this requires knowledge of how the persistence layer is saving jobs...
-                tar.add(os.path.join(gc3libs.Default.JOBS_DIR, jobid))
-                tar.close()
-
-                # send notification email to gc3admin
-                utils.send_mail(self.params.sender,
-                                self.params.receiver,
-                                self.params.subject,
-                                self.params.message,
-                                [tar_filename])
-
-                # clean up tar.gz archive
-                os.remove(tar_filename)
-
-            except Exception, ex:
-                self.log.error("Error generating %s report: %s" 
-                               % (jobid, str(ex)))
-                failed += 1
-
-        # exit code is practically limited to 7 bits ...
-        return utils.ifelse(failed < 127, failed, 126)
 
 
 class cmd_glist(_BaseCmd):
