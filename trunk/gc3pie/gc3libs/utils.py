@@ -193,6 +193,30 @@ def cat(*args, **kw):
             output.write(line)
 
 
+def contents(path):
+    """
+    Return the whole contents of the file at `path` as a single string.
+
+    Example::
+
+      >>> contents('/dev/null')
+      ''
+
+      >>> w = open('/tmp/testfile', 'w')
+      >>> w.write('hey')
+      >>> w.close()
+      >>> contents('/tmp/testfile')
+      'hey'
+
+    """
+    # XXX: this really calls for the `with:` statement...
+    try:
+        stream = open(path, 'r')
+        return stream.read()
+    finally:
+        stream.close()
+
+
 def copyfile(src, dst, overwrite=False, link=False):
     """
     Copy a file from `src` to `dst`; return `True` if the copy was
