@@ -1,6 +1,6 @@
 #! /usr/bin/env python
 #
-# Copyright (C) 2009-2011 GC3, University of Zurich. All rights reserved.
+# Copyright (C) 2009-2012 GC3, University of Zurich. All rights reserved.
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
@@ -573,6 +573,7 @@ class Application(Struct, Persistable, Task):
       Directories are copied recursively.
 
       There are three possible ways of specifying the `outputs` parameter:
+
       * It can be a Python dictionary: keys are remote file or
         directory paths (relative to the execution directory), values
         are corresponding local names.
