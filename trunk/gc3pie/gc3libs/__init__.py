@@ -985,9 +985,10 @@ class Application(Struct, Persistable, Task):
         # to the bottom of the list
         selected = sorted(resources, cmp=self._cmp_resources)
         
-        if self.execution.has_key('execution_targets'):
+        if 'execution_targets' in self.execution:
             for lrms in selected:
-                if lrms._resource.frontend in self.execution.execution_targets:
+                if ('frontend' in lrms._resource
+                    and lrms._resource.frontend in self.execution.execution_targets):
                     # append resource to the bottom of the list
                     selected.remove(lrms)
                     selected.append(lrms)
