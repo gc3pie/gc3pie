@@ -176,8 +176,12 @@ class ABCWorkflow(SessionBasedScript):
                     w.close()
                     inputs.append(abc_input_filename)
                     gc3libs.log.debug("  ... written file '%s'", abc_input_filename)
-                    
-                yield (jobname, cchem_abc.ABCApplication, inputs, extra.copy())
+
+                kw = extra.copy()
+                kw['output_dir'] = os.path.join(
+                    self.make_directory_path(self.params.output, jobname), 'output')
+                yield (jobname, cchem_abc.ABCApplication, inputs, kw)
+
 
 # run script
 if __name__ == '__main__':
