@@ -254,9 +254,9 @@ class ArcLrms(LRMS):
                 'PREPARED':  Run.State.SUBMITTED,
                 'INLRMS:Q':  Run.State.SUBMITTED,
                 'INLRMS:R':  Run.State.RUNNING,
-                'INLRMS:O':  Run.State.RUNNING,
-                'INLRMS:E':  Run.State.RUNNING,
-                'INLRMS:X':  Run.State.RUNNING,
+                'INLRMS:O':  Run.State.STOPPED,
+                'INLRMS:E':  Run.State.STOPPED,
+                'INLRMS:X':  Run.State.STOPPED,
                 'INLRMS:S':  Run.State.STOPPED,
                 'INLRMS:H':  Run.State.STOPPED,
                 'FINISHING': Run.State.RUNNING,
@@ -294,9 +294,9 @@ class ArcLrms(LRMS):
                     PREPARED        SUBMITTED
                     INLRMS:Q        SUBMITTED
                     INLRMS:R        RUNNING
-                    INLRMS:O        RUNNING
-                    INLRMS:E        RUNNING
-                    INLRMS:X        RUNNING
+                    INLRMS:O        STOPPED
+                    INLRMS:E        STOPPED
+                    INLRMS:X        STOPPED
                     INLRMS:S        STOPPED
                     INLRMS:H        STOPPED
                     FINISHING       RUNNING
