@@ -1,9 +1,9 @@
 .. This file follows reStructuredText markup syntax; see
    http://docutils.sf.net/rst.html for more information
 
-++++++++++++++
+--------------
  Introduction
-++++++++++++++
+--------------
 
 GC3Libs is a python package for controlling the life-cycle of a Grid
 or batch computational job.
@@ -26,12 +26,16 @@ computational workflows in Python.
 Outline of the contents
 =======================
 
-The `Programming overview <overview.html>`_ section presents the main
+The `Programming overview <overview.html>` section presents the main
 concepts behind GC3Libs programming.
 
-The `GC3Libs modules <api.html>`_ section is a comprehensive list of all
+The `GC3Libs modules <api.html>` section is a comprehensive list of all
 the modules, classes and functions comprising GC3Libs; its content is
 automatically generated from docstrings in the source code.
+
+The `Contributing to GC3Pie <contributing.html>` section provides some
+instructions to prospective contributors: code organization, style and
+formatting guide, etc.
 
 
 .. (for Emacs only)

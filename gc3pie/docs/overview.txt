@@ -1,9 +1,9 @@
 .. This file follows reStructuredText markup syntax; see
    http://docutils.sf.net/rst.html for more information
 
-++++++++++++++++++++++
+----------------------
  Programming overview
-++++++++++++++++++++++
+----------------------
 
 GC3Libs takes an application-oriented approach to asynchronous
 computing. A generic :class:`Application` class provides the basic
@@ -38,7 +38,8 @@ to control the above process by:
      input/output files, memory/CPU/duration requirements, etc.) of the
      corresponding computational job.  This is done by passing suitable
      values to the :class:`Application` constructor.  See the
-     :class:`Application` constructor documentation for more info.
+     :class:`Application` constructor documentation for a detailed
+     description of the parameters.
 
   2. Providing methods to control the "life-cycle" of the associated
      computational job: start, check execution state, stop, retrieve a
@@ -274,8 +275,6 @@ details.  Changes in the job characteristics *after* an
 supported.
 
 .. _xRSL: http://www.nordugrid.org/documents/xrsl.pdf
-
-
 
 
 

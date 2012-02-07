@@ -1,9 +1,9 @@
 .. This file is included by `index.txt`.
 
 
-+++++++++++++++++
+-----------------
  GC3Libs modules
-+++++++++++++++++
+-----------------
 
 
 `gc3libs`
@@ -147,9 +147,9 @@
     :members:
 
 
-++++++++++++++++++
+------------------
  GC3Utils modules
-++++++++++++++++++
+------------------
 
 `gc3utils`
 ==========
@@ -166,3 +166,10 @@
 ===================
 .. automodule:: gc3utils.commands
    :members:
+
+
+.. (for Emacs only)
+..
+  Local variables:
+  mode: rst
+  End:
