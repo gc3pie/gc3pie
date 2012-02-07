@@ -270,6 +270,7 @@ def combinedThresholdPlot():
 
 def combinedOwnerSimuPlot():
     import copy
+    logger.debug('starting combinedOwnerSimuPlot')
     folders = [folder for folder in os.listdir(os.getcwd()) if os.path.isdir(folder) and not folder == 'localBaseDir' and not folder == 'ghousing.jobs']
     tableList = [ (folder, os.path.join(os.getcwd(), folder, 'output', 'aggregate.out')) for folder in folders ]
     tableDicts = dict([ (folder, tableDict.fromTextFile(table, width = np.max([len(folder) for folder in folders]) + 5, prec = 10)) for folder, table in tableList if os.path.isfile(table)])
@@ -292,10 +293,14 @@ def combinedOwnerSimuPlot():
         empOwnershipTable.rename('PrOwnership', 'empOwnership') 
         fullTable.merge(empOwnershipTable, 'age')
         fullTable.drop('_merge')
-        logger.info(fullTable)
-        f = open(os.path.join(os.getcwd(), 'ownerSimu'), 'w')  
-        print >> f, fullTable
-        f.flush()       
+        if fullTable:
+            logger.info(fullTable)
+            f = open(os.path.join(os.getcwd(), 'ownerSimu'), 'w')  
+            print >> f, fullTable
+            f.flush()
+        else: 
+            logger.info('no owner simus')
+        logger.debug('done combinedOwnerSimuPlot')
         
         plotSimulation(path = os.path.join(os.getcwd(), 'ownerSimu'), xVar = 'age', yVars = list(fullTable.cols), yVarRange = (0., 1.), figureFile = os.path.join(os.getcwd(), 'ownerSimu.eps'), verb = 'CRITICAL' )
 
