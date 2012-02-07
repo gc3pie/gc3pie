@@ -735,6 +735,16 @@ def get_resources(resources_list):
                 "Configuration error: '%s' is no valid resource type.", 
                 resource['type'])
             continue
+        if tmpres.type in [gc3libs.Default.ARC0_LRMS, gc3libs.Default.ARC1_LRMS] and not tmpres.has_key('frontend'):
+            # extract frontend information from arc_ldap entry
+            try:
+                resource_url = gc3libs.url.Url(tmpres.arc_ldap)
+                tmpres['frontend'] = resource_url.hostname
+            except Exception, x:
+                gc3libs.log.error(
+                "Configuration error: resource '%s' has no valid arc_ldap. Error type %s, message %s" %
+                    (tmpres.name, x.__class__, x.message))
+                continue
         gc3libs.log.debug("Created %s resource '%s' of type %s"
                           % (utils.ifelse(tmpres.is_valid, "valid", "invalid"),
                              tmpres.name, 
