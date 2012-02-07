@@ -1,6 +1,6 @@
-++++++++++++++++++++++++++
+--------------------------
  Installation of GC3Utils
-++++++++++++++++++++++++++
+--------------------------
 
 :Author:   Riccardo Murri <riccardo.murri@gmail.com>
 :Date:     2010-10-06
