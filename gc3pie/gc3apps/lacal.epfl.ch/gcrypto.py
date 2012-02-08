@@ -91,23 +91,21 @@ class CryptoApplication(gc3libs.Application):
 
     def terminated(self):
         """
-        Checks whether M*.gz files have been created
-        Checks 'done' pattern in stdout
+        Checks whether the ``M*.gz`` files have been created.
+        Checks "done" pattern in stdout.
         
         The exit status of the whole job is set to one of these values:
 
         *  0 -- all files processed successfully
         *  1 -- some files were *not* processed successfully
         *  2 -- no files processed successfully
-        * 127 -- the ``codeml`` application did not run at all.
+        * 127 -- the ``gnfs-cmd`` application did not run at all.
          
         """
+        gc3libs.log.debug(
+            'Application terminated. postprocessing with execution.exicode %d',
+            self.execution.exitcode)
 
-        gc3libs.log.debug('Application terminated. postprocessing with execution.exicode [%d]' % self.execution.exitcode)
-        return
-
-
-gc3libs.application.register(CryptoApplication, 'crypto')
 
 class CryptoChunkedParameterSweep(ChunkedParameterSweep):
     """

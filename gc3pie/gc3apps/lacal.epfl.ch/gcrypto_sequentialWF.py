@@ -107,8 +107,6 @@ class CryptoApplication(gc3libs.Application):
         return
 
 
-gc3libs.application.register(CryptoApplication, 'crypto')
-
 class CryptoParallel(ParallelTaskCollection):
     """
     CryptoParallel(increment,increment + parallel_task_increment, step)

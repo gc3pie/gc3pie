@@ -3,7 +3,7 @@
 """
 Specialized support for TurboMol.
 """
-# Copyright (C) 2009-2011 GC3, University of Zurich. All rights reserved.
+# Copyright (C) 2009-2012 GC3, University of Zurich. All rights reserved.
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
@@ -147,9 +147,6 @@ class TurbomoleDefineApplication(gc3libs.Application):
         self.execution.exitcode = 0 # SUCCESS
         return
 
-
-gc3libs.application.register(TurbomoleApplication, 'turbomole')
-gc3libs.application.register(TurbomoleDefineApplication, 'turbomole_define')
 
 
 ## main: run tests
