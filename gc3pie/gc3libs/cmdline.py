@@ -855,6 +855,46 @@ class SessionBasedScript(_Script):
             output.write("\n")
 
 
+    def before_main_loop(self):
+        """
+        Hook executed before entering the scripts' main loop.
+
+        This is the last chance to alter the script state as it will
+        be seen by the main loop.
+
+        Override in subclasses to plug any behavior here; the default
+        implementation does nothing.
+        """
+        pass
+
+
+    def every_main_loop(self):
+        """
+        Hook executed during each round of the main loop.
+
+        This is called from within the main loop, after progressing
+        all tasks.
+
+        Override in subclasses to plug any behavior here; the default
+        implementation does nothing.
+        """
+        pass
+
+
+    def after_main_loop(self):
+        """
+        Hook executed after exit from the main loop.
+
+        This is called after the main loop has exited (for whatever
+        reason), but *before* the session is finally saved and other
+        connections are finalized.
+        
+        Override in subclasses to plug any behavior here; the default
+        implementation does nothing.
+        """
+        pass
+
+        
     ##
     ## pyCLI INTERFACE METHODS
     ##
@@ -1107,6 +1147,7 @@ class SessionBasedScript(_Script):
         self._controller = self.make_task_controller()
 
         # ...now do a first round of submit/update/retrieve
+        self.before_main_loop()
         rc = self._main_loop()
         if self.params.wait > 0:
             self.log.info("sleeping for %d seconds..." % self.params.wait)
@@ -1120,6 +1161,8 @@ class SessionBasedScript(_Script):
                     rc = self._main_loop()
             except KeyboardInterrupt: # gracefully intercept Ctrl+C
                 pass
+        self.after_main_loop()
+        
         # save the session again before exiting, so the file reflects
         # jobs' statuses
         self._save_session()
@@ -1158,6 +1201,8 @@ class SessionBasedScript(_Script):
         """
         # advance all jobs
         self._controller.progress()
+        # hook method
+        self.every_main_loop()
         # print results to user
         print ("Status of jobs in the '%s' session: (at %s)" 
                % (os.path.basename(self.params.session),
