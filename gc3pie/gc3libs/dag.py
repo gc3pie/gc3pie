@@ -353,7 +353,8 @@ class SequentialTaskCollection(TaskCollection):
 
 
 class StagedTaskCollection(SequentialTaskCollection):
-    """Simplified interface for creating a sequence of Tasks.
+    """
+    Simplified interface for creating a sequence of Tasks.
     This can be used when the number of Tasks to run is
     fixed and known at program writing time.
 
@@ -409,6 +410,7 @@ class StagedTaskCollection(SequentialTaskCollection):
         except AttributeError:
             self.execution.returncode = self.tasks[done].execution.returncode
             return Run.State.TERMINATED
+
 
 
 class ParallelTaskCollection(TaskCollection):
@@ -505,6 +507,67 @@ class ParallelTaskCollection(TaskCollection):
             # FIXME: incorrectly sets `changed` each time it's called!
             self.changed = True
         
+
+class ChunkedParameterSweep(ParallelTaskCollection):
+
+    def __init__(self, jobname, min_value, max_value, step, chunk_size, grid=None):
+        """
+        Like `ParallelTaskCollection`, but generate a sequence of jobs
+        with a parameter varying from `min_value` to `max_value` in
+        steps of `step`.  Only `chunk_size` jobs are generated at a
+        time, to distribute the burden of job creation along the whole run.
+        """
+        self.min_value = min_value
+        self.max_value = max_value
+        self.step = step
+        self.chunk_size = chunk_size
+        self._floor = min(min_value + (chunk_size * step), max_value)
+        initial = [ self.new_task(param) for param in
+                    range(min_value, self._floor, step) ]
+        # start with the initial chunk of jobs
+        ParallelTaskCollection.__init__(self,jobname, initial, grid)
+
+    def new_task(self, param, **kw):
+        """
+        Return the `Task` corresponding to the parameter value `param`.
+        """
+        pass
+
+    # this is called at every cycle
+    def update_state(self, **kw):
+        """
+        Like `ParallelTaskCollection.update_state()`,
+        but also creates new tasks if less than
+        `chunk_size` are running.
+        """
+
+        # XXX: proposal, reset chuck_size from self._grid.max_in_flight
+        # this is the way to pass new 'max-running' value to the class
+        # this creates though, a tigh coupling with 'grid' and maybe
+        # limits the flexibility of the class.
+        # In this way we obsolete 'chunked_size' as part of the __init__ args
+        # if self._grid:
+        #     gc3libs.log.info("Updating %s chunk_size from %d to %d" %
+        #                      (self.__class__, self.chunk_size, self._grid.max_in_flight))
+        #     self.chunk_size =  self._grid.
+        # XXX: shall we als could jobs in Run.State.STOPPED ?
+        num_running = len([task for task in self.tasks if
+                           task.execution.state in  [ Run.State.NEW,
+                                                      Run.State.SUBMITTED, 
+                                                      Run.State.RUNNING, 
+                                                      Run.State.UNKNOWN ]])
+        # add more jobs if we're close to the end
+        # XXX: why using 2*self.chunk_size as treshold ?
+        # is the idea to submit more jobs once we reach at least 50% of completion ?
+        # if num_running < 2*self.chunk_size and self._floor < self.max_value:
+        if 2*num_running < self.chunk_size and self._floor < self.max_value:
+            # generate more tasks
+            top = min(self._floor + (self.chunk_size * self.step), self.max_value)
+            for param in range(self._floor, top, self.step):
+                self.add(self.new_task(param, **kw))
+            self._floor = top
+            self.changed = True
+        return ParallelTaskCollection.update_state(self, **kw)
 
 ## main: run tests
 
