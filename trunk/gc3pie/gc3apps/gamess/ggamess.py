@@ -2,7 +2,7 @@
 #
 #   ggamess.py -- Front-end script for submitting multiple GAMESS jobs to SMSCG.
 #
-#   Copyright (C) 2010, 2011 GC3, University of Zurich
+#   Copyright (C) 2010-2012 GC3, University of Zurich
 #
 #   This program is free software: you can redistribute it and/or modify
 #   it under the terms of the GNU General Public License as published by
@@ -73,8 +73,8 @@ of newly-created jobs so that this limit is never exceeded.
                        " `apppot-snap` utility.")
         self.add_param("-R", "--verno", metavar="VERNO",
                        dest="verno", default=None,
-                       help="Request using the specified version of GAMESS;"
-                       " (will be used as second argument to the localgms/rungms script).")
+                       help="Use the specified version of GAMESS"
+                       " (second argument to the localgms/rungms script).")
         self.add_param("-e", "--extbas", metavar='FILE',
                        dest='extbas',
                        type=existing_file, default=None,
