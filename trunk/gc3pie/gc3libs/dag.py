@@ -10,7 +10,7 @@ patterns of job group execution; they can be combined to form more
 complex workflows.  Hook methods are provided so that derived classes
 can implement problem-specific job control policies.
 """
-# Copyright (C) 2009-2011 GC3, University of Zurich. All rights reserved.
+# Copyright (C) 2009-2012 GC3, University of Zurich. All rights reserved.
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
@@ -527,11 +527,15 @@ class ChunkedParameterSweep(ParallelTaskCollection):
         # start with the initial chunk of jobs
         ParallelTaskCollection.__init__(self,jobname, initial, grid)
 
+
     def new_task(self, param, **kw):
         """
         Return the `Task` corresponding to the parameter value `param`.
+
+        This method *must* be overridden in subclasses to generate tasks.
         """
-        pass
+        raise NotImplementedError("Abstract method `ChunkedParameterSweep.new_task()` called - this should have been defined in a derived class.")
+
 
     # this is called at every cycle
     def update_state(self, **kw):
