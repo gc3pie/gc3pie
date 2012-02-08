@@ -3,7 +3,7 @@
 """
 Specialized support for computational jobs running GAMESS-US.
 """
-# Copyright (C) 2009-2011 GC3, University of Zurich. All rights reserved.
+# Copyright (C) 2009-2012 GC3, University of Zurich. All rights reserved.
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
@@ -175,7 +175,6 @@ class GamessApplication(gc3libs.Application):
             " GAMESS invocation requires too many deployment-specific parameters"
             " to make a generic invocation script possible.")
 
-gc3libs.application.register(GamessApplication, 'gamess')
 
 
 class GamessAppPotApplication(GamessApplication,
@@ -242,9 +241,6 @@ class GamessAppPotApplication(GamessApplication,
     # GAMESS (see Issue 3 on the web site).
     qsub = gc3libs.Application.qsub
     cmdline = gc3libs.Application.cmdline
-
-
-gc3libs.application.register(GamessAppPotApplication, 'gamess/apppot')
 
 
 

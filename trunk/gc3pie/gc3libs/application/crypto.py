@@ -33,12 +33,12 @@ class CryptoApplication(gc3libs.Application):
     """
     
     def __init__(self, inp, **kw):
-	# Get the list of input files to send to the grid
+        # Get the list of input files to send to the grid
 
         #inputs = self.gatherInputList()
-	arguments = self.read_inp(inp)
+        arguments = self.read_inp(inp)
 
-	# Append # cores
+        # Append # cores
         if kw.has_key('requested_cores'):
             arguments.append(kw['requested_cores'])
         else:
@@ -76,13 +76,13 @@ class CryptoApplication(gc3libs.Application):
         # 1 line with two numbers separated by blank space:
         # 2200000400 100
         # should be treated as two separate arguments
-	try:
+        try:
             f = open(inFile, 'r')
             line = f.readline().strip()
             f.close()
             args = line.split(" ")
             return args
-	except IOError:
+        except IOError:
             gc3libs.log.error("Argument file '%s' not found" % inFile)
 
     def terminated(self):
@@ -134,8 +134,6 @@ class CryptoApplication(gc3libs.Application):
         # self.execution.exitcode = self.execution.signal
         return
 
-
-gc3libs.application.register(CryptoApplication, 'crypto')
 
 ## main: run tests
 
