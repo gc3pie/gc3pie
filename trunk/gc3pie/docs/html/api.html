@@ -1001,7 +1001,7 @@ are used, with the following meaning:</p>
 </thead>
 <tbody valign="top">
 <tr><td>0</td>
-<td>Set if a fatal error occurred: <cite>gcodeml</cite> could not complete</td>
+<td>Set if a fatal error occurred: the script could not complete</td>
 </tr>
 <tr><td>1</td>
 <td>Set if there are jobs in <cite>FAILED</cite> state</td>
@@ -1025,6 +1025,37 @@ are used, with the following meaning:</p>
 </ul>
 </dd>
 </dl>
+<dl class="method">
+<dt id="gc3libs.cmdline.SessionBasedScript.after_main_loop">
+<tt class="descname">after_main_loop</tt><big>(</big><big>)</big><a class="headerlink" href="#gc3libs.cmdline.SessionBasedScript.after_main_loop" title="Permalink to this definition">¶</a></dt>
+<dd><p>Hook executed after exit from the main loop.</p>
+<p>This is called after the main loop has exited (for whatever
+reason), but <em>before</em> the session is finally saved and other
+connections are finalized.</p>
+<p>Override in subclasses to plug any behavior here; the default
+implementation does nothing.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="gc3libs.cmdline.SessionBasedScript.before_main_loop">
+<tt class="descname">before_main_loop</tt><big>(</big><big>)</big><a class="headerlink" href="#gc3libs.cmdline.SessionBasedScript.before_main_loop" title="Permalink to this definition">¶</a></dt>
+<dd><p>Hook executed before entering the scripts&#8217; main loop.</p>
+<p>This is the last chance to alter the script state as it will
+be seen by the main loop.</p>
+<p>Override in subclasses to plug any behavior here; the default
+implementation does nothing.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="gc3libs.cmdline.SessionBasedScript.every_main_loop">
+<tt class="descname">every_main_loop</tt><big>(</big><big>)</big><a class="headerlink" href="#gc3libs.cmdline.SessionBasedScript.every_main_loop" title="Permalink to this definition">¶</a></dt>
+<dd><p>Hook executed during each round of the main loop.</p>
+<p>This is called from within the main loop, after progressing
+all tasks.</p>
+<p>Override in subclasses to plug any behavior here; the default
+implementation does nothing.</p>
+</dd></dl>
+
 <dl class="method">
 <dt id="gc3libs.cmdline.SessionBasedScript.make_directory_path">
 <tt class="descname">make_directory_path</tt><big>(</big><em>pathspec</em>, <em>jobname</em>, <em>*args</em><big>)</big><a class="headerlink" href="#gc3libs.cmdline.SessionBasedScript.make_directory_path" title="Permalink to this definition">¶</a></dt>
@@ -1128,7 +1159,7 @@ description.</p>
 
 <dl class="method">
 <dt id="gc3libs.cmdline.SessionBasedScript.print_tasks_table">
-<tt class="descname">print_tasks_table</tt><big>(</big><em>output=&lt;open file '&lt;stdout&gt;'</em>, <em>mode 'w' at 0x2b20cec8f1e0&gt;</em>, <em>states=Enum(['TERMINATED'</em>, <em>'UNKNOWN'</em>, <em>'SUBMITTED'</em>, <em>'RUNNING'</em>, <em>'TERMINATING'</em>, <em>'STOPPED'</em>, <em>'NEW'])</em><big>)</big><a class="headerlink" href="#gc3libs.cmdline.SessionBasedScript.print_tasks_table" title="Permalink to this definition">¶</a></dt>
+<tt class="descname">print_tasks_table</tt><big>(</big><em>output=&lt;open file '&lt;stdout&gt;'</em>, <em>mode 'w' at 0x2b795f4561e0&gt;</em>, <em>states=Enum(['TERMINATED'</em>, <em>'UNKNOWN'</em>, <em>'SUBMITTED'</em>, <em>'RUNNING'</em>, <em>'TERMINATING'</em>, <em>'STOPPED'</em>, <em>'NEW'])</em><big>)</big><a class="headerlink" href="#gc3libs.cmdline.SessionBasedScript.print_tasks_table" title="Permalink to this definition">¶</a></dt>
 <dd><p>Output a text table to stream <cite>output</cite>, giving details about
 tasks in the given states.</p>
 </dd></dl>
@@ -1762,7 +1793,7 @@ in <cite>except</cite> clauses to exclude &#8220;try again&#8221; situations.</p
 <p>Facade to store and retrieve Job information from permanent storage.</p>
 <dl class="class">
 <dt id="gc3libs.persistence.FilesystemStore">
-<em class="property">class </em><tt class="descclassname">gc3libs.persistence.</tt><tt class="descname">FilesystemStore</tt><big>(</big><em>directory='/home/rmurri/.gc3/jobs'</em>, <em>idfactory=&lt;gc3libs.persistence.IdFactory object at 0x2a463d0&gt;</em>, <em>protocol=2</em><big>)</big><a class="headerlink" href="#gc3libs.persistence.FilesystemStore" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><tt class="descclassname">gc3libs.persistence.</tt><tt class="descname">FilesystemStore</tt><big>(</big><em>directory='/home/rmurri/.gc3/jobs'</em>, <em>idfactory=&lt;gc3libs.persistence.IdFactory object at 0x18c7450&gt;</em>, <em>protocol=2</em><big>)</big><a class="headerlink" href="#gc3libs.persistence.FilesystemStore" title="Permalink to this definition">¶</a></dt>
 <dd><p>Save and load objects in a given directory.  Uses Python&#8217;s
 standard <cite>pickle</cite> module to serialize objects onto files.</p>
 <p>All objects are saved as files in the given directory (default:
@@ -1938,7 +1969,7 @@ texts coming from the same template.  Templates can be nested, and
 expansions generated recursviely.</p>
 <dl class="class">
 <dt id="gc3libs.template.Template">
-<em class="property">class </em><tt class="descclassname">gc3libs.template.</tt><tt class="descname">Template</tt><big>(</big><em>template</em>, <em>validator=&lt;function &lt;lambda&gt; at 0x2e036e0&gt;</em>, <em>**kw</em><big>)</big><a class="headerlink" href="#gc3libs.template.Template" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><tt class="descclassname">gc3libs.template.</tt><tt class="descname">Template</tt><big>(</big><em>template</em>, <em>validator=&lt;function &lt;lambda&gt; at 0x1ba78c0&gt;</em>, <em>**kw</em><big>)</big><a class="headerlink" href="#gc3libs.template.Template" title="Permalink to this definition">¶</a></dt>
 <dd><p>A template object is a pair <cite>(obj, keywords)</cite>.  Methods are
 provided to substitute the keyword values into <cite>obj</cite>, and to
 iterate over expansions of the given keywords (optionally
@@ -2802,7 +2833,7 @@ are not altered to reflect <cite>mode</cite>.</p>
 
 <dl class="function">
 <dt id="gc3libs.utils.prettyprint">
-<tt class="descclassname">gc3libs.utils.</tt><tt class="descname">prettyprint</tt><big>(</big><em>D</em>, <em>indent=0</em>, <em>width=0</em>, <em>maxdepth=None</em>, <em>step=4</em>, <em>only_keys=None</em>, <em>output=&lt;open file '&lt;stdout&gt;'</em>, <em>mode 'w' at 0x2b20cec8f1e0&gt;</em>, <em>_key_prefix=''</em>, <em>_exclude=None</em><big>)</big><a class="headerlink" href="#gc3libs.utils.prettyprint" title="Permalink to this definition">¶</a></dt>
+<tt class="descclassname">gc3libs.utils.</tt><tt class="descname">prettyprint</tt><big>(</big><em>D</em>, <em>indent=0</em>, <em>width=0</em>, <em>maxdepth=None</em>, <em>step=4</em>, <em>only_keys=None</em>, <em>output=&lt;open file '&lt;stdout&gt;'</em>, <em>mode 'w' at 0x2b795f4561e0&gt;</em>, <em>_key_prefix=''</em>, <em>_exclude=None</em><big>)</big><a class="headerlink" href="#gc3libs.utils.prettyprint" title="Permalink to this definition">¶</a></dt>
 <dd><p>Print dictionary instance <cite>D</cite> in a YAML-like format.
 Each output line consists of:</p>
 <blockquote>
