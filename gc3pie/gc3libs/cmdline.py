@@ -591,7 +591,7 @@ class SessionBasedScript(_Script):
        ===  ============================================================
        Bit  Meaning
        ===  ============================================================
-         0  Set if a fatal error occurred: `gcodeml` could not complete
+         0  Set if a fatal error occurred: the script could not complete
          1  Set if there are jobs in `FAILED` state
          2  Set if there are jobs in `RUNNING` or `SUBMITTED` state
          3  Set if there are jobs in `NEW` state
