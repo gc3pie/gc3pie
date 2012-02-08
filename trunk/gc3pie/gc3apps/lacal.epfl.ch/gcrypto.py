@@ -28,7 +28,6 @@ import fnmatch
 import logging
 import os
 import os.path
-# import re
 import sys
 from pkg_resources import Requirement, resource_filename
 
@@ -37,13 +36,11 @@ from gc3libs.cmdline import SessionBasedScript, existing_file
 from gc3libs import Application, Run, Task, RetryableTask
 import gc3libs.exceptions
 import gc3libs.application
-from gc3libs.dag import SequentialTaskCollection, ParallelTaskCollection
+from gc3libs.dag import SequentialTaskCollection, ParallelTaskCollection, ChunkedParameterSweep
 
 if __name__ == "__main__":
     import gcrypto_sequentialWF
 
-
-DEFAULT_PARALLEL_RANGE_INCREMENT = 100
 
 class CryptoApplication(gc3libs.Application):
     """
@@ -66,6 +63,9 @@ class CryptoApplication(gc3libs.Application):
         arguments.append(step)
         arguments.append(kw['requested_cores'])
         arguments.append("input.tgz")
+
+        name = str(start_range + step)
+        kw.setdefault('jobname', name)
 
         src_crypto_bin = resource_filename(Requirement.parse("gc3pie"), 
                                            "gc3libs/etc/gnfs-cmd")
@@ -109,75 +109,37 @@ class CryptoApplication(gc3libs.Application):
 
 gc3libs.application.register(CryptoApplication, 'crypto')
 
-class CryptoParallel(ParallelTaskCollection):
-    """
-    CryptoParallel(increment,increment + parallel_task_increment, step)
-    launches 'parallel_task_increment - step' CryptoApplications in parallel
-    This is an alternative implementeation of the 'max_running' concept
-    """
-
-    def __init__(self, begin=None, end=None, step=None, input_files_archive=None, output_folder=None, grid=None, **kw):
-
-        gc3libs.log.debug("Init ParallelCrypto: begin: %s, end: %s, step:%s" % (begin, end, step))
-        
-        parallel_task = []
-
-        name = end
-
-        for param in range(int(begin), int(end), int(step)):
-            parallel_task.append(CryptoApplication(param, step, input_files_archive, output_folder, **kw))
-            
-        ParallelTaskCollection.__init__(self, name, parallel_task, grid)
-
-
-class CryptoSequence(SequentialTaskCollection):
+class CryptoChunkedParameterSweep(ChunkedParameterSweep):
     """
     provided the beginning of the range 'begin_range',
     the end of the range 'end_range',
     the step size of each job 'step',
-    CryptoSequence creates as many CryptoParallel
+    CryptoChunkedParameterSweep creates a chunked_size of CryptoApplication
+    executed in parallel. Every update cycle it will check how many new
+    CryptoApplication will have to be created
     (each of the launching in parallel
     DEFAULT_PARALLEL_RANGE_INCREMENT CryptoApplications)
     as the following rule:
     [ (end-range - begin_range) / step ] / DEFAULT_PARALLEL_RANGE_INCREMENT
     """
-    def __init__(self, start_range, stop_range, step, pincrement, input_files_archive, output, grid=None, **kw):
+    
+    def __init__(self, start_range, stop_range, step, max_running, input_files_archive, output_folder, grid=None, **kw):
 
-        # self.parallel_task_increment = int(step) * DEFAULT_PARALLEL_RANGE_INCREMENT
-        self.parallel_task_increment = int(step) * int(pincrement)
-
-        self.start_range = start_range
-        self.stop_range = stop_range
-        self.step = step
+        self.parameter_count_increment = int(step) * int(max_running)
         self.input_files_archive = input_files_archive
-        self.output = output
+        self.output_folder = output_folder
 
-        name = self.start_range
-
-        tasks = []
-
-        # for increment in range(int(start_range), int(stop_range), int(parallel_task_increment)):
-        #     gc3libs.log.debug("Creating ParallelTask for range %d - %d" % (increment,increment + int(parallel_task_increment)))
-        #     tasks.append(CryptoParallel(increment,increment + int(parallel_task_increment), step, input_files_archive, output))
-
-        tasks.append(CryptoParallel(int(start_range), int(start_range) + self.parallel_task_increment, step, input_files_archive, output))
-
-        SequentialTaskCollection.__init__(self, name, tasks, grid)
-
-    def next(self, done):
+        ChunkedParameterSweep.__init__(self, kw['jobname'], start_range, stop_range, step, max_running, grid)
+        
+    def new_task(self, param, **kw):
         """
-        Checks whether the last computed job has reached the 'stop_range'
-        limit. Otherwise launch another CryptoParallel
+        trust param value and create a new CryptoApplication
+        from param to param+step.
+        Ending condition is determined by ChunkedParameterSweep
         """
-        last_terminated_range = self.tasks[done].jobname # Use jobname as index of last computed increment
-        if last_terminated_range == self.stop_range:
-            # computed all range
-            return Run.State.TERMINATED
-        else:
-            # submit new parallel sequence
-            self.tasks.append(CryptoParallel(int(last_terminated_range), int(last_terminated_range) + self.parallel_task_increment, self.step, self.input_files_archive, self.output))
-            return Run.State.RUNNING
 
+        return CryptoApplication(param, self.step, self.input_files_archive, self.output_folder, **kw)
+        
 ## the script itself
 
 class GCryptoScript(SessionBasedScript):
@@ -188,7 +150,7 @@ class GCryptoScript(SessionBasedScript):
     nth is the number of threads spwaned.
     The following ranges are of interest: 800M-1200M and 2100M-2400M.
 
-    ggeotop pilot script takes as input three arguments:
+    gcrytpo pilot script takes as input three arguments:
     1. Initial value of the range (e.g. 800000000)
     2. steps (ot final value of the range) (e.g. 1200000000)
     3. increment (1000)
@@ -197,7 +159,7 @@ class GCryptoScript(SessionBasedScript):
     will produce 400000 jobs
     job progress is monitored and, when a job is done,
     output is retrieved back to submitting host in a folder structure
-    organized by 1.+increment*actual_step
+    organized by 'Initial value'+(increment*actual_step)
 
     The `gcrypto` command keeps a record of jobs (submitted, executed and
     pending) in a session file (set name with the '-s' option); at each
@@ -257,21 +219,19 @@ class GCryptoScript(SessionBasedScript):
         """
         if len(self.params.args) != 3:
             raise gc3libs.exceptions.InvalidUsage("Wrong number of input parameters. Got %d" % len(self.params.args))
-        self.range_start = self.params.args[0]
-        self.range_stop = self.params.args[1]
-        self.range_step = self.params.args[2]
-
-        self.parallel_increment = self.params.max_running
+        self.range_start = int(self.params.args[0])
+        self.range_stop = int(self.params.args[1])
+        self.range_step = int(self.params.args[2])
 
     def new_tasks(self, extra):
         yield (
-            str(self.range_start), # jobname
-            CryptoSequence,
+            "LACAL_"+str(self.range_start), # jobname
+            CryptoChunkedParameterSweep,
             [ # parameters passed to the constructor, see `CryptoSequence.__init__`
                 self.range_start, # Initial range
                 self.range_stop, # End range
                 self.range_step, # step
-                self.parallel_increment, # increment of each ParallelTask
+                self.params.max_running, # increment of each ParallelTask
                 self.params.input_files_archive, # path to input.tgz
                 self.params.output, # output folder
                 ],
