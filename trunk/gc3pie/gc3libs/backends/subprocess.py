@@ -2,7 +2,7 @@
 """
 Run applications as local processes.
 """
-# Copyright (C) 2009-2011 GC3, University of Zurich. All rights reserved.
+# Copyright (C) 2009-2012 GC3, University of Zurich. All rights reserved.
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
@@ -273,7 +273,7 @@ class SubprocessLrms(LRMS):
                     os.environ[k] = v
 
                 ## finally.. exec()
-                if os.path.exists(app.executable) and not os.path.isabs(app.executable):
+                if not os.path.isabs(app.executable) and os.path.exists(app.executable):
                     # local file
                     os.execl('./' + app.executable, app.executable, *app.arguments)
                 else:
