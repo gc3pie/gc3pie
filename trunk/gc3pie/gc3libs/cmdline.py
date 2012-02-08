@@ -1089,7 +1089,7 @@ class SessionBasedScript(_Script):
                               " Aborting." % (self.session_filename, str(ex)))
             return 1
 
-        ## update session based on comman-line args
+        ## update session based on command-line args
         self.process_args()
 
         # save the session list immediately, so newly added jobs will
@@ -1104,44 +1104,10 @@ class SessionBasedScript(_Script):
                           self.params.resource_name)
 
         ## create an `Engine` instance to manage the job list
-        controller = self.make_task_controller()
-
-        ## The main loop of the application: it is a local function so
-        ## that we can call it just once or properly loop around it,
-        ## as directed by the `self.params.wait` option.
-        def loop():
-            # advance all jobs
-            controller.progress()
-            # print results to user
-            print ("Status of jobs in the '%s' session: (at %s)" 
-                   % (os.path.basename(self.params.session),
-                      time.strftime('%X, %x')))
-            # summary
-            stats = controller.stats(self.stats_only_for)
-            total = stats['total']
-            if total > 0:
-                self.print_summary_table(sys.stdout, stats)
-                # details table, as per ``-l`` option
-                if self.params.states:
-                    self.print_tasks_table(sys.stdout, self.params.states)
-            else:
-                if self.params.session is not None:
-                    print ("  There are no tasks in session '%s'."
-                           % self.params.session)
-                else:
-                    print ("  No tasks in this session.")
-            # compute exitcode based on the running status of jobs
-            rc = 0
-            if stats['failed'] > 0:
-                rc |= 2
-            if stats[gc3libs.Run.State.RUNNING] > 0 or stats[gc3libs.Run.State.SUBMITTED] > 0:
-                rc |= 4
-            if stats[gc3libs.Run.State.NEW] > 0:
-                rc |= 8
-            return rc
+        self._controller = self.make_task_controller()
 
         # ...now do a first round of submit/update/retrieve
-        rc = loop()
+        rc = self._main_loop()
         if self.params.wait > 0:
             self.log.info("sleeping for %d seconds..." % self.params.wait)
             try:
@@ -1151,7 +1117,7 @@ class SessionBasedScript(_Script):
                     # to process interrupts in the breaks.  Ugly, but works...
                     for x in xrange(self.params.wait):
                         time.sleep(1)
-                    rc = loop()
+                    rc = self._main_loop()
             except KeyboardInterrupt: # gracefully intercept Ctrl+C
                 pass
         # save the session again before exiting, so the file reflects
@@ -1160,8 +1126,64 @@ class SessionBasedScript(_Script):
 
         # XXX: shall we call the termination on the controller here ?
         # or rather as a post_run method in the SessionBasedScript ?
-        controller.close()
+        self._controller.close()
 
+        return rc
+
+
+    def _main_loop(self):
+        """
+        The main loop of the application.  It is in a separate
+        function so that we can call it just once or properly loop
+        around it, as directed by the `self.params.wait` option.
+
+        .. note::
+        
+          Overriding this method can disrupt the whole functionality of
+          the script, so be careful.
+
+        Invocation of this method should return a numeric exitcode,
+        that will be used as the scripts' exitcode.  As stated in the
+        `SessionBasedScript`, the exitcode is a bitfield; only the 4
+        least-significant bits are used, with the following meaning:
+
+           ===  ============================================================
+           Bit  Meaning
+           ===  ============================================================
+             0  Set if a fatal error occurred: the script could not complete
+             1  Set if there are jobs in `FAILED` state
+             2  Set if there are jobs in `RUNNING` or `SUBMITTED` state
+             3  Set if there are jobs in `NEW` state
+           ===  ============================================================
+        """
+        # advance all jobs
+        self._controller.progress()
+        # print results to user
+        print ("Status of jobs in the '%s' session: (at %s)" 
+               % (os.path.basename(self.params.session),
+                  time.strftime('%X, %x')))
+        # summary
+        stats = self._controller.stats(self.stats_only_for)
+        total = stats['total']
+        if total > 0:
+            self.print_summary_table(sys.stdout, stats)
+            # details table, as per ``-l`` option
+            if self.params.states:
+                self.print_tasks_table(sys.stdout, self.params.states)
+        else:
+            if self.params.session is not None:
+                print ("  There are no tasks in session '%s'."
+                       % self.params.session)
+            else:
+                print ("  No tasks in this session.")
+        # compute exitcode based on the running status of jobs
+        rc = 0
+        if stats['failed'] > 0:
+            rc |= 2
+        if stats[gc3libs.Run.State.RUNNING] > 0 or stats[gc3libs.Run.State.SUBMITTED] > 0:
+            rc |= 4
+        if stats[gc3libs.Run.State.NEW] > 0:
+            rc |= 8
         return rc
 
 
