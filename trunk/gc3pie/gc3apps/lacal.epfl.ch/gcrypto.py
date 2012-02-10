@@ -38,8 +38,16 @@ import gc3libs.exceptions
 import gc3libs.application
 from gc3libs.dag import SequentialTaskCollection, ParallelTaskCollection, ChunkedParameterSweep
 
+
+# allow access to tasks defined in this script from GC3Utils and other
+# GC3Pie programs: the trick is to "import self" and then use the
+# fully qualified name to run the script:
 if __name__ == "__main__":
-    import gcrypto_sequentialWF
+    import gcrypto
+    gcrypto.GCryptoScript().run()
+
+# the rest of this script runs as the `gcrypto` module, so no need to
+# qualify local names here.
 
 
 class CryptoApplication(gc3libs.Application):
@@ -191,7 +199,6 @@ of newly-created jobs so that this limit is never exceeded.
         SessionBasedScript.__init__(
             self,
             version = __version__, # module version == script version
-            application = CryptoApplication
             )
 
 
@@ -244,8 +251,3 @@ of newly-created jobs so that this limit is never exceeded.
         for task in self.tasks:
             assert isinstance(task, CryptoChunkedParameterSweep)
             task.chunk_size = self.params.max_running
-
-
-# run it
-if __name__ == '__main__':
-    GCryptoScript().run()
