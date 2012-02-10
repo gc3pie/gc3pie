@@ -44,9 +44,9 @@ import sys
 
 ## interface to Gc3libs
 import gc3libs
-from gc3libs import Application, Run, Task
+from gc3libs import Application, Run, Task, RetryableTask
 import gc3libs.exceptions
-from gc3libs.cmdline import SessionBasedScript, executable_file
+from gc3libs.cmdline import SessionBasedScript, executable_file, nonnegative_int
 import gc3libs.utils
 
 
@@ -87,8 +87,17 @@ class ABCWorkflow(SessionBasedScript):
                        " in the input files, LOW and HIGH are the minimum"
                        " and the maximum values, and STEP is the increment."
                        " The ':STEP' part can be omitted if STEP is 1.")
+        self.add_param("-K", "--retry",
+                       nargs='?',    # takes one optional argument
+                       type=nonnegative_int, metavar='MAX',
+                       const=3,      # returned if '-K' is there, but with no argument
+                       default=None, # returned if '-K' is *not* there
+                       action="store", dest="retry",
+                       help="Retry failed jobs up to MAX times."
+                       " If MAX is 0, then retry until the jobs succeeds."
+                       " By default, failed jobs are *not* retried.")
 
-
+        
     def parse_args(self):
         self.subst_names = [ ]
         self.subst_values = [ ]
@@ -180,7 +189,14 @@ class ABCWorkflow(SessionBasedScript):
                 kw = extra.copy()
                 kw['output_dir'] = os.path.join(
                     self.make_directory_path(self.params.output, jobname), 'output')
-                yield (jobname, cchem_abc.ABCApplication, inputs, kw)
+                if self.params.retry is not None:
+                    yield (jobname, RetryableTask, [
+                        jobname,
+                        cchem_abc.ABCApplication(*inputs, **kw),
+                        self.params.retry,
+                        ], kw)
+                else:
+                    yield (jobname, cchem_abc.ABCApplication, inputs, kw)
 
 
 # run script
