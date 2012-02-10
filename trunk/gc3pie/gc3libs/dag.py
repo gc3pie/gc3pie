@@ -467,7 +467,7 @@ class ParallelTaskCollection(TaskCollection):
         """
         for task in self.tasks:
             task.kill(**kw)
-        self.execution.state = TERMINATED
+        self.execution.state = Run.State.TERMINATED
         self.execution.returncode = (Run.Signals.Cancelled, -1)
         self.changed = True
 
