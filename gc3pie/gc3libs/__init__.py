@@ -103,7 +103,7 @@ import gc3libs.url
 from gc3libs.utils import defproperty, deploy_configuration_file, get_and_remove, Enum, Log, Struct, safe_repr
 
 
-class Task(object):
+class Task(Struct):
     # XXX: alternative design: we could make Task take an additional
     # `job` parameter, which is the controlled job (i.e., the one that
     # `submit()` and friends act upon), defaulting to `self`.  This
@@ -525,7 +525,7 @@ def configure_logger(level=logging.ERROR,
 # directory"
 ANY_OUTPUT = '*'
 
-class Application(Struct, Persistable, Task):
+class Application(Persistable, Task):
     """
     Support for running a generic application with the GC3Libs.
     The following parameters are *required* to create an `Application`
@@ -1788,7 +1788,7 @@ class RetryableTask(Task):
             instance, see `Task`:class:.
 
         :param int max_retries: Maximum number of times `task` should be
-            re-submitted; use 0 for "no limit".
+            re-submitted; use 0 for 'no limit'.
         """
         self.max_retries = max_retries
         self.retried = 0
