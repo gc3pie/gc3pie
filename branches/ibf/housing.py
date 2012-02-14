@@ -54,7 +54,8 @@ class housingApplication(Application):
     _invalid_chars = re.compile(r'[^_a-zA-Z0-9]+', re.X)
     
     def __init__(self, executable, arguments, inputs, outputs, output_dir, **kw):
-        Application.__init__(self, executable, arguments, inputs, outputs, output_dir, requested_walltime = 1)
+        kw.setdefault('requested_walltime', 100)
+        Application.__init__(self, executable, arguments, inputs, outputs, output_dir, **kw)
     
     def fetch_output_error(self, ex):
 

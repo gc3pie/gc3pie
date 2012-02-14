@@ -272,6 +272,7 @@ def combinedOwnerSimuPlot():
     import copy
     logger.debug('starting combinedOwnerSimuPlot')
     folders = [folder for folder in os.listdir(os.getcwd()) if os.path.isdir(folder) and not folder == 'localBaseDir' and not folder == 'ghousing.jobs']
+    logger.debug('folders are %s ' % folders)
     tableList = [ (folder, os.path.join(os.getcwd(), folder, 'output', 'aggregate.out')) for folder in folders ]
     tableDicts = dict([ (folder, tableDict.fromTextFile(table, width = np.max([len(folder) for folder in folders]) + 5, prec = 10)) for folder, table in tableList if os.path.isfile(table)])
     tableKeys = tableDicts.keys()
