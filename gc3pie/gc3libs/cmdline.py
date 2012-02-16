@@ -41,9 +41,7 @@ __author__ = 'Riccardo Murri <riccardo.murri@uzh.ch>'
 __docformat__ = 'reStructuredText'
 
 
-import cli # pyCLI
-import cli.app
-import cli._ext.argparse as argparse
+## stdlib modules
 import csv
 import fnmatch
 import lockfile
@@ -56,9 +54,12 @@ import random
 from texttable import Texttable
 import time
 
+## 3rd party modules
+import cli # pyCLI
+import cli.app
+import cli._ext.argparse as argparse
 
 ## interface to Gc3libs
-
 import gc3libs
 import gc3libs.core
 import gc3libs.exceptions
