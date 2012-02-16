@@ -1208,10 +1208,14 @@ class SessionBasedScript(_Script):
                % (os.path.basename(self.params.session),
                   time.strftime('%X, %x')))
         # summary
-        stats = self._controller.stats(self.stats_only_for)
+        stats = self._controller.stats()
         total = stats['total']
         if total > 0:
-            self.print_summary_table(sys.stdout, stats)
+            if self.stats_only_for is not None:
+                self.print_summary_table(sys.stdout,
+                                         self._controller.stats(self.stats_only_for))
+            else:
+                self.print_summary_table(sys.stdout, stats)
             # details table, as per ``-l`` option
             if self.params.states:
                 self.print_tasks_table(sys.stdout, self.params.states)
