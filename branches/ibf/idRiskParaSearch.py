@@ -197,6 +197,7 @@ class idRiskParaSearchDriver(SequentialTaskCollection):
         logger.debug('entering gParaSearchDriver.__init__')
 
         self.jobname = sessionParas['jobname'] + 'driver'
+        solverParas['jobname'] = self.jobname
         
         self.sessionParas     = sessionParas
         self.solverParas      = solverParas

@@ -155,7 +155,8 @@ class idRiskParaSearchDriver(SequentialTaskCollection):
         logger.debug('entering gParaSearchDriver.__init__')
 
         self.jobname = sessionParas['jobname'] + 'driver'
-        
+        solverParas['jobname'] = self.jobname
+
         self.sessionParas     = sessionParas
         self.solverParas      = solverParas
         self.substs           = substs
@@ -165,7 +166,9 @@ class idRiskParaSearchDriver(SequentialTaskCollection):
 
         # create a subfolder for optim over xVar
         self.optimFolder = os.path.join(paraFolder, 'optim' + str(solverParas['xVars'][0]))
+        self.solverParas['optimFolder'] = self.optimFolder
         gc3libs.utils.mkdir(self.optimFolder)
+
 
         self.costlyOptimizer = costlyOptimization.costlyOptimization(solverParas)
         
@@ -187,7 +190,9 @@ class idRiskParaSearchDriver(SequentialTaskCollection):
 
     def next(self, *args): 
         self.iter += 1
+        logger.debug('')
         logger.debug('entering idRiskParaSearchDriver.next in iteration %s for variables %s and paraCombo %s' % (self.iter, self.solverParas['xVars'], self.jobname))
+        logger.debug('')
         # sometimes next is called even though run state is terminated. In this case simply return. 
         if self.costlyOptimizer.converged:
             return Run.State.TERMINATED
@@ -195,21 +200,31 @@ class idRiskParaSearchDriver(SequentialTaskCollection):
         if  self.execution.state == 'TERMINATED':
             logger.debug('idRiskParaSearchDriver.next already terminated. Returning.. ')
             return Run.State.TERMINATED
+        logger.debug('calling self.evaluator.target to get newVals')
         newVals = self.evaluator.target(self.xVars, self.xParaCombos, self.targetVars, self.target_fx)
         if newVals is None:
-            logger.critical('evaluating variable %s at guess %s failed' % (self.xVars, self.xParaCombos))	
+            logger.critical('')
+            logger.critical('FAILURE: newVals is None. Evaluating variable %s at guess %s failed' % (self.xVars, self.xParaCombos))	
+            logger.critical('')
             self.execution.returncode = 13
             self.failed = True
             return Run.State.TERMINATED
+        logger.debug('calling self.costlyOptimizer.updateInterpolationPoints to update list of points. ')
         self.costlyOptimizer.updateInterpolationPoints(self.xParaCombos, newVals)
+        logger.debug('calling self.costlyOptimizer to check convergence')
         if not self.costlyOptimizer.checkConvergence():
-            logger.debug('not converged yet. Building new guess and reevaluating. ')
+            logger.debug('not converged yet... ')
+            logger.debug('calling self.costlyOptimizer.updateApproximation')
             self.costlyOptimizer.updateApproximation()
+            logger.debug('calling self.costlyOptimizer.generateNewGuess')
             self.xParaCombos = self.costlyOptimizer.generateNewGuess()
+            logger.debug('generating a new idRiskParaSearchParallel instance to evaluate new guess')
             self.evaluator = idRiskParaSearchParallel(self.xVars, self.xParaCombos, self.substs, self.optimFolder, self.solverParas, **self.sessionParas)
             self.add(self.evaluator)
         else:
-            logger.debug('converged idRiskParaSearchDriver.next in iteration %s for variables %s. Returning exit code 0. ' % (self.iter, self.solverParas['xVars']))
+            logger.debug('')
+            logger.debug('SUCCESS: converged idRiskParaSearchDriver.next in iteration %s for variables %s. Returning exit code 0. ' % (self.iter, self.solverParas['xVars']))
+            logger.debug('')
             self.execution.returncode = 0
             return Run.State.TERMINATED
         logger.debug('done idRiskParaSearchDriver.next in iteration %s for variables %s' % (self.iter, self.solverParas['xVars']))
@@ -267,21 +282,25 @@ class idRiskParaSearchParallel(ParallelTaskCollection, paraLoop):
         logger.info(overviewTable) 
         # Could replace this with a check that every xVar value is in the table, then output the two relevant columns.
         result = np.array([])
-        for xParaCombo in xParaCombos:
+        for ixParaCombo, xParaCombo in enumerate(xParaCombos):
             overviewTableSub = copy.deepcopy(overviewTable)        
             for xVar, xVal in zip(xVars, xParaCombo):
                 overviewTableSub = overviewTableSub.getSubset( np.abs( overviewTableSub[xVar] - xVal ) < 1.e-8 )
             if len(overviewTableSub) == 0:
                 logger.critical('Cannot find value for xVal %s, i.e. overviewTableSub empty. Did you set the pythonPath?' % xVal)
-                return None
+                result = np.append(result, None)                 
+#                return None
             elif len(overviewTableSub) == 1:
                 #result.append(np.linalg.norm(np.array([ overviewTableSub[targetVars[ixVar]][0] for ixVar, var in enumerate(xVars) ]) - target_fx))
                 result = np.append(result, [ overviewTableSub[targetVars[ixVar]][0] for ixVar, var in enumerate(xVars) ])
+                logger.info('found xParaCombo = %s, result = %s' % (xParaCombo, result[ixParaCombo]))
             else:
                 logger.critical('Cannot find unique value for xVal %s' % xVal)
                 os._exit(1)
-        logger.info('Computed target: Returning result to solver\n')
-        logger.info('result for variables %s is %s' % (xVars, result))
+
+        logger.info('result for variables %s: xParaCombos = %s. Values =  %s' % (xVars, xParaCombos, result))
+        logger.info('done target')
+        logger.info('')
         return result
 
 
@@ -308,6 +327,7 @@ class idRiskParaSearchParallel(ParallelTaskCollection, paraLoop):
         # Fill the task list
         tasks = []
         for paraCombo in paraCombos:
+            logger.debug('paraCombo = %s' % paraCombo)
             executable = os.path.basename(pathToExecutable)
             inputs = { pathToExecutable:executable }        
             # make a "stage" directory where input files are collected
@@ -342,7 +362,7 @@ class idRiskParaSearchParallel(ParallelTaskCollection, paraLoop):
             #kwargs = sessionParas.copy()
             kwargs = {}
             kwargs['jobname'] = self.jobname
-            kwargs['stdout'] = 'forwardPremiumOut.log'
+            kwargs['stdout'] = 'idriskOut.log'
             kwargs['join'] = True
             kwargs['output_dir'] = os.path.join(path_to_stage_dir, 'output')
             kwargs['requested_architecture'] = architecture
@@ -375,6 +395,9 @@ class idRiskParaSearchScript(SessionBasedScript, paraLoop):
             version = '0.2',
             # only '.loop' files are considered as valid input
             input_filename_pattern = '*.loop',
+            stats_only_for = Application
+#idRiskApppotApplication
+#idRiskApplication,
         )
         paraLoop.__init__(self, 'INFO')        
 
@@ -399,7 +422,7 @@ class idRiskParaSearchScript(SessionBasedScript, paraLoop):
                        dest="makePlots", default = True,
                        help="Generate population plots each iteration.  ")
         self.add_param("-xVars", "--xVars", metavar="ARCH",
-                       dest="xVars", default = 'EA',
+                       dest="xVars", default = 'wBarLower',
                        help="x variables over which to optimize")
         self.add_param("-xVarsDom", "--xVarsDom", metavar="ARCH",
                        dest="xVarsDom", default = '0.5 0.9',
@@ -460,15 +483,19 @@ class idRiskParaSearchScript(SessionBasedScript, paraLoop):
             sessionParas['jobname'] = jobname
             # Compute domain
             xVarsDom = self.params.xVarsDom.split()
+            xVarsDom = [ [ ele ] for ele in xVarsDom ]
             lowerBds = np.array([xVarsDom[i] for i in range(len(xVarsDom)) if i % 2 == 0], dtype = 'float64')
             upperBds = np.array([xVarsDom[i] for i in range(len(xVarsDom)) if i % 2 == 1], dtype = 'float64')
             domain = zip(lowerBds, upperBds)
             solverParas = {}
             solverParas['xVars'] = self.params.xVars.split()
-            solverParas['xInitialParaCombo'] = np.array([lowerBds, upperBds])
+#            solverParas['xInitialParaCombo'] = np.array([lowerBds, upperBds])
+            solverParas['xInitialParaCombo'] = np.array(xVarsDom, dtype = 'float64')
+#            print solverParas['xInitialParaCombo']
+#            os._exit(1)
             solverParas['targetVars'] = self.params.targetVars.split()
             solverParas['target_fx'] = map(float, self.params.target_fx.split())
-            solverParas['plotting'] = False
+            solverParas['plotting'] = self.params.makePlots
             solverParas['convCrit'] = self.params.convCrit
             yield (jobname, solveParaCombination, [ substs, solverParas ], sessionParas)
             
@@ -486,8 +513,15 @@ class idRiskParaSearchScript(SessionBasedScript, paraLoop):
 
 
 def combineTables():
+    print 'start combineTables'
     tableList = [ os.path.join(os.getcwd(), folder, 'optimalRun') for folder in os.listdir(os.getcwd()) if os.path.isdir(folder) and not folder == 'localBaseDir' and not folder == 'idRiskParaSearch.jobs' ]
+    logger.info(tableList)
+    a = [ table for table in tableList ]
+    print a
     tableDicts = [ tableDict.fromTextFile(table, width = 20, prec = 10) for table in tableList if os.path.isfile(table)]
+    logger.info('tableDicts=')
+    logger.info(tableDicts)
+    logger.info('check if tableDicts empty')
     if tableDicts:
         optimalRuns = tableDicts[0]
         for ixTable, table in enumerate(tableDicts):
