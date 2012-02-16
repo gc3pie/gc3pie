@@ -835,10 +835,26 @@ class SessionBasedScript(_Script):
         output.write("\n")
 
 
-    def print_tasks_table(self, output=sys.stdout, states=gc3libs.Run.State):
+    def print_tasks_table(self, output=sys.stdout, states=gc3libs.Run.State, only=object):
         """
         Output a text table to stream `output`, giving details about
         tasks in the given states.
+
+        Optional second argument `states` restricts the listing to
+        tasks that are in one of the specified states.  By default, all
+        task states are allowed.  The `states` argument should be a
+        list or a set of `Run.State` values.
+
+        Optional third argument `only` further restricts the listing
+        to tasks that are instances of a subclass of `only`.  By
+        default, there is no restriction and all tasks are listed. The
+        `only` argument can be a Python class or a tuple -- anything
+        infact, that you can pass as second argument to the
+        `isinstance` operator.
+
+        :param output: An output stream (file-like object)
+        :param states: List of states (`Run.State` items) to consider.
+        :param   only: Root class (or tuple of root classes) of tasks to consider.
         """
         table = Texttable(0) # max_width=0 => dynamically resize cells
         table.set_deco(Texttable.HEADER) # also: .VLINES, .HLINES .BORDER
@@ -848,7 +864,7 @@ class SessionBasedScript(_Script):
         table.add_rows([ (task.persistent_id, task.jobname,
                           task.execution.state, task.execution.info)
                          for task in self.tasks
-                         if task.execution.in_state(*states) ],
+                         if isinstance(task, only) and task.execution.in_state(*states) ],
                        header=False)
         # XXX: uses texttable's internal implementation detail
         if len(table._rows) > 0:
