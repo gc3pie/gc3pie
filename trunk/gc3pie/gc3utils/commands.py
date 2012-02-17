@@ -182,6 +182,9 @@ GC3Libs internals.
                        " e.g., for generating files that can be"
                        " read by a spreadsheet program."
                        " MUST be used together with '-print'.")
+        self.add_param("--no-header",
+                       action="store_false", dest="header", default=True,
+                       help="Do *not* print table or CSV file header.")
         self.add_param("-p", "--print", action="store", dest="keys", 
                        metavar="LIST", default='', 
                        help="Only print job attributes whose name appears in"
@@ -235,14 +238,17 @@ GC3Libs internals.
         if self.params.tabular:
             # prepare table prettyprinter
             table = Texttable(0) # max_width=0 => dynamically resize cells
-            table.set_deco(Texttable.HEADER) # also: .VLINES, .HLINES .BORDER
             table.set_cols_align(['l'] * (1 + len(only_keys)))
-            table.header(["Job ID"] + only_keys)
+            if self.params.header:
+                table.set_deco(Texttable.HEADER) # also: .VLINES, .HLINES .BORDER
+                table.header(["Job ID"] + only_keys)
+            else:
+                table.set_deco(0)
 
         if self.params.csv:
             csv_output = csv.writer(sys.stdout)
-            # header line
-            csv_output.writerow(only_keys)
+            if self.params.header:
+                csv_output.writerow(only_keys)
 
         def cmp_by_jobid(x,y):
             return cmp(x.persistent_id, y.persistent_id)
