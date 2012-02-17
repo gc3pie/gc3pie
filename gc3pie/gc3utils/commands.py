@@ -35,6 +35,7 @@ import posix
 import tarfile
 from texttable import Texttable
 import time
+import types
 
 ## 3rd party modules
 import cli # pyCLI
@@ -369,6 +370,13 @@ Print job state.
                        metavar="STATE", default=None, 
                        help="Only report about jobs in the given state."
                        " Multiple states are allowed: separate them with commas.")
+        self.add_param("-L", "--lifetimes", "--print-lifetimes", nargs='?', metavar='FILE',
+                       action='store', dest='lifetimes',
+                       default=None,     # no option and no argument: discard data
+                       const=sys.stdout, # option given, but no argument
+                       help="For each successful job, print"
+                       " submission, start, and duration times."
+                       " If FILE is omitted, report is printed to screen.")
         self.add_param("-n", "--no-update", action="store_false", dest="update",
                        help="Do not update job statuses;"
                        " only print what's in the local database.")
@@ -419,26 +427,56 @@ Print job state.
             keys = self.params.keys.split(',')
         else:
             keys = [ ]
+
+        # init lifetimes report (if requested)
+        if self.params.lifetimes is not None:
+            if isinstance(self.params.lifetimes, types.StringTypes):
+                self.params.lifetimes = open(self.params.lifetimes, 'w')
+            lifetimes_rows = [['JOBID', 'SUBMITTED_AT', 'RUNNING_AT', 'FINISHED_AT', 'WAIT_DURATION', 'EXEC_DURATION']]
         
         # update states and compute statistics
         stats = utils.defaultdict(lambda: 0)
         tot = 0
         rows = [ ]
         for app in self._get_jobs(self.params.args):
+            tot += 1 # one more job successfully loaded
+            jobid = app.persistent_id
             if self.params.update:
                 app.attach(self._core)
                 self._core.update_job_state(app)
-                self._store.replace(app.persistent_id, app)
+                self._store.replace(jobid, app)
             if states is None or app.execution.in_state(*states):
-                rows.append([app.persistent_id, app.execution.state, app.execution.info] +
+                rows.append([jobid, app.execution.state, app.execution.info] +
                             [ app.execution.get(name, "N/A") for name in keys ])
             stats[app.execution.state] += 1
             if app.execution.state == Run.State.TERMINATED:
                 if app.execution.returncode == 0:
                     stats['ok'] += 1
+                    if self.params.lifetimes is not None:
+                        try:
+                            timestamps = app.execution.timestamp
+                        except AttributeError:
+                            # missing .execution or .terminated: job is malformed, skip it
+                            continue
+                        if Run.State.SUBMITTED in timestamps:
+                            submitted_at = timestamps['SUBMITTED']
+                        else:
+                            # skip job: not enough info
+                            continue
+                        if Run.State.RUNNING in timestamps:
+                            running_at = timestamps[Run.State.RUNNING]
+                        else:
+                            # this means that the transition from
+                            # SUBMITTED to RUNNING to TERMINATED
+                            # happened in between two updates; we have
+                            # no idea what the update cycle was, so...
+                            # there's nothing left to do but skip this job
+                            continue
+                        terminated_at = timestamps['TERMINATING']
+                        lifetimes_rows.append([jobid, submitted_at, running_at, terminated_at,
+                                               running_at-submitted_at, terminated_at-running_at])
                 else:
                     stats['failed'] += 1
-            tot += 1
 
         if len(rows) > capacity and self.params.verbose == 0:
             # only print table with statistics
@@ -460,6 +498,15 @@ Print job state.
             table.header(["Job ID", "State", "Info"] + keys)
             table.add_rows(sorted(rows), header=False)
         print(table.draw())
+
+        if self.params.lifetimes is not None and len(lifetimes_rows) > 1:
+            if self.params.lifetimes is sys.stdout:
+                print("")
+                print("Report on the job life times:")
+                lifetimes_csv = csv.writer(self.params.lifetimes, delimiter='\t')
+            else:
+                lifetimes_csv = csv.writer(self.params.lifetimes)
+            lifetimes_csv.writerows(lifetimes_rows)
 
         # since `_get_jobs` swallows any exception raised by invalid
         # job IDs or corrupted files, let us determine the number of
