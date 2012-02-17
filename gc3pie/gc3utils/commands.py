@@ -27,6 +27,7 @@ __copyright__="Copyright (c) 2009-2011 Grid Computing Competence Center, Univers
 
 
 ## stdlib imports
+import csv
 import logging
 import sys
 import os
@@ -175,6 +176,12 @@ GC3Libs internals.
     verbose_logging_threshold = 2
     
     def setup_options(self):
+        self.add_param("-c", "--csv", action="store_true", dest="csv",
+                       default=False,
+                       help="Print attributes in CSV format,"
+                       " e.g., for generating files that can be"
+                       " read by a spreadsheet program."
+                       " MUST be used together with '-print'.")
         self.add_param("-p", "--print", action="store", dest="keys", 
                        metavar="LIST", default='', 
                        help="Only print job attributes whose name appears in"
@@ -182,9 +189,30 @@ GC3Libs internals.
         self.add_param("-t", "--tabular", action="store_true", dest="tabular",
                        default=False,
                        help="Print attributes in table format."
-                       " Must be used together with '--print'.")
+                       " MUST be used together with '--print'.")
         
     def main(self):
+        if self.params.csv and self.params.tabular:
+            raise gc3libs.exceptions.InvalidUsage(
+                "Conflicting options `-c`/`--csv` and `-t`/`--tabular`."
+                " Choose either one, but not both.")
+
+        if len(self.params.keys) > 0:
+            only_keys = self.params.keys.split(',')
+        else:
+            if self.params.verbose < 2:
+                def names_not_starting_with_underscore(name):
+                    return not name.startswith('_')
+                only_keys = names_not_starting_with_underscore
+            else:
+                # print *all* keys if `-vv` is given
+                only_keys = None
+
+        if (self.params.tabular or self.params.csv) and len(self.params.keys) == 0:
+            raise gc3libs.exceptions.InvalidUsage(
+                "Options '--tabular' and `--csv` only make sense"
+                " in conjuction with option '--print'.")
+        
         if len(self.params.args) == 0:
             # if no arguments, operate on all known jobs
             try:
@@ -204,25 +232,17 @@ GC3Libs internals.
             # presume output goes to a file, so no width restrictions
             width = 0
 
-        if len(self.params.keys) > 0:
-            only_keys = self.params.keys.split(',')
-        else:
-            if self.params.verbose < 2:
-                def names_not_starting_with_underscore(name):
-                    return not name.startswith('_')
-                only_keys = names_not_starting_with_underscore
-            else:
-                # print *all* keys if `-vv` is given
-                only_keys = None
-
         if self.params.tabular:
-            if len(self.params.keys) == 0:
-                raise gc3libs.exceptions.InvalidUsage("Option '--tabular' only makes sense in conjuction with '--print'.")
-            # print table of job status
+            # prepare table prettyprinter
             table = Texttable(0) # max_width=0 => dynamically resize cells
             table.set_deco(Texttable.HEADER) # also: .VLINES, .HLINES .BORDER
             table.set_cols_align(['l'] * (1 + len(only_keys)))
             table.header(["Job ID"] + only_keys)
+
+        if self.params.csv:
+            csv_output = csv.writer(sys.stdout)
+            # header line
+            csv_output.writerow(only_keys)
 
         def cmp_by_jobid(x,y):
             return cmp(x.persistent_id, y.persistent_id)
@@ -235,14 +255,17 @@ GC3Libs internals.
             # of times we *should* have run, i.e., the number of
             # arguments we were passed.
             ok += 1
-            if self.params.tabular:
+            if self.params.tabular or self.params.csv:
                 row = [str(app)]
                 for key in only_keys:
                     try:
                         row.append(gc3libs.utils.getattr_nested(app, key))
                     except AttributeError:
                         row.append("N/A")
-                table.add_row(row)
+                if self.params.tabular:
+                    table.add_row(row)
+                elif self.params.csv:
+                    csv_output.writerow(row)
             else:
                 # usual YAML-like output
                 print(str(app.persistent_id))
