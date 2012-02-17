@@ -32,6 +32,7 @@ import cli.app
 import logging
 import sys
 import os
+import posix
 import tarfile
 from texttable import Texttable
 import time
@@ -191,9 +192,14 @@ GC3Libs internals.
                     "Job storage module does not allow listing all jobs."
                     " Please specify the job IDs you wish to operate on.")
 
-        try:
-            width = int(os.environ['COLUMNS'])
-        except:
+        if posix.isatty(sys.stdout.fileno()):
+            # try to screen width
+            try:
+                width = int(os.environ['COLUMNS'])
+            except:
+                width = 0
+        else:
+            # presume output goes to a file, so no width restrictions
             width = 0
 
         if len(self.params.keys) > 0:
@@ -361,11 +367,15 @@ Print job state.
             print("No jobs submitted.")
             return 0
 
-        # try to determine how many lines of output can we fit in a screen
-        try:
-            capacity = int(os.environ['LINES']) - 5
-        except:
-            capacity = 20
+        if posix.isatty(sys.stdout.fileno()):
+            # try to determine how many lines of output can we fit in a screen
+            try:
+                capacity = int(os.environ['LINES']) - 5
+            except:
+                capacity = 20
+        else:
+            # output is dumped to a file, so no restrictions
+            capacity = gc3libs.utils.PlusInfinity
 
         # limit to specified job states?
         if self.params.states is not None:
