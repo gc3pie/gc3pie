@@ -26,9 +26,7 @@ __date__ = '$Date$'
 __copyright__="Copyright (c) 2009-2011 Grid Computing Competence Center, University of Zurich"
 
 
-
-import cli # pyCLI
-import cli.app
+## stdlib imports
 import logging
 import sys
 import os
@@ -37,7 +35,11 @@ import tarfile
 from texttable import Texttable
 import time
 
+## 3rd party modules
+import cli # pyCLI
+import cli.app
 
+## local modules
 from gc3libs import Application, Run
 import gc3libs.application.gamess as gamess
 import gc3libs.application.rosetta as rosetta
