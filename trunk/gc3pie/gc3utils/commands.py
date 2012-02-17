@@ -332,16 +332,23 @@ Print job state.
                        metavar="STATE", default=None, 
                        help="Only report about jobs in the given state."
                        " Multiple states are allowed: separate them with commas.")
-        self.add_param("-n", "--no-update", action="store_false",
-                       dest="update", default=True,
+        self.add_param("-n", "--no-update", action="store_false", dest="update",
                        help="Do not update job statuses;"
                        " only print what's in the local database.")
+        self.add_param("-u", "--update", action="store_true", dest="update", 
+                       help="Update job statuses before printing results"
+                       " (this is the default.)")
         self.add_param("-p", "--print", action="store", dest="keys", 
                        metavar="LIST", default=None, 
                        help="Additionally print job attributes whose name appears in"
                        " this comma-separated list.")
 
     def main(self):
+        # by default, update job statuses
+        if 'update' not in self.params:
+            self.params.update = True
+        assert self.params.update in [True, False]
+        
         if len(self.params.args) == 0:
             # if no arguments, operate on all known jobs
             try:
@@ -665,4 +672,3 @@ List status of computational resources.
             output_if_exists('max_walltime', "Max walltime per job (minutes)")
             output_if_exists('applications', "Supported applications")
             print(table.draw())
-
