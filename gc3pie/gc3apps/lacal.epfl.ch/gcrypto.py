@@ -13,7 +13,7 @@ __changelog__ = """
   2012-01-29:
     * Moved CryptoApplication from gc3libs.application
 
-    * Restruxtured main script due to excessive size of initial
+    * Restructured main script due to excessive size of initial
     jobs. SessionBaseScript generate a single SequentialTask.
     SequentialTask generated as many ParallelTasks as the whole range divided
     by the number of simultaneous active jobs.
@@ -38,17 +38,8 @@ import gc3libs.exceptions
 import gc3libs.application
 from gc3libs.dag import SequentialTaskCollection, ParallelTaskCollection, ChunkedParameterSweep
 
-
-# allow access to tasks defined in this script from GC3Utils and other
-# GC3Pie programs: the trick is to "import self" and then use the
-# fully qualified name to run the script:
-if __name__ == "__main__":
-    import gcrypto
-    gcrypto.GCryptoScript().run()
-
-# the rest of this script runs as the `gcrypto` module, so no need to
-# qualify local names here.
-
+DEFAULT_INPUTFILE_LOCATION="srm://dpm.lhep.unibe.ch/dpm/lhep.unibe.ch/home/smscg/lacal_input_files.tgz"
+DEFAULT_GNFS_LOCATION="srm://dpm.lhep.unibe.ch/dpm/lhep.unibe.ch/home/smscg/gnfs-cmd"
 
 class CryptoApplication(gc3libs.Application):
     """
@@ -66,11 +57,11 @@ class CryptoApplication(gc3libs.Application):
     CryptoApplication(param, step, input_files_archive, output_folder, **kw)
     """
     
-    def __init__(self, start, extent, input_files_archive, output, **kw):
+    def __init__(self, start, extent, gnfs_location, input_files_archive, output, **kw):
 
-        src_crypto_bin = resource_filename(Requirement.parse("gc3pie"), 
-                                           "gc3libs/etc/gnfs-cmd")
-
+        #src_crypto_bin = resource_filename(Requirement.parse("gc3pie"), 
+        #                                   "gc3libs/etc/gnfs-cmd")
+        gnfs_executable_name = os.path.basename(gnfs_location)
         # set some execution defaults...
         kw.setdefault('requested_cores', 4)
         kw.setdefault('requested_architecture', Run.Arch.X86_64)
@@ -87,12 +78,14 @@ class CryptoApplication(gc3libs.Application):
 
         gc3libs.Application.__init__(
             self,
-            executable =  os.path.basename(src_crypto_bin),
-            executables = ["input.tgz"], # XXX: WTF??
-            arguments = [ start, extent, kw['requested_cores'], input_files_archive ],
+            # executable =  os.path.basename(src_crypto_bin),
+            executable = "gnfs-cmd",
+            executables = ["gnfs-cmd"],
+            # executables = ["input.tgz"], # XXX: WTF??
+            arguments = [ start, extent, kw['requested_cores'], "input.tgz" ],
             inputs = {
                 input_files_archive:"input.tgz",
-                src_crypto_bin:"gnfs-cmd",
+                gnfs_location:"gnfs-cmd",
                 },
             outputs = [ '@output.list' ],
             # outputs = gc3libs.ANY_OUTPUT,
@@ -104,7 +97,6 @@ class CryptoApplication(gc3libs.Application):
     def terminated(self):
         """
         Checks whether the ``M*.gz`` files have been created.
-        Checks "done" pattern in stdout.
         
         The exit status of the whole job is set to one of these values:
 
@@ -114,6 +106,8 @@ class CryptoApplication(gc3libs.Application):
         * 127 -- the ``gnfs-cmd`` application did not run at all.
          
         """
+        # XXX: need to gather more info on how to post-process.
+        # for the moment do nothing and report job's exit status
         gc3libs.log.debug(
             'Application terminated. postprocessing with execution.exicode %d',
             self.execution.exitcode)
@@ -134,12 +128,13 @@ class CryptoChunkedParameterSweep(ChunkedParameterSweep):
     """
     
     def __init__(self, range_start, range_end, slice, chunk_size,
-                 input_files_archive, output_folder, grid=None, **kw):
+                 input_files_archive, gnfs_location, output_folder, grid=None, **kw):
 
         # remember for later
         self.range_end = range_end
         self.parameter_count_increment = slice * chunk_size
         self.input_files_archive = input_files_archive
+        self.gnfs_location = gnfs_location
         self.output_folder = output_folder
 
         ChunkedParameterSweep.__init__(
@@ -152,7 +147,7 @@ class CryptoChunkedParameterSweep(ChunkedParameterSweep):
         `param` to `param+self.parameter_count_increment`.
         """
         return CryptoApplication(
-            param, self.step, self.input_files_archive, self.output_folder, **kw)
+            param, self.step, self.gnfs_location, self.input_files_archive, self.output_folder, **kw)
 
 
 ## the script itself
@@ -181,7 +176,7 @@ can be specified with the '-i' option. Otherwise a default filename
 
 Job progress is monitored and, when a job is done,
 output is retrieved back to submitting host in folders named:
-"range_start + (slice * actual step)"
+'range_start + (slice * actual step)'
 
 The `gcrypto` command keeps a record of jobs (submitted, executed and
 pending) in a session file (set name with the '-s' option); at each
@@ -221,10 +216,18 @@ of newly-created jobs so that this limit is never exceeded.
     def setup_options(self):
         self.add_param("-i", "--input-files", metavar="PATH",
                        action="store", dest="input_files_archive",
-                       type=existing_file, default="input.tgz", 
+                       default=DEFAULT_INPUTFILE_LOCATION, 
                        help="Path to the input files archive."
-                       " By default, a file named 'input.tgz' will"
-                       " be searched in the current directory.")
+                       " By default, the preloaded input archive available on"
+                       " SMSCG Storage Element will be used: "
+                       " %s" % DEFAULT_INPUTFILE_LOCATION)
+        self.add_param("-g", "--gnfs-cmd", metavar="PATH",
+                       action="store", dest="gnfs_location",
+                       default=DEFAULT_GNFS_LOCATION, 
+                       help="Path to the executable script (gnfs-cmd)"
+                       " By default, the preloaded gnfs-cmd available on"
+                       " SMSCG Storage Element will be used: "
+                       " %s" % DEFAULT_GNFS_LOCATION)
 
 
     def new_tasks(self, extra):
@@ -237,6 +240,7 @@ of newly-created jobs so that this limit is never exceeded.
                 self.params.slice,
                 self.params.max_running, # increment of each ParallelTask
                 self.params.input_files_archive, # path to input.tgz
+                self.params.gnfs_location, # path to gnfs-cmd
                 self.params.output, # output folder
                 ],
             extra.copy()
@@ -251,3 +255,12 @@ of newly-created jobs so that this limit is never exceeded.
         for task in self.tasks:
             assert isinstance(task, CryptoChunkedParameterSweep)
             task.chunk_size = self.params.max_running
+
+
+# allow access to tasks defined in this script from GC3Utils and other
+# GC3Pie programs: the trick is to "import self" and then use the
+# fully qualified name to run the script:
+if __name__ == "__main__":
+    import gcrypto
+    gcrypto.GCryptoScript().run()
+
