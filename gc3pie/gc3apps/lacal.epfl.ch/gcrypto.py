@@ -39,7 +39,7 @@ import gc3libs.application
 from gc3libs.dag import SequentialTaskCollection, ParallelTaskCollection, ChunkedParameterSweep
 
 DEFAULT_INPUTFILE_LOCATION="srm://dpm.lhep.unibe.ch/dpm/lhep.unibe.ch/home/crypto/lacal_input_files.tgz"
-DEFAULT_GNFS_LOCATION="srm://dpm.lhep.unibe.ch/dpm/lhep.unibe.ch/home/crypto/gnfs-cmd"
+DEFAULT_GNFS_LOCATION="srm://dpm.lhep.unibe.ch/dpm/lhep.unibe.ch/home/crypto/gnfs-cmd_20120220"
 
 #DEFAULT_INPUTFILE_LOCATION="gsiftp://idgc3grid01.uzh.ch/local_repo/crypto/lacal_input_files.tgz"
 #DEFAULT_GNFS_LOCATION="gsiftp://idgc3grid01.uzh.ch/local_repo/crypto/gnfs-cmd_20120220"
