@@ -1048,6 +1048,15 @@ def string_to_boolean(word):
         return False
 
 
+def stripped(iterable):
+    """
+    Iterate over lines in `iterable` and return each of them stripped
+    of leading and trailing blanks.
+    """
+    for item in iterable:
+        yield item.strip()
+    
+
 def test_file(path, mode, exception=RuntimeError, isdir=False):
     """
     Test for access to a path; if access is not granted, raise an
