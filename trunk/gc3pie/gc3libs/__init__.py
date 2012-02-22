@@ -778,13 +778,8 @@ class Application(Persistable, Task):
         self.requested_architecture = get_and_remove(kw, 'requested_architecture', None)
         
         self.environment = get_and_remove(kw, 'environment', dict())
-        def to_env_pair(val):
-            if isinstance(val, tuple):
-                return val
-            else:
-                # assume `val` is a string
-                return tuple(val.split('=', 1))
-        self.environment = dict(to_env_pair(x) for x in self.environment.items())
+        self.environment = dict(Application._to_env_pair(x)
+                                for x in self.environment.items())
 
         self.join = get_and_remove(kw, 'join', False)
         self.stdin = get_and_remove(kw, 'stdin')
@@ -823,6 +818,15 @@ class Application(Persistable, Task):
             gc3libs.log.debug("outputs[%s]=%s", repr(k), repr(v))
         for k,v in self.inputs.iteritems():
             gc3libs.log.debug("inputs[%s]=%s", repr(k), repr(v))
+
+
+    @staticmethod
+    def _to_env_pair(val):
+        if isinstance(val, tuple):
+            return val
+        else:
+            # assume `val` is a string
+            return tuple(val.split('=', 1))
 
 
     @staticmethod
