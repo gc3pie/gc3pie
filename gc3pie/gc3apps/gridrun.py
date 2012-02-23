@@ -37,6 +37,7 @@ __docformat__ = 'reStructuredText'
 # see: http://code.google.com/p/gc3pie/issues/detail?id=95
 if __name__ == "__main__":
     import gridrun
+    gridrun.GridRunScript().run()
 
 
 ## stdlib imports
@@ -73,9 +74,10 @@ class SmartApplication(Application):
         # scan command-line for things that look like actual files
         if os.path.exists(executable):
             inputs[executable] = os.path.basename(executable)
-        for arg in arguments:
+        for i, arg in enumerate(arguments):
             if arg not in inputs and os.path.exists(arg):
                 inputs[arg] = os.path.basename(arg)
+                arguments[i] = os.path.basename(arg)
 
         # recurse into superclass ctor
         Application.__init__(self, executable, arguments, inputs, **kw)
@@ -206,24 +208,22 @@ to the remote system as the command to be executed.
         # fix an ordering of the subst parameters, independent of any runtime variable
         names = sorted(self.subst.iterkeys())
 
+        inputs = { }
+        
         # decide whether CMD indicates a local file or a command
         # to be searched on the remote systems' PATH
         if os.path.exists(self.params.cmd):
             self.log.info("Uploading local file '%s' as executable.", self.params.cmd)
             gc3libs.utils.test_file(self.params.cmd, os.R_OK|os.X_OK)
-            executable = os.path.abspath(self.params.cmd)
+            executable = './' + os.path.basename(self.params.cmd)
+            inputs[os.path.abspath(self.params.cmd)] = os.path.basename(self.params.cmd)
         else:
             if not os.path.isabs(self.params.cmd):
                 raise RuntimeError(
-                    "Unfortunately, the ARC authors have decided that every relative"
-                    " filename must represent an entry in the local filesystem."
-                    " Therefore I'm not able to tell it to execute '%s' as a command"
-                    " on the remote system. I have no other chances that aborting now.",
-                    self.params.cmd)
-            if os.path.sep in self.params.cmd:
-                self.log.warning(
-                    "Command name '%s' looks like a local path, but no such file exists."
-                    " I'll try to execute that remotely, let's see what happens.",
+                    "You cannot execute a command by calling a relative path,"
+                    " because the remote execution directory is empty"
+                    " except for files we upload there; but there is"
+                    " no file named '%s' here, so I don't know what to upload.",
                     self.params.cmd)
             executable = self.params.cmd
 
@@ -252,16 +252,10 @@ to the remote system as the command to be executed.
             if self.params.retry is not None:
                 yield (jobname, RetryableTask, [
                     jobname,
-                    SmartApplication(executable, arguments, **kw),
+                    SmartApplication(executable, arguments, inputs, **kw),
                     self.params.retry,
                     ], kw)
             else:
                 yield (jobname, SmartApplication, [
-                    executable,
-                    arguments,
+                    executable, arguments, inputs
                     ], kw)
-
-
-# run script
-if __name__ == '__main__':
-    GridRunScript().run()
