@@ -201,9 +201,6 @@ to the remote system as the command to be executed.
 
         # use the name of the executable as job name
         basename = os.path.basename(self.params.cmd)
-        if '.' in basename:
-            r = basename.rindex('.')
-            basename = basename[:r]
 
         # fix an ordering of the subst parameters, independent of any runtime variable
         names = sorted(self.subst.iterkeys())
