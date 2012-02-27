@@ -3,13 +3,16 @@
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
   "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 
+
 <html xmlns="http://www.w3.org/1999/xhtml">
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     
-    <title>Programming overview &mdash; gc3pie vdevelopment (SVN $Revision$) documentation</title>
+    <title>Programming overview &mdash; gc3pie development (SVN $Revision$) documentation</title>
+    
     <link rel="stylesheet" href="_static/default.css" type="text/css" />
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
     <script type="text/javascript">
       var DOCUMENTATION_OPTIONS = {
         URL_ROOT:    '',
@@ -22,8 +25,8 @@
     <script type="text/javascript" src="_static/jquery.js"></script>
     <script type="text/javascript" src="_static/underscore.js"></script>
     <script type="text/javascript" src="_static/doctools.js"></script>
-    <link rel="top" title="gc3pie vdevelopment (SVN $Revision$) documentation" href="index.html" />
-    <link rel="next" title="GC3Libs modules" href="api.html" />
+    <link rel="top" title="gc3pie development (SVN $Revision$) documentation" href="index.html" />
+    <link rel="next" title="GC3Libs programming API" href="api.html" />
     <link rel="prev" title="Installation of GC3Utils" href="install.html" /> 
   </head>
   <body>
@@ -37,12 +40,12 @@
           <a href="py-modindex.html" title="Python Module Index"
              >modules</a> |</li>
         <li class="right" >
-          <a href="api.html" title="GC3Libs modules"
+          <a href="api.html" title="GC3Libs programming API"
              accesskey="N">next</a> |</li>
         <li class="right" >
           <a href="install.html" title="Installation of GC3Utils"
              accesskey="P">previous</a> |</li>
-        <li><a href="index.html">gc3pie vdevelopment (SVN $Revision$) documentation</a> &raquo;</li> 
+        <li><a href="index.html">gc3pie development (SVN $Revision$) documentation</a> &raquo;</li> 
       </ul>
     </div>  
 
@@ -199,25 +202,25 @@ and GC3Libs&#8217; <cite>Application</cite> objects explicit.</p>
 <col width="37%" />
 </colgroup>
 <thead valign="bottom">
-<tr><th class="head"><cite>os</cite> module function</th>
+<tr class="row-odd"><th class="head"><cite>os</cite> module function</th>
 <th class="head"><cite>Core</cite> function</th>
 <th class="head">purpose</th>
 </tr>
 </thead>
 <tbody valign="top">
-<tr><td>exec</td>
+<tr class="row-even"><td>exec</td>
 <td>Core.submit</td>
 <td>start new job</td>
 </tr>
-<tr><td>kill(..., SIGTERM)</td>
+<tr class="row-odd"><td>kill(..., SIGTERM)</td>
 <td>Core.kill</td>
 <td>terminate executing job</td>
 </tr>
-<tr><td>wait(..., WNOHANG)</td>
+<tr class="row-even"><td>wait(..., WNOHANG)</td>
 <td>Core.update_job_state</td>
 <td>get job status</td>
 </tr>
-<tr><td><ul class="first last simple">
+<tr class="row-odd"><td><ul class="first last simple">
 <li></li>
 </ul>
 </td>
@@ -272,31 +275,31 @@ information.</p>
 <col width="22%" />
 </colgroup>
 <thead valign="bottom">
-<tr><th class="head">GC3Libs&#8217; Job state</th>
+<tr class="row-odd"><th class="head">GC3Libs&#8217; Job state</th>
 <th class="head">purpose</th>
 <th class="head">can change to</th>
 </tr>
 </thead>
 <tbody valign="top">
-<tr><td>NEW</td>
+<tr class="row-even"><td>NEW</td>
 <td>Job has not yet been submitted/started (i.e., gsub not called)</td>
 <td>SUBMITTED (by gsub)</td>
 </tr>
-<tr><td>SUBMITTED</td>
+<tr class="row-odd"><td>SUBMITTED</td>
 <td>Job has been sent to execution resource</td>
 <td>RUNNING, STOPPED</td>
 </tr>
-<tr><td>STOPPED</td>
+<tr class="row-even"><td>STOPPED</td>
 <td>Trap state: job needs manual intervention (either user-
 or sysadmin-level) to resume normal execution</td>
 <td>TERMINATED (by gkill),
 SUBMITTED (by miracle)</td>
 </tr>
-<tr><td>RUNNING</td>
+<tr class="row-odd"><td>RUNNING</td>
 <td>Job is executing on remote resource</td>
 <td>TERMINATED</td>
 </tr>
-<tr><td>TERMINATED</td>
+<tr class="row-even"><td>TERMINATED</td>
 <td>Job execution is finished (correctly or not)
 and will not be resumed</td>
 <td>None: final state</td>
@@ -372,7 +375,7 @@ supported.</p>
                         title="previous chapter">Installation of GC3Utils</a></p>
   <h4>Next topic</h4>
   <p class="topless"><a href="api.html"
-                        title="next chapter">GC3Libs modules</a></p>
+                        title="next chapter">GC3Libs programming API</a></p>
   <h3>This Page</h3>
   <ul class="this-page-menu">
     <li><a href="_sources/overview.txt"
@@ -381,7 +384,7 @@ supported.</p>
 <div id="searchbox" style="display: none">
   <h3>Quick search</h3>
     <form class="search" action="search.html" method="get">
-      <input type="text" name="q" size="18" />
+      <input type="text" name="q" />
       <input type="submit" value="Go" />
       <input type="hidden" name="check_keywords" value="yes" />
       <input type="hidden" name="area" value="default" />
@@ -405,17 +408,17 @@ supported.</p>
           <a href="py-modindex.html" title="Python Module Index"
              >modules</a> |</li>
         <li class="right" >
-          <a href="api.html" title="GC3Libs modules"
+          <a href="api.html" title="GC3Libs programming API"
              >next</a> |</li>
         <li class="right" >
           <a href="install.html" title="Installation of GC3Utils"
              >previous</a> |</li>
-        <li><a href="index.html">gc3pie vdevelopment (SVN $Revision$) documentation</a> &raquo;</li> 
+        <li><a href="index.html">gc3pie development (SVN $Revision$) documentation</a> &raquo;</li> 
       </ul>
     </div>
     <div class="footer">
         &copy; Copyright 2010, Grid Computing Competence Centre, University of Zurich.
-      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.0.7.
+      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.1.2.
     </div>
   </body>
 </html>
