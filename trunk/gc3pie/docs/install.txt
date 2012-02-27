@@ -92,7 +92,7 @@ Installation into a virtualenv has two distinct advantages:
 2. Create a virtualenv to host the GC3Pie installation, and ``cd``
    into it::
 
-       virtualenv $HOME/gc3pie
+       virtualenv --system-site-packages $HOME/gc3pie
        cd $HOME/gc3pie/
        source bin/activate
 
