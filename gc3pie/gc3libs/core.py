@@ -50,6 +50,16 @@ import gc3libs.utils as utils
 
 
 class Core:
+    """Core operations: submit, update state, retrieve (a
+snapshot of) output, cancel job.
+
+Core operations are *blocking*, i.e., they return only after the
+operation has successfully completed, or an error has been detected.
+
+Operations are always performed by a `Core` object.
+`Core` implements an overlay Grid on the resources 
+specified in the configuration file.
+    """
     def __init__(self, resource_list, auths, auto_enable_auth):
         if len(resource_list) == 0:
             raise gc3libs.exceptions.NoResources("Resource list has length 0")
@@ -647,7 +657,6 @@ class Core:
 
     def _get_backend(self,resource_name):
         _lrms = None
-
         for _resource in self._resources:
             if _resource.name == resource_name:
                 # there's a matching resource
@@ -802,7 +811,7 @@ def read_config(*locations):
                               " ignoring." % location)
             continue # with next `location`
         files_successfully_read += 1
-
+ 
         # update `defaults` with the contents of the `[DEFAULTS]` section
         defaults.update(config.defaults())
 
