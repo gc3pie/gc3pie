@@ -314,7 +314,7 @@ type = arc
 auth = <auth_name> # pick a `voms` type auth
 frontend = idgc3grid01.uzh.ch
 name = gc3
-arc_ldap = ldap://idgc3grid01.uzh.ch:2135/mds-vo-name=resource,o=grid
+arc_ldap = ldap://idgc3grid01.uzh.ch:2135/mds-vo-name=local,o=grid
 max_cores_per_job = 32
 max_memory_per_core = 2
 max_walltime = 12
