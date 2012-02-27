@@ -772,7 +772,7 @@ class Application(Persistable, Task):
         self.output_base_url = get_and_remove(kw, 'output_base_url', None)
         
         # FIXME: should use appropriate unit classes for requested_*
-        self.requested_cores = get_and_remove(kw, 'requested_cores')
+        self.requested_cores = get_and_remove(kw, 'requested_cores', 1)
         self.requested_memory = get_and_remove(kw, 'requested_memory')
         self.requested_walltime = get_and_remove(kw, 'requested_walltime')
         self.requested_architecture = get_and_remove(kw, 'requested_architecture', None)
