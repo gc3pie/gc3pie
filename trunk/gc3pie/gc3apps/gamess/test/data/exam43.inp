@@ -1,0 +1,59 @@
+! EXAM 43.
+!   methane G3(MP2,CCSD(T)) heat of formation
+!      6-31G(d) has 23 AOs and 23 MOs,
+!      G3Large  has 79 AOs and 74 MOs.
+!
+!                SUMMARY OF G3(MP2) CALCULATIONS
+! --------------------------------------------------------
+! MP2/6-31G(D)   = -40.332552 CCSD(T)/6-31G(D)= -40.355850
+! MP2/G3MP2LARGE = -40.404248 BASIS CONTRIBUT =   -.071696
+! ZPE(HF/6-31G(D)=    .042659 ZPE SCALE FACTOR=    .892900
+! HLC            =   -.036680 FREE ENERGY     =    .030480
+! THERMAL ENERGY =    .050629 THERMAL ENTHALPY=    .051573
+! --------------------------------------------------------
+! E(G3(MP2)) @ 0K= -40.421567 E(G3(MP2)) @298K= -40.418715
+! H(G3(MP2))     = -40.417771 G(G3(MP2))      = -40.438863
+! --------------------------------------------------------
+!       HEAT OF FORMATION   (0K):     -16.01 KCAL/MOL
+!       HEAT OF FORMATION (298K):     -17.83 KCAL/MOL
+! --------------------------------------------------------
+! The literature, namely JCP 110,4705(1999), says the
+! heat of formation by G3(MP2,QCISD(T)) = -17.8 @ 298
+!
+! This run substitutes the standard CCSD(T) energy for
+! QCI, as considered by
+!   L.A.Curtiss, K.Ragavachari, P.C.Redfern, A.G.Baboul,
+!   J.A.Pople Chem.Phys.Lett. 314, 101-107(1999)
+!
+! RUNTYP=G3MP2 performs a sequence of computations,
+!   First, using the 6-31G(d) Cartesian GTO basis set:
+!     HF geometry optimization (much like runtyp=optimize)
+!     HF frequencies and ZPE evaluation (runtyp=hessian)
+!     MP2 geometry, with no frozen cores (runtyp=optimize)
+!     CCSD(T) energy calculation (runtyp=energy)
+!   Then, using the G3Large basis, as spherical harmonics:
+!     MP2 energy calculation, with frozen cores
+! All these intermediate energies are then gathered up
+! by the G3(MP2,CCSD(T)) recipe to produce the results.
+!
+! Note that there is no particular input.  The two basis
+! sets that are used, and the switch from Cartesian to
+! spherical harmonics is handled internally, so there is
+! no $BASIS group.  The bases and atomic thermochemistry
+! are available for H-Ar, except for the noble gases.
+! The reference state must be RHF.
+! Parallel computation is enabled.
+!
+! You can assist the run by giving a converged HF/6-31G(d)
+! geometry in $DATA, although this is not necessary.
+!
+ $contrl scftyp=rhf runtyp=g3mp2 $end  
+ $system timlim=2 mwords=2 memddi=5 $end
+ $scf    dirscf=.true. $end
+ $data
+Methane...G3(MP2,CCSD(T))
+Td
+
+C  6.0  0.0000000     0.0000000     0.0000000
+H  1.0  0.6375302     0.6375302     0.6375302
+ $end

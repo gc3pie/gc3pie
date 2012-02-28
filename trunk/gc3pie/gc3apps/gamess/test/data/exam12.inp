@@ -1,0 +1,30 @@
+! EXAM 12.
+!   This job illustrates linear bends, for acetylene, and
+!   tests the closed shell LDA density functional program.
+!
+!   At the input geometry,
+!   the FINAL E= -76.5352334525 after 15 iterations,
+!   and the RMS gradient is 0.0944557.
+!
+!   At the optimized geometry, 5 steps later,
+!   the FINAL E= -76.5841347569, RMS gradient=0.0000007,
+!   R(CC)=1.21193 and R(CH)=1.07797.
+!
+ $CONTRL SCFTYP=RHF DFTTYP=SVWN RUNTYP=OPTIMIZE NZVAR=5 $END
+ $SYSTEM TIMLIM=3 $END
+ $BASIS  GBASIS=N31 NGAUSS=6 NDFUNC=1 $END
+ $GUESS  GUESS=HUCKEL $END
+!   Note, this OPTTOL is smaller than the accuracy of the
+!   integration grid actually supports (see REFS.DOC)
+ $STATPT OPTTOL=0.00001 $END
+ $DATA
+Acetylene geometry optimization in internal coordinates
+Dnh      4
+
+CARBON      6.0    0.0  0.0  0.70
+HYDROGEN    1.0    0.0  0.0  1.78
+ $END
+ $ZMAT  IZMAT(1)=1,1,2,   1,1,3,   1,2,4,
+                 5,1,2,4,    5,2,1,3  $END
+------- XZ is 1st plane for both bends -------
+ $LIBE  APTS(1)=1.0,0.0,0.0,1.0,0.0,0.0 $END

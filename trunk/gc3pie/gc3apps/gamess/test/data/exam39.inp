@@ -1,0 +1,226 @@
+!  EXAM 39.
+!  The non-resonant Raman and hyper-Raman spectra of CH4
+!
+!  This run generates results similar to four published papers,
+!  although the basis set in this test is much smaller.  This
+!  run (3-21G) can be run in a few seconds, making it suitable
+!  for a GAMESS test input, but not for publishable results.
+!
+!  The basis set for polarizabilities should be large, and have
+!  appreciable diffuse character.  Good choices are the Sadlej
+!  basis set named POL, or augmented-cc-pVDZ (GBASIS=ACCD).
+!  The 3-21G run takes 10 seconds on a certain computer, short
+!  enough to be a test case, whereas ACCD takes 1217 seconds.
+!
+!  dAlpha/dx and dBeta/dX are computed by iterative and non-
+!  iterative means, to be sure that they get the same results.
+!
+!  The log file contains the following things, in this order.
+!  Search on the phrase "procedure to xcompute", with no x, for
+!      Iterative procedure to xcompute      Alpha(-0.04; 0.04)
+!      Iterative procedure to xcompute   dAlphadX(-0.04; 0.04)
+!  Non-Iterative procedure to xcompute   dAlphadX(-0.04; 0.04)
+!  Non-Iterative procedure to xcompute         Mu
+!      Iterative procedure to xcompute       Beta(-0.08; 0.04, 0.04)
+!      Iterative procedure to xcompute    dBetadX(-0.08; 0.04, 0.04)
+!      Iterative procedure to xcompute      Alpha( 0.08;-0.08)
+!      Iterative procedure to xcompute       Beta( 0.04;-0.08, 0.04)
+!  Non-Iterative procedure to xcompute    dBetadX(-0.08; 0.04, 0.04)
+!      Iterative procedure to xcompute       Beta( 0.00;-0.04, 0.04)
+!  Non-Iterative procedure to xcompute d2AlphadX2(-0.04; 0.04)
+!      Iterative procedure to xcompute      Gamma( 0.00;-0.08, 0.04,0.04)
+!      Iterative procedure to xcompute   dAlphadX( 0.08;-0.08)
+!  Non-Iterative procedure to xcompute  d2BetadX2(-0.08; 0.04, 0.04)
+!
+!  ==================================================================
+!  A. Table 3 in paper number 1,
+!     O.Quinet, B.Champagne  JCP  115,2481(2002)
+!  can be compared to the results from this run, of:
+!
+!      Alpha tensor [in au]( -0.040000;  0.040000)
+!                   x                y                z
+!        x.        11.502812        -0.000000         0.000000
+!        y.        -0.000000        11.502812        -0.000000
+!        z.         0.000000        -0.000000        11.502811
+!    
+!      Mean       :       11.502812
+!      Anisotropy :        0.000000
+!
+!  as well as
+!
+!        mode    6(3186.7 cm^-1)( -0.040000;  0.040000)
+!                   x                y                z
+!        x.         0.137838        -0.000000        -0.000000
+!        y.        -0.000000         0.137838         0.000000
+!        z.        -0.000000         0.000000         0.137838
+!    
+!      Mean       :        0.137838
+!      Anisotropy :        0.000000
+!    
+!      Raman
+!       Ak=    1.647939 Gk=    0.000002
+!       Intensity=  122.2066
+!       l-depolarization ratio=0.0000
+!       n-depolarization ratio=0.0000
+!
+!  The mean 11.50 is to be compared to 16.09, and the mean 0.138 to
+!  the 0.191 in this table.  The difference is due to the basis set.
+!
+!  Table 6 also in paper 1 can be compared to:
+!     Raman Intensity at Omega =   0.040000
+!         Intensity expressed in [Ang.^4/AMU]
+!      ----------------------------------------------------------------
+!        Freq  |Mult|  Intensity     (%)  |l-depol ratio|n-depol ratio
+!       [cm^-1]|    |                     |             |
+!      ----------------------------------------------------------------
+!        1520.3|  3.|         9.29 (  5.2)|     0.750000|     0.857143
+!        1739.8|  2.|        78.39 ( 44.2)|     0.750000|     0.857143
+!        3186.7|  1.|       122.21 ( 68.8)|     0.000000|     0.000000
+!        3280.0|  3.|       177.56 (100.0)|     0.750000|     0.857143
+!      ----------------------------------------------------------------
+!
+!  aug-cc-pVDZ gives
+!       frequency= 1423.6    1637.6   3152.7   3266.1
+!       Intensity=   0.03      7.78   226.85   160.44
+!  which are much closer to the published POL result.  To run this,
+!  use GBASIS=ACCD, MWORDS=10, ISPHER=1, and x=y=z=0.6289602528 
+!
+!  ==================================================================
+!  B. Table 3 in paper number 2,
+!     O.Quinet, B.Champagne, B.Kirtman   JCC 22, 1920(2001)
+!  can be compared to the results from this run, for d2Alpha/dX2:
+!
+!       dQ(   6)(w=3186.7 cm^-1)dQ(   6)(w=3186.7 cm^-1)( -0.040000;  0.040000)
+!                  x                y                z
+!       x.         0.001616         0.000000        -0.000000
+!       y.         0.000000         0.001616         0.000000
+!       z.        -0.000000        -0.000000         0.001616
+!   
+!     Mean       :        0.001616
+!     Anisotropy :        0.000000
+!
+!  The mean of 0.001616 is to be compared to the table's 0.002132.
+!  The 16.09 for dAlpha/dX was already reported in the 1st paper.
+!
+!  Table 6 in paper 2 cannot be directly compared.  The zero
+!  point value averaged results require a portion of the third
+!  nuclear derivative, E-abb, in addition to the polarizability
+!  derivative tensors computed analytically here.  The paper
+!  obtained third nuclear deriviatives numerically, from E-ab,
+!  with a special code that is not included here.
+!
+!  ==================================================================
+!  C. Table 3 in paper number 3,  (this paper uses 0.042823, not 0.04)
+!     O.Quinet, B.Champagne  JCP  117,2481(2002)
+!  can be compared to the results from this run, of:
+!
+!       mode    6(3186.7 cm^-1)(  -.080000;   .040000,   .040000)
+!                  x                y                z
+!      xx.          .000000          .000000          .000000
+!      xy.          .000000          .000000         -.593060
+!      xz.          .000000         -.593060          .000000
+!      yx.          .000000          .000000         -.593060
+!      yy.          .000000          .000000          .000000
+!      yz.         -.593060          .000000          .000000
+!      zx.          .000000         -.593060          .000000
+!      zy.         -.593060          .000000          .000000
+!      zz.          .000000          .000000          .000000
+!   
+!     x   :         .000000  B(i)=(B(i,j,j)+B(j,i,j)+B(j,j,i))/5
+!     y   :         .000000
+!     z   :         .000000
+!     BAR :         .000000  BAR=B(i)*MU(i)/|MU|
+!   
+!     x   :         .000000  B(i)=(B(i,j,j)+B(j,i,j)+B(j,j,i))/3
+!     y   :         .000000
+!     z   :         .000000
+!     VEC :         .000000  norm of Beta VEC
+!   
+!     hyper-Raman
+!      Biii^2=     .120590 Bijj^2=     .080393 Bijk^2=     .000000
+!      Intensity=  976.5023
+!      l-depolarization ratio= .8000
+!      n-depolarization ratio= .6667
+!
+!  The -0.5930 is to be compared to the Table's -0.3532.  The A,B,C
+!  values are obtained by least squares fitting to several runs,
+!  stepping w from 0.00, 0.02, 0.04, ... 0.10 (see eq. 18 and 19)
+!
+!  Table 6 in the same paper can be compared to:
+!    Hyper Raman Intensity at Omega =   0.040000
+!        Intensity expressed in [Ang.^6 AMU^-1 StatVolt^-2]
+!     ----------------------------------------------------------------
+!       Freq  |Mult|  Intensity     (%)  |n-depol ratio|p-depol ratio
+!      [cm^-1]|    |                     |             |
+!     ----------------------------------------------------------------
+!       1520.3|  3.|       616.32 ( 63.1)|     0.266253|     0.153571
+!       1739.8|  2.|         0.01 (  0.0)|     2.000000|*************
+!       3186.7|  1.|       976.50 (100.0)|     0.800000|     0.666667
+!       3280.0|  3.|       845.50 ( 86.6)|     0.490350|     0.324810
+!     ----------------------------------------------------------------
+!
+!  The 976.50 is to be compared to 346.4 in the published table,
+!  with the large discrepancy due to the small basis set used here.
+!  The aug-cc-pVDZ results are much closer to the table,
+!       frequency= 1423.6    1637.6   3152.7   3266.1
+!       Intensity= 127.94      0.00   413.96  2063.99
+!
+!  ==================================================================
+!  D. Table 3 in paper number 4,
+!     O.Quinet, B.Kirtman, B.Champagne  JCP  118,505(2003)
+!  can be compared to the results from this run, of:
+!
+!       dQ(   6)(w=3186.7 cm^-1)dQ(   6)(w=3186.7 cm^-1)
+!                            (  -.080000;   .040000,   .040000)
+!                  x                y                z
+!      xx.          .000000          .000000          .000000
+!      xy.          .000000          .000000         -.009749
+!      xz.          .000000         -.009749          .000000
+!      yx.          .000000          .000000         -.009749
+!      yy.          .000000          .000000          .000000
+!      yz.         -.009749          .000000          .000000
+!      zx.          .000000         -.009749          .000000
+!      zy.         -.009749          .000000          .000000
+!      zz.          .000000          .000000          .000000
+!   
+!     x   :         .000000  B(i)=(B(i,j,j)+B(j,i,j)+B(j,j,i))/5
+!     y   :         .000000
+!     z   :         .000000
+!     BAR :         .000000  BAR=B(i)*MU(i)/|MU|
+!   
+!     x   :         .000000  B(i)=(B(i,j,j)+B(j,i,j)+B(j,j,i))/3
+!     y   :         .000000
+!     z   :         .000000
+!     VEC :         .000000  norm of Beta VEC
+!
+!   in which the -0.0097 compares to -0.3532.
+!   Again the dispersion coefficients require fitting to multiple
+!   runs which step through w, and the ZPVA results require part
+!   of the third nuclear derivatives, not just the above tensor.
+!
+
+ $contrl scftyp=rhf runtyp=tdhfx nosym=1 ispher=0 $end
+ $system timlim=3 $end
+ $basis  gbasis=n21 ngauss=3 $end
+ $guess  guess=huckel $end
+ $scf    dirscf=.true. conv=1d-6 $end
+ $force  method=analytic  $end
+ $cphf   cphf=AO polar=.false. $end
+ $tdhfx
+   FREQ2
+   DADX 0.04
+   DADX_NI 0.04
+   DBDX 0.04 0.04
+   DBDX_NI 0.04 0.04
+   RAMAN 0.04
+   HRAMAN 0.04
+   D2ADX2_NI 0.04
+   D2BDX2_NI 0.04 0.04
+ $end
+ $data
+methane RHF
+Td
+
+C     6.0   0.0            0.0            0.0
+H     1.0   0.6252197764   0.6252197764   0.6252197764
+ $END

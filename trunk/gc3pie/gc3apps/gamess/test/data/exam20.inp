@@ -1,0 +1,22 @@
+! EXAM 20.
+!  Optimize an orbital exponent.
+!  The SBKJC basis for I consists of 5 gaussians, in a -41
+!  type split.  The exponent of a diffuse L shell for 
+!  iodide ion is optimized (6th exponent overall).  The
+!  optimal exponent turns out to be 0.036713, with a
+!  corresponding FINAL energy of -11.3010023066
+!
+ $CONTRL SCFTYP=RHF RUNTYP=TRUDGE ICHARG=-1 PP=SBKJC $END
+ $SYSTEM TIMLIM=1 $END
+ $TRUDGE OPTMIZ=BASIS NPAR=1 IEX(1)=6 $end
+ $GUESS  GUESS=HUCKEL $END
+ $DATA
+I- ion
+Dnh 2
+
+Iodine 53.0
+   SBKJC
+   L 1
+     1 0.02 1.0
+
+ $END

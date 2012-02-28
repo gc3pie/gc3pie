@@ -1,0 +1,53 @@
+! EXAM06.
+!    1-A-1 CH2    MCSCF methylene geometry optimization.
+!    The two configuration ansatz is the same as used in
+!    the fourth example.
+!
+!    The optimization is done in internal coordinates,
+!    as NZVAR is non-zero.   Since a explicit $ZMAT is
+!    given, these are used for the internal coordinates,
+!    rather than those used to enter the molecule in
+!    the $DATA.  (Careful examination of this trivial
+!    triatomic's input shows that $ZMAT is equivalent
+!    to $DATA in this case.  You would normally give
+!    $ZMAT only if it is somehow different.)
+!
+!    This job tests the MCSCF wavefunction and gradient.
+!
+!    At the initial geometry:
+!    The initial energy is -37.187342653,
+!    the FINAL E= -37.2562020559 after 14 iterations,
+!    the RMS gradient is 0.0196185.
+!
+!    After 4 steps,
+!    FINAL E= -37.2581791690, RMS gradient=0.0000012,
+!    r(CH)=1.1243353, ang(HCH)=98.8170741
+!
+ $CONTRL SCFTYP=MCSCF RUNTYP=OPTIMIZE NZVAR=3 COORD=ZMT $END
+ $SYSTEM TIMLIM=1 $END
+ $BASIS  GBASIS=STO NGAUSS=2 $END
+ $DATA
+Methylene...1-A-1 state...MCSCF/STO-2G
+Cnv  2
+
+C
+H 1 rCH
+H 1 rCH 2 aHOH
+
+rCH=1.09
+aHOH=99.0
+ $END
+ $ZMAT   IZMAT(1)=1,1,2,   1,1,3,   2,2,1,3  $END
+!
+! Normally one starts a MCSCF run with converged SCF
+! orbitals, as Huckel orbitals normally do not converge.
+! Even if they do converge, the extra iterations are
+! very expensive, so use MOREAD for your runs!
+!
+ $GUESS  GUESS=HUCKEL $END
+!
+! two active electrons in two active orbitals.
+! The ground 3-B-1 state is of different symmetry so we
+! need only solve for the lowest A-1 symmetry root.
+!
+ $DET    NCORE=3 NACT=2 NELS=2 ISTSYM=1 NSTATE=1 $END
