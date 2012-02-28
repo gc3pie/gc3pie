@@ -2,7 +2,7 @@
 #
 #   grosetta.py -- Front-end script for submitting ROSETTA jobs to SMSCG.
 #
-#   Copyright (C) 2010, 2011 GC3, University of Zurich
+#   Copyright (C) 2010, 2011, 2012 GC3, University of Zurich
 #
 #   This program is free software: you can redistribute it and/or modify
 #   it under the terms of the GNU General Public License as published by
@@ -73,17 +73,16 @@ Note: the list of INPUT and OUTPUT files must be separated by ':'
 (on the shell command line, put a space before and after).
     """
 
-    usage = "%(prog)s [options] FLAGSFILE INPUT ... [: OUTPUT ...]"
-
     def __init__(self):
         SessionBasedScript.__init__(
             self,
+            usage = "%(prog)s [options] FLAGSFILE INPUT ... [: OUTPUT ...]",
             version = __version__, # module version == script version
             application = RosettaApplication,
             )
 
     def setup_options(self):
-        self.add_param("-P", "--total_decoys", dest="total_decoys", 
+        self.add_param("-P", "--total-decoys", dest="total_decoys", 
                        type=positive_int, default=1,
                        metavar="NUM",
                        help="Compute NUM decoys per input file (default: %(default)s)."
@@ -103,7 +102,7 @@ Note: the list of INPUT and OUTPUT files must be separated by ':'
                        type=str, dest="rosetta_release", default="3.1",
                        metavar="NAME",
                        help="Numerical suffix to identify which version of Rosetta should be requested."
-                       " (example: '-e 20110622' will request rosetta-svn20110622)"
+                       " For example: '-e 20110622' will run rosetta-svn20110622."
                        " (default: %(default)s)"
                        )
 
