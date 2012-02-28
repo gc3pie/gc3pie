@@ -352,8 +352,12 @@ class ArcLrms(LRMS):
                 # ignore the error and return object unchanged
                 return job.state
             else:
-                raise  gc3libs.exceptions.UnknownJob(
-                    "No job found corresponding to the ID '%s'" % job.lrms_jobid)
+                gc3libs.log.error("Could not update job information for the last %s seconds. Consider setting to Unknown state" % self._resource.lost_job_timeout)
+                #raise  gc3libs.exceptions.UnknownJob(
+                #    "No job found corresponding to the ID '%s'" % job.lrms_jobid)
+                job.state = Run.State.UNKNOWN
+                return job.state
+                
         job._arc0_state_last_checked = time.time()
         
         # update status
