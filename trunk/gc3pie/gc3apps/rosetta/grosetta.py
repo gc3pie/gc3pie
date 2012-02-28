@@ -26,6 +26,8 @@ See the output of ``grosetta --help`` for program usage instructions.
 __version__ = 'development version (SVN $Revision$)'
 # summary of user-visible changes
 __changelog__ = """
+  2012-02-28:
+    * Use option ``-R`` to request a specific release of Rosetta.
   2011-03-28:
     * No longer require any input file on the command line: e.g., ``grosetta -l``
       will just list the status of jobs in the current session.  On the other hand,
@@ -98,7 +100,7 @@ Note: the list of INPUT and OUTPUT files must be separated by ':'
                        type=str, default="minirosetta.static",
                        metavar="PROTOCOL",
                        help="Run the specified Rosetta protocol/application; default: %(default)s")
-        self.add_param("-e", "--release",
+        self.add_param("-R", "--release",
                        type=str, dest="rosetta_release", default="3.1",
                        metavar="NAME",
                        help="Numerical suffix to identify which version of Rosetta should be requested."
