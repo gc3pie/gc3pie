@@ -26,16 +26,34 @@ __changelog__ = """
 """
 __docformat__ = 'reStructuredText'
 
-import shutil
+
+#from logging import getLogger
+#log = getLogger('My Logger')
+#log.warn('This is a warning')
+#from logbook.compat import redirect_logging
+#redirect_logging()
+#log.warn('This is a warning')
 
 
-# Calls: 
-# -x /home/benjamin/workspace/fpProj/model/bin/forwardPremiumOut -b ../base/ para.loop  -C 1 -N -X i686
-# 5-x /home/benjamin/workspace/idrisk/bin/idRiskOut -b ../base/ para.loop  -C 1 -N -X i686
-# -x /home/benjamin/workspace/idrisk/model/bin/idRiskOut -b ../base/ para.loop  -C 1 -N
-# Need to set path to linux kernel and apppot, e.g.: export PATH=$PATH:~/workspace/apppot:~/workspace/
+#from logbook.compat import redirect_logging
+#redirect_logging()
+#from logging import getLogger
+#log = getLogger('My Logger')
+##log.warn('This is a warning')
+#print log.handlers
+#log.warn('This is a warning')
+#print 'done'
 
-# Remove all files in curPath if -N option specified. 
+
+#import shutil
+
+## Calls: 
+## -x /home/benjamin/workspace/fpProj/model/bin/forwardPremiumOut -b ../base/ para.loop  -C 1 -N -X i686
+## 5-x /home/benjamin/workspace/idrisk/bin/idRiskOut -b ../base/ para.loop  -C 1 -N -X i686
+## -x /home/benjamin/workspace/idrisk/model/bin/idRiskOut -b ../base/ para.loop  -C 1 -N
+## Need to set path to linux kernel and apppot, e.g.: export PATH=$PATH:~/workspace/apppot:~/workspace/
+
+## Remove all files in curPath if -N option specified. 
 if __name__ == '__main__':    
     import sys
     if '-N' in sys.argv:
@@ -86,7 +104,7 @@ from gc3libs.cmdline import SessionBasedScript, existing_file
 import gc3libs.utils
 import gc3libs.application.apppot
 
-import gc3libs.debug
+#import gc3libs.debug
 
 # import personal libraries
 path2SrcPy = os.path.join(os.path.dirname(__file__), '../srcPy')
@@ -95,9 +113,143 @@ if not sys.path.count(path2SrcPy):
 from plotSimulation import plotSimulation
 
 
+### Temporary evil overloads
+
+def script__init__(self, **kw):
+    """
+temporary overload for _Script.__init__
+    """
+    # use keyword arguments to set additional instance attrs
+    for k,v in kw.items():
+        if k not in ['name', 'description']:
+            setattr(self, k, v)
+    # init and setup pyCLI classes
+    if not kw.has_key('version'):
+        try:
+            kw['version'] = self.version
+        except AttributeError:
+            raise AssertionError("Missing required parameter 'version'.")
+    if not kw.has_key('description'):
+        if self.__doc__ is not None:
+            kw['description'] = self.__doc__
+        else:
+            raise AssertionError("Missing required parameter 'description'.")
+    # allow overriding command-line options in subclasses
+    def argparser_factory(*args, **kwargs):
+        kwargs.setdefault('conflict_handler', 'resolve')
+        kwargs.setdefault('formatter_class',
+                          cli._ext.argparse.RawDescriptionHelpFormatter)
+        return cli.app.CommandLineApp.argparser_factory(*args, **kwargs)
+    self.argparser_factory = argparser_factory
+    # init superclass
+    cli.app.CommandLineApp.__init__(
+        self,
+        # remove the '.py' extension, if any
+        name=os.path.splitext(os.path.basename(sys.argv[0]))[0],
+        reraise = Exception,
+        **kw
+        )
+    # provide some defaults
+    self.verbose_logging_threshold = 0
+
+import gc3libs.cmdline
+gc3libs.cmdline._Script.__init__ = script__init__
+
+
+def post_run(self, returned):
+    """
+    temporary overload for cli.app.Application.post_run
+    """
+    # Interpret the returned value in the same way sys.exit() does.
+    if returned is None:
+        returned = 0
+    elif isinstance(returned, Abort):
+        returned = returned.status
+    elif isinstance(returned, self.reraise):
+        raise
+    else:
+        try:
+            returned = int(returned)
+        except:
+            returned = 1
+        
+    if self.exit_after_main:
+        sys.exit(returned)
+    else:
+        return returned
+import cli.app
+cli.app.Application.post_run = post_run
+
+
+def pre_run(self):
+    """
+        Temporary overload for pre_run method of gc3libs.cmdline._Script. 
+    """
+    import cli # pyCLI
+    import cli.app
+    import cli._ext.argparse as argparse
+    from cli.util import ifelse, ismethodof  
+    import logging
+    ## finish setup
+    self.setup_options()
+    self.setup_args()
+
+    ## parse command-line
+    cli.app.CommandLineApp.pre_run(self)
+
+    ## setup GC3Libs logging
+    loglevel = max(1, logging.ERROR - 10 * max(0, self.params.verbose - self.verbose_logging_threshold))
+    gc3libs.configure_logger(loglevel, self.name)
+    self.log = logging.getLogger('gc3.gc3utils') # alternate: ('gc3.' + self.name)
+    self.log.setLevel(loglevel)
+  
+    self.log.propagate = True
+    self.log.parent.propagate = False
+    # Changed to false since we want to avoid dealing with the root logger and catch the information directly. 
+    
+    from logging import getLogger
+    from logbook.compat import redirect_logging
+    from logbook.compat import RedirectLoggingHandler
+#    redirect_logging() # does the same thing as adding a RedirectLoggingHandler... might as well be explicit
+    self.log.parent.handlers = []
+    self.log.parent.addHandler(RedirectLoggingHandler())
+    print self.log.handlers
+    print self.log.parent.handlers
+    print self.log.root.handlers
+
+    self.log.critical('Successfully overridden gc3pie error handling. ')
+    
+    # interface to the GC3Libs main functionality
+    self._core = self._get_core()
+
+    # call hook methods from derived classes
+    self.parse_args()
+    
+logger = wrapLogger(loggerName = 'ghousing.log', streamVerb = 'INFO', logFile = os.path.join(os.getcwd(), 'ghousing.log'))
+gc3utilsLogger = wrapLogger(loggerName = 'gc3ghousing.log', streamVerb = 'INFO', logFile = os.path.join(os.getcwd(), 'ghousing.log'), 
+                            streamFormat = '{record.time:%Y-%m-%d %H:%M:%S} - {record.channel}: {record.message}', 
+                            fileFormat = '{record.time:%Y-%m-%d %H:%M:%S} - {record.channel}: {record.message}')
+logger.debug('hello')
+
+def dispatch_record(record):
+    """Passes a record on to the handlers on the stack.  This is useful when
+    log records are created programmatically and already have all the
+    information attached and should be dispatched independent of a logger.
+    """
+#    logbook.base._default_dispatcher.call_handlers(record)
+    gc3utilsLogger.call_handlers(record)
+
+import gc3libs.cmdline
+gc3libs.cmdline._Script.pre_run = pre_run
+import logbook
+logbook.dispatch_record = dispatch_record
+
+
 ## custom application class
 
-logger = wrapLogger(loggerName = 'ghousing.log', streamVerb = 'INFO', logFile = os.path.join(os.getcwd(), 'ghousing.log'))
+
+
+
 
 class ghousing(SessionBasedScript, paraLoop):
     """
@@ -154,12 +306,63 @@ Read `.loop` files and execute the `housingOut` program accordingly.
                                                   'housing')
         gc3libs.utils.test_file(self.params.executable, os.R_OK|os.X_OK,
                                 gc3libs.exceptions.InvalidUsage)
-
-
-
+        
+        
+    def run(self):
+        """
+        Execute `cli.app.Application.run`:meth: if any exception is
+        raised, catch it, output an error message and then exit with
+        an appropriate error code.
+        """
+        
+      #  return cli.app.CommandLineApp.run(self)
+        import lockfile     
+        import cli  
+        try:
+            return cli.app.CommandLineApp.run(self)
+        except gc3libs.exceptions.InvalidUsage, ex:
+            # Fatal errors do their own printing, we only add a short usage message
+            sys.stderr.write("Type '%s --help' to get usage help.\n" % self.name)
+            return 64 # EX_USAGE in /usr/include/sysexits.h
+        except KeyboardInterrupt:
+            sys.stderr.write("%s: Exiting upon user request (Ctrl+C)\n" % self.name)
+            return 13
+        except SystemExit, ex:
+            return ex.code
+        # the following exception handlers put their error message
+        # into `msg` and the exit code into `rc`; the closing stanza
+        # tries to log the message and only outputs it to stderr if
+        # this fails
+        except lockfile.Error, ex:
+            exc_info = sys.exc_info()
+            msg = ("Error manipulating the lock file (%s: %s)."
+                   " This likely points to a filesystem error"
+                   " or a stale process holding the lock."
+                   " If you cannot get this command to run after"
+                   " a system reboot, please write to gc3pie@googlegroups.com"
+                   " including any output you got by running '%s -vvvv %s'.")
+            if len(sys.argv) > 0:
+                msg %= (ex.__class__.__name__, str(ex),
+                        self.name, str.join(' ', sys.argv[1:]))
+            else:
+                msg %= (ex.__class__.__name__, str(ex), self.name, '')
+            rc = 1
+        except AssertionError, ex:
+            exc_info = sys.exc_info()
+            msg = ("BUG: %s\n"
+                   "Please send an email to gc3pie@googlegroups.com"
+                   " including any output you got by running '%s -vvvv %s'."
+                   " Thanks for your cooperation!")
+            if len(sys.argv) > 0:
+                msg %= (str(ex), self.name, str.join(' ', sys.argv[1:]))
+            else:
+                msg %= (str(ex), self.name, '')
+            rc = 1        
+        
     def new_tasks(self, extra):
         # setup AppPot parameters
         use_apppot = False
+        bug = use_apppot[0]
         apppot_img = None
         apppot_changes = None
         if self.params.apppot:
