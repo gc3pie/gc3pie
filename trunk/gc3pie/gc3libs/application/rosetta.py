@@ -162,10 +162,11 @@ class RosettaDockingApplication(RosettaApplication):
     Specialized `Application` class for executing a single run of the
     Rosetta "docking_protocol" application.
 
-    Currently used in the `grosetta` app.
+    Currently used in the `gdocking` app.
     """
     def __init__(self, pdb_file_path, native_file_path=None, 
-                 number_of_decoys_to_create=1, flags_file=None, **kw):
+                 number_of_decoys_to_create=1, flags_file=None,
+                 application_release='3.1', **kw):
         pdb_file_name = os.path.basename(pdb_file_path)
         pdb_file_dir = os.path.dirname(pdb_file_path)
         pdb_file_name_sans = os.path.splitext(pdb_file_name)[0]
@@ -181,6 +182,7 @@ class RosettaDockingApplication(RosettaApplication):
         RosettaApplication.__init__(
             self,
             application = 'docking_protocol',
+            application_release = application_release,
             inputs = [
                 pdb_file_path,
                 native_file_path,
