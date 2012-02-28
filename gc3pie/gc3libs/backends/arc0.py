@@ -34,19 +34,21 @@ warnings.simplefilter("ignore")
 # NG's default packages install arclib into /opt/nordugrid/lib/pythonX.Y/site-packages;
 # add this anyway in case users did not set their PYTHONPATH correctly
 import sys
-sys.path.append('/opt/nordugrid/lib/python%d.%d/site-packages' 
-                % sys.version_info[:2])
-# this is where arc0 libraries are installed from release 11.05
-sys.path.append('/usr/lib/pymodules/python%d.%d/'
-                % sys.version_info[:2])
 
-import arclib
 from gc3libs import log, Run
 from gc3libs.backends import LRMS
 import gc3libs.exceptions
 from gc3libs.utils import *
 from gc3libs.Resource import Resource
 
+# this is where arc0 libraries are installed from release 11.05
+sys.path.append('/usr/lib/pymodules/python%d.%d/'
+                % sys.version_info[:2])
+try:
+    import arclib
+except ImportError:
+    gc3libs.log.error('Failed importing required arclib module')
+    raise gc3libs.exceptions.LRMSError("Failed importing required arclib module")
 
 class ArcLrms(LRMS):
     """
