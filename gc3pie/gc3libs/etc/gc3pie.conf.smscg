@@ -87,6 +87,8 @@ vo = life
 #    * name: Resource name
 #    * ncores: Total number of cores provided by the resource
 #    * type: Resource type, one of arc or sge_ssh 
+#    * architecture: A comma separated list of available
+#      architectures. Valid values include `x86_64` and `i686`.
 #
 # arc resources
 # -------------
@@ -106,6 +108,7 @@ max_cores_per_job = 256
 max_memory_per_core = 3
 max_walltime = 9999
 ncores = 1200
+architecture = x86_64, i386
 
 
 # More examples:
@@ -115,12 +118,14 @@ ncores = 1200
 # type = arc
 # auth = smscg
 # frontend = idgc3grid01.uzh.ch
-# arc_ldap = ldap://idgc3grid01.uzh.ch:2135/mds-vo-name=resource,o=grid
+# arc_ldap = ldap://idgc3grid01.uzh.ch:2135/o=grid/mds-vo-name=local
 # max_cores_per_job = 32
 # max_memory_per_core = 2
 # max_walltime = 12
 # ncores = 80
 # walltime = 12
+# architecture = x86_64
+
 
 
 # ssh_sge resources
@@ -169,3 +174,4 @@ ncores = 1200
 # # if you need to lower this
 # sge_accounting_delay = 15
 # walltime = 2
+# architecture = i686
