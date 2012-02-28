@@ -8,7 +8,8 @@ Execution of ``grosetta`` is basically controlled by the "flags" file,
 which must be the first argument.  A list of input files follows, then
 (optionally) a colon and a list of output files.
 
-The ``data/`` directory contains file needed for a sample run::
+The ``data/`` directory contains file needed for a sample run
+(courtesy of Lars Malmstroem)::
 
     grosetta -s TEST_SESSION_NAME -C 120 --total-decoys 5 --decoys-per-job 2 data/flags data/alignment.filt data/boinc_aaquery0* data/query.* data/*.pdb
 
