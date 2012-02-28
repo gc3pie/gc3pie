@@ -1246,7 +1246,7 @@ class SessionBasedScript(_Script):
         rc = 0
         if stats['failed'] > 0:
             rc |= 2
-        if stats[gc3libs.Run.State.RUNNING] > 0 or stats[gc3libs.Run.State.SUBMITTED] > 0:
+        if stats[gc3libs.Run.State.RUNNING] > 0 or stats[gc3libs.Run.State.SUBMITTED] > 0 or stats[gc3libs.Run.State.UNKNOWN]:
             rc |= 4
         if stats[gc3libs.Run.State.NEW] > 0:
             rc |= 8

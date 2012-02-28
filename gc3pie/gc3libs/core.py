@@ -372,8 +372,11 @@ specified in the configuration file.
 
             except gc3libs.exceptions.UnknownJob:
                 # information about the job is lost, mark it as failed
-                app.execution.returncode = (Run.Signals.Lost, -1)
-                app.execution.state = Run.State.TERMINATED
+                # XXX: Alternative bahaviour suggestion:
+                # Never mark an unknown job as failed.
+                # worst case let human or higher level scripts to decide.
+                # app.execution.returncode = (Run.Signals.Lost, -1)
+                # app.execution.state = Run.State.TERMINATED
                 app.changed = True
                 continue
 
@@ -992,7 +995,7 @@ class Engine(object):
             return False
         if Run.State.NEW == state:
             if not contained(task, self._new): self._new.append(task)
-        elif Run.State.SUBMITTED == state or Run.State.RUNNING == state:
+        elif Run.State.SUBMITTED == state or Run.State.RUNNING == state or Run.State.UNKNOWN == state:
             if not contained(task, self._in_flight): self._in_flight.append(task)
         elif Run.State.STOPPED == state:
             if not contained(task, self._stopped): self._stopped.append(task)
@@ -1070,7 +1073,7 @@ class Engine(object):
                     if isinstance(task, Application):
                         currently_submitted += 1
                         currently_in_flight += 1
-                elif state == Run.State.RUNNING:
+                elif state == Run.State.RUNNING or state == Run.State.UNKNOWN:
                     if isinstance(task, Application):
                         currently_in_flight += 1
                 elif state == Run.State.STOPPED:
@@ -1109,7 +1112,7 @@ class Engine(object):
                     if isinstance(task, Application):
                         currently_submitted -= 1
                         currently_in_flight -= 1
-                elif old_state == Run.State.RUNNING:
+                elif old_state == Run.State.RUNNING or old_state == Run.State.UNKNOWN:
                     if isinstance(task, Application):
                         currently_in_flight -= 1
                 self._terminated.append(task)
@@ -1134,7 +1137,7 @@ class Engine(object):
                 if self._store and task.changed:
                     self._store.save(task)
                 state = task.execution.state
-                if state in [Run.State.SUBMITTED, Run.State.RUNNING]:
+                if state in [Run.State.SUBMITTED, Run.State.RUNNING, Run.State.UNKNOWN]:
                     if isinstance(task, Application):
                         currently_in_flight += 1
                         if task.execution.state == Run.State.SUBMITTED:
@@ -1283,7 +1286,8 @@ class Engine(object):
                            + result[Run.State.RUNNING]
                            + result[Run.State.STOPPED]
                            + result[Run.State.TERMINATING]
-                           + result[Run.State.TERMINATED])
+                           + result[Run.State.TERMINATED]
+                           + result[Run.State.UNKNOWN])
         return result
 
             

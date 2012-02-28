@@ -471,6 +471,22 @@ class Task(Struct):
         """
         pass
 
+    def unknown(self):
+        """
+        Called when the job state transitions to `UNKNOWN`, i.e.,
+        the job has not been updated for a certain period of time
+        thus it is placed in UNKNOWN state.
+
+        Two possible ways of changing from this state:
+        1) next update cycle, job status is updated from the remote
+        server
+        2) derive this method for Application specific logic to deal
+        with this case
+
+        The default implementation does nothing, override in derived
+        classes to implement additional behavior.
+        """
+        pass
 
 def configure_logger(level=logging.ERROR,
                      name=None,
