@@ -1,0 +1,30 @@
+! EXAM32.
+!  Test of Coupled-Cluster energy for HNO
+!  The basis set used is 6-31G(d,p), with 35 AOs.
+!  The two chemical core orbitals are not correlated.
+!
+!  RHF FINAL E= -129.7891059395 after 13 iters
+!  Highest level result is E(CR-CCSD(T))= -130.1486914387
+!
+!  Other results are
+!  19 CCSD iterations needed to converge T1 and T2.
+!  E(MBPT(2)) = -130.1278985212, aka MP2 energy
+!  E(CCSD)    = -130.1398314377
+!  E(CCSD(T)) = -130.1508271128
+!  The T1 diagnostic is 0.01448788, and the largest T2
+!  amplitude is for the pi->pi* double, namely -0.146352.
+!  The R-CCSD(T) denominator is 1.126.
+!
+ $contrl scftyp=rhf cctyp=cr-cc runtyp=energy nzvar=3 $end
+ $system timlim=2 $end
+ $guess  guess=huckel $end
+ $basis  gbasis=n31 ngauss=6 ndfunc=1 npfunc=1 $end
+ $zmat   izmat(1)=1,1,2,  1,2,3,  2,1,2,3  $end
+ $data
+HNO...CR-CCSD(T) computation in small DZP basis
+Cs
+
+H 1.0  -0.3153213523   0.9784305023   0.0
+N 7.0   0.0188021294   0.0012704060   0.0
+O 8.0   1.1940439356   0.0007180427   0.0
+ $end

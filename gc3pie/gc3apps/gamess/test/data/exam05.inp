@@ -1,0 +1,38 @@
+! EXAM05
+!    CH2    CI calculation.
+!    The wavefunction is RHF + CI-SD, within the minimal
+!    basis, containing 55 configurations.  Two CI roots
+!    are found, and the gradient of the higher state is
+!    then computed.
+!
+!    Note that CI gradients have several restrictions,
+!    which are further described in the $LAGRAN group.
+!
+!    FINAL energy of RHF = -38.3704885135 after 10 iters.
+!    State 1 EIGENvalue = -38.4270674142, c(1)  = 0.970224
+!    State 2 EIGENvalue = -38.3130036831, c(29) = 0.990865
+!    The upper state's dipole moment is 0.708275 Debye
+!    from the expectation value density, and 0.691104
+!    from the relaxed density (it is well known that CI
+!    does not satisfy the Hellmann-Feynmann theorem).
+!    The upper state has RMS gradient 0.032264079
+!
+ $CONTRL SCFTYP=RHF CITYP=GUGA RUNTYP=GRADIENT $END
+ $SYSTEM TIMLIM=1 $END
+ $BASIS  GBASIS=STO NGAUSS=3 $END
+ $GUESS  GUESS=HUCKEL $END
+!    look at all state symmetries, by using C1 symmetry
+ $CIDRT  GROUP=C1 IEXCIT=2 NFZC=1 NDOC=3 NVAL=3 $END
+!    lowest singlet is 1-A-1, 1st excited singlet is 1-B-1
+ $GUGDIA NSTATE=2 $END
+!    compute properties of the 1-B-1 state
+ $GUGDM  NFLGDM(1)=1,1 IROOT=2 $END
+!    compute gradient of the 1-B-1 state
+ $GUGDM2 WSTATE(1)=0.0,1.0 $END
+ $DATA
+Methylene...CI...STO-3G basis
+Cnv   2
+
+Carbon    6.0
+Hydrogen  1.0      0.0       0.82884        0.7079
+ $END
