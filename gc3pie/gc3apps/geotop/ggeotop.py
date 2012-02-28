@@ -106,7 +106,7 @@ class GeotopApplication(Application):
                     gc3libs.log.error("Failed while removing %s. Type %s. Message %s" % (GEOTOP_INPUT_ARCHIVE, x.__class__, x.message))
                     pass
         
-            tar = tarfile.open(GEOTOP_INPUT_ARCHIVE, "w:gz")
+            tar = tarfile.open(GEOTOP_INPUT_ARCHIVE, "w:gz", dereference=True)
             tar.add('./geotop.inpts')
             tar.add('./in')
             tar.add('./out')
@@ -243,7 +243,6 @@ class GeotopApplication(Application):
         else:
             # should be resubmitted
             # call _scan_and_tar to create new archive
-            # needed to include 'rec' folder retrieved from previous execution
             # XXX: To consider a better way of handling this
             # at the moment the entire input archive is recreated
             gc3libs.log.info("Updating tar archive for resubmission")
