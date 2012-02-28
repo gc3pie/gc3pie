@@ -146,6 +146,9 @@ to the remote system as the command to be executed.
 
         
     def parse_args(self):
+        if self.params.retry is not None:
+            self.stats_only_for = RetryableTask
+
         self.subst = { }
         for define in self.params.define:
             try:
