@@ -2,7 +2,7 @@
 #
 #   gdocking.py -- Front-end script for submitting ROSETTA `docking_protocol` jobs to SMSCG.
 #
-#   Copyright (C) 2010-2011 GC3, University of Zurich
+#   Copyright (C) 2010-2012 GC3, University of Zurich
 #
 #   This program is free software: you can redistribute it and/or modify
 #   it under the terms of the GNU General Public License as published by
@@ -27,6 +27,8 @@ __version__ = 'development version (SVN $Revision$)'
 __author__ = 'Riccardo Murri <riccardo.murri@uzh.ch>'
 # summary of user-visible changes
 __changelog__ = """
+  2012-02-28:
+    * Use option ``-R`` to request a specific release of Rosetta.
   2011-05-06:
     * Workaround for Issue 95: now we have complete interoperability
       with GC3Utils.
@@ -233,6 +235,13 @@ of newly-created jobs so that this limit is never exceeded.
                        " This parameter should be tuned so that the running time"
                        " of a single job does not exceed the maximum wall-clock time."
                        )
+        self.add_param("-R", "--release",
+                       type=str, dest="rosetta_release", default="3.1",
+                       metavar="NAME",
+                       help="Numerical suffix to identify which version of Rosetta should be requested."
+                       " For example: '-e 20110622' will run rosetta-svn20110622."
+                       " (default: %(default)s)"
+                       )
         self.add_param("-T", "--collect", dest="collect", default=False, action="store_true",
                        help="Collect all output PDB and FASC/SC files into a single '.tar' file,"
                        " located in the output directory (see the '-o' option)."
@@ -245,6 +254,7 @@ of newly-created jobs so that this limit is never exceeded.
         self.instances_per_file = self.params.decoys_per_file
         self.instances_per_job = self.params.decoys_per_job
 
+        self.extra['application_release'] = self.params.rosetta_release
         self.extra['number_of_decoys_to_create'] = self.params.decoys_per_job
         self.extra['collect'] = self.params.collect
         self.extra['flags_file'] = os.path.abspath(self.params.flags_file)
