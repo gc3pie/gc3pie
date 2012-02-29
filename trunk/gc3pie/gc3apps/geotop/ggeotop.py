@@ -2,7 +2,7 @@
 #
 #   ggeotop.py -- Front-end script for submitting multiple `GEOtop` jobs to SMSCG.
 #
-#   Copyright (C) 2011 GC3, University of Zurich
+#   Copyright (C) 2011, 2012 GC3, University of Zurich
 #
 #   This program is free software: you can redistribute it and/or modify
 #   it under the terms of the GNU General Public License as published by
@@ -89,8 +89,27 @@ class GeotopApplication(Application):
     """
     Custom class to wrap the execution of the ``GEOtop` program.
 
-    For more information about GEOtop, see <http://www.goetop.org/>
+    For more information about GEOtop, see <http://www.geotop.org/>
     """
+    # From GEOtop's "read me" file:
+    #
+    # RUNNING
+    # Run this simulation by calling the executable (GEOtop_1.223_static) 
+    # and giving the simulation directory as an argument.
+    # 
+    # EXAMPLE
+    # ls2:/group/geotop/sim/tmp/000001>./GEOtop_1.223_static ./
+    # 
+    # TERMINATION OF SIMULATION BY GEOTOP
+    # When GEOtop terminates due to an internal error, it mostly reports this
+    # by writing a corresponding file (_FAILED_RUN or _FAILED_RUN.old) in the
+    # simulation directory. When is terminates sucessfully this file is
+    # named (_SUCCESSFUL_RUN or _SUCCESSFUL_RUN.old).
+    # 
+    # RESTARTING SIMULATIONS THAT WERE TERMINATED BY THE SERVER
+    # When a simulation is started again with the same arguments as described
+    # above (RUNNING), then it continues from the last saving point. If
+    # GEOtop finds a file indicating a successful/failed run, it terminates.
 
     def _scan_and_tar(self, simulation_dir):
         try:
