@@ -27,6 +27,11 @@ __changelog__ = """
 """
 __docformat__ = 'reStructuredText'
 
+
+# Calling syntax one4all: 
+# -b ~/workspace/fpProj/model/base/ -x ~/workspace/fpProj/model/bin/forwardPremiumOut -e ~/workspace/fpProj/empirical/ -C 16 -NP 8 -xVars 'EA sigmaA' -xVarsDom '0.8 0.94 0.004 0.006' -sv info -t one4all --itermax 1 --countryList 'AU DE' -J 1000 -X i686 -r localhost --norm "fpSqr2" --initialPop "" -N
+
+
 # Remove all files in curPath if -N option specified. 
 if __name__ == '__main__':    
     import sys

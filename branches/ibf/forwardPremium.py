@@ -109,6 +109,14 @@ class GPremiumApplication(Application):
                 os.rename(os.path.join(wrong_output_dir, entry), dest_entry)
         # set the exitcode based on postprocessing the main output file
         simulation_out = os.path.join(output_dir, 'simulation.out')
+        # -- clean the output dir from all files but simulation.out --
+        # forwardPremiumOut creates .pol files which are huge. These are deleted if forwardPremiumOut runs through
+        # if it doesn't however this is the dirty way of cleaning out the unnecessary output. 
+        # This issue should be fixed by using log4cpp for output and not couts. 
+        for dirFile in os.listdir(output_dir):
+            if dirFile != simulation_out:
+                os.remove(dirFile)
+        # ------------------------------------ 
         if os.path.exists(simulation_out):
             self.execution.exitcode = 0
 ##            ofile = open(simulation_out, 'r')
