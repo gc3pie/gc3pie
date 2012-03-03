@@ -822,9 +822,20 @@ class Application(Persistable, Task):
 
         self.tags = get_and_remove(kw, 'tags', list())
 
+        jobname = get_and_remove(kw, 'jobname', self.__class__.__name__)
+        # address Issue 250
+        try:
+            # Check whether the first character of a jobname
+            # is an integer. SGE does not allow job names
+            # to start with a number. Add prefix
+            int(str(jobname)[0])
+            jobname = "GC3_%s",jobname
+        except ValueError:
+            pass
+        
         # task setup; creates the `.execution` attribute as well
         Task.__init__(self,
-                      get_and_remove(kw, 'jobname', self.__class__.__name__),
+                      jobname,
                       get_and_remove(kw, 'grid', None))
         
         # any additional param
@@ -1203,11 +1214,8 @@ class Application(Persistable, Task):
                         " but there is no generic way of expressing this requirement in SGE!"
                         " Ignoring request, but this will likely result in malfunctioning later on.", 
                         self.requested_cores)
-        try:
-            if self.jobname:
-                qsub += " -N '%s'" % self.jobname
-        except:
-            pass
+
+        qsub += " -N '%s'" % self.jobname
         return (qsub, self.cmdline(resource))
 
 
