@@ -829,7 +829,7 @@ class Application(Persistable, Task):
             # is an integer. SGE does not allow job names
             # to start with a number. Add prefix
             int(str(jobname)[0])
-            jobname = "GC3_%s",jobname
+            jobname = "GC3_%s" % jobname
         except ValueError:
             pass
         
