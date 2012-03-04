@@ -58,18 +58,37 @@ class costlyOptimization(object):
   def updateInterpolationPoints(self, x, fx):
     self.logger.debug('')
     self.logger.debug('entering updateInterpolationPoints')
+    self.logger.debug('self.x = \n%s'  % self.x)
+    self.logger.debug('self.fx = \n%s' % self.fx)
+    self.logger.debug('x = \n%s' % x)
+    self.logger.debug('fx = \n%s' % fx)
     if self.nUpdates == 0:
-      self.logger.debug('storing initial fx values %s corresponding to inital guess %s' % (fx, self.xInitialGuess))
+      self.logger.debug('check if fx has more than one value: ')
+      self.logger.debug('np.nonzero = %s' % np.nonzero(fx))
+      self.logger.debug('np.nonzero(fx)[0] = %s' % np.nonzero(fx)[0])
+      numFxVals = len(np.nonzero(fx)[0])
+      if not numFxVals > 1:
+        self.logger.debug('numFxVals = %s. Sending back failure code. ' % numFxVals)
+        return 1
+      else: 
+        self.logger.debug('numFxVals = %s. Storing values. ' % numFxVals)
+      self.logger.debug('storing initial fx values %s corresponding to inital guess \n%s' % (fx, self.xInitialGuess))
       ixParaCombo = 0
+      indicesToDelete = []
       for paraCombo,paraComboFx in zip(x, fx):
         # if paraCombo has no paraComboFx return value eliminate it from xInitialGuess
         if not paraComboFx:
-          self.logger.debug('deleting paraCombo = %s because of missing paraComboFx' % paraCombo)
-          np.delete(self.x, ixParaCombo)
+          self.logger.debug('adding paraCombo = %s (element = %s) to indicesToDelete because of missing paraComboFx' % (paraCombo, ixParaCombo))
+          indicesToDelete.append(ixParaCombo)
         else:
           self.fx = np.append(self.fx, paraComboFx)
         ixParaCombo += 1
+      self.logger.debug('self.x before deletion = %s' % self.x)
+      self.logger.debug('indicesToDelete = %s' % indicesToDelete)
+      self.x = np.delete(self.x, indicesToDelete, axis = 0) # axis = 0 is necessary to keep m*n array
+      self.logger.debug('self.x after deletion = %s\n' % self.x)
     else:
+      self.logger.debug('nUpdates > 0.. proceding to append paraCombo')
       for paraCombo,paraComboFx in zip(x, fx):
         if not paraComboFx:
           self.logger.debug('could not evaluate paraCombo = %s because of missing paraComboFx' % paraCombo)
@@ -79,10 +98,8 @@ class costlyOptimization(object):
           self.logger.debug('appending para combo %s' % paraCombo)
           self.x  = np.append(self.x, np.array([paraCombo]), 0)
           self.fx = np.append(self.fx, paraComboFx)
-        elif self.nUpdates > 0:
-          self.logger.critical('x = %s already in self.x = %s' % (x, self.x))
-        else: 
-          pass
+        else:
+          self.logger.critical('CRITICAL: x = %s already in self.x = %s' % (x, self.x))
     normedDistances = self._computeNormedDistance(self.fx)
     sortedIndicesDistances = np.argsort(normedDistances)
     self.sorted_x = self.x[sortedIndicesDistances]
@@ -91,12 +108,18 @@ class costlyOptimization(object):
     bestIndex = np.argmin(self._computeNormedDistance(self.fx))
     self.best_x = self.x[bestIndex]
     self.best_fx  = self.fx[bestIndex]
-    self.logger.debug('done updating interpolation points. x = \n%s, \nfx = \n%s' % (self.x, self.fx))
+    self.logger.debug('done updating interpolation points. self.x = \n%s, \nself.fx = \n%s' % (self.x, self.fx))
     self.logger.debug('best points: best_x = \n%s, \nbest_fx = \n%s' % (self.best_x, self.best_fx))
     nAboveTarget = np.sum(self.sorted_fx - self.target_fx > 0)
     nBelowTarget = np.sum(self.sorted_fx - self.target_fx < 0)
     self.logger.debug('nAboveTarget = %s' % nAboveTarget)
     self.logger.debug('nBelowTarget = %s' % nBelowTarget)
+    if nBelowTarget == 0:
+      self.logger.critical('nBelowTarget is 0. Abandoning para combo. ')
+      return 1
+    if nAboveTarget == 0:
+      self.logger.critical('nAboveTarget is 0. Abandoning para combo. ')
+      return 1
     nAboveTargetInt = np.sum(self.sorted_fx[:self.nIntpoints_max] - self.target_fx > 0)
     nBelowTargetInt = np.sum(self.sorted_fx[:self.nIntpoints_max] - self.target_fx < 0)
     self.logger.debug('nAboveTargetInt = %s' % nAboveTargetInt)
@@ -116,8 +139,11 @@ class costlyOptimization(object):
     self.nUpdates += 1
     if self.nUpdates > 1 and self.makePlots:
       self.plot()
+    self.logger.debug('self.x = \n%s'  % self.x)
+    self.logger.debug('self.fx = \n%s' % self.fx)
     self.logger.debug('done updateInterpolationPoints')
     self.logger.debug('')
+    return 0
     
   def checkConvergence(self):
     self.logger.debug('')
@@ -136,7 +162,10 @@ class costlyOptimization(object):
   def updateApproximation(self):
     self.logger.debug('')
     self.logger.debug('entering updateApproximation')
+    self.logger.debug('self.x = \n%s'  % self.x)
+    self.logger.debug('self.fx = \n%s' % self.fx)
     if len(self.x[0]) == 1: # we are dealing with the one-dimensional case
+      self.logger.debug('self.x[0] == 1')
       xIn = self.sorted_x.copy()
       fIn = self.sorted_fx.copy()
       withinDistance = ( self.sortedNormedDistances[1] / self.sortedNormedDistances ) < 10
@@ -236,7 +265,11 @@ class costlyOptimization(object):
     ax.grid()
     # plot approximation
     xVals = np.linspace(self.plotRange[0], self.plotRange[1], 1.e3)
-    fxVals = self.gx(xVals)
+    try: 
+      fxVals = self.gx(xVals)
+    except: 
+      self.logger.debug('couldnt create plot. self.gx not defined')
+      return
     # plot polynomial
     ax.plot(xVals, fxVals)
     # plot actual values (non standardized)
