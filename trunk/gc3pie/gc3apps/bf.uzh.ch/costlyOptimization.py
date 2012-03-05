@@ -88,6 +88,11 @@ class costlyOptimization(object):
       self.x = np.delete(self.x, indicesToDelete, axis = 0) # axis = 0 is necessary to keep m*n array
       self.logger.debug('self.x after deletion = %s\n' % self.x)
     else:
+      self.logger.debug('check if the only new guess failed. If so terminate to avoid infinite loop')
+      if len(fx) == 1:
+        if not fx[0]:
+          self.logger.debug('Evaluation of new guess at %s failed. Terminating para combo. ' % x)
+          return 1
       self.logger.debug('nUpdates > 0.. proceding to append paraCombo')
       for paraCombo,paraComboFx in zip(x, fx):
         if not paraComboFx:
