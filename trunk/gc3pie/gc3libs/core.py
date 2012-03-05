@@ -2,7 +2,7 @@
 """
 Top-level interface to Grid functionality.
 """
-# Copyright (C) 2009-2011 GC3, University of Zurich. All rights reserved.
+# Copyright (C) 2009-2012 GC3, University of Zurich. All rights reserved.
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
@@ -629,7 +629,7 @@ specified in the configuration file.
 
     def close(self):
         """
-        Used to invoke explicitly the distructor on objects
+        Used to invoke explicitly the destructor on objects
         e.g. LRMS
         """
         for lrms in self._lrms_list:
