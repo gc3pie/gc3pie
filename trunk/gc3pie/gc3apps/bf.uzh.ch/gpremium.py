@@ -3,7 +3,7 @@
 """
 Driver script for running the `forwardPremium` application on SMSCG.
 """
-# Copyright (C) 2011 University of Zurich. All rights reserved.
+# Copyright (C) 2011, 2012 University of Zurich. All rights reserved.
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -73,22 +73,14 @@ from forwardPremium import paraLoop_fp, GPremiumApplication
 # gc3 library imports
 import gc3libs
 from gc3libs import Application, Run, Task
-from gc3libs.cmdline import SessionBasedScript
+from gc3libs.cmdline import SessionBasedScript, executable_file, positive_int
 #from gc3libs.dag import SequentialTaskCollection, ParallelTaskCollection
 import gc3libs.utils
 
 import gc3libs.debug
 
 
-## custom application class
-
-#class GPremiumApplication(Application, GPremiumTaskMods):
-    #"""
-    #Custom application class to wrap the execution of the
-    #`forwardPremiumOut` program by B. Jonen and S. Scheuring.
-    #"""
-
-
+## the main script functionality
 
 class GPremiumScript(SessionBasedScript, paraLoop_fp):
     """
@@ -106,19 +98,20 @@ Read `.loop` files and execute the `forwardPremium` program accordingly.
 
     def setup_options(self):
         self.add_param("-b", "--initial", metavar="DIR",
-                       dest="initial",
+                       dest="initial", type=existing_directory,
                        help="Include directory contents in any job's input."
                        " Use this to specify the initial guess files.")
         self.add_param("-n", "--dry-run",
                        dest = 'dryrun', action="store_true", default = False,
                        help="Take the loop for a test run")
         self.add_param("-x", "--executable", metavar="PATH",
-                       dest="executable", default=os.path.join(
-                           os.getcwd(), "forwardPremiumOut"),
+                       dest="executable", type=executable_file,
+                       default=os.path.join(os.getcwd(), "forwardPremiumOut"),
                        help="Path to the `forwardPremium` executable binary"
                        "(Default: %(default)s)")
         self.add_param("-X", "--architecture", metavar="ARCH",
-                       dest="architecture", default=Run.Arch.X86_64,
+                       dest="architecture",
+                       default=Run.Arch.X86_64, choices=['i686', 'x86_64'],
                        help="Processor architecture required by the executable"
                        " (one of: 'i686' or 'x86_64', without quotes)")
 
