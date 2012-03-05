@@ -160,13 +160,15 @@ def engineProgress(self):
             elif state == Run.State.TERMINATED:
                 transitioned.append(index) # task changed state, mark as to remove
                 self._terminated.append(task)
-        except gc3libs.exceptions.ConfigurationError:
-            # Unrecoverable; no sense in continuing -- pass
-            # immediately on to client code and let it handle
-            # this...
-            raise
+        # except gc3libs.exceptions.ConfigurationError:
+        #     # Unrecoverable; no sense in continuing -- pass
+        #     # immediately on to client code and let it handle
+        #     # this...
+        #     raise
         except: 
+        #     pass
             gc3libs.log.debug('Error in updating task. Raising error. ')
+            raise
     # remove tasks that transitioned to other states
     for index in reversed(transitioned):
         del self._in_flight[index]
