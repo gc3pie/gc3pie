@@ -27,26 +27,6 @@ __changelog__ = """
 __docformat__ = 'reStructuredText'
 
 
-#from logging import getLogger
-#log = getLogger('My Logger')
-#log.warn('This is a warning')
-#from logbook.compat import redirect_logging
-#redirect_logging()
-#log.warn('This is a warning')
-
-
-#from logbook.compat import redirect_logging
-#redirect_logging()
-#from logging import getLogger
-#log = getLogger('My Logger')
-##log.warn('This is a warning')
-#print log.handlers
-#log.warn('This is a warning')
-#print 'done'
-
-
-#import shutil
-
 ## Calls: 
 ## -x /home/benjamin/workspace/fpProj/model/bin/forwardPremiumOut -b ../base/ para.loop  -C 1 -N -X i686
 ## 5-x /home/benjamin/workspace/idrisk/bin/idRiskOut -b ../base/ para.loop  -C 1 -N -X i686
@@ -114,6 +94,231 @@ from plotSimulation import plotSimulation
 
 
 ### Temporary evil overloads
+
+class Error(Exception):
+    pass
+
+class Abort(Error):
+    """Raised when an application exits unexpectedly.
+
+    :class:`Abort` takes a single integer argument indicating the exit status of
+    the application.
+
+    .. versionadded:: 1.0.4
+    """
+
+    def __init__(self, status):
+        self.status = status
+        message = "Application terminated (%s)" % self.status
+        super(Abort, self).__init__(message, self.status)
+
+def engineProgress(self):
+    """
+    Update state of all registered tasks and take appropriate action.
+    Specifically:
+
+      * tasks in `NEW` state are submitted;
+
+      * the state of tasks in `SUBMITTED`, `RUNNING` or `STOPPED` state is updated;
+
+      * when a task reaches `TERMINATING` state, its output is downloaded.
+
+      * tasks in `TERMINATED` status are simply ignored.
+
+    The `max_in_flight` and `max_submitted` limits (if >0) are
+    taken into account when attempting submission of tasks.
+    """
+    # prepare 
+    currently_submitted = 0
+    currently_in_flight = 0
+    if self.max_in_flight > 0:
+        limit_in_flight = self.max_in_flight
+    else:
+        limit_in_flight = utils.PlusInfinity()
+    if self.max_submitted > 0:
+        limit_submitted = self.max_submitted
+    else:
+        limit_submitted = utils.PlusInfinity()
+
+    # update status of SUBMITTED/RUNNING tasks before launching
+    # new ones, otherwise we would be checking the status of
+    # some tasks twice...
+    #gc3libs.log.debug("Engine.progress: updating status of tasks [%s]"
+    #                  % str.join(', ', [str(task) for task in self._in_flight]))
+    transitioned = []
+    for index, task in enumerate(self._in_flight):
+        try:
+            self._core.update_job_state(task)
+            if self._store and task.changed:
+                self._store.save(task)
+            state = task.execution.state
+            if state == Run.State.SUBMITTED:
+                # only real applications need to be counted
+                # against the limit; policy tasks are exempt
+                # (this applies to all similar clause below)
+                if isinstance(task, Application):
+                    currently_submitted += 1
+                    currently_in_flight += 1
+            elif state == Run.State.RUNNING:
+                if isinstance(task, Application):
+                    currently_in_flight += 1
+            elif state == Run.State.STOPPED:
+                transitioned.append(index) # task changed state, mark as to remove
+                self._stopped.append(task)
+            elif state == Run.State.TERMINATING:
+                transitioned.append(index) # task changed state, mark as to remove
+                self._terminating.append(task)
+            elif state == Run.State.TERMINATED:
+                transitioned.append(index) # task changed state, mark as to remove
+                self._terminated.append(task)
+        #except gc3libs.exceptions.ConfigurationError:
+            ## Unrecoverable; no sense in continuing -- pass
+            ## immediately on to client code and let it handle
+            ## this...
+            #raise
+        except: 
+            gc3libs.log.debug('Error in updating task. Raising error. ')
+            raise
+    # remove tasks that transitioned to other states
+    for index in reversed(transitioned):
+        del self._in_flight[index]
+
+    # execute kills and update count of submitted/in-flight tasks
+    #gc3libs.log.debug("Engine.progress: killing tasks [%s]"
+    #                  % str.join(', ', [str(task) for task in self._to_kill]))
+    transitioned = []
+    for index, task in enumerate(self._to_kill):
+        try:
+            old_state = task.execution.state
+            self._core.kill(task)
+            if self._store:
+                self._store.save(task)
+            if old_state == Run.State.SUBMITTED:
+                if isinstance(task, Application):
+                    currently_submitted -= 1
+                    currently_in_flight -= 1
+            elif old_state == Run.State.RUNNING:
+                if isinstance(task, Application):
+                    currently_in_flight -= 1
+            self._terminated.append(task)
+            transitioned.append(index)
+        except Exception, x:
+            gc3libs.log.error("Ignored error in killing task '%s': %s: %s"
+                              % (task, x.__class__.__name__, str(x)),
+                              exc_info=True)
+    # remove tasks that transitioned to other states
+    for index in reversed(transitioned):
+        del self._to_kill[index]
+
+    # update state of STOPPED tasks; again need to make before new
+    # submissions, because it can alter the count of in-flight
+    # tasks.
+    #gc3libs.log.debug("Engine.progress: updating status of stopped tasks [%s]"
+    #                  % str.join(', ', [str(task) for task in self._stopped]))
+    transitioned = []
+    for index, task in enumerate(self._stopped):
+        try:
+            self._core.update_job_state(task)
+            if self._store and task.changed:
+                self._store.save(task)
+            state = task.execution.state
+            if state in [Run.State.SUBMITTED, Run.State.RUNNING]:
+                if isinstance(task, Application):
+                    currently_in_flight += 1
+                    if task.execution.state == Run.State.SUBMITTED:
+                        currently_submitted += 1
+                self._in_flight.append(task)
+                transitioned.append(index) # task changed state, mark as to remove
+            elif state == Run.State.TERMINATING:
+                self._terminating.append(task)
+                transitioned.append(index) # task changed state, mark as to remove
+            elif state == Run.State.TERMINATED:
+                self._terminated.append(task)
+                transitioned.append(index) # task changed state, mark as to remove
+        except Exception, x:
+            gc3libs.log.error("Ignoring error in updating state of STOPPED task '%s': %s: %s"
+                              % (task, x.__class__.__name__, str(x)),
+                              exc_info=True)
+        # except Exception, x:
+        #     gc3libs.log.error("Ignoring error in updating state of STOPPED task '%s': %s: %s"
+        #                       % (task, x.__class__.__name__, str(x)),
+        #                       exc_info=True)
+    # remove tasks that transitioned to other states
+    for index in reversed(transitioned):
+        del self._stopped[index]
+
+    # now try to submit NEW tasks
+    #gc3libs.log.debug("Engine.progress: submitting new tasks [%s]"
+    #                  % str.join(', ', [str(task) for task in self._new]))
+    transitioned = []
+    if self.can_submit:
+        index = 0
+        while (currently_submitted < limit_submitted
+               and currently_in_flight < limit_in_flight
+               and index < len(self._new)):
+            task = self._new[index]
+            # try to submit; go to SUBMITTED if successful, FAILED if not
+            if currently_submitted < limit_submitted and currently_in_flight < limit_in_flight:
+                try:
+                    self._core.submit(task)
+                    if self._store:
+                        self._store.save(task)
+                    self._in_flight.append(task)
+                    transitioned.append(index)
+                    if isinstance(task, Application):
+                        currently_submitted += 1
+                        currently_in_flight += 1
+                except Exception, x:
+  #                  sys.excepthook(*sys.exc_info()) # DEBUG
+                    import traceback
+                    traceback.print_exc()
+                    gc3libs.log.error("Ignored error in submitting task '%s': %s: %s"
+                                      % (task, x.__class__.__name__, str(x)))
+                    task.execution.log("Submission failed: %s: %s" 
+                                       % (x.__class__.__name__, str(x)))
+                    #raise
+                #except Exception:
+                    #gc3libs.log.error("Ignored error in submitting task. BJ addition")
+            index += 1
+    # remove tasks that transitioned to SUBMITTED state
+    for index in reversed(transitioned):
+        del self._new[index]
+
+    # finally, retrieve output of finished tasks
+    #gc3libs.log.debug("Engine.progress: fetching output of tasks [%s]"
+    #                  % str.join(', ', [str(task) for task in self._terminating]))
+    if self.can_retrieve:
+        transitioned = []
+        for index, task in enumerate(self._terminating):
+            # try to get output
+            try:
+                self._core.fetch_output(task)
+            except gc3libs.exceptions.UnrecoverableDataStagingError, ex:
+                gc3libs.log.error("Error in fetching output of task '%s',"
+                                  " will mark it as TERMINATED"
+                                  " (with error exit code %d): %s: %s",
+                                  task, posix.EX_IOERR,
+                                  ex.__class__.__name__, str(ex), exc_info=True)
+                task.execution.returncode = (Run.Signals.DataStagingFailure,
+                                             posix.EX_IOERR)
+                task.execution.state = Run.State.TERMINATED
+                task.changed = True
+            except Exception, x:
+                gc3libs.log.error("Ignored error in fetching output of task '%s': %s: %s" 
+                                  % (task, x.__class__.__name__, str(x)), exc_info=True)
+            if task.execution.state == Run.State.TERMINATED:
+                self._terminated.append(task)
+                self._core.free(task)
+                transitioned.append(index)
+            if self._store and task.changed:
+                self._store.save(task)
+        # remove tasks for which final output has been retrieved
+        for index in reversed(transitioned):
+            del self._terminating[index]
+
+
+import gc3libs.core
+gc3libs.core.Engine.progress = engineProgress
 
 def script__init__(self, **kw):
     """
@@ -229,7 +434,6 @@ logger = wrapLogger(loggerName = 'ghousing.log', streamVerb = 'INFO', logFile = 
 gc3utilsLogger = wrapLogger(loggerName = 'gc3ghousing.log', streamVerb = 'INFO', logFile = os.path.join(os.getcwd(), 'ghousing.log'), 
                             streamFormat = '{record.time:%Y-%m-%d %H:%M:%S} - {record.channel}: {record.message}', 
                             fileFormat = '{record.time:%Y-%m-%d %H:%M:%S} - {record.channel}: {record.message}')
-logger.debug('hello')
 
 def dispatch_record(record):
     """Passes a record on to the handlers on the stack.  This is useful when
@@ -319,7 +523,7 @@ Read `.loop` files and execute the `housingOut` program accordingly.
         import lockfile     
         import cli  
         try:
-            return cli.app.CommandLineApp.run(self)
+            return cli.app.CommandLineApp.run(self)           
         except gc3libs.exceptions.InvalidUsage, ex:
             # Fatal errors do their own printing, we only add a short usage message
             sys.stderr.write("Type '%s --help' to get usage help.\n" % self.name)
@@ -357,12 +561,14 @@ Read `.loop` files and execute the `housingOut` program accordingly.
                 msg %= (str(ex), self.name, str.join(' ', sys.argv[1:]))
             else:
                 msg %= (str(ex), self.name, '')
-            rc = 1        
+            rc = 1      
+        except NotImplementedError, nE:
+            pass
         
     def new_tasks(self, extra):
         # setup AppPot parameters
         use_apppot = False
-        bug = use_apppot[0]
+        #bug = use_apppot[0]
         apppot_img = None
         apppot_changes = None
         if self.params.apppot:
@@ -533,14 +739,27 @@ def combineRunningTimes():
         print >> f, '%s = %f12.1' % (key, runTimes[key])
     f.flush()
     f.close()
+    
+def getDateTimeStr():
+    import datetime
+    cDate = datetime.date.today()
+    cTime = datetime.datetime.time(datetime.datetime.now())
+    dateString = '%04d-%02d-%02d-%02d-%02d-%02d' % (cDate.year, cDate.month, cDate.day, cTime.hour, cTime.minute, cTime.second)
+    return dateString
 
 
 ## run scriptfg
 
 
 if __name__ == '__main__':
-    logger.info('Starting: \n%s' % ' '.join(sys.argv))
+    #logger.info('Starting: \n%s' % ' '.join(sys.argv))
+    logger.info('\n%s - Starting: \n%s' % (getDateTimeStr(), ' '.join(sys.argv)))
+    os.system('cat ghousing.log')
+    #os._exit(1)
     ghousing().run()
+    #from guppy import hpy
+    #h = hpy()
+    #print h.heap()     
     # create overview plots across parameter combinations
     try:
         combinedThresholdPlot()
