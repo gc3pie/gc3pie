@@ -231,12 +231,8 @@ class _Script(cli.app.CommandLineApp):
             return cli.app.CommandLineApp.argparser_factory(*args, **kwargs)
         self.argparser_factory = argparser_factory
         # init superclass
-        cli.app.CommandLineApp.__init__(
-            self,
-            # remove the '.py' extension, if any
-            name=os.path.splitext(os.path.basename(sys.argv[0]))[0],
-            **kw
-            )
+        kw.setdefault('name', os.path.splitext(os.path.basename(sys.argv[0]))[0])
+        cli.app.CommandLineApp.__init__(self, **kw)
         # provide some defaults
         self.verbose_logging_threshold = 0
         
