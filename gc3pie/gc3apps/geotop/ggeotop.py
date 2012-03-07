@@ -222,6 +222,7 @@ class GeotopApplication(Application):
             os.path.basename(self.executable),
             self.stdout,
             self.stderr,
+            GEOTOP_OUTPUT_ARCHIVE,
             ]
 
         # move files one level up, except the ones listed in `exclude`
@@ -254,9 +255,9 @@ class GeotopApplication(Application):
         shutil.rmtree(tmp_output_dir, ignore_errors=True)
 
         # search for termination files
-        if os.path.isfile(os.path.join(self.simulation_dir,'_SUCCESSFUL_RUN')) or os.path.isfile(os.path.join(self.simulation_dir,'_SUCCESSFUL_RUN.old')):
+        if os.path.isfile(os.path.join(self.simulation_dir, 'out', '_SUCCESSFUL_RUN')) or os.path.isfile(os.path.join(self.simulation_dir,'out', '_SUCCESSFUL_RUN.old')):
             self.execution.returncode = (0, posix.EX_OK)
-        elif os.path.isfile(os.path.join(self.simulation_dir,'_FAILED_RUN')) or os.path.isfile(os.path.join(self.simulation_dir,'_FAILED_RUN.old')):
+        elif os.path.isfile(os.path.join(self.simulation_dir, 'out', '_FAILED_RUN')) or os.path.isfile(os.path.join(self.simulation_dir, 'out', '_FAILED_RUN.old')):
             # use exit code 100 to indicate total failure
             self.execution.returncode = (0, 100)
         else:
@@ -334,9 +335,9 @@ newly-created jobs so that this limit is never exceeded.
                        dest="executable", default=None,
                        help="Path to the GEOtop executable file.")
 
-        # change default for the "-o"/"--output" option
-        #self.actions['output'].default = 'NPOPSIZE/PARAMS/ITERATION'
-
+        self.add_param("-q", "--summary", metavar="TIME", dest="summary_period",
+                       default=1800,
+                       help="Creates a summary of the current execution.")
 
     def parse_args(self):
         """
@@ -355,11 +356,11 @@ newly-created jobs so that this limit is never exceeded.
 
 
     def new_tasks(self, extra):
-        input_files = self._search_for_input_files(self.params.args, 'geotop.inpts')
+        # input_files = self._search_for_input_files(self.params.args, 'geotop.inpts')
 
         # the real input to GEOtop are the directories containing `geotop.inpts`
         # as well as 'in' and 'out' fodlers
-        for path in self._validate_input_folder(input_files):
+        for path in self._validate_input_folders(self.params.args):
             # construct GEOtop job
             yield (
                 # job name
@@ -375,33 +376,69 @@ newly-created jobs so that this limit is never exceeded.
                 extra.copy()
                 )
 
-    def _validate_input_folder(self, inputfiles):
-        """
-        Checks if, provided a valida input filename of type
-        'geotop.inpts', the corresponding folder contains the required
-        additional files and folders:
+    # def _validate_input_folder(self, inputfiles):
+    #     """
+    #     Checks if, provided a valida input filename of type
+    #     'geotop.inpts', the corresponding folder contains the required
+    #     additional files and folders:
 
-        ./out/
-        ./in/
-        ./geotop.inpts
+    #     ./out/
+    #     ./in/
+    #     ./geotop.inpts
 
-        /tmp folders are excluded
+    #     /tmp folders are excluded
 
-        @input: list of filenamens
-        @output: iterator of 'valid' input_dirs
+    #     discard those folder containing _SUCCESSFULL_RUN
+    #     or _FAILED_RUN
+
+    #     @input: list of filenamens
+    #     @output: iterator of 'valid' input_dirs
         
-        """
+    #     """
 
-        for input_filename in inputfiles:
-            # extract folder name from input_filename
-            dirname = os.path.dirname(input_filename)
-            if os.path.isdir(os.path.join(dirname,"in")) and \
-                   os.path.isdir(os.path.join(dirname,"out")) and \
-                   not dirname.endswith("/tmp") and \
-                   not dirname.endswith("~"):
-                yield dirname
+    #     for input_filename in inputfiles:
+    #         # extract folder name from input_filename
+    #         dirname = os.path.dirname(input_filename)
+    #         if os.path.isdir(os.path.join(dirname,"in")) and \
+    #                os.path.isdir(os.path.join(dirname,"out")) and \
+    #                not dirname.endswith("/tmp") and \
+    #                not dirname.endswith("~") and \
+    #                not os.path.isfile(os.path.join(dirname, 'out', '_SUCCESSFUL_RUN')) and \
+    #                not os.path.isfile(os.path.join(dirname, 'out', '_FAILED_RUN')):
+    #             yield dirname
+    #         else:
+    #             gc3libs.log.warning("validate_input_folder skipping '%s'" %  dirname)
+
+
+
+
+    def _validate_input_folders(self, paths):
+        """
+        Recursively scan each location in list `paths` for files
+        matching a glob pattern, and return the set of path names to
+        such files.
+
+        By default, the value of `self.input_filename_pattern` is used
+        as the glob pattern to match file names against, but this can
+        be overridden by specifying an explicit argument `pattern`.
+        """
+        for path in paths:
+            self.log.debug("Now processing input path '%s' ..." % path)
+            if os.path.isdir(path):
+                # recursively scan for input files
+                for dirpath, dirnames, filenames in os.walk(path):
+                    if "geotop.inpts" in filenames and  \
+                       "in" in dirnames and \
+                       "out" in dirnames and \
+                       not dirpath.endswith("/tmp") and \
+                       not dirpath.endswith("~") and \
+                       not os.path.isfile(os.path.join(dirpath, 'out', '_SUCCESSFUL_RUN')) and \
+                       not os.path.isfile(os.path.join(dirpath, 'out', '_FAILED_RUN')):
+                        yield dirpath
+                    else:
+                        gc3libs.log.warning("validate_input_folder rejects '%s'" %  dirpath)
             else:
-                gc3libs.log.warning("validate_input_folder skipping '%s'" %  dirname)
+                gc3libs.log.warning("validate_input_folder rejects '%s'. Not a folder." %  path)
 
 # run it
 if __name__ == '__main__':
