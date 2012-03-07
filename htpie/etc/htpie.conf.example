@@ -1,6 +1,0 @@
-[SETTINGS]
-database_user=mark
-database_name=engine
-database_uri=127.0.0.1
-database_port=27017
-verbosity=10
