@@ -232,6 +232,7 @@ class _Script(cli.app.CommandLineApp):
         self.argparser_factory = argparser_factory
         # init superclass
         kw.setdefault('name', os.path.splitext(os.path.basename(sys.argv[0]))[0])
+        kw.setdefault('reraise', Exception)
         cli.app.CommandLineApp.__init__(self, **kw)
         # provide some defaults
         self.verbose_logging_threshold = 0
