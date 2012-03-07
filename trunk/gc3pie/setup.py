@@ -102,7 +102,7 @@ setuptools.setup(
         # texttable -- format tabular text output
         'texttable',
         # pyCLI -- object-oriented command-line app programming
-        'pyCLI==2.0.2',
+        'pyCLI>=2.0.3',
         # Unum -- define and manipulate quantities with units attached
         #'Unum',
         ],
