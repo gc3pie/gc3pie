@@ -135,7 +135,7 @@ explanation of the syntax to use in configuration files.
 An example configuration file, enabling access to the [http://www.smscg.ch SMSCG]
 infrastructure can be found at:
 
-     http://gc3pie.googlecode.com/svn/branches/1.0/gc3pie/gc3libs/etc/gc3pie.conf.smscg
+     http://gc3pie.googlecode.com/svn/trunk/gc3pie/gc3libs/etc/gc3pie.conf.smscg
 
 Before you can actually use this file, you will need to insert into it
 three values, for which we can provide no default: `aai_username`,
@@ -198,7 +198,7 @@ watch out for the `Revision:` line.
 HTML documentation for the GC3Libs programming interface can be
 read online at:
      
-  http://gc3pie.googlecode.com/svn/branches/1.0/docs/html/index.html
+  http://gc3pie.googlecode.com/svn/trunk/docs/html/index.html
 
 Or you can generate a local copy from the sources:
 {{{
