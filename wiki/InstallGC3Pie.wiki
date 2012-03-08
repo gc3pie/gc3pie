@@ -198,7 +198,7 @@ watch out for the `Revision:` line.
 HTML documentation for the GC3Libs programming interface can be
 read online at:
      
-  http://gc3pie.googlecode.com/svn/trunk/docs/html/index.html
+  http://gc3pie.googlecode.com/svn/trunk/gc3pie/docs/html/index.html
 
 Or you can generate a local copy from the sources:
 {{{
