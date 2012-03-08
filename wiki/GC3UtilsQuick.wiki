@@ -1,4 +1,5 @@
 #summary GC3Utils by example
+#labels Deprecated
 
 = Examples =
 
