@@ -10,11 +10,5 @@
     ** [http://gc3pie.googlecode.com/svn/trunk/gc3pie/docs/html/index.html development version (trunk)]
     ** [http://gc3pie.googlecode.com/svn/trunk/gc3pie/docs/html/index.html stable release (1.0)]
   * [SlidesEtc Presentations, slides, etc.]
-  * [GC3Apps]
-    ** [grundb]
-    ** [ggamess]
-    ** [gdocking]
-    ** [grosetta]
-    ** [gcodeml]
 
 [http://code.google.com/p/gc3pie/w/list Full list of GC3Pie wiki pages]
