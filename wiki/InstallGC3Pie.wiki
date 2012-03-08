@@ -93,7 +93,7 @@ directory you chose in Step 1.:
 
 4. Check-out the `gc3pie` files in a `src/` directory::
 {{{     
-   svn co http://gc3pie.googlecode.com/svn/branches/1.0/gc3pie src
+   svn co http://gc3pie.googlecode.com/svn/trunk/gc3pie src
 }}}
   
 
