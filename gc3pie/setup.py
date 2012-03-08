@@ -10,20 +10,20 @@ use_setuptools()
 # subsequent invocations of it (when the `distribute-*.egg` file is
 # already there run fine, apparently.  So, let us re-exec ourselves
 # to ensure that `distribute` is loaded properly.
-REINVOKE = "__SETUP_REINVOKE"
-import sys
-import os
-if not os.environ.has_key(REINVOKE):
-    # mutating os.environ doesn't work in old Pythons
-    os.putenv(REINVOKE, "1")
-    try:
-        os.execvp(sys.executable, [sys.executable] + sys.argv)
-    except OSError, x:
-        sys.stderr.write("Failed to re-exec '%s' (got error '%s');"
-                         " continuing anyway, keep fingers crossed.\n"
-                         % (str.join(' ', sys.argv), str(x)))
-if hasattr(os, "unsetenv"):
-    os.unsetenv(REINVOKE)
+#REINVOKE = "__SETUP_REINVOKE"
+# import sys
+# import os
+# if not os.environ.has_key(REINVOKE):
+#     # mutating os.environ doesn't work in old Pythons
+#     os.putenv(REINVOKE, "1")
+#     try:
+#         os.execvp(sys.executable, [sys.executable] + sys.argv)
+#     except OSError, x:
+#         sys.stderr.write("Failed to re-exec '%s' (got error '%s');"
+#                          " continuing anyway, keep fingers crossed.\n"
+#                          % (str.join(' ', sys.argv), str(x)))
+# if hasattr(os, "unsetenv"):
+#     os.unsetenv(REINVOKE)
 
 
 def read_whole_file(path):
