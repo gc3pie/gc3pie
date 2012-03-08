@@ -3,7 +3,6 @@
 [http://gc3pie.googlecode.com/ GC3Pie home page]
   * [GC3Utils GC3Utils]
     ** [GC3Utils A GC3Utils primer]
-    ** [GC3UtilsQuick Quick Reference]
     ** [InstallGC3Pie Installation instructions]
     ** [ConfigurationFile Configuration]
     ** [TroubleShooting Troubleshooting known issues]    
