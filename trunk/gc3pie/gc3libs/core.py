@@ -40,6 +40,7 @@ import gc3libs
 import gc3libs.debug
 from gc3libs import Application, Run, Task
 from gc3libs.backends.sge import SgeLrms
+from gc3libs.backends.pbs import PbsLrms
 from gc3libs.backends.lsf import LsfLrms
 from gc3libs.backends.subprocess import SubprocessLrms
 from gc3libs.authentication import Auth
@@ -673,6 +674,8 @@ specified in the configuration file.
                         _lrms = Arc1Lrms(_resource, self.auths)
                     elif _resource.type == gc3libs.Default.SGE_LRMS:
                         _lrms = SgeLrms(_resource, self.auths)
+                    elif _resource.type == gc3libs.Default.PBS_LRMS:
+                        _lrms = PbsLrms(_resource, self.auths)
                     elif _resource.type == gc3libs.Default.LSF_LRMS:
                         _lrms = LsfLrms(_resource, self.auths)
                     elif _resource.type == gc3libs.Default.SUBPROCESS_LRMS:
@@ -741,6 +744,7 @@ def get_resources(resources_list):
             gc3libs.Default.ARC0_LRMS,
             gc3libs.Default.ARC1_LRMS,
             gc3libs.Default.SGE_LRMS,
+            gc3libs.Default.PBS_LRMS,
             gc3libs.Default.LSF_LRMS,
             gc3libs.Default.SUBPROCESS_LRMS,
             ]:

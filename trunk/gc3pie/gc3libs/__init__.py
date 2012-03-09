@@ -82,6 +82,7 @@ class Default(object):
     ARC_JOBLIST_LOCATION = os.path.expandvars("$HOME/.arc/jobs.xml")
     
     SGE_LRMS = 'sge'
+    PBS_LRMS = 'pbs'
     LSF_LRMS = 'lsf'
     SUBPROCESS_LRMS = 'subprocess'
 
@@ -1274,7 +1275,36 @@ class Application(Persistable, Task):
             pass
         return (bsub, self.cmdline(resource))
 
-
+    def pbs_qsub(self, resource, _suppress_warning=False, **kw):
+        """
+        Similar to ``qsub()`` but will work with a PBS/Torque resource
+        manager
+        """
+        qsub = ['qsub']
+        if self.requested_walltime:
+            qsub.append('-l walltime=%s' % (3600 * self.requested_walltime))
+        if self.requested_memory:
+            qsub.append('-l mem=%dgb' % self.requested_memory)
+        if self.stdin:
+            # `self.stdin` is the full pathname on the GC3Pie client host;
+            # it is copied to its basename on the execution host
+            qsub.append('< %s' % os.path.basename(self.stdin))
+        if self.stderr:
+            # from the qsub(1) man page: "If both the -j y and the -e
+            # options are present, Grid Engine sets but ignores the
+            # error-path attribute."
+            qsub.append('-e %s' % self.stderr)
+        if self.stdout:
+            # from the qsub(1) man page: "If both the -j y and the -e
+            # options are present, Grid Engine sets but ignores the
+            # error-path attribute."
+            qsub.append('-o %s' % self.stdout)
+        if self.requested_cores > 1:
+            qsub.append('-l nodes=%d' % self.requested_cores)
+            
+        qsub.append('-N "%s"' % self.jobname)
+        return (" ".join(qsub), self.cmdline(resource))
+            
     # Operation error handlers; called when transition from one state
     # to another fails.  The names are formed by suffixing the
     # corresponding `Core` method (operation) with ``_error``.
