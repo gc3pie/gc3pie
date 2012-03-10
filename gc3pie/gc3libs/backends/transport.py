@@ -482,8 +482,7 @@ class LocalTransport(Transport):
             " on `Transport` instance closed / not yet open"
 
         try:
-            subprocess_command = shlex.split(command)
-            _process = subprocess.Popen(subprocess_command, close_fds=True, stdout=subprocess.PIPE)
+            _process = subprocess.Popen(command, close_fds=True, stdout=subprocess.PIPE, shell=True)
             return _process.pid
         except Exception, ex:
             raise gc3libs.exceptions.TransportError("Failed executing command '%s': %s: %s" 
@@ -503,8 +502,7 @@ class LocalTransport(Transport):
             " on `Transport` instance closed / not yet open"
 
         try:
-            subprocess_command = shlex.split(command)
-            self._process = subprocess.Popen(subprocess_command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, close_fds=True)
+            self._process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, close_fds=True, shell=True)
 
             exitcode = self._process.wait()
 
