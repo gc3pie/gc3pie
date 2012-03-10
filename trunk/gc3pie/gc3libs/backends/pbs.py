@@ -710,7 +710,7 @@ class PbsLrms(LRMS):
 
             username = self._ssh_username
             log.debug("Running `qstat -a`...")
-            _command = "qstat "
+            _command = "qstat -a"
             exit_code, qstat_stdout, stderr = self.transport.execute_command(_command)
 
             # self.transport.close()
