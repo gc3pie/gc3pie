@@ -84,6 +84,7 @@ class Default(object):
     SGE_LRMS = 'sge'
     PBS_LRMS = 'pbs'
     LSF_LRMS = 'lsf'
+    SHELLCMD_LRMS = 'shellcmd'
     SUBPROCESS_LRMS = 'subprocess'
 
     # Transport information
