@@ -292,7 +292,7 @@ class UrlKeyDict(dict):
 
        >>> d = UrlKeyDict()
        >>> d['/tmp/foo'] = 1
-       >>> for k in d.keys(): print (type(k), k.path) # doctest: +ELLIPSIS
+       >>> for k in d.keys(): print (type(k), k.path) # doctest:+ELLIPSIS
        (<class '....Url'>, '/tmp/foo')
 
     Retrieving the value associated with a key works with both the
@@ -326,10 +326,11 @@ class UrlKeyDict(dict):
     Differently from `dict`, initialization from keyword arguments
     alone is *not* supported:
 
-        >>> d3 = UrlKeyDict(foo='foo', bar='bar')
+        >>> d3 = UrlKeyDict(foo='foo', bar='bar') # doctest: +ELLIPSIS
         Traceback (most recent call last):
             ...
-        TypeError: __init__() got an unexpected keyword argument 'foo'    
+        TypeError: __init__() got an unexpected keyword argument 'foo'
+
 
     An empty `UrlKeyDict` instance is returned by the constructor
     when called with no parameters::
