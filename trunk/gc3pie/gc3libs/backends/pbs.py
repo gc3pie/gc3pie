@@ -42,158 +42,6 @@ from gc3libs.utils import same_docstring_as
 import transport
 
 
-def _int_floor(s):
-    return int(float(s))
-
-# `_convert` is a `dict` instance, mapping key names to functions
-# that parse a value from a string into a Python native type.
-_convert = {
-    'slots':         int,
-    'slots_used':    int,
-    'slots_resv':    int,
-    'slots_total':   int,
-    'load_avg':      float,
-    'load_short':    float,
-    'load_medium':   float,
-    'load_long':     float,
-    'np_load_avg':   float,
-    'np_load_short': float,
-    'np_load_medium':float,
-    'np_load_long':  float,
-    'num_proc':      _int_floor, # PBS/Torque considers `num_proc` a floating-point value...
-    'swap_free':     utils.to_bytes,
-    'swap_total':    utils.to_bytes,
-    'swap_used':     utils.to_bytes,
-    'mem_free':      utils.to_bytes,
-    'mem_used':      utils.to_bytes,
-    'mem_total':     utils.to_bytes,
-    'virtual_free':  utils.to_bytes,
-    'virtual_used':  utils.to_bytes,
-    'virtual_total': utils.to_bytes,
-}
-def _parse_value(key, value):
-    try:
-        return _convert[key](value)
-    except:
-        return value
-
-
-def parse_qstat_f(qstat_output):
-    """
-    Parse PBS/Torque's ``qstat -f`` output (as contained in string `qstat_output`)
-    and return a `dict` instance, mapping each queue name to its attributes.
-    """
-    # a job report line starts with a numeric job ID
-    _job_line_re = re.compile(r'^[0-9]+ \s+', re.X)
-    # queue report header line starts with queuename@hostname 
-    _queue_header_re = re.compile(r'^([a-z0-9\._-]+)@([a-z0-9\.-]+) \s+ ([BIPCTN]+) \s+ ([0-9]+)?/?([0-9]+)/([0-9]+)', 
-                                  re.I|re.X)
-    # property lines always have the form 'xx:propname=value'
-    _property_line_re = re.compile(r'^[a-z]{2}:([a-z_]+)=(.+)', re.I|re.X)
-    def dzdict():
-        def zdict():
-            return defaultdict(lambda: 0)
-        return defaultdict(zdict)
-    result = defaultdict(dzdict)
-    qname = None
-    for line in qstat_output.split('\n'):
-        # strip leading and trailing whitespace
-        line = line.strip()
-        # is this a queue header?
-        match = _queue_header_re.match(line)
-        if match:
-            qname, hostname, kind, slots_resv, slots_used, slots_total = match.groups()
-            if 'B' not in kind:
-                continue # ignore non-batch queues
-            # Some versions of PBS/Torque do not have a "reserved" digit in the slots column, so
-            # slots_resv will be set to None.  For our purposes it is better that it is 0.
-            if slots_resv is None:
-                slots_resv = 0
-            # key names are taken from 'qstat -xml' output
-            result[qname][hostname]['slots_resv'] = _parse_value('slots_resv', slots_resv)
-            result[qname][hostname]['slots_used'] = _parse_value('slots_used', slots_used)
-            result[qname][hostname]['slots_total'] = _parse_value('slots_total', slots_total)
-        # is this a property line?
-        match = _property_line_re.match(line)
-        if match:
-            key, value = match.groups()
-            result[qname][hostname][key] = _parse_value(key, value)
-    return result
-
-
-def compute_nr_of_slots(qstat_output):
-    """
-    Compute the number of total, free, and used/reserved slots from
-    the output of PBS/Torque's ``qstat -f``.
-
-    Return a dictionary instance, mapping each host name into a
-    dictionary instance, mapping the strings ``total``, ``available``,
-    and ``unavailable`` to (respectively) the the total number of
-    slots on the host, the number of free slots on the host, and the
-    number of used+reserved slots on the host.
-
-    Cluster-wide totals are associated with key ``global``.
-
-    **Note:** The 'available slots' computation carried out by this
-    function is unreliable: there is indeed no notion of a 'global' or
-    even 'per-host' number of 'free' slots in PBS/Torque.  Slot numbers can
-    be computed per-queue, but a host can belong in different queues
-    at the same time; therefore the number of 'free' slots available
-    to a job actually depends on the queue it is submitted to.  Since
-    PBS/Torque does not force users to submit explicitly to a queue, rather
-    encourages use of a sort of 'implicit' routing queue, there is no
-    way to compute the number of free slots, as this entirely depends
-    on how local policies will map a job to the available queues.
-    """
-    qstat = parse_qstat_f(qstat_output)
-    def zero_initializer():
-        return 0
-    def dict_with_zero_initializer():
-        return defaultdict(zero_initializer)
-    result = defaultdict(dict_with_zero_initializer)
-    for q in qstat.iterkeys():
-        for host in qstat[q].iterkeys():
-            r = result[host]
-            s = qstat[q][host]
-            r['total'] = max(s['slots_total'], r['total'])
-            r['unavailable'] = max(s['slots_used'] + s['slots_resv'], 
-                                   r['unavailable'])
-    # compute available slots by subtracting the number of used+reserved from the total
-    g = result['global']
-    for host in result.iterkeys():
-        r = result[host]
-        r['available'] = r['total'] - r['unavailable']
-        # update cluster-wide ('global') totals
-        g['total'] += r['total']
-        g['unavailable'] += r['unavailable']
-        g['available'] += r['available']
-    return result
-
-
-def parse_qhost_f(qhost_output):
-    """
-    Parse PBS/Torque's ``qhost -f`` output (as contained in string `qhost_output`)
-    and return a `dict` instance, mapping each host name to its attributes.
-    """
-    result = defaultdict(dict)
-    n = 0
-    for line in qhost_output.split('\n'):
-        # skip header lines
-        n += 1
-        if n < 3:
-            continue
-        # property lines start with TAB
-        if line.startswith(' '):
-            key, value = line.split('=')
-            ignored, key = key.split(':')
-            result[hostname][key] = _parse_value(key, value)
-        # host lines begin at column 0
-        else:
-            hostname = line.split(' ')[0]
-    return result
-    
-
-
 def count_jobs(qstat_output, whoami):
     """
     Parse PBS/Torque's ``qstat`` output (as contained in string `qstat_output`)
@@ -244,15 +92,6 @@ def get_qsub_jobid(qsub_output):
     raise gc3libs.exceptions.InternalError("Could not extract jobid from qsub output '%s'" 
                         % qsub_output.rstrip())
 
-
-def _job_info_normalize(self, job):
-    if job.haskey('used_cputime'):
-        # convert from string to int. Also convert from float representation to int
-        job.used_cputime =  int(job.used_cputime.split('.')[0])
-
-    if job.haskey('used_memory'):
-        # store used memory in MiB
-        job.used_memory = utils.to_bytes(mem + 'B') / 1024
 
 
 # FIXME: I think this function is completely wrong and only exists to
@@ -320,7 +159,7 @@ class PbsLrms(LRMS):
         """
         # XXX: should these be `InternalError` instead?
         assert resource.type == gc3libs.Default.PBS_LRMS, \
-            "PbsLRMS.__init__(): Failed. Resource type expected 'sge'. Received '%s'" \
+            "PbsLRMS.__init__(): Failed. Resource type expected 'pbs'. Received '%s'" \
             % resource.type
 
         # checking mandatory resource attributes
@@ -331,7 +170,6 @@ class PbsLrms(LRMS):
         self._resource = resource
 
         # set defaults
-        self._resource.setdefault('sge_accounting_delay', 15)
         auth = auths.get(resource.auth)
 
         self._ssh_username = auth.username
@@ -460,7 +298,7 @@ class PbsLrms(LRMS):
                            "  === stdout ===\n%s"
                            "  === stderr ===\n%s"
                            "  === end ===\n" 
-                           % (stdout, stderr), 'sge', 'qsub')
+                           % (stdout, stderr), 'pbs', 'qsub')
             job.ssh_remote_folder = ssh_remote_folder
 
             return job
@@ -515,7 +353,7 @@ class PbsLrms(LRMS):
                     state = Run.State.UNKNOWN
             else:
                 # jobs disappear from `qstat` output as soon as they are finished;
-                # we rely on `qacct` to provide information on a finished job
+                # we rely on `tracejob` to provide information on a finished job
                 _command = 'tracejob %s' % job.lrms_jobid
                 log.debug("`qstat` returned no job information; trying with '%s'" % _command)
                 exit_code, stdout, stderr = self.transport.execute_command(_command)
@@ -533,27 +371,10 @@ class PbsLrms(LRMS):
                         else:
                             continue
                         
-                    # FIXME: parsing dates is locale-dependent; if the
-                    # locale of the local computer and the PBS/Torque
-                    # front-end server do not match, this will blow
-                    # up.  Disabling it for now, until we can find a
-                    # way to force both locales to be the same.  (RM,
-                    # 2010-11-15)
-                    #
-                    # log.debug('Normalizing data')
-                    # # Need to mormalize dates
-                    # if job.has_key('submission_time'):
-                    #     log.debug('submission_time: %s',job.submission_time)
-                    #     job.submission_time = _date_normalize(job.submission_time)
-                    # if job.has_key('completion_time'):
-                    #     log.debug('completion_time: %s',job.completion_time)
-                    #     job.completion_time = _date_normalize(job.completion_time)
-                                                                                                    
                     state = Run.State.TERMINATING
                 else:
-                    # `qacct` failed as well...
                     try:
-                        if (time.time() - job.sge_qstat_failed_at) > self._resource.sge_accounting_delay:
+                        if (time.time() - job.pbs_qstat_failed_at) > self._resource.sge_accounting_delay:
                             # accounting info should be there, if it's not then job is definitely lost
                             log.critical("Failed executing remote command: '%s'; exit status %d" 
                                                   % (_command,exit_code))
@@ -718,8 +539,6 @@ class PbsLrms(LRMS):
             log.debug("Computing updated values for total/available slots ...")
             (total_running, self._resource.queued, 
              self._resource.user_run, self._resource.user_queued) = count_jobs(qstat_stdout, username)
-            # slots = compute_nr_of_slots(qstat_stdout)
-            # self._resource.free_slots = int(slots['global']['available'])
             self._resource.total_run = total_running
             self._resource.free_slots = -1
             self._resource.used_quota = -1
