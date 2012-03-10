@@ -292,8 +292,8 @@ class UrlKeyDict(dict):
 
        >>> d = UrlKeyDict()
        >>> d['/tmp/foo'] = 1
-       >>> for k in d.keys(): print (type(k), k.path)
-       (<class '__main__.Url'>, '/tmp/foo')
+       >>> for k in d.keys(): print (type(k), k.path) # doctest: +ELLIPSIS
+       (<class '....Url'>, '/tmp/foo')
 
     Retrieving the value associated with a key works with both the
     string or the url value of the key:
@@ -397,9 +397,9 @@ class UrlValueDict(dict):
        >>> d = UrlValueDict()
        >>> d[1] = '/tmp/foo'
        >>> d[2] = Url('file:///tmp/bar')
-       >>> for v in d.values(): print (type(v), v.path)
-       (<class '__main__.Url'>, '/tmp/foo')
-       (<class '__main__.Url'>, '/tmp/bar')
+       >>> for v in d.values(): print (type(v), v.path) # doctest:+ELLIPSIS
+       (<class '....Url'>, '/tmp/foo')
+       (<class '....Url'>, '/tmp/bar')
 
     Retrieving the value associated with a key always returns the
     URL-type value, regardless of how it was set::
