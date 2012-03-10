@@ -42,7 +42,7 @@ from gc3libs import Application, Run, Task
 from gc3libs.backends.sge import SgeLrms
 from gc3libs.backends.pbs import PbsLrms
 from gc3libs.backends.lsf import LsfLrms
-from gc3libs.backends.subprocess import SubprocessLrms
+from gc3libs.backends.shellcmd import ShellcmdLrms
 from gc3libs.authentication import Auth
 import gc3libs.exceptions
 import gc3libs.Resource as Resource
@@ -678,8 +678,8 @@ specified in the configuration file.
                         _lrms = PbsLrms(_resource, self.auths)
                     elif _resource.type == gc3libs.Default.LSF_LRMS:
                         _lrms = LsfLrms(_resource, self.auths)
-                    elif _resource.type == gc3libs.Default.SUBPROCESS_LRMS:
-                        _lrms = SubprocessLrms(_resource, self.auths)
+                    elif _resource.type == gc3libs.Default.SHELLCMD_LRMS or _resource.type == gc3libs.Default.SUBPROCESS_lrms:
+                        _lrms = ShellcmdLrms(_resource, self.auths)
                     else:
                         raise gc3libs.exceptions.ConfigurationError(
                             "Unknown resource type '%s'" % _resource.type)
@@ -746,6 +746,7 @@ def get_resources(resources_list):
             gc3libs.Default.SGE_LRMS,
             gc3libs.Default.PBS_LRMS,
             gc3libs.Default.LSF_LRMS,
+            gc3libs.Default.SHELLCMD_LRMS,
             gc3libs.Default.SUBPROCESS_LRMS,
             ]:
             gc3libs.log.error(

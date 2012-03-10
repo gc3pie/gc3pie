@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-# 
-# @(#)test_configparser.py
+# @(#)test_configparser_subprocess.py
 # 
 # 
 #  Copyright (C) 2010, 2011, 2012 GC3, University of Zurich
@@ -30,6 +30,48 @@ def _setup_config_file(confstring):
     f.write(confstring)
     f.close()
     return name
+
+def test_conf_shellcmd_valid():
+    """test a valid configuration file"""
+    confstring = """
+[auth/anto_ssh]
+type = ssh
+username = gc3pie
+
+[resource/localhost]
+enabled = true
+type = shellcmd
+frontend = localhost
+transport = local
+max_cores_per_job = 2
+max_memory_per_core = 2
+max_walltime = 8
+ncores = 2
+"""
+    # This should be valid
+    fname = _setup_config_file(confstring+"architecture = x86_64\n")
+    (res, auth, auto_enable) =  gc3libs.core.import_config([fname])
+    os.remove(fname)
+    assert res[0].enabled
+    assert res[0].type == 'shellcmd'
+    assert res[0].architecture == 'x86_64'
+    assert res[0].transport == 'local'
+
+    # This architecture value is invalid
+    fname = _setup_config_file(confstring+"architecture = 32bit\n")
+    try:
+        (res, auth, auto_enable) =  gc3libs.core.import_config([fname])
+    except gc3libs.ConfigurationError:
+        os.remove(fname)
+        assert True
+
+    fname = _setup_config_file(confstring+"architecture = i386\n")
+    (res, auth, auto_enable) =  gc3libs.core.import_config([fname])
+    os.remove(fname)
+    assert res[0].enabled
+    assert res[0].type == 'shellcmd'
+    assert res[0].architecture == 'i386'
+    assert res[0].transport == 'local'
 
 def test_conf_subprocess_valid():
     """test a valid configuration file"""
@@ -73,7 +115,6 @@ ncores = 2
     assert res[0].architecture == 'i386'
     assert res[0].transport == 'local'
 
-
 def test_conf_subprocess_invalid():
     """Test for needed configuration options"""
     confstring = """
@@ -102,3 +143,5 @@ frontend = localhost,
         (res, auth, auto_enable) =  gc3libs.core.import_config([fname])
         os.remove(fname)
         assert res == []
+
+
