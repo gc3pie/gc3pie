@@ -409,7 +409,6 @@ class SshTransport(Transport):
 #
 
 import subprocess
-import shlex
 import shutil
 
 
