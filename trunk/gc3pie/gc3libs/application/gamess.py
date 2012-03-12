@@ -27,7 +27,6 @@ import gc3libs
 import gc3libs.application
 import gc3libs.application.apppot
 import gc3libs.exceptions
-from gc3libs.InformationContainer import *
 import os
 import os.path
 import re
