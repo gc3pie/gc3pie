@@ -723,7 +723,7 @@ def get_resources(resources_list):
     for key in resources_list.keys():
         resource = resources_list[key]
         try:
-            tmpres = gc3libs.Resource.Resource(resource)
+            tmpres = gc3libs.Resource.Resource(**resource)
         except Exception, x:
             gc3libs.log.error("Could not create resource '%s': %s."
                               " Please check configuration file.",

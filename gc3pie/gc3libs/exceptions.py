@@ -190,10 +190,6 @@ class DuplicateEntryError(InvalidArgument):
     pass
 
 
-class InvalidInformationContainerError(Error):
-    pass
-
-
 class InvalidOperation(Error):
     """
     Raised when an operation is attempted, that is not considered
