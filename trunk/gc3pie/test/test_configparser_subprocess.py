@@ -41,6 +41,7 @@ username = gc3pie
 [resource/localhost]
 enabled = true
 type = shellcmd
+auth = anto_ssh
 frontend = localhost
 transport = local
 max_cores_per_job = 2
@@ -82,6 +83,7 @@ username = gc3pie
 
 [resource/localhost]
 enabled = true
+auth = anto_ssh
 type = subprocess
 frontend = localhost
 transport = local
@@ -128,7 +130,7 @@ frontend = localhost,
 """
     
     opts = [
-        "type = subprocess"
+        "type = subprocess",
         "max_cores_per_job = 2",
         "max_memory_per_core = 2",
         "max_walltime = 8",

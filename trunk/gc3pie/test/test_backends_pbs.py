@@ -98,7 +98,7 @@ class FakePBSTransport(LocalTransport):
         return LocalTransport.execute_command(self, command)
     
 def _setup_conf():
-    resource = Resource({
+    resource = Resource(**{
     'name' : 'argo',
     'type' : 'pbs',
      'auth' : 'ssh',
