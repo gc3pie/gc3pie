@@ -117,7 +117,7 @@ force removal of a job regardless.
                     if app.execution.state != Run.State.TERMINATED:
                         if self.params.force:
                             self.log.warning("Job '%s' not in terminal state:"
-                                             " attempting to kill before cleaning up.")
+                                             " attempting to kill before cleaning up.", app)
                             try:
                                 self._core.kill(app)
                             except Exception, ex:
@@ -128,7 +128,7 @@ force removal of a job regardless.
                                 app.execution.state = Run.State.TERMINATED
                         else:
                             failed += 1
-                            self.log.error("Job '%s' not in terminal state: ignoring.", jobid)
+                            self.log.error("Job '%s' not in terminal state: ignoring.", app)
                             continue
 
                     try:
