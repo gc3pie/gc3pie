@@ -929,11 +929,11 @@ class Engine(object):
         terminated task.
 
     Any of the above can also be set by passing a keyword argument to
-    the constructor::
+    the constructor (assume ``g`` is a `Core`:class: instance)::
 
-      >>> e = Engine(can_submit=False)
-      >>> e.can_submit
-      False
+      | >>> e = Engine(g, can_submit=False)
+      | >>> e.can_submit
+      | False
     """
 
 
