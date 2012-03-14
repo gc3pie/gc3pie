@@ -41,6 +41,7 @@ from gc3libs.utils import same_docstring_as
 
 import transport
 
+import batch
 
 def count_jobs(qstat_output, whoami):
     """
@@ -81,16 +82,8 @@ def count_jobs(qstat_output, whoami):
     return (total_running, total_queued, own_running, own_queued)
         
 
-_qsub_jobid_re = re.compile(r'(?P<jobname>(?P<jobid>\d+).*)', re.I)
+_qsub_jobid_re = re.compile(r'(?P<jobid>\d+.*)', re.I)
 
-def get_qsub_jobid(qsub_output):
-    """Parse the ``qsub`` output for the local jobid."""
-    for line in qsub_output.split('\n'):
-        match = _qsub_jobid_re.match(line)
-        if match:
-            return (match.group('jobid'), match.group('jobname'))
-    raise gc3libs.exceptions.InternalError("Could not extract jobid from qsub output '%s'" 
-                        % qsub_output.rstrip())
 
 
 
@@ -273,25 +266,24 @@ class PbsLrms(LRMS):
                                 " exit code: %d, stderr: '%s'."
                                 % (_command, self._resource, exit_code, stderr))
             
-            jobid, jobname = get_qsub_jobid(stdout)
+            jobid = batch.get_qsub_jobid(stdout, _qsub_jobid_re)
             log.debug('Job submitted with jobid: %s', jobid)
             # self.transport.close()
 
             job.execution_target = self._resource.frontend
             
             job.lrms_jobid = jobid
-            job.lrms_jobname = jobname
             if 'stdout' in app:
                 job.stdout_filename = app.stdout
             else:
-                job.stdout_filename = '%s.o%s' % (jobname, jobid)
+                job.stdout_filename = '%s.o%s' % (job.lrms_jobname, jobid)
             if app.join:
                 job.stderr_filename = job.stdout_filename
             else:
                 if 'stderr' in app:
                     job.stderr_filename = app.stderr
                 else:
-                    job.stderr_filename = '%s.e%s' % (jobname, jobid)
+                    job.stderr_filename = '%s.e%s' % (job.lrms_jobname, jobid)
             job.log.append('Submitted to PBS/Torque @ %s with jobid %s' 
                            % (self._resource.name, jobid))
             job.log.append("PBS/Torque `qsub` output:\n"
