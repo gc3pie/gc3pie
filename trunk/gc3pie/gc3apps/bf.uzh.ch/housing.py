@@ -42,7 +42,7 @@ import shutil
 import logbook, sys
 from supportGc3 import wrapLogger
 # import personal libraries
-path2SrcPy = os.path.join(os.path.dirname(__file__), '../srcPy')
+path2SrcPy = os.path.join(os.path.dirname(__file__), '../src')
 if not sys.path.count(path2SrcPy):
     sys.path.append(path2SrcPy)
 from plotSimulation import plotSimulation
