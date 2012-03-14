@@ -1,10 +1,10 @@
 #! /bin/bash
 #
-# GEO_WRAP -- base wrapper script for executing GEOTOP
+# geotop_wrap.sh -- base wrapper script for executing GEOTOP
 # 
 # Author: Tyanko Aleksiev <tyanko.aleksiev@oci.uzh.ch>
 #
-# Copyright (c) 201 OCI UZH http://www.oci.uzh.ch/ 
+# Copyright (c) 2011-2012 GC3, University of Zurich, http://www.gc3.uzh.ch/ 
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -20,36 +20,50 @@
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA 
 #-----------------------------------------------------------------------
+PROG=$(basename "$0")
 
-## Prepare the environment for the execution. Untar the input.tgz file ##
+## configuration defaults
 
 OVERWRITE="--keep-old-files"
-GEOTOP_EXEC="GEOtop_1.223_static"
 OUTPUT_ARCHIVE="output.tgz"
 TAR_EXCLUDE_PATTERN="--exclude .arc --exclude ./in --exclude ggeotop.log"
+tag_files='_SUCCESSFUL_RUN _FAILED_RUN'
 
-#=============
-
-function gracefull_exit {
-    echo -n "Creating output archive... "
-    # tar czf $OUTPUT_ARCHIVE ./* $TAR_EXCLUDE_PATTERN
-    tar czf $OUTPUT_ARCHIVE out
-    if [ $? -eq 0 ]; then
-        # Remove everything else if tar has been created successfully
-	echo "[ok]"
-	echo "Cleaning... "
-	# ls | grep -v output.tgz | grep -v .log | grep -v .arc | xargs --replace rm -rf {}
-	rm -rf in
-	rm -rf out
-	ls | grep -v $OUTPUT_ARCHIVE | grep -v .log | grep -v .arc | xargs --replace rm {}
-    else
-	echo "[failed]"
-    fi
+## helper functions
+function die () {
+  rc="$1"
+  shift
+  (echo -n "$PROG: ERROR: ";
+      if [ $# -gt 0 ]; then echo "$@"; else cat; fi) 1>&2
+  exit $rc
 }
 
-USAGE="Usage: `basename $0` [-w] <input archive> <GEOTop executable>"
+function cleanup_on_exit {
+    echo -n "$PROG: Creating output archive... "
+    # be sure to include tag files, wherever they are located
+    actual_tag_files=''
+    for file in $tag_files; do 
+        if [ -r "$file" ]; then
+            actual_tag_files="$actual_tag_files $file"
+        fi
+    done
+    tar czvf $OUTPUT_ARCHIVE out/ $actual_tag_files $TAR_EXCLUDE_PATTERN
+    if [ $? -eq 0 ]; then
+        # Remove everything else if tar has been created successfully
+        echo "[ok]"
+        echo "$PROG: Cleaning up temporary files... "
+        rm -rfv in
+        rm -rfv out
+        ls | egrep -v "($OUTPUT_ARCHIVE|.log|.arc)" | xargs --replace rm {}
+    else
+        echo "[failed]"
+    fi
+}
+trap "cleanup_on_exit" EXIT TERM INT
 
-# Parse command line options.
+
+## Parse command line options.
+USAGE="Usage: $PROG [-w] <input archive> <GEOTop executable>"
 while getopts w OPT; do
     case "$OPT" in
         w)
@@ -57,9 +71,7 @@ while getopts w OPT; do
             ;;
         \?)
             # getopts issues an error message
-            echo $USAGE >&2
-	    gracefull_exit
-            exit 1
+            die 1 "$USAGE"
             ;;
     esac
 done
@@ -70,52 +82,44 @@ shift `expr $OPTIND - 1`
 # We want at least one non-option argument.
 # Remove this block if you don't need it.
 if [ $# -eq 0 ]; then
-    echo $USAGE >&2
-    gracefull_exit
-    exit 1
+    die 1 "$USAGE"
 fi
 
 INPUT_ARCHIVE=$1
 GEOTOP_EXEC=$2
 
 # Check INPUT_ARCHIVE
-echo -n "Checking input archive [$INPUT_ARCHIVE] ... "
+echo -n "$PROG: Checking for presence of input archive [$INPUT_ARCHIVE] ... "
 if [ ! -r $INPUT_ARCHIVE ]; then
     echo "[failed]"
-    gracefull_exit
-    exit 1
+    die 1 "Cannot read input archive file '$INPUT_ARCHIVE', aborting."
 else
     echo "[ok]"
 fi
 
-echo -n "Running: tar $OVERWRITE -xzf $INPUT_ARCHIVE ... "
+echo -n "$PROG: Running: tar $OVERWRITE -xzf $INPUT_ARCHIVE ... "
 tar $OVERWRITE -xzf $INPUT_ARCHIVE
 RET=$?
-rm $INPUT_ARCHIVE
-
+rm -fv $INPUT_ARCHIVE
 if [ $RET -ne 0 ]; then
     echo "[failed]"
-    gracefull_exit
-    exit $RET
+    die $RET "Could not extract files from input archive '$INPUT_ARCHIVE', aborting."
 else
     echo "[ok]"
 fi
 
 ## Execute the GEOTOP code ##
 
-echo -n "Checking executable [$GEOTOP_EXEC] ... "
-
+echo -n "$PROG: Checking for presence of executable [$GEOTOP_EXEC] ... "
 if [ -x $GEOTOP_EXEC ]; then
     echo "[ok]"
-    echo "Start execution... "
+    echo "$PROG: Starting execution of $GEOTOP_EXEC ... "
     $GEOTOP_EXEC .
     RET=$?
-    echo "GEOTop execution termianted with [$RET]"
-    rm $GEOTOP_EXEC
-    gracefull_exit
+    echo "$PROG: GEOtop execution terminated with exit code [$RET]"
+    rm -fv $GEOTOP_EXEC
     exit $RET
 else
     echo "[failed]"
-    gracefull_exit
-    exit 1
+    exit 126 # command not found
 fi
