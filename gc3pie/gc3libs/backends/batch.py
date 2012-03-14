@@ -176,6 +176,12 @@ class BatchSystem(LRMS):
         the keys contained in the dictionary.
         """
         raise NotImplementedError("Abstract method `_parse_acct_output()` called - this should have been defined in a derived class.")
+
+    def _cancel_command(self, jobid):
+        """This method returns a string containing the command to
+        issue to delete the job identified by `jobid`
+        """
+        raise NotImplementedError("Abstract method `_cancel_command()` called - this should have been defined in a derived class.")
     
     def submit_job(self, app):
         """This method will create a remote directory to store job's
@@ -397,6 +403,31 @@ class BatchSystem(LRMS):
             if not url.scheme in ['file']:
                 return False
         return True
+
+    @same_docstring_as(LRMS.cancel_job)
+    def cancel_job(self, app):
+        job = app.execution
+        try:
+            self.transport.connect()
+            _command = self._cancel_command(job.lrms_jobid)
+            exit_code, stdout, stderr = self.transport.execute_command(_command)
+            if exit_code != 0:
+                # It is possible that 'qdel' fails because job has been already completed
+                # thus the cancel_job behaviour should be to 
+                log.error('Failed executing remote command: %s. exit status %d' % (_command,exit_code))
+                log.debug("remote command returned stdout: %s" % stdout)
+                log.debug("remote command returned stderr: %s" % stderr)
+                if exit_code == 127:
+                    # failed executing remote command
+                    raise gc3libs.exceptions.LRMSError('Failed executing remote command')
+
+            # self.transport.close()
+            return job
+
+        except:
+            # self.transport.close()
+            log.critical('Failure in checking status')
+            raise        
 
     @same_docstring_as(LRMS.free)
     def free(self, app):
