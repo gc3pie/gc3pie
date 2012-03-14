@@ -1,0 +1,33 @@
+<ComputingActivity xmlns="http://schemas.ogf.org/glue/2008/05/spec_2.0_d41_r01" BaseType="Activity" CreationTime="2012-03-14T12:28:34Z" Validity="60">
+  <ID>urn:ogf:ComputingActivity:idgc3grid01.uzh.ch:443:2749513317279862110240234</ID>
+  <Name>GEOtop_public_test</Name>
+  <Type>single</Type>
+  <IDFromEndpoint>gsiftp://idgc3grid01.uzh.ch:2811/2749513317279862110240234</IDFromEndpoint>
+  <JobDescription>nordugrid:xrsl</JobDescription>
+  <State>nordugrid:FINISHED</State>
+  <State>bes:Finished</State>
+  <ExitCode>0</ExitCode>
+  <Owner>/DC=ch/DC=switch/DC=slcs/O=Universitaet Zuerich/CN=Riccardo Murri 94ADB37F</Owner>
+  <LocalOwner>grid008</LocalOwner>
+  <RequestedTotalWallTime>28800</RequestedTotalWallTime>
+  <RequestedTotalCPUTime>28800</RequestedTotalCPUTime>
+  <RequestedSlots>1</RequestedSlots>
+  <RequestedApplicationEnvironment>APPS/EARTH/GEOTOP-1.224</RequestedApplicationEnvironment>
+  <StdIn>/dev/null</StdIn>
+  <StdOut>ggeotop.log</StdOut>
+  <StdErr>ggeotop.log</StdErr>
+  <LogDir>.arc</LogDir>
+  <ExecutionNode>compute-1-385.local</ExecutionNode>
+  <Queue>all.q</Queue>
+  <UsedTotalWallTime>1</UsedTotalWallTime>
+  <UsedTotalCPUTime>0</UsedTotalCPUTime>
+  <UsedMainMemory>137</UsedMainMemory>
+  <SubmissionTime>2012-03-14T12:26:27Z</SubmissionTime>
+  <EndTime>2012-03-14T12:27:58Z</EndTime>
+  <WorkingAreaEraseTime>2012-03-17T12:27:58Z</WorkingAreaEraseTime>
+  <ProxyExpirationTime>2012-03-15T10:25:47Z</ProxyExpirationTime>
+  <SubmissionHost>130.60.44.39</SubmissionHost>
+  <Associations>
+    <ComputingShareID>urn:ogf:ComputingShare:uzh.ch:idgc3grid01:all.q</ComputingShareID>
+  </Associations>
+</ComputingActivity>
