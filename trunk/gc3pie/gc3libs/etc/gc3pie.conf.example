@@ -104,6 +104,8 @@ debug = 0
 #    * name: Resource name
 #    * ncores: Total number of cores provided by the resource
 #    * type: Resource type, one of arc or sge_ssh 
+#    * accounting_delay: Time (in seconds) a failure in qacct will 
+#                        not be considered critical 
 #
 # arc resources
 #

@@ -220,6 +220,23 @@ def test_pbs_basic_workflow():
     assert app.execution.state == State.TERMINATING
     
 
+def test_tracejob_parsing():
+    (g, t, app)  = _common_setup()
+    t.expected_answer['qsub'] = correct_submit()
+    g.submit(app)
+    t.expected_answer['tracejob'] = correct_tracejob_done()    
+    g.update_job_state(app)
+    assert app.execution.state == State.TERMINATING
+
+    job = app.execution
+    assert job.exitcode == 0
+    assert job.returncode == 0
+    assert job['qname'] == 'short'
+    assert job['walltime'] == '00:02:05'
+    assert job['vmem'] == '190944kb'
+    assert job['mem'] == '2364kb'
+    assert job['used_cputime'] == '00:00:00'
+    
 if __name__ == "__main__":
     test_pbs_basic_workflow()
     test_submission_failed()
