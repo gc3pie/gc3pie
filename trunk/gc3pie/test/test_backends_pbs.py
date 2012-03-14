@@ -23,7 +23,7 @@ __version__ = '$Revision$'
 
 
 def correct_submit(jobid=123):
-    out = """%d.argo.ictp.it
+    out = """%s
     """ % jobid
     return (0, out, "")
 
@@ -36,12 +36,12 @@ def tracejob_notfound(jobid=123):
     return (0, "", err)
 
 def correct_qstat_queued(jobid=123):
-    out = """%d.argo                 antani     amessina                0 Q short
+    out = """%s                 antani     amessina                0 Q short
 """ % jobid
     return (0, out, "")
 
 def correct_tracejob_queued(jobid=123):
-    out = """Job: %d.argo.ictp.it
+    out = """Job: %s
 
 03/14/2012 18:42:04  S    enqueuing into short, state 1 hop 1
 03/14/2012 18:42:04  S    Job Queued at request of amessina@argo.ictp.it, owner = amessina@argo.ictp.it, job name = STDIN, queue = short
@@ -54,12 +54,12 @@ def correct_tracejob_queued(jobid=123):
 
 
 def correct_qstat_running(jobid=123):
-    out = """%d.argo                 cam_icbc         idiallo         01:01:18 R short
+    out = """%s                 cam_icbc         idiallo         01:01:18 R short
 """ % jobid
     return (0, out, "")
 
 def correct_tracejob_running(jobid=123):
-    out = """Job: %d.argo.ictp.it
+    out = """Job: %s
 
 03/14/2012 18:42:04  S    enqueuing into short, state 1 hop 1
 03/14/2012 18:42:04  S    Job Queued at request of amessina@argo.ictp.it, owner = amessina@argo.ictp.it, job name = STDIN, queue = short
@@ -74,16 +74,16 @@ def correct_tracejob_running(jobid=123):
 
 
 def qdel_notfound(jobid=123):
-    return (153,"",  """qdel: Unknown Job Id %d.argo.ictp.it""" % jobid)
+    return (153,"",  """qdel: Unknown Job Id %s""" % jobid)
 
 def qstat_notfound(jobid=123):
-    err = """qstat: Unknown Job Id %d
+    err = """qstat: Unknown Job Id %s
 """ % jobid
     return (153, "", err)
 
 def correct_tracejob_done(jobid=123):
     out = """
-Job: %d.argo.ictp.it
+Job: %s
 
 03/09/2012 09:31:53  S    enqueuing into short, state 1 hop 1
 03/09/2012 09:31:53  S    Job Queued at request of amessina@argo.ictp.it, owner = amessina@argo.ictp.it, job name = DemoPBSApp, queue = short
@@ -114,6 +114,15 @@ def qsub_failed_acl():
 """
     return (159, out, err)
 
+def qdel_success():
+    return (0, "", "")
+
+def qdel_failed_acl(jobid=123):
+    err = """qdel: Unauthorized Request  MSG=operation not permitted %s
+""" % jobid
+    out = ""
+    return (159, out, err)
+    
 from gc3libs.Resource import Resource
 from gc3libs.authentication import Auth
 import gc3libs, gc3libs.core
@@ -236,7 +245,28 @@ def test_tracejob_parsing():
     assert job['vmem'] == '190944kb'
     assert job['mem'] == '2364kb'
     assert job['used_cputime'] == '00:00:00'
+
+def test_delete_job():
+    (g, t, app)  = _common_setup()
+    t.expected_answer['qsub'] = correct_submit()
+    g.submit(app)
+
+    t.expected_answer['qdel'] = qdel_success()
+    g.kill(app)
+    assert app.execution.state == State.TERMINATED
+
+def test_delete_job():
+    (g, t, app)  = _common_setup()
+    t.expected_answer['qsub'] = correct_submit()
+    g.submit(app)
+    assert app.execution.state == State.SUBMITTED
+    
+    t.expected_answer['qdel'] = qdel_failed_acl()
+    g.kill(app)
+    assert app.execution.state == State.TERMINATED
     
 if __name__ == "__main__":
     test_pbs_basic_workflow()
     test_submission_failed()
+    test_tracejob_parsing()
+    test_delete_job()

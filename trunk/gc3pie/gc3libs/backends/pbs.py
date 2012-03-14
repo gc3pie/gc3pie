@@ -164,32 +164,9 @@ class PbsLrms(batch.BatchSystem):
                 retstatus.update(_tracejob_queued_re.match(line).groupdict())
         return retstatus
         
-    @same_docstring_as(LRMS.cancel_job)
-    def cancel_job(self, app):
-        job = app.execution
-        try:
-            self.transport.connect()
-
-            _command = 'qdel '+job.lrms_jobid
-            exit_code, stdout, stderr = self.transport.execute_command(_command)
-            if exit_code != 0:
-                # It is possible that 'qdel' fails because job has been already completed
-                # thus the cancel_job behaviour should be to 
-                log.error('Failed executing remote command: %s. exit status %d' % (_command,exit_code))
-                log.debug("remote command returned stdout: %s" % stdout)
-                log.debug("remote command returned stderr: %s" % stderr)
-                if exit_code == 127:
-                    # failed executing remote command
-                    raise gc3libs.exceptions.LRMSError('Failed executing remote command')
-
-            # self.transport.close()
-            return job
-
-        except:
-            # self.transport.close()
-            log.critical('Failure in checking status')
-            raise        
-
+    def _cancel_command(self, jobid):
+        return "qdel %s" % jobid
+    
                 
     @same_docstring_as(LRMS.get_resource_status)
     def get_resource_status(self):
