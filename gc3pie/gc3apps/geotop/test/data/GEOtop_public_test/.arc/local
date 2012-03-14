@@ -1,0 +1,21 @@
+globalid=gsiftp://idgc3grid01.uzh.ch:2811/2749513317279862110240234
+lrms=sge
+queue=all.q
+localid=661284
+args=geotop_wrap.sh input.tgz ./geotop_1_224_20120227_static 
+subject=/DC=ch/DC=switch/DC=slcs/O=Universitaet Zuerich/CN=Riccardo Murri 94ADB37F
+starttime=20120314122627Z
+lifetime=259200
+rerun=0
+downloads=0
+uploads=0
+rtes=0
+jobname=GEOtop_public_test
+gmlog=.arc
+cleanuptime=20120317122758Z
+delegexpiretime=20120315102547Z
+clientname=130.60.44.39:60673
+sessiondir=/share/grid/session/2749513317279862110240234
+diskspace=209715200
+transfershare=_default
+priority=50
