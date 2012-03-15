@@ -240,11 +240,11 @@ def test_tracejob_parsing():
     job = app.execution
     assert job.exitcode == 0
     assert job.returncode == 0
-    assert job['qname'] == 'short'
-    assert job['walltime'] == '00:02:05'
-    assert job['vmem'] == '190944kb'
+    assert job['queue'] == 'short'
+    assert job['used_walltime'] == '00:02:05'
+    assert job['used_memory'] == '190944kb'
     assert job['mem'] == '2364kb'
-    assert job['used_cputime'] == '00:00:00'
+    assert job['used_cpu_time'] == '00:00:00'
 
 def test_delete_job():
     (g, t, app)  = _common_setup()
