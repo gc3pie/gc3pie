@@ -84,13 +84,13 @@ def count_jobs(qstat_output, whoami):
 
 _qsub_jobid_re = re.compile(r'(?P<jobid>\d+.*)', re.I)
 _tracejob_last_re = re.compile('(?P<end_time>\d+/\d+/\d+\s+\d+:\d+:\d+)\s+.\s+Exit_status=(?P<exit_status>\d+)\s+'
-                                  'resources_used.cput=(?P<used_cputime>[^ ]+)\s+'
+                                  'resources_used.cput=(?P<used_cpu_time>[^ ]+)\s+'
                                   'resources_used.mem=(?P<mem>[^ ]+)\s+'
-                                  'resources_used.vmem=(?P<vmem>[^ ]+)\s+'
-                                  'resources_used.walltime=(?P<walltime>[^ ]+)')
+                                  'resources_used.vmem=(?P<used_memory>[^ ]+)\s+'
+                                  'resources_used.walltime=(?P<used_walltime>[^ ]+)')
 _tracejob_queued_re = re.compile('(?P<submission_time>\d+/\d+/\d+\s+\d+:\d+:\d+)\s+.\s+'
-                                         'Job Queued at request of .*job name =\s*(?P<jobname>[^,]+),'
-                                         '\s+queue =\s*(?P<qname>[^,]+)')
+                                         'Job Queued at request of .*job name =\s*(?P<job_name>[^,]+),'
+                                         '\s+queue =\s*(?P<queue>[^,]+)')
 
 
 class PbsLrms(batch.BatchSystem):
