@@ -1095,6 +1095,10 @@ class SessionBasedScript(_Script):
             self.session_dirname = self.params.session + '.jobs'
             self.session_filename = self.params.session + '.csv'
 
+        ## now that the session directory is known, use it as a store
+        ## for the grid credentials (possibly)
+        self._core.auths.add_params(private_copy_directory=self.session_dirname)
+
         # XXX: ARClib errors out if the download directory already exists, so
         # we need to make sure that each job downloads results in a new one.
         # The easiest way to do so is to append 'NAME' to the `output_dir`
