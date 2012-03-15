@@ -67,8 +67,20 @@ class Auth(object):
         self.__auths = { }
         self._config = config
         self._ctors = { }
-        for auth_name, auth_params in self._config.items():
+        for auth_name, auth_params in self._config.iteritems():
             self._ctors[auth_name] = Auth.types[auth_params['type']]
+
+
+    def add_params(self, **params):
+        """
+        Add the specified keyword arguments as initialization
+        parameters to all the configured auth classes.
+
+        Parameters that have already been specified are silently
+        overwritten.
+        """
+        for auth_name, auth_params in self._config.iteritems():
+            auth_params.update(params)
 
 
     def get(self, auth_name, **kwargs):

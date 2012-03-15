@@ -22,13 +22,15 @@ Authentication support with Grid proxy certificates.
 __docformat__ = 'reStructuredText'
 __version__ = 'development version (SVN $Revision$)'
 
-import sys
-import shlex
+import errno
 import getpass
 import os
+import random
+import string
 import subprocess
-import errno
+import sys
 import time
+
 
 import gc3libs
 from gc3libs.authentication import Auth
@@ -44,6 +46,8 @@ sys.path.append('/opt/nordugrid/lib/python%d.%d/site-packages'
 sys.path.append('/usr/lib/pymodules/python%d.%d/'
                 % sys.version_info[:2])
 
+
+## detect ARC version
 arc_flavour = None
 try:
     import arclib
@@ -57,6 +61,13 @@ except ImportError:
     gc3libs.log.warning("Failed importing ARC1 libraries")
 
 
+## random password generator
+_random_password_letters = string.ascii_letters + string.digits
+
+def random_password(length=24):
+  return str.join('', [random.choice(_random_password_letters) for _ in xrange(length)])
+
+
 class GridAuth(object):
 
     def __init__(self, **auth):
@@ -64,22 +75,56 @@ class GridAuth(object):
         try:
             # test validity
             assert auth['type'] in ['voms-proxy', 'grid-proxy' ], (
-                "Configuration error: Unknown type: %s. Valid types: [voms-proxy, grid-proxy]"
-                % auth.type)
+                "Configuration error: Unknown type: %s."
+                " Valid types are 'voms-proxy' or 'grid-proxy'"
+                % auth['type'])
             assert auth['cert_renewal_method'] in ['manual', 'slcs'], (
-                "Configuration error: Unknown cert_renewal_method: %s. Valid types: [voms-proxy, grid-proxy]"
-                % auth.cert_renewal_method)
+                "Configuration error: Unknown cert_renewal_method: %s."
+                " Valid types are 'voms-proxy' and 'grid-proxy'"
+                % auth['cert_renewal_method'])
 
             # read `remember_password` setting; default to 'False'
             if 'remember_password' in auth:
                 auth['remember_password'] = gc3libs.utils.string_to_boolean(auth['remember_password'])
             else:
                 auth['remember_password'] = False
-            
+
+            # read `private_cert_copy` setting; default to 'False'
+            if 'private_credentials_copy' in auth:
+                auth['private_credentials_copy'] = gc3libs.utils.string_to_boolean(auth['private_credentials_copy'])
+            else:
+                auth['private_credentials_copy'] = False
+            if auth['private_credentials_copy']:
+                assert auth['cert_renewal_method'] == 'slcs', (
+                    "Configuration error: 'private_credentials_copy'"
+                    " can only be used with the 'slcs' certificate renewal.")
+                if 'private_copy_directory' not in auth:
+                    # reset `private_credentials_copy` as it's useless
+                    # w/out the copy directory
+                    gc3libs.log.warning(
+                        "auth/%s: 'private_credentials_copy' is set,"
+                        " but no value for 'private_directory_copy' was passed:"
+                        " the setting is ineffective"
+                        " and no private copy will be kept.", auth['name'])
+                    auth['private_credentials_copy'] = False
+                elif not os.path.exists(auth['private_copy_directory']):
+                    raise gc3libs.exceptions.ConfigurationError(
+                        "Incorrect setting '%s'"
+                        " for 'private_copy_directory' in auth/%s:"
+                        " directory does not exist."
+                        % (auth['private_copy_directory'], auth['name']))
+                elif not os.path.isdir(auth['private_copy_directory']):
+                    raise gc3libs.exceptions.ConfigurationError(
+                        "Incorrect setting '%s'"
+                        " for 'private_copy_directory' in auth/%s:"
+                        " path does not point to a directory."
+                        % (auth['private_copy_directory'], auth['name']))
+
             self.user_cert_valid = False
             self.proxy_valid = False
             self._expiration_time = 0 # initially set expiration time way back in the past
             self._passwd = None
+            self._keypass = None
             self.__dict__.update(auth)
 
         except AssertionError, x:
@@ -96,247 +141,268 @@ class GridAuth(object):
                 " will not actually check.", remaining)
             return True
 
-        self.user_cert_valid = (0 != get_end_time("usercert"))
-        self._expiration_time = get_end_time("proxy")
+        # WARNING: the following code might be counter-intuitive, but
+        # it's what we need! When `private_credentials_copy` is in
+        # effect, we have to force the *certificate* renewal in order
+        # to store it in the private directory as a side-effect.  When
+        # `remember_password` is in effect, we choose force the
+        # *proxy* renewal in order to store the SWITCHaai password as
+        # a side-effect. (We could renew the cert to the same purpose,
+        # and that would guarantee 10 days of operations, but
+        # `slcs-init` is still slower than `voms-proxy-init`...)
 
-        # if 'remember_password' force at least proxy renewal to store password
+        if self.private_credentials_copy and self._keypass is None:
+            # force cert renewal
+            self.user_cert_valid = False
+        else:
+            self.user_cert_valid = (0 != self.get_end_time("usercert"))
+
+        self._expiration_time = self.get_end_time("proxy")
         if self.remember_password and self._passwd is None:
+            # force proxy renewal to store password
             self.proxy_valid = False
         else:
             self.proxy_valid = (0 != self._expiration_time)
 
-        return ( self.user_cert_valid and self.proxy_valid )
+        return (self.user_cert_valid and self.proxy_valid)
 
     
     def enable(self):
-        # Obtain username. Depends on type + cert_renewal_method combination.
-        if self.cert_renewal_method == 'slcs':
-            # Check if aai_username is already set. If not, ask interactively
-            try:
-                self.aai_username
-            except AttributeError:
-                self.aai_username = raw_input('Insert SWITCHaai username: ')
-
-            # Check if idp is already set.  If not, ask interactively
-            try:
-                self.idp
-            except AttributeError:
-                self.idp = raw_input('Insert SWITCHaai Identity Provider (use the command `slcs-info` to list them): ')
-
-        # Check information for grid/voms proxy
-        if self.type == 'voms-proxy':
-            # Check if vo is already set.  If not, ask interactively
-            try:
-                self.vo
-            except AttributeError:
-                self.vo = raw_input('Insert VO name: ' )
-
-            # UserName set, go interactive asking password
+        # User certificate
+        new_cert = False
+        if not self.user_cert_valid:
+            # Obtain username? Depends on type + cert_renewal_method combination.
             if self.cert_renewal_method == 'slcs':
-                message = ('Insert SWITCHaai password for user %s:' % self.aai_username)
+                # Check if aai_username is already set. If not, ask interactively
+                try:
+                    self.aai_username
+                except AttributeError:
+                    self.aai_username = raw_input('Insert SWITCHaai username: ')
+
+                # Check if idp is already set.  If not, ask interactively
+                try:
+                    self.idp
+                except AttributeError:
+                    self.idp = raw_input('Insert SWITCHaai Identity Provider (use the command `slcs-info` to list them): ')
+
+            if self._passwd is not None:
+                shib_passwd = self._passwd
             else:
+                # ask passwd interactively
+                shib_passwd = getpass.getpass('Insert SWITCHaai password for user %s:' % self.aai_username)
+
+            if self.private_credentials_copy:
+                key_passwd = random_password()
+            else:
+                key_passwd = shib_passwd
+
+            new_cert = self.renew_cert(shib_passwd, key_passwd)
+            # save passwds for later use
+            if new_cert and self.remember_password:
+                self._passwd = shib_passwd
+            if new_cert and self.private_credentials_copy:
+                self._keypass = key_passwd
+
+        # renew proxy if cert has changed or proxy expired
+        if new_cert or not self.proxy_valid:
+            # have to renew proxy, check that we have all needed info and passwd
+            if self.type == 'voms-proxy':
+                # Check if vo is already set.  If not, ask interactively
+                try:
+                    self.vo
+                except AttributeError:
+                    self.vo = raw_input('Insert VO name: ' )
+
+            if self._keypass is not None:
+                # `private_credentials_copy` in effect, use the stored random passwd
+                keypass = self._keypass
+            elif self._passwd is not None:
+                # `remember_password` in effect, use the stored SWITCHaai passwd
+                keypass = self._passwd
+            else:
+                # ask interactively
                 if self.type == 'voms-proxy':
                     message = 'Insert voms proxy password: '
                 elif self.type == 'grid-proxy':
                     message = 'Insert grid proxy password: '
+                keypass = getpass.getpass(message)
 
-            if self._passwd is None:
-                self._passwd = getpass.getpass(message)
-            
-        # Start renewing credential
-        new_cert = False
+            self.renew_proxy(keypass)
 
-        # User certificate
-        if not self.user_cert_valid:
-            if self.cert_renewal_method == 'manual':
-                raise gc3libs.exceptions.UnrecoverableAuthError("User certificate expired, please renew it.")
+        # check that all is OK
+        if not self.check():
+            raise gc3libs.exceptions.RecoverableAuthError(
+                "Temporary failure in enabling Grid authentication."
+                " Grid/VOMS proxy is %s."
+                " User certificate is %s." 
+                % (gc3libs.utils.ifelse(self.proxy_valid,
+                                        "valid", "invalid"),
+                   gc3libs.utils.ifelse(self.user_cert_valid,
+                                        "valid", "invalid")))
+        return True
 
-            _cmd = shlex.split("slcs-init --idp %s -u %s -p %s -k %s" 
-                               % (self.idp, self.aai_username,
-                                  self._passwd, self._passwd))
-            gc3libs.log.debug("Executing slcs-init --idp %s -u %s"
-                              " -p ****** -k ******"
-                              % (self.idp, self.aai_username))
 
-            try:
-                p = subprocess.Popen(_cmd,stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
-                (stdout, stderr) = p.communicate()
+    def renew_cert(self, shib_passwd, key_passwd):
+        if self.cert_renewal_method == 'manual':
+            raise gc3libs.exceptions.UnrecoverableAuthError(
+                "User certificate expired and renewal set to 'manual', please renew it.")
 
-                if p.returncode != 0:
-                    # Assume transient error (i.e wrong password or so).
-                    raise gc3libs.exceptions.RecoverableAuthError(
-                        "Error running slcs-init: %s."
-                        " Assuming temporary failure, will retry later." 
-                        % stdout) 
-                # Note: to avoid printing the user's password in plaintext, we do not print the whole command in the error.
-            except OSError, x:
-                if (x.errno == errno.ENOENT or x.errno == errno.EPERM
-                       or x.errno == errno.EACCES):
-                    raise gc3libs.exceptions.UnrecoverableAuthError(
-                        "Failed running slcs-init: %s."
-                        " Please verify that it is available on your $PATH and that it actually works."
-                        % str(x))
-                else:
-                    raise gc3libs.exceptions.UnrecoverableAuthError(
-                        "Failed running slcs-init: %s." % str(x))
-            except Exception, ex:
-                # Intercept any other Error that subprocess may raise
-                gc3libs.log.debug("Unexpected error in GridAuth: %s: %s" 
-                                  % (ex.__class__.__name__, str(ex)))
-                raise gc3libs.exceptions.UnrecoverableAuthError(
-                    "Error renewing SLCS certificate: %s" % str(ex))
-
-            new_cert = True
-            gc3libs.log.info('Created new SLCS certificate.')
-
-        # renew proxy if cert has changed or proxy expired
-        if new_cert or not self.proxy_valid:
-            renew_proxy(self.type, self._passwd, vo=self.vo)
-
-            # dispose content of password
-            if not self.remember_password:
-                self._passwd = None
-
-            if not self.check():
+        try:
+            cmd = [
+                'slcs-init',
+                '--idp',      self.idp,
+                '--user',     self.aai_username,
+                '--password', shib_passwd,
+                '--keypass',  key_passwd
+                ]
+            if self.private_credentials_copy:
+                cmd.extend(['--storedir', self.private_copy_directory])
+            p = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+            (stdout, stderr) = p.communicate()
+            if p.returncode != 0:
+                # Assume transient error (i.e wrong password or so).
                 raise gc3libs.exceptions.RecoverableAuthError(
-                    "Temporary failure in enabling Grid authentication."
-                    " Grid/VOMS proxy status: %s."
-                    " user certificate status: %s" 
-                    % (gc3libs.utils.ifelse(self.proxy_valid,
-                                            "valid", "invalid"),
-                       gc3libs.utils.ifelse(self.user_cert_valid,
-                                            "valid", "invalid")))
-            return True
+                    "Error running slcs-init: %s."
+                    " Assuming temporary failure, will retry later." 
+                    % stdout) 
+        except OSError, x:
+            # Note: to avoid printing the user's password in
+            # plaintext, we do not print the whole command in the
+            # error messages below.
+            if x.errno in [errno.ENOENT, errno.EPERM, errno.EACCES]:
+                raise gc3libs.exceptions.UnrecoverableAuthError(
+                    "Failed running '%s ...': %s."
+                    " Please verify that it is available on your $PATH and that it actually works."
+                    % (str.join(' ', cmd[:5]), str(x)))
+            else:
+                raise gc3libs.exceptions.UnrecoverableAuthError(
+                    "Failed running '%s': %s." % (str.join(' ', cmd[:5]), str(x)))
+        except Exception, ex:
+            # Intercept any other Error that subprocess may raise
+            gc3libs.log.debug("Unexpected error in GridAuth: %s: %s" 
+                              % (ex.__class__.__name__, str(ex)))
+            raise gc3libs.exceptions.UnrecoverableAuthError(
+                "Error renewing SLCS certificate: %s" % str(ex))
+
+        gc3libs.log.info('Created new SLCS certificate.')
+        if self.private_credentials_copy:
+            os.environ['X509_USER_CERT'] = os.path.join(self.private_copy_directory, 'usercert.pem')
+            os.environ['X509_USER_KEY'] = os.path.join(self.private_copy_directory, 'userkey.pem')
+        return True
 
 
-def renew_proxy(proxy_type, password, vo=None, _local_arc_flavour=None):
-    global arc_flavour # module-level param
-    if _local_arc_flavour is None:
-        _local_arc_flavour = arc_flavour
-    _cmd = None
-    if proxy_type == 'voms-proxy':
-        if arc_flavour == Default.ARC1_LRMS:
-            # # Try renew voms credential; another interactive command
-            # gc3libs.log.debug("No valid proxy found; trying to get "
-            #                   " a new one by 'arcproxy' ...")
-            # _cmd = shlex.split("arcproxy -S %s -c vomsACvalidityPeriod=24H -c validityPeriod=24H" % vo)
-            gc3libs.log.debug("ARC1 libraries not yet functional. Falling back to ARC0 method... ")
-            return renew_proxy(proxy_type, password, vo, Default.ARC0_LRMS)
-        elif arc_flavour == Default.ARC0_LRMS:
+    def renew_proxy(self, passwd, _arc_flavour=None):
+        global arc_flavour # module-level param
+        if _arc_flavour is None:
+            _arc_flavour = arc_flavour
+
+        if _arc_flavour == Default.ARC1_LRMS:
+            gc3libs.log.debug(
+                "Proxy support in ARC1 libraries is not yet functional. Falling back to ARC0 method.")
+            return self.renew_proxy(passwd, Default.ARC0_LRMS)
+
+        if self.type == 'voms-proxy':
+            assert _arc_flavour == Default.ARC0_LRMS
             # first make sure existing proxy is properly removed
             # run voms-proxy-destroy. This guarantees that the renewal
-            # takes the recorded password into account
-            _cmd = shlex.split("voms-proxy-destroy")
-            gc3libs.log.debug("Executing voms-proxy-destroy")
+            # takes the recorded self.password into account
+            gc3libs.log.debug("Executing voms-proxy-destroy ...")
             try:
-                p = subprocess.Popen(_cmd,stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+                p = subprocess.Popen('voms-proxy-destroy', stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
                 (stdout, stderr) = p.communicate()
             except Exception, x:
-                gc3libs.log.error("Failed. Error type %s. Message %s" % (x.__class__,x.message))
-                pass
+                gc3libs.log.error("Got the following error from 'voms-proxy-destroy',"
+                                  " but I'm ignoring it:"
+                                  " %s: %s" % (x.__class__,x.message))
 
             # Try renew voms credential; another interactive command
-            gc3libs.log.debug("No valid proxy found; trying to get "
-                              " a new one by 'voms-proxy-init' ...")
-            _cmd = shlex.split("voms-proxy-init -valid 24:00 -rfc"
-                               " -q -pwstdin -voms %s" % vo)
+            gc3libs.log.debug("Trying to get a new proxy by 'voms-proxy-init' ...")
+            cmd = ['voms-proxy-init', '-valid', '24:00', '-rfc', '-q', '-pwstdin']
+            if self.vo is not None:
+                cmd.extend(['-voms', self.vo ])
 
-    elif proxy_type == 'grid-proxy':
-        if arc_flavour == Default.ARC0_LRMS:
-            # Try renew grid credential; another interactive command
-            gc3libs.log.debug("No valid proxy found; trying to get "
-                              "a new one by 'grid-proxy-init' ...")
-            _cmd = shlex.split("grid-proxy-init -valid 24:00 -q -pwstdin")
-        elif arc_flavour == Default.ARC1_LRMS:
-            # # Try renew voms credential; another interactive command
-            # gc3libs.log.debug("No valid proxy found; trying to get "
-            #                   " a new one by 'arcproxy' ...")
-            # _cmd = shlex.split("arcproxy -c validityPeriod=24H")
-            gc3libs.log.debug("ARC1 libraries not yet functional. Using arc0-like approach... ")
-            return renew_proxy(proxy_type, password, vo, Default.ARC0_LRMS)
+        elif self.type == 'grid-proxy':
+            assert _arc_flavour == Default.ARC0_LRMS
+            gc3libs.log.debug("Trying to get a new proxy by 'voms-proxy-init' ...")
+            cmd = ['grid-proxy-init', '-valid', '24:00', '-q', '-pwstdin']
 
-    if not _cmd:
-        raise gc3libs.exceptions.UnrecoverableAuthError(
-            "Error in `renew_proxy`: proxy_type='%s',"
-            " _local_arc_flavour='%s', arc_flavour='%s'"
-            % (proxy_type, str(_local_arc_flavour), str(arc_flavour)))
-        
-    try:
-        p1 = subprocess.Popen(_cmd,
-                              stdin=subprocess.PIPE,
-                              stdout=subprocess.PIPE,
-                              stderr=subprocess.STDOUT)
-        (stdout, stderr) = p1.communicate("%s\n" % password)
-                
-        # XXX: check whether this is needed
-        del password
-            
-        if p1.returncode != 0:
-            # Cannot use voms-proxy-init return code as validation of the command.
-            # just report the warning
-            gc3libs.log.warning("Command 'voms-proxy-init' exited with code %d: %s."
-                                % (p1.returncode, stdout))
+        if self.private_credentials_copy:
+            # XXX: does `grid-proxy-init` support `-out`? do we care?
+            cmd.extend(['-out', os.path.join(self.private_copy_directory, 'proxy.pem')])
 
-    except ValueError, x:
-        # FIXME: is this more a programming error ?
-        raise gc3libs.exceptions.RecoverableAuthError(str(x))
-    except OSError, x:
-        if x.errno == errno.ENOENT or x.errno == errno.EPERM or x.errno == errno.EACCES:
-            if proxy_type == 'grid-proxy':
-                cmd = 'grid-proxy-init'
-            elif proxy_type == 'voms-proxy':
-                cmd = 'voms-proxy-init'
+        try:
+            p1 = subprocess.Popen(cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+            (stdout, stderr) = p1.communicate("%s\n" % passwd)
+
+            if p1.returncode != 0:
+                # Cannot use voms-proxy-init return code as validation of the command.
+                # just report the warning
+                gc3libs.log.warning("Command '%s' exited with code %d: %s."
+                                    % (str.join(' ', cmd), p1.returncode, stdout))
+
+            if self.private_credentials_copy:
+                os.environ['X509_USER_PROXY'] = os.path.join(self.private_copy_directory, 'proxy.pem')
+
+        except ValueError, x:
+            # FIXME: is this more a programming error ?
+            raise gc3libs.exceptions.RecoverableAuthError(str(x))
+
+        except OSError, x:
+            if x.errno in [errno.ENOENT, errno.EPERM, errno.EACCES]:
+                raise gc3libs.exceptions.UnrecoverableAuthError(
+                    "Failed running '%s': %s."
+                    " Please verify that this command is available in"
+                    " your $PATH and that it works."
+                    % (str.join(' ', cmd), str(x)))
             else:
-                # should not happen!
-                raise AssertionError("Unknown auth type '%s'" % proxy_type)
-            raise gc3libs.exceptions.UnrecoverableAuthError(
-                "Failed running '%s': %s."
-                " Please verify that this command is available in"
-                " your $PATH and that it works."
-                % (cmd, str(x)))
-        else:
-            raise gc3libs.exceptions.UnrecoverableAuthError(
-                "Unrecoverable error in enabling Grid authentication: %s" % str(x))
-    except Exception, ex:
-        # Intercept any other Error that subprocess may raise 
-        gc3libs.log.debug("Unhandled error in GridAuth: %s: %s" 
-                          % (ex.__class__.__name__, str(ex)))
-        raise gc3libs.exceptions.UnrecoverableAuthError(str(ex))
+                raise gc3libs.exceptions.UnrecoverableAuthError(
+                    "Unrecoverable error in enabling Grid authentication: %s" % str(x))
 
+        except Exception, ex:
+            # Intercept any other Error that subprocess may raise 
+            gc3libs.log.debug("Unhandled error in GridAuth: %s: %s" 
+                              % (ex.__class__.__name__, str(ex)))
+            raise gc3libs.exceptions.UnrecoverableAuthError(str(ex))
 
-def get_end_time(cert_type):
-    global arc_flavour # module-level constant
-    if arc_flavour == Default.ARC0_LRMS:
-        # use ARC libraries
-        if cert_type == "proxy":
-            cert = arclib.Certificate(arclib.PROXY)
-        elif cert_type == "usercert":
-            cert = arclib.Certificate(arclib.USERCERT)
-        else:
-            raise UnrecoverableAuthError("Unsupported cert type '%s'" % cert_type)
-        expires = cert.Expires().GetTime()
-    elif arc_flavour == Default.ARC1_LRMS:
-        # use ARC1 libraries
-        userconfig = arc.UserConfig()
-        if cert_type == "proxy":
-            cert = arc.Credential(userconfig.ProxyPath(), "", "", "")
-        elif cert_type == "usercert":
-            cert = arc.Credential(userconfig.CertificatePath(), "", "", "")
-        else:
-            raise UnrecoverableAuthError("Unsupported cert type '%s'" % cert_type)
-        expires = cert.GetEndTime().GetTime()
-    else:
-        # XXX: should this be `AssertionError` instead? (it's a programming bug...)
-        raise UnrecoverableAuthError("Wrong ARC flavour specified '%s'" % str(arc))
+        return True
 
-    if expires < time.time():
-        gc3libs.log.info("%s expired." % cert_type)
-        return 0
-    else:
-        gc3libs.log.info("%s valid until %s.", cert_type,
-                         time.strftime("%a, %d %b %Y %H:%M:%S (local time)",
-                                       time.localtime(expires)))
-        return expires
+    @staticmethod
+    def get_end_time(cert_type):
+        global arc_flavour # module-level constant
+
+        if arc_flavour == Default.ARC0_LRMS:
+            # use ARC libraries
+            if cert_type == "proxy":
+                cert = arclib.Certificate(arclib.PROXY)
+            elif cert_type == "usercert":
+                cert = arclib.Certificate(arclib.USERCERT)
+            else:
+                raise UnrecoverableAuthError("Unsupported cert type '%s'" % cert_type)
+            expires = cert.Expires().GetTime()
+
+        elif arc_flavour == Default.ARC1_LRMS:
+            # use ARC1 libraries
+            userconfig = arc.UserConfig()
+            if cert_type == "proxy":
+                cert = arc.Credential(userconfig.ProxyPath(), "", "", "")
+            elif cert_type == "usercert":
+                cert = arc.Credential(userconfig.CertificatePath(), "", "", "")
+            else:
+                raise UnrecoverableAuthError("Unsupported cert type '%s'" % cert_type)
+            expires = cert.GetEndTime().GetTime()
+
+        else:
+            # XXX: should this be `AssertionError` instead? (it's a programming bug...)
+            raise UnrecoverableAuthError("Wrong ARC flavour specified '%s'" % str(arc))
+
+        if expires < time.time():
+            gc3libs.log.info("%s is expired." % cert_type)
+            return 0
+        else:
+            gc3libs.log.info("%s valid until %s.", cert_type,
+                             time.strftime("%a, %d %b %Y %H:%M:%S (local time)",
+                                           time.localtime(expires)))
+            return expires
 
 
 Auth.register('grid-proxy', GridAuth)
