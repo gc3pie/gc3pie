@@ -2,7 +2,7 @@
 """
 Authentication support for the GC3Libs.
 """
-# Copyright (C) 2009-2011 GC3, University of Zurich. All rights reserved.
+# Copyright (C) 2009-2012 GC3, University of Zurich. All rights reserved.
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
@@ -26,25 +26,60 @@ import sys
 import gc3libs.exceptions
 
 class Auth(object):
+    """
+    A mish-mash of authorization functions.
+
+    This class actually serves the purposes of:
+
+    - a registry of authorization 'types', mapping internally-assigned
+      names to Python classes;
+    - storage for the configuration information (which can be
+      arbitrary, but should probably be read off a configuration
+      file);
+    - a factory, returning a 'SomeAuth' object through which clients
+      can deal with actual authorization issues (like checking if the
+      authorization credentials are valid and getting/renewing them).
+    - a cache, that tries to avoid expensive re-initializations of
+      `Auth` objects by allowing only one live instance per type, and
+      returning it when requested.
+
+    .. admonition:: FIXME
+
+      There are several problems with this approach:
+      
+      - the configuration is assumed *static* and cannot be changed after
+        the `Auth` instance is constructed.
+      - there is no communication between the client class and the
+        `Auth` classes.
+      - there is no control over the lifetime of the cache; at a
+        minimum, it should be settable per-auth-type.
+      - I'm unsure whether the mapping of 'type names' (as in the
+        `type=...` keyword in the config file) to Python classes
+        belongs in a generic factory method or in the configuration
+        file reader.  (Probably the former, so the code here would
+        actually be right.)
+      - The whole `auto_enable` stuff really belongs to the user-interface
+        part, which is also hard-coded in the auth classes, and should not be.
+    """
     types = {}
-    def __init__(self, _auth_dict, auto_enable):
+    def __init__(self, config, auto_enable):
         self.auto_enable = auto_enable
         self.__auths = { }
-        self._auth_dict = _auth_dict
-        self._auth_type = { }
-        for auth_name, auth_params in self._auth_dict.items():
-            self._auth_type[auth_name] = Auth.types[auth_params['type']]
+        self._config = config
+        self._ctors = { }
+        for auth_name, auth_params in self._config.items():
+            self._ctors[auth_name] = Auth.types[auth_params['type']]
 
     def get(self, auth_name):
         if not self.__auths.has_key(auth_name):
             try:
                 a =  self._auth_type[auth_name](** self._auth_dict[auth_name])
             except (AssertionError, AttributeError), ex:
-                a = gc3libs.exceptions.ConfigurationError("Missing required configuration parameters"
-                                       " in auth section '%s': %s" % (auth_name, str(ex)))
+                a = gc3libs.exceptions.ConfigurationError(
+                    "Missing required configuration parameters"
+                    " in auth section '%s': %s" % (auth_name, str(ex)))
         else:
             a = self.__auths[auth_name]
-
 
         if isinstance(a, Exception):
             self.__auths[auth_name] = a
@@ -52,15 +87,15 @@ class Auth(object):
 
         if not a.check():
             if self.auto_enable:
-                    try:
-                        a.enable()
-                    except gc3libs.exceptions.RecoverableAuthError, x:
-                        raise
-                    except gc3libs.exceptions.UnrecoverableAuthError, x:
-                        gc3libs.log.debug("Got exception while enabling auth '%s',"
-                                          " will remember for next invocations:"
-                                          " %s: %s" % (auth_name, x.__class__.__name__, x))
-                        a = x
+                try:
+                    a.enable()
+                except gc3libs.exceptions.RecoverableAuthError, x:
+                    raise
+                except gc3libs.exceptions.UnrecoverableAuthError, x:
+                    gc3libs.log.debug("Got exception while enabling auth '%s',"
+                                      " will remember for next invocations:"
+                                      " %s: %s" % (auth_name, x.__class__.__name__, x))
+                    a = x
             else:
                 a = gc3libs.exceptions.UnrecoverableAuthError(
                     "No valid credentials of type '%s'"
@@ -68,6 +103,7 @@ class Auth(object):
 
         self.__auths[auth_name] = a
         return a
+
 
     @staticmethod
     def register(auth_type, ctor):
@@ -79,12 +115,12 @@ class NoneAuth(object):
     def __init__(self, **auth):
         try:
             # test validity
-            assert auth['type'] == 'none',\
-                "Configuration error. Unknown type: %s. Valid type: none" \
-                % auth.type
-            self.__dict__.update(auth)
+            assert auth['type'] == 'none', (
+                "Configuration error. Unknown type: %s. Valid type: none"
+                % auth.type)
         except AssertionError, x:
-            raise gc3libs.exceptions.ConfigurationError('Erroneous configuration parameter: %s' % str(x))
+            raise gc3libs.exceptions.ConfigurationError(
+                'Erroneous configuration parameter: %s' % str(x))
 
     def is_valid(self):
         return True
