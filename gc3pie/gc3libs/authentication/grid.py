@@ -3,7 +3,7 @@
 """
 Authentication support with Grid proxy certificates.
 """
-# Copyright (C) 2009-2011 GC3, University of Zurich. All rights reserved.
+# Copyright (C) 2009-2012 GC3, University of Zurich. All rights reserved.
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
@@ -56,21 +56,22 @@ try:
 except ImportError:
     gc3libs.log.warning("Failed importing ARC1 libraries")
 
+
 class GridAuth(object):
 
     def __init__(self, **auth):
 
         try:
             # test validity
-            assert auth['type'] == 'voms-proxy' or auth['type'] == 'grid-proxy',\
-                "Configuration error: Unknown type: %s. Valid types: [voms-proxy, grid-proxy]" \
-                % auth.type
-            assert auth['cert_renewal_method'] == 'manual' or auth['cert_renewal_method'] == 'slcs',  \
-                "Configuration error: Unknown cert_renewal_method: %s. Valid types: [voms-proxy, grid-proxy]" \
-                % auth.cert_renewal_method
+            assert auth['type'] in ['voms-proxy', 'grid-proxy' ], (
+                "Configuration error: Unknown type: %s. Valid types: [voms-proxy, grid-proxy]"
+                % auth.type)
+            assert auth['cert_renewal_method'] in ['manual', 'slcs'], (
+                "Configuration error: Unknown cert_renewal_method: %s. Valid types: [voms-proxy, grid-proxy]"
+                % auth.cert_renewal_method)
 
             # read `remember_password` setting; default to 'False'
-            if auth.has_key('remember_password'):
+            if 'remember_password' in auth:
                 auth['remember_password'] = gc3libs.utils.string_to_boolean(auth['remember_password'])
             else:
                 auth['remember_password'] = False
@@ -95,11 +96,8 @@ class GridAuth(object):
                 " will not actually check.", remaining)
             return True
 
-        # self.user_cert_valid = (0 != _user_certificate_expiration_time())
-        #self._expiration_time = _proxy_expiration_time()
-
-        self.user_cert_valid = (0 != get_end_time("usercert", ARC_FLAVOUR))
-        self._expiration_time = get_end_time("proxy", ARC_FLAVOUR)
+        self.user_cert_valid = (0 != get_end_time("usercert"))
+        self._expiration_time = get_end_time("proxy")
 
         # if 'remember_password' force at least proxy renewal to store password
         if self.remember_password and self._passwd is None:
@@ -117,13 +115,13 @@ class GridAuth(object):
             try:
                 self.aai_username
             except AttributeError:
-                self.aai_username = raw_input('Insert AAI username: ')
+                self.aai_username = raw_input('Insert SWITCHaai username: ')
 
             # Check if idp is already set.  If not, ask interactively
             try:
                 self.idp
             except AttributeError:
-                self.idp = raw_input('Insert AAI identity provider (use command `slcs-info` to list them): ')
+                self.idp = raw_input('Insert SWITCHaai Identity Provider (use the command `slcs-info` to list them): ')
 
         # Check information for grid/voms proxy
         if self.type == 'voms-proxy':
@@ -135,7 +133,7 @@ class GridAuth(object):
 
             # UserName set, go interactive asking password
             if self.cert_renewal_method == 'slcs':
-                message = 'Insert AAI password for user '+self.aai_username+': '
+                message = ('Insert SWITCHaai password for user %s:' % self.aai_username)
             else:
                 if self.type == 'voms-proxy':
                     message = 'Insert voms proxy password: '
@@ -172,8 +170,8 @@ class GridAuth(object):
                         % stdout) 
                 # Note: to avoid printing the user's password in plaintext, we do not print the whole command in the error.
             except OSError, x:
-                if x.errno == errno.ENOENT or x.errno == errno.EPERM \
-                       or x.errno == errno.EACCES:
+                if (x.errno == errno.ENOENT or x.errno == errno.EPERM
+                       or x.errno == errno.EACCES):
                     raise gc3libs.exceptions.UnrecoverableAuthError(
                         "Failed running slcs-init: %s."
                         " Please verify that it is available on your $PATH and that it actually works."
@@ -191,7 +189,6 @@ class GridAuth(object):
             new_cert = True
             gc3libs.log.info('Created new SLCS certificate.')
 
-
         # renew proxy if cert has changed or proxy expired
         if new_cert or not self.proxy_valid:
             renew_proxy(self.type, ARC_FLAVOUR, self._passwd, vo=self.vo)
@@ -201,17 +198,14 @@ class GridAuth(object):
                 self._passwd = None
 
             if not self.check():
-                raise gc3libs.exceptions.RecoverableAuthError("Temporary failure in enabling Grid authentication."
-                                                              " Grid/VOMS proxy status: %s."
-                                                              " user certificate status: %s" 
-                                                              % (gc3libs.utils.ifelse(self.proxy_valid,
-                                                                                      "valid", "invalid"),
-                                                                 gc3libs.utils.ifelse(self.user_cert_valid,
-                                                                                      "valid", "invalid")))
-            
-            # XXX: this should be redundant with self.check()
-            # self._expiration_time = _proxy_expiration_time()
-            # self._expiration_time = get_end_time("proxy", ARC_FLAVOUR)
+                raise gc3libs.exceptions.RecoverableAuthError(
+                    "Temporary failure in enabling Grid authentication."
+                    " Grid/VOMS proxy status: %s."
+                    " user certificate status: %s" 
+                    % (gc3libs.utils.ifelse(self.proxy_valid,
+                                            "valid", "invalid"),
+                       gc3libs.utils.ifelse(self.user_cert_valid,
+                                            "valid", "invalid")))
             return True
 
 
@@ -262,7 +256,10 @@ def renew_proxy(proxy_type, ARC_FLAVOUR, password, vo=None):
             return renew_proxy(proxy_type, Default.ARC0_LRMS, password, vo)
 
     if not _cmd:
-        raise gc3libs.exceptions.UnrecoverableAuthError("Failed in renew_proxy. proxy_type %s, arc_flavour %s" % (proxy_type, str(ARC_FLAVOUR)))
+        raise gc3libs.exceptions.UnrecoverableAuthError(
+            "Error in `renew_proxy`: proxy_type='%s',"
+            " _local_arc_flavour='%s', arc_flavour='%s'"
+            % (proxy_type, str(_local_arc_flavour), str(arc_flavour)))
         
     try:
         p1 = subprocess.Popen(_cmd,
@@ -292,13 +289,14 @@ def renew_proxy(proxy_type, ARC_FLAVOUR, password, vo=None):
             else:
                 # should not happen!
                 raise AssertionError("Unknown auth type '%s'" % proxy_type)
-            raise gc3libs.exceptions.UnrecoverableAuthError("Failed running '%s': %s."
-                                                            " Please verify that this command is available in"
-                                                            " your $PATH and that it works."
-                                                            % (cmd, str(x)))
+            raise gc3libs.exceptions.UnrecoverableAuthError(
+                "Failed running '%s': %s."
+                " Please verify that this command is available in"
+                " your $PATH and that it works."
+                % (cmd, str(x)))
         else:
-            raise gc3libs.exceptions.UnrecoverableAuthError("Unrecoverable error in enabling"
-                                                            " Grid authentication: %s" % str(x))
+            raise gc3libs.exceptions.UnrecoverableAuthError(
+                "Unrecoverable error in enabling Grid authentication: %s" % str(x))
     except Exception, ex:
         # Intercept any other Error that subprocess may raise 
         gc3libs.log.debug("Unhandled error in GridAuth: %s: %s" 
@@ -326,6 +324,7 @@ def get_end_time(cert_type, ARC_FLAVOUR):
             raise UnrecoverableAuthError("Unsupported cert type '%s'" % cert_type)
         expires = cert.GetEndTime().GetTime()
     else:
+        # XXX: should this be `AssertionError` instead? (it's a programming bug...)
         raise UnrecoverableAuthError("Wrong ARC flavour specified '%s'" % str(arc))
 
     if expires < time.time():
@@ -336,6 +335,7 @@ def get_end_time(cert_type, ARC_FLAVOUR):
                          time.strftime("%a, %d %b %Y %H:%M:%S (local time)",
                                        time.localtime(expires)))
         return expires
+
 
 Auth.register('grid-proxy', GridAuth)
 Auth.register('voms-proxy', GridAuth)
