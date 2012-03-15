@@ -294,7 +294,7 @@ class _Script(cli.app.CommandLineApp):
         self.log.propagate = True
 
         # interface to the GC3Libs main functionality
-        self._core = self._get_core()
+        self._core = self._make_core()
 
         # call hook methods from derived classes
         self.parse_args()
@@ -376,9 +376,9 @@ class _Script(cli.app.CommandLineApp):
     ## should be no need to do so.
     ##
 
-    def _get_core(self,
-                  config_file_locations=gc3libs.Default.CONFIG_FILE_LOCATIONS,
-                  auto_enable_auth=True):
+    def _make_core(self,
+                   config_file_locations=gc3libs.Default.CONFIG_FILE_LOCATIONS,
+                   auto_enable_auth=True):
         """
         Return a `gc3libs.core.Core` instance configured by parsing
         the configuration file(s) located at `config_file_locations`.
@@ -1128,7 +1128,7 @@ class SessionBasedScript(_Script):
         :meth:`process_args`, :meth:`parse_args`, :meth:`setup_args`. 
         """
 
-        ## create a `Persistence` instance to _save_session/_load_session jobs
+        ## create a `persistence.Store` instance to _save_session/_load_session jobs
         self.store = gc3libs.persistence.FilesystemStore(
             self.session_dirname, 
             idfactory=gc3libs.persistence.JobIdFactory()
