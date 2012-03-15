@@ -70,10 +70,33 @@ class Auth(object):
         for auth_name, auth_params in self._config.items():
             self._ctors[auth_name] = Auth.types[auth_params['type']]
 
-    def get(self, auth_name):
-        if not self.__auths.has_key(auth_name):
+
+    def get(self, auth_name, **kwargs):
+        """
+        Return an instance of the `Auth` class corresponding to the
+        given `auth_name`, or raise an exception if instanciating the
+        same class has given an unrecoverable exception in past calls.
+
+        Additional keyword arguments are passed unchanged to the class
+        constructor and can override values specified at configuration time.
+
+        Instances are remembered for the lifetime of the program; if
+        an instance of the given class is already present in the
+        cache, that one is returned; otherwise, an instance is
+        contructed with the given parameters.
+
+        .. caution::
+
+          The `params` keyword arguments are only used if a new
+          instance is constructed and are silently ignored if the
+          cached instance is returned.
+
+        """
+        if auth_name not in self.__auths:
             try:
-                a =  self._auth_type[auth_name](** self._auth_dict[auth_name])
+                params = self._config[auth_name].copy()
+                params.update(kwargs)
+                a =  self._ctors[auth_name](**params)
             except (AssertionError, AttributeError), ex:
                 a = gc3libs.exceptions.ConfigurationError(
                     "Missing required configuration parameters"
