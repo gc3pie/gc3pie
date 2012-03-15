@@ -44,15 +44,15 @@ sys.path.append('/opt/nordugrid/lib/python%d.%d/site-packages'
 sys.path.append('/usr/lib/pymodules/python%d.%d/'
                 % sys.version_info[:2])
 
-ARC_FLAVOUR = None
+arc_flavour = None
 try:
     import arclib
-    ARC_FLAVOUR = Default.ARC0_LRMS
+    arc_flavour = Default.ARC0_LRMS
 except ImportError:
     gc3libs.log.warning("Failed importing ARC0 libraries")
 try:
     import arc
-    ARC_FLAVOUR = Default.ARC1_LRMS
+    arc_flavour = Default.ARC1_LRMS
 except ImportError:
     gc3libs.log.warning("Failed importing ARC1 libraries")
 
@@ -191,7 +191,7 @@ class GridAuth(object):
 
         # renew proxy if cert has changed or proxy expired
         if new_cert or not self.proxy_valid:
-            renew_proxy(self.type, ARC_FLAVOUR, self._passwd, vo=self.vo)
+            renew_proxy(self.type, self._passwd, vo=self.vo)
 
             # dispose content of password
             if not self.remember_password:
@@ -209,20 +209,20 @@ class GridAuth(object):
             return True
 
 
-
-
-
-def renew_proxy(proxy_type, ARC_FLAVOUR, password, vo=None):
+def renew_proxy(proxy_type, password, vo=None, _local_arc_flavour=None):
+    global arc_flavour # module-level param
+    if _local_arc_flavour is None:
+        _local_arc_flavour = arc_flavour
     _cmd = None
     if proxy_type == 'voms-proxy':
-        if ARC_FLAVOUR == Default.ARC1_LRMS:
+        if arc_flavour == Default.ARC1_LRMS:
             # # Try renew voms credential; another interactive command
             # gc3libs.log.debug("No valid proxy found; trying to get "
             #                   " a new one by 'arcproxy' ...")
             # _cmd = shlex.split("arcproxy -S %s -c vomsACvalidityPeriod=24H -c validityPeriod=24H" % vo)
-            gc3libs.log.debug("ARC1 libraries not yet functional. Using arc0-like approach... ")
-            return renew_proxy(proxy_type, Default.ARC0_LRMS, password, vo)
-        elif ARC_FLAVOUR == Default.ARC0_LRMS:
+            gc3libs.log.debug("ARC1 libraries not yet functional. Falling back to ARC0 method... ")
+            return renew_proxy(proxy_type, password, vo, Default.ARC0_LRMS)
+        elif arc_flavour == Default.ARC0_LRMS:
             # first make sure existing proxy is properly removed
             # run voms-proxy-destroy. This guarantees that the renewal
             # takes the recorded password into account
@@ -242,18 +242,18 @@ def renew_proxy(proxy_type, ARC_FLAVOUR, password, vo=None):
                                " -q -pwstdin -voms %s" % vo)
 
     elif proxy_type == 'grid-proxy':
-        if ARC_FLAVOUR == Default.ARC0_LRMS:
+        if arc_flavour == Default.ARC0_LRMS:
             # Try renew grid credential; another interactive command
             gc3libs.log.debug("No valid proxy found; trying to get "
                               "a new one by 'grid-proxy-init' ...")
             _cmd = shlex.split("grid-proxy-init -valid 24:00 -q -pwstdin")
-        elif ARC_FLAVOUR == Default.ARC1_LRMS:
+        elif arc_flavour == Default.ARC1_LRMS:
             # # Try renew voms credential; another interactive command
             # gc3libs.log.debug("No valid proxy found; trying to get "
             #                   " a new one by 'arcproxy' ...")
             # _cmd = shlex.split("arcproxy -c validityPeriod=24H")
             gc3libs.log.debug("ARC1 libraries not yet functional. Using arc0-like approach... ")
-            return renew_proxy(proxy_type, Default.ARC0_LRMS, password, vo)
+            return renew_proxy(proxy_type, password, vo, Default.ARC0_LRMS)
 
     if not _cmd:
         raise gc3libs.exceptions.UnrecoverableAuthError(
@@ -303,8 +303,10 @@ def renew_proxy(proxy_type, ARC_FLAVOUR, password, vo=None):
                           % (ex.__class__.__name__, str(ex)))
         raise gc3libs.exceptions.UnrecoverableAuthError(str(ex))
 
-def get_end_time(cert_type, ARC_FLAVOUR):
-    if ARC_FLAVOUR == Default.ARC0_LRMS:
+
+def get_end_time(cert_type):
+    global arc_flavour # module-level constant
+    if arc_flavour == Default.ARC0_LRMS:
         # use ARC libraries
         if cert_type == "proxy":
             cert = arclib.Certificate(arclib.PROXY)
@@ -313,7 +315,7 @@ def get_end_time(cert_type, ARC_FLAVOUR):
         else:
             raise UnrecoverableAuthError("Unsupported cert type '%s'" % cert_type)
         expires = cert.Expires().GetTime()
-    elif ARC_FLAVOUR == Default.ARC1_LRMS:
+    elif arc_flavour == Default.ARC1_LRMS:
         # use ARC1 libraries
         userconfig = arc.UserConfig()
         if cert_type == "proxy":
