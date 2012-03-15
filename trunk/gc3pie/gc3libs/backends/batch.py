@@ -317,7 +317,7 @@ class BatchSystem(LRMS):
                     log.warning("unknown Batch job status , returning `UNKNOWN`")
                 job.state = state
                 return state
-            # to increase readibility, there is not `else:` block
+            # to increase readability, there is not `else:` block
             
             # In some batch systems, jobs disappeared from `*stat`
             # output as soon as they are finished. In these cases,
@@ -333,7 +333,7 @@ class BatchSystem(LRMS):
                     job.returncode = int(jobstatus['exit_status'])
                 state = Run.State.TERMINATING
                 return state
-            # to increase readibility, there is not `else:` block
+            # to increase readability, there is not `else:` block
 
             # No *stat command and no *acct command returned
             # correctly.
