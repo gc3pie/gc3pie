@@ -274,8 +274,10 @@ class GridAuth(object):
                     " Please verify that it is available on your $PATH and that it actually works."
                     % (str.join(' ', cmd), str(x)))
             else:
-                raise gc3libs.exceptions.UnrecoverableAuthError(
-                    "Failed running '%s': %s." % (str.join(' ', cmd[:5]), str(x)))
+                # other error; presume it's wrong password or a
+                # network glitch.... so retry later.
+                raise gc3libs.exceptions.RecoverableAuthError(
+                    "Failed running '%s': %s." % (str.join(' ', cmd), str(x)))
         except Exception, ex:
             # Intercept any other Error that subprocess may raise
             gc3libs.log.debug("Unexpected error in GridAuth: %s: %s" 
