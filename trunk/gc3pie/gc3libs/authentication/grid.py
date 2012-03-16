@@ -252,28 +252,27 @@ class GridAuth(object):
                 'slcs-init',
                 '--idp',      self.idp,
                 '--user',     self.aai_username,
-                '--password', shib_passwd,
-                '--keypass',  key_passwd
                 ]
             if self.private_credentials_copy:
                 cmd.extend(['--storedir', self.private_copy_directory])
-            p = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
-            (stdout, stderr) = p.communicate()
+            p = subprocess.Popen(cmd,
+                                 stdin= subprocess.PIPE,
+                                 stdout=subprocess.PIPE,
+                                 stderr=subprocess.STDOUT)
+            (stdout, stderr) = p.communicate('%s\n%s\n' %
+                                             (shib_passwd, key_passwd))
             if p.returncode != 0:
                 # Assume transient error (i.e wrong password or so).
                 raise gc3libs.exceptions.RecoverableAuthError(
-                    "Error running slcs-init: %s."
+                    "Error running '%s': %s."
                     " Assuming temporary failure, will retry later." 
-                    % stdout) 
+                    % (str.join(' ', cmd), stdout))
         except OSError, x:
-            # Note: to avoid printing the user's password in
-            # plaintext, we do not print the whole command in the
-            # error messages below.
             if x.errno in [errno.ENOENT, errno.EPERM, errno.EACCES]:
                 raise gc3libs.exceptions.UnrecoverableAuthError(
-                    "Failed running '%s ...': %s."
+                    "Failed running '%s': %s."
                     " Please verify that it is available on your $PATH and that it actually works."
-                    % (str.join(' ', cmd[:5]), str(x)))
+                    % (str.join(' ', cmd), str(x)))
             else:
                 raise gc3libs.exceptions.UnrecoverableAuthError(
                     "Failed running '%s': %s." % (str.join(' ', cmd[:5]), str(x)))
