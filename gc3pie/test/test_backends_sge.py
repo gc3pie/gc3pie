@@ -99,11 +99,12 @@ arid         undefined
     return (0, out, "")
 
 
-# def qsub_failed_resources():
-#     out = ""
-#     err = """qsub: Job exceeds queue resource limits MSG=cannot locate feasible nodes
-# """
-#     return (190, out, err)
+def qsub_failed_jobnamestartswithdigit(jobname='123DemoPBSApp'):
+    out = ""
+    err = """Unable to run job: denied: "%s" is not a valid object name (cannot start with a digit).
+Exiting.
+""" % jobname
+    return (1, out, err)
 
 # def qsub_failed_acl():
 #     out = ""
@@ -152,7 +153,7 @@ def _setup_core():
 
 
 class FakeApp(gc3libs.Application):
-    def __init__(self):
+    def __init__(self, **kw):
         gc3libs.Application.__init__(
             self,
             executable = '/bin/hostname', # mandatory
@@ -162,7 +163,7 @@ class FakeApp(gc3libs.Application):
             output_dir = "./fakedir",    # mandatory
             stdout = "stdout.txt",
             stderr = "stderr.txt",
-            requested_cores = 1,)
+            requested_cores = 1, **kw)
 
 def _common_setup():
     g = _setup_core()
@@ -177,17 +178,31 @@ def _common_setup():
     app = FakeApp()
     return (g,t, app)
 
-# def test_submission_failed():
-#     (g, t, app)  = _common_setup()
+def test_submission_failed():
+    (g, t, app)  = _common_setup()
 
-#     # Submission failed (unable to find resources):
-#     t.expected_answer['qsub'] = qsub_failed_resources()
-#     try:
-#         g.submit(app)
-#     except Exception, e:
-#         assert isinstance(e, gc3libs.exceptions.LRMSError)
-#     assert app.execution.state == State.NEW
+    # Submission failed (jobname starting with a digit, cfr issue #250
+    # at http://code.google.com/p/gc3pie/issues/detail?id=250) This
+    # first test will show the answer you would get if the job name
+    # starts with a digit.
+    t.expected_answer['qsub'] = qsub_failed_jobnamestartswithdigit()
+    try:
+        g.submit(app)
+        assert False
+    except Exception, e:
+        assert isinstance(e, gc3libs.exceptions.LRMSError)
+    assert app.execution.state == State.NEW
 
+    # This second example will show how the Application.__init__()
+    # method changes the jobname in order not to have a digit at the
+    # beginning of it.
+    app = FakeApp(jobname='123Demo')
+    assert app.jobname == 'GC3_123Demo'
+    t.expected_answer['qsub'] = correct_submit()
+    g.submit(app)
+    assert app.execution.state == State.SUBMITTED
+
+    
 #     # Submission failed (unauthrozed user):
 #     t.expected_answer['qsub'] = qsub_failed_acl()
 #     try:
@@ -261,6 +276,6 @@ def test_delete_job():
     
 if __name__ == "__main__":
     test_sge_basic_workflow()
-    # test_submission_failed()
+    test_submission_failed()
     test_qacct_parsing()
     test_delete_job()
