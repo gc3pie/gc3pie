@@ -38,7 +38,7 @@ class FakeTransport(LocalTransport):
     >>> t = FakeTransport()
     >>> t.expected_answer['echo'] = (0, 'GC3pie is wonderful', '')
     >>> t.execute_command("echo 'GC3pie is wonderful'")
-    (0, 'GC3pie is wonderful', "")
+    (0, 'GC3pie is wonderful', '')
     
     """
     def __init__(self, expected_answer={}):
