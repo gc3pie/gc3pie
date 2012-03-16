@@ -825,15 +825,13 @@ class Application(Persistable, Task):
         self.tags = get_and_remove(kw, 'tags', list())
 
         jobname = get_and_remove(kw, 'jobname', self.__class__.__name__)
-        # address Issue 250
-        try:
-            # Check whether the first character of a jobname
-            # is an integer. SGE does not allow job names
-            # to start with a number. Add prefix
-            int(str(jobname)[0])
-            jobname = "GC3_%s" % jobname
-        except ValueError:
-            pass
+        # Check whether the first character of a jobname is an
+        # integer. SGE does not allow job names to start with a
+        # number, so add a prefix...
+        if len(jobname) == 0:
+            jobname = "GC3Pie.%s.%s" % (self.__class__.__name__, id(self))
+        elif str(jobname)[0] in string.digits:
+            jobname = "GC3Pie.%s" % jobname
         
         # task setup; creates the `.execution` attribute as well
         Task.__init__(self,
