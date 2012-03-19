@@ -39,6 +39,7 @@ __version__ = 'development version (SVN $Revision$)'
 import copy
 import os
 import os.path
+import string
 import sys
 import time
 import types
