@@ -66,7 +66,6 @@ class ShellcmdLrms(LRMS):
 
         self.isValid = 1
 
-
     def is_valid(self):
         return self.isValid
 
@@ -288,25 +287,20 @@ class ShellcmdLrms(LRMS):
                 sys.exit(127)
 
 
+    @same_docstring_as(LRMS.peek)
     def peek(self, app, remote_filename, local_file, offset=0, size=None):
-        """
-        Download `size` bytes (at offset `offset` from the start) from
-        remote file `remote_filename` and write them into
-        `local_file`.  If `size` is `None` (default), then snarf
-        contents of remote file from `offset` unto the end.
-
-        Argument `local_file` is either a local path name (string), or
-        a file-like object supporting a `.write()` method.  If
-        `local_file` is a path name, it is created if not existent,
-        otherwise overwritten.
-
-        Argument `remote_filename` is the name of a file in the remote job
-        "sandbox".
+        rfh = open(remote_filename, 'r')
+        rfh.seek(offset)
+        data = rfh.read(size)
+        rfh.close()
         
-        Any exception raised by operations will be passed through.
-        """
-        raise NotImplementedError("Method `ExecLRMS.peek()` is not yet implemented.")
-
+        try:
+            local_file.write(data)
+        except (TypeError, AttributeError):
+            output_file = open(local_file, 'w+b')
+            output_file.write(data)
+            output_file.close()
+        
     
     def validate_data(self, data_file_list=None):
         """
