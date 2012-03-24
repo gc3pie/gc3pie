@@ -494,6 +494,11 @@ Read `.loop` files and execute the `housingOut` program accordingly.
                        " PATH can point either to a complete AppPot system image"
                        " file, or to a `.changes` file generated with the"
                        " `apppot-snap` utility.")
+        self.add_param("-rte", "--rte", action="store_true", default=None,
+                       help="Use an AppPot image to run idRisk."
+                       "use predeployed image")
+
+
 
 
     def parse_args(self):
@@ -620,14 +625,19 @@ Read `.loop` files and execute the `housingOut` program accordingly.
                 kwargs['join'] = True
                 kwargs['output_dir'] = os.path.join(path_to_stage_dir, 'output')
                 kwargs['requested_architecture'] = self.params.architecture
-                print 'kwargs = %s' % kwargs
+
                 print 'inputs = %s' % inputs
                 print 'outputs = %s' % outputs
 
-                kwargs.setdefault('tags', [ ])	
+#                kwargs.setdefault('tags', [ ])	
 
                 # adaptions for uml
-                if use_apppot:
+                if self.params.rte:
+                    kwargs['apppot_tag'] = 'ENV/APPPOT-0.26'
+                    kwargs['tags'] = ['TEST/APPPOT-IBF-1.0']
+                    cls = housingApppotApplication
+                    pathToExecutable = '/home/user/job/' + executable
+                elif use_apppot:
                     if apppot_img is not None:
                         kwargs['apppot_img'] = apppot_img
                     if apppot_changes is not None:
@@ -638,6 +648,7 @@ Read `.loop` files and execute the `housingOut` program accordingly.
                     cls = housingApplication
                     pathToExecutable = executable
 
+                print 'kwargs = %s' % kwargs
                 # hand over job to create
                 yield (jobname, cls, [pathToExecutable, [], inputs, outputs], kwargs)                
                 
