@@ -1,0 +1,51 @@
+!   EXAM30.
+!   Test of water EFP ... formamide/three water complex
+!
+!   FINAL E= -169.0085355753 after 12 iterations
+!   RMS gradient=0.008157643
+!
+!   The geometry below combines a computed gas phase
+!   structure for formamide, with three waters located
+!   in a cylic fashion whose positions approximate the
+!   minimum structure of W.Chen and M.S.Gordon.  This
+!   approximate structure lies about 11 mHartree above 
+!   the actual minimum.
+!
+ $contrl scftyp=rhf runtyp=gradient coord=zmt $end
+ $system timlim=2 $end
+ $basis  gbasis=dh npfunc=1 ndfunc=1 $end
+ $data
+formamide with three effective fragment waters
+C1
+C
+O 1 rCO
+N 1 rCN  2 aNCO
+H 3 rNHa 1 aCNHa 2 0.0
+H 3 rNHb 1 aCNHb 2 180.0
+H 1 rCH  2 aHCO  4 180.0
+
+rCO=1.1962565
+rCN=1.3534065
+rNHa=0.9948420
+rNHb=0.9921367
+rCH=1.0918368
+aNCO=124.93384
+aCNHa=119.16000
+aCNHb=121.22477
+aHCO=122.30822
+ $end
+ $efrag
+coord=int
+fragname=H2ORHF
+O1  4 1.926      3 175.0     1 180.0
+H2  7 0.9438636  4 117.4     3 -175.0
+H3  7 0.9438636  8 106.70327 4 95.0
+fragname=H2ORHF
+O1  8 1.901      7 175.0     4 0.0
+H2 10 0.9438636  8 110.0     4 -5.0
+H3 10 0.9438636 11 106.70327 8 -95.0
+fragname=H2ORHF
+H2  2 1.951      1 150.0     3 0.0
+O1 13 0.9438636  2 177.0     3 0.0
+H3 14 0.9438636 13 106.70327 3 140.0
+ $end

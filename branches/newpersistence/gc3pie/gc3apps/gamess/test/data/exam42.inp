@@ -1,0 +1,38 @@
+! EXAM 42.
+!  numerical gradient for CN, using open shell CC(2,3).
+!
+!  This tests the numerical gradient driver, and also
+!  emphasizes that the Dunning correlation consistent
+!  basis sets should be used in spherical harmonic form.
+!
+!  A numerical gradient computation requires the energy
+!  at the molecule's actual geometry, plus energies at
+!  a pair of geometries displaced along each of its
+!  totally symmetric directions.
+!  A diatomic has 1 totally symmetric degree of freedom,
+!  so this run requires 3 energies for 1 gradient.
+!
+!  See METHOD=FULLNUM in $FORCE for numerical hessians,
+!  and RUNTYP=FFIELD for numerical polarizabilities.
+!
+!  There are 30 AOs, 28 MOs, 2 frozen cores, so 5 alpha
+!  and 4 beta valence electrons are correlated.
+!
+!  E(ROHF)= -92.1960778308, E(CCSD)= -92.4767618032,
+!     the CR-CCL energy E(CC(2,3)) = -92.4930167395,
+!  and RMS gradient= 0.026601131 at the CC(2,3) level.
+!    (will optimize to -92.4941853332 at 1.1966876)
+!
+ $contrl scftyp=rohf cctyp=cr-ccl mult=2 nzvar=1
+         runtyp=gradient numgrd=.true. ispher=1 $end
+ $system timlim=4 $end
+ $basis  gbasis=ccd $end
+ $zmat   izmat(1)=1,1,2 $end
+ $ccinp  maxcc=50 $end
+ $data
+CN...experimental geometry...X-2-sigma-plus state
+Cnv 4
+
+C  6.0   0.0 0.0 0.0
+N  7.0   0.0 0.0 1.1718
+ $end
