@@ -31,3 +31,4 @@ applications of GC3Pie to research in a specific domain.
 
   * [http://gc3pie.googlecode.com/svn/wiki/posters/euroscipy2011/gc3pie-euroscipy2011.pdf Computational workflows with GC3Pie (PDF)].  Poster presented at the [http://www.euroscipy.org/conference/euroscipy2011 EuroSciPy2011 conference].
   * [http://gc3pie.googlecode.com/svn/wiki/posters/egi-user-forum-2011/GC3Pie_EGI-UF2011.pdf  Enabling High-Throughput Computational Chemistry on the Grid (PDF)].  Poster presented at the [http://uf2011.egi.eu/ EGI User Forum 2011].
+  * [http://gc3pie.googlecode.com/svn/wiki/posters/egi-community-forum-2012/gc3pieegi2012.pdf Computational workflows with GC3Pie (PDF)].  Poster presented at the [http://cf2012.egi.eu/ EGI Community Forum 2012].
