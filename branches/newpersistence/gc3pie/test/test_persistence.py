@@ -24,8 +24,7 @@ __docformat__ = 'reStructuredText'
 __version__ = '$Revision$'
 
 from gc3libs.url import Url
-from gc3libs.persistence import FilesystemStore
-from gc3libs.sql_persistence import SQL
+from gc3libs.persistence import persistence_factory, FilesystemStore
 import gc3libs.exceptions as gc3ex
 import tempfile, os
 
@@ -57,7 +56,7 @@ def test_file_persistency_old_conf():
 
 def test_file_persistency():
     path = Url('file:///tmp')
-    fs = FilesystemStore(path)
+    fs = persistence_factory(path)
     obj = MyObj('GC3')
 
     _generic_persistency_test(fs, obj)
@@ -66,7 +65,7 @@ def test_file_persistency():
 def test_sql_persistency():
     (fd, tmpfname) = tempfile.mkstemp()
     path = Url('sqlite://%s' % tmpfname)
-    db = SQL(path)
+    db = persistence_factory(path)
     obj = MyObj('GC3')
 
     _generic_persistency_test(db, obj)
@@ -74,10 +73,14 @@ def test_sql_persistency():
 
 
 def test_mysql_persistency():
-    path = Url('mysql://gc3user:gc3pwd@localhost/gc3')    
-    db = SQL(path)
-    obj = MyObj('GC3')
-    _generic_persistency_test(db, obj)
+    path = Url('mysql://gc3user:gc3pwd@localhost/gc3')
+    try:
+        db = persistence_factory(path)    
+        obj = MyObj('GC3')
+        _generic_persistency_test(db, obj)
+    except Exception, e:
+        if e.__class__.__name__ == "OperationalError": pass
+        else: raise
 
 
 def test_sql_job_persistency():
@@ -93,7 +96,7 @@ def test_sql_job_persistency():
 
     (fd, tmpfname) = tempfile.mkstemp()
     path = Url('sqlite://%s' % tmpfname)
-    db = SQL(path)
+    db = persistence_factory(path)
 
     id_ = db.save(app)
     

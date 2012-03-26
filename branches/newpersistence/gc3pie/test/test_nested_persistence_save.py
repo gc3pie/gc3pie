@@ -1,5 +1,5 @@
 from gc3libs.persistence import *
-fs = FilesystemStore('/tmp')
+fs = persistence_factory('file:///tmp')
 
 from gc3libs.application.gamess import GamessApplication
 
