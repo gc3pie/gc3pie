@@ -49,6 +49,7 @@ import gc3libs.Resource as Resource
 import gc3libs.scheduler as scheduler
 import gc3libs.utils as utils 
 
+from persistence import persistence_factory
 
 class Core:
     """Core operations: submit, update state, retrieve (a
@@ -678,7 +679,7 @@ specified in the configuration file.
                         _lrms = PbsLrms(_resource, self.auths)
                     elif _resource.type == gc3libs.Default.LSF_LRMS:
                         _lrms = LsfLrms(_resource, self.auths)
-                    elif _resource.type == gc3libs.Default.SHELLCMD_LRMS or _resource.type == gc3libs.Default.SUBPROCESS_lrms:
+                    elif _resource.type == gc3libs.Default.SHELLCMD_LRMS or _resource.type == gc3libs.Default.SUBPROCESS_LRMS:
                         _lrms = ShellcmdLrms(_resource, self.auths)
                     else:
                         raise gc3libs.exceptions.ConfigurationError(
@@ -700,9 +701,9 @@ specified in the configuration file.
 # === Configuration File
 
 def import_config(config_file_locations, auto_enable_auth=True):
-    (resources, auths) = read_config(*config_file_locations)
+    (resources, auths, persistings) = read_config(*config_file_locations)
     return (get_resources(resources), 
-            get_auth(auths,auto_enable_auth), 
+            get_auth(auths,auto_enable_auth),
             auto_enable_auth)
 
 
@@ -714,7 +715,17 @@ def get_auth(auths,auto_enable_auth):
                              ex.__class__.__name__, str(ex))
         raise
 
-
+def get_persistence(persistings):
+    # persistings should contain only *one* key!
+    try:
+        assert persistings.keys() > 0
+        return persistence_factory(persistings.values()[0]['uri'])
+    except Exception, ex:
+        gc3libs.log.critical('Failed initializing persistency subsystem: %s: %s',
+                             ex.__class__.__name__, str(ex))
+        raise
+    
+    
 def get_resources(resources_list):
     # build Resource objects from the list returned from read_config
     #        and match with selectd_resource from comand line
@@ -781,7 +792,8 @@ def read_config(*locations):
     defaults = { }
     resources = defaultdict(lambda: dict())
     auths = defaultdict(lambda: dict())
-
+    persistings = defaultdict(lambda: dict())
+    
     # map values for the `architecture=...` configuration item
     # into internal constants
     architecture_value_map = {
@@ -857,7 +869,15 @@ def read_config(*locations):
                             "No architecture specified for resource '%s'" % resource_name)
                 resources[resource_name].update(config_items)
                 resources[resource_name]['name'] = resource_name
-
+            elif sectname.startswith('persistence/'):
+                gc3libs.log.debug("Core.read_config():"
+                                  " Read configuration stanza for persistence '%s'." % sectname)
+                persistence_name = sectname.split('/', 1)[1]
+                cfg = dict(config.items(sectname))
+                if cfg.get('enabled', False): 
+                    persistings[persistence_name].update(dict(config.items(sectname)))
+                                                   
+                                                      
             else:
                 # Unhandled sectname
                 gc3libs.log.error("Core.read_config(): unknown configuration section '%s' -- ignoring!", 
@@ -883,7 +903,7 @@ def read_config(*locations):
         raise gc3libs.exceptions.NoConfigurationFile("Could not read any configuration file; tried locations '%s'."
                                   % str.join("', '", locations))
 
-    return (resources, auths)
+    return (resources, auths, persistings)
 
 
 class Engine(object):
