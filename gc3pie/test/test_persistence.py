@@ -48,9 +48,16 @@ def _generic_persistency_test(driver, obj):
     except Exception, e:
         raise e
 
+def test_file_persistency_old_conf():
+    path = '/tmp'
+    fs = FilesystemStore(path)
+    obj = MyObj('GC3')
+
+    _generic_persistency_test(fs, obj)
+
 def test_file_persistency():
-    path = Url('/tmp')
-    fs = FilesystemStore(path.path)
+    path = Url('file:///tmp')
+    fs = FilesystemStore(path)
     obj = MyObj('GC3')
 
     _generic_persistency_test(fs, obj)
@@ -105,6 +112,7 @@ def test_sql_job_persistency():
 if __name__ == "__main__":
     # fix pickle error
     from test_persistence import MyObj
+    test_file_persistency_old_conf()
     test_file_persistency()
     test_sql_persistency()
     test_mysql_persistency()
