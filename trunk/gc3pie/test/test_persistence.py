@@ -27,6 +27,7 @@ from gc3libs.url import Url
 from gc3libs.persistence import FilesystemStore
 from gc3libs.sql_persistence import SQL
 import gc3libs.exceptions as gc3ex
+import tempfile
 
 import os
 
@@ -58,15 +59,45 @@ def test_file_persistency():
 
 
 def test_sql_persistency():
-    path = Url('sqlite:///tmp/antani.db')
+    (fd, tmpfname) = tempfile.mkstemp()
+    path = Url('sqlite://%s' % tmpfname)
     db = SQL(path)
     obj = MyObj('GC3')
 
     _generic_persistency_test(db, obj)
-    os.remove('/tmp/antani.db')
+    os.remove(tmpfname)
+
+
+def test_sql_job_persistency():
+    import sqlite3
+    import gc3libs
+    from gc3libs.core import Run
+    app = gc3libs.Application(executable='/bin/true', arguments=[], inputs=[], outputs=[], output_dir='/tmp')
+
+    app.execution = MyObj('')
+    app.execution.state = Run.State.NEW
+    app.execution.lrms_jobid = 1
+
+    (fd, tmpfname) = tempfile.mkstemp()
+    path = Url('sqlite://%s' % tmpfname)
+    db = SQL(path)
+
+    id_ = db.save(app)
+    
+    conn = sqlite3.connect(tmpfname)
+    c = conn.cursor()
+    c.execute('select jobid,jobstatus from jobs')
+    row = c.fetchone()
+    assert int(row[0]) == app.execution.lrms_jobid
+    assert row[1] == app.execution.state
+    c.close()
+    os.remove(tmpfname)
+    
+
     
 if __name__ == "__main__":
     # fix pickle error
     from test_persistence import MyObj
     test_file_persistency()
     test_sql_persistency()
+    test_sql_job_persistency()
