@@ -27,9 +27,7 @@ from gc3libs.url import Url
 from gc3libs.persistence import FilesystemStore
 from gc3libs.sql_persistence import SQL
 import gc3libs.exceptions as gc3ex
-import tempfile
-
-import os
+import tempfile, os
 
 class MyObj:
     def __init__(self, x):
@@ -68,6 +66,13 @@ def test_sql_persistency():
     os.remove(tmpfname)
 
 
+def test_mysql_persistency():
+    path = Url('mysql://gc3user:gc3pwd@localhost/gc3')    
+    db = SQL(path)
+    obj = MyObj('GC3')
+    _generic_persistency_test(db, obj)
+
+
 def test_sql_job_persistency():
     import sqlite3
     import gc3libs
@@ -77,6 +82,7 @@ def test_sql_job_persistency():
     app.execution = MyObj('')
     app.execution.state = Run.State.NEW
     app.execution.lrms_jobid = 1
+    app.jobname = 'GC3Test'
 
     (fd, tmpfname) = tempfile.mkstemp()
     path = Url('sqlite://%s' % tmpfname)
@@ -86,10 +92,11 @@ def test_sql_job_persistency():
     
     conn = sqlite3.connect(tmpfname)
     c = conn.cursor()
-    c.execute('select jobid,jobstatus from jobs')
+    c.execute('select jobid,jobname, jobstatus from jobs')
     row = c.fetchone()
     assert int(row[0]) == app.execution.lrms_jobid
-    assert row[1] == app.execution.state
+    assert row[1] == app.jobname
+    assert row[2] == app.execution.state
     c.close()
     os.remove(tmpfname)
     
@@ -100,4 +107,5 @@ if __name__ == "__main__":
     from test_persistence import MyObj
     test_file_persistency()
     test_sql_persistency()
+    test_mysql_persistency()
     test_sql_job_persistency()

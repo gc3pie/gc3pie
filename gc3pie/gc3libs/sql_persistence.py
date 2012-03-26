@@ -44,10 +44,30 @@ def sqlite_factory(url):
     try:
         c.next()
     except StopIteration:
-        c.execute("create table jobs (id int, data blob, type varchar(128), jobid varchar(128), jobstatus varchar(128), persistent_attributes text)")
+        c.execute("create table jobs (id int, data blob, type varchar(128), jobid varchar(128), jobname varchar(255), jobstatus varchar(128), persistent_attributes text)")
     c.close()
     return conn
 
+def mysql_factory(url):
+    assert url.scheme == 'mysql'
+    import MySQLdb, MySQLdb.constants.ER
+    try:
+        port = int(url.port)
+    except:
+        port=3306
+    conn = MySQLdb.connect(host=url.hostname, port=port, user=url.username, passwd=url.password, db=url.path.strip('/'))
+    c = conn.cursor()
+    try:
+        c.execute('select count(*) from jobs')
+    except MySQLdb.ProgrammingError, e:
+        if e.args[0] == MySQLdb.constants.ER.NO_SUCH_TABLE:
+            c.execute("create table jobs (id int, data blob, type varchar(128), jobid varchar(128), jobname varchar(255), jobstatus varchar(128), persistent_attributes text)")
+    c.close()
+    return conn
+
+DRIVERS={'sqlite': sqlite_factory,
+         'mysql': mysql_factory,
+         }
 
 class SQL(Store):
     """
@@ -92,10 +112,10 @@ class SQL(Store):
         url. It will use the correct backend (MySQL, psql, sqlite3)
         based on the url.scheme value
         """
-        if url.scheme not in ['sqlite']:
+        if url.scheme not in DRIVERS:
             raise NotImplementedError("DB Driver %s not supported" % url.scheme)
         
-        self.__conn = sqlite_factory(url)
+        self.__conn = DRIVERS[url.scheme](url)
 
     @same_docstring_as(Store.list)
     def list(self):
@@ -136,23 +156,25 @@ class SQL(Store):
         # insert into db        
         otype = ''
         jobid = ''
+        jobname = ''
         jobstatus = ''
         
         if isinstance(obj, Task):
             otype = 'job'
             jobstatus = obj.execution.state
             jobid = obj.execution.lrms_jobid
+            jobname = obj.jobname
         
         if action == 'save':
             query = """insert into jobs ( \
-id, data, type, jobid, jobstatus, persistent_attributes) \
-values (%d, '%s', '%s', '%s', '%s', '%s')""" % (
-id_, pdata, otype, jobid, jobstatus, pextra )
+id, data, type, jobid, jobname, jobstatus, persistent_attributes) \
+values (%d, '%s', '%s', '%s', '%s', '%s', '%s')""" % (
+id_, pdata, otype, jobid, jobname, jobstatus, pextra )
             c.execute(query)
         elif action == 'replace':
             query = """update jobs set  \
-data='%s', type='%s', jobid='%s', jobstatus='%s', persistent_attributes='%s' \
-where id=%d""" % (pdata,otype, jobid, jobstatus, pextra, id_)
+data='%s', type='%s', jobid='%s', jobstatus='%s', jobname='%s', persistent_attributes='%s' \
+where id=%d""" % (pdata,otype, jobid, jobstatus, jobname, pextra, id_)
             c.execute(query)
         obj.persistent_id = id_
         self.__conn.commit()
