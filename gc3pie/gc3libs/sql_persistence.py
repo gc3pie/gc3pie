@@ -28,6 +28,7 @@ __version__ = '$Revision$'
 from gc3libs.persistence import Store
 from gc3libs.utils import same_docstring_as
 import gc3libs.exceptions
+from gc3libs import Task
 
 import pickle
 
@@ -43,14 +44,17 @@ def sqlite_factory(url):
     try:
         c.next()
     except StopIteration:
-        c.execute("create table jobs (id int, data blob, persistent_attributes text)")
+        c.execute("create table jobs (id int, data blob, type varchar(128), jobid varchar(128), jobstatus varchar(128), persistent_attributes text)")
     c.close()
     return conn
 
 
 class SQL(Store):
     """
-    Stores data in a db
+    Save and load objects in a SQL db. Uses Python's `pickle` module
+    to serialize objects and parse the `Url` object to define the
+    driver to use (`sqlite`, `MySQL`, `postgres`...), db, and
+    optionally user and password.    
 
     >>> import tempfile, os
     >>> (fd, name) = tempfile.mkstemp()
@@ -98,6 +102,7 @@ class SQL(Store):
         c = self.__conn.cursor()
         c.execute('select id from jobs')
         ids = [i[0] for i in c.fetchall()]
+        self.__conn.commit()
         c.close()
         return ids
 
@@ -129,11 +134,28 @@ class SQL(Store):
         pdata = pickle.dumps(obj).encode('base64')
         pextra = pickle.dumps(extra_fields).encode('base64')
         # insert into db        
+        otype = ''
+        jobid = ''
+        jobstatus = ''
+        
+        if isinstance(obj, Task):
+            otype = 'job'
+            jobstatus = obj.execution.state
+            jobid = obj.execution.lrms_jobid
+        
         if action == 'save':
-            c.execute("insert into jobs values (%d, '%s', '%s')" % (id_, pdata, pextra ))
+            query = """insert into jobs ( \
+id, data, type, jobid, jobstatus, persistent_attributes) \
+values (%d, '%s', '%s', '%s', '%s', '%s')""" % (
+id_, pdata, otype, jobid, jobstatus, pextra )
+            c.execute(query)
         elif action == 'replace':
-            c.execute("update jobs set  data='%s', persistent_attributes='%s' where id=%d" % (pdata, pextra, id_))
+            query = """update jobs set  \
+data='%s', type='%s', jobid='%s', jobstatus='%s', persistent_attributes='%s' \
+where id=%d""" % (pdata,otype, jobid, jobstatus, pextra, id_)
+            c.execute(query)
         obj.persistent_id = id_
+        self.__conn.commit()
         c.close()
 
         # return id
@@ -147,6 +169,7 @@ class SQL(Store):
         if not rawdata:
             raise gc3libs.exceptions.LoadError("Unable to find object %d" % id_)
         data = pickle.loads(rawdata[0].decode('base64'))
+        self.__conn.commit()
         c.close()
         return data
 
@@ -154,8 +177,11 @@ class SQL(Store):
     def remove(self, id_):
         c = self.__conn.cursor()
         c.execute('delete from jobs where id=%d' % id_)
+        self.__conn.commit()
         c.close()
-        
+
+
+
 ## main: run tests
 
 if "__main__" == __name__:
