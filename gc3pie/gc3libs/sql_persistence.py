@@ -106,7 +106,7 @@ class SQL(Store):
     >>> import os
     >>> os.remove(name)
     """
-    def __init__(self, url):
+    def __init__(self, url, *args, **kw):
         """
         Open a connection to the storage database identified by
         url. It will use the correct backend (MySQL, psql, sqlite3)
@@ -162,7 +162,9 @@ class SQL(Store):
         if isinstance(obj, Task):
             otype = 'job'
             jobstatus = obj.execution.state
-            jobid = obj.execution.lrms_jobid
+            jobid = -1
+            if hasattr(obj.execution, 'lrms_jobid'):
+                jobid = obj.execution.lrms_jobid
             jobname = obj.jobname
         
         if action == 'save':
