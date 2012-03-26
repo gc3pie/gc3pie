@@ -176,3 +176,36 @@ debug = 0
 # # if you need to lower this
 # sge_accounting_delay = 15
 # walltime = 2
+
+
+
+# Persistence section
+# [persistence/name]
+#
+# In theory, only one persistence should be defined. In practice, you
+# can define more but only one should be enabled.
+#
+# The main configuration entry is `uri` which will contains the uri
+# used to identify when and where persist the data. It is in the form:
+#
+# <dbdriver>://[<user>:<password>@][<hostname>][:<port>]/<dbname>
+# 
+# The only mandatory entries are `dbdriver` and `dbname`. Specific
+# drivers, though, may *requires* you to specify some other values. A
+# sqlite database, for instance, is defined with only <dbdriver> and
+# <dbname> (which is the path to the db file), while for a mysql
+# driver you will probably need to specify user, password and hostname
+# as well.
+#
+# Valid values for `dbdriver` are:
+#
+# * file: will use the `pickle` module and will write one file per
+#   object in the <dbname> directory.
+#
+# * sqlite: will use sqlite3 module. <dbname> will be the absolute
+#   path of the db file
+# 
+# * mysql: will use python-mysql module.
+
+# [persistence/name]
+# uri = mysql://user:password@hostname:port/dbname
