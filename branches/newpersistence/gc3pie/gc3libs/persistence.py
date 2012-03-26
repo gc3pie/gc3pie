@@ -262,7 +262,10 @@ class FilesystemStore(Store):
     """
     def __init__(self, directory=gc3libs.Default.JOBS_DIR, 
                  idfactory=IdFactory(), protocol=pickle.HIGHEST_PROTOCOL):
+        if isinstance(directory, gc3libs.url.Url):
+            directory=directory.path
         self._directory = directory
+        
         self.idfactory = idfactory
         self._protocol = protocol
 
