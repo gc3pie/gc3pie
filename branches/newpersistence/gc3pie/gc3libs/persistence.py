@@ -31,8 +31,7 @@ import sys
 import gc3libs
 import gc3libs.exceptions
 from gc3libs.utils import progressive_number, same_docstring_as
-
-
+from gc3libs.url import Url
 
 class Store(object):
     """
@@ -452,7 +451,13 @@ class FilesystemStore(Store):
                     pass # ignore errors
             raise
 
-
+def persistence_factory(uri, *args, **kw):
+    if not isinstance(uri, Url):
+        uri = Url(uri)
+    if uri.scheme == 'file': return FilesystemStore(uri, *args, **kw)
+    else:
+        from sql_persistence import SQL
+        return SQL(uri, *args, **kw)
 
 ## main: run tests
 
