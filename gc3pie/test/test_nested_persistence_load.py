@@ -1,8 +1,7 @@
 import sys
 
 from gc3libs.persistence import *
-fs = FilesystemStore('/tmp')
-
+fs = persistence_factory('file:///tmp')
 
 class MyList(list):
     """
