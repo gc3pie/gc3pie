@@ -678,7 +678,7 @@ specified in the configuration file.
                         _lrms = PbsLrms(_resource, self.auths)
                     elif _resource.type == gc3libs.Default.LSF_LRMS:
                         _lrms = LsfLrms(_resource, self.auths)
-                    elif _resource.type == gc3libs.Default.SHELLCMD_LRMS or _resource.type == gc3libs.Default.SUBPROCESS_lrms:
+                    elif _resource.type == gc3libs.Default.SHELLCMD_LRMS or _resource.type == gc3libs.Default.SUBPROCESS_LRMS:
                         _lrms = ShellcmdLrms(_resource, self.auths)
                     else:
                         raise gc3libs.exceptions.ConfigurationError(
