@@ -37,7 +37,6 @@ def test_mandatory_arguments():
           'inputs': [],
           'outputs': [],
           'output_dir': '/tmp',
-          'requested_cores': 1,
           }
     
     # test *valid* invocation
@@ -94,7 +93,6 @@ def test_valid_invocation():
           'inputs': ['/tmp/a', 'b'],
           'outputs': ['o1', 'o2'],
           'output_dir': '/tmp',
-          'requested_cores': 1,
           }
     app = Application(**ma)
     
