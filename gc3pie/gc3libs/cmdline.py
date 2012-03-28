@@ -65,11 +65,52 @@ import gc3libs.core
 import gc3libs.exceptions
 import gc3libs.persistence
 import gc3libs.utils
-
+import gc3libs.url
 
 ## types for command-line parsing; see http://docs.python.org/dev/library/argparse.html#type
 
 def nonnegative_int(num):
+    """This function raise an ArgumentTypeError if `num` is a negative
+    integer (<0), and returns int(num) otherwise. `num` can be any
+    object which can be converted to an int.
+
+    >>> nonnegative_int('1')
+    1
+    >>> nonnegative_int(1)
+    1
+    >>> nonnegative_int('-1') # doctest:+ELLIPSIS
+    Traceback (most recent call last):
+        ...
+    ArgumentTypeError: '-1' is not a non-negative integer number.
+    >>> nonnegative_int(-1) # doctest:+ELLIPSIS
+    Traceback (most recent call last):
+        ...
+    ArgumentTypeError: '-1' is not a non-negative integer number.
+
+    Please note that `0` and `'-0'` are ok:
+    
+    >>> nonnegative_int(0)
+    0
+    >>> nonnegative_int(-0)
+    0
+    >>> nonnegative_int('0')
+    0
+    >>> nonnegative_int('-0')
+    0
+
+    Floats are ok too:
+
+    >>> nonnegative_int(3.14)
+    3
+    >>> nonnegative_int(0.1)
+    0
+
+    >>> nonnegative_int('ThisWillRaiseAnException') # doctest:+ELLIPSIS
+    Traceback (most recent call last):
+        ...
+    ArgumentTypeError: 'ThisWillRaiseAnException' is not a non-negative integer number.
+
+    """
     try:
         value = int(num)
         if value < 0:
@@ -82,6 +123,64 @@ def nonnegative_int(num):
 
 
 def positive_int(num):
+    """This function raises an ArgumentTypeError if `num` is not
+    a*strictly* positive integer (>0) and returns int(num)
+    otherwise. `num` can be any object which can be converted to an
+    int.
+
+    >>> positive_int('1')
+    1
+    >>> positive_int(1)
+    1
+    >>> positive_int('-1') # doctest:+ELLIPSIS
+    Traceback (most recent call last):
+    ...
+    ArgumentTypeError: '-1' is not a positive integer number.
+    >>> positive_int(-1) # doctest:+ELLIPSIS
+    Traceback (most recent call last):
+    ...
+    ArgumentTypeError: '-1' is not a positive integer number.
+    >>> positive_int(0) # doctest:+ELLIPSIS
+    Traceback (most recent call last):
+    ...
+    ArgumentTypeError: '0' is not a positive integer number.
+
+    Floats are ok too:
+
+    >>> positive_int(3.14)
+    3
+
+    but please take care that float *greater* than 0 will fail:
+    
+    >>> positive_int(0.1)
+    Traceback (most recent call last):
+    ...
+    ArgumentTypeError: '0.1' is not a positive integer number.
+
+    
+    Please note that `0` is NOT ok:
+    
+    >>> positive_int(-0) # doctest: +ELLIPSIS
+    Traceback (most recent call last):
+    ...
+    ArgumentTypeError: '0' is not a positive integer number.
+    >>> positive_int('0') # doctest: +ELLIPSIS
+    Traceback (most recent call last):
+    ...
+    ArgumentTypeError: '0' is not a positive integer number.
+    >>> positive_int('-0') # doctest: +ELLIPSIS
+    Traceback (most recent call last):
+    ...
+    ArgumentTypeError: '-0' is not a positive integer number.
+
+    Any string which does cannot be converted to an integer will fail:
+    
+    >>> positive_int('ThisWillRaiseAnException') # doctest:+ELLIPSIS
+    Traceback (most recent call last):
+        ...
+    ArgumentTypeError: 'ThisWillRaiseAnException' is not a positive integer number.
+
+    """
     try:
         value = int(num)
         if value <= 0:
@@ -513,7 +612,7 @@ class GC3UtilsScript(_Script):
             if (not os.path.isdir(jobs_dir)
                 and not jobs_dir.endswith('.jobs')):
                 jobs_dir = jobs_dir + '.jobs'
-        self._store = gc3libs.persistence.FilesystemStore(
+        self._store = gc3libs.persistence.persistence_factory(
             jobs_dir, 
             idfactory=gc3libs.persistence.JobIdFactory()
             )
@@ -689,7 +788,8 @@ class SessionBasedScript(_Script):
         new_jobs = list(self.new_tasks(self.extra))
         # pre-allocate Job IDs
         if len(new_jobs) > 0:
-            self.store.idfactory.reserve(len(new_jobs))
+            if hasattr(self.store, 'idfactory'):
+                self.store.idfactory.reserve(len(new_jobs))
 
         # add new jobs to the session
         existing_job_names = set(task.jobname for task in self.tasks)
@@ -1083,20 +1183,26 @@ class SessionBasedScript(_Script):
         self.params.walltime = int(self.params.wctime) / 3600
 
         ## determine the session file name (and possibly create an empty index)
-        if ( os.path.exists(self.params.session)
-             and os.path.isdir(self.params.session) ):
-            self.session_dirname = os.path.realpath(self.params.session)
-            self.session_filename = os.path.join(self.session_dirname, 'index.csv')
-        else:
-            if self.params.session.endswith('.jobs'):
-                self.params.session = self.params.session[:-5]
-            elif self.params.session.endswith('.csv'):
-                self.params.session = self.params.session[:-4]
-            self.session_dirname = self.params.session + '.jobs'
-            self.session_filename = self.params.session + '.csv'
+        self.session_uri = gc3libs.url.Url(self.params.session)
 
-        ## now that the session directory is known, use it as a store
-        ## for the grid credentials (possibly)
+        _path = self.session_uri.path
+        if ( os.path.exists(_path)
+             and os.path.isdir(_path) ):
+            self.session_dirname = os.path.realpath(_path)
+            self.session_filename = os.path.join(_path, 'index.csv')
+        else:
+            if _path.endswith('.jobs'):
+                _path = _path[:-5]
+            elif _path.endswith('.csv'):
+                _path = _path[:-4]
+            elif _path.endswith('.db'):
+                _path = _path[:-3]
+            
+            self.session_dirname = _path + '.jobs'
+            self.session_filename = _path + '.csv'
+
+        if self.session_uri.scheme == 'file':
+            self.session_uri = gc3libs.url.Url(self.session_dirname)
         self._core.auths.add_params(private_copy_directory=self.session_dirname)
 
         # XXX: ARClib errors out if the download directory already exists, so
@@ -1129,8 +1235,8 @@ class SessionBasedScript(_Script):
         """
 
         ## create a `persistence.Store` instance to _save_session/_load_session jobs
-        self.store = gc3libs.persistence.FilesystemStore(
-            self.session_dirname, 
+        self.store = gc3libs.persistence.persistence_factory(
+            self.session_uri, 
             idfactory=gc3libs.persistence.JobIdFactory()
             )
 
