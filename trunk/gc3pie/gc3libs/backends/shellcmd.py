@@ -42,7 +42,8 @@ class ShellcmdLrms(LRMS):
     """
 
     def __init__(self, resource, auths):
-        assert resource.type == gc3libs.Default.SHELLCMD_LRMS, \
+        assert resource.type in [gc3libs.Default.SHELLCMD_LRMS,
+                                 gc3libs.Default.SUBPROCESS_LRMS], \
             "ShellcmdLrms.__init__():" \
             " Expected resource type 'shellcmd', got '%s' instead" \
             % resource.type
