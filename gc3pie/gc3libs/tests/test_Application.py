@@ -53,11 +53,9 @@ def test_mandatory_arguments():
 
 def test_wrong_type_arguments():
     # Things that will raise errors:
-    # * arguments with unicode
-    # * inputs or outputs with unicode
-    # * inputs with duplicated entries
-    # * outputs with duplicated entries
-    # * remote paths are not absolute
+    # * unicode arguments
+    # * unicode files in inputs or outputs
+    # * remote paths (outputs) must not be absolute
     #
     # What happens when you request non-integer cores/memory/walltime?
     # what happens when you request non-existent architecture?
@@ -67,7 +65,7 @@ def test_wrong_type_arguments():
           'inputs': [],
           'outputs': [],
           'output_dir': '/tmp',
-          'requested_cores': 1,
+          'requested_cores': 1,          
           }
     for k,v  in {
         'arguments' : [u'\ua0246'],
@@ -78,6 +76,8 @@ def test_wrong_type_arguments():
         'outputs' : ['/should/not/be/absolute'],
         # 'outputs' : ['duplicated', 'duplicated'],
         # duplicated outputs doesnt raise an exception but just a warning
+        'requested_architecture' : 'FooBar',
+        'requested_cores' : 'one',
         }.items():
         _tmpma = ma.copy()
         _tmpma[k] = v
@@ -101,7 +101,7 @@ def test_io_spec_to_dict_unicode():
     try:
         Application._io_spec_to_dict(gc3libs.url.UrlKeyDict, {u'/tmp/\u0246':u'\u0246', '/tmp/b/':'b'}, True)
     except UnicodeEncodeError, e:
-        assert "UnicodeEncodeError in Application._io_spec_to_dict was expected" 
+        assert "UnicodeEncodeError in Application._io_spec_to_dict was expected" is False
 ## main: run tests
 
 

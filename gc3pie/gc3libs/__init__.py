@@ -791,10 +791,20 @@ class Application(Persistable, Task):
         self.output_base_url = get_and_remove(kw, 'output_base_url', None)
         
         # FIXME: should use appropriate unit classes for requested_*
-        self.requested_cores = get_and_remove(kw, 'requested_cores', 1)
+        self.requested_cores = int(get_and_remove(kw, 'requested_cores', 1))
         self.requested_memory = get_and_remove(kw, 'requested_memory')
         self.requested_walltime = get_and_remove(kw, 'requested_walltime')
         self.requested_architecture = get_and_remove(kw, 'requested_architecture', None)
+        # FIXME: We should add a test like the following, but we can't
+        # import gc3libs.core from __init__.py, so let's think a
+        # better solution.
+        # from gc3libs.core import architecture_value_map
+        # if self.requested_architecture and \
+        #        self.requested_architecture not in architecture_value_map:
+        #     raise InvalidArgument(
+        #         "Requested Architecture `%s` is an invalid token"
+        #         % self.requested_architecture)
+        
         
         self.environment = get_and_remove(kw, 'environment', dict())
         self.environment = dict(Application._to_env_pair(x)
