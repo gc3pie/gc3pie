@@ -54,7 +54,7 @@ class housingApplication(Application):
     _invalid_chars = re.compile(r'[^_a-zA-Z0-9]+', re.X)
     
     def __init__(self, executable, arguments, inputs, outputs, output_dir, **kw):
-        kw.setdefault('requested_walltime', 100)
+        kw.setdefault('requested_walltime', 2)
         Application.__init__(self, executable, arguments, inputs, outputs, output_dir, **kw)
     
     def fetch_output_error(self, ex):
@@ -150,7 +150,7 @@ class housingApplication(Application):
             
 class housingApppotApplication(housingApplication, gc3libs.application.apppot.AppPotApplication):
     _invalid_chars = re.compile(r'[^_a-zA-Z0-9]+', re.X)
-    
     def __init__(self, executable, arguments, inputs, outputs, output_dir, **kw):
+        kw.setdefault('requested_walltime', 2)
         gc3libs.application.apppot.AppPotApplication.__init__(self, executable, arguments, inputs, outputs, output_dir, **kw)
 
