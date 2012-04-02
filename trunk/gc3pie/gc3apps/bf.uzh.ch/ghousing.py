@@ -317,74 +317,6 @@ def engineProgress(self):
             del self._terminating[index]
 
 
-import gc3libs.core
-gc3libs.core.Engine.progress = engineProgress
-
-def script__init__(self, **kw):
-    """
-temporary overload for _Script.__init__
-    """
-    # use keyword arguments to set additional instance attrs
-    for k,v in kw.items():
-        if k not in ['name', 'description']:
-            setattr(self, k, v)
-    # init and setup pyCLI classes
-    if not kw.has_key('version'):
-        try:
-            kw['version'] = self.version
-        except AttributeError:
-            raise AssertionError("Missing required parameter 'version'.")
-    if not kw.has_key('description'):
-        if self.__doc__ is not None:
-            kw['description'] = self.__doc__
-        else:
-            raise AssertionError("Missing required parameter 'description'.")
-    # allow overriding command-line options in subclasses
-    def argparser_factory(*args, **kwargs):
-        kwargs.setdefault('conflict_handler', 'resolve')
-        kwargs.setdefault('formatter_class',
-                          cli._ext.argparse.RawDescriptionHelpFormatter)
-        return cli.app.CommandLineApp.argparser_factory(*args, **kwargs)
-    self.argparser_factory = argparser_factory
-    # init superclass
-    cli.app.CommandLineApp.__init__(
-        self,
-        # remove the '.py' extension, if any
-        name=os.path.splitext(os.path.basename(sys.argv[0]))[0],
-        reraise = Exception,
-        **kw
-        )
-    # provide some defaults
-    self.verbose_logging_threshold = 0
-
-import gc3libs.cmdline
-gc3libs.cmdline._Script.__init__ = script__init__
-
-
-def post_run(self, returned):
-    """
-    temporary overload for cli.app.Application.post_run
-    """
-    # Interpret the returned value in the same way sys.exit() does.
-    if returned is None:
-        returned = 0
-    elif isinstance(returned, Abort):
-        returned = returned.status
-    elif isinstance(returned, self.reraise):
-        raise
-    else:
-        try:
-            returned = int(returned)
-        except:
-            returned = 1
-        
-    if self.exit_after_main:
-        sys.exit(returned)
-    else:
-        return returned
-import cli.app
-cli.app.Application.post_run = post_run
-
 
 def pre_run(self):
     """
@@ -685,8 +617,9 @@ def combinedThresholdPlot():
         logger.info(fullTable)
         f = open(os.path.join(os.getcwd(), 'ownerThresholds'), 'w')  
         print >> f, fullTable
-        f.flush() 
-        plotSimulation(path = os.path.join(os.getcwd(), 'ownerThresholds'), xVar = 'age', yVars = list(fullTable.cols), figureFile = os.path.join(os.getcwd(), 'ownerThresholds.eps'), verb = 'CRITICAL' )
+        f.flush()
+        ax = 3
+        plotSimulation(table = os.path.join(os.getcwd(), 'ownerThresholds'), xVar = 'age', yVars = list(fullTable.cols), figureFile = os.path.join(os.getcwd(), 'ownerThresholds.eps'), verb = 'CRITICAL' )
 
 def combinedOwnerSimuPlot():
     import copy
@@ -723,7 +656,7 @@ def combinedOwnerSimuPlot():
             logger.info('no owner simus')
         logger.debug('done combinedOwnerSimuPlot')
         
-        plotSimulation(path = os.path.join(os.getcwd(), 'ownerSimu'), xVar = 'age', yVars = list(fullTable.cols), yVarRange = (0., 1.), figureFile = os.path.join(os.getcwd(), 'ownerSimu.eps'), verb = 'CRITICAL' )
+        plotSimulation(table = os.path.join(os.getcwd(), 'ownerSimu'), xVar = 'age', yVars = list(fullTable.cols), yVarRange = (0., 1.), figureFile = os.path.join(os.getcwd(), 'ownerSimu.eps'), verb = 'CRITICAL' )
 
 def combineRunningTimes():
     folders = [folder for folder in os.listdir(os.getcwd()) if os.path.isdir(folder) and not folder == 'localBaseDir' and not folder == 'ghousing.jobs']
