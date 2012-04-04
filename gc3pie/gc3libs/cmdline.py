@@ -70,6 +70,47 @@ import gc3libs.url
 ## types for command-line parsing; see http://docs.python.org/dev/library/argparse.html#type
 
 def nonnegative_int(num):
+    """This function raise an ArgumentTypeError if `num` is a negative
+    integer (<0), and returns int(num) otherwise. `num` can be any
+    object which can be converted to an int.
+
+    >>> nonnegative_int('1')
+    1
+    >>> nonnegative_int(1)
+    1
+    >>> nonnegative_int('-1') # doctest:+ELLIPSIS
+    Traceback (most recent call last):
+        ...
+    ArgumentTypeError: '-1' is not a non-negative integer number.
+    >>> nonnegative_int(-1) # doctest:+ELLIPSIS
+    Traceback (most recent call last):
+        ...
+    ArgumentTypeError: '-1' is not a non-negative integer number.
+
+    Please note that `0` and `'-0'` are ok:
+    
+    >>> nonnegative_int(0)
+    0
+    >>> nonnegative_int(-0)
+    0
+    >>> nonnegative_int('0')
+    0
+    >>> nonnegative_int('-0')
+    0
+
+    Floats are ok too:
+
+    >>> nonnegative_int(3.14)
+    3
+    >>> nonnegative_int(0.1)
+    0
+
+    >>> nonnegative_int('ThisWillRaiseAnException') # doctest:+ELLIPSIS
+    Traceback (most recent call last):
+        ...
+    ArgumentTypeError: 'ThisWillRaiseAnException' is not a non-negative integer number.
+
+    """
     try:
         value = int(num)
         if value < 0:
@@ -82,6 +123,64 @@ def nonnegative_int(num):
 
 
 def positive_int(num):
+    """This function raises an ArgumentTypeError if `num` is not
+    a*strictly* positive integer (>0) and returns int(num)
+    otherwise. `num` can be any object which can be converted to an
+    int.
+
+    >>> positive_int('1')
+    1
+    >>> positive_int(1)
+    1
+    >>> positive_int('-1') # doctest:+ELLIPSIS
+    Traceback (most recent call last):
+    ...
+    ArgumentTypeError: '-1' is not a positive integer number.
+    >>> positive_int(-1) # doctest:+ELLIPSIS
+    Traceback (most recent call last):
+    ...
+    ArgumentTypeError: '-1' is not a positive integer number.
+    >>> positive_int(0) # doctest:+ELLIPSIS
+    Traceback (most recent call last):
+    ...
+    ArgumentTypeError: '0' is not a positive integer number.
+
+    Floats are ok too:
+
+    >>> positive_int(3.14)
+    3
+
+    but please take care that float *greater* than 0 will fail:
+    
+    >>> positive_int(0.1)
+    Traceback (most recent call last):
+    ...
+    ArgumentTypeError: '0.1' is not a positive integer number.
+
+    
+    Please note that `0` is NOT ok:
+    
+    >>> positive_int(-0) # doctest: +ELLIPSIS
+    Traceback (most recent call last):
+    ...
+    ArgumentTypeError: '0' is not a positive integer number.
+    >>> positive_int('0') # doctest: +ELLIPSIS
+    Traceback (most recent call last):
+    ...
+    ArgumentTypeError: '0' is not a positive integer number.
+    >>> positive_int('-0') # doctest: +ELLIPSIS
+    Traceback (most recent call last):
+    ...
+    ArgumentTypeError: '-0' is not a positive integer number.
+
+    Any string which does cannot be converted to an integer will fail:
+    
+    >>> positive_int('ThisWillRaiseAnException') # doctest:+ELLIPSIS
+    Traceback (most recent call last):
+        ...
+    ArgumentTypeError: 'ThisWillRaiseAnException' is not a positive integer number.
+
+    """
     try:
         value = int(num)
         if value <= 0:
