@@ -268,7 +268,6 @@ class BatchSystem(LRMS):
                     job.lrms_jobname = app.jobname
             except:
                 pass
-
             if 'stdout' in app:
                 job.stdout_filename = app.stdout
             else:

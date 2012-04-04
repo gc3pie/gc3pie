@@ -21,7 +21,7 @@
 __docformat__ = 'reStructuredText'
 __version__ = '$Revision$'
 
-from gc3libs import Task, configure_logger
+from gc3libs import Task, Application, configure_logger
 from gc3libs.Proxy import Proxy
 
 
@@ -71,7 +71,26 @@ def test_proxy_storage_wrong_storage():
     assert t.jobname == 'NoTask'
     assert isinstance(object.__getattribute__(t, "_obj") , Task)
 
-    
+
+class MyClass:
+    @staticmethod
+    def get_me_wrong():
+        return "wrong"
+
+class MyPClass(Proxy):
+    def __init__(self, x, **kw):
+        obj = MyClass()
+        Proxy.__init__(self, obj, **kw)
+
+def test_staticmethod():
+    t = Proxy(MyClass())
+    assert t.get_me_wrong() == "wrong"
+    # t = MyPClass() questo da' un errore!!!
+    # assert t.get_me_wrong() == "wrong"
+
+def test_application():
+    app = Proxy(Application('bash', [], [], [], '/tmp'))
+    app.proxy_forget()
 ## main: run tests
 
 if "__main__" == __name__:
@@ -82,3 +101,4 @@ if "__main__" == __name__:
     test_proxy_no_storage()
     test_proxy_storage()
     test_proxy_storage_wrong_storage()
+    test_staticmethod()

@@ -255,7 +255,7 @@ def test_delete_job():
     g.kill(app)
     assert app.execution.state == State.TERMINATED
 
-def test_delete_job():
+def test_delete_job2():
     (g, t, app)  = _common_setup()
     t.expected_answer['qsub'] = correct_submit()
     g.submit(app)
@@ -266,7 +266,8 @@ def test_delete_job():
     assert app.execution.state == State.TERMINATED
     
 if __name__ == "__main__":
-    test_pbs_basic_workflow()
     test_submission_failed()
+    test_pbs_basic_workflow()
     test_tracejob_parsing()
     test_delete_job()
+    test_delete_job2()

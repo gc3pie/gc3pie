@@ -544,7 +544,101 @@ def configure_logger(level=logging.ERROR,
 # directory"
 ANY_OUTPUT = '*'
 
-class Application(Persistable, Task):
+import Proxy
+
+class Application(Proxy.Proxy):
+    def __init__(self, *args, **kw):
+        try:
+            storage = kw.pop('storage')
+        except:
+            storage = None
+        try:
+            manager = kw.pop('manager')
+        except:
+            manager = None
+        Proxy.Proxy.__init__(self, _Application(*args, **kw), storage=storage, manager=manager)
+
+    def __new__(cls, *args, **kw):
+        return Proxy.Proxy.__new__(cls, _Application('',[],[],[],''))
+
+    # Some static methods that where defined in _Application
+    @staticmethod
+    def _to_env_pair(val):
+        if isinstance(val, tuple):
+            return val
+        else:
+            # assume `val` is a string
+            return tuple(val.split('=', 1))
+
+
+    @staticmethod
+    def _io_spec_to_dict(ctor, spec, force_abs):
+        """
+        (This class is only used for internal processing of `input`
+        and `output` fields.)
+        
+        Return a dictionary formed by pairs `URL:name` or `name:URL`.
+        The `URL` part is a tuple as returned by functions `urlparse`
+        and `urlsplit` in the Python standard module
+        `urlparse`:module: -- `name` is a string that should be
+        interpreted as a filename (relative to the job execution
+        directory).
+
+        Argument `ctor` is the constructor for the dictionary class to
+        return; `gc3libs.url.UrlKeyDict` and
+        `gc3libs.url.UrlValueDict` are valid values here.
+
+        Argument `spec` is either a list or a Python `dict` instance.
+
+        If a Python `dict` is given, then it is copied into an
+        `gc3libs.url.UrlDict`, and that copy is returned::
+        
+          >>> d1 = { '/tmp/1':'1', '/tmp/2':'2' }
+          >>> d2 = Application._io_spec_to_dict(gc3libs.url.UrlKeyDict, d1, True)
+          >>> isinstance(d2, gc3libs.url.UrlKeyDict)
+          True
+          >>> for key in sorted(d2.keys()): print key.path
+          /tmp/1
+          /tmp/2
+
+        If `spec` is a list, each element can either be a tuple
+        `(path, name)`, or a string `path`, which is converted to a
+        tuple `(path, name)` by setting `name =
+        os.path.basename(path)`::
+
+          >>> l1 = [ ('/tmp/1', '1'), '/tmp/2' ]
+          >>> d3 = Application._io_spec_to_dict(gc3libs.url.UrlKeyDict, l1, True)
+          >>> d3 == d2
+          True
+
+        If `force_abs` is `True`, then all paths are converted to
+        absolute ones in the dictionary keys; otherwise they are
+        stored unchanged.
+        """
+        try:
+            # is `spec` dict-like?
+            # XXX: might raise encoding error if any value is Unicode non-ASCII
+            return ctor(((unicode(k), unicode(v)) for k,v in spec.iteritems()),
+                        force_abs=force_abs)
+        except AttributeError:
+            # `spec` is a list-like
+            def convert_to_tuple(val):
+                if isinstance(val, types.StringTypes):
+                    # XXX: might throw enconding error if `val` is Unicode?
+                    l = unicode(val) 
+                    r = os.path.basename(l)
+                    return (l, r)
+                else: 
+                    return (unicode(val[0]), unicode(val[1]))
+            return ctor((convert_to_tuple(x) for x in spec),
+                        force_abs=force_abs)
+        
+    def qsub(self, *args, **kw):
+        return _Application.qsub(self, *args, **kw)
+    def cmdline(self, *args, **kw):
+        return _Application.cmdline(self, *args, **kw)
+
+class _Application(Persistable, Task):
     """
     Support for running a generic application with the GC3Libs.
     The following parameters are *required* to create an `Application`
@@ -857,78 +951,6 @@ class Application(Persistable, Task):
         for k,v in self.inputs.iteritems():
             gc3libs.log.debug("inputs[%s]=%s", repr(k), repr(v))
 
-
-    @staticmethod
-    def _to_env_pair(val):
-        if isinstance(val, tuple):
-            return val
-        else:
-            # assume `val` is a string
-            return tuple(val.split('=', 1))
-
-
-    @staticmethod
-    def _io_spec_to_dict(ctor, spec, force_abs):
-        """
-        (This class is only used for internal processing of `input`
-        and `output` fields.)
-        
-        Return a dictionary formed by pairs `URL:name` or `name:URL`.
-        The `URL` part is a tuple as returned by functions `urlparse`
-        and `urlsplit` in the Python standard module
-        `urlparse`:module: -- `name` is a string that should be
-        interpreted as a filename (relative to the job execution
-        directory).
-
-        Argument `ctor` is the constructor for the dictionary class to
-        return; `gc3libs.url.UrlKeyDict` and
-        `gc3libs.url.UrlValueDict` are valid values here.
-
-        Argument `spec` is either a list or a Python `dict` instance.
-
-        If a Python `dict` is given, then it is copied into an
-        `gc3libs.url.UrlDict`, and that copy is returned::
-        
-          >>> d1 = { '/tmp/1':'1', '/tmp/2':'2' }
-          >>> d2 = Application._io_spec_to_dict(gc3libs.url.UrlKeyDict, d1, True)
-          >>> isinstance(d2, gc3libs.url.UrlKeyDict)
-          True
-          >>> for key in sorted(d2.keys()): print key.path
-          /tmp/1
-          /tmp/2
-
-        If `spec` is a list, each element can either be a tuple
-        `(path, name)`, or a string `path`, which is converted to a
-        tuple `(path, name)` by setting `name =
-        os.path.basename(path)`::
-
-          >>> l1 = [ ('/tmp/1', '1'), '/tmp/2' ]
-          >>> d3 = Application._io_spec_to_dict(gc3libs.url.UrlKeyDict, l1, True)
-          >>> d3 == d2
-          True
-
-        If `force_abs` is `True`, then all paths are converted to
-        absolute ones in the dictionary keys; otherwise they are
-        stored unchanged.
-        """
-        try:
-            # is `spec` dict-like?
-            # XXX: might raise encoding error if any value is Unicode non-ASCII
-            return ctor(((unicode(k), unicode(v)) for k,v in spec.iteritems()),
-                        force_abs=force_abs)
-        except AttributeError:
-            # `spec` is a list-like
-            def convert_to_tuple(val):
-                if isinstance(val, types.StringTypes):
-                    # XXX: might throw enconding error if `val` is Unicode?
-                    l = unicode(val) 
-                    r = os.path.basename(l)
-                    return (l, r)
-                else: 
-                    return (unicode(val[0]), unicode(val[1]))
-            return ctor((convert_to_tuple(x) for x in spec),
-                        force_abs=force_abs)
-        
 
     def __str__(self):
         try:

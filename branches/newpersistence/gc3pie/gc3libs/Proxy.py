@@ -110,7 +110,7 @@ class BaseProxy(object):
         
         namespace = {}
         for name in cls._special_names:
-            if hasattr(theclass, name):
+            if hasattr(theclass, name) and not hasattr(cls, name):
                 namespace[name] = make_method(name)
         return type("%s(%s)" % (cls.__name__, theclass.__name__), (cls,), namespace)
     
@@ -122,16 +122,16 @@ class BaseProxy(object):
         note: _class_proxy_cache is unique per deriving class (each deriving
         class must hold its own cache)
         """
-        try:
-            cache = cls.__dict__["_class_proxy_cache"]
-        except KeyError:
-            cls._class_proxy_cache = cache = {}
-        try:
-            theclass = cache[obj.__class__]
-        except KeyError:
-            cache[obj.__class__] = theclass = cls._create_class_proxy(obj.__class__)
+        # try:
+        #     cache = cls.__dict__["_class_proxy_cache"]
+        # except KeyError:
+        #     cls._class_proxy_cache = cache = {}
+        # try:
+        #     theclass = cache[obj.__class__]
+        # except KeyError:
+        #     cache[obj.__class__] = theclass = cls._create_class_proxy(obj.__class__)
+        theclass = cls._create_class_proxy(obj.__class__)
         ins = object.__new__(theclass)
-        theclass.__init__(ins, obj, *args, **kwargs)
         return ins
 
 class Proxy(BaseProxy):
