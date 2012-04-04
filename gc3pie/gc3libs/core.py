@@ -700,6 +700,25 @@ specified in the configuration file.
 
 # === Configuration File
 
+# map values for the `architecture=...` configuration item
+# into internal constants
+architecture_value_map = {
+    # 'x86-32', 'x86 32-bit', '32-bit x86' and variants thereof
+    re.compile('x86[ _-]+32([ _-]+bits?)?', re.I): Run.Arch.X86_32,
+    re.compile('32[ _-]+bits? +[ix]86', re.I):     Run.Arch.X86_32,
+    # accept also values printed by `uname -a` on 32-bit x86 archs
+    re.compile('i[3456]86', re.I):                 Run.Arch.X86_32,
+    # 'x86_64', 'x86 64-bit', '64-bit x86' and variants thereof
+    re.compile('x86[ _-]+64([ _-]+bits?)?', re.I): Run.Arch.X86_64,
+    re.compile('64[ _-]+bits? +[ix]86', re.I):     Run.Arch.X86_32,
+    # also accept commercial arch names
+    re.compile('(amd[ -]*64|x64|emt64|intel[ -]*64)( *bits?)?', re.I): \
+                                                   Run.Arch.X86_64,
+    # finally, map "32-bit" and "64-bit" to i686 and x86_64
+    re.compile('32[ _-]+bits?', re.I):             Run.Arch.X86_32,
+    re.compile('64[ _-]+bits?', re.I):             Run.Arch.X86_64,
+    }
+
 def import_config(config_file_locations, auto_enable_auth=True):
     (resources, auths, persistings) = read_config(*config_file_locations)
     return (get_resources(resources), 
@@ -781,7 +800,6 @@ def get_resources(resources_list):
         resources.append(tmpres)
     return resources
 
-                                
 def read_config(*locations):
     """
     Read each of the configuration files listed in `locations`, and
@@ -794,25 +812,6 @@ def read_config(*locations):
     auths = defaultdict(lambda: dict())
     persistings = defaultdict(lambda: dict())
     
-    # map values for the `architecture=...` configuration item
-    # into internal constants
-    architecture_value_map = {
-        # 'x86-32', 'x86 32-bit', '32-bit x86' and variants thereof
-        re.compile('x86[ _-]+32([ _-]+bits?)?', re.I): Run.Arch.X86_32,
-        re.compile('32[ _-]+bits? +[ix]86', re.I):     Run.Arch.X86_32,
-        # accept also values printed by `uname -a` on 32-bit x86 archs
-        re.compile('i[3456]86', re.I):                 Run.Arch.X86_32,
-        # 'x86_64', 'x86 64-bit', '64-bit x86' and variants thereof
-        re.compile('x86[ _-]+64([ _-]+bits?)?', re.I): Run.Arch.X86_64,
-        re.compile('64[ _-]+bits? +[ix]86', re.I):     Run.Arch.X86_32,
-        # also accept commercial arch names
-        re.compile('(amd[ -]*64|x64|emt64|intel[ -]*64)( *bits?)?', re.I): \
-                                                       Run.Arch.X86_64,
-        # finally, map "32-bit" and "64-bit" to i686 and x86_64
-        re.compile('32[ _-]+bits?', re.I):             Run.Arch.X86_32,
-        re.compile('64[ _-]+bits?', re.I):             Run.Arch.X86_64,
-        }
-
     for location in locations:
         location = os.path.expandvars(location)
         if os.path.exists(location):
