@@ -38,7 +38,6 @@ class TestTask(Proxy):
         obj = Task(name, grid=grid, **kw)
         Proxy.__init__(self, obj, storage=storage, manager=manager)
 
-
 def test_proxy_no_storage():
     t = TestTask('NoTask')
     assert isinstance(t, Task)
@@ -59,6 +58,19 @@ def test_proxy_storage():
     assert isinstance(object.__getattribute__(t, "_obj") , Task)
     os.remove(tmp)
 
+
+def test_proxy_storage_wrong_storage():
+    from gc3libs.persistence import persistence_factory
+    
+    fb = persistence_factory("file:///path/to/non/existing/storage")
+    t = TestTask('NoTask', storage=fb)
+    assert t.jobname == 'NoTask'
+    
+    t.proxy_forget()
+    assert object.__getattribute__(t, "_obj") is not None
+    assert t.jobname == 'NoTask'
+    assert isinstance(object.__getattribute__(t, "_obj") , Task)
+
     
 ## main: run tests
 
@@ -69,3 +81,4 @@ if "__main__" == __name__:
 
     test_proxy_no_storage()
     test_proxy_storage()
+    test_proxy_storage_wrong_storage()
