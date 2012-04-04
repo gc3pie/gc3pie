@@ -21,6 +21,8 @@
 __docformat__ = 'reStructuredText'
 __version__ = '$Revision$'
 
+from gc3libs import log
+
 class ProxyManager:
     """ProxyManager should be responsible to decide when a Proxy
     should persist its proxied object and forget it.
@@ -155,6 +157,36 @@ class Proxy(BaseProxy):
     >>> p.jobname
     'NoTask'
 
+    Guess what happen if you don't define a storage?
+    
+    >>> p = Proxy(Task('NoTask'))
+    >>> p # doctest: +ELLIPSIS
+    <gc3libs.Task object at ...>
+    >>> p.jobname
+    'NoTask'
+    >>> object.__getattribute__(p, "_obj") # doctest: +ELLIPSIS
+    <gc3libs.Task object at ...>
+
+    The `proxy_forget()` method will *not* delete the internal
+    reference, otherwise we would be unable to retrive the object
+    later:
+    
+    >>> p.proxy_forget()
+    >>> object.__getattribute__(p, "_obj") # doctest: +ELLIPSIS
+    <gc3libs.Task object at ...>
+    >>> p.jobname
+    'NoTask'
+
+    If you are not able to save the object to the persistent storage
+    too, it will not be deleted:
+
+    >>> p = Proxy(Task('NoTask2'), storage=persistence_factory('file:///path/to/non/existent/file'))
+    >>> p.proxy_forget()
+    >>> object.__getattribute__(p, "_obj") # doctest: +ELLIPSIS
+    <gc3libs.Task object at ...>
+    >>> p.jobname
+    'NoTask2'
+    
     Clean up tests.
     >>> os.remove(tmpname)    
     """
@@ -181,9 +213,14 @@ class Proxy(BaseProxy):
         obj = object.__getattribute__(self, "_obj")
         storage = object.__getattribute__(self, "__storage")
         if storage:
-            p_id = storage.save(obj)
-            object.__setattr__(self, "_obj", None)
-            object.__setattr__(self, "_obj_id", p_id)
+            try:
+                p_id = storage.save(obj)
+                object.__setattr__(self, "_obj", None)
+                object.__setattr__(self, "_obj_id", p_id)
+            except Exception, e:
+                log.error("Proxy: Error saving object to persistent storage")
+        else:
+            log.warning("Proxy: `proxy_forget()` called but no persistent storage has been defined. Aborting *without* deleting proxied object")
             
         # object.__delattr__(self, "_obj")
         
