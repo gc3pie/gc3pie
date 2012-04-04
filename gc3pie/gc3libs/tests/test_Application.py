@@ -28,7 +28,7 @@ def test_invalid_invocation():
     try:
         Application()
     except TypeError, e:
-        assert e.message == '__init__() takes exactly 6 arguments (1 given)'
+        assert str(e) == '__init__() takes exactly 6 arguments (1 given)'
 
 def test_mandatory_arguments():
     # check for all mandatory arguments
@@ -49,7 +49,7 @@ def test_mandatory_arguments():
         try:
             Application(**_tmp)
         except TypeError, e:
-            assert "__init__() takes exactly 6" in e.message
+            assert "__init__() takes exactly 6" in str(e)
 
 def test_wrong_type_arguments():
     # Things that will raise errors:
@@ -95,6 +95,8 @@ def test_valid_invocation():
           'output_dir': '/tmp',
           }
     app = Application(**ma)
+    assert app.executable == '/bin/true'
+    assert app['executable'] == '/bin/true'
     
 def test_io_spec_to_dict_unicode():
     import gc3libs.url
@@ -109,8 +111,16 @@ def test_io_spec_to_dict_unicode():
 
 
 if "__main__" == __name__:
-    test_invalid_invocation()
-    test_mandatory_arguments()
-    test_wrong_type_arguments()
-    test_valid_invocation()
-    test_io_spec_to_dict_unicode()
+    for test in (
+        test_invalid_invocation,
+        test_mandatory_arguments,
+        test_wrong_type_arguments,
+        test_valid_invocation,
+        test_io_spec_to_dict_unicode,
+        ):
+        # try:
+            test()
+        # except Exception, e:
+            # import pdb; pdb.set_trace()
+            # print "Error: %s" % e
+            

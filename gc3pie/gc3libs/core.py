@@ -281,6 +281,7 @@ specified in the configuration file.
         # if wet get here, all submissions have failed; call the
         # appropriate handler method if defined
         ex = app.submit_error(exs)
+
         if isinstance(ex, Exception):
             app.execution.info = ("Submission failed: %s" % str(ex))
             raise ex
