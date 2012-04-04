@@ -27,6 +27,11 @@ class ProxyManager:
     """ProxyManager should be responsible to decide when a Proxy
     should persist its proxied object and forget it.
     """
+    def getattr_called(self, proxy, name):
+        """This method is called by a `proxy` everytime the
+        __getattribute__ method of the proxy is called with argument `name`."""
+        raise NotImplementedError("Abstract method `ProxyManager.getattr_called` called")
+
 
 class BaseProxy(object):
     """
@@ -191,16 +196,22 @@ class Proxy(BaseProxy):
     >>> os.remove(tmpname)    
     """
     
-    __slots__ = ["_obj", "_obj_id", "__storage", "proxy_forget"]
-    def __init__(self, obj, storage=None):
+    __slots__ = ["_obj", "_obj_id", "__storage", "__manager", "proxy_forget"]
+    def __init__(self, obj, storage=None, manager=None):
         object.__setattr__(self, "_obj", obj)
         object.__setattr__(self, "__storage", storage)
+        object.__setattr__(self, "__manager", manager)
     
     def __getattribute__(self, name):
         if name.startswith('proxy_'):
             return object.__getattribute__(self, name)
 
+        manager = object.__getattribute__(self, "__manager")
+        if manager:
+            manager.getattr_called(self, name)
+        
         obj = object.__getattribute__(self, "_obj")
+
         if not obj:
             storage = object.__getattribute__(self, "__storage")
             obj_id = object.__getattribute__(self, "_obj_id")
