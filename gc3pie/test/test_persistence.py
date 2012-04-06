@@ -41,7 +41,26 @@ class MyList(list):
     """
     pass
 
+class SlotClassWrong(object):
+    """
+    This and the SlotClass are class with __slots__ attribute to
+    check that persistency works also with this kind of
+    classes. Usually you just need to use a binary protocol for
+    pickle.
 
+    This class will raise an error because __slots__ does not contain "persistent_id". The SlotClass class instead, will work as expected.
+
+    Check for instance:
+    http://stackoverflow.com/questions/3522765/python-pickling-slots-error
+    """
+    
+    __slots__ = ["attr", ]
+    def __init__(self, attr):
+        self.attr = attr
+
+class SlotClass(SlotClassWrong):
+    __slots__ = ["attr", "persistent_id"]
+    
 def _generic_persistency_test(driver):
     obj = MyObj('GC3')
     id = driver.save(obj)
@@ -95,13 +114,16 @@ def _generic_nested_persistency_test(driver):
         raise e
 
 def test_file_persistency():
-    path = Url('/tmp')
+    tmpdir = tempfile.mkdtemp()
+
+    path = Url(tmpdir)
     fs = FilesystemStore(path.path)
     obj = MyObj('GC3')
 
     _generic_persistency_test(fs)
     _generic_nested_persistency_test(fs)
-
+    _generic_newstile_slots_classes(fs)
+    shutil.rmtree(tmpdir)
 
 def test_filesystemstorage_pickler_class():
     """
@@ -131,6 +153,22 @@ def test_filesystemstorage_pickler_class():
     # cleanup
     shutil.rmtree(tmpfname)
 
+def _generic_newstile_slots_classes(db):
+    obj = SlotClass('GC3')
+    assert obj.attr == 'GC3'
+    id_ = db.save(obj)
+    del obj
+    obj2 = db.load(id_)
+    assert obj2.attr == 'GC3'
+
+    obj2 = SlotClassWrong('GC3')
+    try:
+        db.save(obj2)
+        assert "We shouldn't reach this point" is False
+    except AttributeError:
+        pass
+    
+
 def test_sqlite_persistency():
     (fd, tmpfname) = tempfile.mkstemp()
     path = Url('sqlite://%s' % tmpfname)
@@ -139,6 +177,7 @@ def test_sqlite_persistency():
 
     _generic_persistency_test(db)
     _generic_nested_persistency_test(db)
+    _generic_newstile_slots_classes(db)
     os.remove(tmpfname)
 
 
@@ -147,6 +186,7 @@ def test_mysql_persistency():
     db = SQL(path)
     _generic_persistency_test(db)
     _generic_nested_persistency_test(db)
+    _generic_newstile_slots_classes(db)
 
 
 def test_sqlite_job_persistency():
@@ -180,7 +220,7 @@ def test_sqlite_job_persistency():
     
 if __name__ == "__main__":
     # fix pickle error
-    from test_persistence import MyObj
+    from test_persistence import MyObj, SlotClassWrong, SlotClass
     test_filesystemstorage_pickler_class()
     test_file_persistency()
     test_sqlite_persistency()
