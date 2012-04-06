@@ -104,7 +104,8 @@ class SQL(Store):
     >>> _ = c.execute('select  persistent_attributes from jobs where id=1')
     >>> pickle.loads(c.fetchone()[0].decode('base64'))
     {'pattr': 'persistent'}
-    
+
+    # Cleanup
     >>> import os
     >>> os.remove(name)
     """
@@ -153,8 +154,8 @@ class SQL(Store):
                 if hasattr(obj, attr):
                     extra_fields[attr] = getattr(obj, attr)
 
-        pdata = pickle.dumps(obj).encode('base64')
-        pextra = pickle.dumps(extra_fields).encode('base64')
+        pdata = pickle.dumps(obj, pickle.HIGHEST_PROTOCOL).encode('base64')
+        pextra = pickle.dumps(extra_fields, pickle.HIGHEST_PROTOCOL).encode('base64')
         # insert into db        
         otype = ''
         jobid = ''
