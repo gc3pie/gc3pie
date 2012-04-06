@@ -30,7 +30,7 @@ from gc3libs.utils import same_docstring_as
 import gc3libs.exceptions
 from gc3libs import Task
 
-import pickle
+import cPickle as pickle
 
 class DummyObject:
     pass
@@ -44,7 +44,7 @@ def sqlite_factory(url):
     try:
         c.next()
     except StopIteration:
-        c.execute("create table jobs (id int, data blob, type varchar(128), jobid varchar(128), jobname varchar(255), jobstatus varchar(128), persistent_attributes text)")
+        c.execute("create table jobs (id int not null, data blob, type varchar(128), jobid varchar(128), jobname varchar(255), jobstatus varchar(128), persistent_attributes text, primary key (id))")
     c.close()
     return conn
 
@@ -61,7 +61,7 @@ def mysql_factory(url):
         c.execute('select count(*) from jobs')
     except MySQLdb.ProgrammingError, e:
         if e.args[0] == MySQLdb.constants.ER.NO_SUCH_TABLE:
-            c.execute("create table jobs (id int, data blob, type varchar(128), jobid varchar(128), jobname varchar(255), jobstatus varchar(128), persistent_attributes text)")
+            c.execute("create table jobs (id int not null, data blob, type varchar(128), jobid varchar(128), jobname varchar(255), jobstatus varchar(128), persistent_attributes text,  primary key (id))")
     c.close()
     return conn
 
@@ -143,7 +143,7 @@ class SQL(Store):
             c.execute('select max(id) from jobs')
             id_ = c.fetchone()[0]
             if not id_: id_ = 1
-            id_ = int(id_)
+            id_ = int(id_)+1
 
         extra_fields = {}
         if hasattr(obj, '__persistent_attributes__'):
