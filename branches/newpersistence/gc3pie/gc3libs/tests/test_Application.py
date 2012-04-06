@@ -68,11 +68,8 @@ def test_wrong_type_arguments():
           'requested_cores': 1,          
           }
     for k,v  in {
-        'arguments' : [u'\ua0246'],
-        'inputs' : [u'\ua0246'],
         # 'inputs' : ['duplicated', 'duplicated'],
         # duplicated inputs doesnt raise an exception but just a warning
-        'outputs' : [u'\ua0246'],
         'outputs' : ['/should/not/be/absolute'],
         # 'outputs' : ['duplicated', 'duplicated'],
         # duplicated outputs doesnt raise an exception but just a warning
@@ -107,20 +104,9 @@ def test_io_spec_to_dict_unicode():
 ## main: run tests
 
 
-
-
-
 if "__main__" == __name__:
-    for test in (
-        test_invalid_invocation,
-        test_mandatory_arguments,
-        test_wrong_type_arguments,
-        test_valid_invocation,
-        test_io_spec_to_dict_unicode,
-        ):
-        # try:
-            test()
-        # except Exception, e:
-            # import pdb; pdb.set_trace()
-            # print "Error: %s" % e
-            
+    test_invalid_invocation()
+    test_mandatory_arguments()
+    test_wrong_type_arguments()
+    test_valid_invocation()
+    test_io_spec_to_dict_unicode()
