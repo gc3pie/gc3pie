@@ -281,7 +281,6 @@ class FilesystemStore(Store):
         src = None
         try:
             src = open(path, 'rb')
-            #unpickler = FilesystemStore.Unpickler(self, src)
             obj = pickle.load(src)
             src.close()
             return obj
@@ -384,7 +383,6 @@ class FilesystemStore(Store):
         tgt = None
         try:
             tgt = open(filename, 'w+b')
-            # pickler = FilesystemStore.Pickler(self, tgt, obj)
             pickle.dump(obj, tgt)
             tgt.close()
             try:
