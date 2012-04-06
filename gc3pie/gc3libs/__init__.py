@@ -742,7 +742,7 @@ class Application(Persistable, Task):
     def __init__(self, executable, arguments, inputs, outputs, output_dir, **kw):
         # required parameters
         self.executable = executable
-        self.arguments = [ str(x) for x in arguments ]
+        self.arguments = [ unicode(x) for x in arguments ]
 
         self.inputs = Application._io_spec_to_dict(gc3libs.url.UrlKeyDict, inputs, True)
         self.outputs = Application._io_spec_to_dict(gc3libs.url.UrlValueDict, outputs, False)
@@ -913,19 +913,17 @@ class Application(Persistable, Task):
         """
         try:
             # is `spec` dict-like?
-            # XXX: might raise encoding error if any value is Unicode non-ASCII
-            return ctor(((str(k), str(v)) for k,v in spec.iteritems()),
+            return ctor(((unicode(k), unicode(v)) for k,v in spec.iteritems()),
                         force_abs=force_abs)
         except AttributeError:
             # `spec` is a list-like
             def convert_to_tuple(val):
                 if isinstance(val, types.StringTypes):
-                    # XXX: might throw enconding error if `val` is Unicode?
-                    l = str(val) 
+                    l = unicode(val) 
                     r = os.path.basename(l)
                     return (l, r)
                 else: 
-                    return (str(val[0]), str(val[1]))
+                    return (unicode(val[0]), unicode(val[1]))
             return ctor((convert_to_tuple(x) for x in spec),
                         force_abs=force_abs)
         
@@ -1054,7 +1052,7 @@ class Application(Persistable, Task):
         # XXX: ARC0 seems to behave inconsistently if './something' is
         # given as `executable`; however, commands run fine without
         # the leading `./`, so let us just remove it and hope for the best.
-        xrsl= str.join(' ', [
+        xrsl= unicode.join(' ', [
                 '&',
                 '(executable="%s")' % utils.ifelse(self.executable.startswith('./'),
                                                    self.executable[2:],
@@ -1063,7 +1061,7 @@ class Application(Persistable, Task):
                 ])
         # treat 'arguments' separately
         if self.arguments:
-            xrsl += '(arguments=%s)' % str.join(' ', [('"%s"' % x) for x in self.arguments])
+            xrsl += '(arguments=%s)' % unicode.join(' ', [('"%s"' % x) for x in self.arguments])
         # preserve execute permission on all input files
         executables = [ ]
         for l, r in self.inputs.iteritems():
@@ -1145,13 +1143,7 @@ class Application(Persistable, Task):
         xrsl += '(cache="yes")'
 
         # force it to be ascii
-        try:
-            return str(xrsl)
-        except UnicodeError, ex:
-            raise gc3libs.exceptions.InvalidArgument(
-                "Cannot create ASCII xRSL job description"
-                " (Unicode characters in the `Application` object?): %s"
-                % str(ex))
+        return unicode(xrsl)
 
 
     def cmdline(self, resource):
@@ -1539,7 +1531,7 @@ class Run(Struct):
         def fget(self):
             return self.log.last()
         def fset(self, value):
-            self.log.append(str(value))
+            self.log.append(unicode(value))
         return locals()
     
     # states that a `Run` can be in
