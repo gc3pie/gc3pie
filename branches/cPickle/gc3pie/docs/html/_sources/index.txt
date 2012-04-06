@@ -1,0 +1,35 @@
+.. GC3Pie documentation master file, created by
+   sphinx-quickstart on Wed Nov 17 09:38:24 2010.
+
+   You can adapt this file completely to your liking, but it should at least
+   contain the root `toctree` directive.
+
+
+====================================
+  Welcome to GC3Pie documentation!
+====================================
+
+.. toctree::
+
+  intro
+  install
+  overview
+  api
+  contributing
+  credits
+
+
+--------------------
+ Indices and tables
+--------------------
+
+* :ref:`genindex`
+* :ref:`modindex`
+* :ref:`search`
+
+
+.. (for Emacs only)
+..
+  Local variables:
+  mode: rst
+  End:

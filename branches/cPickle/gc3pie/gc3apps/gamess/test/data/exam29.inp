@@ -1,0 +1,56 @@
+! EXAM29.  surface scan
+!  The scan is done over a 3x3 grid centered on the SCF
+!  transition state for the endothermic SN2 type reaction 
+!      F- + NH2OH -> F-NH2-OH anion -> FNH2 + OH-
+!
+!  Groups 1 and 2 are F and OH, and their distance from
+!  the N is varied antisymmetrically, which is more or
+!  less what the IRC should be like.  The results seem to
+!  indicate that the MP2/3-21G saddle point would shift
+!  further into the product channel, since the higher
+!  MP2 energies occur at shorter r(NF) and longer r(NO):
+!
+!  FINAL E= -229.0368324512, E(MP2)= -229.3873300818
+!  FINAL E= -229.0356378315, E(MP2)= -229.3866641810
+!  FINAL E= -229.0309266214, E(MP2)= -229.3822093947
+!  FINAL E= -229.0372146613, E(MP2)= -229.3923234590
+!  FINAL E= -229.0385440206, E(MP2)= -229.3936484220
+!  FINAL E= -229.0367369459, E(MP2)= -229.3913681166
+!  FINAL E= -229.0328601039, E(MP2)= -229.3918932844
+!  FINAL E= -229.0364643856, E(MP2)= -229.3948324033
+!  FINAL E= -229.0372478139, E(MP2)= -229.3943496933
+!
+!  A more conclusive way to tell this would be to compute
+!  single point MP2 energies along the SCF IRC, since the
+!  true reaction path always curves, and thus does not lie
+!  along rectangular grid points.
+!
+ $contrl scftyp=rhf runtyp=surface
+         icharg=-1 coord=zmt mplevl=2 $end
+ $system timlim=1 $end
+ $surf   ivec1(1)=2,1 igrp1=1       
+         ivec2(1)=2,5 igrp2(1)=5,6  
+         disp1= 0.10 ndisp1=3 orig1=-0.10
+         disp2=-0.10 ndisp2=3 orig2= 0.10 $end
+ $basis  gbasis=n21 ngauss=3 $end
+ $guess  guess=huckel $end
+ $data
+F-NH2-OH exchange (inspired by J.Phys.Chem. 1994,98,7942-4)
+Cs
+
+F
+N 1 rNF
+H 2 rNH   1  aFNH 
+H 2 rNH   1  aFNH   3 aHNH  +1
+O 2 rNO   3  aONH   4 aONH  -1
+H 5 rOH   2  aHON   1 180.0
+
+rNF=1.7125469
+rNH=0.9966981
+rNO=1.9359887
+rOH=0.9828978
+aFNH=90.18493
+aONH=79.34339
+aHON=100.78851
+aHNH=108.57000
+ $end
