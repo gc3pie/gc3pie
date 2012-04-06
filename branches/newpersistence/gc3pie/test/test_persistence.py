@@ -189,7 +189,7 @@ def test_sqlite_persistency():
 
 def test_mysql_persistency():
     path = Url('mysql://gc3user:gc3pwd@localhost/gc3')    
-    db = SQL(path)
+    db = persistence_factory(path)
     _generic_persistency_test(db)
     _generic_nested_persistency_test(db)
     _generic_newstile_slots_classes(db)
