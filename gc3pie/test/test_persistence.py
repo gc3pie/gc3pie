@@ -33,11 +33,38 @@ class MyObj:
     def __init__(self, x):
         self.x = x
 
-def _generic_persistency_test(driver, obj):
+class MyList(list):
+    """
+    Add a `__dict__` to `list`, so that creating a `persistent_id`
+    entry on an instance works.
+    """
+    pass
+
+
+def _generic_persistency_test(driver):
+    obj = MyObj('GC3')
     id = driver.save(obj)
     del obj
     obj = driver.load(id)
     assert obj.x == 'GC3'
+
+    driver.remove(id)
+    try:
+        obj = driver.load(id)
+        assert "Object %s should NOT be found" % id
+    except gc3ex.LoadError:
+        pass
+    except Exception, e:
+        raise e
+
+def _generic_nested_persistency_test(driver):
+    obj = MyList([MyObj('j1'), MyObj('j2'), MyObj('j3'), ])
+
+    id = driver.save(obj)
+    del obj
+    obj = driver.load(id)
+    for i in range(3):
+        assert obj[i].x == 'j%d' % (i+1)
 
     driver.remove(id)
     try:
@@ -53,7 +80,8 @@ def test_file_persistency():
     fs = FilesystemStore(path.path)
     obj = MyObj('GC3')
 
-    _generic_persistency_test(fs, obj)
+    _generic_persistency_test(fs)
+    _generic_nested_persistency_test(fs)
 
 
 def test_sql_persistency():
@@ -62,15 +90,15 @@ def test_sql_persistency():
     db = SQL(path)
     obj = MyObj('GC3')
 
-    _generic_persistency_test(db, obj)
+    _generic_persistency_test(db)
+    _generic_nested_persistency_test(db)
     os.remove(tmpfname)
 
 
 def test_mysql_persistency():
     path = Url('mysql://gc3user:gc3pwd@localhost/gc3')    
     db = SQL(path)
-    obj = MyObj('GC3')
-    _generic_persistency_test(db, obj)
+    _generic_persistency_test(db)
 
 
 def test_sql_job_persistency():
