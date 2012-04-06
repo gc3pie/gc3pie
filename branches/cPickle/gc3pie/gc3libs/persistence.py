@@ -383,7 +383,7 @@ class FilesystemStore(Store):
         tgt = None
         try:
             tgt = open(filename, 'w+b')
-            pickle.dump(obj, tgt)
+            pickle.dump(obj, tgt, protocol=self._protocol)
             tgt.close()
             try:
                 os.remove(backup)
