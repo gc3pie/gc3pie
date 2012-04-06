@@ -25,7 +25,7 @@ GC3pie objects in a SQL DB instead of using Pickle from
 __docformat__ = 'reStructuredText'
 __version__ = '$Revision$'
 
-from gc3libs.persistence import Store
+from gc3libs.persistence import Store, IdFactory
 from gc3libs.utils import same_docstring_as
 import gc3libs.exceptions
 from gc3libs import Task
@@ -69,6 +69,36 @@ DRIVERS={'sqlite': sqlite_factory,
          'mysql': mysql_factory,
          }
 
+def sql_next_id_factory(db):
+    """
+    This function will return a function which can be used as
+    `next_id_fn` argument for the `IdFactory` class constructor.
+
+    `db` is DB connection class conform to DB API2.0 specs
+
+    The function returned has signature:
+
+        sql_next_id(n=1)
+
+    the id returned is the maximum `id` field in the `jobs` table plus
+    1.
+    """
+    def sql_next_id(n=1):
+        c = db.cursor()
+        c.execute('select max(id) from jobs')
+        nextid = c.fetchone()[0]
+        if not nextid: nextid = 1
+        else: nextid = int(nextid)+1
+        c.close()
+        return nextid
+    
+    return sql_next_id
+
+
+class IntId(int):
+    def __new__(cls, prefix, seqno):
+        return int.__new__(cls, seqno)
+
 class SQL(Store):
     """
     Save and load objects in a SQL db. Uses Python's `pickle` module
@@ -89,7 +119,7 @@ class SQL(Store):
     >>> db.list()
     [1]
     >>> db.save(obj)
-    2
+    1
     >>> del obj
     >>> y = db.load(1)
     >>> y.x
@@ -108,7 +138,7 @@ class SQL(Store):
     >>> import os
     >>> os.remove(name)
     """
-    def __init__(self, url):
+    def __init__(self, url, idfactory=None):
         """
         Open a connection to the storage database identified by
         url. It will use the correct backend (MySQL, psql, sqlite3)
@@ -118,7 +148,10 @@ class SQL(Store):
             raise NotImplementedError("DB Driver %s not supported" % url.scheme)
         
         self.__conn = DRIVERS[url.scheme](url)
-
+        self.idfactory = idfactory
+        if not idfactory:
+            self.idfactory = IdFactory(next_id_fn=sql_next_id_factory(self.__conn), id_class=IntId)
+            
     @same_docstring_as(Store.list)
     def list(self):
         c = self.__conn.cursor()
@@ -135,17 +168,12 @@ class SQL(Store):
     # copied from FilesystemStore
     @same_docstring_as(Store.save)
     def save(self, obj):
-        return self._save_or_replace(None, obj, 'save')
+        if not hasattr(obj, 'persistent_id'):
+            obj.persistent_id = self.idfactory.new(obj)
+        return self._save_or_replace(obj.persistent_id, obj, 'save')
 
     def _save_or_replace(self, id_, obj, action):
         c = self.__conn.cursor()
-
-        if not id_:
-            # get new id
-            c.execute('select max(id) from jobs')
-            id_ = c.fetchone()[0]
-            if not id_: id_ = 1
-            else: id_ = int(id_)+1
 
         extra_fields = {}
         if hasattr(obj, '__persistent_attributes__'):
@@ -166,14 +194,16 @@ class SQL(Store):
             jobstatus = obj.execution.state
             jobid = obj.execution.lrms_jobid
             jobname = obj.jobname
-        
-        if action == 'save':
+
+        query = "select id from jobs where id=%d" % id_
+        c.execute(query)
+        if not c.fetchone():
             query = """insert into jobs ( \
 id, data, type, jobid, jobname, jobstatus, persistent_attributes) \
 values (%d, '%s', '%s', '%s', '%s', '%s', '%s')""" % (
 id_, pdata, otype, jobid, jobname, jobstatus, pextra )
             c.execute(query)
-        elif action == 'replace':
+        else:
             query = """update jobs set  \
 data='%s', type='%s', jobid='%s', jobstatus='%s', jobname='%s', persistent_attributes='%s' \
 where id=%d""" % (pdata,otype, jobid, jobstatus, jobname, pextra, id_)
