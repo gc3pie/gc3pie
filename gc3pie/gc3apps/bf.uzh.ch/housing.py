@@ -54,7 +54,7 @@ class housingApplication(Application):
     _invalid_chars = re.compile(r'[^_a-zA-Z0-9]+', re.X)
     
     def __init__(self, executable, arguments, inputs, outputs, output_dir, **kw):
-        kw.setdefault('requested_walltime', 100)
+        kw.setdefault('requested_walltime', 2)
         Application.__init__(self, executable, arguments, inputs, outputs, output_dir, **kw)
     
     def fetch_output_error(self, ex):
@@ -134,23 +134,26 @@ class housingApplication(Application):
             f = open(ownershipTableFile, 'w')
             print >> f, ownershipTable
             f.close()
-            plotSimulation(path = ownershipTableFile, xVar = 'age', yVars = yVars, yVarRange = (0., 1.), figureFile = os.path.join(self.output_dir, 'ownership.eps'), verb = 'CRITICAL')
+            try:
+                plotSimulation(table = ownershipTableFile, xVar = 'age', yVars = yVars, yVarRange = (0., 1.), figureFile = os.path.join(self.output_dir, 'ownership.eps'), verb = 'CRITICAL')
+            except:
+                logger.debug('couldnt make ownershipTableFile')
             
             # make plot of life-cycle simulation (all variables)
-            plotSimulation(path = os.path.join(output_dir, 'aggregate.out'), xVar = 'age', yVars = [], figureFile = os.path.join(self.output_dir, 'aggregate.eps'), verb = 'CRITICAL' )
-            if os.path.exists('ownershipThreshold_1.out'):
-                plotSimulation(path = os.path.join(output_dir, 'ownershipThreshold_1.out'), xVar = 'age', yVars = [ 'Yst1', 'Yst4' ], figureFile = os.path.join(self.output_dir, 'ownershipThreshold_1.eps'), verb = 'CRITICAL' )
-                plotSimulation(path = os.path.join(output_dir, 'ownershipThreshold_1.out'), xVar = 'age', yVars = [ 'yst1', 'yst4' ], figureFile = os.path.join(self.output_dir, 'normownershipThreshold_1.eps'), verb = 'CRITICAL' )
+            try:
+                plotSimulation(table = os.path.join(output_dir, 'aggregate.out'), xVar = 'age', yVars = [], figureFile = os.path.join(self.output_dir, 'aggregate.eps'), verb = 'CRITICAL' )
+            except:
+                logger.debug('coulndt make aggregate.out plot')
+            #if os.path.exists('ownershipThreshold_1.out'):
+                #plotSimulation(path = os.path.join(output_dir, 'ownershipThreshold_1.out'), xVar = 'age', yVars = [ 'Yst1', 'Yst4' ], figureFile = os.path.join(self.output_dir, 'ownershipThreshold_1.eps'), verb = 'CRITICAL' )
+                #plotSimulation(path = os.path.join(output_dir, 'ownershipThreshold_1.out'), xVar = 'age', yVars = [ 'yst1', 'yst4' ], figureFile = os.path.join(self.output_dir, 'normownershipThreshold_1.eps'), verb = 'CRITICAL' )
         else:
             # no `simulation.out` found, signal error
             self.execution.exitcode = 2
-        
-            
-            
             
 class housingApppotApplication(housingApplication, gc3libs.application.apppot.AppPotApplication):
     _invalid_chars = re.compile(r'[^_a-zA-Z0-9]+', re.X)
-    
     def __init__(self, executable, arguments, inputs, outputs, output_dir, **kw):
+        kw.setdefault('requested_walltime', 2)
         gc3libs.application.apppot.AppPotApplication.__init__(self, executable, arguments, inputs, outputs, output_dir, **kw)
 

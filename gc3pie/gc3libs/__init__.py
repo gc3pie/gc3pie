@@ -1085,7 +1085,7 @@ class _Application(Persistable, Task):
                 ])
         # treat 'arguments' separately
         if self.arguments:
-            xrsl += '(arguments=%s)' % str.join(' ', [('"%s"' % x) for x in self.arguments])
+            xrsl += '(arguments=%s)' % unicode.join(' ', [('"%s"' % x) for x in self.arguments])
         # preserve execute permission on all input files
         executables = [ ]
         for l, r in self.inputs.iteritems():
@@ -1548,13 +1548,13 @@ class Run(Struct):
         message entered in the log::
 
           >>> j1.info
-          'a second message'
+          u'a second message'
 
         """
         def fget(self):
             return self.log.last()
         def fset(self, value):
-            self.log.append(str(value))
+            self.log.append(unicode(value))
         return locals()
     
     # states that a `Run` can be in
