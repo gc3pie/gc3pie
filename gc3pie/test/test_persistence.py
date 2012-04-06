@@ -46,8 +46,9 @@ def _generic_persistency_test(driver):
     id = driver.save(obj)
     del obj
     obj = driver.load(id)
-    assert obj.x == 'GC3'
+    assert obj.x == 'GC3'    
 
+    # Removing objects
     driver.remove(id)
     try:
         obj = driver.load(id)
@@ -57,6 +58,16 @@ def _generic_persistency_test(driver):
     except Exception, e:
         raise e
 
+    # test id consistency
+    ids = []
+    for i in range(10):
+        ids.append(driver.save(MyObj(str(i))))
+    assert len(ids) == len(set(ids))
+
+    # cleanup
+    for i in ids:
+        driver.remove(i)
+    
 def _generic_nested_persistency_test(driver):
     obj = MyList([MyObj('j1'), MyObj('j2'), MyObj('j3'), ])
 
@@ -84,7 +95,7 @@ def test_file_persistency():
     _generic_nested_persistency_test(fs)
 
 
-def test_sql_persistency():
+def test_sqlite_persistency():
     (fd, tmpfname) = tempfile.mkstemp()
     path = Url('sqlite://%s' % tmpfname)
     db = SQL(path)
@@ -99,9 +110,10 @@ def test_mysql_persistency():
     path = Url('mysql://gc3user:gc3pwd@localhost/gc3')    
     db = SQL(path)
     _generic_persistency_test(db)
+    _generic_nested_persistency_test(db)
 
 
-def test_sql_job_persistency():
+def test_sqlite_job_persistency():
     import sqlite3
     import gc3libs
     from gc3libs.core import Run
@@ -134,6 +146,6 @@ if __name__ == "__main__":
     # fix pickle error
     from test_persistence import MyObj
     test_file_persistency()
-    test_sql_persistency()
+    test_sqlite_persistency()
     test_mysql_persistency()
-    test_sql_job_persistency()
+    test_sqlite_job_persistency()
