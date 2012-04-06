@@ -27,7 +27,8 @@ from gc3libs.url import Url
 from gc3libs.persistence import FilesystemStore
 from gc3libs.sql_persistence import SQL
 import gc3libs.exceptions as gc3ex
-import tempfile, os
+import tempfile, os, shutil
+import pickle
 
 class MyObj:
     def __init__(self, x):
@@ -102,6 +103,34 @@ def test_file_persistency():
     _generic_nested_persistency_test(fs)
 
 
+def test_filesystemstorage_pickler_class():
+    """
+    If you want to save two independent objects but one of them has a
+    reference to the other, the standard behavior of Pickle is to save
+    a copy of the contained object into the same file of the
+    containing object.
+
+    The FilesystemStorage.Pickler class is aimed to avoid this.
+    """
+    tmpfname = tempfile.mkdtemp()
+    fs = FilesystemStore(tmpfname)
+    obj1 = MyObj('GC3_parent')
+    obj2 = MyObj('GC3_children')
+    id2 = fs.save(obj2)
+    obj1.children = obj2
+    assert obj1.children is obj2
+    id1 = fs.save(obj1)
+    del obj1
+    del obj2
+    obj1 = fs.load(id1)
+    obj2 = fs.load(id2)
+    assert obj1.children.x == 'GC3_children'
+    # XXX: should this happen? I am not sure
+    assert obj1.children is not obj2
+
+    # cleanup
+    shutil.rmtree(tmpfname)
+
 def test_sqlite_persistency():
     (fd, tmpfname) = tempfile.mkstemp()
     path = Url('sqlite://%s' % tmpfname)
@@ -152,6 +181,7 @@ def test_sqlite_job_persistency():
 if __name__ == "__main__":
     # fix pickle error
     from test_persistence import MyObj
+    test_filesystemstorage_pickler_class()
     test_file_persistency()
     test_sqlite_persistency()
     test_mysql_persistency()
