@@ -49,7 +49,7 @@ def test_mandatory_arguments():
         try:
             Application(**_tmp)
         except TypeError, e:
-            assert e.message == '__init__() takes exactly 6 arguments (5 given)'
+            assert "__init__() takes exactly" in str(e)
 
 def test_wrong_type_arguments():
     # Things that will raise errors:
@@ -68,11 +68,8 @@ def test_wrong_type_arguments():
           'requested_cores': 1,          
           }
     for k,v  in {
-        'arguments' : [u'\ua0246'],
-        'inputs' : [u'\ua0246'],
         # 'inputs' : ['duplicated', 'duplicated'],
         # duplicated inputs doesnt raise an exception but just a warning
-        'outputs' : [u'\ua0246'],
         'outputs' : ['/should/not/be/absolute'],
         # 'outputs' : ['duplicated', 'duplicated'],
         # duplicated outputs doesnt raise an exception but just a warning

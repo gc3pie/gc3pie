@@ -1525,7 +1525,7 @@ class Run(Struct):
         message entered in the log::
 
           >>> j1.info
-          'a second message'
+          u'a second message'
 
         """
         def fget(self):
