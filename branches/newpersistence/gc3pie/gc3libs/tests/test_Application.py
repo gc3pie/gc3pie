@@ -49,7 +49,7 @@ def test_mandatory_arguments():
         try:
             Application(**_tmp)
         except TypeError, e:
-            assert "__init__() takes exactly 6" in str(e)
+            assert "__init__() takes exactly" in str(e)
 
 def test_wrong_type_arguments():
     # Things that will raise errors:
