@@ -99,6 +99,9 @@ class IntId(int):
     def __new__(cls, prefix, seqno):
         return int.__new__(cls, seqno)
 
+    def __getnewargs__(self):
+        return (None, int(self))
+
 class SQL(Store):
     """
     Save and load objects in a SQL db. Uses Python's `pickle` module
@@ -181,9 +184,9 @@ class SQL(Store):
                 if hasattr(obj, attr):
                     extra_fields[attr] = getattr(obj, attr)
 
-        pdata = pickle.dumps(obj).encode('base64')
-        pextra = pickle.dumps(extra_fields).encode('base64')
-        # insert into db        
+        pdata = pickle.dumps(obj, protocol=pickle.HIGHEST_PROTOCOL).encode('base64')
+        pextra = pickle.dumps(extra_fields, protocol=pickle.HIGHEST_PROTOCOL).encode('base64')
+        # insert into db
         otype = ''
         jobid = ''
         jobname = ''
