@@ -88,6 +88,8 @@ class SQL(Store):
     1
     >>> db.list()
     [1]
+    >>> db.save(obj)
+    2
     >>> del obj
     >>> y = db.load(1)
     >>> y.x
@@ -143,7 +145,7 @@ class SQL(Store):
             c.execute('select max(id) from jobs')
             id_ = c.fetchone()[0]
             if not id_: id_ = 1
-            id_ = int(id_)+1
+            else: id_ = int(id_)+1
 
         extra_fields = {}
         if hasattr(obj, '__persistent_attributes__'):
