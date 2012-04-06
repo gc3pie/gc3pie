@@ -48,6 +48,13 @@ def _generic_persistency_test(driver):
     obj = driver.load(id)
     assert obj.x == 'GC3'    
 
+    # We assume tat if an object is already on the db a call to
+    # `driver.save` will not save a duplicate of the object, but it
+    # will override the old one.
+    id1 = driver.save(obj)
+    id2 = driver.save(obj)
+    assert id1 == id2
+
     # Removing objects
     driver.remove(id)
     try:
