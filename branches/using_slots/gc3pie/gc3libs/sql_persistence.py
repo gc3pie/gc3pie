@@ -137,7 +137,8 @@ class SQL(Store):
     >>> _ = c.execute('select  persistent_attributes from jobs where id=1')
     >>> pickle.loads(c.fetchone()[0].decode('base64'))
     {'pattr': 'persistent'}
-    
+
+    # Cleanup
     >>> import os
     >>> os.remove(name)
     """

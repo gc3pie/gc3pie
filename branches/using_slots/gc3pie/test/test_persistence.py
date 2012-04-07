@@ -23,6 +23,7 @@
 __docformat__ = 'reStructuredText'
 __version__ = '$Revision$'
 
+import gc3libs
 from gc3libs.url import Url
 from gc3libs.persistence import FilesystemStore
 from gc3libs.sql_persistence import SQL
@@ -48,7 +49,9 @@ class SlotClassWrong(object):
     classes. Usually you just need to use a binary protocol for
     pickle.
 
-    This class will raise an error because __slots__ does not contain "persistent_id". The SlotClass class instead, will work as expected.
+    This class will raise an error because __slots__ does not contain
+    a `persistent_id`. The SlotClass class instead, will work as
+    expected.
 
     Check for instance:
     http://stackoverflow.com/questions/3522765/python-pickling-slots-error
@@ -113,6 +116,27 @@ def _generic_nested_persistency_test(driver):
     except Exception, e:
         raise e
 
+def _generic_newstile_slots_classes(db):
+    obj = SlotClass('GC3')
+    assert obj.attr == 'GC3'
+    id_ = db.save(obj)
+    del obj
+    obj2 = db.load(id_)
+    assert obj2.attr == 'GC3'
+
+    obj2 = SlotClassWrong('GC3')
+    try:
+        db.save(obj2)
+        assert "We shouldn't reach this point" is False
+    except AttributeError:
+        pass
+    
+def _application_test(db):
+    obj = gc3libs.Application('/bin/true', [], [], [], '/tmp')
+    id_ = db.save(obj)
+    obj2 = db.load(id_)
+    
+
 def test_file_persistency():
     tmpdir = tempfile.mkdtemp()
 
@@ -122,7 +146,9 @@ def test_file_persistency():
 
     _generic_persistency_test(fs)
     _generic_nested_persistency_test(fs)
+    # import pdb; pdb.set_trace()
     _generic_newstile_slots_classes(fs)
+    _application_test(fs)
     shutil.rmtree(tmpdir)
 
 def test_filesystemstorage_pickler_class():
@@ -153,21 +179,6 @@ def test_filesystemstorage_pickler_class():
     # cleanup
     shutil.rmtree(tmpfname)
 
-def _generic_newstile_slots_classes(db):
-    obj = SlotClass('GC3')
-    assert obj.attr == 'GC3'
-    id_ = db.save(obj)
-    del obj
-    obj2 = db.load(id_)
-    assert obj2.attr == 'GC3'
-
-    obj2 = SlotClassWrong('GC3')
-    try:
-        db.save(obj2)
-        assert "We shouldn't reach this point" is False
-    except AttributeError:
-        pass
-    
 
 def test_sqlite_persistency():
     (fd, tmpfname) = tempfile.mkstemp()
@@ -178,6 +189,7 @@ def test_sqlite_persistency():
     _generic_persistency_test(db)
     _generic_nested_persistency_test(db)
     _generic_newstile_slots_classes(db)
+    _application_test(db)
     os.remove(tmpfname)
 
 
@@ -187,6 +199,7 @@ def test_mysql_persistency():
     _generic_persistency_test(db)
     _generic_nested_persistency_test(db)
     _generic_newstile_slots_classes(db)
+    _application_test(db)
 
 
 def test_sqlite_job_persistency():
