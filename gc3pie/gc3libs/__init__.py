@@ -154,6 +154,14 @@ class Task(Struct):
 
     """
 
+    __slots__ = ('jobname',
+                 'execution',
+                 '_attached',
+                 '_grid',
+                 'changed',
+                 'persistent_id',
+                 )
+
     # XXX: Why considering the possibility of init a Task with a core instance already ?
     # XXX: why don't we just allow Tasks to be attached throught Task.attach(grid) ?
     def __init__(self, name, grid=None, **kw):
@@ -229,14 +237,15 @@ class Task(Struct):
     # saved separately.
 
     def __getstate__(self):
-        state = self.__dict__.copy()
+        state = dict((i, getattr(self,i)) for i in Task.__slots__)
         state['_grid'] = None
         state['_attached'] = None
         state['changed'] = False
         return state
 
     def __setstate__(self, state):
-        self.__dict__ = state
+        for (key, value) in state.iteritems():
+            setattr(self, key, value)
         self.detach()
 
 
@@ -739,6 +748,24 @@ class Application(Persistable, Task):
       list of strings specifying the tags to request in each resource
       for submission; possibly empty.
     """
+    __slots__ = ('executable',
+                 'arguments',
+                 'inputs',
+                 'outputs',
+                 'output_dir',
+                 'output_base_url',
+                 'requested_cores',
+                 'requested_memory',
+                 'requested_walltime',
+                 'requested_architecture',
+                 'environment',
+                 'join',
+                 'stdin',
+                 'stdout',
+                 'stderr',
+                 'tags',
+                 'persistent_id',
+                 )
     def __init__(self, executable, arguments, inputs, outputs, output_dir, **kw):
         # required parameters
         self.executable = executable

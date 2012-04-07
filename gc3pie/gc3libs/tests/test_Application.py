@@ -41,7 +41,12 @@ def test_mandatory_arguments():
     
     # test *valid* invocation
     Application(**ma)
+    # from meliae import scanner,loader
 
+    # out = open('meiae.dump','w')
+    # scanner.dump_all_referenced(out, Application(**ma))
+    # print loader.load('meiae.dump').summarize()
+    # out.close()
     # test *invalid* invocation removing only one of the arguments
     for k in ma:
         _tmp = ma.copy()
