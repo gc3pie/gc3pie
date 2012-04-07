@@ -1,0 +1,52 @@
+! EXAM 44.
+!   Hydrogen fluoride hexamer...(HF)6
+!   using the divide-and-conquer (DC) method
+!
+!  Divide-and-conquer HF and MP2 energies are:
+!     FINAL DC-RHF E= -599.9471636844, 14 iters
+!             E(MP2)= -600.7388336079
+!  Selecting only DC-MP2, with full SCF accuracy:
+!              RHF E= -599.9475140963, 12 iters
+!              MP2 E= -600.7391870175
+!  An explicit MP2/6-31G calculation yields:
+!              RHF E= -599.9475140963, 12 iters
+!              MP2 E= -600.7399209860
+!
+!  CCSD calculation requires changing one keyword in
+!  $CONTRL.  The divide-and-conquer CCSD energy is 
+!        CCSD ENERGY= -600.7487442686
+!  Selecting only DC-CCSD, with full SCF accuracy:
+!        CCSD ENERGY= -600.7490979478
+!  compared to the explicit CCSD/6-31G calculation:
+!        CCSD ENERGY= -600.7485966549 
+!
+ $CONTRL SCFTYP=RHF RUNTYP=ENERGY MPLEVL=2 COORD=ZMT $END
+ $SYSTEM MWORDS=1 $END
+ $BASIS  GBASIS=N31 NGAUSS=6 $END
+ $GUESS  GUESS=HUCSUB $END
+!   the subsystems consist of individual HF monomers
+ $DANDC  DCFLG=.TRUE. BUFRAD=5.0 BUFTYP=RADSUB
+         NSUBS=6 LBSUBS(1)=1,2,3,4,5,6,1,2,3,4,5,6 $END
+ $DCCORR DODCCR=.TRUE. RBUFCR=3.0 $END
+ $DATA
+zigzag hexamer (HF)6
+C1
+F
+F  1 rFF
+F  2 rFF  1 aHFH
+F  3 rFF  2 aHFH  1 180.0
+F  4 rFF  3 aHFH  2 180.0
+F  5 rFF  4 aHFH  3 180.0
+H  1 rHFL 2 aHFH  3 180.0
+H  2 rHF  3 aHFH  4 180.0
+H  3 rHF  4 aHFH  5 180.0
+H  4 rHF  5 aHFH  6 180.0
+H  4 rFH  3 aHFH  2 180.0
+H  5 rFH  4 aHFH  3 180.0
+
+rFF=2.5
+rHF=0.97
+rFH=1.43
+aHFH=116.0
+rHFL=0.97
+ $END
