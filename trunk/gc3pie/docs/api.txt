@@ -62,18 +62,6 @@
 .. automodule:: gc3libs.Resource
     :members:
 
-`gc3libs.InformationContainer`
-==============================
-
-.. warning:: 
-
-   This module is deprecated and will be removed in a future release.
-   Do not depend on it.
-
-.. automodule:: gc3libs.InformationContainer
-    :members:
-
-
 `gc3libs.application`
 =====================
 .. automodule:: gc3libs.application
