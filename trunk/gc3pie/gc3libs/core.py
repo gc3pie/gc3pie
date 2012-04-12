@@ -359,6 +359,12 @@ specified in the configuration file.
                                 else:
                                     app.execution.info = ("Remote job exited with code %d" 
                                                           % app.execution.exitcode)
+
+                    if state == Run.State.UNKNOWN:
+                        # report application as changed as
+                        # the iteration counter needs to be recorded
+                        app.changed = True
+                                    
                     if state != Run.State.UNKNOWN or update_on_error:
                         app.execution.state = state
 
@@ -373,11 +379,8 @@ specified in the configuration file.
 
             except gc3libs.exceptions.UnknownJob:
                 # information about the job is lost, mark it as failed
-                # XXX: Alternative bahaviour suggestion:
-                # Never mark an unknown job as failed.
-                # worst case let human or higher level scripts to decide.
-                # app.execution.returncode = (Run.Signals.Lost, -1)
-                # app.execution.state = Run.State.TERMINATED
+                app.execution.returncode = (Run.Signals.Lost, -1)
+                app.execution.state = Run.State.TERMINATED
                 app.changed = True
                 continue
 

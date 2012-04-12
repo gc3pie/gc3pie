@@ -100,6 +100,9 @@ class Default(object):
 
     PEEK_FILE_SIZE = 120 # expressed in bytes
 
+    # number of iterations before job is permanently marked as lost
+    UNKNOWN_ITER_LIMIT = 5
+
 from gc3libs.exceptions import *
 from gc3libs.persistence import Persistable
 import gc3libs.url
