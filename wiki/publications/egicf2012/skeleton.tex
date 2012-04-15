@@ -1,0 +1,159 @@
+% Please use the skeleton file you have received in the 
+% invitation-to-submit email, where your data are already
+% filled in. Otherwise please make sure you insert your 
+% data according to the instructions in PoSauthmanual.pdf
+\documentclass{PoS}
+
+\usepackage{acronym}
+
+\acrodef{ARC}{Advanced Resource Connector}
+\acrodef{xRSL}{Extended Resource Specification Language}
+
+\title{GC3Pie: A Python framework for high-throughput computing}
+
+\ShortTitle{GC3Pie: A Python framework for high-throughput computing}
+
+\author{\speaker{Sergio MAFFIOLETTI}%
+        GC3: Grid Computing Competence Center\\
+        University of Zurich \\
+         E-mail: \email{sergio.maffioletti@gc3.uzh.ch}}
+
+\author{Riccardo Murri\\
+        GC3: Grid Computing Competence Center\\
+        University of Zurich \\
+        E-mail: \email{riccardo.murri@gmail.com}}
+
+\abstract{This paper present GC3Pie, a python library to ease the
+  development of scalable and robust High Throughput data analysis
+  tools. Most of the current distributed computing middlewares as well
+  as most of the in-house grown scripts fall short in reaching the
+  scaling and reliability factors required by the ever growing demand
+  of large data analysis. GC3Pie provides mechanisms to automitise the
+  execution and the monitoring of large collection of applications
+  while, at the same time, provides simple data structures and
+  interfaces to steer the behaviour of the underlying system in an
+  application-centric perspective. The goal of GC3Pie is to embody the
+  common execution and monitorig processing part of large data
+  analysys while moving most decision making logic to the application
+  level; like, for example, the reaction of certain types of failures,
+  the validation of the application execution or the brokering of the
+  computing resources driven by application fidelity metrics.
+  This allows to write application specific tools that take full
+  control of the underlying computing and data infrastructure, as
+  opposite of current middleware stacks that are trying to embody the
+  full control of the execution logic thus reducing the flexibility of
+  the entire system as they prevent applications to define their own
+  expected behaviour of the system.}
+
+
+%% Grid middlewares provide simple interfaces,
+%%   most of the time in forms of command line interface that are
+%%   centered around the single execution usage model: one submission at
+%%   a time. 
+
+
+\FullConference{EGI Community Forum 2012 / EMI Second Technical Conference\\
+          26-30 March, 2012\\
+           Munich, Germany}
+
+\begin{document}
+
+\section{Introduction}
+% Troppo bla bla
+Modern science is progressively more involved in the use of scientific
+computing involving mathematical models with a hierarchy of
+complexity. Together with expanding capabilities in hardware, this
+results in exponential increase in computed data, which comes with a
+need for an array of quantitative analysis tools,
+all brought together in a seamless fashion to solve scientific
+problems. As a major consequence of this growth in digital computing
+the needs for support of data and compute infrastructure to carry out
+scientific investigations is growing.  To deal with such needs
+requires a global as well as a multi-disciplinary perspective with a
+robust data infrastructure in place to facilitate the digital
+ecosystem. 
+
+% mettere accento sulla inadeguatezza dei middleware xche' cercano di
+% cecano di prendere troppe decisioni autonomamente. Questo limita la
+% flessibilita' delle applicazioni (spingere sul feedback di Atlas
+% dove anche loro concordano che la complessita' dovrebbe stare di
+% piu' a livello applicazioni.
+% GC3Pie aiuta in questa direzione.
+% si presentano gli strumenti di HTC: engine, TaskCollection,
+% Application.
+% Quelli di reliability: persistency, e magari la rotazione delle
+% risorse in caso di failure
+% Quelli di workflow: Task come composable, Seq., Par,
+
+
+\section{Related Works}
+% Ganga, Saga, P-GRADE
+
+\section{What is GC3Pie}
+GC3Pie is a library of Python classes for running large job campaigns
+(high throughput) on diverse batch-oriented execution environments,
+including \acs{ARC}-based computational grids \cite{arc}.  It also
+provides facilities for implementing command-line driver scripts, in
+the form of Python object classes whose behavior can be customized by
+overriding specified object methods.
+
+The GC3Pie suite is comprised of three main components: 
+
+\begin{itemize}
+\item GC3Libs: A python package for controlling the life-cycle of a Grid or batch computational job 
+\item GC3Apps: Driver scripts to run large job campaigns 
+\end{itemize}
+
+\subsubsection*{GC3Libs}
+
+GC3Libs provides services for submitting computational jobs to Grids and batch systems and controlling their execution, persisting job information, and retrieving the final output. \\
+
+GC3Libs takes an application-oriented approach to batch computing. A generic Application class provides the basic operations for controlling remote computations, but different Application subclasses can expose adapted interfaces, focusing on the most relevant aspects of the application being represented. Specific interfaces are already provided for the GAMESS-US and Rosetta suites; new ones can be easily created by subclassing the generic Application class. \\
+
+\subsubsection*{GC3Apps}
+
+There is a need in some scientific communities, to run large job campaigns to analyze a vast number of data files with the same application. The single-job level of control implemented by GC3Utils in this case is not enough: you would have to implement "glue scripts" to control hundreds or thousand scripts at once. GC3Pie has provisons for this, in the form of re-usable Python classes that implement a single point of control for job families. \\
+
+The GC3Apps scripts are driver scripts that run job campaigns using the supported applications on a large set of input data. They can be used in production as-is, or adapted to suit your data processing needs. 
+
+
+At the heart of the GC3Pie model is a generic \emph{Application}
+object, that provides a high-level description of a computational
+job: list of input/output files, what command to run, resource
+requirements and limits, etc. GC3Pie translates this information into
+the job description format needed by the actual execution back-end
+selected, e.g., \acs{xRSL} for ARC-based Grids, or a submission script for
+direct execution on a batch-queuing system. \emph{Application} objects
+can be adapted to provide behavior customized to a specific use case.
+
+\subsection{High Throughput with GC3Pie}
+% Application, Engine, Task and Collections
+% persistency
+
+\subsection{Workflows}
+% Tasks as composable entities
+% Sequential and Parallel Tasks
+
+\section{High Throughput with GC3Pie}
+\begin{itemize}
+\item grosetta o ggeotop
+\item gpremium per il workflow
+\item gcrypto per il Chunked
+\end{itemize}
+
+
+\section{Conclusions}
+\begin{itemize}
+  \item Where we are: GC3Pie is used to implement end-to-end solutions for a large variety of scientific usecases. GC3Pie is centered around the controlled execution of a collection of applications. It automatically handles the execution process by optimizing the submission to the underlying computing infrastructure, by monitoring the progress of the entire collection, by handling individual failures through resubmisson or termination, and by retrieving and organizing the results.
+
+  \item Where are we going: GC3Pie is a tool to write complex application clients; this allows to move the control and decision logic from the middleware stack to the application level. GC3Pie will grow in providing at application level as much information and related directives as possible to represent the status of the underlying system. In such a way, the application client developers will have a more structured framework to write complex execution logics (e.g. application-driven resource brokering, reliability metric, etc.)
+\end{itemize}
+
+\begin{thebibliography}{99}
+  \bibitem{...} ....
+\end{thebibliography}
+
+\end{document}
+
+
+
