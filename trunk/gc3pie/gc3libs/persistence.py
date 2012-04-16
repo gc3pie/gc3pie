@@ -31,8 +31,7 @@ import sys
 import gc3libs
 import gc3libs.exceptions
 from gc3libs.utils import progressive_number, same_docstring_as
-
-
+from gc3libs.url import Url
 
 class Store(object):
     """
@@ -262,7 +261,10 @@ class FilesystemStore(Store):
     """
     def __init__(self, directory=gc3libs.Default.JOBS_DIR, 
                  idfactory=IdFactory(), protocol=pickle.HIGHEST_PROTOCOL):
+        if isinstance(directory, gc3libs.url.Url):
+            directory=directory.path
         self._directory = directory
+        
         self.idfactory = idfactory
         self._protocol = protocol
 
@@ -449,7 +451,13 @@ class FilesystemStore(Store):
                     pass # ignore errors
             raise
 
-
+def persistence_factory(uri, *args, **kw):
+    if not isinstance(uri, Url):
+        uri = Url(uri)
+    if uri.scheme == 'file': return FilesystemStore(uri, *args, **kw)
+    else:
+        from sql_persistence import SQL
+        return SQL(uri, *args, **kw)
 
 ## main: run tests
 
