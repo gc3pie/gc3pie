@@ -124,9 +124,9 @@
 .. automodule:: gc3libs.backends.sge
     :members:
 
-`gc3libs.backends.subprocess`
+`gc3libs.backends.shellcmd`
 =============================
-.. automodule:: gc3libs.backends.subprocess
+.. automodule:: gc3libs.backends.shellcmd
     :members:
 
 `gc3libs.backends.transport`
