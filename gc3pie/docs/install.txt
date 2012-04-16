@@ -191,10 +191,8 @@ Installation into a virtualenv has two distinct advantages:
        info
        kill
        list
-       notify
        resub
        stat
-       sub
        tail
 
    If you get some errors, do not despair!  The `GC3Pie users
