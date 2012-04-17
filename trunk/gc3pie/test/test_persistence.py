@@ -29,6 +29,10 @@ from gc3libs.sql_persistence import SQL
 import gc3libs.exceptions as gc3ex
 import tempfile, os, shutil
 import pickle
+try:
+    import MySQLdb
+except:
+    MySQLdb = None
 
 class MyObj:
     def __init__(self, x):
@@ -182,8 +186,15 @@ def test_sqlite_persistency():
 
 
 def test_mysql_persistency():
-    path = Url('mysql://gc3user:gc3pwd@localhost/gc3')    
-    db = SQL(path)
+    if not MySQLdb: return
+    
+    try:
+        path = Url('mysql://gc3user:gc3pwd@localhost/gc3')    
+        db = SQL(path)
+    except MySQLdb.OperationalError:
+        # Ignore MySQL errors, since the mysql server may not be
+        # running or not properly configured.
+        return
     _generic_persistency_test(db)
     _generic_nested_persistency_test(db)
     _generic_newstile_slots_classes(db)
