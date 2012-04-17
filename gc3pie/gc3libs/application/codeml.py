@@ -254,6 +254,13 @@ class CodemlApplication(gc3libs.Application):
 
         # form full-path to the stdout files
         download_dir = self.output_dir
+
+        # check whether 'download_dir' exists at all
+        if not os.path.isdir(download_dir):
+            # output folder not available
+            self.execution.exitcode = 127
+            return
+
         outputs = [ os.path.join(download_dir, filename) 
                     for filename in fnmatch.filter(os.listdir(download_dir), '*.mlc') ]
         if len(outputs) == 0:
