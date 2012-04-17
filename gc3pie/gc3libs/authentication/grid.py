@@ -397,7 +397,7 @@ class GridAuth(object):
                 else:
                     raise UnrecoverableAuthError("Unsupported cert type '%s'" % cert_type)
                 expires = cert.GetEndTime().GetTime()
-            except arclib.CredentialError:
+            except arc.CredentialError:
                 # ARClib cannot read/access cert, consider it expired
                 # to force renewal
                 return 0
