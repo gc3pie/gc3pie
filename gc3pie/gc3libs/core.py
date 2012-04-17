@@ -246,7 +246,7 @@ specified in the configuration file.
                                       " See log file for details."
                                       % r._resource.name)
                     gc3libs.log.debug("Got error from get_resource_status(): %s: %s",
-                                      x.__class__.__name__, x.args, exc_info=True)
+                                      x.__class__.__name__, str(x), exc_info=True)
 
         # sort resources according to Application's preferences
         _selected_lrms_list = app.rank_resources(updated_resources)
