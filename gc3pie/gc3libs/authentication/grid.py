@@ -373,24 +373,34 @@ class GridAuth(object):
 
         if arc_flavour == Default.ARC0_LRMS:
             # use ARC libraries
-            if cert_type == "proxy":
-                cert = arclib.Certificate(arclib.PROXY)
-            elif cert_type == "usercert":
-                cert = arclib.Certificate(arclib.USERCERT)
-            else:
-                raise UnrecoverableAuthError("Unsupported cert type '%s'" % cert_type)
-            expires = cert.Expires().GetTime()
+            try:
+                if cert_type == "proxy":
+                    cert = arclib.Certificate(arclib.PROXY)
+                elif cert_type == "usercert":
+                    cert = arclib.Certificate(arclib.USERCERT)
+                else:
+                    raise UnrecoverableAuthError("Unsupported cert type '%s'" % cert_type)
+                expires = cert.Expires().GetTime()
+            except arclib.CertificateError:
+                # ARClib cannot read/access cert, consider it expired
+                # to force renewal
+                return 0
 
         elif arc_flavour == Default.ARC1_LRMS:
             # use ARC1 libraries
-            userconfig = arc.UserConfig()
-            if cert_type == "proxy":
-                cert = arc.Credential(userconfig.ProxyPath(), "", "", "")
-            elif cert_type == "usercert":
-                cert = arc.Credential(userconfig.CertificatePath(), "", "", "")
-            else:
-                raise UnrecoverableAuthError("Unsupported cert type '%s'" % cert_type)
-            expires = cert.GetEndTime().GetTime()
+            try:
+                userconfig = arc.UserConfig()
+                if cert_type == "proxy":
+                    cert = arc.Credential(userconfig.ProxyPath(), "", "", "")
+                elif cert_type == "usercert":
+                    cert = arc.Credential(userconfig.CertificatePath(), "", "", "")
+                else:
+                    raise UnrecoverableAuthError("Unsupported cert type '%s'" % cert_type)
+                expires = cert.GetEndTime().GetTime()
+            except arclib.CredentialError:
+                # ARClib cannot read/access cert, consider it expired
+                # to force renewal
+                return 0
 
         else:
             # XXX: should this be `AssertionError` instead? (it's a programming bug...)
