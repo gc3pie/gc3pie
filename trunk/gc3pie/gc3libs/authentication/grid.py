@@ -3,7 +3,7 @@
 """
 Authentication support with Grid proxy certificates.
 """
-# Copyright (C) 2009-2012 GC3, University of Zurich. All rights reserved.
+# Copyright (C) 2009-201/v2 GC3, University of Zurich. All rights reserved.
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
@@ -221,11 +221,14 @@ class GridAuth(object):
                 keypass = self._passwd
             else:
                 # ask interactively
-                if self.type == 'voms-proxy':
-                    message = 'Insert voms proxy password: '
-                elif self.type == 'grid-proxy':
-                    message = 'Insert grid proxy password: '
-                keypass = getpass.getpass(message)
+                if new_cert:
+                    keypass = key_passwd
+                else:
+                    if self.type == 'voms-proxy':
+                        message = 'Insert voms proxy password: '
+                    elif self.type == 'grid-proxy':
+                        message = 'Insert grid proxy password: '
+                    keypass = getpass.getpass(message)
 
             self.renew_proxy(keypass)
 
