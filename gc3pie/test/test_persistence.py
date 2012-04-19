@@ -171,25 +171,27 @@ def test_filesystemstorage_pickler_class():
     containing object.
 
     The FilesystemStorage.Pickler class is aimed to avoid this.
-    """
+    """    
     tmpfname = tempfile.mkdtemp()
-    fs = FilesystemStore(tmpfname)
-    obj1 = MyObj('GC3_parent')
-    obj2 = MyObj('GC3_children')
-    id2 = fs.save(obj2)
-    obj1.children = obj2
-    assert obj1.children is obj2
-    id1 = fs.save(obj1)
-    del obj1
-    del obj2
-    obj1 = fs.load(id1)
-    obj2 = fs.load(id2)
-    assert obj1.children.x == 'GC3_children'
-    # XXX: should this happen? I am not sure
-    assert obj1.children is not obj2
+    try:
+        fs = FilesystemStore(tmpfname)
+        obj1 = MyObj('GC3_parent')
+        obj2 = MyObj('GC3_children')
+        id2 = fs.save(obj2)
+        obj1.children = obj2
+        assert obj1.children is obj2
+        id1 = fs.save(obj1)
+        del obj1
+        del obj2
+        obj1 = fs.load(id1)
+        obj2 = fs.load(id2)
+        assert obj1.children.x == 'GC3_children'
+        # XXX: should this happen? I am not sure
+        assert obj1.children is not obj2
 
-    # cleanup
-    shutil.rmtree(tmpfname)
+        # cleanup
+    finally:
+        shutil.rmtree(tmpfname)
 
 def _generic_newstile_slots_classes(db):
     return
@@ -213,9 +215,10 @@ def test_sqlite_persistency():
     db = persistence_factory(path)
     obj = MyObj('GC3')
     
-    _run_driver_tests(db)
-    os.remove(tmpfname)
-
+    try:
+        _run_driver_tests(db)
+    finally:
+        os.remove(tmpfname)
 
 def test_mysql_persistency():
     if not MySQLdb: return
@@ -244,18 +247,19 @@ def test_sqlite_job_persistency():
     (fd, tmpfname) = tempfile.mkstemp()
     path = Url('sqlite://%s' % tmpfname)
     db = persistence_factory(path)
-
     id_ = db.save(app)
     
     conn = sqlite3.connect(tmpfname)
     c = conn.cursor()
-    c.execute('select jobid,jobname, jobstatus from jobs')
+    c.execute('select jobid,jobname, jobstatus from jobs where id=%d' % app.persistent_id)
     row = c.fetchone()
-    assert int(row[0]) == app.execution.lrms_jobid
-    assert row[1] == app.jobname
-    assert row[2] == app.execution.state
-    c.close()
-    os.remove(tmpfname)
+    try:
+        assert int(row[0]) == app.execution.lrms_jobid
+        assert row[1] == app.jobname
+        assert row[2] == app.execution.state
+    finally:
+        c.close()
+        os.remove(tmpfname)
     
 
     

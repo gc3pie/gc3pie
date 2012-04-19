@@ -25,12 +25,13 @@ GC3pie objects in a SQL DB instead of using Pickle from
 __docformat__ = 'reStructuredText'
 __version__ = '$Revision$'
 
-from gc3libs.persistence import Store, IdFactory
+from gc3libs.persistence import Store, IdFactory, Persistable, create_pickler, create_unpickler
 from gc3libs.utils import same_docstring_as
 import gc3libs.exceptions
 from gc3libs import Task
 
 import cPickle as pickle
+import cStringIO as StringIO
 
 class DummyObject:
     pass
@@ -117,24 +118,25 @@ class SQL(Store):
     >>> from sql_persistence import DummyObject
     >>> obj = DummyObject()
     >>> obj.x = 'test'
-    >>> db.save(obj)
-    1
-    >>> db.list()
-    [1]
-    >>> db.save(obj)
-    1
+    >>> objid = db.save(obj)
+    >>> isinstance(objid, int)
+    True
+    >>> db.list() == [objid]
+    True
+    >>> db.save(obj) == objid
+    True
     >>> del obj
-    >>> y = db.load(1)
+    >>> y = db.load(objid)
     >>> y.x
     'test'
     >>> c = db._SQL__conn.cursor()
-    >>> _ = c.execute('select  persistent_attributes from jobs where id=1')
+    >>> _ = c.execute('select  persistent_attributes from jobs where id=%s' % objid)
     >>> pickle.loads(c.fetchone()[0].decode('base64'))
     {}
     >>> y.__persistent_attributes__ = ['pattr']
     >>> y.pattr = 'persistent'
-    >>> db.replace(1, y)
-    >>> _ = c.execute('select  persistent_attributes from jobs where id=1')
+    >>> db.replace(objid, y)
+    >>> _ = c.execute('select  persistent_attributes from jobs where id=%s' % objid)
     >>> pickle.loads(c.fetchone()[0].decode('base64'))
     {'pattr': 'persistent'}
     
@@ -153,7 +155,8 @@ class SQL(Store):
         self.__conn = DRIVERS[url.scheme](url)
         self.idfactory = idfactory
         if not idfactory:
-            self.idfactory = IdFactory(next_id_fn=sql_next_id_factory(self.__conn), id_class=IntId)
+            # self.idfactory = IdFactory(next_id_fn=sql_next_id_factory(self.__conn), id_class=IntId)
+            self.idfactory = IdFactory(id_class=IntId)
             
     @same_docstring_as(Store.list)
     def list(self):
@@ -183,19 +186,21 @@ class SQL(Store):
             for attr in obj.__persistent_attributes__:
                 if hasattr(obj, attr):
                     extra_fields[attr] = getattr(obj, attr)
-
-        pdata = pickle.dumps(obj, protocol=pickle.HIGHEST_PROTOCOL).encode('base64')
+        dstdata = StringIO.StringIO()
+        pickler = create_pickler(self, dstdata, obj)
+        pickler.dump(obj)
+        pdata = dstdata.getvalue().encode('base64')
+        
         pextra = pickle.dumps(extra_fields, protocol=pickle.HIGHEST_PROTOCOL).encode('base64')
         # insert into db
         otype = ''
-        jobid = ''
+        jobid = -1
         jobname = ''
         jobstatus = ''
         
         if isinstance(obj, Task):
             otype = 'job'
             jobstatus = obj.execution.state
-            jobid = -1
             if hasattr(obj.execution, 'lrms_jobid'):
                 jobid = obj.execution.lrms_jobid
             jobname = obj.jobname
@@ -227,10 +232,12 @@ where id=%d""" % (pdata,otype, jobid, jobstatus, jobname, pextra, id_)
         rawdata = c.fetchone()
         if not rawdata:
             raise gc3libs.exceptions.LoadError("Unable to find object %d" % id_)
-        data = pickle.loads(rawdata[0].decode('base64'))
+        srcdata = StringIO.StringIO(rawdata[0].decode('base64'))
+        unpickler = create_unpickler(self, srcdata)
+        obj = unpickler.load()
         self.__conn.commit()
         c.close()
-        return data
+        return obj
 
     @same_docstring_as(Store.remove)
     def remove(self, id_):
