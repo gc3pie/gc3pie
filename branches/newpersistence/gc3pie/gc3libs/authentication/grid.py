@@ -3,7 +3,7 @@
 """
 Authentication support with Grid proxy certificates.
 """
-# Copyright (C) 2009-2012 GC3, University of Zurich. All rights reserved.
+# Copyright (C) 2009-201/v2 GC3, University of Zurich. All rights reserved.
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
@@ -221,11 +221,14 @@ class GridAuth(object):
                 keypass = self._passwd
             else:
                 # ask interactively
-                if self.type == 'voms-proxy':
-                    message = 'Insert voms proxy password: '
-                elif self.type == 'grid-proxy':
-                    message = 'Insert grid proxy password: '
-                keypass = getpass.getpass(message)
+                if new_cert:
+                    keypass = key_passwd
+                else:
+                    if self.type == 'voms-proxy':
+                        message = 'Insert voms proxy password: '
+                    elif self.type == 'grid-proxy':
+                        message = 'Insert grid proxy password: '
+                    keypass = getpass.getpass(message)
 
             self.renew_proxy(keypass)
 
@@ -373,24 +376,34 @@ class GridAuth(object):
 
         if arc_flavour == Default.ARC0_LRMS:
             # use ARC libraries
-            if cert_type == "proxy":
-                cert = arclib.Certificate(arclib.PROXY)
-            elif cert_type == "usercert":
-                cert = arclib.Certificate(arclib.USERCERT)
-            else:
-                raise UnrecoverableAuthError("Unsupported cert type '%s'" % cert_type)
-            expires = cert.Expires().GetTime()
+            try:
+                if cert_type == "proxy":
+                    cert = arclib.Certificate(arclib.PROXY)
+                elif cert_type == "usercert":
+                    cert = arclib.Certificate(arclib.USERCERT)
+                else:
+                    raise UnrecoverableAuthError("Unsupported cert type '%s'" % cert_type)
+                expires = cert.Expires().GetTime()
+            except arclib.CertificateError:
+                # ARClib cannot read/access cert, consider it expired
+                # to force renewal
+                return 0
 
         elif arc_flavour == Default.ARC1_LRMS:
             # use ARC1 libraries
-            userconfig = arc.UserConfig()
-            if cert_type == "proxy":
-                cert = arc.Credential(userconfig.ProxyPath(), "", "", "")
-            elif cert_type == "usercert":
-                cert = arc.Credential(userconfig.CertificatePath(), "", "", "")
-            else:
-                raise UnrecoverableAuthError("Unsupported cert type '%s'" % cert_type)
-            expires = cert.GetEndTime().GetTime()
+            try:
+                userconfig = arc.UserConfig()
+                if cert_type == "proxy":
+                    cert = arc.Credential(userconfig.ProxyPath(), "", "", "")
+                elif cert_type == "usercert":
+                    cert = arc.Credential(userconfig.CertificatePath(), "", "", "")
+                else:
+                    raise UnrecoverableAuthError("Unsupported cert type '%s'" % cert_type)
+                expires = cert.GetEndTime().GetTime()
+            except arc.CredentialError:
+                # ARClib cannot read/access cert, consider it expired
+                # to force renewal
+                return 0
 
         else:
             # XXX: should this be `AssertionError` instead? (it's a programming bug...)
