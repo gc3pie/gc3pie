@@ -100,6 +100,9 @@ class Default(object):
 
     PEEK_FILE_SIZE = 120 # expressed in bytes
 
+    # number of iterations before job is permanently marked as lost
+    UNKNOWN_ITER_LIMIT = 5
+
 from gc3libs.exceptions import *
 from gc3libs.persistence import Persistable
 import gc3libs.url
@@ -1072,6 +1075,13 @@ class _Application(Persistable, Task):
         The default implementation produces XRSL content based on 
         the construction parameters; you should override this method
         to produce XRSL tailored to your application.
+
+        .. warning::
+
+          WARNING: ARClib SWIG bindings cannot resolve the overloaded
+          constructor if the xRSL stringargument is a Python 'unicode'
+          object; if you overload this method, force the result to be
+          a 'str'!
         """
         # XXX: ARC0 seems to behave inconsistently if './something' is
         # given as `executable`; however, commands run fine without
@@ -1166,8 +1176,10 @@ class _Application(Persistable, Task):
         # this should be harmless if cache registration would not work
         xrsl += u'(cache="yes")'
 
-        # force it to be unicode
-        return unicode(xrsl)
+        # WARNING: ARClib SWIG bindings cannot resolve the overloaded
+        # constructor if the argument is a Python "unicode" object;
+        # force it to be a "str"!
+        return str(xrsl)
 
 
     def cmdline(self, resource):
