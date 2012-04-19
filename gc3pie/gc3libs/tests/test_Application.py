@@ -28,7 +28,7 @@ def test_invalid_invocation():
     try:
         Application()
     except TypeError, e:
-        assert e.message == '__init__() takes exactly 6 arguments (1 given)'
+        assert str(e) == '__init__() takes exactly 6 arguments (1 given)'
 
 def test_mandatory_arguments():
     # check for all mandatory arguments
