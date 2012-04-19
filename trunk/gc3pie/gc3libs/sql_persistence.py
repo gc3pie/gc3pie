@@ -37,8 +37,11 @@ class DummyObject:
 
 def sqlite_factory(url):
     assert url.scheme == 'sqlite'
-    import sqlite3
-    conn = sqlite3.connect(url.path)
+    try:
+        import sqlite3 as sqlite
+    except ImportError:
+        import pysqlite2.dbapi2 as sqlite
+    conn = sqlite.connect(url.path)
     c = conn.cursor()
     c.execute("select name from sqlite_master where type='table' and name='jobs'")
     try:
