@@ -24,7 +24,7 @@ __docformat__ = 'reStructuredText'
 __version__ = '$Revision$'
 
 from gc3libs.url import Url
-from gc3libs.persistence import FilesystemStore
+from gc3libs.persistence import FilesystemStore, Persistable
 from gc3libs.sql_persistence import SQL
 import gc3libs.exceptions as gc3ex
 import tempfile, os, shutil
@@ -34,11 +34,11 @@ try:
 except:
     MySQLdb = None
 
-class MyObj:
+class MyObj(Persistable):
     def __init__(self, x):
         self.x = x
 
-class MyList(list):
+class MyList(list, Persistable):
     """
     Add a `__dict__` to `list`, so that creating a `persistent_id`
     entry on an instance works.
@@ -117,6 +117,43 @@ def _generic_nested_persistency_test(driver):
     except Exception, e:
         raise e
 
+def _save_different_objects_separated(driver):
+    """Since we want to save Tasks separately from the containing
+    object (e.g. SessionBasedScript) this test will try to save a
+    generic persisted container which contain another persisted and
+    check that they are saved on different items.
+
+    This is done by checking that all the objects have a persistent_id
+    attribute and """
+    
+    container = MyList()
+    container.append(MyObj('MyJob'))
+    id = driver.save(container)
+
+    # Check that there are two files!
+    assert id == container.persistent_id
+    assert hasattr(container[0], 'persistent_id')
+    
+    objid = container[0].persistent_id
+    if isinstance(driver, FilesystemStore):
+        containerfile = os.path.join(driver._directory, "%s" % id)
+        assert os.path.exists(containerfile)
+
+        objfile = os.path.join(driver._directory, "%s" % objid)
+        assert os.path.exists(objfile)
+
+    del container
+    container = driver.load(id)
+    obj = driver.load(objid)
+
+def _run_driver_tests(db):
+    _generic_persistency_test(db)
+    _generic_nested_persistency_test(db)
+    _generic_newstile_slots_classes(db)
+    _save_different_objects_separated(db)
+
+
+
 def test_file_persistency():
     tmpdir = tempfile.mkdtemp()
 
@@ -124,9 +161,7 @@ def test_file_persistency():
     fs = FilesystemStore(path.path)
     obj = MyObj('GC3')
 
-    _generic_persistency_test(fs)
-    _generic_nested_persistency_test(fs)
-    _generic_newstile_slots_classes(fs)
+    _run_driver_tests(fs)
     shutil.rmtree(tmpdir)
 
 def test_filesystemstorage_pickler_class():
@@ -158,6 +193,7 @@ def test_filesystemstorage_pickler_class():
     shutil.rmtree(tmpfname)
 
 def _generic_newstile_slots_classes(db):
+    return
     obj = SlotClass('GC3')
     assert obj.attr == 'GC3'
     id_ = db.save(obj)
@@ -172,16 +208,13 @@ def _generic_newstile_slots_classes(db):
     except AttributeError:
         pass
     
-
 def test_sqlite_persistency():
     (fd, tmpfname) = tempfile.mkstemp()
     path = Url('sqlite://%s' % tmpfname)
     db = SQL(path)
     obj = MyObj('GC3')
-
-    _generic_persistency_test(db)
-    _generic_nested_persistency_test(db)
-    _generic_newstile_slots_classes(db)
+    
+    _run_driver_tests(db)
     os.remove(tmpfname)
 
 
@@ -195,9 +228,7 @@ def test_mysql_persistency():
         # Ignore MySQL errors, since the mysql server may not be
         # running or not properly configured.
         return
-    _generic_persistency_test(db)
-    _generic_nested_persistency_test(db)
-    _generic_newstile_slots_classes(db)
+    _run_driver_tests(db)
 
 
 def test_sqlite_job_persistency():
