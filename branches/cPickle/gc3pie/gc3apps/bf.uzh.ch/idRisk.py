@@ -48,7 +48,7 @@ class idRiskApplication(Application):
     _invalid_chars = re.compile(r'[^_a-zA-Z0-9]+', re.X)
     
     def __init__(self, executable, arguments, inputs, outputs, output_dir, **kw):
-        Application.__init__(self, executable, arguments, inputs, outputs, output_dir, requested_walltime = 1)
+        Application.__init__(self, executable, arguments, inputs, outputs, output_dir, **kw)
     
     def fetch_output_error(self, ex):
 
@@ -122,5 +122,6 @@ class idRiskApppotApplication(idRiskApplication, gc3libs.application.apppot.AppP
     _invalid_chars = re.compile(r'[^_a-zA-Z0-9]+', re.X)
     
     def __init__(self, executable, arguments, inputs, outputs, output_dir, **kw):
+        print 'kw = %s' % kw
         gc3libs.application.apppot.AppPotApplication.__init__(self, executable, arguments, inputs, outputs, output_dir, **kw)
 
