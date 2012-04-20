@@ -246,7 +246,7 @@ specified in the configuration file.
                                       " See log file for details."
                                       % r._resource.name)
                     gc3libs.log.debug("Got error from get_resource_status(): %s: %s",
-                                      x.__class__.__name__, x.args, exc_info=True)
+                                      x.__class__.__name__, str(x), exc_info=True)
 
         # sort resources according to Application's preferences
         _selected_lrms_list = app.rank_resources(updated_resources)
@@ -359,6 +359,12 @@ specified in the configuration file.
                                 else:
                                     app.execution.info = ("Remote job exited with code %d" 
                                                           % app.execution.exitcode)
+
+                    if state == Run.State.UNKNOWN:
+                        # report application as changed as
+                        # the iteration counter needs to be recorded
+                        app.changed = True
+                                    
                     if state != Run.State.UNKNOWN or update_on_error:
                         app.execution.state = state
 
@@ -373,11 +379,8 @@ specified in the configuration file.
 
             except gc3libs.exceptions.UnknownJob:
                 # information about the job is lost, mark it as failed
-                # XXX: Alternative bahaviour suggestion:
-                # Never mark an unknown job as failed.
-                # worst case let human or higher level scripts to decide.
-                # app.execution.returncode = (Run.Signals.Lost, -1)
-                # app.execution.state = Run.State.TERMINATED
+                app.execution.returncode = (Run.Signals.Lost, -1)
+                app.execution.state = Run.State.TERMINATED
                 app.changed = True
                 continue
 

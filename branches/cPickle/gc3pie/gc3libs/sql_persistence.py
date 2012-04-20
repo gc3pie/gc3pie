@@ -196,7 +196,8 @@ class SQL(Store):
         if isinstance(obj, Task):
             otype = 'job'
             jobstatus = obj.execution.state
-            jobid = obj.execution.lrms_jobid
+            if hasattr(obj.execution, 'lrms_jobid'):
+                jobid = obj.execution.lrms_jobid
             jobname = obj.jobname
 
         query = "select id from jobs where id=%d" % id_
