@@ -235,6 +235,60 @@ class Persistable(object):
     pass
 
 
+class persistent_id_class:
+    """This class is needed because:
+
+    * we want to save each Persistable object as a separate record
+
+    * we want to use cPickle.
+
+    Check http://docs.python.org/library/pickle.html#pickling-and-unpickling-external-objects
+
+    for details on the differences between `pickle` and `cPickle`
+    modules.
+    """
+    def __init__(self, parent, root):
+        self._root = root
+        self._parent = parent
+
+    def __call__(self, obj):
+        if obj is self._root:
+            return None
+        elif hasattr(obj, 'persistent_id'):
+            return obj.persistent_id
+        elif isinstance(obj, Persistable):
+            self._parent.save(obj)
+            return obj.persistent_id
+
+class persistent_load_class:
+    """This class is needed because:
+
+    * we want to save each Persistable object as a separate record
+
+    * we want to use cPickle.
+
+    Check http://docs.python.org/library/pickle.html#pickling-and-unpickling-external-objects
+
+    for details on the differences between `pickle` and `cPickle`
+    modules.
+    """
+    def __init__(self, parent):
+        self._parent = parent
+
+    def __call__(self, id_):
+        return self._parent.load(id_)
+
+def create_pickler(driver, f, root, protocol=pickle.HIGHEST_PROTOCOL):
+    p = pickle.Pickler(f, protocol=protocol)
+    p.persistent_id = persistent_id_class(driver, root)
+    return p
+
+def create_unpickler(driver, f):
+    p = pickle.Unpickler(f)
+    p.persistent_load = persistent_load_class(driver)
+    return p
+
+
 class FilesystemStore(Store):
     """
     Save and load objects in a given directory.  Uses Python's
@@ -269,7 +323,6 @@ class FilesystemStore(Store):
         self._protocol = protocol
 
 
-
     @same_docstring_as(Store.list)
     def list(self):
         if not os.path.exists(self._directory):
@@ -283,7 +336,8 @@ class FilesystemStore(Store):
         src = None
         try:
             src = open(path, 'rb')
-            obj = pickle.load(src)
+            unpickler = create_unpickler(self, src)
+            obj = unpickler.load()
             src.close()
             return obj
         except Exception, ex:
@@ -385,7 +439,8 @@ class FilesystemStore(Store):
         tgt = None
         try:
             tgt = open(filename, 'w+b')
-            pickle.dump(obj, tgt, protocol=self._protocol)
+            pickler = create_pickler(self, tgt, obj)
+            pickler.dump(obj)
             tgt.close()
             try:
                 os.remove(backup)
