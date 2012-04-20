@@ -202,19 +202,16 @@ class SQL(Store):
                 jobid = obj.execution.lrms_jobid
             jobname = obj.jobname
 
-        query = "select id from jobs where id=%d" % id_
-        c.execute(query)
+        c.execute("select id from jobs where id=%d" % id_)
         if not c.fetchone():
-            query = """insert into jobs ( \
+            c.execute("""insert into jobs ( \
 id, data, type, jobid, jobname, jobstatus, persistent_attributes) \
-values (%d, '%s', '%s', '%s', '%s', '%s', '%s')""" % (
-id_, pdata, otype, jobid, jobname, jobstatus, pextra )
-            c.execute(query)
+values (?, ?, ?, ?, ?, ?, ?)""", (
+id_, pdata, otype, jobid, jobname, jobstatus, pextra ))
         else:
-            query = """update jobs set  \
-data='%s', type='%s', jobid='%s', jobstatus='%s', jobname='%s', persistent_attributes='%s' \
-where id=%d""" % (pdata,otype, jobid, jobstatus, jobname, pextra, id_)
-            c.execute(query)
+            c.execute("""update jobs set  \
+data=?, type=?, jobid=?, jobstatus=?, jobname=?, persistent_attributes=? \
+where id=?""", (pdata,otype, jobid, jobstatus, jobname, pextra, id_))
         obj.persistent_id = id_
         self.__conn.commit()
         c.close()
