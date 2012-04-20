@@ -25,7 +25,7 @@ __version__ = 'development version (SVN $Revision$)'
 
 import operator
 import os
-import pickle
+import cPickle as pickle
 import sys
 
 import gc3libs
