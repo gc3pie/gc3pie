@@ -104,7 +104,7 @@ def test_memory_pool():
     mempool = MemoryPool(store, maxobjects=nobjects)
 
     objects = []
-    for i in range(40):
+    for i in range(25):
         obj = TestTask(str(i))
         assert obj.jobname == str(i) # let's call a getattr, to be
                                      # sure it will be properly
@@ -124,6 +124,41 @@ def test_memory_pool():
     finally:
         os.remove(tmp)
 
+def test_memory_pool_policy_function():
+    """Test MemoryPool class and its "policy_function" """
+    (f, tmp) = tempfile.mkstemp()    
+    store = persistence_factory("sqlite://%s" % tmp)
+
+    def mypolicy(obj):
+        """Dump tasks with even name"""
+        return int(obj.jobname) % 2 == 0
+
+    mempool = MemoryPool(store, policy_function=mypolicy)
+
+    for i in range(20):
+        obj = TestTask(str(i))
+        mempool.add(obj)
+    try:
+        saved = []
+        mempool.refresh()
+        for i in mempool:
+            if object.__getattribute__(i, '_obj') is not None:
+                saved.append(i)
+                assert int(i.jobname) % 2 == 1
+        assert len(saved) == 10
+
+
+        # Now let's try to set maxobjects to 5. After calling
+        # refresh() we should see only 5 object saved.
+        mempool.maxobjects = 5
+        mempool.refresh()
+        objects = [i for i in mempool if object.__getattribute__(i, '_obj') is not None]
+        assert len(objects) == 5
+
+    finally:
+        os.remove(tmp)
+    
+
 if "__main__" == __name__:
     import logging
     loglevel = logging.INFO
@@ -134,3 +169,4 @@ if "__main__" == __name__:
     test_proxy_storage_wrong_storage()
     test_staticmethod()
     test_memory_pool()
+    test_memory_pool_policy_function()
