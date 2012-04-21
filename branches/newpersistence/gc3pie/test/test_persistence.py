@@ -234,7 +234,10 @@ def test_mysql_persistency():
 
 
 def test_sqlite_job_persistency():
-    import sqlite3
+    try:
+        import sqlite3 as sqlite
+    except ImportError:
+        import pysqlite2.dbapi2 as sqlite
     import gc3libs
     from gc3libs.core import Run
     app = gc3libs.Application(executable='/bin/true', arguments=[], inputs=[], outputs=[], output_dir='/tmp')
@@ -249,7 +252,7 @@ def test_sqlite_job_persistency():
     db = persistence_factory(path)
     id_ = db.save(app)
     
-    conn = sqlite3.connect(tmpfname)
+    conn = sqlite.connect(tmpfname)
     c = conn.cursor()
     c.execute('select jobid,jobname, jobstatus from jobs where id=%d' % app.persistent_id)
     row = c.fetchone()

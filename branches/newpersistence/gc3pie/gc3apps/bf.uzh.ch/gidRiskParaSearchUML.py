@@ -415,16 +415,17 @@ def pre_run(self):
     self.log.propagate = True
     self.log.parent.propagate = False
     # Changed to false since we want to avoid dealing with the root logger and catch the information directly. 
-    
-#    from logging import getLogger
- #   from logbook.compat import redirect_logging
-    from logbook.compat import RedirectLoggingHandler
-#    redirect_logging() # does the same thing as adding a RedirectLoggingHandler... might as well be explicit
-    self.log.parent.handlers = []
-    self.log.parent.addHandler(RedirectLoggingHandler())
-    print self.log.handlers
-    print self.log.parent.handlers
-    print self.log.root.handlers
+
+# temporarily take out logging redirection    
+# #    from logging import getLogger
+#  #   from logbook.compat import redirect_logging
+#     from logbook.compat import RedirectLoggingHandler
+# #    redirect_logging() # does the same thing as adding a RedirectLoggingHandler... might as well be explicit
+#     self.log.parent.handlers = []
+#     self.log.parent.addHandler(RedirectLoggingHandler())
+#     print self.log.handlers
+#     print self.log.parent.handlers
+#     print self.log.root.handlers
 
  #   self.log.critical('redirected gc3 log to ' + curFileName + '.log.')
     
@@ -449,7 +450,7 @@ def dispatch_record(record):
     gc3utilsLogger.call_handlers(record)
 
 import gc3libs.cmdline
-gc3libs.cmdline._Script.pre_run = pre_run
+#gc3libs.cmdline._Script.pre_run = pre_run
 import logbook
 logbook.dispatch_record = dispatch_record
 
@@ -585,7 +586,16 @@ class idRiskParaSearchDriver(SequentialTaskCollection):
             logger.debug('calling self.costlyOptimizer.updateApproximation')
             self.costlyOptimizer.updateApproximation()
             logger.debug('calling self.costlyOptimizer.generateNewGuess')
-            self.xParaCombos = self.costlyOptimizer.generateNewGuess()
+            try: 
+                self.xParaCombos = self.costlyOptimizer.generateNewGuess()
+            except FloatingPointError:
+                logger.critical('')
+                logger.critical('FAILURE: Critcial error in self.costlyOptimizer.generateNewGuess. ')
+                logger.critical('cannot compute np.exp(self.gx(xMat)), bc of FoatingPointError. ')
+                logger.critical('')
+                self.execution.returncode = 13
+                self.failed = True
+                return Run.State.TERMINATED
             logger.debug('generating a new idRiskParaSearchParallel instance to evaluate new guess')
             self.evaluator = idRiskParaSearchParallel(self.xVars, self.xParaCombos, self.substs, self.optimFolder, self.solverParas, **self.sessionParas)
             self.add(self.evaluator)
@@ -682,6 +692,8 @@ class idRiskParaSearchParallel(ParallelTaskCollection, paraLoop):
         apppot_changes = None
         apppot_file = sessionParas['AppPotFile']
         if apppot_file:
+            # print 'apppot_file = %s' % apppot_file
+            # os._exit(1)
             use_apppot = True
             if apppot_file.endswith('.changes.tar.gz'):
                 apppot_changes = apppot_file
@@ -692,6 +704,7 @@ class idRiskParaSearchParallel(ParallelTaskCollection, paraLoop):
         localBaseDir     = sessionParas['localBaseDir']
         architecture     = sessionParas['architecture']
         jobname          = sessionParas['jobname']
+        rte              = sessionParas['rte']
         # Fill the task list
         tasks = []
         for paraCombo in paraCombos:
@@ -742,12 +755,22 @@ class idRiskParaSearchParallel(ParallelTaskCollection, paraLoop):
                 if apppot_changes is not None:
                     kwargs['apppot_changes'] = apppot_changes
                 cls = idRiskApppotApplication
+                callExecutable = '/home/user/job/' + executable
+            elif rte:
+                kwargs['apppot_tag'] = 'ENV/APPPOT-0.26'
+                kwargs['tags'] = ['TEST/APPPOT-IBF-1.0']
+                cls = idRiskApppotApplication
+                callExecutable = '/home/user/job/' + executable
             else:
                 cls = idRiskApplication 
+                callExecutable = './' + executable
             kwargs.setdefault('tags', [ ])
+            print 'cls = %s' % cls
+            print 'callExecutable = %s' % callExecutable
+            print 'kwargs = %s' % kwargs
 
             # hand over job to create
-            curApplication = cls('./' + executable, [], inputs, outputs, **kwargs)
+            curApplication = cls(callExecutable, [], inputs, outputs, **kwargs)
             tasks.append(curApplication)
         return tasks
 
@@ -814,6 +837,10 @@ class idRiskParaSearchScript(SessionBasedScript, paraLoop):
                        " PATH can point either to a complete AppPot system image"
                        " file, or to a `.changes` file generated with the"
                        " `apppot-snap` utility.")
+        self.add_param("-rte", "--rte", action="store_true", default=None,
+                       help="Use an AppPot image to run idRisk."
+                       "use predeployed image")
+
 #-x /home/benjamin/workspace/idrisk/model/bin/idRiskOut -b /home/benjamin/workspace/idrisk/model/base para.loop -xVars 'wBarLower' -xVarsDom '-0.2 0.2 ' -target_fx '-0.1' -yC '4.9e-2' -sv info  -C 10 -N
 
     def parse_args(self):
@@ -899,6 +926,7 @@ class idRiskParaSearchScript(SessionBasedScript, paraLoop):
             sessionParas['architecture'] = self.params.architecture
             sessionParas['localBaseDir'] = localBaseDir
             sessionParas['jobname'] = jobname
+            sessionParas['rte']     = self.params.rte
             # Compute domain
             xVarsDom = self.params.xVarsDom.split()
             xVarsDom = [ [ ele ] for ele in xVarsDom ]
