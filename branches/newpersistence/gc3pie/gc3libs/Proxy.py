@@ -198,7 +198,7 @@ class Proxy(BaseProxy):
     >>> os.remove(tmpname)    
     """
     
-    __slots__ = ["_obj", "_obj_id", "__storage", "__manager", "__last_access", "proxy_forget", "proxy_last_accessed", "proxy_set_storage"]
+    __slots__ = ["_obj", "_obj_id", "__storage", "__manager", "__last_access", "proxy_forget", "proxy_last_accessed", "proxy_set_storage", "proxy_saved"]
     def __init__(self, obj, storage=None, manager=None):
         object.__setattr__(self, "_obj", obj)
         object.__setattr__(self, "__storage", storage)
@@ -227,6 +227,8 @@ class Proxy(BaseProxy):
     def proxy_forget(self):
         obj = object.__getattribute__(self, "_obj")
         storage = object.__getattribute__(self, "__storage")
+        if not obj: 
+            return
         if storage:
             try:
                 p_id = storage.save(obj)
@@ -245,6 +247,9 @@ class Proxy(BaseProxy):
     def proxy_set_storage(self, storage):
         object.__setattr__(self, "__storage", storage)
 
+    def proxy_saved(self):
+        """Return True if the object attribute is None, False otherwise"""
+        return object.__getattribute__(self, "_obj") is None
 
 class MemoryPool(object):
     """This class is used to store a set of Proxy objects but tries to
@@ -253,7 +258,7 @@ class MemoryPool(object):
     It works with any Proxy object.
     """
 
-    def __init__(self, storage, maxobjects=-1, cmp=None, policy_function=None):
+    def __init__(self, storage, maxobjects=0, cmp=None, policy_function=None):
         """
         * `maxobjects`: If maxobjects is >0, then the MemoryPool will
           *never* save more than `maxobjects` objects.
@@ -290,6 +295,8 @@ class MemoryPool(object):
         
         obj.proxy_set_storage(self.__storage)
         self._proxies.append(obj)
+        if self.maxobjects and len(self._proxies)>self.maxobjects: 
+            self.refresh()
 
     def extend(self, objects):
         """objects is a sequence of objects that will be added to the
@@ -310,9 +317,10 @@ class MemoryPool(object):
         if self.__policy_function:
             map(lambda x: self.__policy_function(x) and x.proxy_forget(), self._proxies)
 
-        self._proxies.sort(cmp=self.__cmp_func)
-        for i in range(len(self._proxies) - self.maxobjects):
-            self._proxies[i].proxy_forget()
+        if self.maxobjects:
+            self._proxies.sort(cmp=self.__cmp_func)             
+            for i in range(len(self._proxies) - self.maxobjects):
+                self._proxies[i].proxy_forget()
         
     def __iter__(self):
         self._proxies.sort(cmp=self.__cmp_func)
@@ -331,7 +339,12 @@ class MemoryPool(object):
         True
         >>> MemoryPool.last_accessed(p1, p2)
         -1
+
+        For the sake of our refresh function, if any "forgetted"
+        object is considered *greager* than any non-forgetted object.
         """
+        if cmp(obj2.proxy_saved(), obj1.proxy_saved()):
+            return cmp(obj2.proxy_saved(), obj1.proxy_saved())
         return cmp(obj1.proxy_last_accessed(), obj2.proxy_last_accessed())
 
 ## main: run tests
