@@ -22,8 +22,9 @@ __docformat__ = 'reStructuredText'
 __version__ = '$Revision$'
 
 from gc3libs import Task, Application, configure_logger
-from gc3libs.Proxy import Proxy
-
+from gc3libs.Proxy import Proxy, MemoryPool
+from gc3libs.persistence import persistence_factory
+import tempfile, os
 
 ma = {'executable': '/bin/true',
       'arguments': [],
@@ -49,14 +50,17 @@ def test_proxy_storage():
     (f, tmp) = tempfile.mkstemp()
     
     fb = persistence_factory("sqlite://%s" % tmp)
-    t = TestTask('NoTask', storage=fb)
-    assert t.jobname == 'NoTask'
+    try:
+        t = TestTask('NoTask', storage=fb)
     
-    t.proxy_forget()
-    assert object.__getattribute__(t, "_obj") is None
-    assert t.jobname == 'NoTask'
-    assert isinstance(object.__getattribute__(t, "_obj") , Task)
-    os.remove(tmp)
+        assert t.jobname == 'NoTask'
+    
+        t.proxy_forget()
+        assert object.__getattribute__(t, "_obj") is None
+        assert t.jobname == 'NoTask'
+        assert isinstance(object.__getattribute__(t, "_obj") , Task)
+    finally:
+        os.remove(tmp)
 
 
 def test_proxy_storage_wrong_storage():
@@ -91,7 +95,34 @@ def test_staticmethod():
 def test_application():
     app = Proxy(Application('bash', [], [], [], '/tmp'))
     app.proxy_forget()
-## main: run tests
+
+def test_memory_pool():
+    """Test MemoryPool class basic behavior"""
+    (f, tmp) = tempfile.mkstemp()    
+    store = persistence_factory("sqlite://%s" % tmp)
+    nobjects = 10
+    mempool = MemoryPool(store, maxobjects=nobjects)
+
+    objects = []
+    for i in range(40):
+        obj = TestTask(str(i))
+        assert obj.jobname == str(i) # let's call a getattr, to be
+                                     # sure it will be properly
+                                     # ordered
+        objects.append(obj)
+    try:
+        mempool.extend(objects)
+        mempool.refresh()
+        # First all-maxobjs should NOT be there
+        for i in objects[:len(objects)-nobjects]:
+            assert object.__getattribute__(i, '_obj') is None
+        # All remaining maxobjs should be there
+        for i in objects[nobjects:]:
+            #assert object.__getattribute__(i, '_obj') is not None
+            i is None
+
+    finally:
+        os.remove(tmp)
 
 if "__main__" == __name__:
     import logging
@@ -102,3 +133,4 @@ if "__main__" == __name__:
     test_proxy_storage()
     test_proxy_storage_wrong_storage()
     test_staticmethod()
+    test_memory_pool()

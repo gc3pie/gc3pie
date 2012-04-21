@@ -22,6 +22,8 @@ __docformat__ = 'reStructuredText'
 __version__ = '$Revision$'
 
 from gc3libs import log
+from persistence import Store
+import time
 
 class ProxyManager:
     """ProxyManager should be responsible to decide when a Proxy
@@ -196,11 +198,12 @@ class Proxy(BaseProxy):
     >>> os.remove(tmpname)    
     """
     
-    __slots__ = ["_obj", "_obj_id", "__storage", "__manager", "proxy_forget"]
+    __slots__ = ["_obj", "_obj_id", "__storage", "__manager", "__last_access", "proxy_forget", "proxy_last_accessed", "proxy_set_storage"]
     def __init__(self, obj, storage=None, manager=None):
         object.__setattr__(self, "_obj", obj)
         object.__setattr__(self, "__storage", storage)
         object.__setattr__(self, "__manager", manager)
+        object.__setattr__(self, "__last_access", -1)
     
     def __getattribute__(self, name):
         if name.startswith('proxy_'):
@@ -211,6 +214,7 @@ class Proxy(BaseProxy):
             manager.getattr_called(self, name)
         
         obj = object.__getattribute__(self, "_obj")
+        object.__setattr__(self, "__last_access", time.time())
 
         if not obj:
             storage = object.__getattribute__(self, "__storage")
@@ -234,7 +238,102 @@ class Proxy(BaseProxy):
             log.warning("Proxy: `proxy_forget()` called but no persistent storage has been defined. Aborting *without* deleting proxied object")
             
         # object.__delattr__(self, "_obj")
+            
+    def proxy_last_accessed(self):
+        return object.__getattribute__(self, "__last_access")
+
+    def proxy_set_storage(self, storage):
+        object.__setattr__(self, "__storage", storage)
+
+
+class MemoryPool(object):
+    """This class is used to store a set of Proxy objects but tries to
+    keep in memory only a limited amount of them.
+
+    It works with any Proxy object.
+    """
+
+    def __init__(self, storage, maxobjects=-1, cmp=None, policy_function=None):
+        """
+        * `maxobjects`: If maxobjects is >0, then the MemoryPool will
+          *never* save more than `maxobjects` objects.
+
+        * `policy_function`: If defined, at each `refresh` call this
+          function will be called for each object of the pool. Each
+          object for which the function returns False will be
+          forgetted.
+
+        * `cmp`: If after the `policy_function` (if any) is called
+          there are still more than `maxobjects` proxies in the pool,
+          then the objects in the pool will be sorted using the `cmp`
+          function and only the last `maxobjects` will be saved.
+
+          Default `cmp` function is: sorting by last access to the
+          object (`__getattribute__` call)
+        """
+        if not isinstance(storage, Store):
+            raise TypeError("Invalid storage %s" % type(storage))
+        self.__storage = storage
+        self._proxies = []
+        self.maxobjects=maxobjects
+
+        self.__cmp_func = cmp
+        if not cmp:
+            self.__cmp_func = MemoryPool.last_accessed
+        self.__policy_function = policy_function
+
+    def add(self, obj):
+        """Add `proxy` object to the memory pool."""
+        if obj in self._proxies: return
+        if not isinstance(obj, Proxy):
+            raise TypeError("Object of type %s not supported by MemoryPool" % type(obj))
         
+        obj.proxy_set_storage(self.__storage)
+        self._proxies.append(obj)
+
+    def extend(self, objects):
+        """objects is a sequence of objects that will be added to the
+        pool, if they are not already there."""
+        for obj in objects: 
+            self.add(obj)
+        
+    def remove(self, obj):
+        """Remove `porxy` object from the memory pool"""
+        self._proxies.remove(obj)
+
+    def refresh(self):
+        """Refresh the list of proxies, forget `old` proxies if
+        needed"""
+
+        # If policy_function is defined, forget all objects we don't
+        # want to remember anymore.
+        if self.__policy_function:
+            map(lambda x: self.__policy_function(x) and x.proxy_forget(), self._proxies)
+
+        self._proxies.sort(cmp=self.__cmp_func)
+        for i in range(len(self._proxies) - self.maxobjects):
+            self._proxies[i].proxy_forget()
+        
+    def __iter__(self):
+        self._proxies.sort(cmp=self.__cmp_func)
+        return iter(self._proxies)
+
+    @staticmethod
+    def last_accessed(obj1, obj2):
+        """Default comparison function used to sort proxies. It uses
+        the `last_access` method of the objects to sort them.
+
+        >>> p1 = Proxy("p1")
+        >>> p2 = Proxy("p2")
+        >>> p1.strip() == "p1"
+        True
+        >>> p2.strip() == "p2"
+        True
+        >>> MemoryPool.last_accessed(p1, p2)
+        -1
+        """
+        return cmp(obj1.proxy_last_accessed(), obj2.proxy_last_accessed())
+
 ## main: run tests
 
 if "__main__" == __name__:
