@@ -105,7 +105,7 @@ def test_memory_pool():
 
     objects = []
     for i in range(25):
-        obj = TestTask(str(i))
+        obj = Proxy(Task(str(i)))
         assert obj.jobname == str(i) # let's call a getattr, to be
                                      # sure it will be properly
                                      # ordered

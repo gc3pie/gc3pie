@@ -149,6 +149,8 @@ class Proxy(BaseProxy):
     <gc3libs.Task object at ...>
     >>> object.__getattribute__(p, "_obj") # doctest: +ELLIPSIS
     <gc3libs.Task object at ...>
+    >>> p.proxy_saved()
+    False
     >>> p.jobname
     'NoTask'
 
@@ -156,6 +158,8 @@ class Proxy(BaseProxy):
     
     >>> p.proxy_forget()
     >>> object.__getattribute__(p, "_obj") # doctest: +ELLIPSIS
+    >>> p.proxy_saved()
+    True
 
     The object has been *forgetted*, and hopefully saved in the
     persistency. If you try to access an attribute, however, you
@@ -173,6 +177,8 @@ class Proxy(BaseProxy):
     'NoTask'
     >>> object.__getattribute__(p, "_obj") # doctest: +ELLIPSIS
     <gc3libs.Task object at ...>
+    >>> p.proxy_saved()
+    False
 
     The `proxy_forget()` method will *not* delete the internal
     reference, otherwise we would be unable to retrive the object
@@ -181,6 +187,8 @@ class Proxy(BaseProxy):
     >>> p.proxy_forget()
     >>> object.__getattribute__(p, "_obj") # doctest: +ELLIPSIS
     <gc3libs.Task object at ...>
+    >>> p.proxy_saved()
+    False
     >>> p.jobname
     'NoTask'
 
@@ -191,6 +199,8 @@ class Proxy(BaseProxy):
     >>> p.proxy_forget()
     >>> object.__getattribute__(p, "_obj") # doctest: +ELLIPSIS
     <gc3libs.Task object at ...>
+    >>> p.proxy_saved()
+    False
     >>> p.jobname
     'NoTask2'
     
@@ -275,7 +285,37 @@ class MemoryPool(object):
 
           Default `cmp` function is: sorting by last access to the
           object (`__getattribute__` call)
-        """
+          
+          Let's setup a storage:
+          >>> import tempfile, os
+          >>> from gc3libs.persistence import persistence_factory
+          >>> from gc3libs import Task
+          >>> (f, tmp) = tempfile.mkstemp()
+          >>> store = persistence_factory("sqlite://%s" % tmp)
+
+          MemoryPool is called with this store and the maximum number
+          of objects we want to save:
+
+          >>> mempool = MemoryPool(store, maxobjects=10)
+
+          We add 30 Proxy objects to the memory pool (we can add only
+          Proxy objects)
+
+          >>> for i in range(30):
+          ...     mempool.add(Proxy(Task(str(i))))
+
+          The `refresh` method will remove all the *old* objects. It
+          is currently called each time `add` is called, but this may
+          change in future.
+
+          >>> mempool.refresh()          
+          >>> len([i for i in mempool if i.proxy_saved()])
+          20
+          >>> len([i for i in mempool if not i.proxy_saved()])
+          10
+          >>> os.remove(tmp)
+          """
+
         if not isinstance(storage, Store):
             raise TypeError("Invalid storage %s" % type(storage))
         self.__storage = storage
@@ -289,7 +329,7 @@ class MemoryPool(object):
 
     def add(self, obj):
         """Add `proxy` object to the memory pool."""
-        if obj in self._proxies: return
+        # if obj in self._proxies: return
         if not isinstance(obj, Proxy):
             raise TypeError("Object of type %s not supported by MemoryPool" % type(obj))
         
