@@ -28,6 +28,8 @@ from gc3libs.persistence import persistence_factory, FilesystemStore, Persistabl
 import gc3libs.exceptions as gc3ex
 import tempfile, os, shutil
 import pickle
+from gc3libs import Task
+
 try:
     import MySQLdb
 except:
@@ -42,6 +44,9 @@ class MyList(list, Persistable):
     Add a `__dict__` to `list`, so that creating a `persistent_id`
     entry on an instance works.
     """
+    pass
+
+class MyTask(Task):
     pass
 
 class SlotClassWrong(object):
@@ -263,6 +268,20 @@ def test_sqlite_job_persistency():
         c.close()
         os.remove(tmpfname)
     
+def test_sql_injection():
+    """Test if the `SQL` class is vulnerable to SQL injection"""
+    (fd, tmpfname) = tempfile.mkstemp()
+    path = Url('sqlite://%s' % tmpfname)
+    db = persistence_factory(path)
+    obj = MyTask("Antonio's task")
+    obj.execution.lrms_jobid = "my'job'id'is'strange'"
+    try:
+        id_ = db.save(obj)
+        obj2 = db.load(id_)
+        assert obj.jobname == obj2.jobname
+        assert obj.execution.lrms_jobid == obj2.execution.lrms_jobid
+    finally:
+        os.remove(path.path)
 
     
 if __name__ == "__main__":
@@ -273,3 +292,4 @@ if __name__ == "__main__":
     test_sqlite_persistency()
     test_mysql_persistency()
     test_sqlite_job_persistency()
+    test_sql_injection()
