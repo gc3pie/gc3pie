@@ -199,19 +199,22 @@ class SQL(Store):
             otype = 'job'
             jobstatus = obj.execution.state
             if hasattr(obj.execution, 'lrms_jobid'):
-                jobid = obj.execution.lrms_jobid
-            jobname = obj.jobname
+                jobid = SQL.escape(obj.execution.lrms_jobid)
+            jobname = SQL.escape(obj.jobname)
 
-        c.execute("select id from jobs where id=%d" % id_)
+        query = "select id from jobs where id=%d" % id_
+        c.execute(query)
         if not c.fetchone():
-            c.execute("""insert into jobs ( \
+            query = """insert into jobs ( \
 id, data, type, jobid, jobname, jobstatus, persistent_attributes) \
-values (?, ?, ?, ?, ?, ?, ?)""", (
-id_, pdata, otype, jobid, jobname, jobstatus, pextra ))
+values (%d, '%s', '%s', '%s', '%s', '%s', '%s')""" % (
+id_, pdata, otype, jobid, jobname, jobstatus, pextra )
+            c.execute(query)
         else:
-            c.execute("""update jobs set  \
-data=?, type=?, jobid=?, jobstatus=?, jobname=?, persistent_attributes=? \
-where id=?""", (pdata,otype, jobid, jobstatus, jobname, pextra, id_))
+            query = """update jobs set  \
+data='%s', type='%s', jobid='%s', jobstatus='%s', jobname='%s', persistent_attributes='%s' \
+where id=%d""" % (pdata,otype, jobid, jobstatus, jobname, pextra, id_)
+            c.execute(query)
         obj.persistent_id = id_
         self.__conn.commit()
         c.close()
@@ -238,8 +241,27 @@ where id=?""", (pdata,otype, jobid, jobstatus, jobname, pextra, id_))
         self.__conn.commit()
         c.close()
 
+    @staticmethod
+    def escape(s):
+        """escape string `s` so that it can be used in a sql query.
 
+        Please note that for now we only escape "'" chars because of
+        the queries we are doing, thus this function is not at all a
+        fully-featured SQL escaping function!
 
+        >>> SQL.escape("Antonio's boat")
+        "Antonio''s boat"
+        >>> SQL.escape(u"Antonio's unicode boat")
+        u"Antonio''s unicode boat"
+        >>> SQL.escape(9)
+        9
+        
+        """
+        if hasattr(s, 'replace'):
+            return s.replace("'", "''")
+        else:
+            return s
+        
 ## main: run tests
 
 if "__main__" == __name__:
