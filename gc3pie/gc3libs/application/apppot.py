@@ -6,7 +6,7 @@ Support for AppPot-hosted applications.
 For more details about AppPot, visit:
 <http://apppot.googlecode.com>
 """
-# Copyright (C) 2011, GC3, University of Zurich. All rights reserved.
+# Copyright (C) 2011, 2012, GC3, University of Zurich. All rights reserved.
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
@@ -43,7 +43,8 @@ class AppPotApplication(gc3libs.Application):
       on the remote system is used.
     """
     def __init__(self, executable, arguments, inputs, outputs, output_dir,
-                 apppot_img=None, apppot_changes=None, apppot_tag='ENV/APPPOT-0.21', **kw):
+                 apppot_img=None, apppot_changes=None, apppot_tag='ENV/APPPOT-0.21',
+                 apppot_extra=[], **kw):
         # AppPot-specific setup
         apppot_start_args = [] 
         if apppot_img is not None:
@@ -58,6 +59,9 @@ class AppPotApplication(gc3libs.Application):
             # systems miscompute the amount of memory actually used by
             # an UMLx process...
             del kw['requested_memory']
+        if apppot_extra:
+            for arg in apppot_extra:
+                apppot_start_args += ['--extra', arg]
         apppot_start_args += [ executable ] + arguments
 
         kw.setdefault('tags', dict())
