@@ -41,6 +41,14 @@ class AppPotApplication(gc3libs.Application):
     * `apppot_img`: Path or URL to the AppPot system image to use.
       If ``None`` (default), then the default AppPot system image
       on the remote system is used.
+
+    * `apppot_changes`: Path or URL to an AppPot changes file to be merged
+      at system startup.
+
+    * `apppot_tag`: ARC RTE to use for submission of this AppPot job.
+
+    * `apppot_extra`: List of additional UML boot command-line arguments.
+      (Passed to the AppPot instance via ``apppot-start``'s ``--extra`` option.)
     """
     def __init__(self, executable, arguments, inputs, outputs, output_dir,
                  apppot_img=None, apppot_changes=None, apppot_tag='ENV/APPPOT-0.21',
