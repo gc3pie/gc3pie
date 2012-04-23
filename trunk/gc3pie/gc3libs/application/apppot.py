@@ -72,8 +72,10 @@ class AppPotApplication(gc3libs.Application):
                 apppot_start_args += ['--extra', arg]
         apppot_start_args += [ executable ] + arguments
 
-        kw.setdefault('tags', dict())
-        kw['tags'].append(apppot_tag)
+        if 'tags' in kw:
+            kw['tags'].append(apppot_tag)
+        else:
+            kw['tags'] = [ apppot_tag ]
         
         # init base class
         gc3libs.Application.__init__(
