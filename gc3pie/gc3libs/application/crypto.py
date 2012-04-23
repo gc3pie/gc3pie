@@ -58,7 +58,7 @@ class CryptoApplication(gc3libs.Application):
         inputs = {kw['input_directives']:"input_files.tgz", src_crypto_bin:"gnfs-cmd" }
 
         if 'tags' in kw:
-            kw['tags'].append('TEST/CRYPTO-1.0')
+            kw['tags'].insert(0, 'TEST/CRYPTO-1.0')
         else:
             kw['tags'] = [ 'TEST/CRYPTO-1.0' ]
 
