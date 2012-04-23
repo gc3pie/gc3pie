@@ -76,7 +76,7 @@ class CodemlApplication(gc3libs.Application):
         if codeml is None:
             # use the RTE
             if 'tags' in kw:
-                kw['tags'].insert(0, 'APPS/BIO/CODEML-4.4.3')
+                kw['tags'].append('APPS/BIO/CODEML-4.4.3')
             else:
                 kw['tags'] = [ 'APPS/BIO/CODEML-4.4.3' ]
         else:

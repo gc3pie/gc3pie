@@ -59,7 +59,7 @@ class GamessApplication(gc3libs.Application):
         kw.setdefault('application_tag', "gamess")
         if 'tags' in kw:
             # FIXME: should be APPS/CHEM/GAMESS-${verno}
-            kw['tags'].insert(0, "APPS/CHEM/GAMESS-2010")
+            kw['tags'].append("APPS/CHEM/GAMESS-2010")
         else:
             kw['tags'] = [ "APPS/CHEM/GAMESS-2010" ]
         arguments = [ input_file_name ]
