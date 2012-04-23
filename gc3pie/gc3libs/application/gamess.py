@@ -57,9 +57,11 @@ class GamessApplication(gc3libs.Application):
         # add defaults to `kw` if not already present
         kw.setdefault('stdout', input_file_name_sans + '.out')
         kw.setdefault('application_tag', "gamess")
-        kw.setdefault('tags', [ ])
-        # FIXME: should be APPS/CHEM/GAMESS-${verno}
-        kw['tags'].append("APPS/CHEM/GAMESS-2010")
+        if 'tags' in kw:
+            # FIXME: should be APPS/CHEM/GAMESS-${verno}
+            kw['tags'].append("APPS/CHEM/GAMESS-2010")
+        else:
+            kw['tags'] = [ "APPS/CHEM/GAMESS-2010" ]
         arguments = [ input_file_name ]
         # FIXME: enable when the GAMESS invocation script conforms to
         # the `rungms` interface; see Issue 3.

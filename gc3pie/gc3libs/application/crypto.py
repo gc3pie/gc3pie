@@ -1,6 +1,6 @@
 #! /usr/bin/env python
 #
-#   gcrypto.py -- Front-end script for submitting multiple Crypto jobs to SMSCG.
+#   crypto.py -- Front-end script for submitting multiple Crypto jobs to SMSCG.
 """
 Front-end script for submitting multiple Crypto jobs to SMSCG.
 It uses the generic `gc3libs.cmdline.SessionBasedScript` framework.
@@ -57,7 +57,10 @@ class CryptoApplication(gc3libs.Application):
 
         inputs = {kw['input_directives']:"input_files.tgz", src_crypto_bin:"gnfs-cmd" }
 
-        kw['tags'] = [ 'TEST/CRYPTO-1.0' ]
+        if 'tags' in kw:
+            kw['tags'].append('TEST/CRYPTO-1.0')
+        else:
+            kw['tags'] = [ 'TEST/CRYPTO-1.0' ]
 
         gc3libs.Application.__init__(
             self,
