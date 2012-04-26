@@ -32,6 +32,7 @@ from gc3libs import Task
 
 import cPickle as pickle
 import sqlalchemy
+import sqlalchemy.sql as sql
 
 class DummyObject:
     pass
@@ -42,7 +43,8 @@ def sql_next_id_factory(db):
     This function will return a function which can be used as
     `next_id_fn` argument for the `IdFactory` class constructor.
 
-    `db` is DB connection class conform to DB API2.0 specs
+    `db` is DB connection class conform to DB API2.0 specs (works also
+    with SQLAlchemy engine types)
 
     The function returned has signature:
 
@@ -103,8 +105,6 @@ class SQL(Store):
         url. It will use the correct backend (MySQL, psql, sqlite3)
         based on the url.scheme value
         """
-        # if url.scheme not in DRIVERS:
-        #     raise NotImplementedError("DB Driver %s not supported" % url.scheme)
 
         # gc3libs.url.Url is not RFC compliant, check issue http://code.google.com/p/gc3pie/issues/detail?id=261
         if url.scheme in ('file', 'sqlite'):
@@ -133,16 +133,18 @@ class SQL(Store):
 
             self.extra_fields = (i for i in self.__meta.tables['store'].columns.keys() if i not in ('id', 'data', 'type', 'jobid', 'jobname', 'jobstatus'))
 
-
+        self.t_store = self.__meta.tables['store']
+        
         self.idfactory = idfactory
         if not idfactory:
             self.idfactory = IdFactory(next_id_fn=sql_next_id_factory(self.__engine), id_class=IntId)
             
     @same_docstring_as(Store.list)
     def list(self):
-        c = self.__engine
-        q = c.execute('select id from store')
-        ids = [i[0] for i in q.fetchall()]
+        q = sql.select([self.t_store.c.id])
+        rows = self.__engine.execute(q)
+        
+        ids = [i[0] for i in rows.fetchall()]
         return ids
 
     @same_docstring_as(Store.replace)
@@ -159,47 +161,33 @@ class SQL(Store):
     def _save_or_replace(self, id_, obj, action):
         c = self.__engine
 
-
+        fields={'id':id_}
         pdata = pickle.dumps(obj, protocol=pickle.HIGHEST_PROTOCOL).encode('base64')
+        fields['data'] = pdata
         # insert into db
-        otype = ''
-        extra_fields = {}
+        fields['type'] = ''
             
         for i in self.extra_fields:
             if hasattr(obj, i):
-                extra_fields[i] = getattr(obj, i)
+                fields[i] = getattr(obj, i)
 
         if isinstance(obj, Task):
-            otype = 'job'
-            extra_fields['jobstatus'] = obj.execution.state
+            fields['typpe'] = 'job'
+            fields['jobstatus'] = obj.execution.state
             if hasattr(obj.execution, 'lrms_jobid'):
-                extra_fields['jobid'] = SQL.escape(obj.execution.lrms_jobid)
-            extra_fields['jobname'] = SQL.escape(obj.jobname)
+                fields['jobid'] = obj.execution.lrms_jobid
+            fields['jobname'] = obj.jobname
 
-            
-        query = "select id from store where id=%d" % id_
-        q = c.execute(query)
-        if not q.fetchone():
-            extras = extra_fields.items()            
-            kline = (i[0] for i in extras)
-            kline = ","+", ".join(kline) if extras else ""
-            vline = ("'%s'" % SQL.escape(str(i[1])) for i in extras)
-            vline = ","+", ".join(vline) if extras else ""
-
-            query = """insert into store ( \
-id, data, type %s) \
-values (%d, '%s', '%s' %s)""" % (
-kline, id_, pdata, otype, vline )
-            # gc3libs.log.debug("Executing query `%s`" % query)
-            q = c.execute(query)
-            
+        q = sql.select([self.t_store.c.id]).where(self.t_store.c.id==id_)
+        r = self.__engine.execute(q)
+        if not r.fetchone():
+            # It's an insert
+            q = self.t_store.insert().values(**fields)
+            self.__engine.execute(q)
         else:
-            extra = "," + ", ".join("%s='%s'" % (i[0], SQL.escape(str(i[1]))) for i in extra_fields.iteritems()) if extra_fields else ""
-            query = """update store set  \
-data='%s', type='%s' %s \
-where id=%d""" % (pdata,otype, extra, id_)
-            # gc3libs.log.debug("Executing query `%s`" % query)
-            q = c.execute(query)
+            # it's an update
+            q = self.t_store.update().where(self.t_store.c.id==id_).values(**fields)
+            self.__engine.execute(q)
         obj.persistent_id = id_
 
         # return id
@@ -207,17 +195,18 @@ where id=%d""" % (pdata,otype, extra, id_)
 
     @same_docstring_as(Store.load)
     def load(self, id_):
-        c = self.__engine
-        q = c.execute('select data  from store where id=%d' % id_)
-        rawdata = q.fetchone()
+        q = sql.select([self.t_store.c.data]).where(self.t_store.c.id == id_)
+        r = self.__engine.execute(q)
+        rawdata = r.fetchone()
+        
         if not rawdata:
             raise gc3libs.exceptions.LoadError("Unable to find object %d" % id_)
         data = pickle.loads(rawdata[0].decode('base64'))
         return data
 
     @same_docstring_as(Store.remove)
-    def remove(self, id_):
-        self.__engine.execute('delete from store where id=%d' % id_)
+    def remove(self, id_):        
+        self.__engine.execute(self.t_store.delete().where(id==id_))
 
     @staticmethod
     def escape(s):
