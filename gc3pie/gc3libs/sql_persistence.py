@@ -93,16 +93,6 @@ class SQL(Store):
     >>> y = db.load(1)
     >>> y.x
     'test'
-    >>> c = db._SQL__engine
-    >>> q = c.execute('select  persistent_attributes from store where id=1')
-    >>> pickle.loads(q.fetchone()[0].decode('base64'))
-    {}
-    >>> y.__persistent_attributes__ = ['pattr']
-    >>> y.pattr = 'persistent'
-    >>> db.replace(1, y)
-    >>> q = c.execute('select  persistent_attributes from store where id=1')
-    >>> pickle.loads(q.fetchone()[0].decode('base64'))
-    {'pattr': 'persistent'}
     
     >>> import os
     >>> os.remove(name)
@@ -123,7 +113,7 @@ class SQL(Store):
 
         self.__meta = sqlalchemy.MetaData(bind=self.__engine)
         self.__meta.reflect()
-
+        self.extra_fields = ()
         # check if database has 'store' table
         if 'store' not in self.__meta.tables:
             from sqlalchemy import Column, INTEGER, BLOB, VARCHAR, TEXT, Table
@@ -137,10 +127,13 @@ class SQL(Store):
                 Column(u'jobid', VARCHAR(length=128)),
                 Column(u'jobname', VARCHAR(length=255)),
                 Column(u'jobstatus', VARCHAR(length=128)),
-                Column(u'persistent_attributes', TEXT()),
                 )
             self.__meta.create_all()
-               
+        else:
+
+            self.extra_fields = (i for i in self.__meta.tables['store'].columns.keys() if i not in ('id', 'data', 'type', 'jobid', 'jobname', 'jobstatus'))
+
+
         self.idfactory = idfactory
         if not idfactory:
             self.idfactory = IdFactory(next_id_fn=sql_next_id_factory(self.__engine), id_class=IntId)
@@ -166,39 +159,46 @@ class SQL(Store):
     def _save_or_replace(self, id_, obj, action):
         c = self.__engine
 
-        extra_fields = {}
-        if hasattr(obj, '__persistent_attributes__'):
-            for attr in obj.__persistent_attributes__:
-                if hasattr(obj, attr):
-                    extra_fields[attr] = getattr(obj, attr)
 
         pdata = pickle.dumps(obj, protocol=pickle.HIGHEST_PROTOCOL).encode('base64')
-        pextra = pickle.dumps(extra_fields, protocol=pickle.HIGHEST_PROTOCOL).encode('base64')
         # insert into db
         otype = ''
-        jobid = ''
-        jobname = ''
-        jobstatus = ''
-        
+        extra_fields = {}
+            
+        for i in self.extra_fields:
+            if hasattr(obj, i):
+                extra_fields[i] = getattr(obj, i)
+
         if isinstance(obj, Task):
             otype = 'job'
-            jobstatus = obj.execution.state
+            extra_fields['jobstatus'] = obj.execution.state
             if hasattr(obj.execution, 'lrms_jobid'):
-                jobid = SQL.escape(obj.execution.lrms_jobid)
-            jobname = SQL.escape(obj.jobname)
+                extra_fields['jobid'] = SQL.escape(obj.execution.lrms_jobid)
+            extra_fields['jobname'] = SQL.escape(obj.jobname)
 
+            
         query = "select id from store where id=%d" % id_
         q = c.execute(query)
         if not q.fetchone():
+            extras = extra_fields.items()            
+            kline = (i[0] for i in extras)
+            kline = ","+", ".join(kline) if extras else ""
+            vline = ("'%s'" % SQL.escape(str(i[1])) for i in extras)
+            vline = ","+", ".join(vline) if extras else ""
+
             query = """insert into store ( \
-id, data, type, jobid, jobname, jobstatus, persistent_attributes) \
-values (%d, '%s', '%s', '%s', '%s', '%s', '%s')""" % (
-id_, pdata, otype, jobid, jobname, jobstatus, pextra )
+id, data, type %s) \
+values (%d, '%s', '%s' %s)""" % (
+kline, id_, pdata, otype, vline )
+            # gc3libs.log.debug("Executing query `%s`" % query)
             q = c.execute(query)
+            
         else:
+            extra = "," + ", ".join("%s='%s'" % (i[0], SQL.escape(str(i[1]))) for i in extra_fields.iteritems()) if extra_fields else ""
             query = """update store set  \
-data='%s', type='%s', jobid='%s', jobstatus='%s', jobname='%s', persistent_attributes='%s' \
-where id=%d""" % (pdata,otype, jobid, jobstatus, jobname, pextra, id_)
+data='%s', type='%s' %s \
+where id=%d""" % (pdata,otype, extra, id_)
+            # gc3libs.log.debug("Executing query `%s`" % query)
             q = c.execute(query)
         obj.persistent_id = id_
 
