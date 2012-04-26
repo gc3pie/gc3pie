@@ -31,6 +31,7 @@ import gc3libs.exceptions
 from gc3libs import Task
 
 import cPickle as pickle
+import sqlalchemy
 
 class DummyObject:
     pass
@@ -43,11 +44,16 @@ def sqlite_factory(url):
         import pysqlite2.dbapi2 as sqlite
     conn = sqlite.connect(url.path)
     c = conn.cursor()
-    c.execute("select name from sqlite_master where type='table' and name='jobs'")
+    c.execute("select name from sqlite_master where type='table' and name='store'")
     try:
         c.next()
+        # guess extra fields, in case there are any
+        
     except StopIteration:
-        c.execute("create table jobs (id int not null, data blob, type varchar(128), jobid varchar(128), jobname varchar(255), jobstatus varchar(128), persistent_attributes text, primary key (id))")
+        c.execute("create table store (id int not null, data blob, type varchar(128), jobid varchar(128), jobname varchar(255), jobstatus varchar(128), persistent_attributes text, primary key (id))")
+
+    
+    
     c.close()
     return conn
 
@@ -61,11 +67,12 @@ def mysql_factory(url):
     conn = MySQLdb.connect(host=url.hostname, port=port, user=url.username, passwd=url.password, db=url.path.strip('/'))
     c = conn.cursor()
     try:
-        c.execute('select count(*) from jobs')
+        c.execute('select count(*) from store')
     except MySQLdb.ProgrammingError, e:
         if e.args[0] == MySQLdb.constants.ER.NO_SUCH_TABLE:
-            c.execute("create table jobs (id int not null, data blob, type varchar(128), jobid varchar(128), jobname varchar(255), jobstatus varchar(128), persistent_attributes text,  primary key (id))")
-    c.close()
+            c.execute("create table store (id int not null, data blob, type varchar(128), jobid varchar(128), jobname varchar(255), jobstatus varchar(128), persistent_attributes text,  primary key (id))")
+    c.close()    
+    
     return conn
 
 DRIVERS={'sqlite': sqlite_factory,
@@ -83,16 +90,14 @@ def sql_next_id_factory(db):
 
         sql_next_id(n=1)
 
-    the id returned is the maximum `id` field in the `jobs` table plus
+    the id returned is the maximum `id` field in the `store` table plus
     1.
     """
     def sql_next_id(n=1):
-        c = db.cursor()
-        c.execute('select max(id) from jobs')
-        nextid = c.fetchone()[0]
+        q = db.execute('select max(id) from store')
+        nextid = q.fetchone()[0]
         if not nextid: nextid = 1
         else: nextid = int(nextid)+1
-        c.close()
         return nextid
     
     return sql_next_id
@@ -130,15 +135,15 @@ class SQL(Store):
     >>> y = db.load(1)
     >>> y.x
     'test'
-    >>> c = db._SQL__conn.cursor()
-    >>> _ = c.execute('select  persistent_attributes from jobs where id=1')
-    >>> pickle.loads(c.fetchone()[0].decode('base64'))
+    >>> c = db._SQL__engine
+    >>> q = c.execute('select  persistent_attributes from store where id=1')
+    >>> pickle.loads(q.fetchone()[0].decode('base64'))
     {}
     >>> y.__persistent_attributes__ = ['pattr']
     >>> y.pattr = 'persistent'
     >>> db.replace(1, y)
-    >>> _ = c.execute('select  persistent_attributes from jobs where id=1')
-    >>> pickle.loads(c.fetchone()[0].decode('base64'))
+    >>> q = c.execute('select  persistent_attributes from store where id=1')
+    >>> pickle.loads(q.fetchone()[0].decode('base64'))
     {'pattr': 'persistent'}
     
     >>> import os
@@ -150,21 +155,43 @@ class SQL(Store):
         url. It will use the correct backend (MySQL, psql, sqlite3)
         based on the url.scheme value
         """
-        if url.scheme not in DRIVERS:
-            raise NotImplementedError("DB Driver %s not supported" % url.scheme)
-        
-        self.__conn = DRIVERS[url.scheme](url)
+        # if url.scheme not in DRIVERS:
+        #     raise NotImplementedError("DB Driver %s not supported" % url.scheme)
+
+        # gc3libs.url.Url is not RFC compliant, check issue http://code.google.com/p/gc3pie/issues/detail?id=261
+        if url.scheme in ('file', 'sqlite'):
+            url = "%s://%s/%s" % (url.scheme, url.netloc, url.path)
+        self.__engine = sqlalchemy.create_engine(str(url))
+
+        self.__meta = sqlalchemy.MetaData(bind=self.__engine)
+        self.__meta.reflect()
+
+        # check if database has 'store' table
+        if 'store' not in self.__meta.tables:
+            from sqlalchemy import Column, INTEGER, BLOB, VARCHAR, TEXT, Table
+            
+            table = Table(
+                'store',
+                self.__meta,
+                Column(u'id', INTEGER(), primary_key=True, nullable=False),
+                Column(u'data', BLOB()),
+                Column(u'type', VARCHAR(length=128)),
+                Column(u'jobid', VARCHAR(length=128)),
+                Column(u'jobname', VARCHAR(length=255)),
+                Column(u'jobstatus', VARCHAR(length=128)),
+                Column(u'persistent_attributes', TEXT()),
+                )
+            self.__meta.create_all()
+               
         self.idfactory = idfactory
         if not idfactory:
-            self.idfactory = IdFactory(next_id_fn=sql_next_id_factory(self.__conn), id_class=IntId)
+            self.idfactory = IdFactory(next_id_fn=sql_next_id_factory(self.__engine), id_class=IntId)
             
     @same_docstring_as(Store.list)
     def list(self):
-        c = self.__conn.cursor()
-        c.execute('select id from jobs')
-        ids = [i[0] for i in c.fetchall()]
-        self.__conn.commit()
-        c.close()
+        c = self.__engine
+        q = c.execute('select id from store')
+        ids = [i[0] for i in q.fetchall()]
         return ids
 
     @same_docstring_as(Store.replace)
@@ -179,7 +206,7 @@ class SQL(Store):
         return self._save_or_replace(obj.persistent_id, obj, 'save')
 
     def _save_or_replace(self, id_, obj, action):
-        c = self.__conn.cursor()
+        c = self.__engine
 
         extra_fields = {}
         if hasattr(obj, '__persistent_attributes__'):
@@ -202,44 +229,37 @@ class SQL(Store):
                 jobid = SQL.escape(obj.execution.lrms_jobid)
             jobname = SQL.escape(obj.jobname)
 
-        query = "select id from jobs where id=%d" % id_
-        c.execute(query)
-        if not c.fetchone():
-            query = """insert into jobs ( \
+        query = "select id from store where id=%d" % id_
+        q = c.execute(query)
+        if not q.fetchone():
+            query = """insert into store ( \
 id, data, type, jobid, jobname, jobstatus, persistent_attributes) \
 values (%d, '%s', '%s', '%s', '%s', '%s', '%s')""" % (
 id_, pdata, otype, jobid, jobname, jobstatus, pextra )
-            c.execute(query)
+            q = c.execute(query)
         else:
-            query = """update jobs set  \
+            query = """update store set  \
 data='%s', type='%s', jobid='%s', jobstatus='%s', jobname='%s', persistent_attributes='%s' \
 where id=%d""" % (pdata,otype, jobid, jobstatus, jobname, pextra, id_)
-            c.execute(query)
+            q = c.execute(query)
         obj.persistent_id = id_
-        self.__conn.commit()
-        c.close()
 
         # return id
         return obj.persistent_id
 
     @same_docstring_as(Store.load)
     def load(self, id_):
-        c = self.__conn.cursor()
-        c.execute('select data  from jobs where id=%d' % id_)
-        rawdata = c.fetchone()
+        c = self.__engine
+        q = c.execute('select data  from store where id=%d' % id_)
+        rawdata = q.fetchone()
         if not rawdata:
             raise gc3libs.exceptions.LoadError("Unable to find object %d" % id_)
         data = pickle.loads(rawdata[0].decode('base64'))
-        self.__conn.commit()
-        c.close()
         return data
 
     @same_docstring_as(Store.remove)
     def remove(self, id_):
-        c = self.__conn.cursor()
-        c.execute('delete from jobs where id=%d' % id_)
-        self.__conn.commit()
-        c.close()
+        self.__engine.execute('delete from store where id=%d' % id_)
 
     @staticmethod
     def escape(s):

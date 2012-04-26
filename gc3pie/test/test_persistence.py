@@ -258,7 +258,7 @@ def test_sqlite_job_persistency():
     
     conn = sqlite.connect(tmpfname)
     c = conn.cursor()
-    c.execute('select jobid,jobname, jobstatus from jobs where id=%d' % app.persistent_id)
+    c.execute('select jobid,jobname, jobstatus from store where id=%d' % app.persistent_id)
     row = c.fetchone()
     try:
         assert int(row[0]) == app.execution.lrms_jobid
@@ -283,10 +283,37 @@ def test_sql_injection():
     finally:
         os.remove(path.path)
 
+def test_sql_extend_table():
+    """Test if the `SQL` class is vulnerable to SQL injection"""
+    (fd, tmpfname) = tempfile.mkstemp()
+    path = Url('sqlite://%s' % tmpfname)        
+    db = persistence_factory(path)
+
+    try:
+        import sqlite3 as sqlite
+    except ImportError:
+        import pysqlite2.dbapi2 as sqlite
+
+    conn = sqlite.connect(tmpfname)
+    c = conn.cursor()
+
+    # c.execute("select store from sqlite_master where type='table' and name='store'")
+    c.execute("select * from sqlite_master")
+    print c.fetchall()
+    
+    obj = MyTask('My App')
+    
+    try:
+        id_ = db.save(obj)
+        obj2 = db.load(id_)
+    finally:
+        os.remove(path.path)
+
     
 if __name__ == "__main__":
     # fix pickle error
     from test_persistence import MyObj, SlotClassWrong, SlotClass
+    test_sql_extend_table()
     test_filesystemstorage_pickler_class()
     test_file_persistency()
     test_sqlite_persistency()
