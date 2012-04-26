@@ -284,9 +284,10 @@ def test_sql_injection():
         os.remove(path.path)
 
 def test_sql_extend_table():
-    """Test if the `SQL` class is vulnerable to SQL injection"""
+    """Test if SQL is able to save extra attributes if extra columns have been defined into the DB"""
     (fd, tmpfname) = tempfile.mkstemp()
-    path = Url('sqlite://%s' % tmpfname)        
+    path = Url('sqlite://%s' % tmpfname)
+    # create the db with default schema
     db = persistence_factory(path)
 
     try:
@@ -294,18 +295,22 @@ def test_sql_extend_table():
     except ImportError:
         import pysqlite2.dbapi2 as sqlite
 
+    # Extend the db
     conn = sqlite.connect(tmpfname)
     c = conn.cursor()
+    c.execute('alter table store add column x varchar(256)')
 
-    # c.execute("select store from sqlite_master where type='table' and name='store'")
-    c.execute("select * from sqlite_master")
-    print c.fetchall()
-    
-    obj = MyTask('My App')
-    
+    # re-open the db. We need this because schema definition is
+    # checked only in SQL.__init__
+    db = persistence_factory(path)
+    obj = MyObj('My App')
+
     try:
         id_ = db.save(obj)
-        obj2 = db.load(id_)
+        c.execute('select x from store where id=%d' % id_)
+        rows = c.fetchall()
+        assert len(rows) == 1
+        assert rows[0][0] == obj.x
     finally:
         os.remove(path.path)
 
