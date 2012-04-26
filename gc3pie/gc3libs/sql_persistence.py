@@ -36,48 +36,6 @@ import sqlalchemy
 class DummyObject:
     pass
 
-def sqlite_factory(url):
-    assert url.scheme == 'sqlite'
-    try:
-        import sqlite3 as sqlite
-    except ImportError:
-        import pysqlite2.dbapi2 as sqlite
-    conn = sqlite.connect(url.path)
-    c = conn.cursor()
-    c.execute("select name from sqlite_master where type='table' and name='store'")
-    try:
-        c.next()
-        # guess extra fields, in case there are any
-        
-    except StopIteration:
-        c.execute("create table store (id int not null, data blob, type varchar(128), jobid varchar(128), jobname varchar(255), jobstatus varchar(128), persistent_attributes text, primary key (id))")
-
-    
-    
-    c.close()
-    return conn
-
-def mysql_factory(url):
-    assert url.scheme == 'mysql'
-    import MySQLdb, MySQLdb.constants.ER
-    try:
-        port = int(url.port)
-    except:
-        port=3306
-    conn = MySQLdb.connect(host=url.hostname, port=port, user=url.username, passwd=url.password, db=url.path.strip('/'))
-    c = conn.cursor()
-    try:
-        c.execute('select count(*) from store')
-    except MySQLdb.ProgrammingError, e:
-        if e.args[0] == MySQLdb.constants.ER.NO_SUCH_TABLE:
-            c.execute("create table store (id int not null, data blob, type varchar(128), jobid varchar(128), jobname varchar(255), jobstatus varchar(128), persistent_attributes text,  primary key (id))")
-    c.close()    
-    
-    return conn
-
-DRIVERS={'sqlite': sqlite_factory,
-         'mysql': mysql_factory,
-         }
 
 def sql_next_id_factory(db):
     """
