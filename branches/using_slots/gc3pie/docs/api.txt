@@ -62,18 +62,6 @@
 .. automodule:: gc3libs.Resource
     :members:
 
-`gc3libs.InformationContainer`
-==============================
-
-.. warning:: 
-
-   This module is deprecated and will be removed in a future release.
-   Do not depend on it.
-
-.. automodule:: gc3libs.InformationContainer
-    :members:
-
-
 `gc3libs.application`
 =====================
 .. automodule:: gc3libs.application
@@ -136,9 +124,9 @@
 .. automodule:: gc3libs.backends.sge
     :members:
 
-`gc3libs.backends.subprocess`
+`gc3libs.backends.shellcmd`
 =============================
-.. automodule:: gc3libs.backends.subprocess
+.. automodule:: gc3libs.backends.shellcmd
     :members:
 
 `gc3libs.backends.transport`

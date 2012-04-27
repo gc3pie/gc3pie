@@ -79,7 +79,7 @@ class Default(object):
     ARC0_LRMS = 'arc0'
     ARC1_LRMS = 'arc1'
     ARC_CACHE_TIME = 30 #: only update ARC resources status every this seconds
-    ARC_LOST_JOB_TIMEOUT = 4*ARC_CACHE_TIME #: consider a submitted job lost if it does not show up in the information system after this duration
+    ARC_LOST_JOB_TIMEOUT = 1800 # previously: 4*ARC_CACHE_TIME #: consider a submitted job lost if it does not show up in the information system after this duration
     ARC_JOBLIST_LOCATION = os.path.expandvars("$HOME/.arc/jobs.xml")
     
     SGE_LRMS = 'sge'
@@ -237,7 +237,7 @@ class Task(Struct):
     # saved separately.
 
     def __getstate__(self):
-        state = dict((i, getattr(self,i)) for i in Task.__slots__)
+        state = dict((i, getattr(self,i)) for i in Task.__slots__ if hasattr(self, i))
         state['_grid'] = None
         state['_attached'] = None
         state['changed'] = False
@@ -1075,6 +1075,13 @@ class Application(Persistable, Task):
         The default implementation produces XRSL content based on 
         the construction parameters; you should override this method
         to produce XRSL tailored to your application.
+
+        .. warning::
+
+          WARNING: ARClib SWIG bindings cannot resolve the overloaded
+          constructor if the xRSL stringargument is a Python 'unicode'
+          object; if you overload this method, force the result to be
+          a 'str'!
         """
         # XXX: ARC0 seems to behave inconsistently if './something' is
         # given as `executable`; however, commands run fine without
@@ -1169,8 +1176,10 @@ class Application(Persistable, Task):
         # this should be harmless if cache registration would not work
         xrsl += u'(cache="yes")'
 
-        # force it to be unicode
-        return unicode(xrsl)
+        # WARNING: ARClib SWIG bindings cannot resolve the overloaded
+        # constructor if the argument is a Python "unicode" object;
+        # force it to be a "str"!
+        return str(xrsl)
 
 
     def cmdline(self, resource):

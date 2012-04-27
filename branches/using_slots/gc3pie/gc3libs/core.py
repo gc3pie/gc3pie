@@ -246,7 +246,7 @@ specified in the configuration file.
                                       " See log file for details."
                                       % r._resource.name)
                     gc3libs.log.debug("Got error from get_resource_status(): %s: %s",
-                                      x.__class__.__name__, x.args, exc_info=True)
+                                      x.__class__.__name__, str(x), exc_info=True)
 
         # sort resources according to Application's preferences
         _selected_lrms_list = app.rank_resources(updated_resources)
@@ -359,6 +359,7 @@ specified in the configuration file.
                                 else:
                                     app.execution.info = ("Remote job exited with code %d" 
                                                           % app.execution.exitcode)
+
                     if state != Run.State.UNKNOWN or update_on_error:
                         app.execution.state = state
 
@@ -373,11 +374,8 @@ specified in the configuration file.
 
             except gc3libs.exceptions.UnknownJob:
                 # information about the job is lost, mark it as failed
-                # XXX: Alternative bahaviour suggestion:
-                # Never mark an unknown job as failed.
-                # worst case let human or higher level scripts to decide.
-                # app.execution.returncode = (Run.Signals.Lost, -1)
-                # app.execution.state = Run.State.TERMINATED
+                app.execution.returncode = (Run.Signals.Lost, -1)
+                app.execution.state = Run.State.TERMINATED
                 app.changed = True
                 continue
 
@@ -1020,7 +1018,7 @@ class Engine(object):
         state = task.execution.state
         if Run.State.NEW == state:
             self._new.remove(task)
-        elif Run.State.SUBMITTED == state or Run.State.RUNNING == state:
+        elif Run.State.SUBMITTED == state or Run.State.RUNNING == state or Run.State.UNKNOWN == state:
             self._in_flight.remove(task)
         elif Run.State.STOPPED == state:
             self._stopped.remove(task)
@@ -1040,7 +1038,7 @@ class Engine(object):
 
           * tasks in `NEW` state are submitted;
 
-          * the state of tasks in `SUBMITTED`, `RUNNING` or `STOPPED` state is updated;
+          * the state of tasks in `SUBMITTED`, `RUNNING`, `STOPPED` or `UNKNOWN` state is updated;
 
           * when a task reaches `TERMINATING` state, its output is downloaded.
 
@@ -1080,7 +1078,8 @@ class Engine(object):
                     if isinstance(task, Application):
                         currently_submitted += 1
                         currently_in_flight += 1
-                elif state == Run.State.RUNNING or state == Run.State.UNKNOWN:
+                # elif state == Run.State.RUNNING or state == Run.State.UNKNOWN:
+                elif state == Run.State.RUNNING:
                     if isinstance(task, Application):
                         currently_in_flight += 1
                 elif state == Run.State.STOPPED:
@@ -1119,7 +1118,7 @@ class Engine(object):
                     if isinstance(task, Application):
                         currently_submitted -= 1
                         currently_in_flight -= 1
-                elif old_state == Run.State.RUNNING or old_state == Run.State.UNKNOWN:
+                elif old_state == Run.State.RUNNING:
                     if isinstance(task, Application):
                         currently_in_flight -= 1
                 self._terminated.append(task)
@@ -1146,7 +1145,7 @@ class Engine(object):
                 if self._store and task.changed:
                     self._store.save(task)
                 state = task.execution.state
-                if state in [Run.State.SUBMITTED, Run.State.RUNNING, Run.State.UNKNOWN]:
+                if state in [Run.State.SUBMITTED, Run.State.RUNNING]:
                     if isinstance(task, Application):
                         currently_in_flight += 1
                         if task.execution.state == Run.State.SUBMITTED:
@@ -1239,6 +1238,7 @@ class Engine(object):
 
     def stats(self, only=None):
         """
+
         Return a dictionary mapping each state name into the count of
         tasks in that state. In addition, the following keys are defined:
         
@@ -1249,11 +1249,11 @@ class Engine(object):
         * `total`: total count of managed tasks, whatever their state
 
         If the optional argument `only` is not None, tasks whose
-        class is not contained in `only` are ignored.
+        whose class is not contained in `only` are ignored.
+        : param tuple only: Restrict counting to tasks of these classes.
 
-        :param tuple only: Restrict counting to tasks of these classes.
-        
         """
+        
         if only:
             gc3libs.log.debug("Engine.stats: Restricting to object of class %s", only)
         result = defaultdict(lambda: 0)
@@ -1284,6 +1284,8 @@ class Engine(object):
                                                                if isinstance(task, only)])
         else:
             result[Run.State.TERMINATED] = len(self._terminated)
+
+
         # for TERMINATED tasks, compute the number of successes/failures
         for task in self._terminated:
             if only and not isinstance(task, only):

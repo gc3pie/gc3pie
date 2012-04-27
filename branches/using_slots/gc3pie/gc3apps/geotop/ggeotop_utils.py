@@ -34,14 +34,6 @@ def search_and_list(input_folder):
     for r,d,f in os.walk(input_folder):
         if "geotop.inpts" in f and "in" in d and "out" in d:
             print r
-            
-            # v = [missing for missing in dirs if not missing in d]
-            # if not v:
-            #     # all required folders in there
-            #     v = [missing for missing in files if not missing in f]
-            #     if not v:
-            #         # all required files in there
-            #         print r
 
 def main():
     """

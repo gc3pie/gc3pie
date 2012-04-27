@@ -39,10 +39,7 @@ import gc3libs.application
 from gc3libs.dag import SequentialTaskCollection, ParallelTaskCollection, ChunkedParameterSweep
 
 DEFAULT_INPUTFILE_LOCATION="srm://dpm.lhep.unibe.ch/dpm/lhep.unibe.ch/home/crypto/lacal_input_files.tgz"
-DEFAULT_GNFS_LOCATION="srm://dpm.lhep.unibe.ch/dpm/lhep.unibe.ch/home/crypto/gnfs-cmd_20120220"
-
-#DEFAULT_INPUTFILE_LOCATION="gsiftp://idgc3grid01.uzh.ch/local_repo/crypto/lacal_input_files.tgz"
-#DEFAULT_GNFS_LOCATION="gsiftp://idgc3grid01.uzh.ch/local_repo/crypto/gnfs-cmd_20120220"
+DEFAULT_GNFS_LOCATION="srm://dpm.lhep.unibe.ch/dpm/lhep.unibe.ch/home/crypto/gnfs-cmd_20120406"
 
 class CryptoApplication(gc3libs.Application):
     """
@@ -62,29 +59,27 @@ class CryptoApplication(gc3libs.Application):
     
     def __init__(self, start, extent, gnfs_location, input_files_archive, output, **kw):
 
-        #src_crypto_bin = resource_filename(Requirement.parse("gc3pie"), 
-        #                                   "gc3libs/etc/gnfs-cmd")
         gnfs_executable_name = os.path.basename(gnfs_location)
+
         # set some execution defaults...
         kw.setdefault('requested_cores', 4)
         kw.setdefault('requested_architecture', Run.Arch.X86_64)
         kw.setdefault('requested_walltime', 2)
 
-        kw.setdefault('jobname', str(start + extent))
-
-        # XXX: check whehter this is necessary
-        kw.setdefault('output_dir', os.path.join(output, str(start + extent)))
+        kw['jobname'] = "LACAL_%s" % str(start + extent)
+        kw['output_dir'] = os.path.join(output, str(start + extent))
 
         # XXX: this will be changed once RTE will be validated
         # will use APPS/CRYPTO/LACAL-1.0
-        kw['tags'] = [ 'TEST/CRYPTO-1.0' ]
+        # kw['tags'] = [ 'TEST/CRYPTO-1.0' ]
+        # kw['tags'] = [ 'TEST/LACAL-1.0' ]
+        kw['tags'] = [ 'APPS/CRYPTO/LACAL-1.0' ]
 
         gc3libs.Application.__init__(
             self,
-            # executable =  os.path.basename(src_crypto_bin),
+
             executable = "gnfs-cmd",
             executables = ["gnfs-cmd"],
-            # executables = ["input.tgz"], # XXX: WTF??
             arguments = [ start, extent, kw['requested_cores'], "input.tgz" ],
             inputs = {
                 input_files_archive:"input.tgz",
@@ -111,10 +106,15 @@ class CryptoApplication(gc3libs.Application):
         """
         # XXX: need to gather more info on how to post-process.
         # for the moment do nothing and report job's exit status
-        gc3libs.log.debug(
-            'Application terminated. postprocessing with execution.exicode %d',
-            self.execution.exitcode)
 
+        if self.execution.exitcode:
+            gc3libs.log.debug(
+                'Application terminated. postprocessing with execution.exicode %d',
+                self.execution.exitcode)
+        else:
+            gc3libs.log.debug(
+                'Application terminated. No exitcode available')
+            
 
 class CryptoChunkedParameterSweep(ChunkedParameterSweep):
     """
@@ -139,10 +139,10 @@ class CryptoChunkedParameterSweep(ChunkedParameterSweep):
         self.input_files_archive = input_files_archive
         self.gnfs_location = gnfs_location
         self.output_folder = output_folder
+        self.kw = kw
 
         ChunkedParameterSweep.__init__(
             self, kw['jobname'], range_start, range_end, slice, chunk_size, grid)
-
 
     def new_task(self, param, **kw):
         """
@@ -150,7 +150,7 @@ class CryptoChunkedParameterSweep(ChunkedParameterSweep):
         `param` to `param+self.parameter_count_increment`.
         """
         return CryptoApplication(
-            param, self.step, self.gnfs_location, self.input_files_archive, self.output_folder, **kw)
+            param, self.step, self.gnfs_location, self.input_files_archive, self.output_folder, **self.kw.copy())
 
 
 ## the script itself
@@ -197,6 +197,7 @@ of newly-created jobs so that this limit is never exceeded.
         SessionBasedScript.__init__(
             self,
             version = __version__, # module version == script version
+            stats_only_for = CryptoApplication,
             )
 
 
