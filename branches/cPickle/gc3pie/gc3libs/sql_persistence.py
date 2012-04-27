@@ -204,8 +204,8 @@ class SQL(Store):
             otype = 'job'
             jobstatus = obj.execution.state
             if hasattr(obj.execution, 'lrms_jobid'):
-                jobid = obj.execution.lrms_jobid
-            jobname = obj.jobname
+                jobid = SQL.escape(obj.execution.lrms_jobid)
+            jobname = SQL.escape(obj.jobname)
 
         query = "select id from jobs where id=%d" % id_
         c.execute(query)
@@ -248,8 +248,27 @@ where id=%d""" % (pdata,otype, jobid, jobstatus, jobname, pextra, id_)
         self.__conn.commit()
         c.close()
 
+    @staticmethod
+    def escape(s):
+        """escape string `s` so that it can be used in a sql query.
 
+        Please note that for now we only escape "'" chars because of
+        the queries we are doing, thus this function is not at all a
+        fully-featured SQL escaping function!
 
+        >>> SQL.escape("Antonio's boat")
+        "Antonio''s boat"
+        >>> SQL.escape(u"Antonio's unicode boat")
+        u"Antonio''s unicode boat"
+        >>> SQL.escape(9)
+        9
+        
+        """
+        if hasattr(s, 'replace'):
+            return s.replace("'", "''")
+        else:
+            return s
+        
 ## main: run tests
 
 if "__main__" == __name__:

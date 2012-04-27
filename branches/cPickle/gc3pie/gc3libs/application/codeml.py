@@ -2,7 +2,7 @@
 #
 #   codeml.py -- Simple interface to the CODEML application
 #
-#   Copyright (C) 2010, 2011 GC3, University of Zurich
+#   Copyright (C) 2010, 2011, 2012 GC3, University of Zurich
 #
 #   This program is free software: you can redistribute it and/or modify
 #   it under the terms of the GNU General Public License as published by
@@ -75,8 +75,10 @@ class CodemlApplication(gc3libs.Application):
         inputs = { codeml_pl:'codeml.pl' }
         if codeml is None:
             # use the RTE
-            kw['tags'] = [ 'APPS/BIO/CODEML-4.4.3' ]
-            # kw['tags'] = [ 'TEST/CODEML-4.4.3' ]
+            if 'tags' in kw:
+                kw['tags'].append('APPS/BIO/CODEML-4.4.3')
+            else:
+                kw['tags'] = [ 'APPS/BIO/CODEML-4.4.3' ]
         else:
             # use provided binary
             inputs[codeml] = 'codeml'
