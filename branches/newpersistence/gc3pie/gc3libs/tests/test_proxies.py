@@ -124,16 +124,21 @@ def test_memory_pool():
     finally:
         os.remove(tmp)
 
-def test_memory_pool_policy_function():
-    """Test MemoryPool class and its "policy_function" """
+class MyMemoryPoolKeep(MemoryPool):
+    """Class used to test customization of the keep method of the
+    MemoryPool class."""
+    
+    def keep(self, obj):
+        """Keep all odd name, dump even name"""
+        return int(obj.jobname) % 2 == 1
+
+
+def test_custom_memorypool_keep():
+    """Test customization of MemoryPool class"""
     (f, tmp) = tempfile.mkstemp()    
     store = persistence_factory("sqlite://%s" % tmp)
 
-    def mypolicy(obj):
-        """Dump tasks with even name"""
-        return int(obj.jobname) % 2 == 0
-
-    mempool = MemoryPool(store, policy_function=mypolicy)
+    mempool = MyMemoryPoolKeep(store)
 
     for i in range(20):
         obj = TestTask(str(i))
@@ -142,7 +147,7 @@ def test_memory_pool_policy_function():
         saved = []
         mempool.refresh()
         for i in mempool:
-            if object.__getattribute__(i, '_obj') is not None:
+            if not i.proxy_saved():
                 saved.append(i)
                 assert int(i.jobname) % 2 == 1
         assert len(saved) == 10
@@ -152,11 +157,73 @@ def test_memory_pool_policy_function():
         # refresh() we should see only 5 object saved.
         mempool.maxobjects = 5
         mempool.refresh()
-        objects = [i for i in mempool if object.__getattribute__(i, '_obj') is not None]
+        objects = [i for i in mempool if not i.proxy_saved()]
         assert len(objects) == 5
 
     finally:
         os.remove(tmp)
+
+class MyMemoryPoolCmp(MemoryPool):
+    """This class will sort objects by name: evens before odds, from
+    lesser to greater
+    """
+    
+    def cmp(self, x, y):
+        if hasattr(x, 'jobname'):
+            x = x.jobname
+        if hasattr(y, 'jobname'):
+            y = y.jobname
+        x,y = int(x), int(y)
+        # Check if one of them is even and the other is odd
+        if x%2 != y %2:
+            if x%2 == 0: return -1
+            else:        return 1
+        return cmp(x,y)
+        
+def test_autotest_memoypoolcmp():
+    # I need to test this method as well, so that I'll make no
+    # mistakes :)
+
+    # The idea is that even numbers will be lesser than odd
+    # numbers. So:
+
+    m = MyMemoryPoolCmp(persistence_factory('file:///tmp'))
+    assert m.cmp(1,2) == 1
+    assert m.cmp(2,1) == -1
+    assert m.cmp(2,2) == 0
+    assert m.cmp(2,4) == -1
+    assert m.cmp(4,2) == 1
+    assert m.cmp(1,3) == -1
+    
+def test_custom_memorypool_cmp():
+    """Test customization of MemoryPool class"""
+    (f, tmp) = tempfile.mkstemp()    
+    store = persistence_factory("sqlite://%s" % tmp)
+
+    mempool = MyMemoryPoolCmp(store, maxobjects=10)
+
+    for i in range(20):
+        obj = TestTask(str(i))
+        mempool.add(obj)
+    try:
+        saved = []
+        mempool.refresh()
+        for i in mempool:
+            if not i.proxy_saved():
+                saved.append(i)
+        assert len(saved) == 10
+
+
+        # Now let's try to set maxobjects to 5. After calling
+        # refresh() we should see only 5 object saved.
+        mempool.maxobjects = 5
+        mempool.refresh()
+        objects = [i for i in mempool if not i.proxy_saved()]
+        assert len(objects) == 5
+
+    finally:
+        os.remove(tmp)
+
     
 
 if "__main__" == __name__:
@@ -164,9 +231,15 @@ if "__main__" == __name__:
     loglevel = logging.INFO
     configure_logger(loglevel, 'test_proxies')
 
-    test_proxy_no_storage()
-    test_proxy_storage()
-    test_proxy_storage_wrong_storage()
-    test_staticmethod()
-    test_memory_pool()
-    test_memory_pool_policy_function()
+    test_functions = [i for i in sorted(locals()) if i.startswith('test_')]
+    for i in test_functions:
+        try:
+            func = "%s()" % i
+            print "Testing %s" % func,
+            eval(func)
+            print "OK"
+        except Exception, e:
+            print "ERROR"
+            print "Error in function %s" % func
+            print "Exception %s: %s" % (repr(e), e)
+            print

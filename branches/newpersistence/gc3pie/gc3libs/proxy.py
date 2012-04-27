@@ -265,25 +265,20 @@ class MemoryPool(object):
     keep in memory only a limited amount of them.
 
     It works with any Proxy object.
+
+    This class is basically a FIFO where at each addiction
+    (:meth:`add`) or each time the :meth:`refresh` method is called
+    all proxy objects are saved but the last `self.maxobjects`.
+
+    Other than updating the `self.maxobjects` attribute of the class
+    you can customize the behavior by subclassing `MemoryPool` and
+    overriding the two main methods: :meth:`cmp` and :meth:`keep`.
     """
 
-    def __init__(self, storage, maxobjects=0, cmp=None, policy_function=None):
+    def __init__(self, storage, maxobjects=0):
         """
         * `maxobjects`: If maxobjects is >0, then the MemoryPool will
           *never* save more than `maxobjects` objects.
-
-        * `policy_function`: If defined, at each `refresh` call this
-          function will be called for each object of the pool. Each
-          object for which the function returns False will be
-          forgetted.
-
-        * `cmp`: If after the `policy_function` (if any) is called
-          there are still more than `maxobjects` proxies in the pool,
-          then the objects in the pool will be sorted using the `cmp`
-          function and only the last `maxobjects` will be saved.
-
-          Default `cmp` function is: sorting by last access to the
-          object (`__getattribute__` call)
           
           Let's setup a storage:
           >>> import tempfile, os
@@ -321,11 +316,6 @@ class MemoryPool(object):
         self._proxies = []
         self.maxobjects=maxobjects
 
-        self.__cmp_func = cmp
-        if not cmp:
-            self.__cmp_func = MemoryPool.last_accessed
-        self.__policy_function = policy_function
-
     def add(self, obj):
         """Add `proxy` object to the memory pool."""
         # if obj in self._proxies: return
@@ -353,16 +343,15 @@ class MemoryPool(object):
 
         # If policy_function is defined, forget all objects we don't
         # want to remember anymore.
-        if self.__policy_function:
-            map(lambda x: self.__policy_function(x) and x.proxy_forget(), self._proxies)
+        map(lambda x: not self.keep(x) and x.proxy_forget(), self._proxies)
 
-        if self.maxobjects:
-            self._proxies.sort(cmp=self.__cmp_func)             
+        if self.maxobjects > 0:
+            self._proxies.sort(cmp=lambda x,y: self.cmp(x,y))             
             for i in range(len(self._proxies) - self.maxobjects):
                 self._proxies[i].proxy_forget()
         
     def __iter__(self):
-        return iter(sorted(self._proxies, cmp=self.__cmp_func))
+        return iter(self._proxies)
 
     @staticmethod
     def last_accessed(obj1, obj2):
@@ -384,7 +373,43 @@ class MemoryPool(object):
         if cmp(obj2.proxy_saved(), obj1.proxy_saved()):
             return cmp(obj2.proxy_saved(), obj1.proxy_saved())
         return cmp(obj1.proxy_last_accessed(), obj2.proxy_last_accessed())
+    def cmp(self, x, y):
+        """This method is used to inplace sort the list of Proxy
+        objects in order to decide which proxies need to be forgotten.
 
+        Default sorting method is based on the access time of any
+        attribute of the proxied argument, in order to dump the
+        "oldest" jobs.
+
+        You can override this method by subclassing `MemoryPool`, but
+        please remember that accessing attributes other than the ones
+        stored on the Proxy itself may cause multiple `save` and
+        `load` of the same object, thus degrading the overall
+        performance.
+
+        Moreover, since this function is called *after* the
+        :meth:`keep` method, it is possible that an object already
+        *forgotten* by the `keep` method is then loaded again because
+        of the comparison.
+
+        Therefore, it's probably safer not to mix `keep` and `cmp`
+        methods in your implementation.
+        """
+        return MemoryPool.last_accessed(x, y)
+
+    def keep(self, obj):
+        """This method is used to decide if an object has to be
+        forgotten or not.
+
+        By default only least accessed objects are forgotten, thus
+        this function returns always True.
+
+        Please note that this method is called before the :meth:`cmp`
+        method, and customizing both methods may not be safe. Please
+        check the documentation for the :meth:`cmp` method too.
+        """
+        return True
+    
 ## main: run tests
 
 if "__main__" == __name__:
