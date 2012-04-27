@@ -258,7 +258,7 @@ def test_sqlite_job_persistency():
     
     conn = sqlite.connect(tmpfname)
     c = conn.cursor()
-    c.execute('select jobid,jobname, jobstatus from jobs where id=%d' % app.persistent_id)
+    c.execute('select jobid,jobname, jobstatus from store where id=%d' % app.persistent_id)
     row = c.fetchone()
     try:
         assert int(row[0]) == app.execution.lrms_jobid
@@ -283,10 +283,42 @@ def test_sql_injection():
     finally:
         os.remove(path.path)
 
+def test_sql_extend_table():
+    """Test if SQL is able to save extra attributes if extra columns have been defined into the DB"""
+    (fd, tmpfname) = tempfile.mkstemp()
+    path = Url('sqlite://%s' % tmpfname)
+    # create the db with default schema
+    db = persistence_factory(path)
+
+    try:
+        import sqlite3 as sqlite
+    except ImportError:
+        import pysqlite2.dbapi2 as sqlite
+
+    # Extend the db
+    conn = sqlite.connect(tmpfname)
+    c = conn.cursor()
+    c.execute('alter table store add column x varchar(256)')
+
+    # re-open the db. We need this because schema definition is
+    # checked only in SQL.__init__
+    db = persistence_factory(path)
+    obj = MyObj('My App')
+
+    try:
+        id_ = db.save(obj)
+        c.execute('select x from store where id=%d' % id_)
+        rows = c.fetchall()
+        assert len(rows) == 1
+        assert rows[0][0] == obj.x
+    finally:
+        os.remove(path.path)
+
     
 if __name__ == "__main__":
     # fix pickle error
     from test_persistence import MyObj, SlotClassWrong, SlotClass
+    test_sql_extend_table()
     test_filesystemstorage_pickler_class()
     test_file_persistency()
     test_sqlite_persistency()

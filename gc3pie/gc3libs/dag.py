@@ -558,8 +558,8 @@ class ChunkedParameterSweep(ParallelTaskCollection):
         num_running = len([task for task in self.tasks if
                            task.execution.state in  [ Run.State.NEW,
                                                       Run.State.SUBMITTED, 
-                                                      Run.State.RUNNING, 
-                                                      Run.State.UNKNOWN ]])
+                                                      Run.State.RUNNING ]]) 
+                                                      # Run.State.UNKNOWN ]])
         # add more jobs if we're close to the end
         # XXX: why using 2*self.chunk_size as treshold ?
         # is the idea to submit more jobs once we reach at least 50% of completion ?

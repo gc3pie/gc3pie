@@ -66,10 +66,8 @@ class CryptoApplication(gc3libs.Application):
         kw.setdefault('requested_architecture', Run.Arch.X86_64)
         kw.setdefault('requested_walltime', 2)
 
-        kw.setdefault('jobname', 'LACAL_%s' % str(start + extent))
-
-        # XXX: check whehter this is necessary
-        kw.setdefault('output_dir', os.path.join(output, str(start + extent)))
+        kw['jobname'] = "LACAL_%s" % str(start + extent)
+        kw['output_dir'] = os.path.join(output, str(start + extent))
 
         # XXX: this will be changed once RTE will be validated
         # will use APPS/CRYPTO/LACAL-1.0
