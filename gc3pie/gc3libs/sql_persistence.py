@@ -144,9 +144,11 @@ class SQL(Store):
     @same_docstring_as(Store.list)
     def list(self):
         q = sql.select([self.t_store.c.id])
-        rows = self.__engine.execute(q)
-        
+        conn = self.__engine.connect()
+        rows = conn.execute(q)
+
         ids = [i[0] for i in rows.fetchall()]
+        conn.close()
         return ids
 
     @same_docstring_as(Store.replace)
@@ -202,7 +204,8 @@ class SQL(Store):
     @same_docstring_as(Store.load)
     def load(self, id_):
         q = sql.select([self.t_store.c.data]).where(self.t_store.c.id == id_)
-        r = self.__engine.execute(q)
+        conn = self.__engine.connect()
+        r = conn.execute(q)
         rawdata = r.fetchone()
         
         if not rawdata:
@@ -210,11 +213,15 @@ class SQL(Store):
         srcdata = StringIO.StringIO(rawdata[0].decode('base64'))
         unpickler = create_unpickler(self, srcdata)
         obj = unpickler.load()
+        conn.close()
+
         return obj
 
     @same_docstring_as(Store.remove)
-    def remove(self, id_):        
-        self.__engine.execute(self.t_store.delete().where(id==id_))
+    def remove(self, id_):
+        conn = self.__engine.connect()
+        conn.execute(self.t_store.delete().where(id==id_))
+        conn.close()
 
     @staticmethod
     def escape(s):
