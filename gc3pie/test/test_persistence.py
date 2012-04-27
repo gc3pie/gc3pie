@@ -25,21 +25,29 @@ __version__ = '$Revision$'
 
 import gc3libs
 from gc3libs.url import Url
-from gc3libs.persistence import FilesystemStore
-from gc3libs.sql_persistence import SQL
+from gc3libs.persistence import persistence_factory, FilesystemStore, Persistable
 import gc3libs.exceptions as gc3ex
 import tempfile, os, shutil
 import pickle
+from gc3libs import Task
 
-class MyObj:
+try:
+    import MySQLdb
+except:
+    MySQLdb = None
+
+class MyObj(Persistable):
     def __init__(self, x):
         self.x = x
 
-class MyList(list):
+class MyList(list, Persistable):
     """
     Add a `__dict__` to `list`, so that creating a `persistent_id`
     entry on an instance works.
     """
+    pass
+
+class MyTask(Task):
     pass
 
 class SlotClassWrong(object):
@@ -116,7 +124,90 @@ def _generic_nested_persistency_test(driver):
     except Exception, e:
         raise e
 
+def _save_different_objects_separated(driver):
+    """Since we want to save Tasks separately from the containing
+    object (e.g. SessionBasedScript) this test will try to save a
+    generic persisted container which contain another persisted and
+    check that they are saved on different items.
+
+    This is done by checking that all the objects have a persistent_id
+    attribute and """
+    
+    container = MyList()
+    container.append(MyObj('MyJob'))
+    id = driver.save(container)
+
+    # Check that there are two files!
+    assert id == container.persistent_id
+    assert hasattr(container[0], 'persistent_id')
+    
+    objid = container[0].persistent_id
+    if isinstance(driver, FilesystemStore):
+        containerfile = os.path.join(driver._directory, "%s" % id)
+        assert os.path.exists(containerfile)
+
+        objfile = os.path.join(driver._directory, "%s" % objid)
+        assert os.path.exists(objfile)
+
+    del container
+    container = driver.load(id)
+    obj = driver.load(objid)
+
+def _application_test(db):
+    obj = gc3libs.Application('/bin/true', [], [], [], '/tmp')
+    id_ = db.save(obj)
+    obj2 = db.load(id_)
+
+def _run_driver_tests(db):
+    _generic_persistency_test(db)
+    _application_test(db)
+    _generic_nested_persistency_test(db)
+    _generic_newstile_slots_classes(db)
+    _save_different_objects_separated(db)
+
+
+def test_file_persistency():
+    tmpdir = tempfile.mkdtemp()
+
+    path = Url(tmpdir)
+    fs = FilesystemStore(path.path)
+    obj = MyObj('GC3')
+
+    _run_driver_tests(fs)
+    shutil.rmtree(tmpdir)
+
+def test_filesystemstorage_pickler_class():
+    """
+    If you want to save two independent objects but one of them has a
+    reference to the other, the standard behavior of Pickle is to save
+    a copy of the contained object into the same file of the
+    containing object.
+
+    The FilesystemStorage.Pickler class is aimed to avoid this.
+    """    
+    tmpfname = tempfile.mkdtemp()
+    try:
+        fs = FilesystemStore(tmpfname)
+        obj1 = MyObj('GC3_parent')
+        obj2 = MyObj('GC3_children')
+        id2 = fs.save(obj2)
+        obj1.children = obj2
+        assert obj1.children is obj2
+        id1 = fs.save(obj1)
+        del obj1
+        del obj2
+        obj1 = fs.load(id1)
+        obj2 = fs.load(id2)
+        assert obj1.children.x == 'GC3_children'
+        # XXX: should this happen? I am not sure
+        assert obj1.children is not obj2
+
+        # cleanup
+    finally:
+        shutil.rmtree(tmpfname)
+
 def _generic_newstile_slots_classes(db):
+    return
     obj = SlotClass('GC3')
     assert obj.attr == 'GC3'
     id_ = db.save(obj)
@@ -131,79 +222,35 @@ def _generic_newstile_slots_classes(db):
     except AttributeError:
         pass
     
-def _application_test(db):
-    obj = gc3libs.Application('/bin/true', [], [], [], '/tmp')
-    id_ = db.save(obj)
-    obj2 = db.load(id_)
-    
-
-def test_file_persistency():
-    tmpdir = tempfile.mkdtemp()
-
-    path = Url(tmpdir)
-    fs = FilesystemStore(path.path)
-    obj = MyObj('GC3')
-
-    _generic_persistency_test(fs)
-    _generic_nested_persistency_test(fs)
-    # import pdb; pdb.set_trace()
-    _generic_newstile_slots_classes(fs)
-    _application_test(fs)
-    shutil.rmtree(tmpdir)
-
-def test_filesystemstorage_pickler_class():
-    """
-    If you want to save two independent objects but one of them has a
-    reference to the other, the standard behavior of Pickle is to save
-    a copy of the contained object into the same file of the
-    containing object.
-
-    The FilesystemStorage.Pickler class is aimed to avoid this.
-    """
-    tmpfname = tempfile.mkdtemp()
-    fs = FilesystemStore(tmpfname)
-    obj1 = MyObj('GC3_parent')
-    obj2 = MyObj('GC3_children')
-    id2 = fs.save(obj2)
-    obj1.children = obj2
-    assert obj1.children is obj2
-    id1 = fs.save(obj1)
-    del obj1
-    del obj2
-    obj1 = fs.load(id1)
-    obj2 = fs.load(id2)
-    assert obj1.children.x == 'GC3_children'
-    # XXX: should this happen? I am not sure
-    assert obj1.children is not obj2
-
-    # cleanup
-    shutil.rmtree(tmpfname)
-
-
 def test_sqlite_persistency():
     (fd, tmpfname) = tempfile.mkstemp()
     path = Url('sqlite://%s' % tmpfname)
-    db = SQL(path)
+    db = persistence_factory(path)
     obj = MyObj('GC3')
-
-    _generic_persistency_test(db)
-    _generic_nested_persistency_test(db)
-    _generic_newstile_slots_classes(db)
-    _application_test(db)
-    os.remove(tmpfname)
-
+    
+    try:
+        _run_driver_tests(db)
+    finally:
+        os.remove(tmpfname)
 
 def test_mysql_persistency():
-    path = Url('mysql://gc3user:gc3pwd@localhost/gc3')    
-    db = SQL(path)
-    _generic_persistency_test(db)
-    _generic_nested_persistency_test(db)
-    _generic_newstile_slots_classes(db)
-    _application_test(db)
+    if not MySQLdb: return
+    
+    try:
+        path = Url('mysql://gc3user:gc3pwd@localhost/gc3')    
+        db = persistence_factory(path)
+    except MySQLdb.OperationalError:
+        # Ignore MySQL errors, since the mysql server may not be
+        # running or not properly configured.
+        return
+    _run_driver_tests(db)
 
 
 def test_sqlite_job_persistency():
-    import sqlite3
+    try:
+        import sqlite3 as sqlite
+    except ImportError:
+        import pysqlite2.dbapi2 as sqlite
     import gc3libs
     from gc3libs.core import Run
     app = gc3libs.Application(executable='/bin/true', arguments=[], inputs=[], outputs=[], output_dir='/tmp')
@@ -215,27 +262,75 @@ def test_sqlite_job_persistency():
 
     (fd, tmpfname) = tempfile.mkstemp()
     path = Url('sqlite://%s' % tmpfname)
-    db = SQL(path)
-
+    db = persistence_factory(path)
     id_ = db.save(app)
     
-    conn = sqlite3.connect(tmpfname)
+    conn = sqlite.connect(tmpfname)
     c = conn.cursor()
-    c.execute('select jobid,jobname, jobstatus from jobs')
+    c.execute('select jobid,jobname, jobstatus from store where id=%d' % app.persistent_id)
     row = c.fetchone()
-    assert int(row[0]) == app.execution.lrms_jobid
-    assert row[1] == app.jobname
-    assert row[2] == app.execution.state
-    c.close()
-    os.remove(tmpfname)
+    try:
+        assert int(row[0]) == app.execution.lrms_jobid
+        assert row[1] == app.jobname
+        assert row[2] == app.execution.state
+    finally:
+        c.close()
+        os.remove(tmpfname)
     
+def test_sql_injection():
+    """Test if the `SQL` class is vulnerable to SQL injection"""
+    (fd, tmpfname) = tempfile.mkstemp()
+    path = Url('sqlite://%s' % tmpfname)
+    db = persistence_factory(path)
+    obj = MyTask("Antonio's task")
+    obj.execution.lrms_jobid = "my'job'id'is'strange'"
+    try:
+        id_ = db.save(obj)
+        obj2 = db.load(id_)
+        assert obj.jobname == obj2.jobname
+        assert obj.execution.lrms_jobid == obj2.execution.lrms_jobid
+    finally:
+        os.remove(path.path)
+
+def test_sql_extend_table():
+    """Test if SQL is able to save extra attributes if extra columns have been defined into the DB"""
+    (fd, tmpfname) = tempfile.mkstemp()
+    path = Url('sqlite://%s' % tmpfname)
+    # create the db with default schema
+    db = persistence_factory(path)
+
+    try:
+        import sqlite3 as sqlite
+    except ImportError:
+        import pysqlite2.dbapi2 as sqlite
+
+    # Extend the db
+    conn = sqlite.connect(tmpfname)
+    c = conn.cursor()
+    c.execute('alter table store add column x varchar(256)')
+
+    # re-open the db. We need this because schema definition is
+    # checked only in SQL.__init__
+    db = persistence_factory(path)
+    obj = MyObj('My App')
+
+    try:
+        id_ = db.save(obj)
+        c.execute('select x from store where id=%d' % id_)
+        rows = c.fetchall()
+        assert len(rows) == 1
+        assert rows[0][0] == obj.x
+    finally:
+        os.remove(path.path)
 
     
 if __name__ == "__main__":
     # fix pickle error
     from test_persistence import MyObj, SlotClassWrong, SlotClass
+    test_sql_extend_table()
     test_filesystemstorage_pickler_class()
     test_file_persistency()
     test_sqlite_persistency()
     test_mysql_persistency()
     test_sqlite_job_persistency()
+    test_sql_injection()

@@ -797,17 +797,26 @@ def progressive_number(qty=None,
 
     Example::
 
-      >>> n = progressive_number()
-      >>> m = progressive_number()
+    (create a temporary directory to avoid bug #)
+
+      >>> import tempfile, os
+      >>> (fd, tmp) = tempfile.mkstemp()
+
+      
+      >>> n = progressive_number(id_filename=tmp)
+      >>> m = progressive_number(id_filename=tmp)
       >>> m > n
       True
 
     If you specify a positive integer as argument, then a list of
     monotonically increasing numbers is returned.  For example::
 
-      >>> ls = progressive_number(5)
+      >>> ls = progressive_number(5, id_filename=tmp)
       >>> len(ls)
       5
+
+    (clean up test environment)
+      >>> os.remove(tmp)
 
     In other words, `progressive_number(N)` is equivalent to::
 

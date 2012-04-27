@@ -71,7 +71,7 @@ class ArcLrms(LRMS):
             # Convert from hours to minutes
             self._resource.max_walltime = self._resource.max_walltime * 60
             
-        if hasattr(resource, 'lost_job_timeout'):
+        if hasattr(self._resource, 'lost_job_timeout'):
             self._resource.lost_job_timeout = int(resource.lost_job_timeout)
         else:
             self._resource.lost_job_timeout = gc3libs.Default.ARC_LOST_JOB_TIMEOUT
@@ -136,7 +136,7 @@ class ArcLrms(LRMS):
         attribute, or the default GIIS) and return the corresponding
         `arclib.Cluster` object.
         """
-        if self._resource.has_key('arc_ldap'):
+        if hasattr(self._resource,'arc_ldap'):
             log.info("Updating ARC resource information from '%s'"
                       % self._resource.arc_ldap)
             return arclib.GetClusterResources(arclib.URL(self._resource.arc_ldap),
@@ -320,6 +320,10 @@ class ArcLrms(LRMS):
         job = app.execution
         self.auths.get(self._resource.auth)
 
+        # initialize the unknown counter
+        if not hasattr(job, 'unknown_iteration'):
+            job.unknown_iteration = 0
+
         # try to intercept error conditions and translate them into
         # meaningful exceptions
         try:
@@ -336,27 +340,50 @@ class ArcLrms(LRMS):
             if not hasattr(job, 'state_last_changed'):
                 # XXX: compatibility with running sessions, remove before release
                 job.state_last_changed = time.time()
+                app.changed = True
             if not hasattr(job, '_arc0_state_last_checked'):
                 # XXX: compatibility with running sessions, remove before release
                 job._arc0_state_last_checked = time.time()
+                app.changed = True
             now = time.time()
-            if (job.state == Run.State.SUBMITTED
+            if (now - job._arc0_state_last_checked) > gc3libs.Default.ARC_LOST_JOB_TIMEOUT:
+                if not job.state == Run.State.UNKNOWN:
+                    # set to UNKNOWN
+                    job.state = Run.State.UNKNOWN
+                    gc3libs.log.error("Failed updating job status for [%d] sec. Setting to Unknown state. " % gc3libs.Default.ARC_LOST_JOB_TIMEOUT)
+                # else:
+                #     # just record failure updating job state
+                #     gc3libs.log.warning("Failed updating job status. Assume transient information system failure. Return unchanged status.")
+                # # return job.state
+            elif (job.state == Run.State.SUBMITTED
                 and now - job.state_last_changed < self._resource.lost_job_timeout):
+                gc3libs.log.warning("Failed updating job status. Assume job was recently submitted. Return unchanged status.")
                 # assume the job was recently submitted, hence the
                 # information system knows nothing about it; just
                 # ignore the error and return the object unchanged
-                return job.state
+                # return job.state
             elif (job.state in [ Run.State.SUBMITTED, Run.State.RUNNING ]
                   and now - job._arc0_state_last_checked < self._resource.lost_job_timeout):
+                gc3libs.log.warning("Failed updating job status. Assume transient information system failure. Return unchanged status.")
                 # assume transient information system failure;
                 # ignore the error and return object unchanged
-                return job.state
-            else:
-                gc3libs.log.error("Could not update job information for the last %s seconds. Consider setting to Unknown state" % self._resource.lost_job_timeout)
-                #raise  gc3libs.exceptions.UnknownJob(
-                #    "No job found corresponding to the ID '%s'" % job.lrms_jobid)
-                job.state = Run.State.UNKNOWN
-                return job.state
+                # return job.state
+            # # elif (job.state == Run.State.UNKNOWN
+            # #       and job.unknown_iteration > gc3libs.Default.UNKNOWN_ITER_LIMIT):
+            # #     # consider job as lost
+            # #     raise gc3libs.exceptions.UnknownJob(
+            # #         "No job found corresponding to the ID '%s'" % job.lrms_jobid)
+            # else:
+            #     gc3libs.log.error("Failed updating job status. Keeping status unchanged for [%d] times." % ((gc3libs.Default.UNKNOWN_ITER_LIMIT - job.unknown_iteration)))
+            #     #raise  gc3libs.exceptions.UnknownJob(
+            #     #    "No job found corresponding to the ID '%s'" % job.lrms_jobid)
+            #     # job.state = Run.State.UNKNOWN
+            #     job.unknown_iteration += 1
+            #     app.changed = True
+
+            # End of except. Return job state
+            return job.state
+
                 
         job._arc0_state_last_checked = time.time()
         
@@ -364,9 +391,6 @@ class ArcLrms(LRMS):
         state = self._map_arc0_status_to_gc3pie_state(arc_job.status)
         if arc_job.exitcode != -1:
             job.exitcode = arc_job.exitcode
-
-        
-
         elif state in [Run.State.TERMINATING, Run.State.TERMINATED] and job.returncode is None:
             # XXX: it seems that ARC does not report the job exit code
             # (at least in some cases); let's make one up based on
