@@ -544,9 +544,9 @@ def configure_logger(level=logging.ERROR,
 # directory"
 ANY_OUTPUT = '*'
 
-import Proxy
+import proxy
 
-class Application(Proxy.Proxy):
+class Application(proxy.Proxy):
     def __init__(self, *args, **kw):
         try:
             storage = kw.pop('storage')
@@ -556,10 +556,10 @@ class Application(Proxy.Proxy):
             manager = kw.pop('manager')
         except:
             manager = None
-        Proxy.Proxy.__init__(self, _Application(*args, **kw), storage=storage, manager=manager)
+        proxy.Proxy.__init__(self, _Application(*args, **kw), storage=storage, manager=manager)
 
     def __new__(cls, *args, **kw):
-        return Proxy.Proxy.__new__(cls, _Application('',[],[],[],''))
+        return proxy.Proxy.__new__(cls, _Application('',[],[],[],''))
 
     # Some static methods that where defined in _Application
     @staticmethod

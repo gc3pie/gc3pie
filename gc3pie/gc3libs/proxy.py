@@ -52,7 +52,7 @@ class BaseProxy(object):
 
     >>> p = BaseProxy(1)
     >>> type(p)
-    <class 'gc3libs.Proxy.BaseProxy(int)'>
+    <class 'gc3libs.proxy.BaseProxy(int)'>
     >>> p+1
     2
     >>> type(p+1)
