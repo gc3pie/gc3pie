@@ -4,6 +4,10 @@
 """
 # Copyright (C) 2011, GC3, University of Zurich. All rights reserved.
 #
+# Portions of this file were extracted from
+# http://code.activestate.com/recipes/496741-object-proxying/ which is
+# copyright Tomer Filiba.
+#
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
 # the Free Software Foundation; either version 2 of the License, or
@@ -25,7 +29,7 @@ from gc3libs import log
 from persistence import Store
 import time
 
-class ProxyManager:
+class ProxyManager(object):
     """ProxyManager should be responsible to decide when a Proxy
     should persist its proxied object and forget it.
     """
@@ -37,7 +41,9 @@ class ProxyManager:
 
 class BaseProxy(object):
     """
-    This class is took from
+    This class implements a generic proxy for generic objects.
+
+    The class is took from
     http://code.activestate.com/recipes/496741-object-proxying/ and is
     used as a base for the `Proxy` class which is used to implement
     lazy objects to access persistent tasks.
@@ -61,6 +67,7 @@ class BaseProxy(object):
 
     """
     __slots__ = ["_obj", "__weakref__"]
+
     def __init__(self, obj):
         object.__setattr__(self, "_obj", obj)
     
@@ -118,20 +125,11 @@ class BaseProxy(object):
     
     def __new__(cls, obj, *args, **kwargs):
         """
-        creates an proxy instance referencing `obj`. (obj, *args, **kwargs) are
-        passed to this class' __init__, so deriving classes can define an 
-        __init__ method of their own.
-        note: _class_proxy_cache is unique per deriving class (each deriving
-        class must hold its own cache)
+        creates an proxy instance referencing `obj`.
+
+        (obj, *args, **kwargs) are passed to this class' __init__, so
+        deriving classes can define an __init__ method of their own.
         """
-        # try:
-        #     cache = cls.__dict__["_class_proxy_cache"]
-        # except KeyError:
-        #     cls._class_proxy_cache = cache = {}
-        # try:
-        #     theclass = cache[obj.__class__]
-        # except KeyError:
-        #     cache[obj.__class__] = theclass = cls._create_class_proxy(obj.__class__)
         theclass = cls._create_class_proxy(obj.__class__)
         ins = object.__new__(theclass)
         return ins
@@ -161,7 +159,7 @@ class Proxy(BaseProxy):
     >>> p.proxy_saved()
     True
 
-    The object has been *forgetted*, and hopefully saved in the
+    The object has been *forgotten*, and hopefully saved in the
     persistency. If you try to access an attribute, however, you
     should be able to:
     
@@ -209,6 +207,7 @@ class Proxy(BaseProxy):
     """
     
     __slots__ = ["_obj", "_obj_id", "__storage", "__manager", "__last_access", "proxy_forget", "proxy_last_accessed", "proxy_set_storage", "proxy_saved"]
+    
     def __init__(self, obj, storage=None, manager=None):
         object.__setattr__(self, "_obj", obj)
         object.__setattr__(self, "__storage", storage)
@@ -349,7 +348,7 @@ class MemoryPool(object):
         self._proxies.remove(obj)
 
     def refresh(self):
-        """Refresh the list of proxies, forget `old` proxies if
+        """Refresh the list of proxies, forget "old" proxies if
         needed"""
 
         # If policy_function is defined, forget all objects we don't
@@ -363,8 +362,7 @@ class MemoryPool(object):
                 self._proxies[i].proxy_forget()
         
     def __iter__(self):
-        self._proxies.sort(cmp=self.__cmp_func)
-        return iter(self._proxies)
+        return iter(sorted(self._proxies, cmp=self.__cmp_func))
 
     @staticmethod
     def last_accessed(obj1, obj2):
