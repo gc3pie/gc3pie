@@ -79,7 +79,7 @@ class Default(object):
     ARC0_LRMS = 'arc0'
     ARC1_LRMS = 'arc1'
     ARC_CACHE_TIME = 30 #: only update ARC resources status every this seconds
-    ARC_LOST_JOB_TIMEOUT = 4*ARC_CACHE_TIME #: consider a submitted job lost if it does not show up in the information system after this duration
+    ARC_LOST_JOB_TIMEOUT = 1800 # previously: 4*ARC_CACHE_TIME #: consider a submitted job lost if it does not show up in the information system after this duration
     ARC_JOBLIST_LOCATION = os.path.expandvars("$HOME/.arc/jobs.xml")
     
     SGE_LRMS = 'sge'
@@ -99,9 +99,6 @@ class Default(object):
     ARC1_DEFAULT_SERVICE_TIMEOUT = 3 # max wait (seconds) for a service to respond; hopefully this impacts also LDAP searches
 
     PEEK_FILE_SIZE = 120 # expressed in bytes
-
-    # number of iterations before job is permanently marked as lost
-    UNKNOWN_ITER_LIMIT = 5
 
 from gc3libs.exceptions import *
 from gc3libs.persistence import Persistable

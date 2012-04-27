@@ -54,7 +54,7 @@ class housingApplication(Application):
     _invalid_chars = re.compile(r'[^_a-zA-Z0-9]+', re.X)
     
     def __init__(self, executable, arguments, inputs, outputs, output_dir, **kw):
-        kw.setdefault('requested_walltime', 2)
+#        kw.setdefault('requested_walltime', 2)
         Application.__init__(self, executable, arguments, inputs, outputs, output_dir, **kw)
     
     def fetch_output_error(self, ex):
@@ -105,6 +105,10 @@ class housingApplication(Application):
                     # backup with numerical suffix
                     gc3libs.utils.backup(dest_entry)
                 os.rename(os.path.join(wrong_output_dir, entry), dest_entry)
+            try: 
+                os.rmdir(wrong_output_dir)
+            except:
+                logger.warning('could not delete wront output dir = %s' % wrong_output_dir)
                 
         # set the exitcode based on postprocessing the main output file
         aggregateOut = os.path.join(output_dir, 'aggregate.out')
@@ -135,13 +139,13 @@ class housingApplication(Application):
             print >> f, ownershipTable
             f.close()
             try:
-                plotSimulation(table = ownershipTableFile, xVar = 'age', yVars = yVars, yVarRange = (0., 1.), figureFile = os.path.join(self.output_dir, 'ownership.eps'), verb = 'CRITICAL')
+                plotSimulation(table = ownershipTableFile, xVar = 'age', yVars = yVars, yVarRange = (0., 1.), figureFile = os.path.join(self.output_dir, 'ownership.png'), verb = 'CRITICAL')
             except:
                 logger.debug('couldnt make ownershipTableFile')
             
             # make plot of life-cycle simulation (all variables)
             try:
-                plotSimulation(table = os.path.join(output_dir, 'aggregate.out'), xVar = 'age', yVars = [], figureFile = os.path.join(self.output_dir, 'aggregate.eps'), verb = 'CRITICAL' )
+                plotSimulation(table = os.path.join(output_dir, 'aggregate.out'), xVar = 'age', yVars = [], figureFile = os.path.join(self.output_dir, 'aggregate.png'), verb = 'CRITICAL' )
             except:
                 logger.debug('coulndt make aggregate.out plot')
             #if os.path.exists('ownershipThreshold_1.out'):
@@ -154,6 +158,6 @@ class housingApplication(Application):
 class housingApppotApplication(housingApplication, gc3libs.application.apppot.AppPotApplication):
     _invalid_chars = re.compile(r'[^_a-zA-Z0-9]+', re.X)
     def __init__(self, executable, arguments, inputs, outputs, output_dir, **kw):
-        kw.setdefault('requested_walltime', 2)
+#        kw.setdefault('requested_walltime', 2) # unnecessary.. gc3pie automatically sets default to 8
         gc3libs.application.apppot.AppPotApplication.__init__(self, executable, arguments, inputs, outputs, output_dir, **kw)
 

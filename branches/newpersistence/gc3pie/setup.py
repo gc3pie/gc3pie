@@ -102,6 +102,7 @@ setuptools.setup(
         'texttable',
         # pyCLI -- object-oriented command-line app programming
         'pyCLI>=2.0.3',
+        'sqlalchemy',
         # Unum -- define and manipulate quantities with units attached
         #'Unum',
         ],
