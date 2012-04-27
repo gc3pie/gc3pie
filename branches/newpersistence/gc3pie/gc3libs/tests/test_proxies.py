@@ -22,7 +22,7 @@ __docformat__ = 'reStructuredText'
 __version__ = '$Revision$'
 
 from gc3libs import Task, Application, configure_logger
-from gc3libs.Proxy import Proxy, MemoryPool
+from gc3libs.proxy import Proxy, MemoryPool
 from gc3libs.persistence import persistence_factory
 import tempfile, os
 
