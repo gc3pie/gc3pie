@@ -46,6 +46,7 @@ path2SrcPy = os.path.join(os.path.dirname(__file__), '../src')
 if not sys.path.count(path2SrcPy):
     sys.path.append(path2SrcPy)
 from plotSimulation import plotSimulation
+from plotAggregate import makeAggregatePlot
 from pymods.classes.tableDict import tableDict
 
 logger = wrapLogger(loggerName = __name__ + 'logger', streamVerb = 'DEBUG', logFile = __name__ + '.log')
@@ -144,8 +145,9 @@ class housingApplication(Application):
                 logger.debug('couldnt make ownershipTableFile')
             
             # make plot of life-cycle simulation (all variables)
-            try:
-                plotSimulation(table = os.path.join(output_dir, 'aggregate.out'), xVar = 'age', yVars = [], figureFile = os.path.join(self.output_dir, 'aggregate.png'), verb = 'CRITICAL' )
+            try:                
+                makeAggregatePlot(self.output_dir)
+#                plotSimulation(table = os.path.join(output_dir, 'aggregate.out'), xVar = 'age', yVars = ['wealth', 'theta1', 'theta2', 'theta3', 'theta4', 'theta5', 'cons', 'income'], figureFile = os.path.join(self.output_dir, 'aggregate.png'), verb = 'CRITICAL' )
             except:
                 logger.debug('coulndt make aggregate.out plot')
             #if os.path.exists('ownershipThreshold_1.out'):
