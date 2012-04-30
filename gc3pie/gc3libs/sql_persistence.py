@@ -37,7 +37,6 @@ import sqlalchemy.sql as sql
 class DummyObject:
     pass
 
-
 def sql_next_id_factory(db):
     """
     This function will return a function which can be used as
