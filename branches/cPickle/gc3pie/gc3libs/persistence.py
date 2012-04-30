@@ -235,7 +235,7 @@ class Persistable(object):
     pass
 
 
-class persistent_id_class:
+class persistent_id_class(object):
     """This class is needed because:
 
     * we want to save each Persistable object as a separate record
@@ -260,7 +260,7 @@ class persistent_id_class:
             self._parent.save(obj)
             return obj.persistent_id
 
-class persistent_load_class:
+class persistent_load_class(object):
     """This class is needed because:
 
     * we want to save each Persistable object as a separate record
