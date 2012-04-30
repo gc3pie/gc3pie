@@ -141,9 +141,11 @@ class SQL(Store):
     @same_docstring_as(Store.list)
     def list(self):
         q = sql.select([self.t_store.c.id])
-        rows = self.__engine.execute(q)
-        
+        conn = self.__engine.connect()
+        rows = conn.execute(q)
+
         ids = [i[0] for i in rows.fetchall()]
+        conn.close()
         return ids
 
     @same_docstring_as(Store.replace)
@@ -178,34 +180,41 @@ class SQL(Store):
             fields['jobname'] = obj.jobname
 
         q = sql.select([self.t_store.c.id]).where(self.t_store.c.id==id_)
-        r = self.__engine.execute(q)
+        conn = self.__engine.connect()
+        r = conn.execute(q)
         if not r.fetchone():
             # It's an insert
             q = self.t_store.insert().values(**fields)
-            self.__engine.execute(q)
+            conn.execute(q)
         else:
             # it's an update
             q = self.t_store.update().where(self.t_store.c.id==id_).values(**fields)
-            self.__engine.execute(q)
+            conn.execute(q)
         obj.persistent_id = id_
-
+        conn.close()
+        
         # return id
         return obj.persistent_id
 
     @same_docstring_as(Store.load)
     def load(self, id_):
         q = sql.select([self.t_store.c.data]).where(self.t_store.c.id == id_)
-        r = self.__engine.execute(q)
+        conn = self.__engine.connect()
+        r = conn.execute(q)
         rawdata = r.fetchone()
         
         if not rawdata:
             raise gc3libs.exceptions.LoadError("Unable to find object %d" % id_)
         data = pickle.loads(rawdata[0].decode('base64'))
+        conn.close()
+
         return data
 
     @same_docstring_as(Store.remove)
-    def remove(self, id_):        
-        self.__engine.execute(self.t_store.delete().where(id==id_))
+    def remove(self, id_):
+        conn = self.__engine.connect()
+        conn.execute(self.t_store.delete().where(id==id_))
+        conn.close()
 
     @staticmethod
     def escape(s):
