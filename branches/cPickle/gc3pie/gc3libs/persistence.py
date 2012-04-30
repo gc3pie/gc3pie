@@ -235,10 +235,10 @@ class Persistable(object):
     pass
 
 
-class persistent_id_class(object):
+class _PersistentIdToSave(object):
     """This class is needed because:
 
-    * we want to save each Persistable object as a separate record
+    * we want to save each `Persistable`:class: object as a separate record
 
     * we want to use cPickle.
 
@@ -247,9 +247,9 @@ class persistent_id_class(object):
     for details on the differences between `pickle` and `cPickle`
     modules.
     """
-    def __init__(self, parent, root):
+    def __init__(self, driver, root):
         self._root = root
-        self._parent = parent
+        self._driver = driver
 
     def __call__(self, obj):
         if obj is self._root:
@@ -257,13 +257,13 @@ class persistent_id_class(object):
         elif hasattr(obj, 'persistent_id'):
             return obj.persistent_id
         elif isinstance(obj, Persistable):
-            self._parent.save(obj)
+            self._driver.save(obj)
             return obj.persistent_id
 
-class persistent_load_class(object):
+class _PersistentLoadExternalId(object):
     """This class is needed because:
 
-    * we want to save each Persistable object as a separate record
+    * we want to save each `Persistable`:class: object as a separate record
 
     * we want to use cPickle.
 
@@ -272,20 +272,20 @@ class persistent_load_class(object):
     for details on the differences between `pickle` and `cPickle`
     modules.
     """
-    def __init__(self, parent):
-        self._parent = parent
+    def __init__(self, driver):
+        self._driver = driver
 
     def __call__(self, id_):
-        return self._parent.load(id_)
+        return self._driver.load(id_)
 
-def create_pickler(driver, f, root, protocol=pickle.HIGHEST_PROTOCOL):
-    p = pickle.Pickler(f, protocol=protocol)
-    p.persistent_id = persistent_id_class(driver, root)
+def create_pickler(driver, stream, root, protocol=pickle.HIGHEST_PROTOCOL):
+    p = pickle.Pickler(stream, protocol=protocol)
+    p.persistent_id = _PersistentIdToSave(driver, root)
     return p
 
-def create_unpickler(driver, f):
-    p = pickle.Unpickler(f)
-    p.persistent_load = persistent_load_class(driver)
+def create_unpickler(driver, stream):
+    p = pickle.Unpickler(stream)
+    p.persistent_load = _PersistentLoadExternalId(driver)
     return p
 
 
