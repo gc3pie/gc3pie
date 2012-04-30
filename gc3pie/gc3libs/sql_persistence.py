@@ -25,12 +25,13 @@ GC3pie objects in a SQL DB instead of using Pickle from
 __docformat__ = 'reStructuredText'
 __version__ = '$Revision$'
 
-from gc3libs.persistence import Store, IdFactory
+from gc3libs.persistence import Store, IdFactory, Persistable, create_pickler, create_unpickler
 from gc3libs.utils import same_docstring_as
 import gc3libs.exceptions
 from gc3libs import Task
 
 import cPickle as pickle
+import cStringIO as StringIO
 import sqlalchemy
 import sqlalchemy.sql as sql
 
@@ -84,14 +85,15 @@ class SQL(Store):
     >>> from sql_persistence import DummyObject
     >>> obj = DummyObject()
     >>> obj.x = 'test'
-    >>> db.save(obj)
-    1
-    >>> db.list()
-    [1]
-    >>> db.save(obj)
-    1
+    >>> objid = db.save(obj)
+    >>> isinstance(objid, int)
+    True
+    >>> db.list() == [objid]
+    True
+    >>> db.save(obj) == objid
+    True
     >>> del obj
-    >>> y = db.load(1)
+    >>> y = db.load(objid)
     >>> y.x
     'test'
     
@@ -136,7 +138,7 @@ class SQL(Store):
         
         self.idfactory = idfactory
         if not idfactory:
-            self.idfactory = IdFactory(next_id_fn=sql_next_id_factory(self.__engine), id_class=IntId)
+            self.idfactory = IdFactory(id_class=IntId)
             
     @same_docstring_as(Store.list)
     def list(self):
@@ -160,10 +162,12 @@ class SQL(Store):
         return self._save_or_replace(obj.persistent_id, obj, 'save')
 
     def _save_or_replace(self, id_, obj, action):
-        c = self.__engine
 
         fields={'id':id_}
-        pdata = pickle.dumps(obj, protocol=pickle.HIGHEST_PROTOCOL).encode('base64')
+        dstdata = StringIO.StringIO()
+        pickler = create_pickler(self, dstdata, obj)
+        pickler.dump(obj)
+        pdata = dstdata.getvalue().encode('base64')
         fields['data'] = pdata
         # insert into db
         fields['type'] = ''
@@ -205,10 +209,12 @@ class SQL(Store):
         
         if not rawdata:
             raise gc3libs.exceptions.LoadError("Unable to find object %d" % id_)
-        data = pickle.loads(rawdata[0].decode('base64'))
+        srcdata = StringIO.StringIO(rawdata[0].decode('base64'))
+        unpickler = create_unpickler(self, srcdata)
+        obj = unpickler.load()
         conn.close()
 
-        return data
+        return obj
 
     @same_docstring_as(Store.remove)
     def remove(self, id_):
