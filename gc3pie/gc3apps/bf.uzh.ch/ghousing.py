@@ -619,7 +619,7 @@ def combinedThresholdPlot():
         print >> f, fullTable
         f.flush()
         ax = 3
-        plotSimulation(table = os.path.join(os.getcwd(), 'ownerThresholds'), xVar = 'age', yVars = list(fullTable.cols), figureFile = os.path.join(os.getcwd(), 'ownerThresholds.eps'), verb = 'CRITICAL' )
+        plotSimulation(table = os.path.join(os.getcwd(), 'ownerThresholds'), xVar = 'age', yVars = list(fullTable.cols), figureFile = os.path.join(os.getcwd(), 'ownerThresholds.png'), verb = 'CRITICAL' )
 
 def combinedOwnerSimuPlot():
     import copy
@@ -656,7 +656,7 @@ def combinedOwnerSimuPlot():
             logger.info('no owner simus')
         logger.debug('done combinedOwnerSimuPlot')
         
-        plotSimulation(table = os.path.join(os.getcwd(), 'ownerSimu'), xVar = 'age', yVars = list(fullTable.cols), yVarRange = (0., 1.), figureFile = os.path.join(os.getcwd(), 'ownerSimu.eps'), verb = 'CRITICAL' )
+        plotSimulation(table = os.path.join(os.getcwd(), 'ownerSimu'), xVar = 'age', yVars = list(fullTable.cols), yVarRange = (0., 1.), figureFile = os.path.join(os.getcwd(), 'ownerSimu.png'), verb = 'CRITICAL' )
 
 def combineRunningTimes():
     folders = [folder for folder in os.listdir(os.getcwd()) if os.path.isdir(folder) and not folder == 'localBaseDir' and not folder == 'ghousing.jobs']

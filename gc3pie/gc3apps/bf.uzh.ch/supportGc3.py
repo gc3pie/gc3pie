@@ -279,7 +279,7 @@ def format_newVal(newVal):
         try:
             # try to convert to integer, and use decimal repr
             newValMat = str(int(newVal))
-        except ValueError:
+        except ValueError: 
             # then it's a string
             newValMat = newVal
     return newValMat
