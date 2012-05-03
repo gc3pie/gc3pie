@@ -30,9 +30,11 @@ from gc3libs.utils import same_docstring_as
 import gc3libs.exceptions
 from gc3libs import Task
 
+import copy
+
 import cPickle as pickle
 import cStringIO as StringIO
-import sqlalchemy
+import sqlalchemy as sqla
 import sqlalchemy.sql as sql
 
 class DummyObject:
@@ -153,7 +155,14 @@ class SQL(Store):
     >>> import os
     >>> os.remove(name)
     """
-    def __init__(self, url, idfactory=None, extra_fields={}):
+    default_extra_fields = {
+                sqla.Column(u'type', sqla.VARCHAR(length=128)) : lambda obj: isinstance(obj, Task) and 'job' or '',
+                sqla.Column(u'jobid', sqla.VARCHAR(length=128)): lambda obj: obj.execution.lrms_jobid,
+                sqla.Column(u'jobname', sqla.VARCHAR(length=255)): lambda obj: obj.jobname,
+                sqla.Column(u'jobstatus', sqla.VARCHAR(length=128)) : lambda obj: obj.execution.state,
+                }
+
+    def __init__(self, url, idfactory=None, extra_fields=default_extra_fields):
         """
         Open a connection to the storage database identified by
         url. It will use the correct backend (MySQL, psql, sqlite3)
@@ -163,31 +172,36 @@ class SQL(Store):
         # gc3libs.url.Url is not RFC compliant, check issue http://code.google.com/p/gc3pie/issues/detail?id=261
         if url.scheme in ('file', 'sqlite'):
             url = "%s://%s/%s" % (url.scheme, url.netloc, url.path)
-        self.__engine = sqlalchemy.create_engine(str(url))
+        self.__engine = sqla.create_engine(str(url))
 
-        self.__meta = sqlalchemy.MetaData(bind=self.__engine)
+        self.__meta = sqla.MetaData(bind=self.__engine)
         self.__meta.reflect()
         self.extra_fields = {}
+
+        # `deepcopy` is needed in order to avoid modifying the Column
+        # objects passed as argument and using it twice, which would
+        # raise a:
+        #
+        #   ArgumentError("Column object already assigned to Table 'store'",)
+        #
+        # exception
+        extra_fields = copy.deepcopy(extra_fields)
+
         # check if the db exists and already has a 'store' table
         if 'store' not in self.__meta.tables:
             # No table, let's create it
-            from sqlalchemy import Column, INTEGER, BLOB, VARCHAR, TEXT, Table
             
-            table = Table(
+            table = sqla.Table(
                 'store',
                 self.__meta,
-                Column(u'id', INTEGER(), primary_key=True, nullable=False),
-                Column(u'data', BLOB()),
-                Column(u'type', VARCHAR(length=128)),
-                Column(u'jobid', VARCHAR(length=128)),
-                Column(u'jobname', VARCHAR(length=255)),
-                Column(u'jobstatus', VARCHAR(length=128)),
+                sqla.Column(u'id', sqla.INTEGER(), primary_key=True, nullable=False),
+                sqla.Column(u'data', sqla.BLOB()),
                 )
             for col in extra_fields:
-                if isinstance(col, Column):
+                if isinstance(col, sqla.Column):
                     table.append_column(col)
                 else:
-                    table.append_column(Column(unicode(col), BLOB()))
+                    table.append_column(sqla.Column(unicode(col), sqla.BLOB()))
             self.__meta.create_all()
         else:
             # A 'store' table exists. Check the column names and fill
@@ -247,13 +261,6 @@ class SQL(Store):
                 fields[column] = self.extra_fields[column](obj)
             except:
                 pass
-
-        if isinstance(obj, Task):
-            fields['type'] = 'job'
-            fields['jobstatus'] = obj.execution.state
-            if hasattr(obj.execution, 'lrms_jobid'):
-                fields['jobid'] = obj.execution.lrms_jobid
-            fields['jobname'] = obj.jobname
 
         q = sql.select([self.t_store.c.id]).where(self.t_store.c.id==id_)
         conn = self.__engine.connect()
