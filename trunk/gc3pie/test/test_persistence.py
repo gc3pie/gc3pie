@@ -335,10 +335,17 @@ def test_sql_create_custom_table():
     (fd, tmpfname) = tempfile.mkstemp()
     path = Url('sqlite://%s' % tmpfname)
     from sqlalchemy import Column, VARCHAR
+
+    # Create a db with an extra field named "extra" which will
+    # contains the value of `foo` attribute of the object
     db = persistence_factory(path, 
                              extra_fields={
-            Column(u'extra1', VARCHAR(length=128)) : lambda x: x.foo}
+            Column(u'extra', VARCHAR(length=128)) : lambda x: x.foo}
                              )
+    obj = MyObj('My App')
+    obj.foo = 'foo bar'
+
+    # Create a connection to the database
     try:
         import sqlite3 as sqlite
     except ImportError:
@@ -346,12 +353,11 @@ def test_sql_create_custom_table():
     conn = sqlite.connect(tmpfname)
     c = conn.cursor()
         
-
-    obj = MyObj('My App')
-    obj.foo = 'foo bar'
     try:
+        # Save the object, read the data from the db and check if they
+        # are different.
         id_ = db.save(obj)
-        c.execute("select extra1 from store where id=%d" % id_)
+        c.execute("select extra from store where id=%d" % id_)
         rows = c.fetchall()
         assert len(rows) == 1
         assert rows[0][0] == obj.foo
