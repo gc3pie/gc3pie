@@ -72,10 +72,63 @@ class IntId(int):
 
 class SQL(Store):
     """
-    Save and load objects in a SQL db. Uses Python's `pickle` module
-    to serialize objects and parse the `Url` object to define the
-    driver to use (`sqlite`, `MySQL`, `postgres`...), db, and
-    optionally user and password.    
+    Save and load objects in a SQL db, using python's `pickle` module
+    to serialize objects into a specific field.
+
+    Access to the DB is done via SQLAlchemy module, therefore any
+    driver supported by SQLAlchemy will be supported by this class.
+
+    The `url` argument is used to access the store. It is supposed to
+    be a `gc3libs.url.Url`:class: class, and therefore may contain
+    username, password, host and port if they are needed by the db
+    used.
+
+    The constructor will create a "store" table if it does not exist,
+    but if there already is such a table it will assume the it's
+    schema is compatible with our needs. A minimal table schema is as follow:
+
+        +-----------+--------------+------+-----+---------+
+        | Field     | Type         | Null | Key | Default |
+        +-----------+--------------+------+-----+---------+
+        | id        | int(11)      | NO   | PRI | NULL    |
+        | data      | blob         | YES  |     | NULL    |
+        | type      | varchar(128) | YES  |     | NULL    |
+        | jobid     | varchar(128) | YES  |     | NULL    |
+        | jobname   | varchar(255) | YES  |     | NULL    |
+        | jobstatus | varchar(128) | YES  |     | NULL    |
+        +-----------+--------------+------+-----+---------+
+
+    The meaning of the fields are:
+
+    `id`: this is the id returned by the `save()` method and
+    univoquely identify a stored object.
+
+    `data`: the serialization of the object.
+
+    `type`: equal to "job" if the object is an instance of the
+    `Task`:class: class
+
+    `jobstatus`: if the object is a `Task` istance this wil lbe the
+    current execution state of the job
+
+    `jobid`: if the object is a `Task` this will be the
+    `obj.execution.lrms_jobid` attribute
+
+    `jobname`: if the object is a `Task` this is its `jobname`
+    attribute.    
+
+    The `extra_fields` argument is used to extend the database. It must contain a mapping  `<column>` : `<function>` where:
+
+    `<column>` may be a `sqlalchemy.Column` object or string. If it is
+    a string the corresponding column will be a `BLOB`.
+
+    `<function>` is a function (or lambda) which accept the object as
+    argument and will return the value to be stored into the database. Any exception raised by this function will be *ignored*.
+
+    For each extra column the `save()` method will call the
+    corresponding `<function>` in order to get the correct value to
+    store into the db.
+
 
     >>> import tempfile, os
     >>> (fd, name) = tempfile.mkstemp()
@@ -100,7 +153,7 @@ class SQL(Store):
     >>> import os
     >>> os.remove(name)
     """
-    def __init__(self, url, idfactory=None):
+    def __init__(self, url, idfactory=None, extra_fields={}):
         """
         Open a connection to the storage database identified by
         url. It will use the correct backend (MySQL, psql, sqlite3)
@@ -114,9 +167,10 @@ class SQL(Store):
 
         self.__meta = sqlalchemy.MetaData(bind=self.__engine)
         self.__meta.reflect()
-        self.extra_fields = ()
-        # check if database has 'store' table
+        self.extra_fields = {}
+        # check if the db exists and already has a 'store' table
         if 'store' not in self.__meta.tables:
+            # No table, let's create it
             from sqlalchemy import Column, INTEGER, BLOB, VARCHAR, TEXT, Table
             
             table = Table(
@@ -129,10 +183,26 @@ class SQL(Store):
                 Column(u'jobname', VARCHAR(length=255)),
                 Column(u'jobstatus', VARCHAR(length=128)),
                 )
+            for col in extra_fields:
+                if isinstance(col, Column):
+                    table.append_column(col)
+                else:
+                    table.append_column(Column(unicode(col), BLOB()))
             self.__meta.create_all()
         else:
+            # A 'store' table exists. Check the column names and fill
+            # self.extra_fields
 
-            self.extra_fields = (i for i in self.__meta.tables['store'].columns.keys() if i not in ('id', 'data', 'type', 'jobid', 'jobname', 'jobstatus'))
+            # Please note that the "i=i" in the lambda definition is
+            # *needed*, since otherwise all the lambdas would share
+            # the same outer 'i' object, which is the last used in the
+            # loop.
+
+            self.extra_fields = dict(((i, lambda x, i=i: getattr(x, i))  for i in self.__meta.tables['store'].columns.keys() if i not in ('id', 'data', 'type', 'jobid', 'jobname', 'jobstatus')))
+
+        for (col, func) in extra_fields.iteritems():
+            if hasattr(col, 'name'): col=col.name
+            self.extra_fields[unicode(col)] = func
 
         self.t_store = self.__meta.tables['store']
         
@@ -172,12 +242,14 @@ class SQL(Store):
         # insert into db
         fields['type'] = ''
             
-        for i in self.extra_fields:
-            if hasattr(obj, i):
-                fields[i] = getattr(obj, i)
+        for column in self.extra_fields:
+            try:
+                fields[column] = self.extra_fields[column](obj)
+            except:
+                pass
 
         if isinstance(obj, Task):
-            fields['typpe'] = 'job'
+            fields['type'] = 'job'
             fields['jobstatus'] = obj.execution.state
             if hasattr(obj.execution, 'lrms_jobid'):
                 fields['jobid'] = obj.execution.lrms_jobid
