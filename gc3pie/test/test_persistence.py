@@ -284,7 +284,11 @@ def test_sql_injection():
         os.remove(path.path)
 
 def test_sql_extend_table():
-    """Test if SQL is able to save extra attributes if extra columns have been defined into the DB"""
+    """Test if SQL is able to save extra attributes if extra columns have been defined into the DB.
+
+    We add two columns to the DB, one will be automatically mapped to
+    one of the attribute of the calss, the other will be mapped to an
+    attribute of an attribute using a lambda function."""
     (fd, tmpfname) = tempfile.mkstemp()
     path = Url('sqlite://%s' % tmpfname)
     # create the db with default schema
@@ -299,10 +303,13 @@ def test_sql_extend_table():
     conn = sqlite.connect(tmpfname)
     c = conn.cursor()
     c.execute('alter table store add column x varchar(256)')
+    c.execute('alter table store add column extra1 varchar(256)')
 
     # re-open the db. We need this because schema definition is
     # checked only in SQL.__init__
-    db = persistence_factory(path)
+    from sqlalchemy import Column, VARCHAR
+    db = persistence_factory(path, 
+                             extra_fields={ 'extra1' : lambda x: x.foo.x})
     obj = MyObj('My App')
 
     try:
@@ -311,17 +318,55 @@ def test_sql_extend_table():
         rows = c.fetchall()
         assert len(rows) == 1
         assert rows[0][0] == obj.x
+
+        # Try with the column which contains a dot
+        obj.foo = MyObj('antani')        
+        id_ = db.save(obj)
+        c.execute("select extra1 from store where id=%d" % id_)
+        rows = c.fetchall()
+        assert len(rows) == 1
+        assert rows[0][0] == obj.foo.x
     finally:
         os.remove(path.path)
 
     
+def test_sql_create_custom_table():
+    """Test automatic creation of extra column in the 'store' table"""
+    (fd, tmpfname) = tempfile.mkstemp()
+    path = Url('sqlite://%s' % tmpfname)
+    from sqlalchemy import Column, VARCHAR
+    db = persistence_factory(path, 
+                             extra_fields={
+            Column(u'extra1', VARCHAR(length=128)) : lambda x: x.foo}
+                             )
+    try:
+        import sqlite3 as sqlite
+    except ImportError:
+        import pysqlite2.dbapi2 as sqlite
+    conn = sqlite.connect(tmpfname)
+    c = conn.cursor()
+        
+
+    obj = MyObj('My App')
+    obj.foo = 'foo bar'
+    try:
+        id_ = db.save(obj)
+        c.execute("select extra1 from store where id=%d" % id_)
+        rows = c.fetchall()
+        assert len(rows) == 1
+        assert rows[0][0] == obj.foo
+    finally:
+        os.remove(path.path)
+    
+
 if __name__ == "__main__":
     # fix pickle error
     from test_persistence import MyObj, SlotClassWrong, SlotClass
-    test_sql_extend_table()
     test_filesystemstorage_pickler_class()
     test_file_persistency()
     test_sqlite_persistency()
     test_mysql_persistency()
     test_sqlite_job_persistency()
     test_sql_injection()
+    test_sql_extend_table()
+    test_sql_create_custom_table()
