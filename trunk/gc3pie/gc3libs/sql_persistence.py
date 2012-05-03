@@ -89,23 +89,33 @@ class SQL(Store):
     but if there already is such a table it will assume the it's
     schema is compatible with our needs. A minimal table schema is as follow:
 
+    The meaning of the fields is:
+
+    `id`: this is the id returned by the `save()` method and
+    univoquely identify a stored object.
+
+    `data`: the serialization of the object.
+
         +-----------+--------------+------+-----+---------+
         | Field     | Type         | Null | Key | Default |
         +-----------+--------------+------+-----+---------+
         | id        | int(11)      | NO   | PRI | NULL    |
         | data      | blob         | YES  |     | NULL    |
+        +-----------+--------------+------+-----+---------+
+
+    If no optional `extra_fields` argument is passed, also the
+    following fields will be created:
+
+        +-----------+--------------+------+-----+---------+
+        | Field     | Type         | Null | Key | Default |
+        +-----------+--------------+------+-----+---------+
         | type      | varchar(128) | YES  |     | NULL    |
         | jobid     | varchar(128) | YES  |     | NULL    |
         | jobname   | varchar(255) | YES  |     | NULL    |
         | jobstatus | varchar(128) | YES  |     | NULL    |
         +-----------+--------------+------+-----+---------+
 
-    The meaning of the fields are:
-
-    `id`: this is the id returned by the `save()` method and
-    univoquely identify a stored object.
-
-    `data`: the serialization of the object.
+     The meaning of these optional fields is:
 
     `type`: equal to "job" if the object is an instance of the
     `Task`:class: class
