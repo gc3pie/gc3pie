@@ -51,15 +51,15 @@ except:
         Examples::
           >>> list(SetProductIterator([]))
           [[]]
-          >>> list(SetProductIterator([[1]]))
+          >>> list(SetProductIterator([1]))
           [[1]]
-          >>> list(SetProductIterator([[1],[1]]))
+          >>> list(SetProductIterator([1],[1]))
           [[1, 1]]
-          >>> list(SetProductIterator([[1,2],[]]))
+          >>> list(SetProductIterator([1,2],[]))
           [[]]
-          >>> list(SetProductIterator([[1,2],[1]]))
+          >>> list(SetProductIterator([1,2],[1]))
           [[1, 1], [2, 1]]
-          >>> list(SetProductIterator([[1,2],[1,2]]))
+          >>> list(SetProductIterator([1, 2], [1, 2]))
           [[1, 1], [2, 1], [1, 2], [2, 2]]
         """
         def __init__(self, *factors):
