@@ -392,11 +392,6 @@ def test_table_with_different_name():
 if __name__ == "__main__":
     # fix pickle error
     from test_persistence import MyObj, SlotClassWrong, SlotClass
-    test_filesystemstorage_pickler_class()
-    test_file_persistency()
-    test_sqlite_persistency()
-    test_mysql_persistency()
-    test_sqlite_job_persistency()
-    test_sql_injection()
-    test_sql_extend_table()
-    test_sql_create_custom_table()
+
+    from common import run_my_tests
+    run_my_tests(locals())
