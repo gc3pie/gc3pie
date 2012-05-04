@@ -195,15 +195,6 @@ class SQL(Store):
         self.__meta.reflect()
         self.extra_fields = {}
 
-        # `deepcopy` is needed in order to avoid modifying the Column
-        # objects passed as argument and using it twice, which would
-        # raise a:
-        #
-        #   ArgumentError("Column object already assigned to Table 'store'",)
-        #
-        # exception
-        extra_fields = copy.deepcopy(extra_fields)
-
         # check if the db exists and already has a 'store' table
         if self.tname not in self.__meta.tables:
             # No table, let's create it
@@ -216,7 +207,7 @@ class SQL(Store):
                 )
             for col in extra_fields:
                 if isinstance(col, sqla.Column):
-                    table.append_column(col)
+                    table.append_column(col.copy())
                 else:
                     table.append_column(sqla.Column(unicode(col), sqla.BLOB()))
             self.__meta.create_all()
