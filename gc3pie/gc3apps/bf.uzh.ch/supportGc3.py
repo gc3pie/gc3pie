@@ -233,9 +233,6 @@ class getIndex():
         return self.loopIndex.tolist()
 
 
-
-
-
 @gc3libs.debug.trace
 def extractVal(ixVar, vals, index):
     """
@@ -274,13 +271,15 @@ def str2vals(strIn):
         return str2mat(strIn)
 
 def format_newVal(newVal):
-    if '.' in str(newVal):
+    import re
+    if re.match("^[0-9]*\.[0-9]*$", str(newVal)):
+#    if '.' in str(newVal):
         newValMat = '%.10f' % float(newVal)
     else:
         try:
             # try to convert to integer, and use decimal repr
             newValMat = str(int(newVal))
-        except ValueError:
+        except ValueError: 
             # then it's a string
             newValMat = newVal
     return newValMat

@@ -105,8 +105,5 @@ def test_io_spec_to_dict_unicode():
 
 
 if "__main__" == __name__:
-    test_invalid_invocation()
-    test_mandatory_arguments()
-    test_wrong_type_arguments()
-    test_valid_invocation()
-    test_io_spec_to_dict_unicode()
+    from test.common import run_my_tests
+    run_my_tests(locals())
