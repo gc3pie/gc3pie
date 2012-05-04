@@ -1082,31 +1082,31 @@ class SessionBasedScript(_Script):
                        type=positive_int, default=1, # 1 core
                        metavar="NUM",
                        help="Set the number of CPU cores required for each job (default: %(default)s)."
-                       "NUM must be a whole number."
+                       " NUM must be a whole number."
                        )
         self.add_param("-m", "--memory-per-core", dest="memory_per_core",
                        type=positive_int, default=2, # 2 GB
                        metavar="GIGABYTES",
                        help="Set the amount of memory required per execution core, in gigabytes (Default: %(default)s)."
-                       "Currently, GIGABYTES can only be an integer number; no fractional amounts are allowed.")
+                       " Currently, GIGABYTES can only be an integer number; no fractional amounts are allowed.")
         self.add_param("-r", "--resource", action="store", dest="resource_name", metavar="NAME",
                        default=None,
-                       help="Select one or more computational resources;"
+                       help="Submit jobs to a specific computational resources."
                        " NAME is a reource name or comma-separated list of such names."
-                       " Use the command `glist` to list available resources")
+                       " Use the command `glist` to list available resources.")
         self.add_param("-w", "--wall-clock-time", dest="wctime", default=str(8), # 8 hrs
                        metavar="DURATION",
-                       help="Set the time limit for each job (default %s for '8 hours')."
+                       help="Set the time limit for each job (default %(default)s for '8 hours')."
                        " Jobs exceeding this limit will be stopped and considered as 'failed'."
                        " The duration can be expressed as a whole number (indicating the duration in hours)"
-                       " or as STRING in the form 'hours:minutes'."
+                       " or as a string in the form 'hours:minutes'."
                        )
 
         # 2. session control
         self.add_param("-s", "--session", dest="session", 
                        default=os.path.join(os.getcwd(), self.name),
                        metavar="PATH",
-                       help="Use PATH to store jobs (default: '%(default)s')."
+                       help="Store the session information in the directory at PATH. (Default: '%(default)s')."
                        " If PATH is an existing directory, it will be used for storing job"
                        " information, and an index file (with suffix '.csv') will be created"
                        " in it.  Otherwise, the job information will be stored in a directory"
