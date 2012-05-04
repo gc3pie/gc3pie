@@ -85,9 +85,13 @@ class SQL(Store):
     username, password, host and port if they are needed by the db
     used.
 
-    The constructor will create a "store" table if it does not exist,
-    but if there already is such a table it will assume the it's
-    schema is compatible with our needs. A minimal table schema is as follow:
+    The `table_name` argument is the name of the table to create. By
+    default it's ``store``.
+
+    The constructor will create the `table_name` table if it does not
+    exist, but if there already is such a table it will assume the
+    it's schema is compatible with our needs. A minimal table schema
+    is as follow:
 
     The meaning of the fields is:
 
@@ -129,13 +133,15 @@ class SQL(Store):
     `jobname`: if the object is a `Task` this is its `jobname`
     attribute.    
 
-    The `extra_fields` argument is used to extend the database. It must contain a mapping  `<column>` : `<function>` where:
+    The `extra_fields` argument is used to extend the database. It
+    must contain a mapping `<column>` : `<function>` where:
 
     `<column>` may be a `sqlalchemy.Column` object or string. If it is
     a string the corresponding column will be a `BLOB`.
 
     `<function>` is a function (or lambda) which accept the object as
-    argument and will return the value to be stored into the database. Any exception raised by this function will be *ignored*.
+    argument and will return the value to be stored into the
+    database. Any exception raised by this function will be *ignored*.
 
     For each extra column the `save()` method will call the
     corresponding `<function>` in order to get the correct value to
@@ -172,7 +178,7 @@ class SQL(Store):
                 sqla.Column(u'jobstatus', sqla.VARCHAR(length=128)) : lambda obj: obj.execution.state,
                 }
 
-    def __init__(self, url, idfactory=None, extra_fields=default_extra_fields):
+    def __init__(self, url, table_name="store", idfactory=None, extra_fields=default_extra_fields):
         """
         Open a connection to the storage database identified by
         url. It will use the correct backend (MySQL, psql, sqlite3)
@@ -183,6 +189,7 @@ class SQL(Store):
         if url.scheme in ('file', 'sqlite'):
             url = "%s://%s/%s" % (url.scheme, url.netloc, url.path)
         self.__engine = sqla.create_engine(str(url))
+        self.tname = table_name
 
         self.__meta = sqla.MetaData(bind=self.__engine)
         self.__meta.reflect()
@@ -198,11 +205,11 @@ class SQL(Store):
         extra_fields = copy.deepcopy(extra_fields)
 
         # check if the db exists and already has a 'store' table
-        if 'store' not in self.__meta.tables:
+        if self.tname not in self.__meta.tables:
             # No table, let's create it
             
             table = sqla.Table(
-                'store',
+                self.tname,
                 self.__meta,
                 sqla.Column(u'id', sqla.INTEGER(), primary_key=True, nullable=False),
                 sqla.Column(u'data', sqla.BLOB()),
@@ -222,13 +229,13 @@ class SQL(Store):
             # the same outer 'i' object, which is the last used in the
             # loop.
 
-            self.extra_fields = dict(((i, lambda x, i=i: getattr(x, i))  for i in self.__meta.tables['store'].columns.keys() if i not in ('id', 'data', 'type', 'jobid', 'jobname', 'jobstatus')))
+            self.extra_fields = dict(((i, lambda x, i=i: getattr(x, i))  for i in self.__meta.tables[self.tname].columns.keys() if i not in ('id', 'data', 'type', 'jobid', 'jobname', 'jobstatus')))
 
         for (col, func) in extra_fields.iteritems():
             if hasattr(col, 'name'): col=col.name
             self.extra_fields[unicode(col)] = func
 
-        self.t_store = self.__meta.tables['store']
+        self.t_store = self.__meta.tables[self.tname]
         
         self.idfactory = idfactory
         if not idfactory:
