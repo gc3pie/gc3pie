@@ -67,334 +67,10 @@ or batch computational job.</p>
 and batch systems, controlling their execution, persisting job
 information, and retrieving the final output.</p>
 <p>GC3Libs takes an application-oriented approach to batch computing. A
-generic <a class="reference internal" href="#gc3libs.Application" title="gc3libs.Application"><tt class="xref py py-class docutils literal"><span class="pre">Application</span></tt></a> class provides the basic operations for
-controlling remote computations, but different <a class="reference internal" href="#gc3libs.Application" title="gc3libs.Application"><tt class="xref py py-class docutils literal"><span class="pre">Application</span></tt></a>
+generic <tt class="xref py py-class docutils literal"><span class="pre">Application</span></tt> class provides the basic operations for
+controlling remote computations, but different <tt class="xref py py-class docutils literal"><span class="pre">Application</span></tt>
 subclasses can expose adapted interfaces, focusing on the most
 relevant aspects of the application being represented.</p>
-<dl class="class">
-<dt id="gc3libs.Application">
-<em class="property">class </em><tt class="descclassname">gc3libs.</tt><tt class="descname">Application</tt><big>(</big><em>executable</em>, <em>arguments</em>, <em>inputs</em>, <em>outputs</em>, <em>output_dir</em>, <em>**kw</em><big>)</big><a class="headerlink" href="#gc3libs.Application" title="Permalink to this definition">¶</a></dt>
-<dd><p>Support for running a generic application with the GC3Libs.
-The following parameters are <em>required</em> to create an <cite>Application</cite>
-instance:</p>
-<dl class="docutils">
-<dt><cite>executable</cite></dt>
-<dd>(string) name of the application binary to be
-launched on the remote resource; the specifics of how this is
-handled are dependent on the submission backend, but you may
-always run a script that you upload through the <cite>inputs</cite>
-mechanism by specifying <tt class="docutils literal"><span class="pre">./scriptname</span></tt> as <cite>executable</cite>.</dd>
-<dt><cite>arguments</cite></dt>
-<dd>List of command-line arguments to pass to <cite>executable</cite>; any
-object in the list will be converted to string via Python&#8217;s
-<cite>str()</cite>. Note that, in contrast with the UNIX <tt class="docutils literal"><span class="pre">execvp()</span></tt>
-usage, the first argument in this list will be passed as
-<tt class="docutils literal"><span class="pre">argv[1]</span></tt>, i.e., <tt class="docutils literal"><span class="pre">argv[0]</span></tt> will always be equal to
-<cite>executable</cite>.</dd>
-<dt><cite>inputs</cite></dt>
-<dd><p class="first">Files that will be copied to the remote execution node before
-execution starts.</p>
-<p>There are two possible ways of specifying the <cite>inputs</cite> parameter:</p>
-<ul class="last">
-<li><p class="first">It can be a Python dictionary: keys are local file paths or
-URLs, values are remote file names.</p>
-</li>
-<li><p class="first">It can be a Python list: each item in the list should be a
-pair <cite>(source, remote_file_name)</cite>: the <cite>source</cite> can be a
-local file or a URL; <cite>remote_file_name</cite> is the path
-(relative to the execution directory) where <cite>source</cite> will be
-downloaded.  If <cite>remote_file_name</cite> is an absolute path, an
-<tt class="xref py py-class docutils literal"><span class="pre">InvalidArgument</span></tt> error is raised.</p>
-<p>A single string <cite>file_name</cite> is allowed instead of the pair
-and results in the local file <cite>file_name</cite> being copied to
-<cite>file_name</cite> on the remote host.</p>
-</li>
-</ul>
-</dd>
-<dt><cite>outputs</cite></dt>
-<dd><p class="first">Files and directories that will be copied from the remote
-execution node back to the local computer (or a
-network-accessible server) after execution has completed.
-Directories are copied recursively.</p>
-<p>There are three possible ways of specifying the <cite>outputs</cite> parameter:</p>
-<ul>
-<li><p class="first">It can be a Python dictionary: keys are remote file or
-directory paths (relative to the execution directory), values
-are corresponding local names.</p>
-</li>
-<li><p class="first">It can be a Python list: each item in the list should be a
-pair <cite>(remote_file_name, destination)</cite>: the <cite>destination</cite>
-can be a local file or a URL; <cite>remote_file_name</cite> is the path
-(relative to the execution directory) that will be uploaded
-to <cite>destination</cite>.  If <cite>remote_file_name</cite> is an absolute
-path, an <tt class="xref py py-class docutils literal"><span class="pre">InvalidArgument</span></tt> error is raised.</p>
-<p>A single string <cite>file_name</cite> is allowed instead of the pair
-and results in the remote file <cite>file_name</cite> being copied to
-<cite>file_name</cite> on the local host.</p>
-</li>
-<li><p class="first">The constant <cite>gc3libs.ANY_OUTPUT</cite> which instructs GC3Libs to
-copy every file in the remote execution directory back to the
-local output path (as specified by the <cite>output_dir</cite> attribute).</p>
-</li>
-</ul>
-<p class="last">Note that no errors will be raised if an output file is not present.
-Override the <tt class="xref py py-meth docutils literal"><span class="pre">terminated()</span></tt> method to raise errors for reacting
-on this kind of failures.</p>
-</dd>
-<dt><cite>output_dir</cite></dt>
-<dd>Path to the base directory where output files will be downloaded.
-Output file names are interpreted relative to this base directory.</dd>
-<dt><cite>requested_cores</cite>,`requested_memory`,`requested_walltime`</dt>
-<dd>specify resource requirements for the application: the
-number of independent execution units (CPU cores), amount of
-memory (in GB; will be converted to a whole number by
-truncating any decimal digits), amount of wall-clock time to
-allocate for the computational job (in hours; will be
-converted to a whole number by truncating any decimal
-digits).</dd>
-</dl>
-<p>The following optional parameters may be additionally
-specified as keyword arguments and will be given special
-treatment by the <cite>Application</cite> class logic:</p>
-<dl class="docutils">
-<dt><cite>requested_architecture</cite></dt>
-<dd>specify that this application can only be executed on a certain
-processor architecture; see <a class="reference internal" href="#gc3libs.Run.Arch" title="gc3libs.Run.Arch"><tt class="xref py py-class docutils literal"><span class="pre">Run.Arch</span></tt></a> for a list of
-possible values.  The default value <cite>None</cite> means that any
-architecture is valid, i.e., there are no requirements on the
-processor architecture.</dd>
-<dt><cite>environment</cite></dt>
-<dd>a list of pairs <cite>(name, value)</cite>: the
-environment variable whose name is given by the contents of
-the string <cite>name</cite> will be defined as the content of string
-<cite>value</cite> (i.e., as if &#8220;export name=value&#8221; was executed prior
-to starting the application).  Alternately, one can pass in
-a list of strings of the form &#8220;name=value&#8221;.</dd>
-<dt><cite>grid</cite></dt>
-<dd>if not <cite>None</cite>, equivalent to calling <cite>Task.attach(self, grid)</cite>.
-This enables the use of the <cite>Task</cite>/active job control interface</dd>
-<dt><cite>output_base_url</cite></dt>
-<dd>if not <cite>None</cite>, this is prefixed to all output files (except
-stdout and stderr, which are always retrieved), so, for instance,
-having <cite>output_base_url=&#8221;gsiftp://example.org/data&#8221;</cite> will upload
-output files into that remote directory.</dd>
-<dt><cite>stdin</cite></dt>
-<dd>file name of a file whose contents will be fed as
-standard input stream to the remote-executing process.</dd>
-<dt><cite>stdout</cite></dt>
-<dd>name of a file where the standard output stream of
-the remote executing process will be redirected to; will be
-automatically added to <cite>outputs</cite>.</dd>
-<dt><cite>stderr</cite></dt>
-<dd>name of a file where the standard error stream of
-the remote executing process will be redirected to; will be
-automatically added to <cite>outputs</cite>.</dd>
-<dt><cite>join</cite></dt>
-<dd>if this evaluates to <cite>True</cite>, then standard error is
-redirected to the file specified by <cite>stdout</cite> and <cite>stderr</cite> is
-ignored.  (<cite>join</cite> has no effect if <cite>stdout</cite> is not given.)</dd>
-<dt><cite>tags</cite></dt>
-<dd>list of tag names (string) that must be present on a
-resource in order to be eligible for submission; in the ARC
-backend, tags are interpreted as run-time environments (RTE) to
-request.</dd>
-</dl>
-<p>Any other keyword arguments will be set as instance attributes,
-but otherwise ignored by the <cite>Application</cite> constructor.</p>
-<p>After successful construction, an <cite>Application</cite> object is
-guaranteed to have the following instance attributes:</p>
-<dl class="docutils">
-<dt><cite>executable</cite></dt>
-<dd>a string specifying the executable name</dd>
-<dt><cite>arguments</cite></dt>
-<dd>list of strings specifying command-line arguments for executable
-invocation; possibly empty</dd>
-<dt><cite>inputs</cite></dt>
-<dd>dictionary mapping source URL (a <a class="reference internal" href="#gc3libs.url.Url" title="gc3libs.url.Url"><tt class="xref py py-class docutils literal"><span class="pre">gc3libs.url.Url</span></tt></a>
-object) to a remote file name (a string); remote file names are
-relative paths (root directory is the remote job folder)</dd>
-<dt><cite>outputs</cite></dt>
-<dd>dictionary mapping remote file name (a string) to a destination
-(a <a class="reference internal" href="#gc3libs.url.Url" title="gc3libs.url.Url"><tt class="xref py py-class docutils literal"><span class="pre">gc3libs.url.Url</span></tt></a>); remote file names are relative
-paths (root directory is the remote job folder)</dd>
-<dt><cite>output_dir</cite></dt>
-<dd>Path to the base directory where output files will be
-downloaded.  Output file names (those which are not URLs) are
-interpreted relative to this base directory.</dd>
-<dt><cite>execution</cite></dt>
-<dd><blockquote class="first">
-<div>a <cite>Run</cite> instance; its state attribute is initially set to <tt class="docutils literal"><span class="pre">NEW</span></tt>
-(Actually inherited from the <a class="reference internal" href="#gc3libs.Task" title="gc3libs.Task"><tt class="xref py py-class docutils literal"><span class="pre">Task</span></tt></a>)</div></blockquote>
-<dl class="last docutils">
-<dt><cite>environment</cite></dt>
-<dd>dictionary mapping environment variable names to the requested
-value (string); possibly empty</dd>
-</dl>
-</dd>
-<dt><cite>stdin</cite></dt>
-<dd><cite>None</cite> or a string specifying a (local) file name.  If <cite>stdin</cite>
-is not None, then it matches a key name in <cite>inputs</cite></dd>
-<dt><cite>stdout</cite></dt>
-<dd><cite>None</cite> or a string specifying a (remote) file name.  If <cite>stdout</cite>
-is not None, then it matches a key name in <cite>outputs</cite></dd>
-<dt><cite>stderr</cite></dt>
-<dd><cite>None</cite> or a string specifying a (remote) file name.  If <cite>stdout</cite>
-is not None, then it matches a key name in <cite>outputs</cite></dd>
-<dt><cite>join</cite></dt>
-<dd>boolean value, indicating whether <cite>stdout</cite> and <cite>stderr</cite> are
-collected into the same file</dd>
-<dt><cite>tags</cite></dt>
-<dd>list of strings specifying the tags to request in each resource
-for submission; possibly empty.</dd>
-</dl>
-<dl class="method">
-<dt id="gc3libs.Application.bsub">
-<tt class="descname">bsub</tt><big>(</big><em>resource</em>, <em>_suppress_warning=False</em>, <em>**kw</em><big>)</big><a class="headerlink" href="#gc3libs.Application.bsub" title="Permalink to this definition">¶</a></dt>
-<dd><p>Get an LSF <tt class="docutils literal"><span class="pre">qsub</span></tt> command-line invocation for submitting an
-instance of this application.  Return a pair <cite>(cmd, script)</cite>,
-where <cite>cmd</cite> is the command to run to submit an instance of
-this application to the LSF batch system, and <cite>script</cite> &#8211;if
-it&#8217;s not <cite>None</cite>&#8211; is written to a new file, whose name is then
-appended to <cite>cmd</cite>.</p>
-<p>In the construction of the command-line invocation, one should
-assume that all the input files (as named in <cite>Application.inputs</cite>)
-have been copied to the current working directory, and that output
-files should be created in this same directory.</p>
-<p>The default implementation just prefixes any output from the
-<cite>cmdline</cite> method with an SGE <tt class="docutils literal"><span class="pre">bsub</span></tt> invocation of the form
-<tt class="docutils literal"><span class="pre">bsub</span> <span class="pre">-L</span> <span class="pre">/bin/sh</span></tt> + resource limits.</p>
-<p>Override this method in application-specific classes to
-provide appropriate invocation templates.</p>
-</dd></dl>
-
-<dl class="method">
-<dt id="gc3libs.Application.clone">
-<tt class="descname">clone</tt><big>(</big><big>)</big><a class="headerlink" href="#gc3libs.Application.clone" title="Permalink to this definition">¶</a></dt>
-<dd><p>Return a deep copy of this <cite>Application</cite> object, with the
-<cite>.execution</cite> instance variable reset to a fresh new instance
-of <cite>Run</cite>.</p>
-</dd></dl>
-
-<dl class="method">
-<dt id="gc3libs.Application.cmdline">
-<tt class="descname">cmdline</tt><big>(</big><em>resource</em><big>)</big><a class="headerlink" href="#gc3libs.Application.cmdline" title="Permalink to this definition">¶</a></dt>
-<dd><p>Return a string, suitable for invoking the application from a
-UNIX shell command-line.</p>
-<p>The default implementation just concatenates <cite>executable</cite> and
-<cite>arguments</cite> separating them with whitespace; this is hardly
-correct for any application, so you should override this
-method in derived classes to provide appropriate invocation
-templates.</p>
-</dd></dl>
-
-<dl class="method">
-<dt id="gc3libs.Application.compatible_resources">
-<tt class="descname">compatible_resources</tt><big>(</big><em>resources</em><big>)</big><a class="headerlink" href="#gc3libs.Application.compatible_resources" title="Permalink to this definition">¶</a></dt>
-<dd><p>Return a list of compatible resources.</p>
-</dd></dl>
-
-<dl class="method">
-<dt id="gc3libs.Application.fetch_output_error">
-<tt class="descname">fetch_output_error</tt><big>(</big><em>ex</em><big>)</big><a class="headerlink" href="#gc3libs.Application.fetch_output_error" title="Permalink to this definition">¶</a></dt>
-<dd><p>Invocation of <cite>Core.fetch_output()</cite> on this object failed;
-<cite>ex</cite> is the <cite>Exception</cite> that describes the error.</p>
-<p>If this method returns an exception object, that is raised as
-a result of the <cite>Core.fetch_output()</cite>, otherwise the return
-value is ignored and <cite>Core.fetch_output</cite> returns <cite>None</cite>.</p>
-<p>Default is to return <cite>ex</cite> unchanged; override in derived classes
-to change this behavior.</p>
-</dd></dl>
-
-<dl class="method">
-<dt id="gc3libs.Application.pbs_qsub">
-<tt class="descname">pbs_qsub</tt><big>(</big><em>resource</em>, <em>_suppress_warning=False</em>, <em>**kw</em><big>)</big><a class="headerlink" href="#gc3libs.Application.pbs_qsub" title="Permalink to this definition">¶</a></dt>
-<dd><p>Similar to <tt class="docutils literal"><span class="pre">qsub()</span></tt> but will work with a PBS/Torque resource
-manager</p>
-</dd></dl>
-
-<dl class="method">
-<dt id="gc3libs.Application.qsub">
-<tt class="descname">qsub</tt><big>(</big><em>resource</em>, <em>_suppress_warning=False</em>, <em>**kw</em><big>)</big><a class="headerlink" href="#gc3libs.Application.qsub" title="Permalink to this definition">¶</a></dt>
-<dd><p>Get an SGE <tt class="docutils literal"><span class="pre">qsub</span></tt> command-line invocation for submitting an
-instance of this application.  Return a pair <cite>(cmd, script)</cite>,
-where <cite>cmd</cite> is the command to run to submit an instance of
-this application to the SGE batch system, and <cite>script</cite> &#8211;if
-it&#8217;s not <cite>None</cite>&#8211; is written to a new file, whose name is then
-appended to <cite>cmd</cite>.</p>
-<p>In the construction of the command-line invocation, one should
-assume that all the input files (as named in <cite>Application.inputs</cite>)
-have been copied to the current working directory, and that output
-files should be created in this same directory.</p>
-<p>The default implementation just prefixes any output from the
-<cite>cmdline</cite> method with an SGE <tt class="docutils literal"><span class="pre">qsub</span></tt> invocation of the form
-<tt class="docutils literal"><span class="pre">qsub</span> <span class="pre">-cwd</span> <span class="pre">-S</span> <span class="pre">/bin/sh</span></tt> + resource limits.  Note that 
-<em>there is no generic way of requesting a certain number of cores</em> 
-in SGE: it all depends on the installed parallel environment, and
-these are totally under control of the local sysadmin;
-therefore, any request for cores is ignored and a warning is
-logged.</p>
-<p>Override this method in application-specific classes to
-provide appropriate invocation templates.</p>
-</dd></dl>
-
-<dl class="method">
-<dt id="gc3libs.Application.rank_resources">
-<tt class="descname">rank_resources</tt><big>(</big><em>resources</em><big>)</big><a class="headerlink" href="#gc3libs.Application.rank_resources" title="Permalink to this definition">¶</a></dt>
-<dd><p>Sort the given resources in order of preference.</p>
-<p>By default, less-loaded resources come first;
-see <cite>_cmp_resources</cite>.</p>
-</dd></dl>
-
-<dl class="method">
-<dt id="gc3libs.Application.submit_error">
-<tt class="descname">submit_error</tt><big>(</big><em>exs</em><big>)</big><a class="headerlink" href="#gc3libs.Application.submit_error" title="Permalink to this definition">¶</a></dt>
-<dd><p>Invocation of <cite>Core.submit()</cite> on this object failed;
-<cite>exs</cite> is a list of <cite>Exception</cite> objects, one for each attempted
-submission.</p>
-<p>If this method returns an exception object, that is raised as
-a result of the <cite>Core.submit()</cite>, otherwise the return value is
-ignored and <cite>Core.submit</cite> returns <cite>None</cite>.</p>
-<p>Default is to always return the first exception in the list
-(on the assumption that it is the root of all exceptions or
-that at least it refers to the preferred resource).  Override
-in derived classes to change this behavior.</p>
-</dd></dl>
-
-<dl class="method">
-<dt id="gc3libs.Application.update_job_state_error">
-<tt class="descname">update_job_state_error</tt><big>(</big><em>ex</em><big>)</big><a class="headerlink" href="#gc3libs.Application.update_job_state_error" title="Permalink to this definition">¶</a></dt>
-<dd><p>Handle exceptions that occurred during a <cite>Core.update_job_state</cite> call.</p>
-<p>If this method returns an exception object, that exception is
-processed in <cite>Core.update_job_state()</cite> instead of the original
-one.  Any other return value is ignored and
-<cite>Core.update_job_state</cite> proceeds as if no exception had
-happened.</p>
-<p>Argument <cite>ex</cite> is the exception that was raised by the backend
-during job state update.</p>
-<p>Default is to return <cite>ex</cite> unchanged; override in derived
-classes to change this behavior.</p>
-</dd></dl>
-
-<dl class="method">
-<dt id="gc3libs.Application.xrsl">
-<tt class="descname">xrsl</tt><big>(</big><em>resource</em><big>)</big><a class="headerlink" href="#gc3libs.Application.xrsl" title="Permalink to this definition">¶</a></dt>
-<dd><p>Return a string containing an xRSL sequence, suitable for
-submitting an instance of this application through ARC&#8217;s
-<tt class="docutils literal"><span class="pre">ngsub</span></tt> command.</p>
-<p>The default implementation produces XRSL content based on 
-the construction parameters; you should override this method
-to produce XRSL tailored to your application.</p>
-<div class="admonition warning">
-<p class="first admonition-title">Warning</p>
-<p class="last">WARNING: ARClib SWIG bindings cannot resolve the overloaded
-constructor if the xRSL stringargument is a Python &#8216;unicode&#8217;
-object; if you overload this method, force the result to be
-a &#8216;str&#8217;!</p>
-</div>
-</dd></dl>
-
-</dd></dl>
-
 <dl class="class">
 <dt id="gc3libs.Default">
 <em class="property">class </em><tt class="descclassname">gc3libs.</tt><tt class="descname">Default</tt><a class="headerlink" href="#gc3libs.Default" title="Permalink to this definition">¶</a></dt>
@@ -1212,7 +888,7 @@ description.</p>
 
 <dl class="method">
 <dt id="gc3libs.cmdline.SessionBasedScript.print_tasks_table">
-<tt class="descname">print_tasks_table</tt><big>(</big><em>output=&lt;open file '&lt;stdout&gt;'</em>, <em>mode 'w' at 0x2b9a69a70150&gt;</em>, <em>states=Enum(['TERMINATED'</em>, <em>'UNKNOWN'</em>, <em>'SUBMITTED'</em>, <em>'RUNNING'</em>, <em>'TERMINATING'</em>, <em>'STOPPED'</em>, <em>'NEW'])</em>, <em>only=&lt;type 'object'&gt;</em><big>)</big><a class="headerlink" href="#gc3libs.cmdline.SessionBasedScript.print_tasks_table" title="Permalink to this definition">¶</a></dt>
+<tt class="descname">print_tasks_table</tt><big>(</big><em>output=&lt;open file '&lt;stdout&gt;'</em>, <em>mode 'w' at 0x2adeee591150&gt;</em>, <em>states=Enum(['TERMINATED'</em>, <em>'UNKNOWN'</em>, <em>'SUBMITTED'</em>, <em>'RUNNING'</em>, <em>'TERMINATING'</em>, <em>'STOPPED'</em>, <em>'NEW'])</em>, <em>only=&lt;type 'object'&gt;</em><big>)</big><a class="headerlink" href="#gc3libs.cmdline.SessionBasedScript.print_tasks_table" title="Permalink to this definition">¶</a></dt>
 <dd><p>Output a text table to stream <cite>output</cite>, giving details about
 tasks in the given states.</p>
 <p>Optional second argument <cite>states</cite> restricts the listing to
@@ -2166,7 +1842,7 @@ in <cite>except</cite> clauses to exclude &#8220;try again&#8221; situations.</p
 <p>Facade to store and retrieve Job information from permanent storage.</p>
 <dl class="class">
 <dt id="gc3libs.persistence.FilesystemStore">
-<em class="property">class </em><tt class="descclassname">gc3libs.persistence.</tt><tt class="descname">FilesystemStore</tt><big>(</big><em>directory='/home/amessina/.gc3/jobs'</em>, <em>idfactory=&lt;gc3libs.persistence.IdFactory object at 0x20fc690&gt;</em>, <em>protocol=2</em><big>)</big><a class="headerlink" href="#gc3libs.persistence.FilesystemStore" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><tt class="descclassname">gc3libs.persistence.</tt><tt class="descname">FilesystemStore</tt><big>(</big><em>directory='/home/amessina/.gc3/jobs'</em>, <em>idfactory=&lt;gc3libs.persistence.IdFactory object at 0x2d2c990&gt;</em>, <em>protocol=2</em><big>)</big><a class="headerlink" href="#gc3libs.persistence.FilesystemStore" title="Permalink to this definition">¶</a></dt>
 <dd><p>Save and load objects in a given directory.  Uses Python&#8217;s
 standard <cite>pickle</cite> module to serialize objects onto files.</p>
 <p>All objects are saved as files in the given directory (default:
@@ -2335,7 +2011,7 @@ texts coming from the same template.  Templates can be nested, and
 expansions generated recursviely.</p>
 <dl class="class">
 <dt id="gc3libs.template.Template">
-<em class="property">class </em><tt class="descclassname">gc3libs.template.</tt><tt class="descname">Template</tt><big>(</big><em>template</em>, <em>validator=&lt;function &lt;lambda&gt; at 0x3ea3230&gt;</em>, <em>**kw</em><big>)</big><a class="headerlink" href="#gc3libs.template.Template" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><tt class="descclassname">gc3libs.template.</tt><tt class="descname">Template</tt><big>(</big><em>template</em>, <em>validator=&lt;function &lt;lambda&gt; at 0x4a4b398&gt;</em>, <em>**kw</em><big>)</big><a class="headerlink" href="#gc3libs.template.Template" title="Permalink to this definition">¶</a></dt>
 <dd><p>A template object is a pair <cite>(obj, keywords)</cite>.  Methods are
 provided to substitute the keyword values into <cite>obj</cite>, and to
 iterate over expansions of the given keywords (optionally
@@ -3199,7 +2875,7 @@ are not altered to reflect <cite>mode</cite>.</p>
 
 <dl class="function">
 <dt id="gc3libs.utils.prettyprint">
-<tt class="descclassname">gc3libs.utils.</tt><tt class="descname">prettyprint</tt><big>(</big><em>D</em>, <em>indent=0</em>, <em>width=0</em>, <em>maxdepth=None</em>, <em>step=4</em>, <em>only_keys=None</em>, <em>output=&lt;open file '&lt;stdout&gt;'</em>, <em>mode 'w' at 0x2b9a69a70150&gt;</em>, <em>_key_prefix=''</em>, <em>_exclude=None</em><big>)</big><a class="headerlink" href="#gc3libs.utils.prettyprint" title="Permalink to this definition">¶</a></dt>
+<tt class="descclassname">gc3libs.utils.</tt><tt class="descname">prettyprint</tt><big>(</big><em>D</em>, <em>indent=0</em>, <em>width=0</em>, <em>maxdepth=None</em>, <em>step=4</em>, <em>only_keys=None</em>, <em>output=&lt;open file '&lt;stdout&gt;'</em>, <em>mode 'w' at 0x2adeee591150&gt;</em>, <em>_key_prefix=''</em>, <em>_exclude=None</em><big>)</big><a class="headerlink" href="#gc3libs.utils.prettyprint" title="Permalink to this definition">¶</a></dt>
 <dd><p>Print dictionary instance <cite>D</cite> in a YAML-like format.
 Each output line consists of:</p>
 <blockquote>
@@ -3511,43 +3187,6 @@ list, but not otherwise treated specially.</p>
 class can be used here as well, with the exception of <cite>input</cite> and
 <cite>output</cite>.  Note that a GAMESS-US job is <em>always</em> submitted with
 <cite>join = True</cite>, therefore any <cite>stderr</cite> setting is ignored.</p>
-<dl class="method">
-<dt id="gc3libs.application.gamess.GamessAppPotApplication.cmdline">
-<tt class="descname">cmdline</tt><big>(</big><em>resource</em><big>)</big><a class="headerlink" href="#gc3libs.application.gamess.GamessAppPotApplication.cmdline" title="Permalink to this definition">¶</a></dt>
-<dd><p>Return a string, suitable for invoking the application from a
-UNIX shell command-line.</p>
-<p>The default implementation just concatenates <cite>executable</cite> and
-<cite>arguments</cite> separating them with whitespace; this is hardly
-correct for any application, so you should override this
-method in derived classes to provide appropriate invocation
-templates.</p>
-</dd></dl>
-
-<dl class="method">
-<dt id="gc3libs.application.gamess.GamessAppPotApplication.qsub">
-<tt class="descname">qsub</tt><big>(</big><em>resource</em>, <em>_suppress_warning=False</em>, <em>**kw</em><big>)</big><a class="headerlink" href="#gc3libs.application.gamess.GamessAppPotApplication.qsub" title="Permalink to this definition">¶</a></dt>
-<dd><p>Get an SGE <tt class="docutils literal"><span class="pre">qsub</span></tt> command-line invocation for submitting an
-instance of this application.  Return a pair <cite>(cmd, script)</cite>,
-where <cite>cmd</cite> is the command to run to submit an instance of
-this application to the SGE batch system, and <cite>script</cite> &#8211;if
-it&#8217;s not <cite>None</cite>&#8211; is written to a new file, whose name is then
-appended to <cite>cmd</cite>.</p>
-<p>In the construction of the command-line invocation, one should
-assume that all the input files (as named in <cite>Application.inputs</cite>)
-have been copied to the current working directory, and that output
-files should be created in this same directory.</p>
-<p>The default implementation just prefixes any output from the
-<cite>cmdline</cite> method with an SGE <tt class="docutils literal"><span class="pre">qsub</span></tt> invocation of the form
-<tt class="docutils literal"><span class="pre">qsub</span> <span class="pre">-cwd</span> <span class="pre">-S</span> <span class="pre">/bin/sh</span></tt> + resource limits.  Note that 
-<em>there is no generic way of requesting a certain number of cores</em> 
-in SGE: it all depends on the installed parallel environment, and
-these are totally under control of the local sysadmin;
-therefore, any request for cores is ignored and a warning is
-logged.</p>
-<p>Override this method in application-specific classes to
-provide appropriate invocation templates.</p>
-</dd></dl>
-
 </dd></dl>
 
 <dl class="class">
