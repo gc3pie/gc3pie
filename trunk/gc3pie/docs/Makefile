@@ -28,7 +28,17 @@ help:
 	@echo "  doctest   to run all doctests embedded in the documentation (if enabled)"
 
 clean:
-	-rm -rf $(BUILDDIR)/*
+	-rm -rf $(BUILDDIR)/html \
+		$(BUILDDIR)/dirhtml \
+		$(BUILDDIR)/pickle \
+		$(BUILDDIR)/json \
+		$(BUILDDIR)/htmlhelp \
+		$(BUILDDIR)/qthelp \
+		$(BUILDDIR)/latex \
+		$(BUILDDIR)/changes \
+		$(BUILDDIR)/linkcheck \
+		$(BUILDDIR)/doctest \
+		;
 
 html:
 	$(SPHINXBUILD) -b html $(ALLSPHINXOPTS) $(BUILDDIR)/html
