@@ -71,6 +71,19 @@ class Url(tuple):
         >>> u.path
         '/tmp/foo'
 
+      Please note that extra leading slashes '/' are interpreted as
+      the begining of a network location:
+
+        >>> u = Url('//foo/bar')
+        >>> u.path
+        '/bar'
+        >>> u.netloc
+        'foo'
+        >>> Url('///foo/bar').path
+        '/foo/bar'
+
+      Check RFC 3986 http://tools.ietf.org/html/rfc3986
+
       If `force_abs` is `True` (default), then the `path`
       attribute is made absolute, by calling `os.path.abspath` if
       necessary::
