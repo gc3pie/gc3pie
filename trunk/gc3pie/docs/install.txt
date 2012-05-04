@@ -1,15 +1,14 @@
+.. Hey Emacs, this is -*- rst -*-
+
+   This file follows reStructuredText markup syntax; see
+   http://docutils.sf.net/rst.html for more information.
+
+.. include:: global.inc
+
+
 --------------------------
  Installation of GC3Utils
 --------------------------
-
-:Author:   Riccardo Murri <riccardo.murri@gmail.com>
-:Date:     2010-10-06
-:Revision: $Revision$
-
-
-.. This file follows reStructuredText markup syntax; see
-   http://docutils.sf.net/rst.html for more information
-
 
 Installation
 ============
@@ -170,9 +169,6 @@ Installation into a virtualenv has two distinct advantages:
      "crypto" should be here.  Find out more at:
      http://www.smscg.ch/www/user/
 
-   .. _SMSCG: http://www.smscg.ch
-   .. _SWITCHaai: http://www.switch.ch/aai
-
 
 7. Now you can check your GC3Pie installation; just type the command:: 
 
@@ -247,15 +243,7 @@ Note that you need the Python package `Sphinx <http://sphinx.pocoo.org>`
 in order to build the documentation locally.
 
 
-.. References
+.. Local references
 
-.. _subversion: http://subversion.tigris.org/
 .. _sphinx: http://sphinx.pocoo.org/
 .. _virtualenv: http://pypi.python.org/pypi/virtualenv/1.7
-
-
-.. (for Emacs only)
-..
-  Local variables:
-  mode: rst
-  End:

@@ -1,0 +1,294 @@
+
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>&lt;no title&gt; &mdash; gc3pie vdevelopment (SVN $Revision$) documentation</title>
+    <link rel="stylesheet" href="../_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../',
+        VERSION:     'development (SVN $Revision$)',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <link rel="top" title="gc3pie vdevelopment (SVN $Revision$) documentation" href="../index.html" />
+    <link rel="up" title="The GC3Apps software" href="index.html" />
+    <link rel="next" title="The GC3Utils software" href="../gc3utils.html" />
+    <link rel="prev" title="Introduction to session-based scripts" href="intro.html" />
+ 
+<script type="text/javascript">
+  var _gaq = _gaq || [];
+  _gaq.push(['_setAccount', 'UA-23320630-1']);
+  _gaq.push(['_trackPageview']);
+</script>
+
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="../gc3utils.html" title="The GC3Utils software"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="intro.html" title="Introduction to session-based scripts"
+             accesskey="P">previous</a> |</li>
+        <li><a href="../index.html">gc3pie vdevelopment (SVN $Revision$) documentation</a> &raquo;</li>
+          <li><a href="index.html" accesskey="U">The GC3Apps software</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <p>At present, I&#8217;m thinking of implementing the following schema; let
+&#8220;DIR/&#8221; be the directory where an input &#8221;.pdb&#8221; is.  Then, when all
+decoys of that &#8221;.pdb&#8221; have been computed, the output will be stored as
+follows: (use monospaced font to view)</p>
+<blockquote>
+<div><dl class="docutils">
+<dt>DIR/</dt>
+<dd><div class="first line-block">
+<div class="line"><br /></div>
+</div>
+<p class="last">+- a_file.pdb  Original input file
+|
++- job.XXX/  Directory collecting job outputs from job.XXX
+|    |
+|    +- docking_protocol.tar.gz
+|    +- docking_protocol.log
+|    +- docking_protocol.stderr.txt
+|    ... etc
+|
++- a_file.N&#8211;M.fasc  FASC file for decoys N to M [1]
+|
++- a_file.YYYY.pdb   PDB file for decoy YYYY [2]
+|
+...</p>
+</dd>
+</dl>
+</div></blockquote>
+<p>Let P be the total number of decoys (the argument to the &#8220;-P&#8221; option),
+and p be the number of decoys per job (argument to the &#8220;-p&#8221; option).
+Then you would get in a single directory:</p>
+<p>[1] (P/p) x different &#8221;.fasc&#8221; files, corresponding to the (P/p) jobs
+[2] P x different &#8221;.pdb&#8221; files, named &#8220;a_file.0.pdb&#8221; to &#8220;a_file.(P-1).pdb&#8221;</p>
+<p>The working pattern of the new grosetta is very like the old one
+(<tt class="docutils literal"><span class="pre">gdocking</span></tt>, the one used by Abdullah):</p>
+<ul class="simple">
+<li>on the command line you specify:</li>
+</ul>
+<blockquote>
+<div><ul class="simple">
+<li>one flags file (1st argument), then</li>
+<li>any number of input files (copied from your PC to the execution site), then</li>
+<li>a literal colon character &#8216;:&#8217;, then</li>
+<li>any number of output files (copied back from the execution site to
+you); wildcards (e.g., &#8220;<a href="#id1"><span class="problematic" id="id2">*</span></a>.pdb&#8221;) are allowed, but you must enclose</li>
+</ul>
+</div></blockquote>
+<dl class="docutils">
+<dt>them in quotes</dt>
+<dd><ul class="first last simple">
+<li>you can omit the output files: the default is &#8220;<em>.pdb&#8221; &#8220;</em>.sc&#8221; &#8220;<a href="#id3"><span class="problematic" id="id4">*</span></a>.fasc&#8221;</li>
+<li>if you omit the output files spec, omit the colon as well</li>
+</ul>
+</dd>
+</dl>
+<ul class="simple">
+<li>there will be a number of <em>identical</em> jobs being executed as a result</li>
+</ul>
+<blockquote>
+<div><p>of a <tt class="docutils literal"><span class="pre">grosetta</span></tt> invocation; this number depends on the ratio of
+the values given to options <tt class="docutils literal"><span class="pre">-P</span></tt> and <tt class="docutils literal"><span class="pre">-p</span></tt>.
++ if you omit <tt class="docutils literal"><span class="pre">-P</span></tt> and <tt class="docutils literal"><span class="pre">-p</span></tt>, they both default to 1, i.e., one</p>
+<blockquote>
+<div>job will be created.</div></blockquote>
+</div></blockquote>
+<ul class="simple">
+<li>calling <tt class="docutils literal"><span class="pre">grosetta</span></tt> over and over again will result in the same</li>
+</ul>
+<blockquote>
+<div>jobs being monitored; to create new jobs, change the command line
+and raise the value for <tt class="docutils literal"><span class="pre">-P</span></tt>.</div></blockquote>
+<ul class="simple">
+<li>to erase a session, use the <tt class="docutils literal"><span class="pre">-N</span></tt> option</li>
+<li>there&#8217;s a <tt class="docutils literal"><span class="pre">--help</span></tt> text, that I hope is clear and comprehensive</li>
+</ul>
+<blockquote>
+<div>enough :-)</div></blockquote>
+<p>Here&#8217;s a commented example session with <tt class="docutils literal"><span class="pre">grosetta</span></tt>:</p>
+<p># create session (1 job only, since no -P option is given);
+# note the &#8216;-N&#8217; options for &#8220;start new session afresh&#8221;
+$ ../grosetta.py flags alignment.filt query.fasta query.psipred_ss2
+boinc_aaquery03_05.200_v1_3.gz boinc_aaquery09_05.200_v1_3.gz
+1bjpA.pdb 1ca7A.pdb 1cgqA.pdb 1dptA.pdb 1fimA.pdb 1gczA.pdb 1gifA.pdb
+1gyjA.pdb 1hfoA.pdb 1mffA.pdb 1mfiA.pdb 1mifA.pdb 1mwwA.pdb 1otfA.pdb
+1otgA.pdb 1p1gA.pdb 1s0yA.pdb 1u9dA.pdb 1uizA.pdb 2aagA.pdb 2aajA.pdb
+2aalA.pdb 2fltA.pdb 2fm7A.pdb 2op8A.pdb 2ormA.pdb 2os5A.pdb 3c6vA.pdb
+-N
+Queue selected: <a class="reference external" href="mailto:all&#46;q&#37;&#52;&#48;idgc3grid01&#46;uzh&#46;ch">all<span>&#46;</span>q<span>&#64;</span>idgc3grid01<span>&#46;</span>uzh<span>&#46;</span>ch</a>
+File uploaded: /tmp/rmurri/rsl.wCGljG
+File uploaded: /home/rmurri/gc3/gc3utils/grosetta/lars/1bjpA.pdb</p>
+<blockquote>
+<div>...</div></blockquote>
+<p>File uploaded: /home/rmurri/gc3/gc3utils/grosetta/lars/3c6vA.pdb
+File uploaded: /home/rmurri/gc3/gc3utils/grosetta/lars/alignment.filt
+File uploaded: /home/rmurri/gc3/gc3utils/grosetta/lars/boinc_aaquery03_05.200_v1_3.gz
+File uploaded: /home/rmurri/gc3/gc3utils/grosetta/lars/boinc_aaquery09_05.200_v1_3.gz
+File uploaded: /home/rmurri/gc3/gc3utils/grosetta/lars/flags
+File uploaded: /home/rmurri/gc3/gc3utils/grosetta/lars/query.fasta
+File uploaded: /home/rmurri/gc3/gc3utils/grosetta/lars/query.psipred_ss2
+File uploaded: /home/rmurri/gc3/gc3utils/trunk/gc3libs/etc/rosetta.sh
+Status of jobs in the &#8216;grosetta.csv&#8217; session:</p>
+<blockquote>
+<div>SUBMITTED   1/1 (100.0%)</div></blockquote>
+<p># next step is to monitor the session; option &#8216;-l&#8217; at the end chooses
+# detailed listing of all jobs.  You can keep the command line
+# arguments: they will be ignored...
+$ ../grosetta.py flags alignment.filt query.fasta query.psipred_ss2
+boinc_aaquery03_05.200_v1_3.gz boinc_aaquery09_05.200_v1_3.gz
+1bjpA.pdb 1ca7A.pdb 1cgqA.pdb 1dptA.pdb 1fimA.pdb 1gczA.pdb 1gifA.pdb
+1gyjA.pdb 1hfoA.pdb 1mffA.pdb 1mfiA.pdb 1mifA.pdb 1mwwA.pdb 1otfA.pdb
+1otgA.pdb 1p1gA.pdb 1s0yA.pdb 1u9dA.pdb 1uizA.pdb 2aagA.pdb 2aajA.pdb
+2aalA.pdb 2fltA.pdb 2fm7A.pdb 2op8A.pdb 2ormA.pdb 2os5A.pdb 3c6vA.pdb
+-l
+Decoys Nr.       State (JobID)       Info
+================================================================================
+0&#8211;1             SUBMITTED (job.766)</p>
+<p># ...or you can omit them: as long as you are not submitting new jobs
+# they&#8217;re not needed
+$ ../grosetta.py -l
+Decoys Nr.       State (JobID)       Info
+================================================================================
+0&#8211;1             RUNNING (job.766)   Running at Mon Dec 20 19:32:08 2010</p>
+<p># without the &#8216;-l&#8217; option only a summary of job statuses is presented
+$ ../grosetta.py
+Status of jobs in the &#8216;grosetta.csv&#8217; session:</p>
+<blockquote>
+<div>RUNNING     1/1 (100.0%)</div></blockquote>
+<p># calling <tt class="docutils literal"><span class="pre">grosetta</span></tt> again when jobs are done triggers automated
+# download of the results:
+$ ../grosetta.py
+File downloaded:
+gsiftp://idgc3grid01.uzh.ch:2811/jobs/214661292869757468202765/minirosetta.static.stdout.txt
+File downloaded:
+gsiftp://idgc3grid01.uzh.ch:2811/jobs/214661292869757468202765/minirosetta.static.log</p>
+<blockquote>
+<div>...</div></blockquote>
+<p>File downloaded:
+gsiftp://idgc3grid01.uzh.ch:2811/jobs/214661292869757468202765/gmlog/input
+Status of jobs in the &#8216;grosetta.csv&#8217; session:</p>
+<blockquote>
+<div>TERMINATED  1/1 (100.0%)
+ok          1/1 (100.0%)</div></blockquote>
+<p># the &#8216;-l&#8217; option comes handy to see what directory contains the job output:
+$ ../grosetta.py -l
+Decoys Nr.       State (JobID)       Info
+================================================================================
+0&#8211;1             TERMINATED (job.766)  Output retrieved into directory
+&#8216;/home/rmurri/gc3/gc3utils/grosetta/lars/0&#8211;1&#8217;</p>
+<p># the <tt class="docutils literal"><span class="pre">gmlog</span></tt> directory contains Grid Middleware log files, just ignore it
+$ ls /home/rmurri/gc3/gc3utils/grosetta/lars/0&#8211;1
+1bjpA.pdb  1fimA.pdb  1hfoA.pdb  1mwwA.pdb  1s0yA.pdb  2aajA.pdb
+2op8A.pdb  gmlog                          S_1CA7A_1_0001.pdb
+1ca7A.pdb  1gczA.pdb  1mffA.pdb  1otfA.pdb  1u9dA.pdb  2aalA.pdb
+2ormA.pdb  minirosetta.static.log         score.sc
+1cgqA.pdb  1gifA.pdb  1mfiA.pdb  1otgA.pdb  1uizA.pdb  2fltA.pdb
+2os5A.pdb  minirosetta.static.stderr.txt
+1dptA.pdb  1gyjA.pdb  1mifA.pdb  1p1gA.pdb  2aagA.pdb  2fm7A.pdb
+3c6vA.pdb  minirosetta.static.stdout.txt</p>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="intro.html"
+                        title="previous chapter">Introduction to <em>session-based</em> scripts</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="../gc3utils.html"
+                        title="next chapter">The GC3Utils software</a></p>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="../_sources/gc3apps/grosetta.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" size="18" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="../gc3utils.html" title="The GC3Utils software"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="intro.html" title="Introduction to session-based scripts"
+             >previous</a> |</li>
+        <li><a href="../index.html">gc3pie vdevelopment (SVN $Revision$) documentation</a> &raquo;</li>
+          <li><a href="index.html" >The GC3Apps software</a> &raquo;</li> 
+      </ul>
+    </div>
+
+    <div class="footer">
+        &copy; Copyright 2010-2012, Grid Computing Competence Centre, University of Zurich.
+      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.0.7.
+    </div>
+<div class="footer">This page uses <a href="http://analytics.google.com/">
+Google Analytics</a> to collect statistics. You can disable it by blocking
+the JavaScript coming from www.google-analytics.com.
+<script type="text/javascript">
+  (function() {
+    var ga = document.createElement('script');
+    ga.src = ('https:' == document.location.protocol ?
+              'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+    ga.setAttribute('async', 'true');
+    document.documentElement.firstChild.appendChild(ga);
+  })();
+</script>
+</div>
+
+  </body>
+</html>

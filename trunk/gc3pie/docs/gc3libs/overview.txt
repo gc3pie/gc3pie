@@ -1,9 +1,34 @@
-.. This file follows reStructuredText markup syntax; see
-   http://docutils.sf.net/rst.html for more information
+.. Hey Emacs, this is -*- rst -*-
+
+   This file follows reStructuredText markup syntax; see
+   http://docutils.sf.net/rst.html for more information.
+
+.. include:: ../global.inc
+
 
 ----------------------
  Programming overview
 ----------------------
+
+Computational job lifecycle
+===========================
+
+A computational job (for short: :term:`job`) is a single run of a
+non-interactive application.  The prototypical example is a run of
+GAMESS_ on a single input file.
+
+The GC3Utils commands support the following workflow:
+
+#. Submit a GAMESS_ job (with a single input file): :command:`ggamess`
+#. Monitor the status of the submitted job: :command:`gstat`
+#. Retrieve the output of a job once it's finished: :command:`gget`
+  
+Usage and some examples on how to use the mentioned commands are
+provided in the next sections
+
+
+Managing jobs with GC3Libs
+==========================
 
 GC3Libs takes an application-oriented approach to asynchronous
 computing. A generic :class:`Application` class provides the basic
