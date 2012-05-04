@@ -320,7 +320,7 @@ def test_sql_extend_table():
         assert rows[0][0] == obj.x
 
         # Try with the column which contains a dot
-        obj.foo = MyObj('antani')        
+        obj.foo = MyObj('antani')
         id_ = db.save(obj)
         c.execute("select extra1 from store where id=%d" % id_)
         rows = c.fetchall()
@@ -340,7 +340,7 @@ def test_sql_create_custom_table():
     # contains the value of `foo` attribute of the object
     db = persistence_factory(path, 
                              extra_fields={
-            Column(u'extra', VARCHAR(length=128)) : lambda x: x.foo}
+            Column('extra', VARCHAR(length=128)) : lambda x: x.foo}
                              )
     obj = MyObj('My App')
     obj.foo = 'foo bar'
