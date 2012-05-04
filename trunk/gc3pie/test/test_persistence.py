@@ -363,7 +363,31 @@ def test_sql_create_custom_table():
         assert rows[0][0] == obj.foo
     finally:
         os.remove(path.path)
+
+
+def test_table_with_different_name():
+    (fd, tmpfname) = tempfile.mkstemp()
+    path = Url('sqlite://%s' % tmpfname)
+    from sqlalchemy import Column, VARCHAR
+    db = persistence_factory(path, table_name='store_2')
+
+    # Create a connection to the database
+    try:
+        import sqlite3 as sqlite
+    except ImportError:
+        import pysqlite2.dbapi2 as sqlite
+    conn = sqlite.connect(tmpfname)
+    c = conn.cursor()
     
+    try:
+        _run_driver_tests(db)
+        # Save the object, read the data from the db and check if they
+        # are different.
+        c.execute("select id from store_2")
+        rows = c.fetchall()
+    finally:
+        os.remove(path.path)
+
 
 if __name__ == "__main__":
     # fix pickle error
