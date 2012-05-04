@@ -172,10 +172,10 @@ class SQL(Store):
     >>> os.remove(name)
     """
     default_extra_fields = {
-                sqla.Column(u'type', sqla.VARCHAR(length=128)) : lambda obj: isinstance(obj, Task) and 'job' or '',
-                sqla.Column(u'jobid', sqla.VARCHAR(length=128)): lambda obj: obj.execution.lrms_jobid,
-                sqla.Column(u'jobname', sqla.VARCHAR(length=255)): lambda obj: obj.jobname,
-                sqla.Column(u'jobstatus', sqla.VARCHAR(length=128)) : lambda obj: obj.execution.state,
+                sqla.Column('type', sqla.VARCHAR(length=128)) : lambda obj: isinstance(obj, Task) and 'job' or '',
+                sqla.Column('jobid', sqla.VARCHAR(length=128)): lambda obj: obj.execution.lrms_jobid,
+                sqla.Column('jobname', sqla.VARCHAR(length=255)): lambda obj: obj.jobname,
+                sqla.Column('jobstatus', sqla.VARCHAR(length=128)) : lambda obj: obj.execution.state,
                 }
 
     def __init__(self, url, table_name="store", idfactory=None, extra_fields=default_extra_fields):
@@ -202,14 +202,14 @@ class SQL(Store):
             table = sqla.Table(
                 self.tname,
                 self.__meta,
-                sqla.Column(u'id', sqla.INTEGER(), primary_key=True, nullable=False),
-                sqla.Column(u'data', sqla.BLOB()),
+                sqla.Column('id', sqla.INTEGER(), primary_key=True, nullable=False),
+                sqla.Column('data', sqla.BLOB()),
                 )
             for col in extra_fields:
                 if isinstance(col, sqla.Column):
                     table.append_column(col.copy())
                 else:
-                    table.append_column(sqla.Column(unicode(col), sqla.BLOB()))
+                    table.append_column(sqla.Column(col, sqla.BLOB()))
             self.__meta.create_all()
         else:
             # A 'store' table exists. Check the column names and fill
@@ -220,11 +220,11 @@ class SQL(Store):
             # the same outer 'i' object, which is the last used in the
             # loop.
 
-            self.extra_fields = dict(((i, lambda x, i=i: getattr(x, i))  for i in self.__meta.tables[self.tname].columns.keys() if i not in ('id', 'data', 'type', 'jobid', 'jobname', 'jobstatus')))
+            self.extra_fields = dict(((str(i), lambda x, i=i: getattr(x, i))  for i in self.__meta.tables[self.tname].columns.keys() if i not in ('id', 'data', 'type', 'jobid', 'jobname', 'jobstatus')))
 
         for (col, func) in extra_fields.iteritems():
             if hasattr(col, 'name'): col=col.name
-            self.extra_fields[unicode(col)] = func
+            self.extra_fields[str(col)] = func
 
         self.t_store = self.__meta.tables[self.tname]
         
