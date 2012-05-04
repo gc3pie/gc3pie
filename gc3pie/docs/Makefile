@@ -4,7 +4,7 @@
 # You can set these variables from the command line.
 SPHINXOPTS    =
 SPHINXBUILD   = python $(shell which sphinx-build)
-PAPER         =
+PAPER         = a4
 BUILDDIR      = .
 
 # Internal variables.
