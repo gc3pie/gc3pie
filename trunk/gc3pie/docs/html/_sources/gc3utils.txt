@@ -1,0 +1,416 @@
+.. Hey Emacs, this is -*- rst -*-
+
+   This file follows reStructuredText markup syntax; see
+   http://docutils.sf.net/rst.html for more information.
+
+.. include:: global.inc
+
+
+.. _gc3utils:
+
+-----------------------
+ The GC3Utils software
+-----------------------
+
+The GC3Utils are lower-level commands, provided to perform common
+operations on jobs, regardless of their type or the application they run.
+
+For instance, GC3Utils provide commands to obtain the list and status
+of computational resources (:command:`glist`); to clear the list of jobs from
+old and failed ones (:command:`gclean`); to get detailed information on a
+submitted job (:command:`ginfo`, mainly for debugging purposes).
+
+This chapter is a tutorial for the GC3Utils command-line utilities.
+
+If you find a technical term whose meaning is not clear to you, please
+look it up in the :ref:`glossary`. (But feel free to ask on the
+`GC3Pie mailing list`_ if it's still unclear!)
+
+
+.. contents::
+
+
+:command:`gstat`: monitor the status of submitted jobs
+======================================================
+
+To see the status of all the jobs you have submitted, use the
+:command:`gstat` command.  Typing::
+
+    gstat
+
+will print to the screen a table like the following::
+
+    Job ID    Status    
+    ====================
+    job.12    TERMINATED
+    job.15    SUBMITTED
+    job.16    RUNNING
+    job.17    RUNNING
+    job.23    NEW
+
+.. note:: 
+
+   If you have never submitted any job, or if you have cleared
+   your job list with the :command:`gclean` command, then :command:`gstat` will
+   print *nothing* to the screen!
+
+A job can be in one and only one of the following states:
+
+``NEW``
+
+  The job has been created but not yet submitted: it only exists on
+  the local disk.  
+
+``RUNNING``
+
+  The job is currently running -- there's nothing to do but wait.
+
+``SUBMITTED``
+
+  The job has been sent to a compute resource for execution -- it
+  should change to ``RUNNING`` status eventually.
+
+``STOPPED``
+
+  The job was sent to a remote cluster for execution, but it is stuck
+  there for some unknown reason.  There is no automated procedure in
+  this case: the best thing you can do is to contact the systems
+  administrator to determine what has happened.
+
+``TERMINATED``
+
+  The job has finished running; now there are three things you can do:
+
+    1. Use the :command:`gget` command to get the command output files back
+       from the remote execution cluster.
+    2. Use the :command:`gclean` command to remove this job from the list.
+       After issuing :command:`gclean` on a job, any information on it is
+       lost, so be sure you have retrieved any interesting output with
+       :command:`gget` before!
+    3. If something went wrong during the execution of the job (it did
+       not complete its execution or -possibly- it did not even
+       start), you can use the :command:`ginfo` command to try to debug the
+       problem.
+  
+The list of submitted jobs persists from one session to the other: you
+can log off, shut your computer down, then turn it on again next day
+and you will see the same list of jobs.
+
+.. note:: 
+   Completed jobs persist in the :command:`gstat` list until they are
+   cleared off with the :command:`gclean` command.
+
+
+:command:`gtail`: peeking at the job output and error report
+============================================================
+
+Once a job has reached ``RUNNING`` status (check with :command:`gstat`), you
+can also monitor its progress by looking at the last lines in the job
+output and error stream.  
+
+An example might clarify this: assume you have submitted a
+long-running computation as *job.16* and you know from :command:`gstat` that
+it got into ``RUNNING`` state; then to take a peek at what this job is
+doing, you issue the following command::
+
+    gtail job.16
+
+This would produce the following output, from which you can deduce how
+far GAMESS_ has progressed into the computation::
+
+    RECOMMEND NRAD ABOVE  50 FOR ZETA'S ABOVE 1E+4
+
+    RECOMMEND NRAD ABOVE  75 FOR ZETA'S ABOVE 1E+5
+
+    RECOMMEND NRAD ABOVE 125 FOR ZETA'S ABOVE 1E+6
+
+    DFT IS SWITCHED OFF, PERFORMING PURE SCF UNTIL SWOFF THRESHOLD IS REACHED.
+
+
+    ITER EX DEM     TOTAL ENERGY        E CHANGE  DENSITY CHANGE    DIIS ERROR
+
+      1  0  0    -1079.0196780290 -1079.0196780290   0.343816910   1.529879639
+
+             * * *   INITIATING DIIS PROCEDURE   * * *
+
+      2  1  0    -1081.1910665431    -2.1713885141   0.056618918   0.105322104
+
+      3  2  0    -1081.2658345285    -0.0747679855   0.019565324   0.044813607
+
+By default, :command:`gtail` only outputs the last 10 lines of a job
+output/error stream. To see more, use the command line option ``-n``;
+for example, to see the last 25 lines of the output, issue the command::
+
+    gtail -n 25 job.16
+
+The command :command:`gtail` is especially useful for long computations: you
+can see how far a job has gotten and, e.g., cancel it if it's gotten
+stuck into an endless/improductive loop.
+
+To "keep an eye" over what a job is doing, you can add the ``-f`` option
+to :command:`gtail`: this will run :command:`gtail` in "follow" mode, i.e.,
+:command:`gtail` will continue to display the contents of the job output and
+update it as time passes, until you hit Ctrl+C to interrupt it.
+
+
+:command:`gkill`: cancel a running job
+======================================
+
+To cancel a running job, you can use the command :command:`gkill`.  For
+instance, to cancel *job.16*, you would type the following command
+into the terminal::
+
+    gkill job.16
+
+.. warning:: 
+
+   *There's no way to undo a cancel operation!* Once you have issued a
+   :command:`gkill` command, the job is deleted and it cannot be resumed.
+   (You can still re-submit it with :command:`gresub`, though.)
+
+
+:command:`gget`: retrieve the output of finished jobs
+=====================================================
+
+Once a job has reached ``RUNNING`` status (check with :command:`gstat`),
+you can retrieve its output files with the :command:`gget` command.  For
+instance, to download the output files of *job.15* you would use::
+
+  gget job.15
+
+This command will print out a message like::
+
+  Job results successfully retrieved in '/path/to/some/directory'
+
+If you are not running the :command:`gget` command on your copmputer, but
+rather on a shared front-end like `ocikbgtw`, you can copy+paste the
+path within quotes to the sftp_ command to get the files to your
+usual workstation.  For example, you can run the following command in
+a terminal on your computer to get the output files back to your
+workstation::
+
+  sftp ocikbgtw:'/path/to/some/directory'
+
+This will take you to the directory where the output files have been stored.
+
+.. _sftp: http://kb.iu.edu/data/akqg.html
+
+
+:command:`gclean`: remove a completed job from the status list
+==============================================================
+
+Jobs persist in the :command:`gstat` list until they are cleared off; you
+need to use the :command:`gclean` command for that.
+
+Just call the :command:`gclean` command followed by the job identifier
+*job.NNN*.  For example::
+
+  gclean job.23
+
+In normal operation, you can only remove jobs that are in the
+``TERMINATED`` status; if you want to force :command:`gclean` to remove a job
+that is not in any one of those states, just add ``-f`` to the command
+line.
+
+
+:command:`gresub`: re-submit a failed job
+=========================================
+
+In case a job failed for accidental causes (e.g., the site where it
+was running went unexpectedly down), you can re-submit it with the
+:command:`gresub` command.
+
+Just call :command:`gresub`  followed by the job identifier
+*job.NNN*.  For example::
+
+    gresub job.42
+
+Resubmitting a job that is not in a terminal state (i.e.,
+``TERMINATED``) results in the job being killed (as with :command:`gkill`)
+before being submitted again.  If you are unsure what state
+a job is in, check it with :command:`gstat`.
+
+
+:command:`glist`: list available resources
+==========================================
+
+The :command:`glist` command prints out information about the configured resources.
+For each resource, a summary of the information recorded in the configuration
+file and the current resource status is printed.  For example::
+
+    $ glist
+    +----------------------------------------------------------------+
+    |                     smscg                                      |
+    +================================================================+
+    |                  Frontend host name / frontend   giis.smscg.ch |
+    |                             Access mode / type   arc0          |
+    |                      Authorization name / auth   smscg         |
+    |                          Accessible? / updated   1             |
+    |                 Total number of cores / ncores   4000          |
+    |                     Total queued jobs / queued   3475          |
+    |                  Own queued jobs / user_queued   0             |
+    |                    Own running jobs / user_run   0             |
+    |          Max cores per job / max_cores_per_job   256           |
+    | Max memory per core (MB) / max_memory_per_core   2000          |
+    |  Max walltime per job (minutes) / max_walltime   1440          |
+    +----------------------------------------------------------------+
+
+The meaning of the printed fields is as follows:
+
+* The title of each box is the "resource name", as you would write it
+  after the `-r` option to :command:`gsub`.
+* *Access mode / type*: it is the kind of software that is used for
+  accessing the resource; consult Section `configuration`:ref: for more
+  information about resource types.
+* *Authorization name / auth*: this is paired with the *Access mode /
+  type*, and identifies a section in the `configuration file
+  <configuration>`:ref: where authentication information for this
+  resource is stored; see Section `configuration`:ref: for more
+  information.
+* *Accessible? / updated*: whether you are *currently* authorized to
+  access this resource; note that if this turns *False* or *0* for
+  resources that you should have access to, then something is wrong
+  either with the state of your system, or with the resource itself.
+  (The procedure on how to diagnose this is too complex to list here;
+  consult your friendly systems administrator :-))
+* *Total nunber of cores*: the total number of cores present on the
+  resource.  Note this can vary over time as cluster nodes go in and
+  out of service: computers break, then are repaired, then break
+  again, etc.
+* *Total queued jobs*: number of jobs (from all users) waiting to be
+  executed on the remote compute cluster.
+* *Own queued jobs*: number of jobs (submitted by you) waiting to be
+  executed on the remote compute cluster.
+* *Own running jobs*: number of jobs (submitted by you) currently
+  executing on the remote compute cluster.
+* *Max cores per job*: the maximum nunber of cores that you can
+  request for a single computational job on this resource.
+* *Max memory per core*: maximum amount of memory (per core) that you
+  can request on this resource.  The amount shows the maximum
+  requestable memory in MB.
+* *Max walltime per job*: maximum duration of a computational job on
+  this resource. The amount shows the maximum time in seconds.
+
+The whole point of GC3Utils is to abstract job submission and
+management from detailed knowledge of the resources and their hardware
+and software configuration, but it is sometimes convenient and
+sometimes necessary to get into this level of detail...
+
+
+:command:`ginfo`: accessing low-level details of a job
+======================================================
+
+It is sometimes necessary, for debugging purposes, to print out all
+the details about a job; the :command:`ginfo` command does just that: prints
+all the details that GC3Utils know about a single job.
+
+For instance, to print out detailed information about `job.13` in
+session `TEST1`, you would type::
+
+    ginfo -s TEST1 job.13
+
+For a job in ``RUNNING`` or ``SUBMITTED`` state, only little
+information is known: basically, where the job is running, and when it
+was started::
+
+    $ ginfo -s XXX job.13
+    job.13
+        execution_targets: hera.wsl.ch
+        log: 
+            SUBMITTED at Wed Mar  7 17:40:07 2012
+            Submitted to 'smscg' at Wed Mar  7 17:40:07 2012
+        lrms_jobid: gsiftp://hera.wsl.ch:2811/jobs/593513311384071771546195
+        resource_name: smscg
+        state_last_changed: 1331138407.33
+        timestamp: 
+            SUBMITTED: 1331138407.33
+
+If you omit the job number, information about *all* jobs in the
+session will be printed.
+
+Most of the output is only useful if you are familiar with GC3Utils
+inner working. Nonetheless, :command:`ginfo` output is definitely something
+you should include in any report about a misbehaving job!
+
+For a finished job, the information is more complete and can include
+error messages in case the job has failed::
+
+    $ ginfo -s TEST1 job.13
+    job.13
+        cores: 1
+        download_dir: /home/rmurri/gc3/gc3pie.googlecode.com/gc3pie/gc3apps/gamess/exam01
+        execution_targets: idgc3grid01.uzh.ch
+        log: 
+            SUBMITTED at Wed Mar  7 15:52:37 2012
+            Submitted to 'idgc3grid01' at Wed Mar  7 15:52:37 2012
+            TERMINATING at Wed Mar  7 15:54:52 2012
+            Final output downloaded to '/home/rmurri/gc3/gc3pie.googlecode.com/gc3pie/gc3apps/gamess/exam01'
+            TERMINATED at Wed Mar  7 15:54:53 2012
+            Execution of gamess terminated normally wed mar  7 15:52:42 2012
+        lrms_jobid: gsiftp://idgc3grid01.uzh.ch:2811/jobs/2938713311319571678156670
+        lrms_jobname: exam01
+        original_exitcode: 0
+        queue: all.q
+        resource_name: idgc3grid01
+        state_last_changed: 1331132093.18
+        stderr_filename: exam01.out
+        stdout_filename: exam01.out
+        timestamp: 
+            SUBMITTED: 1331131957.49
+            TERMINATED: 1331132093.18
+            TERMINATING: 1331132092.74
+        used_cputime: 0
+        used_memory: 492019
+        used_walltime: 60
+
+With option ``-v``, :command:`ginfo` output is even more verbose and complete,
+and includes information about the application itself, the input and
+output files, plus some backend-specific information::
+
+    $ ginfo -c -s TEST1 job.13
+    job.13
+        application_tag: gamess
+        arguments: exam01.inp
+        changed: False
+        environment: 
+        executable: /$GAMESS_LOCATION/nggms
+        execution: 
+            _arc0_state_last_checked: 1331138407.33
+            _exitcode: None
+            _signal: None
+            _state: SUBMITTED
+            execution_targets: hera.wsl.ch
+            log:
+                SUBMITTED at Wed Mar  7 17:40:07 2012
+                Submitted to 'smscg' at Wed Mar  7 17:40:07 2012
+            lrms_jobid: gsiftp://hera.wsl.ch:2811/jobs/593513311384071771546195
+            resource_name: smscg
+            state_last_changed: 1331138407.33
+            timestamp:
+                SUBMITTED: 1331138407.33
+        inp_file_path: test/data/exam01.inp
+        inputs: 
+            file:///home/rmurri/gc3/gc3pie.googlecode.com/gc3pie/gc3apps/gamess/test/data/exam01.inp: exam01.inp
+        job_name: exam01
+        jobname: exam01
+        join: True
+        output_base_url: None
+        output_dir: /home/rmurri/gc3/gc3pie.googlecode.com/gc3pie/gc3apps/gamess/exam01
+        outputs: 
+            exam01.dat: file, , exam01.dat, None, None, None, None
+            exam01.out: file, , exam01.out, None, None, None, None
+        persistent_id: job.33998
+        requested_architecture: None
+        requested_cores: 1
+        requested_memory: 2
+        requested_walltime: 8
+        stderr: None
+        stdin: None
+        stdout: exam01.out
+        tags: APPS/CHEM/GAMESS-2010
+        verno: None
+
+
+.. References
+
+.. _grid: http://www.smscg.ch
