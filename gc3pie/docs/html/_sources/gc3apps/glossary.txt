@@ -1,0 +1,32 @@
+.. This file is included by `index.txt`.
+
+.. _glossary:
+
+Glossary
+========
+
+.. glossary::
+
+  Core
+    A single computing unit. This was called a *CPU* until manufacturers
+    started packing many processing units into a single package: now the
+    term CPU is used for the package, and *core* is one of the several
+    independent processing units within the package.
+
+  Job
+    A computational job is a single run of a non-interactive
+    application.  The prototypical example is a run of GAMESS_ on a
+    single input file.
+
+  Resource
+    Short for "computational resource": any cluster or Grid where a job
+    can run.
+
+  Status
+    A one-word indication of a computational job execution status (e.g.,
+    ``RUNNING`` or ``TERMINATED``).
+
+  Walltime
+    Short for *wall-clock time*: indicates the total running time of a
+    job.
+  

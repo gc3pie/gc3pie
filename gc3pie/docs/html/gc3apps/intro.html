@@ -3,13 +3,16 @@
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
   "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 
+
 <html xmlns="http://www.w3.org/1999/xhtml">
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     
-    <title>Introduction to session-based scripts &mdash; gc3pie vdevelopment (SVN $Revision$) documentation</title>
+    <title>Introduction to session-based scripts &mdash; gc3pie development (SVN $Revision$) documentation</title>
+    
     <link rel="stylesheet" href="../_static/default.css" type="text/css" />
     <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    
     <script type="text/javascript">
       var DOCUMENTATION_OPTIONS = {
         URL_ROOT:    '../',
@@ -22,9 +25,9 @@
     <script type="text/javascript" src="../_static/jquery.js"></script>
     <script type="text/javascript" src="../_static/underscore.js"></script>
     <script type="text/javascript" src="../_static/doctools.js"></script>
-    <link rel="top" title="gc3pie vdevelopment (SVN $Revision$) documentation" href="../index.html" />
+    <link rel="top" title="gc3pie development (SVN $Revision$) documentation" href="../index.html" />
     <link rel="up" title="The GC3Apps software" href="index.html" />
-    <link rel="next" title="&lt;no title&gt;" href="grosetta.html" />
+    <link rel="next" title="The grosetta and gdocking scripts" href="grosetta.html" />
     <link rel="prev" title="The GC3Apps software" href="index.html" />
  
 <script type="text/javascript">
@@ -45,12 +48,12 @@
           <a href="../py-modindex.html" title="Python Module Index"
              >modules</a> |</li>
         <li class="right" >
-          <a href="grosetta.html" title="&lt;no title&gt;"
+          <a href="grosetta.html" title="The grosetta and gdocking scripts"
              accesskey="N">next</a> |</li>
         <li class="right" >
           <a href="index.html" title="The GC3Apps software"
              accesskey="P">previous</a> |</li>
-        <li><a href="../index.html">gc3pie vdevelopment (SVN $Revision$) documentation</a> &raquo;</li>
+        <li><a href="../index.html">gc3pie development (SVN $Revision$) documentation</a> &raquo;</li>
           <li><a href="index.html" accesskey="U">The GC3Apps software</a> &raquo;</li> 
       </ul>
     </div>  
@@ -67,7 +70,7 @@ blueprint, named a <em>session-based script</em>.  The purpose of this
 section is to describe this common functionality; script-specific
 sections detail the scope and options that are unique to a given
 script.  Readers interested in Python programming can find the
-complete documentation about the <em>session-based script</em> <em class="xref std std-term">API</em> in
+complete documentation about the <em>session-based script</em> <a class="reference internal" href="../glossary.html#term-api"><em class="xref std std-term">API</em></a> in
 the <tt class="xref py py-class docutils literal"><span class="pre">SessionBasedScript</span></tt> section.</p>
 <p>The functioning of GC3Apps scripts revolves around a so-called
 <em>session</em>.  A <a class="reference internal" href="../glossary.html#term-session"><em class="xref std std-term">session</em></a> is just a collection of jobs (and
@@ -132,7 +135,7 @@ jobs.</p>
 </tr>
 <tr><td>&nbsp;</td><td><p class="first">Print a table of jobs including their status.</p>
 <p>The <em>STATE</em> argument restricts output to jobs in that particular
-state.  It can be a single <em class="xref std std-term">state</em> word (e.g., <tt class="docutils literal"><span class="pre">RUNNING</span></tt>)
+state.  It can be a single <a class="reference internal" href="../glossary.html#term-state"><em class="xref std std-term">state</em></a> word (e.g., <tt class="docutils literal"><span class="pre">RUNNING</span></tt>)
 or a comma-separated list thereof (e.g.,
 <tt class="docutils literal"><span class="pre">NEW,SUBMITTED,RUNNING</span></tt>).</p>
 <p>The pseudo-states <tt class="docutils literal"><span class="pre">ok</span></tt> and <tt class="docutils literal"><span class="pre">failed</span></tt> are also allowed for
@@ -279,21 +282,21 @@ following table:</p>
 <col width="95%" />
 </colgroup>
 <thead valign="bottom">
-<tr><th class="head">Bit</th>
+<tr class="row-odd"><th class="head">Bit</th>
 <th class="head">Meaning</th>
 </tr>
 </thead>
 <tbody valign="top">
-<tr><td>0</td>
+<tr class="row-even"><td>0</td>
 <td>Set if a fatal error occurred: the script could not complete</td>
 </tr>
-<tr><td>1</td>
+<tr class="row-odd"><td>1</td>
 <td>Set if there are jobs in <tt class="docutils literal"><span class="pre">FAILED</span></tt> state</td>
 </tr>
-<tr><td>2</td>
+<tr class="row-even"><td>2</td>
 <td>Set if there are jobs in <tt class="docutils literal"><span class="pre">RUNNING</span></tt> or <tt class="docutils literal"><span class="pre">SUBMITTED</span></tt> state</td>
 </tr>
-<tr><td>3</td>
+<tr class="row-odd"><td>3</td>
 <td>Set if there are jobs in <tt class="docutils literal"><span class="pre">NEW</span></tt> state</td>
 </tr>
 </tbody>
@@ -332,7 +335,7 @@ session).</li>
                         title="previous chapter">The GC3Apps software</a></p>
   <h4>Next topic</h4>
   <p class="topless"><a href="grosetta.html"
-                        title="next chapter">&lt;no title&gt;</a></p>
+                        title="next chapter">The <strong class="command">grosetta</strong> and <strong class="command">gdocking</strong> scripts</a></p>
   <h3>This Page</h3>
   <ul class="this-page-menu">
     <li><a href="../_sources/gc3apps/intro.txt"
@@ -341,7 +344,7 @@ session).</li>
 <div id="searchbox" style="display: none">
   <h3>Quick search</h3>
     <form class="search" action="../search.html" method="get">
-      <input type="text" name="q" size="18" />
+      <input type="text" name="q" />
       <input type="submit" value="Go" />
       <input type="hidden" name="check_keywords" value="yes" />
       <input type="hidden" name="area" value="default" />
@@ -365,19 +368,19 @@ session).</li>
           <a href="../py-modindex.html" title="Python Module Index"
              >modules</a> |</li>
         <li class="right" >
-          <a href="grosetta.html" title="&lt;no title&gt;"
+          <a href="grosetta.html" title="The grosetta and gdocking scripts"
              >next</a> |</li>
         <li class="right" >
           <a href="index.html" title="The GC3Apps software"
              >previous</a> |</li>
-        <li><a href="../index.html">gc3pie vdevelopment (SVN $Revision$) documentation</a> &raquo;</li>
+        <li><a href="../index.html">gc3pie development (SVN $Revision$) documentation</a> &raquo;</li>
           <li><a href="index.html" >The GC3Apps software</a> &raquo;</li> 
       </ul>
     </div>
 
     <div class="footer">
         &copy; Copyright 2010-2012, Grid Computing Competence Centre, University of Zurich.
-      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.0.7.
+      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.1.3.
     </div>
 <div class="footer">This page uses <a href="http://analytics.google.com/">
 Google Analytics</a> to collect statistics. You can disable it by blocking
