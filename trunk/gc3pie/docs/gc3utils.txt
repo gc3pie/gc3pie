@@ -163,6 +163,7 @@ into the terminal::
     gkill job.16
 
 .. warning:: 
+
    *There's no way to undo a cancel operation!* Once you have issued a
    :command:`gkill` command, the job is deleted and it cannot be resumed.
    (You can still re-submit it with :command:`gresub`, though.)
