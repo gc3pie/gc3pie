@@ -195,6 +195,8 @@ Installation into a virtualenv has two distinct advantages:
    mailing-list <gc3pie@googlegroups.com>` is there to help you :-)
 
 
+.. _upgrade:
+
 Upgrade
 =======
 

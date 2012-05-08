@@ -57,6 +57,7 @@ GC3Pie is comprised of three main components:
 
   install
   configuration
+  troubleshooting
   gc3apps/index
   gc3utils
   gc3libs/index
