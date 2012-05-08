@@ -73,12 +73,9 @@ script.  Readers interested in Python programming can find the
 complete documentation about the <em>session-based script</em> <a class="reference internal" href="../glossary.html#term-api"><em class="xref std std-term">API</em></a> in
 the <tt class="xref py py-class docutils literal"><span class="pre">SessionBasedScript</span></tt> section.</p>
 <p>The functioning of GC3Apps scripts revolves around a so-called
-<em>session</em>.  A <a class="reference internal" href="../glossary.html#term-session"><em class="xref std std-term">session</em></a> is just a collection of jobs (and
-possibly dependent tasks) with a given name.  GC3Pie imposes no
-requirement on how jobs should be grouped into sessions: it is
-entirely in your hands to decide what jobs should go into a determined
-session. For instance, you could group into a single session jobs that
-analyze a set of related files.</p>
+<em>session</em>.  A <a class="reference internal" href="../glossary.html#term-session"><em class="xref std std-term">session</em></a> is just a named collection of jobs.  For
+instance, you could group into a single session jobs that analyze a
+set of related files.</p>
 <p>Each time it is run, a GC3Apps script performs the
 following steps:</p>
 <ol class="arabic">
@@ -101,6 +98,14 @@ the specified amount of seconds, and then goes back to step 3.</p>
 <p>Execution can be interrupted at any time by pressing <tt class="kbd docutils literal"><span class="pre">Ctrl+C</span></tt>.</p>
 </li>
 </ol>
+<div class="section" id="basic-command-line-usage-and-options">
+<h2>Basic command-line usage and options<a class="headerlink" href="#basic-command-line-usage-and-options" title="Permalink to this headline">¶</a></h2>
+<p>The exact command-line usage of <em>session-based scripts</em> varies from
+one script to the other, so please consult the documentation page for
+your application.  There are quite a number of common options and
+behaviors, however, which are described here.</p>
+<div class="section" id="continuous-execution">
+<h3>Continuous execution<a class="headerlink" href="#continuous-execution" title="Permalink to this headline">¶</a></h3>
 <p>While single-pass execution of a GC3Apps script is possible (and
 sometimes used), it is much more common to keep the script running
 and let it manage jobs until all are finished.  This is accomplished
@@ -121,6 +126,9 @@ new ones or fetching results every NUM seconds.</p>
 </tbody>
 </table>
 </div></blockquote>
+</div>
+<div class="section" id="verbose-listing-of-jobs">
+<h3>Verbose listing of jobs<a class="headerlink" href="#verbose-listing-of-jobs" title="Permalink to this headline">¶</a></h3>
 <p>Only a summary of job states is printed by default at the end of step
 3., together with the count of jobs that are in the specified state.
 Use the <tt class="docutils literal"><span class="pre">-l</span></tt> option (see below) to get a detailed listing of all
@@ -147,6 +155,9 @@ a table of <em>all</em> jobs is printed.</p>
 </tbody>
 </table>
 </div></blockquote>
+</div>
+<div class="section" id="maximum-number-of-concurrent-jobs">
+<h3>Maximum number of concurrent jobs<a class="headerlink" href="#maximum-number-of-concurrent-jobs" title="Permalink to this headline">¶</a></h3>
 <p>There is a maximum number of jobs that can be in <tt class="docutils literal"><span class="pre">SUBMITTED</span></tt> or
 <tt class="docutils literal"><span class="pre">RUNNING</span></tt> state at a given time.  GC3Apps scripts will delay
 submission of newly-created jobs so that this limit is never
@@ -165,6 +176,9 @@ or <tt class="docutils literal"><span class="pre">RUNNING</span></tt> state.</td
 </tbody>
 </table>
 </div></blockquote>
+</div>
+<div class="section" id="location-of-output-files">
+<h3>Location of output files<a class="headerlink" href="#location-of-output-files" title="Permalink to this headline">¶</a></h3>
 <p>By default, output files are placed in the same directory where the
 corresponding input file resides.  This can be changed with the
 following option; it is also possible to specify output locations that
@@ -177,22 +191,14 @@ vary depending on certain job features.</p>
 <tr><td class="option-group" colspan="2">
 <kbd><span class="option">-o <var>DIRECTORY</var></span>, <span class="option">--output <var>DIRECTORY</var></span></kbd></td>
 </tr>
-<tr><td>&nbsp;</td><td><p class="first">Output files from all jobs will be collected in the specified
+<tr><td>&nbsp;</td><td>Output files from all jobs will be collected in the specified
 <em>DIRECTORY</em> path.  If the destination directory does not exist, it
-is created.</p>
-<p>The following strings will be substituted into <em>DIRECTORY,</em> to
-specify an output location that varies with each submitted job:</p>
-<ul class="last simple">
-<li>the string <tt class="docutils literal"><span class="pre">PATH</span></tt> is replaced by the directory where the job input resides;</li>
-<li>the string <tt class="docutils literal"><span class="pre">NAME</span></tt> is replaced by the job name;</li>
-<li><tt class="docutils literal"><span class="pre">DATE</span></tt> is replaced by the submission date in ISO format <em>YYYY-MM-DD</em>;</li>
-<li><tt class="docutils literal"><span class="pre">TIME</span></tt> is replaced by the submission time formatted as <em>HH:MM</em>;</li>
-<li><tt class="docutils literal"><span class="pre">SESSION</span></tt> is replaced by the path to the session directory, with a <tt class="docutils literal"><span class="pre">.out</span></tt> appended.</li>
-</ul>
-</td></tr>
+is created.</td></tr>
 </tbody>
 </table>
 </div></blockquote>
+</div>
+</div>
 <div class="section" id="job-control-options">
 <h2>Job control options<a class="headerlink" href="#job-control-options" title="Permalink to this headline">¶</a></h2>
 <p>These command-line options control the requirements and constraints of
@@ -323,6 +329,13 @@ session).</li>
   <h3><a href="../index.html">Table Of Contents</a></h3>
   <ul>
 <li><a class="reference internal" href="#">Introduction to <em>session-based</em> scripts</a><ul>
+<li><a class="reference internal" href="#basic-command-line-usage-and-options">Basic command-line usage and options</a><ul>
+<li><a class="reference internal" href="#continuous-execution">Continuous execution</a></li>
+<li><a class="reference internal" href="#verbose-listing-of-jobs">Verbose listing of jobs</a></li>
+<li><a class="reference internal" href="#maximum-number-of-concurrent-jobs">Maximum number of concurrent jobs</a></li>
+<li><a class="reference internal" href="#location-of-output-files">Location of output files</a></li>
+</ul>
+</li>
 <li><a class="reference internal" href="#job-control-options">Job control options</a></li>
 <li><a class="reference internal" href="#session-control-options">Session control options</a></li>
 <li><a class="reference internal" href="#exit-code">Exit code</a></li>
