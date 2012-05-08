@@ -21,6 +21,7 @@
 .. _GC3Pie: http://gc3pie.googlecode.com/
 .. _`GC3Pie mailing list`: mailto:gc3pie@googlegroups.com
 .. _`Grid Engine`: http://gridengine.org/blog/2011/11/23/what-now/
+.. _NorduGrid: http://www.nordugrid.org/
 .. _Rosetta: http://www.rosettacommons.org/
 .. _SMSCG: http://www.smscg.ch/
 .. _Subversion: http://subversion.apache.org/
