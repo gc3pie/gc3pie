@@ -133,11 +133,11 @@ from faketransport import FakeTransport
 
 def _setup_conf():
     resource = Resource(**{
-    'name' : 'argo',
+    'name' : 'example',
     'type' : 'pbs',
      'auth' : 'ssh',
      'transport' : 'ssh',
-     'frontend' : 'argo.ictp.it',
+     'frontend' : 'example.org',
      'max_cores_per_job' : 128,
      'max_memory_per_core' : 2,
      'max_walltime' : 2,
@@ -146,7 +146,7 @@ def _setup_conf():
      'queue' : 'testing',
     'enabled' : True,})
 
-    auth = Auth({'ssh':{'name': 'ssh','type' : 'ssh','username' : 'amessina',}}, True)
+    auth = Auth({'ssh':{'name': 'ssh','type' : 'ssh','username' : 'NONEXISTENT',}}, True)
     
     return ([resource], auth)
 
@@ -170,7 +170,7 @@ class FakeApp(gc3libs.Application):
 
 def _common_setup():
     g = _setup_core()
-    b = g.get_backend('argo')
+    b = g.get_backend('example')
     b.transport = FakeTransport()
     t = b.transport
     # Basic responses
