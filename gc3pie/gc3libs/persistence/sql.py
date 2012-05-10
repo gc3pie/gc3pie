@@ -74,7 +74,7 @@ class IntId(int):
         return (None, int(self))
 
 
-class SQL(Store):
+class SqlStore(Store):
     """
     Save and load objects in a SQL db, using python's `pickle` module
     to serialize objects into a specific field.
@@ -149,29 +149,6 @@ class SQL(Store):
     corresponding `<function>` in order to get the correct value to
     store into the db.
 
-
-    >>> import tempfile, os
-    >>> (fd, name) = tempfile.mkstemp()
-    >>> from gc3libs.url import Url
-    >>> url = Url('sqlite:///%s' % name)
-    >>> db = SQL(url)
-    >>> from gc3libs.persistence.sql import DummyObject
-    >>> obj = DummyObject()
-    >>> obj.x = 'test'
-    >>> objid = db.save(obj)
-    >>> isinstance(objid, int)
-    True
-    >>> db.list() == [objid]
-    True
-    >>> db.save(obj) == objid
-    True
-    >>> del obj
-    >>> y = db.load(objid)
-    >>> y.x
-    'test'
-    
-    >>> import os
-    >>> os.remove(name)
     """
     default_extra_fields = {
         sqla.Column('type', sqla.VARCHAR(length=128)): (lambda obj: isinstance(obj, Task) and 'job' or ''),
@@ -330,26 +307,26 @@ class SQL(Store):
 # register all URLs that SQLAlchemy can handle
 def make_sqlstore(url, *args, **kw):
     """
-    Return a `SQL`:class: instance, given a SQLAlchemy URL and
+    Return a `SqlStore`:class: instance, given a SQLAlchemy URL and
     optional initialization arguments.
 
     This function is a bridge between the generic factory functions
     provided by `gc3libs.persistence.make_store`:func: and
     `gc3libs.persistence.register`:func: and the class constructor
-    `SQL`:class.
+    `SqlStore`:class.
 
     Examples::
 
       >>> ss1 = make_sqlstore(gc3libs.url.Url('sqlite:///tmp/foo.db'))
       >>> ss1.__class__.__name__
-      'SQL'
+      'SqlStore'
     """
     assert isinstance(url, gc3libs.url.Url)
     # rewrite ``sqlite`` URLs to be RFC compliant, 
     # see: http://code.google.com/p/gc3pie/issues/detail?id=261
     if url.scheme in ('sqlite', 'file'):
         url = "%s://%s/%s" % (url.scheme, url.netloc, url.path)
-    return SQL(str(url), *args, **kw)
+    return SqlStore(str(url), *args, **kw)
 
 register('sqlite',     make_sqlstore)
 register('mysql',      make_sqlstore)

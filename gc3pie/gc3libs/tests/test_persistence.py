@@ -310,7 +310,7 @@ class SqlStoreChecks(GenericStoreChecks):
 
 
     def test_sql_injection(self):
-        """Test if the `SQL` class is vulnerable to SQL injection."""
+        """Test if the `SqlStore` class is vulnerable to SQL injection."""
         obj = SimpleTask("Antonio's task")
         obj.execution.lrms_jobid = "my 'jobid' has a lot%! of strange SQL? characters; doesn't it?"
         id_ = self.store.save(obj)
@@ -321,14 +321,14 @@ class SqlStoreChecks(GenericStoreChecks):
 
     def test_sql_implicit_attribute_save(self):
         """
-        Test if SQL saves extra attributes into columns of the same name.
+        Test if `SqlStore` saves extra attributes into columns of the same name.
         """
         # extend the db
         self.c.execute('alter table %s add column value varchar(256)'
                        % self.store.table_name)
 
         # re-open the db. We need this because schema definition is
-        # checked only in SQL.__init__
+        # checked only in SqlStore.__init__
         self.store = self._make_store()
 
         obj = SimplePersistableObject('My App')
@@ -343,7 +343,7 @@ class SqlStoreChecks(GenericStoreChecks):
 
     def test_sql_save_load_extra_fields(self):
         """
-        Test if SQL reads and writes extra columns.
+        Test if `SqlStore` reads and writes extra columns.
         """
         # extend the db
         self.c.execute('alter table %s add column extra varchar(256)'
@@ -372,7 +372,7 @@ class SqlStoreChecks(GenericStoreChecks):
     @raises(AssertionError)
     def test_sql_error_if_no_extra_fields(self):
         """
-        Test if SQL reads and writes extra columns.
+        Test if `SqlStore` reads and writes extra columns.
         """
         # re-build store with a non-existent extra column; should raise `AssertionError`
         self._make_store(extra_fields={ 'extra': (lambda arg: arg.foo.value) })
@@ -393,7 +393,7 @@ class ExtraSqlChecks(object):
 
     def test_sql_create_extra_fields(self):
         """
-        Test if SQL creates extra columns.
+        Test if `SqlStore` creates extra columns.
         """
 
         # extend the db
