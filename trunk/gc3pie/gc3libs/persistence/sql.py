@@ -1,6 +1,7 @@
 #! /usr/bin/env python
 #
 """
+SQL-based storage of GC3pie objects.
 """
 # Copyright (C) 2011-2012, GC3, University of Zurich. All rights reserved.
 #
@@ -18,9 +19,6 @@
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 #
-"""This file implements an SQL-based persistency driver to store
-GC3pie objects in a SQL DB instead of using Pickle from
-`persistent.FilesystemStore` class"""
 
 __docformat__ = 'reStructuredText'
 __version__ = '$Revision$'
@@ -40,6 +38,7 @@ import sqlalchemy.sql as sql
 class DummyObject:
     pass
 
+
 def sql_next_id_factory(db):
     """
     This function will return a function which can be used as
@@ -58,8 +57,10 @@ def sql_next_id_factory(db):
     def sql_next_id(n=1):
         q = db.execute('select max(id) from store')
         nextid = q.fetchone()[0]
-        if not nextid: nextid = 1
-        else: nextid = int(nextid)+1
+        if not nextid:
+            nextid = 1
+        else:
+            nextid = int(nextid)+1
         return nextid
     
     return sql_next_id
@@ -71,6 +72,7 @@ class IntId(int):
 
     def __getnewargs__(self):
         return (None, int(self))
+
 
 class SQL(Store):
     """
@@ -172,86 +174,103 @@ class SQL(Store):
     >>> os.remove(name)
     """
     default_extra_fields = {
-                sqla.Column('type', sqla.VARCHAR(length=128)) : lambda obj: isinstance(obj, Task) and 'job' or '',
-                sqla.Column('jobid', sqla.VARCHAR(length=128)): lambda obj: obj.execution.lrms_jobid,
-                sqla.Column('jobname', sqla.VARCHAR(length=255)): lambda obj: obj.jobname,
-                sqla.Column('jobstatus', sqla.VARCHAR(length=128)) : lambda obj: obj.execution.state,
-                }
+        sqla.Column('type', sqla.VARCHAR(length=128)): (lambda obj: isinstance(obj, Task) and 'job' or ''),
+        sqla.Column('jobid', sqla.VARCHAR(length=128)): (lambda obj: obj.execution.lrms_jobid),
+        sqla.Column('jobname', sqla.VARCHAR(length=255)): (lambda obj: obj.jobname),
+        sqla.Column('jobstatus', sqla.VARCHAR(length=128)): (lambda obj: obj.execution.state),
+        }
 
-    def __init__(self, url, table_name="store", idfactory=None, extra_fields=default_extra_fields):
+    def __init__(self, url, table_name="store", idfactory=None,
+                 extra_fields=default_extra_fields):
         """
         Open a connection to the storage database identified by
         url. It will use the correct backend (MySQL, psql, sqlite3)
         based on the url.scheme value
         """
 
-        # gc3libs.url.Url is not RFC compliant, check issue http://code.google.com/p/gc3pie/issues/detail?id=261
+        # `gc3libs.url.Url` is not RFC compliant, 
+        # see: http://code.google.com/p/gc3pie/issues/detail?id=261
         if url.scheme in ('file', 'sqlite'):
             url = "%s://%s/%s" % (url.scheme, url.netloc, url.path)
         self.__engine = sqla.create_engine(str(url))
-        self.tname = table_name
+        self.table_name = table_name
 
         self.__meta = sqla.MetaData(bind=self.__engine)
         self.__meta.reflect()
-        self.extra_fields = {}
 
+        self.extra_fields = dict()
         # check if the db exists and already has a 'store' table
-        if self.tname not in self.__meta.tables:
+        if self.table_name not in self.__meta.tables:
             # No table, let's create it
-            
             table = sqla.Table(
-                self.tname,
+                self.table_name,
                 self.__meta,
-                sqla.Column('id', sqla.INTEGER(), primary_key=True, nullable=False),
+                sqla.Column('id',   sqla.INTEGER(), primary_key=True, nullable=False),
                 sqla.Column('data', sqla.BLOB()),
                 )
-            for col in extra_fields:
+            for col, func in extra_fields.iteritems():
                 if isinstance(col, sqla.Column):
                     table.append_column(col.copy())
+                    self.extra_fields[col.name] = func
                 else:
                     table.append_column(sqla.Column(col, sqla.BLOB()))
+                    self.extra_fields[str(col)] = func
             self.__meta.create_all()
+
         else:
             # A 'store' table exists. Check the column names and fill
-            # self.extra_fields
+            # `self.extra_fields` accordingly.
 
-            # Please note that the "i=i" in the lambda definition is
+            # NOTE: the "attr=colname" in the lambda definition is
             # *needed*, since otherwise all the lambdas would share
-            # the same outer 'i' object, which is the last used in the
-            # loop.
+            # the same outer 'colname' reference, which is bound to
+            # the last `colname` value used in the loop...
+            self.extra_fields = dict()
+            for colname in self.__meta.tables[self.table_name].columns.keys():
+                colname = str(colname)
+                if colname in ('id', 'data', 'type', 'jobid', 'jobname', 'jobstatus'):
+                    continue
+                if colname in extra_fields:
+                    self.extra_fields[colname] = extra_fields[colname]
+                else:
+                    self.extra_fields[colname] = (lambda obj, attr=colname: getattr(obj, attr))
 
-            self.extra_fields = dict(((str(i), lambda x, i=i: getattr(x, i))  for i in self.__meta.tables[self.tname].columns.keys() if i not in ('id', 'data', 'type', 'jobid', 'jobname', 'jobstatus')))
+            # check that it has all the required fields
+            if __debug__:
+                actual_fields = set(str(colname) for colname in self.__meta.tables[self.table_name].columns.keys())
+                expected_fields = set(['id', 'data']
+                                      + [str(col) for col in extra_fields.keys() ])
+                assert expected_fields <= actual_fields
 
-        for (col, func) in extra_fields.iteritems():
-            if hasattr(col, 'name'): col=col.name
-            self.extra_fields[str(col)] = func
-
-        self.t_store = self.__meta.tables[self.tname]
+        self.t_store = self.__meta.tables[self.table_name]
         
         self.idfactory = idfactory
         if not idfactory:
             self.idfactory = IdFactory(id_class=IntId)
-            
+
+
     @same_docstring_as(Store.list)
     def list(self):
         q = sql.select([self.t_store.c.id])
         conn = self.__engine.connect()
         rows = conn.execute(q)
-
-        ids = [i[0] for i in rows.fetchall()]
+        ids = [ i[0] for i in rows.fetchall() ]
         conn.close()
         return ids
+
 
     @same_docstring_as(Store.replace)
     def replace(self, id_, obj):
         self._save_or_replace(id_, obj, 'replace')
-                              
+
+
     # copied from FilesystemStore
     @same_docstring_as(Store.save)
     def save(self, obj):
         if not hasattr(obj, 'persistent_id'):
             obj.persistent_id = self.idfactory.new(obj)
         return self._save_or_replace(obj.persistent_id, obj, 'save')
+
 
     def _save_or_replace(self, id_, obj, action):
 
@@ -267,8 +286,11 @@ class SQL(Store):
         for column in self.extra_fields:
             try:
                 fields[column] = self.extra_fields[column](obj)
-            except:
-                pass
+                gc3libs.log.debug("Writing value '%s' in column '%s' for object '%s'",
+                                  fields[column], column, obj)
+            except Exception, ex:
+                gc3libs.log.warning("Error saving DB column '%s' of object '%s': %s: %s",
+                                    column, obj, ex.__class__.__name__, str(ex))
 
         q = sql.select([self.t_store.c.id]).where(self.t_store.c.id==id_)
         conn = self.__engine.connect()
@@ -287,6 +309,7 @@ class SQL(Store):
         # return id
         return obj.persistent_id
 
+
     @same_docstring_as(Store.load)
     def load(self, id_):
         q = sql.select([self.t_store.c.data]).where(self.t_store.c.id == id_)
@@ -303,33 +326,15 @@ class SQL(Store):
 
         return obj
 
+
     @same_docstring_as(Store.remove)
     def remove(self, id_):
         conn = self.__engine.connect()
         conn.execute(self.t_store.delete().where(self.t_store.c.id==id_))
         conn.close()
 
-    @staticmethod
-    def escape(s):
-        """escape string `s` so that it can be used in a sql query.
 
-        Please note that for now we only escape "'" chars because of
-        the queries we are doing, thus this function is not at all a
-        fully-featured SQL escaping function!
 
-        >>> SQL.escape("Antonio's boat")
-        "Antonio''s boat"
-        >>> SQL.escape(u"Antonio's unicode boat")
-        u"Antonio''s unicode boat"
-        >>> SQL.escape(9)
-        9
-        
-        """
-        if hasattr(s, 'replace'):
-            return s.replace("'", "''")
-        else:
-            return s
-        
 ## main: run tests
 
 if "__main__" == __name__:

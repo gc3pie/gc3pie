@@ -1,8 +1,9 @@
 #! /usr/bin/env python
 #
 """
+Test persistence backends.
 """
-# Copyright (C) 2011, GC3, University of Zurich. All rights reserved.
+# Copyright (C) 2011, 2012, GC3, University of Zurich. All rights reserved.
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
@@ -18,48 +19,66 @@
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 #
-"""Test for persistency backend(s)"""
-
 __docformat__ = 'reStructuredText'
 __version__ = '$Revision$'
 
-from gc3libs.url import Url
-from gc3libs.persistence import persistence_factory, FilesystemStore, Persistable
-import gc3libs.exceptions as gc3ex
-import tempfile, os, shutil
+# stdlib imports
+import os
 import pickle
-from gc3libs import Task
-from nose.tools import raises
-from nose.plugins.skip import SkipTest
-import sqlalchemy.exc
+import shutil
+import tempfile
 
+# 3rd party imports
+from nose.plugins.skip import SkipTest
+from nose.tools import raises, assert_equal
+
+# GC3Pie imports
+import gc3libs; from gc3libs import Run
+import gc3libs.exceptions
+from gc3libs.persistence import persistence_factory, FilesystemStore, Persistable
+from gc3libs.url import Url
+from gc3libs import Task
+
+# we skip MySQL tests if no MySQLdb module is present
 try:
     import MySQLdb
 except:
     MySQLdb = None
 
-class MyObj(Persistable):
-    def __init__(self, x):
-        self.x = x
 
-class MyList(list, Persistable):
+class SimplePersistableObject(Persistable):
+    def __init__(self, x):
+        self.value = x
+
+    def __eq__(self, other):
+        return (self.value == other.value)
+
+
+class SimplePersistableList(list, Persistable):
     """
     Add a `__dict__` to `list`, so that creating a `persistent_id`
     entry on an instance works.
     """
     pass
 
-class MyTask(Task):
+
+class SimpleTask(Task):
+    # XXX: do we need this? why not instanciating `Task` directly?
     pass
 
-class SlotClassWrong(object):
-    """
-    This and the SlotClass are class with __slots__ attribute to
-    check that persistency works also with this kind of
-    classes. Usually you just need to use a binary protocol for
-    pickle.
 
-    This class will raise an error because __slots__ does not contain "persistent_id". The SlotClass class instead, will work as expected.
+class NonPersistableClassWithSlots(object):
+    """
+    A class to test that persistence of classes with `__slots__`.
+    
+    This and the `PersistableClassWithSlots`:class: are classes with
+    `__slots__` attribute to check that persistence works also with
+    this kind of classes. Usually you just need to use a binary
+    protocol for pickle.
+
+    This class will raise an error because `__slots__` does not
+    contain `persistent_id`. The `PersistableClassWithSlots`:class:
+    class instead, will work as expected.
 
     Check for instance:
     http://stackoverflow.com/questions/3522765/python-pickling-slots-error
@@ -69,335 +88,423 @@ class SlotClassWrong(object):
     def __init__(self, attr):
         self.attr = attr
 
-class SlotClass(SlotClassWrong):
+
+class PersistableClassWithSlots(NonPersistableClassWithSlots):
     __slots__ = ["attr", "persistent_id"]
+
     
-def _generic_persistency_test(driver):
-    obj = MyObj('GC3')
-    id = driver.save(obj)
-    del obj
-    obj = driver.load(id)
-    assert obj.x == 'GC3'    
-
-    # We assume tat if an object is already on the db a call to
-    # `driver.save` will not save a duplicate of the object, but it
-    # will override the old one.
-    id1 = driver.save(obj)
-    id2 = driver.save(obj)
-    assert id1 == id2
-
-    # Removing objects
-    driver.remove(id)
-    
-    @raises(gc3ex.LoadError)
-    def _testload(x):
-        obj = driver.load(x)
-        assert False, "Object %s should NOT be found" % id
-
-    _testload(id)
-
-    # test id consistency
-    ids = []
-    for i in range(10):
-        ids.append(driver.save(MyObj(str(i))))
-    assert len(ids) == len(set(ids))
-
-    # cleanup
-    for i in ids:
-        driver.remove(i)
-    
-def _generic_nested_persistency_test(driver):
-    obj = MyList([MyObj('j1'), MyObj('j2'), MyObj('j3'), ])
-
-    id = driver.save(obj)
-    del obj
-    obj = driver.load(id)
-    for i in range(3):
-        assert obj[i].x == 'j%d' % (i+1)
-
-    driver.remove(id)
-
-    @raises(gc3ex.LoadError)
-    def _testload(x):
-        obj = driver.load(x)
-        assert False, "Object %s should NOT be found" % id
-
-    _testload(id)
-
-def _save_different_objects_separated(driver):
-    """Since we want to save Tasks separately from the containing
-    object (e.g. SessionBasedScript) this test will try to save a
-    generic persisted container which contain another persisted and
-    check that they are saved on different items.
-
-    This is done by checking that all the objects have a persistent_id
-    attribute and """
-    
-    container = MyList()
-    container.append(MyObj('MyJob'))
-    id = driver.save(container)
-
-    # Check that there are two files!
-    assert id == container.persistent_id
-    assert hasattr(container[0], 'persistent_id')
-    
-    objid = container[0].persistent_id
-    if isinstance(driver, FilesystemStore):
-        containerfile = os.path.join(driver._directory, "%s" % id)
-        assert os.path.exists(containerfile)
-
-        objfile = os.path.join(driver._directory, "%s" % objid)
-        assert os.path.exists(objfile)
-
-    del container
-    container = driver.load(id)
-    obj = driver.load(objid)
-
-def _run_driver_tests(db):
-    _generic_persistency_test(db)
-    _generic_nested_persistency_test(db)
-    _generic_newstile_slots_classes(db)
-    _save_different_objects_separated(db)
 
 
-def test_file_persistency():
-    tmpdir = tempfile.mkdtemp()
+def _run_generic_tests(store):
+    _generic_persistence_test(store)
+    _generic_nested_persistence_test(store)
+    _generic_persist_classes_with_slots(store)
+    _save_different_objects_separated(store)
 
-    path = Url(tmpdir)
-    fs = FilesystemStore(path.path)
-    obj = MyObj('GC3')
 
-    _run_driver_tests(fs)
-    shutil.rmtree(tmpdir)
-
-def test_filesystemstorage_pickler_class():
+class GenericStoreChecks(object):
     """
-    If you want to save two independent objects but one of them has a
-    reference to the other, the standard behavior of Pickle is to save
-    a copy of the contained object into the same file of the
-    containing object.
+    A suite of tests for the generic `gc3libs.persistence.Store` interface.
+    """
+    
+    def test_generic_persistence(self):
+        """
+        Test basic functionality of the persistence subsystem.
+        """
+        # check that basic save/load works
+        obj = SimplePersistableObject('GC3')
+        id = self.store.save(obj)
+        del obj
+        obj = self.store.load(id)
+        assert obj.value == 'GC3'    
 
-    The FilesystemStorage.Pickler class is aimed to avoid this.
-    """    
-    tmpfname = tempfile.mkdtemp()
-    try:
-        fs = FilesystemStore(tmpfname)
-        obj1 = MyObj('GC3_parent')
-        obj2 = MyObj('GC3_children')
-        id2 = fs.save(obj2)
-        obj1.children = obj2
-        assert obj1.children is obj2
-        id1 = fs.save(obj1)
-        del obj1
-        del obj2
-        obj1 = fs.load(id1)
-        obj2 = fs.load(id2)
-        assert obj1.children.x == 'GC3_children'
-        # XXX: should this happen? I am not sure
-        assert obj1.children is not obj2
+        # check that if an object is already on the db a call to
+        # `self.store.save` will not save a duplicate of the object, but it
+        # will override the old one.
+        id1 = self.store.save(obj)
+        id2 = self.store.save(obj)
+        assert id1 == id2
+
+        # Removing objects
+        self.store.remove(id)
+        try:
+            obj = self.store.load(id)
+            raise AssertionError("Object %s should not have been found" % id)
+        except gc3libs.exceptions.LoadError:
+            # OK, this is what we were expecting
+            pass
+
+        # check that IDs are never duplicate
+        ids = []
+        for i in range(10):
+            ids.append(self.store.save(SimplePersistableObject(str(i))))
+        assert len(ids) == len(set(ids))
 
         # cleanup
-    finally:
-        shutil.rmtree(tmpfname)
+        for i in ids:
+            self.store.remove(i)
 
-def _generic_newstile_slots_classes(db):
-    return
-    obj = SlotClass('GC3')
-    assert obj.attr == 'GC3'
-    id_ = db.save(obj)
-    del obj
-    obj2 = db.load(id_)
-    assert obj2.attr == 'GC3'
 
-    obj2 = SlotClassWrong('GC3')
+    def test_persist_classes_with_slots(self):
+        raise SkipTest("FIXME: Test code needs to be checked!")
 
-    @raises(AttributeError)
-    def _test_save(x):
-        db.save(x)
-        assert False,  "We shouldn't reach this point"
-    _test_save(obj2)
+        # FIXME: check this code!
+        obj = PersistableClassWithSlots('GC3')
+        assert obj.attr == 'GC3'
+        id_ = self.store.save(obj)
+        del obj
+        obj2 = self.store.load(id_)
+        assert obj2.attr == 'GC3'
+
+        obj2 = NonPersistableClassWithSlots('GC3')
+        try:
+            self.store.save(obj2)
+            raise AssertionError("We shouldn't reach this point")
+        except AttributeError:
+            pass
+
+
+    # XXX: what's the between difference this test and `test_disaggregate_persistable_obejcts`?
+    def test_nested_persistence(self):
+        """
+        Check that nested objects are saved/loaded correctly.
+        """
+        obj = SimplePersistableList([
+            SimplePersistableObject('j1'),
+            SimplePersistableObject('j2'),
+            SimplePersistableObject('j3'),
+            ])
+
+        # save
+        id = self.store.save(obj)
+        del obj
+
+        # load
+        obj = self.store.load(id)
+        for i in range(3):
+            assert obj[i].value == ('j%d' % (i+1))
+
+        # remove
+        self.store.remove(id)
+        try:
+            obj = self.store.load(id)
+            raise AssertionError("Object %s should not have been found!" % id)
+        except gc3libs.exceptions.LoadError:
+            pass
+
+
+    def test_disaggregate_persistable_objects(self):
+        """
+        Check that `Persistable` instances are saved separately from their containers.
+
+        Since we want to save `Task`s separately from the containing
+        object (e.g. `SessionBasedScript`), this test will try to save a
+        generic persisted container which contain another persisted and
+        check that they are saved on different items.
+
+        This is done by checking that all the objects have a unique
+        `persistent_id` attribute.
+        """
+        container = SimplePersistableList()
+        container.append(SimplePersistableObject('MyJob'))
+        container_id = self.store.save(container)
+
+        # check that IDs have been assigned
+        assert hasattr(container, 'persistent_id')
+        assert hasattr(container[0], 'persistent_id')
+
+        # check that IDs are distinct
+        assert container_id == container.persistent_id
+        objid = container[0].persistent_id
+        assert objid != container_id
+
+        # check that loading the container re-creates the same contained object
+        del container
+        container = self.store.load(container_id)
+        obj = self.store.load(objid)
+        assert obj == container[0]
+
+        # return objects for further testing
+        return (container_id, objid)
+
+
+class TestFilesystemStore(GenericStoreChecks):
     
-def test_sqlite_persistency():
-    (fd, tmpfname) = tempfile.mkstemp()
-    path = Url('sqlite://%s' % tmpfname)
-    db = persistence_factory(path)
-    obj = MyObj('GC3')
+    def setUp(self):
+        self.tmpdir = tempfile.mkdtemp()
+        self.store = FilesystemStore(self.tmpdir)
+
+    def tearDown(self):
+        shutil.rmtree(self.tmpdir)
+
+    # XXX: there's nothing which is `FilesystemStore`-specific here!
+    def test_filesystemstorage_pickler_class(self):
+        """
+        Check that `Persistable` instances are saved saparately.
+        
+        Namely, if you want to save two independent objects but one of
+        them has a reference to the other, the standard behavior of
+        Pickle is to save a copy of the contained object into the same
+        file of the containing object.
+
+        The FilesystemStorage.Pickler class is aimed to avoid this.
+        """    
+        obj1 = SimplePersistableObject('parent')
+        obj2 = SimplePersistableObject('children')
+        obj1.children = obj2
+        id2 = self.store.save(obj2)
+        id1 = self.store.save(obj1)
+        del obj1
+        del obj2
+        obj1 = self.store.load(id1)
+        obj2 = self.store.load(id2)
+        assert obj1.children.value == 'children'
+        assert obj2.value == 'children'
+        assert obj1.children == obj2
+
+    def test_disaggregate_persistable_objects(self):
+        """
+        Check that `Persistable` instances are saved separately from their containers.
+
+        In addition to the checks done in `GenericStoreChecks`, we
+        also test that files have been created.
+        """
+        # std checks
+        container_id, obj_id = super(TestFilesystemStore, self).test_disaggregate_persistable_objects()
+        # check that files exist
+        container_file = os.path.join(self.store._directory, str(container_id))
+        assert os.path.exists(container_file)
+        obj_file = os.path.join(self.store._directory, str(obj_id))
+        assert os.path.exists(obj_file)
+
     
-    try:
-        _run_driver_tests(db)
-    finally:
-        os.remove(tmpfname)
+class SqlStoreChecks(GenericStoreChecks):
+    """
+    Extend `GenericStoreChecks` with additional SQL-related tests.
 
-def test_mysql_persistency():
-    if not MySQLdb:
-        raise SkipTest("Skipping MySQL tests because MySQLdb module is not available")
-    
-    try:
-        path = Url('mysql://gc3user:gc3pwd@localhost/gc3')    
-        db = persistence_factory(path)
-    except sqlalchemy.exc.OperationalError, e:
-        # Ignore MySQL errors, since the mysql server may not be
-        # running or not properly configured.
-        raise SkipTest("Connection to MySQL failed: environment unready")
+    In order for these tests to work, the class constructor must
+    define these instance attributes:
 
-    _run_driver_tests(db)
+    * `self.db_url`: SqlAlchemy URL to open the database
+    * `self.store`: a `gc3libs.persistence.Store` instance to use for tests
+    * `self.c`: a valid cursor for executing raw SQL queries.
+    """
 
+    def test_default_fields(self):
+        app = gc3libs.Application(
+            executable='/bin/true',
+            arguments=[],
+            inputs=[],
+            outputs=[],
+            output_dir='/tmp',
+            jobname='test_job_persistence')
 
-def test_sqlite_job_persistency():
-    try:
-        import sqlite3 as sqlite
-    except ImportError:
-        import pysqlite2.dbapi2 as sqlite
-    import gc3libs
-    from gc3libs.core import Run
-    app = gc3libs.Application(executable='/bin/true', arguments=[], inputs=[], outputs=[], output_dir='/tmp')
+        app.execution.state = Run.State.NEW
+        app.execution.lrms_jobid = 1
 
-    app.execution = MyObj('')
-    app.execution.state = Run.State.NEW
-    app.execution.lrms_jobid = 1
-    app.jobname = 'GC3Test'
+        id_ = self.store.save(app)
+        self.c.execute('select jobid,jobname,jobstatus from %s where id=%d'
+                  % (self.store.table_name, app.persistent_id))
+        row = self.c.fetchone()
 
-    (fd, tmpfname) = tempfile.mkstemp()
-    path = Url('sqlite://%s' % tmpfname)
-    db = persistence_factory(path)
-    id_ = db.save(app)
-    
-    conn = sqlite.connect(tmpfname)
-    c = conn.cursor()
-    c.execute('select jobid,jobname, jobstatus from store where id=%d' % app.persistent_id)
-    row = c.fetchone()
-    try:
         assert int(row[0]) == app.execution.lrms_jobid
         assert row[1] == app.jobname
         assert row[2] == app.execution.state
-    finally:
-        c.close()
-        os.remove(tmpfname)
-    
-def test_sql_injection():
-    """Test if the `SQL` class is vulnerable to SQL injection"""
-    (fd, tmpfname) = tempfile.mkstemp()
-    path = Url('sqlite://%s' % tmpfname)
-    db = persistence_factory(path)
-    obj = MyTask("Antonio's task")
-    obj.execution.lrms_jobid = "my'job'id'is'strange'"
-    try:
-        id_ = db.save(obj)
-        obj2 = db.load(id_)
+
+
+    def test_sql_injection(self):
+        """Test if the `SQL` class is vulnerable to SQL injection."""
+        obj = SimpleTask("Antonio's task")
+        obj.execution.lrms_jobid = "my 'jobid' has a lot%! of strange SQL? characters; doesn't it?"
+        id_ = self.store.save(obj)
+        obj2 = self.store.load(id_)
         assert obj.jobname == obj2.jobname
         assert obj.execution.lrms_jobid == obj2.execution.lrms_jobid
-    finally:
-        os.remove(path.path)
 
-def test_sql_extend_table():
-    """Test if SQL is able to save extra attributes if extra columns have been defined into the DB.
 
-    We add two columns to the DB, one will be automatically mapped to
-    one of the attribute of the calss, the other will be mapped to an
-    attribute of an attribute using a lambda function."""
-    (fd, tmpfname) = tempfile.mkstemp()
-    path = Url('sqlite://%s' % tmpfname)
-    # create the db with default schema
-    db = persistence_factory(path)
+    def test_sql_implicit_attribute_save(self):
+        """
+        Test if SQL saves extra attributes into columns of the same name.
+        """
+        # extend the db
+        self.c.execute('alter table %s add column value varchar(256)'
+                       % self.store.table_name)
 
-    try:
-        import sqlite3 as sqlite
-    except ImportError:
-        import pysqlite2.dbapi2 as sqlite
+        # re-open the db. We need this because schema definition is
+        # checked only in SQL.__init__
+        self.store = self._make_store()
 
-    # Extend the db
-    conn = sqlite.connect(tmpfname)
-    c = conn.cursor()
-    c.execute('alter table store add column x varchar(256)')
-    c.execute('alter table store add column extra1 varchar(256)')
+        obj = SimplePersistableObject('My App')
+        id = self.store.save(obj)
 
-    # re-open the db. We need this because schema definition is
-    # checked only in SQL.__init__
-    from sqlalchemy import Column, VARCHAR
-    db = persistence_factory(path, 
-                             extra_fields={ 'extra1' : lambda x: x.foo.x})
-    obj = MyObj('My App')
+        # check that the attribute `.value` has been saved in the dedicated col
+        self.c.execute('select value from %s where id=%s' % (self.store.table_name, id))
+        rows = self.c.fetchall()
+        assert_equal(len(rows), 1)
+        assert_equal(rows[0][0], obj.value)
 
-    try:
-        id_ = db.save(obj)
-        c.execute('select x from store where id=%d' % id_)
-        rows = c.fetchall()
-        assert len(rows) == 1
-        assert rows[0][0] == obj.x
 
-        # Try with the column which contains a dot
-        obj.foo = MyObj('antani')
-        id_ = db.save(obj)
-        c.execute("select extra1 from store where id=%d" % id_)
-        rows = c.fetchall()
-        assert len(rows) == 1
-        assert rows[0][0] == obj.foo.x
-    finally:
-        os.remove(path.path)
+    def test_sql_save_load_extra_fields(self):
+        """
+        Test if SQL reads and writes extra columns.
+        """
+        # extend the db
+        self.c.execute('alter table %s add column extra varchar(256)'
+                       % self.store.table_name)
+        # if this query does not error out, the column is defined
+        self.c.execute("select distinct count(extra) from %s" % self.store.table_name)
+        rows = self.c.fetchall()
+        assert_equal(len(rows), 1)
 
+        # re-build store, as the table list is read upon `__init__`
+        self.store = self._make_store(extra_fields={ 'extra': (lambda arg: arg.foo.value) })
+
+        # create and save an object
+        obj = SimplePersistableObject('an object')
+        obj.foo = SimplePersistableObject('an attribute')
+        id = self.store.save(obj)
+
+        # check that the value has been saved
+        self.c.execute("select extra from %s where id=%d"
+                       % (self.store.table_name, id))
+        rows = self.c.fetchall()
+        assert_equal(len(rows), 1)
+        assert_equal(rows[0][0], obj.foo.value)
+
+
+    @raises(AssertionError)
+    def test_sql_error_if_no_extra_fields(self):
+        """
+        Test if SQL reads and writes extra columns.
+        """
+        # re-build store with a non-existent extra column; should raise `AssertionError`
+        self._make_store(extra_fields={ 'extra': (lambda arg: arg.foo.value) })
+
+
+
+
+class ExtraSqlChecks(object):
+    """
+    `SqlStore` that depend on the setup of a non-default table.
+    """
+
+    def _make_store(self, url, **kwargs):
+        self.db_url = url
+        self.store = persistence_factory(url, **kwargs)
+        self.c = self.store.__engine.connect()
+
+
+    def test_sql_create_extra_fields(self):
+        """
+        Test if SQL creates extra columns.
+        """
+
+        # extend the db
+        self._make_store(self.db_url,
+                         extra_fields={ 'extra': (lambda arg: arg.foo.value) })
+
+        # if this query does not error out, the column is defined
+        self.c.execute("select distinct count(extra) from %s" % self.store.table_name)
+        rows = self.c.fetchall()
+        assert_equal(len(rows), 1)
+
+        # create and save an object
+        obj = SimplePersistableObject('an object')
+        obj.foo = SimplePersistableObject('an attribute')
+        id = db.save(obj)
+
+        # check that the value has been saved
+        self.c.execute("select extra from %s where id=%d"
+                       % (self.store.table_name, id))
+        rows = self.c.fetchall()
+        assert_equal(len(rows), 1)
+        assert_equal(rows[0][0], obj.foo.value)
+
+
+
+class TestSqliteStore(SqlStoreChecks):
+    """Test SQLite backend."""
     
-def test_sql_create_custom_table():
-    """Test automatic creation of extra column in the 'store' table"""
-    (fd, tmpfname) = tempfile.mkstemp()
-    path = Url('sqlite://%s' % tmpfname)
-    from sqlalchemy import Column, VARCHAR
+    @classmethod
+    def setup_class(cls):
+        try:
+            import sqlite3 as sqlite
+        except ImportError:
+            import pysqlite2.dbapi2 as sqlite
+        cls.sqlite = sqlite
 
-    # Create a db with an extra field named "extra" which will
-    # contains the value of `foo` attribute of the object
-    db = persistence_factory(path, 
-                             extra_fields={
-            Column('extra', VARCHAR(length=128)) : lambda x: x.foo}
-                             )
-    obj = MyObj('My App')
-    obj.foo = 'foo bar'
+    @classmethod
+    def teardown_class(cls):
+        pass
 
-    # Create a connection to the database
-    try:
-        import sqlite3 as sqlite
-    except ImportError:
-        import pysqlite2.dbapi2 as sqlite
-    conn = sqlite.connect(tmpfname)
-    c = conn.cursor()
+    def setUp(self):
+        fd, self.tmpfile = tempfile.mkstemp()
+        self.db_url = Url('sqlite://%s' % self.tmpfile)
+        self.store = self._make_store()
+
+        # create a connection to the database
+        self.conn = self.sqlite.connect(self.tmpfile)
+        self.c = self.conn.cursor()
+
+    def tearDown(self):
+        self.c.close()
+        os.remove(self.tmpfile)
+
+    def _make_store(self, **kwargs):
+        return persistence_factory(self.db_url, **kwargs)
+    
+
+
+class TestSqliteStoreWithAlternateTable(TestSqliteStore):
+    """Test SQLite backend with a different table name."""
+
+    def _make_store(self, **kwargs):
+        return persistence_factory(self.db_url, table_name='another_store', **kwargs)
+
+    def test_alternate_table_not_empty(self):
+        obj = SimplePersistableObject('an object')
+        self.store.save(obj)
         
-    try:
-        # Save the object, read the data from the db and check if they
-        # are different.
-        id_ = db.save(obj)
-        c.execute("select extra from store where id=%d" % id_)
-        rows = c.fetchall()
-        assert len(rows) == 1
-        assert rows[0][0] == obj.foo
-    finally:
-        os.remove(path.path)
+        self.c.execute("select id from %s" % self.store.table_name)
+        rows = self.c.fetchall()
+        assert len(rows) > 0
 
 
-def test_table_with_different_name():
-    (fd, tmpfname) = tempfile.mkstemp()
-    path = Url('sqlite://%s' % tmpfname)
-    from sqlalchemy import Column, VARCHAR
-    db = persistence_factory(path, table_name='store_2')
+class TestMysqlStore(SqlStoreChecks):
 
-    # Create a connection to the database
-    try:
-        import sqlite3 as sqlite
-    except ImportError:
-        import pysqlite2.dbapi2 as sqlite
-    conn = sqlite.connect(tmpfname)
-    c = conn.cursor()
-    
-    try:
-        _run_driver_tests(db)
-        # Save the object, read the data from the db and check if they
-        # are different.
-        c.execute("select id from store_2")
-        rows = c.fetchall()
-    finally:
-        os.remove(path.path)
+    @classmethod
+    def setup_class(cls):
+        # we skip MySQL tests if no MySQLdb module is present
+        try:
+            import MySQLdb
+        except:
+            raise SkipTest("MySQLdb module not installed.")
+
+    @classmethod
+    def teardown_class(cls):
+        pass
+
+    def setUp(self):
+        try:
+            self.db_url = Url('mysql://gc3user:gc3pwd@localhost/gc3')
+            self.db = persistence_factory(self.db_url)
+        except MySQLdb.OperationalError:
+            raise SkipTest("Cannot connect to MySQL database.")
+
+        # create a connection to the database
+        #self.conn = self.sqlite.connect(self.tmpfile)
+        #self.c = conn.cursor()
+
+    def tearDown(self):
+        pass
+        # self.c.close()
+        # os.remove(self.tmpfile)
+
 
 
 if __name__ == "__main__":
     # fix pickle error
-    from test_persistence import MyObj, SlotClassWrong, SlotClass
+    from test_persistence import SimplePersistableObject, NonPersistableClassWithSlots, PersistableClassWithSlots
 
     from common import run_my_tests
     run_my_tests(locals())
