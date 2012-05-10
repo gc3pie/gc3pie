@@ -107,5 +107,5 @@ def test_io_spec_to_dict_unicode():
 ## main: run tests
 
 if "__main__" == __name__:
-    from test.common import run_my_tests
+    from common import run_my_tests
     run_my_tests(locals())
