@@ -3,7 +3,7 @@
 """
 Facade to store and retrieve Job information from permanent storage.
 """
-# Copyright (C) 2009-2011 GC3, University of Zurich. All rights reserved.
+# Copyright (C) 2009-2012 GC3, University of Zurich. All rights reserved.
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
@@ -466,7 +466,7 @@ def persistence_factory(uri, *args, **kw):
         uri = Url(uri)
     if uri.scheme == 'file': return FilesystemStore(uri, *args, **kw)
     else:
-        from sql_persistence import SQL
+        from gc3libs.persistence.sql import SQL
         return SQL(uri, *args, **kw)
 
 ## main: run tests
