@@ -289,6 +289,74 @@ def create_unpickler(driver, stream):
     return p
 
 
+## registration mechanism
+
+_registered_store_ctors = { }
+
+def register(scheme, constructor):
+    """
+    Register `constructor` as the factory corresponding to an URL scheme.
+
+    If a different constructor is already registered for the same
+    scheme, it is silently overwritten.
+
+    The registry mapping schemes to constructors is used in the
+    `make_store`:func: to create concrete instances of
+    `gc3libs.persistence.Store`, given a URI that identifies the kind
+    and location of the storage.
+
+    :param str scheme: URL scheme to associate with the given constructor.
+    :param callable constructor: A callable returning a `Store`:class: instance. Typically, a class constructor.
+    """
+    global _registered_store_ctors
+    assert callable(constructor), (
+        "Registering non-callable constructor for scheme '%s' in `gc3libs.persistence.register`"
+        % scheme)
+    gc3libs.log.debug("Registering scheme '%s' with the `gc3libs.persistence` registry.", scheme)
+    _registered_store_ctors[ str(scheme) ] = constructor
+
+
+def make_store(uri, *args, **kw):
+    """
+    Factory producing concrete `Store`:class: instances.
+
+    Given a URL and (optionally) initialization arguments, return a
+    fully-constructed `Store`:class: instance.
+
+    The only required argument is `uri`; if any other arguments are
+    present in the function invocation, they are passed verbatim to
+    the constructor associated with the scheme of the given `uri`.
+
+    Example::
+
+      >>> fs1 = make_store('file:///tmp')
+      >>> fs1.__class__.__name__
+      'FilesystemStore'
+
+    Argument `uri` can also consist of a path name, in which case a
+    URL scheme 'file:///' is assumed::
+
+      >>> fs2 = make_store('/tmp')
+      >>> fs2.__class__.__name__
+      'FilesystemStore'
+      
+    """
+    if not isinstance(uri, Url):
+        uri = Url(uri)
+    try:
+        return _registered_store_ctors[uri.scheme](uri, *args, **kw)
+    except KeyError:
+        gc3libs.log.error("Unknown URL scheme '%s' in `gc3libs.persistence.make_store`:"
+                          " has never been registered.", uri.scheme)
+        raise
+    except Exception, ex:
+        gc3libs.log.error("Error constructing store for URL '%s': %s: %s",
+                          str(uri), ex.__class__.__name__, str(ex))
+        raise
+
+
+## persist objects in a filesystem directory
+
 class FilesystemStore(Store):
     """
     Save and load objects in a given directory.  Uses Python's
@@ -461,13 +529,28 @@ class FilesystemStore(Store):
                     pass # ignore errors
             raise
 
-def persistence_factory(uri, *args, **kw):
-    if not isinstance(uri, Url):
-        uri = Url(uri)
-    if uri.scheme == 'file': return FilesystemStore(uri, *args, **kw)
-    else:
-        from gc3libs.persistence.sql import SQL
-        return SQL(uri, *args, **kw)
+
+def make_filesystemstore(url, *args, **kw):
+    """
+    Return a `FilesystemStore`:class: instance, given a 'file:///' URL
+    and optional initialization arguments.
+
+    This function is a bridge between the generic factory functions
+    provided by `gc3libs.persistence.make_store`:func: and
+    `gc3libs.persistence.register`:func: and the class constructor
+    `FilesystemStore`:class.
+
+    Examples::
+
+      >>> fs1 = make_filesystemstore(gc3libs.url.Url('file:///tmp'))
+      >>> fs1.__class__.__name__
+      'FilesystemStore'
+    """
+    assert isinstance(url, gc3libs.url.Url)
+    return FilesystemStore(url.path, *args, **kw)
+
+register('file', make_filesystemstore)
+
 
 ## main: run tests
 
