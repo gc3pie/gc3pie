@@ -29,6 +29,9 @@ import gc3libs.exceptions as gc3ex
 import tempfile, os, shutil
 import pickle
 from gc3libs import Task
+from nose.tools import raises
+from nose.plugins.skip import SkipTest
+import sqlalchemy.exc
 
 try:
     import MySQLdb
@@ -85,13 +88,13 @@ def _generic_persistency_test(driver):
 
     # Removing objects
     driver.remove(id)
-    try:
-        obj = driver.load(id)
-        assert "Object %s should NOT be found" % id
-    except gc3ex.LoadError:
-        pass
-    except Exception, e:
-        raise e
+    
+    @raises(gc3ex.LoadError)
+    def _testload(x):
+        obj = driver.load(x)
+        assert False, "Object %s should NOT be found" % id
+
+    _testload(id)
 
     # test id consistency
     ids = []
@@ -225,15 +228,17 @@ def test_sqlite_persistency():
         os.remove(tmpfname)
 
 def test_mysql_persistency():
-    if not MySQLdb: return
+    if not MySQLdb:
+        raise SkipTest("Skipping MySQL tests because MySQLdb module is not available")
     
     try:
         path = Url('mysql://gc3user:gc3pwd@localhost/gc3')    
         db = persistence_factory(path)
-    except MySQLdb.OperationalError:
+    except sqlalchemy.exc.OperationalError, e:
         # Ignore MySQL errors, since the mysql server may not be
         # running or not properly configured.
-        return
+        raise SkipTest("Connection to MySQL failed: environment unready")
+
     _run_driver_tests(db)
 
 
