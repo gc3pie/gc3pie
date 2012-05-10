@@ -33,18 +33,15 @@ from nose.plugins.skip import SkipTest
 from nose.tools import raises, assert_equal
 
 # GC3Pie imports
-import gc3libs; from gc3libs import Run
+import gc3libs; from gc3libs import Run, Task
 import gc3libs.exceptions
-from gc3libs.persistence import persistence_factory, FilesystemStore, Persistable
+from gc3libs.persistence import make_store, FilesystemStore, Persistable
+import gc3libs.persistence.sql # needed to register the SQL stores
 from gc3libs.url import Url
-from gc3libs import Task
 
-# we skip MySQL tests if no MySQLdb module is present
-try:
-    import MySQLdb
-except:
-    MySQLdb = None
 
+## for testing basic functionality we do no need fully-fledged GC3Pie
+## objects; let's define some simple make-do's.
 
 class SimplePersistableObject(Persistable):
     def __init__(self, x):
@@ -390,7 +387,7 @@ class ExtraSqlChecks(object):
 
     def _make_store(self, url, **kwargs):
         self.db_url = url
-        self.store = persistence_factory(url, **kwargs)
+        self.store = make_store(url, **kwargs)
         self.c = self.store.__engine.connect()
 
 
@@ -451,7 +448,7 @@ class TestSqliteStore(SqlStoreChecks):
         os.remove(self.tmpfile)
 
     def _make_store(self, **kwargs):
-        return persistence_factory(self.db_url, **kwargs)
+        return make_store(self.db_url, **kwargs)
     
 
 
@@ -459,7 +456,7 @@ class TestSqliteStoreWithAlternateTable(TestSqliteStore):
     """Test SQLite backend with a different table name."""
 
     def _make_store(self, **kwargs):
-        return persistence_factory(self.db_url, table_name='another_store', **kwargs)
+        return make_store(self.db_url, table_name='another_store', **kwargs)
 
     def test_alternate_table_not_empty(self):
         obj = SimplePersistableObject('an object')
@@ -487,7 +484,7 @@ class TestMysqlStore(SqlStoreChecks):
     def setUp(self):
         try:
             self.db_url = Url('mysql://gc3user:gc3pwd@localhost/gc3')
-            self.db = persistence_factory(self.db_url)
+            self.db = make_store(self.db_url)
         except MySQLdb.OperationalError:
             raise SkipTest("Cannot connect to MySQL database.")
 

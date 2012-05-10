@@ -23,7 +23,7 @@ SQL-based storage of GC3pie objects.
 __docformat__ = 'reStructuredText'
 __version__ = '$Revision$'
 
-from gc3libs.persistence import Store, IdFactory, Persistable, create_pickler, create_unpickler
+from gc3libs.persistence import Store, IdFactory, Persistable, create_pickler, create_unpickler, register
 from gc3libs.utils import same_docstring_as
 import gc3libs.exceptions
 from gc3libs import Task
@@ -187,11 +187,6 @@ class SQL(Store):
         url. It will use the correct backend (MySQL, psql, sqlite3)
         based on the url.scheme value
         """
-
-        # `gc3libs.url.Url` is not RFC compliant, 
-        # see: http://code.google.com/p/gc3pie/issues/detail?id=261
-        if url.scheme in ('file', 'sqlite'):
-            url = "%s://%s/%s" % (url.scheme, url.netloc, url.path)
         self.__engine = sqla.create_engine(str(url))
         self.table_name = table_name
 
@@ -331,6 +326,37 @@ class SQL(Store):
         conn.execute(self.t_store.delete().where(self.t_store.c.id==id_))
         conn.close()
 
+
+# register all URLs that SQLAlchemy can handle
+def make_sqlstore(url, *args, **kw):
+    """
+    Return a `SQL`:class: instance, given a SQLAlchemy URL and
+    optional initialization arguments.
+
+    This function is a bridge between the generic factory functions
+    provided by `gc3libs.persistence.make_store`:func: and
+    `gc3libs.persistence.register`:func: and the class constructor
+    `SQL`:class.
+
+    Examples::
+
+      >>> ss1 = make_sqlstore(gc3libs.url.Url('sqlite:///tmp/foo.db'))
+      >>> ss1.__class__.__name__
+      'SQL'
+    """
+    assert isinstance(url, gc3libs.url.Url)
+    # rewrite ``sqlite`` URLs to be RFC compliant, 
+    # see: http://code.google.com/p/gc3pie/issues/detail?id=261
+    if url.scheme in ('sqlite', 'file'):
+        url = "%s://%s/%s" % (url.scheme, url.netloc, url.path)
+    return SQL(str(url), *args, **kw)
+
+register('sqlite',     make_sqlstore)
+register('mysql',      make_sqlstore)
+register('postgresql', make_sqlstore)
+register('oracle',     make_sqlstore)
+register('mssql',      make_sqlstore)
+register('firebird',   make_sqlstore)
 
 
 ## main: run tests

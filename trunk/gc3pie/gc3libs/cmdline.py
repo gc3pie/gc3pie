@@ -612,7 +612,7 @@ class GC3UtilsScript(_Script):
             if (not os.path.isdir(jobs_dir)
                 and not jobs_dir.endswith('.jobs')):
                 jobs_dir = jobs_dir + '.jobs'
-        self._store = gc3libs.persistence.persistence_factory(
+        self._store = gc3libs.persistence.make_store(
             jobs_dir, 
             idfactory=gc3libs.persistence.JobIdFactory()
             )
@@ -1235,7 +1235,7 @@ class SessionBasedScript(_Script):
         """
 
         ## create a `persistence.Store` instance to _save_session/_load_session jobs
-        self.store = gc3libs.persistence.persistence_factory(
+        self.store = gc3libs.persistence.make_store(
             self.session_uri, 
             idfactory=gc3libs.persistence.JobIdFactory()
             )
