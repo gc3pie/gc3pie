@@ -22,7 +22,6 @@
 import gc3libs.core
 
 import tempfile, os
-import pytest
 
 def _setup_config_file(confstring):
     (fd, name) = tempfile.mkstemp()
