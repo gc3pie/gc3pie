@@ -2,7 +2,7 @@
 #
 """
 """
-# Copyright (C) 2011, GC3, University of Zurich. All rights reserved.
+# Copyright (C) 2011-2012, GC3, University of Zurich. All rights reserved.
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
@@ -153,7 +153,7 @@ class SQL(Store):
     >>> from gc3libs.url import Url
     >>> url = Url('sqlite:///%s' % name)
     >>> db = SQL(url)
-    >>> from sql_persistence import DummyObject
+    >>> from gc3libs.persistence.sql import DummyObject
     >>> obj = DummyObject()
     >>> obj.x = 'test'
     >>> objid = db.save(obj)
@@ -334,5 +334,5 @@ class SQL(Store):
 
 if "__main__" == __name__:
     import doctest
-    doctest.testmod(name="sql_persistence",
+    doctest.testmod(name="sql",
                     optionflags=doctest.NORMALIZE_WHITESPACE)
