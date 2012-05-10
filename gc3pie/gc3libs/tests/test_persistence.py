@@ -116,13 +116,13 @@ def _generic_nested_persistency_test(driver):
         assert obj[i].x == 'j%d' % (i+1)
 
     driver.remove(id)
-    try:
-        obj = driver.load(id)
-        assert "Object %s should NOT be found" % id
-    except gc3ex.LoadError:
-        pass
-    except Exception, e:
-        raise e
+
+    @raises(gc3ex.LoadError)
+    def _testload(x):
+        obj = driver.load(x)
+        assert False, "Object %s should NOT be found" % id
+
+    _testload(id)
 
 def _save_different_objects_separated(driver):
     """Since we want to save Tasks separately from the containing
@@ -210,11 +210,12 @@ def _generic_newstile_slots_classes(db):
     assert obj2.attr == 'GC3'
 
     obj2 = SlotClassWrong('GC3')
-    try:
-        db.save(obj2)
-        assert "We shouldn't reach this point" is False
-    except AttributeError:
-        pass
+
+    @raises(AttributeError)
+    def _test_save(x):
+        db.save(x)
+        assert False,  "We shouldn't reach this point"
+    _test_save(obj2)
     
 def test_sqlite_persistency():
     (fd, tmpfname) = tempfile.mkstemp()
