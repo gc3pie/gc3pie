@@ -278,8 +278,7 @@ class SQL(Store):
         dstdata = StringIO.StringIO()
         pickler = create_pickler(self, dstdata, obj)
         pickler.dump(obj)
-        pdata = dstdata.getvalue().encode('base64')
-        fields['data'] = pdata
+        fields['data'] = dstdata.getvalue()
         # insert into db
         fields['type'] = ''
             
@@ -319,8 +318,7 @@ class SQL(Store):
         
         if not rawdata:
             raise gc3libs.exceptions.LoadError("Unable to find object %d" % id_)
-        srcdata = StringIO.StringIO(rawdata[0].decode('base64'))
-        unpickler = create_unpickler(self, srcdata)
+        unpickler = create_unpickler(self, StringIO.StringIO(rawdata[0]))
         obj = unpickler.load()
         conn.close()
 
