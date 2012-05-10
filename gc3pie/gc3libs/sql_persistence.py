@@ -306,7 +306,7 @@ class SQL(Store):
     @same_docstring_as(Store.remove)
     def remove(self, id_):
         conn = self.__engine.connect()
-        conn.execute(self.t_store.delete().where(id==id_))
+        conn.execute(self.t_store.delete().where(self.t_store.c.id==id_))
         conn.close()
 
     @staticmethod
