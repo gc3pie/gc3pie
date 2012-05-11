@@ -474,6 +474,7 @@ class TestMysqlStore(SqlStoreChecks):
         # we skip MySQL tests if no MySQLdb module is present
         try:
             import MySQLdb
+            import sqlalchemy.ex
         except:
             raise SkipTest("MySQLdb module not installed.")
 
@@ -485,7 +486,7 @@ class TestMysqlStore(SqlStoreChecks):
         try:
             self.db_url = Url('mysql://gc3user:gc3pwd@localhost/gc3')
             self.db = make_store(self.db_url)
-        except MySQLdb.OperationalError:
+        except sqlalchemy.ex.OperationalError:
             raise SkipTest("Cannot connect to MySQL database.")
 
         # create a connection to the database
