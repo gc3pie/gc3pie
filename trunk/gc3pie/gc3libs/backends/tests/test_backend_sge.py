@@ -275,7 +275,5 @@ def test_delete_job():
     assert app.execution.state == State.TERMINATED
     
 if __name__ == "__main__":
-    test_sge_basic_workflow()
-    test_submission_failed()
-    test_qacct_parsing()
-    test_delete_job()
+    import nose
+    nose.runmodule()

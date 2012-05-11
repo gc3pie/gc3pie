@@ -266,7 +266,5 @@ def test_delete_job():
     assert app.execution.state == State.TERMINATED
     
 if __name__ == "__main__":
-    test_pbs_basic_workflow()
-    test_submission_failed()
-    test_tracejob_parsing()
-    test_delete_job()
+    import nose
+    nose.runmodule()
