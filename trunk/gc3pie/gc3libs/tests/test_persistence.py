@@ -497,12 +497,11 @@ class TestMysqlStore(SqlStoreChecks):
 
     def setUp(self):
         fd, tmpfile = tempfile.mkstemp()
-        table_name = tmpfile.split('/')[-1] 
-        self.table_created =set()
-        self.table_created.add(table_name)
+        self.table_name = tmpfile.split('/')[-1] 
+        
         try:
             self.db_url = Url('mysql://gc3user:gc3pwd@localhost/gc3')
-            self.store = make_store(self.db_url, table_name=table_name)
+            self.store = make_store(self.db_url, table_name=self.table_name)
         except sqlalchemy.exc.OperationalError:
             raise SkipTest("Cannot connect to MySQL database.")
         
@@ -510,16 +509,13 @@ class TestMysqlStore(SqlStoreChecks):
         self.conn = self.store._SqlStore__engine.connect()
 
     def tearDown(self):
-        self.table_created.add(self.store.table_name)
-        for table in self.table_created:
-            self.conn.execute('drop table %s' % table)
+        self.conn.execute('drop table %s' % self.table_name)
         self.conn.close()
         # self.c.close()
         # os.remove(self.tmpfile)
 
     def _make_store(self, **kwargs):
-        self.table_created.add(self.store.table_name)
-        return make_store(self.db_url, table_name='another_store', **kwargs)
+        return make_store(self.db_url, table_name=self.table_name, **kwargs)
 
 
 if __name__ == "__main__":
