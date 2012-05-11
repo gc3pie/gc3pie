@@ -51,7 +51,5 @@ def test_sge_backends():
 
 
 if "__main__" == __name__:
-    test_shellcmd_backends()
-    test_lsf_backends()
-    test_pbs_backends()
-    test_sge_backends()
+    import nose
+    nose.runmodule()

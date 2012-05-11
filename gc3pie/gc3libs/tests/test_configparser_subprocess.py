@@ -147,5 +147,5 @@ frontend = localhost,
 
 
 if __name__ == "__main__":
-    from common import run_my_tests
-    run_my_tests(locals())
+    import nose
+    nose.runmodule()

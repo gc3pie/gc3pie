@@ -500,8 +500,5 @@ class TestMysqlStore(SqlStoreChecks):
 
 
 if __name__ == "__main__":
-    # fix pickle error
-    from test_persistence import SimplePersistableObject, NonPersistableClassWithSlots, PersistableClassWithSlots
-
-    from common import run_my_tests
-    run_my_tests(locals())
+    import nose
+    nose.runmodule()
