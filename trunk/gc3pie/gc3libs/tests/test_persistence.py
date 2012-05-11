@@ -39,6 +39,12 @@ from gc3libs.persistence import make_store, FilesystemStore, Persistable
 import gc3libs.persistence.sql # needed to register the SQL stores
 from gc3libs.url import Url
 
+try:
+    import sqlalchemy
+    import sqlalchemy.sql as sql
+    sqlfunc = sqlalchemy.func
+except:
+    pass
 
 ## for testing basic functionality we do no need fully-fledged GC3Pie
 ## objects; let's define some simple make-do's.
@@ -300,9 +306,15 @@ class SqlStoreChecks(GenericStoreChecks):
         app.execution.lrms_jobid = 1
 
         id_ = self.store.save(app)
-        self.c.execute('select jobid,jobname,jobstatus from %s where id=%d'
-                  % (self.store.table_name, app.persistent_id))
-        row = self.c.fetchone()
+        q = sql.select([self.store.t_store.c.jobid,
+                           self.store.t_store.c.jobname,
+                           self.store.t_store.c.jobstatus]).where(self.store.t_store.c.id==id_)
+        
+        result = self.conn.execute(q)
+        row = result.fetchone()
+        # self.c.execute('select jobid,jobname,jobstatus from %s where id=%d'
+        #           % (self.store.table_name, app.persistent_id))
+        # row = self.c.fetchone()
 
         assert int(row[0]) == app.execution.lrms_jobid
         assert row[1] == app.jobname
@@ -324,7 +336,7 @@ class SqlStoreChecks(GenericStoreChecks):
         Test if `SqlStore` saves extra attributes into columns of the same name.
         """
         # extend the db
-        self.c.execute('alter table %s add column value varchar(256)'
+        self.conn.execute('alter table %s add column value varchar(256)'
                        % self.store.table_name)
 
         # re-open the db. We need this because schema definition is
@@ -332,11 +344,12 @@ class SqlStoreChecks(GenericStoreChecks):
         self.store = self._make_store()
 
         obj = SimplePersistableObject('My App')
-        id = self.store.save(obj)
+        id_ = self.store.save(obj)
 
         # check that the attribute `.value` has been saved in the dedicated col
-        self.c.execute('select value from %s where id=%s' % (self.store.table_name, id))
-        rows = self.c.fetchall()
+        q = sql.select([self.store.t_store.c.value]).where(self.store.t_store.c.id==id_)
+        results = self.conn.execute(q)
+        rows = results.fetchall()
         assert_equal(len(rows), 1)
         assert_equal(rows[0][0], obj.value)
 
@@ -346,25 +359,31 @@ class SqlStoreChecks(GenericStoreChecks):
         Test if `SqlStore` reads and writes extra columns.
         """
         # extend the db
-        self.c.execute('alter table %s add column extra varchar(256)'
+        self.conn.execute('alter table %s add column extra varchar(256)'
                        % self.store.table_name)
-        # if this query does not error out, the column is defined
-        self.c.execute("select distinct count(extra) from %s" % self.store.table_name)
-        rows = self.c.fetchall()
-        assert_equal(len(rows), 1)
 
         # re-build store, as the table list is read upon `__init__`
         self.store = self._make_store(extra_fields={ 'extra': (lambda arg: arg.foo.value) })
 
+        # if this query does not error out, the column is defined
+        q = sql.select([sqlfunc.count(self.store.t_store.c.extra)]).distinct()
+        # self.c.execute("select distinct count(extra) from %s" % self.store.table_name)
+        results = self.conn.execute(q)
+        rows = results.fetchall()
+        assert_equal(len(rows), 1)
+
+
         # create and save an object
         obj = SimplePersistableObject('an object')
         obj.foo = SimplePersistableObject('an attribute')
-        id = self.store.save(obj)
+        id_ = self.store.save(obj)
 
         # check that the value has been saved
-        self.c.execute("select extra from %s where id=%d"
-                       % (self.store.table_name, id))
-        rows = self.c.fetchall()
+        q = sql.select([self.store.t_store.c.extra]).where(self.store.t_store.c.id==id_)
+        # self.c.execute("select extra from %s where id=%d"
+        #                % (self.store.table_name, id))
+        results = self.conn.execute(q)
+        rows = results.fetchall()
         assert_equal(len(rows), 1)
         assert_equal(rows[0][0], obj.foo.value)
 
@@ -401,19 +420,23 @@ class ExtraSqlChecks(object):
                          extra_fields={ 'extra': (lambda arg: arg.foo.value) })
 
         # if this query does not error out, the column is defined
-        self.c.execute("select distinct count(extra) from %s" % self.store.table_name)
-        rows = self.c.fetchall()
+        q = sql.select([sqlfunc.count(self.store.t_store.c.extra)]).distinct()
+        results = self.conn.execute(q)
+        # self.c.execute("select distinct count(extra) from %s" % self.store.table_name)
+        rows = results.fetchall()
         assert_equal(len(rows), 1)
 
         # create and save an object
         obj = SimplePersistableObject('an object')
         obj.foo = SimplePersistableObject('an attribute')
-        id = db.save(obj)
+        id_ = db.save(obj)
 
         # check that the value has been saved
-        self.c.execute("select extra from %s where id=%d"
-                       % (self.store.table_name, id))
-        rows = self.c.fetchall()
+        q = sql.select([self.store.t_store.c.extra]).where(self.store.t_store.c.id==id_)
+        # self.c.execute("select extra from %s where id=%d"
+        #                % (self.store.table_name, id_))
+        results = self.conn.execute(q)
+        rows = results.fetchall()
         assert_equal(len(rows), 1)
         assert_equal(rows[0][0], obj.foo.value)
 
@@ -422,14 +445,6 @@ class ExtraSqlChecks(object):
 class TestSqliteStore(SqlStoreChecks):
     """Test SQLite backend."""
     
-    @classmethod
-    def setup_class(cls):
-        try:
-            import sqlite3 as sqlite
-        except ImportError:
-            import pysqlite2.dbapi2 as sqlite
-        cls.sqlite = sqlite
-
     @classmethod
     def teardown_class(cls):
         pass
@@ -440,11 +455,10 @@ class TestSqliteStore(SqlStoreChecks):
         self.store = self._make_store()
 
         # create a connection to the database
-        self.conn = self.sqlite.connect(self.tmpfile)
-        self.c = self.conn.cursor()
+        self.conn = self.store._SqlStore__engine.connect()
 
     def tearDown(self):
-        self.c.close()
+        self.conn.close()
         os.remove(self.tmpfile)
 
     def _make_store(self, **kwargs):
@@ -461,9 +475,9 @@ class TestSqliteStoreWithAlternateTable(TestSqliteStore):
     def test_alternate_table_not_empty(self):
         obj = SimplePersistableObject('an object')
         self.store.save(obj)
-        
-        self.c.execute("select id from %s" % self.store.table_name)
-        rows = self.c.fetchall()
+
+        results = self.conn.execute(sql.select([self.store.t_store.c.id]))
+        rows = results.fetchall()
         assert len(rows) > 0
 
 
@@ -474,7 +488,6 @@ class TestMysqlStore(SqlStoreChecks):
         # we skip MySQL tests if no MySQLdb module is present
         try:
             import MySQLdb
-            import sqlalchemy.exc
         except:
             raise SkipTest("MySQLdb module not installed.")
 
@@ -483,21 +496,30 @@ class TestMysqlStore(SqlStoreChecks):
         pass
 
     def setUp(self):
+        fd, tmpfile = tempfile.mkstemp()
+        table_name = tmpfile.split('/')[-1] 
+        self.table_created =set()
+        self.table_created.add(table_name)
         try:
             self.db_url = Url('mysql://gc3user:gc3pwd@localhost/gc3')
-            self.db = make_store(self.db_url)
+            self.store = make_store(self.db_url, table_name=table_name)
         except sqlalchemy.exc.OperationalError:
             raise SkipTest("Cannot connect to MySQL database.")
-
+        
         # create a connection to the database
-        #self.conn = self.sqlite.connect(self.tmpfile)
-        #self.c = conn.cursor()
+        self.conn = self.store._SqlStore__engine.connect()
 
     def tearDown(self):
-        pass
+        self.table_created.add(self.store.table_name)
+        for table in self.table_created:
+            self.conn.execute('drop table %s' % table)
+        self.conn.close()
         # self.c.close()
         # os.remove(self.tmpfile)
 
+    def _make_store(self, **kwargs):
+        self.table_created.add(self.store.table_name)
+        return make_store(self.db_url, table_name='another_store', **kwargs)
 
 
 if __name__ == "__main__":
