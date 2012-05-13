@@ -23,17 +23,21 @@ SQL-based storage of GC3pie objects.
 __docformat__ = 'reStructuredText'
 __version__ = '$Revision$'
 
-from gc3libs.persistence import Store, IdFactory, Persistable, create_pickler, create_unpickler, register
-from gc3libs.utils import same_docstring_as
-import gc3libs.exceptions
-from gc3libs import Task
-
 import copy
 
 import cPickle as pickle
 import cStringIO as StringIO
 import sqlalchemy as sqla
 import sqlalchemy.sql as sql
+
+
+from gc3libs.utils import same_docstring_as
+import gc3libs.exceptions
+from gc3libs import Task
+
+from store import Store, Persistable, register
+from idfactory import IdFactory
+from filesystem import  create_pickler, create_unpickler
 
 class DummyObject:
     pass

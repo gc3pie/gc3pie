@@ -35,8 +35,7 @@ from nose.tools import raises, assert_equal
 # GC3Pie imports
 import gc3libs; from gc3libs import Run, Task
 import gc3libs.exceptions
-from gc3libs.persistence import make_store, FilesystemStore, Persistable
-import gc3libs.persistence.sql # needed to register the SQL stores
+from gc3libs.persistence import make_store, Persistable
 from gc3libs.url import Url
 
 try:
@@ -234,6 +233,7 @@ class GenericStoreChecks(object):
 class TestFilesystemStore(GenericStoreChecks):
     
     def setUp(self):
+        from gc3libs.persistence.filesystem import FilesystemStore
         self.tmpdir = tempfile.mkdtemp()
         self.store = FilesystemStore(self.tmpdir)
 
