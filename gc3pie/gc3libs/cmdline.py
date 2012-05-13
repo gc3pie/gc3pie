@@ -22,7 +22,7 @@ Prototype classes for GC3Libs-based scripts.
 
 Classes implemented in this file provide common and recurring
 functionality for GC3Libs command-line utilities and scripts.  User
-applications should implement their specific behavior by subclassing 
+applications should implement their specific behavior by subclassing
 and overriding a few customization methods.
 
 There are currently two public classes provided here:
@@ -30,7 +30,7 @@ There are currently two public classes provided here:
 :class:`GC3UtilsScript`
   Base class for all the GC3Utils commands. Implements a few methods
   useful for writing command-line scripts that operate on jobs by ID.
- 
+
 :class:`SessionBasedScript`
   Base class for the ``grosetta``/``ggamess``/``gcodeml`` scripts.
   Implements a long-running script to submit and manage a large number
@@ -55,7 +55,7 @@ from texttable import Texttable
 import time
 
 ## 3rd party modules
-import cli # pyCLI
+import cli  # pyCLI
 import cli.app
 import cli._ext.argparse as argparse
 
@@ -67,7 +67,9 @@ import gc3libs.persistence
 import gc3libs.utils
 import gc3libs.url
 
-## types for command-line parsing; see http://docs.python.org/dev/library/argparse.html#type
+## types for command-line parsing; see
+## http://docs.python.org/dev/library/argparse.html#type
+
 
 def nonnegative_int(num):
     """This function raise an ArgumentTypeError if `num` is a negative
@@ -88,7 +90,7 @@ def nonnegative_int(num):
     ArgumentTypeError: '-1' is not a non-negative integer number.
 
     Please note that `0` and `'-0'` are ok:
-    
+
     >>> nonnegative_int(0)
     0
     >>> nonnegative_int(-0)
@@ -151,15 +153,15 @@ def positive_int(num):
     3
 
     but please take care that float *greater* than 0 will fail:
-    
+
     >>> positive_int(0.1)
     Traceback (most recent call last):
     ...
     ArgumentTypeError: '0.1' is not a positive integer number.
 
-    
+
     Please note that `0` is NOT ok:
-    
+
     >>> positive_int(-0) # doctest: +ELLIPSIS
     Traceback (most recent call last):
     ...
@@ -174,7 +176,7 @@ def positive_int(num):
     ArgumentTypeError: '-0' is not a positive integer number.
 
     Any string which does cannot be converted to an integer will fail:
-    
+
     >>> positive_int('ThisWillRaiseAnException') # doctest:+ELLIPSIS
     Traceback (most recent call last):
         ...
@@ -193,17 +195,23 @@ def positive_int(num):
 
 
 def existing_file(path):
-    gc3libs.utils.test_file(path, os.F_OK|os.R_OK, argparse.ArgumentTypeError)
+    gc3libs.utils.test_file(path,
+                            os.F_OK | os.R_OK,
+                            argparse.ArgumentTypeError)
     return path
 
 
 def executable_file(path):
-    gc3libs.utils.test_file(path, os.F_OK|os.R_OK|os.X_OK, argparse.ArgumentTypeError)
+    gc3libs.utils.test_file(path,
+                            os.F_OK | os.R_OK | os.X_OK,
+                            argparse.ArgumentTypeError)
     return path
 
 
 def existing_directory(path):
-    gc3libs.utils.test_file(path, os.F_OK|os.R_OK|os.X_OK, argparse.ArgumentTypeError, isdir=True)
+    gc3libs.utils.test_file(path,
+                            os.F_OK | os.R_OK | os.X_OK,
+                            argparse.ArgumentTypeError, isdir=True)
     return path
 
 
@@ -219,15 +227,15 @@ def valid_directory(path):
 
 class _Script(cli.app.CommandLineApp):
     """
-    Base class for GC3Libs scripts.  
+    Base class for GC3Libs scripts.
 
     By default, only the standard options ``-h``/``--help`` and
     ``-V``/``--version`` are considered; to add more, override
     `setup_options`:meth:
 
-    There is no defaults for positional arguments, you *must* override 
+    There is no defaults for positional arguments, you *must* override
     `setup_args`:meth: in derived classes.
-    
+
     """
 
     ##
@@ -244,15 +252,15 @@ class _Script(cli.app.CommandLineApp):
         an (input) path name; processing of the given path names is
         done in `parse_args`:meth:
         """
-        raise NotImplementedError("Abstract method `_Script.setup_args()` called,"
-                                  " which should have been implemented in a derived class")
-                       
+        raise NotImplementedError(
+            "Abstract method `_Script.setup_args()` called,"
+            " which should have been implemented in a derived class")
+
     def setup_options(self):
         """
         Override this method to add command-line options.
         """
         pass
-
 
     def parse_args(self):
         """
@@ -266,7 +274,6 @@ class _Script(cli.app.CommandLineApp):
         """
         pass
 
-
     ##
     ## pyCLI INTERFACE METHODS
     ##
@@ -275,14 +282,13 @@ class _Script(cli.app.CommandLineApp):
     ## applications.  Think twice before overriding them, and read
     ## the pyCLI docs before :-)
     ##
-
     def __init__(self, **kw):
         """
         Perform initialization and set the version, help and usage
         strings.
 
-        The help text to be printed when the script is invoked with the 
-        ``-h``/``--help`` option will be taken from (in order of preference): 
+        The help text to be printed when the script is invoked with the
+        ``-h``/``--help`` option will be taken from (in order of preference):
           * the keyword argument `description`
           * the attribute `self.description`
         If neither is provided, an `AssertionError` is raised.
@@ -308,34 +314,37 @@ class _Script(cli.app.CommandLineApp):
         arguments ?
         """
         # use keyword arguments to set additional instance attrs
-        for k,v in kw.items():
+        for k, v in kw.items():
             if k not in ['name', 'description']:
                 setattr(self, k, v)
         # init and setup pyCLI classes
-        if not kw.has_key('version'):
+        if 'version' not in kw:
             try:
                 kw['version'] = self.version
             except AttributeError:
                 raise AssertionError("Missing required parameter 'version'.")
-        if not kw.has_key('description'):
+        if 'description' not in kw:
             if self.__doc__ is not None:
                 kw['description'] = self.__doc__
             else:
                 raise AssertionError("Missing required parameter 'description'.")
+
         # allow overriding command-line options in subclasses
         def argparser_factory(*args, **kwargs):
             kwargs.setdefault('conflict_handler', 'resolve')
             kwargs.setdefault('formatter_class',
                               cli._ext.argparse.RawDescriptionHelpFormatter)
             return cli.app.CommandLineApp.argparser_factory(*args, **kwargs)
+
         self.argparser_factory = argparser_factory
         # init superclass
-        kw.setdefault('name', os.path.splitext(os.path.basename(sys.argv[0]))[0])
+        kw.setdefault('name',
+                      os.path.splitext(os.path.basename(sys.argv[0]))[0])
         kw.setdefault('reraise', Exception)
         cli.app.CommandLineApp.__init__(self, **kw)
         # provide some defaults
         self.verbose_logging_threshold = 0
-        
+
     @property
     def description(self):
         """A string describing the application.
@@ -349,23 +358,25 @@ class _Script(cli.app.CommandLineApp):
         else:
             return getattr(self.main, "__doc__", '')
 
-
     def setup(self):
         """
         Setup standard command-line parsing.
 
-        GC3Utils scripts should probably override `setup_args`:meth: 
+        GC3Utils scripts should probably override `setup_args`:meth:
         and `setup_options`:meth: to modify command-line parsing.
         """
         ## setup of base classes
         cli.app.CommandLineApp.setup(self)
 
-        self.add_param("-v", "--verbose", action="count", dest="verbose", default=0,
+        self.add_param("-v",
+                       "--verbose",
+                       action="count",
+                       dest="verbose",
+                       default=0,
                        help="Print more detailed (debugging) information about the program's activity."
                        "The verbosity of the output can be controlled by adding/removing 'v' characters."
                        )
         return
-
 
     def pre_run(self):
         """
@@ -388,7 +399,7 @@ class _Script(cli.app.CommandLineApp):
         ## setup GC3Libs logging
         loglevel = max(1, logging.ERROR - 10 * max(0, self.params.verbose - self.verbose_logging_threshold))
         gc3libs.configure_logger(loglevel, self.name)
-        self.log = logging.getLogger('gc3.gc3utils') # alternate: ('gc3.' + self.name)
+        self.log = logging.getLogger('gc3.gc3utils')  # alternate: ('gc3.' + self.name)
         self.log.setLevel(loglevel)
         self.log.propagate = True
 
@@ -397,7 +408,6 @@ class _Script(cli.app.CommandLineApp):
 
         # call hook methods from derived classes
         self.parse_args()
-
 
     def run(self):
         """
@@ -410,7 +420,7 @@ class _Script(cli.app.CommandLineApp):
         except gc3libs.exceptions.InvalidUsage, ex:
             # Fatal errors do their own printing, we only add a short usage message
             sys.stderr.write("Type '%s --help' to get usage help.\n" % self.name)
-            return 64 # EX_USAGE in /usr/include/sysexits.h
+            return 64  # EX_USAGE in /usr/include/sysexits.h
         except KeyboardInterrupt:
             sys.stderr.write("%s: Exiting upon user request (Ctrl+C)\n" % self.name)
             return 13
@@ -446,11 +456,11 @@ class _Script(cli.app.CommandLineApp):
                 msg %= (str(ex), self.name, '')
             rc = 1
         except Exception, ex:
-            msg = "%s: %s" % (ex.__class__.__name__, str(ex)) 
+            msg = "%s: %s" % (ex.__class__.__name__, str(ex))
             if isinstance(ex, cli.app.Abort):
                 rc = (ex.status)
             elif isinstance(ex, EnvironmentError):
-                rc = 74 # EX_IOERR in /usr/include/sysexits.h
+                rc = 74  # EX_IOERR in /usr/include/sysexits.h
             else:
                 # generic error exit
                 rc = 1
@@ -466,7 +476,6 @@ class _Script(cli.app.CommandLineApp):
         # ...and exit
         return 1
 
-
     ##
     ## INTERNAL METHODS
     ##
@@ -481,17 +490,18 @@ class _Script(cli.app.CommandLineApp):
         """
         Return a `gc3libs.core.Core` instance configured by parsing
         the configuration file(s) located at `config_file_locations`.
-        Order of configuration files matters: files read last overwrite
-        settings from previously-read ones; list the most specific configuration
-        files last.
+        Order of configuration files matters: files read last
+        overwrite settings from previously-read ones; list the most
+        specific configuration files last.
 
-        If `auto_enable_auth` is `True` (default), then `Core` will try to renew
-        expired credentials; this requires interaction with the user and will
-        certainly fail unless stdin & stdout are connected to a terminal.
+        If `auto_enable_auth` is `True` (default), then `Core` will
+        try to renew expired credentials; this requires interaction
+        with the user and will certainly fail unless stdin & stdout
+        are connected to a terminal.
         """
         # ensure a configuration file exists in the most specific location
         for location in reversed(config_file_locations):
-            if os.access(os.path.dirname(location), os.W_OK|os.X_OK) \
+            if os.access(os.path.dirname(location), os.W_OK | os.X_OK) \
                     and not gc3libs.utils.deploy_configuration_file(location, "gc3pie.conf.example"):
                 # warn user
                 self.log.warning("No configuration file '%s' was found;"
@@ -503,13 +513,12 @@ class _Script(cli.app.CommandLineApp):
         except gc3libs.exceptions.NoResources:
             raise gc3libs.exceptions.FatalError(
                 "No computational resources defined."
-                " Please edit the configuration file(s): '%s'." 
+                " Please edit the configuration file(s): '%s'."
                 % (str.join("', '", config_file_locations)))
         except:
-            self.log.debug("Failed loading config file from '%s'", 
+            self.log.debug("Failed loading config file from '%s'",
                            str.join("', '", config_file_locations))
             raise
-
 
     def _select_resources(self, *resource_names):
         """
@@ -518,9 +527,10 @@ class _Script(cli.app.CommandLineApp):
         allowed resources (comma-separated), or a list of names of the
         resources to keep active.
         """
-        patterns = [ ]
+        patterns = []
         for item in resource_names:
             patterns.extend(name for name in item.split(','))
+
         def keep_resource_if_matches(resource):
             """
             Return `True` iff `resource`'s `name` attribute matches
@@ -533,15 +543,13 @@ class _Script(cli.app.CommandLineApp):
         kept = self._core.select_resource(keep_resource_if_matches)
         if kept == 0:
             raise gc3libs.exceptions.NoResources(
-                "No resources match the names '%s'" 
+                "No resources match the names '%s'"
                 % str.join(',', resource_names))
-
-
 
 
 class GC3UtilsScript(_Script):
     """
-    Base class for GC3Utils scripts.  
+    Base class for GC3Utils scripts.
 
     The default command line implemented is the following:
 
@@ -550,9 +558,9 @@ class GC3UtilsScript(_Script):
     By default, only the standard options ``-h``/``--help`` and
     ``-V``/``--version`` are considered; to add more, override
     `setup_options`:meth:
-    To change default positional argument parsing, override 
+    To change default positional argument parsing, override
     `setup_args`:meth:
-    
+
     """
 
     ##
@@ -569,9 +577,11 @@ class GC3UtilsScript(_Script):
         job ID; actual processing of the IDs is done in
         `parse_args`:meth:
         """
-        self.add_param('args', nargs='*', metavar='JOBID', 
+        self.add_param('args',
+                       nargs='*',
+                       metavar='JOBID',
                        help="Job ID string identifying the jobs to operate upon.")
-                       
+
     ##
     ## pyCLI INTERFACE METHODS
     ##
@@ -584,20 +594,21 @@ class GC3UtilsScript(_Script):
     def __init__(self, **kw):
         _Script.__init__(self, main=self.main, **kw)
 
-
     def setup(self):
         """
         Setup standard command-line parsing.
 
-        GC3Utils scripts should probably override `setup_args`:meth: 
+        GC3Utils scripts should probably override `setup_args`:meth:
         and `setup_options`:meth: to modify command-line parsing.
         """
         ## setup of base classes (creates the argparse stuff)
         _Script.setup(self)
         ## local additions
-        self.add_param("-s", "--session", action="store", default=gc3libs.Default.JOBS_DIR,
+        self.add_param("-s",
+                       "--session",
+                       action="store",
+                       default=gc3libs.Default.JOBS_DIR,
                        help="Directory where job information will be stored.")
-
 
     def pre_run(self):
         """
@@ -613,10 +624,9 @@ class GC3UtilsScript(_Script):
                 and not jobs_dir.endswith('.jobs')):
                 jobs_dir = jobs_dir + '.jobs'
         self._store = gc3libs.persistence.make_store(
-            jobs_dir, 
+            jobs_dir,
             idfactory=gc3libs.persistence.JobIdFactory()
             )
-
 
     ##
     ## INTERNAL METHODS
@@ -643,13 +653,12 @@ class GC3UtilsScript(_Script):
                 yield self._store.load(jobid)
             except Exception, ex:
                 if ignore_failures:
-                    gc3libs.log.error("Could not retrieve job '%s' (%s: %s). Ignoring.", 
+                    gc3libs.log.error("Could not retrieve job '%s' (%s: %s). Ignoring.",
                                       jobid, ex.__class__.__name__, str(ex),
                                       exc_info=(self.params.verbose > 2))
                     continue
                 else:
                     raise
-
 
 
 class SessionBasedScript(_Script):
@@ -678,11 +687,11 @@ class SessionBasedScript(_Script):
 
     The script finally proceeds to updating the status of all jobs in
     the session, submitting new ones and retrieving output as needed.
-    When all jobs are done, the method :py:meth:`done()` is called, 
+    When all jobs are done, the method :py:meth:`done()` is called,
     and its return value is used as the script's exit code.
 
     The script's exitcode tracks job status, in the following way.
-    The exitcode is a bitfield; only the 4 least-significant bits 
+    The exitcode is a bitfield; only the 4 least-significant bits
     are used, with the following meaning:
 
        ===  ============================================================
@@ -716,12 +725,11 @@ class SessionBasedScript(_Script):
         an (input) path name; processing of the given path names is
         done in `parse_args`:meth:
         """
-        self.add_param('args', nargs='*', metavar='INPUT', 
+        self.add_param('args', nargs='*', metavar='INPUT',
                        help="Path to input file or directory."
                        " Directories are recursively scanned for input files"
-                       " matching the glob pattern '%s'" 
+                       " matching the glob pattern '%s'"
                        % self.input_filename_pattern)
-
 
     def make_directory_path(self, pathspec, jobname, *args):
         """
@@ -746,7 +754,7 @@ class SessionBasedScript(_Script):
           * ``NAME`` is replaced with `jobname`;
           * ``DATE`` is replaced with the current date, in *YYYY-MM-DD* format;
           * ``TIME`` is replaced with the current time, in *HH:MM* format.
-          
+
         """
         if len(args) == 0:
             path = os.getcwd()
@@ -765,7 +773,6 @@ class SessionBasedScript(_Script):
                 .replace('DATE', time.strftime('%Y-%m-%d'))
                 .replace('TIME', time.strftime('%H:%M')))
 
-    
     def process_args(self):
         """
         Process command-line positional arguments and set up
@@ -819,9 +826,8 @@ class SessionBasedScript(_Script):
                 self.log.error("Could not create job '%s': %s."
                                % (jobname, str(ex)), exc_info=__debug__)
                 # XXX: should we raise an exception here?
-                #raise AssertionError("Could not create job '%s': %s: %s" 
+                #raise AssertionError("Could not create job '%s': %s: %s"
                 #                     % (jobname, ex.__class__.__name__, str(ex)))
-
 
     def new_tasks(self, extra):
         """
@@ -862,10 +868,12 @@ class SessionBasedScript(_Script):
 
         for path in inputs:
             if self.instances_per_file > 1:
-                for seqno in range(1, 1+self.instances_per_file, self.instances_per_job):
+                for seqno in range(1,
+                                   1 + self.instances_per_file,
+                                   self.instances_per_job):
                     if self.instances_per_job > 1:
                         yield ("%s.%d--%s" % (gc3libs.utils.basename_sans(path),
-                                              seqno, 
+                                              seqno,
                                               min(seqno + self.instances_per_job - 1,
                                                   self.instances_per_file)),
                                self.application, [path], extra.copy())
@@ -875,7 +883,6 @@ class SessionBasedScript(_Script):
             else:
                 yield (gc3libs.utils.basename_sans(path),
                        self.application, [path], extra.copy())
-
 
     def make_task_controller(self):
         """
@@ -896,9 +903,8 @@ class SessionBasedScript(_Script):
         and command-line parsing is of course available.
         """
         return gc3libs.core.Engine(self._core, self.tasks, self.store,
-                                   max_submitted = self.params.max_running,
-                                   max_in_flight = self.params.max_running)
-
+                                   max_submitted=self.params.max_running,
+                                   max_in_flight=self.params.max_running)
 
     def print_summary_table(self, output, stats):
         """
@@ -910,7 +916,7 @@ class SessionBasedScript(_Script):
         Override this in subclasses to customize the report that you
         provide to users.  By default, this prints a table with the
         count of tasks for each possible state.
-        
+
         The `output` argument is a file-like object, only the `write`
         method of which is used.  The `stats` argument is a
         dictionary, mapping each possible `Run.State` to the count of
@@ -918,19 +924,18 @@ class SessionBasedScript(_Script):
         description.
 
         """
-        table = Texttable(0) # max_width=0 => dynamically resize cells
-        table.set_deco(0)    # no decorations
+        table = Texttable(0)  # max_width=0 => dynamically resize cells
+        table.set_deco(0)     # no decorations
         table.set_cols_align(['r', 'r', 'c'])
         total = stats['total']
         for state in sorted(stats.keys()):
             table.add_row([
-                    state, 
+                    state,
                     "%d/%d" % (stats[state], total),
                     "(%.1f%%)" % (100.0 * stats[state] / total)
                     ])
         output.write(table.draw())
         output.write("\n")
-
 
     def print_tasks_table(self, output=sys.stdout, states=gc3libs.Run.State, only=object):
         """
@@ -953,21 +958,21 @@ class SessionBasedScript(_Script):
         :param states: List of states (`Run.State` items) to consider.
         :param   only: Root class (or tuple of root classes) of tasks to consider.
         """
-        table = Texttable(0) # max_width=0 => dynamically resize cells
-        table.set_deco(Texttable.HEADER) # also: .VLINES, .HLINES .BORDER
+        table = Texttable(0)  # max_width=0 => dynamically resize cells
+        table.set_deco(Texttable.HEADER)  # also: .VLINES, .HLINES .BORDER
         table.header(['JobID', 'Job name', 'State', 'Info'])
         #table.set_cols_width([10, 20, 10, 35])
         table.set_cols_align(['l', 'l', 'l', 'l'])
-        table.add_rows([ (task.persistent_id, task.jobname,
-                          task.execution.state, task.execution.info)
-                         for task in self.tasks
-                         if isinstance(task, only) and task.execution.in_state(*states) ],
+        table.add_rows([
+            (task.persistent_id, task.jobname,
+             task.execution.state, task.execution.info)
+            for task in self.tasks
+            if isinstance(task, only) and task.execution.in_state(*states)],
                        header=False)
         # XXX: uses texttable's internal implementation detail
         if len(table._rows) > 0:
             output.write(table.draw())
             output.write("\n")
-
 
     def before_main_loop(self):
         """
@@ -981,7 +986,6 @@ class SessionBasedScript(_Script):
         """
         pass
 
-
     def every_main_loop(self):
         """
         Hook executed during each round of the main loop.
@@ -994,7 +998,6 @@ class SessionBasedScript(_Script):
         """
         pass
 
-
     def after_main_loop(self):
         """
         Hook executed after exit from the main loop.
@@ -1002,13 +1005,12 @@ class SessionBasedScript(_Script):
         This is called after the main loop has exited (for whatever
         reason), but *before* the session is finally saved and other
         connections are finalized.
-        
+
         Override in subclasses to plug any behavior here; the default
         implementation does nothing.
         """
         pass
 
-        
     ##
     ## pyCLI INTERFACE METHODS
     ##
@@ -1020,7 +1022,8 @@ class SessionBasedScript(_Script):
 
     # XXX: please explain this.
     def __unset_application_cls(*args, **kwargs):
-        """Raise an error if users did not set `application` in `SessionBasedScript` initialization."""
+        """Raise an error if users did not set `application` in
+        `SessionBasedScript` initialization."""
         raise gc3libs.exceptions.Error("PLEASE SET `application` in `SessionBasedScript` CONSTRUCTOR")
 
     def __init__(self, **kw):
@@ -1028,8 +1031,8 @@ class SessionBasedScript(_Script):
         Perform initialization and set the version, help and usage
         strings.
 
-        The help text to be printed when the script is invoked with the 
-        ``-h``/``--help`` option will be taken from (in order of preference): 
+        The help text to be printed when the script is invoked with the
+        ``-h``/``--help`` option will be taken from (in order of preference):
           * the keyword argument `description`
           * the attribute `self.description`
         If neither is provided, an `AssertionError` is raised.
@@ -1049,11 +1052,11 @@ class SessionBasedScript(_Script):
         Any additional keyword argument will be used to set a
         corresponding instance attribute on this Python object.
         """
-        self.tasks = [ ]
-        self.stats_only_for = None #: by default, print stats of all kind of jobs
+        self.tasks = []
+        self.stats_only_for = None  # by default, print stats of all kind of jobs
         self.instances_per_file = 1
         self.instances_per_job = 1
-        self.extra = { } #: extra kw arguments passed to `parse_args`
+        self.extra = {}  # extra kw arguments passed to `parse_args`
         # use bogus values that should point ppl to the right place
         self.input_filename_pattern = 'PLEASE SET `input_filename_pattern` IN `SessionBasedScript` CONSTRUCTOR'
         # XXX: what does the following call is for ?
@@ -1064,28 +1067,28 @@ class SessionBasedScript(_Script):
             main=self._main,
             **kw
             )
-        
+
     def setup(self):
         """
         Setup standard command-line parsing.
 
-        GC3Libs scripts should probably override `setup_args`:meth: 
+        GC3Libs scripts should probably override `setup_args`:meth:
         to modify command-line parsing.
         """
         ## setup of base classes
         _Script.setup(self)
 
         ## add own "standard options"
-        
+
         # 1. job requirements
         self.add_param("-c", "--cpu-cores", dest="ncores",
-                       type=positive_int, default=1, # 1 core
+                       type=positive_int, default=1,  # 1 core
                        metavar="NUM",
                        help="Set the number of CPU cores required for each job (default: %(default)s)."
                        " NUM must be a whole number."
                        )
         self.add_param("-m", "--memory-per-core", dest="memory_per_core",
-                       type=positive_int, default=2, # 2 GB
+                       type=positive_int, default=2,  # 2 GB
                        metavar="GIGABYTES",
                        help="Set the amount of memory required per execution core, in gigabytes (Default: %(default)s)."
                        " Currently, GIGABYTES can only be an integer number; no fractional amounts are allowed.")
@@ -1094,7 +1097,7 @@ class SessionBasedScript(_Script):
                        help="Submit jobs to a specific computational resources."
                        " NAME is a reource name or comma-separated list of such names."
                        " Use the command `glist` to list available resources.")
-        self.add_param("-w", "--wall-clock-time", dest="wctime", default=str(8), # 8 hrs
+        self.add_param("-w", "--wall-clock-time", dest="wctime", default=str(8),  # 8 hrs
                        metavar="DURATION",
                        help="Set the time limit for each job (default %(default)s for '8 hours')."
                        " Jobs exceeding this limit will be stopped and considered as 'failed'."
@@ -1103,7 +1106,7 @@ class SessionBasedScript(_Script):
                        )
 
         # 2. session control
-        self.add_param("-s", "--session", dest="session", 
+        self.add_param("-s", "--session", dest="session",
                        default=os.path.join(os.getcwd(), self.name),
                        metavar="PATH",
                        help="Store the session information in the directory at PATH. (Default: '%(default)s')."
@@ -1156,7 +1159,6 @@ class SessionBasedScript(_Script):
                        )
         return
 
-
     def pre_run(self):
         """
         Perform parsing of standard command-line options and call into
@@ -1167,15 +1169,15 @@ class SessionBasedScript(_Script):
 
         ## consistency checks
         n = self.params.wctime.count(":")
-        if 0 == n: # wctime expressed in hours
+        if 0 == n:  # wctime expressed in hours
             duration = int(self.params.wctime)*60*60
             if duration < 1:
                 raise cli.app.Error("Argument to option -w/--wall-clock-time must be a positive integer.")
             self.params.wctime = duration
-        elif 1 == n: # wctime expressed as 'HH:MM'
+        elif 1 == n:  # wctime expressed as 'HH:MM'
             hrs, mins = self.params.wctime.split(":")
             self.params.wctime = hrs*60*60 + mins*60
-        elif 2 == n: # wctime expressed as 'HH:MM:SS'
+        elif 2 == n:  # wctime expressed as 'HH:MM:SS'
             hrs, mins, secs = self.params.wctime.split(":")
             self.params.wctime = hrs*60*60 + mins*60 + secs
         else:
@@ -1186,8 +1188,8 @@ class SessionBasedScript(_Script):
         self.session_uri = gc3libs.url.Url(self.params.session)
 
         _path = self.session_uri.path
-        if ( os.path.exists(_path)
-             and os.path.isdir(_path) ):
+        if (os.path.exists(_path)
+             and os.path.isdir(_path)):
             self.session_dirname = os.path.realpath(_path)
             self.session_filename = os.path.join(_path, 'index.csv')
         else:
@@ -1197,7 +1199,7 @@ class SessionBasedScript(_Script):
                 _path = _path[:-4]
             elif _path.endswith('.db'):
                 _path = _path[:-3]
-            
+
             self.session_dirname = _path + '.jobs'
             self.session_filename = _path + '.csv'
 
@@ -1215,8 +1217,7 @@ class SessionBasedScript(_Script):
 
         ## parse the `states` list
         self.params.states = self.params.states.split(',')
-    
-    
+
     ##
     ## INTERNAL METHODS
     ##
@@ -1224,24 +1225,25 @@ class SessionBasedScript(_Script):
     ## overridden and customized in derived classes, although there
     ## should be no need to do so.
     ##
-
     def _main(self, *args):
         """
         Implementation of the main logic in the `SessionBasedScript`.
 
         This is a template method, that you should not override in derived
         classes: rather use the provided customization hooks:
-        :meth:`process_args`, :meth:`parse_args`, :meth:`setup_args`. 
+        :meth:`process_args`, :meth:`parse_args`, :meth:`setup_args`.
         """
 
-        ## create a `persistence.Store` instance to _save_session/_load_session jobs
+        ## create a `persistence.Store` instance to
+        ## _save_session/_load_session jobs
         self.store = gc3libs.persistence.make_store(
-            self.session_uri, 
+            self.session_uri,
             idfactory=gc3libs.persistence.JobIdFactory()
             )
 
         ## zero out the session index if `-N` was given
-        if self.params.new_session or not os.path.exists(self.session_filename):
+        if self.params.new_session \
+               or not os.path.exists(self.session_filename):
             # XXX: we should abort existing jobs here...
             open(self.session_filename, 'w+b').close()
 
@@ -1277,16 +1279,17 @@ class SessionBasedScript(_Script):
             self.log.info("sleeping for %d seconds..." % self.params.wait)
             try:
                 while rc > 3:
-                    # Python scripts become unresponsive during `time.sleep()`,
-                    # so we just do the wait in small steps, to allow the interpreter
-                    # to process interrupts in the breaks.  Ugly, but works...
+                    # Python scripts become unresponsive during
+                    # `time.sleep()`, so we just do the wait in small
+                    # steps, to allow the interpreter to process
+                    # interrupts in the breaks.  Ugly, but works...
                     for x in xrange(self.params.wait):
                         time.sleep(1)
                     rc = self._main_loop()
-            except KeyboardInterrupt: # gracefully intercept Ctrl+C
+            except KeyboardInterrupt:  # gracefully intercept Ctrl+C
                 pass
         self.after_main_loop()
-        
+
         # save the session again before exiting, so the file reflects
         # jobs' statuses
         self._save_session()
@@ -1297,7 +1300,6 @@ class SessionBasedScript(_Script):
 
         return rc
 
-
     def _main_loop(self):
         """
         The main loop of the application.  It is in a separate
@@ -1305,7 +1307,7 @@ class SessionBasedScript(_Script):
         around it, as directed by the `self.params.wait` option.
 
         .. note::
-        
+
           Overriding this method can disrupt the whole functionality of
           the script, so be careful.
 
@@ -1328,7 +1330,7 @@ class SessionBasedScript(_Script):
         # hook method
         self.every_main_loop()
         # print results to user
-        print ("Status of jobs in the '%s' session: (at %s)" 
+        print ("Status of jobs in the '%s' session: (at %s)"
                % (os.path.basename(self.params.session),
                   time.strftime('%X, %x')))
         # summary
@@ -1337,7 +1339,8 @@ class SessionBasedScript(_Script):
         if total > 0:
             if self.stats_only_for is not None:
                 self.print_summary_table(sys.stdout,
-                                         self._controller.stats(self.stats_only_for))
+                                         self._controller.stats(
+                                             self.stats_only_for))
             else:
                 self.print_summary_table(sys.stdout, stats)
             # details table, as per ``-l`` option
@@ -1353,12 +1356,13 @@ class SessionBasedScript(_Script):
         rc = 0
         if stats['failed'] > 0:
             rc |= 2
-        if stats[gc3libs.Run.State.RUNNING] > 0 or stats[gc3libs.Run.State.SUBMITTED] > 0 or stats[gc3libs.Run.State.UNKNOWN]:
+        if stats[gc3libs.Run.State.RUNNING] > 0 \
+               or stats[gc3libs.Run.State.SUBMITTED] > 0 \
+               or stats[gc3libs.Run.State.UNKNOWN]:
             rc |= 4
         if stats[gc3libs.Run.State.NEW] > 0:
             rc |= 8
         return rc
-
 
     def _load_session(self, session_filename, store):
         """
@@ -1371,21 +1375,25 @@ class SessionBasedScript(_Script):
             if os.path.exists(session_filename + '.OLD'):
                 session_filename += '.OLD'
             else:
-                raise IOError(2, "No such file or directory: '%s'" % session_filename)
+                raise IOError(2,
+                              "No such file or directory: '%s'" %
+                              session_filename)
         session_file = open(session_filename, 'r+b')
         for row in csv.DictReader(session_file,
-                                  ['jobname', 'persistent_id', 'state', 'info']):
+                                  ['jobname',
+                                   'persistent_id',
+                                   'state',
+                                   'info']):
             row['jobname'] = row['jobname'].strip()
             row['persistent_id'] = row['persistent_id'].strip()
             if (row['jobname'] == '' or row['persistent_id'] == ''):
                 # invalid row, skip
-                continue 
+                continue
             # resurrect saved state
             task = store.load(row['persistent_id'])
             # append to this list
             self.tasks.append(task)
         session_file.close()
-        
 
     def _save_session(self, store=None):
         """
@@ -1403,8 +1411,8 @@ class SessionBasedScript(_Script):
             for task in self.tasks:
                 if store is not None:
                     store.save(task)
-                csv.DictWriter(session_file, 
-                               ['jobname', 'persistent_id', 'state', 'info'], 
+                csv.DictWriter(session_file,
+                               ['jobname', 'persistent_id', 'state', 'info'],
                                extrasaction='ignore').writerow(task)
             session_file.close()
         except IOError, ex:
@@ -1413,7 +1421,6 @@ class SessionBasedScript(_Script):
         # move it to final location
         os.rename(self.session_filename, self.session_filename + '.OLD')
         os.rename(session_filename_new, self.session_filename)
-
 
     def _search_for_input_files(self, paths, pattern=None):
         """
@@ -1436,8 +1443,6 @@ class SessionBasedScript(_Script):
                 # re-check for more wildcard characters
                 if '*' in ext or '?' in ext or '[' in ext:
                     ext = None
-            #self.log.debug("Input files must match glob pattern '%s' or extension '%s'"
-            #               % (pattern, ext))
 
         def matches(name):
             return (fnmatch.fnmatch(os.path.basename(name), pattern)
@@ -1458,13 +1463,16 @@ class SessionBasedScript(_Script):
                 self.log.debug("Path '%s' matches pattern '%s',"
                                " adding it to input list" % (path, pattern))
                 inputs.add(path)
-            elif ext is not None and not path.endswith(ext) and os.path.exists(path + ext):
+            elif ext is not None \
+                     and not path.endswith(ext) \
+                     and os.path.exists(path + ext):
                 self.log.debug("Path '%s' matched extension '%s',"
                                " adding to input list"
                                % (path + ext, ext))
                 inputs.add(os.path.realpath(path + ext))
             else:
-                self.log.error("Cannot access input path '%s' - ignoring it.", path)
-            #self.log.debug("Gathered input files: '%s'" % str.join("', '", inputs))
+                self.log.error(
+                    "Cannot access input path '%s' - ignoring it.",
+                    path)
 
         return inputs

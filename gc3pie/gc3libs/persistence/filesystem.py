@@ -60,6 +60,7 @@ class _PersistentIdToSave(object):
             self._driver.save(obj)
             return obj.persistent_id
 
+
 class _PersistentLoadExternalId(object):
     """This class is needed because:
 
@@ -78,10 +79,12 @@ class _PersistentLoadExternalId(object):
     def __call__(self, id_):
         return self._driver.load(id_)
 
+
 def create_pickler(driver, stream, root, protocol=pickle.HIGHEST_PROTOCOL):
     p = pickle.Pickler(stream, protocol=protocol)
     p.persistent_id = _PersistentIdToSave(driver, root)
     return p
+
 
 def create_unpickler(driver, stream):
     p = pickle.Unpickler(stream)
@@ -115,23 +118,21 @@ class FilesystemStore(Store):
     (default: `pickle` protocol 0).  See the `pickle` module
     documentation for details.
     """
-    def __init__(self, directory=gc3libs.Default.JOBS_DIR, 
+    def __init__(self, directory=gc3libs.Default.JOBS_DIR,
                  idfactory=IdFactory(), protocol=pickle.HIGHEST_PROTOCOL):
         if isinstance(directory, gc3libs.url.Url):
-            directory=directory.path
+            directory = directory.path
         self._directory = directory
-        
+
         self.idfactory = idfactory
         self._protocol = protocol
-
 
     @same_docstring_as(Store.list)
     def list(self):
         if not os.path.exists(self._directory):
-            return [ ]
-        return [ id_ for id_ in os.listdir(self._directory)
-                 if not id_.endswith('.OLD') ]
-
+            return []
+        return [id_ for id_ in os.listdir(self._directory)
+                if not id_.endswith('.OLD')]
 
     def _load_from_file(self, path):
         """Auxiliary method for `load`."""
@@ -147,16 +148,16 @@ class FilesystemStore(Store):
                 try:
                     src.close()
                 except:
-                    pass # ignore errors
+                    pass  # ignore errors
             raise
-                
+
     @same_docstring_as(Store.load)
     def load(self, id_):
         filename = os.path.join(self._directory, id_)
         #gc3libs.log.debug("Loading object from file '%s' ...", filename)
 
         if not os.path.exists(filename):
-            raise gc3libs.exceptions.LoadError("No '%s' file found in directory '%s'" 
+            raise gc3libs.exceptions.LoadError("No '%s' file found in directory '%s'"
                                    % (id_, self._directory))
 
         # XXX: this should become `with src = ...:` as soon as we stop
@@ -170,7 +171,8 @@ class FilesystemStore(Store):
             old_copy = filename + '.OLD'
             if os.path.exists(old_copy):
                 gc3libs.log.warning(
-                    "Will try loading from backup file '%s' instead...", old_copy)
+                    "Will try loading from backup file '%s' instead...",
+                    old_copy)
                 try:
                     obj = self._load_from_file(old_copy)
                 except Exception, ex:
@@ -189,21 +191,18 @@ class FilesystemStore(Store):
                 % (filename))
         if str(obj.persistent_id) != str(id_):
             raise gc3libs.exceptions.LoadError(
-                "Retrieved persistent ID '%s' does not match given ID '%s'" 
+                "Retrieved persistent ID '%s' does not match given ID '%s'"
                 % (obj.persistent_id, id_))
         return obj
-
 
     @same_docstring_as(Store.remove)
     def remove(self, id_):
         filename = os.path.join(self._directory, id_)
         os.remove(filename)
 
-
     @same_docstring_as(Store.replace)
     def replace(self, id_, obj):
         self._save_or_replace(id_, obj)
-
 
     @same_docstring_as(Store.save)
     def save(self, obj):
@@ -211,7 +210,6 @@ class FilesystemStore(Store):
             obj.persistent_id = self.idfactory.new(obj)
         self._save_or_replace(obj.persistent_id, obj)
         return obj.persistent_id
-
 
     def _save_or_replace(self, id_, obj):
         """
@@ -227,7 +225,7 @@ class FilesystemStore(Store):
                 os.makedirs(self._directory)
             except Exception, ex:
                 # raise same exception but add context message
-                gc3libs.log.error("Could not create jobs directory '%s': %s" 
+                gc3libs.log.error("Could not create jobs directory '%s': %s"
                                   % (self._directory, str(ex)))
                 raise
 
@@ -235,7 +233,7 @@ class FilesystemStore(Store):
         if os.path.exists(filename):
             backup = filename + '.OLD'
             os.rename(filename, backup)
-        
+
         # TODO: this should become `with tgt = ...:` as soon as we
         # stop supporting Python 2.4
         tgt = None
@@ -247,20 +245,20 @@ class FilesystemStore(Store):
             try:
                 os.remove(backup)
             except:
-                pass # ignore errors
+                pass  # ignore errors
         except Exception, ex:
-            gc3libs.log.error("Error saving job '%s' to file '%s': %s: %s" 
+            gc3libs.log.error("Error saving job '%s' to file '%s': %s: %s"
                               % (obj, filename, ex.__class__.__name__, ex))
             if tgt is not None:
                 try:
                     tgt.close()
                 except:
-                    pass # ignore errors
+                    pass  # ignore errors
             if backup is not None:
-                try: 
+                try:
                     os.rename(backup, filename)
                 except:
-                    pass # ignore errors
+                    pass  # ignore errors
             raise
 
 
