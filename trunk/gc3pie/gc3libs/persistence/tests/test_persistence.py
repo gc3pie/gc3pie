@@ -120,32 +120,65 @@ class GenericStoreChecks(object):
         obj = self.store.load(id)
         assert obj.value == 'GC3'    
 
-        # check that if an object is already on the db a call to
-        # `self.store.save` will not save a duplicate of the object, but it
-        # will override the old one.
+    def test_duplicated_save(self):
+        """
+        Check that if an object is already on the db a call to
+        `self.store.save` will not save a duplicate of the object, but
+        it will override the old one.
+        """
+        obj = SimplePersistableObject('GC3')
+        
         id1 = self.store.save(obj)
         id2 = self.store.save(obj)
         assert id1 == id2
 
-        # Removing objects
-        self.store.remove(id)
-        try:
-            obj = self.store.load(id)
-            raise AssertionError("Object %s should not have been found" % id)
-        except gc3libs.exceptions.LoadError:
-            # OK, this is what we were expecting
-            pass
 
-        # check that IDs are never duplicate
+
+    def test_ids_are_not_duplicated(self):
+        """
+        check that IDs are never duplicate
+        """
         ids = []
         for i in range(10):
             ids.append(self.store.save(SimplePersistableObject(str(i))))
         assert len(ids) == len(set(ids))
 
-        # cleanup
-        for i in ids:
-            self.store.remove(i)
 
+    def test_list_method(self):
+        """Test the `list` method of the `SqlStore` class"""
+        num_objs = 10
+        for i in range(num_objs):        
+            self.store.save(SimplePersistableObject('Object %d' % i))
+            
+        assert len(self.store.list()) == num_objs
+
+    @raises(gc3libs.exceptions.LoadError)
+    def test_remove_method(self):
+        """
+        Test remove method of a generic `Store` class
+        """
+        # Removing objects
+        obj = SimplePersistableObject('GC3')
+        id = self.store.save(obj)
+        self.store.remove(id)
+
+        obj = self.store.load(id)
+
+    def test_replace_method(self):
+        """Test the `replace` method of the `SqlStore` class"""
+        # 1) save a new object
+        obj = SimplePersistableObject("Original")
+        id_ = self.store.save(obj)
+
+        # 2) change it and replace it
+        obj.x = "Updated"
+        self.store.replace(obj.persistent_id, obj)
+        assert id_ == obj.persistent_id
+
+        # 3_ load it again and check if it has been updated
+        obj2 = self.store.load(id_)
+        assert obj2.x == "Updated"
+        
 
     def test_persist_classes_with_slots(self):
         raise SkipTest("FIXME: Test code needs to be checked!")
@@ -163,35 +196,6 @@ class GenericStoreChecks(object):
             self.store.save(obj2)
             raise AssertionError("We shouldn't reach this point")
         except AttributeError:
-            pass
-
-
-    # XXX: what's the between difference this test and `test_disaggregate_persistable_obejcts`?
-    def test_nested_persistence(self):
-        """
-        Check that nested objects are saved/loaded correctly.
-        """
-        obj = SimplePersistableList([
-            SimplePersistableObject('j1'),
-            SimplePersistableObject('j2'),
-            SimplePersistableObject('j3'),
-            ])
-
-        # save
-        id = self.store.save(obj)
-        del obj
-
-        # load
-        obj = self.store.load(id)
-        for i in range(3):
-            assert obj[i].value == ('j%d' % (i+1))
-
-        # remove
-        self.store.remove(id)
-        try:
-            obj = self.store.load(id)
-            raise AssertionError("Object %s should not have been found!" % id)
-        except gc3libs.exceptions.LoadError:
             pass
 
 
