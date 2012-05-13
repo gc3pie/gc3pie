@@ -24,6 +24,7 @@ __version__ = '$Revision$'
 import gc3libs
 from gc3libs.url import Url
 
+
 class Store(object):
     """
     Interface for storing and retrieving objects on permanent storage.
@@ -42,7 +43,7 @@ class Store(object):
         the `Store` class: it should not be set or altered by other
         parts of the code.
     """
-    
+
     def list(self, **kw):
         """
         Return list of IDs of saved `Job` objects.
@@ -50,38 +51,41 @@ class Store(object):
         This is an optional method; classes that do not implement it
         should raise a `NotImplementedError` exception.
         """
-        raise NotImplementedError("Method `list` not implemented in this class.")
+        raise NotImplementedError(
+            "Method `list` not implemented in this class.")
 
     def remove(self, id_):
         """
         Delete a given object from persistent storage, given its ID.
         """
-        raise NotImplementedError("Abstract method 'Store.remove' called"
-                                  " -- should have been implemented in a derived class!")
+        raise NotImplementedError(
+            "Abstract method 'Store.remove' called"
+            " -- should have been implemented in a derived class!")
 
     def replace(self, id_, obj):
         """
-        Replace the object already saved with the given ID with a copy of `obj`.
+        Replace the object already saved with the given ID with a copy
+        of `obj`.
         """
-        raise NotImplementedError("Abstract method 'Store.replace' called"
-                                  " -- should have been implemented in a derived class!")
+        raise NotImplementedError(
+            "Abstract method 'Store.replace' called"
+            " -- should have been implemented in a derived class!")
 
     def load(self, id_):
         """
         Load a saved object given its ID, and return it.
         """
-        raise NotImplementedError("Abstract method 'Store.load' called"
-                                  " -- should have been implemented in a derived class!")
+        raise NotImplementedError(
+            "Abstract method 'Store.load' called"
+            " -- should have been implemented in a derived class!")
 
     def save(self, obj):
         """
         Save an object, and return an ID.
         """
-        raise NotImplementedError("Abstract method 'Store.save' called"
-                                  " -- should have been implemented in a derived class!")
-
-
-
+        raise NotImplementedError(
+            "Abstract method 'Store.save' called"
+            " -- should have been implemented in a derived class!")
 
 
 class Persistable(object):
@@ -93,11 +97,10 @@ class Persistable(object):
     """
     pass
 
-
-
 ## registration mechanism
 
-_registered_store_ctors = { }
+_registered_store_ctors = {}
+
 
 def register(scheme, constructor):
     """
@@ -112,14 +115,19 @@ def register(scheme, constructor):
     and location of the storage.
 
     :param str scheme: URL scheme to associate with the given constructor.
-    :param callable constructor: A callable returning a `Store`:class: instance. Typically, a class constructor.
+
+    :param callable constructor: A callable returning a `Store`:class:
+    instance. Typically, a class constructor.
     """
     global _registered_store_ctors
     assert callable(constructor), (
-        "Registering non-callable constructor for scheme '%s' in `gc3libs.persistence.register`"
+        "Registering non-callable constructor for scheme "
+        "'%s' in `gc3libs.persistence.register`"
         % scheme)
-    gc3libs.log.debug("Registering scheme '%s' with the `gc3libs.persistence` registry.", scheme)
-    _registered_store_ctors[ str(scheme) ] = constructor
+    gc3libs.log.debug(
+        "Registering scheme '%s' with the `gc3libs.persistence` registry.",
+        scheme)
+    _registered_store_ctors[str(scheme)] = constructor
 
 
 def make_store(uri, *args, **kw):
@@ -145,7 +153,7 @@ def make_store(uri, *args, **kw):
       >>> fs2 = make_store('/tmp')
       >>> fs2.__class__.__name__
       'FilesystemStore'
-      
+
     """
     if not isinstance(uri, Url):
         uri = Url(uri)
@@ -159,8 +167,6 @@ def make_store(uri, *args, **kw):
         gc3libs.log.error("Error constructing store for URL '%s': %s: %s",
                           str(uri), ex.__class__.__name__, str(ex))
         raise
-
-
 
 ## main: run tests
 

@@ -39,6 +39,7 @@ from store import Store, Persistable, register
 from idfactory import IdFactory
 from filesystem import  create_pickler, create_unpickler
 
+
 class DummyObject:
     pass
 
@@ -64,9 +65,9 @@ def sql_next_id_factory(db):
         if not nextid:
             nextid = 1
         else:
-            nextid = int(nextid)+1
+            nextid = int(nextid) + 1
         return nextid
-    
+
     return sql_next_id
 
 
@@ -137,7 +138,7 @@ class SqlStore(Store):
     `obj.execution.lrms_jobid` attribute
 
     `jobname`: if the object is a `Task` this is its `jobname`
-    attribute.    
+    attribute.
 
     The `extra_fields` argument is used to extend the database. It
     must contain a mapping `<column>` : `<function>` where:
@@ -155,10 +156,18 @@ class SqlStore(Store):
 
     """
     default_extra_fields = {
-        sqla.Column('type', sqla.VARCHAR(length=128)): (lambda obj: isinstance(obj, Task) and 'job' or ''),
-        sqla.Column('jobid', sqla.VARCHAR(length=128)): (lambda obj: obj.execution.lrms_jobid),
-        sqla.Column('jobname', sqla.VARCHAR(length=255)): (lambda obj: obj.jobname),
-        sqla.Column('jobstatus', sqla.VARCHAR(length=128)): (lambda obj: obj.execution.state),
+        sqla.Column(
+            'type',
+            sqla.VARCHAR(length=128)): (lambda obj: isinstance(obj, Task) and 'job' or ''),
+        sqla.Column(
+            'jobid',
+            sqla.VARCHAR(length=128)): (lambda obj: obj.execution.lrms_jobid),
+        sqla.Column(
+            'jobname',
+            sqla.VARCHAR(length=255)): (lambda obj: obj.jobname),
+        sqla.Column(
+            'jobstatus',
+            sqla.VARCHAR(length=128)): (lambda obj: obj.execution.state),
         }
 
     def __init__(self, url, table_name="store", idfactory=None,
@@ -181,8 +190,11 @@ class SqlStore(Store):
             table = sqla.Table(
                 self.table_name,
                 self.__meta,
-                sqla.Column('id',   sqla.INTEGER(), primary_key=True, nullable=False),
-                sqla.Column('data', sqla.BLOB()),
+                sqla.Column('id',
+                            sqla.INTEGER(),
+                            primary_key=True, nullable=False),
+                sqla.Column('data',
+                            sqla.BLOB()),
                 )
             for col, func in extra_fields.iteritems():
                 if isinstance(col, sqla.Column):
@@ -204,41 +216,40 @@ class SqlStore(Store):
             self.extra_fields = dict()
             for colname in self.__meta.tables[self.table_name].columns.keys():
                 colname = str(colname)
-                if colname in ('id', 'data', 'type', 'jobid', 'jobname', 'jobstatus'):
+                if colname in ('id', 'data', 'type',
+                               'jobid', 'jobname', 'jobstatus'):
                     continue
                 if colname in extra_fields:
                     self.extra_fields[colname] = extra_fields[colname]
                 else:
-                    self.extra_fields[colname] = (lambda obj, attr=colname: getattr(obj, attr))
+                    self.extra_fields[colname] = (lambda obj, attr=colname:
+                                                  getattr(obj, attr))
 
             # check that it has all the required fields
             if __debug__:
                 actual_fields = set(str(colname) for colname in self.__meta.tables[self.table_name].columns.keys())
                 expected_fields = set(['id', 'data']
-                                      + [str(col) for col in extra_fields.keys() ])
+                                      + [str(col) for col in extra_fields.keys()])
                 assert expected_fields <= actual_fields
 
         self.t_store = self.__meta.tables[self.table_name]
-        
+
         self.idfactory = idfactory
         if not idfactory:
             self.idfactory = IdFactory(id_class=IntId)
-
 
     @same_docstring_as(Store.list)
     def list(self):
         q = sql.select([self.t_store.c.id])
         conn = self.__engine.connect()
         rows = conn.execute(q)
-        ids = [ i[0] for i in rows.fetchall() ]
+        ids = [i[0] for i in rows.fetchall()]
         conn.close()
         return ids
-
 
     @same_docstring_as(Store.replace)
     def replace(self, id_, obj):
         self._save_or_replace(id_, obj, 'replace')
-
 
     # copied from FilesystemStore
     @same_docstring_as(Store.save)
@@ -247,17 +258,15 @@ class SqlStore(Store):
             obj.persistent_id = self.idfactory.new(obj)
         return self._save_or_replace(obj.persistent_id, obj, 'save')
 
-
     def _save_or_replace(self, id_, obj, action):
-
-        fields={'id':id_}
+        fields = {'id': id_}
         dstdata = StringIO.StringIO()
         pickler = create_pickler(self, dstdata, obj)
         pickler.dump(obj)
         fields['data'] = dstdata.getvalue()
         # insert into db
         fields['type'] = ''
-            
+
         for column in self.extra_fields:
             try:
                 fields[column] = self.extra_fields[column](obj)
@@ -267,7 +276,7 @@ class SqlStore(Store):
                 gc3libs.log.warning("Error saving DB column '%s' of object '%s': %s: %s",
                                     column, obj, ex.__class__.__name__, str(ex))
 
-        q = sql.select([self.t_store.c.id]).where(self.t_store.c.id==id_)
+        q = sql.select([self.t_store.c.id]).where(self.t_store.c.id == id_)
         conn = self.__engine.connect()
         r = conn.execute(q)
         if not r.fetchone():
@@ -276,14 +285,13 @@ class SqlStore(Store):
             conn.execute(q)
         else:
             # it's an update
-            q = self.t_store.update().where(self.t_store.c.id==id_).values(**fields)
+            q = self.t_store.update().where(self.t_store.c.id == id_).values(**fields)
             conn.execute(q)
         obj.persistent_id = id_
         conn.close()
-        
+
         # return id
         return obj.persistent_id
-
 
     @same_docstring_as(Store.load)
     def load(self, id_):
@@ -291,7 +299,7 @@ class SqlStore(Store):
         conn = self.__engine.connect()
         r = conn.execute(q)
         rawdata = r.fetchone()
-        
+
         if not rawdata:
             raise gc3libs.exceptions.LoadError("Unable to find object %d" % id_)
         unpickler = create_unpickler(self, StringIO.StringIO(rawdata[0]))
@@ -300,11 +308,10 @@ class SqlStore(Store):
 
         return obj
 
-
     @same_docstring_as(Store.remove)
     def remove(self, id_):
         conn = self.__engine.connect()
-        conn.execute(self.t_store.delete().where(self.t_store.c.id==id_))
+        conn.execute(self.t_store.delete().where(self.t_store.c.id == id_))
         conn.close()
 
 
@@ -326,8 +333,8 @@ def make_sqlstore(url, *args, **kw):
       'SqlStore'
     """
     assert isinstance(url, gc3libs.url.Url)
-    # rewrite ``sqlite`` URLs to be RFC compliant, 
-    # see: http://code.google.com/p/gc3pie/issues/detail?id=261
+    # rewrite ``sqlite`` URLs to be RFC compliant, see:
+    # http://code.google.com/p/gc3pie/issues/detail?id=261
     if url.scheme in ('sqlite', 'file'):
         url = "%s://%s/%s" % (url.scheme, url.netloc, url.path)
     return SqlStore(str(url), *args, **kw)
