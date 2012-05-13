@@ -21,7 +21,7 @@
 __docformat__ = 'reStructuredText'
 __version__ = '$Revision$'
 
-from gc3libs.persistence import IdFactory
+from gc3libs.persistence.idfactory import IdFactory
 
 class DummyObject(object):
     pass
