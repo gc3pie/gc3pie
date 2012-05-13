@@ -22,6 +22,8 @@ __docformat__ = 'reStructuredText'
 __version__ = '$Revision$'
 
 import operator
+
+import gc3libs
 from gc3libs.utils import progressive_number
 
 
