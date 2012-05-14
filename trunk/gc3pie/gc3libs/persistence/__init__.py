@@ -22,7 +22,14 @@ Facade to store and retrieve Job information from permanent storage.
 __docformat__ = 'reStructuredText'
 __version__ = 'development version (SVN $Revision$)'
 
+
+# Export the "public API" towards other modules, so that
+# one can do ``import gc3libs.persistence`` and load whatever
+# should be normally needed and supported.  Other modules in
+# this package should be considered "internal use only".
 from store import make_store, Persistable
+from idfactory import IdFactory, JobIdFactory
+
 
 ## main: run tests
 
