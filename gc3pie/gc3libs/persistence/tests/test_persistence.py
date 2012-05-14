@@ -32,18 +32,20 @@ import tempfile
 from nose.plugins.skip import SkipTest
 from nose.tools import raises, assert_equal
 
-# GC3Pie imports
-import gc3libs; from gc3libs import Run, Task
-import gc3libs.exceptions
-from gc3libs.persistence import make_store, Persistable
-from gc3libs.url import Url
-
 try:
     import sqlalchemy
     import sqlalchemy.sql as sql
     sqlfunc = sqlalchemy.func
 except:
-    pass
+    raise SkipTest("Cannot import `sqlalchemy`; skipping all SQL tests.")
+
+# GC3Pie imports
+import gc3libs; from gc3libs import Run, Task
+import gc3libs.exceptions
+from gc3libs.persistence import make_store, Persistable
+import gc3libs.persistence.sql
+from gc3libs.url import Url
+
 
 ## for testing basic functionality we do no need fully-fledged GC3Pie
 ## objects; let's define some simple make-do's.
@@ -308,17 +310,41 @@ class SqlStoreChecks(GenericStoreChecks):
 
         app.execution.state = Run.State.NEW
         app.execution.lrms_jobid = 1
-
         id_ = self.store.save(app)
-        q = sql.select([self.store.t_store.c.jobid,
-                           self.store.t_store.c.jobname,
-                           self.store.t_store.c.jobstatus]).where(self.store.t_store.c.id==id_)
-        
+
+        q = sql.select([
+            self.store.t_store.c.jobid,
+            self.store.t_store.c.jobname,
+            self.store.t_store.c.state
+            ]).where(self.store.t_store.c.id==id_)
         result = self.conn.execute(q)
         row = result.fetchone()
-        # self.c.execute('select jobid,jobname,jobstatus from %s where id=%d'
-        #           % (self.store.table_name, app.persistent_id))
-        # row = self.c.fetchone()
+
+        assert int(row[0]) == app.execution.lrms_jobid
+        assert row[1] == app.jobname
+        assert row[2] == app.execution.state
+
+
+    # the `jobname` attribute is optional in the `Application` ctor
+    def test_persist_Application_with_no_job_name(self):
+        app = gc3libs.Application(
+            executable='/bin/true',
+            arguments=[],
+            inputs=[],
+            outputs=[],
+            output_dir='/tmp')
+
+        app.execution.state = Run.State.NEW
+        app.execution.lrms_jobid = 1
+        id_ = self.store.save(app)
+
+        q = sql.select([
+            self.store.t_store.c.jobid,
+            self.store.t_store.c.jobname,
+            self.store.t_store.c.state
+            ]).where(self.store.t_store.c.id==id_)
+        result = self.conn.execute(q)
+        row = result.fetchone()
 
         assert int(row[0]) == app.execution.lrms_jobid
         assert row[1] == app.jobname
@@ -328,7 +354,8 @@ class SqlStoreChecks(GenericStoreChecks):
     def test_sql_injection(self):
         """Test if the `SqlStore` class is vulnerable to SQL injection."""
         obj = SimpleTask("Antonio's task")
-        obj.execution.lrms_jobid = "my 'jobid' has a lot%! of strange SQL? characters; doesn't it?"
+        # obligatory XKCD citation ;-)
+        obj.execution.lrms_jobid = "Robert'); DROP TABLE store;--"
         id_ = self.store.save(obj)
         obj2 = self.store.load(id_)
         assert obj.jobname == obj2.jobname

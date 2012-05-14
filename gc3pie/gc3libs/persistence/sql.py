@@ -120,10 +120,9 @@ class SqlStore(Store):
         +-----------+--------------+------+-----+---------+
         | Field     | Type         | Null | Key | Default |
         +-----------+--------------+------+-----+---------+
-        | type      | varchar(128) | YES  |     | NULL    |
         | jobid     | varchar(128) | YES  |     | NULL    |
         | jobname   | varchar(255) | YES  |     | NULL    |
-        | jobstatus | varchar(128) | YES  |     | NULL    |
+        | state     | varchar(128) | YES  |     | NULL    |
         +-----------+--------------+------+-----+---------+
 
      The meaning of these optional fields is:
@@ -131,7 +130,7 @@ class SqlStore(Store):
     `type`: equal to "job" if the object is an instance of the
     `Task`:class: class
 
-    `jobstatus`: if the object is a `Task` istance this wil lbe the
+    `state`: if the object is a `Task` istance this wil lbe the
     current execution state of the job
 
     `jobid`: if the object is a `Task` this will be the
@@ -156,18 +155,9 @@ class SqlStore(Store):
 
     """
     default_extra_fields = {
-        sqla.Column(
-            'type',
-            sqla.VARCHAR(length=128)): (lambda obj: isinstance(obj, Task) and 'job' or ''),
-        sqla.Column(
-            'jobid',
-            sqla.VARCHAR(length=128)): (lambda obj: obj.execution.lrms_jobid),
-        sqla.Column(
-            'jobname',
-            sqla.VARCHAR(length=255)): (lambda obj: obj.jobname),
-        sqla.Column(
-            'jobstatus',
-            sqla.VARCHAR(length=128)): (lambda obj: obj.execution.state),
+        sqla.Column('jobid',   sqla.VARCHAR(length=128)): (lambda obj: obj.execution.lrms_jobid),
+        sqla.Column('jobname', sqla.VARCHAR(length=255)): (lambda obj: obj.jobname),
+        sqla.Column('state',   sqla.VARCHAR(length=128)): (lambda obj: obj.execution.state),
         }
 
     def __init__(self, url, table_name="store", idfactory=None,
@@ -216,8 +206,7 @@ class SqlStore(Store):
             self.extra_fields = dict()
             for colname in self.__meta.tables[self.table_name].columns.keys():
                 colname = str(colname)
-                if colname in ('id', 'data', 'type',
-                               'jobid', 'jobname', 'jobstatus'):
+                if colname in ('id', 'data', 'jobid', 'jobname', 'state'):
                     continue
                 if colname in extra_fields:
                     self.extra_fields[colname] = extra_fields[colname]
@@ -264,9 +253,8 @@ class SqlStore(Store):
         pickler = create_pickler(self, dstdata, obj)
         pickler.dump(obj)
         fields['data'] = dstdata.getvalue()
-        # insert into db
-        fields['type'] = ''
 
+        # insert into db
         for column in self.extra_fields:
             try:
                 fields[column] = self.extra_fields[column](obj)
