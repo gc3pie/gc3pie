@@ -27,8 +27,9 @@ __version__ = 'development version (SVN $Revision$)'
 # one can do ``import gc3libs.persistence`` and load whatever
 # should be normally needed and supported.  Other modules in
 # this package should be considered "internal use only".
-from store import make_store, Persistable
+from filesystem import FilesystemStore
 from idfactory import IdFactory, JobIdFactory
+from store import make_store, Persistable
 
 
 ## main: run tests
