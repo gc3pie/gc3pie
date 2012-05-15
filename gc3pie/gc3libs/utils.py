@@ -74,6 +74,11 @@ def backup(path):
       >>> path2 = backup(path)
       >>> os.path.exists(path + '.~2~')
       True
+
+    cleaning up tests
+
+      >>> os.remove(path+'.~1~')
+      >>> os.remove(path+'.~2~')
       
     """
     parent_dir = (os.path.dirname(path) or os.getcwd())
@@ -202,11 +207,17 @@ def contents(path):
       >>> contents('/dev/null')
       ''
 
-      >>> w = open('/tmp/testfile', 'w')
+      >>> import tempfile
+      >>> (fd, tmpfile) = tempfile.mkstemp()
+      >>> w = open(tmpfile, 'w')
       >>> w.write('hey')
       >>> w.close()
-      >>> contents('/tmp/testfile')
+      >>> contents(tmpfile)
       'hey'
+
+    cleaning up
+
+      >>> os.remove(tmpfile)
 
     """
     # XXX: this really calls for the `with:` statement...
