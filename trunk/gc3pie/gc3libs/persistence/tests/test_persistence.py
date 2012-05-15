@@ -520,6 +520,7 @@ class TestMysqlStore(SqlStoreChecks):
 
     def setUp(self):
         fd, tmpfile = tempfile.mkstemp()
+        os.remove(tmpfile)
         self.table_name = tmpfile.split('/')[-1] 
         
         try:
