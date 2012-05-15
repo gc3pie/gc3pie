@@ -343,7 +343,7 @@ class SqlStoreChecks(GenericStoreChecks):
 
     def test_sql_injection(self):
         """Test if the `SqlStore` class is vulnerable to SQL injection."""
-        raise SkipTest("We need an ectra field to store arbitrary data in oreder to test SQL Injection")
+        raise SkipTest("We need an extra field to store arbitrary data in oreder to test SQL Injection")
 
         obj = SimpleTask("Antonio's task")
         # obligatory XKCD citation ;-)
