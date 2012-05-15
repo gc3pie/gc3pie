@@ -17,6 +17,17 @@ except NameError:
         """
         A backport of `defaultdict` to Python 2.4
         See http://docs.python.org/library/collections.html
+
+        >>> dl = defaultdict(list)
+        >>> dl['emptylist']
+        []
+        >>> di = defaultdict(int)
+        >>> di['zero']
+        0
+        >>> ds = defaultdict(str)
+        >>> ds['empty']
+        ''
+
         """
         def __new__(cls, default_factory=None):
             return dict.__new__(cls)
