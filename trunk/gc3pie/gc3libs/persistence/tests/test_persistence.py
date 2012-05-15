@@ -313,16 +313,12 @@ class SqlStoreChecks(GenericStoreChecks):
         id_ = self.store.save(app)
 
         q = sql.select([
-            self.store.t_store.c.jobid,
-            self.store.t_store.c.jobname,
             self.store.t_store.c.state
             ]).where(self.store.t_store.c.id==id_)
         result = self.conn.execute(q)
         row = result.fetchone()
 
-        assert int(row[0]) == app.execution.lrms_jobid
-        assert row[1] == app.jobname
-        assert row[2] == app.execution.state
+        assert row[0] == app.execution.state
 
 
     # the `jobname` attribute is optional in the `Application` ctor
@@ -339,28 +335,24 @@ class SqlStoreChecks(GenericStoreChecks):
         id_ = self.store.save(app)
 
         q = sql.select([
-            self.store.t_store.c.jobid,
-            self.store.t_store.c.jobname,
             self.store.t_store.c.state
             ]).where(self.store.t_store.c.id==id_)
         result = self.conn.execute(q)
         row = result.fetchone()
-
-        assert int(row[0]) == app.execution.lrms_jobid
-        assert row[1] == app.jobname
-        assert row[2] == app.execution.state
-
+        assert row[0] == app.execution.state
 
     def test_sql_injection(self):
         """Test if the `SqlStore` class is vulnerable to SQL injection."""
+        raise SkipTest("We need an ectra field to store arbitrary data in oreder to test SQL Injection")
+
         obj = SimpleTask("Antonio's task")
         # obligatory XKCD citation ;-)
-        obj.execution.lrms_jobid = "Robert'); DROP TABLE store;--"
+        # Ric, you can't just "cite" XKCD without inserting a
+        # reference: http://xkcd.com/327/
+        obj.execution.state = "Robert'); DROP TABLE store;--"
         id_ = self.store.save(obj)
         obj2 = self.store.load(id_)
-        assert obj.jobname == obj2.jobname
-        assert obj.execution.lrms_jobid == obj2.execution.lrms_jobid
-
+        assert obj.execution.state == obj2.execution.state
 
     def test_sql_implicit_attribute_save(self):
         """
