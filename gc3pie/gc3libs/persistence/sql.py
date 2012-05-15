@@ -107,37 +107,17 @@ class SqlStore(Store):
 
     `data`: the serialization of the object.
 
+    `state`: if the object is a `Task` istance this wil lbe the
+    current execution state of the job
+
         +-----------+--------------+------+-----+---------+
         | Field     | Type         | Null | Key | Default |
         +-----------+--------------+------+-----+---------+
         | id        | int(11)      | NO   | PRI | NULL    |
         | data      | blob         | YES  |     | NULL    |
-        +-----------+--------------+------+-----+---------+
-
-    If no optional `extra_fields` argument is passed, also the
-    following fields will be created:
-
-        +-----------+--------------+------+-----+---------+
-        | Field     | Type         | Null | Key | Default |
-        +-----------+--------------+------+-----+---------+
-        | jobid     | varchar(128) | YES  |     | NULL    |
-        | jobname   | varchar(255) | YES  |     | NULL    |
         | state     | varchar(128) | YES  |     | NULL    |
         +-----------+--------------+------+-----+---------+
 
-     The meaning of these optional fields is:
-
-    `type`: equal to "job" if the object is an instance of the
-    `Task`:class: class
-
-    `state`: if the object is a `Task` istance this wil lbe the
-    current execution state of the job
-
-    `jobid`: if the object is a `Task` this will be the
-    `obj.execution.lrms_jobid` attribute
-
-    `jobname`: if the object is a `Task` this is its `jobname`
-    attribute.
 
     The `extra_fields` argument is used to extend the database. It
     must contain a mapping `<column>` : `<function>` where:
@@ -154,14 +134,9 @@ class SqlStore(Store):
     store into the db.
 
     """
-    default_extra_fields = {
-        sqla.Column('jobid',   sqla.VARCHAR(length=128)): (lambda obj: obj.execution.lrms_jobid),
-        sqla.Column('jobname', sqla.VARCHAR(length=255)): (lambda obj: obj.jobname),
-        sqla.Column('state',   sqla.VARCHAR(length=128)): (lambda obj: obj.execution.state),
-        }
 
     def __init__(self, url, table_name="store", idfactory=None,
-                 extra_fields=default_extra_fields):
+                 extra_fields={}):
         """
         Open a connection to the storage database identified by
         url. It will use the correct backend (MySQL, psql, sqlite3)
@@ -174,6 +149,7 @@ class SqlStore(Store):
         self.__meta.reflect()
 
         self.extra_fields = dict()
+
         # check if the db exists and already has a 'store' table
         if self.table_name not in self.__meta.tables:
             # No table, let's create it
@@ -185,6 +161,8 @@ class SqlStore(Store):
                             primary_key=True, nullable=False),
                 sqla.Column('data',
                             sqla.BLOB()),
+                sqla.Column('state',
+                            sqla.VARCHAR(length=128))
                 )
             for col, func in extra_fields.iteritems():
                 if isinstance(col, sqla.Column):
@@ -206,7 +184,7 @@ class SqlStore(Store):
             self.extra_fields = dict()
             for colname in self.__meta.tables[self.table_name].columns.keys():
                 colname = str(colname)
-                if colname in ('id', 'data', 'jobid', 'jobname', 'state'):
+                if colname in ('id', 'data', 'state'):
                     continue
                 if colname in extra_fields:
                     self.extra_fields[colname] = extra_fields[colname]
@@ -252,7 +230,10 @@ class SqlStore(Store):
         dstdata = StringIO.StringIO()
         pickler = create_pickler(self, dstdata, obj)
         pickler.dump(obj)
-        fields['data'] = dstdata.getvalue()
+        fields['data'] = dstdata.getvalue()        
+        fields['state'] = 'None'
+        if hasattr(obj, 'execution') and hasattr(obj.execution, 'state'):
+            fields['state'] = obj.execution.state
 
         # insert into db
         for column in self.extra_fields:
