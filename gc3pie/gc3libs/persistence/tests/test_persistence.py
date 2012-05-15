@@ -382,7 +382,7 @@ class SqlStoreChecks(GenericStoreChecks):
         Test if `SqlStore` reads and writes extra columns.
         """
         # extend the db
-        self.conn.execute('alter table %s add column extra varchar(256)'
+        self.conn.execute('alter table `%s` add column extra varchar(256)'
                        % self.store.table_name)
 
         # re-build store, as the table list is read upon `__init__`
@@ -418,8 +418,6 @@ class SqlStoreChecks(GenericStoreChecks):
         """
         # re-build store with a non-existent extra column; should raise `AssertionError`
         self._make_store(extra_fields={ 'extra': (lambda arg: arg.foo.value) })
-
-
 
 
 class ExtraSqlChecks(object):
@@ -533,7 +531,7 @@ class TestMysqlStore(SqlStoreChecks):
         self.conn = self.store._SqlStore__engine.connect()
 
     def tearDown(self):
-        self.conn.execute('drop table %s' % self.table_name)
+        self.conn.execute('drop table `%s`' % self.table_name)
         self.conn.close()
         # self.c.close()
         # os.remove(self.tmpfile)
