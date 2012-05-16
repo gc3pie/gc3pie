@@ -116,57 +116,66 @@ Testing the code
 ----------------
 
 In developing GC3Pie we try to use a `Test Driven Development`_
-approach, in the light of the quote *It's tested or it's broken*. We
+approach, in the light of the quote: *It's tested or it's broken*. We
 use `tox`_ and `nose`_ as test runners, which make creating tests very
 easy.
+
+.. _`Test Driven Development`: http://en.wikipedia.org/wiki/Test-driven_development
+.. _`tox`: http://tox.testrun.org/latest/
+.. _`nose`: http://readthedocs.org/docs/nose/en/latest/
+
 
 Organizing tests
 ~~~~~~~~~~~~~~~~
 
-Each single python file should have, if possible, a test file inside a
-``tests`` subpackage with filename created by prefixing  ``test_`` to the
-filename to test. Therefore, if you created a file ``foo.py``, there
-should be a file ``tests/test_foo.py`` which will contains tests for
-that file.
+Each single python file should have a test file inside a ``tests``
+subpackage with filename created by prefixing ``test_`` to the
+filename to test.  For example, if you created a file ``foo.py``,
+there should be a file ``tests/test_foo.py`` which will contains tests
+for ``foo.py``.
 
 Even though following the naming convention above is not always
 possible, each test regarding a specific component should be in a file
-inside a ``tests`` directory inside that component. Tests for the
-subpackage `gc3libs.persistence`, for instance, stay inside the
+inside a ``tests`` directory inside that component.  For instance,
+tests for the subpackage `gc3libs.persistence` are located inside the
 directory ``gc3libs/persistence/tests`` but are not named after the
 specific file.
+
 
 Writing tests
 ~~~~~~~~~~~~~
 
 Please remember that it may be hard to understand, whenever a test
-fails, if it's a bug in the code or in the tests, therefore please
+fails, if it's a bug in the code or in the tests!  Therefore please
 remember:
 
 * Try to keep tests as simple as possible, and *always* simpler than
-  the tested code (*Debugging is twice as hard as writing the code in
+  the tested code. (*Debugging is twice as hard as writing the code in
   the first place.*,  Brian W. Kernighan and P. J. Plauger)
 
 * Write multiple indipendent tests to test different possible behavior
   and/or different methods of a class.
 
-* Tests should cover methods, functions but also specific use cases.
+* Tests should cover methods and functions, but also specific use cases.
 
 * If you are fixing a bug, it's good practice to write a test to check
   if the bug is still there, in order to avoid to re-include the bug
-  in the future
+  in the future.
 
-* tests should clean up every temporary file they create.
+* Tests should clean up every temporary file they create.
 
-Writing tests is very easy even if you are lazy: just create a
-filename beginning with ``test_`` and put in it some functions which
-name begins with ``test_``, and nose will automatically call each one of
-them. Moreover, nose will run also any doctest which will be found in
+Writing tests is very easy: just create a file whose name begins with
+``test_``, then put in it some functions which name begins with
+``test_``; the nose_ framework will automatically call each one of
+them. Moreover, nose_ will run also any doctest_ which will be found in
 the code.
 
-Full documentation of the nose framework is available at the `nose`_
+.. _doctest: http://wiki.python.org/moin/DocTest
+
+Full documentation of the nose_ framework is available at the `nose`_
 website. However, there are some of the interesting features you may
-want to use to improve your tests include:
+want to use to improve your tests, detailed in the following sections.
+
 
 Testing for errors
 ++++++++++++++++++
@@ -176,11 +185,12 @@ of wrapping the test inside a ``try: ... except:`` block you can use
 the `@raises` decorator from the `nose.tools` module::
 
     from nose.tools import raises
+
     @raises(TypeError)
     def test_invalid_invocation():
         Application()
 
-  This is exactly the same as writing::
+This is exactly the same as writing::
 
      try:
          Application()
@@ -188,14 +198,16 @@ the `@raises` decorator from the `nose.tools` module::
      except TypeError:
          pass
 
+
 Skipping tests
 ++++++++++++++
 
-If you want to skip a test you can raise a `SkipTest` exception from
-the `nose.plugins.skip` module. This is useful when you know that the
-test will fail, either because the code is not ready yet or because
-you are missing some soft dependency (an optional module, or when the
-current environment is not properly configured to run the test)::
+If you want to skip a test, just raise a `SkipTest` exception
+(imported from the `nose.plugins.skip` module). This is useful when
+you know that the test will fail, either because the code is not ready
+yet, or because some environmental conditions are not satisfied (e.g.,
+an optional module is missing, or the code needs to access a service
+that is not available).  For example::
 
     from nose.plugins.skip import SkipTest
     try:
@@ -203,11 +215,12 @@ current environment is not properly configured to run the test)::
     except ImportError:
         raise SkipTest("Error importing MySQL backend. Skipping MySQL low level tests")
 
-Generator tests
-+++++++++++++++
 
-  It is possible to use generators to create at runtime multiple
-  tests::
+Generating tests
+++++++++++++++++
+
+It is possible to use `Python generators`_ to create multiple
+tests at run time::
 
     def test_evens():
         for i in range(0, 5):
@@ -216,32 +229,54 @@ Generator tests
     def check_even(n, nn):
         assert n % 2 == 0 or nn % 2 == 0
 
-This will result in five tests. nose will iterate the generator,
-creating a function test case wrapper for each tuple it yields.
+This will result in five tests: nose_ will iterate the generator,
+creating a function test case wrapper for each tuple it
+yields. Specifically, in the example above, nose_ will execute the
+function calls ``check_even(0,0)``, ``check_even(1,3)``, ...,
+``check_even(4,12)`` as if each of them were written in the source as
+a separate test; if any of them fails (i.e., raises an
+`AssertionError`), then the test is considered failed.
+
+.. _`python generators`: http://wiki.python.org/moin/Generators
 
 
-Test classes
-++++++++++++
+Grouping tests into classes
++++++++++++++++++++++++++++
 
-Instead of creating one function for each test you can create a class
-and write one test per class method. Advantages are that:
+Tests that share the same set-up or clean-up code should be grouped
+into *test classes*:
 
-* easily use fixtures, code that will be run before and after the test
-  in order to set it up before and to clean up after.
+* The exact same set-up and clean-up code *(fixtures)* will be run
+  before and after each test, but is written down only once.
 
-* you can use inheritance in order to easily run the same tests on
-  different configurations
+* Python class inheritance can be used to run the same tests on
+  different configurations (e.g., by just overriding the set-up and
+  clean-up code).
 
-Like with test functions, each class which has a name beginning with
-``Test`` will be considered a class test, and each method beginning with
-``test_`` will be considered a test method.
+A test class is a regular Python class, whose name begins with
+``Test`` (first letter must be uppercase); each method whose name
+begins with ``test_`` defines a test case.
 
-If the class defines a `setUp` method it will be called *before each
-test method*. If the class defines a `tearDown` method it will be
-called *after each test method*. A canonical example of test class
-with fixtures will look like::
+If the class defines a `setUp` method, it will be called *before each
+test method*. If the class defines a `tearDown` method, it will be
+called *after each test method*. 
+
+If class methods ``setup_class`` and ``teardown_class`` are defined,
+nose_ will invoke them *once* (before and after performing the tests
+of that class, respectively).
+
+A canonical example of a test class with fixtures looks like this::
 
     class TestClass(object):
+
+       @classmethod
+       def setup_class(cls):
+          ...
+
+       @classmethod
+       def teardown_class(cls):
+          ...
+
        def setUp(self):
           ...
 
@@ -257,8 +292,9 @@ with fixtures will look like::
        def test_case_3(self):
           ...
 
-the nose framework will execute a code like this::
+The nose_ framework will execute a code like this::
 
+    TestClass.setup_class()
     for test_method in get_test_classes():
        obj = TestClass()
        obj.setUp()
@@ -266,28 +302,28 @@ the nose framework will execute a code like this::
           obj.test_method()
        finally:
           obj.tearDown()
+    TestClass.teardown_class()
 
-That is, for each test case, a new object is created, set up, and torn
-down -- thus approximating the Platonic ideal of running each test in
-a completely new, pristine environment.
+That is, for each test case, a new instance of the `TestClass` is
+created, set up, and torn down -- thus approximating the Platonic
+ideal of running each test in a completely new, pristine environment.
 
 
-Running tests
-~~~~~~~~~~~~~
+Running multiple tests
+~~~~~~~~~~~~~~~~~~~~~~
 
 In order to test GC3Pie against multiple version of python we use
-`tox`, which will create (if they don't exists already) virtual
-environments for all configured python version, run `nose` inside each
-one of them and print a summary of the test results. Running tox is
-straightforward::
+`tox`_, which creates virtual environments for all configured python
+version, runs `nose`_ inside each one of them, and prints a summary of
+the test results. 
 
-    tox
+Running tox_ is straightforward; just type ``tox`` on the command-line
+in GC3Pie's top level source directory.
 
-by default all virtual environment will be tested, but since there are
-virtual environments for python 2.4, 2.5, 2.6 and 2.7 it's likely that
-you don't have all the needed binaries. If you want to run tests only
-for a specific version of python, for instance 2.6, use the ``-e``
-option::
+The default ``tox.ini`` file shipped with GC3Pie attempts to test all
+Python versions from 2.4 to 2.7 (inclusive).  If you want to run tests
+only for a specific version of python, for instance Python 2.6, use
+the ``-e`` option::
 
     tox -e py26
     [...]
@@ -298,15 +334,14 @@ option::
     [TOX] py26: commands succeeded
     [TOX] congratulations :)
 
-Skipped tests are either tests which are know not to run because, for
-instance, the tested code is not ready yet, or tests that for some
-reasons *external* to GC3Pie does not run (for instance, the MySQL
-backend of the persistence component will assume that there is a MySQL
-database accessible using a specific pair of user and password).
+(See section `skipping tests`_ for a discussion about how and when to
+define skipped tests.)
 
-.. _`Test Driven Development`: http://en.wikipedia.org/wiki/Test-driven_development
-.. _`tox`: http://tox.testrun.org/latest/
-.. _`nose`: http://readthedocs.org/docs/nose/en/latest/
+Option ``-r`` instructs `tox`:command: to re-build the testing virtual environment.
+
+.. todo::
+
+   When should ``-r`` be used?
 
 
 Coding style

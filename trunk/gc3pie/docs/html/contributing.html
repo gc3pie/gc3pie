@@ -144,74 +144,77 @@ might be a good idea.</p>
 <div class="section" id="testing-the-code">
 <h2>Testing the code<a class="headerlink" href="#testing-the-code" title="Permalink to this headline">¶</a></h2>
 <p>In developing GC3Pie we try to use a <a class="reference external" href="http://en.wikipedia.org/wiki/Test-driven_development">Test Driven Development</a>
-approach, in the light of the quote <em>It&#8217;s tested or it&#8217;s broken</em>. We
+approach, in the light of the quote: <em>It&#8217;s tested or it&#8217;s broken</em>. We
 use <a class="reference external" href="http://tox.testrun.org/latest/">tox</a> and <a class="reference external" href="http://readthedocs.org/docs/nose/en/latest/">nose</a> as test runners, which make creating tests very
 easy.</p>
 <div class="section" id="organizing-tests">
 <h3>Organizing tests<a class="headerlink" href="#organizing-tests" title="Permalink to this headline">¶</a></h3>
-<p>Each single python file should have, if possible, a test file inside a
-<tt class="docutils literal"><span class="pre">tests</span></tt> subpackage with filename created by prefixing  <tt class="docutils literal"><span class="pre">test_</span></tt> to the
-filename to test. Therefore, if you created a file <tt class="docutils literal"><span class="pre">foo.py</span></tt>, there
-should be a file <tt class="docutils literal"><span class="pre">tests/test_foo.py</span></tt> which will contains tests for
-that file.</p>
+<p>Each single python file should have a test file inside a <tt class="docutils literal"><span class="pre">tests</span></tt>
+subpackage with filename created by prefixing <tt class="docutils literal"><span class="pre">test_</span></tt> to the
+filename to test.  For example, if you created a file <tt class="docutils literal"><span class="pre">foo.py</span></tt>,
+there should be a file <tt class="docutils literal"><span class="pre">tests/test_foo.py</span></tt> which will contains tests
+for <tt class="docutils literal"><span class="pre">foo.py</span></tt>.</p>
 <p>Even though following the naming convention above is not always
 possible, each test regarding a specific component should be in a file
-inside a <tt class="docutils literal"><span class="pre">tests</span></tt> directory inside that component. Tests for the
-subpackage <cite>gc3libs.persistence</cite>, for instance, stay inside the
+inside a <tt class="docutils literal"><span class="pre">tests</span></tt> directory inside that component.  For instance,
+tests for the subpackage <cite>gc3libs.persistence</cite> are located inside the
 directory <tt class="docutils literal"><span class="pre">gc3libs/persistence/tests</span></tt> but are not named after the
 specific file.</p>
 </div>
 <div class="section" id="writing-tests">
 <h3>Writing tests<a class="headerlink" href="#writing-tests" title="Permalink to this headline">¶</a></h3>
 <p>Please remember that it may be hard to understand, whenever a test
-fails, if it&#8217;s a bug in the code or in the tests, therefore please
+fails, if it&#8217;s a bug in the code or in the tests!  Therefore please
 remember:</p>
 <ul class="simple">
 <li>Try to keep tests as simple as possible, and <em>always</em> simpler than
-the tested code (<em>Debugging is twice as hard as writing the code in
+the tested code. (<em>Debugging is twice as hard as writing the code in
 the first place.</em>,  Brian W. Kernighan and P. J. Plauger)</li>
 <li>Write multiple indipendent tests to test different possible behavior
 and/or different methods of a class.</li>
-<li>Tests should cover methods, functions but also specific use cases.</li>
+<li>Tests should cover methods and functions, but also specific use cases.</li>
 <li>If you are fixing a bug, it&#8217;s good practice to write a test to check
 if the bug is still there, in order to avoid to re-include the bug
-in the future</li>
-<li>tests should clean up every temporary file they create.</li>
+in the future.</li>
+<li>Tests should clean up every temporary file they create.</li>
 </ul>
-<p>Writing tests is very easy even if you are lazy: just create a
-filename beginning with <tt class="docutils literal"><span class="pre">test_</span></tt> and put in it some functions which
-name begins with <tt class="docutils literal"><span class="pre">test_</span></tt>, and nose will automatically call each one of
-them. Moreover, nose will run also any doctest which will be found in
+<p>Writing tests is very easy: just create a file whose name begins with
+<tt class="docutils literal"><span class="pre">test_</span></tt>, then put in it some functions which name begins with
+<tt class="docutils literal"><span class="pre">test_</span></tt>; the <a class="reference external" href="http://readthedocs.org/docs/nose/en/latest/">nose</a> framework will automatically call each one of
+them. Moreover, <a class="reference external" href="http://readthedocs.org/docs/nose/en/latest/">nose</a> will run also any <a class="reference external" href="http://wiki.python.org/moin/DocTest">doctest</a> which will be found in
 the code.</p>
-<p>Full documentation of the nose framework is available at the <a class="reference external" href="http://readthedocs.org/docs/nose/en/latest/">nose</a>
+<p>Full documentation of the <a class="reference external" href="http://readthedocs.org/docs/nose/en/latest/">nose</a> framework is available at the <a class="reference external" href="http://readthedocs.org/docs/nose/en/latest/">nose</a>
 website. However, there are some of the interesting features you may
-want to use to improve your tests include:</p>
+want to use to improve your tests, detailed in the following sections.</p>
 <div class="section" id="testing-for-errors">
 <h4>Testing for errors<a class="headerlink" href="#testing-for-errors" title="Permalink to this headline">¶</a></h4>
 <p>If your test must verify that the code raises an exception, instead
 of wrapping the test inside a <tt class="docutils literal"><span class="pre">try:</span> <span class="pre">...</span> <span class="pre">except:</span></tt> block you can use
 the <cite>&#64;raises</cite> decorator from the <cite>nose.tools</cite> module:</p>
-<div class="highlight-python"><pre>  from nose.tools import raises
-  @raises(TypeError)
-  def test_invalid_invocation():
-      Application()
+<div class="highlight-python"><div class="highlight"><pre><span class="kn">from</span> <span class="nn">nose.tools</span> <span class="kn">import</span> <span class="n">raises</span>
 
-This is exactly the same as writing::
-
-   try:
-       Application()
-       assert False, "we should have got an exception"
-   except TypeError:
-       pass</pre>
+<span class="nd">@raises</span><span class="p">(</span><span class="ne">TypeError</span><span class="p">)</span>
+<span class="k">def</span> <span class="nf">test_invalid_invocation</span><span class="p">():</span>
+    <span class="n">Application</span><span class="p">()</span>
+</pre></div>
+</div>
+<p>This is exactly the same as writing:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="k">try</span><span class="p">:</span>
+    <span class="n">Application</span><span class="p">()</span>
+    <span class="k">assert</span> <span class="bp">False</span><span class="p">,</span> <span class="s">&quot;we should have got an exception&quot;</span>
+<span class="k">except</span> <span class="ne">TypeError</span><span class="p">:</span>
+    <span class="k">pass</span>
+</pre></div>
 </div>
 </div>
 <div class="section" id="skipping-tests">
 <h4>Skipping tests<a class="headerlink" href="#skipping-tests" title="Permalink to this headline">¶</a></h4>
-<p>If you want to skip a test you can raise a <cite>SkipTest</cite> exception from
-the <cite>nose.plugins.skip</cite> module. This is useful when you know that the
-test will fail, either because the code is not ready yet or because
-you are missing some soft dependency (an optional module, or when the
-current environment is not properly configured to run the test):</p>
+<p>If you want to skip a test, just raise a <cite>SkipTest</cite> exception
+(imported from the <cite>nose.plugins.skip</cite> module). This is useful when
+you know that the test will fail, either because the code is not ready
+yet, or because some environmental conditions are not satisfied (e.g.,
+an optional module is missing, or the code needs to access a service
+that is not available).  For example:</p>
 <div class="highlight-python"><div class="highlight"><pre><span class="kn">from</span> <span class="nn">nose.plugins.skip</span> <span class="kn">import</span> <span class="n">SkipTest</span>
 <span class="k">try</span><span class="p">:</span>
     <span class="kn">import</span> <span class="nn">MySQLdb</span>
@@ -220,11 +223,10 @@ current environment is not properly configured to run the test):</p>
 </pre></div>
 </div>
 </div>
-<div class="section" id="generator-tests">
-<h4>Generator tests<a class="headerlink" href="#generator-tests" title="Permalink to this headline">¶</a></h4>
-<blockquote>
-<div><p>It is possible to use generators to create at runtime multiple
-tests:</p>
+<div class="section" id="generating-tests">
+<h4>Generating tests<a class="headerlink" href="#generating-tests" title="Permalink to this headline">¶</a></h4>
+<p>It is possible to use <a class="reference external" href="http://wiki.python.org/moin/Generators">Python generators</a> to create multiple
+tests at run time:</p>
 <div class="highlight-python"><div class="highlight"><pre><span class="k">def</span> <span class="nf">test_evens</span><span class="p">():</span>
     <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">5</span><span class="p">):</span>
         <span class="k">yield</span> <span class="n">check_even</span><span class="p">,</span> <span class="n">i</span><span class="p">,</span> <span class="n">i</span><span class="o">*</span><span class="mi">3</span>
@@ -233,28 +235,45 @@ tests:</p>
     <span class="k">assert</span> <span class="n">n</span> <span class="o">%</span> <span class="mi">2</span> <span class="o">==</span> <span class="mi">0</span> <span class="ow">or</span> <span class="n">nn</span> <span class="o">%</span> <span class="mi">2</span> <span class="o">==</span> <span class="mi">0</span>
 </pre></div>
 </div>
-</div></blockquote>
-<p>This will result in five tests. nose will iterate the generator,
-creating a function test case wrapper for each tuple it yields.</p>
+<p>This will result in five tests: <a class="reference external" href="http://readthedocs.org/docs/nose/en/latest/">nose</a> will iterate the generator,
+creating a function test case wrapper for each tuple it
+yields. Specifically, in the example above, <a class="reference external" href="http://readthedocs.org/docs/nose/en/latest/">nose</a> will execute the
+function calls <tt class="docutils literal"><span class="pre">check_even(0,0)</span></tt>, <tt class="docutils literal"><span class="pre">check_even(1,3)</span></tt>, ...,
+<tt class="docutils literal"><span class="pre">check_even(4,12)</span></tt> as if each of them were written in the source as
+a separate test; if any of them fails (i.e., raises an
+<cite>AssertionError</cite>), then the test is considered failed.</p>
 </div>
-<div class="section" id="test-classes">
-<h4>Test classes<a class="headerlink" href="#test-classes" title="Permalink to this headline">¶</a></h4>
-<p>Instead of creating one function for each test you can create a class
-and write one test per class method. Advantages are that:</p>
+<div class="section" id="grouping-tests-into-classes">
+<h4>Grouping tests into classes<a class="headerlink" href="#grouping-tests-into-classes" title="Permalink to this headline">¶</a></h4>
+<p>Tests that share the same set-up or clean-up code should be grouped
+into <em>test classes</em>:</p>
 <ul class="simple">
-<li>easily use fixtures, code that will be run before and after the test
-in order to set it up before and to clean up after.</li>
-<li>you can use inheritance in order to easily run the same tests on
-different configurations</li>
+<li>The exact same set-up and clean-up code <em>(fixtures)</em> will be run
+before and after each test, but is written down only once.</li>
+<li>Python class inheritance can be used to run the same tests on
+different configurations (e.g., by just overriding the set-up and
+clean-up code).</li>
 </ul>
-<p>Like with test functions, each class which has a name beginning with
-<tt class="docutils literal"><span class="pre">Test</span></tt> will be considered a class test, and each method beginning with
-<tt class="docutils literal"><span class="pre">test_</span></tt> will be considered a test method.</p>
-<p>If the class defines a <cite>setUp</cite> method it will be called <em>before each
-test method</em>. If the class defines a <cite>tearDown</cite> method it will be
-called <em>after each test method</em>. A canonical example of test class
-with fixtures will look like:</p>
+<p>A test class is a regular Python class, whose name begins with
+<tt class="docutils literal"><span class="pre">Test</span></tt> (first letter must be uppercase); each method whose name
+begins with <tt class="docutils literal"><span class="pre">test_</span></tt> defines a test case.</p>
+<p>If the class defines a <cite>setUp</cite> method, it will be called <em>before each
+test method</em>. If the class defines a <cite>tearDown</cite> method, it will be
+called <em>after each test method</em>.</p>
+<p>If class methods <tt class="docutils literal"><span class="pre">setup_class</span></tt> and <tt class="docutils literal"><span class="pre">teardown_class</span></tt> are defined,
+<a class="reference external" href="http://readthedocs.org/docs/nose/en/latest/">nose</a> will invoke them <em>once</em> (before and after performing the tests
+of that class, respectively).</p>
+<p>A canonical example of a test class with fixtures looks like this:</p>
 <div class="highlight-python"><div class="highlight"><pre><span class="k">class</span> <span class="nc">TestClass</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+
+   <span class="nd">@classmethod</span>
+   <span class="k">def</span> <span class="nf">setup_class</span><span class="p">(</span><span class="n">cls</span><span class="p">):</span>
+      <span class="o">...</span>
+
+   <span class="nd">@classmethod</span>
+   <span class="k">def</span> <span class="nf">teardown_class</span><span class="p">(</span><span class="n">cls</span><span class="p">):</span>
+      <span class="o">...</span>
+
    <span class="k">def</span> <span class="nf">setUp</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
       <span class="o">...</span>
 
@@ -271,36 +290,35 @@ with fixtures will look like:</p>
       <span class="o">...</span>
 </pre></div>
 </div>
-<p>the nose framework will execute a code like this:</p>
-<div class="highlight-python"><div class="highlight"><pre><span class="k">for</span> <span class="n">test_method</span> <span class="ow">in</span> <span class="n">get_test_classes</span><span class="p">():</span>
+<p>The <a class="reference external" href="http://readthedocs.org/docs/nose/en/latest/">nose</a> framework will execute a code like this:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="n">TestClass</span><span class="o">.</span><span class="n">setup_class</span><span class="p">()</span>
+<span class="k">for</span> <span class="n">test_method</span> <span class="ow">in</span> <span class="n">get_test_classes</span><span class="p">():</span>
    <span class="n">obj</span> <span class="o">=</span> <span class="n">TestClass</span><span class="p">()</span>
    <span class="n">obj</span><span class="o">.</span><span class="n">setUp</span><span class="p">()</span>
    <span class="k">try</span><span class="p">:</span>
       <span class="n">obj</span><span class="o">.</span><span class="n">test_method</span><span class="p">()</span>
    <span class="k">finally</span><span class="p">:</span>
       <span class="n">obj</span><span class="o">.</span><span class="n">tearDown</span><span class="p">()</span>
+<span class="n">TestClass</span><span class="o">.</span><span class="n">teardown_class</span><span class="p">()</span>
 </pre></div>
 </div>
-<p>That is, for each test case, a new object is created, set up, and torn
-down &#8211; thus approximating the Platonic ideal of running each test in
-a completely new, pristine environment.</p>
+<p>That is, for each test case, a new instance of the <cite>TestClass</cite> is
+created, set up, and torn down &#8211; thus approximating the Platonic
+ideal of running each test in a completely new, pristine environment.</p>
 </div>
 </div>
-<div class="section" id="running-tests">
-<h3>Running tests<a class="headerlink" href="#running-tests" title="Permalink to this headline">¶</a></h3>
+<div class="section" id="running-multiple-tests">
+<h3>Running multiple tests<a class="headerlink" href="#running-multiple-tests" title="Permalink to this headline">¶</a></h3>
 <p>In order to test GC3Pie against multiple version of python we use
-<cite>tox</cite>, which will create (if they don&#8217;t exists already) virtual
-environments for all configured python version, run <cite>nose</cite> inside each
-one of them and print a summary of the test results. Running tox is
-straightforward:</p>
-<div class="highlight-python"><div class="highlight"><pre><span class="n">tox</span>
-</pre></div>
-</div>
-<p>by default all virtual environment will be tested, but since there are
-virtual environments for python 2.4, 2.5, 2.6 and 2.7 it&#8217;s likely that
-you don&#8217;t have all the needed binaries. If you want to run tests only
-for a specific version of python, for instance 2.6, use the <tt class="docutils literal"><span class="pre">-e</span></tt>
-option:</p>
+<a class="reference external" href="http://tox.testrun.org/latest/">tox</a>, which creates virtual environments for all configured python
+version, runs <a class="reference external" href="http://readthedocs.org/docs/nose/en/latest/">nose</a> inside each one of them, and prints a summary of
+the test results.</p>
+<p>Running <a class="reference external" href="http://tox.testrun.org/latest/">tox</a> is straightforward; just type <tt class="docutils literal"><span class="pre">tox</span></tt> on the command-line
+in GC3Pie&#8217;s top level source directory.</p>
+<p>The default <tt class="docutils literal"><span class="pre">tox.ini</span></tt> file shipped with GC3Pie attempts to test all
+Python versions from 2.4 to 2.7 (inclusive).  If you want to run tests
+only for a specific version of python, for instance Python 2.6, use
+the <tt class="docutils literal"><span class="pre">-e</span></tt> option:</p>
 <div class="highlight-python"><pre>tox -e py26
 [...]
 Ran 118 tests in 14.168s
@@ -310,18 +328,16 @@ __________________________________________________________ [tox summary] _______
 [TOX] py26: commands succeeded
 [TOX] congratulations :)</pre>
 </div>
-<p>Skipped tests are either tests which are know not to run because, for
-instance, the tested code is not ready yet, or tests that for some
-reasons <em>external</em> to GC3Pie does not run (for instance, the MySQL
-backend of the persistence component will assume that there is a MySQL
-database accessible using a specific pair of user and password).</p>
+<p>(See section <a class="reference internal" href="#skipping-tests">skipping tests</a> for a discussion about how and when to
+define skipped tests.)</p>
+<p>Option <tt class="docutils literal"><span class="pre">-r</span></tt> instructs <strong class="command">tox</strong> to re-build the testing virtual environment.</p>
 </div>
 </div>
 <div class="section" id="coding-style">
 <h2>Coding style<a class="headerlink" href="#coding-style" title="Permalink to this headline">¶</a></h2>
-<p><strong>Python code should be written according to the recommendations in :pep:`8`.</strong>
+<p><strong>Python code should be written according to PEP 8 recommendations.</strong>
 (And by this we mean not just the code style.)</p>
-<p>Please take the time to read <span class="target" id="index-0"></span><a class="pep reference external" href="http://www.python.org/dev/peps/pep-0008"><strong>PEP 8</strong></a> through, as it is widely-used
+<p>Please take the time to read <a class="reference external" href="http://www.python.org/dev/peps/pep-0008/">PEP 8</a> through, as it is widely-used
 across the Python programming community &#8211; it will benefit your
 contribution to any free/open-source Python project!</p>
 <p>Anyway, here&#8217;s a short summary for the impatient:</p>
@@ -426,11 +442,11 @@ answer promptly.</p>
 <li><a class="reference internal" href="#writing-tests">Writing tests</a><ul>
 <li><a class="reference internal" href="#testing-for-errors">Testing for errors</a></li>
 <li><a class="reference internal" href="#skipping-tests">Skipping tests</a></li>
-<li><a class="reference internal" href="#generator-tests">Generator tests</a></li>
-<li><a class="reference internal" href="#test-classes">Test classes</a></li>
+<li><a class="reference internal" href="#generating-tests">Generating tests</a></li>
+<li><a class="reference internal" href="#grouping-tests-into-classes">Grouping tests into classes</a></li>
 </ul>
 </li>
-<li><a class="reference internal" href="#running-tests">Running tests</a></li>
+<li><a class="reference internal" href="#running-multiple-tests">Running multiple tests</a></li>
 </ul>
 </li>
 <li><a class="reference internal" href="#coding-style">Coding style</a></li>
