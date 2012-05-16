@@ -312,14 +312,14 @@ database accessible using a specific pair of user and password).
 Coding style
 ------------
 
-**Python code should be written according to the recommendations in :pep:`8`.**
+**Python code should be written according to PEP 8 recommendations.**
 (And by this we mean not just the code style.)
 
-Please take the time to read :PEP:`8` through, as it is widely-used
+.. _`pep 8`: http://www.python.org/dev/peps/pep-0008/
+
+Please take the time to read `PEP 8`_ through, as it is widely-used
 across the Python programming community -- it will benefit your
 contribution to any free/open-source Python project!
-
-.. _`pep 8`: http://www.python.org/dev/peps/pep-0008/
 
 Anyway, here's a short summary for the impatient:
 
