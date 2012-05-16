@@ -172,8 +172,11 @@ latex_font_size = '10pt'
 # Grouping the document tree into LaTeX files. List of tuples
 # (source start file, target name, title, author, documentclass [howto/manual]).
 latex_documents = [
-  ('index', 'gc3pie.tex', u'gc3pie Documentation',
-   u'Sergio Maffioletti, Mark Monroe, Riccardo Murri, Mike Packard', 'manual'),
+  ('index',
+   'gc3pie.tex',
+   u'gc3pie Documentation',
+   u'Sergio Maffioletti, Antonio Messina, Mark Monroe, Riccardo Murri, Mike Packard',
+   'manual'),
 ]
 
 # The name of an image file (relative to this directory) to place at the top of
