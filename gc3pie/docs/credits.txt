@@ -19,7 +19,7 @@ The list is sorted by last name.  Please send an email to
 
 * Tyanko Aleksiev <tyanko.alexiev@gmail.com>
 * Benjamin Jonen <benjamin.jonen@gmail.com>
-* Sergio Maffioletti <maffioletti@gmail.com>
+* Sergio Maffioletti <sergio.maffioletti@gc3.uzh.ch>
 * Antonio Messina <arcimboldo@gmail.com>
 * Mark Monroe <markjmonroe@yahoo.com>
 * Riccardo Murri <riccardo.murri@gmail.com>
