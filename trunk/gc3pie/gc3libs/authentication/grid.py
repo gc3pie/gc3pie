@@ -3,7 +3,7 @@
 """
 Authentication support with Grid proxy certificates.
 """
-# Copyright (C) 2009-201/v2 GC3, University of Zurich. All rights reserved.
+# Copyright (C) 2009-2012 GC3, University of Zurich. All rights reserved.
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
@@ -38,6 +38,9 @@ import gc3libs.exceptions
 import gc3libs.utils
 from gc3libs import Default
 
+
+## detect ARC version
+
 # ARC's default packages install arclib into /opt/nordugrid/lib/pythonX.Y/site-packages; 
 # add this anyway in case users did not set their PYTHONPATH correctly 
 sys.path.append('/opt/nordugrid/lib/python%d.%d/site-packages'
@@ -46,19 +49,17 @@ sys.path.append('/opt/nordugrid/lib/python%d.%d/site-packages'
 sys.path.append('/usr/lib/pymodules/python%d.%d/'
                 % sys.version_info[:2])
 
-
-## detect ARC version
 arc_flavour = None
 try:
     import arclib
     arc_flavour = Default.ARC0_LRMS
-except ImportError:
-    gc3libs.log.warning("Failed importing ARC0 libraries")
+except ImportError, ex:
+    gc3libs.log.warning("Could not import ARC0 libraries: %s", str(ex))
 try:
     import arc
     arc_flavour = Default.ARC1_LRMS
 except ImportError:
-    gc3libs.log.warning("Failed importing ARC1 libraries")
+    gc3libs.log.warning("Could not import ARC1 libraries: %s", str(ex))
 
 
 ## random password generator
