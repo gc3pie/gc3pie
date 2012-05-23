@@ -347,7 +347,7 @@ class GridAuth(object):
             if p1.returncode != 0:
                 # Cannot use voms-proxy-init return code as validation of the command.
                 # just report the warning
-                gc3libs.log.warning("Command '%s' exited with code %d: %s."
+                gc3libs.log.warning("Command '%s' exited with code %d: %s"
                                     % (str.join(' ', cmd), p1.returncode, stdout))
 
             if self.private_credentials_copy:
