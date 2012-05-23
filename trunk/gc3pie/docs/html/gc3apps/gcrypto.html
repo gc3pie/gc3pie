@@ -84,7 +84,8 @@ three mandatory arguments:</p>
 <li>SLICE: extent of the range that will be examined by a single job (e.g., 1000)</li>
 </ol>
 <p>For example:</p>
-<div class="highlight-python"><pre>gcrypto 800000000 1200000000 1000</pre>
+<div class="highlight-python"><div class="highlight"><pre><span class="c"># gcrypto 800000000 1200000000 1000</span>
+</pre></div>
 </div>
 <p>will produce 400000 jobs; the first job will perform calculations
 on the range 800000000 to 800000000+1000, the 2nd one will do the
@@ -94,7 +95,9 @@ can be specified with the &#8216;-i&#8217; option. Otherwise a default filename
 &#8216;input.tgz&#8217; will be searched in current directory.</p>
 <p>Job progress is monitored and, when a job is done,
 output is retrieved back to submitting host in folders named:
-<tt class="docutils literal"><span class="pre">range_start</span> <span class="pre">+</span> <span class="pre">(slice</span> <span class="pre">*</span> <span class="pre">actual</span> <span class="pre">step)</span></tt></p>
+<tt class="docutils literal"><span class="pre">RANGE_START</span> <span class="pre">+</span> <span class="pre">(SLICE</span> <span class="pre">*</span> <span class="pre">ACTUAL_STEP)</span></tt>
+Where <tt class="docutils literal"><span class="pre">ACTUAL_STEP</span></tt> correspond to the position of the job in the
+overall execution.</p>
 <p>The <strong class="command">gcrypto</strong> command keeps a record of jobs (submitted, executed and
 pending) in a session file (set name with the &#8216;-s&#8217; option); at each
 invocation of the command, the status of all recorded jobs is updated,
@@ -255,7 +258,7 @@ total   400k/400k   (100.0%)</pre>
 </div>
 <p>Each job will be named after the parameter range it has computed (e.g.
 800001000, 800002000, ... ) (you could see this by passing
-the <tt class="docutils literal"><span class="pre">-l</span></tt> option to <strong class="command">grosetta</strong>); each of these jobs will
+the <tt class="docutils literal"><span class="pre">-l</span></tt> option to <strong class="command">gcrypto</strong>); each of these jobs will
 create an output directory named after the job.</p>
 <p>For each job, the set of output files is automatically retrieved and
 placed in the locations described below.</p>
@@ -282,11 +285,7 @@ requested resources)</p>
 <div class="section" id="example-usage">
 <h2>Example usage<a class="headerlink" href="#example-usage" title="Permalink to this headline">¶</a></h2>
 <p>This section contains commented example sessions with
-<strong class="command">grosetta</strong>.  All the files used in this example are available
-in the <a class="reference external" href="http://code.google.com/p/gc3pie/source/browse/#svn%2Ftrunk%2Fgc3pie%2Fgc3apps%2Frosetta%2Ftest">GC3Pie Rosetta test</a> directory (courtesy of <a class="reference external" href="http://www.imsb.ethz.ch/researchgroup/malars">Lars
-Malmstroem</a>).</p>
-<blockquote>
-<div></div></blockquote>
+<strong class="command">gcrypto</strong>.</p>
 <div class="section" id="manage-a-set-of-jobs-from-start-to-end">
 <h3>Manage a set of jobs from start to end<a class="headerlink" href="#manage-a-set-of-jobs-from-start-to-end" title="Permalink to this headline">¶</a></h3>
 <p><em>In typical operation,</em> one calls <strong class="command">gcrypto</strong> with the <tt class="docutils literal"><span class="pre">-C</span></tt>
@@ -317,14 +316,13 @@ TERMINATED   1/1 (100.0%)</pre>
 </div>
 </div>
 </div>
-</div>
 <div class="section" id="using-gc3pie-utilities">
-<h1>Using GC3Pie utilities<a class="headerlink" href="#using-gc3pie-utilities" title="Permalink to this headline">¶</a></h1>
+<h2>Using GC3Pie utilities<a class="headerlink" href="#using-gc3pie-utilities" title="Permalink to this headline">¶</a></h2>
 <p>GC3Pie comes with a set of generic utilities that could be used as a
 complemet to the <strong class="command">gcrypto</strong> command to better manage a entire
 session execution.</p>
 <div class="section" id="gkill-cancel-a-running-job">
-<h2><strong class="command">gkill</strong>: cancel a running job<a class="headerlink" href="#gkill-cancel-a-running-job" title="Permalink to this headline">¶</a></h2>
+<h3><strong class="command">gkill</strong>: cancel a running job<a class="headerlink" href="#gkill-cancel-a-running-job" title="Permalink to this headline">¶</a></h3>
 <p>To cancel a running job, you can use the command <strong class="command">gkill</strong>.  For
 instance, to cancel <em>job.16</em>, you would type the following command
 into the terminal:</p>
@@ -343,40 +341,8 @@ into the terminal:</p>
 (You can still re-submit it with <strong class="command">gresub</strong>, though.)</p>
 </div>
 </div>
-<div class="section" id="gclean-remove-a-completed-job-from-the-status-list">
-<h2><strong class="command">gclean</strong>: remove a completed job from the status list<a class="headerlink" href="#gclean-remove-a-completed-job-from-the-status-list" title="Permalink to this headline">¶</a></h2>
-<p>Jobs persist in the session list until they are cleared off; you
-need to use the <strong class="command">gclean</strong> command for that.</p>
-<p>Just call the <strong class="command">gclean</strong> command followed by the session name
-and the job identifier <em>job.NNN</em>.  For example:</p>
-<div class="highlight-python"><pre>gclean -s example job.23</pre>
-</div>
-<p>In normal operation, you can only remove jobs that are in the
-<tt class="docutils literal"><span class="pre">TERMINATED</span></tt> status; if you want to force <strong class="command">gclean</strong> to remove a job
-that is not in any one of those states, just add <tt class="docutils literal"><span class="pre">-f</span></tt> to the command
-line.</p>
-<p>Additionally one would like to wipe out an entire session. This could
-be done using the combitation of options <tt class="docutils literal"><span class="pre">-A</span></tt> (remove all stored
-jobs) and <tt class="docutils literal"><span class="pre">-f</span></tt> (remove job even when not in terminal state) like in
-the following example:</p>
-<div class="highlight-python"><pre>$ gclean -s example -A -f</pre>
-</div>
-<div class="admonition note">
-<p class="first admonition-title">Note</p>
-<p class="last">This command erase <em>all</em> jobs within the specified session. Those
-jobs, even if still running on a remote computational resource,
-will be considered lost and it won&#8217;t be possible to retrieve them
-anylonger.</p>
-</div>
-<p>gclean could also be used to remove jobs in a given state
-(e.g. TERMINATED, UNKNOWN, FAILED). For example:</p>
-<div class="highlight-python"><pre>gclean -s example -l UNKNOWN</pre>
-</div>
-<p>will remove all jobs from the session <em class="xref std std-ref">example</em> that are in state
-<em class="xref std std-ref">UNKNOWN</em>.</p>
-</div>
 <div class="section" id="ginfo-accessing-low-level-details-of-a-job">
-<h2><strong class="command">ginfo</strong>: accessing low-level details of a job<a class="headerlink" href="#ginfo-accessing-low-level-details-of-a-job" title="Permalink to this headline">¶</a></h2>
+<h3><strong class="command">ginfo</strong>: accessing low-level details of a job<a class="headerlink" href="#ginfo-accessing-low-level-details-of-a-job" title="Permalink to this headline">¶</a></h3>
 <p>It is sometimes necessary, for debugging purposes, to print out all
 the details about a job; the <strong class="command">ginfo</strong> command does just that: prints
 all the details that GC3Utils know about a single job.</p>
@@ -479,6 +445,7 @@ job.13
 </div>
 </div>
 </div>
+</div>
 
 
           </div>
@@ -496,12 +463,11 @@ job.13
 <li><a class="reference internal" href="#manage-a-set-of-jobs-from-start-to-end">Manage a set of jobs from start to end</a></li>
 </ul>
 </li>
-</ul>
-</li>
 <li><a class="reference internal" href="#using-gc3pie-utilities">Using GC3Pie utilities</a><ul>
 <li><a class="reference internal" href="#gkill-cancel-a-running-job"><strong class="command">gkill</strong>: cancel a running job</a></li>
-<li><a class="reference internal" href="#gclean-remove-a-completed-job-from-the-status-list"><strong class="command">gclean</strong>: remove a completed job from the status list</a></li>
 <li><a class="reference internal" href="#ginfo-accessing-low-level-details-of-a-job"><strong class="command">ginfo</strong>: accessing low-level details of a job</a></li>
+</ul>
+</li>
 </ul>
 </li>
 </ul>

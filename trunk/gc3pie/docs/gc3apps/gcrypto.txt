@@ -34,7 +34,7 @@ three mandatory arguments:
 
 For example::
 
-  gcrypto 800000000 1200000000 1000
+  # gcrypto 800000000 1200000000 1000
   
 will produce 400000 jobs; the first job will perform calculations
 on the range 800000000 to 800000000+1000, the 2nd one will do the
@@ -46,7 +46,9 @@ can be specified with the '-i' option. Otherwise a default filename
 
 Job progress is monitored and, when a job is done,
 output is retrieved back to submitting host in folders named:
-``range_start + (slice * actual step)``
+``RANGE_START + (SLICE * ACTUAL_STEP)``
+Where ``ACTUAL_STEP`` correspond to the position of the job in the
+overall execution.
 
 The `gcrypto`:command: command keeps a record of jobs (submitted, executed and
 pending) in a session file (set name with the '-s' option); at each
@@ -228,7 +230,7 @@ correctly retrieved.  On successful completion, the command given in
 
 Each job will be named after the parameter range it has computed (e.g.
 800001000, 800002000, ... ) (you could see this by passing
-the ``-l`` option to `grosetta`:command:); each of these jobs will
+the ``-l`` option to `gcrypto`:command:); each of these jobs will
 create an output directory named after the job.
 
 For each job, the set of output files is automatically retrieved and
@@ -256,12 +258,7 @@ Example usage
 -------------
 
 This section contains commented example sessions with
-`grosetta`:command:.  All the files used in this example are available
-in the `GC3Pie Rosetta test`_ directory (courtesy of `Lars
-Malmstroem`_).
-
-      .. _`gc3pie rosetta test`: http://code.google.com/p/gc3pie/source/browse/#svn%2Ftrunk%2Fgc3pie%2Fgc3apps%2Frosetta%2Ftest
-      .. _`Lars Malmstroem`: http://www.imsb.ethz.ch/researchgroup/malars
+`gcrypto`:command:.
 
 Manage a set of jobs from start to end
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -302,14 +299,14 @@ successfully retrieved, the job is marked as ``TERMINATED``::
 
 
 Using GC3Pie utilities
-======================
+----------------------
 
 GC3Pie comes with a set of generic utilities that could be used as a
 complemet to the `gcrypto`:command: command to better manage a entire
 session execution.
 
 :command:`gkill`: cancel a running job
---------------------------------------
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 To cancel a running job, you can use the command :command:`gkill`.  For
 instance, to cancel *job.16*, you would type the following command
@@ -334,43 +331,8 @@ gkill could also be used to cancel jobs in  a given state
    (You can still re-submit it with :command:`gresub`, though.)
 
 
-:command:`gclean`: remove a completed job from the status list
---------------------------------------------------------------
-
-Jobs persist in the session list until they are cleared off; you
-need to use the :command:`gclean` command for that.
-
-Just call the :command:`gclean` command followed by the session name
-and the job identifier *job.NNN*.  For example::
-
-  gclean -s example job.23
-
-In normal operation, you can only remove jobs that are in the
-``TERMINATED`` status; if you want to force :command:`gclean` to remove a job
-that is not in any one of those states, just add ``-f`` to the command
-line.
-
-Additionally one would like to wipe out an entire session. This could
-be done using the combitation of options ``-A`` (remove all stored
-jobs) and ``-f`` (remove job even when not in terminal state) like in
-the following example::
-  $ gclean -s example -A -f
-
-.. note::
-   This command erase *all* jobs within the specified session. Those
-   jobs, even if still running on a remote computational resource,
-   will be considered lost and it won't be possible to retrieve them
-   anylonger.
-
-gclean could also be used to remove jobs in a given state
-(e.g. TERMINATED, UNKNOWN, FAILED). For example::
-  gclean -s example -l UNKNOWN
-will remove all jobs from the session `example`:ref: that are in state
-`UNKNOWN`:ref:.
-
-
 :command:`ginfo`: accessing low-level details of a job
-------------------------------------------------------
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 It is sometimes necessary, for debugging purposes, to print out all
 the details about a job; the :command:`ginfo` command does just that: prints
