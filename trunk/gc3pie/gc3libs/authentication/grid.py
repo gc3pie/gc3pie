@@ -58,7 +58,7 @@ except ImportError, ex:
 try:
     import arc
     arc_flavour = Default.ARC1_LRMS
-except ImportError:
+except ImportError, ex:
     gc3libs.log.warning("Could not import ARC1 libraries: %s", str(ex))
 
 
