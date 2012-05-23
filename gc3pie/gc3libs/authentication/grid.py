@@ -135,6 +135,8 @@ class GridAuth(object):
     def check(self):
         gc3libs.log.debug('Checking auth: GridAuth')
 
+        # this is of course skipped the first time `check` is called,
+        # as `self._expiration_time` is set to 0 in the ctor
         remaining = int(self._expiration_time - time.time())
         if remaining > gc3libs.Default.PROXY_VALIDITY_THRESHOLD:
             gc3libs.log.debug(
@@ -231,7 +233,10 @@ class GridAuth(object):
                         message = 'Insert grid proxy password: '
                     keypass = getpass.getpass(message)
 
-            self.renew_proxy(keypass)
+            new_proxy = self.renew_proxy(keypass)
+            # save passwds for later use
+            if new_proxy and self.remember_password and self._passwd is None:
+                self._passwd = keypass
 
         # check that all is OK
         if not self.check():
