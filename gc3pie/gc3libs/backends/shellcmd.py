@@ -31,7 +31,7 @@ import tempfile
 import gc3libs
 import gc3libs.exceptions
 from gc3libs import log, Run
-from gc3libs.utils import same_docstring_as, same_file, copy_recursively
+from gc3libs.utils import same_docstring_as, copy_recursively
 from gc3libs.backends import LRMS
 
 
