@@ -245,7 +245,7 @@ def copyfile(src, dst, overwrite=False, link=False):
         dst = os.path.join(dst, os.path.basename(src))
     if os.path.exists(dst) and not overwrite:
         return False
-    if os.path.samefile(src, dst):
+    if samefile(src, dst):
         return False
     try:
         dstdir = os.path.dirname(dst)
@@ -895,6 +895,19 @@ def same_docstring_as(referenced_fn):
             return f
     return decorate
 
+
+def samefile(path1, path2):
+    """
+    Like os.path.samefile but returns false if one of the files does
+    not exist.
+    """
+    try:
+        return os.path.samefile(path1, path2)
+    except OSError, err:
+        if err.errno == 2: # ENOENT
+            return False
+        else:
+            raise
 
 # see http://stackoverflow.com/questions/31875/is-there-a-simple-elegant-way-to-define-singletons-in-python/1810391#1810391
 class Singleton(object):
