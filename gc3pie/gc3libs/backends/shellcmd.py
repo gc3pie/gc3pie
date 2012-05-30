@@ -189,6 +189,11 @@ class ShellcmdLrms(LRMS):
 
         :see: `LRMS.submit_job`
         """
+        if self._resource.free_slots == 0:
+            raise gc3libs.exceptions.LRMSSubmitError(
+                "Resource %s already running maximum allowed number of jobs"
+                " (increase 'ncores' to raise)." % self._resource.name)
+
         gc3libs.log.debug("Executing local command '%s %s' ..."
                           % (app.executable, str.join(" ", app.arguments)))
 
