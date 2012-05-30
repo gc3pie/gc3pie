@@ -41,8 +41,8 @@ from gc3libs import Default
 
 ## detect ARC version
 
-# ARC's default packages install arclib into /opt/nordugrid/lib/pythonX.Y/site-packages; 
-# add this anyway in case users did not set their PYTHONPATH correctly 
+# ARC's default packages install arclib into /opt/nordugrid/lib/pythonX.Y/site-packages;
+# add this anyway in case users did not set their PYTHONPATH correctly
 sys.path.append('/opt/nordugrid/lib/python%d.%d/site-packages'
                 % sys.version_info[:2])
 # this is where arc0 libraries are installed from release 11.05
@@ -175,7 +175,7 @@ class GridAuth(object):
 
         return (self.user_cert_valid and self.proxy_valid)
 
-    
+
     def enable(self):
         # User certificate
         new_cert = False
@@ -249,7 +249,7 @@ class GridAuth(object):
             raise gc3libs.exceptions.RecoverableAuthError(
                 "Temporary failure in enabling Grid authentication."
                 " Grid/VOMS proxy is %s."
-                " User certificate is %s." 
+                " User certificate is %s."
                 % (gc3libs.utils.ifelse(self.proxy_valid,
                                         "valid", "invalid"),
                    gc3libs.utils.ifelse(self.user_cert_valid,
@@ -280,7 +280,7 @@ class GridAuth(object):
                 # Assume transient error (i.e wrong password or so).
                 raise gc3libs.exceptions.RecoverableAuthError(
                     "Error running '%s': %s."
-                    " Assuming temporary failure, will retry later." 
+                    " Assuming temporary failure, will retry later."
                     % (str.join(' ', cmd), stdout))
         except OSError, x:
             if x.errno in [errno.ENOENT, errno.EPERM, errno.EACCES]:
@@ -295,7 +295,7 @@ class GridAuth(object):
                     "Failed running '%s': %s." % (str.join(' ', cmd), str(x)))
         except Exception, ex:
             # Intercept any other Error that subprocess may raise
-            gc3libs.log.debug("Unexpected error in GridAuth: %s: %s" 
+            gc3libs.log.debug("Unexpected error in GridAuth: %s: %s"
                               % (ex.__class__.__name__, str(ex)))
             raise gc3libs.exceptions.UnrecoverableAuthError(
                 "Error renewing SLCS certificate: %s" % str(ex))
@@ -375,8 +375,8 @@ class GridAuth(object):
                     "Unrecoverable error in enabling Grid authentication: %s" % str(x))
 
         except Exception, ex:
-            # Intercept any other Error that subprocess may raise 
-            gc3libs.log.debug("Unhandled error in GridAuth: %s: %s" 
+            # Intercept any other Error that subprocess may raise
+            gc3libs.log.debug("Unhandled error in GridAuth: %s: %s"
                               % (ex.__class__.__name__, str(ex)))
             raise gc3libs.exceptions.UnrecoverableAuthError(str(ex))
 
