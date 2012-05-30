@@ -21,6 +21,8 @@ Run applications as local processes.
 __docformat__ = 'reStructuredText'
 __version__ = '$Revision: 1165 $'
 
+
+# stdlib imports
 import os
 import os.path
 import posix
@@ -28,6 +30,7 @@ import shutil
 import sys
 import tempfile
 
+# GC3Pie imports
 import gc3libs
 import gc3libs.exceptions
 from gc3libs import log, Run
@@ -38,7 +41,7 @@ from gc3libs.backends import LRMS
 
 class ShellcmdLrms(LRMS):
     """
-    Execute an application as a local process.
+    Execute an `Application`:class: instance as a local process.
     """
 
     def __init__(self, resource, auths):
@@ -57,7 +60,7 @@ class ShellcmdLrms(LRMS):
 
         # use `ncores` as the max number of processes to allow
         self._resource.free_slots = int(resource.ncores)
-        self._resource.user_run = 0      
+        self._resource.user_run = 0
         self._resource.user_queued = 0
         self._resource.queued = 0
 
@@ -65,7 +68,7 @@ class ShellcmdLrms(LRMS):
             # default is to use $TMPDIR or '/tmp' (see `tempfile.mkftemp`)
             self._resource.spooldir = None
 
-        self.isValid = 1
+        self.isValid = True
 
     def is_valid(self):
         return self.isValid
@@ -73,9 +76,10 @@ class ShellcmdLrms(LRMS):
 
     def cancel_job(self, app):
         """
-        Cancel a running job.  If `app` is associated to a queued or
-        running remote job, tell the execution middleware to cancel
-        it.
+        Cancel a running job.
+
+        If `app` is associated to a queued or running remote job, tell
+        the execution middleware to cancel it.
         """
         try:
             pid = int(app.execution.lrms_jobid)
@@ -92,8 +96,8 @@ class ShellcmdLrms(LRMS):
         except ValueError, ex:
             raise gc3libs.exceptions.InvalidArgument(
                 "Invalid field `lrms_jobid` in Job '%s':"
-                " should be a number, is '%s' instead"
-                % (app, app.execution.lrms_jobid))
+                " expected a number, got '%s' (%s) instead"
+                % (app, app.execution.lrms_jobid, type(app.execution.lrms_jobid)))
 
 
     @same_docstring_as(LRMS.close)
@@ -104,11 +108,13 @@ class ShellcmdLrms(LRMS):
 
     def free(self, app):
         """
-        Delete the temporary directory where a child process has run,
-        with all its content, recursively.
+        Delete the temporary directory where a child process has run.
+
+        The temporary directory is removed with all its content,
+        recursively.
         """
         shutil.rmtree(app.execution.lrms_execdir)
-    
+
 
     @same_docstring_as(LRMS.get_resource_status)
     def get_resource_status(self):
@@ -131,7 +137,7 @@ class ShellcmdLrms(LRMS):
             copy_recursively(os.path.join(app.execution.lrms_execdir, r),
                              os.path.join(download_dir, relative_dest_path))
 
-    
+
     def update_job_state(self, app):
         """
         Query the running status of the local process whose PID is
@@ -157,8 +163,8 @@ class ShellcmdLrms(LRMS):
             # XXX: is `InvalidArgument` the correct exception here?
             raise gc3libs.exceptions.InvalidArgument(
                 "Invalid field `lrms_jobid` in Job '%s':"
-                " should be a number, is '%s' instead"
-                % (app, app.execution.lrms_jobid))
+                " expected a PID number, got '%s' (%s) instead"
+                % (app, app.execution.lrms_jobid, type(app.execution.lrms_jobid)))
 
         # map POSIX status to GC3Libs `State`
         if posix.WIFSTOPPED(status):
@@ -175,8 +181,8 @@ class ShellcmdLrms(LRMS):
             pass
 
         return app.execution.state
-    
-    
+
+
     def submit_job(self, app):
         """
         Run an `Application` instance as a local process.
@@ -185,7 +191,7 @@ class ShellcmdLrms(LRMS):
         """
         gc3libs.log.debug("Executing local command '%s %s' ..."
                           % (app.executable, str.join(" ", app.arguments)))
-        
+
         # We cannot use `exec` or other front-end modules that
         # hide the differences between UNIX and Windows, exactly
         # because we need to get the PID of the submitted process.
@@ -205,7 +211,7 @@ class ShellcmdLrms(LRMS):
             # book-keeping
             self._resource.free_slots -= 1
             self._resource.user_run += 1
-    
+
         else: # child process
             try:
                 ## stage inputs files into execution directory
@@ -275,11 +281,12 @@ class ShellcmdLrms(LRMS):
                 ## finally.. exec()
                 if not os.path.isabs(app.executable) and os.path.exists(app.executable):
                     # local file
-                    os.execl('./' + app.executable, app.executable, *app.arguments)
+                    os.execl(os.path.join(os.getcwd(), app.executable),
+                             app.executable, *app.arguments)
                 else:
                     # search in path
                     os.execlp(app.executable, app.executable, *app.arguments)
-                
+
             except Exception, ex:
                 sys.excepthook(* sys.exc_info())
                 gc3libs.log.error("Failed starting local process '%s': %s"
@@ -294,18 +301,21 @@ class ShellcmdLrms(LRMS):
         rfh.seek(offset)
         data = rfh.read(size)
         rfh.close()
-        
+
         try:
             local_file.write(data)
         except (TypeError, AttributeError):
             output_file = open(local_file, 'w+b')
             output_file.write(data)
             output_file.close()
-        
-    
-    def validate_data(self, data_file_list=None):
+
+
+    def validate_data(self, data_file_list=[]):
         """
-        Supported protocols: file
+        Return `False` if any of the URLs in `data_file_list` cannot
+        be handled by this backend.
+
+        The `shellcmd`:module: backend can only handle ``file`` URLs.
         """
         for url in data_file_list:
             if not url.scheme in ['file']:
