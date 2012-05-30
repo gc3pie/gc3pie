@@ -49,15 +49,20 @@ from plotSimulation import plotSimulation
 from plotAggregate import makeAggregatePlot
 from pymods.classes.tableDict import tableDict
 
+path2Pymods = os.path.join(os.path.dirname(__file__), '../')
+if not sys.path.count(path2Pymods):
+    sys.path.append(path2Pymods)
+from pymods.support.support import getParameter
+
 logger = wrapLogger(loggerName = __name__ + 'logger', streamVerb = 'DEBUG', logFile = __name__ + '.log')
 
 class housingApplication(Application):
     _invalid_chars = re.compile(r'[^_a-zA-Z0-9]+', re.X)
-    
+
     def __init__(self, executable, arguments, inputs, outputs, output_dir, **kw):
 #        kw.setdefault('requested_walltime', 2)
         Application.__init__(self, executable, arguments, inputs, outputs, output_dir, **kw)
-    
+
     def fetch_output_error(self, ex):
 
         if self.execution.state == Run.State.TERMINATING:
@@ -73,10 +78,10 @@ class housingApplication(Application):
         else:
         # non-terminal state, pass on error
             return ex
-        
+
     # def submit_error(self, ex):
     #     logger.debug('submit_error occured... continuing')
-        
+
     #     try: 
     #         if self.lrms_jobid:
     #             logger.debug('jobid: %s info: %s exception: %s' % (self.lrms_jobid, self.info, str(ex)))
@@ -93,7 +98,7 @@ class housingApplication(Application):
 
         - work around a bug in ARC where the output is stored in a
           subdirectory of the output directory.
-          
+
         - make plots for post-analysis
         """
         output_dir = self.output_dir
@@ -110,10 +115,21 @@ class housingApplication(Application):
                 os.rmdir(wrong_output_dir)
             except:
                 logger.warning('could not delete wront output dir = %s' % wrong_output_dir)
-                
+
         # set the exitcode based on postprocessing the main output file
         aggregateOut = os.path.join(output_dir, 'aggregate.out')
-        empOwnershipFile = os.path.join(os.path.split(output_dir)[0], 'input', 'PSIDOwnershipProfilealleduc.out')
+        genParametersFile = os.path.join(os.getcwd(), 'localBaseDir', 'input', 'genParameters.in')
+        ctry =       getParameter(genParametersFile, 'ctry', 'space-separated')
+        if ctry == 'us':
+            curPanel = 'PSID'
+        elif ctry == 'de':
+            curPanel = 'SOEP'
+        elif ctry == 'uk':
+            curPanel = 'BHPS'
+        else: 
+            logger.critical('unknown profile %s' % profile)
+            os.exit(1)        
+        empOwnershipFile = os.path.join(os.path.split(output_dir)[0], 'input', curPanel + 'OwnershipProfilealleduc.out')
         ownershipTableFile = os.path.join(output_dir, 'ownershipTable.out')
         if os.path.exists(aggregateOut):
             self.execution.exitcode = 0
@@ -143,7 +159,7 @@ class housingApplication(Application):
                 plotSimulation(table = ownershipTableFile, xVar = 'age', yVars = yVars, yVarRange = (0., 1.), figureFile = os.path.join(self.output_dir, 'ownership.png'), verb = 'CRITICAL')
             except:
                 logger.debug('couldnt make ownershipTableFile')
-            
+
             # make plot of life-cycle simulation (all variables)
             try:                
                 makeAggregatePlot(self.output_dir)
@@ -156,10 +172,9 @@ class housingApplication(Application):
         else:
             # no `simulation.out` found, signal error
             self.execution.exitcode = 2
-            
+
 class housingApppotApplication(housingApplication, gc3libs.application.apppot.AppPotApplication):
     _invalid_chars = re.compile(r'[^_a-zA-Z0-9]+', re.X)
     def __init__(self, executable, arguments, inputs, outputs, output_dir, **kw):
 #        kw.setdefault('requested_walltime', 2) # unnecessary.. gc3pie automatically sets default to 8
         gc3libs.application.apppot.AppPotApplication.__init__(self, executable, arguments, inputs, outputs, output_dir, **kw)
-
