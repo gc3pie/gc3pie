@@ -5,21 +5,21 @@ In addition to the exceptions listed here, `gc3libs`:mod: functions
 try to use Python builtin exceptions with the same meaning they have
 in core Python, namely:
 
-* `TypeError`: raised when an argument to a function or method has an
+* `TypeError` is raised when an argument to a function or method has an
   incompatible type or does not implement the required protocol (e.g.,
   a number is given where a sequence is expected).
 
-* `ValueError`: raised when an argument to a function or method has
+* `ValueError`is  raised when an argument to a function or method has
   the correct type, but fails to satisfy other constraints in the
   function contract (e.g., a positive number is required, and `-1` is
   passed instead).
 
-* `AssertionError`: raised when some internal assumption regarding
+* `AssertionError` is raised when some internal assumption regarding
   state or function/method calling contract is violated.  Informally,
   this indicates a bug in the software.
 
 """
-# Copyright (C) 2009-2011 GC3, University of Zurich. All rights reserved.
+# Copyright (C) 2009-2012 GC3, University of Zurich. All rights reserved.
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
@@ -70,7 +70,7 @@ class Error(Exception):
     This is the base class for all error-level exceptions.
     """
     def __init__(self, msg, do_log=False):
-        if do_log: 
+        if do_log:
             gc3libs.log.error(msg)
         Exception.__init__(self, msg)
 
@@ -227,7 +227,7 @@ class LoadError(Error):
 
 
 class LRMSError(Error):
-    pass    
+    pass
 
 
 class LRMSSubmitError(Error):
