@@ -67,6 +67,7 @@ import time
 
 from supportGc3 import lower, flatten, str2tuple, getIndex, extractVal, str2vals
 from supportGc3 import format_newVal, update_parameter_in_file, safe_eval, str2mat, mat2str, getParameter
+
 from housing import housingApplication, housingApppotApplication
 from paraLoop import paraLoop
 
@@ -74,6 +75,7 @@ path2Pymods = os.path.join(os.path.dirname(__file__), '../')
 if not sys.path.count(path2Pymods):
     sys.path.append(path2Pymods)
 
+from pymods.support.support import catFile
 from pymods.support.support import wrapLogger
 from pymods.classes.tableDict import tableDict
 
@@ -357,7 +359,7 @@ def pre_run(self):
     self.log.critical('Successfully overridden gc3pie error handling. ')
     
     # interface to the GC3Libs main functionality
-    self._core = self._get_core()
+    self._core = self._make_core()
 
     # call hook methods from derived classes
     self.parse_args()
@@ -376,9 +378,9 @@ def dispatch_record(record):
     gc3utilsLogger.call_handlers(record)
 
 import gc3libs.cmdline
-gc3libs.cmdline._Script.pre_run = pre_run
+#gc3libs.cmdline._Script.pre_run = pre_run
 import logbook
-logbook.dispatch_record = dispatch_record
+#logbook.dispatch_record = dispatch_record
 
 
 ## custom application class
@@ -395,8 +397,7 @@ Read `.loop` files and execute the `housingOut` program accordingly.
     def __init__(self):
         SessionBasedScript.__init__(
             self,
-            version = '0.2',
-            # only '.loop' files are considered as valid input
+            version = '1.0',
             input_filename_pattern = '*.loop',
             stats_only_for = Application,
         )
@@ -503,6 +504,23 @@ Read `.loop` files and execute the `housingOut` program accordingly.
             pass
         
     def new_tasks(self, extra):
+        # Generating new tasks for both paramter files
+        self.logger.info('\ngenParamters.in: ')
+        self.logger.info('-----------------')
+        catFile(os.path.join(self.params.initial, 'input', 'genParameters.in'))
+        self.logger.info('\nctryParameters.in: ')
+        self.logger.info('-----------------')
+        catFile(os.path.join(self.params.initial, 'input', 'ctryParameters.in'))
+        self.logger.info('\npara.loop: ')
+        self.logger.info('-----------------')
+        catFile(os.path.join(os.getcwd(), 'para.loop'))
+        self.logger.info('\nPress [y] to confirm the input files and continue execution of ghousing.py. Press [q] to exit')
+        #import select
+        #rlist, wlist, xlist = select.select([sys.stdin], [], [], None)
+        selection = raw_input()
+        if selection.lower() == 'q':
+            self.logger.critical('Exiting upon user request...')
+            os._exit(1)
         # setup AppPot parameters
         use_apppot = False
         #bug = use_apppot[0]
@@ -558,15 +576,18 @@ Read `.loop` files and execute the `housingOut` program accordingly.
                 kwargs['output_dir'] = os.path.join(path_to_stage_dir, 'output')
                 kwargs['requested_architecture'] = self.params.architecture
 
-                print 'inputs = %s' % inputs
-                print 'outputs = %s' % outputs
+#                print 'inputs = %s' % inputs
+#                print 'outputs = %s' % outputs
 
 #                kwargs.setdefault('tags', [ ])	
 
                 # adaptions for uml
                 if self.params.rte:
                     kwargs['apppot_tag'] = 'ENV/APPPOT-0.26'
-                    kwargs['tags'] = ['TEST/APPPOT-IBF-1.0']
+#                    kwargs['tags'] = ['TEST/APPPOT-IBF-1.0']
+#                    kwargs['tags'] = ['TEST/APPPOT-IBF-1.1']
+                    kwargs['tags'] = ['APPS/ECON/APPPOT-IBF-1.0']
+
                     cls = housingApppotApplication
                     pathToExecutable = '/home/user/job/' + executable
                 elif use_apppot:
@@ -580,7 +601,7 @@ Read `.loop` files and execute the `housingOut` program accordingly.
                     cls = housingApplication
                     pathToExecutable = executable
 
-                print 'kwargs = %s' % kwargs
+#                print 'kwargs = %s' % kwargs
                 # hand over job to create
                 yield (jobname, cls, [pathToExecutable, [], inputs, outputs], kwargs)                
                 
@@ -717,5 +738,10 @@ if __name__ == '__main__':
         combineRunningTimes()
     except:
         logger.critical('problem creating combineRunningTimes. Investigate...')
+    # some find commands to copy result graphs to a common directory. 
+    os.system("find -maxdepth 1 -type d -iregex './p.*' -exec bash -c 'x='{}' && mkdir -p ownerPlots && y=${x#./} && echo $y && cp ${y}/output/ownership.png ownerPlots/${y}.png 2>/dev/null' \; ; ld ownerPlots/")
+    os.system("find -maxdepth 1 -type d -iregex './p.*' -exec bash -c 'x='{}' && mkdir -p aggregatePlots && y=${x#./} && echo $y && cp ${y}/output/aggregate.png aggregatePlots/${y}.png' \; ; ld aggregatePlots/")
+    os.system("find -maxdepth 1 -type d -iregex './p.*' -exec bash -c 'x='{}' && mkdir -p ownerBdry && y=${x#./} && echo $y && cp ${y}/output/ownerBdry1.png ownerBdry/${y}.png' \; ; ld ownerBdry")
+    
     logger.info('main done')
 
