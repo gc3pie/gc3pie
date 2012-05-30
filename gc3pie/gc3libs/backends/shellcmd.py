@@ -85,7 +85,7 @@ class ShellcmdLrms(LRMS):
             pid = int(app.execution.lrms_jobid)
             posix.kill(pid, 15)
             # XXX: should we check that the process actually died?
-            self._resource.free_slots += 1
+            self._resource.free_slots += app.requested_cores
         except OSError, ex:
             if ex.errno == 10:
                 raise gc3libs.exceptions.InvalidArgument(
@@ -174,7 +174,7 @@ class ShellcmdLrms(LRMS):
             app.execution.state = Run.State.TERMINATING
             app.execution.returncode = status
             # book-keeping
-            self._resource.free_slots += 1
+            self._resource.free_slots += app.requested_cores
             self._resource.user_run -= 1
         else:
             # no changes
@@ -209,7 +209,7 @@ class ShellcmdLrms(LRMS):
             app.execution.lrms_execdir = execdir
             app.execution.state = Run.State.RUNNING
             # book-keeping
-            self._resource.free_slots -= 1
+            self._resource.free_slots -= app.requested_cores
             self._resource.user_run += 1
 
         else: # child process
