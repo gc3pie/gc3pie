@@ -79,7 +79,7 @@ def backup(path):
 
       >>> os.remove(path+'.~1~')
       >>> os.remove(path+'.~2~')
-      
+
     """
     parent_dir = (os.path.dirname(path) or os.getcwd())
     prefix = os.path.basename(path) + '.~'
@@ -100,7 +100,7 @@ def backup(path):
 def data_merge(source_path, destination_path):
     # mv --update -v in/* ../in/
     pass
-    
+
 
 def basename_sans(path):
     """
@@ -149,7 +149,7 @@ def cache_for(lapse):
         >>> time.sleep(3)
         >>> x.foo()
         'times effectively run: 2'
-    
+
     """
     def decorator(fn):
         @functools.wraps(fn)
@@ -162,7 +162,7 @@ def cache_for(lapse):
                 obj._cache_last_updated = defaultdict(lambda: 0)
                 obj._cache_value = dict()
                 update = True
-            if update:    
+            if update:
                 obj._cache_value[key] = fn(obj, *args)
                 obj._cache_last_updated[key] = now
             # gc3libs.log.debug("%s(%s, ...): Using cached value '%s'",
@@ -170,7 +170,7 @@ def cache_for(lapse):
             return obj._cache_value[key]
         return wrapper
     return decorator
-    
+
 
 def cat(*args, **kw):
     """
@@ -327,9 +327,9 @@ def deploy_configuration_file(filename, template_filename=None):
     Ensure that configuration file `filename` exists; possibly
     copying it from the specified `template_filename`.
 
-    Return `True` if a file with the specified name exists in the 
+    Return `True` if a file with the specified name exists in the
     configuration directory.  If not, try to copy the template file
-    over and then return `False`; in case the copy operations fails, 
+    over and then return `False`; in case the copy operations fails,
     a `NoConfigurationFile` exception is raised.
 
     If parameter `filename` is not an absolute path, it is interpreted
@@ -344,11 +344,11 @@ def deploy_configuration_file(filename, template_filename=None):
         return True
     else:
         try:
-            # copy sample config file 
+            # copy sample config file
             if not os.path.exists(dirname(filename)):
                 os.makedirs(dirname(filename))
             from pkg_resources import Requirement, resource_filename, DistributionNotFound
-            sample_config = resource_filename(Requirement.parse("gc3pie"), 
+            sample_config = resource_filename(Requirement.parse("gc3pie"),
                                               "gc3libs/etc/" + template_filename)
             import shutil
             shutil.copyfile(sample_config, filename)
@@ -385,7 +385,7 @@ class Enum(frozenset):
     make the enumeration "label"::
 
       >>> Animal = Enum('CAT', 'DOG')
-    
+
     Each label is available as an instance attribute, evaluating to
     itself::
 
@@ -451,7 +451,7 @@ def first(seq):
 def from_template(template, **kw):
     """
     Return the contents of `template`, substituting all occurrences
-    of Python formatting directives '%(key)s' with the corresponding values 
+    of Python formatting directives '%(key)s' with the corresponding values
     taken from dictionary `kw`.
 
     If `template` is an object providing a `read()` method, that is
@@ -496,7 +496,7 @@ def getattr_nested(obj, name):
     else:
         first, rest = name.split('.', 1)
         return getattr(getattr(obj, first), rest)
-    
+
 
 def ifelse(test, if_true, if_false):
     """
@@ -565,7 +565,7 @@ def irange(start, stop, step=1):
         while value > stop:
             yield value
             value += step
-    
+
 
 def lock(path, timeout, create=True):
     """
@@ -632,7 +632,7 @@ class Log(object):
 
     def append(self, message, *tags):
         """
-        Append a message to this `Log`.  
+        Append a message to this `Log`.
 
         The message is timestamped with the time at the moment of the
         call.
@@ -641,13 +641,13 @@ class Log(object):
         are recorded together with the message and may be used to
         filter log messages given a set of labels. *(This feature is
         not yet implemented.)*
-        
+
         """
         self._messages.append((message, time.time(), tags))
 
     def last(self):
         """
-        Return text of last message appended. 
+        Return text of last message appended.
         If log is empty, return empty string.
         """
         if len(self._messages) == 0:
@@ -813,7 +813,7 @@ def progressive_number(qty=None,
       >>> import tempfile, os
       >>> (fd, tmp) = tempfile.mkstemp()
 
-      
+
       >>> n = progressive_number(id_filename=tmp)
       >>> m = progressive_number(id_filename=tmp)
       >>> m > n
@@ -834,7 +834,7 @@ def progressive_number(qty=None,
       nums = [ progressive_number() for n in range(N) ]
 
     only more efficient, because it has to obtain and release the lock
-    only once.  
+    only once.
 
     After every invocation of this function, the last returned number
     is stored into the file passed as argument `id_filename`.  If the
@@ -848,7 +848,7 @@ def progressive_number(qty=None,
     `LockTimeout` exception if this fails.
 
     :raise: LockTimeout, IOError, OSError
-    
+
     :returns: A positive integer number, monotonically increasing with
             every call.  A list of such numbers if argument `qty` is a
             positive integer.
@@ -861,7 +861,7 @@ def progressive_number(qty=None,
     id_file.seek(0)
     if qty is None:
         id_file.write("%08x -- DO NOT REMOVE OR ALTER THIS FILE: it is used internally by the gc3libs\n" % (id+1))
-    else: 
+    else:
         id_file.write("%08x -- DO NOT REMOVE OR ALTER THIS FILE: it is used internally by the gc3libs\n" % (id+qty))
     id_file.close()
     unlock(lck)
@@ -877,14 +877,14 @@ def safe_repr(obj):
     any Python magic methods, so should be safe to use as a "last
     resort" in implementation of `__str__` and `__repr__` magic.
     """
-    return ("<`%s` instance @ %x>" 
+    return ("<`%s` instance @ %x>"
             % (obj.__class__.__name__, id(obj)))
 
 
 def same_docstring_as(referenced_fn):
     """
     Function decorator: sets the docstring of the following function
-    to the one of `referenced_fn`.  
+    to the one of `referenced_fn`.
 
     Intended usage is for setting docstrings on methods redefined in
     derived classes, so that they inherit the docstring from the
@@ -898,8 +898,8 @@ def same_docstring_as(referenced_fn):
 
 def samefile(path1, path2):
     """
-    Like os.path.samefile but returns false if one of the files does
-    not exist.
+    Like `os.path.samefile` but return `False` if either one of the
+    paths does not exist.
     """
     try:
         return os.path.samefile(path1, path2)
@@ -970,7 +970,7 @@ class PlusInfinity(Singleton):
         False
         >>> x <= y
         True
-        >>> x == y 
+        >>> x == y
         True
         >>> x >= y
         True
@@ -1034,7 +1034,7 @@ class Struct(object, UserDict.DictMixin):
                 # initializer is `dict`-like?
                 for name, value in initializer.items():
                     self[name] = value
-            except AttributeError: 
+            except AttributeError:
                 # initializer is a sequence of (name,value) pairs?
                 for name, value in initializer:
                     self[name] = value
@@ -1083,12 +1083,12 @@ def string_to_boolean(word):
       False
 
     This includes also the empty string and whitespace-only::
-    
+
       >>> string_to_boolean('')
       False
       >>> string_to_boolean('  ')
       False
-      
+
     """
     if word.strip().lower() in [ 'true', 'yes', 'on', '1' ]:
         return True
@@ -1103,7 +1103,7 @@ def stripped(iterable):
     """
     for item in iterable:
         yield item.strip()
-    
+
 
 def test_file(path, mode, exception=RuntimeError, isdir=False):
     """
@@ -1227,7 +1227,7 @@ def to_bytes(s):
     if unit == 'y':
         return int(float(s[0:last])*k*k*k*k*k*k*k*k)
 
- 
+
 def send_mail(send_from, send_to, subject, text, files=[], server="localhost"):
 
     from smtplib import SMTP
@@ -1242,17 +1242,17 @@ def send_mail(send_from, send_to, subject, text, files=[], server="localhost"):
     msg['To'] = COMMASPACE.join(send_to)
     msg['Date'] = formatdate(localtime=True)
     msg['Subject'] = subject
-    
+
     msg.attach(MIMEText(text))
-    
+
     for f in files:
         part = MIMEBase('application', "octet-stream")
         part.set_payload( open(f,"rb").read() )
         Encoders.encode_base64(part)
-        part.add_header('Content-Disposition', 
+        part.add_header('Content-Disposition',
                         'attachment; filename="%s"' % os.path.basename(f))
         msg.attach(part)
-        
+
     smtp = SMTP(server)
     smtp.sendmail(send_from, send_to, msg.as_string())
     smtp.close()
@@ -1281,7 +1281,7 @@ def unlock(lock):
 
 
 ##
-## Main 
+## Main
 ##
 
 if __name__ == '__main__':
