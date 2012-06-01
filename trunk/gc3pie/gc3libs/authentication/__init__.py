@@ -46,7 +46,7 @@ class Auth(object):
     .. admonition:: FIXME
 
       There are several problems with this approach:
-      
+
       - the configuration is assumed *static* and cannot be changed after
         the `Auth` instance is constructed.
       - there is no communication between the client class and the
@@ -117,7 +117,8 @@ class Auth(object):
             a = self.__auths[auth_name]
 
         if isinstance(a, Exception):
-            self.__auths[auth_name] = a
+            if isinstance(a, UnrecoverableError):
+                self.__auths[auth_name] = a
             raise a
 
         if not a.check():
@@ -159,7 +160,7 @@ class NoneAuth(object):
 
     def is_valid(self):
         return True
-    
+
     def check(self):
         gc3libs.log.debug("Checking auth: NoneAuth (always successful).")
         return True
