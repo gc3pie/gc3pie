@@ -47,7 +47,7 @@ from gc3libs.authentication import Auth
 import gc3libs.exceptions
 import gc3libs.Resource as Resource
 import gc3libs.scheduler as scheduler
-import gc3libs.utils as utils 
+import gc3libs.utils as utils
 
 
 class Core:
@@ -58,7 +58,7 @@ Core operations are *blocking*, i.e., they return only after the
 operation has successfully completed, or an error has been detected.
 
 Operations are always performed by a `Core` object.
-`Core` implements an overlay Grid on the resources 
+`Core` implements an overlay Grid on the resources
 specified in the configuration file.
     """
     def __init__(self, resource_list, auths, auto_enable_auth):
@@ -75,7 +75,7 @@ specified in the configuration file.
             if fnmatch(lrms._resource.name, resource_name):
                 return lrms
         raise gc3libs.exceptions.InvalidResourceName(
-            "Cannot find computational resource '%s'" % 
+            "Cannot find computational resource '%s'" %
             resource_name)
 
     def _init_backends(self):
@@ -113,7 +113,7 @@ specified in the configuration file.
             self._resources = [ res for res in self._resources if match(res) ]
             self._lrms_list = [ lrms for lrms in self._lrms_list if match(lrms._resource) ]
         except:
-            # `match` is not callable, then assume it's a 
+            # `match` is not callable, then assume it's a
             # glob pattern and select resources whose name matches
             self._resources = [ res for res in self._resources
                                 if fnmatch(res.name, match) ]
@@ -143,7 +143,7 @@ specified in the configuration file.
         else:
             # must be a `Task` instance
             return self.__free_task(app, **kw)
-        
+
     def __free_application(self, app, **kw):
         """Implementation of `free` on `Application` objects."""
         if app.execution.state not in [ Run.State.TERMINATING, Run.State.TERMINATED ]:
@@ -189,7 +189,7 @@ specified in the configuration file.
         gc3libs.log.debug("Submitting %s ..." % str(app))
 
         auto_enable_auth = kw.get('auto_enable_auth', self.auto_enable_auth)
-        
+
         # XXX: we obsolete this check as we now move this responsibility
         # within the LRMS
         # check that all input files can be read
@@ -202,7 +202,7 @@ specified in the configuration file.
             job.state = Run.State.NEW
         elif job.state != Run.State.NEW:
             return
-        
+
         if len(self._lrms_list) == 0:
             raise gc3libs.exceptions.NoResources(
                 "Could not initialize any computational resource"
@@ -250,28 +250,32 @@ specified in the configuration file.
 
         # sort resources according to Application's preferences
         _selected_lrms_list = app.rank_resources(updated_resources)
+        if len(_selected_lrms_list) == 0:
+            raise gc3libs.exceptions.LRMSSubmitError(
+                "No computational resources left after brokering."
+                " Aborting submission of job '%s'", app)
 
         exs = [ ]
         # Scheduler.do_brokering returns a sorted list of valid lrms
         for lrms in _selected_lrms_list:
-            gc3libs.log.debug("Attempting submission to resource '%s'..." 
+            gc3libs.log.debug("Attempting submission to resource '%s'..."
                               % lrms._resource.name)
             try:
                 # self.auths.get(lrms._resource.auth)
                 lrms.submit_job(app)
             except Exception, ex:
                 gc3libs.log.info(
-                    "Error in submitting job to resource '%s': %s: %s", 
+                    "Error in submitting job to resource '%s': %s: %s",
                     lrms._resource.name, ex.__class__.__name__, str(ex),
                     exc_info=True)
-                exs.append(ex) 
+                exs.append(ex)
                 continue
             gc3libs.log.info("Successfully submitted %s to: %s",
                              str(app), lrms._resource.name)
             job.state = Run.State.SUBMITTED
             job.resource_name = lrms._resource.name
             job.info = ("Submitted to '%s' at %s"
-                        % (job.resource_name, 
+                        % (job.resource_name,
                            time.ctime(job.timestamp[Run.State.SUBMITTED])))
             app.changed = True
             app.submitted()
@@ -295,7 +299,7 @@ specified in the configuration file.
     def update_job_state(self, *apps, **kw):
         """
         Update state of all applications passed in as arguments.
-        
+
         If keyword argument `update_on_error` is `False` (default),
         then application execution state is not changed in case a
         backend error happens; it is changed to `UNKNOWN` otherwise.
@@ -312,7 +316,7 @@ specified in the configuration file.
                 configuration of this `Core` object is invalid or
                 otherwise inconsistent (e.g., a resource references a
                 non-existing auth section).
-        
+
         """
         self.__update_application((app for app in apps if isinstance(app, Application)), **kw)
         self.__update_task((app for app in apps if not isinstance(app, Application)), **kw)
@@ -347,7 +351,7 @@ specified in the configuration file.
                     if state != old_state:
                         app.changed = True
                         # set log information accordingly
-                        if (app.execution.state == Run.State.TERMINATING 
+                        if (app.execution.state == Run.State.TERMINATING
                             and app.execution.returncode != 0):
                             # there was some error, try to explain
                             signal = app.execution.signal
@@ -357,13 +361,13 @@ specified in the configuration file.
                                 if os.WIFSIGNALED(app.execution.returncode):
                                     app.execution.info = ("Remote job terminated by signal %d" % signal)
                                 else:
-                                    app.execution.info = ("Remote job exited with code %d" 
+                                    app.execution.info = ("Remote job exited with code %d"
                                                           % app.execution.exitcode)
 
                     if state != Run.State.UNKNOWN or update_on_error:
                         app.execution.state = state
 
-            except (gc3libs.exceptions.InvalidArgument, 
+            except (gc3libs.exceptions.InvalidArgument,
                     gc3libs.exceptions.ConfigurationError,
                     gc3libs.exceptions.UnrecoverableAuthError,
                     gc3libs.exceptions.FatalError):
@@ -486,7 +490,7 @@ specified in the configuration file.
                 raise ex
             else:
                 return
-        
+
         # successfully downloaded results
         gc3libs.log.debug("Downloaded output of '%s' (which is in state %s)"
                           % (str(app), job.state))
@@ -528,7 +532,7 @@ specified in the configuration file.
             self.__kill_application(app, **kw)
         else:
             self.__kill_task(app, **kw)
-            
+
     def __kill_application(self, app, **kw):
         """Implementation of `kill` on `Application` objects."""
         job = app.execution
@@ -553,7 +557,7 @@ specified in the configuration file.
     def __kill_task(self, task, **kw):
         kw.setdefault('auto_enable_auth', self.auto_enable_auth)
         task.kill(**kw)
-    
+
 
     def peek(self, app, what='stdout', offset=0, size=None, **kw):
         """
@@ -564,7 +568,7 @@ specified in the configuration file.
 
         If `size` is `None` (default), then snarf all available
         contents of the remote stream from `offset` unto the end.
-        
+
         The only allowed values for the `what` arguments are the
         strings `'stdout'` and `'stderr'`, indicating that the
         relevant section of the job's standard output resp. standard
@@ -576,7 +580,7 @@ specified in the configuration file.
             return self.__peek_application(app, what, offset, size, **kw)
         else:
             return self.__peek_task(app, what, offset, size, **kw)
-        
+
     def __peek_application(self, app, what, offset, size, **kw):
         """Implementation of `peek` on `Application` objects."""
         job = app.execution
@@ -601,13 +605,13 @@ specified in the configuration file.
             lrms.peek(app, remote_filename, local_file, offset, size)
             local_file.flush()
             local_file.seek(0)
-        
+
         return local_file
 
     def __peek_task(self, task, what, offset, size, **kw):
         """Implementation of `peek` on generic `Task` objects."""
         return task.peek(what, offset, size, **kw)
-    
+
 
     def update_resources(self, **kw):
         """
@@ -637,7 +641,7 @@ specified in the configuration file.
 
 
     ## compatibility with the `Engine` interface
-    
+
     def add(self, task):
         """
         This method is here just to allow `Core` and `Engine` objects
@@ -718,8 +722,8 @@ architecture_value_map = {
 
 def import_config(config_file_locations, auto_enable_auth=True):
     (resources, auths) = read_config(*config_file_locations)
-    return (get_resources(resources), 
-            get_auth(auths,auto_enable_auth), 
+    return (get_resources(resources),
+            get_auth(auths,auto_enable_auth),
             auto_enable_auth)
 
 
@@ -767,7 +771,7 @@ def get_resources(resources_list):
             gc3libs.Default.SUBPROCESS_LRMS,
             ]:
             gc3libs.log.error(
-                "Configuration error: '%s' is no valid resource type.", 
+                "Configuration error: '%s' is no valid resource type.",
                 resource['type'])
             continue
         if tmpres.type in [gc3libs.Default.ARC0_LRMS, gc3libs.Default.ARC1_LRMS] and not tmpres.has_key('frontend'):
@@ -782,12 +786,12 @@ def get_resources(resources_list):
                 continue
         gc3libs.log.debug("Created %s resource '%s' of type %s"
                           % (utils.ifelse(tmpres.is_valid, "valid", "invalid"),
-                             tmpres.name, 
+                             tmpres.name,
                              tmpres.type))
         resources.append(tmpres)
     return resources
 
-                                
+
 def read_config(*locations):
     """
     Read each of the configuration files listed in `locations`, and
@@ -819,7 +823,7 @@ def read_config(*locations):
                               " ignoring." % location)
             continue # with next `location`
         files_successfully_read += 1
- 
+
         # update `defaults` with the contents of the `[DEFAULTS]` section
         defaults.update(config.defaults())
 
@@ -859,7 +863,7 @@ def read_config(*locations):
 
             else:
                 # Unhandled sectname
-                gc3libs.log.error("Core.read_config(): unknown configuration section '%s' -- ignoring!", 
+                gc3libs.log.error("Core.read_config(): unknown configuration section '%s' -- ignoring!",
                                    sectname)
 
     # remove disabled resources
@@ -889,7 +893,7 @@ class Engine(object):
     """
     Submit tasks in a collection, and update their state until a
     terminal state is reached. Specifically:
-      
+
       * tasks in `NEW` state are submitted;
 
       * the state of tasks in `SUBMITTED`, `RUNNING` or `STOPPED` state is updated;
@@ -911,7 +915,7 @@ class Engine(object):
         `STOPPED` state is greater than `max_in_flight`, then no new
         submissions will be attempted.
 
-      `max_submitted` 
+      `max_submitted`
         If >0, limit the number of tasks in `SUBMITTED` state: if the
         number of tasks in `SUBMITTED`, `RUNNING` or `STOPPED` state is
         greater than `max_submitted`, then no new submissions will be
@@ -936,12 +940,12 @@ class Engine(object):
     """
 
 
-    def __init__(self, grid, tasks=list(), store=None, 
-                 can_submit=True, can_retrieve=True, 
+    def __init__(self, grid, tasks=list(), store=None,
+                 can_submit=True, can_retrieve=True,
                  max_in_flight=0, max_submitted=0,
                  output_dir=None, fetch_output_overwrites=False):
         """
-        Create a new `Engine` instance.  Arguments are as follows: 
+        Create a new `Engine` instance.  Arguments are as follows:
 
         `grid`
           A `gc3libs.Core` instance, that will be used to operate on
@@ -1047,7 +1051,7 @@ class Engine(object):
         The `max_in_flight` and `max_submitted` limits (if >0) are
         taken into account when attempting submission of tasks.
         """
-        # prepare 
+        # prepare
         currently_submitted = 0
         currently_in_flight = 0
         if self.max_in_flight > 0:
@@ -1194,7 +1198,7 @@ class Engine(object):
                         gc3libs.log.debug("Ignored error in submitting task '%s': %s: %s",
                                           task, x.__class__.__name__, str(x), exc_info=True)
                         # record the fact in the task's history
-                        task.execution.log("Submission failed: %s: %s" 
+                        task.execution.log("Submission failed: %s: %s"
                                            % (x.__class__.__name__, str(x)))
                 index += 1
         # remove tasks that transitioned to SUBMITTED state
@@ -1241,9 +1245,9 @@ class Engine(object):
 
         Return a dictionary mapping each state name into the count of
         tasks in that state. In addition, the following keys are defined:
-        
+
         * `ok`:  count of TERMINATED tasks with return code 0
-        
+
         * `failed`: count of TERMINATED tasks with nonzero return code
 
         * `total`: total count of managed tasks, whatever their state
@@ -1253,7 +1257,7 @@ class Engine(object):
         : param tuple only: Restrict counting to tasks of these classes.
 
         """
-        
+
         if only:
             gc3libs.log.debug("Engine.stats: Restricting to object of class %s", only)
         result = defaultdict(lambda: 0)
@@ -1306,7 +1310,7 @@ class Engine(object):
                            + result[Run.State.UNKNOWN])
         return result
 
-            
+
     # implement a Core-like interface, so `Engine` objects can be used
     # as substitutes for `Core`.
 
