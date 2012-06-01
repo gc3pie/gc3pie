@@ -234,7 +234,7 @@ class GridAuth(object):
                     keypass = key_passwd
                 else:
                     if self.type == 'voms-proxy':
-                        message = 'Insert voms proxy password: '
+                        message = 'Insert VOMS proxy password: '
                     elif self.type == 'grid-proxy':
                         message = 'Insert grid proxy password: '
                     keypass = getpass.getpass(message)
@@ -276,12 +276,7 @@ class GridAuth(object):
                                  stderr=subprocess.STDOUT)
             (stdout, stderr) = p.communicate('%s\n%s\n' %
                                              (shib_passwd, key_passwd))
-            if p.returncode != 0:
-                # Assume transient error (i.e wrong password or so).
-                raise gc3libs.exceptions.RecoverableAuthError(
-                    "Error running '%s': %s."
-                    " Assuming temporary failure, will retry later."
-                    % (str.join(' ', cmd), stdout))
+
         except OSError, x:
             if x.errno in [errno.ENOENT, errno.EPERM, errno.EACCES]:
                 raise gc3libs.exceptions.UnrecoverableAuthError(
@@ -293,12 +288,20 @@ class GridAuth(object):
                 # network glitch.... so retry later.
                 raise gc3libs.exceptions.RecoverableAuthError(
                     "Failed running '%s': %s." % (str.join(' ', cmd), str(x)))
+
         except Exception, ex:
             # Intercept any other Error that subprocess may raise
             gc3libs.log.debug("Unexpected error in GridAuth: %s: %s"
                               % (ex.__class__.__name__, str(ex)))
             raise gc3libs.exceptions.UnrecoverableAuthError(
                 "Error renewing SLCS certificate: %s" % str(ex))
+
+        # `slcs-init` exited with error, assume transient condition (wrong password or so).
+        if p.returncode != 0:
+            raise gc3libs.exceptions.RecoverableAuthError(
+                "Error running '%s': %s."
+                " Assuming temporary failure, will retry later."
+                % (str.join(' ', cmd), stdout))
 
         gc3libs.log.info('Created new SLCS certificate.')
         if self.private_credentials_copy:
