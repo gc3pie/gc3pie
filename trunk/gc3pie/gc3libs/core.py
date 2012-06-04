@@ -354,6 +354,7 @@ specified in the configuration file.
                         if (app.execution.state == Run.State.TERMINATING
                             and app.execution.returncode != 0):
                             # there was some error, try to explain
+                            app.execution.info = ("Execution failed on resource: %s" % app.execution.resource_name)
                             signal = app.execution.signal
                             if signal in Run.Signals:
                                 app.execution.info = ("Abnormal termination: %s" % signal)
@@ -835,6 +836,7 @@ def read_config(*locations):
                 # extract auth name and register auth dictionary
                 auth_name = sectname.split('/', 1)[1]
                 auths[auth_name].update(dict(config.items(sectname)))
+                auths[auth_name]['name'] = auth_name
 
             elif  sectname.startswith('resource/'):
                 # handle resource section
