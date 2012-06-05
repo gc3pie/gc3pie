@@ -155,7 +155,7 @@ class GridAuth(object):
         # `slcs-init` is still slower than `voms-proxy-init`...)
 
         if self.private_credentials_copy and self._keypass is None:
-            gc3libs.log.debug(
+            gc3libs.log.warning(
                 "Need to ask password anyway"
                 " because of 'private_credentials_copy=yes' in the config file.")
             # force cert renewal to store password
@@ -165,7 +165,7 @@ class GridAuth(object):
 
         self._expiration_time = self.get_end_time("proxy")
         if self.remember_password and self._passwd is None:
-            gc3libs.log.debug(
+            gc3libs.log.warning(
                 "Need the proxy password anyway"
                 " because of 'remember_password=yes' in the config file.")
             # force proxy renewal to store password
