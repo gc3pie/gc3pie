@@ -68,39 +68,9 @@ to control the above process by:
 
   2. Providing methods to control the "life-cycle" of the associated
      computational job: start, check execution state, stop, retrieve a
-     snapshot of the output files.  There are actually two different
-     interfaces for this, detailed below:
-     
-       1. A *passive* interface: a :class:`Core` or a
-          :class:`Engine` object is used to start/stop/monitor jobs
-          associated with the given application.  For instance::
-
-            a = GamessApplication(...)
-
-            # create a `Core` object; only one instance is needed
-            g = Core(...)
-
-            # start the remote computation
-            g.submit(a)
-
-            # periodically monitor job execution
-            g.update_job_state(a)
-
-            # retrieve output when the job is done
-            g.fetch_output(a)
-
-          The passive interface gives client code full control over
-          the lifecycle of the job, but cannot support some use cases
-          (e.g., automatic application re-start).
-
-          As you can see from the above example, the passive interface
-          is implemented by methods in the :class:`Core` and
-          :class:`Engine` classes (they implement the same
-          interface).  See those classes documentation for more details.
-
-       2. An *active* interface: this requires that the
-          :class:`Application` object be attached to a :class:`Core`
-          or :class:`Engine` instance::
+     snapshot of the output files.  The job control interface requires
+     that the :class:`Application` object be attached to a
+     :class:`Core` or :class:`Engine` instance::
 
             a = GamessApplication(...)
 
@@ -119,16 +89,15 @@ to control the above process by:
             # retrieve output when the job is done
             a.fetch_output()
 
-          With the active interface, application objects can support
-          automated restart and similar use-cases.
+     With the active interface, application objects can support
+     automated restart and similar use-cases.
 
-          When an :class:`Engine` object is used instead of a
-          :class:`Core` one, the job life-cycle is automatically
-          managed, providing a fully asynchronous way of executing
-          computations. 
+     When an :class:`Engine` object is used instead of a :class:`Core`
+     one, the job life-cycle is automatically managed, providing a
+     fully asynchronous way of executing computations.
 
-          The active interface is implemented by the :class:`Task`
-          class and all its descendants (including :class:`Application`).
+     The active interface is implemented by the :class:`Task` class
+     and all its descendants (including :class:`Application`).
 
   3. Providing "state transition methods" that are called when a
      change in the job execution state is detected; those methods can
