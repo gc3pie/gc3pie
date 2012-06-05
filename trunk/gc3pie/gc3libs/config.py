@@ -187,6 +187,16 @@ class Configuration(gc3libs.utils.Struct):
         taken literally and an error is raised if it cannot be read
         for whatever reason.
 
+        Any parameter which is set in the configuration files
+        ``[DEFAULT]`` section, and whose name does not start with
+        underscore (``_``) defines an attribute in the current
+        `Configuration`.
+
+        .. warning::
+
+          No type conversion is performed on values set this way - so
+          they all end up being strings!
+
         :raise gc3libs.exceptions.ConfigurationError: if the
             configuration file does not exist, cannot be read, is
             corrupt or has wrong format.
@@ -195,11 +205,13 @@ class Configuration(gc3libs.utils.Struct):
         stream = open(filename, 'r')
         (defaults, resources, auths) = self._parse(stream, filename)
         stream.close()
-        self.update(defaults)
         for name, values in resources.iteritems():
             self.resources[name].update(values)
         for name, values in auths.iteritems():
             self.auths[name].update(values)
+        for name, value in defaults.iteritems():
+            if not name.startswith('_'):
+                self[name] = value
 
 
     def _parse(self, stream, filename=None):
