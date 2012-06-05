@@ -95,7 +95,7 @@ class Default(object):
 from gc3libs.exceptions import *
 from gc3libs.persistence import Persistable
 import gc3libs.url
-from gc3libs.utils import defproperty, deploy_configuration_file, get_and_remove, Enum, Log, Struct, safe_repr
+from gc3libs.utils import defproperty, deploy_configuration_file, Enum, Log, Struct, safe_repr
 
 
 class Task(Struct):
@@ -780,13 +780,13 @@ class Application(Persistable, Task):
         self.output_dir = output_dir
 
         # optional params
-        self.output_base_url = get_and_remove(kw, 'output_base_url', None)
+        self.output_base_url = kw.pop('output_base_url', None)
 
         # FIXME: should use appropriate unit classes for requested_*
-        self.requested_cores = int(get_and_remove(kw, 'requested_cores', 1))
-        self.requested_memory = get_and_remove(kw, 'requested_memory')
-        self.requested_walltime = get_and_remove(kw, 'requested_walltime')
-        self.requested_architecture = get_and_remove(kw, 'requested_architecture', None)
+        self.requested_cores = int(kw.pop('requested_cores', 1))
+        self.requested_memory = kw.pop('requested_memory', None)
+        self.requested_walltime = kw.pop('requested_walltime', None)
+        self.requested_architecture = kw.pop('requested_architecture', None)
         # FIXME: We should add a test like the following, but we can't
         # import gc3libs.core from __init__.py, so let's think a
         # better solution.
@@ -798,15 +798,15 @@ class Application(Persistable, Task):
         #         % self.requested_architecture)
 
 
-        self.environment = get_and_remove(kw, 'environment', dict())
+        self.environment = kw.pop('environment', dict())
         self.environment = dict(Application._to_env_pair(x)
                                 for x in self.environment.items())
 
-        self.join = get_and_remove(kw, 'join', False)
-        self.stdin = get_and_remove(kw, 'stdin')
+        self.join = kw.pop('join', False)
+        self.stdin = kw.pop('stdin', None)
         if self.stdin and (self.stdin not in self.inputs):
             self.inputs[self.stdin] = os.path.basename(self.stdin)
-        self.stdout = get_and_remove(kw, 'stdout')
+        self.stdout = kw.pop('stdout', None)
         if self.stdout is not None and os.path.isabs(self.stdout):
             raise InvalidArgument(
                 "Absolute path '%s' passed as `Application.stdout`"
@@ -815,7 +815,7 @@ class Application(Persistable, Task):
             and (gc3libs.ANY_OUTPUT not in self.outputs)
             and (self.stdout not in self.outputs)):
             self.outputs[self.stdout] = self.stdout
-        self.stderr = get_and_remove(kw, 'stderr')
+        self.stderr = kw.pop('stderr', None)
         if self.stderr is not None and os.path.isabs(self.stderr):
             raise InvalidArgument(
                 "Absolute path '%s' passed as `Application.stderr`"
@@ -825,9 +825,9 @@ class Application(Persistable, Task):
             and (self.stderr not in self.outputs)):
             self.outputs[self.stderr] = self.stderr
 
-        self.tags = get_and_remove(kw, 'tags', list())
+        self.tags = kw.pop('tags', list())
 
-        jobname = get_and_remove(kw, 'jobname', self.__class__.__name__)
+        jobname = kw.pop('jobname', self.__class__.__name__)
         # Check whether the first character of a jobname is an
         # integer. SGE does not allow job names to start with a
         # number, so add a prefix...
@@ -839,7 +839,7 @@ class Application(Persistable, Task):
         # task setup; creates the `.execution` attribute as well
         Task.__init__(self,
                       jobname,
-                      get_and_remove(kw, 'grid', None))
+                      kw.pop('grid', None))
 
         # any additional param
         Struct.__init__(self, **kw)

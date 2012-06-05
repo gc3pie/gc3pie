@@ -473,19 +473,6 @@ def from_template(template, **kw):
     return (template_contents % kw)
 
 
-def get_and_remove(dictionary, key, default=None):
-    """
-    Return the value associated to `key` in `dictionary`, or `default`
-    if there is no such key.  Remove `key` from `dictionary` afterwards.
-    """
-    if dictionary.has_key(key):
-        result = dictionary[key]
-        del dictionary[key]
-    else:
-        result = default
-    return result
-
-
 def getattr_nested(obj, name):
     """
     Like Python's `getattr`, but perform a recursive lookup if `name` contains any dots.

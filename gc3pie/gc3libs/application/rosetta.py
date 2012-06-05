@@ -36,26 +36,26 @@ class RosettaApplication(gc3libs.Application):
     """
     Specialized `Application` object to submit one run of a single
     application in the Rosetta suite.
-    
+
     Required parameters for construction:
 
       * `application`: name of the Rosetta application to call (e.g., "docking_protocol" or "relax")
-      * `inputs`: a `dict` instance, keys are Rosetta ``-in:file:*`` options, values are the (local) path names of the corresponding files.  (Example: ``inputs={"-in:file:s":"1brs.pdb"}``) 
+      * `inputs`: a `dict` instance, keys are Rosetta ``-in:file:*`` options, values are the (local) path names of the corresponding files.  (Example: ``inputs={"-in:file:s":"1brs.pdb"}``)
       * `outputs`: list of output file names to fetch after Rosetta has finished running.
-    
+
     Optional parameters:
 
-      * `flags_file`: path to a local file containing additional flags for controlling Rosetta invocation; if `None`, a local configuration file will be used. 
+      * `flags_file`: path to a local file containing additional flags for controlling Rosetta invocation; if `None`, a local configuration file will be used.
       * `database`: (local) path to the Rosetta DB; if this is not specified, then it is assumed that the correct location will be available at the remote execution site as environment variable ``ROSETTA_DB_LOCATION``
       * `arguments`: If present, they will be appended to the Rosetta application command line.
     """
-    def __init__(self, application, application_release, inputs, outputs=[], 
+    def __init__(self, application, application_release, inputs, outputs=[],
                  flags_file=None, database=None, arguments=[], **kw):
 
         # we're submitting Rosetta jobs thorugh the support script
         # "rosetta.sh", so do the specific setup tailored to this
         # script' usage
-        src_rosetta_sh = resource_filename(Requirement.parse("gc3pie"), 
+        src_rosetta_sh = resource_filename(Requirement.parse("gc3pie"),
                                            "gc3libs/etc/rosetta.sh")
 
         # ensure `application` has no trailing ".something' (e.g., ".linuxgccrelease")
@@ -72,16 +72,16 @@ class RosettaApplication(gc3libs.Application):
         # _inputs = inputs
         _inputs = gc3libs.Application._io_spec_to_dict(gc3libs.url.UrlKeyDict, inputs, True)
 
-        
+
         # since ARC/xRSL does not allow wildcards in the "outputFiles"
         # line, and Rosetta can create ouput files whose number/name
         # is not known in advance, the support script will create a
         # tar archive all of all the output files; therefore, the
         # GC3Libs Application is only told to fetch two files back,
         # and we extract output files back during the postprocessing stage
-        _outputs = [ 
+        _outputs = [
             self.__protocol + '.log',
-            self.__protocol + '.tar.gz' 
+            self.__protocol + '.tar.gz'
             ]
 
         # if len(outputs) > 0:
@@ -105,7 +105,7 @@ class RosettaApplication(gc3libs.Application):
             _arguments.append(os.path.basename(database))
 
         #if len(arguments) > 0:
-        if arguments:   
+        if arguments:
             _arguments.extend(arguments)
 
         kw['application_tag'] = 'rosetta'
@@ -136,7 +136,7 @@ class RosettaApplication(gc3libs.Application):
         'rosetta.sh' script.
         """
         output_dir = self.output_dir
-        tar_file_name = os.path.join(output_dir, 
+        tar_file_name = os.path.join(output_dir,
                                      self.__protocol + '.tar.gz')
         if os.path.exists(tar_file_name):
             if tarfile.is_tarfile(tar_file_name):
@@ -149,12 +149,12 @@ class RosettaApplication(gc3libs.Application):
                                       % (tar_file_name, ex.__class__.__name__, str(ex)))
             else:
                 gc3libs.log.error("Could not extract output archive '%s':"
-                                  " format not handled by Python 'tarfile' module" 
+                                  " format not handled by Python 'tarfile' module"
                                   % tar_file_name)
         else:
-            gc3libs.log.error("Could not find output archive '%s' for Rosetta job" 
+            gc3libs.log.error("Could not find output archive '%s' for Rosetta job"
                               % tar_file_name)
-                
+
 
 
 class RosettaDockingApplication(RosettaApplication):
@@ -164,7 +164,7 @@ class RosettaDockingApplication(RosettaApplication):
 
     Currently used in the `gdocking` app.
     """
-    def __init__(self, pdb_file_path, native_file_path=None, 
+    def __init__(self, pdb_file_path, native_file_path=None,
                  number_of_decoys_to_create=1, flags_file=None,
                  application_release='3.1', **kw):
         pdb_file_name = os.path.basename(pdb_file_path)
@@ -172,13 +172,6 @@ class RosettaDockingApplication(RosettaApplication):
         pdb_file_name_sans = os.path.splitext(pdb_file_name)[0]
         if native_file_path is None:
             native_file_path = pdb_file_path
-        def get_and_remove(D, k, d):
-            if D.has_key(k):
-                result = D[k]
-                del D[k]
-                return result
-            else:
-                return d
         RosettaApplication.__init__(
             self,
             application = 'docking_protocol',
@@ -190,13 +183,13 @@ class RosettaDockingApplication(RosettaApplication):
             outputs = [
                 ],
             flags_file = flags_file,
-            arguments = [ 
+            arguments = [
                 "-in:file:s", os.path.basename(pdb_file_path),
                 "-in:file:native", os.path.basename(native_file_path),
                 "-out:file:o", pdb_file_name_sans,
                 "-out:nstruct", number_of_decoys_to_create,
-                ] + get_and_remove(kw, 'arguments', []),
-            output_dir = get_and_remove(kw, 'output_dir', pdb_file_dir),
+                ] + kw.pop('arguments', []),
+            output_dir = kw.pop('output_dir', pdb_file_dir),
             **kw)
 
 
