@@ -787,16 +787,8 @@ class Application(Persistable, Task):
         self.requested_memory = kw.pop('requested_memory', None)
         self.requested_walltime = kw.pop('requested_walltime', None)
         self.requested_architecture = kw.pop('requested_architecture', None)
-        # FIXME: We should add a test like the following, but we can't
-        # import gc3libs.core from __init__.py, so let's think a
-        # better solution.
-        # from gc3libs.core import architecture_value_map
-        # if self.requested_architecture and \
-        #        self.requested_architecture not in architecture_value_map:
-        #     raise InvalidArgument(
-        #         "Requested Architecture `%s` is an invalid token"
-        #         % self.requested_architecture)
-
+        assert (self.requested_architecture is None
+                or self.requested_architecture in [ Run.Arch.X86_32, Run.Arch.X86_64 ])
 
         self.environment = kw.pop('environment', dict())
         self.environment = dict(Application._to_env_pair(x)
@@ -1550,7 +1542,7 @@ class Run(Struct):
         """
         Processor architectures, for use as values in the
         `requested_architecture` field of the `Application` class
-        ctor.
+        constructor.
 
         The following values are currently defined:
 
