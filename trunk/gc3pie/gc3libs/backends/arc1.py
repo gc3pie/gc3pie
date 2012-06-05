@@ -4,7 +4,7 @@
 Job control using ``libarcclient``.  (Which can submit to all
 EMI-supported resources.)
 """
-# Copyright (C) 2009-2011 GC3, University of Zurich. All rights reserved.
+# Copyright (C) 2009-2012 GC3, University of Zurich. All rights reserved.
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
@@ -58,13 +58,13 @@ class Arc1Lrms(LRMS):
 
         self.auths = auths
 
-        self._resource.ncores = int(resource.ncores)
+        self._resource.max_cores = int(resource.max_cores)
         self._resource.max_memory_per_core = int(resource.max_memory_per_core) * 1000
         self._resource.max_walltime = int(resource.max_walltime)
         if self._resource.max_walltime > 0:
             # Convert from hours to minutes
             self._resource.max_walltime = self._resource.max_walltime * 60
-            
+
         if hasattr(resource, 'lost_job_timeout'):
             self._resource.lost_job_timeout = int(resource.lost_job_timeout)
         else:
@@ -120,7 +120,7 @@ class Arc1Lrms(LRMS):
         # # XXX: can we also create the target ?
         # log.info('Invoking arc.TargetGenerator')
         # self._target_generator = arc.TargetGenerator(self._usercfg, 0)
-                
+
         log.info('ARC1 resource %s init [ ok ]' % self._resource.name)
         self.isValid = 1
 
@@ -138,7 +138,7 @@ class Arc1Lrms(LRMS):
         # XXX: can we also create the target ?
         log.info('Invoking arc.TargetGenerator')
         self._target_generator = arc.TargetGenerator(self._usercfg, 0)
-                
+
 
 
 
@@ -337,7 +337,7 @@ class Arc1Lrms(LRMS):
         update `app.execution.state` accordingly.  Return the
         corresponding `Run.State`; see `Run.State` for more details.
 
-        The mapping of ARC job statuses to `Run.State` is as follows: 
+        The mapping of ARC job statuses to `Run.State` is as follows:
 
                     ==============  ===========
                     ARC job status  `Run.State`
@@ -415,7 +415,7 @@ class Arc1Lrms(LRMS):
                   and arc_job.UsedTotalWallTime.GetPeriod() != -1
                   and arc_job.UsedTotalWallTime.GetPeriod() > arc_job.RequestedTotalWallTime.GetPeriod()):
                 job.log("Job exceeded requested wall-clock time (%d s),"
-                        " killed by remote batch system" 
+                        " killed by remote batch system"
                         % arc_job.RequestedTotalWallTime.GetPeriod())
                 job.returncode = (Run.Signals.RemoteError, -1)
             elif (arc_job.RequestedTotalCPUTime is not None
@@ -423,15 +423,15 @@ class Arc1Lrms(LRMS):
                   and arc_job.UsedTotalCPUTime.GetPeriod() != -1
                   and arc_job.UsedTotalCPUTime.GetPeriod() > arc_job.RequestedTotalCPUTime.GetPeriod()):
                 job.log("Job exceeded requested CPU time (%d s),"
-                        " killed by remote batch system" 
+                        " killed by remote batch system"
                         % arc_job.RequestedTotalWallTime.GetPeriod())
                 job.returncode = (Run.Signals.RemoteError, -1)
             # note: arc_job.used_memory is in KiB (!), app.requested_memory is in GiB
-            elif (app.requested_memory is not None 
+            elif (app.requested_memory is not None
                   and arc_job.UsedMainMemory > -1
                   and (arc_job.UsedMainMemory / 1024) > (app.requested_memory * 1024)):
                 job.log("Job used more memory (%d MB) than requested (%d MB),"
-                        " killed by remote batch system" 
+                        " killed by remote batch system"
                         % (arc_job.UsedMainMemory / 1024, app.requested_memory * 1024))
                 job.returncode = (Run.Signals.RemoteError, -1)
             else:
@@ -483,17 +483,17 @@ class Arc1Lrms(LRMS):
         completed = True
 
         download_dir = str(download_dir)
-        
+
         self.auths.get(self._resource.auth)
-        
+
         job = app.execution
         c, j = self._get_job_and_controller(job.lrms_jobid)
-        
+
         log.debug("Downloading job output into '%s' ...", download_dir)
 
         # Get a list of downloadable files
         download_file_list = c.GetDownloadFiles(j.JobID);
-        
+
         source_url = arc.URL(j.JobID.str())
         destination_url = arc.URL(download_dir)
 
@@ -507,10 +507,10 @@ class Arc1Lrms(LRMS):
             if not c.ARCCopyFile(source_url,destination_url):
                 log.warning("Failed downloading %s to %s" % (source_url.str(), destination_url.str()))
                 completed = False
-        
+
         if not completed:
             raise gc3libs.exceptions.UnrecoverableDataStagingError(
-                "Unrecoverble Error: Failed downloading remote folder for job '%s': into %s" 
+                "Unrecoverble Error: Failed downloading remote folder for job '%s': into %s"
                 % (job.lrms_jobid, download_dir))
 
         job.download_dir = download_dir
@@ -532,7 +532,7 @@ class Arc1Lrms(LRMS):
 
     @cache_for(gc3libs.Default.ARC_CACHE_TIME)
     def get_resource_status(self):
-        # Get dynamic information out of the attached ARC subsystem 
+        # Get dynamic information out of the attached ARC subsystem
         # (being it a single resource or a grid)
         # Fill self._resource object with dynamic information
         # return self._resource
@@ -603,12 +603,12 @@ class Arc1Lrms(LRMS):
     def peek(self, app, remote_filename, local_file, offset=0, size=None):
 
         job = app.execution
-        
+
         assert job.has_key('lrms_jobid'), \
             "Missing attribute `lrms_jobid` on `Job` instance passed to `ArcLrms.peek`."
 
         self.auths.get(self._resource.auth)
-        controller, j = self._get_job_and_controller(job.lrms_jobid) 
+        controller, j = self._get_job_and_controller(job.lrms_jobid)
 
         if size is None:
             size = sys.maxint
@@ -652,7 +652,7 @@ class Arc1Lrms(LRMS):
                 return False
         return True
 
-                
+
     @staticmethod
     def init_arc_logger():
         if not gc3libs.backends.arc1.Arc1Lrms.arc_logger_set:

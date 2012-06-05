@@ -71,7 +71,7 @@ class Resource(Struct):
             'max_memory_per_core',
             'max_walltime',
             'name',
-            'ncores',
+            'max_cores',
             'type',
             ]
         for param in mandatory:

@@ -3,7 +3,7 @@
 """
 Job control on ARC0 resources.
 """
-# Copyright (C) 2009-2011 GC3, University of Zurich. All rights reserved.
+# Copyright (C) 2009-2012 GC3, University of Zurich. All rights reserved.
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
@@ -64,13 +64,13 @@ class ArcLrms(LRMS):
 
         self.auths = auths
 
-        self._resource.ncores = int(resource.ncores)
+        self._resource.max_cores = int(resource.max_cores)
         self._resource.max_memory_per_core = int(resource.max_memory_per_core) * 1000
         self._resource.max_walltime = int(resource.max_walltime)
         if self._resource.max_walltime > 0:
             # Convert from hours to minutes
             self._resource.max_walltime = self._resource.max_walltime * 60
-            
+
         if hasattr(self._resource, 'lost_job_timeout'):
             self._resource.lost_job_timeout = int(resource.lost_job_timeout)
         else:
@@ -104,7 +104,7 @@ class ArcLrms(LRMS):
     # excluded_targets is the list of targets hostnames where the application
     # has been already running; thus to be excluded for the next submission
     # candidate_queues is the list of available queues
-    # this method simply returns a 
+    # this method simply returns a
     def _filter_queues(self, candidate_queues, job):
         """
         Excludes from the list of candidate queuse those corresponding to hosts
@@ -152,7 +152,7 @@ class ArcLrms(LRMS):
     def _get_jobs(self):
         """
         Wrapper around `arclib.GetAllJobs()`. Retrieve Jobs information from a
-        given resource. Jobs are stored into a dictionary using 
+        given resource. Jobs are stored into a dictionary using
         job.lrms_jobid as index.
         This is supposed to speedup the access to a given job object in the
         update_job_state() method.
@@ -181,7 +181,7 @@ class ArcLrms(LRMS):
         return arclib.GetQueueInfo(clusters, arclib.MDS_FILTER_CLUSTERINFO,
                                    True, '', 5)
 
-            
+
     @same_docstring_as(LRMS.submit_job)
     def submit_job(self, app):
         job = app.execution
@@ -227,7 +227,7 @@ class ArcLrms(LRMS):
         # see Issue 227
         url = arclib.URL(lrms_jobid)
         job.execution_targets.append(url.Host())
-        
+
         # state is known at this point, so mark this as a successful update
         job._arc0_state_last_checked = time.time()
         return job
@@ -284,7 +284,7 @@ class ArcLrms(LRMS):
         update `app.execution.state` accordingly.  Return the
         corresponding `Run.State`; see `Run.State` for more details.
 
-        The mapping of ARC0 job statuses to `Run.State` is as follows: 
+        The mapping of ARC0 job statuses to `Run.State` is as follows:
 
                     ==============  ===========
                     ARC job status  `Run.State`
@@ -384,9 +384,9 @@ class ArcLrms(LRMS):
             # End of except. Return job state
             return job.state
 
-                
+
         job._arc0_state_last_checked = time.time()
-        
+
         # update status
         state = self._map_arc0_status_to_gc3pie_state(arc_job.status)
         if arc_job.exitcode != -1:
@@ -400,27 +400,27 @@ class ArcLrms(LRMS):
                 job.returncode = (Run.Signals.RemoteError, -1)
             # FIXME: we should introduce a kind of "wrong requirements" error
             elif (arc_job.requested_wall_time is not None
-                  and arc_job.requested_wall_time != -1 
-                  and arc_job.used_wall_time != -1 
+                  and arc_job.requested_wall_time != -1
+                  and arc_job.used_wall_time != -1
                   and arc_job.used_wall_time > arc_job.requested_wall_time):
                 job.log("Job exceeded requested wall-clock time (%d s),"
-                        " killed by remote batch system" 
+                        " killed by remote batch system"
                         % arc_job.requested_wall_time)
                 job.returncode = (Run.Signals.RemoteError, -1)
             elif (arc_job.requested_cpu_time is not None
-                  and arc_job.requested_cpu_time != -1 
-                  and arc_job.used_cpu_time != -1 
+                  and arc_job.requested_cpu_time != -1
+                  and arc_job.used_cpu_time != -1
                   and arc_job.used_cpu_time > arc_job.requested_cpu_time):
                 job.log("Job exceeded requested CPU time (%d s),"
-                        " killed by remote batch system" 
+                        " killed by remote batch system"
                         % arc_job.requested_cpu_time)
                 job.returncode = (Run.Signals.RemoteError, -1)
             # note: arc_job.used_memory is in KiB (!), app.requested_memory is in GiB
-            elif (app.requested_memory is not None 
-                  and app.requested_memory != -1 and arc_job.used_memory != -1 
+            elif (app.requested_memory is not None
+                  and app.requested_memory != -1 and arc_job.used_memory != -1
                   and (arc_job.used_memory / 1024) > (app.requested_memory * 1024)):
                 job.log("Job used more memory (%d MB) than requested (%d MB),"
-                        " killed by remote batch system" 
+                        " killed by remote batch system"
                         % (arc_job.used_memory / 1024, app.requested_memory * 1024))
                 job.returncode = (Run.Signals.RemoteError, -1)
             else:
@@ -496,10 +496,10 @@ class ArcLrms(LRMS):
                     % (job.lrms_jobid, str(ex)))
             # critical error. consider job remote data as lost
             raise gc3libs.exceptions.UnrecoverableDataStagingError(
-                "Unrecoverable Error: Failed downloading remote folder '%s': %s" 
+                "Unrecoverable Error: Failed downloading remote folder '%s': %s"
                 % (job.lrms_jobid, str(ex)))
 
-        return 
+        return
 
     @same_docstring_as(LRMS.free)
     def free(self, app):
@@ -519,7 +519,7 @@ class ArcLrms(LRMS):
 
     @cache_for(gc3libs.Default.ARC_CACHE_TIME)
     def get_resource_status(self):
-        # Get dynamic information out of the attached ARC subsystem 
+        # Get dynamic information out of the attached ARC subsystem
         # (being it a single resource or a grid)
         # Fill self._resource object with dynamic information
         # return self._resource
@@ -557,7 +557,7 @@ class ArcLrms(LRMS):
 
             q.cluster.used_cpus = _normalize_value(q.cluster.used_cpus)
             q.cluster.total_cpus = _normalize_value(q.cluster.total_cpus)
-            
+
             # total_queued
             total_queued = total_queued +  q.grid_queued + \
                            q.local_queued + q.prelrms_queued + q.queued

@@ -2,7 +2,7 @@
 #
 """
 This module provides a generic BatchSystem class from which all
-batch-like backends should inherit. 
+batch-like backends should inherit.
 """
 # Copyright (C) 2009-2012 GC3, University of Zurich. All rights reserved.
 #
@@ -37,7 +37,7 @@ import transport
 
 # Define some commonly used functions
 
-    
+
 
 # FIXME: (Riccardo?) thinks this function is completely wrong and only
 # exists to support GAMESS' ``qgms``, which does not allow users to
@@ -66,7 +66,7 @@ def generic_filename_mapping(jobname, jobid, file_name):
 
 def make_remote_and_local_path_pair(transport, job, remote_relpath, local_root_dir, local_relpath):
     """
-    Return list of (remote_path, local_path) pairs corresponding to 
+    Return list of (remote_path, local_path) pairs corresponding to
     """
     # see https://github.com/fabric/fabric/issues/306 about why it is
     # correct to use `posixpath.join` for remote paths (instead of `os.path.join`)
@@ -104,13 +104,13 @@ class BatchSystem(LRMS):
         if resource.transport == 'local':
             self.transport = transport.LocalTransport()
         elif resource.transport == 'ssh':
-            self.transport = transport.SshTransport(self._resource.frontend, 
+            self.transport = transport.SshTransport(self._resource.frontend,
                                                     username=self._ssh_username)
         else:
             raise gc3libs.exceptions.TransportError("Unknown transport '%s'", resource.transport)
-        
+
         # XXX: does Ssh really needs this ?
-        self._resource.ncores = int(self._resource.ncores)
+        self._resource.max_cores = int(self._resource.max_cores)
         self._resource.max_memory_per_core = int(self._resource.max_memory_per_core) * 1000
         self._resource.max_walltime = int(self._resource.max_walltime)
         if self._resource.max_walltime > 0:
@@ -128,7 +128,7 @@ class BatchSystem(LRMS):
 
     def is_valid(self):
         return self.isValid
-        
+
     def get_jobid_from_submit_output(self, output, regexp):
         """Parse the output of the submission command. Regexp is
         provided by the caller. """
@@ -136,19 +136,19 @@ class BatchSystem(LRMS):
             match = regexp.match(line)
             if match:
                 return match.group('jobid')
-        raise gc3libs.exceptions.InternalError("Could not extract jobid from qsub output '%s'" 
+        raise gc3libs.exceptions.InternalError("Could not extract jobid from qsub output '%s'"
                             % qsub_output.rstrip())
 
     def _submit_command(self, app):
         """This method returns a string containing the command to
         issue to submit the job."""
         raise NotImplementedError("Abstract method `_submit_command()` called - this should have been defined in a derived class.")
-    
+
     def _parse_submit_output(self, stdout):
         """This method will parse the output of the submit command and
         return the jobid of the submitted job."""
         raise NotImplementedError("Abstract method `parse_submit_output()` called - this should have been defined in a derived class.")
-    
+
     def _stat_command(self, job):
         """This method returns a string containing the command to
         issue to get status information about a job."""
@@ -168,7 +168,7 @@ class BatchSystem(LRMS):
         It is usually called only if the _stat_command() fails.
         """
         raise NotImplementedError("Abstract method `_acct_command()` called - this should have been defined in a derived class.")
-        
+
     def _parse_acct_output(self, stdout):
         """This method will parse the output of the acct command and
         return a dictionary containing infos about the
@@ -182,13 +182,13 @@ class BatchSystem(LRMS):
         issue to delete the job identified by `jobid`
         """
         raise NotImplementedError("Abstract method `_cancel_command()` called - this should have been defined in a derived class.")
-    
+
     def submit_job(self, app):
         """This method will create a remote directory to store job's
         sandbox, and will copy the sandbox in there.
         """
         job = app.execution
-        # Create the remote directory. 
+        # Create the remote directory.
         try:
             self.transport.connect()
 
@@ -231,7 +231,7 @@ class BatchSystem(LRMS):
             self.transport.chmod(os.path.join(ssh_remote_folder,
                                               app.executable), 0755)
 
-        try:            
+        try:
             _command, script, script_name = self._submit_command(app)
             if script is not None:
                 # save script to a temporary file and submit that one instead
@@ -247,7 +247,7 @@ class BatchSystem(LRMS):
                     os.unlink(local_script_file.name)
 
             # Submit it
-            exit_code, stdout, stderr = self.transport.execute_command("/bin/sh -c 'cd %s && %s'" 
+            exit_code, stdout, stderr = self.transport.execute_command("/bin/sh -c 'cd %s && %s'"
                                                                       % (ssh_remote_folder, _command))
 
             if exit_code != 0:
@@ -260,7 +260,7 @@ class BatchSystem(LRMS):
             # self.transport.close()
 
             job.execution_target = self._resource.frontend
-            
+
             job.lrms_jobid = jobid
             job.lrms_jobname = jobid
             try:
@@ -280,12 +280,12 @@ class BatchSystem(LRMS):
                     job.stderr_filename = app.stderr
                 else:
                     job.stderr_filename = '%s.e%s' % (job.lrms_jobname, jobid)
-            job.log.append('Submitted to PBS/Torque @ %s with jobid %s' 
+            job.log.append('Submitted to PBS/Torque @ %s with jobid %s'
                            % (self._resource.name, jobid))
             job.log.append("Batch submission output:\n"
                            "  === stdout ===\n%s"
                            "  === stderr ===\n%s"
-                           "  === end ===\n" 
+                           "  === end ===\n"
                            % (stdout, stderr), 'pbs', 'qsub')
             job.ssh_remote_folder = ssh_remote_folder
 
@@ -318,7 +318,7 @@ class BatchSystem(LRMS):
                 job.state = state
                 return state
             # to increase readability, there is not `else:` block
-            
+
             # In some batch systems, jobs disappeared from `*stat`
             # output as soon as they are finished. In these cases,
             # we have to check some *accounting* command to check
@@ -340,11 +340,11 @@ class BatchSystem(LRMS):
             try:
                 if (time.time() - job.stat_failed_at) > self._resource.accounting_delay:
                     # accounting info should be there, if it's not then job is definitely lost
-                    log.critical("Failed executing remote command: '%s'; exit status %d" 
+                    log.critical("Failed executing remote command: '%s'; exit status %d"
                                  % (_command,exit_code))
                     log.debug("Remote command returned stdout: %s" % stdout)
                     log.debug("remote command returned stderr: %s" % stderr)
-                    raise paramiko.SSHException("Failed executing remote command: '%s'; exit status %d" 
+                    raise paramiko.SSHException("Failed executing remote command: '%s'; exit status %d"
                                                 % (_command,exit_code))
                 else:
                     # do nothing, let's try later...
@@ -352,7 +352,7 @@ class BatchSystem(LRMS):
             except AttributeError:
                 # this is the first time `qstat` fails, record a timestamp and retry later
                 job.stat_failed_at = time.time()
-                        
+
         except Exception, ex:
             # self.transport.close()
             log.error("Error in querying PBS/Torque resource '%s': %s: %s",
@@ -362,7 +362,7 @@ class BatchSystem(LRMS):
         # the current state of the job.
         job.state = Run.state.UNKNOWN
         return job.state
-                
+
     @same_docstring_as(LRMS.peek)
     def peek(self, app, remote_filename, local_file, offset=0, size=None):
         job = app.execution
@@ -413,7 +413,7 @@ class BatchSystem(LRMS):
             exit_code, stdout, stderr = self.transport.execute_command(_command)
             if exit_code != 0:
                 # It is possible that 'qdel' fails because job has been already completed
-                # thus the cancel_job behaviour should be to 
+                # thus the cancel_job behaviour should be to
                 log.error('Failed executing remote command: %s. exit status %d' % (_command,exit_code))
                 log.debug("remote command returned stdout: %s" % stdout)
                 log.debug("remote command returned stderr: %s" % stderr)
@@ -427,19 +427,19 @@ class BatchSystem(LRMS):
         except:
             # self.transport.close()
             log.critical('Failure in checking status')
-            raise        
+            raise
 
     @same_docstring_as(LRMS.free)
     def free(self, app):
 
         job = app.execution
         try:
-            log.debug("Connecting to cluster frontend '%s' as user '%s' via SSH ...", 
+            log.debug("Connecting to cluster frontend '%s' as user '%s' via SSH ...",
                            self._resource.frontend, self._ssh_username)
             self.transport.connect()
             self.transport.remove_tree(job.ssh_remote_folder)
         except:
-            log.warning("Failed removing remote folder '%s': %s: %s" 
+            log.warning("Failed removing remote folder '%s': %s: %s"
                         % (job.ssh_remote_folder, sys.exc_info()[0], sys.exc_info()[1]))
         return
 
@@ -486,14 +486,14 @@ class BatchSystem(LRMS):
             # self.transport.close()
             return # XXX: should we return list of downloaded files?
 
-        except: 
+        except:
             # self.transport.close()
-            raise 
+            raise
 
     @same_docstring_as(LRMS.validate_data)
     def close(self):
         self.transport.close()
-        
+
 
 
 if "__main__" == __name__:
