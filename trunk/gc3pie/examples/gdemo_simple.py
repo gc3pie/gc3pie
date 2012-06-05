@@ -1,21 +1,21 @@
-#!/usr/bin/python
-# -*- coding: utf-8 -*-# 
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-#
 # @(#)gdemo_simple.py
-# 
-# 
+#
+#
 # Copyright (C) 2009-2012 GC3, University of Zurich. All rights reserved.
-# 
-# 
+#
+#
 #  This program is free software; you can redistribute it and/or modify it
 #  under the terms of the GNU General Public License as published by the
 #  Free Software Foundation; either version 2 of the License, or (at your
 #  option) any later version.
-# 
+#
 #  This program is distributed in the hope that it will be useful, but
 #  WITHOUT ANY WARRANTY; without even the implied warranty of
 #  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
 #  General Public License for more details.
-# 
+#
 #  You should have received a copy of the GNU General Public License along
 #  with this program; if not, write to the Free Software Foundation, Inc.,
 #  59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
@@ -33,13 +33,20 @@ You can specify the resource you want to use by passing its name as
 command line argument.
 """
 
-import gc3libs, gc3libs.core
-import time, sys
+# stdlib imports
 import logging
+import sys
+import time
 
-# Configure loggin. This is not really necessary but will avoid some
+# GC3Pie imports
+import gc3libs
+import gc3libs.config
+import gc3libs.core
+
+
+# Configure logging. This is not really necessary but will avoid some
 # boring errors from the logging subsystem
-loglevel = logging.ERROR
+loglevel = logging.DEBUG
 gc3libs.configure_logger(loglevel, "gdemo")
 
 class GdemoSimpleApp(gc3libs.Application):
@@ -55,14 +62,16 @@ class GdemoSimpleApp(gc3libs.Application):
             outputs = [],                 # mandatory
             output_dir = "./mygc3job",    # mandatory
             stdout = "stdout.txt",)
-        
+
 
 # create an instance of GdemoSimpleApp
 app = GdemoSimpleApp()
 
 # create an instance of Core. Read configuration from your default
 # configuration file
-g = gc3libs.core.Core(* gc3libs.core.import_config(gc3libs.Default.CONFIG_FILE_LOCATIONS, True))
+cfg = gc3libs.config.Configuration(*gc3libs.Default.CONFIG_FILE_LOCATIONS,
+                                   auto_enable_auth=True)
+g = gc3libs.core.Core(cfg)
 
 # in case you want to select a specific resource, call
 # `Core.select_resource(...)`

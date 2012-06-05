@@ -74,12 +74,11 @@ class Default(object):
     ARC_CACHE_TIME = 30 #: only update ARC resources status every this seconds
     ARC_LOST_JOB_TIMEOUT = 1800 # previously: 4*ARC_CACHE_TIME #: consider a submitted job lost if it does not show up in the information system after this duration
     ARC_JOBLIST_LOCATION = os.path.expandvars("$HOME/.arc/jobs.xml")
-    
+
     SGE_LRMS = 'sge'
     PBS_LRMS = 'pbs'
     LSF_LRMS = 'lsf'
     SHELLCMD_LRMS = 'shellcmd'
-    SUBPROCESS_LRMS = 'subprocess'
 
     # Transport information
     SSH_PORT = 22
@@ -119,7 +118,7 @@ class Task(Struct):
 
         t = GamessApplication(input_file)
         t.submit()
-        # ... do other stuff 
+        # ... do other stuff
         t.update_state()
         # ... take decisions based on t.execution.state
         t.wait() # blocks until task is terminated
@@ -290,14 +289,14 @@ class Task(Struct):
         if self.execution.state == Run.State.TERMINATING:
             self.execution.state = Run.State.TERMINATED
         return result
-    
+
 
     def peek(self, what='stdout', offset=0, size=None, **kw):
         """
         Download `size` bytes (at offset `offset` from the start) from
         the associated job standard output or error stream, and write them
         into a local file.  Return a file-like object from which the
-        downloaded contents can be read. 
+        downloaded contents can be read.
 
         See :meth:`gc3libs.Core.peek` for a full explanation.
         """
@@ -318,7 +317,7 @@ class Task(Struct):
 
     # convenience methods, do not really add any functionality over
     # what's above
-    
+
     def progress(self):
         """
         Advance the associated job through all states of a regular
@@ -349,13 +348,13 @@ class Task(Struct):
         # first update state, we'll submit NEW jobs last, so that the
         # state is not updated immediately after submission as ARC
         # does not cope well with this...
-        if self.execution.state in [ Run.State.SUBMITTED, 
-                                     Run.State.RUNNING, 
-                                     Run.State.STOPPED, 
+        if self.execution.state in [ Run.State.SUBMITTED,
+                                     Run.State.RUNNING,
+                                     Run.State.STOPPED,
                                      Run.State.UNKNOWN ]:
             self.update_state()
         # now "do the right thing" based on actual state
-        if self.execution.state in [ Run.State.STOPPED, 
+        if self.execution.state in [ Run.State.STOPPED,
                                      Run.State.UNKNOWN ]:
             raise gc3libs.exceptions.UnexpectedStateError(
                 "Task '%s' entered `%s` state." % (self, self.execution.state))
@@ -378,7 +377,7 @@ class Task(Struct):
         # call should suspend the current thread and wait for
         # notifications from the Engine, but:
         #  - there's no way to tell if we are running threaded,
-        #  - `self._grid` could be a `Core` instance, thus not capable 
+        #  - `self._grid` could be a `Core` instance, thus not capable
         #    of running independently.
         # For now this is a poll+sleep loop, but we certainly need to revise it.
         while True:
@@ -390,7 +389,7 @@ class Task(Struct):
 
     # State transition handlers.
     #
-                      
+
     def new(self):
         """
         Called when the job state is (re)set to `NEW`.
@@ -486,14 +485,14 @@ class Task(Struct):
 
 def configure_logger(level=logging.ERROR,
                      name=None,
-                     format=(os.path.basename(sys.argv[0]) 
+                     format=(os.path.basename(sys.argv[0])
                              + ': [%(asctime)s] %(levelname)-8s: %(message)s'),
                      datefmt='%Y-%m-%d %H:%M:%S'):
     """
     Configure the ``gc3.gc3libs`` logger.
 
     Arguments `level`, `format` and `datefmt` set the corresponding
-    arguments in the `logging.basicConfig()` call.  
+    arguments in the `logging.basicConfig()` call.
 
     If a user configuration file exists in file NAME.log.conf in the
     ``Default.RCDIR`` directory (usually ``~/.gc3``), it is read and
@@ -521,7 +520,7 @@ def configure_logger(level=logging.ERROR,
         log.disabled = 0
     except:
         pass
-    # due to a bug in Python 2.4.x (see 
+    # due to a bug in Python 2.4.x (see
     # https://bugzilla.redhat.com/show_bug.cgi?id=573782 )
     # we need to disable `logging` reporting of exceptions.
     try:
@@ -573,7 +572,7 @@ class Application(Persistable, Task):
         (relative to the execution directory) where `source` will be
         downloaded.  If `remote_file_name` is an absolute path, an
         :class:`InvalidArgument` error is raised.
-        
+
         A single string `file_name` is allowed instead of the pair
         and results in the local file `file_name` being copied to
         `file_name` on the remote host.
@@ -596,11 +595,11 @@ class Application(Persistable, Task):
         (relative to the execution directory) that will be uploaded
         to `destination`.  If `remote_file_name` is an absolute
         path, an :class:`InvalidArgument` error is raised.
-        
+
         A single string `file_name` is allowed instead of the pair
         and results in the remote file `file_name` being copied to
         `file_name` on the local host.
-          
+
       * The constant `gc3libs.ANY_OUTPUT` which instructs GC3Libs to
         copy every file in the remote execution directory back to the
         local output path (as specified by the `output_dir` attribute).
@@ -782,7 +781,7 @@ class Application(Persistable, Task):
 
         # optional params
         self.output_base_url = get_and_remove(kw, 'output_base_url', None)
-        
+
         # FIXME: should use appropriate unit classes for requested_*
         self.requested_cores = int(get_and_remove(kw, 'requested_cores', 1))
         self.requested_memory = get_and_remove(kw, 'requested_memory')
@@ -797,8 +796,8 @@ class Application(Persistable, Task):
         #     raise InvalidArgument(
         #         "Requested Architecture `%s` is an invalid token"
         #         % self.requested_architecture)
-        
-        
+
+
         self.environment = get_and_remove(kw, 'environment', dict())
         self.environment = dict(Application._to_env_pair(x)
                                 for x in self.environment.items())
@@ -836,12 +835,12 @@ class Application(Persistable, Task):
             jobname = "GC3Pie.%s.%s" % (self.__class__.__name__, id(self))
         elif str(jobname)[0] in string.digits:
             jobname = "GC3Pie.%s" % jobname
-        
+
         # task setup; creates the `.execution` attribute as well
         Task.__init__(self,
                       jobname,
                       get_and_remove(kw, 'grid', None))
-        
+
         # any additional param
         Struct.__init__(self, **kw)
 
@@ -865,7 +864,7 @@ class Application(Persistable, Task):
         """
         (This class is only used for internal processing of `input`
         and `output` fields.)
-        
+
         Return a dictionary formed by pairs `URL:name` or `name:URL`.
         The `URL` part is a tuple as returned by functions `urlparse`
         and `urlsplit` in the Python standard module
@@ -881,7 +880,7 @@ class Application(Persistable, Task):
 
         If a Python `dict` is given, then it is copied into an
         `gc3libs.url.UrlDict`, and that copy is returned::
-        
+
           >>> d1 = { '/tmp/1':'1', '/tmp/2':'2' }
           >>> d2 = Application._io_spec_to_dict(gc3libs.url.UrlKeyDict, d1, True)
           >>> isinstance(d2, gc3libs.url.UrlKeyDict)
@@ -912,14 +911,14 @@ class Application(Persistable, Task):
             # `spec` is a list-like
             def convert_to_tuple(val):
                 if isinstance(val, types.StringTypes):
-                    l = unicode(val) 
+                    l = unicode(val)
                     r = os.path.basename(l)
                     return (l, r)
-                else: 
+                else:
                     return (unicode(val[0]), unicode(val[1]))
             return ctor((convert_to_tuple(x) for x in spec),
                         force_abs=force_abs)
-        
+
 
     def __str__(self):
         try:
@@ -927,7 +926,7 @@ class Application(Persistable, Task):
         except AttributeError:
             return safe_repr(self)
 
-        
+
     def clone(self):
         """
         Return a deep copy of this `Application` object, with the
@@ -983,7 +982,7 @@ class Application(Persistable, Task):
                 continue
 
             selected.append(lrms)
-        
+
         return selected
 
 
@@ -999,9 +998,9 @@ class Application(Persistable, Task):
         finally, should all preceding parameters compare equal, `a` is
         preferred over `b` if it has less running jobs from the same user.
         """
-        a_ = (a._resource.user_queued, -a._resource.free_slots, 
+        a_ = (a._resource.user_queued, -a._resource.free_slots,
               a._resource.queued, a._resource.user_run)
-        b_ = (b._resource.user_queued, -b._resource.free_slots, 
+        b_ = (b._resource.user_queued, -b._resource.free_slots,
               b._resource.queued, b._resource.user_run)
         return cmp(a_, b_)
 
@@ -1013,11 +1012,11 @@ class Application(Persistable, Task):
         see `_cmp_resources`.
         """
         # return sorted(resources, cmp=self._cmp_resources)
-        
+
         # shift lrms that are already in application.execution_targets
         # to the bottom of the list
         selected = sorted(resources, cmp=self._cmp_resources)
-        
+
         if 'execution_targets' in self.execution:
             for lrms in selected:
                 if ('frontend' in lrms._resource
@@ -1025,20 +1024,20 @@ class Application(Persistable, Task):
                     # append resource to the bottom of the list
                     selected.remove(lrms)
                     selected.append(lrms)
-            
-        return selected 
+
+        return selected
 
     ##
     ## backend interface methods
     ##
-    
+
     def xrsl(self, resource):
         """
         Return a string containing an xRSL sequence, suitable for
         submitting an instance of this application through ARC's
         ``ngsub`` command.
 
-        The default implementation produces XRSL content based on 
+        The default implementation produces XRSL content based on
         the construction parameters; you should override this method
         to produce XRSL tailored to your application.
 
@@ -1081,7 +1080,7 @@ class Application(Persistable, Task):
         if self.stderr and not self.join:
             xrsl += '(stderr="%s")' % self.stderr
         if len(self.inputs) > 0:
-            xrsl += ('(inputFiles=%s)' 
+            xrsl += ('(inputFiles=%s)'
                      % unicode.join(u' ', [ (u'("%s" "%s")' % (r, l))
                                        for (l,r) in self.inputs.items() ]))
         if len(self.outputs) > 0:
@@ -1110,9 +1109,9 @@ class Application(Persistable, Task):
             # retrieved) and then check again
             outputs_ = [ ('("%s" "%s")' % (relpath(r), output_url(l, r)))
                          for (r,l) in [ (remotename, localname)
-                                        for remotename,localname 
-                                        in self.outputs.iteritems() 
-                                        if (remotename != self.stdout 
+                                        for remotename,localname
+                                        in self.outputs.iteritems()
+                                        if (remotename != self.stdout
                                             and remotename != self.stderr)]]
             if len(outputs_) > 0:
                 xrsl += (u'(outputFiles=%s)' % unicode.join(u' ', outputs_))
@@ -1120,7 +1119,7 @@ class Application(Persistable, Task):
             xrsl += unicode.join(u'\n', [
                     (u'(runTimeEnvironment="%s")' % rte) for rte in self.tags ])
         if len(self.environment) > 0:
-            xrsl += (u'(environment=%s)' % 
+            xrsl += (u'(environment=%s)' %
                      unicode.join(u' ', [ (u'("%s" "%s")' % kv) for kv in self.environment ]))
         if self.requested_walltime:
             xrsl += u'(wallTime="%d hours")' % self.requested_walltime
@@ -1183,8 +1182,8 @@ class Application(Persistable, Task):
 
         The default implementation just prefixes any output from the
         `cmdline` method with an SGE ``qsub`` invocation of the form
-        ``qsub -cwd -S /bin/sh`` + resource limits.  Note that 
-        *there is no generic way of requesting a certain number of cores* 
+        ``qsub -cwd -S /bin/sh`` + resource limits.  Note that
+        *there is no generic way of requesting a certain number of cores*
         in SGE: it all depends on the installed parallel environment, and
         these are totally under control of the local sysadmin;
         therefore, any request for cores is ignored and a warning is
@@ -1217,7 +1216,7 @@ class Application(Persistable, Task):
             # XXX: should this be an error instead?
             log.warning("Application requested %d cores,"
                         " but there is no generic way of expressing this requirement in SGE!"
-                        " Ignoring request, but this will likely result in malfunctioning later on.", 
+                        " Ignoring request, but this will likely result in malfunctioning later on.",
                         self.requested_cores)
 
         qsub += " -N '%s'" % self.jobname
@@ -1305,10 +1304,10 @@ class Application(Persistable, Task):
             qsub.append('-o %s' % self.stdout)
         if self.requested_cores > 1:
             qsub.append('-l nodes=%d' % self.requested_cores)
-            
+
         qsub.append('-N "%s"' % self.jobname)
         return (" ".join(qsub), self.cmdline(resource))
-            
+
     # Operation error handlers; called when transition from one state
     # to another fails.  The names are formed by suffixing the
     # corresponding `Core` method (operation) with ``_error``.
@@ -1448,7 +1447,7 @@ class Run(Struct):
         A `gc3libs.utils.Log` instance, recording human-readable text
         messages on events in this job's history.
 
-      `info` 
+      `info`
         A simplified interface for reading/writing messages to
         `Run.log`.  Reading from the `info` attribute returns the last
         message appended to `log`.  Writing into `info` appends a
@@ -1468,9 +1467,9 @@ class Run(Struct):
         """
         Create a new Run object; constructor accepts the same
         arguments as the `dict` constructor.
-        
+
         Examples:
-        
+
           1. Create a new job with default parameters::
 
             >>> j1 = Run()
@@ -1496,7 +1495,7 @@ class Run(Struct):
             'GAMESS'
             >>> j3['version']
             '2010R1'
-            
+
         """
         self._ref = attach
         if not hasattr(self, '_state'):
@@ -1535,7 +1534,7 @@ class Run(Struct):
         def fset(self, value):
             self.log.append(unicode(value))
         return locals()
-    
+
     # states that a `Run` can be in
     State = Enum(
         'NEW',       # Job has not yet been submitted/started
@@ -1573,7 +1572,7 @@ class Run(Struct):
     @defproperty
     def state():
         """
-        The state a `Run` is in.  
+        The state a `Run` is in.
 
         The value of `Run.state` must always be a value from the
         `Run.State` enumeration, i.e., one of the following values.
@@ -1674,20 +1673,20 @@ class Run(Struct):
     def signal():
         """
         The "signal number" part of a `Run.returncode`, see
-        `os.WTERMSIG` for details. 
+        `os.WTERMSIG` for details.
 
         The "signal number" is a 7-bit integer value in the range
         0..127; value `0` is used to mean that no signal has been
         received during the application runtime (i.e., the application
-        terminated by calling ``exit()``).  
+        terminated by calling ``exit()``).
 
         The value represents either a real UNIX system signal, or a
         "fake" one that GC3Libs uses to represent Grid middleware
         errors (see `Run.Signals`).
         """
-        def fget(self): 
+        def fget(self):
             return self._signal
-        def fset(self, value): 
+        def fset(self, value):
             if value is None:
                 self._signal = None
             else:
@@ -1729,7 +1728,7 @@ class Run(Struct):
         `os.WEXITSTATUS(returncode)` is meaningful iff
         `os.WTERMSIG(returncode)` is 0 or one of the pseudo-signals
         listed in `Run.Signals`.
-        
+
         `Run.exitcode` and `Run.signal` are combined to form the
         return code 16-bit integer as follows (the convention appears
         to be obeyed on every known system):
@@ -1767,7 +1766,7 @@ class Run(Struct):
 
         See also `Run.exitcode` and `Run.signal`.
         """
-        def fget(self): 
+        def fget(self):
             if self.exitcode is None and self.signal is None:
                 return None
             if self.exitcode is None:
@@ -1776,7 +1775,7 @@ class Run(Struct):
                 exitcode = self.exitcode
             if self.signal is None:
                 signal = 0
-            else: 
+            else:
                 signal = self.signal
             return (exitcode << 8) | signal
         def fset(self, value):
@@ -1797,7 +1796,7 @@ class Run(Struct):
         return (locals())
 
     # `Run.Signals` is an instance of global class `_Signals`
-    Signals = _Signals()    
+    Signals = _Signals()
 
 
     @staticmethod
@@ -1810,7 +1809,7 @@ class Run(Struct):
 
         * If the program was terminated by signal `N`, the shell exits
           with code 128+N,
-        
+
         * otherwise, if the program terminated with exit code C, the
           shell exits with code C.
         """
@@ -1964,7 +1963,7 @@ class RetryableTask(Task):
             # should not happen!
             raise AssertionError("Unhandled own state '%s'"
                                  " in RetryableTask._recompute_state()", own_state)
-        
+
     def update_state(self):
         """
         Update the state of the dependent task, then resubmit it if it's
@@ -1986,8 +1985,8 @@ class RetryableTask(Task):
             self.execution.state = own_state_new
             self.changed = True
 
-        
-        
+
+
 ## main: run tests
 
 if "__main__" == __name__:

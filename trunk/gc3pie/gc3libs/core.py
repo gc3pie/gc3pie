@@ -61,14 +61,55 @@ operation has successfully completed, or an error has been detected.
 Operations are always performed by a `Core` object.  `Core` implements
 an overlay Grid on the resources specified in the configuration file.
     """
-    def __init__(self, resource_list, auths, auto_enable_auth):
-        if len(resource_list) == 0:
-            raise gc3libs.exceptions.NoResources("Resource list has length 0")
-        self._resources = resource_list
-        self.auths = auths
-        self.auto_enable_auth = auto_enable_auth
+    def __init__(self, cfg):
+        # init auths
+        self.auto_enable_auth = cfg.auto_enable_auth
+        self.auths = cfg.make_auths()
+
+        # init backends
         self._lrms_list = []
-        self._init_backends()
+        resources = cfg.make_resources()
+        if len(resources) == 0:
+            raise gc3libs.exceptions.NoResources(
+                "No resources given to initialize `gc3libs.core.Core` object!")
+        for name, resource in resources.iteritems():
+            try:
+                _lrms = self._make_backend(resource)
+                self._lrms_list.append(_lrms)
+            except Exception, ex:
+                # log exceptions but ignore them
+                gc3libs.log.warning(
+                    "Failed creating LRMS for resource '%s' of type '%s': %s: %s",
+                    resource.name, resource.type,
+                    ex.__class__.__name__, str(ex), exc_info=True)
+                continue
+
+    def _make_backend(self, resource):
+        try:
+            if resource.type == gc3libs.Default.ARC0_LRMS:
+                from gc3libs.backends.arc0 import ArcLrms
+                return ArcLrms(resource, self.auths)
+            elif resource.type == gc3libs.Default.ARC1_LRMS:
+                from gc3libs.backends.arc1 import Arc1Lrms
+                return Arc1Lrms(resource, self.auths)
+            elif resource.type == gc3libs.Default.SGE_LRMS:
+                return SgeLrms(resource, self.auths)
+            elif resource.type == gc3libs.Default.PBS_LRMS:
+                return PbsLrms(resource, self.auths)
+            elif resource.type == gc3libs.Default.LSF_LRMS:
+                return LsfLrms(resource, self.auths)
+            elif resource.type == gc3libs.Default.SHELLCMD_LRMS:
+                return ShellcmdLrms(resource, self.auths)
+            else:
+                raise gc3libs.exceptions.ConfigurationError(
+                    "Unknown resource type '%s'" % resource.type)
+        except Exception, ex:
+            gc3libs.log.error(
+                "Error in creating resource %s: %s."
+                " Configuration file problem?"
+                % (resource.name, str(ex)))
+            raise
+
 
     def get_backend(self, resource_name):
         for lrms in self._lrms_list:
@@ -78,21 +119,6 @@ an overlay Grid on the resources specified in the configuration file.
             "Cannot find computational resource '%s'" %
             resource_name)
 
-    def _init_backends(self):
-        for _resource in self._resources:
-            if not _resource.enabled:
-                gc3libs.log.info("Ignoring disabled resource '%s'.", resource_name)
-                continue
-            try:
-                _lrms = self._get_backend(_resource.name)
-                # self.auths.get(_lrms._resource.auth)
-                self._lrms_list.append(_lrms)
-            except Exception, ex:
-                # log exceptions but ignore them
-                gc3libs.log.warning("Failed creating LRMS for resource '%s' of type '%s': %s: %s",
-                                    _resource.name, _resource.type,
-                                    ex.__class__.__name__, str(ex), exc_info=True)
-                continue
 
     def select_resource(self, match):
         """
@@ -110,16 +136,12 @@ an overlay Grid on the resources specified in the configuration file.
             (wildcards ``*`` and ``?`` are allowed) are retained.
         """
         try:
-            self._resources = [ res for res in self._resources if match(res) ]
             self._lrms_list = [ lrms for lrms in self._lrms_list if match(lrms._resource) ]
         except:
             # `match` is not callable, then assume it's a
             # glob pattern and select resources whose name matches
-            self._resources = [ res for res in self._resources
-                                if fnmatch(res.name, match) ]
             self._lrms_list = [ lrms for lrms in self._lrms_list
                                 if fnmatch(lrms._resource.name, match) ]
-        # return len(self._resources)
         return len(self._lrms_list)
 
 
@@ -543,233 +565,25 @@ an overlay Grid on the resources specified in the configuration file.
             lrms.close()
 
 
-    ## internal methods
+    ## compatibility with the `Engine` interface
 
-    def _get_backend(self,resource_name):
-        _lrms = None
-        for _resource in self._resources:
-            if _resource.name == resource_name:
-                # there's a matching resource
-                try:
-                    if _resource.type == gc3libs.Default.ARC0_LRMS:
-                        from gc3libs.backends.arc0 import ArcLrms
-                        _lrms = ArcLrms(_resource, self.auths)
-                    elif _resource.type == gc3libs.Default.ARC1_LRMS:
-                        from gc3libs.backends.arc1 import Arc1Lrms
-                        _lrms = Arc1Lrms(_resource, self.auths)
-                    elif _resource.type == gc3libs.Default.SGE_LRMS:
-                        _lrms = SgeLrms(_resource, self.auths)
-                    elif _resource.type == gc3libs.Default.PBS_LRMS:
-                        _lrms = PbsLrms(_resource, self.auths)
-                    elif _resource.type == gc3libs.Default.LSF_LRMS:
-                        _lrms = LsfLrms(_resource, self.auths)
-                    elif _resource.type == gc3libs.Default.SHELLCMD_LRMS or _resource.type == gc3libs.Default.SUBPROCESS_LRMS:
-                        _lrms = ShellcmdLrms(_resource, self.auths)
-                    else:
-                        raise gc3libs.exceptions.ConfigurationError(
-                            "Unknown resource type '%s'" % _resource.type)
-                except Exception, ex:
-                    gc3libs.log.error(
-                        "Error in creating resource %s: %s."
-                        " Configuration file problem?"
-                        % (_resource.name, str(ex)))
-                    raise
-
-        if _lrms is None:
-            raise gc3libs.exceptions.InvalidResourceName(
-                "Cannot find computational resource '%s'" % resource_name)
-
-        return _lrms
+    def add(self, task):
+        """
+        This method is here just to allow `Core` and `Engine` objects
+        to be used interchangeably.  It's effectively a no-op, as it makes
+        no sense in the synchronous/blocking semantics implemented by `Core`.
+        """
+        pass
 
 
-# === Configuration File
+    def remove(self, task):
+        """
+        This method is here just to allow `Core` and `Engine` objects
+        to be used interchangeably.  It's effectively a no-op, as it makes
+        no sense in the synchronous/blocking semantics implemented by `Core`.
+        """
+        pass
 
-# map values for the `architecture=...` configuration item
-# into internal constants
-architecture_value_map = {
-    # 'x86-32', 'x86 32-bit', '32-bit x86' and variants thereof
-    re.compile('x86[ _-]+32([ _-]+bits?)?', re.I): Run.Arch.X86_32,
-    re.compile('32[ _-]+bits? +[ix]86', re.I):     Run.Arch.X86_32,
-    # accept also values printed by `uname -a` on 32-bit x86 archs
-    re.compile('i[3456]86', re.I):                 Run.Arch.X86_32,
-    # 'x86_64', 'x86 64-bit', '64-bit x86' and variants thereof
-    re.compile('x86[ _-]+64([ _-]+bits?)?', re.I): Run.Arch.X86_64,
-    re.compile('64[ _-]+bits? +[ix]86', re.I):     Run.Arch.X86_32,
-    # also accept commercial arch names
-    re.compile('(amd[ -]*64|x64|emt64|intel[ -]*64)( *bits?)?', re.I): \
-                                                   Run.Arch.X86_64,
-    # finally, map "32-bit" and "64-bit" to i686 and x86_64
-    re.compile('32[ _-]+bits?', re.I):             Run.Arch.X86_32,
-    re.compile('64[ _-]+bits?', re.I):             Run.Arch.X86_64,
-    }
-
-def import_config(config_file_locations, auto_enable_auth=True):
-    (resources, auths) = read_config(*config_file_locations)
-    return (get_resources(resources),
-            get_auth(auths,auto_enable_auth),
-            auto_enable_auth)
-
-
-def get_auth(auths,auto_enable_auth):
-    try:
-        return Auth(auths, auto_enable_auth)
-    except Exception, ex:
-        gc3libs.log.critical('Failed initializing Auth module: %s: %s',
-                             ex.__class__.__name__, str(ex))
-        raise
-
-
-def get_resources(resources_list):
-    # build Resource objects from the list returned from read_config
-    #        and match with selectd_resource from comand line
-    #        (optional) if not options.resource_name is None:
-    resources = [ ]
-    for key in resources_list.keys():
-        resource = resources_list[key]
-        try:
-            tmpres = gc3libs.Resource.Resource(**resource)
-        except Exception, x:
-            gc3libs.log.error("Could not create resource '%s': %s."
-                              " Please check configuration file.",
-                               key, str(x))
-            continue
-        if tmpres.type == 'arc':
-            gc3libs.log.warning("Resource type 'arc' was renamed to 'arc0',"
-                                " please change all occurrences of 'type=arc' to 'type=arc0'"
-                                " in your configuration file.")
-            tmpres.type = gc3libs.Default.ARC0_LRMS
-        elif tmpres.type == 'ssh':
-            gc3libs.log.warning("Resource type 'ssh' was renamed to '%s',"
-                                " please change all occurrences of 'type=ssh' to 'type=%s'"
-                                " in your configuration file.",
-                                gc3libs.Default.SGE_LRMS, gc3libs.Default.SGE_LRMS)
-            tmpres.type = gc3libs.Default.SGE_LRMS
-        if tmpres.type not in [
-            gc3libs.Default.ARC0_LRMS,
-            gc3libs.Default.ARC1_LRMS,
-            gc3libs.Default.SGE_LRMS,
-            gc3libs.Default.PBS_LRMS,
-            gc3libs.Default.LSF_LRMS,
-            gc3libs.Default.SHELLCMD_LRMS,
-            gc3libs.Default.SUBPROCESS_LRMS,
-            ]:
-            gc3libs.log.error(
-                "Configuration error: '%s' is no valid resource type.",
-                resource['type'])
-            continue
-        if tmpres.type in [gc3libs.Default.ARC0_LRMS, gc3libs.Default.ARC1_LRMS] and not tmpres.has_key('frontend'):
-            # extract frontend information from arc_ldap entry
-            try:
-                resource_url = gc3libs.url.Url(tmpres.arc_ldap)
-                tmpres['frontend'] = resource_url.hostname
-            except Exception, x:
-                gc3libs.log.error(
-                "Configuration error: resource '%s' has no valid arc_ldap. Error type %s, message %s" %
-                    (tmpres.name, x.__class__, x.message))
-                continue
-        gc3libs.log.debug("Created %s resource '%s' of type %s"
-                          % (utils.ifelse(tmpres.is_valid, "valid", "invalid"),
-                             tmpres.name,
-                             tmpres.type))
-        resources.append(tmpres)
-    return resources
-
-
-def read_config(*locations):
-    """
-    Read each of the configuration files listed in `locations`, and
-    return a `(defaults, resources, auths)` triple that can be passed
-    to the `Core` class constructor.
-    """
-    files_successfully_read = 0
-    defaults = { }
-    resources = defaultdict(lambda: dict())
-    auths = defaultdict(lambda: dict())
-
-    for location in locations:
-        location = os.path.expandvars(location)
-        if os.path.exists(location):
-            if os.access(location, os.R_OK):
-                gc3libs.log.debug("Core.read_config(): Reading file '%s'" % location)
-            else:
-                gc3libs.log.debug("Core.read_config(): File '%s' cannot be read, ignoring." % location)
-                continue # with next `location`
-        else:
-            gc3libs.log.debug("Core.read_config(): File '%s' does not exist, ignoring." % location)
-            continue # with next `location`
-
-        # Config File exists; read it
-        config = ConfigParser.ConfigParser()
-        if location not in config.read(location):
-            gc3libs.log.debug("Configuration file '%s' is unreadable or malformed:"
-                              " ignoring." % location)
-            continue # with next `location`
-        files_successfully_read += 1
-
-        # update `defaults` with the contents of the `[DEFAULTS]` section
-        defaults.update(config.defaults())
-
-        for sectname in config.sections():
-            if sectname.startswith('auth/'):
-                # handle auth section
-                gc3libs.log.debug("Core.read_config():"
-                                  " Read configuration stanza for auth '%s'." % sectname)
-                # extract auth name and register auth dictionary
-                auth_name = sectname.split('/', 1)[1]
-                auths[auth_name].update(dict(config.items(sectname)))
-                auths[auth_name]['name'] = auth_name
-
-            elif  sectname.startswith('resource/'):
-                # handle resource section
-                resource_name = sectname.split('/', 1)[1]
-                gc3libs.log.debug("Core.read_config():"
-                                  " Read configuration stanza for resource '%s'." % resource_name)
-                config_items = dict(config.items(sectname))
-                if config_items.has_key('enabled'):
-                    config_items['enabled'] = utils.string_to_boolean(config_items['enabled'])
-                if config_items.has_key('architecture'):
-                    def matching_architecture(value):
-                        for matcher, arch in architecture_value_map.items():
-                            if matcher.match(value):
-                                return arch
-                        raise gc3libs.exceptions.ConfigurationError(
-                            "Unknown architecture '%s' in resource '%s'"
-                            " (reading configuration file '%s')"
-                            % (value, resource_name, location))
-                    archs = [ matching_architecture(value.strip())
-                              for value in config_items['architecture'].split(',') ]
-                    if len(archs) == 0:
-                        raise gc3libs.exceptions.ConfigurationError(
-                            "No architecture specified for resource '%s'" % resource_name)
-                resources[resource_name].update(config_items)
-                resources[resource_name]['name'] = resource_name
-
-            else:
-                # Unhandled sectname
-                gc3libs.log.error("Core.read_config(): unknown configuration section '%s' -- ignoring!",
-                                   sectname)
-
-    # remove disabled resources
-    disabled_resources = [ ]
-    for resource in resources.values():
-        if resource.has_key('enabled'):
-            if not resource['enabled']:
-                disabled_resources.append(resource['name'])
-        else:
-            # by default, resources are enabled
-            resource['enabled'] = True
-    for resource_name in disabled_resources:
-        gc3libs.log.info("Ignoring computational resource '%s'"
-                         " because of 'enabled=False' setting"
-                         " in configuration file.",
-                         resource_name)
-        del resources[resource_name]
-
-    if files_successfully_read == 0:
-        raise gc3libs.exceptions.NoConfigurationFile("Could not read any configuration file; tried locations '%s'."
-                                  % str.join("', '", locations))
-
-    return (resources, auths)
 
 
 class Engine(object):

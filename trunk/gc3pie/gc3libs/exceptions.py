@@ -185,6 +185,19 @@ class InvalidArgument(Error, AssertionError): # XXX: should this be fatal?
     """
     pass
 
+class InvalidType(InvalidArgument, TypeError):
+    """
+    A specialization of`InvalidArgument` for cases when the type of
+    the passed argument does not match expectations.
+    """
+    pass
+
+class InvalidValue(InvalidArgument, ValueError):
+    """
+    A specialization of`InvalidArgument` for cases when the type of
+    the passed argument does not match expectations.
+    """
+    pass
 
 class DuplicateEntryError(InvalidArgument):
     """
