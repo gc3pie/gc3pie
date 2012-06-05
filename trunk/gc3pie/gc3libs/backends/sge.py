@@ -85,8 +85,8 @@ def parse_qstat_f(qstat_output):
     """
     # a job report line starts with a numeric job ID
     _job_line_re = re.compile(r'^[0-9]+ \s+', re.X)
-    # queue report header line starts with queuename@hostname 
-    _queue_header_re = re.compile(r'^([a-z0-9\._-]+)@([a-z0-9\.-]+) \s+ ([BIPCTN]+) \s+ ([0-9]+)?/?([0-9]+)/([0-9]+)', 
+    # queue report header line starts with queuename@hostname
+    _queue_header_re = re.compile(r'^([a-z0-9\._-]+)@([a-z0-9\.-]+) \s+ ([BIPCTN]+) \s+ ([0-9]+)?/?([0-9]+)/([0-9]+)',
                                   re.I|re.X)
     # property lines always have the form 'xx:propname=value'
     _property_line_re = re.compile(r'^[a-z]{2}:([a-z_]+)=(.+)', re.I|re.X)
@@ -156,7 +156,7 @@ def compute_nr_of_slots(qstat_output):
             r = result[host]
             s = qstat[q][host]
             r['total'] = max(s['slots_total'], r['total'])
-            r['unavailable'] = max(s['slots_used'] + s['slots_resv'], 
+            r['unavailable'] = max(s['slots_used'] + s['slots_resv'],
                                    r['unavailable'])
     # compute available slots by subtracting the number of used+reserved from the total
     g = result['global']
@@ -191,8 +191,8 @@ def parse_qhost_f(qhost_output):
         else:
             hostname = line.split(' ')[0]
     return result
-    
-    
+
+
 def count_jobs(qstat_output, whoami):
     """
     Parse SGE's ``qstat`` output (as contained in string `qstat_output`)
@@ -219,7 +219,7 @@ def count_jobs(qstat_output, whoami):
             continue
         jid, prio, name, user, state, rest = re.split(r'\s+', line, 5)
         # skip in error/hold/suspended/deleted state
-        if (('E' in state) or ('h' in state) or ('T' in state) 
+        if (('E' in state) or ('h' in state) or ('T' in state)
             or ('s' in state) or ('S' in state) or ('d' in state)):
             continue
         if 'q' in state:
@@ -231,7 +231,7 @@ def count_jobs(qstat_output, whoami):
             if user == whoami:
                 own_running += 1
     return (total_running, total_queued, own_running, own_queued)
-        
+
 
 _qsub_jobid_re = re.compile(r'Your job (?P<jobid>\d+) \("(?P<jobname>.+)"\) has been submitted', re.I)
 
@@ -241,7 +241,7 @@ def get_qsub_jobid(qsub_output):
         match = _qsub_jobid_re.match(line)
         if match:
             return (match.group('jobid'), match.group('jobname'))
-    raise gc3libs.exceptions.InternalError("Could not extract jobid from qsub output '%s'" 
+    raise gc3libs.exceptions.InternalError("Could not extract jobid from qsub output '%s'"
                         % qsub_output.rstrip())
 
 
@@ -282,7 +282,7 @@ def _sge_filename_mapping(jobname, jobid, file_name):
 
 def _make_remote_and_local_path_pair(transport, job, remote_relpath, local_root_dir, local_relpath):
     """
-    Return list of (remote_path, local_path) pairs corresponding to 
+    Return list of (remote_path, local_path) pairs corresponding to
     """
     # see https://github.com/fabric/fabric/issues/306 about why it is
     # correct to use `posixpath.join` for remote paths (instead of `os.path.join`)
@@ -339,11 +339,11 @@ class SgeLrms(LRMS):
         if resource.transport == 'local':
             self.transport = transport.LocalTransport()
         elif resource.transport == 'ssh':
-            self.transport = transport.SshTransport(self._resource.frontend, 
+            self.transport = transport.SshTransport(self._resource.frontend,
                                                     username=self._ssh_username)
         else:
             raise gc3libs.exceptions.TransportError("Unknown transport '%s'", resource.transport)
-        
+
         # XXX: does Ssh really needs this ?
         self._resource.ncores = int(self._resource.ncores)
         self._resource.max_memory_per_core = int(self._resource.max_memory_per_core) * 1000
@@ -362,7 +362,7 @@ class SgeLrms(LRMS):
     @same_docstring_as(LRMS.submit_job)
     def submit_job(self, app):
         job = app.execution
-        # Create the remote directory. 
+        # Create the remote directory.
         try:
             self.transport.connect()
 
@@ -405,7 +405,7 @@ class SgeLrms(LRMS):
                               app.executable)
             self.transport.chmod(os.path.join(ssh_remote_folder,
                                               app.executable), 0755)
-        
+
         try:
             # Try to submit it to the local queueing system.
             qsub, script = app.qsub(self._resource)
@@ -414,7 +414,7 @@ class SgeLrms(LRMS):
                 local_script_file = tempfile.NamedTemporaryFile()
                 local_script_file.write(script)
                 local_script_file.flush()
-                script_name = '%s.%x.sh' % (app.get('application_tag', 'script'), 
+                script_name = '%s.%x.sh' % (app.get('application_tag', 'script'),
                                             random.randint(0, sys.maxint))
                 # upload script to remote location
                 self.transport.put(local_script_file.name,
@@ -425,20 +425,20 @@ class SgeLrms(LRMS):
                     os.unlink(local_script_file.name)
                 # submit it
                 qsub += ' ' + script_name
-            exit_code, stdout, stderr = self.transport.execute_command("/bin/sh -c 'cd %s && %s'" 
+            exit_code, stdout, stderr = self.transport.execute_command("/bin/sh -c 'cd %s && %s'"
                                                                       % (ssh_remote_folder, qsub))
 
             if exit_code != 0:
                 raise gc3libs.exceptions.LRMSError("Failed while executing command '%s' on resource '%s';"
                                 " exit code: %d, stderr: '%s'."
                                 % (_command, self._resource, exit_code, stderr))
-            
+
             jobid, jobname = get_qsub_jobid(stdout)
             log.debug('Job submitted with jobid: %s', jobid)
             # self.transport.close()
 
             job.execution_target = self._resource.frontend
-            
+
             job.lrms_jobid = jobid
             job.lrms_jobname = jobname
             if app.has_key('stdout'):
@@ -452,12 +452,12 @@ class SgeLrms(LRMS):
                     job.stderr_filename = app.stderr
                 else:
                     job.stderr_filename = '%s.e%s' % (jobname, jobid)
-            job.log.append('Submitted to SGE @ %s with jobid %s' 
+            job.log.append('Submitted to SGE @ %s with jobid %s'
                            % (self._resource.name, jobid))
             job.log.append("SGE `qsub` output:\n"
                            "  === stdout ===\n%s"
                            "  === stderr ===\n%s"
-                           "  === end ===\n" 
+                           "  === end ===\n"
                            % (stdout, stderr), 'sge', 'qsub')
             job.ssh_remote_folder = ssh_remote_folder
 
@@ -480,9 +480,6 @@ class SgeLrms(LRMS):
             # `job` has no `lrms_jobid`: object is invalid
             raise gc3libs.exceptions.InvalidArgument("Job object is invalid: %s" % str(ex))
 
-        def map_sge_names_to_local_ones(name):
-            return 'sge_' + name
-
         mapping = {
             'qname':         'queue',
             'jobname':       'job_name',
@@ -496,6 +493,7 @@ class SgeLrms(LRMS):
             'qsub_time':     'sge_submission_time',
             }
 
+        old_state = job.state
         try:
             self.transport.connect()
 
@@ -514,7 +512,7 @@ class SgeLrms(LRMS):
                 elif job_status in ['s', 'S', 'T'] or 'qh' in job_status:
                     state = Run.State.STOPPED
                 elif job_status == 'E': # error condition
-                    state = Run.State.TERMINATING 
+                    state = Run.State.TERMINATING
                 else:
                     log.warning("unknown SGE job status '%s', returning `UNKNOWN`", job_status)
                     state = Run.State.UNKNOWN
@@ -551,7 +549,7 @@ class SgeLrms(LRMS):
                         except KeyError:
                             log.debug("Ignoring job information '%s=%s';"
                                       " no mapping defined for it"
-                                      " in 'gc3libs/backends/sge.py'." 
+                                      " in 'gc3libs/backends/sge.py'."
                                       % (key,value))
 
                     # FIXME: parsing dates is locale-dependent; if the
@@ -569,35 +567,33 @@ class SgeLrms(LRMS):
                     # if job.has_key('completion_time'):
                     #     log.debug('completion_time: %s',job.completion_time)
                     #     job.completion_time = _date_normalize(job.completion_time)
-                                                                                                    
+
                     state = Run.State.TERMINATING
                 else:
                     # `qacct` failed as well...
                     try:
                         if (time.time() - job.sge_qstat_failed_at) > self._resource.sge_accounting_delay:
                             # accounting info should be there, if it's not then job is definitely lost
-                            log.critical("Failed executing remote command: '%s'; exit status %d" 
+                            log.critical("Failed executing remote command: '%s'; exit status %d"
                                                   % (_command,exit_code))
                             log.debug("Remote command returned stdout: %s" % stdout)
                             log.debug("remote command returned stderr: %s" % stderr)
-                            raise paramiko.SSHException("Failed executing remote command: '%s'; exit status %d" 
+                            raise paramiko.SSHException("Failed executing remote command: '%s'; exit status %d"
                                                         % (_command,exit_code))
                         else:
                             # do nothing, let's try later...
-                            pass
+                            state = old_state
                     except AttributeError:
                         # this is the first time `qstat` fails, record a timestamp and retry later
                         job.sge_qstat_failed_at = time.time()
 
         except Exception, ex:
-            # self.transport.close()
             log.error("Error in querying SGE resource '%s': %s: %s",
                               self._resource.name, ex.__class__.__name__, str(ex))
             raise
-        
-        # self.transport.close()
 
-        job.state = state
+        if state != old_state:
+            job.state = state
         return state
 
 
@@ -611,7 +607,7 @@ class SgeLrms(LRMS):
             exit_code, stdout, stderr = self.transport.execute_command(_command)
             if exit_code != 0:
                 # It is possible that 'qdel' fails because job has been already completed
-                # thus the cancel_job behaviour should be to 
+                # thus the cancel_job behaviour should be to
                 log.error('Failed executing remote command: %s. exit status %d' % (_command,exit_code))
                 log.debug("remote command returned stdout: %s" % stdout)
                 log.debug("remote command returned stderr: %s" % stderr)
@@ -626,7 +622,7 @@ class SgeLrms(LRMS):
             # self.transport.close()
             log.critical('Failure in checking status')
             raise
-        
+
 
 
     @same_docstring_as(LRMS.free)
@@ -634,12 +630,12 @@ class SgeLrms(LRMS):
 
         job = app.execution
         try:
-            log.debug("Connecting to cluster frontend '%s' as user '%s' via SSH ...", 
+            log.debug("Connecting to cluster frontend '%s' as user '%s' via SSH ...",
                            self._resource.frontend, self._ssh_username)
             self.transport.connect()
             self.transport.remove_tree(job.ssh_remote_folder)
         except:
-            log.warning("Failed removing remote folder '%s': %s: %s" 
+            log.warning("Failed removing remote folder '%s': %s: %s"
                         % (job.ssh_remote_folder, sys.exc_info()[0], sys.exc_info()[1]))
         return
 
@@ -688,9 +684,9 @@ class SgeLrms(LRMS):
             # self.transport.close()
             return # XXX: should we return list of downloaded files?
 
-        except: 
+        except:
             # self.transport.close()
-            raise 
+            raise
 
 
     @same_docstring_as(LRMS.peek)
@@ -724,7 +720,7 @@ class SgeLrms(LRMS):
             output_file.close()
         log.debug('... Done.')
 
-                
+
     @same_docstring_as(LRMS.get_resource_status)
     def get_resource_status(self):
         try:
@@ -742,7 +738,7 @@ class SgeLrms(LRMS):
             # self.transport.close()
 
             log.debug("Computing updated values for total/available slots ...")
-            (total_running, self._resource.queued, 
+            (total_running, self._resource.queued,
              self._resource.user_run, self._resource.user_queued) = count_jobs(qstat_stdout, username)
             slots = compute_nr_of_slots(qstat_F_stdout)
             self._resource.free_slots = int(slots['global']['available'])
@@ -767,7 +763,7 @@ class SgeLrms(LRMS):
             log.debug("Error querying LRMS: %s: %s",
                       ex.__class__.__name__, str(ex))
             raise
-        
+
     @same_docstring_as(LRMS.validate_data)
     def validate_data(self, data_file_list):
         """
@@ -781,7 +777,7 @@ class SgeLrms(LRMS):
     @same_docstring_as(LRMS.validate_data)
     def close(self):
         self.transport.close()
-        
+
 ## main: run tests
 
 if "__main__" == __name__:
