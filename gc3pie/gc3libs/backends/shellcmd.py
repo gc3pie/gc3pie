@@ -53,13 +53,13 @@ class ShellcmdLrms(LRMS):
 
         # checking mandatory resource attributes
         resource.name
-        resource.ncores
+        resource.max_cores
 
         # ok, save resource parameters
         self._resource = resource
 
-        # use `ncores` as the max number of processes to allow
-        self._resource.free_slots = int(resource.ncores)
+        # use `max_cores` as the max number of processes to allow
+        self._resource.free_slots = int(resource.max_cores)
         self._resource.user_run = 0
         self._resource.user_queued = 0
         self._resource.queued = 0
@@ -192,7 +192,7 @@ class ShellcmdLrms(LRMS):
         if self._resource.free_slots == 0:
             raise gc3libs.exceptions.LRMSSubmitError(
                 "Resource %s already running maximum allowed number of jobs"
-                " (increase 'ncores' to raise)." % self._resource.name)
+                " (increase 'max_cores' to raise)." % self._resource.name)
 
         gc3libs.log.debug("Executing local command '%s %s' ..."
                           % (app.executable, str.join(" ", app.arguments)))

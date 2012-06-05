@@ -228,7 +228,7 @@ class Configuration(gc3libs.utils.Struct):
           max_cores_per_job    int
           max_memory_per_core  int
           max_walltime         int
-          ncores               int
+          max_cores            int
           ===================  ==============
 
         Any attribute not mentioned in the above table will have type
@@ -322,6 +322,7 @@ class Configuration(gc3libs.utils.Struct):
     _renamed_keys = {
         # old key name         new key name
         # ===================  ===================
+        'ncores':              'max_cores',
         }
 
     @staticmethod
@@ -376,10 +377,10 @@ class Configuration(gc3libs.utils.Struct):
         # ===================  ==================================
         'enabled':             gc3libs.utils.string_to_boolean,
         'architecture':        _parse_architecture,
+        'max_cores':           int,
         'max_cores_per_job':   int,
         'max_memory_per_core': int,
         'max_walltime':        int,
-        'ncores':              int,
         }
 
     @staticmethod

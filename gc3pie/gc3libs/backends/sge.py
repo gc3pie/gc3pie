@@ -345,7 +345,7 @@ class SgeLrms(LRMS):
             raise gc3libs.exceptions.TransportError("Unknown transport '%s'", resource.transport)
 
         # XXX: does Ssh really needs this ?
-        self._resource.ncores = int(self._resource.ncores)
+        self._resource.max_cores = int(self._resource.max_cores)
         self._resource.max_memory_per_core = int(self._resource.max_memory_per_core) * 1000
         self._resource.max_walltime = int(self._resource.max_walltime)
         if self._resource.max_walltime > 0:

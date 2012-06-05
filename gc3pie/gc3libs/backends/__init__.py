@@ -44,7 +44,7 @@ class LRMS(object):
       max_memory_per_core  int            yes
       max_walltime         int            yes
       name                 string         yes
-      ncores               int
+      max_cores            int
       type                 string         yes
       ===================  ============== =========
 

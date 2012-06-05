@@ -3,7 +3,7 @@
 """
 Job control on SGE clusters (possibly connecting to the front-end via SSH).
 """
-# Copyright (C) 2009-2011 GC3, University of Zurich. All rights reserved.
+# Copyright (C) 2009-2012 GC3, University of Zurich. All rights reserved.
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
@@ -46,69 +46,69 @@ import transport
 # $ bsub -W 00:10 -n 1 -R "rusage[mem=1800]" < script.sh
 # Generic job.
 # Job <473713> is submitted to queue <pub.1h>.
-# 
+#
 # where:
 #   -W HH:MM is the wall-clock time
 #   -n is the number of CPUs
 #   -R sets resource limits
 # note: script must be fed as STDIN
-# 
+#
 # [gloessa@brutus2 test_queue]$ bjobs 473713
 # JOBID   USER    STAT  QUEUE      FROM_HOST   EXEC_HOST   JOB_NAME   SUBMIT_TIME
 # 473713  gloessa PEND  pub.1h     brutus2                 TM-T       Oct 19 17:10
-# 
+#
 # $ bjobs 473713
 # JOBID   USER    STAT  QUEUE      FROM_HOST   EXEC_HOST   JOB_NAME   SUBMIT_TIME
 # 473713  gloessa RUN   pub.1h     brutus2     a6128       TM-T       Oct 19 17:10
 # [gloessa@brutus2 test_queue]$ bjobs -l 473713
-# 
+#
 # Job <473713>, Job Name <TM-T>, User <gloessa>, Project <default>, Status <RUN>,
 #                       Queue <pub.1h>, Job Priority <50>, Command <#!/bin/sh;#;#
 #                      ;echo 'sequential test job';echo $OMP_NUM_THREADS;echo '$T
 #                      URBODIR: '$TURBODIR;sysname;which dscf;echo '$TMPDIR: '$TM
 #                      PDIR; echo 'parallel test job';export OMP_NUM_THREADS=2;ec
 #                      ho $OMP_NUM_THREADS;echo '$TURBODIR: '$TURBODIR;sysname;wh
-#                      ich dscf;echo '$TMPDIR: '$TMPDIR; sleep 300>, Share group 
+#                      ich dscf;echo '$TMPDIR: '$TMPDIR; sleep 300>, Share group
 #                      charged </lsf_cfour/gloessa>
 # Wed Oct 19 17:10:27: Submitted from host <brutus2>, CWD <$HOME/test_queue>, Out
 #                      put File <lsf.o%J>, Requested Resources <order[-r1m] span[
 #                      ptile=1] same[model] rusage[mem=1800,xs=1]>, Specified Hos
 #                      ts <thin+7>, <single+5>, <shared+3>, <parallel+1>;
-# 
-#  RUNLIMIT                
+#
+#  RUNLIMIT
 #  10.0 min of a6128
 # Wed Oct 19 17:11:02: Started on <a6128>, Execution Home </cluster/home/chab/glo
 #                      essa>, Execution CWD </cluster/home/chab/gloessa/test_queu
 #                      e>;
 # Wed Oct 19 17:12:10: Resource usage collected.
 #                      MEM: 5 Mbytes;  SWAP: 201 Mbytes;  NTHREAD: 5
-#                      PGID: 23177;  PIDs: 23177 23178 23182 23259 
-# 
-# 
+#                      PGID: 23177;  PIDs: 23177 23178 23182 23259
+#
+#
 #  SCHEDULING PARAMETERS:
 #            r15s   r1m  r15m   ut      pg    io   ls    it    tmp    swp    mem
-#  loadSched   -     -     -     -       -     -    -     -     -      -      -  
-#  loadStop    -     -     -     -       -     -    -     -     -      -      -  
-# 
-#           scratch      xs       s       m       l      xl      sp 
-#  loadSched     -       -       -       -       -       -       -  
-#  loadStop      -       -       -       -       -       -       -  
-# 
+#  loadSched   -     -     -     -       -     -    -     -     -      -      -
+#  loadStop    -     -     -     -       -     -    -     -     -      -      -
+#
+#           scratch      xs       s       m       l      xl      sp
+#  loadSched     -       -       -       -       -       -       -
+#  loadStop      -       -       -       -       -       -       -
+#
 # $ bkill 473713
 # Job <473713> is being terminated
-# 
+#
 # $ bjobs -W -w 473713
 # JOBID   USER    STAT  QUEUE      FROM_HOST   EXEC_HOST   JOB_NAME   SUBMIT_TIME  PROJ_NAME CPU_USED MEM SWAP PIDS START_TIME FINISH_TIME
 # 473713  gloessa EXIT  pub.1h     brutus2     a6128       TM-T       10/19-17:10:27 default    000:00:00.12 5208   206312 23177,23178,23182,23259 10/19-17:11:02 10/19-17:14:49
-# 
+#
 # # STAT would be DONE if not killed
 # $ bjobs 473713
 # JOBID   USER    STAT  QUEUE      FROM_HOST   EXEC_HOST   JOB_NAME   SUBMIT_TIME
 # 473713  gloessa EXIT  pub.1h     brutus2     a6128       TM-T       Oct 19 17:10
-# 
+#
 # $ bacct 473713
-# 
-# Accounting information about jobs that are: 
+#
+# Accounting information about jobs that are:
 #   - submitted by all users.
 #   - accounted on all projects.
 #   - completed normally or exited
@@ -116,8 +116,8 @@ import transport
 #   - submitted to all queues.
 #   - accounted on all service classes.
 # ------------------------------------------------------------------------------
-# 
-# SUMMARY:      ( time unit: second ) 
+#
+# SUMMARY:      ( time unit: second )
 #  Total number of done jobs:       0      Total number of exited jobs:     1
 #  Total CPU time consumed:       0.1      Average CPU time consumed:     0.1
 #  Maximum CPU time of a job:     0.1      Minimum CPU time of a job:     0.1
@@ -128,8 +128,8 @@ import transport
 #  Maximum turnaround time:       262      Minimum turnaround time:       262
 #  Average hog factor of a job:  0.00 ( cpu time / turnaround time )
 #  Maximum hog factor of a job:  0.00      Minimum hog factor of a job:  0.00
-# 
-# $ lsinfo 
+#
+# $ lsinfo
 # RESOURCE_NAME   TYPE   ORDER  DESCRIPTION
 # r15s          Numeric   Inc   15-second CPU run queue length
 # r1m           Numeric   Inc   1-minute CPU run queue length (alias: cpu)
@@ -254,7 +254,7 @@ import transport
 # msi_tokenr    Numeric   Dec   msi tokens
 # gpu           Numeric   Dec   nodes with 1,2,3... GPUs
 # ddadb         Numeric   Dec   number of connections that ddadb.ethz.ch can handle
-# 
+#
 # TYPE_NAME
 # UNKNOWN_AUTO_DETECT
 # DEFAULT
@@ -317,7 +317,7 @@ import transport
 # IA64
 # DIA64
 # SIA64
-# 
+#
 # MODEL_NAME      CPU_FACTOR      ARCHITECTURE
 # Opteron2216           8.00      x15_3604_AMDOpterontmProcessor2216
 # Opteron2220           8.00      x15_3604_AMDOpterontmProcessor2220
@@ -326,10 +326,10 @@ import transport
 # Opteron8380           7.50      x15_3604_AMDOpterontmProcessor8380
 # Opteron8384           8.10      x15_3604_AMDOpterontmProcessor8384
 # Opteron6174           7.00      x15_3604_AMDOpterontmProcessor6174
-# [gloessa@brutus2 test_queue]$ lsid 
+# [gloessa@brutus2 test_queue]$ lsid
 # Platform LSF HPC 7 Update 6, Sep 04 2009
 # Copyright 1992-2009 Platform Computing Corporation
-# 
+#
 # My cluster name is brutus
 # My master name is hpcadm2
 
@@ -342,13 +342,13 @@ def get_bsub_jobid(bsub_output):
         match = _bsub_jobid_re.match(line)
         if match:
             return match.group('jobid')
-    raise gc3libs.exceptions.InternalError("Could not extract jobid from bsub output '%s'" 
+    raise gc3libs.exceptions.InternalError("Could not extract jobid from bsub output '%s'"
                         % bsub_output.rstrip())
 
 
 def _make_remote_and_local_path_pair(transport, job, remote_relpath, local_root_dir, local_relpath):
     """
-    Return list of (remote_path, local_path) pairs corresponding to 
+    Return list of (remote_path, local_path) pairs corresponding to
     """
     # see https://github.com/fabric/fabric/issues/306 about why it is
     # correct to use `posixpath.join` for remote paths (instead of `os.path.join`)
@@ -400,13 +400,13 @@ class LsfLrms(LRMS):
         if resource.transport == 'local':
             self.transport = transport.LocalTransport()
         elif resource.transport == 'ssh':
-            self.transport = transport.SshTransport(self._resource.frontend, 
+            self.transport = transport.SshTransport(self._resource.frontend,
                                                     username=self._ssh_username)
         else:
             raise gc3libs.exceptions.TransportError("Unknown transport '%s'", resource.transport)
-        
+
         # XXX: does Ssh really needs this ?
-        self._resource.ncores = int(self._resource.ncores)
+        self._resource.max_cores = int(self._resource.max_cores)
         self._resource.max_memory_per_core = int(self._resource.max_memory_per_core) * 1000
         self._resource.max_walltime = int(self._resource.max_walltime)
         if self._resource.max_walltime > 0:
@@ -423,7 +423,7 @@ class LsfLrms(LRMS):
     @same_docstring_as(LRMS.submit_job)
     def submit_job(self, app):
         job = app.execution
-        # Create the remote directory. 
+        # Create the remote directory.
         try:
             self.transport.connect()
 
@@ -466,7 +466,7 @@ class LsfLrms(LRMS):
                               app.executable)
             self.transport.chmod(os.path.join(ssh_remote_folder,
                                               app.executable), 0755)
-        
+
         try:
             # Try to submit it to the local queueing system.
             bsub, script = app.bsub(self._resource)
@@ -475,7 +475,7 @@ class LsfLrms(LRMS):
                 local_script_file = tempfile.NamedTemporaryFile()
                 local_script_file.write(script)
                 local_script_file.flush()
-                script_name = '%s.%x.sh' % (app.get('application_tag', 'script'), 
+                script_name = '%s.%x.sh' % (app.get('application_tag', 'script'),
                                             random.randint(0, sys.maxint))
                 # upload script to remote location
                 self.transport.put(local_script_file.name,
@@ -486,7 +486,7 @@ class LsfLrms(LRMS):
                     os.unlink(local_script_file.name)
             # submit it
             exitcode, stdout, stderr = self.transport.execute_command(
-                "/bin/sh -c 'cd %s && %s < %s'" 
+                "/bin/sh -c 'cd %s && %s < %s'"
                 % (ssh_remote_folder, bsub, script_name))
             jobid = get_bsub_jobid(stdout)
             log.debug('Job submitted with jobid: %s', jobid)
@@ -504,12 +504,12 @@ class LsfLrms(LRMS):
                     job.stderr_filename = app.stderr
                 else:
                     job.stderr_filename = '%s.e%s' % (jobname, jobid)
-            job.log.append('Submitted to LSF @ %s with jobid %s' 
+            job.log.append('Submitted to LSF @ %s with jobid %s'
                            % (self._resource.name, jobid))
             job.log.append("LSF `bsub` output:\n"
                            "  === stdout ===\n%s"
                            "  === stderr ===\n%s"
-                           "  === end ===\n" 
+                           "  === end ===\n"
                            % (stdout, stderr), 'lsf', 'bsub')
             job.ssh_remote_folder = ssh_remote_folder
 
@@ -545,7 +545,7 @@ class LsfLrms(LRMS):
             if exit_code == 0 and stdout:
                 # 1st line in STDOUT is header line, 2nd one is real info
                 status_line = stdout.split('\n')[1]
-                # 
+                #
                 fields = status_line.split()
                 assert fields[0] == job.lrms_jobid, \
                        "First field in `bjobs` output is not JobID!"
@@ -559,20 +559,20 @@ class LsfLrms(LRMS):
                     'DONE', # successful termination
                     'EXIT'  # job was killed / exit forced
                     ]:
-                    return Run.State.TERMINATING 
+                    return Run.State.TERMINATING
                 else:
                     log.warning("unknown LSF job status '%s', returning `UNKNOWN`", stat)
                     state = Run.State.UNKNOWN
             else:
                 # only good test for job termination is the presence of the "lsf.o<JobID>"
                 # file on the filesystem; it is created after the job has finished
-                # XXX: is this systematic ? or depends on the LSF directives for stdout ? 
+                # XXX: is this systematic ? or depends on the LSF directives for stdout ?
                 found = False
                 for entry in self.transport.listdir(job.ssh_remote_folder):
                     if entry == app.stdout:
                         found = True
                         state = Run.State.TERMINATING
-                        # XXX: assume returncode 0. need to 
+                        # XXX: assume returncode 0. need to
                         job.returncode = (0, 0)
                         break
                 if not found:
@@ -584,7 +584,7 @@ class LsfLrms(LRMS):
             log.error("Error in querying LSF resource '%s': %s: %s",
                               self._resource.name, ex.__class__.__name__, str(ex))
             raise
-        
+
         # self.transport.close()
 
         job.state = state
@@ -614,7 +614,7 @@ class LsfLrms(LRMS):
             # self.transport.close()
             log.critical('Failure in checking status')
             raise
-        
+
 
 
     @same_docstring_as(LRMS.free)
@@ -622,12 +622,12 @@ class LsfLrms(LRMS):
 
         job = app.execution
         try:
-            log.debug("Connecting to cluster frontend '%s' as user '%s' via SSH ...", 
+            log.debug("Connecting to cluster frontend '%s' as user '%s' via SSH ...",
                            self._resource.frontend, self._ssh_username)
             self.transport.connect()
             self.transport.remove_tree(job.ssh_remote_folder)
         except:
-            log.warning("Failed removing remote folder '%s': %s: %s" 
+            log.warning("Failed removing remote folder '%s': %s: %s"
                         % (job.ssh_remote_folder, sys.exc_info()[0], sys.exc_info()[1]))
         return
 
@@ -676,9 +676,9 @@ class LsfLrms(LRMS):
             # self.transport.close()
             return # XXX: should we return list of downloaded files?
 
-        except: 
+        except:
             # self.transport.close()
-            raise 
+            raise
 
 
     @same_docstring_as(LRMS.peek)
@@ -712,7 +712,7 @@ class LsfLrms(LRMS):
             output_file.close()
         log.debug('... Done.')
 
-    @cache_for(gc3libs.Default.ARC_CACHE_TIME)    
+    @cache_for(gc3libs.Default.ARC_CACHE_TIME)
     def get_resource_status(self):
         """
         Get dynamic information out of the LSF subsystem.
@@ -737,7 +737,7 @@ class LsfLrms(LRMS):
             # lhost output format:
             # ($nodeid,$OStype,$model,$cpuf,$ncpus,$maxmem,$maxswp)
             log.debug("Running `lshosts -w`... ")
-            _command = "lshosts -w" 
+            _command = "lshosts -w"
             exit_code, stdout, stderr = self.transport.execute_command(_command)
             if exit_code != 0:
                 # Stop and do not continue
@@ -751,12 +751,12 @@ class LsfLrms(LRMS):
                 # Remove Header
                 lhosts_output = stdout.strip().split('\n')
                 lhosts_output.pop(0)
-            
+
             # Run bhosts to get information about the number of
             # occupied slots for each node
             # used to compute self._resource.free_slots
             # bhosts output format:
-            # HOST_NAME          STATUS          JL/U    MAX  NJOBS    RUN  SSUSP  USUSP    RSV 
+            # HOST_NAME          STATUS          JL/U    MAX  NJOBS    RUN  SSUSP  USUSP    RSV
             # a3000              closed_Full     -      4      4      4      0      0      0
             # log.debug("Running `bhosts -w`... ")
             # _command = "bhosts -w"
@@ -808,7 +808,7 @@ class LsfLrms(LRMS):
                 raise gc3libs.exceptions.LRMSError("LSF backend failed while executing [%s]."
                                     "Exit code: [%d]. Stdout: [%s]. Stderr: [%s]" %
                                     (_command, exit_code, stdout, stderr))
-            
+
             bjobs_output = []
             if stdout:
                 # Remove Header
@@ -818,12 +818,12 @@ class LsfLrms(LRMS):
             # self.transport.close()
 
             # compute self._resource.total_slots
-            self._resource.ncores = 0
+            self._resource.max_cores = 0
             for line in lhosts_output:
                 # HOST_NAME      type    model  cpuf ncpus maxmem maxswp server RESOURCES
                 (hostname, h_type, h_model, h_cpuf, h_ncpus) = line.strip().split()[0:5]
                 try:
-                    self._resource.ncores +=  int(h_ncpus)
+                    self._resource.max_cores +=  int(h_ncpus)
                 except ValueError:
                     # h_ncpus == '-'
                     pass
@@ -832,18 +832,18 @@ class LsfLrms(LRMS):
             self._resource.queued = 0
             running_jobs = 0
             for line in bqueues_output:
-                # QUEUE_NAME      PRIO STATUS          MAX JL/U JL/P JL/H NJOBS  PEND   RUN  SUSP 
+                # QUEUE_NAME      PRIO STATUS          MAX JL/U JL/P JL/H NJOBS  PEND   RUN  SUSP
                 (queue_name, priority, status, max_j, jlu, jlp, jlh, n_jobs, j_pend, j_run, j_susp) = line.split()
                 self._resource.queued += int(j_pend)
                 running_jobs += int(j_run)
 
-            self._resource.free_slots = self._resource.ncores - running_jobs
+            self._resource.free_slots = self._resource.max_cores - running_jobs
 
             # # compute self._resource.free_slots
             # total_jobs = 0
 
             # for line in bhosts_output:
-            #     # HOST_NAME          STATUS          JL/U    MAX  NJOBS    RUN  SSUSP  USUSP    RSV 
+            #     # HOST_NAME          STATUS          JL/U    MAX  NJOBS    RUN  SSUSP  USUSP    RSV
             #     # a3000              closed_Full     -      4      4      4      0      0      0
             #     njobs = line.strip().split()[4]
             #     try:
@@ -853,12 +853,12 @@ class LsfLrms(LRMS):
             #         pass
 
 
-            # self._resource.free_slots = self._resource.ncores - total_jobs
+            # self._resource.free_slots = self._resource.max_cores - total_jobs
 
             # user runing/queued
             self._resource.user_run = 0
             self._resource.user_queued = 0
-            
+
             queued_status = ['PEND', 'PSUSP', 'USUSP', 'SSUSP', 'WAIT', 'ZOMBI']
 
             for line in bjobs_output:
@@ -892,7 +892,7 @@ class LsfLrms(LRMS):
             # self._resource.free_slots = 800
             # self._resource.used_quota = -1
             # self._resource.queued = 0
-            
+
             return self._resource
 
         except Exception, ex:
@@ -905,7 +905,7 @@ class LsfLrms(LRMS):
     @same_docstring_as(LRMS.validate_data)
     def close(self):
         self.transport.close()
-        
+
     @same_docstring_as(LRMS.validate_data)
     def validate_data(self, data_file_list):
         """

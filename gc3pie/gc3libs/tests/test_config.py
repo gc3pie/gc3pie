@@ -56,7 +56,7 @@ transport = local
 max_cores_per_job = 2
 max_memory_per_core = 2
 max_walltime = 8
-ncores = 2
+max_cores = 2
 architecture = x86_64
     """)
     try:
@@ -71,7 +71,7 @@ architecture = x86_64
         assert_is_instance(resources['test']['max_cores_per_job'], int)
         assert_is_instance(resources['test']['max_memory_per_core'], int)
         assert_is_instance(resources['test']['max_walltime'], int)
-        assert_is_instance(resources['test']['ncores'],       int)
+        assert_is_instance(resources['test']['max_cores'],    int)
         assert_is_instance(resources['test']['architecture'], set)
         # test parsed values
         assert_equal(resources['test']['name'],            'test')
@@ -80,7 +80,7 @@ architecture = x86_64
         assert_equal(resources['test']['max_cores_per_job'],    2)
         assert_equal(resources['test']['max_memory_per_core'],  2)
         assert_equal(resources['test']['max_walltime'],         8)
-        assert_equal(resources['test']['ncores'],               2)
+        assert_equal(resources['test']['max_cores'],            2)
         assert_equal(resources['test']['architecture'],
                                            set([Run.Arch.X86_64]))
     finally:
@@ -138,6 +138,33 @@ def parse_invalid_conf(confstr, **kw):
     """`_parse` raises a `ConfigurationError` exception on invalid input."""
     cfg = gc3libs.config.Configuration()
     defaults, resources, auths = cfg._parse(StringIO(confstr))
+
+
+def test_key_renames():
+    """Test that `ncores` is renamed to `max_cores` during parse"""
+    tmpfile = _setup_config_file("""
+[auth/ssh]
+type = ssh
+username = gc3pie
+
+[resource/test]
+type = shellcmd
+auth = ssh
+max_cores_per_job = 2
+max_memory_per_core = 2
+max_walltime = 8
+# `ncores` renamed to `max_cores`
+ncores = 77
+architecture = x86_64
+    """)
+    try:
+        cfg = gc3libs.config.Configuration(tmpfile)
+        resources = cfg.make_resources()
+        assert 'ncores' not in resources['test']
+        assert 'max_cores' in resources['test']
+        assert_equal(resources['test']['max_cores'], 77)
+    finally:
+        os.remove(tmpfile)
 
 
 class TestReadMultiple(object):
@@ -287,7 +314,7 @@ auth = ssh
 max_cores_per_job = 2
 max_memory_per_core = 2
 max_walltime = 8
-ncores = 2
+max_cores = 2
 architecture = x86_64
 """
     lines = good_conf.split('\n')
