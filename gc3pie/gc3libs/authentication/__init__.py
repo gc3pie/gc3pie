@@ -117,7 +117,7 @@ class Auth(object):
             a = self.__auths[auth_name]
 
         if isinstance(a, Exception):
-            if isinstance(a, UnrecoverableError):
+            if isinstance(a, gc3libs.exceptions.UnrecoverableError):
                 self.__auths[auth_name] = a
             raise a
 
