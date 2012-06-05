@@ -73,7 +73,7 @@ Permanently remove jobs from local and remote storage.
 In normal operation, only jobs that are in a terminal status can
 be removed; if you want to force ``gclean`` to remove a job that
 is not in any one of those states, add the ``-f`` option to the
-command line. 
+command line.
 
 If a job description cannot be successfully read, the
 corresponding job will not be deleted; use the ``-f`` option to
@@ -81,15 +81,15 @@ force removal of a job regardless.
     """
 
     def setup_options(self):
-        self.add_param("-A", action="store_true", dest="all", default=False, 
+        self.add_param("-A", action="store_true", dest="all", default=False,
                        help="Remove all stored jobs.")
-        self.add_param("-f", "--force", action="store_true", dest="force", default=False, 
+        self.add_param("-f", "--force", action="store_true", dest="force", default=False,
                        help="Remove job even when not in terminal state.")
 
     def main(self):
         if self.params.all and len(self.params.args) > 0:
             raise gc3libs.exceptions.InvalidUsage("Option '-A' conflicts with list of job IDs to remove.")
-    
+
         if self.params.all:
             args = self._store.list()
             if len(args) == 0:
@@ -98,7 +98,7 @@ force removal of a job regardless.
             args = self.params.args
             if len(args) == 0:
                 self.log.warning("No job IDs given on command line: nothing to do."
-                                 " Type '%s --help' for usage help." 
+                                 " Type '%s --help' for usage help."
                                  # if we were called with an absolute path,
                                  # presume the command has been found by the
                                  # shell through PATH and just print the command name,
@@ -119,7 +119,7 @@ force removal of a job regardless.
                             self.log.warning("Job '%s' not in terminal state:"
                                              " attempting to kill before cleaning up.", app)
                             try:
-                                self._core.kill(app)
+                                app.kill()
                             except Exception, ex:
                                 self.log.warning("Killing job '%s' failed (%s: %s);"
                                                  " continuing anyway, but errors might ensue.",
@@ -132,7 +132,7 @@ force removal of a job regardless.
                             continue
 
                     try:
-                        self._core.free(app)
+                        app.free()
                     except Exception, ex:
                         if self.params.force:
                             pass
@@ -175,7 +175,7 @@ GC3Libs internals.
     """
 
     verbose_logging_threshold = 2
-    
+
     def setup_options(self):
         self.add_param("-c", "--csv", action="store_true", dest="csv",
                        default=False,
@@ -186,15 +186,15 @@ GC3Libs internals.
         self.add_param("--no-header",
                        action="store_false", dest="header", default=True,
                        help="Do *not* print table or CSV file header.")
-        self.add_param("-p", "--print", action="store", dest="keys", 
-                       metavar="LIST", default='', 
+        self.add_param("-p", "--print", action="store", dest="keys",
+                       metavar="LIST", default='',
                        help="Only print job attributes whose name appears in"
                        " this comma-separated list.")
         self.add_param("-t", "--tabular", action="store_true", dest="tabular",
                        default=False,
                        help="Print attributes in table format."
                        " MUST be used together with '--print'.")
-        
+
     def main(self):
         if self.params.csv and self.params.tabular:
             raise gc3libs.exceptions.InvalidUsage(
@@ -216,7 +216,7 @@ GC3Libs internals.
             raise gc3libs.exceptions.InvalidUsage(
                 "Options '--tabular' and `--csv` only make sense"
                 " in conjuction with option '--print'.")
-        
+
         if len(self.params.args) == 0:
             # if no arguments, operate on all known jobs
             try:
@@ -286,7 +286,7 @@ GC3Libs internals.
         failed = len(self.params.args) - ok
         # exit code is practically limited to 7 bits ...
         return utils.ifelse(failed < 127, failed, 126)
-        
+
 
 
 class cmd_gresub(_BaseCmd):
@@ -298,23 +298,23 @@ is canceled before re-submission.
     """
 
     def setup_options(self):
-        self.add_param("-r", "--resource", action="store", dest="resource_name", 
-                       metavar="NAME", default=None, 
+        self.add_param("-r", "--resource", action="store", dest="resource_name",
+                       metavar="NAME", default=None,
                        help='Select execution resource by name')
         self.add_param("-c", "--cores", action="store", dest="ncores", type=int,
-                       metavar="NUM", default=1, 
+                       metavar="NUM", default=1,
                        help='Request running job on this number of CPU cores')
-        self.add_param("-m", "--memory", action="store", dest="memory_per_core", type=int, 
-                       metavar="NUM", default=1, 
+        self.add_param("-m", "--memory", action="store", dest="memory_per_core", type=int,
+                       metavar="NUM", default=1,
                        help='Request at least this memory per core (GB) on execution site')
         self.add_param("-w", "--walltime", action="store", dest="walltime", type=int,
-                       metavar="HOURS", default=1, 
+                       metavar="HOURS", default=1,
                        help='Guaranteed minimal duration of job, in hours.')
 
     def main(self):
         if len(self.params.args) == 0:
             self.log.error("No job IDs given on command line: nothing to do."
-                           " Type '%s --help' for usage help." 
+                           " Type '%s --help' for usage help."
                            # if we were called with an absolute path,
                            # presume the command has been found by the
                            # shell through PATH and just print the command name,
@@ -326,7 +326,7 @@ is canceled before re-submission.
         if self.params.resource_name:
             self._select_resources(self.params.resource_name)
             self.log.info("Retained only resources: %s (restricted by command-line option '-r %s')",
-                              str.join(",", [res['name'] for res in self._core._resources]), 
+                              str.join(",", [res['name'] for res in self._core._resources]),
                               self.params.resource_name)
 
         failed = 0
@@ -334,25 +334,25 @@ is canceled before re-submission.
             app = self._store.load(jobid.strip())
             app.attach(self._core)
             try:
-                self._core.update_job_state(app) # update state
+                app.update_state() # update state
             except Exception, ex:
                 # ignore errors, and proceed to resubmission anyway
-                self.log.warning("Could not update state of %s: %s: %s", 
+                self.log.warning("Could not update state of %s: %s: %s",
                                      jobid, ex.__class__.__name__, str(ex))
             # kill remote job
             try:
-                self._core.kill(app)
+                app.kill()
             except Exception, ex:
                 # ignore errors (alert user?)
                 pass
 
             try:
-                self._core.submit(app)
+                app.submit()
                 print("Successfully re-submitted %s; use the 'gstat' command to monitor its progress." % app)
                 self._store.replace(jobid, app)
             except Exception, ex:
                 failed += 1
-                self.log.error("Failed resubmission of job '%s': %s: %s", 
+                self.log.error("Failed resubmission of job '%s': %s: %s",
                                jobid, ex.__class__.__name__, str(ex))
 
         # exit code is practically limited to 7 bits ...
@@ -366,8 +366,8 @@ Print job state.
     verbose_logging_threshold = 1
 
     def setup_options(self):
-        self.add_param("-l", "--state", action="store", dest="states", 
-                       metavar="STATE", default=None, 
+        self.add_param("-l", "--state", action="store", dest="states",
+                       metavar="STATE", default=None,
                        help="Only report about jobs in the given state."
                        " Multiple states are allowed: separate them with commas.")
         self.add_param("-L", "--lifetimes", "--print-lifetimes", nargs='?', metavar='FILE',
@@ -380,11 +380,11 @@ Print job state.
         self.add_param("-n", "--no-update", action="store_false", dest="update",
                        help="Do not update job statuses;"
                        " only print what's in the local database.")
-        self.add_param("-u", "--update", action="store_true", dest="update", 
+        self.add_param("-u", "--update", action="store_true", dest="update",
                        help="Update job statuses before printing results"
                        " (this is the default.)")
-        self.add_param("-p", "--print", action="store", dest="keys", 
-                       metavar="LIST", default=None, 
+        self.add_param("-p", "--print", action="store", dest="keys",
+                       metavar="LIST", default=None,
                        help="Additionally print job attributes whose name appears in"
                        " this comma-separated list.")
 
@@ -393,7 +393,7 @@ Print job state.
         if 'update' not in self.params:
             self.params.update = True
         assert self.params.update in [True, False]
-        
+
         if len(self.params.args) == 0:
             # if no arguments, operate on all known jobs
             try:
@@ -433,7 +433,7 @@ Print job state.
             if isinstance(self.params.lifetimes, types.StringTypes):
                 self.params.lifetimes = open(self.params.lifetimes, 'w')
             lifetimes_rows = [['JOBID', 'SUBMITTED_AT', 'RUNNING_AT', 'FINISHED_AT', 'WAIT_DURATION', 'EXEC_DURATION']]
-        
+
         # update states and compute statistics
         stats = utils.defaultdict(lambda: 0)
         tot = 0
@@ -443,7 +443,7 @@ Print job state.
             jobid = app.persistent_id
             if self.params.update:
                 app.attach(self._core)
-                self._core.update_job_state(app)
+                app.update_state()
                 self._store.replace(jobid, app)
             if states is None or app.execution.in_state(*states):
                 rows.append([jobid, app.execution.state, app.execution.info] +
@@ -522,7 +522,7 @@ class cmd_gget(_BaseCmd):
     """
 Retrieve output files of a job.
 
-Output files can only be retrieved once a job has reached the 
+Output files can only be retrieved once a job has reached the
 'RUNNING' state; this command will print an error message if
 no output files are available.
 
@@ -533,13 +533,13 @@ released once the output files have been fetched.
     def setup_options(self):
         self.add_param("-d", "--download-dir", action="store", dest="download_dir", default=None,
                        help="Destination directory (job id will be appended to it); default is '.'")
-        self.add_param("-f", "--overwrite", action="store_true", dest="overwrite", default=False, 
+        self.add_param("-f", "--overwrite", action="store_true", dest="overwrite", default=False,
                        help="Overwrite files in destination directory")
 
     def main(self):
         if len(self.params.args) == 0:
             self.log.error("No job IDs given on command line: nothing to do."
-                           " Type '%s --help' for usage help." 
+                           " Type '%s --help' for usage help."
                            # if we were called with an absolute path,
                            # presume the command has been found by the
                            # shell through PATH and just print the command name,
@@ -560,7 +560,7 @@ released once the output files have been fetched.
                         % app.persistent_id)
                 elif app.execution.state == Run.State.TERMINATED:
                     raise gc3libs.exceptions.InvalidOperation(
-                        "Output of '%s' already downloaded to '%s'" 
+                        "Output of '%s' already downloaded to '%s'"
                         % (app.persistent_id, app.output_dir))
 
                 if self.params.download_dir is None:
@@ -568,7 +568,7 @@ released once the output files have been fetched.
                 else:
                     download_dir = os.path.join(self.params.download_dir, app.persistent_id)
 
-                self._core.fetch_output(app, download_dir, overwrite=self.params.overwrite)
+                app.fetch_output(download_dir, overwrite=self.params.overwrite)
                 if app.execution.state == Run.State.TERMINATED:
                     print("Job final results were successfully retrieved in '%s'" % download_dir)
                 else:
@@ -596,13 +596,13 @@ error occurred.
     """
 
     def setup_options(self):
-        self.add_param("-A", action="store_true", dest="all", default=False, 
+        self.add_param("-A", action="store_true", dest="all", default=False,
                        help="Remove all stored jobs. USE WITH CAUTION!")
 
     def main(self):
         if self.params.all and len(self.params.args) > 0:
             raise gc3libs.exceptions.InvalidUsage("Option '-A' conflicts with list of job IDs to remove.")
-    
+
         if self.params.all:
             args = self._store.list()
             if len(args) == 0:
@@ -611,7 +611,7 @@ error occurred.
             args = self.params.args
             if len(args) == 0:
                 self.log.warning("No job IDs given on command line: nothing to do."
-                                 " Type '%s --help' for usage help." 
+                                 " Type '%s --help' for usage help."
                                  # if we were called with an absolute path,
                                  # presume the command has been found by the
                                  # shell through PATH and just print the command name,
@@ -633,7 +633,7 @@ error occurred.
                 if app.execution.state == Run.State.TERMINATED:
                     raise gc3libs.exceptions.InvalidOperation("Job '%s' is already in terminal state" % app)
                 else:
-                    self._core.kill(app)
+                    app.kill()
                     self._store.replace(jobid, app)
 
                     # or shall we simply return an ack message ?
@@ -656,7 +656,7 @@ as more lines are written to the given stream.
     """
     def setup_args(self):
         self.add_param("jobid", nargs=1)
-    
+
     def setup_options(self):
         self.add_param("-e", "--stderr", action="store_true", dest="stderr", default=False, help="show stderr of the job")
         self.add_param("-f", "--follow", action="store_true", dest="follow", default=False, help="output appended data as the file grows")
@@ -673,7 +673,7 @@ as more lines are written to the given stream.
         else:
             stream = 'stdout'
 
-        app = self._store.load(jobid)        
+        app = self._store.load(jobid)
         if app.execution.state == Run.State.UNKNOWN \
                 or app.execution.state == Run.State.SUBMITTED \
                 or app.execution.state == Run.State.NEW:
@@ -684,7 +684,7 @@ as more lines are written to the given stream.
             if self.params.follow:
                 where = 0
                 while True:
-                    file_handle = self._core.peek(app, stream)
+                    file_handle = app.peek(stream)
                     self.log.debug("Seeking position %d in stream %s" % (where, stream))
                     file_handle.seek(where)
                     for line in file_handle.readlines():
@@ -695,7 +695,7 @@ as more lines are written to the given stream.
                     time.sleep(5)
             else:
                 estimated_size = gc3libs.Default.PEEK_FILE_SIZE * self.params.num_lines
-                file_handle = self._core.peek(app, stream, offset=-estimated_size, size=estimated_size)
+                file_handle = app.peek(stream, offset=-estimated_size, size=estimated_size)
                 for line in file_handle.readlines()[-(self.params.num_lines):]:
                     print line.strip()
                 file_handle.close()
@@ -718,8 +718,8 @@ List status of computational resources.
                        dest="update", default=True,
                        help="Do not update resource statuses;"
                        " only print what's in the local database.")
-        self.add_param("-p", "--print", action="store", dest="keys", 
-                       metavar="LIST", default=None, 
+        self.add_param("-p", "--print", action="store", dest="keys",
+                       metavar="LIST", default=None,
                        help="Only print resource attributes whose name appears in"
                        " this comma-separated list. (Attribute name is as given in"
                        " the configuration file, or listed in the middle column"
