@@ -67,15 +67,14 @@ an overlay Grid on the resources specified in the configuration file.
         self.auths = cfg.make_auths()
 
         # init backends
-        self._lrms_list = []
+        self._lrms= { }
         resources = cfg.make_resources()
         if len(resources) == 0:
             raise gc3libs.exceptions.NoResources(
                 "No resources given to initialize `gc3libs.core.Core` object!")
         for name, resource in resources.iteritems():
             try:
-                _lrms = self._make_backend(resource)
-                self._lrms_list.append(_lrms)
+                self._lrms[name] = self._make_backend(resource)
             except Exception, ex:
                 # log exceptions but ignore them
                 gc3libs.log.warning(
@@ -111,13 +110,13 @@ an overlay Grid on the resources specified in the configuration file.
             raise
 
 
-    def get_backend(self, resource_name):
-        for lrms in self._lrms_list:
-            if fnmatch(lrms._resource.name, resource_name):
-                return lrms
-        raise gc3libs.exceptions.InvalidResourceName(
-            "Cannot find computational resource '%s'" %
-            resource_name)
+    def get_backend(self, name):
+        try:
+            return self._lrms[name]
+        except KeyError:
+            raise gc3libs.exceptions.InvalidResourceName(
+                "Cannot find computational resource '%s'" %
+                resource_name)
 
 
     def select_resource(self, match):
@@ -136,13 +135,14 @@ an overlay Grid on the resources specified in the configuration file.
             (wildcards ``*`` and ``?`` are allowed) are retained.
         """
         try:
-            self._lrms_list = [ lrms for lrms in self._lrms_list if match(lrms._resource) ]
+            self._lrms = dict( (name,lrms) for (name,lrms) in self._lrms.iteritems()
+                               if match(lrms._resource) )
         except:
             # `match` is not callable, then assume it's a
             # glob pattern and select resources whose name matches
-            self._lrms_list = [ lrms for lrms in self._lrms_list
-                                if fnmatch(lrms._resource.name, match) ]
-        return len(self._lrms_list)
+            self._lrms = dict( (name,lrms) for (name,lrms) in self._lrms.iteritems()
+                               if fnmatch(lrms._resource.name, match) )
+        return len(self._lrms)
 
 
     def free(self, app, **kw):
@@ -193,7 +193,7 @@ an overlay Grid on the resources specified in the configuration file.
         elif job.state != Run.State.NEW:
             return
 
-        if len(self._lrms_list) == 0:
+        if len(self._lrms) == 0:
             raise gc3libs.exceptions.NoResources(
                 "Could not initialize any computational resource"
                 " - please check log and configuration file.")
@@ -201,7 +201,7 @@ an overlay Grid on the resources specified in the configuration file.
         gc3libs.log.debug('Performing brokering ...')
         # decide which resource to use
         # (Resource)[] = (Scheduler).PerformBrokering((Resource)[],(Application))
-        _selected_lrms_list = app.compatible_resources(self._lrms_list)
+        _selected_lrms_list = app.compatible_resources(self._lrms.itervalues())
         gc3libs.log.debug('Application scheduler returned %d matching resources',
                            len(_selected_lrms_list))
         if 0 == len(_selected_lrms_list):
@@ -466,7 +466,7 @@ an overlay Grid on the resources specified in the configuration file.
         """
         Return list of resources configured into this `Core` instance.
         """
-        return [ lrms._resource for lrms in self._lrms_list ]
+        return [ lrms._resource for lrms in self._lrms.itervalues() ]
 
 
     def kill(self, app, **kw):
@@ -545,7 +545,7 @@ an overlay Grid on the resources specified in the configuration file.
         Each resource object in the returned list will have its `updated` attribute
         set to `True` if the update operation succeeded, or `False` if it failed.
         """
-        for lrms in self._lrms_list:
+        for lrms in self._lrms.itervalues():
             try:
                 auto_enable_auth = kw.get('auto_enable_auth', self.auto_enable_auth)
                 resource = lrms.get_resource_status()
@@ -561,7 +561,7 @@ an overlay Grid on the resources specified in the configuration file.
         Used to invoke explicitly the destructor on objects
         e.g. LRMS
         """
-        for lrms in self._lrms_list:
+        for lrms in self._lrms.itervalues():
             lrms.close()
 
 

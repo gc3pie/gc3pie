@@ -326,7 +326,7 @@ is canceled before re-submission.
         if self.params.resource_name:
             self._select_resources(self.params.resource_name)
             self.log.info("Retained only resources: %s (restricted by command-line option '-r %s')",
-                              str.join(",", [res['name'] for res in self._core._resources]),
+                              str.join(",", [ res['name'] for res in self._core.get_resources() ]),
                               self.params.resource_name)
 
         failed = 0
@@ -729,7 +729,7 @@ List status of computational resources.
         if len(self.params.args) > 0:
             self._select_resources(* self.params.args)
             self.log.info("Retained only resources: %s",
-                          str.join(",", [res['name'] for res in self._core._resources]))
+                          str.join(",", [ res['name'] for res in self._core.get_resources() ]))
 
         if self.params.update:
             self._core.update_resources()
