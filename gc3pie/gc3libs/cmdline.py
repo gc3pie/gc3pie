@@ -61,15 +61,16 @@ import cli._ext.argparse as argparse
 
 ## interface to Gc3libs
 import gc3libs
+import gc3libs.config
 import gc3libs.core
 import gc3libs.exceptions
 import gc3libs.persistence
 import gc3libs.utils
 import gc3libs.url
 
+
 ## types for command-line parsing; see
 ## http://docs.python.org/dev/library/argparse.html#type
-
 
 def nonnegative_int(num):
     """This function raise an ArgumentTypeError if `num` is a negative
@@ -509,7 +510,10 @@ class _Script(cli.app.CommandLineApp):
                                  " please edit it and define resources." % location)
         try:
             self.log.debug('Creating instance of Core ...')
-            return gc3libs.core.Core(* gc3libs.core.import_config(config_file_locations, auto_enable_auth))
+            cfg = gc3libs.config.Configuration(
+                *config_file_locations,
+                auto_enable_auth=auto_enable_auth)
+            return gc3libs.core.Core(cfg)
         except gc3libs.exceptions.NoResources:
             raise gc3libs.exceptions.FatalError(
                 "No computational resources defined."

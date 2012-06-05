@@ -1027,6 +1027,14 @@ class Struct(object, UserDict.DictMixin):
       3
       >>> a.z
       3
+
+    Like `dict` instances, `Struct`s have a `copy` method to get a
+    shallow copy of the instance:
+
+      >>> b = a.copy()
+      >>> b.z
+      3
+
     """
     def __init__(self, initializer=None, **kw):
         if initializer is not None:
@@ -1040,6 +1048,10 @@ class Struct(object, UserDict.DictMixin):
                     self[name] = value
         for name, value in kw.items():
             self[name] = value
+
+    def copy(self):
+        """Return a (shallow) copy of this `Struct` instance."""
+        return Struct(self)
 
     # the `DictMixin` class defines all std `dict` methods, provided
     # that `__getitem__`, `__setitem__` and `keys` are defined.

@@ -7,7 +7,7 @@ the Grid resources from the Swiss National Infrastructure SMSCG and
 local compute clusters.
 
 Given a template GAMESS input file, GRunDB will launch a GAMESS job
-for each molecule of the chosen subset(s) of the GAMESS.UZH database, 
+for each molecule of the chosen subset(s) of the GAMESS.UZH database,
 manage the job lifecycle, and finally print out a comparison table
 of stoichiomery reference data (from the database) and the same
 quantitites as computed by GAMESS.
@@ -33,7 +33,7 @@ import re
 import shutil
 import sys
 import time
-import urlparse 
+import urlparse
 
 from optparse import OptionParser
 
@@ -56,9 +56,9 @@ PROG = os.path.splitext(os.path.basename(sys.argv[0]))[0]
 
 def grouped(iterable, pattern, container=tuple):
     """
-    Iterate over elements in `iterable`, grouping them into 
+    Iterate over elements in `iterable`, grouping them into
     batches: the `n`-th batch has length given by the `n`-th
-    item of `pattern`.  Each batch is cast into an object 
+    item of `pattern`.  Each batch is cast into an object
     of type `container`.
 
     Examples::
@@ -87,7 +87,7 @@ class CsvTable(object):
                 width = 1
             elif hdr == '':
                 width += 1
-            else: 
+            else:
                 self._groupnames.append(prev_hdr)
                 self._grouping.append(width)
                 width = 1
@@ -97,7 +97,7 @@ class CsvTable(object):
         self._grouping.append(width)
     def rows_as_dict(self):
         for raw in csv.reader(self._data, dialect=self._dialect):
-            yield dict([ (k,v) for k,v 
+            yield dict([ (k,v) for k,v
                          in itertools.izip(self._groupnames,
                                            grouped(raw, self._grouping)) ])
 
@@ -189,16 +189,16 @@ class GamessDb(object):
             yield (reaction, refdata)
 
 
-### THE FOLLOWING CODE IS COMMON WITH `grosetta` 
+### THE FOLLOWING CODE IS COMMON WITH `grosetta`
 ### (AND SHOULD BE KEPT IN SYNC WITH IT)
 ### It will be merged into `gc3utils` someday.
 
 def zerodict():
     """
-    A dictionary that automatically creates keys 
+    A dictionary that automatically creates keys
     with value 0 on first reference.
     """
-    def zero(): 
+    def zero():
         return 0
     return gc3utils.utils.defaultdict(zero)
 
@@ -209,7 +209,7 @@ class Job(Gc3utilsJob):
     """
     def __init__(self, **kw):
         kw.setdefault('log', list())
-        kw.setdefault('state', None) # user-visible status 
+        kw.setdefault('state', None) # user-visible status
         kw.setdefault('status', -1)  # gc3utils status (internal use only)
         kw.setdefault('timestamp', gc3utils.utils.defaultdict(time.time))
         Gc3utilsJob.__init__(self, **kw)
@@ -230,7 +230,7 @@ class Job(Gc3utilsJob):
             if state == 'NEW':
                 self.created = epoch
             self.set_info(state.capitalize() + ' at ' + time.asctime(time.localtime(epoch)))
-        
+
 
 def _get_state_from_gc3utils_job_status(status):
     """
@@ -255,7 +255,8 @@ class Grid(object):
     An interface to job lifecycle management.
     """
     def __init__(self, config_file=gc3utils.Default.CONFIG_FILE_LOCATION, default_output_dir=None):
-        self.mw = gc3utils.gcli.Gcli(*gc3utils.gcli.import_config([config_file]))
+        cfg = gc3libs.config.Config(config_file)
+        self.mw = gc3utils.gcli.Gcli(cfg)
         self.default_output_dir = default_output_dir
 
     def save(self, job):
@@ -295,7 +296,7 @@ class Grid(object):
         """
         Retrieve job's output files into `output_dir`.
         If `output_dir` is `None` (default), then use
-        `self.output_dir`. 
+        `self.output_dir`.
         """
         # `job_local_dir` is where gc3utils will retrieve the output
         if output_dir is not None:
@@ -320,7 +321,7 @@ class Grid(object):
         # update status of SUBMITTED/RUNNING jobs before launching new ones, otherwise
         # we would be checking the status of some jobs twice...
         if job.state == 'SUBMITTED' or job.state == 'RUNNING' or job.state == 'UNKNOWN':
-            # update state 
+            # update state
             try:
                 self.update_state(job)
             except Exception, x:
@@ -345,17 +346,17 @@ class Grid(object):
                 job.set_state('DONE')
                 job.set_info("Results retrieved into directory '%s'" % job.output_dir)
             except Exception, x:
-                logger.error("Got error in fetching output of job '%s': %s: %s" 
+                logger.error("Got error in fetching output of job '%s': %s: %s"
                              % (job.id, x.__class__.__name__, str(x)), exc_info=True)
         if can_retrieve and (job.state == 'FAILED') and not job.get('output_retrieved_to', None):
             # try to get output, ignore errors as there might be no output
             try:
                 self.get_output(job, job.output_dir)
                 job.status = gc3utils.Job.JOB_STATE_FAILED # patch
-                job.set_info("Output retrieved into directory '%s/%s'" 
+                job.set_info("Output retrieved into directory '%s/%s'"
                              % (job.output_dir, job.jobid))
             except Exception, x:
-                logger.error("Got error in fetching output of job '%s': %s: %s" 
+                logger.error("Got error in fetching output of job '%s': %s: %s"
                              % (job.id, x.__class__.__name__, str(x)), exc_info=True)
                 job.set_info("No output could be retrieved.")
         self.save(job)
@@ -391,7 +392,7 @@ class JobCollection(dict):
                                   ['id', 'jobid', 'state', 'info', 'history']):
             if row['id'].strip() == '':
                 # invalid row, skip
-                continue 
+                continue
             id = row['id']
             if not self.has_key(id):
                 self[id] = Job(unique_token=row['jobid'], ** self.default_job_initializer)
@@ -423,7 +424,7 @@ class JobCollection(dict):
         """
         for job in self.values():
             job.history = str.join("; ", job.log)
-            csv.DictWriter(session, ['id', 'jobid', 'state', 'info', 'history'], 
+            csv.DictWriter(session, ['id', 'jobid', 'state', 'info', 'history'],
                            extrasaction='ignore').writerow(job)
 
     def stats(self):
@@ -435,7 +436,7 @@ class JobCollection(dict):
         for job in self.values():
             result[job.state] += 1
         return result
-        
+
     def pprint(self, output=sys.stdout, session=None):
         """
         Output a summary table to stream `output`.
@@ -446,13 +447,13 @@ class JobCollection(dict):
             else:
                 print ("There are no jobs in session file.")
         else:
-            output.write("%-15s  %-18s  %-s\n" 
+            output.write("%-15s  %-18s  %-s\n"
                          % ("Input file name", "State (JobID)", "Info"))
             output.write(78 * "=" + '\n')
             def cmp_by_molecule_name(x,y):
                 return cmp(os.path.basename(x.id), os.path.basename(y.id))
             for job in sorted(self.values()):
-                output.write("%-15s  %-18s  %-s\n" % 
+                output.write("%-15s  %-18s  %-s\n" %
                              (os.path.basename(job.id), ('%s (%s)' % (job.state, job.jobid)), job.info))
 
 ### END OF COMMON CODE PART
@@ -570,7 +571,7 @@ def grep1(filename, re):
             return match
     file.close()
     return None
-            
+
 
 _whitespace_re = re.compile(r'\s+', re.X)
 def prettify(text):
@@ -585,7 +586,7 @@ def progress(session):
     grid = Grid()
     session_file_name = add_extension(session, 'csv')
     jobs = _load_jobs(session_file_name)
-    logger.info("Loaded %d jobs from session file '%s'", 
+    logger.info("Loaded %d jobs from session file '%s'",
                 len(jobs), session_file_name)
     final_energy_re = re.compile(r'FINAL [-\s]+ [A-Z0-9_-]+ \s+ ENERGY \s* (IS|=) \s* '
                                  r'(?P<energy>[+-]?[0-9]*(\.[0-9]*)?) \s* [A-Z0-9\s]*', re.X)
@@ -628,8 +629,8 @@ def progress(session):
                     job.set_info(prettify(final_energy_line.group(0)))
                     # record energy in compute-ready form
                     job.energy = float(final_energy_line.group('energy'))
-                    if abs(job.energy) < 0.01: 
-                        job.set_info(job.info + 
+                    if abs(job.energy) < 0.01:
+                        job.set_info(job.info +
                                      ' (WARNING: energy below threshold, computation might be incorrect)')
                 else:
                     job.set_info(job.info + ' (WARNING: could not parse GAMESS output file)')
@@ -658,8 +659,8 @@ def progress(session):
         print ("")
         print ("STOICHIOMETRY DATA")
         print ("")
-        print ("%-40s  %-12s  (%-s; %-s)" 
-               % ("Reaction", "Comp. energy", "Ref. data", "deviation"))                
+        print ("%-40s  %-12s  (%-s; %-s)"
+               % ("Reaction", "Comp. energy", "Ref. data", "deviation"))
         print (78 * "=")
         for subset in sorted(subsets):
             # print subset name, centered
@@ -670,11 +671,11 @@ def progress(session):
                 # compute corresponding energy
                 computed_energy = sum([ (627.509*qty*energy[sy]) for sy,qty in reaction.items() ])
                 deviation = computed_energy - refdata
-                print ("%-40s  %+.2f  (%+.2f; %+.2f)" 
+                print ("%-40s  %+.2f  (%+.2f; %+.2f)"
                        % (
                         # symbolic reaction
-                        str.join(' + ', 
-                             [ ("%d*%s" % (qty, sy)) for sy,qty in reaction.items() ]), 
+                        str.join(' + ',
+                             [ ("%d*%s" % (qty, sy)) for sy,qty in reaction.items() ]),
                         # numerical data
                         computed_energy, refdata, deviation)
                        )
@@ -726,7 +727,7 @@ cmdline.add_option("-t", "--template", dest="template", metavar="TEMPLATE",
                    help="Prefix geometry data with the contents of the specified file,"
                    " to build the full GAMESS '.inp' file (Default: '%default')"
                    )
-cmdline.add_option("-v", "--verbose", dest="verbose", action="count", default=0, 
+cmdline.add_option("-v", "--verbose", dest="verbose", action="count", default=0,
                    help="Verbosely report about program operation and progress."
                    )
 cmdline.add_option("-w", "--wall-clock-time", dest="wctime", default=str(24), # 24 hrs
@@ -773,7 +774,7 @@ def get_required_argument(args, argno=1, argname='SUBSET'):
         return args[argno]
     except:
         logger.critical("Missing required argument %s."
-                        " Aborting now; type '%s --help' to get usage help.", 
+                        " Aborting now; type '%s --help' to get usage help.",
                         argname, PROG)
         raise
 def get_optional_argument(args, argno=2, argname="SESSION",
@@ -814,9 +815,9 @@ if "__main__" == __name__:
     elif 'refdata' == args[0]:
         subset = get_required_argument(args, 1, "SUBSET")
         for r,d in GamessDb().get_reference_data(subset):
-            print ("%s = %.3f" 
-                   % (str.join(' + ', 
-                               [ ("%d*%s" % (qty, sy)) for sy,qty in r.items() ]), 
+            print ("%s = %.3f"
+                   % (str.join(' + ',
+                               [ ("%d*%s" % (qty, sy)) for sy,qty in r.items() ]),
                       d))
 
     elif 'download' == args[0]:

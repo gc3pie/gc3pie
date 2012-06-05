@@ -2,7 +2,7 @@
 """
 A specialized dictionary for representing computational resource characteristics.
 """
-# Copyright (C) 2009-2011 GC3, University of Zurich. All rights reserved.
+# Copyright (C) 2009-2012 GC3, University of Zurich. All rights reserved.
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
@@ -36,7 +36,7 @@ from gc3libs.utils import Struct
 class Resource(Struct):
     '''
     `Resource` objects are dictionaries, comprised of the following keys.
-    
+
     Statically provided, i.e., specified at construction time and changed never after:
 
       arc_ldap             string
@@ -52,7 +52,7 @@ class Resource(Struct):
       type                 int     *
 
     Starred attributes are required for object construction.
-     
+
     Dynamically provided (i.e., defined by the `get_resource_status()` method or similar):
       free_slots          int
       user_run            int
@@ -60,59 +60,23 @@ class Resource(Struct):
       queued              int
     '''
 
-    def __init__(self, name=None, type=None, auth=None, architecture=None, max_cores_per_job=None, max_memory_per_core=None, max_walltime=None, **keywd):
-        
+    def __init__(self, **keywd):
+
         self.isValid = False
 
-        if not name:
-            raise TypeError("Missing mandatory attribute 'name'")
-        else:
-            self.name = str(name)
-
-        if not type:
-            raise TypeError("Missing mandatory attribute 'type'")
-        else:
-            self.type = str(type)
-
-        if not architecture:
-            raise TypeError("Missing mandatory attribute 'architecture'")
-        else:
-            self.architecture = str(architecture)
-
-        if not auth:
-            raise TypeError("Missing mandatory attribute 'auth'")
-        else:
-            self.auth = str(auth)
-
-        if not max_cores_per_job:
-            raise TypeError("Missing mandatory attribute 'max_cores_per_job'")
-        else:
-            # try to type it to int
-            try:
-                self.max_cores_per_job = int(max_cores_per_job)
-            except ValueError:
-                # not a pure int
-                raise TypeError("Mandatory attribute 'max_cores_per_job' should be <int>")
-
-        if not max_memory_per_core:
-            raise TypeError("Missing mandatory attribute 'max_memory_per_core'")
-        else:
-            # try to type it to int
-            try:
-                self.max_memory_per_core = int(max_memory_per_core)
-            except ValueError:
-                # not a pure int
-                raise TypeError("Mandatory attribute 'max_memory_per_core' should be <int>")
-
-        if not max_walltime:
-            raise TypeError("Missing mandatory attribute 'max_walltime'")
-        else:
-            # try to type it to int
-            try:
-                self.max_walltime = int(max_walltime)
-            except ValueError:
-                # not a pure int
-                raise TypeError("Mandatory attribute 'max_walltime' should be <int>")
+        mandatory = [
+            'architecture',
+            'auth',
+            'max_cores_per_job',
+            'max_memory_per_core',
+            'max_walltime',
+            'name',
+            'ncores',
+            'type',
+            ]
+        for param in mandatory:
+            if param not in keywd:
+                raise TypeError("Missing mandatory attribute '%s'" % param)
 
         Struct.__init__(self, **keywd)
 
@@ -121,4 +85,3 @@ class Resource(Struct):
 
     def is_valid(self):
         return self.isValid
-
