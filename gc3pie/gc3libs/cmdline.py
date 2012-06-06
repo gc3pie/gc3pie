@@ -1270,7 +1270,7 @@ class SessionBasedScript(_Script):
         if self.params.resource_name:
             self._select_resources(self.params.resource_name)
             self.log.info("Retained only resources: %s (restricted by command-line option '-r %s')",
-                          str.join(",", [res['name'] for res in self._core._resources]),
+                          str.join(",", [r['name'] for r in self._core.get_resources()]),
                           self.params.resource_name)
 
         ## create an `Engine` instance to manage the job list
