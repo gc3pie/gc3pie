@@ -51,15 +51,15 @@ import gc3libs.utils as utils
 
 
 class Core:
-    """
-Core operations: submit, update state, retrieve (a snapshot of)
-output, cancel job.
+    """Core operations: submit, update state, retrieve (a
+snapshot of) output, cancel job.
 
 Core operations are *blocking*, i.e., they return only after the
 operation has successfully completed, or an error has been detected.
 
-Operations are always performed by a `Core` object.  `Core` implements
-an overlay Grid on the resources specified in the configuration file.
+Operations are always performed by a `Core` object.
+`Core` implements an overlay Grid on the resources
+specified in the configuration file.
     """
     def __init__(self, cfg):
         # init auths
@@ -158,6 +158,16 @@ an overlay Grid on the resources specified in the configuration file.
         :raise: `gc3libs.exceptions.InvalidOperation` if `app.execution.state`
                 differs from `Run.State.TERMINATED`.
         """
+        assert isinstance(app, Task), \
+            "Core.free: passed an `app` argument which is not a `Task` instance."
+        if isinstance(app, Application):
+            return self.__free_application(app, **kw)
+        else:
+            # must be a `Task` instance
+            return self.__free_task(app, **kw)
+
+    def __free_application(self, app, **kw):
+        """Implementation of `free` on `Application` objects."""
         if app.execution.state not in [ Run.State.TERMINATING, Run.State.TERMINATED ]:
             raise gc3libs.exceptions.InvalidOperation(
                 "Attempting to free resources of job '%s',"
@@ -167,6 +177,10 @@ an overlay Grid on the resources specified in the configuration file.
 
         lrms =  self.get_backend(app.execution.resource_name)
         lrms.free(app)
+
+    def __free_task(self, task, **kw):
+        """Implementation of `free` on generic `Task` objects."""
+        return task.free(**kw)
 
 
     def submit(self, app, resubmit=False, **kw):
@@ -183,9 +197,27 @@ an overlay Grid on the resources specified in the configuration file.
         :raise: `gc3libs.exceptions.InputFileError` if an input file
                 does not exist or cannot otherwise be read.
         """
+        assert isinstance(app, Task), \
+            "Core.submit: passed an `app` argument which is not a `Task` instance."
+        if isinstance(app, Application):
+            return self.__submit_application(app, resubmit, **kw)
+        else:
+            # must be a `Task` instance
+            return self.__submit_task(app, resubmit, **kw)
+
+    def __submit_application(self, app, resubmit, **kw):
+        """Implementation of `submit` on `Application` objects."""
+
         gc3libs.log.debug("Submitting %s ..." % str(app))
 
         auto_enable_auth = kw.get('auto_enable_auth', self.auto_enable_auth)
+
+        # XXX: we obsolete this check as we now move this responsibility
+        # within the LRMS
+        # check that all input files can be read
+        #for local_path in app.inputs:
+        #    gc3libs.utils.test_file(local_path, os.R_OK,
+        #                            gc3libs.exceptions.InputFileError)
 
         job = app.execution
         if resubmit:
@@ -197,6 +229,14 @@ an overlay Grid on the resources specified in the configuration file.
             raise gc3libs.exceptions.NoResources(
                 "Could not initialize any computational resource"
                 " - please check log and configuration file.")
+
+        # # XXX: auth should probably become part of LRMS and controlled within it
+        # for _lrms in self._lrms_list:
+        #     try:
+        #         self.auths.get(_lrms._resource.auth)
+        #     except Exception, ex:
+        #         gc3libs.log.warning('Failed obtaining auth. Error type %s, message %s' % (ex.__class__,str(ex)))
+        #         continue
 
         gc3libs.log.debug('Performing brokering ...')
         # decide which resource to use
@@ -272,6 +312,11 @@ an overlay Grid on the resources specified in the configuration file.
         else:
             return
 
+    def __submit_task(self, task, resubmit, **kw):
+        """Implementation of `submit` on generic `Task` objects."""
+        kw.setdefault('auto_enable_auth', self.auto_enable_auth)
+        task.submit(resubmit, **kw)
+
 
     def update_job_state(self, *apps, **kw):
         """
@@ -295,6 +340,11 @@ an overlay Grid on the resources specified in the configuration file.
                 non-existing auth section).
 
         """
+        self.__update_application((app for app in apps if isinstance(app, Application)), **kw)
+        self.__update_task((app for app in apps if not isinstance(app, Application)), **kw)
+
+    def __update_application(self, apps, **kw):
+        """Implementation of `update_job_state` on `Application` objects."""
         update_on_error = kw.get('update_on_error', False)
         auto_enable_auth = kw.get('auto_enable_auth', self.auto_enable_auth)
 
@@ -364,6 +414,13 @@ an overlay Grid on the resources specified in the configuration file.
                                   ex.__class__.__name__, str(ex), exc_info=True)
                 continue
 
+    def __update_task(self, tasks, **kw):
+        """Implementation of `update_job_state` on generic `Task` objects."""
+        for task in tasks:
+            assert isinstance(task, Task), \
+                   "Core.update_job_state: passed an argument which is not a `Task` instance."
+            task.update_state()
+
 
     def fetch_output(self, app, download_dir=None, overwrite=False, **kw):
         """
@@ -393,6 +450,16 @@ an overlay Grid on the resources specified in the configuration file.
                 state, indicating the remote job has not started
                 running).
         """
+        assert isinstance(app, Task), \
+            "Core.fetch_output: passed an `app` argument which is not a `Task` instance."
+        if isinstance(app, Application):
+            self.__fetch_output_application(app, download_dir, overwrite, **kw)
+        else:
+            # generic `Task` object
+            self.__fetch_output_task(app, download_dir, overwrite, **kw)
+
+    def __fetch_output_application(self, app, download_dir, overwrite, **kw):
+        """Implementation of `fetch_output` on `Application` objects."""
         job = app.execution
         if job.state in [ Run.State.NEW, Run.State.SUBMITTED ]:
             raise gc3libs.exceptions.OutputNotAvailableError(
@@ -462,6 +529,11 @@ an overlay Grid on the resources specified in the configuration file.
             job.info = ("Output snapshot downloaded to '%s'" % download_dir)
 
 
+    def __fetch_output_task(self, task, download_dir, overwrite, **kw):
+        """Implementation of `fetch_output` on generic `Task` objects."""
+        return task.fetch_output(download_dir, overwrite, **kw)
+
+
     def get_resources(self, **kw):
         """
         Return list of resources configured into this `Core` instance.
@@ -477,6 +549,15 @@ an overlay Grid on the resources specified in the configuration file.
         entails canceling the job with the remote execution system;
         terminating a job in the NEW or TERMINATED state is a no-op.
         """
+        assert isinstance(app, Task), \
+            "Core.kill: passed an `app` argument which is not a `Task` instance."
+        if isinstance(app, Application):
+            self.__kill_application(app, **kw)
+        else:
+            self.__kill_task(app, **kw)
+
+    def __kill_application(self, app, **kw):
+        """Implementation of `kill` on `Application` objects."""
         job = app.execution
         auto_enable_auth = kw.get('auto_enable_auth', self.auto_enable_auth)
         lrms = self.get_backend(job.resource_name)
@@ -496,12 +577,16 @@ an overlay Grid on the resources specified in the configuration file.
         job.signal = Run.Signals.Cancelled
         job.log.append("Cancelled.")
 
+    def __kill_task(self, task, **kw):
+        kw.setdefault('auto_enable_auth', self.auto_enable_auth)
+        task.kill(**kw)
+
 
     def peek(self, app, what='stdout', offset=0, size=None, **kw):
         """
         Download `size` bytes (at `offset` bytes from the start) from
         the remote job standard output or error stream, and write them
-        into a local file.  Return a file-like object from which the
+        into a local file.  Return file-like object from which the
         downloaded contents can be read.
 
         If `size` is `None` (default), then snarf all available
@@ -512,6 +597,15 @@ an overlay Grid on the resources specified in the configuration file.
         relevant section of the job's standard output resp. standard
         error should be downloaded.
         """
+        assert isinstance(app, Task), \
+            "Core.peek: passed an `app` argument which is not a `Task` instance."
+        if isinstance(app, Application):
+            return self.__peek_application(app, what, offset, size, **kw)
+        else:
+            return self.__peek_task(app, what, offset, size, **kw)
+
+    def __peek_application(self, app, what, offset, size, **kw):
+        """Implementation of `peek` on `Application` objects."""
         job = app.execution
         if what == 'stdout':
             remote_filename = job.stdout_filename
@@ -536,6 +630,10 @@ an overlay Grid on the resources specified in the configuration file.
             local_file.seek(0)
 
         return local_file
+
+    def __peek_task(self, task, what, offset, size, **kw):
+        """Implementation of `peek` on generic `Task` objects."""
+        return task.peek(what, offset, size, **kw)
 
 
     def update_resources(self, **kw):
