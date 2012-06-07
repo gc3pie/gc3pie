@@ -1,0 +1,43 @@
+! EXAM26
+!  Localized orbital test...J.Phys.Chem. 1984, 88, 382-389
+!
+!  FINAL Energy= -415.2660357291 in 11 iters
+!
+!  If you localize only the valence orbitals, by commenting
+!  out the $LOCAL group below, the
+!        Boys localization sum is 204.693589
+!  Ruedenberg localization sum is   5.081667
+!  population localization sum is   4.610528
+!
+!  The SCF localized charge decomposition forces all orbitals
+!  to be localized, so the final diagonal sum is 28.389125.
+!  The nuclear charge assigned to the oxygen "lone pairs" is
+!  redistributed so that the total nuclear P and O charges are
+!  correct.  The energies computed for the PO bond, PH bonds,
+!  and O lone pairs are -37.273022, -27.364212, -26.363865.
+!  The corresponding dipoles are 2.041, 3.484, and 3.465.
+!
+!  To analyze the MP2 valence contributions, select MPLEVL=2,
+!  and turn EDCOMP and DIPDCM off.  The results should be
+!  E(MP2)=-415.4952200908, and the contribution of the PO bond,
+!  PH bonds, and O lone pairs to the correlation energy are
+!  -0.0442096, -0.0237793, and -0.0378790, respectively.
+!
+ $contrl scftyp=rhf runtyp=energy local=ruednbrg mplevl=0 $end
+ $system timlim=1 $end
+ $mp2    lmomp2=.true. $end
+ $local  edcomp=.true.  moidon=.true. dipdcm=.true.
+         ijmo(1)= 1,11, 2,11, 1,12, 2,12, 1,13, 2,13
+         zij(1)=1.666666667,0.333333333,1.6666666667,0.333333333,
+                1.666666667,0.333333333
+         moij(1)= 2,1,  2,1,  2,1
+         nmoij(11)=2,2,2  $end
+ $basis  gbasis=n21 ngauss=3 ndfunc=1 $end
+ $data
+phosphine oxide...3-21G* basis...localized orbital test
+Cnv 3
+
+P 15.0
+O  8.0  0.0000000000  0.0   1.4701
+H  1.0  1.2335928631  0.0  -0.6421021244
+ $end

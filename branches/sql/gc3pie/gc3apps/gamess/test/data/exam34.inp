@@ -1,0 +1,32 @@
+! EXAM34.
+!   CIS treatment of excited states of formaldehyde.
+!
+!   EXCITED STATE 1's E=-113.7017742428, RMS=0.0290048
+!   The S0->S1 transition dipole is (0,0,0.006029),
+!   and the S0 -> S1 transition energy is 4.56 eV.
+!
+!   geometry optimization would lead in 18 steps to 
+!   -113.7053624528, at r(CO)=1.2553, r(CH)=1.0854, 
+!   a(HCO)= 117.74, with C's pyramidalization= 24.88.
+!   This reproduces the fourth line of Table III in 
+!   Foresman et al. J.Phys.Chem. 96, 135-149(1992),
+!   using no frozen core orbitals in order to do so.
+!   Since it is well known that the geometry of this
+!   state lies within Cs symmetry, the initial guess
+!   geometry below is very slightly bent into Cs.
+!
+ $contrl scftyp=rhf cityp=cis runtyp=gradient nzvar=6 $end
+ $system timlim=1 $end
+ $basis gbasis=n31 ngauss=6 ndfunc=1 npfunc=0 diffsp=.t. $end
+ $guess  guess=huckel $end
+ $cis    hamtyp=saps mult=1 nacore=0 nstate=1 iroot=1 $end
+ $zmat   izmat(1)=1,1,2,  1,2,3,  1,2,4, 
+                  2,1,2,3,  2,1,2,4,  4,1,2,4,3 $end
+ $data
+Formaldehyde CIS/6-31+G(d) 1(n->pi*) state optimization
+Cs
+
+O   8.0    .01  -.8669736159  .0
+C   6.0    .0    .3455497481  .0
+H   1.0  -0.01   .9295804473  .9376713430
+ $end
