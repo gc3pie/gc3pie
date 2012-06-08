@@ -358,6 +358,7 @@ class SqlStoreChecks(GenericStoreChecks):
         """
         Test if `SqlStore` saves extra attributes into columns of the same name.
         """
+        raise SkipTest("This feature is not supported anymore.")
         # extend the db
         self.conn.execute('alter table %s add column value varchar(256)'
                        % self.store.table_name)
@@ -386,7 +387,8 @@ class SqlStoreChecks(GenericStoreChecks):
                        % self.store.table_name)
 
         # re-build store, as the table list is read upon `__init__`
-        self.store = self._make_store(extra_fields={ 'extra': (lambda arg: arg.foo.value) })
+        self.store = self._make_store(extra_fields={
+            sqlalchemy.Column('extra',sqlalchemy.VARCHAR(length=128)): (lambda arg: arg.foo.value) })
 
         # if this query does not error out, the column is defined
         q = sql.select([sqlfunc.count(self.store.t_store.c.extra)]).distinct()

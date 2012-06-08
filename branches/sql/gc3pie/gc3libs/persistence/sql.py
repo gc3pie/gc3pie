@@ -122,8 +122,7 @@ class SqlStore(Store):
     The `extra_fields` argument is used to extend the database. It
     must contain a mapping `<column>` : `<function>` where:
 
-    `<column>` may be a `sqlalchemy.Column` object or string. If it is
-    a string the corresponding column will be a `BLOB`.
+    `<column>` is a `sqlalchemy.Column` object.
 
     `<function>` is a function (or lambda) which accept the object as
     argument and will return the value to be stored into the
@@ -136,7 +135,7 @@ class SqlStore(Store):
     """
 
     def __init__(self, url, table_name="store", idfactory=None,
-                 extra_fields={}):
+                 extra_fields={}, create=True):
         """
         Open a connection to the storage database identified by
         url. It will use the correct backend (MySQL, psql, sqlite3)
@@ -146,58 +145,32 @@ class SqlStore(Store):
         self.table_name = table_name
 
         self.__meta = sqla.MetaData(bind=self.__engine)
-        self.__meta.reflect()
 
+        # create internal rep of table
         self.extra_fields = dict()
 
+        # Create schema.
+        table = sqla.Table(
+            self.table_name,
+            self.__meta,
+            sqla.Column('id',
+                        sqla.INTEGER(),
+                        primary_key=True, nullable=False),
+            sqla.Column('data',
+                        sqla.BLOB()),
+            sqla.Column('state',
+                        sqla.VARCHAR(length=128))
+            )
+        for col, func in extra_fields.iteritems():
+            assert isinstance(col, sqla.Column)
+            table.append_column(col.copy())
+            self.extra_fields[col.name] = func
+
+        current_metadata = sqla.MetaData(bind=self.__engine)
+        current_metadata.reflect()
         # check if the db exists and already has a 'store' table
-        if self.table_name not in self.__meta.tables:
-            # No table, let's create it
-            table = sqla.Table(
-                self.table_name,
-                self.__meta,
-                sqla.Column('id',
-                            sqla.INTEGER(),
-                            primary_key=True, nullable=False),
-                sqla.Column('data',
-                            sqla.BLOB()),
-                sqla.Column('state',
-                            sqla.VARCHAR(length=128))
-                )
-            for col, func in extra_fields.iteritems():
-                if isinstance(col, sqla.Column):
-                    table.append_column(col.copy())
-                    self.extra_fields[col.name] = func
-                else:
-                    table.append_column(sqla.Column(col, sqla.BLOB()))
-                    self.extra_fields[str(col)] = func
+        if create and self.table_name not in current_metadata.tables:
             self.__meta.create_all()
-
-        else:
-            # A 'store' table exists. Check the column names and fill
-            # `self.extra_fields` accordingly.
-
-            # NOTE: the "attr=colname" in the lambda definition is
-            # *needed*, since otherwise all the lambdas would share
-            # the same outer 'colname' reference, which is bound to
-            # the last `colname` value used in the loop...
-            self.extra_fields = dict()
-            for colname in self.__meta.tables[self.table_name].columns.keys():
-                colname = str(colname)
-                if colname in ('id', 'data', 'state'):
-                    continue
-                if colname in extra_fields:
-                    self.extra_fields[colname] = extra_fields[colname]
-                else:
-                    self.extra_fields[colname] = (lambda obj, attr=colname:
-                                                  getattr(obj, attr))
-
-            # check that it has all the required fields
-            if __debug__:
-                actual_fields = set(str(colname) for colname in self.__meta.tables[self.table_name].columns.keys())
-                expected_fields = set(['id', 'data']
-                                      + [str(col) for col in extra_fields.keys()])
-                assert expected_fields <= actual_fields
 
         self.t_store = self.__meta.tables[self.table_name]
 
