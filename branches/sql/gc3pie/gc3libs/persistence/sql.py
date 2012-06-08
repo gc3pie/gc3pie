@@ -159,8 +159,8 @@ class SqlStore(Store):
             sqla.Column('data',
                         sqla.BLOB()),
             sqla.Column('state',
-                        sqla.VARCHAR(length=128))
-            )
+                        sqla.VARCHAR(length=128)))
+
         for col, func in extra_fields.iteritems():
             assert isinstance(col, sqla.Column)
             table.append_column(col.copy())
@@ -203,7 +203,7 @@ class SqlStore(Store):
         dstdata = StringIO.StringIO()
         pickler = create_pickler(self, dstdata, obj)
         pickler.dump(obj)
-        fields['data'] = dstdata.getvalue()        
+        fields['data'] = dstdata.getvalue()
         fields['state'] = 'None'
         if hasattr(obj, 'execution') and hasattr(obj.execution, 'state'):
             fields['state'] = obj.execution.state
