@@ -145,7 +145,7 @@ class FakeApp(gc3libs.Application):
             requested_cores = 1, **kw)
 
 
-class TestBackendPbs(object):
+class TestBackendSge(object):
     
     CONF="""
 [resource/example]
@@ -168,7 +168,7 @@ username=NONEXISTENT
     def setUp(self):        
         (fd, self.tmpfile) = tempfile.mkstemp()
         f = os.fdopen(fd, 'w+')
-        f.write(TestBackendPbs.CONF)
+        f.write(TestBackendSge.CONF)
         f.close()
 
         self.cfg = gc3libs.config.Configuration()
