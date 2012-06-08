@@ -123,33 +123,12 @@ def qdel_failed_acl(jobid=123):
     
 from gc3libs.Resource import Resource
 from gc3libs.authentication import Auth
-import gc3libs, gc3libs.core
+import gc3libs, gc3libs.core, gc3libs.config
 #import gc3libs.Run.State as State
 State = gc3libs.Run.State
 
+import tempfile, os
 from faketransport import FakeTransport
-
-def _setup_conf():
-    resource = Resource(**{
-    'name' : 'example',
-    'type' : 'sge',
-     'auth' : 'ssh',
-     'transport' : 'ssh',
-     'frontend' : 'example.org',
-     'max_cores_per_job' : 128,
-     'max_memory_per_core' : 2,
-     'max_walltime' : 2,
-     'ncores' : 80,
-     'architecture' : 'x86_64',
-    'enabled' : True,})
-
-    auth = Auth({'ssh':{'name': 'ssh','type' : 'ssh','username' : 'NONEXISTENT',}}, True)
-    
-    return ([resource], auth)
-
-def _setup_core():
-    (res, auth) = _setup_conf()
-    return gc3libs.core.Core(res, auth, True)
 
 
 class FakeApp(gc3libs.Application):
@@ -165,114 +144,142 @@ class FakeApp(gc3libs.Application):
             stderr = "stderr.txt",
             requested_cores = 1, **kw)
 
-def _common_setup():
-    g = _setup_core()
-    b = g.get_backend('example')
-    b.transport = FakeTransport()
-    t = b.transport
-    # Basic responses
-    t.expected_answer['qstat'] = qstat_notfound()
-    t.expected_answer['qacct'] = qacct_notfound()
-    t.expected_answer['qdel'] = qdel_notfound()
+
+class TestBackendPbs(object):
     
-    app = FakeApp()
-    return (g,t, app)
+    CONF="""
+[resource/example]
+type=sge
+auth=ssh
+transport=ssh
+frontend=example.org
+max_cores_per_job=128
+max_memory_per_core=2
+max_walltime=2
+max_cores=80
+architecture=x86_64
+queue=testing
+enabled=True
 
-def test_submission_failed():
-    (g, t, app)  = _common_setup()
+[auth/ssh]
+type=ssh
+username=NONEXISTENT
+"""
+    def setUp(self):        
+        (fd, self.tmpfile) = tempfile.mkstemp()
+        f = os.fdopen(fd, 'w+')
+        f.write(TestBackendPbs.CONF)
+        f.close()
 
-    # Submission failed (jobname starting with a digit, cfr issue #250
-    # at http://code.google.com/p/gc3pie/issues/detail?id=250) This
-    # first test will show the answer you would get if the job name
-    # starts with a digit.
-    t.expected_answer['qsub'] = qsub_failed_jobnamestartswithdigit()
-    try:
-        g.submit(app)
-        assert False
-    except Exception, e:
-        assert isinstance(e, gc3libs.exceptions.LRMSError)
-    assert app.execution.state == State.NEW
+        self.cfg = gc3libs.config.Configuration()
+        self.cfg.merge_file(self.tmpfile)
 
-    # This second example will show how the Application.__init__()
-    # method changes the jobname in order not to have a digit at the
-    # beginning of it.
-    app = FakeApp(jobname='123Demo')
-    assert app.jobname == 'GC3Pie.123Demo'
-    t.expected_answer['qsub'] = correct_submit()
-    g.submit(app)
-    assert app.execution.state == State.SUBMITTED
+        self.core = gc3libs.core.Core(self.cfg)
 
-    
-#     # Submission failed (unauthrozed user):
-#     t.expected_answer['qsub'] = qsub_failed_acl()
-#     try:
-#         g.submit(app)
-#     except Exception, e:
-#         assert isinstance(e, gc3libs.exceptions.LRMSError)
-#     assert app.execution.state == State.NEW
+        b = self.core.get_backend('example')
+        b.transport = FakeTransport()
+        self.transport = b.transport
+        # Basic responses
+        self.transport.expected_answer['qstat'] = qstat_notfound()
+        self.transport.expected_answer['tracejob'] = qacct_notfound()
+        self.transport.expected_answer['qdel'] = qdel_notfound()
+        
+    def tearDown(self):
+        os.remove(self.tmpfile)
 
-    
-def test_sge_basic_workflow():
-    (g, t, app)  = _common_setup()
+    def test_submission_failed(self):
+        app = FakeApp()
+        # Submission failed (jobname starting with a digit, cfr issue #250
+        # at http://code.google.com/p/gc3pie/issues/detail?id=250) This
+        # first test will show the answer you would get if the job name
+        # starts with a digit.
+        self.transport.expected_answer['qsub'] = qsub_failed_jobnamestartswithdigit()
+        try:
+            self.core.submit(app)
+            assert False
+        except Exception, e:
+            assert isinstance(e, gc3libs.exceptions.LRMSError)
+        assert app.execution.state == State.NEW
 
-    # Succesful submission:
-    t.expected_answer['qsub'] = correct_submit()
-    g.submit(app)
-    assert app.execution.state == State.SUBMITTED
+        # This second example will show how the Application.__init__()
+        # method changes the jobname in order not to have a digit at the
+        # beginning of it.
+        app = FakeApp(jobname='123Demo')
+        assert app.jobname == 'GC3Pie.123Demo'
+        self.transport.expected_answer['qsub'] = correct_submit()
+        self.core.submit(app)
+        assert app.execution.state == State.SUBMITTED
 
 
-    # Update state. We would expect the job to be SUBMITTED
-    t.expected_answer['qstat'] = correct_qstat_queued()
-    t.expected_answer['qacct'] = qacct_notfound()
-    g.update_job_state(app)
-    assert app.execution.state == State.SUBMITTED
+    #     # Submission failed (unauthrozed user):
+    #     t.expected_answer['qsub'] = qsub_failed_acl()
+    #     try:
+    #         self.core.submit(app)
+    #     except Exception, e:
+    #         assert isinstance(e, gc3libs.exceptions.LRMSError)
+    #     assert app.execution.state == State.NEW
 
-    # Update state. We would expect the job to be RUNNING
-    t.expected_answer['qstat'] = correct_qstat_running()
-    t.expected_answer['qacct'] = qacct_notfound()    
-    g.update_job_state(app)
-    assert app.execution.state == State.RUNNING
 
-    # Job done. qstat doesn't find it, qacct should.
-    t.expected_answer['qstat'] = qstat_notfound()
-    t.expected_answer['qacct'] = correct_qacct_done()    
-    g.update_job_state(app)
-    assert app.execution.state == State.TERMINATING
-    
+    def test_sge_basic_workflow(self):
+        app = FakeApp()
+        # Succesful submission:
+        self.transport.expected_answer['qsub'] = correct_submit()
+        self.core.submit(app)
+        assert app.execution.state == State.SUBMITTED
 
-def test_qacct_parsing():
-    (g, t, app)  = _common_setup()
-    t.expected_answer['qsub'] = correct_submit()
-    g.submit(app)
-    t.expected_answer['qacct'] = correct_qacct_done()    
-    g.update_job_state(app)
-    assert app.execution.state == State.TERMINATING
 
-    job = app.execution
-    assert job.exitcode == 0
-    assert job.returncode == 0
-    assert job['used_walltime'] == '10'
-    assert job['used_memory'] == '13.152M'
-    assert job['used_cpu_time'] == '0.248'
+        # Update state. We would expect the job to be SUBMITTED
+        self.transport.expected_answer['qstat'] = correct_qstat_queued()
+        self.transport.expected_answer['qacct'] = qacct_notfound()
+        self.core.update_job_state(app)
+        assert app.execution.state == State.SUBMITTED
 
-def test_delete_job():
-    (g, t, app)  = _common_setup()
-    t.expected_answer['qsub'] = correct_submit()
-    g.submit(app)
+        # Update state. We would expect the job to be RUNNING
+        self.transport.expected_answer['qstat'] = correct_qstat_running()
+        self.transport.expected_answer['qacct'] = qacct_notfound()    
+        self.core.update_job_state(app)
+        assert app.execution.state == State.RUNNING
 
-    t.expected_answer['qdel'] = qdel_success()
-    g.kill(app)
-    assert app.execution.state == State.TERMINATED
+        # Job done. qstat doesn't find it, qacct should.
+        self.transport.expected_answer['qstat'] = qstat_notfound()
+        self.transport.expected_answer['qacct'] = correct_qacct_done()    
+        self.core.update_job_state(app)
+        assert app.execution.state == State.TERMINATING
 
-def test_delete_job():
-    (g, t, app)  = _common_setup()
-    t.expected_answer['qsub'] = correct_submit()
-    g.submit(app)
-    assert app.execution.state == State.SUBMITTED
-    
-    t.expected_answer['qdel'] = qdel_failed_acl()
-    g.kill(app)
-    assert app.execution.state == State.TERMINATED
+
+    def test_qacct_parsing(self):
+        app = FakeApp()
+        self.transport.expected_answer['qsub'] = correct_submit()
+        self.core.submit(app)
+        self.transport.expected_answer['qacct'] = correct_qacct_done()    
+        self.core.update_job_state(app)
+        assert app.execution.state == State.TERMINATING
+
+        job = app.execution
+        assert job.exitcode == 0
+        assert job.returncode == 0
+        assert job['used_walltime'] == '10'
+        assert job['used_memory'] == '13.152M'
+        assert job['used_cpu_time'] == '0.248'
+
+    def test_delete_job(self):
+        app = FakeApp()
+        self.transport.expected_answer['qsub'] = correct_submit()
+        self.core.submit(app)
+
+        self.transport.expected_answer['qdel'] = qdel_success()
+        self.core.kill(app)
+        assert app.execution.state == State.TERMINATED
+
+    def test_delete_job(self):
+        app = FakeApp()
+        self.transport.expected_answer['qsub'] = correct_submit()
+        self.core.submit(app)
+        assert app.execution.state == State.SUBMITTED
+
+        self.transport.expected_answer['qdel'] = qdel_failed_acl()
+        self.core.kill(app)
+        assert app.execution.state == State.TERMINATED
     
 if __name__ == "__main__":
     import nose
