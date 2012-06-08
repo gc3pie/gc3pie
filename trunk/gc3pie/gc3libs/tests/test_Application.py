@@ -75,7 +75,6 @@ def test_wrong_type_arguments():
     def _create_app(tmp):
         app = Application(**_tmpma)
         raise SkipTest("FIXME invalid arguments")
-        assert False, "We shuold have got an exception!"
         
     for k,v  in {
         # 'inputs' : ['duplicated', 'duplicated'],
