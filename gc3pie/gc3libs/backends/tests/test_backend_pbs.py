@@ -133,7 +133,25 @@ import tempfile, os
 State = gc3libs.Run.State
 
 from faketransport import FakeTransport
-CONF="""
+
+
+class FakeApp(gc3libs.Application):
+    def __init__(self):
+        gc3libs.Application.__init__(
+            self,
+            executable = '/bin/hostname', # mandatory
+            arguments = [],               # mandatory
+            inputs = [],                  # mandatory
+            outputs = [],                 # mandatory
+            output_dir = "./fakedir",    # mandatory
+            stdout = "stdout.txt",
+            stderr = "stderr.txt",
+            requested_cores = 1,)
+
+
+class TestBackendPbs(object):
+    
+    CONF="""
 [resource/example]
 type=pbs
 auth=ssh
@@ -151,131 +169,111 @@ enabled=True
 type=ssh
 username=NONEXISTENT
 """
+    def setUp(self):        
+        (fd, self.tmpfile) = tempfile.mkstemp()
+        f = os.fdopen(fd, 'w+')
+        f.write(TestBackendPbs.CONF)
+        f.close()
 
-def _setup_conf():
-    (fd, tmpfile) = tempfile.mkstemp()
-    f = os.fdopen(fd, 'w+')
-    f.write(CONF)
-    f.close()
+        self.cfg = gc3libs.config.Configuration()
+        self.cfg.merge_file(self.tmpfile)
 
-    return tmpfile
+        self.core = gc3libs.core.Core(self.cfg)
 
-def _setup_core():
-    tmpfile = _setup_conf()
-    cfg = gc3libs.config.Configuration()
-    cfg.merge_file(tmpfile)
-    return gc3libs.core.Core(cfg)
+        b = self.core.get_backend('example')
+        b.transport = FakeTransport()
+        self.transport = b.transport
+        # Basic responses
+        self.transport.expected_answer['qstat'] = qstat_notfound()
+        self.transport.expected_answer['tracejob'] = tracejob_notfound()
+        self.transport.expected_answer['qdel'] = qdel_notfound()
+        
+    def tearDown(self):
+        os.remove(self.tmpfile)
 
+    def test_submission_failed(self):
+        app = FakeApp()
 
-class FakeApp(gc3libs.Application):
-    def __init__(self):
-        gc3libs.Application.__init__(
-            self,
-            executable = '/bin/hostname', # mandatory
-            arguments = [],               # mandatory
-            inputs = [],                  # mandatory
-            outputs = [],                 # mandatory
-            output_dir = "./fakedir",    # mandatory
-            stdout = "stdout.txt",
-            stderr = "stderr.txt",
-            requested_cores = 1,)
+        # Submission failed (unable to find resources):
+        self.transport.expected_answer['qsub'] = qsub_failed_resources()
+        try:
+            self.core.submit(app)
+        except Exception, e:
+            assert isinstance(e, gc3libs.exceptions.LRMSError)
+        assert app.execution.state == State.NEW
 
-def _common_setup():
-    g = _setup_core()
-    b = g.get_backend('example')
-    b.transport = FakeTransport()
-    t = b.transport
-    # Basic responses
-    t.expected_answer['qstat'] = qstat_notfound()
-    t.expected_answer['tracejob'] = tracejob_notfound()
-    t.expected_answer['qdel'] = qdel_notfound()
-    
-    app = FakeApp()
-    return (g,t, app)
-
-def test_submission_failed():
-    (g, t, app)  = _common_setup()
-
-    # Submission failed (unable to find resources):
-    t.expected_answer['qsub'] = qsub_failed_resources()
-    try:
-        g.submit(app)
-    except Exception, e:
-        assert isinstance(e, gc3libs.exceptions.LRMSError)
-    assert app.execution.state == State.NEW
-
-    # Submission failed (unauthrozed user):
-    t.expected_answer['qsub'] = qsub_failed_acl()
-    try:
-        g.submit(app)
-    except Exception, e:
-        assert isinstance(e, gc3libs.exceptions.LRMSError)
-    assert app.execution.state == State.NEW
-
-    
-def test_pbs_basic_workflow():
-    (g, t, app)  = _common_setup()
-
-    # Succesful submission:
-    t.expected_answer['qsub'] = correct_submit()
-    g.submit(app)
-    assert app.execution.state == State.SUBMITTED
+        # Submission failed (unauthrozed user):
+        self.transport.expected_answer['qsub'] = qsub_failed_acl()
+        try:
+            self.core.submit(app)
+        except Exception, e:
+            assert isinstance(e, gc3libs.exceptions.LRMSError)
+        assert app.execution.state == State.NEW
 
 
-    # Update state. We would expect the job to be SUBMITTED
-    t.expected_answer['qstat'] = correct_qstat_queued()
-    t.expected_answer['tracejob'] = correct_tracejob_queued()
-    g.update_job_state(app)
-    assert app.execution.state == State.SUBMITTED
+    def test_pbs_basic_workflow(self):
+        app = FakeApp()
 
-    # Update state. We would expect the job to be RUNNING
-    t.expected_answer['qstat'] = correct_qstat_running()
-    t.expected_answer['tracejob'] = correct_tracejob_running()    
-    g.update_job_state(app)
-    assert app.execution.state == State.RUNNING
+        # Succesful submission:
+        self.transport.expected_answer['qsub'] = correct_submit()
+        self.core.submit(app)
+        assert app.execution.state == State.SUBMITTED
 
-    # Job done. qstat doesn't find it, tracejob should.
-    t.expected_answer['qstat'] = qstat_notfound()
-    t.expected_answer['tracejob'] = correct_tracejob_done()    
-    g.update_job_state(app)
-    assert app.execution.state == State.TERMINATING
-    
 
-def test_tracejob_parsing():
-    (g, t, app)  = _common_setup()
-    t.expected_answer['qsub'] = correct_submit()
-    g.submit(app)
-    t.expected_answer['tracejob'] = correct_tracejob_done()    
-    g.update_job_state(app)
-    assert app.execution.state == State.TERMINATING
+        # Update state. We would expect the job to be SUBMITTED
+        self.transport.expected_answer['qstat'] = correct_qstat_queued()
+        self.transport.expected_answer['tracejob'] = correct_tracejob_queued()
+        self.core.update_job_state(app)
+        assert app.execution.state == State.SUBMITTED
 
-    job = app.execution
-    assert job.exitcode == 0
-    assert job.returncode == 0
-    assert job['queue'] == 'short'
-    assert job['used_walltime'] == '00:02:05'
-    assert job['used_memory'] == '190944kb'
-    assert job['mem'] == '2364kb'
-    assert job['used_cpu_time'] == '00:00:00'
+        # Update state. We would expect the job to be RUNNING
+        self.transport.expected_answer['qstat'] = correct_qstat_running()
+        self.transport.expected_answer['tracejob'] = correct_tracejob_running()    
+        self.core.update_job_state(app)
+        assert app.execution.state == State.RUNNING
 
-def test_delete_job():
-    (g, t, app)  = _common_setup()
-    t.expected_answer['qsub'] = correct_submit()
-    g.submit(app)
+        # Job done. qstat doesn't find it, tracejob should.
+        self.transport.expected_answer['qstat'] = qstat_notfound()
+        self.transport.expected_answer['tracejob'] = correct_tracejob_done()    
+        self.core.update_job_state(app)
+        assert app.execution.state == State.TERMINATING
 
-    t.expected_answer['qdel'] = qdel_success()
-    g.kill(app)
-    assert app.execution.state == State.TERMINATED
 
-def test_delete_job():
-    (g, t, app)  = _common_setup()
-    t.expected_answer['qsub'] = correct_submit()
-    g.submit(app)
-    assert app.execution.state == State.SUBMITTED
-    
-    t.expected_answer['qdel'] = qdel_failed_acl()
-    g.kill(app)
-    assert app.execution.state == State.TERMINATED
+    def test_tracejob_parsing(self):
+        app = FakeApp()
+        self.transport.expected_answer['qsub'] = correct_submit()
+        self.core.submit(app)
+        self.transport.expected_answer['tracejob'] = correct_tracejob_done()    
+        self.core.update_job_state(app)
+        assert app.execution.state == State.TERMINATING
+
+        job = app.execution
+        assert job.exitcode == 0
+        assert job.returncode == 0
+        assert job['queue'] == 'short'
+        assert job['used_walltime'] == '00:02:05'
+        assert job['used_memory'] == '190944kb'
+        assert job['mem'] == '2364kb'
+        assert job['used_cpu_time'] == '00:00:00'
+
+    def test_delete_job(self):
+        app = FakeApp()
+        self.transport.expected_answer['qsub'] = correct_submit()
+        self.core.submit(app)
+
+        self.transport.expected_answer['qdel'] = qdel_success()
+        self.core.kill(app)
+        assert app.execution.state == State.TERMINATED
+
+    def test_delete_job(self):
+        app = FakeApp()
+        self.transport.expected_answer['qsub'] = correct_submit()
+        self.core.submit(app)
+        assert app.execution.state == State.SUBMITTED
+
+        self.transport.expected_answer['qdel'] = qdel_failed_acl()
+        self.core.kill(app)
+        assert app.execution.state == State.TERMINATED
     
 if __name__ == "__main__":
     import nose
