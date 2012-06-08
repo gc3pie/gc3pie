@@ -125,34 +125,46 @@ def qdel_failed_acl(jobid=123):
     
 from gc3libs.Resource import Resource
 from gc3libs.authentication import Auth
-import gc3libs, gc3libs.core
+import gc3libs, gc3libs.core, gc3libs.config
+
+import tempfile, os
+
 #import gc3libs.Run.State as State
 State = gc3libs.Run.State
 
 from faketransport import FakeTransport
+CONF="""
+[resource/example]
+type=pbs
+auth=ssh
+transport=ssh
+frontend=example.org
+max_cores_per_job=128
+max_memory_per_core=2
+max_walltime=2
+max_cores=80
+architecture=x86_64
+queue=testing
+enabled=True
+
+[auth/ssh]
+type=ssh
+username=NONEXISTENT
+"""
 
 def _setup_conf():
-    resource = Resource(**{
-    'name' : 'example',
-    'type' : 'pbs',
-     'auth' : 'ssh',
-     'transport' : 'ssh',
-     'frontend' : 'example.org',
-     'max_cores_per_job' : 128,
-     'max_memory_per_core' : 2,
-     'max_walltime' : 2,
-     'ncores' : 80,
-     'architecture' : 'x86_64',
-     'queue' : 'testing',
-    'enabled' : True,})
+    (fd, tmpfile) = tempfile.mkstemp()
+    f = os.fdopen(fd, 'w+')
+    f.write(CONF)
+    f.close()
 
-    auth = Auth({'ssh':{'name': 'ssh','type' : 'ssh','username' : 'NONEXISTENT',}}, True)
-    
-    return ([resource], auth)
+    return tmpfile
 
 def _setup_core():
-    (res, auth) = _setup_conf()
-    return gc3libs.core.Core(res, auth, True)
+    tmpfile = _setup_conf()
+    cfg = gc3libs.config.Configuration()
+    cfg.merge_file(tmpfile)
+    return gc3libs.core.Core(cfg)
 
 
 class FakeApp(gc3libs.Application):
