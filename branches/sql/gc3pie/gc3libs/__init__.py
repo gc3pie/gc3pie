@@ -79,6 +79,7 @@ class Default(object):
     PBS_LRMS = 'pbs'
     LSF_LRMS = 'lsf'
     SHELLCMD_LRMS = 'shellcmd'
+    SUBPROCESS_LRMS = 'subprocess'
 
     # Transport information
     SSH_PORT = 22
@@ -787,8 +788,12 @@ class Application(Persistable, Task):
         self.requested_memory = kw.pop('requested_memory', None)
         self.requested_walltime = kw.pop('requested_walltime', None)
         self.requested_architecture = kw.pop('requested_architecture', None)
-        assert (self.requested_architecture is None
-                or self.requested_architecture in [ Run.Arch.X86_32, Run.Arch.X86_64 ])
+        if self.requested_architecture is not None \
+               and self.requested_architecture not in [ Run.Arch.X86_32, Run.Arch.X86_64 ]:
+            raise gc3libs.exceptions.InvalidArgument(
+                "Architecture must be either '%s' or '%s'"
+                % (Run.Arch.X86_32, Run.Arch.X86_64))
+                
 
         self.environment = kw.pop('environment', dict())
         self.environment = dict(Application._to_env_pair(x)

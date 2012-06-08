@@ -34,121 +34,126 @@ from nose.tools import raises, assert_equal
 import gc3libs
 from gc3libs.Resource import Resource
 from gc3libs.authentication import Auth
-import gc3libs.core
+import gc3libs.core, gc3libs.config
 
 
-def _setup_core():
-    resource = Resource(
-        name='localhost_test',
-        type='shellcmd',
-        transport='local',
-        ncores=2,
-        max_cores_per_job=2,
-        max_memory_per_core=2,
-        max_walltime=2,
-        architecture=gc3libs.Run.Arch.X86_64,
-        auth='none',
-        enabled=True,
-        )
+class TestBackendShellcmd(object):
+    CONF="""
+[resource/localhost_test]
+type=shellcmd
+transport=local
+max_cores=2
+max_cores_per_job=2
+max_memory_per_core=2
+max_walltime=2
+architecture=x64_64
+auth=noauth
+enabled=True
 
-    auth = Auth({'none':dict(
-        name='noauth',
-        type='none',
-        )}, True)
+[auth/noauth]
+type=none
+"""
 
-    g = gc3libs.core.Core([resource], auth, True)
-    b = g.get_backend('localhost_test')
-    return (g, b)
+    def setUp(self):        
+        (fd, self.tmpfile) = tempfile.mkstemp()
+        f = os.fdopen(fd, 'w+')
+        f.write(TestBackendShellcmd.CONF)
+        f.close()
 
+        self.cfg = gc3libs.config.Configuration()
+        self.cfg.merge_file(self.tmpfile)
 
-def test_backend_creation():
-    """
-    Test that the initial resource parameters match those specified in the test config.
-    """
-    g, b = _setup_core()
-    assert_equal(b._resource.free_slots, 2)
-    assert_equal(b._resource.user_run, 0)
-    assert_equal(b._resource.user_queued, 0)
+        self.core = gc3libs.core.Core(self.cfg)
+        self.backend = self.core.get_backend('localhost_test')
+        
+    def tearDown(self):
+        os.remove(self.tmpfile)
 
-
-def test_submission_ok():
-    """
-    Test a successful submission cycle and the backends' resource book-keeping.
-    """
-    g, b = _setup_core()
-    tmpdir = tempfile.mkdtemp(prefix=__name__, suffix='.d')
-
-    app = gc3libs.Application(
-        executable = '/usr/bin/env',
-        arguments = [],
-        inputs = [],
-        outputs = [],
-        output_dir = tmpdir,
-        stdout = "stdout.txt",
-        stderr = "stderr.txt",
-        requested_cores = 1,
-        )
-    g.submit(app)
-    # there's no SUBMITTED state here: jobs go immediately into RUNNING state
-    assert_equal(app.execution.state, gc3libs.Run.State.SUBMITTED)
-    assert_equal(b._resource.free_slots,  1)
-    assert_equal(b._resource.user_queued, 0)
-    assert_equal(b._resource.user_run,    1)
-
-    # wait until the test job is done, but timeout and raise an error
-    # if it takes too much time...
-    MAX_WAIT = 10 # seconds
-    WAIT = 0.1 # seconds
-    waited = 0
-    while app.execution.state != gc3libs.Run.State.TERMINATING and waited < MAX_WAIT:
-        time.sleep(WAIT)
-        waited += WAIT
-        g.update_job_state(app)
-    assert_equal(app.execution.state, gc3libs.Run.State.TERMINATING)
-    assert_equal(b._resource.free_slots,  2)
-    assert_equal(b._resource.user_queued, 0)
-    assert_equal(b._resource.user_run,    0)
-
-    g.fetch_output(app)
-    assert_equal(app.execution.state, gc3libs.Run.State.TERMINATED)
-    assert_equal(b._resource.free_slots,  2)
-    assert_equal(b._resource.user_queued, 0)
-    assert_equal(b._resource.user_run,    0)
-
-    # cleanup
-    shutil.rmtree(tmpdir, ignore_errors=True)
+    def test_backend_creation(self):
+        """
+        Test that the initial resource parameters match those specified in the test config.
+        """
+        assert_equal(self.backend._resource.free_slots, 2)
+        assert_equal(self.backend._resource.user_run, 0)
+        assert_equal(self.backend._resource.user_queued, 0)
 
 
-@raises(gc3libs.exceptions.LRMSSubmitError)
-def test_submission_too_many_jobs():
-    g, b = _setup_core()
+    def test_submission_ok(self):
+        """
+        Test a successful submission cycle and the backends' resource book-keeping.
+        """
+        tmpdir = tempfile.mkdtemp(prefix=__name__, suffix='.d')
 
-    app1 = gc3libs.Application(
-        executable = '/usr/bin/env',
-        arguments = [],
-        inputs = [],
-        outputs = [],
-        output_dir = ".",
-        stdout = "stdout.txt",
-        stderr = "stderr.txt",
-        requested_cores = b._resource.free_slots,
-        )
-    g.submit(app1)
-    assert_equal(app1.execution.state, gc3libs.Run.State.SUBMITTED)
+        app = gc3libs.Application(
+            executable = '/usr/bin/env',
+            arguments = [],
+            inputs = [],
+            outputs = [],
+            output_dir = tmpdir,
+            stdout = "stdout.txt",
+            stderr = "stderr.txt",
+            requested_cores = 1,
+            )
+        self.core.submit(app)
+        # there's no SUBMITTED state here: jobs go immediately into RUNNING state
+        assert_equal(app.execution.state, gc3libs.Run.State.SUBMITTED)
+        assert_equal(self.backend._resource.free_slots,  1)
+        assert_equal(self.backend._resource.user_queued, 0)
+        assert_equal(self.backend._resource.user_run,    1)
 
-    # this fails, as the number of cores exceeds the resource total
-    app2 = gc3libs.Application(
-        executable = '/usr/bin/env',
-        arguments = [],
-        inputs = [],
-        outputs = [],
-        output_dir = ".",
-        stdout = "stdout.txt",
-        stderr = "stderr.txt",
-        requested_cores = 1,
-        )
-    g.submit(app2)
-    assert False # should not happen
+        # wait until the test job is done, but timeout and raise an error
+        # if it takes too much time...
+        MAX_WAIT = 10 # seconds
+        WAIT = 0.1 # seconds
+        waited = 0
+        while app.execution.state != gc3libs.Run.State.TERMINATING and waited < MAX_WAIT:
+            time.sleep(WAIT)
+            waited += WAIT
+            self.core.update_job_state(app)
+        assert_equal(app.execution.state, gc3libs.Run.State.TERMINATING)
+        assert_equal(self.backend._resource.free_slots,  2)
+        assert_equal(self.backend._resource.user_queued, 0)
+        assert_equal(self.backend._resource.user_run,    0)
+
+        self.core.fetch_output(app)
+        assert_equal(app.execution.state, gc3libs.Run.State.TERMINATED)
+        assert_equal(self.backend._resource.free_slots,  2)
+        assert_equal(self.backend._resource.user_queued, 0)
+        assert_equal(self.backend._resource.user_run,    0)
+
+        # cleanup
+        shutil.rmtree(tmpdir, ignore_errors=True)
+
+
+    @raises(gc3libs.exceptions.LRMSSubmitError)
+    def test_submission_too_many_jobs(self):
+
+        app1 = gc3libs.Application(
+            executable = '/usr/bin/env',
+            arguments = [],
+            inputs = [],
+            outputs = [],
+            output_dir = ".",
+            stdout = "stdout.txt",
+            stderr = "stderr.txt",
+            requested_cores = self.backend._resource.free_slots,
+            )
+        self.core.submit(app1)
+        assert_equal(app1.execution.state, gc3libs.Run.State.SUBMITTED)
+
+        # this fails, as the number of cores exceeds the resource total
+        app2 = gc3libs.Application(
+            executable = '/usr/bin/env',
+            arguments = [],
+            inputs = [],
+            outputs = [],
+            output_dir = ".",
+            stdout = "stdout.txt",
+            stderr = "stderr.txt",
+            requested_cores = 1,
+            )
+        self.core.submit(app2)
+        assert False # should not happen
 
 
 if __name__ == "__main__":

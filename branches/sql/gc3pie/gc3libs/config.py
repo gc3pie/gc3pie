@@ -96,9 +96,11 @@ class Configuration(gc3libs.utils.Struct):
 
     Example 1: initialization from config file::
 
-      >>> cfg = Configuration('etc/gc3pie.conf.example')
+      >>> import os
+      >>> example_cfgfile = os.path.join(os.path.dirname(__file__), 'etc/gc3pie.conf.example')
+      >>> cfg = Configuration(example_cfgfile)
       >>> cfg.debug
-      0
+      '0'
 
     Example 2: initialization from key=value list::
 
@@ -114,9 +116,9 @@ class Configuration(gc3libs.utils.Struct):
     values in the configuration files override those in the key=value
     list::
 
-      >>> cfg = Configuration('etc/gc3pie.conf.example', debug=1)
+      >>> cfg = Configuration(example_cfgfile, debug=1)
       >>> cfg.debug
-      0
+      '0'
 
     Example 3: default initialization::
 
