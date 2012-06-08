@@ -405,6 +405,10 @@ class SqlStoreChecks(GenericStoreChecks):
         q = sql.select([self.store.t_store.c.extra]).where(self.store.t_store.c.id==id_)
         # self.c.execute("select extra from %s where id=%d"
         #                % (self.store.table_name, id))
+
+        # Oops, apparently the store.save call will close our
+        # connection too.
+        self.conn = self.store._SqlStore__engine.connect()
         results = self.conn.execute(q)
         rows = results.fetchall()
         assert_equal(len(rows), 1)
