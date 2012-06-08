@@ -40,7 +40,8 @@ except:
     raise SkipTest("Cannot import `sqlalchemy`; skipping all SQL tests.")
 
 # GC3Pie imports
-import gc3libs; from gc3libs import Run, Task
+import gc3libs
+from gc3libs import Run, Task
 import gc3libs.exceptions
 from gc3libs.persistence import make_store, Persistable
 import gc3libs.persistence.sql
@@ -74,7 +75,7 @@ class SimpleTask(Task):
 class NonPersistableClassWithSlots(object):
     """
     A class to test that persistence of classes with `__slots__`.
-    
+
     This and the `PersistableClassWithSlots`:class: are classes with
     `__slots__` attribute to check that persistence works also with
     this kind of classes. Usually you just need to use a binary
@@ -87,16 +88,15 @@ class NonPersistableClassWithSlots(object):
     Check for instance:
     http://stackoverflow.com/questions/3522765/python-pickling-slots-error
     """
-    
+
     __slots__ = ["attr", ]
+
     def __init__(self, attr):
         self.attr = attr
 
 
 class PersistableClassWithSlots(NonPersistableClassWithSlots):
     __slots__ = ["attr", "persistent_id"]
-
-    
 
 
 def _run_generic_tests(store):
@@ -110,7 +110,7 @@ class GenericStoreChecks(object):
     """
     A suite of tests for the generic `gc3libs.persistence.Store` interface.
     """
-    
+
     def test_generic_persistence(self):
         """
         Test basic functionality of the persistence subsystem.
@@ -120,7 +120,7 @@ class GenericStoreChecks(object):
         id = self.store.save(obj)
         del obj
         obj = self.store.load(id)
-        assert obj.value == 'GC3'    
+        assert obj.value == 'GC3'
 
     def test_duplicated_save(self):
         """
@@ -129,12 +129,10 @@ class GenericStoreChecks(object):
         it will override the old one.
         """
         obj = SimplePersistableObject('GC3')
-        
+
         id1 = self.store.save(obj)
         id2 = self.store.save(obj)
         assert id1 == id2
-
-
 
     def test_ids_are_not_duplicated(self):
         """
@@ -145,13 +143,12 @@ class GenericStoreChecks(object):
             ids.append(self.store.save(SimplePersistableObject(str(i))))
         assert len(ids) == len(set(ids))
 
-
     def test_list_method(self):
         """Test the `list` method of the `SqlStore` class"""
         num_objs = 10
-        for i in range(num_objs):        
+        for i in range(num_objs):
             self.store.save(SimplePersistableObject('Object %d' % i))
-            
+
         assert len(self.store.list()) == num_objs
 
     @raises(gc3libs.exceptions.LoadError)
@@ -180,7 +177,6 @@ class GenericStoreChecks(object):
         # 3_ load it again and check if it has been updated
         obj2 = self.store.load(id_)
         assert obj2.x == "Updated"
-        
 
     def test_persist_classes_with_slots(self):
         raise SkipTest("FIXME: Test code needs to be checked!")
@@ -200,10 +196,10 @@ class GenericStoreChecks(object):
         except AttributeError:
             pass
 
-
     def test_disaggregate_persistable_objects(self):
         """
-        Check that `Persistable` instances are saved separately from their containers.
+        Check that `Persistable` instances are saved separately from
+        their containers.
 
         Since we want to save `Task`s separately from the containing
         object (e.g. `SessionBasedScript`), this test will try to save a
@@ -237,7 +233,7 @@ class GenericStoreChecks(object):
 
 
 class TestFilesystemStore(GenericStoreChecks):
-    
+
     def setUp(self):
         from gc3libs.persistence.filesystem import FilesystemStore
         self.tmpdir = tempfile.mkdtemp()
@@ -250,14 +246,14 @@ class TestFilesystemStore(GenericStoreChecks):
     def test_filesystemstorage_pickler_class(self):
         """
         Check that `Persistable` instances are saved saparately.
-        
+
         Namely, if you want to save two independent objects but one of
         them has a reference to the other, the standard behavior of
         Pickle is to save a copy of the contained object into the same
         file of the containing object.
 
         The FilesystemStorage.Pickler class is aimed to avoid this.
-        """    
+        """
         obj1 = SimplePersistableObject('parent')
         obj2 = SimplePersistableObject('children')
         obj1.children = obj2
@@ -273,7 +269,8 @@ class TestFilesystemStore(GenericStoreChecks):
 
     def test_disaggregate_persistable_objects(self):
         """
-        Check that `Persistable` instances are saved separately from their containers.
+        Check that `Persistable` instances are saved separately from
+        their containers.
 
         In addition to the checks done in `GenericStoreChecks`, we
         also test that files have been created.
@@ -286,7 +283,7 @@ class TestFilesystemStore(GenericStoreChecks):
         obj_file = os.path.join(self.store._directory, str(obj_id))
         assert os.path.exists(obj_file)
 
-    
+
 class SqlStoreChecks(GenericStoreChecks):
     """
     Extend `GenericStoreChecks` with additional SQL-related tests.
@@ -314,12 +311,11 @@ class SqlStoreChecks(GenericStoreChecks):
 
         q = sql.select([
             self.store.t_store.c.state
-            ]).where(self.store.t_store.c.id==id_)
+            ]).where(self.store.t_store.c.id == id_)
         result = self.conn.execute(q)
         row = result.fetchone()
 
         assert row[0] == app.execution.state
-
 
     # the `jobname` attribute is optional in the `Application` ctor
     def test_persist_Application_with_no_job_name(self):
@@ -336,7 +332,7 @@ class SqlStoreChecks(GenericStoreChecks):
 
         q = sql.select([
             self.store.t_store.c.state
-            ]).where(self.store.t_store.c.id==id_)
+            ]).where(self.store.t_store.c.id == id_)
         result = self.conn.execute(q)
         row = result.fetchone()
         assert row[0] == app.execution.state
@@ -371,12 +367,11 @@ class SqlStoreChecks(GenericStoreChecks):
         id_ = self.store.save(obj)
 
         # check that the attribute `.value` has been saved in the dedicated col
-        q = sql.select([self.store.t_store.c.value]).where(self.store.t_store.c.id==id_)
+        q = sql.select([self.store.t_store.c.value]).where(self.store.t_store.c.id == id_)
         results = self.conn.execute(q)
         rows = results.fetchall()
         assert_equal(len(rows), 1)
         assert_equal(rows[0][0], obj.value)
-
 
     def test_sql_save_load_extra_fields(self):
         """
@@ -388,7 +383,7 @@ class SqlStoreChecks(GenericStoreChecks):
 
         # re-build store, as the table list is read upon `__init__`
         self.store = self._make_store(extra_fields={
-            sqlalchemy.Column('extra',sqlalchemy.VARCHAR(length=128)): (lambda arg: arg.foo.value) })
+            sqlalchemy.Column('extra', sqlalchemy.VARCHAR(length=128)): (lambda arg: arg.foo.value) })
 
         # if this query does not error out, the column is defined
         q = sql.select([sqlfunc.count(self.store.t_store.c.extra)]).distinct()
@@ -397,14 +392,13 @@ class SqlStoreChecks(GenericStoreChecks):
         rows = results.fetchall()
         assert_equal(len(rows), 1)
 
-
         # create and save an object
         obj = SimplePersistableObject('an object')
         obj.foo = SimplePersistableObject('an attribute')
         id_ = self.store.save(obj)
 
         # check that the value has been saved
-        q = sql.select([self.store.t_store.c.extra]).where(self.store.t_store.c.id==id_)
+        q = sql.select([self.store.t_store.c.extra]).where(self.store.t_store.c.id == id_)
         # self.c.execute("select extra from %s where id=%d"
         #                % (self.store.table_name, id))
 
@@ -416,14 +410,15 @@ class SqlStoreChecks(GenericStoreChecks):
         assert_equal(len(rows), 1)
         assert_equal(rows[0][0], obj.foo.value)
 
-
     @raises(AssertionError)
     def test_sql_error_if_no_extra_fields(self):
         """
         Test if `SqlStore` reads and writes extra columns.
         """
         # re-build store with a non-existent extra column; should raise `AssertionError`
-        self._make_store(extra_fields={ 'extra': (lambda arg: arg.foo.value) })
+        raise SkipTest("Feature not supported anymore")
+        self._make_store(extra_fields={
+            sqlalchemy.Column('extra', sqlalchemy.VARCHAR(length=128)): (lambda arg: arg.foo.value)})
 
 
 class ExtraSqlChecks(object):
@@ -436,7 +431,6 @@ class ExtraSqlChecks(object):
         self.store = make_store(url, **kwargs)
         self.c = self.store.__engine.connect()
 
-
     def test_sql_create_extra_fields(self):
         """
         Test if `SqlStore` creates extra columns.
@@ -444,7 +438,7 @@ class ExtraSqlChecks(object):
 
         # extend the db
         self._make_store(self.db_url,
-                         extra_fields={ 'extra': (lambda arg: arg.foo.value) })
+                         extra_fields={sqlalchemy.Column('extra', sqlalchemy.VARCHAR(length=128)): (lambda arg: arg.foo.value)})
 
         # if this query does not error out, the column is defined
         q = sql.select([sqlfunc.count(self.store.t_store.c.extra)]).distinct()
@@ -459,7 +453,7 @@ class ExtraSqlChecks(object):
         id_ = db.save(obj)
 
         # check that the value has been saved
-        q = sql.select([self.store.t_store.c.extra]).where(self.store.t_store.c.id==id_)
+        q = sql.select([self.store.t_store.c.extra]).where(self.store.t_store.c.id == id_)
         # self.c.execute("select extra from %s where id=%d"
         #                % (self.store.table_name, id_))
         results = self.conn.execute(q)
@@ -468,10 +462,9 @@ class ExtraSqlChecks(object):
         assert_equal(rows[0][0], obj.foo.value)
 
 
-
 class TestSqliteStore(SqlStoreChecks):
     """Test SQLite backend."""
-    
+
     @classmethod
     def teardown_class(cls):
         pass
@@ -490,7 +483,6 @@ class TestSqliteStore(SqlStoreChecks):
 
     def _make_store(self, **kwargs):
         return make_store(self.db_url, **kwargs)
-    
 
 
 class TestSqliteStoreWithAlternateTable(TestSqliteStore):
@@ -525,14 +517,14 @@ class TestMysqlStore(SqlStoreChecks):
     def setUp(self):
         fd, tmpfile = tempfile.mkstemp()
         os.remove(tmpfile)
-        self.table_name = tmpfile.split('/')[-1] 
-        
+        self.table_name = tmpfile.split('/')[-1]
+
         try:
             self.db_url = Url('mysql://gc3user:gc3pwd@localhost/gc3')
             self.store = make_store(self.db_url, table_name=self.table_name)
         except sqlalchemy.exc.OperationalError:
             raise SkipTest("Cannot connect to MySQL database.")
-        
+
         # create a connection to the database
         self.conn = self.store._SqlStore__engine.connect()
 
