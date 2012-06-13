@@ -76,7 +76,7 @@ class TestSqlSession(TestSession):
         self.tmpfname = os.path.relpath(tmpfname)
         self.s = Session(tmpfname, store_url="sqlite:////%s/store.db" % os.path.abspath(self.tmpfname))
 
-    def test_sqlie_store(self):
+    def test_sqlite_store(self):
         jobid = self.s.save(Persistable())
         self.s.save_session()
 
