@@ -69,12 +69,17 @@ class Session(object):
         will save the
         """
         self.path = os.path.abspath(path)
-        if not store_url:
-            store_url = os.path.join(self.path, 'jobs')
-        self.store_url = store_url
-        self.output_dir = output_dir
-        self.store = None
-        self.job_ids = []
+        if os.path.isdir(self.path):
+            self.load_session()
+        else:
+            if not store_url:
+                store_url = os.path.join(self.path, 'jobs')
+            self.store_url = store_url
+            self.output_dir = output_dir
+            os.mkdir(self.path)
+            self.store = make_store(self.store_url)
+            self.__update_store_url_file()
+            self.job_ids = []
 
     def load_session(self):
         """
@@ -103,7 +108,7 @@ class Session(object):
         # create directory if it does not exists
         if not os.path.exists(self.path):
             os.mkdir(self.path)
-            self.__update_store_url_file()
+
 
         self.store = make_store(self.store_url)
 
@@ -112,14 +117,24 @@ class Session(object):
         fd_job_ids.close()
 
     def load(self, persistent_id):
+        """Load an object from the persistency store
+        """
         return self.store.load(persistent_id)
 
     def save(self, obj):
+        """
+        Save an object to the persistency store and add it to the
+        list of jobs in the current session
+        """
         newid = self.store.save(obj)
         if newid not in self.job_ids:
             self.job_ids.append(newid)
+        return newid
 
     def load_all(self):
+        """Load all jobs belonging to the session from the persistency
+        store and returns them as a list
+        """
         jobs = []
         for jobid in self.job_ids:
             jobs.append(self.load(jobid))
@@ -127,10 +142,12 @@ class Session(object):
 
     def remove_session(self):
         """
-        Remove all data related to that session. We probably don't
-        want to do that!
+        Remove all data related to that session.
 
+        Remove also the jobs from the store.
         """
+        for jobid in self.job_ids:
+            self.store.remove(jobid)
         shutil.rmtree(self.path)
 
     def __update_store_url_file(self):

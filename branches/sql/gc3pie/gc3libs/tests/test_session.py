@@ -22,12 +22,14 @@ __docformat__ = 'reStructuredText'
 __version__ = '$Revision$'
 
 import os, tempfile
+import cPickle as Pickle
 
 from gc3libs.session import Session
+from gc3libs.persistence import Persistable
+import gc3libs.persistence.sql
+import sqlalchemy.sql as sql
 
 from nose.tools import assert_true, assert_equal
-
-from gc3libs.persistence import Persistable
 
 class TestSession(object):
     def setUp(self):
@@ -38,9 +40,8 @@ class TestSession(object):
     def tearDown(self):
         self.s.remove_session()
 
-
     def test_directory_creation(self):
-        self.s.save_session()        
+        self.s.save_session()
         assert_true(os.path.isdir(self.s.path))
         assert_true(os.path.samefile(
             os.path.join(
@@ -52,22 +53,44 @@ class TestSession(object):
         storefile = os.path.join(self.s.path, Session.STORE_URL_FILENAME)
         assert_true(os.path.isfile(storefile))
 
-
     def test_load_and_save(self):
-        self.s.save_session()
         assert_equal(self.s.store.list(), [])
 
         self.s.save(Persistable())
         self.s.save_session()
-        assert_true(os.path.isdir(os.path.join(self.s.path, 'jobs')))
 
-        import cPickle as Pickle
         fd_job_ids = open(os.path.join(self.s.path, 'job_ids.db'), 'r')
         ids = Pickle.load(fd_job_ids)
         assert_equal(ids, self.s.job_ids)
         assert_equal(len(ids),  1)
 
+    def test_reload_session(self):
+        self.s.save(Persistable())
+        self.s.save_session()
+        s2 = Session(self.s.path)
+        s2.job_ids == self.s.job_ids
 
+class TestSqlSession(TestSession):
+    def setUp(self):
+        tmpfname = tempfile.mktemp(dir='.')
+        self.tmpfname = os.path.relpath(tmpfname)
+        self.s = Session(tmpfname, store_url="sqlite:////%s/store.db" % os.path.abspath(self.tmpfname))
+
+    def test_sqlie_store(self):
+        jobid = self.s.save(Persistable())
+        self.s.save_session()
+
+        q = sql.select(
+            [self.s.store.t_store.c.id]
+            ).where(
+            self.s.store.t_store.c.id == jobid
+            )
+        conn = self.s.store._SqlStore__engine.connect()
+        results = conn.execute(q)
+        rows = results.fetchall()
+        assert_equal(len(rows), 1)
+        assert_equal(rows[0][0], jobid)
+        
 ## main: run tests
 
 if "__main__" == __name__:
