@@ -21,7 +21,8 @@
 __docformat__ = 'reStructuredText'
 __version__ = '$Revision$'
 
-import os, tempfile
+import os
+import tempfile
 import cPickle as Pickle
 
 from gc3libs.session import Session
@@ -30,6 +31,7 @@ import gc3libs.persistence.sql
 import sqlalchemy.sql as sql
 
 from nose.tools import assert_true, assert_equal
+
 
 class TestSession(object):
     def setUp(self):
@@ -70,11 +72,14 @@ class TestSession(object):
         s2 = Session(self.s.path)
         s2.job_ids == self.s.job_ids
 
+
 class TestSqlSession(TestSession):
     def setUp(self):
         tmpfname = tempfile.mktemp(dir='.')
         self.tmpfname = os.path.relpath(tmpfname)
-        self.s = Session(tmpfname, store_url="sqlite:////%s/store.db" % os.path.abspath(self.tmpfname))
+        self.s = Session(
+            tmpfname,
+            store_url="sqlite:////%s/store.db" % os.path.abspath(self.tmpfname))
 
     def test_sqlite_store(self):
         jobid = self.s.save(Persistable())
@@ -90,10 +95,9 @@ class TestSqlSession(TestSession):
         rows = results.fetchall()
         assert_equal(len(rows), 1)
         assert_equal(rows[0][0], jobid)
-        
+
 ## main: run tests
 
 if "__main__" == __name__:
     import nose
     nose.runmodule()
-

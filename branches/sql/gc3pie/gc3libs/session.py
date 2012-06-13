@@ -21,11 +21,13 @@
 __docformat__ = 'reStructuredText'
 __version__ = '$Revision$'
 
-import os, shutil
+import os
+import shutil
 
 from gc3libs.persistence import make_store
 
 import cPickle as Pickle
+
 
 class Session(object):
     """
@@ -66,7 +68,10 @@ class Session(object):
         The `store_url` argument is the url of the store.
 
         the `output_dir` argument is the directory in which the store
-        will save the
+        will save the output of the jobs.
+
+        It will cleaned by the `remove_session()`:meth: method only if
+        it's inside the session.
         """
         self.path = os.path.abspath(path)
         if os.path.isdir(self.path):
@@ -108,7 +113,6 @@ class Session(object):
         # create directory if it does not exists
         if not os.path.exists(self.path):
             os.mkdir(self.path)
-
 
         self.store = make_store(self.store_url)
 

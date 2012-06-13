@@ -67,7 +67,7 @@ import gc3libs.exceptions
 import gc3libs.persistence
 import gc3libs.utils
 import gc3libs.url
-
+from gc3libs.session import Session
 
 ## types for command-line parsing; see
 ## http://docs.python.org/dev/library/argparse.html#type
@@ -622,16 +622,6 @@ class GC3UtilsScript(_Script):
         ## base class parses command-line
         _Script.pre_run(self)
 
-        jobs_dir = self.params.session
-        if jobs_dir != gc3libs.Default.JOBS_DIR:
-            if (not os.path.isdir(jobs_dir)
-                and not jobs_dir.endswith('.jobs')):
-                jobs_dir = jobs_dir + '.jobs'
-        self._store = gc3libs.persistence.make_store(
-            jobs_dir,
-            idfactory=gc3libs.persistence.JobIdFactory()
-            )
-
     ##
     ## INTERNAL METHODS
     ##
@@ -654,7 +644,7 @@ class GC3UtilsScript(_Script):
         """
         for jobid in job_ids:
             try:
-                yield self._store.load(jobid)
+                yield self.session.load(jobid)
             except Exception, ex:
                 if ignore_failures:
                     gc3libs.log.error("Could not retrieve job '%s' (%s: %s). Ignoring.",
@@ -900,7 +890,7 @@ class SessionBasedScript(_Script):
 
         * `self._core`: a `gc3libs.core.Core` instance;
         * `self.tasks`: the list of `Task` instances to manage;
-        * `self.store`: the `gc3libs.persistence.Store` instance
+        * `self.session`: the `gc3libs.session.Session` instance
           that should be used to save/load jobs
 
         In addition, any other attribute created during initialization
@@ -1057,6 +1047,7 @@ class SessionBasedScript(_Script):
         corresponding instance attribute on this Python object.
         """
         self.tasks = []
+        self.session = None
         self.stats_only_for = None  # by default, print stats of all kind of jobs
         self.instances_per_file = 1
         self.instances_per_job = 1
@@ -1120,6 +1111,12 @@ class SessionBasedScript(_Script):
                        " named after PATH with a suffix '.jobs' appended, and the index file"
                        " will be named after PATH with a suffix '.csv' added."
                        )
+        self.add_param("-u",
+                       "--store-url",
+                       action="store",
+                       metavar="URL",
+                       help="URL to the persistency store to use. By default, FilesystemStore will be used on `SESSION/jobs` dir")
+
         self.add_param("-N", "--new-session", dest="new_session", action="store_true", default=False,
                        help="Discard any information saved in the session directory (see '--session' option)"
                        " and start a new session afresh.  Any information about previous jobs is lost.")
@@ -1190,26 +1187,32 @@ class SessionBasedScript(_Script):
 
         ## determine the session file name (and possibly create an empty index)
         self.session_uri = gc3libs.url.Url(self.params.session)
+        self.session = Session(self.session_uri.path,
+                               store_url=self.params.store_url)
 
-        _path = self.session_uri.path
-        if (os.path.exists(_path)
-             and os.path.isdir(_path)):
-            self.session_dirname = os.path.realpath(_path)
-            self.session_filename = os.path.join(_path, 'index.csv')
-        else:
-            if _path.endswith('.jobs'):
-                _path = _path[:-5]
-            elif _path.endswith('.csv'):
-                _path = _path[:-4]
-            elif _path.endswith('.db'):
-                _path = _path[:-3]
+        # XXX: I think this can be removed since we moved everything
+        # into the `Session` class
+        #
+        # self.session = Session(self.params.session)
+        # _path = self.session_uri.path
+        # if (os.path.exists(_path)
+        #      and os.path.isdir(_path)):
+        #     self.session_dirname = os.path.realpath(_path)
+        #     self.session_filename = os.path.join(_path, 'index.csv')
+        # else:
+        #     if _path.endswith('.jobs'):
+        #         _path = _path[:-5]
+        #     elif _path.endswith('.csv'):
+        #         _path = _path[:-4]
+        #     elif _path.endswith('.db'):
+        #         _path = _path[:-3]
 
-            self.session_dirname = _path + '.jobs'
-            self.session_filename = _path + '.csv'
+        #     self.session_dirname = _path + '.jobs'
+        #     self.session_filename = _path + '.csv'
 
-        if self.session_uri.scheme == 'file':
-            self.session_uri = gc3libs.url.Url(self.session_dirname)
-        self._core.auths.add_params(private_copy_directory=self.session_dirname)
+        # if self.session_uri.scheme == 'file':
+        #     self.session_uri = gc3libs.url.Url(self.session_dirname)
+        self._core.auths.add_params(private_copy_directory=self.session.path)
 
         # XXX: ARClib errors out if the download directory already exists, so
         # we need to make sure that each job downloads results in a new one.
@@ -1238,33 +1241,24 @@ class SessionBasedScript(_Script):
         :meth:`process_args`, :meth:`parse_args`, :meth:`setup_args`.
         """
 
-        ## create a `persistence.Store` instance to
-        ## _save_session/_load_session jobs
-        self.store = gc3libs.persistence.make_store(
-            self.session_uri,
-            idfactory=gc3libs.persistence.JobIdFactory()
-            )
+        # ## create a `persistence.Store` instance to
+        # ## _save_session/_load_session jobs
+        # self.store = gc3libs.persistence.make_store(
+        #     self.session_uri,
+        #     idfactory=gc3libs.persistence.JobIdFactory()
+        #     )
 
         ## zero out the session index if `-N` was given
-        if self.params.new_session \
-               or not os.path.exists(self.session_filename):
-            # XXX: we should abort existing jobs here...
-            open(self.session_filename, 'w+b').close()
-
-        ## load the session index file
-        try:
-            self._load_session(self.session_filename, self.store)
-        except IOError, ex:
-            self.log.critical("Cannot open session index file '%s' in read+write mode: %s."
-                              " Aborting." % (self.session_filename, str(ex)))
-            return 1
+        if self.params.new_session:
+            for jobid in self.session.job_ids:
+                self.session.remove(jobid)
 
         ## update session based on command-line args
         self.process_args()
 
         # save the session list immediately, so newly added jobs will
         # be in it if the script is stopped here
-        self._save_session(self.store)
+        self._save_session()
 
         # obey the ``-r`` command-line option
         if self.params.resource_name:
@@ -1368,63 +1362,20 @@ class SessionBasedScript(_Script):
             rc |= 8
         return rc
 
-    def _load_session(self, session_filename, store):
+    def _load_session(self):
         """
-        Load all jobs from a previously-saved session file into `self.tasks`.
-        The `session_file` argument can be any file-like object suitable
-        for passing to Python's stdlib `csv.DictReader`.
+        Load all jobs from a previously-saved session.
         """
-        if not os.path.exists(session_filename):
-            # try older copy, if present
-            if os.path.exists(session_filename + '.OLD'):
-                session_filename += '.OLD'
-            else:
-                raise IOError(2,
-                              "No such file or directory: '%s'" %
-                              session_filename)
-        session_file = open(session_filename, 'r+b')
-        for row in csv.DictReader(session_file,
-                                  ['jobname',
-                                   'persistent_id',
-                                   'state',
-                                   'info']):
-            row['jobname'] = row['jobname'].strip()
-            row['persistent_id'] = row['persistent_id'].strip()
-            if (row['jobname'] == '' or row['persistent_id'] == ''):
-                # invalid row, skip
-                continue
-            # resurrect saved state
-            task = store.load(row['persistent_id'])
-            # append to this list
-            self.tasks.append(task)
-        session_file.close()
+        self.session.load()
+        self.tasks = self.session.load_all()
 
-    def _save_session(self, store=None):
+    def _save_session(self):
         """
-        Save tasks into a given session file.  The `session`
-        argument can be any file-like object suitable for passing to
-        Python's standard library `csv.DictWriter`.
-
-        If `store` is different from the default `None`, then each job
-        in the session is also saved to it.
+        Save tasks into the session
         """
-        # save to a temporary file
-        session_filename_new = self.session_filename + '.NEW'
-        try:
-            session_file = file(session_filename_new, "wb")
-            for task in self.tasks:
-                if store is not None:
-                    store.save(task)
-                csv.DictWriter(session_file,
-                               ['jobname', 'persistent_id', 'state', 'info'],
-                               extrasaction='ignore').writerow(task)
-            session_file.close()
-        except IOError, ex:
-            self.log.error("Cannot save job list to session file '%s': %s"
-                           % (self.params.session, str(ex)))
-        # move it to final location
-        os.rename(self.session_filename, self.session_filename + '.OLD')
-        os.rename(session_filename_new, self.session_filename)
+        for task in self.tasks:
+            self.session.save(task)
+        self.session.save_session()
 
     def _search_for_input_files(self, paths, pattern=None):
         """
