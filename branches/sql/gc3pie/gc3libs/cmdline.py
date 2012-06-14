@@ -789,8 +789,8 @@ class SessionBasedScript(_Script):
         new_jobs = list(self.new_tasks(self.extra))
         # pre-allocate Job IDs
         if len(new_jobs) > 0:
-            if hasattr(self.store, 'idfactory'):
-                self.store.idfactory.reserve(len(new_jobs))
+            if hasattr(self.session.store, 'idfactory'):
+                self.session.store.idfactory.reserve(len(new_jobs))
 
         # add new jobs to the session
         existing_job_names = set(task.jobname for task in self.tasks)
@@ -896,7 +896,7 @@ class SessionBasedScript(_Script):
         In addition, any other attribute created during initialization
         and command-line parsing is of course available.
         """
-        return gc3libs.core.Engine(self._core, self.tasks, self.store,
+        return gc3libs.core.Engine(self._core, self.tasks, self.session.store,
                                    max_submitted=self.params.max_running,
                                    max_in_flight=self.params.max_running)
 

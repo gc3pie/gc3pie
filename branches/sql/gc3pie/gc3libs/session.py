@@ -24,7 +24,7 @@ __version__ = '$Revision$'
 import os
 import shutil
 
-from gc3libs.persistence import make_store
+import gc3libs.persistence
 
 import cPickle as Pickle
 
@@ -82,7 +82,7 @@ class Session(object):
             self.store_url = store_url
             self.output_dir = output_dir
             os.mkdir(self.path)
-            self.store = make_store(self.store_url)
+            self.store = gc3libs.persistence.make_store(self.store_url)
             self.__update_store_url_file()
             self.job_ids = []
 
@@ -94,7 +94,7 @@ class Session(object):
         self.store_url = fd.readline()
         fd.close()
 
-        self.store = make_store(self.store_url)
+        self.store = gc3libs.persistence.make_store(self.store_url)
         fd_job_ids = open(os.path.join(self.path, 'job_ids.db'), 'r')
         job_ids = Pickle.load(fd_job_ids)
         if job_ids:
@@ -114,7 +114,8 @@ class Session(object):
         if not os.path.exists(self.path):
             os.mkdir(self.path)
 
-        self.store = make_store(self.store_url)
+        self.store = gc3libs.persistence.make_store(self.store_url,
+                                idfactory=gc3libs.persistence.JobIdFactory())
 
         fd_job_ids = open(os.path.join(self.path, 'job_ids.db'), 'w')
         Pickle.dump(self.job_ids, fd_job_ids)
