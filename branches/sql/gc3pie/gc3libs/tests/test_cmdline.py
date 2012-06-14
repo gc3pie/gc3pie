@@ -52,6 +52,8 @@ class TestScript(cli.test.FunctionalTest):
 
         assert_true(re.match('.*TERMINATED\s+1/1\s+\(100.0%\).*', result.stdout, re.S))
 
+        # FIXME: output dir should be inside session dir
+        session_dir = os.path.join(self.env.base_path, 'TestOne')
         assert_true(
             os.path.isdir(
                 os.path.join(self.env.base_path, 'SimpleScript.out.d')
@@ -59,10 +61,21 @@ class TestScript(cli.test.FunctionalTest):
             )
 
         assert_true(
-            os.path.isdir(
-                os.path.join(self.env.base_path, 'TestOne.jobs')
+            os.path.isdir(session_dir)
+            )
+
+        assert_true(
+            os.path.isfile(
+                os.path.join(session_dir, 'job_ids.db', )
                 )
             )
+
+        assert_true(
+            os.path.isfile(
+                os.path.join(session_dir, 'store.url', )
+                )
+            )
+
 
 ## main: run tests
 
