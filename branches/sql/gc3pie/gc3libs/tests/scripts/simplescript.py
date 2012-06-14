@@ -36,7 +36,8 @@ class SimpleScript(SessionBasedScript):
                                [],
                                ['SimpleScript.stdout'],
                                'SimpleScript.out.d')
-        yield ('MyJob',
+        for i in range(1):
+            yield ('MyJob',
                myfunc,
                ('/bin/bash', '-c', '/bin/echo ciao > SimpleScript.stdout'),
                {})

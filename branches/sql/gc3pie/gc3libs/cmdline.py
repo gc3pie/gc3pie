@@ -1247,6 +1247,11 @@ class SessionBasedScript(_Script):
         #     self.session_uri,
         #     idfactory=gc3libs.persistence.JobIdFactory()
         #     )
+        try:
+            self._load_session()
+            self.log.info("Recovering previous session")
+        except:
+            self.log.info("Initializing new session")
 
         ## zero out the session index if `-N` was given
         if self.params.new_session:
@@ -1366,7 +1371,7 @@ class SessionBasedScript(_Script):
         """
         Load all jobs from a previously-saved session.
         """
-        self.session.load()
+        self.session.load_session()
         self.tasks = self.session.load_all()
 
     def _save_session(self):
