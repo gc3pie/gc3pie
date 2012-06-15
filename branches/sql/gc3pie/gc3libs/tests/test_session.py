@@ -37,6 +37,7 @@ from nose.tools import assert_true, assert_equal, raises
 from nose.plugins.skip import SkipTest
 
 
+
 class TestSession(object):
     def setUp(self):
         tmpfname = tempfile.mktemp(dir='.')
@@ -86,6 +87,13 @@ class TestSession(object):
         self.s.save_session()
         self.s.remove_session()
         self.s.load(jobid)
+
+    @raises(gc3libs.exceptions.InvalidUsage)
+    def test_invalid_session_dir(self):
+        tmpfname = tempfile.mktemp(dir='.')
+        os.mkdir(tmpfname)
+        invalid_s = Session(tmpfname)
+        shutil.rmtree(tmpfname)
 
 class StubForSqlSession(TestSession):
 

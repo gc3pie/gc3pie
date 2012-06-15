@@ -24,6 +24,7 @@ __version__ = '$Revision$'
 import os
 import shutil
 
+import gc3libs
 import gc3libs.persistence
 
 import cPickle as Pickle
@@ -90,9 +91,16 @@ class Session(object):
         """
         Load the session from the disk.
         """
-        fd = open(os.path.join(self.path, Session.STORE_URL_FILENAME))
-        self.store_url = fd.readline()
-        fd.close()
+        try:
+            store_fname = os.path.join(self.path, Session.STORE_URL_FILENAME)
+            fd = open(store_fname)
+            self.store_url = fd.readline()
+            fd.close()
+        except IOError:
+            if hasattr(self, 'store_url'):
+                gc3libs.log.debug("Loading session: missing store url file `%s`. Continuing with string %s" % (store_fname, self.store_url))
+            else:
+                raise gc3libs.exceptions.InvalidUsage("Unable to load session. File %s is missing." % (store_fname))
 
         self.store = gc3libs.persistence.make_store(self.store_url)
         jobid_file = os.path.join(self.path, 'job_ids.db')
