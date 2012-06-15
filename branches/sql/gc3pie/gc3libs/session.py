@@ -138,6 +138,16 @@ class Session(object):
             self.job_ids.append(newid)
         return newid
 
+    def remove(self, jobid):
+        """
+        Remove job identified by `jobid` from the current session
+        *and* from the storage
+        """
+        if jobid not in self.job_ids:
+            raise InvalidArgument("Job id %s not found in current session" % jobid)
+        self.store.remove(jobid)
+        self.job_ids.remove(jobid)
+
     def list(self):
         """
         Return the list of all Job IDs belonging to this session
