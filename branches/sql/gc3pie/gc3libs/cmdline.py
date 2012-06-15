@@ -520,7 +520,7 @@ class _Script(cli.app.CommandLineApp):
             self.log.debug('Creating instance of Core ...')
             cfg = gc3libs.config.Configuration(
                 *config_file_locations,
-                auto_enable_auth=auto_enable_auth)
+                **{'auto_enable_auth':auto_enable_auth})
             return gc3libs.core.Core(cfg)
         except gc3libs.exceptions.NoResources:
             raise gc3libs.exceptions.FatalError(
