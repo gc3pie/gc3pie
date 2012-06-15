@@ -22,6 +22,7 @@ __docformat__ = 'reStructuredText'
 __version__ = '$Revision$'
 
 import os
+import shutil
 import tempfile
 import cPickle as Pickle
 
@@ -73,13 +74,7 @@ class TestSession(object):
         s2.job_ids == self.s.job_ids
 
 
-class TestSqlSession(TestSession):
-    def setUp(self):
-        tmpfname = tempfile.mktemp(dir='.')
-        self.tmpfname = os.path.relpath(tmpfname)
-        self.s = Session(
-            tmpfname,
-            store_url="sqlite:////%s/store.db" % os.path.abspath(self.tmpfname))
+class StubForSqlSession(TestSession):
 
     def test_sqlite_store(self):
         jobid = self.s.save(Persistable())
@@ -95,6 +90,33 @@ class TestSqlSession(TestSession):
         rows = results.fetchall()
         assert_equal(len(rows), 1)
         assert_equal(rows[0][0], jobid)
+
+
+class TestSqliteSession(StubForSqlSession):
+
+    def setUp(self):
+        tmpfname = tempfile.mktemp(dir='.')
+        self.tmpfname = os.path.relpath(tmpfname)
+        self.s = Session(
+            tmpfname,
+            store_url="sqlite:////%s/store.db" % os.path.abspath(self.tmpfname))
+
+    def tearDown(self):
+        shutil.rmtree(self.tmpfname)
+
+
+class TestMysqlSession(StubForSqlSession):
+
+    def setUp(self):
+        tmpfname = tempfile.mktemp(dir='.')
+        self.tmpfname = os.path.relpath(tmpfname)
+        self.s = Session(
+            tmpfname,
+            store_url="mysql://gc3user:gc3pwd@localhost/gc3")
+
+    def tearDown(self):
+        self.s.remove_session()
+
 
 ## main: run tests
 
