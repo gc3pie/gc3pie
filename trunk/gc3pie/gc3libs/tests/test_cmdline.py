@@ -37,6 +37,35 @@ class TestScript(cli.test.FunctionalTest):
         cli.test.FunctionalTest.__init__(self, *args, **kw)
         self.scriptdir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'scripts')
 
+
+    def setUp(self):
+        cli.test.FunctionalTest.setUp(self)
+        CONF_FILE="""
+[auth/dummy]
+type = ssh
+username = dummy
+
+[resource/localhost]
+enabled = true
+auth = dummy
+type = subprocess
+frontend = localhost
+transport = local
+max_cores_per_job = 2
+max_memory_per_core = 2
+max_walltime = 8
+max_cores = 2
+architecture = x86_64
+"""
+        (fd, self.cfgfile) = tempfile.mkstemp()
+        f = os.fdopen(fd, 'w')
+        f.write(CONF_FILE)
+        f.close()
+
+    def tearDown(self):
+        os.remove(self.cfgfile)
+        cli.test.FunctionalTest.tearDown(self)
+
     def test_simplescript(self):
         """Test a very simple script based on `SessionBasedScript`:class:
 
@@ -48,6 +77,7 @@ class TestScript(cli.test.FunctionalTest):
                                  os.path.join(self.scriptdir, 'simplescript.py'),
                                  '-C', '1',
                                  '-s', 'TestOne',
+                                 '--config-files', self.cfgfile,
                                  '-r', 'localhost')
 
         assert_true(re.match('.*TERMINATED\s+1/1\s+\(100.0%\).*', result.stdout, re.S))
