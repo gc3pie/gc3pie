@@ -601,6 +601,7 @@ error occurred.
                        help="Remove all stored jobs. USE WITH CAUTION!")
 
     def main(self):
+        self.session = Session(self.params.session)
         if self.params.all and len(self.params.args) > 0:
             raise gc3libs.exceptions.InvalidUsage("Option '-A' conflicts with list of job IDs to remove.")
 
