@@ -377,6 +377,12 @@ class _Script(cli.app.CommandLineApp):
                        help="Print more detailed (debugging) information about the program's activity."
                        "The verbosity of the output can be controlled by adding/removing 'v' characters."
                        )
+
+        self.add_param("--config-files",
+                       action="store",
+                       default=str.join(',', gc3libs.Default.CONFIG_FILE_LOCATIONS),
+                       help="Comma separated list of configuration files",
+                       )
         return
 
     def pre_run(self):
@@ -404,8 +410,10 @@ class _Script(cli.app.CommandLineApp):
         self.log.setLevel(loglevel)
         self.log.propagate = True
 
+        # Read config file(s) from command line
+        self.params.config_files = self.params.config_files.split(',')
         # interface to the GC3Libs main functionality
-        self._core = self._make_core()
+        self._core = self._make_core(self.params.config_files)
 
         # call hook methods from derived classes
         self.parse_args()
