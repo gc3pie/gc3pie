@@ -33,7 +33,7 @@ import sqlalchemy.sql as sql
 
 from gc3libs.utils import same_docstring_as
 import gc3libs.exceptions
-from gc3libs import Task
+from gc3libs import Task, Run
 
 from store import Store, Persistable, register
 from idfactory import IdFactory
@@ -204,7 +204,11 @@ class SqlStore(Store):
         pickler = create_pickler(self, dstdata, obj)
         pickler.dump(obj)
         fields['data'] = dstdata.getvalue()
-        fields['state'] = 'None'
+
+        # By default the state of an object will be UNKNOWN. It's the
+        # only valid (and reasonable) value both for `Task`s and for
+        # other classes we could think of.
+        fields['state'] = Run.State.UNKNOWN
         if hasattr(obj, 'execution') and hasattr(obj.execution, 'state'):
             fields['state'] = obj.execution.state
 
