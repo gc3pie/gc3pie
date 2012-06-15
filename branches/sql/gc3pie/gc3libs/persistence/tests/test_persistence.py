@@ -338,15 +338,21 @@ class SqlStoreChecks(GenericStoreChecks):
 
     def test_sql_injection(self):
         """Test if the `SqlStore` class is vulnerable to SQL injection."""
-        raise SkipTest("We need an extra field to store arbitrary data in order to test SQL Injection")
+
+        storetemp = make_store(self.db_url,
+            table_name='sql_injection_test',
+            extra_fields={
+                sqlalchemy.Column('extra', sqlalchemy.VARCHAR(length=128)): gc3libs.persistence.sql.value_of('extra')
+                })
 
         obj = SimpleTask("Antonio's task")
         # obligatory XKCD citation ;-)
         # Ric, you can't just "cite" XKCD without inserting a
         # reference: http://xkcd.com/327/
-        obj.execution.state = "Robert'); DROP TABLE store;--"
-        id_ = self.store.save(obj)
-        obj2 = self.store.load(id_)
+        obj.extra = "Robert'); DROPT TABLE sql_injection_test; --"
+        id_ = storetemp.save(obj)
+        obj2 = storetemp.load(id_)
+        self.conn.execute('drop table sql_injection_test')
         assert obj.execution.state == obj2.execution.state
 
     def test_sql_save_load_extra_fields(self):
