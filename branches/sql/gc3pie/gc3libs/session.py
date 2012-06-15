@@ -74,6 +74,7 @@ class Session(object):
         it's inside the session.
         """
         self.path = os.path.abspath(path)
+        self.job_ids = []
         if os.path.isdir(self.path):
             self.load_session()
         else:
@@ -84,7 +85,6 @@ class Session(object):
             os.mkdir(self.path)
             self.store = gc3libs.persistence.make_store(self.store_url)
             self.__update_store_url_file()
-            self.job_ids = []
 
     def load_session(self):
         """
@@ -95,11 +95,13 @@ class Session(object):
         fd.close()
 
         self.store = gc3libs.persistence.make_store(self.store_url)
-        fd_job_ids = open(os.path.join(self.path, 'job_ids.db'), 'r')
-        job_ids = Pickle.load(fd_job_ids)
-        if job_ids:
-            self.job_ids = job_ids
-        fd_job_ids.close()
+        jobid_file = os.path.join(self.path, 'job_ids.db')
+        if os.path.isfile(jobid_file):
+            fd_job_ids = open(jobid_file, 'r')
+            job_ids = Pickle.load(fd_job_ids)
+            if job_ids:
+                self.job_ids = job_ids
+            fd_job_ids.close()
 
     def save_session(self):
         """
@@ -135,6 +137,12 @@ class Session(object):
         if newid not in self.job_ids:
             self.job_ids.append(newid)
         return newid
+
+    def list(self):
+        """
+        Return the list of all Job IDs belonging to this session
+        """
+        return self.job_ids
 
     def load_all(self):
         """Load all jobs belonging to the session from the persistency
