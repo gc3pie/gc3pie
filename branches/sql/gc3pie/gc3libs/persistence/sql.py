@@ -245,9 +245,9 @@ class SqlStore(Store):
         conn = self.__engine.connect()
         r = conn.execute(q)
         rawdata = r.fetchone()
-
         if not rawdata:
-            raise gc3libs.exceptions.LoadError("Unable to find object %d" % id_)
+            raise gc3libs.exceptions.LoadError(
+                "Unable to find any object with ID '%s'" % id_)
         unpickler = create_unpickler(self, StringIO.StringIO(rawdata[0]))
         obj = unpickler.load()
         conn.close()
