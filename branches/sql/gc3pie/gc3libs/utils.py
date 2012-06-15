@@ -856,7 +856,8 @@ def read_contents(path):
         stream = open(path, 'r')
         return stream.read()
     finally:
-        stream.close()
+        if 'stream' in locals():
+            stream.close()
 
 
 def safe_repr(obj):
