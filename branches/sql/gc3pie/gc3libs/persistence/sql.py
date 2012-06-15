@@ -40,10 +40,6 @@ from idfactory import IdFactory
 from filesystem import  create_pickler, create_unpickler
 
 
-class DummyObject:
-    pass
-
-
 def sql_next_id_factory(db):
     """
     This function will return a function which can be used as
