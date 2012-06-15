@@ -23,6 +23,8 @@ SQL-based storage of GC3pie objects.
 __docformat__ = 'reStructuredText'
 __version__ = '$Revision$'
 
+
+# stdlib imports
 import copy
 
 import cPickle as pickle
@@ -30,14 +32,94 @@ import cStringIO as StringIO
 import sqlalchemy as sqla
 import sqlalchemy.sql as sql
 
-
-from gc3libs.utils import same_docstring_as
-import gc3libs.exceptions
+# GC3Pie interface
 from gc3libs import Task, Run
+import gc3libs.exceptions
+import gc3libs.utils
+from gc3libs.utils import same_docstring_as, getattr_nested
 
 from store import Store, Persistable
 from idfactory import IdFactory
 from filesystem import  create_pickler, create_unpickler
+
+
+def value_of(attr):
+    """
+    Return accessor function for the given attribute.
+
+    The return value of a call to `value_of` is a function that, given
+    any object, returns the value of its attribute `attr` (or raises
+    `AttributeError` if no such attribute exists)::
+
+        >>> fn = value_of('x')
+        >>> a = gc3libs.utils.Struct(x=1, y=2)
+        >>> fn(a)
+        1
+        >>> b = gc3libs.utils.Struct(z=3)
+        >>> fn(b)
+        Traceback (most recent call last):
+           ...
+        AttributeError: 'Struct' object has no attribute 'x'
+
+    In other words, if `fn = value_of('x')`, then `fn(obj)` evaluates
+    to `obj.x`.
+
+    If the string `attr` contains any dots, then attribute lookups are
+    chained: if `fn = value_of('x.y')` then `fn(obj)` evaluates to
+    `obj.x.y`::
+
+        >>> fn = value_of('x.y')
+        >>> a = gc3libs.utils.Struct(x=gc3libs.utils.Struct(y=42))
+        >>> fn(a)
+        42
+
+    See also: `value_at_index`:meth:, `gc3libs.utils.getattr_nested`.
+    """
+    def fn(obj):
+        return gc3libs.utils.getattr_nested(obj, attr)
+    return fn
+
+
+def value_at_index(idx):
+    """
+    Return accessor function for the given item in a sequence.
+
+    The return value of a call to `value_at_index` is a function that,
+    given any sequence/container object, returns the value of the item
+    at its place `idx`::
+
+        >>> fn = value_at_index(1)
+        >>> a = 'abc'
+        >>> fn(a)
+        'b'
+        >>> b = { 1:'x', 2:'y' }
+        >>> fn(b)
+        'x'
+
+    In other words, if `fn = value_at_index(x)`, then `fn(obj)` evaluates
+    to `obj[x]`.
+
+    Note that the returned function `fn` raises `IndexError` or `KeyError`,
+    depending on the type of sequence/container, if place `idx` does not
+    exist::
+
+        >>> fn = value_at_index(42)
+        >>> a = list('abc')
+        >>> fn(a)
+        Traceback (most recent call last):
+           ...
+        IndexError: list index out of range
+        >>> b = dict(x=1, y=2, z=3)
+        >>> fn(b)
+        Traceback (most recent call last):
+           ...
+        KeyError: 42
+
+    See also: `value_of`:meth:
+    """
+    def fn(obj):
+        return obj[idx]
+    return fn
 
 
 def sql_next_id_factory(db):
@@ -120,9 +202,12 @@ class SqlStore(Store):
 
     `<column>` is a `sqlalchemy.Column` object.
 
-    `<function>` is a function (or lambda) which accept the object as
-    argument and will return the value to be stored into the
-    database. Any exception raised by this function will be *ignored*.
+    `<function>` is a function which takes the object to be saved as
+    argument and returns the value to be stored into the database. Any
+    exception raised by this function will be *ignored*.  The
+    functions `value_of`:func: and `value_at_index`:func: in this
+    module provide convenient helpers to save object attributes into
+    table columns.
 
     For each extra column the `save()` method will call the
     corresponding `<function>` in order to get the correct value to

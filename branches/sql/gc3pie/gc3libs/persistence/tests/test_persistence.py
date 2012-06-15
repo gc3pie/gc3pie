@@ -338,7 +338,7 @@ class SqlStoreChecks(GenericStoreChecks):
 
     def test_sql_injection(self):
         """Test if the `SqlStore` class is vulnerable to SQL injection."""
-        raise SkipTest("We need an extra field to store arbitrary data in oreder to test SQL Injection")
+        raise SkipTest("We need an extra field to store arbitrary data in order to test SQL Injection")
 
         obj = SimpleTask("Antonio's task")
         # obligatory XKCD citation ;-)
@@ -348,29 +348,6 @@ class SqlStoreChecks(GenericStoreChecks):
         id_ = self.store.save(obj)
         obj2 = self.store.load(id_)
         assert obj.execution.state == obj2.execution.state
-
-    def test_sql_implicit_attribute_save(self):
-        """
-        Test if `SqlStore` saves extra attributes into columns of the same name.
-        """
-        raise SkipTest("This feature is not supported anymore.")
-        # extend the db
-        self.conn.execute('alter table %s add column value varchar(256)'
-                       % self.store.table_name)
-
-        # re-open the db. We need this because schema definition is
-        # checked only in SqlStore.__init__
-        self.store = self._make_store()
-
-        obj = SimplePersistableObject('My App')
-        id_ = self.store.save(obj)
-
-        # check that the attribute `.value` has been saved in the dedicated col
-        q = sql.select([self.store.t_store.c.value]).where(self.store.t_store.c.id == id_)
-        results = self.conn.execute(q)
-        rows = results.fetchall()
-        assert_equal(len(rows), 1)
-        assert_equal(rows[0][0], obj.value)
 
     def test_sql_save_load_extra_fields(self):
         """
@@ -382,11 +359,11 @@ class SqlStoreChecks(GenericStoreChecks):
 
         # re-build store, as the table list is read upon `__init__`
         self.store = self._make_store(extra_fields={
-            sqlalchemy.Column('extra', sqlalchemy.VARCHAR(length=128)): (lambda arg: arg.foo.value) })
+            sqlalchemy.Column('extra', sqlalchemy.VARCHAR(length=128)): gc3libs.persistence.sql.value_of('foo.value')
+            })
 
         # if this query does not error out, the column is defined
         q = sql.select([sqlfunc.count(self.store.t_store.c.extra)]).distinct()
-        # self.c.execute("select distinct count(extra) from %s" % self.store.table_name)
         results = self.conn.execute(q)
         rows = results.fetchall()
         assert_equal(len(rows), 1)
@@ -398,8 +375,6 @@ class SqlStoreChecks(GenericStoreChecks):
 
         # check that the value has been saved
         q = sql.select([self.store.t_store.c.extra]).where(self.store.t_store.c.id == id_)
-        # self.c.execute("select extra from %s where id=%d"
-        #                % (self.store.table_name, id))
 
         # Oops, apparently the store.save call will close our
         # connection too.
