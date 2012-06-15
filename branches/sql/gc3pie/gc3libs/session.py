@@ -116,8 +116,8 @@ class Session(object):
         if not os.path.exists(self.path):
             os.mkdir(self.path)
 
-        self.store = gc3libs.persistence.make_store(self.store_url,
-                                idfactory=gc3libs.persistence.JobIdFactory())
+        # self.store = gc3libs.persistence.make_store(self.store_url,
+        #                         idfactory=gc3libs.persistence.JobIdFactory())
 
         fd_job_ids = open(os.path.join(self.path, 'job_ids.db'), 'w')
         Pickle.dump(self.job_ids, fd_job_ids)
@@ -147,6 +147,7 @@ class Session(object):
             raise InvalidArgument("Job id %s not found in current session" % jobid)
         self.store.remove(jobid)
         self.job_ids.remove(jobid)
+        self.save_session()
 
     def list(self):
         """
@@ -171,7 +172,8 @@ class Session(object):
         """
         for jobid in self.job_ids:
             self.store.remove(jobid)
-        shutil.rmtree(self.path)
+        if os.path.exists(self.path):
+            shutil.rmtree(self.path)
 
     def __update_store_url_file(self):
         """
