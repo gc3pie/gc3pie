@@ -538,6 +538,7 @@ released once the output files have been fetched.
                        help="Overwrite files in destination directory")
 
     def main(self):
+        self.session = Session(self.params.session)
         if len(self.params.args) == 0:
             self.log.error("No job IDs given on command line: nothing to do."
                            " Type '%s --help' for usage help."
@@ -666,6 +667,7 @@ as more lines are written to the given stream.
         self.add_param("-n", "--lines", dest="num_lines", type=int, default=10, help="output  the  last N lines, instead of the last 10")
 
     def main(self):
+        self.session = Session(self.params.session)
         if len(self.params.jobid) != 1:
             raise gc3libs.exceptions.InvalidUsage("This command takes only one argument: the Job ID.")
         jobid = self.params.jobid[0]
@@ -728,6 +730,7 @@ List status of computational resources.
                        " in `glist` output.)")
 
     def main(self):
+        self.session = Session(self.params.session)
         if len(self.params.args) > 0:
             self._select_resources(* self.params.args)
             self.log.info("Retained only resources: %s",
