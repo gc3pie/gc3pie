@@ -169,7 +169,7 @@ class Session(object):
         jobids_file = os.path.join(self.path, 'job_ids.db')
         gc3libs.utils.write_contents(jobids_file, pickle.dumps(self.job_ids, pickle.HIGHEST_PROTOCOL))
 
-    def load(self, persistent_id):
+    def load(self, jobid):
         """
         Load the object identified by `persistent_id` from the
         persistent store and return it.
