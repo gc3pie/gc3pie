@@ -2,7 +2,7 @@
 #
 """
 """
-# Copyright (C) 2011, GC3, University of Zurich. All rights reserved.
+# Copyright (C) 2011-2012, GC3, University of Zurich. All rights reserved.
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
@@ -31,7 +31,7 @@ import gc3libs.exceptions
 from gc3libs.utils import progressive_number, same_docstring_as
 import gc3libs.url
 
-from store import Store, Persistable, register
+from store import Store, Persistable
 from idfactory import IdFactory
 
 
@@ -280,8 +280,6 @@ def make_filesystemstore(url, *args, **kw):
     """
     assert isinstance(url, gc3libs.url.Url)
     return FilesystemStore(url.path, *args, **kw)
-
-register('file', make_filesystemstore)
 
 
 ## main: run tests

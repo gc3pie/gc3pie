@@ -35,7 +35,7 @@ from gc3libs.utils import same_docstring_as
 import gc3libs.exceptions
 from gc3libs import Task, Run
 
-from store import Store, Persistable, register
+from store import Store, Persistable
 from idfactory import IdFactory
 from filesystem import  create_pickler, create_unpickler
 
@@ -289,13 +289,6 @@ def make_sqlstore(url, *args, **kw):
     if url.scheme in ('sqlite', 'file'):
         url = "%s://%s/%s" % (url.scheme, url.netloc, url.path)
     return SqlStore(str(url), *args, **kw)
-
-register('sqlite',     make_sqlstore)
-register('mysql',      make_sqlstore)
-register('postgresql', make_sqlstore)
-register('oracle',     make_sqlstore)
-register('mssql',      make_sqlstore)
-register('firebird',   make_sqlstore)
 
 
 ## main: run tests

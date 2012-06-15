@@ -44,7 +44,6 @@ import gc3libs
 from gc3libs import Run, Task
 import gc3libs.exceptions
 from gc3libs.persistence import make_store, Persistable
-import gc3libs.persistence.sql
 from gc3libs.url import Url
 
 
