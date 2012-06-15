@@ -117,7 +117,7 @@ class TestSqliteSession(StubForSqlSession):
 
     def setUp(self):
         tmpfname = tempfile.mktemp(dir='.')
-        self.tmpfname = os.path.relpath(tmpfname)
+        self.tmpfname = os.path.basename(tmpfname)
         self.s = Session(
                 tmpfname,
                 store_url="sqlite:////%s/store.db" % os.path.abspath(self.tmpfname))
@@ -131,7 +131,7 @@ class TestMysqlSession(StubForSqlSession):
 
     def setUp(self):
         tmpfname = tempfile.mktemp(dir='.')
-        self.tmpfname = os.path.relpath(tmpfname)
+        self.tmpfname = os.path.basename(tmpfname)
         try:
             self.s = Session(
                 tmpfname,
