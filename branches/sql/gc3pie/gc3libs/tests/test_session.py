@@ -26,12 +26,15 @@ import shutil
 import tempfile
 import cPickle as Pickle
 
+import gc3libs.exceptions
 from gc3libs.session import Session
 from gc3libs.persistence import Persistable
 import gc3libs.persistence.sql
+import sqlalchemy
 import sqlalchemy.sql as sql
 
-from nose.tools import assert_true, assert_equal
+from nose.tools import assert_true, assert_equal, raises
+from nose.plugins.skip import SkipTest
 
 
 class TestSession(object):
@@ -41,7 +44,11 @@ class TestSession(object):
         self.s = Session(tmpfname)
 
     def tearDown(self):
-        self.s.remove_session()
+        try:
+            self.s.remove_session()
+        except:
+            # after test_remove_session() we will get an error
+            pass
 
     def test_directory_creation(self):
         self.s.save_session()
@@ -73,6 +80,12 @@ class TestSession(object):
         s2 = Session(self.s.path)
         s2.job_ids == self.s.job_ids
 
+    @raises(gc3libs.exceptions.LoadError,sqlalchemy.exc.OperationalError)
+    def test_remove_session(self):
+        jobid = self.s.save(Persistable())
+        self.s.save_session()
+        self.s.remove_session()
+        self.s.load(jobid)
 
 class StubForSqlSession(TestSession):
 
@@ -98,11 +111,12 @@ class TestSqliteSession(StubForSqlSession):
         tmpfname = tempfile.mktemp(dir='.')
         self.tmpfname = os.path.relpath(tmpfname)
         self.s = Session(
-            tmpfname,
-            store_url="sqlite:////%s/store.db" % os.path.abspath(self.tmpfname))
+                tmpfname,
+                store_url="sqlite:////%s/store.db" % os.path.abspath(self.tmpfname))
 
     def tearDown(self):
-        shutil.rmtree(self.tmpfname)
+        if os.path.exists(self.tmpfname):
+            shutil.rmtree(self.tmpfname)
 
 
 class TestMysqlSession(StubForSqlSession):
@@ -110,9 +124,12 @@ class TestMysqlSession(StubForSqlSession):
     def setUp(self):
         tmpfname = tempfile.mktemp(dir='.')
         self.tmpfname = os.path.relpath(tmpfname)
-        self.s = Session(
-            tmpfname,
-            store_url="mysql://gc3user:gc3pwd@localhost/gc3")
+        try:
+            self.s = Session(
+                tmpfname,
+                store_url="mysql://gc3user:gc3pwd@localhost/gc3")
+        except sqlalchemy.exc.OperationalError:
+            raise SkipTest("Cannot connect to MySQL database.")
 
     def tearDown(self):
         self.s.remove_session()
