@@ -43,23 +43,41 @@ from idfactory import IdFactory
 from filesystem import  create_pickler, create_unpickler
 
 
-def value_of(attr):
+# tag object for catching the "no value passed" in `value_of` and
+# `value_at_index`
+_none = object()
+
+
+def value_of(attr, default=_none):
     """
     Return accessor function for the given attribute.
 
     The return value of a call to `value_of` is a function that, given
-    any object, returns the value of its attribute `attr` (or raises
-    `AttributeError` if no such attribute exists)::
+    any object, returns the value of its attribute `attr`::
 
         >>> fn = value_of('x')
         >>> a = gc3libs.utils.Struct(x=1, y=2)
         >>> fn(a)
         1
+
+    The returned accessor function raises `AttributeError` if no such
+    attribute exists)::
+
         >>> b = gc3libs.utils.Struct(z=3)
         >>> fn(b)
         Traceback (most recent call last):
            ...
         AttributeError: 'Struct' object has no attribute 'x'
+
+    However, you can specify a default value as second argument, in
+    which case the default value is returned and no error is raised::
+
+        >>> fn = value_of('x', 42)
+        >>> fn(b)
+        42
+        >>> fn = value_of('y', None)
+        >>> print(fn(b))
+        None
 
     In other words, if `fn = value_of('x')`, then `fn(obj)` evaluates
     to `obj.x`.
@@ -76,11 +94,17 @@ def value_of(attr):
     See also: `value_at_index`:meth:, `gc3libs.utils.getattr_nested`.
     """
     def fn(obj):
-        return gc3libs.utils.getattr_nested(obj, attr)
+        try:
+            return gc3libs.utils.getattr_nested(obj, attr)
+        except AttributeError:
+            if default is not _none:
+                return default
+            else:
+                raise
     return fn
 
 
-def value_at_index(idx):
+def value_at_index(idx, default=_none):
     """
     Return accessor function for the given item in a sequence.
 
@@ -115,10 +139,25 @@ def value_at_index(idx):
            ...
         KeyError: 42
 
+    However, you can specify a default value as second argument, in
+    which case the default value is returned and no error is raised::
+
+        >>> fn = value_at_index(42, 'foo')
+        >>> fn(a)
+        'foo'
+        >>> fn(b)
+        'foo'
+
     See also: `value_of`:meth:
     """
     def fn(obj):
-        return obj[idx]
+        try:
+            return obj[idx]
+        except (KeyError, IndexError):
+            if default is not _none:
+                return default
+            else:
+                raise
     return fn
 
 
