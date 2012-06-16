@@ -48,7 +48,7 @@ from filesystem import  create_pickler, create_unpickler
 _none = object()
 
 
-def value_of(attr, default=_none):
+def value_of(attr, xform=(lambda obj: obj), default=_none):
     """
     Return accessor function for the given attribute.
 
@@ -69,13 +69,13 @@ def value_of(attr, default=_none):
            ...
         AttributeError: 'Struct' object has no attribute 'x'
 
-    However, you can specify a default value as second argument, in
-    which case the default value is returned and no error is raised::
+    However, you can specify a default value, in which case the
+    default value is returned and no error is raised::
 
-        >>> fn = value_of('x', 42)
+        >>> fn = value_of('x', default=42)
         >>> fn(b)
         42
-        >>> fn = value_of('y', None)
+        >>> fn = value_of('y', default=None)
         >>> print(fn(b))
         None
 
@@ -91,11 +91,25 @@ def value_of(attr, default=_none):
         >>> fn(a)
         42
 
-    See also: `value_at_index`:meth:, `gc3libs.utils.getattr_nested`.
+    The optional second argument `xform` allows composing the accessor
+    with an arbitrary function that is passed an object and should
+    return a (possibly different) object whose attributes should be
+    looked up.  In other words, if `xform` is specified, then the
+    returned accessor function computes `xform(obj).attr` instead of
+    `obj.attr`.  For example::
+
+    This allows combining `value_of` with `value_at_index`:meth:
+    (which see), to access objects in deeply-nested data structures::
+
+        >>> c = [ {'x':'a'}, 2, 3.14 ]
+        >>> fn = value_of('__class__.__name__', value_at_index(0))
+        >>> fn(c)
+        'dict'
+
     """
     def fn(obj):
         try:
-            return gc3libs.utils.getattr_nested(obj, attr)
+            return gc3libs.utils.getattr_nested(xform(obj), attr)
         except AttributeError:
             if default is not _none:
                 return default
@@ -104,7 +118,7 @@ def value_of(attr, default=_none):
     return fn
 
 
-def value_at_index(idx, default=_none):
+def value_at_index(idx, xform=(lambda obj: obj), default=_none):
     """
     Return accessor function for the given item in a sequence.
 
@@ -142,17 +156,36 @@ def value_at_index(idx, default=_none):
     However, you can specify a default value as second argument, in
     which case the default value is returned and no error is raised::
 
-        >>> fn = value_at_index(42, 'foo')
+        >>> fn = value_at_index(42, default='foo')
         >>> fn(a)
         'foo'
         >>> fn(b)
         'foo'
 
-    See also: `value_of`:meth:
+    The optional second argument `xform` allows composing the accessor
+    with an arbitrary function that is passed an object and should
+    return a (possibly different) object where the item lookup should
+    be performed.  In other words, if `xform` is specified, then the
+    returned accessor function computes `xform(obj)[idx]` instead of
+    `obj[idx]`.  For example::
+
+        >>> c = 'abc'
+        >>> fn = value_at_index(1, xform=(lambda s: s.upper()))
+        >>> fn(c)
+        'B'
+
+        >>> c = (('a',1), ('b',2))
+        >>> fn = value_at_index('a', xform=dict)
+        >>> fn(c)
+        1
+
+
+    This allows combining `value_at_index` with `value_of`:meth:
+    (which see), to access objects in deeply-nested data structures.
     """
     def fn(obj):
         try:
-            return obj[idx]
+            return xform(obj)[idx]
         except (KeyError, IndexError):
             if default is not _none:
                 return default
