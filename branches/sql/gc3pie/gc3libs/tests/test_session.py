@@ -129,6 +129,14 @@ class TestSqliteSession(StubForSqlSession):
 
 class TestMysqlSession(StubForSqlSession):
 
+    @classmethod
+    def setup_class(cls):
+        # we skip MySQL tests if no MySQLdb module is present
+        try:
+            import MySQLdb
+        except:
+            raise SkipTest("MySQLdb module not installed.")
+
     def setUp(self):
         tmpfname = tempfile.mktemp(dir='.')
         self.tmpfname = os.path.basename(tmpfname)
