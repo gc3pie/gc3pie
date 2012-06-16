@@ -70,7 +70,7 @@ class TestSession(object):
         self.s.save(Persistable())
         self.s.save_session()
 
-        fd_job_ids = open(os.path.join(self.s.path, 'job_ids.db'), 'r')
+        fd_job_ids = open(os.path.join(self.s.path, self.s.JOBIDS_DB), 'r')
         ids = Pickle.load(fd_job_ids)
         assert_equal(ids, self.s.job_ids)
         assert_equal(len(ids),  1)

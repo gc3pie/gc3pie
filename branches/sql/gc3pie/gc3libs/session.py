@@ -56,7 +56,7 @@ class Session(object):
         >>> tmpfname = tempfile.mktemp(dir='.')
         >>> session = Session(tmpfname)
         >>> sorted(os.listdir(tmpfname))
-        ['job_ids.db', 'store.url']
+        ['job_ids.pickle', 'store.url']
 
     To load, save or replace objects in the store you should use the
     methods defined in `Session`, which work like the equivalent
@@ -91,35 +91,40 @@ class Session(object):
 
     """
 
+    JOBIDS_DB = 'job_ids.pickle'
     STORE_URL_FILENAME = "store.url"
 
     def __init__(self, path, store_url=None, output_dir=None):
         """
-        The only mandatory argument is `path`, which is the path to
-        the session directory. It will usually be just a name and
-        thus will be considered as a relative path.
+        First argument `path` is the path to the session directory.
 
-        The `store_url` argument is the url of the store. By default
-        the persistent storage used is FileSystemStore which will
-        points to the `jobs` subdirectory of the session
-        directory. Please note, however, that if the session already
-        exists and contains a valid ``store.url`` file, the store_url
-        argument will be *ignored*.
+        The `store_url` argument is the URL of the store, as would be
+        passed to function
+        `gc3libs.persistence.store.make_store`:func:.  Please note,
+        however, that if the session directory already exists and
+        contains a valid ``store.url`` file, the store_url argument
+        will be *ignored*.
 
-        the `output_dir` argument is the directory in which the store
-        will save the output of the jobs. FIXME: not yet implemented
+        By default the
+        `gc3libs.persistence.filesystem.FileSystemStore`:class: (which
+        see) is used for providing the session with a store.
+
+        The `output_dir` argument is the directory in which the store
+        will save the output of the jobs. **FIXME:** not yet implemented
         """
         self.path = os.path.abspath(path)
         self.job_ids = []
         if os.path.isdir(self.path):
+            # session already exists
             self.load_session()
         else:
+            # new session
             if not store_url:
                 store_url = os.path.join(self.path, 'jobs')
             self.store_url = store_url
-            self.output_dir = output_dir
-            os.mkdir(self.path)
             self.store = gc3libs.persistence.make_store(self.store_url)
+            #self.output_dir = output_dir
+            os.mkdir(self.path)
             self.__update_store_url_file()
             self.__update_job_ids_file()
 
@@ -146,13 +151,15 @@ class Session(object):
                     "Unable to load session. File %s is missing." % (store_fname))
 
         self.store = gc3libs.persistence.make_store(self.store_url)
-        jobid_file = os.path.join(self.path, 'job_ids.db')
-        if os.path.isfile(jobid_file):
-            fd_job_ids = open(jobid_file, 'r')
-            job_ids = pickle.load(fd_job_ids)
-            if job_ids:
-                self.job_ids = job_ids
-            fd_job_ids.close()
+        jobid_filename = os.path.join(self.path, self.JOBIDS_DB)
+        if os.path.isfile(jobid_filename):
+            fd_job_ids = open(jobid_filename, 'r')
+            try:
+                job_ids = pickle.load(fd_job_ids)
+                if job_ids:
+                    self.job_ids = job_ids
+            finally:
+                fd_job_ids.close()
 
     def save_session(self):
         """
@@ -166,8 +173,8 @@ class Session(object):
         self.__update_store_url_file()
         self.__update_job_ids_file()
 
-        jobids_file = os.path.join(self.path, 'job_ids.db')
-        gc3libs.utils.write_contents(jobids_file, pickle.dumps(self.job_ids, pickle.HIGHEST_PROTOCOL))
+        jobids_filename = os.path.join(self.path, self.JOBIDS_DB)
+        gc3libs.utils.write_contents(jobids_filename, pickle.dumps(self.job_ids, pickle.HIGHEST_PROTOCOL))
 
     def load(self, jobid):
         """
@@ -240,5 +247,5 @@ class Session(object):
         """
         Update the job ids files, in order to avoid inconsistencies.
         """
-        jobids_file = os.path.join(self.path, 'job_ids.db')
+        jobids_file = os.path.join(self.path, self.JOBIDS_DB)
         gc3libs.utils.write_contents(jobids_file, pickle.dumps(self.job_ids, pickle.HIGHEST_PROTOCOL))

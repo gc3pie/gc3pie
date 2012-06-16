@@ -26,11 +26,11 @@ import os
 import tempfile
 import re
 
-import gc3libs.cmdline
-
 import cli.test
 from nose.tools import assert_true
 
+import gc3libs.cmdline
+import gc3libs.session
 
 class TestScript(cli.test.FunctionalTest):
     def __init__(self, *args, **kw):
@@ -96,13 +96,13 @@ architecture = x86_64
 
         assert_true(
             os.path.isfile(
-                os.path.join(session_dir, 'job_ids.db', )
+                os.path.join(session_dir, gc3libs.session.Session.JOBIDS_DB, )
                 )
             )
 
         assert_true(
             os.path.isfile(
-                os.path.join(session_dir, 'store.url', )
+                os.path.join(session_dir, gc3libs.session.Session.STORE_URL_FILENAME, )
                 )
             )
 

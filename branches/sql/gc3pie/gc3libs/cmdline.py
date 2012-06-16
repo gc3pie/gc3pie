@@ -69,6 +69,7 @@ import gc3libs.utils
 import gc3libs.url
 from gc3libs.session import Session
 
+
 ## types for command-line parsing; see
 ## http://docs.python.org/dev/library/argparse.html#type
 
@@ -290,15 +291,15 @@ class _Script(cli.app.CommandLineApp):
 
         The help text to be printed when the script is invoked with the
         ``-h``/``--help`` option will be taken from (in order of preference):
-          * the keyword argument `description`
-          * the attribute `self.description`
+          * the keyword argument `description`;
+          * the attribute `self.description`.
         If neither is provided, an `AssertionError` is raised.
 
         The text to output when the the script is invoked with the
         ``-V``/``--version`` options is taken from (in order of
         preference):
-          * the keyword argument `version`
-          * the attribute `self.version`
+          * the keyword argument `version`;
+          * the attribute `self.version`.
         If none of these is provided, an `AssertionError` is raised.
 
         The `usage` keyword argument (if provided) will be used to
@@ -309,10 +310,6 @@ class _Script(cli.app.CommandLineApp):
         Any additional keyword argument will be used to set a
         corresponding instance attribute on this Python object.
 
-        XXX: version if not documented to be a required attribute
-        XXX: why description and version are not declared as argument to be
-        passed to the __init__ method even if they are treated as compulsory
-        arguments ?
         """
         # use keyword arguments to set additional instance attrs
         for k, v in kw.items():
@@ -369,13 +366,13 @@ class _Script(cli.app.CommandLineApp):
         ## setup of base classes
         cli.app.CommandLineApp.setup(self)
 
-        self.add_param("-v",
-                       "--verbose",
+        self.add_param("-v", "--verbose",
                        action="count",
                        dest="verbose",
                        default=0,
-                       help="Print more detailed (debugging) information about the program's activity."
-                       "The verbosity of the output can be controlled by adding/removing 'v' characters."
+                       help="Print more detailed information about the program's activity."
+                       " Increase verbosity each time this option is encountered on the"
+                       " command line."
                        )
 
         self.add_param("--config-files",
@@ -1022,11 +1019,14 @@ class SessionBasedScript(_Script):
     ## the pyCLI docs before :-)
     ##
 
-    # XXX: please explain this.
+    # safeguard against programming errors: if the `application` ctor
+    # parameter has not been given to the constructor, the following
+    # method raises a fatal error (this function simulates a class ctor)
     def __unset_application_cls(*args, **kwargs):
         """Raise an error if users did not set `application` in
         `SessionBasedScript` initialization."""
-        raise gc3libs.exceptions.Error("PLEASE SET `application` in `SessionBasedScript` CONSTRUCTOR")
+        raise gc3libs.exceptions.InvalidArgument(
+            "PLEASE SET `application` in `SessionBasedScript` CONSTRUCTOR")
 
     def __init__(self, **kw):
         """
@@ -1062,7 +1062,7 @@ class SessionBasedScript(_Script):
         self.extra = {}  # extra kw arguments passed to `parse_args`
         # use bogus values that should point ppl to the right place
         self.input_filename_pattern = 'PLEASE SET `input_filename_pattern` IN `SessionBasedScript` CONSTRUCTOR'
-        # XXX: what does the following call is for ?
+        # catch omission of mandatory `application` ctor param (see above)
         self.application = SessionBasedScript.__unset_application_cls
         ## init base classes
         _Script.__init__(
@@ -1119,12 +1119,10 @@ class SessionBasedScript(_Script):
                        " named after PATH with a suffix '.jobs' appended, and the index file"
                        " will be named after PATH with a suffix '.csv' added."
                        )
-        self.add_param("-u",
-                       "--store-url",
+        self.add_param("-u", "--store-url",
                        action="store",
                        metavar="URL",
-                       help="URL to the persistency store to use. By default, FilesystemStore will be used on `SESSION/jobs` dir")
-
+                       help="URL of the persistent store to use.")
         self.add_param("-N", "--new-session", dest="new_session", action="store_true", default=False,
                        help="Discard any information saved in the session directory (see '--session' option)"
                        " and start a new session afresh.  Any information about previous jobs is lost.")
@@ -1198,28 +1196,7 @@ class SessionBasedScript(_Script):
         self.session = Session(self.session_uri.path,
                                store_url=self.params.store_url)
 
-        # XXX: I think this can be removed since we moved everything
-        # into the `Session` class
-        #
-        # self.session = Session(self.params.session)
-        # _path = self.session_uri.path
-        # if (os.path.exists(_path)
-        #      and os.path.isdir(_path)):
-        #     self.session_dirname = os.path.realpath(_path)
-        #     self.session_filename = os.path.join(_path, 'index.csv')
-        # else:
-        #     if _path.endswith('.jobs'):
-        #         _path = _path[:-5]
-        #     elif _path.endswith('.csv'):
-        #         _path = _path[:-4]
-        #     elif _path.endswith('.db'):
-        #         _path = _path[:-3]
-
-        #     self.session_dirname = _path + '.jobs'
-        #     self.session_filename = _path + '.csv'
-
-        # if self.session_uri.scheme == 'file':
-        #     self.session_uri = gc3libs.url.Url(self.session_dirname)
+        ## keep a copy of the credentials in the session dir
         self._core.auths.add_params(private_copy_directory=self.session.path)
 
         # XXX: ARClib errors out if the download directory already exists, so
