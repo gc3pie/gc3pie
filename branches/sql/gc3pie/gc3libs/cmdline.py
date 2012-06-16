@@ -1240,17 +1240,11 @@ class SessionBasedScript(_Script):
         :meth:`process_args`, :meth:`parse_args`, :meth:`setup_args`.
         """
 
-        # ## create a `persistence.Store` instance to
-        # ## _save_session/_load_session jobs
-        # self.store = gc3libs.persistence.make_store(
-        #     self.session_uri,
-        #     idfactory=gc3libs.persistence.JobIdFactory()
-        #     )
         try:
             self._load_session()
-            self.log.info("Recovering previous session")
+            self.log.info("Recovering saved session ...")
         except:
-            self.log.info("Initializing new session")
+            self.log.info("Initializing new session ...")
 
         ## zero out the session index if `-N` was given
         if self.params.new_session:

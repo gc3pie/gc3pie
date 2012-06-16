@@ -26,9 +26,10 @@ __version__ = '$Revision$'
 
 # stdlib imports
 import copy
-
 import cPickle as pickle
 import cStringIO as StringIO
+import os
+
 import sqlalchemy as sqla
 import sqlalchemy.sql as sql
 
@@ -44,7 +45,7 @@ from filesystem import  create_pickler, create_unpickler
 
 
 # tag object for catching the "no value passed" in `value_of` and
-# `value_at_index`
+# `value_at_index` (cannot use `None` as it's a legit value!)
 _none = object()
 
 
@@ -299,10 +300,7 @@ class SqlStore(Store):
 
         self.__meta = sqla.MetaData(bind=self.__engine)
 
-        # create internal rep of table
-        self.extra_fields = dict()
-
-        # Create schema.
+        # create schema
         table = sqla.Table(
             self.table_name,
             self.__meta,
@@ -314,6 +312,7 @@ class SqlStore(Store):
             sqla.Column('state',
                         sqla.VARCHAR(length=128)))
 
+        self.extra_fields = dict()
         for col, func in extra_fields.iteritems():
             assert isinstance(col, sqla.Column)
             table.append_column(col.copy())
@@ -342,17 +341,18 @@ class SqlStore(Store):
 
     @same_docstring_as(Store.replace)
     def replace(self, id_, obj):
-        self._save_or_replace(id_, obj, 'replace')
+        self._save_or_replace(id_, obj)
 
     # copied from FilesystemStore
     @same_docstring_as(Store.save)
     def save(self, obj):
         if not hasattr(obj, 'persistent_id'):
             obj.persistent_id = self.idfactory.new(obj)
-        return self._save_or_replace(obj.persistent_id, obj, 'save')
+        return self._save_or_replace(obj.persistent_id, obj)
 
-    def _save_or_replace(self, id_, obj, action):
+    def _save_or_replace(self, id_, obj):
         fields = {'id': id_}
+
         dstdata = StringIO.StringIO()
         pickler = create_pickler(self, dstdata, obj)
         pickler.dump(obj)
