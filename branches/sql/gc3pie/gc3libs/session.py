@@ -94,16 +94,20 @@ class Session(object):
     JOBIDS_DB = 'job_ids.pickle'
     STORE_URL_FILENAME = "store.url"
 
-    def __init__(self, path, store_url=None, output_dir=None):
+    def __init__(self, path, store_url=None, output_dir=None, **kw):
         """
         First argument `path` is the path to the session directory.
 
         The `store_url` argument is the URL of the store, as would be
         passed to function
-        `gc3libs.persistence.store.make_store`:func:.  Please note,
-        however, that if the session directory already exists and
-        contains a valid ``store.url`` file, the store_url argument
-        will be *ignored*.
+        `gc3libs.persistence.store.make_store`:func:; any additional
+        keyword argument are passed to `maek_store` unchanged.
+
+        .. warning::
+
+          If the session directory already exists and contains a valid
+          ``store.url`` file, the `store_url` argument (and any
+          keyword arguments) will be *ignored.*
 
         By default the
         `gc3libs.persistence.filesystem.FileSystemStore`:class: (which
@@ -122,7 +126,7 @@ class Session(object):
             if not store_url:
                 store_url = os.path.join(self.path, 'jobs')
             self.store_url = store_url
-            self.store = gc3libs.persistence.make_store(self.store_url)
+            self.store = gc3libs.persistence.make_store(self.store_url, **kw)
             #self.output_dir = output_dir
             os.mkdir(self.path)
             self.__update_store_url_file()

@@ -1193,8 +1193,7 @@ class SessionBasedScript(_Script):
 
         ## determine the session file name (and possibly create an empty index)
         self.session_uri = gc3libs.url.Url(self.params.session)
-        self.session = Session(self.session_uri.path,
-                               store_url=self.params.store_url)
+        self.session = self._make_session(self.session_uri.path, self.params.store_url)
 
         ## keep a copy of the credentials in the session dir
         self._core.auths.add_params(private_copy_directory=self.session.path)
@@ -1217,6 +1216,21 @@ class SessionBasedScript(_Script):
     ## overridden and customized in derived classes, although there
     ## should be no need to do so.
     ##
+    def _make_session(self, session_uri, store_url):
+        """
+        Return a `gc3libs.session.Session` instance for use in this script.
+
+        Override in subclasses to provide a specialized session.  For
+        instance, if you need to add extra fields to a SQL/DB store,
+        this is the place to do it.
+
+        The arguments are exactly as in the `gc3libs.session.Session`
+        constructor (which see), but this method is free to modify the
+        passed parameters or add new ones, as long as the returned
+        object implements the `Session` interface.
+        """
+        return Session(session_uri, store_url)
+
     def _main(self, *args):
         """
         Implementation of the main logic in the `SessionBasedScript`.
