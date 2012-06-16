@@ -437,9 +437,13 @@ def make_sqlstore(url, *args, **kw):
       >>> os.remove('/tmp/foo.db')
     """
     assert isinstance(url, gc3libs.url.Url)
-    # rewrite ``sqlite`` URLs to be RFC compliant, see:
-    # http://code.google.com/p/gc3pie/issues/detail?id=261
-    if url.scheme in ('sqlite', 'file'):
+    if url.scheme == 'sqlite':
+        # create parent directories: avoid "OperationalError: unable to open database file None None"
+        dir = gc3libs.utils.dirname(url.path)
+        if not os.path.exists(dir):
+            os.makedirs(dir)
+        # rewrite ``sqlite`` URLs to be RFC compliant, see:
+        # http://code.google.com/p/gc3pie/issues/detail?id=261
         url = "%s://%s/%s" % (url.scheme, url.netloc, url.path)
     return SqlStore(str(url), *args, **kw)
 

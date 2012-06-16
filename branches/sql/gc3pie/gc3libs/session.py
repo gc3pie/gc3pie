@@ -119,16 +119,19 @@ class Session(object):
         self.path = os.path.abspath(path)
         self.job_ids = []
         if os.path.isdir(self.path):
-            # session already exists
+            # Session already exists.
             self.load_session()
         else:
-            # new session
+            # New Session.
+            # Must create its directory before `make_store` is called,
+            # or SQLite raises an "OperationalError: unable to open
+            # database file None None"
+            gc3libs.utils.mkdir(self.path)
             if not store_url:
                 store_url = os.path.join(self.path, 'jobs')
             self.store_url = store_url
             self.store = gc3libs.persistence.make_store(self.store_url, **kw)
             #self.output_dir = output_dir
-            os.mkdir(self.path)
             self.__update_store_url_file()
             self.__update_job_ids_file()
 
