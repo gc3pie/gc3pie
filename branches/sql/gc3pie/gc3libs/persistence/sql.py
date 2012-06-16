@@ -358,12 +358,11 @@ class SqlStore(Store):
         pickler.dump(obj)
         fields['data'] = dstdata.getvalue()
 
-        # By default the state of an object will be UNKNOWN. It's the
-        # only valid (and reasonable) value both for `Task`s and for
-        # other classes we could think of.
-        fields['state'] = Run.State.UNKNOWN
-        if hasattr(obj, 'execution') and hasattr(obj.execution, 'state'):
+        try:
             fields['state'] = obj.execution.state
+        except AttributeError:
+            # If we cannot determine the state of a task, consider it UNKNOWN.
+            fields['state'] = Run.State.UNKNOWN
 
         # insert into db
         for column in self.extra_fields:

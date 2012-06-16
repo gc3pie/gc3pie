@@ -52,7 +52,7 @@ class TestSession(object):
             pass
 
     def test_directory_creation(self):
-        self.s.save_session()
+        self.s.flush()
         assert_true(os.path.isdir(self.s.path))
         assert_true(os.path.samefile(
             os.path.join(
@@ -60,7 +60,7 @@ class TestSession(object):
             self.tmpfname), self.s.path))
 
     def test_store_url(self):
-        self.s.save_session()
+        self.s.flush()
         storefile = os.path.join(self.s.path, Session.STORE_URL_FILENAME)
         assert_true(os.path.isfile(storefile))
 
@@ -68,7 +68,7 @@ class TestSession(object):
         assert_equal(self.s.store.list(), [])
 
         self.s.save(Persistable())
-        self.s.save_session()
+        self.s.flush()
 
         fd_job_ids = open(os.path.join(self.s.path, self.s.JOBIDS_DB), 'r')
         ids = Pickle.load(fd_job_ids)
@@ -77,29 +77,30 @@ class TestSession(object):
 
     def test_reload_session(self):
         self.s.save(Persistable())
-        self.s.save_session()
+        self.s.flush()
         s2 = Session(self.s.path)
         s2.job_ids == self.s.job_ids
 
     @raises(gc3libs.exceptions.LoadError,sqlalchemy.exc.OperationalError)
     def test_remove_session(self):
         jobid = self.s.save(Persistable())
-        self.s.save_session()
+        self.s.flush()
         self.s.remove_session()
         self.s.load(jobid)
 
-    @raises(gc3libs.exceptions.InvalidUsage)
-    def test_invalid_session_dir(self):
+    def test_incomplete_session_dir(self):
         tmpfname = tempfile.mktemp(dir='.')
         os.mkdir(tmpfname)
-        invalid_s = Session(tmpfname)
+        incomplete_s = Session(tmpfname)
+        assert os.path.exists(os.path.join(tmpfname, Session.JOBIDS_DB))
+        assert os.path.exists(os.path.join(tmpfname, Session.STORE_URL_FILENAME))
         shutil.rmtree(tmpfname)
 
 class StubForSqlSession(TestSession):
 
     def test_sqlite_store(self):
         jobid = self.s.save(Persistable())
-        self.s.save_session()
+        self.s.flush()
 
         q = sql.select(
             [self.s.store.t_store.c.id]

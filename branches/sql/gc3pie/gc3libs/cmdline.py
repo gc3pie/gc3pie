@@ -1364,7 +1364,6 @@ class SessionBasedScript(_Script):
         """
         Load all jobs from a previously-saved session.
         """
-        self.session.load_session()
         self.tasks = self.session.load_all()
 
     def _save_session(self):
@@ -1373,7 +1372,6 @@ class SessionBasedScript(_Script):
         """
         for task in self.tasks:
             self.session.save(task)
-        self.session.save_session()
 
     def _search_for_input_files(self, paths, pattern=None):
         """

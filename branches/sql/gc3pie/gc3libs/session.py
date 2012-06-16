@@ -71,19 +71,9 @@ class Session(object):
     The `Store`:class: object is accessible in the `store`:attr:
     attribute of each `Session` instance.
 
-    Loading a previously created session is done using the
-    :meth:`load_session` method::
-
-        >>> session2 = Session(tmpfname)
-        >>> session2.load_session()
-
-    Saving a session is done with::
-
-        >>> session.save_session()
-
-    The `save_session`:meth: method saves *all* the objects (jobs,
-    tasks) that have been inserted in the session to the persistent
-    storage.
+    When a `Session` object is created with a `path` argument pointing
+    to an existing valid session, the index of jobs is automatically
+    loaded into memory.
 
     If no `store_url` argument is passed, a `Session` object will
     instantiate and use a `FileSystemStore`:class: store, keeping data
@@ -119,45 +109,48 @@ class Session(object):
         self.path = os.path.abspath(path)
         self.job_ids = []
         if os.path.isdir(self.path):
-            # Session already exists.
-            self.load_session()
+            # Session already exists?
+            try:
+                self._load_session()
+            except IOError, err:
+                gc3libs.log.debug("Cannot load session '%s': %s", path, str(err))
+                if err.errno == 2: # "No such file or directory"
+                    gc3libs.log.debug("Assuming session is incomplete or corrupted, creating it again.")
+                    self._create_session(path, store_url, **kw)
+                else:
+                    raise
         else:
-            # New Session.
-            # Must create its directory before `make_store` is called,
-            # or SQLite raises an "OperationalError: unable to open
-            # database file None None"
-            gc3libs.utils.mkdir(self.path)
-            if not store_url:
-                store_url = os.path.join(self.path, 'jobs')
-            self.store_url = store_url
-            self.store = gc3libs.persistence.make_store(self.store_url, **kw)
-            #self.output_dir = output_dir
-            self.__update_store_url_file()
-            self.__update_job_ids_file()
+            self._create_session(path, store_url, **kw)
 
-    def load_session(self):
+    def _create_session(self, path, store_url, **kw):
+        self.path = path
+        # Must create its directory before `make_store` is called,
+        # or SQLite raises an "OperationalError: unable to open
+        # database file None None"
+        gc3libs.utils.mkdir(path)
+        if not store_url:
+            store_url = os.path.join(self.path, 'jobs')
+        self.store_url = store_url
+        self.store = gc3libs.persistence.make_store(store_url, **kw)
+        #self.output_dir = output_dir
+        self._update_store_url_file()
+        self._update_job_ids_file()
+
+    def _load_session(self, **kw):
         """
-        Load session from disk.
+        Load an existing session from disk.
 
-        This method will work also for new sessions, even if the
-        associated directory does not exist yet, but only if the
-        `store_url` option was given, otherwise `Session` will be
-        unable to create a `Store`:class:
+        Keyword arguments are passed to the `make_store` factory
+        method unchanged.
         """
         try:
             store_fname = os.path.join(self.path, self.STORE_URL_FILENAME)
             self.store_url = gc3libs.utils.read_contents(store_fname)
         except IOError:
-            if hasattr(self, 'store_url'):
-                gc3libs.log.debug(
-                    "Loading session: missing store URL file `%s`."
-                    " Assuming store URL is '%s' and continuing"
-                    % (store_fname, self.store_url))
-            else:
-                raise gc3libs.exceptions.InvalidUsage(
-                    "Unable to load session. File %s is missing." % (store_fname))
-
-        self.store = gc3libs.persistence.make_store(self.store_url)
+            gc3libs.log.error(
+                "Unable to load session: file %s is missing." % (store_fname))
+            raise
+        self.store = gc3libs.persistence.make_store(self.store_url, **kw)
         jobid_filename = os.path.join(self.path, self.JOBIDS_DB)
         if os.path.isfile(jobid_filename):
             fd_job_ids = open(jobid_filename, 'r')
@@ -168,17 +161,20 @@ class Session(object):
             finally:
                 fd_job_ids.close()
 
-    def save_session(self):
+    def flush(self):
         """
-        Save current session to disk.
+        Update session metadata.
+
+        Should be used after a save/remove operations, to ensure that
+        the session state and metadata is correctly persisted.
         """
         # create directory if it does not exists
         if not os.path.exists(self.path):
             os.mkdir(self.path)
 
         # Update store.url and job_ids.db files
-        self.__update_store_url_file()
-        self.__update_job_ids_file()
+        self._update_store_url_file()
+        self._update_job_ids_file()
 
         jobids_filename = os.path.join(self.path, self.JOBIDS_DB)
         gc3libs.utils.write_contents(jobids_filename, pickle.dumps(self.job_ids, pickle.HIGHEST_PROTOCOL))
@@ -200,7 +196,7 @@ class Session(object):
         if newid not in self.job_ids:
             self.job_ids.append(newid)
         # Save the list of current jobs to disk, to avoid inconsistency
-        self.save_session()
+        self.flush()
         return newid
 
     def remove(self, jobid):
@@ -214,7 +210,7 @@ class Session(object):
         self.store.remove(jobid)
         self.job_ids.remove(jobid)
         # Save the list of current jobs to disk, to avoid inconsistency
-        self.save_session()
+        self.flush()
 
     def list(self):
         """
@@ -227,10 +223,7 @@ class Session(object):
         Load all jobs belonging to the session from the persistent
         storage and returns them as a list.
         """
-        jobs = []
-        for jobid in self.job_ids:
-            jobs.append(self.load(jobid))
-        return jobs
+        return [ self.load(jobid) for jobid in self.job_ids ]
 
     def remove_session(self):
         """
@@ -242,7 +235,7 @@ class Session(object):
         if os.path.exists(self.path):
             shutil.rmtree(self.path)
 
-    def __update_store_url_file(self):
+    def _update_store_url_file(self):
         """
         Update the store url file. If the file does not exists it will
         be created. If it exists it will be overwritten.
@@ -250,7 +243,7 @@ class Session(object):
         store_url_filename = os.path.join(self.path, self.STORE_URL_FILENAME)
         gc3libs.utils.write_contents(store_url_filename, self.store_url)
 
-    def __update_job_ids_file(self):
+    def _update_job_ids_file(self):
         """
         Update the job ids files, in order to avoid inconsistencies.
         """
