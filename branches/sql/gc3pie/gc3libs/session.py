@@ -25,7 +25,7 @@ __version__ = '$Revision$'
 # stdlib imports
 import os
 import shutil
-import cPickle as pickle
+import csv
 
 # GC3Pie imports
 import gc3libs
@@ -43,7 +43,7 @@ class Session(object):
     releated to that session. Specifically, two files are always
     created in the session directory andused internally by this class:
 
-    * `job_ids.db`: contains a list (in Python `pickle` format) of all job IDs associated with this session;
+    * `job_ids.csv`: contains a list (in CSV format) of all job IDs associated with this session;
     * `store.url`:  its contents are the URL of the store.
 
     To only argument needed to instantiate a session is the `path` of
@@ -56,7 +56,7 @@ class Session(object):
         >>> tmpfname = tempfile.mktemp(dir='.')
         >>> session = Session(tmpfname)
         >>> sorted(os.listdir(tmpfname))
-        ['job_ids.pickle', 'store.url']
+        ['job_ids.csv', 'store.url']
 
     To load, save or replace objects in the store you should use the
     methods defined in `Session`, which work like the equivalent
@@ -79,9 +79,13 @@ class Session(object):
     instantiate and use a `FileSystemStore`:class: store, keeping data
     in the ``jobs`` subdirectory of the session directory.
 
+    Cleanup tests
+
+        >>> shutil.rmtree(tmpfname)
+
     """
 
-    JOBIDS_DB = 'job_ids.pickle'
+    JOBIDS_DB = 'job_ids.csv'
     STORE_URL_FILENAME = "store.url"
 
     def __init__(self, path, store_url=None, output_dir=None, **kw):
@@ -151,15 +155,21 @@ class Session(object):
                 "Unable to load session: file %s is missing." % (store_fname))
             raise
         self.store = gc3libs.persistence.make_store(self.store_url, **kw)
+                
         jobid_filename = os.path.join(self.path, self.JOBIDS_DB)
-        if os.path.isfile(jobid_filename):
-            fd_job_ids = open(jobid_filename, 'r')
-            try:
-                job_ids = pickle.load(fd_job_ids)
-                if job_ids:
-                    self.job_ids = job_ids
-            finally:
-                fd_job_ids.close()
+        try:
+            jobid_fd = open(jobid_filename)
+            self.job_ids = [row[0] for row in csv.reader(jobid_fd)]
+        finally:
+            jobid_fd.close()
+        # if os.path.isfile(jobid_filename):
+        #     fd_job_ids = open(jobid_filename, 'r')
+        #     try:
+        #         job_ids = pickle.load(fd_job_ids)
+        #         if job_ids:
+        #             self.job_ids = job_ids
+        #     finally:
+        #         fd_job_ids.close()
 
     def flush(self):
         """
@@ -175,9 +185,6 @@ class Session(object):
         # Update store.url and job_ids.db files
         self._update_store_url_file()
         self._update_job_ids_file()
-
-        jobids_filename = os.path.join(self.path, self.JOBIDS_DB)
-        gc3libs.utils.write_contents(jobids_filename, pickle.dumps(self.job_ids, pickle.HIGHEST_PROTOCOL))
 
     def load(self, jobid):
         """
@@ -251,5 +258,10 @@ class Session(object):
         """
         Update the job ids files, in order to avoid inconsistencies.
         """
-        jobids_file = os.path.join(self.path, self.JOBIDS_DB)
-        gc3libs.utils.write_contents(jobids_file, pickle.dumps(self.job_ids, pickle.HIGHEST_PROTOCOL))
+        jobids_filename = os.path.join(self.path, self.JOBIDS_DB)
+        try:
+            jobids_fd = open(jobids_filename, 'w')
+            for jobid in self.job_ids:
+                csv.writer(jobids_fd).writerow([jobid])
+        finally:
+            jobids_fd.close()

@@ -24,7 +24,7 @@ __version__ = '$Revision$'
 import os
 import shutil
 import tempfile
-import cPickle as Pickle
+import csv
 
 import gc3libs.exceptions
 from gc3libs.session import Session
@@ -69,8 +69,8 @@ class TestSession(object):
         self.s.flush()
 
         fd_job_ids = open(os.path.join(self.s.path, self.s.JOBIDS_DB), 'r')
-        ids = Pickle.load(fd_job_ids)
-        assert_equal(ids, self.s.job_ids)
+        ids = [row[0] for row in csv.reader(fd_job_ids)]
+        assert_equal(ids, [str(i) for i in self.s.job_ids])
         assert_equal(len(ids),  1)
 
     def test_reload_session(self):
