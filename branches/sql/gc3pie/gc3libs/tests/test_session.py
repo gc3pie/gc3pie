@@ -28,12 +28,12 @@ import csv
 
 import gc3libs.exceptions
 from gc3libs.session import Session
-from gc3libs.persistence import Persistable
+from gc3libs.persistence import Persistable, make_store
 import gc3libs.persistence.sql
 import sqlalchemy
 import sqlalchemy.sql as sql
 
-from nose.tools import assert_true, assert_equal, raises
+from nose.tools import assert_true, assert_equal, raises, set_trace
 from nose.plugins.skip import SkipTest
 
 
@@ -100,6 +100,54 @@ class TestSession(object):
         extraid = self.s.store.save(Persistable())
         self.s.load(extraid)
 
+    def test_load_oldstyle_session(self):
+        """Check if Session is able to load an old-style session"""
+        jobid_filename = self.s.path + '.csv'
+        store_directory = os.path.abspath(self.s.path+'.jobs')
+        store_url = "file://%s" % store_directory
+
+        # Load the old store
+        oldstore = make_store(store_url)
+        # save something in it
+        jobid = oldstore.save(Persistable())
+
+        try:
+            # Create the old-style csv file containing the jobid of
+            # the saved object
+            jobidfile = open(jobid_filename, 'w')
+            jobline = {'jobname': 'test job',
+                   'persistent_id' : jobid,
+                   'state': 'UNKNWON',
+                   'info': ''}
+            csv.DictWriter(jobidfile,
+                       ['jobname', 'persistent_id', 'state', 'info'],
+                      extrasaction='ignore').writerow(jobline)
+            jobidfile.close()
+
+            # Create a new session. It should load the old one.
+            session = Session(self.s.path)
+            session._load_oldstyle_session()
+
+            # Check if the job list is correct
+            assert_true(jobid in session.job_ids)
+            session.load(jobid)
+
+            # This should create a new-style session, but using the
+            # old store
+            session.flush()
+
+            assert_true(os.path.isdir(session.path))
+            assert_true('job_ids.csv' in os.listdir(session.path))
+            assert_true('store.url' in os.listdir(session.path))
+            assert_equal(
+                gc3libs.utils.read_contents(
+                    os.path.join(session.path, 'store.url')),
+                store_url)
+
+        finally:
+            jobidfile.close()
+            os.remove(jobid_filename)
+            shutil.rmtree(store_directory)
 
 class StubForSqlSession(TestSession):
 

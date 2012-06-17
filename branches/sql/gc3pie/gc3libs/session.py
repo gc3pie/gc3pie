@@ -140,6 +140,36 @@ class Session(object):
         self._update_store_url_file()
         self._update_job_ids_file()
 
+    def _load_oldstyle_session(self):
+        """
+        Load an old-style session from a csv session file and a jobs
+        directory
+        """
+        jobid_filename = self.path + '.csv'
+        store_path = self.path + '.jobs'
+
+        if not os.path.isfile(jobid_filename) or \
+           not os.path.isdir(store_path):
+            raise(gc3libs.exceptions.InvalidArgument(
+                "Unable to load old-style session from "
+                "%s index file and %s job directory" % (jobid_filename, store_path)))
+
+        # Read job index file
+        try:
+            jobid_fd = open(jobid_filename)
+            self.job_ids = [row['persistent_id'] for row in
+                            csv.DictReader(jobid_fd,
+                                           ['jobname',
+                                            'persistent_id',
+                                            'state',
+                                            'info'])]
+        finally:
+            jobid_fd.close()
+
+        # Load store.
+        self.store_url = "file://%s" % os.path.abspath(store_path)
+        self.store = gc3libs.persistence.make_store(self.store_url)
+
     def _load_session(self, **kw):
         """
         Load an existing session from disk.
@@ -147,6 +177,14 @@ class Session(object):
         Keyword arguments are passed to the `make_store` factory
         method unchanged.
         """
+        # First, check if there is an old-style session to load
+        if os.path.isfile(self.path + '.csv') and \
+           os.path.isdir(self.path + '.jobs'):
+            gc3libs.log.warning("Loading session from an old-style session. "
+                                "Old store directory %s will be used. Old inxed file %s will NOT be updated." % (self.path+'.jobs', self.path+'.csv'))
+            self._load_oldstyle_session()
+            return
+
         try:
             store_fname = os.path.join(self.path, self.STORE_URL_FILENAME)
             self.store_url = gc3libs.utils.read_contents(store_fname)
@@ -162,14 +200,6 @@ class Session(object):
             self.job_ids = [row[0] for row in csv.reader(jobid_fd)]
         finally:
             jobid_fd.close()
-        # if os.path.isfile(jobid_filename):
-        #     fd_job_ids = open(jobid_filename, 'r')
-        #     try:
-        #         job_ids = pickle.load(fd_job_ids)
-        #         if job_ids:
-        #             self.job_ids = job_ids
-        #     finally:
-        #         fd_job_ids.close()
 
     def flush(self):
         """
