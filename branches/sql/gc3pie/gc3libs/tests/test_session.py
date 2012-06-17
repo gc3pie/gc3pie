@@ -65,8 +65,6 @@ class TestSession(object):
         assert_true(os.path.isfile(storefile))
 
     def test_load_and_save(self):
-        assert_equal(self.s.store.list(), [])
-
         self.s.save(Persistable())
         self.s.flush()
 
@@ -95,6 +93,13 @@ class TestSession(object):
         assert os.path.exists(os.path.join(tmpfname, Session.JOBIDS_DB))
         assert os.path.exists(os.path.join(tmpfname, Session.STORE_URL_FILENAME))
         shutil.rmtree(tmpfname)
+
+    @raises(gc3libs.exceptions.LoadError)
+    def test_load_external_jobid(self):
+        """Check if we are able to load jobid which does not belong to the session"""
+        extraid = self.s.store.save(Persistable())
+        self.s.load(extraid)
+
 
 class StubForSqlSession(TestSession):
 

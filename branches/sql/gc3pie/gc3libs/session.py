@@ -184,6 +184,10 @@ class Session(object):
         Load the object identified by `persistent_id` from the
         persistent store and return it.
         """
+        if jobid not in self.job_ids:
+            raise gc3libs.exceptions.LoadError(
+                "Unable to find any object with ID '%s'" % jobid)
+
         return self.store.load(jobid)
 
     def save(self, obj):
