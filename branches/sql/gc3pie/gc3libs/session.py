@@ -85,7 +85,7 @@ class Session(object):
 
     """
 
-    JOBIDS_DB = 'job_ids.csv'
+    JOBIDS_DB_FILENAME = 'job_ids.csv'
     STORE_URL_FILENAME = "store.url"
 
     def __init__(self, path, store_url=None, output_dir=None, **kw):
@@ -193,8 +193,8 @@ class Session(object):
                 "Unable to load session: file %s is missing." % (store_fname))
             raise
         self.store = gc3libs.persistence.make_store(self.store_url, **kw)
-                
-        jobid_filename = os.path.join(self.path, self.JOBIDS_DB)
+
+        jobid_filename = os.path.join(self.path, self.JOBIDS_DB_FILENAME)
         try:
             jobid_fd = open(jobid_filename)
             self.job_ids = [row[0] for row in csv.reader(jobid_fd)]
@@ -288,7 +288,7 @@ class Session(object):
         """
         Update the job ids files, in order to avoid inconsistencies.
         """
-        jobids_filename = os.path.join(self.path, self.JOBIDS_DB)
+        jobids_filename = os.path.join(self.path, self.JOBIDS_DB_FILENAME)
         try:
             jobids_fd = open(jobids_filename, 'w')
             for jobid in self.job_ids:

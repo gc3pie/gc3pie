@@ -68,7 +68,7 @@ class TestSession(object):
         self.s.save(Persistable())
         self.s.flush()
 
-        fd_job_ids = open(os.path.join(self.s.path, self.s.JOBIDS_DB), 'r')
+        fd_job_ids = open(os.path.join(self.s.path, self.s.JOBIDS_DB_FILENAME), 'r')
         ids = [row[0] for row in csv.reader(fd_job_ids)]
         assert_equal(ids, [str(i) for i in self.s.job_ids])
         assert_equal(len(ids),  1)
@@ -90,7 +90,7 @@ class TestSession(object):
         tmpfname = tempfile.mktemp(dir='.')
         os.mkdir(tmpfname)
         incomplete_s = Session(tmpfname)
-        assert os.path.exists(os.path.join(tmpfname, Session.JOBIDS_DB))
+        assert os.path.exists(os.path.join(tmpfname, Session.JOBIDS_DB_FILENAME))
         assert os.path.exists(os.path.join(tmpfname, Session.STORE_URL_FILENAME))
         shutil.rmtree(tmpfname)
 
