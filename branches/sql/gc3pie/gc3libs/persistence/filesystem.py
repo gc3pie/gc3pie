@@ -21,79 +21,19 @@
 __docformat__ = 'reStructuredText'
 __version__ = '$Revision$'
 
-
+# stdlib imports
 import os
-import cPickle as pickle
 import sys
 
+# GC3Pie imports
 import gc3libs
 import gc3libs.exceptions
-from gc3libs.utils import progressive_number, same_docstring_as
+from gc3libs.utils import same_docstring_as
 import gc3libs.url
 
-from store import Store, Persistable
-from idfactory import IdFactory
-
-
-class _PersistentIdToSave(object):
-    """Used internally to provide `persistent_id` support to *cPickle*.
-
-    This class is needed because:
-
-    * we want to save each `Persistable`:class: object as a separate record,
-    * we want to use the *cPickle* module for performance reasons.
-
-    Check the `documentation of Python's *pickle* module`__ for
-    details on the differences between *pickle* and *cPickle* modules.
-
-    .. __: http://docs.python.org/library/pickle.html#pickling-and-unpickling-external-objects
-
-    """
-    def __init__(self, driver, root):
-        self._root = root
-        self._driver = driver
-
-    def __call__(self, obj):
-        if obj is self._root:
-            return None
-        elif hasattr(obj, 'persistent_id'):
-            return obj.persistent_id
-        elif isinstance(obj, Persistable):
-            self._driver.save(obj)
-            return obj.persistent_id
-
-
-class _PersistentLoadExternalId(object):
-    """Used internally to provide `persistent_id` support to *cPickle*.
-
-    This class is needed because:
-
-    * we want to save each `Persistable`:class: object as a separate record,
-    * we want to use the *cPickle* module for performance reasons.
-
-    Check the `documentation of Python's *pickle* module`__ for
-    details on the differences between *pickle* and *cPickle* modules.
-
-    .. __: http://docs.python.org/library/pickle.html#pickling-and-unpickling-external-objects
-
-    """
-    def __init__(self, driver):
-        self._driver = driver
-
-    def __call__(self, id_):
-        return self._driver.load(id_)
-
-
-def make_pickler(driver, stream, root, protocol=pickle.HIGHEST_PROTOCOL):
-    p = pickle.Pickler(stream, protocol=protocol)
-    p.persistent_id = _PersistentIdToSave(driver, root)
-    return p
-
-
-def make_unpickler(driver, stream):
-    p = pickle.Unpickler(stream)
-    p.persistent_load = _PersistentLoadExternalId(driver)
-    return p
+from gc3libs.persistence.idfactory import IdFactory
+from gc3libs.persistence.serialization import DEFAULT_PROTOCOL, make_pickler, make_unpickler
+from gc3libs.persistence.store import Store, Persistable
 
 
 ## persist objects in a filesystem directory
@@ -118,15 +58,13 @@ class FilesystemStore(Store):
     sequential number to the class name; see class `Id` for
     details.
 
-    The `protocol` argument specifies the pickle protocol to use
-    (default: *pickle* protocol *HIGHEST_PROTOCOL*).  See the `*pickle*
-    module documentation`__ for details.
-
-    .. __: http://docs.python.org/library/pickle.html
-
+    The `protocol` argument specifies the serialization protocol to use,
+    if different from `gc3libs.persistence.serialization.DEFAULT_PROTOCOL`.
     """
-    def __init__(self, directory=gc3libs.Default.JOBS_DIR,
-                 idfactory=IdFactory(), protocol=pickle.HIGHEST_PROTOCOL):
+    def __init__(self,
+                 directory=gc3libs.Default.JOBS_DIR,
+                 idfactory=IdFactory(),
+                 protocol=DEFAULT_PROTOCOL):
         if isinstance(directory, gc3libs.url.Url):
             directory = directory.path
         self._directory = directory

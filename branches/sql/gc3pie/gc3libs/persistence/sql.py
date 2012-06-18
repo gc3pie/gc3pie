@@ -39,9 +39,9 @@ import gc3libs.exceptions
 import gc3libs.utils
 from gc3libs.utils import same_docstring_as, getattr_nested
 
-from store import Store, Persistable
-from idfactory import IdFactory
-from filesystem import  make_pickler, make_unpickler
+from gc3libs.persistence.idfactory import IdFactory
+from gc3libs.persistence.serialization import make_pickler, make_unpickler
+from gc3libs.persistence.store import Store, Persistable
 
 
 # tag object for catching the "no value passed" in `value_of` and
@@ -351,10 +351,6 @@ class SqlStore(Store):
         return self._save_or_replace(obj.persistent_id, obj)
 
     def _save_or_replace(self, id_, obj):
-        ### DEBUG ###
-        gc3libs.log.debug("Entering _save_or_replace(%r, %r)", id_, obj)
-        import traceback as tb; tb.print_stack()
-        ### DEBUG ###
         fields = {'id': id_}
 
         dstdata = StringIO.StringIO()

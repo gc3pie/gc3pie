@@ -21,6 +21,8 @@
 __docformat__ = 'reStructuredText'
 __version__ = '$Revision$'
 
+
+# GC3Pie imports
 import gc3libs
 from gc3libs.url import Url
 
@@ -96,6 +98,7 @@ class Persistable(object):
     when a container holding a reference to it is saved.
     """
     pass
+
 
 ## registration mechanism
 
