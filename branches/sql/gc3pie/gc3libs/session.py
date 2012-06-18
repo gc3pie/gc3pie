@@ -88,14 +88,13 @@ class Session(object):
     JOBIDS_DB_FILENAME = 'job_ids.csv'
     STORE_URL_FILENAME = "store.url"
 
-    def __init__(self, path, store_url=None, output_dir=None, **kw):
+    def __init__(self, path, store_url=None, **kw):
         """
         First argument `path` is the path to the session directory.
 
         The `store_url` argument is the URL of the store, as would be
-        passed to function
-        `gc3libs.persistence.store.make_store`:func:; any additional
-        keyword argument are passed to `maek_store` unchanged.
+        passed to function `gc3libs.persistence.store.make_store`:func:;
+        any additional keyword arguments are passed to `make_store` unchanged.
 
         .. warning::
 
@@ -103,15 +102,12 @@ class Session(object):
           ``store.url`` file, the `store_url` argument (and any
           keyword arguments) will be *ignored.*
 
-        By default the
-        `gc3libs.persistence.filesystem.FileSystemStore`:class: (which
-        see) is used for providing the session with a store.
+        By default `gc3libs.persistence.filesystem.FileSystemStore`:class:
+        (which see) is used for providing the session with a store.
 
-        The `output_dir` argument is the directory in which the store
-        will save the output of the jobs. **FIXME:** not yet implemented
         """
         self.path = os.path.abspath(path)
-        self.job_ids = []
+        self.job_ids = set()
         if os.path.isdir(self.path):
             # Session already exists?
             try:
@@ -119,7 +115,8 @@ class Session(object):
             except IOError, err:
                 gc3libs.log.debug("Cannot load session '%s': %s", path, str(err))
                 if err.errno == 2: # "No such file or directory"
-                    gc3libs.log.debug("Assuming session is incomplete or corrupted, creating it again.")
+                    gc3libs.log.debug(
+                        "Assuming session is incomplete or corrupted, creating it again.")
                     self._create_session(path, store_url, **kw)
                 else:
                     raise
@@ -136,14 +133,13 @@ class Session(object):
             store_url = os.path.join(self.path, 'jobs')
         self.store_url = store_url
         self.store = gc3libs.persistence.make_store(store_url, **kw)
-        #self.output_dir = output_dir
         self._update_store_url_file()
         self._update_job_ids_file()
 
     def _load_oldstyle_session(self):
         """
-        Load an old-style session from a csv session file and a jobs
-        directory
+        Load an old-style session from a `.csv` session file and a
+        `.jobs` directory.
         """
         jobid_filename = self.path + '.csv'
         store_path = self.path + '.jobs'
@@ -157,12 +153,13 @@ class Session(object):
         # Read job index file
         try:
             jobid_fd = open(jobid_filename)
-            self.job_ids = [row['persistent_id'] for row in
-                            csv.DictReader(jobid_fd,
-                                           ['jobname',
-                                            'persistent_id',
-                                            'state',
-                                            'info'])]
+            self.job_ids = set(row['persistent_id'] for row in
+                               csv.DictReader(jobid_fd, [
+                                   'jobname',
+                                   'persistent_id',
+                                   'state',
+                                   'info'
+                                   ]))
         finally:
             jobid_fd.close()
 
@@ -197,7 +194,7 @@ class Session(object):
         jobid_filename = os.path.join(self.path, self.JOBIDS_DB_FILENAME)
         try:
             jobid_fd = open(jobid_filename)
-            self.job_ids = [row[0] for row in csv.reader(jobid_fd)]
+            self.job_ids = set(row[0] for row in csv.reader(jobid_fd))
         finally:
             jobid_fd.close()
 
@@ -235,7 +232,7 @@ class Session(object):
         """
         newid = self.store.save(obj)
         if newid not in self.job_ids:
-            self.job_ids.append(newid)
+            self.job_ids.add(newid)
         # Save the list of current jobs to disk, to avoid inconsistency
         self.flush()
         return newid
@@ -255,7 +252,7 @@ class Session(object):
 
     def list(self):
         """
-        Return a list of all Job IDs belonging to this session.
+        Return set of all Job IDs belonging to this session.
         """
         return self.job_ids
 
