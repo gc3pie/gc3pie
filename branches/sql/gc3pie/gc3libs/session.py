@@ -107,7 +107,7 @@ class Session(object):
 
         """
         self.path = os.path.abspath(path)
-        self.job_ids = set()
+        self._job_ids = set()
         if os.path.isdir(self.path):
             # Session already exists?
             try:
@@ -153,7 +153,7 @@ class Session(object):
         # Read job index file
         try:
             jobid_fd = open(jobid_filename)
-            self.job_ids = set(row['persistent_id'] for row in
+            self._job_ids = set(row['persistent_id'] for row in
                                csv.DictReader(jobid_fd, [
                                    'jobname',
                                    'persistent_id',
@@ -194,7 +194,7 @@ class Session(object):
         jobid_filename = os.path.join(self.path, self.JOBIDS_DB_FILENAME)
         try:
             jobid_fd = open(jobid_filename)
-            self.job_ids = set(row[0] for row in csv.reader(jobid_fd))
+            self._job_ids = set(row[0] for row in csv.reader(jobid_fd))
         finally:
             jobid_fd.close()
 
@@ -218,7 +218,7 @@ class Session(object):
         Load the object identified by `persistent_id` from the
         persistent store and return it.
         """
-        if jobid not in self.job_ids:
+        if jobid not in self._job_ids:
             raise gc3libs.exceptions.LoadError(
                 "Unable to find any object with ID '%s'" % jobid)
 
@@ -231,8 +231,8 @@ class Session(object):
         `persistent_id` of the saved object.
         """
         newid = self.store.save(obj)
-        if newid not in self.job_ids:
-            self.job_ids.add(newid)
+        if newid not in self._job_ids:
+            self._job_ids.add(newid)
         # Save the list of current jobs to disk, to avoid inconsistency
         self.flush()
         return newid
@@ -242,11 +242,11 @@ class Session(object):
         Remove job identified by `jobid` from the current session
         *and* from the storage.
         """
-        if jobid not in self.job_ids:
+        if jobid not in self._job_ids:
             raise InvalidArgument(
                 "Job id %s not found in current session" % jobid)
         self.store.remove(jobid)
-        self.job_ids.remove(jobid)
+        self._job_ids.remove(jobid)
         # Save the list of current jobs to disk, to avoid inconsistency
         self.flush()
 
@@ -254,21 +254,21 @@ class Session(object):
         """
         Return set of all Job IDs belonging to this session.
         """
-        return self.job_ids
+        return self._job_ids
 
     def load_all(self):
         """
         Load all jobs belonging to the session from the persistent
         storage and returns them as a list.
         """
-        return [ self.load(jobid) for jobid in self.job_ids ]
+        return [ self.load(jobid) for jobid in self._job_ids ]
 
     def remove_session(self):
         """
         Remove the session directory and remove also all the jobs from
         the store which are associated to this session.
         """
-        for jobid in self.job_ids:
+        for jobid in self._job_ids:
             self.store.remove(jobid)
         if os.path.exists(self.path):
             shutil.rmtree(self.path)
@@ -288,7 +288,7 @@ class Session(object):
         jobids_filename = os.path.join(self.path, self.JOBIDS_DB_FILENAME)
         try:
             jobids_fd = open(jobids_filename, 'w')
-            for jobid in self.job_ids:
+            for jobid in self._job_ids:
                 csv.writer(jobids_fd).writerow([jobid])
         finally:
             jobids_fd.close()
