@@ -80,8 +80,9 @@ In more detail, `ggeotop`:command: does the following:
    to find the input data, what and how to process and where to place
    generated output results. Extracted from a generic geotop.inpts
    file:
+
 ::
-   ! 8) LIST OF FILE NAMES
+
    DemFile = "in/dem"
    MeteoFile = "in/meteo"
    SkyViewFactorMapFile = "in/svf"
@@ -144,14 +145,12 @@ A `ggeotop`:command: command-line is constructed as follows:
 in the recursive check of ``input_folder``
 ::
 
-   $ ggeotop ./input_folder -x
-   /apps/geotop/bin/geotop_1_224_20120227_static
+   $ ggeotop -x /apps/geotop/bin/geotop_1_224_20120227_static ./input_folder
 
 **Example 2.**
 ::
    
-   $ ggeotop --session SAMPLE_SESSION -w 24 
-   -x /apps/geotop/bin/geotop_1_224_20120227_static ./input_folder
+   $ ggeotop --session SAMPLE_SESSION -w 24 -x /apps/geotop/bin/geotop_1_224_20120227_static ./input_folder
 
 In this example, job information is stored into session
 ``SAMPLE_SESSION`` (see the documentation of the ``--session`` option
