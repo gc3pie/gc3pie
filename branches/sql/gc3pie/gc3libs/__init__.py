@@ -793,7 +793,7 @@ class Application(Persistable, Task):
             raise gc3libs.exceptions.InvalidArgument(
                 "Architecture must be either '%s' or '%s'"
                 % (Run.Arch.X86_32, Run.Arch.X86_64))
-                
+
 
         self.environment = kw.pop('environment', dict())
         self.environment = dict(Application._to_env_pair(x)
@@ -1504,8 +1504,10 @@ class Run(Struct):
 
         Struct.__init__(self, initializer, **keywd)
 
-        if 'log' not in self: self.log = Log()
-        if 'timestamp' not in self: self.timestamp = { }
+        if 'log' not in self:
+            self.log = Log()
+        if 'timestamp' not in self:
+            self.timestamp = { }
 
 
     @defproperty

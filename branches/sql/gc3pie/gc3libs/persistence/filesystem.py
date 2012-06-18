@@ -36,16 +36,18 @@ from idfactory import IdFactory
 
 
 class _PersistentIdToSave(object):
-    """This class is needed because:
+    """Used internally to provide `persistent_id` support to *cPickle*.
 
-    * we want to save each `Persistable`:class: object as a separate record
+    This class is needed because:
 
-    * we want to use cPickle.
+    * we want to save each `Persistable`:class: object as a separate record,
+    * we want to use the *cPickle* module for performance reasons.
 
-    Check http://docs.python.org/library/pickle.html#pickling-and-unpickling-external-objects
+    Check the `documentation of Python's *pickle* module`__ for
+    details on the differences between *pickle* and *cPickle* modules.
 
-    for details on the differences between `pickle` and `cPickle`
-    modules.
+    .. __: http://docs.python.org/library/pickle.html#pickling-and-unpickling-external-objects
+
     """
     def __init__(self, driver, root):
         self._root = root
@@ -62,16 +64,18 @@ class _PersistentIdToSave(object):
 
 
 class _PersistentLoadExternalId(object):
-    """This class is needed because:
+    """Used internally to provide `persistent_id` support to *cPickle*.
 
-    * we want to save each `Persistable`:class: object as a separate record
+    This class is needed because:
 
-    * we want to use cPickle.
+    * we want to save each `Persistable`:class: object as a separate record,
+    * we want to use the *cPickle* module for performance reasons.
 
-    Check http://docs.python.org/library/pickle.html#pickling-and-unpickling-external-objects
+    Check the `documentation of Python's *pickle* module`__ for
+    details on the differences between *pickle* and *cPickle* modules.
 
-    for details on the differences between `pickle` and `cPickle`
-    modules.
+    .. __: http://docs.python.org/library/pickle.html#pickling-and-unpickling-external-objects
+
     """
     def __init__(self, driver):
         self._driver = driver
@@ -80,13 +84,13 @@ class _PersistentLoadExternalId(object):
         return self._driver.load(id_)
 
 
-def create_pickler(driver, stream, root, protocol=pickle.HIGHEST_PROTOCOL):
+def make_pickler(driver, stream, root, protocol=pickle.HIGHEST_PROTOCOL):
     p = pickle.Pickler(stream, protocol=protocol)
     p.persistent_id = _PersistentIdToSave(driver, root)
     return p
 
 
-def create_unpickler(driver, stream):
+def make_unpickler(driver, stream):
     p = pickle.Unpickler(stream)
     p.persistent_load = _PersistentLoadExternalId(driver)
     return p
@@ -105,7 +109,7 @@ class FilesystemStore(Store):
     If an object contains references to other `Persistable` objects,
     these are saved in the file they would have been saved if the
     `save` method was called on them in the first place, and only an
-    "external reference" is saved in the pickled container. This
+    'external reference' is saved in the pickled container. This
     ensures that: (1) only one copy of a shared object is ever saved,
     and (2) any shared reference to `Persistable` objects is correctly
     restored when restoring the container.
@@ -115,8 +119,11 @@ class FilesystemStore(Store):
     details.
 
     The `protocol` argument specifies the pickle protocol to use
-    (default: `pickle` protocol 0).  See the `pickle` module
-    documentation for details.
+    (default: *pickle* protocol *HIGHEST_PROTOCOL*).  See the `*pickle*
+    module documentation`__ for details.
+
+    .. __: http://docs.python.org/library/pickle.html
+
     """
     def __init__(self, directory=gc3libs.Default.JOBS_DIR,
                  idfactory=IdFactory(), protocol=pickle.HIGHEST_PROTOCOL):
@@ -139,7 +146,7 @@ class FilesystemStore(Store):
         src = None
         try:
             src = open(path, 'rb')
-            unpickler = create_unpickler(self, src)
+            unpickler = make_unpickler(self, src)
             obj = unpickler.load()
             src.close()
             return obj
@@ -239,7 +246,7 @@ class FilesystemStore(Store):
         tgt = None
         try:
             tgt = open(filename, 'w+b')
-            pickler = create_pickler(self, tgt, obj)
+            pickler = make_pickler(self, tgt, obj)
             pickler.dump(obj)
             tgt.close()
             try:

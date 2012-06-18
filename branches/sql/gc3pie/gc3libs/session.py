@@ -152,9 +152,14 @@ class Session(object):
 
     def _convert_oldstyle_session(self, index_csv, jobs_dir):
         """
-        Load an old-style session from a `.csv` session file and a
-        `.jobs` directory.  Both will be moved to the location
-        where the new-style session expects them.
+        Convert an old-style session into a new-style one.  An
+        exception is raised if any error is encountered during the
+        conversion.
+
+        An old-style session consists of a `.csv` index file and a
+        `.jobs` directory.  Both will be moved to the location where
+        the new-style session expects them, i.e., into file
+        ``job_ids.csv`` and subdirectory ``jobs`` respectively.
 
         Converted sessions use a `FilesystemStore`:class: located in
         the `.jobs` directory; any other setting of `store_url` in
@@ -162,6 +167,12 @@ class Session(object):
         `jobs` directory location.  In other words, storage is *not*
         converted to the any new format -- it is just relocated on the
         filesystem.
+
+        .. fixme::
+
+          If the conversion process fails halfway through, you will
+          end up with something that is neither a valid old-style
+          session nor a valid new-style one!  This is certainly a bug.
 
         """
         # check access to new-style session dir and make it if needed
@@ -253,18 +264,18 @@ class Session(object):
 
         return self.store.load(jobid)
 
-    def save(self, obj):
+    def list(self):
         """
-        Save an object to the persistent storage and add it to the
-        list of jobs in the current session.  Return the
-        `persistent_id` of the saved object.
+        Return set of all Job IDs belonging to this session.
         """
-        newid = self.store.save(obj)
-        if newid not in self._job_ids:
-            self._job_ids.add(newid)
-        # Save the list of current jobs to disk, to avoid inconsistency
-        self.flush()
-        return newid
+        return self._job_ids
+
+    def load_all(self):
+        """
+        Load all jobs belonging to the session from the persistent
+        storage and returns them as a list.
+        """
+        return [ self.load(jobid) for jobid in self._job_ids ]
 
     def remove(self, jobid):
         """
@@ -279,19 +290,6 @@ class Session(object):
         # Save the list of current jobs to disk, to avoid inconsistency
         self.flush()
 
-    def list(self):
-        """
-        Return set of all Job IDs belonging to this session.
-        """
-        return self._job_ids
-
-    def load_all(self):
-        """
-        Load all jobs belonging to the session from the persistent
-        storage and returns them as a list.
-        """
-        return [ self.load(jobid) for jobid in self._job_ids ]
-
     def remove_session(self):
         """
         Remove the session directory and remove also all the jobs from
@@ -301,6 +299,19 @@ class Session(object):
             self.store.remove(jobid)
         if os.path.exists(self.path):
             shutil.rmtree(self.path)
+
+    def save(self, obj):
+        """
+        Save an object to the persistent storage and add it to the
+        list of jobs in the current session.  Return the
+        `persistent_id` of the saved object.
+        """
+        newid = self.store.save(obj)
+        if newid not in self._job_ids:
+            self._job_ids.add(newid)
+        # Save the list of current jobs to disk, to avoid inconsistency
+        self.flush()
+        return newid
 
     def _save_job_ids_file(self):
         """
