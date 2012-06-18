@@ -820,7 +820,7 @@ class SessionBasedScript(_Script):
             try:
                 app = cls(*args, **kwargs)
                 self.tasks.append(app)
-                self.log.debug("Added job '%s' to session." % jobname)
+                self.log.debug("Added task '%s' to session." % jobname)
             except Exception, ex:
                 self.log.error("Could not create job '%s': %s."
                                % (jobname, str(ex)), exc_info=__debug__)
@@ -1370,10 +1370,11 @@ class SessionBasedScript(_Script):
 
     def _save_session(self):
         """
-        Save tasks into the session
+        Save updated tasks.
         """
         for task in self.tasks:
-            self.session.save(task)
+            if task.changed:
+                self.session.save(task)
 
     def _search_for_input_files(self, paths, pattern=None):
         """

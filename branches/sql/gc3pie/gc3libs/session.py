@@ -253,6 +253,12 @@ class Session(object):
         self._save_store_url_file()
         self._save_job_ids_file()
 
+    def list(self):
+        """
+        Return set of all Job IDs belonging to this session.
+        """
+        return self._job_ids
+
     def load(self, jobid):
         """
         Load the object identified by `persistent_id` from the
@@ -264,16 +270,17 @@ class Session(object):
 
         return self.store.load(jobid)
 
-    def list(self):
-        """
-        Return set of all Job IDs belonging to this session.
-        """
-        return self._job_ids
-
     def load_all(self):
         """
         Load all jobs belonging to the session from the persistent
         storage and returns them as a list.
+
+        .. note::
+
+          Most of the time, calling this method is redundant, as jobs
+          are automatically loaded when the `Session` object is first
+          created.
+
         """
         return [ self.load(jobid) for jobid in self._job_ids ]
 
