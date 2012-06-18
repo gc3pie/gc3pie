@@ -862,12 +862,12 @@ def read_contents(path):
 
 def safe_repr(obj):
     """
-    Return a string describing Python object `obj`.  Avoids calling
-    any Python magic methods, so should be safe to use as a "last
-    resort" in implementation of `__str__` and `__repr__` magic.
+    Return a string describing Python object `obj`.
+
+    Avoids calling any Python magic methods, so should be safe to use
+    as a 'last resort' in implementation of `__str__` and `__repr__`.
     """
-    return ("<`%s` instance @ %x>"
-            % (obj.__class__.__name__, id(obj)))
+    return ("%s@%x" % (obj.__class__.__name__, id(obj)))
 
 
 def same_docstring_as(referenced_fn):
