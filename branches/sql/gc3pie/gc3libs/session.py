@@ -23,9 +23,9 @@ __version__ = '$Revision$'
 
 
 # stdlib imports
+import csv
 import os
 import shutil
-import csv
 
 # GC3Pie imports
 import gc3libs
@@ -88,6 +88,8 @@ class Session(object):
     JOBIDS_DB_FILENAME = 'job_ids.csv'
     STORE_URL_FILENAME = "store.url"
 
+    DEFAULT_JOBS_DIR = 'jobs'
+
     def __init__(self, path, store_url=None, **kw):
         """
         First argument `path` is the path to the session directory.
@@ -108,13 +110,25 @@ class Session(object):
         """
         self.path = os.path.abspath(path)
         self._job_ids = set()
+
+        # check if there is an old-style session to load
+        oldstyle_index = self.path + '.csv'
+        oldstyle_store = self.path + '.jobs'
+        if (os.path.isfile(oldstyle_index) and os.path.isdir(oldstyle_store)):
+            gc3libs.log.warning(
+                "Old-style session detected in file '%s' and directory '%s'."
+                " Attempting conversion to directory based format ..."
+                % (oldstyle_index, oldstyle_store))
+            self._convert_oldstyle_session(oldstyle_index, oldstyle_store)
+
+        # load or make session
         if os.path.isdir(self.path):
             # Session already exists?
             try:
                 self._load_session()
             except IOError, err:
                 gc3libs.log.debug("Cannot load session '%s': %s", path, str(err))
-                if err.errno == 2: # "No such file or directory"
+                if err.errno == 2:  # "No such file or directory"
                     gc3libs.log.debug(
                         "Assuming session is incomplete or corrupted, creating it again.")
                     self._create_session(path, store_url, **kw)
@@ -130,42 +144,65 @@ class Session(object):
         # database file None None"
         gc3libs.utils.mkdir(path)
         if not store_url:
-            store_url = os.path.join(self.path, 'jobs')
+            store_url = os.path.join(self.path, self.DEFAULT_JOBS_DIR)
         self.store_url = store_url
         self.store = gc3libs.persistence.make_store(store_url, **kw)
-        self._update_store_url_file()
-        self._update_job_ids_file()
+        self._save_store_url_file()
+        self._save_job_ids_file()
 
-    def _load_oldstyle_session(self):
+    def _convert_oldstyle_session(self, index_csv, jobs_dir):
         """
         Load an old-style session from a `.csv` session file and a
-        `.jobs` directory.
+        `.jobs` directory.  Both will be moved to the location
+        where the new-style session expects them.
+
+        Converted sessions use a `FilesystemStore`:class: located in
+        the `.jobs` directory; any other setting of `store_url` in
+        this class instance is ignored and overwritten with the new
+        `jobs` directory location.  In other words, storage is *not*
+        converted to the any new format -- it is just relocated on the
+        filesystem.
+
         """
-        jobid_filename = self.path + '.csv'
-        store_path = self.path + '.jobs'
+        # check access to new-style session dir and make it if needed
+        if os.path.exists(self.path):
+            gc3libs.utils.test_file(self.path, os.W_OK|os.X_OK, isdir=True)
+        else:
+            os.makedirs(self.path)
 
-        if not os.path.isfile(jobid_filename) or \
-           not os.path.isdir(store_path):
-            raise(gc3libs.exceptions.InvalidArgument(
-                "Unable to load old-style session from "
-                "%s index file and %s job directory" % (jobid_filename, store_path)))
-
-        # Read job index file
+        # read job index file...
         try:
-            jobid_fd = open(jobid_filename)
-            self._job_ids = set(row['persistent_id'] for row in
-                               csv.DictReader(jobid_fd, [
-                                   'jobname',
-                                   'persistent_id',
-                                   'state',
-                                   'info'
-                                   ]))
+            jobid_fd = open(index_csv, 'r')
+            self._job_ids = set(
+                row['persistent_id'] for row in
+                csv.DictReader(jobid_fd, [
+                    'jobname',
+                    'persistent_id',
+                    'state',
+                    'info'
+                    ]))
         finally:
             jobid_fd.close()
+        # and immediately write it back...
+        self._save_job_ids_file()
 
-        # Load store.
-        self.store_url = "file://%s" % os.path.abspath(store_path)
-        self.store = gc3libs.persistence.make_store(self.store_url)
+        # move jobs directory
+        new_jobs_dir = os.path.join(self.path, self.DEFAULT_JOBS_DIR)
+        shutil.move(jobs_dir, new_jobs_dir)
+        new_store_url = ('file://%s' % os.path.abspath(new_jobs_dir))
+        if self.store_url != new_store_url:
+            gc3libs.log.warning(
+                "Ignoring given task storage URL '%s':"
+                " task information will be stored at URL '%s'"
+                " resulting from conversion of old-style session.",
+                self.store_url, new_store_url)
+        self._save_store_url_file()
+
+        # if we got this far, everything is fine and we can remove the old index
+        os.unlink(index_csv)
+
+        gc3libs.log.info("Successfully converted old-style session"
+                         " to new-style session directory '%s'", self.path)
 
     def _load_session(self, **kw):
         """
@@ -174,14 +211,6 @@ class Session(object):
         Keyword arguments are passed to the `make_store` factory
         method unchanged.
         """
-        # First, check if there is an old-style session to load
-        if os.path.isfile(self.path + '.csv') and \
-           os.path.isdir(self.path + '.jobs'):
-            gc3libs.log.warning("Loading session from an old-style session. "
-                                "Old store directory %s will be used. Old inxed file %s will NOT be updated." % (self.path+'.jobs', self.path+'.csv'))
-            self._load_oldstyle_session()
-            return
-
         try:
             store_fname = os.path.join(self.path, self.STORE_URL_FILENAME)
             self.store_url = gc3libs.utils.read_contents(store_fname)
@@ -210,8 +239,8 @@ class Session(object):
             os.mkdir(self.path)
 
         # Update store.url and job_ids.db files
-        self._update_store_url_file()
-        self._update_job_ids_file()
+        self._save_store_url_file()
+        self._save_job_ids_file()
 
     def load(self, jobid):
         """
@@ -273,17 +302,9 @@ class Session(object):
         if os.path.exists(self.path):
             shutil.rmtree(self.path)
 
-    def _update_store_url_file(self):
+    def _save_job_ids_file(self):
         """
-        Update the store url file. If the file does not exists it will
-        be created. If it exists it will be overwritten.
-        """
-        store_url_filename = os.path.join(self.path, self.STORE_URL_FILENAME)
-        gc3libs.utils.write_contents(store_url_filename, self.store_url)
-
-    def _update_job_ids_file(self):
-        """
-        Update the job ids files, in order to avoid inconsistencies.
+        Save job IDs to the default session index.
         """
         jobids_filename = os.path.join(self.path, self.JOBIDS_DB_FILENAME)
         try:
@@ -292,3 +313,13 @@ class Session(object):
                 csv.writer(jobids_fd).writerow([jobid])
         finally:
             jobids_fd.close()
+
+    def _save_store_url_file(self):
+        """
+        Save the storage URL to a session file.
+
+        If the destination file does not exists, it will
+        be created; if it exists, it will be overwritten.
+        """
+        store_url_filename = os.path.join(self.path, self.STORE_URL_FILENAME)
+        gc3libs.utils.write_contents(store_url_filename, self.store_url)
