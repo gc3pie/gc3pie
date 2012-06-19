@@ -317,7 +317,7 @@ newly-created jobs so that this limit is never exceeded.
     def new_tasks(self, extra):
         # how many iterations are we already computing (per parameter set)?
         iters = defaultdict(lambda: 0)
-        for task in self.tasks:
+        for task in self.session:
             name, instance = task.jobname.split('#')
             iters[name] = max(iters[name], int(instance))
 

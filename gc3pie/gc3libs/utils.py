@@ -198,36 +198,6 @@ def cat(*args, **kw):
             output.write(line)
 
 
-def contents(path):
-    """
-    Return the whole contents of the file at `path` as a single string.
-
-    Example::
-
-      >>> contents('/dev/null')
-      ''
-
-      >>> import tempfile
-      >>> (fd, tmpfile) = tempfile.mkstemp()
-      >>> w = open(tmpfile, 'w')
-      >>> w.write('hey')
-      >>> w.close()
-      >>> contents(tmpfile)
-      'hey'
-
-    cleaning up
-
-      >>> os.remove(tmpfile)
-
-    """
-    # XXX: this really calls for the `with:` statement...
-    try:
-        stream = open(path, 'r')
-        return stream.read()
-    finally:
-        stream.close()
-
-
 def copyfile(src, dst, overwrite=False, link=False):
     """
     Copy a file from `src` to `dst`; return `True` if the copy was
@@ -858,14 +828,46 @@ def progressive_number(qty=None,
         return [ (id+n) for n in range(1, qty+1) ]
 
 
+def read_contents(path):
+    """
+    Return the whole contents of the file at `path` as a single string.
+
+    Example::
+
+      >>> read_contents('/dev/null')
+      ''
+
+      >>> import tempfile
+      >>> (fd, tmpfile) = tempfile.mkstemp()
+      >>> w = open(tmpfile, 'w')
+      >>> w.write('hey')
+      >>> w.close()
+      >>> read_contents(tmpfile)
+      'hey'
+
+    (If you run this test, remember to do cleanup afterwards)
+    ::
+
+      >>> os.remove(tmpfile)
+
+    """
+    # XXX: this really calls for the `with:` statement...
+    try:
+        stream = open(path, 'r')
+        return stream.read()
+    finally:
+        if 'stream' in locals():
+            stream.close()
+
+
 def safe_repr(obj):
     """
-    Return a string describing Python object `obj`.  Avoids calling
-    any Python magic methods, so should be safe to use as a "last
-    resort" in implementation of `__str__` and `__repr__` magic.
+    Return a string describing Python object `obj`.
+
+    Avoids calling any Python magic methods, so should be safe to use
+    as a 'last resort' in implementation of `__str__` and `__repr__`.
     """
-    return ("<`%s` instance @ %x>"
-            % (obj.__class__.__name__, id(obj)))
+    return ("%s@%x" % (obj.__class__.__name__, id(obj)))
 
 
 def same_docstring_as(referenced_fn):
@@ -1277,6 +1279,33 @@ def unlock(lock):
     See also: `gc3libs.utils.lock`:func:
     """
     lock.release()
+
+
+def write_contents(path, data):
+    """
+    Overwrite the contents of the file at `path` with the given data.
+    If the file does not exist, it is created.
+
+    Example::
+
+      >>> import tempfile
+      >>> (fd, tmpfile) = tempfile.mkstemp()
+      >>> write_contents(tmpfile, 'big data here')
+      >>> read_contents(tmpfile)
+      'big data here'
+
+    (If you run this test, remember to clean up afterwards)
+    ::
+
+      >>> os.remove(tmpfile)
+
+    """
+    # XXX: this really calls for the `with:` statement...
+    try:
+        stream = open(path, 'wb')
+        return stream.write(data)
+    finally:
+        stream.close()
 
 
 ##

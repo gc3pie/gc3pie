@@ -359,7 +359,6 @@ specified in the configuration file.
                                   ]:
                     lrms = self.get_backend(app.execution.resource_name)
                     try:
-                        # self.auths.get(lrms._resource.auth)
                         state = lrms.update_job_state(app)
                     except Exception, ex:
                         gc3libs.log.debug(
@@ -808,7 +807,7 @@ class Engine(object):
         elif Run.State.TERMINATED == state:
             if not contained(task, self._terminated): self._terminated.append(task)
         else:
-            raise AssertionError("Unhandled run state '%s' in gc3libs.core.Engine." % state)
+            raise AssertionError("Unhandled state '%s' in gc3libs.core.Engine." % state)
         task.attach(self)
 
 
@@ -826,7 +825,7 @@ class Engine(object):
         elif Run.State.TERMINATED == state:
             self._terminated.remove(task)
         else:
-            raise AssertionError("Unhandled run state '%s' in gc3libs.core.Engine." % state)
+            raise AssertionError("Unhandled state '%s' in gc3libs.core.Engine." % state)
         task.detach()
 
 
@@ -1052,9 +1051,9 @@ class Engine(object):
         : param tuple only: Restrict counting to tasks of these classes.
 
         """
-
         if only:
-            gc3libs.log.debug("Engine.stats: Restricting to object of class %s", only)
+            gc3libs.log.debug(
+                "Engine.stats: Restricting to object of class '%s'", only.__name__)
         result = defaultdict(lambda: 0)
         if only:
             result[Run.State.NEW] = len([task for task in self._new
@@ -1083,7 +1082,6 @@ class Engine(object):
                                                                if isinstance(task, only)])
         else:
             result[Run.State.TERMINATED] = len(self._terminated)
-
 
         # for TERMINATED tasks, compute the number of successes/failures
         for task in self._terminated:
@@ -1131,7 +1129,7 @@ class Engine(object):
     def update_job_state(self, *tasks, **kw):
         """
         Return list of *current* states of the given tasks.  States
-        will only be updated at the next invocation of `perform`; in
+        will only be updated at the next invocation of `progress`; in
         particular, no state-change handlers are called as a result of
         calling this method.
         """

@@ -266,6 +266,6 @@ of newly-created jobs so that this limit is never exceeded.
         Ensure each instance of `ChunkedParameterSweep` has
         `chunk_size` set to the maximum allowed number of jobs.
         """
-        for task in self.tasks:
+        for task in self.session:
             assert isinstance(task, CryptoChunkedParameterSweep)
             task.chunk_size = self.params.max_running

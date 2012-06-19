@@ -168,7 +168,7 @@ Note: the list of INPUT and OUTPUT files must be separated by ':'
     def new_tasks(self, extra):
         ## compute number of decoys already being computed in this session
         decoys = 0
-        for task in self.tasks:
+        for task in self.session:
             start, end = task.jobname.split('--')
             decoys += int(end) - int(start)
         self.log.debug("Total no. of decoys already scheduled for computation: %d", decoys)

@@ -108,7 +108,7 @@ class Auth(object):
             try:
                 params = self._config[auth_name].copy()
                 params.update(kwargs)
-                a =  self._ctors[auth_name](**params)
+                a =  self._ctors[auth_name](**dict(params))
             except (AssertionError, AttributeError), ex:
                 a = gc3libs.exceptions.ConfigurationError(
                     "Missing required configuration parameters"

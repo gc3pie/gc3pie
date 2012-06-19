@@ -50,6 +50,7 @@ import gc3libs.cmdline
 import gc3libs.core as core
 import gc3libs.persistence
 import gc3libs.utils as utils
+from gc3libs.session import Session
 
 import gc3utils
 
@@ -87,11 +88,12 @@ force removal of a job regardless.
                        help="Remove job even when not in terminal state.")
 
     def main(self):
+        self.session = Session(self.params.session)
         if self.params.all and len(self.params.args) > 0:
             raise gc3libs.exceptions.InvalidUsage("Option '-A' conflicts with list of job IDs to remove.")
 
         if self.params.all:
-            args = self._store.list()
+            args = self.session.list()
             if len(args) == 0:
                 self.log.info("No jobs in session: nothing to do.")
         else:
@@ -110,7 +112,7 @@ force removal of a job regardless.
         failed = 0
         for jobid in args:
             try:
-                app = self._store.load(jobid)
+                app = self.session.load(jobid)
                 app.attach(self._core)
 
                 if app.execution.state != Run.State.NEW:
@@ -153,7 +155,7 @@ force removal of a job regardless.
                     continue
 
             try:
-                self._store.remove(jobid)
+                self.session.remove(jobid)
                 self.log.info("Removed job '%s'", jobid)
             except:
                 failed += 1
@@ -196,6 +198,7 @@ GC3Libs internals.
                        " MUST be used together with '--print'.")
 
     def main(self):
+        self.session = Session(self.params.session)
         if self.params.csv and self.params.tabular:
             raise gc3libs.exceptions.InvalidUsage(
                 "Conflicting options `-c`/`--csv` and `-t`/`--tabular`."
@@ -220,7 +223,7 @@ GC3Libs internals.
         if len(self.params.args) == 0:
             # if no arguments, operate on all known jobs
             try:
-                self.params.args = self._store.list()
+                self.params.args = self.session.list()
             except NotImplementedError, ex:
                 raise NotImplementedError(
                     "Job storage module does not allow listing all jobs."
@@ -312,6 +315,7 @@ is canceled before re-submission.
                        help='Guaranteed minimal duration of job, in hours.')
 
     def main(self):
+        self.session = Session(self.params.session)
         if len(self.params.args) == 0:
             self.log.error("No job IDs given on command line: nothing to do."
                            " Type '%s --help' for usage help."
@@ -331,7 +335,7 @@ is canceled before re-submission.
 
         failed = 0
         for jobid in self.params.args:
-            app = self._store.load(jobid.strip())
+            app = self.session.load(jobid.strip())
             app.attach(self._core)
             try:
                 app.update_state() # update state
@@ -349,7 +353,7 @@ is canceled before re-submission.
             try:
                 app.submit()
                 print("Successfully re-submitted %s; use the 'gstat' command to monitor its progress." % app)
-                self._store.replace(jobid, app)
+                self.session.store.replace(jobid, app)
             except Exception, ex:
                 failed += 1
                 self.log.error("Failed resubmission of job '%s': %s: %s",
@@ -390,17 +394,14 @@ Print job state.
 
     def main(self):
         # by default, update job statuses
+        self.session = Session(self.params.session)
         if 'update' not in self.params:
             self.params.update = True
         assert self.params.update in [True, False]
 
         if len(self.params.args) == 0:
             # if no arguments, operate on all known jobs
-            try:
-                self.params.args = self._store.list()
-            except NotImplementedError, ex:
-                raise NotImplementedError("Job storage module does not allow listing all jobs."
-                                          " Please specify the job IDs you wish to operate on.")
+            self.params.args = self.session.list()
 
         if len(self.params.args) == 0:
             print("No jobs submitted.")
@@ -444,7 +445,7 @@ Print job state.
             if self.params.update:
                 app.attach(self._core)
                 app.update_state()
-                self._store.replace(jobid, app)
+                self.session.store.replace(jobid, app)
             if states is None or app.execution.in_state(*states):
                 rows.append([jobid, app.execution.state, app.execution.info] +
                             [ app.execution.get(name, "N/A") for name in keys ])
@@ -537,6 +538,7 @@ released once the output files have been fetched.
                        help="Overwrite files in destination directory")
 
     def main(self):
+        self.session = Session(self.params.session)
         if len(self.params.args) == 0:
             self.log.error("No job IDs given on command line: nothing to do."
                            " Type '%s --help' for usage help."
@@ -551,7 +553,7 @@ released once the output files have been fetched.
         failed = 0
         for jobid in self.params.args:
             try:
-                app = self._store.load(jobid)
+                app = self.session.load(jobid)
                 app.attach(self._core)
 
                 if app.execution.state == Run.State.NEW:
@@ -573,7 +575,7 @@ released once the output files have been fetched.
                     print("Job final results were successfully retrieved in '%s'" % download_dir)
                 else:
                     print("A snapshot of job results was successfully retrieved in '%s'" % download_dir)
-                self._store.replace(app.persistent_id, app)
+                self.session.store.replace(app.persistent_id, app)
 
             except Exception, ex:
                 print("Failed retrieving results of job '%s': %s"% (jobid, str(ex)))
@@ -600,11 +602,12 @@ error occurred.
                        help="Remove all stored jobs. USE WITH CAUTION!")
 
     def main(self):
+        self.session = Session(self.params.session)
         if self.params.all and len(self.params.args) > 0:
             raise gc3libs.exceptions.InvalidUsage("Option '-A' conflicts with list of job IDs to remove.")
 
         if self.params.all:
-            args = self._store.list()
+            args = self.session.list()
             if len(args) == 0:
                 self.log.info("No jobs in session: nothing to do.")
         else:
@@ -623,7 +626,7 @@ error occurred.
         failed = 0
         for jobid in args:
             try:
-                app = self._store.load(jobid)
+                app = self.session.load(jobid)
                 app.attach(self._core)
 
                 self.log.debug("gkill: Job '%s' in state %s"
@@ -634,7 +637,7 @@ error occurred.
                     raise gc3libs.exceptions.InvalidOperation("Job '%s' is already in terminal state" % app)
                 else:
                     app.kill()
-                    self._store.replace(jobid, app)
+                    self.session.store.replace(jobid, app)
 
                     # or shall we simply return an ack message ?
                     print("Sent request to cancel job '%s'."% jobid)
@@ -664,6 +667,7 @@ as more lines are written to the given stream.
         self.add_param("-n", "--lines", dest="num_lines", type=int, default=10, help="output  the  last N lines, instead of the last 10")
 
     def main(self):
+        self.session = Session(self.params.session)
         if len(self.params.jobid) != 1:
             raise gc3libs.exceptions.InvalidUsage("This command takes only one argument: the Job ID.")
         jobid = self.params.jobid[0]
@@ -673,7 +677,7 @@ as more lines are written to the given stream.
         else:
             stream = 'stdout'
 
-        app = self._store.load(jobid)
+        app = self.session.load(jobid)
         if app.execution.state == Run.State.UNKNOWN \
                 or app.execution.state == Run.State.SUBMITTED \
                 or app.execution.state == Run.State.NEW:
@@ -726,6 +730,7 @@ List status of computational resources.
                        " in `glist` output.)")
 
     def main(self):
+        self.session = Session(self.params.session)
         if len(self.params.args) > 0:
             self._select_resources(* self.params.args)
             self.log.info("Retained only resources: %s",
