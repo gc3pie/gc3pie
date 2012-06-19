@@ -225,6 +225,8 @@ class Session(list):
                                                'state', 'info']):
                 ids_out.write(row['persistent_id'])
                 ids_out.write('\n')
+            ids_out.close()
+            ids_in.close()
         except Exception, err:
             gc3libs.log.error(
                 "Error converting old-style session index '%s' to new-style one '%s':"
@@ -233,7 +235,6 @@ class Session(list):
                 os.remove(ids_out.name)
             except:
                 pass
-        finally:
             ids_out.close()
             ids_in.close()
 
@@ -305,8 +306,10 @@ class Session(list):
         try:
             idx_fd = open(idx_filename)
             ids = idx_fd.read().split('\n')
-        finally:
             idx_fd.close()
+        except:
+            idx_fd.close()
+            raise
 
         for task_id in ids:
             try:
@@ -480,8 +483,10 @@ class Session(list):
             idx_fd = open(idx_filename, 'w')
             for task_id in self.tasks:
                 idx_fd.write(str(task_id))
-        finally:
             idx_fd.close()
+        except:
+            idx_fd.close()
+            raise
 
     def _save_store_url_file(self):
         """

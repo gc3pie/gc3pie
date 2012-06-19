@@ -211,6 +211,18 @@ class StubForSqlSession(TestSession):
 
 class TestSqliteSession(StubForSqlSession):
 
+    @classmethod
+    def setup_class(cls):
+        # skip SQLite tests if no SQLite module present (Py 2.4)
+        try:
+            import sqlite3
+        except ImportError:
+            # SQLAlchemy uses `pysqlite2` on Py 2.4
+            try:
+                import pysqlite2
+            except ImportError:
+                raise SkipTest("No SQLite module installed.")
+
     def setUp(self):
         tmpdir = tempfile.mktemp(dir='.')
         self.tmpdir = os.path.basename(tmpdir)

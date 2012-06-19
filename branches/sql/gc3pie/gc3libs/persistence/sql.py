@@ -426,14 +426,10 @@ def make_sqlstore(url, *args, **kw):
 
     Examples::
 
-      >>> ss1 = make_sqlstore(gc3libs.url.Url('sqlite:///tmp/foo.db'))
-      >>> ss1.__class__.__name__
-      'SqlStore'
+      | >>> ss1 = make_sqlstore(gc3libs.url.Url('sqlite:////tmp/foo.db'))
+      | >>> ss1.__class__.__name__
+      | 'SqlStore'
 
-    cleaning up tests
-
-      >>> import os
-      >>> os.remove('/tmp/foo.db')
     """
     assert isinstance(url, gc3libs.url.Url)
     if url.scheme == 'sqlite':

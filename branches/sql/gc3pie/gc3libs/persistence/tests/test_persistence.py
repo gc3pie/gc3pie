@@ -446,6 +446,18 @@ class TestSqliteStore(SqlStoreChecks):
     """Test SQLite backend."""
 
     @classmethod
+    def setup_class(cls):
+        # skip SQLite tests if no SQLite module present (Py 2.4)
+        try:
+            import sqlite3
+        except ImportError:
+            # SQLAlchemy uses `pysqlite2` on Py 2.4
+            try:
+                import pysqlite2
+            except ImportError:
+                raise SkipTest("No SQLite module installed.")
+
+    @classmethod
     def teardown_class(cls):
         pass
 
@@ -467,6 +479,18 @@ class TestSqliteStore(SqlStoreChecks):
 
 class TestSqliteStoreWithAlternateTable(TestSqliteStore):
     """Test SQLite backend with a different table name."""
+
+    @classmethod
+    def setup_class(cls):
+        # skip SQLite tests if no SQLite module present (Py 2.4)
+        try:
+            import sqlite3
+        except ImportError:
+            # SQLAlchemy uses `pysqlite2` on Py 2.4
+            try:
+                import pysqlite2
+            except ImportError:
+                raise SkipTest("No SQLite module installed.")
 
     def _make_store(self, **kwargs):
         return make_store(self.db_url, table_name='another_store', **kwargs)
