@@ -2,7 +2,7 @@
 #
 """
 """
-# Copyright (C) 2011, GC3, University of Zurich. All rights reserved.
+# Copyright (C) 2011-2012, GC3, University of Zurich. All rights reserved.
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
@@ -21,75 +21,19 @@
 __docformat__ = 'reStructuredText'
 __version__ = '$Revision$'
 
-
+# stdlib imports
 import os
-import cPickle as pickle
 import sys
 
+# GC3Pie imports
 import gc3libs
 import gc3libs.exceptions
-from gc3libs.utils import progressive_number, same_docstring_as
+from gc3libs.utils import same_docstring_as
 import gc3libs.url
 
-from store import Store, Persistable, register
-from idfactory import IdFactory
-
-
-class _PersistentIdToSave(object):
-    """This class is needed because:
-
-    * we want to save each `Persistable`:class: object as a separate record
-
-    * we want to use cPickle.
-
-    Check http://docs.python.org/library/pickle.html#pickling-and-unpickling-external-objects
-
-    for details on the differences between `pickle` and `cPickle`
-    modules.
-    """
-    def __init__(self, driver, root):
-        self._root = root
-        self._driver = driver
-
-    def __call__(self, obj):
-        if obj is self._root:
-            return None
-        elif hasattr(obj, 'persistent_id'):
-            return obj.persistent_id
-        elif isinstance(obj, Persistable):
-            self._driver.save(obj)
-            return obj.persistent_id
-
-
-class _PersistentLoadExternalId(object):
-    """This class is needed because:
-
-    * we want to save each `Persistable`:class: object as a separate record
-
-    * we want to use cPickle.
-
-    Check http://docs.python.org/library/pickle.html#pickling-and-unpickling-external-objects
-
-    for details on the differences between `pickle` and `cPickle`
-    modules.
-    """
-    def __init__(self, driver):
-        self._driver = driver
-
-    def __call__(self, id_):
-        return self._driver.load(id_)
-
-
-def create_pickler(driver, stream, root, protocol=pickle.HIGHEST_PROTOCOL):
-    p = pickle.Pickler(stream, protocol=protocol)
-    p.persistent_id = _PersistentIdToSave(driver, root)
-    return p
-
-
-def create_unpickler(driver, stream):
-    p = pickle.Unpickler(stream)
-    p.persistent_load = _PersistentLoadExternalId(driver)
-    return p
+from gc3libs.persistence.idfactory import IdFactory
+from gc3libs.persistence.serialization import DEFAULT_PROTOCOL, make_pickler, make_unpickler
+from gc3libs.persistence.store import Store, Persistable
 
 
 ## persist objects in a filesystem directory
@@ -105,7 +49,7 @@ class FilesystemStore(Store):
     If an object contains references to other `Persistable` objects,
     these are saved in the file they would have been saved if the
     `save` method was called on them in the first place, and only an
-    "external reference" is saved in the pickled container. This
+    'external reference' is saved in the pickled container. This
     ensures that: (1) only one copy of a shared object is ever saved,
     and (2) any shared reference to `Persistable` objects is correctly
     restored when restoring the container.
@@ -114,12 +58,13 @@ class FilesystemStore(Store):
     sequential number to the class name; see class `Id` for
     details.
 
-    The `protocol` argument specifies the pickle protocol to use
-    (default: `pickle` protocol 0).  See the `pickle` module
-    documentation for details.
+    The `protocol` argument specifies the serialization protocol to use,
+    if different from `gc3libs.persistence.serialization.DEFAULT_PROTOCOL`.
     """
-    def __init__(self, directory=gc3libs.Default.JOBS_DIR,
-                 idfactory=IdFactory(), protocol=pickle.HIGHEST_PROTOCOL):
+    def __init__(self,
+                 directory=gc3libs.Default.JOBS_DIR,
+                 idfactory=IdFactory(),
+                 protocol=DEFAULT_PROTOCOL):
         if isinstance(directory, gc3libs.url.Url):
             directory = directory.path
         self._directory = directory
@@ -139,7 +84,7 @@ class FilesystemStore(Store):
         src = None
         try:
             src = open(path, 'rb')
-            unpickler = create_unpickler(self, src)
+            unpickler = make_unpickler(self, src)
             obj = unpickler.load()
             src.close()
             return obj
@@ -239,7 +184,7 @@ class FilesystemStore(Store):
         tgt = None
         try:
             tgt = open(filename, 'w+b')
-            pickler = create_pickler(self, tgt, obj)
+            pickler = make_pickler(self, tgt, obj)
             pickler.dump(obj)
             tgt.close()
             try:
@@ -280,8 +225,6 @@ def make_filesystemstore(url, *args, **kw):
     """
     assert isinstance(url, gc3libs.url.Url)
     return FilesystemStore(url.path, *args, **kw)
-
-register('file', make_filesystemstore)
 
 
 ## main: run tests

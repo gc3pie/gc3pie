@@ -26,11 +26,11 @@ import os
 import tempfile
 import re
 
-import gc3libs.cmdline
-
 import cli.test
 from nose.tools import assert_true
 
+import gc3libs.cmdline
+import gc3libs.session
 
 class TestScript(cli.test.FunctionalTest):
     def __init__(self, *args, **kw):
@@ -82,6 +82,8 @@ architecture = x86_64
 
         assert_true(re.match('.*TERMINATED\s+1/1\s+\(100.0%\).*', result.stdout, re.S))
 
+        # FIXME: output dir should be inside session dir
+        session_dir = os.path.join(self.env.base_path, 'TestOne')
         assert_true(
             os.path.isdir(
                 os.path.join(self.env.base_path, 'SimpleScript.out.d')
@@ -89,10 +91,21 @@ architecture = x86_64
             )
 
         assert_true(
-            os.path.isdir(
-                os.path.join(self.env.base_path, 'TestOne.jobs')
+            os.path.isdir(session_dir)
+            )
+
+        assert_true(
+            os.path.isfile(
+                os.path.join(session_dir, gc3libs.session.Session.INDEX_FILENAME, )
                 )
             )
+
+        assert_true(
+            os.path.isfile(
+                os.path.join(session_dir, gc3libs.session.Session.STORE_URL_FILENAME, )
+                )
+            )
+
 
 ## main: run tests
 

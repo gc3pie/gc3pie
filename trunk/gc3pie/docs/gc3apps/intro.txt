@@ -173,6 +173,29 @@ This set of options control the placement and contents of the :term:`session`.
     afresh. Any information about jobs previously recorded
     in the session is lost.
 
+  -u, --store-url URL
+    
+    Store GC3Pie job information at the persistent storage specified
+    by *URL*.  The *URL* can be any form that is understood by the
+    `gc3libs.persistence.make_store`:func: function (which see for
+    details).  A few examples:
+
+    * `sqlite`:file: -- the jobs are stored in a SQLite3 database
+      named ``jobs.db`` and contained in the session directory.
+    * `{/path/to/a/directory}`:file: -- the jobs are stored in the given
+      directory, one file per job (this is the default format used by
+      GC3Pie)
+    * `sqlite:////{path/to/a/file.db}`:file: -- the jobs are stored in
+      the given SQLite3 database file.
+    * `mysql://user,passwd@{server}/{dbname}`:file: -- jobs are stored
+      in table ``store`` of the specified MySQL database.  The DB
+      server and connection credentials (username, password) are also
+      part of the *URL*.
+
+    If this option is omitted, GC3Pie's *SessionBasedScript* defaults
+    to storing jobs in the subdirectory `jobs`:file: of the session
+    directory; each job is saved in a separate file.
+
 
 Exit code
 ---------

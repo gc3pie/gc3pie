@@ -67,6 +67,7 @@ import gc3libs.exceptions
 import gc3libs.persistence
 import gc3libs.utils
 import gc3libs.url
+from gc3libs.session import Session
 
 
 ## types for command-line parsing; see
@@ -290,15 +291,15 @@ class _Script(cli.app.CommandLineApp):
 
         The help text to be printed when the script is invoked with the
         ``-h``/``--help`` option will be taken from (in order of preference):
-          * the keyword argument `description`
-          * the attribute `self.description`
+          * the keyword argument `description`;
+          * the attribute `self.description`.
         If neither is provided, an `AssertionError` is raised.
 
         The text to output when the the script is invoked with the
         ``-V``/``--version`` options is taken from (in order of
         preference):
-          * the keyword argument `version`
-          * the attribute `self.version`
+          * the keyword argument `version`;
+          * the attribute `self.version`.
         If none of these is provided, an `AssertionError` is raised.
 
         The `usage` keyword argument (if provided) will be used to
@@ -309,10 +310,6 @@ class _Script(cli.app.CommandLineApp):
         Any additional keyword argument will be used to set a
         corresponding instance attribute on this Python object.
 
-        XXX: version if not documented to be a required attribute
-        XXX: why description and version are not declared as argument to be
-        passed to the __init__ method even if they are treated as compulsory
-        arguments ?
         """
         # use keyword arguments to set additional instance attrs
         for k, v in kw.items():
@@ -369,13 +366,19 @@ class _Script(cli.app.CommandLineApp):
         ## setup of base classes
         cli.app.CommandLineApp.setup(self)
 
-        self.add_param("-v",
-                       "--verbose",
+        self.add_param("-v", "--verbose",
                        action="count",
                        dest="verbose",
                        default=0,
-                       help="Print more detailed (debugging) information about the program's activity."
-                       "The verbosity of the output can be controlled by adding/removing 'v' characters."
+                       help="Print more detailed information about the program's activity."
+                       " Increase verbosity each time this option is encountered on the"
+                       " command line."
+                       )
+
+        self.add_param("--config-files",
+                       action="store",
+                       default=str.join(',', gc3libs.Default.CONFIG_FILE_LOCATIONS),
+                       help="Comma separated list of configuration files",
                        )
 
         self.add_param("--config-files",
@@ -520,7 +523,7 @@ class _Script(cli.app.CommandLineApp):
             self.log.debug('Creating instance of Core ...')
             cfg = gc3libs.config.Configuration(
                 *config_file_locations,
-                auto_enable_auth=auto_enable_auth)
+                **{'auto_enable_auth': auto_enable_auth})
             return gc3libs.core.Core(cfg)
         except gc3libs.exceptions.NoResources:
             raise gc3libs.exceptions.FatalError(
@@ -630,16 +633,6 @@ class GC3UtilsScript(_Script):
         ## base class parses command-line
         _Script.pre_run(self)
 
-        jobs_dir = self.params.session
-        if jobs_dir != gc3libs.Default.JOBS_DIR:
-            if (not os.path.isdir(jobs_dir)
-                and not jobs_dir.endswith('.jobs')):
-                jobs_dir = jobs_dir + '.jobs'
-        self._store = gc3libs.persistence.make_store(
-            jobs_dir,
-            idfactory=gc3libs.persistence.JobIdFactory()
-            )
-
     ##
     ## INTERNAL METHODS
     ##
@@ -662,7 +655,7 @@ class GC3UtilsScript(_Script):
         """
         for jobid in job_ids:
             try:
-                yield self._store.load(jobid)
+                yield self.session.load(jobid)
             except Exception, ex:
                 if ignore_failures:
                     gc3libs.log.error("Could not retrieve job '%s' (%s: %s). Ignoring.",
@@ -787,15 +780,15 @@ class SessionBasedScript(_Script):
 
     def process_args(self):
         """
-        Process command-line positional arguments and set up
-        `tasks`:attr: accordingly.  In particular, new jobs should be
-        appended to `tasks`:attr: in this method: `self.tasks` is not
-        altered elsewhere.
+        Process command-line positional arguments and set up the
+        session accordingly.  In particular, new jobs should be added
+        to the session during the execution of this method: additions
+        are not contemplated elsewhere.
 
         This method is called by the standard `_main`:meth: after
-        loading existing tasks into `self.tasks`.  New jobs should be
-        appended to `self.tasks` and it is also permitted to remove
-        existing ones.
+        loading or creating a session into `self.session`.  New jobs
+        should be appended to `self.session` and it is also permitted to
+        remove existing ones.
 
         The default implementation calls `new_tasks`:meth: and adds to
         the session all jobs whose name does not clash with the
@@ -807,11 +800,15 @@ class SessionBasedScript(_Script):
         new_jobs = list(self.new_tasks(self.extra))
         # pre-allocate Job IDs
         if len(new_jobs) > 0:
-            if hasattr(self.store, 'idfactory'):
-                self.store.idfactory.reserve(len(new_jobs))
+            # XXX: can't we just make `reserve` part of the `IdFactory` contract?
+            try:
+                self.session.store.idfactory.reserve(len(new_jobs))
+            except AttributeError:
+                # no `idfactory`, ignore
+                pass
 
         # add new jobs to the session
-        existing_job_names = set(task.jobname for task in self.tasks)
+        existing_job_names = self.session.list_names()
         random.seed()
         for jobname, cls, args, kwargs in new_jobs:
             #self.log.debug("SessionBasedScript.process_args():"
@@ -832,8 +829,8 @@ class SessionBasedScript(_Script):
             # create a new `Application` object
             try:
                 app = cls(*args, **kwargs)
-                self.tasks.append(app)
-                self.log.debug("Added job '%s' to session." % jobname)
+                self.session.add(app, flush=False)
+                self.log.debug("Added task '%s' to session." % jobname)
             except Exception, ex:
                 self.log.error("Could not create job '%s': %s."
                                % (jobname, str(ex)), exc_info=__debug__)
@@ -907,14 +904,13 @@ class SessionBasedScript(_Script):
         following instance attributes are already defined:
 
         * `self._core`: a `gc3libs.core.Core` instance;
-        * `self.tasks`: the list of `Task` instances to manage;
-        * `self.store`: the `gc3libs.persistence.Store` instance
+        * `self.session`: the `gc3libs.session.Session` instance
           that should be used to save/load jobs
 
         In addition, any other attribute created during initialization
         and command-line parsing is of course available.
         """
-        return gc3libs.core.Engine(self._core, self.tasks, self.store,
+        return gc3libs.core.Engine(self._core, self.session, self.session.store,
                                    max_submitted=self.params.max_running,
                                    max_in_flight=self.params.max_running)
 
@@ -978,7 +974,7 @@ class SessionBasedScript(_Script):
         table.add_rows([
             (task.persistent_id, task.jobname,
              task.execution.state, task.execution.info)
-            for task in self.tasks
+            for task in self.session
             if isinstance(task, only) and task.execution.in_state(*states)],
                        header=False)
         # XXX: uses texttable's internal implementation detail
@@ -1032,11 +1028,14 @@ class SessionBasedScript(_Script):
     ## the pyCLI docs before :-)
     ##
 
-    # XXX: please explain this.
+    # safeguard against programming errors: if the `application` ctor
+    # parameter has not been given to the constructor, the following
+    # method raises a fatal error (this function simulates a class ctor)
     def __unset_application_cls(*args, **kwargs):
         """Raise an error if users did not set `application` in
         `SessionBasedScript` initialization."""
-        raise gc3libs.exceptions.Error("PLEASE SET `application` in `SessionBasedScript` CONSTRUCTOR")
+        raise gc3libs.exceptions.InvalidArgument(
+            "PLEASE SET `application` in `SessionBasedScript` CONSTRUCTOR")
 
     def __init__(self, **kw):
         """
@@ -1064,14 +1063,14 @@ class SessionBasedScript(_Script):
         Any additional keyword argument will be used to set a
         corresponding instance attribute on this Python object.
         """
-        self.tasks = []
+        self.session = None
         self.stats_only_for = None  # by default, print stats of all kind of jobs
         self.instances_per_file = 1
         self.instances_per_job = 1
         self.extra = {}  # extra kw arguments passed to `parse_args`
         # use bogus values that should point ppl to the right place
         self.input_filename_pattern = 'PLEASE SET `input_filename_pattern` IN `SessionBasedScript` CONSTRUCTOR'
-        # XXX: what does the following call is for ?
+        # catch omission of mandatory `application` ctor param (see above)
         self.application = SessionBasedScript.__unset_application_cls
         ## init base classes
         _Script.__init__(
@@ -1128,6 +1127,10 @@ class SessionBasedScript(_Script):
                        " named after PATH with a suffix '.jobs' appended, and the index file"
                        " will be named after PATH with a suffix '.csv' added."
                        )
+        self.add_param("-u", "--store-url",
+                       action="store",
+                       metavar="URL",
+                       help="URL of the persistent store to use.")
         self.add_param("-N", "--new-session", dest="new_session", action="store_true", default=False,
                        help="Discard any information saved in the session directory (see '--session' option)"
                        " and start a new session afresh.  Any information about previous jobs is lost.")
@@ -1198,26 +1201,12 @@ class SessionBasedScript(_Script):
 
         ## determine the session file name (and possibly create an empty index)
         self.session_uri = gc3libs.url.Url(self.params.session)
+        if self.params.store_url == 'sqlite':
+            self.params.store_url = ("sqlite://%s/jobs.db" % self.session_uri.path)
+        self.session = self._make_session(self.session_uri.path, self.params.store_url)
 
-        _path = self.session_uri.path
-        if (os.path.exists(_path)
-             and os.path.isdir(_path)):
-            self.session_dirname = os.path.realpath(_path)
-            self.session_filename = os.path.join(_path, 'index.csv')
-        else:
-            if _path.endswith('.jobs'):
-                _path = _path[:-5]
-            elif _path.endswith('.csv'):
-                _path = _path[:-4]
-            elif _path.endswith('.db'):
-                _path = _path[:-3]
-
-            self.session_dirname = _path + '.jobs'
-            self.session_filename = _path + '.csv'
-
-        if self.session_uri.scheme == 'file':
-            self.session_uri = gc3libs.url.Url(self.session_dirname)
-        self._core.auths.add_params(private_copy_directory=self.session_dirname)
+        ## keep a copy of the credentials in the session dir
+        self._core.auths.add_params(private_copy_directory=self.session.path)
 
         # XXX: ARClib errors out if the download directory already exists, so
         # we need to make sure that each job downloads results in a new one.
@@ -1237,6 +1226,21 @@ class SessionBasedScript(_Script):
     ## overridden and customized in derived classes, although there
     ## should be no need to do so.
     ##
+    def _make_session(self, session_uri, store_url):
+        """
+        Return a `gc3libs.session.Session` instance for use in this script.
+
+        Override in subclasses to provide a specialized session.  For
+        instance, if you need to add extra fields to a SQL/DB store,
+        this is the place to do it.
+
+        The arguments are exactly as in the `gc3libs.session.Session`
+        constructor (which see), but this method is free to modify the
+        passed parameters or add new ones, as long as the returned
+        object implements the `Session` interface.
+        """
+        return Session(session_uri, store_url)
+
     def _main(self, *args):
         """
         Implementation of the main logic in the `SessionBasedScript`.
@@ -1246,33 +1250,17 @@ class SessionBasedScript(_Script):
         :meth:`process_args`, :meth:`parse_args`, :meth:`setup_args`.
         """
 
-        ## create a `persistence.Store` instance to
-        ## _save_session/_load_session jobs
-        self.store = gc3libs.persistence.make_store(
-            self.session_uri,
-            idfactory=gc3libs.persistence.JobIdFactory()
-            )
-
         ## zero out the session index if `-N` was given
-        if self.params.new_session \
-               or not os.path.exists(self.session_filename):
-            # XXX: we should abort existing jobs here...
-            open(self.session_filename, 'w+b').close()
-
-        ## load the session index file
-        try:
-            self._load_session(self.session_filename, self.store)
-        except IOError, ex:
-            self.log.critical("Cannot open session index file '%s' in read+write mode: %s."
-                              " Aborting." % (self.session_filename, str(ex)))
-            return 1
+        if self.params.new_session:
+            for jobid in self.session.list():
+                self.session.remove(jobid)
 
         ## update session based on command-line args
         self.process_args()
 
         # save the session list immediately, so newly added jobs will
         # be in it if the script is stopped here
-        self._save_session(self.store)
+        self.session.save_all()
 
         # obey the ``-r`` command-line option
         if self.params.resource_name:
@@ -1304,7 +1292,7 @@ class SessionBasedScript(_Script):
 
         # save the session again before exiting, so the file reflects
         # jobs' statuses
-        self._save_session()
+        self.session.save_all()
 
         # XXX: shall we call the termination on the controller here ?
         # or rather as a post_run method in the SessionBasedScript ?
@@ -1375,64 +1363,6 @@ class SessionBasedScript(_Script):
         if stats[gc3libs.Run.State.NEW] > 0:
             rc |= 8
         return rc
-
-    def _load_session(self, session_filename, store):
-        """
-        Load all jobs from a previously-saved session file into `self.tasks`.
-        The `session_file` argument can be any file-like object suitable
-        for passing to Python's stdlib `csv.DictReader`.
-        """
-        if not os.path.exists(session_filename):
-            # try older copy, if present
-            if os.path.exists(session_filename + '.OLD'):
-                session_filename += '.OLD'
-            else:
-                raise IOError(2,
-                              "No such file or directory: '%s'" %
-                              session_filename)
-        session_file = open(session_filename, 'r+b')
-        for row in csv.DictReader(session_file,
-                                  ['jobname',
-                                   'persistent_id',
-                                   'state',
-                                   'info']):
-            row['jobname'] = row['jobname'].strip()
-            row['persistent_id'] = row['persistent_id'].strip()
-            if (row['jobname'] == '' or row['persistent_id'] == ''):
-                # invalid row, skip
-                continue
-            # resurrect saved state
-            task = store.load(row['persistent_id'])
-            # append to this list
-            self.tasks.append(task)
-        session_file.close()
-
-    def _save_session(self, store=None):
-        """
-        Save tasks into a given session file.  The `session`
-        argument can be any file-like object suitable for passing to
-        Python's standard library `csv.DictWriter`.
-
-        If `store` is different from the default `None`, then each job
-        in the session is also saved to it.
-        """
-        # save to a temporary file
-        session_filename_new = self.session_filename + '.NEW'
-        try:
-            session_file = file(session_filename_new, "wb")
-            for task in self.tasks:
-                if store is not None:
-                    store.save(task)
-                csv.DictWriter(session_file,
-                               ['jobname', 'persistent_id', 'state', 'info'],
-                               extrasaction='ignore').writerow(task)
-            session_file.close()
-        except IOError, ex:
-            self.log.error("Cannot save job list to session file '%s': %s"
-                           % (self.params.session, str(ex)))
-        # move it to final location
-        os.rename(self.session_filename, self.session_filename + '.OLD')
-        os.rename(session_filename_new, self.session_filename)
 
     def _search_for_input_files(self, paths, pattern=None):
         """

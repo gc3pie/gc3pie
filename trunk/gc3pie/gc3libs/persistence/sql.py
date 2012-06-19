@@ -23,25 +23,176 @@ SQL-based storage of GC3pie objects.
 __docformat__ = 'reStructuredText'
 __version__ = '$Revision$'
 
-import copy
 
+# stdlib imports
+import copy
 import cPickle as pickle
 import cStringIO as StringIO
+import os
+
 import sqlalchemy as sqla
 import sqlalchemy.sql as sql
 
-
-from gc3libs.utils import same_docstring_as
+# GC3Pie interface
+from gc3libs import Task, Run
 import gc3libs.exceptions
-from gc3libs import Task
+import gc3libs.utils
+from gc3libs.utils import same_docstring_as, getattr_nested
 
-from store import Store, Persistable, register
-from idfactory import IdFactory
-from filesystem import  create_pickler, create_unpickler
+from gc3libs.persistence.idfactory import IdFactory
+from gc3libs.persistence.serialization import make_pickler, make_unpickler
+from gc3libs.persistence.store import Store, Persistable
 
 
-class DummyObject:
-    pass
+# tag object for catching the "no value passed" in `value_of` and
+# `value_at_index` (cannot use `None` as it's a legit value!)
+_none = object()
+
+
+def value_of(attr, xform=(lambda obj: obj), default=_none):
+    """
+    Return accessor function for the given attribute.
+
+    The return value of a call to `value_of` is a function that, given
+    any object, returns the value of its attribute `attr`::
+
+        >>> fn = value_of('x')
+        >>> a = gc3libs.utils.Struct(x=1, y=2)
+        >>> fn(a)
+        1
+
+    The returned accessor function raises `AttributeError` if no such
+    attribute exists)::
+
+        >>> b = gc3libs.utils.Struct(z=3)
+        >>> fn(b)
+        Traceback (most recent call last):
+           ...
+        AttributeError: 'Struct' object has no attribute 'x'
+
+    However, you can specify a default value, in which case the
+    default value is returned and no error is raised::
+
+        >>> fn = value_of('x', default=42)
+        >>> fn(b)
+        42
+        >>> fn = value_of('y', default=None)
+        >>> print(fn(b))
+        None
+
+    In other words, if `fn = value_of('x')`, then `fn(obj)` evaluates
+    to `obj.x`.
+
+    If the string `attr` contains any dots, then attribute lookups are
+    chained: if `fn = value_of('x.y')` then `fn(obj)` evaluates to
+    `obj.x.y`::
+
+        >>> fn = value_of('x.y')
+        >>> a = gc3libs.utils.Struct(x=gc3libs.utils.Struct(y=42))
+        >>> fn(a)
+        42
+
+    The optional second argument `xform` allows composing the accessor
+    with an arbitrary function that is passed an object and should
+    return a (possibly different) object whose attributes should be
+    looked up.  In other words, if `xform` is specified, then the
+    returned accessor function computes `xform(obj).attr` instead of
+    `obj.attr`.  For example::
+
+    This allows combining `value_of` with `value_at_index`:meth:
+    (which see), to access objects in deeply-nested data structures::
+
+        >>> c = [ {'x':'a'}, 2, 3.14 ]
+        >>> fn = value_of('__class__.__name__', value_at_index(0))
+        >>> fn(c)
+        'dict'
+
+    """
+    def fn(obj):
+        try:
+            return gc3libs.utils.getattr_nested(xform(obj), attr)
+        except AttributeError:
+            if default is not _none:
+                return default
+            else:
+                raise
+    return fn
+
+
+def value_at_index(idx, xform=(lambda obj: obj), default=_none):
+    """
+    Return accessor function for the given item in a sequence.
+
+    The return value of a call to `value_at_index` is a function that,
+    given any sequence/container object, returns the value of the item
+    at its place `idx`::
+
+        >>> fn = value_at_index(1)
+        >>> a = 'abc'
+        >>> fn(a)
+        'b'
+        >>> b = { 1:'x', 2:'y' }
+        >>> fn(b)
+        'x'
+
+    In other words, if `fn = value_at_index(x)`, then `fn(obj)` evaluates
+    to `obj[x]`.
+
+    Note that the returned function `fn` raises `IndexError` or `KeyError`,
+    depending on the type of sequence/container, if place `idx` does not
+    exist::
+
+        >>> fn = value_at_index(42)
+        >>> a = list('abc')
+        >>> fn(a)
+        Traceback (most recent call last):
+           ...
+        IndexError: list index out of range
+        >>> b = dict(x=1, y=2, z=3)
+        >>> fn(b)
+        Traceback (most recent call last):
+           ...
+        KeyError: 42
+
+    However, you can specify a default value as second argument, in
+    which case the default value is returned and no error is raised::
+
+        >>> fn = value_at_index(42, default='foo')
+        >>> fn(a)
+        'foo'
+        >>> fn(b)
+        'foo'
+
+    The optional second argument `xform` allows composing the accessor
+    with an arbitrary function that is passed an object and should
+    return a (possibly different) object where the item lookup should
+    be performed.  In other words, if `xform` is specified, then the
+    returned accessor function computes `xform(obj)[idx]` instead of
+    `obj[idx]`.  For example::
+
+        >>> c = 'abc'
+        >>> fn = value_at_index(1, xform=(lambda s: s.upper()))
+        >>> fn(c)
+        'B'
+
+        >>> c = (('a',1), ('b',2))
+        >>> fn = value_at_index('a', xform=dict)
+        >>> fn(c)
+        1
+
+
+    This allows combining `value_at_index` with `value_of`:meth:
+    (which see), to access objects in deeply-nested data structures.
+    """
+    def fn(obj):
+        try:
+            return xform(obj)[idx]
+        except (KeyError, IndexError):
+            if default is not _none:
+                return default
+            else:
+                raise
+    return fn
 
 
 def sql_next_id_factory(db):
@@ -122,12 +273,14 @@ class SqlStore(Store):
     The `extra_fields` argument is used to extend the database. It
     must contain a mapping `<column>` : `<function>` where:
 
-    `<column>` may be a `sqlalchemy.Column` object or string. If it is
-    a string the corresponding column will be a `BLOB`.
+    `<column>` is a `sqlalchemy.Column` object.
 
-    `<function>` is a function (or lambda) which accept the object as
-    argument and will return the value to be stored into the
-    database. Any exception raised by this function will be *ignored*.
+    `<function>` is a function which takes the object to be saved as
+    argument and returns the value to be stored into the database. Any
+    exception raised by this function will be *ignored*.  The
+    functions `value_of`:func: and `value_at_index`:func: in this
+    module provide convenient helpers to save object attributes into
+    table columns.
 
     For each extra column the `save()` method will call the
     corresponding `<function>` in order to get the correct value to
@@ -136,7 +289,7 @@ class SqlStore(Store):
     """
 
     def __init__(self, url, table_name="store", idfactory=None,
-                 extra_fields={}):
+                 extra_fields={}, create=True):
         """
         Open a connection to the storage database identified by
         url. It will use the correct backend (MySQL, psql, sqlite3)
@@ -146,58 +299,30 @@ class SqlStore(Store):
         self.table_name = table_name
 
         self.__meta = sqla.MetaData(bind=self.__engine)
-        self.__meta.reflect()
+
+        # create schema
+        table = sqla.Table(
+            self.table_name,
+            self.__meta,
+            sqla.Column('id',
+                        sqla.INTEGER(),
+                        primary_key=True, nullable=False),
+            sqla.Column('data',
+                        sqla.BLOB()),
+            sqla.Column('state',
+                        sqla.VARCHAR(length=128)))
 
         self.extra_fields = dict()
+        for col, func in extra_fields.iteritems():
+            assert isinstance(col, sqla.Column)
+            table.append_column(col.copy())
+            self.extra_fields[col.name] = func
 
+        current_metadata = sqla.MetaData(bind=self.__engine)
+        current_metadata.reflect()
         # check if the db exists and already has a 'store' table
-        if self.table_name not in self.__meta.tables:
-            # No table, let's create it
-            table = sqla.Table(
-                self.table_name,
-                self.__meta,
-                sqla.Column('id',
-                            sqla.INTEGER(),
-                            primary_key=True, nullable=False),
-                sqla.Column('data',
-                            sqla.BLOB()),
-                sqla.Column('state',
-                            sqla.VARCHAR(length=128))
-                )
-            for col, func in extra_fields.iteritems():
-                if isinstance(col, sqla.Column):
-                    table.append_column(col.copy())
-                    self.extra_fields[col.name] = func
-                else:
-                    table.append_column(sqla.Column(col, sqla.BLOB()))
-                    self.extra_fields[str(col)] = func
+        if create and self.table_name not in current_metadata.tables:
             self.__meta.create_all()
-
-        else:
-            # A 'store' table exists. Check the column names and fill
-            # `self.extra_fields` accordingly.
-
-            # NOTE: the "attr=colname" in the lambda definition is
-            # *needed*, since otherwise all the lambdas would share
-            # the same outer 'colname' reference, which is bound to
-            # the last `colname` value used in the loop...
-            self.extra_fields = dict()
-            for colname in self.__meta.tables[self.table_name].columns.keys():
-                colname = str(colname)
-                if colname in ('id', 'data', 'state'):
-                    continue
-                if colname in extra_fields:
-                    self.extra_fields[colname] = extra_fields[colname]
-                else:
-                    self.extra_fields[colname] = (lambda obj, attr=colname:
-                                                  getattr(obj, attr))
-
-            # check that it has all the required fields
-            if __debug__:
-                actual_fields = set(str(colname) for colname in self.__meta.tables[self.table_name].columns.keys())
-                expected_fields = set(['id', 'data']
-                                      + [str(col) for col in extra_fields.keys()])
-                assert expected_fields <= actual_fields
 
         self.t_store = self.__meta.tables[self.table_name]
 
@@ -216,24 +341,28 @@ class SqlStore(Store):
 
     @same_docstring_as(Store.replace)
     def replace(self, id_, obj):
-        self._save_or_replace(id_, obj, 'replace')
+        self._save_or_replace(id_, obj)
 
     # copied from FilesystemStore
     @same_docstring_as(Store.save)
     def save(self, obj):
         if not hasattr(obj, 'persistent_id'):
             obj.persistent_id = self.idfactory.new(obj)
-        return self._save_or_replace(obj.persistent_id, obj, 'save')
+        return self._save_or_replace(obj.persistent_id, obj)
 
-    def _save_or_replace(self, id_, obj, action):
+    def _save_or_replace(self, id_, obj):
         fields = {'id': id_}
+
         dstdata = StringIO.StringIO()
-        pickler = create_pickler(self, dstdata, obj)
+        pickler = make_pickler(self, dstdata, obj)
         pickler.dump(obj)
-        fields['data'] = dstdata.getvalue()        
-        fields['state'] = 'None'
-        if hasattr(obj, 'execution') and hasattr(obj.execution, 'state'):
+        fields['data'] = dstdata.getvalue()
+
+        try:
             fields['state'] = obj.execution.state
+        except AttributeError:
+            # If we cannot determine the state of a task, consider it UNKNOWN.
+            fields['state'] = Run.State.UNKNOWN
 
         # insert into db
         for column in self.extra_fields:
@@ -268,10 +397,10 @@ class SqlStore(Store):
         conn = self.__engine.connect()
         r = conn.execute(q)
         rawdata = r.fetchone()
-
         if not rawdata:
-            raise gc3libs.exceptions.LoadError("Unable to find object %d" % id_)
-        unpickler = create_unpickler(self, StringIO.StringIO(rawdata[0]))
+            raise gc3libs.exceptions.LoadError(
+                "Unable to find any object with ID '%s'" % id_)
+        unpickler = make_unpickler(self, StringIO.StringIO(rawdata[0]))
         obj = unpickler.load()
         conn.close()
 
@@ -297,28 +426,21 @@ def make_sqlstore(url, *args, **kw):
 
     Examples::
 
-      >>> ss1 = make_sqlstore(gc3libs.url.Url('sqlite:///tmp/foo.db'))
-      >>> ss1.__class__.__name__
-      'SqlStore'
+      | >>> ss1 = make_sqlstore(gc3libs.url.Url('sqlite:////tmp/foo.db'))
+      | >>> ss1.__class__.__name__
+      | 'SqlStore'
 
-    cleaning up tests
-
-      >>> import os
-      >>> os.remove('/tmp/foo.db')
     """
     assert isinstance(url, gc3libs.url.Url)
-    # rewrite ``sqlite`` URLs to be RFC compliant, see:
-    # http://code.google.com/p/gc3pie/issues/detail?id=261
-    if url.scheme in ('sqlite', 'file'):
+    if url.scheme == 'sqlite':
+        # create parent directories: avoid "OperationalError: unable to open database file None None"
+        dir = gc3libs.utils.dirname(url.path)
+        if not os.path.exists(dir):
+            os.makedirs(dir)
+        # rewrite ``sqlite`` URLs to be RFC compliant, see:
+        # http://code.google.com/p/gc3pie/issues/detail?id=261
         url = "%s://%s/%s" % (url.scheme, url.netloc, url.path)
     return SqlStore(str(url), *args, **kw)
-
-register('sqlite',     make_sqlstore)
-register('mysql',      make_sqlstore)
-register('postgresql', make_sqlstore)
-register('oracle',     make_sqlstore)
-register('mssql',      make_sqlstore)
-register('firebird',   make_sqlstore)
 
 
 ## main: run tests

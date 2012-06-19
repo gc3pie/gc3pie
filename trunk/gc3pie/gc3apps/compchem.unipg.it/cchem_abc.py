@@ -180,7 +180,7 @@ class ABCWorkflow(SessionBasedScript):
                 gc3libs.log.info("Creating input files for job '%s' ...", jobname)
                 gc3libs.utils.mkdir(jobname)
                 for path in self.input_files:
-                    template_text = gc3libs.utils.contents(path)
+                    template_text = gc3libs.utils.read_contents(path)
                     text = string.Template(template_text).safe_substitute(subst)
                     abc_input_filename = os.path.join(jobname, os.path.basename(path))
                     w = open(abc_input_filename, 'w')

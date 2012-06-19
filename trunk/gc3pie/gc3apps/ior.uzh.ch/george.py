@@ -535,7 +535,7 @@ class GeorgeScript(SessionBasedScript):
                 if hasattr(task, 'stats'):
                     add_stats(result, task.stats())
             return result
-        for toplevel in self.tasks:
+        for toplevel in self.session:
             current_iteration = toplevel._current_task
             total_iterations = toplevel.total_iterations
             if toplevel.slice_size == 0:

@@ -447,7 +447,7 @@ class Configuration(gc3libs.utils.Struct):
                     ]))
 
         try:
-            resobj = gc3libs.Resource.Resource(**resdict)
+            resobj = gc3libs.Resource.Resource(**dict(resdict))
         except Exception, err:
             raise gc3libs.exceptions.ConfigurationError(
                 "Could not create resource '%s': %s."
