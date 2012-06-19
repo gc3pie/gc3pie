@@ -30,11 +30,14 @@ __changelog__ = """
 __docformat__ = 'reStructuredText'
 
 
-# ugly workaround for Issue 95,
-# see: http://code.google.com/p/gc3pie/issues/detail?id=95
-if __name__ == "__main__":
+# run script, but allow GC3Pie persistence module to access classes defined here;
+# for details, see: http://code.google.com/p/gc3pie/issues/detail?id=95
+if __name__ == '__main__':
     import cchem_abc
+    cchem_abc.ABCWorkflow().run()
 
+
+# stdlib imports
 import itertools
 import os
 import os.path
@@ -97,7 +100,7 @@ class ABCWorkflow(SessionBasedScript):
                        " If MAX is 0, then retry until the jobs succeeds."
                        " By default, failed jobs are *not* retried.")
 
-        
+
     def parse_args(self):
         self.subst_names = [ ]
         self.subst_values = [ ]
@@ -192,13 +195,8 @@ class ABCWorkflow(SessionBasedScript):
                 if self.params.retry is not None:
                     yield (jobname, RetryableTask, [
                         jobname,
-                        cchem_abc.ABCApplication(*inputs, **kw),
+                        ABCApplication(*inputs, **kw),
                         self.params.retry,
                         ], kw)
                 else:
-                    yield (jobname, cchem_abc.ABCApplication, inputs, kw)
-
-
-# run script
-if __name__ == '__main__':
-    ABCWorkflow().run()
+                    yield (jobname, ABCApplication, inputs, kw)

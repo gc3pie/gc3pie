@@ -2,7 +2,7 @@
 #
 #   gcodeml.py -- Front-end script for submitting multiple CODEML jobs to SMSCG.
 #
-#   Copyright (C) 2010, 2011 GC3, University of Zurich
+#   Copyright (C) 2010-2012 GC3, University of Zurich
 #
 #   This program is free software: you can redistribute it and/or modify
 #   it under the terms of the GNU General Public License as published by
@@ -48,10 +48,12 @@ __author__ = 'Riccardo Murri <riccardo.murri@uzh.ch>'
 __docformat__ = 'reStructuredText'
 
 
-# workaround for Issue 95,
-# see: http://code.google.com/p/gc3pie/issues/detail?id=95
-if __name__ == "__main__":
+
+# run script, but allow GC3Pie persistence module to access classes defined here;
+# for details, see: http://code.google.com/p/gc3pie/issues/detail?id=95
+if __name__ == '__main__':
     import gcodeml
+    gcodeml.GCodemlScript().run()
 
 
 # std module imports
@@ -114,7 +116,7 @@ of newly-created jobs so that this limit is never exceeded.
             version = __version__, # module version == script version
             # `CodemlRetryPolicy` is the top-level object here,
             # so only print information about it.
-#            stats_only_for = gcodeml.CodemlRetryPolicy,
+#            stats_only_for = CodemlRetryPolicy,
              stats_only_for = gc3libs.application.codeml.CodemlApplication,
             )
 
@@ -128,7 +130,7 @@ of newly-created jobs so that this limit is never exceeded.
                        "(e.g., 'gsiftp://...')")
         self.add_param("-x", "--codeml-executable", metavar="PATH",
                        action="store", dest="codeml",
-                       type=executable_file, default=None, 
+                       type=executable_file, default=None,
                        help="Local path to the CODEML executable."
                        " By default, request the CODEML-4.4.3 run time tag"
                        " and use the remotely-provided application.")
@@ -153,7 +155,7 @@ of newly-created jobs so that this limit is never exceeded.
 
         input_dirs = set()
         total_n_ctl_files = 0
-        
+
         for path in self.params.args:
             self.log.debug("Now processing input argument '%s' ..." % path)
             if not os.path.isdir(path):
@@ -167,21 +169,21 @@ of newly-created jobs so that this limit is never exceeded.
 
         self.log.debug("Gathered input directories: '%s'"
                        % str.join("', '", input_dirs))
-        
+
         for dirpath in input_dirs:
             # gather control files; other input files are automatically
             # pulled in by CodemlApplication by parsing the '.ctl'
             ctl_files = [ os.path.join(dirpath, filename)
                           for filename in os.listdir(dirpath)
                           if filename.endswith('.ctl') ]
-           
+
             total_n_ctl_files += len(ctl_files) # AK: DEBUG
             # check if the dir contains exactly two control files (*.H0.ctl and *.H1.ctl)
             if len(ctl_files) != 2:
                 raise gc3libs.exceptions.InvalidUsage(
                     "The input directory '%s' must contain exactly two control files." % dirpath)
-                  
-            self.log.debug("Gathered control files: '%s':" % str.join("', '", ctl_files)) 
+
+            self.log.debug("Gathered control files: '%s':" % str.join("', '", ctl_files))
             # set optional arguments (path to 'codeml' binary, output URL, etc.)
             kwargs = extra.copy()
             if self.params.output_base_url != "":
@@ -210,7 +212,7 @@ of newly-created jobs so that this limit is never exceeded.
             # yield new job
             yield (
                 jobname, # unique string tagging this job; duplicate jobs are discarded
-                gcodeml.CodemlRetryPolicy, # the task constructor
+                CodemlRetryPolicy, # the task constructor
                 [ # the following parameters are passed to the
                     # `CodemlRetryPolicy` constructor:
                     jobname, # = name; used for display purposes
@@ -222,7 +224,3 @@ of newly-created jobs so that this limit is never exceeded.
                 )
 
         self.log.debug("Total number of control files: %d", total_n_ctl_files) # AK: DEBUG
-
-# run it
-if __name__ == '__main__':
-    GCodemlScript().run()

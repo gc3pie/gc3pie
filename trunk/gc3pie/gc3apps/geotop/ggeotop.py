@@ -52,10 +52,11 @@ __author__ = 'Riccardo Murri <riccardo.murri@uzh.ch>'
 __docformat__ = 'reStructuredText'
 
 
-# ugly workaround for Issue 95,
-# see: http://code.google.com/p/gc3pie/issues/detail?id=95
+# run script, but allow GC3Pie persistence module to access classes defined here;
+# for details, see: http://code.google.com/p/gc3pie/issues/detail?id=95
 if __name__ == "__main__":
     import ggeotop
+    GGeotopScript().run()
 
 
 # std module imports
@@ -94,18 +95,18 @@ class GeotopApplication(Application):
     # From GEOtop's "read me" file:
     #
     # RUNNING
-    # Run this simulation by calling the executable (GEOtop_1.223_static) 
+    # Run this simulation by calling the executable (GEOtop_1.223_static)
     # and giving the simulation directory as an argument.
-    # 
+    #
     # EXAMPLE
     # ls2:/group/geotop/sim/tmp/000001>./GEOtop_1.223_static ./
-    # 
+    #
     # TERMINATION OF SIMULATION BY GEOTOP
     # When GEOtop terminates due to an internal error, it mostly reports this
     # by writing a corresponding file (_FAILED_RUN or _FAILED_RUN.old) in the
     # simulation directory. When is terminates sucessfully this file is
     # named (_SUCCESSFUL_RUN or _SUCCESSFUL_RUN.old).
-    # 
+    #
     # RESTARTING SIMULATIONS THAT WERE TERMINATED BY THE SERVER
     # When a simulation is started again with the same arguments as described
     # above (RUNNING), then it continues from the last saving point. If
@@ -125,7 +126,7 @@ class GeotopApplication(Application):
                     gc3libs.log.error("Failed removing '%s': %s: %s",
                                       GEOTOP_INPUT_ARCHIVE, x.__class__, x.message)
                     pass
-        
+
             tar = tarfile.open(GEOTOP_INPUT_ARCHIVE, "w:gz", dereference=True)
             tar.add('./geotop.inpts')
             tar.add('./in')
@@ -140,7 +141,7 @@ class GeotopApplication(Application):
             tar.close()
             os.chdir(cwd)
             yield (tar.name, GEOTOP_INPUT_ARCHIVE)
-        except Exception, x:        
+        except Exception, x:
             gc3libs.log.error("Failed creating input archive '%s': %s: %s",
                               os.path.join(simulation_dir, GEOTOP_INPUT_ARCHIVE),
                               x.__class__,x.message)
@@ -220,7 +221,7 @@ class GeotopApplication(Application):
                 gc3libs.log.error("Error opening output archive '%s': %s: %s",
                                   full_tarname, ex.__class__, ex.message)
                 pass
-        
+
         tmp_output_dir = self.output_dir
         exclude = [
             os.path.basename(self.executable),
@@ -315,7 +316,7 @@ class GeotopTask(RetryableTask, gc3libs.utils.Struct):
 
 
 ## main script class
-            
+
 class GGeotopScript(SessionBasedScript):
     """
 Scan the specified INPUT directories recursively for simulation
@@ -342,12 +343,12 @@ newly-created jobs so that this limit is never exceeded.
         SessionBasedScript.__init__(
             self,
             version = __version__, # module version == script version
-            application = ggeotop.GeotopTask,
+            application = GeotopTask,
             # only display stats for the top-level policy objects
             # (which correspond to the processed files) omit counting
             # actual applications because their number varies over
             # time as checkpointing and re-submission takes place.
-            stats_only_for = ggeotop.GeotopTask,
+            stats_only_for = GeotopTask,
             )
 
     def setup_options(self):
@@ -386,7 +387,7 @@ newly-created jobs so that this limit is never exceeded.
                 # job name
                 gc3libs.utils.basename_sans(path),
                 # task constructor
-                ggeotop.GeotopTask,
+                GeotopTask,
                 [ # parameters passed to the constructor, see `GeotopTask.__init__`
                     path,                   # path to the directory containing input files
                     self.params.executable, # path to the GEOtop executable
@@ -428,8 +429,3 @@ newly-created jobs so that this limit is never exceeded.
             else:
                 gc3libs.log.warning("Ignoring input path '%s': not a directory.",
                                     path)
-
-# run it
-if __name__ == '__main__':
-    GGeotopScript().run()
-

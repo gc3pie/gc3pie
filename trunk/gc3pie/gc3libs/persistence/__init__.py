@@ -2,6 +2,36 @@
 #
 """
 Facade to store and retrieve Job information from permanent storage.
+
+A usage warning
+~~~~~~~~~~~~~~~
+
+This module saves Python objects using the `pickle` framework: thus,
+the `Application` subclass corresponding to a job must be already
+loaded (or at least ``import``-able) in the Python interpreter for
+`pickle` to be able to 'undump' the object from its on-disk
+representation.
+
+In other words, if you create a custom `Application` subclass in some
+client code, GC3Utils won't be able to read job files created by this
+code, because the class definition is not available in GC3Utils.
+
+The recommended simple workaround is for a stand-alone script to
+'import self' and then use the fully qualified name to run the script.
+In other words, start your script with this boilerplate code::
+
+    if __name__ == '__main__':
+        import myscriptname
+        myscriptname.MyScript().run()
+
+The rest of the script now runs as the ``myscript`` module, which does
+the trick!
+
+.. note::
+
+  Of course, the ``myscript.py`` file must be in the search path of
+  the Python interpreter, or GC3Utils will still complain!
+
 """
 # Copyright (C) 2009-2012 GC3, University of Zurich. All rights reserved.
 #

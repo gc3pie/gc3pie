@@ -4,7 +4,7 @@
 Driver script for running 'Value Function Iteration' programs
 on the SMSCG infrastructure.
 """
-# Copyright (C) 2011 GC3, University of Zurich. All rights reserved.
+# Copyright (C) 2011-2012 GC3, University of Zurich. All rights reserved.
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
@@ -31,12 +31,14 @@ __changelog__ = """
 __docformat__ = 'reStructuredText'
 
 
-# ugly workaround for Issue 95,
-# see: http://code.google.com/p/gc3pie/issues/detail?id=95
-if __name__ == "__main__":
+# run script, but allow GC3Pie persistence module to access classes defined here;
+# for details, see: http://code.google.com/p/gc3pie/issues/detail?id=95
+if __name__ == '__main__':
     import george
+    george.GeorgeScript().run()
 
 
+# stdlib imports
 import ConfigParser
 import csv
 import math
@@ -47,8 +49,7 @@ import sys
 from texttable import Texttable
 import types
 
-## interface to Gc3libs
-
+# interface to Gc3libs
 import gc3libs
 from gc3libs import Application, Run, Task
 from gc3libs.cmdline import SessionBasedScript, executable_file, nonnegative_int, positive_int
@@ -66,7 +67,7 @@ TMPDIR = '/tmp'
 # `self.params.iterations` passes, each pass corresponding to
 # an application of the `self.params.executable` function.
 #
-# This is the crucial point: 
+# This is the crucial point:
 
 class ValueFunctionIteration(SequentialTaskCollection):
     """
@@ -81,7 +82,7 @@ class ValueFunctionIteration(SequentialTaskCollection):
     which is a parallel collection of tasks, each of which is a
     single-core task executing the given program.
     """
-    
+
     def __init__(self, executable, initial_values_file,
                  total_iterations, slice_size=0,
                  output_dir=TMPDIR, grid=None, **kw):
@@ -101,7 +102,7 @@ class ValueFunctionIteration(SequentialTaskCollection):
         assert slice_size >= 0, \
                "Argument `slice_size` to ValueFunctionIteration.__init__" \
                " must be a non-negative integer."
-        
+
         # remember values for later use
         self.executable = executable
         self.initial_values = initial_values_file
@@ -241,12 +242,12 @@ class ValueFunctionIterationPass(ParallelTaskCollection):
         assert isinstance(extra, dict), \
                "Argument `extra` to ValueFunctionIterationPass.__init__" \
                " must be a dictionary instance."
-        
+
         self.input_values = input_values_file
         self.output_values = None
 
         total_input_values = _count_input_values(input_values_file)
-        
+
         if slice_size < 1:
             # trick to make the for-loop below work in the case of one
             # slice only
@@ -263,7 +264,7 @@ class ValueFunctionIterationPass(ParallelTaskCollection):
         datasubdir = os.path.join(datadir, self.jobname)
         if not os.path.exists(datasubdir):
             os.makedirs(datasubdir)
-            
+
         # build list of tasks
         tasks = [ ]
         for start in range(0, total_input_values, slice_size):
@@ -292,7 +293,7 @@ class ValueFunctionIterationPass(ParallelTaskCollection):
 
     def __str__(self):
         return self.jobname
-    
+
 
     def terminated(self):
         """
@@ -329,7 +330,7 @@ class ValueFunctionIterationApplication(Application):
     back, the list of output values is made available in the
     `self.output_values` attribute.
     """
-    
+
     def __init__(self, executable, input_values_file, iteration, total_iterations,
                  start=0, end=None, parent=None, **kw):
         count = _count_input_values(input_values_file)
@@ -392,7 +393,7 @@ class ValueFunctionIterationApplication(Application):
                 self.info = msg
                 self.exitcode = 74 # EX_IOERR in /usr/include/sysexits.h
             except Exception, ex:
-                msg = ("Error processing result file '%s': %s" 
+                msg = ("Error processing result file '%s': %s"
                        % (output_filename, str(ex)))
                 gc3libs.log.error("%s: %s" % (self.persistent_id, msg))
                 self.info = msg
@@ -432,7 +433,7 @@ class GeorgeScript(SessionBasedScript):
     Computation of the value function on a set of values is performed
     by a separate program ``vfi.exe``.  You can set an alternate path
     to the compute program using the ``-x`` command-line option.
-    
+
     The number P of iterations can be set with the ``-P`` command-line
     option.
     """
@@ -452,7 +453,7 @@ class GeorgeScript(SessionBasedScript):
                        dest='iterations', type=positive_int, default=1,
                        help="Compute NUM iterations per each output file"
                        " (default: %(default)s).")
-        self.add_param('-p', '--slice-size', metavar='NUM', 
+        self.add_param('-p', '--slice-size', metavar='NUM',
                        dest='slice_size', type=nonnegative_int, default=0,
                        help="Process at most NUM states in a single"
                        " computational job.  Each input file is chopped"
@@ -486,7 +487,7 @@ class GeorgeScript(SessionBasedScript):
             if filename not in successfully_read:
                 self.log.error("Could not read/parse input file '%s'. Ignoring it."
                                % filename)
-        
+
         for name in p.sections():
             # path to the initial values file
             if not p.has_option(name, 'initial_values_file'):
@@ -500,7 +501,7 @@ class GeorgeScript(SessionBasedScript):
                 self.log.error("Input values file '%s' does not exist."
                                " Ignoring task '%s', which depends on it."
                                % (path, name))
-                
+
             # import running parameters from cfg file
             kw = extra.copy()
             kw['jobname'] = name
@@ -511,7 +512,7 @@ class GeorgeScript(SessionBasedScript):
                 self.log.error("Could not read required parameter 'discount_factor'"
                                " in input '%s': %s"
                                % (name, str(ex)))
-        
+
             yield (name, george.ValueFunctionIteration, [
                 self.params.execute, path,
                 self.params.iterations,
@@ -562,15 +563,10 @@ class GeorgeScript(SessionBasedScript):
                                            % (100.0 * stats['ok'] / count,
                                               100.0 * stats['failed'] / count))
             table.add_row([
-                toplevel.jobname, 
+                toplevel.jobname,
                 "%d/%d" % (1+current_iteration, 1+total_iterations),
                 "%d/%d" % (generated_tasks, total_tasks),
                 str.join(", ", progresses)
                 ])
         output.write(table.draw())
         output.write("\n")
-
-
-# run script
-if __name__ == '__main__':
-    GeorgeScript().run()

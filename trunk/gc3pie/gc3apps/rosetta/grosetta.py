@@ -38,13 +38,20 @@ __changelog__ = """
 __author__ = 'Riccardo Murri <riccardo.murri@uzh.ch>'
 __docformat__ = 'reStructuredText'
 
+
+
+# workaround Issue 95, see: http://code.google.com/p/gc3pie/issues/detail?id=95
+if __name__ == '__main__':
+    import grosetta
+    grosetta.GRosettaScript().run()
+
+
+# stdlib imports
 import os
 import os.path
 import sys
 
-
-## interface to Gc3libs
-
+# interface to Gc3libs
 import gc3libs
 from gc3libs.application.rosetta import RosettaApplication
 from gc3libs.cmdline import SessionBasedScript, positive_int
@@ -64,7 +71,7 @@ The `grosetta` command keeps a record of jobs (submitted, executed and
 pending) in a session file (set name with the '-s' option); at each
 invocation of the command, the status of all recorded jobs is updated,
 output from finished jobs is collected, and a summary table of all
-known jobs is printed.  New jobs are added to the session if the number 
+known jobs is printed.  New jobs are added to the session if the number
 of wanted decoys (option '-P') is raised.
 
 Options can specify a maximum number of jobs that should be in
@@ -84,12 +91,12 @@ Note: the list of INPUT and OUTPUT files must be separated by ':'
             )
 
     def setup_options(self):
-        self.add_param("-P", "--total-decoys", dest="total_decoys", 
+        self.add_param("-P", "--total-decoys", dest="total_decoys",
                        type=positive_int, default=1,
                        metavar="NUM",
                        help="Compute NUM decoys per input file (default: %(default)s)."
                        )
-        self.add_param("-p", "--decoys-per-job", dest="decoys_per_job", 
+        self.add_param("-p", "--decoys-per-job", dest="decoys_per_job",
                        type=positive_int, default=1,
                        metavar="NUM",
                        help="Compute NUM decoys in a single job (default: %(default)s)."
@@ -174,12 +181,12 @@ Note: the list of INPUT and OUTPUT files must be separated by ':'
                               decoys, self.params.total_decoys - decoys)
             # create new jobs and add them to session
             for nr in range(decoys, self.params.total_decoys, self.params.decoys_per_job):
-                jobname = ("%d--%d" 
-                           % (nr, min(self.params.total_decoys, 
+                jobname = ("%d--%d"
+                           % (nr, min(self.params.total_decoys,
                                       nr + self.params.decoys_per_job - 1)))
                 # yield new job to construct to `self._main()`
                 yield (
-                    jobname, RosettaApplication, 
+                    jobname, RosettaApplication,
                     # args
                     (self.params.protocol, self.params.rosetta_release, self.inputs, self.outputs),
                     # kwargs
@@ -187,8 +194,3 @@ Note: the list of INPUT and OUTPUT files must be separated by ':'
                      'flags_file':self.flags_file,
                      },
                     )
-
-
-## run it
-if __name__ == '__main__':
-    GRosettaScript().run()

@@ -33,8 +33,8 @@ __changelog__ = """
 __docformat__ = 'reStructuredText'
 
 
-# the workaround for Issue 95,
-# see: http://code.google.com/p/gc3pie/issues/detail?id=95
+# run script, but allow GC3Pie persistence module to access classes defined here;
+# for details, see: http://code.google.com/p/gc3pie/issues/detail?id=95
 if __name__ == "__main__":
     import gridrun
     gridrun.GridRunScript().run()
@@ -144,7 +144,7 @@ to the remote system as the command to be executed.
                        " If MAX is 0, then retry until the jobs succeeds."
                        " By default, failed jobs are *not* retried.")
 
-        
+
     def parse_args(self):
         if self.params.retry is not None:
             self.stats_only_for = RetryableTask
@@ -209,7 +209,7 @@ to the remote system as the command to be executed.
         names = sorted(self.subst.iterkeys())
 
         inputs = { }
-        
+
         # decide whether CMD indicates a local file or a command
         # to be searched on the remote systems' PATH
         if os.path.exists(self.params.cmd):
