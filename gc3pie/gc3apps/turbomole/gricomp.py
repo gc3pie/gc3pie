@@ -4,7 +4,7 @@
 Driver script for running Turbomole basis benchmarks
 on the SMSCG infrastructure.
 """
-# Copyright (C) 2011 GC3, University of Zurich. All rights reserved.
+# Copyright (C) 2011-2012 GC3, University of Zurich. All rights reserved.
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
@@ -36,12 +36,13 @@ __changelog__ = """
 __docformat__ = 'reStructuredText'
 
 
-# ugly workaround for Issue 95,
-# see: http://code.google.com/p/gc3pie/issues/detail?id=95
+# workaround Issue 95, see: http://code.google.com/p/gc3pie/issues/detail?id=95
 if __name__ == "__main__":
     import gricomp
+    gricomp.GRICompScript().run()
 
 
+# stdlib imports
 import ConfigParser
 import csv
 import math
@@ -52,8 +53,7 @@ import sys
 from texttable import Texttable
 import types
 
-## interface to Gc3libs
-
+# interface to Gc3libs
 import gc3libs
 from gc3libs import Application, Run, Task
 from gc3libs.application.turbomole import TurbomoleApplication, TurbomoleDefineApplication
@@ -227,7 +227,7 @@ class XmlLintApplication(LocalApplication):
                 control_xml = os.path.join(turbomole_output_dir, filename)
                 break
         if control_xml is None:
-            raise ValueError("Cannot find a 'control_*.xml' file in directory '%s'" 
+            raise ValueError("Cannot find a 'control_*.xml' file in directory '%s'"
                              % turbomole_output_dir)
         gc3libs.Application.__init__(
             self,
@@ -235,7 +235,7 @@ class XmlLintApplication(LocalApplication):
             arguments = [ '--schema', schema, control_xml ],
             inputs = [ control_xml ],
             outputs = [ validation_log ],
-            output_dir = output_dir, 
+            output_dir = output_dir,
             stdout = None,
             stderr = validation_log,
             **kw)
@@ -260,7 +260,7 @@ class XmlDbApplication(LocalApplication):
                 control_xml = os.path.join(turbomole_output_dir, filename)
                 break
         if control_xml is None:
-            raise ValueError("Cannot find a 'control_*.xml' file in directory '%s'" 
+            raise ValueError("Cannot find a 'control_*.xml' file in directory '%s'"
                              % turbomole_output_dir)
         # pre-process control_*.xml to remove the 'xmlns' part,
         # which confuses eXist
@@ -273,11 +273,11 @@ class XmlDbApplication(LocalApplication):
             control_xml_file_out.write(line)
         control_xml_file_in.close()
         control_xml_file_out.close()
-        
+
         gc3libs.Application.__init__(
             self,
             executable='/opt/eXist/bin/client.sh',
-            arguments = [ 
+            arguments = [
                 '-u', db_user,
                 '-P', db_pass,
                 '-m', db_dir,
@@ -286,7 +286,7 @@ class XmlDbApplication(LocalApplication):
             ],
             inputs = [ control_xml ],
             outputs = [ db_log ],
-            output_dir = output_dir, 
+            output_dir = output_dir,
             stdout = db_log,
             stderr = db_log,
             join=True,
@@ -367,7 +367,7 @@ class BasisSweepPasses(StagedTaskCollection):
 
         :param str work_dir: Path to a directory where input files and
         results will be stored.
-    
+
         """
         # need to remove this, we override it both in pass1 and pass2
         if kw.has_key('output_dir'):
@@ -375,7 +375,7 @@ class BasisSweepPasses(StagedTaskCollection):
         # remember for later
         self.orb_basis = ridft_in._keywords['ORB_BASIS']
         self.rijk_basis = ridft_in._keywords['RIJK_BASIS']
-        self.work_dir = os.path.join(work_dir, 'bas-%s/jkbas-%s' 
+        self.work_dir = os.path.join(work_dir, 'bas-%s/jkbas-%s'
                                      % (self.orb_basis, self.rijk_basis))
         self.name = name
         self.coord = coord
@@ -503,12 +503,12 @@ class BasisSweep(ParallelTaskCollection):
     :param list jkbases: Names of the RIJK bases to sweep.
 
     :param list cbases: Values for TURBOMOLE's `cbas` parameter to sweep.
-    
+
     :param list cabses: Values for TURBOMOLE's `cabs` parameter to sweep.
 
     :param str work_dir: Path to a directory where input files and
         results will be stored.
-    
+
     :param func valid1: A function taking a pair (orbital basis, jk
         basis) and returning `True` iff that combination is valid and
         should be analyzed.
@@ -517,7 +517,7 @@ class BasisSweep(ParallelTaskCollection):
         returning `True` iff that combination is valid and should be
         analyzed.
     """
-    
+
     def __init__(self, title, coord, bases, jkbases, cbases, cabses, work_dir,
                  valid1=acceptable_ridft_basis_set,
                  valid2=acceptable_ricc2_basis_set,
@@ -527,7 +527,7 @@ class BasisSweep(ParallelTaskCollection):
         for each accepted combination of orbital and RIJK basis.
         """
         kw.setdefault('memory', 2000) # XXX: check with `requested_memory`
-        
+
         ridft_define_in = Template(
             RIDFT_DEFINE_IN, valid1,
             TITLE=title,
@@ -554,7 +554,7 @@ class BasisSweep(ParallelTaskCollection):
                                     ORB_BASIS=orb_basis)),
                     work_dir, **kw))
         ParallelTaskCollection.__init__(self, title, tasks, grid)
-            
+
 
 ## main
 
@@ -660,8 +660,3 @@ controlled with the ``--bas``, ``--jkbas``, ``--cbas`` and
                        self.make_directory_path(self.params.output, name),
                        ],
                    {})
-
-
-# run script
-if __name__ == '__main__':
-    GRICompScript().run()

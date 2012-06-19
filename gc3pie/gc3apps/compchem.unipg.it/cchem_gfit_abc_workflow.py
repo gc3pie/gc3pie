@@ -13,12 +13,17 @@ __changelog__ = """
 __docformat__ = 'reStructuredText'
 
 
+# run script, but allow GC3Pie persistence module to access classes defined here;
+# for details, see: http://code.google.com/p/gc3pie/issues/detail?id=95
+if __name__ == '__main__':
+    import cchem_gfit_abc_workflow
+    cchem_gfit_abc_workflow.ABC_Workflow().run()
+
+
+# stdlib imports
 import os
 import os.path
 import sys
-
-#CCHEM
-import cchem_gfit_abc_workflow
 
 ## interface to Gc3libs
 import gc3libs
@@ -44,27 +49,27 @@ ABC_RUN="/home/acostantini/workflow/script/abc.sh"
 #
 class MainSequentialABC(SequentialTaskCollection):
         def __init__(self, name, ABC_UML_IMAGE, output, g3cfile, dimensions, fortran_pes, inputfilelist_abc, grid=None, **kw):
-        
+
                 self.inputfilelist_abc = inputfilelist_abc
                 self.output_folder = output
                 self.kw = kw
                 self.name = name
                 self.grid = grid
 # first step --> __init__ source compiling
-                
+
                 first_task = Gfit3C_ABC_uml_Application(abc_uml_image_file=ABC_UML_IMAGE, output_folder=output, g3c_input_file=g3cfile, dimension_file=dimensions, surface_file=fortran_pes, **kw)
                 SequentialTaskCollection.__init__(self, name, [first_task], grid)
 
 # second step --> __init__ ABC execution (parallel)
 
         def next(self, done):
-                
+
                 if done == 0:
 
                         first_task = self.tasks[done]
 
                         abc_executable = os.path.join(first_task.output_dir, "abc.x") #first_task.outputs["abc.x"].path)
- 
+
                         second_task = ParallelABC(ABC_RUN, abc_executable, self.inputfilelist_abc, first_task.output_dir, self.grid, **self.kw)
                         self.add(second_task)
                         return Run.State.RUNNING
@@ -86,7 +91,7 @@ class ParallelABC(ParallelTaskCollection):
                         name = "ABC_execution_" + os.path.basename(input_file)
 
                         parallel_task.append(ABC_Application(executable, abc_executable, input_file, output_folder, **kw))
-                
+
                 ParallelTaskCollection.__init__(self, name, parallel_task, grid)
 
         def terminated(self):
@@ -124,7 +129,7 @@ class Gfit3C_ABC_uml_Application(Application):
                                         executable = "$APPPOT_STARTUP",
                                         arguments = ["--apppot", "abc.cow,abc.img"],
                                         inputs = inputs,
-                                        outputs = [ ("abc.x", "abc."+abc_prefix), (os.path.basename(abc_prefix).split(".g3c")[0]+"_log.tgz", 
+                                        outputs = [ ("abc.x", "abc."+abc_prefix), (os.path.basename(abc_prefix).split(".g3c")[0]+"_log.tgz",
                                         os.path.basename(abc_prefix).split(".g3c")[0]+"_log.tgz")],
                                         join = True,
                                         stdout = os.path.basename(abc_prefix).split(".g3c")[0]+".log",
@@ -154,7 +159,7 @@ class ABC_Application(Application):
                                 inputs = [(abc_executable, os.path.basename(abc_executable)), (input_file, os.path.basename(input_file)), (executable, os.path.basename(executable))],
                                 outputs = [],
                                 # output_dir = os.path.join(output_folder,os.path.basename(input_file)),
-                                join = True,                                    
+                                join = True,
                                 stdout = os.path.basename(input_file)+".out",
                                 **kw
                                 )
@@ -187,7 +192,7 @@ class ABC_Workflow(SessionBasedScript):
 
 
     def setup_options(self):
-        
+
 # inputs file definitions
         self.add_param("--g3c",
                        action="store", dest="g3cfile",
@@ -224,34 +229,34 @@ class ABC_Workflow(SessionBasedScript):
 # inizializzo la lista di files
 
          self.inputfilelist_abc = self._search_for_input_files([self.inputfolder_abc])
-         
 
-# dimensions+gc3file --> compiling gfit + abc 
+
+# dimensions+gc3file --> compiling gfit + abc
          if self.params.dimensions and self.params.g3cfile:
              name = "Gfit3C_"+str(os.path.basename(self.params.g3cfile))
              #self.real_outputfolder = self.make_directory_path(self.params.output, name)
 # yield for MainSequential_ABC
-             yield (name, cchem_gfit_abc_workflow.MainSequentialABC, [
+             yield (name, MainSequentialABC, [
                      name,
-                     cchem_gfit_abc_workflow.ABC_UML_IMAGE,
+                     ABC_UML_IMAGE,
                      #self.apppot_run,
-                     #cchem_gfit_abc_workflow.ABC_APPOTRUN,
+                     #ABC_APPOTRUN,
                      self.params.output,
                      self.params.g3cfile,
                      self.params.dimensions,
                      self.params.fortran_pes,
                      self.inputfilelist_abc,
                      ], kw) # MainSequentialABC(ABC_URL_IMAGE, self.apppot_run, self.params.out, ..., **kw)
-          
+
 # pes file --> compiling abc
 #         elif self.params.fortran_pes:
 #             name = "ABC_"+str(os.path.basename(self.params.fortran_pes))
 # yield for MainSequential_ABC
-#             yield (name, cchem_gfit_abc_workflow.MainSequentialABC, [
+#             yield (name, MainSequentialABC, [
 #                     name,
-#                    cchem_gfit_abc_workflow.ABC_UML_IMAGE,
+#                    ABC_UML_IMAGE,
 #                    #self.apppot_run,
-#                     #cchem_gfit_abc_workflow.ABC_APPOTRUN,
+#                     #ABC_APPOTRUN,
 #                     self.params.output,
 #                    self.params.g3cfile,
 #                    self.params.dimensions,
@@ -261,9 +266,9 @@ class ABC_Workflow(SessionBasedScript):
 # abc executable --> abc execution in parallel
          elif self.params.abc_exec:
              name = "ABC_execution_"+str(os.path.basename(self.params.abc_exec))
-# yield for ParallelABC 
-             yield (name, cchem_gfit_abc_workflow.ParallelABC, [
-                     cchem_gfit_abc_workflow.ABC_RUN,
+# yield for ParallelABC
+             yield (name, ParallelABC, [
+                     ABC_RUN,
                      self.params.abc_exec,
                      self.inputfilelist_abc,
                      os.path.join(self.params.output, os.path.basename(self.params.abc_exec)),
@@ -272,7 +277,3 @@ class ABC_Workflow(SessionBasedScript):
          else :
                 raise gc3libs.exceptions.InvalidUsage("Invalid use of the command line")
 #######################################################################################
-
-# run script
-if __name__ == '__main__':
-    ABC_Workflow().run()

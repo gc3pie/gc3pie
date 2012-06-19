@@ -2,7 +2,7 @@
 #
 """
 """
-# Copyright (C) 2011 GC3, University of Zurich. All rights reserved.
+# Copyright (C) 2011-2012 GC3, University of Zurich. All rights reserved.
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
@@ -28,18 +28,19 @@ __changelog__ = """
 __docformat__ = 'reStructuredText'
 
 
-# ugly workaround for Issue 95,
-# see: http://code.google.com/p/gc3pie/issues/detail?id=95
-#if __name__ == "__main__":
-#    import cchem_abc
+# run script, but allow GC3Pie persistence module to access classes defined here;
+# for details, see: http://code.google.com/p/gc3pie/issues/detail?id=95
+if __name__ == '__main__':
+    import cchem_abc_uml
+    cchem_abc_uml.ABC_uml_Workflow().run()
 
+
+# stdlib imports
 import os
 import os.path
 import sys
 
-import cchem_abc_uml
-
-## interface to Gc3libs
+# interface to Gc3libs
 import gc3libs
 from gc3libs import Application, Run, Task
 from gc3libs.cmdline import SessionBasedScript, _Script, existing_file
@@ -153,8 +154,8 @@ class ABC_uml_Workflow(SessionBasedScript):
              #     def __init__(self, abc_uml_image_file, abc_apppotrun_file, output_folder, g3c_input_file=None, dimension_file=None, surface_file=None, **kw):
              name = "Gfit3C_"+str(os.path.basename(self.params.g3cfile))
 
-             yield (name, cchem_abc_uml.Gfit3C_ABC_uml_Application, [
-                     cchem_abc_uml.ABC_UML_IMAGE,
+             yield (name, Gfit3C_ABC_uml_Application, [
+                     ABC_UML_IMAGE,
                      self.apppot_run,
                      self.params.output,
                      self.params.g3cfile,
@@ -172,13 +173,9 @@ class ABC_uml_Workflow(SessionBasedScript):
 
          #     gc3libs.log.info("Calling ABCWorkflow.next_tastk() for param [%s] ... " % path)
 
-         #     yield (name, cchem_abc_uml.Gfit3C_ABC_uml_Application, [
-         #             cchem_abc_uml.EXECUTABLE,
-         #             cchem_abc_uml.ABC_EXECUTABLE,
+         #     yield (name, Gfit3C_ABC_uml_Application, [
+         #             EXECUTABLE,
+         #             ABC_EXECUTABLE,
          #             path,
          #             self.params.output,
          #             ], kw)
-
-# run script
-if __name__ == '__main__':
-    ABC_uml_Workflow().run()

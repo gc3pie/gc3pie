@@ -2,7 +2,7 @@
 #
 #   gmhc_coev.py -- Front-end script for submitting multiple `MHC_coev` jobs to SMSCG.
 #
-#   Copyright (C) 2011 GC3, University of Zurich
+#   Copyright (C) 2011-2012 GC3, University of Zurich
 #
 #   This program is free software: you can redistribute it and/or modify
 #   it under the terms of the GNU General Public License as published by
@@ -27,7 +27,7 @@ __version__ = 'development version (SVN $Revision$)'
 # summary of user-visible changes
 __changelog__ = """
   2011-07-22:
-    * Use the ``APPS/BIO/MHC_COEV-040711`` run time tag to select execution sites. 
+    * Use the ``APPS/BIO/MHC_COEV-040711`` run time tag to select execution sites.
   2011-06-15:
     * Initial release, forked off the ``ggamess`` sources.
 """
@@ -35,10 +35,11 @@ __author__ = 'Riccardo Murri <riccardo.murri@uzh.ch>'
 __docformat__ = 'reStructuredText'
 
 
-# ugly workaround for Issue 95,
-# see: http://code.google.com/p/gc3pie/issues/detail?id=95
-if __name__ == "__main__":
+# run script, but allow GC3Pie persistence module to access classes defined here;
+# for details, see: http://code.google.com/p/gc3pie/issues/detail?id=95
+if __name__ == '__main__':
     import gmhc_coev
+    gmhc_coev.GMhcCoevScript().run()
 
 
 # std module imports
@@ -96,7 +97,7 @@ class GMhcCoevApplication(Application):
                                  # the MatLab workspace, but allow 5
                                  # minutes for I/O before the job is
                                  # killed forcibly by the batch system
-                                 kw.get('requested_walltime')*60 - 20, 
+                                 kw.get('requested_walltime')*60 - 20,
                                  N, p_mut_coeff, choose_or_rand, sick_or_not, off_v_last,
                                  ],
                              inputs = inputs,
@@ -181,7 +182,7 @@ class GMhcCoevTask(SequentialTaskCollection):
 
     # regular expression for extracting the generation no. from an output file name
     GENERATIONS_FILENAME_RE = re.compile(r'(?P<generation_no>[0-9]+)gen\.mat$')
-        
+
     def next(self, done):
         """
         Analyze the retrieved output and decide whether to submit
@@ -244,7 +245,7 @@ class GMhcCoevTask(SequentialTaskCollection):
 
 
 ## main script class
-            
+
 class GMhcCoevScript(SessionBasedScript):
     """
 Scan the specified INPUT directories recursively for executable files
@@ -271,12 +272,12 @@ newly-created jobs so that this limit is never exceeded.
             self,
             version = __version__, # module version == script version
             input_filename_pattern = 'MHC_coev_*',
-            application = gmhc_coev.GMhcCoevTask,
+            application = GMhcCoevTask,
             # only display stats for the top-level policy objects
             # (which correspond to the processed files) omit counting
             # actual applications because their number varies over
             # time as checkpointing and re-submission takes place.
-            stats_only_for = gmhc_coev.GMhcCoevTask,
+            stats_only_for = GMhcCoevTask,
             )
 
     def setup_options(self):
@@ -300,19 +301,19 @@ newly-created jobs so that this limit is never exceeded.
           * ``POPSIZE``: replaced with the value of the N parameter;
           * ``PARAMS``: replaced with the ``__``-separated list of all 6 parameters;
           * ``ITERATION``: replaced with the current iteration number.
-          
+
         """
         basename, iteration = jobname.split('#')
         basename = basename[9:] # strip initial 'MHC_coev_'
         N, p_mut_coeff, choose_or_rand, sick_or_not, off_v_last = GMhcCoevScript._string_to_params(basename)
-        return SessionBasedScript.make_directory_path(self, 
+        return SessionBasedScript.make_directory_path(self,
             pathspec
             .replace('POPSIZE', str(N))
             .replace('PARAMS', basename)
             .replace('ITERATION', iteration),
             jobname, *args)
 
-    
+
     def new_tasks(self, extra):
         # how many iterations are we already computing (per parameter set)?
         iters = defaultdict(lambda: 0)
@@ -373,7 +374,7 @@ newly-created jobs so that this limit is never exceeded.
                         self.log.warning("Ignoring line '%s' in input file '%s': %s",
                                          str.join(',', row), path, str(ex))
                         continue
-                    basename = ('MHC_coev_' + 
+                    basename = ('MHC_coev_' +
                                 GMhcCoevScript._params_to_str(
                                     N, p_mut_coeff, choose_or_rand,
                                     sick_or_not, off_v_last))
@@ -387,7 +388,7 @@ newly-created jobs so that this limit is never exceeded.
                             kwargs = extra.copy()
                             kwargs['executable'] = self.params.executable
                             yield (('%s#%d' % (basename, iter)),
-                                   gmhc_coev.GMhcCoevTask,
+                                   GMhcCoevTask,
                                    [self.params.walltime*60, # single_run_duration
                                     self.params.generations,
                                     N,
@@ -402,7 +403,7 @@ newly-created jobs so that this limit is never exceeded.
             else:
                 self.log.error("Ignoring input file '%s': not a CSV file.", path)
 
-        
+
     ##
     ## INTERNAL METHODS
     ##
@@ -475,16 +476,16 @@ newly-created jobs so that this limit is never exceeded.
         """
         p_mut_coeff, N, choose_or_rand, sick_or_not, off_v_last = s.split('__')
 
-        return (GMhcCoevScript._parse_N(N), 
-                GMhcCoevScript._parse_p_mut_coeff(p_mut_coeff), 
-                GMhcCoevScript._parse_choose_or_rand(choose_or_rand), 
-                GMhcCoevScript._parse_sick_or_not(sick_or_not), 
+        return (GMhcCoevScript._parse_N(N),
+                GMhcCoevScript._parse_p_mut_coeff(p_mut_coeff),
+                GMhcCoevScript._parse_choose_or_rand(choose_or_rand),
+                GMhcCoevScript._parse_sick_or_not(sick_or_not),
                 GMhcCoevScript._parse_off_v_last(off_v_last))
 
     @staticmethod
     def _N_to_str(N):
         return ("N%d" % N)
-    
+
     @staticmethod
     def _p_mut_coeff_to_str(p_mut_coeff):
         """
@@ -499,7 +500,7 @@ newly-created jobs so that this limit is never exceeded.
           '1x10plus1'
           >>> _p_mut_coeff_to_str(0.1234)
           '1.234x10min1'
-          
+
         """
         exponent = math.log10(p_mut_coeff)
         mantissa = p_mut_coeff * (10 ** math.ceil(-exponent))
@@ -515,7 +516,7 @@ newly-created jobs so that this limit is never exceeded.
             else:
                 result += ('x10plus%d' % (int(exponent),))
         return result
-        
+
     @staticmethod
     def _choose_or_rand_to_str(choose_or_rand):
         if choose_or_rand == 1:
@@ -544,7 +545,7 @@ newly-created jobs so that this limit is never exceeded.
             return "offval_1"
         else:
             # off_v_last == 0.xxxx
-            
+
             # XXX: Python switches to scientific notation for
             # N<0.00001; the funny %-hack below ensures that the
             # dot+digits notation is used instead; starting Python
@@ -564,8 +565,3 @@ newly-created jobs so that this limit is never exceeded.
             GMhcCoevScript._sick_or_not_to_str(sick_or_not),
             GMhcCoevScript._off_v_last_to_str(off_v_last),
             ])
-
-
-# run it
-if __name__ == '__main__':
-    GMhcCoevScript().run()

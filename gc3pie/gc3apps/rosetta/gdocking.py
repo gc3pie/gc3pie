@@ -33,16 +33,16 @@ __changelog__ = """
     * Workaround for Issue 95: now we have complete interoperability
       with GC3Utils.
   2011-02-10:
-    * Renamed option '-t'/'--tarfile' to '-T'/'--collect', 
-      in order not to conflict with `SessionBasedScript` 
+    * Renamed option '-t'/'--tarfile' to '-T'/'--collect',
+      in order not to conflict with `SessionBasedScript`
       option '-t'/'--table'.
     * Removed the '-b' option.
   2010-12-20:
     * Renamed to ``gdocking``; default session file is not ``gdocking.csv``.
   2010-09-21:
-    * Do not collect output FASC and PDB files into a single tar file. 
+    * Do not collect output FASC and PDB files into a single tar file.
       (Get old behavior back with the '-t' option)
-    * Do not compress PDB files in Rosetta output. 
+    * Do not compress PDB files in Rosetta output.
       (Get the old behavior back with the '-z' option)
   2010-08-09:
     * Exitcode tracks job status; use the "-b" option to get the old behavior back.
@@ -70,7 +70,7 @@ __changelog__ = """
     * After successful retrieval of job information, reorder output files so that:
       - for each sumitted job, there is a corresponding ``input.N--M.fasc`` file,
         in the same directory as the input ".pdb" file;
-      - all decoys belonging to the same input ".pdb" file are collected into 
+      - all decoys belonging to the same input ".pdb" file are collected into
         a single ``input.decoys.tar`` file (in the same dir as the input ".pdb" file);
       - output from grid jobs is kept untouched in the "job.XXX/" directories.
     * Compress PDB files by default, and prefix them with a "source filename + N--M" prefix
@@ -85,12 +85,14 @@ __changelog__ = """
 __docformat__ = 'reStructuredText'
 
 
-# ugly workaround for Issue 95,
+# workaround for Issue 95,
 # see: http://code.google.com/p/gc3pie/issues/detail?id=95
 if __name__ == "__main__":
     import gdocking
+    gdocking.GDockingScript().run()
 
 
+# stdlib imports
 import grp
 import logging
 import os
@@ -100,9 +102,7 @@ import sys
 import tarfile
 import time
 
-
-## interface to Gc3libs
-
+# interface to Gc3libs
 import gc3libs
 from gc3libs.application.rosetta import RosettaDockingApplication
 from gc3libs.cmdline import SessionBasedScript, existing_file, positive_int
@@ -116,12 +116,12 @@ class GDockingApplication(RosettaDockingApplication):
     methods that implement job status reporting for the UI, and data
     post-processing.
     """
-    def __init__(self, pdb_file_path, native_file_path=None, 
-                 number_of_decoys_to_create=1, flags_file=None, 
+    def __init__(self, pdb_file_path, native_file_path=None,
+                 number_of_decoys_to_create=1, flags_file=None,
                  collect=False, **kw):
         RosettaDockingApplication.__init__(
-            self, pdb_file_path, native_file_path, 
-            number_of_decoys_to_create, flags_file, 
+            self, pdb_file_path, native_file_path,
+            number_of_decoys_to_create, flags_file,
             **kw)
         # save pdb_file_path for later processing
         self.pdb_file_path = pdb_file_path
@@ -153,14 +153,14 @@ class GDockingApplication(RosettaDockingApplication):
             for entry in output_tar:
                 if (entry.name.endswith('.fasc') or entry.name.endswith('.sc')):
                     filename, extension = os.path.splitext(entry.name)
-                    scoring_file_name = (os.path.join(work_dir, input_name_sans) 
+                    scoring_file_name = (os.path.join(work_dir, input_name_sans)
                                          + '.' + self.jobname + extension)
                     src = output_tar.extractfile(entry)
                     dst = open(scoring_file_name, 'wb')
                     dst.write(src.read())
                     dst.close()
                     src.close()
-                elif (self.collect and 
+                elif (self.collect and
                       (entry.name.endswith('.pdb.gz') or entry.name.endswith('.pdb'))):
                     src = output_tar.extractfile(entry)
                     dst = tarfile.TarInfo(entry.name)
@@ -181,7 +181,7 @@ class GDockingApplication(RosettaDockingApplication):
         else: # no `docking_protocol.tar.gz` file
             self.info = ("No 'docking_protocol.tar.gz' file found.")
 
-        
+
 ## the script class
 
 class GDockingScript(SessionBasedScript):
@@ -212,7 +212,7 @@ of newly-created jobs so that this limit is never exceeded.
             # Use fully-qualified name for class,
             # to allow GC3Utils to unpickle job instances
             # see: http://code.google.com/p/gc3pie/issues/detail?id=95
-            application = gdocking.GDockingApplication,
+            application = GDockingApplication,
             input_filename_pattern = '*.pdb'
             )
 
@@ -223,12 +223,12 @@ of newly-created jobs so that this limit is never exceeded.
                        help="Pass the specified flags file to Rosetta 'docking_protocol'"
                        " Default: '%(default)s'"
                        )
-        self.add_param("-P", "--decoys-per-file", dest="decoys_per_file", 
+        self.add_param("-P", "--decoys-per-file", dest="decoys_per_file",
                        type=positive_int, default=1,
                        metavar="NUM",
                        help="Compute NUM decoys per input file (default: %(default)s)."
                        )
-        self.add_param("-p", "--decoys-per-job", dest="decoys_per_job", 
+        self.add_param("-p", "--decoys-per-job", dest="decoys_per_job",
                        type=positive_int, default=1,
                        metavar="NUM",
                        help="Compute NUM decoys in a single job (default: %(default)s)."
@@ -259,8 +259,3 @@ of newly-created jobs so that this limit is never exceeded.
         self.extra['collect'] = self.params.collect
         self.extra['flags_file'] = os.path.abspath(self.params.flags_file)
         self.log.info("Using flags file '%s'", self.extra['flags_file'])
-
-
-## run it
-if __name__ == '__main__':
-    GDockingScript().run()
