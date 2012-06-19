@@ -73,9 +73,8 @@ import gc3libs.utils
 
 from gc3libs.application.codeml import CodemlApplication
 from gc3libs.cmdline import SessionBasedScript, executable_file
+from gc3libs.persistence.get import GET
 
-from gc3libs.persistence.sql import value_of as val
-from gc3libs.persistence.sql import value_at_index as idx
 
 
 ## retry policy
@@ -254,33 +253,33 @@ of newly-created jobs so that this limit is never exceeded.
             session_uri,
             store_url,
             extra_fields = {
-                sqla.Column('executable',         sqla.TEXT())    : val('executable', default=None),                  # program executable
-                sqla.Column('name',               sqla.TEXT())    : val('jobname'),                                   # job name; lrms_jobname attr
-                sqla.Column('output_path',        sqla.TEXT())    : val('output_dir', default=None),                  # fullpath to codeml output directory
-                sqla.Column('input_path',         sqla.TEXT())    : _get_input_path,                                  # fullpath to codeml input directory
-                sqla.Column('mlc_exists_h0',      sqla.TEXT())    : idx(0, val('exists'), default=None),              # exists codeml *.H0.mlc output file
-                sqla.Column('mlc_exists_h1',      sqla.TEXT())    : idx(1, val('exists'), default=None),              # exists codeml *.H1.mlc output file
-                sqla.Column('mlc_valid_h0',       sqla.TEXT())    : idx(0, val('valid'), default=None),               # valid codeml *.H0.mlc output file
-                sqla.Column('mlc_valid_h1',       sqla.TEXT())    : idx(1, val('valid'), default=None),               # valid codeml *.H1.mlc output file
-                sqla.Column('cluster',            sqla.TEXT())    : val('execution.resource_name', default=None),     # cluster/compute element
-                sqla.Column('worker',             sqla.TEXT())    : val('hostname', default=None),                    # hostname of the worker node
-                sqla.Column('cpu',                sqla.TEXT())    : val('cpuinfo', default=None),                     # CPU model of the worker node
-                sqla.Column('codeml_walltime_h0', sqla.INTEGER()) : idx(0, val('time_used')),                         # time used by the codeml H0 run (sec)
-                sqla.Column('codeml_walltime_h1', sqla.INTEGER()) : idx(1, val('time_used')),                         # time used by the codeml H1 run (sec)
-                sqla.Column('aln_len',            sqla.TEXT())    : idx('aln_len', idx(0, val('aln_info'))),          # alignement length
-                sqla.Column('seq',                sqla.TEXT())    : idx('n_seq',   idx(0, val('aln_info'))),          # num of sequences
-                sqla.Column('requested_walltime', sqla.INTEGER()) : val('requested_walltime', default=None),          # requested walltime
-                sqla.Column('requested_cores',    sqla.INTEGER()) : val('requested_cores', default=None),             # num of cores requested
-                sqla.Column('tags',               sqla.TEXT())    : idx(0, val('tags')),                              # run-time environments (RTE) to request; e.g. 'APPS/BIO/CODEML-4.4.3'
-                sqla.Column('used_walltime',      sqla.INTEGER()) : val('execution.used_walltime', default=None),     # used walltime
-                sqla.Column('lrms_jobid',         sqla.TEXT())    : val('execution.lrms_jobid', default=None),        # arc job ID
-                sqla.Column('original_exitcode',  sqla.INTEGER()) : val('execution.original_exitcode', default=None), # original exitcode
-                sqla.Column('used_cputime',       sqla.INTEGER()) : val('execution.used_cputime', default=None),      # used cputime in sec
-                sqla.Column('signal',             sqla.INTEGER()) : val('execution._signal', default=None),           # _signal attr
-                sqla.Column('exitcode',           sqla.INTEGER()) : val('execution._exitcode', default=None),         # _exitcode attr
-                sqla.Column('queue',              sqla.TEXT())    : val('execution.queue', default=None),             # queue priority
-                sqla.Column('time_submitted',     sqla.FLOAT())   : idx('SUBMITTED',  val('execution.timestamp'), default=None),# client-side submission (float) time; SUBMITTED timestamp
-                sqla.Column('time_terminated',    sqla.FLOAT())   : idx('TERMINATED', val('execution.timestamp'), default=None),# client-side termination (float) time; TERMINATED timestamp
-                sqla.Column('time_stopped',       sqla.FLOAT())   : idx('STOPPED',    val('execution.timestamp'), default=None),# client-side stop (float) time; STOPPED timestamp
-                sqla.Column('retried',            sqla.INTEGER()) : val('retried', default=None),                     # num of time job has been retried??; attr
+                sqla.Column('executable',         sqla.TEXT())    : GET.attr('executable', default=None),                  # program executable
+                sqla.Column('name',               sqla.TEXT())    : GET.attr('jobname'),                                   # job name; lrms_jobname attr
+                sqla.Column('output_path',        sqla.TEXT())    : GET.attr('output_dir', default=None),                  # fullpath to codeml output directory
+                sqla.Column('input_path',         sqla.TEXT())    : _get_input_path,                                       # fullpath to codeml input directory
+                sqla.Column('mlc_exists_h0',      sqla.TEXT())    : GET.attr('exists').item(0, default=None),              # exists codeml *.H0.mlc output file
+                sqla.Column('mlc_exists_h1',      sqla.TEXT())    : GET.attr('exists').item(1, default=None),              # exists codeml *.H1.mlc output file
+                sqla.Column('mlc_valid_h0',       sqla.TEXT())    : GET.attr('valid').item(0, default=None),               #.attrid codeml *.H0.mlc output file
+                sqla.Column('mlc_valid_h1',       sqla.TEXT())    : GET.attr('valid').item(1, default=None),               #.attrid codeml *.H1.mlc output file
+                sqla.Column('cluster',            sqla.TEXT())    : GET.attr('execution.resource_name', default=None),     # cluster/compute element
+                sqla.Column('worker',             sqla.TEXT())    : GET.attr('hostname', default=None),                    # hostname of the worker node
+                sqla.Column('cpu',                sqla.TEXT())    : GET.attr('cpuinfo', default=None),                     # CPU model of the worker node
+                sqla.Column('codeml_walltime_h0', sqla.INTEGER()) : GET.attr('time_used').item(0),                         # time used by the codeml H0 run (sec)
+                sqla.Column('codeml_walltime_h1', sqla.INTEGER()) : GET.attr('time_used').item(1),                         # time used by the codeml H1 run (sec)
+                sqla.Column('aln_len',            sqla.TEXT())    : GET.attr('aln_info').item(0).item('aln_len'),          # alignement length
+                sqla.Column('seq',                sqla.TEXT())    : GET.attr('aln_info').item(0).item('n_seq'),            # num of sequences
+                sqla.Column('requested_walltime', sqla.INTEGER()) : GET.attr('requested_walltime', default=None),          # requested walltime
+                sqla.Column('requested_cores',    sqla.INTEGER()) : GET.attr('requested_cores', default=None),             # num of cores requested
+                sqla.Column('tags',               sqla.TEXT())    : GET.attr('tags').item(0),                              # run-time environments (RTE) to request; e.g. 'APPS/BIO/CODEML-4.4.3'
+                sqla.Column('used_walltime',      sqla.INTEGER()) : GET.attr('execution.used_walltime', default=None),     # used walltime
+                sqla.Column('lrms_jobid',         sqla.TEXT())    : GET.attr('execution.lrms_jobid', default=None),        # arc job ID
+                sqla.Column('original_exitcode',  sqla.INTEGER()) : GET.attr('execution.original_exitcode', default=None), # original exitcode
+                sqla.Column('used_cputime',       sqla.INTEGER()) : GET.attr('execution.used_cputime', default=None),      # used cputime in sec
+                sqla.Column('signal',             sqla.INTEGER()) : GET.attr('execution._signal', default=None),           # _signal attr
+                sqla.Column('exitcode',           sqla.INTEGER()) : GET.attr('execution._exitcode', default=None),         # _exitcode attr
+                sqla.Column('queue',              sqla.TEXT())    : GET.attr('execution.queue', default=None),             # queue priority
+                sqla.Column('time_submitted',     sqla.FLOAT())   : GET.attr('execution.timestamp').item('SUBMITTED',  default=None),# client-side submission (float) time; SUBMITTED timestamp
+                sqla.Column('time_terminated',    sqla.FLOAT())   : GET.attr('execution.timestamp').item('TERMINATED', default=None),# client-side termination (float) time; TERMINATED timestamp
+                sqla.Column('time_stopped',       sqla.FLOAT())   : GET.attr('execution.timestamp').item('STOPPED',    default=None),# client-side stop (float) time; STOPPED timestamp
+                sqla.Column('retried',            sqla.INTEGER()) : GET.attr('retried', default=None),                     # num of time job has been retried??; attr
                 })
