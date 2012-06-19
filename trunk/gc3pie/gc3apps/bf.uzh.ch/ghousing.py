@@ -305,9 +305,9 @@ def engineProgress(self):
                                              posix.EX_IOERR)
                 task.execution.state = Run.State.TERMINATED
                 task.changed = True
-            except Exception, x:
-                gc3libs.log.error("Ignored error in fetching output of task '%s': %s: %s" 
-                                  % (task, x.__class__.__name__, str(x)), exc_info=True)
+            #except Exception, x:
+                #gc3libs.log.error("Ignored error in fetching output of task '%s': %s: %s" 
+                                  #% (task, x.__class__.__name__, str(x)), exc_info=True)
             if task.execution.state == Run.State.TERMINATED:
                 self._terminated.append(task)
                 self._core.free(task)
@@ -317,6 +317,9 @@ def engineProgress(self):
         # remove tasks for which final output has been retrieved
         for index in reversed(transitioned):
             del self._terminating[index]
+            
+import gc3libs.core
+gc3libs.core.Engine.progress = engineProgress
 
 
 
