@@ -96,7 +96,7 @@ architecture = x86_64
 
         assert_true(
             os.path.isfile(
-                os.path.join(session_dir, gc3libs.session.Session.JOBIDS_DB_FILENAME, )
+                os.path.join(session_dir, gc3libs.session.Session.INDEX_FILENAME, )
                 )
             )
 
