@@ -64,7 +64,7 @@ The `grosetta` command keeps a record of jobs (submitted, executed and
 pending) in a session file (set name with the '-s' option); at each
 invocation of the command, the status of all recorded jobs is updated,
 output from finished jobs is collected, and a summary table of all
-known jobs is printed.  New jobs are added to the session if the number 
+known jobs is printed.  New jobs are added to the session if the number
 of wanted decoys (option '-P') is raised.
 
 Options can specify a maximum number of jobs that should be in
@@ -84,12 +84,12 @@ Note: the list of INPUT and OUTPUT files must be separated by ':'
             )
 
     def setup_options(self):
-        self.add_param("-P", "--total-decoys", dest="total_decoys", 
+        self.add_param("-P", "--total-decoys", dest="total_decoys",
                        type=positive_int, default=1,
                        metavar="NUM",
                        help="Compute NUM decoys per input file (default: %(default)s)."
                        )
-        self.add_param("-p", "--decoys-per-job", dest="decoys_per_job", 
+        self.add_param("-p", "--decoys-per-job", dest="decoys_per_job",
                        type=positive_int, default=1,
                        metavar="NUM",
                        help="Compute NUM decoys in a single job (default: %(default)s)."
@@ -161,7 +161,7 @@ Note: the list of INPUT and OUTPUT files must be separated by ':'
     def new_tasks(self, extra):
         ## compute number of decoys already being computed in this session
         decoys = 0
-        for task in self.tasks:
+        for task in self.session:
             start, end = task.jobname.split('--')
             decoys += int(end) - int(start)
         self.log.debug("Total no. of decoys already scheduled for computation: %d", decoys)
@@ -174,12 +174,12 @@ Note: the list of INPUT and OUTPUT files must be separated by ':'
                               decoys, self.params.total_decoys - decoys)
             # create new jobs and add them to session
             for nr in range(decoys, self.params.total_decoys, self.params.decoys_per_job):
-                jobname = ("%d--%d" 
-                           % (nr, min(self.params.total_decoys, 
+                jobname = ("%d--%d"
+                           % (nr, min(self.params.total_decoys,
                                       nr + self.params.decoys_per_job - 1)))
                 # yield new job to construct to `self._main()`
                 yield (
-                    jobname, RosettaApplication, 
+                    jobname, RosettaApplication,
                     # args
                     (self.params.protocol, self.params.rosetta_release, self.inputs, self.outputs),
                     # kwargs

@@ -94,10 +94,12 @@ class Persistable(object):
     """
     A mix-in class to mark that an object should be persisted by its ID.
 
-    Any instance of this class is saved as an "external reference"
+    Any instance of this class is saved as an 'external reference'
     when a container holding a reference to it is saved.
+
     """
     pass
+
 
 
 ## registration mechanism

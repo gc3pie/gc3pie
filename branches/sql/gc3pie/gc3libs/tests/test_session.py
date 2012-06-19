@@ -21,146 +21,188 @@
 __docformat__ = 'reStructuredText'
 __version__ = '$Revision$'
 
+# stdlib imports
+import csv
 import os
 import shutil
 import tempfile
-import csv
-
-import gc3libs.exceptions
-from gc3libs.session import Session
-from gc3libs.persistence import Persistable, make_store
-import gc3libs.persistence.sql
-import sqlalchemy
-import sqlalchemy.sql as sql
 
 from nose.tools import assert_true, assert_equal, raises, set_trace
 from nose.plugins.skip import SkipTest
 
+import sqlalchemy
+import sqlalchemy.sql as sql
+
+# GC3Pie imports
+import gc3libs.exceptions
+from gc3libs.persistence import Persistable, make_store
+import gc3libs.persistence.sql
+from gc3libs.session import Session
+from gc3libs.utils import Struct
+
+
+class _PStruct(Struct, Persistable):
+    """
+    A Persistable+Struct mix-in.
+
+    This class just exists so that we are able to persist something in
+    the tests and make a non-trivial equality check afterwards.
+    """
+    pass
+
+
+def test_create():
+    tmpdir = tempfile.mktemp(dir='.')
+    sess = Session(tmpdir)
+    assert os.path.isdir(sess.path)
+
+@raises(gc3libs.exceptions.LoadError,sqlalchemy.exc.OperationalError)
+def test_destroy():
+    tmpdir = tempfile.mktemp(dir='.')
+    sess = Session(tmpdir)
+    tid = sess.add(_PStruct(a=1, b='foo'))
+    sess.destroy()
+    # destroy should kill all traces of the sessiondir
+    assert not os.path.exists(sess.path)
+    # in particular, no task can be loaded
+    sess.load(tid)
+
+
+class TestOldstyleConversion:
+
+    def setUp(self):
+        self.path = tempfile.mktemp(dir='.')
+        self.jobs_dir = os.path.abspath(self.path+'.jobs')
+        # create old-style session
+        self.index_csv = self.path + '.csv'
+        # Load the old store
+        store_url = "file://%s" % self.jobs_dir
+        oldstore = make_store(store_url)
+        # save something in it
+        self.test_task_id = oldstore.save(_PStruct(a=1, b='foo'))
+        jobidfile = open(self.index_csv, 'w')
+        jobline = {
+            'jobname':       'test',
+            'persistent_id': self.test_task_id,
+            'state':         'UNKNOWN',
+            'info':          '',
+            }
+        csv.DictWriter(
+            jobidfile,
+            ['jobname', 'persistent_id', 'state', 'info'],
+            extrasaction='ignore').writerow(jobline)
+        jobidfile.close()
+        # create new-style session
+        self.sess = Session(self.path)
+
+    def tearDown(self):
+        if os.path.exists(self.index_csv):
+            os.remove(self.index_csv)
+        if os.path.exists(self.jobs_dir):
+            shutil.rmtree(self.jobs_dir)
+        if os.path.exists(self.path):
+            shutil.rmtree(self.path)
+
+    def test_load_oldstyle_session(self):
+        """Check that Session is able to load an old-style session"""
+        # Check if the job list is correct
+        assert_true(self.test_task_id in self.sess.tasks)
+        assert_equal(self.sess.load(self.test_task_id), self.sess.tasks[self.test_task_id])
+
+    def test_convert_oldstyle_session(self):
+        assert os.path.isdir(self.sess.path)
+        assert not os.path.exists(self.index_csv)
+        assert not os.path.exists(self.jobs_dir)
 
 
 class TestSession(object):
     def setUp(self):
-        tmpfname = tempfile.mktemp(dir='.')
-        self.tmpfname = tmpfname
-        self.s = Session(tmpfname)
+        tmpdir = tempfile.mktemp(dir='.')
+        self.tmpdir = tmpdir
+        self.sess = Session(tmpdir)
 
     def tearDown(self):
-        try:
-            self.s.remove_session()
-        except:
-            # after test_remove_session() we will get an error
-            pass
+        self.sess.destroy()
 
-    def test_directory_creation(self):
-        self.s.flush()
-        assert_true(os.path.isdir(self.s.path))
+    def test_session_directory_created(self):
+        assert_true(os.path.isdir(self.sess.path))
         assert_true(os.path.samefile(
-            os.path.join(
-            os.path.abspath('.'),
-            self.tmpfname), self.s.path))
+            os.path.join(os.path.abspath('.'), self.tmpdir),
+            self.sess.path))
 
-    def test_store_url(self):
-        self.s.flush()
-        storefile = os.path.join(self.s.path, Session.STORE_URL_FILENAME)
+    def test_store_url_file_exists(self):
+        self.sess.flush()
+        storefile = os.path.join(self.sess.path, Session.STORE_URL_FILENAME)
         assert_true(os.path.isfile(storefile))
 
-    def test_load_and_save(self):
-        self.s.save(Persistable())
-        self.s.flush()
+    def test_add(self):
+        tid = self.sess.add(_PStruct(a=1, b='foo'))
+        assert_equal(len(self.sess), 1)
+        assert_equal([tid], self.sess.list())
 
-        fd_job_ids = open(os.path.join(self.s.path, self.s.JOBIDS_DB_FILENAME), 'r')
-        ids = [row[0] for row in csv.reader(fd_job_ids)]
-        assert_equal(ids, [str(i) for i in self.s.job_ids])
+    def test_add_updates_metadata(self):
+        """Check that on-disk metadata is changed on add(..., flush=True)."""
+        self.sess.add(_PStruct(a=1, b='foo'), flush=True)
+        fd_job_ids = open(os.path.join(self.sess.path, self.sess.INDEX_FILENAME), 'r')
+        ids = fd_job_ids.read().split('\n')
         assert_equal(len(ids),  1)
+        assert_equal(ids, [str(i) for i in self.sess.tasks])
+
+    def test_add_no_flush(self):
+        """Check that on-disk metadata is not changed on add(..., flush=False)."""
+        tid = self.sess.add(_PStruct(a=1, b='foo'), flush=False)
+        # in-memory metadata is updated
+        assert_equal(len(self.sess), 1)
+        assert_equal([tid], self.sess.list())
+        # on-disk metadata is not
+        fd_job_ids = open(os.path.join(self.sess.path, self.sess.INDEX_FILENAME), 'r')
+        assert_equal('', fd_job_ids.read())
+
+    def test_remove(self):
+        # add tasks
+        tid1 = self.sess.add(_PStruct(a=1, b='foo'))
+        tid2 = self.sess.add(_PStruct(a=1, b='foo'))
+        assert_equal(len(self.sess), 2)
+        self.sess.remove(tid1)
+        assert_equal(len(self.sess), 1)
+        self.sess.remove(tid2)
+        assert_equal(len(self.sess), 0)
 
     def test_reload_session(self):
-        self.s.save(Persistable())
-        self.s.flush()
-        s2 = Session(self.s.path)
-        s2.job_ids == self.s.job_ids
-
-    @raises(gc3libs.exceptions.LoadError,sqlalchemy.exc.OperationalError)
-    def test_remove_session(self):
-        jobid = self.s.save(Persistable())
-        self.s.flush()
-        self.s.remove_session()
-        self.s.load(jobid)
+        self.sess.add(_PStruct(a=1, b='foo'))
+        sess2 = Session(self.sess.path)
+        assert_equal(len(sess2), 1)
+        for task2, task1 in zip(sess2.tasks.values(), self.sess.tasks.values()):
+            assert_equal(task1, task2)
 
     def test_incomplete_session_dir(self):
-        tmpfname = tempfile.mktemp(dir='.')
-        os.mkdir(tmpfname)
-        incomplete_s = Session(tmpfname)
-        assert os.path.exists(os.path.join(tmpfname, Session.JOBIDS_DB_FILENAME))
-        assert os.path.exists(os.path.join(tmpfname, Session.STORE_URL_FILENAME))
-        shutil.rmtree(tmpfname)
+        tmpdir = tempfile.mktemp(dir='.')
+        os.mkdir(tmpdir)
+        incomplete_sess = Session(tmpdir)
+        assert os.path.exists(os.path.join(tmpdir, Session.INDEX_FILENAME))
+        assert os.path.exists(os.path.join(tmpdir, Session.STORE_URL_FILENAME))
+        incomplete_sess.destroy()
 
-    @raises(gc3libs.exceptions.LoadError)
     def test_load_external_jobid(self):
-        """Check if we are able to load jobid which does not belong to the session"""
-        extraid = self.s.store.save(Persistable())
-        self.s.load(extraid)
+        """Check that we are able to load an object which does not belong to the session"""
+        obj1 = _PStruct(a=1, b='foo')
+        extraid = self.sess.store.save(obj1)
+        obj2 = self.sess.load(extraid)
+        assert_equal(obj1, obj2)
 
-    def test_load_oldstyle_session(self):
-        """Check if Session is able to load an old-style session"""
-        jobid_filename = self.s.path + '.csv'
-        store_directory = os.path.abspath(self.s.path+'.jobs')
-        store_url = "file://%s" % store_directory
-
-        # Load the old store
-        oldstore = make_store(store_url)
-        # save something in it
-        jobid = oldstore.save(Persistable())
-
-        try:
-            # Create the old-style csv file containing the jobid of
-            # the saved object
-            jobidfile = open(jobid_filename, 'w')
-            jobline = {'jobname': 'test job',
-                   'persistent_id' : jobid,
-                   'state': 'UNKNWON',
-                   'info': ''}
-            csv.DictWriter(jobidfile,
-                       ['jobname', 'persistent_id', 'state', 'info'],
-                      extrasaction='ignore').writerow(jobline)
-            jobidfile.close()
-
-            # Create a new session. It should load the old one.
-            session = Session(self.s.path)
-            session._load_oldstyle_session()
-
-            # Check if the job list is correct
-            assert_true(jobid in session.job_ids)
-            session.load(jobid)
-
-            # This should create a new-style session, but using the
-            # old store
-            session.flush()
-
-            assert_true(os.path.isdir(session.path))
-            assert_true('job_ids.csv' in os.listdir(session.path))
-            assert_true('store.url' in os.listdir(session.path))
-            assert_equal(
-                gc3libs.utils.read_contents(
-                    os.path.join(session.path, 'store.url')),
-                store_url)
-
-        finally:
-            jobidfile.close()
-            os.remove(jobid_filename)
-            shutil.rmtree(store_directory)
 
 class StubForSqlSession(TestSession):
 
     def test_sqlite_store(self):
-        jobid = self.s.save(Persistable())
-        self.s.flush()
+        jobid = self.sess.save(_PStruct(a=1, b='foo'))
+        self.sess.flush()
 
         q = sql.select(
-            [self.s.store.t_store.c.id]
+            [self.sess.store.t_store.c.id]
             ).where(
-            self.s.store.t_store.c.id == jobid
+            self.sess.store.t_store.c.id == jobid
             )
-        conn = self.s.store._SqlStore__engine.connect()
+        conn = self.sess.store._SqlStore__engine.connect()
         results = conn.execute(q)
         rows = results.fetchall()
         assert_equal(len(rows), 1)
@@ -170,15 +212,15 @@ class StubForSqlSession(TestSession):
 class TestSqliteSession(StubForSqlSession):
 
     def setUp(self):
-        tmpfname = tempfile.mktemp(dir='.')
-        self.tmpfname = os.path.basename(tmpfname)
-        self.s = Session(
-                tmpfname,
-                store_url="sqlite:////%s/store.db" % os.path.abspath(self.tmpfname))
+        tmpdir = tempfile.mktemp(dir='.')
+        self.tmpdir = os.path.basename(tmpdir)
+        self.sess = Session(
+                tmpdir,
+                store_url="sqlite:///%s/store.db" % os.path.abspath(self.tmpdir))
 
     def tearDown(self):
-        if os.path.exists(self.tmpfname):
-            shutil.rmtree(self.tmpfname)
+        if os.path.exists(self.tmpdir):
+            shutil.rmtree(self.tmpdir)
 
 
 class TestMysqlSession(StubForSqlSession):
@@ -192,17 +234,17 @@ class TestMysqlSession(StubForSqlSession):
             raise SkipTest("MySQLdb module not installed.")
 
     def setUp(self):
-        tmpfname = tempfile.mktemp(dir='.')
-        self.tmpfname = os.path.basename(tmpfname)
+        tmpdir = tempfile.mktemp(dir='.')
+        self.tmpdir = os.path.basename(tmpdir)
         try:
-            self.s = Session(
-                tmpfname,
+            self.sess = Session(
+                tmpdir,
                 store_url="mysql://gc3user:gc3pwd@localhost/gc3")
         except sqlalchemy.exc.OperationalError:
             raise SkipTest("Cannot connect to MySQL database.")
 
     def tearDown(self):
-        self.s.remove_session()
+        self.sess.remove_session()
 
 
 ## main: run tests

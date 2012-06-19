@@ -56,7 +56,7 @@ class CryptoApplication(gc3libs.Application):
 
     CryptoApplication(param, step, input_files_archive, output_folder, **kw)
     """
-    
+
     def __init__(self, start, extent, gnfs_location, input_files_archive, output, **kw):
 
         gnfs_executable_name = os.path.basename(gnfs_location)
@@ -95,14 +95,14 @@ class CryptoApplication(gc3libs.Application):
     def terminated(self):
         """
         Checks whether the ``M*.gz`` files have been created.
-        
+
         The exit status of the whole job is set to one of these values:
 
         *  0 -- all files processed successfully
         *  1 -- some files were *not* processed successfully
         *  2 -- no files processed successfully
         * 127 -- the ``gnfs-cmd`` application did not run at all.
-         
+
         """
         # XXX: need to gather more info on how to post-process.
         # for the moment do nothing and report job's exit status
@@ -114,7 +114,7 @@ class CryptoApplication(gc3libs.Application):
         else:
             gc3libs.log.debug(
                 'Application terminated. No exitcode available')
-            
+
 
 class CryptoChunkedParameterSweep(ChunkedParameterSweep):
     """
@@ -129,7 +129,7 @@ class CryptoChunkedParameterSweep(ChunkedParameterSweep):
     following rule: [ (end-range - begin_range) / step ] /
     DEFAULT_PARALLEL_RANGE_INCREMENT
     """
-    
+
     def __init__(self, range_start, range_end, slice, chunk_size,
                  input_files_archive, gnfs_location, output_folder, grid=None, **kw):
 
@@ -168,7 +168,7 @@ three mandatory arguments:
 For example::
 
   gcrypto 800000000 1200000000 1000
-  
+
 will produce 400000 jobs; the first job will perform calculations
 on the range 800000000 to 800000000+1000, the 2nd one will do the
 range 800001000 to 800002000, and so on.
@@ -215,19 +215,19 @@ of newly-created jobs so that this limit is never exceeded.
                   help="Positive integer value of the range end.")
         self.add_param('slice', type=positive_int,
                   help="Positive integer value of the increment.")
-        
+
 
     def setup_options(self):
         self.add_param("-i", "--input-files", metavar="PATH",
                        action="store", dest="input_files_archive",
-                       default=DEFAULT_INPUTFILE_LOCATION, 
+                       default=DEFAULT_INPUTFILE_LOCATION,
                        help="Path to the input files archive."
                        " By default, the preloaded input archive available on"
                        " SMSCG Storage Element will be used: "
                        " %s" % DEFAULT_INPUTFILE_LOCATION)
         self.add_param("-g", "--gnfs-cmd", metavar="PATH",
                        action="store", dest="gnfs_location",
-                       default=DEFAULT_GNFS_LOCATION, 
+                       default=DEFAULT_GNFS_LOCATION,
                        help="Path to the executable script (gnfs-cmd)"
                        " By default, the preloaded gnfs-cmd available on"
                        " SMSCG Storage Element will be used: "
@@ -256,7 +256,7 @@ of newly-created jobs so that this limit is never exceeded.
         Ensure each instance of `ChunkedParameterSweep` has
         `chunk_size` set to the maximum allowed number of jobs.
         """
-        for task in self.tasks:
+        for task in self.session:
             assert isinstance(task, CryptoChunkedParameterSweep)
             task.chunk_size = self.params.max_running
 
@@ -267,4 +267,3 @@ of newly-created jobs so that this limit is never exceeded.
 if __name__ == "__main__":
     import gcrypto
     gcrypto.GCryptoScript().run()
-

@@ -517,7 +517,7 @@ class _Script(cli.app.CommandLineApp):
             self.log.debug('Creating instance of Core ...')
             cfg = gc3libs.config.Configuration(
                 *config_file_locations,
-                **{'auto_enable_auth':auto_enable_auth})
+                **{'auto_enable_auth': auto_enable_auth})
             return gc3libs.core.Core(cfg)
         except gc3libs.exceptions.NoResources:
             raise gc3libs.exceptions.FatalError(
@@ -774,15 +774,15 @@ class SessionBasedScript(_Script):
 
     def process_args(self):
         """
-        Process command-line positional arguments and set up
-        `tasks`:attr: accordingly.  In particular, new jobs should be
-        appended to `tasks`:attr: in this method: `self.tasks` is not
-        altered elsewhere.
+        Process command-line positional arguments and set up the
+        session accordingly.  In particular, new jobs should be added
+        to the session during the execution of this method: additions
+        are not contemplated elsewhere.
 
         This method is called by the standard `_main`:meth: after
-        loading existing tasks into `self.tasks`.  New jobs should be
-        appended to `self.tasks` and it is also permitted to remove
-        existing ones.
+        loading or creating a session into `self.session`.  New jobs
+        should be appended to `self.session` and it is also permitted to
+        remove existing ones.
 
         The default implementation calls `new_tasks`:meth: and adds to
         the session all jobs whose name does not clash with the
@@ -794,11 +794,15 @@ class SessionBasedScript(_Script):
         new_jobs = list(self.new_tasks(self.extra))
         # pre-allocate Job IDs
         if len(new_jobs) > 0:
-            if hasattr(self.session.store, 'idfactory'):
+            # XXX: can't we just make `reserve` part of the `IdFactory` contract?
+            try:
                 self.session.store.idfactory.reserve(len(new_jobs))
+            except AttributeError:
+                # no `idfactory`, ignore
+                pass
 
         # add new jobs to the session
-        existing_job_names = set(task.jobname for task in self.tasks)
+        existing_job_names = self.session.list_names()
         random.seed()
         for jobname, cls, args, kwargs in new_jobs:
             #self.log.debug("SessionBasedScript.process_args():"
@@ -819,7 +823,7 @@ class SessionBasedScript(_Script):
             # create a new `Application` object
             try:
                 app = cls(*args, **kwargs)
-                self.tasks.append(app)
+                self.session.add(app, flush=False)
                 self.log.debug("Added task '%s' to session." % jobname)
             except Exception, ex:
                 self.log.error("Could not create job '%s': %s."
@@ -894,14 +898,13 @@ class SessionBasedScript(_Script):
         following instance attributes are already defined:
 
         * `self._core`: a `gc3libs.core.Core` instance;
-        * `self.tasks`: the list of `Task` instances to manage;
         * `self.session`: the `gc3libs.session.Session` instance
           that should be used to save/load jobs
 
         In addition, any other attribute created during initialization
         and command-line parsing is of course available.
         """
-        return gc3libs.core.Engine(self._core, self.tasks, self.session.store,
+        return gc3libs.core.Engine(self._core, self.session, self.session.store,
                                    max_submitted=self.params.max_running,
                                    max_in_flight=self.params.max_running)
 
@@ -965,7 +968,7 @@ class SessionBasedScript(_Script):
         table.add_rows([
             (task.persistent_id, task.jobname,
              task.execution.state, task.execution.info)
-            for task in self.tasks
+            for task in self.session
             if isinstance(task, only) and task.execution.in_state(*states)],
                        header=False)
         # XXX: uses texttable's internal implementation detail
@@ -1054,7 +1057,6 @@ class SessionBasedScript(_Script):
         Any additional keyword argument will be used to set a
         corresponding instance attribute on this Python object.
         """
-        self.tasks = []
         self.session = None
         self.stats_only_for = None  # by default, print stats of all kind of jobs
         self.instances_per_file = 1
@@ -1242,15 +1244,9 @@ class SessionBasedScript(_Script):
         :meth:`process_args`, :meth:`parse_args`, :meth:`setup_args`.
         """
 
-        try:
-            self._load_session()
-            self.log.info("Recovering saved session ...")
-        except:
-            self.log.info("Initializing new session ...")
-
         ## zero out the session index if `-N` was given
         if self.params.new_session:
-            for jobid in self.session.job_ids:
+            for jobid in self.session.list():
                 self.session.remove(jobid)
 
         ## update session based on command-line args
@@ -1258,7 +1254,7 @@ class SessionBasedScript(_Script):
 
         # save the session list immediately, so newly added jobs will
         # be in it if the script is stopped here
-        self._save_session()
+        self.session.save_all()
 
         # obey the ``-r`` command-line option
         if self.params.resource_name:
@@ -1290,7 +1286,7 @@ class SessionBasedScript(_Script):
 
         # save the session again before exiting, so the file reflects
         # jobs' statuses
-        self._save_session()
+        self.session.save_all()
 
         # XXX: shall we call the termination on the controller here ?
         # or rather as a post_run method in the SessionBasedScript ?
@@ -1361,20 +1357,6 @@ class SessionBasedScript(_Script):
         if stats[gc3libs.Run.State.NEW] > 0:
             rc |= 8
         return rc
-
-    def _load_session(self):
-        """
-        Load all jobs from a previously-saved session.
-        """
-        self.tasks = self.session.load_all()
-
-    def _save_session(self):
-        """
-        Save updated tasks.
-        """
-        for task in self.tasks:
-            if task.changed:
-                self.session.save(task)
 
     def _search_for_input_files(self, paths, pattern=None):
         """
