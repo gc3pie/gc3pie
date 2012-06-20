@@ -365,6 +365,8 @@ class Session(list):
 
             # do cleanup
             >>> session.destroy()
+            >>> os.path.exists(session.path)
+            False
 
         """
         newid = self.store.save(task)
@@ -461,6 +463,10 @@ class Session(list):
             >>> 0 == len(session)
             True
 
+            # do cleanup
+            >>> session.destroy()
+            >>> os.path.exists(session.path)
+            False
         """
         return self.store.save(obj)
 

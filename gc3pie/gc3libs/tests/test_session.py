@@ -55,6 +55,7 @@ def test_create():
     tmpdir = tempfile.mktemp(dir='.')
     sess = Session(tmpdir)
     assert os.path.isdir(sess.path)
+    sess.destroy()
 
 @raises(gc3libs.exceptions.LoadError,sqlalchemy.exc.OperationalError)
 def test_destroy():
