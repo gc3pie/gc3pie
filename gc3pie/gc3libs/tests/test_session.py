@@ -145,7 +145,7 @@ class TestSession(object):
         """Check that on-disk metadata is changed on add(..., flush=True)."""
         self.sess.add(_PStruct(a=1, b='foo'), flush=True)
         fd_job_ids = open(os.path.join(self.sess.path, self.sess.INDEX_FILENAME), 'r')
-        ids = fd_job_ids.read().strip().split('\n')
+        ids = fd_job_ids.read().split()
         assert_equal(len(ids),  1)
         assert_equal(ids, [str(i) for i in self.sess.tasks])
 
