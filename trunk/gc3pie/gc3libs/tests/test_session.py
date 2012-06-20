@@ -256,7 +256,7 @@ class TestMysqlSession(StubForSqlSession):
             raise SkipTest("Cannot connect to MySQL database.")
 
     def tearDown(self):
-        self.sess.remove_session()
+        self.sess.destroy()
 
 
 ## main: run tests
