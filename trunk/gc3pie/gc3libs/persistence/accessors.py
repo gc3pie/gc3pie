@@ -63,7 +63,7 @@ class GetValue(object):
        'no value found'
 
     """
-    __slots__ = ('default',)
+    # __slots__ = ('default',)
 
     def __init__(self, default=_none):
          self.default = default
