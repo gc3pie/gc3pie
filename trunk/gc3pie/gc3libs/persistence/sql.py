@@ -135,10 +135,13 @@ class SqlStore(Store):
     corresponding `<function>` in order to get the correct value to
     store into the db.
 
+    Any extra keyword arguments are ignored for compatibility with
+    `FilesystemStore`.
+
     """
 
     def __init__(self, url, table_name="store", idfactory=None,
-                 extra_fields={}, create=True):
+                 extra_fields={}, create=True, **kw):
         """
         Open a connection to the storage database identified by
         url. It will use the correct backend (MySQL, psql, sqlite3)

@@ -60,11 +60,15 @@ class FilesystemStore(Store):
 
     The `protocol` argument specifies the serialization protocol to use,
     if different from `gc3libs.persistence.serialization.DEFAULT_PROTOCOL`.
+
+    Any extra keyword arguments are ignored for compatibility with
+    `SqlStore`.
     """
     def __init__(self,
                  directory=gc3libs.Default.JOBS_DIR,
                  idfactory=IdFactory(),
-                 protocol=DEFAULT_PROTOCOL):
+                 protocol=DEFAULT_PROTOCOL,
+                 **kw):
         if isinstance(directory, gc3libs.url.Url):
             directory = directory.path
         self._directory = directory
