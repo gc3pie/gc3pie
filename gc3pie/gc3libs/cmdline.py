@@ -1254,8 +1254,33 @@ class SessionBasedScript(_Script):
 
         ## zero out the session index if `-N` was given
         if self.params.new_session:
-            for jobid in self.session.list():
-                self.session.remove(jobid)
+            old_jobids = self.session.list_ids()
+            if old_jobids:
+                self.log.warning(
+                    "Abort of existing session requested:"
+                    " will attempt to kill existing jobs."
+                    " This may generate a few spurious error messages"
+                    " if the jobs are too old and have already been"
+                    " cleaned up by the system.")
+                for jobid in old_jobids:
+                    job = self.session.load(jobid)
+                    job.attach(self._core)
+                    try:
+                        job.kill()
+                    except Exception, err:
+                        self.log.info(
+                            "Got this error while killing old job '%s', ignore it: %s: %s",
+                            job, err.__class__.__name__, str(err))
+                    try:
+                        job.free()
+                    except Exception, err:
+                        self.log.info(
+                            "Got this error while cleaning up old job '%s', ignore it: %s: %s",
+                            job, err.__class__.__name__, str(err))
+                    job.detach()
+                    self.session.remove(jobid)
+                    self.log.debug("Removed job '%s' from session.", job)
+                self.log.info("Done cleaning up old session jobs, starting with new one afresh...")
 
         ## update session based on command-line args
         self.process_args()

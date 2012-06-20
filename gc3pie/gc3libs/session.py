@@ -401,7 +401,7 @@ class Session(list):
     def __iter__(self):
         return self.tasks.itervalues()
 
-    def list(self):
+    def list_ids(self):
         """
         Return set of all task IDs belonging to this session.
         """

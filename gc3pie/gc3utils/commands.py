@@ -93,7 +93,7 @@ force removal of a job regardless.
             raise gc3libs.exceptions.InvalidUsage("Option '-A' conflicts with list of job IDs to remove.")
 
         if self.params.all:
-            args = self.session.list()
+            args = self.session.list_ids()
             if len(args) == 0:
                 self.log.info("No jobs in session: nothing to do.")
         else:
@@ -223,7 +223,7 @@ GC3Libs internals.
         if len(self.params.args) == 0:
             # if no arguments, operate on all known jobs
             try:
-                self.params.args = self.session.list()
+                self.params.args = self.session.list_ids()
             except NotImplementedError, ex:
                 raise NotImplementedError(
                     "Job storage module does not allow listing all jobs."
@@ -401,7 +401,7 @@ Print job state.
 
         if len(self.params.args) == 0:
             # if no arguments, operate on all known jobs
-            self.params.args = self.session.list()
+            self.params.args = self.session.list_ids()
 
         if len(self.params.args) == 0:
             print("No jobs submitted.")
@@ -607,7 +607,7 @@ error occurred.
             raise gc3libs.exceptions.InvalidUsage("Option '-A' conflicts with list of job IDs to remove.")
 
         if self.params.all:
-            args = self.session.list()
+            args = self.session.list_ids()
             if len(args) == 0:
                 self.log.info("No jobs in session: nothing to do.")
         else:
