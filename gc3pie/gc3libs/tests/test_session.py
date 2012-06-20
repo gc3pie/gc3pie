@@ -149,6 +149,21 @@ class TestSession(object):
         assert_equal(len(ids),  1)
         assert_equal(ids, [str(i) for i in self.sess.tasks])
 
+    def test_empty_lines_in_index_file(self):
+        """Check that the index file is read correctly even when there
+        are empty lines.
+
+        Because of a bug, in some cases Session used to create invalid
+        job ids equals to ''
+        """
+        self.sess.add(_PStruct(a=1, b='foo'), flush=True)
+        fd_job_ids = open(os.path.join(self.sess.path, self.sess.INDEX_FILENAME), 'a')
+        fd_job_ids.write('\n\n\n')
+        self.sess = Session(self.sess.path)
+        ids = self.sess.list()
+        assert_equal(len(ids),  1)
+        assert_equal(ids, [str(i) for i in self.sess.tasks])
+
     def test_add_no_flush(self):
         """Check that on-disk metadata is not changed on add(..., flush=False)."""
         tid = self.sess.add(_PStruct(a=1, b='foo'), flush=False)
