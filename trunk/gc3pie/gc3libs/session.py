@@ -489,6 +489,7 @@ class Session(list):
             idx_fd = open(idx_filename, 'w')
             for task_id in self.tasks:
                 idx_fd.write(str(task_id))
+                idx_fd.write('\n')
             idx_fd.close()
         except:
             idx_fd.close()
