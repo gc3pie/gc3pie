@@ -186,10 +186,16 @@ class TestSession(object):
 
     def test_reload_session(self):
         self.sess.add(_PStruct(a=1, b='foo'))
+        self.sess.add(_PStruct(a=2, b='bar'))
+        self.sess.add(_PStruct(a=3, b='baz'))
         sess2 = Session(self.sess.path)
-        assert_equal(len(sess2), 1)
-        for task2, task1 in zip(sess2.tasks.values(), self.sess.tasks.values()):
-            assert_equal(task1, task2)
+        assert_equal(len(sess2), 3)
+        for task_id in sess2.tasks.iterkeys():
+            task = sess2.store.load(task_id)
+            assert_equal(task, sess2.tasks[task_id])
+        for task2_id, task1_id in zip(sess2.tasks.keys(), self.sess.tasks.keys()):
+            assert_equal(self.sess.tasks[task1_id],
+                         sess2.tasks[task2_id])
 
     def test_incomplete_session_dir(self):
         tmpdir = tempfile.mktemp(dir='.')
