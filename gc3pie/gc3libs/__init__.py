@@ -1854,6 +1854,13 @@ class RetryableTask(Task):
         self.task = task
         Task.__init__(self, name, **kw)
 
+    def __getattr__(self, name):
+        """Proxy public attributes of the wrapped task."""
+        if name.startswith('_'):
+            raise AttributeError(
+                "'%s' object has no attribute '%s'"
+                % (self.__class__.__name__, name))
+        return getattr(self.task, name)
 
     def retry(self):
         """
