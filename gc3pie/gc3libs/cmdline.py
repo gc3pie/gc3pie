@@ -1202,7 +1202,9 @@ class SessionBasedScript(_Script):
         ## determine the session file name (and possibly create an empty index)
         self.session_uri = gc3libs.url.Url(self.params.session)
         if self.params.store_url == 'sqlite':
-            self.params.store_url = ("sqlite://%s/jobs.db" % self.session_uri.path)
+            self.params.store_url = ("sqlite:///%s/jobs.db" % self.session_uri.path)
+        elif self.params.store_url == 'file':
+            self.params.store_url = ("file:///%s/jobs" % self.session_uri.path)
         self.session = self._make_session(self.session_uri.path, self.params.store_url)
 
         ## keep a copy of the credentials in the session dir
