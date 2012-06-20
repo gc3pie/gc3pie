@@ -186,6 +186,8 @@ class FilesystemStore(Store):
             tgt = open(filename, 'w+b')
             pickler = make_pickler(self, tgt, obj)
             pickler.dump(obj)
+            if hasattr(obj, 'changed'):
+                obj.changed = False
             tgt.close()
             try:
                 os.remove(backup)

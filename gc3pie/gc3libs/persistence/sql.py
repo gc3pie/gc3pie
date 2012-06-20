@@ -235,6 +235,8 @@ class SqlStore(Store):
             q = self.t_store.update().where(self.t_store.c.id == id_).values(**fields)
             conn.execute(q)
         obj.persistent_id = id_
+        if hasattr(obj, 'changed'):
+            obj.changed = False
         conn.close()
 
         # return id
