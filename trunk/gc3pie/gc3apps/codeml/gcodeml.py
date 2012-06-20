@@ -276,8 +276,9 @@ def _get_input_path_CodemlApplication(job):
     for src_url in job.inputs:
         if src_url.path.endswith('.ctl'):
             return os.path.dirname(src_url.path)
+
 def _get_input_path(job):
-    if isinstance(job, gc3libs.application.CodemlApplication):
+    if isinstance(job, gc3libs.application.codeml.CodemlApplication):
         return _get_input_path_CodemlApplication(job)
     elif isinstance(job, CodemlRetryPolicy):
         return _get_input_path_CodemlApplication(job.task)
