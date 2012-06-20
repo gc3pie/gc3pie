@@ -24,7 +24,7 @@ __docformat__ = 'reStructuredText'
 __version__ = '$Revision$'
 
 
-import gc3libs.utils
+from gc3libs.utils import getattr_nested, Struct
 
 
 # tag object for catching the "no value passed" in `GetAttr` and
@@ -32,66 +32,106 @@ import gc3libs.utils
 _none = object()
 
 
-class Get(object):
+class GetValue(object):
     """
-    Provide easier compositional syntax for `GetAttribute` and `GetItem`.
+    Provide easier compositional syntax for `GetAttributeValue` and `GetItemValue`.
 
-    Instances of `GetAttribute` and `GetItem` can be composed by
+    Instances of `GetAttributeValue` and `GetItemValue` can be composed by
     passing one as `xform` parameter to the other; however, this
     results in the writing order being the opposite of the composition
     order: for instance, to create an accessor to evaluate `x.a[0]`
     for any Python object `x`, one has to write::
 
-       >>> fn1 = GetItem(0, GetAttribute('a'))
+       >>> fn1 = GetItemValue(0, GetAttributeValue('a'))
 
-    The `Get` class allows this to be reversed, i.e., to reflect more
-    naturally the way Python expressions are laid out::
+    The `GetValue` class allows to write accessor expressions the way
+    they are normally written in Python::
 
-       >>> fn2 = Get().attr('a').item(0)
-       >>> x = gc3libs.utils.Struct(a=[21,42], b='foo')
+       >>> GET = GetValue()
+       >>> fn2 = GET.a[0]
+       >>> x = Struct(a=[21,42], b='foo')
        >>> fn1(x)
        21
        >>> fn2(x)
        21
 
+    The optional `default` argument specifies a value that should be
+    used in case the required attribute or item is not found:
+
+       >>> fn3 = GetValue(default='no value found').a[3]
+       >>> fn3(x)
+       'no value found'
+
     """
+    __slots__ = ('default',)
+
+    def __init__(self, default=_none):
+         self.default = default
 
     def __call__(self, obj):
+        # identity accessor
         return obj
 
-    def attr(self, name, default=_none):
-        return GetAttribute(name, xform=(lambda obj: self(obj)), default=default)
+    def __getattr__(self, name):
+        return GetAttributeValue(
+            name, xform=(lambda obj: self(obj)), default=self.default)
 
-    def item(self, place, default=_none):
-        return GetItem(place,  xform=(lambda obj: self(obj)), default=default)
+    def __getitem__(self, place):
+        return GetItemValue(
+            place,  xform=(lambda obj: self(obj)), default=self.default)
+
+    def only(self, specifier):
+        """
+        Restrict the action of the accessor expression to members of a certain class;
+        return default value otherwise.
+
+        The invocation to `only`:meth: should *always be last*::
+
+            >>> fn = GetValue(default='foo').a[0].only(Struct)
+            >>> fn(Struct(a=['bar','baz']))
+            'bar'
+            >>> fn(dict(a=['bar','baz']))
+            'foo'
+
+        If it's not last, you will get `AttributeError` like the following:
+
+            >>> fn = GetValue().only(Struct).a[0]
+            >>> fn(dict(a=[0,1]))
+            Traceback (most recent call last):
+              ...
+            AttributeError: 'NoneType' object has no attribute 'a'
+
+        """
+        return GetOnly(
+            specifier, xform=(lambda obj: self(obj)), default=self.default)
 
 
-GET = Get()
+GET = GetValue()
 """
 Constant identity getter.
 
-Use this for better readability (e.g., `GET.index(0)` instead of
-`Get().index(0)`).
+Use this for better readability (e.g., `GET[0]` instead of
+`GetValue()[0]`).
 """
 
 
-class GetAttribute(Get):
+class GetAttributeValue(GetValue):
     """
     Return an accessor function for the given attribute.
 
-    An instance of `GetAttribute` is a callable that, given any
+    An instance of `GetAttributeValue` is a callable that, given any
     object, returns the value of its attribute `attr`, whose name is
-    specified in the `GetAttribute` constructor::
+    specified in the `GetAttributeValue` constructor::
 
-        >>> fn = GetAttribute('x')
-        >>> a = gc3libs.utils.Struct(x=1, y=2)
+        >>> fn = GetAttributeValue('x')
+        >>> a = Struct(x=1, y=2)
         >>> fn(a)
         1
 
     The accessor raises `AttributeError` if no such attribute
     exists)::
 
-        >>> b = gc3libs.utils.Struct(z=3)
+        >>> b = Struct(z=3)
         >>> fn(b)
         Traceback (most recent call last):
            ...
@@ -100,22 +140,22 @@ class GetAttribute(Get):
     However, you can specify a default value, in which case the
     default value is returned and no error is raised::
 
-        >>> fn = GetAttribute('x', default=42)
+        >>> fn = GetAttributeValue('x', default=42)
         >>> fn(b)
         42
-        >>> fn = GetAttribute('y', default=None)
+        >>> fn = GetAttributeValue('y', default=None)
         >>> print(fn(b))
         None
 
-    In other words, if `fn = GetAttribute('x')`, then `fn(obj)`
+    In other words, if `fn = GetAttributeValue('x')`, then `fn(obj)`
     evaluates to `obj.x`.
 
     If the string `attr` contains any dots, then attribute lookups are
-    chained: if `fn = GetAttribute('x.y')` then `fn(obj)` evaluates to
+    chained: if `fn = GetAttributeValue('x.y')` then `fn(obj)` evaluates to
     `obj.x.y`::
 
-        >>> fn = GetAttribute('x.y')
-        >>> a = gc3libs.utils.Struct(x=gc3libs.utils.Struct(y=42))
+        >>> fn = GetAttributeValue('x.y')
+        >>> a = Struct(x=Struct(y=42))
         >>> fn(a)
         42
 
@@ -126,9 +166,9 @@ class GetAttribute(Get):
     returned accessor function computes `xform(obj).attr` instead of
     `obj.attr`.
 
-    This allows combining `GetAttribute` with `GetItem`:meth: (which
+    This allows combining `GetAttributeValue` with `GetItemValue`:meth: (which
     see), to access objects in deeply-nested data structures; see
-    `GetItem`:class: for examples.
+    `GetItemValue`:class: for examples.
 
     """
     __slots__ = ('attr', 'xform', 'default')
@@ -140,7 +180,7 @@ class GetAttribute(Get):
 
     def __call__(self, obj):
         try:
-            return gc3libs.utils.getattr_nested(self.xform(obj), self.attr)
+            return getattr_nested(self.xform(obj), self.attr)
         except AttributeError:
             if self.default is not _none:
                 return self.default
@@ -148,15 +188,15 @@ class GetAttribute(Get):
                 raise
 
 
-class GetItem(Get):
+class GetItemValue(GetValue):
     """
     Return accessor function for the given item in a sequence.
 
-    An instance of `GetItem` is a callable that, given any
+    An instance of `GetItemValue` is a callable that, given any
     sequence/container object, returns the value of the item at its
     place `idx`::
 
-        >>> fn = GetItem(1)
+        >>> fn = GetItemValue(1)
         >>> a = 'abc'
         >>> fn(a)
         'b'
@@ -164,14 +204,14 @@ class GetItem(Get):
         >>> fn(b)
         'x'
 
-    In other words, if `fn = GetItem(x)`, then `fn(obj)` evaluates
+    In other words, if `fn = GetItemValue(x)`, then `fn(obj)` evaluates
     to `obj[x]`.
 
     Note that the returned function `fn` raises `IndexError` or `KeyError`,
     (depending on the type of sequence/container) if place `idx` does not
     exist::
 
-        >>> fn = GetItem(42)
+        >>> fn = GetItemValue(42)
         >>> a = list('abc')
         >>> fn(a)
         Traceback (most recent call last):
@@ -186,7 +226,7 @@ class GetItem(Get):
     However, you can specify a default value, in which case the
     default value is returned and no error is raised::
 
-        >>> fn = GetItem(42, default='foo')
+        >>> fn = GetItemValue(42, default='foo')
         >>> fn(a)
         'foo'
         >>> fn(b)
@@ -200,17 +240,17 @@ class GetItem(Get):
     `obj[idx]`.  For example::
 
         >>> c = 'abc'
-        >>> fn = GetItem(1, xform=(lambda s: s.upper()))
+        >>> fn = GetItemValue(1, xform=(lambda s: s.upper()))
         >>> fn(c)
         'B'
 
         >>> c = (('a',1), ('b',2))
-        >>> fn = GetItem('a', xform=dict)
+        >>> fn = GetItemValue('a', xform=dict)
         >>> fn(c)
         1
 
 
-    This allows combining `GetItem` with `GetAttr`:class:
+    This allows combining `GetItemValue` with `GetAttrValue`:class:
     (which see), to access objects in deeply-nested data structures.
     """
     __slots__ = ('idx', 'xform', 'default')
@@ -228,6 +268,52 @@ class GetItem(Get):
                 return self.default
             else:
                 raise
+
+
+class GetOnly(GetValue):
+    """
+    Apply accessor function to members of a certain class; return a
+    default value otherwise.
+
+    The `GetOnly` accessor performs just like `GetValue`, but is
+    effective only on instances of a certain class; if the accessor
+    function is passed an instance of a different class, the default
+    value is returned::
+
+       >>> fn4 = GetOnly(Struct, default=42)
+       >>> isinstance(fn4(Struct(foo='bar')), Struct)
+       True
+       >>> isinstance(fn4(dict(foo='bar')), dict)
+       False
+       >>> fn4(dict(foo='bar'))
+       42
+
+    If `default` is not specified, then `None` is returned::
+
+       >>> fn5 = GetOnly(Struct)
+       >>> repr(fn5(dict(foo='bar')))
+       'None'
+
+    """
+    __slots__ = ('only', 'xform', 'default')
+
+    def __init__(self, only, xform=(lambda obj: obj), default=_none):
+        self.only = only
+        self.xform = xform
+        self.default = default
+
+    def __call__(self, obj):
+        # only apply `xform` if `obj` matches a class in `only`
+        if isinstance(obj, self.only):
+            return self.xform(obj)
+        else:
+            if self.default is not _none:
+                return self.default
+            else:
+                return None
+
+
+
 
 ## main: run tests
 
