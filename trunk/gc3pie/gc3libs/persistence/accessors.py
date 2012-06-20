@@ -63,7 +63,7 @@ class GetValue(object):
        'no value found'
 
     """
-    # __slots__ = ('default',)
+    __slots__ = ('default',)
 
     def __init__(self, default=_none):
          self.default = default
@@ -73,6 +73,10 @@ class GetValue(object):
         return obj
 
     def __getattr__(self, name):
+        if name.startswith('_'):
+            raise AttributeError(
+                "'%s' object has no attribute '%s'"
+                % (self.__class__.__name__, name))
         return GetAttributeValue(
             name, xform=(lambda obj: self(obj)), default=self.default)
 
