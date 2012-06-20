@@ -139,7 +139,7 @@ class TestSession(object):
     def test_add(self):
         tid = self.sess.add(_PStruct(a=1, b='foo'))
         assert_equal(len(self.sess), 1)
-        assert_equal([tid], self.sess.list())
+        assert_equal([tid], self.sess.list_ids())
 
     def test_add_updates_metadata(self):
         """Check that on-disk metadata is changed on add(..., flush=True)."""
@@ -160,7 +160,7 @@ class TestSession(object):
         fd_job_ids = open(os.path.join(self.sess.path, self.sess.INDEX_FILENAME), 'a')
         fd_job_ids.write('\n\n\n')
         self.sess = Session(self.sess.path)
-        ids = self.sess.list()
+        ids = self.sess.list_ids()
         assert_equal(len(ids),  1)
         assert_equal(ids, [str(i) for i in self.sess.tasks])
 
@@ -169,7 +169,7 @@ class TestSession(object):
         tid = self.sess.add(_PStruct(a=1, b='foo'), flush=False)
         # in-memory metadata is updated
         assert_equal(len(self.sess), 1)
-        assert_equal([tid], self.sess.list())
+        assert_equal([tid], self.sess.list_ids())
         # on-disk metadata is not
         fd_job_ids = open(os.path.join(self.sess.path, self.sess.INDEX_FILENAME), 'r')
         assert_equal('', fd_job_ids.read())
