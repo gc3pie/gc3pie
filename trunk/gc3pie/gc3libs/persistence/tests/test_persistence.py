@@ -45,9 +45,39 @@ from gc3libs import Run, Task
 import gc3libs.exceptions
 from gc3libs.persistence import make_store, Persistable
 from gc3libs.persistence.accessors import GET
+from gc3libs.persistence.serialization import DEFAULT_PROTOCOL
+from gc3libs.persistence.idfactory import IdFactory
+from gc3libs.persistence.filesystem import FilesystemStore
+from gc3libs.persistence.sql import SqlStore
 from gc3libs.url import Url
 
+def test_store_ctor_with_extra_arguments():
+    """Test if `Store`:class: classess accept extra keyword arguments
+    without complaining.
 
+    This test will ensure that any `Store` class can be called with
+    arguments which are valid only on other `Store` classes.
+    """
+    tmpdir = tempfile.mkdtemp()
+    args = {
+        'url': 'sqlite:///%s/test.sqlite' % os.path.abspath(tmpdir),
+        'table_name': 'store',
+        'create': True,
+        'directory': tmpdir,
+        'idfactory': IdFactory(),
+        'protocol': DEFAULT_PROTOCOL,
+        'extra_fields': {sqlalchemy.Column('extra',         sqlalchemy.TEXT())    : lambda x: "test"},
+        
+        }
+
+    def run_test(cls, args):
+        cls(**args)
+
+    for cls in (SqlStore, FilesystemStore):
+        yield run_test, cls, args
+        if os.path.exists(tmpdir):
+            shutil.rmtree(tmpdir)
+    
 ## for testing basic functionality we do no need fully-fledged GC3Pie
 ## objects; let's define some simple make-do's.
 
