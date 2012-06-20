@@ -44,6 +44,7 @@ import gc3libs
 from gc3libs import Run, Task
 import gc3libs.exceptions
 from gc3libs.persistence import make_store, Persistable
+from gc3libs.persistence.get import GET
 from gc3libs.url import Url
 
 
@@ -342,7 +343,7 @@ class SqlStoreChecks(GenericStoreChecks):
         storetemp = make_store(self.db_url,
             table_name='sql_injection_test',
             extra_fields={
-                sqlalchemy.Column('extra', sqlalchemy.VARCHAR(length=128)): gc3libs.persistence.sql.value_of('extra')
+                sqlalchemy.Column('extra', sqlalchemy.VARCHAR(length=128)): GET.attr('extra')
                 })
 
         obj = SimpleTask("Antonio's task")
@@ -365,7 +366,7 @@ class SqlStoreChecks(GenericStoreChecks):
 
         # re-build store, as the table list is read upon `__init__`
         self.store = self._make_store(extra_fields={
-            sqlalchemy.Column('extra', sqlalchemy.VARCHAR(length=128)): gc3libs.persistence.sql.value_of('foo.value')
+            sqlalchemy.Column('extra', sqlalchemy.VARCHAR(length=128)): GET.attr('foo.value')
             })
 
         # if this query does not error out, the column is defined
