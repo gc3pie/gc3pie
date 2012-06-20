@@ -84,14 +84,14 @@ class GetValue(object):
         return GetItemValue(
             place,  xform=(lambda obj: self(obj)), default=self.default)
 
-    def only(self, specifier):
+    def ONLY(self, specifier):
         """
         Restrict the action of the accessor expression to members of a certain class;
         return default value otherwise.
 
         The invocation to `only`:meth: should *always be last*::
 
-            >>> fn = GetValue(default='foo').a[0].only(Struct)
+            >>> fn = GetValue(default='foo').a[0].ONLY(Struct)
             >>> fn(Struct(a=['bar','baz']))
             'bar'
             >>> fn(dict(a=['bar','baz']))
@@ -99,7 +99,7 @@ class GetValue(object):
 
         If it's not last, you will get `AttributeError` like the following:
 
-            >>> fn = GetValue().only(Struct).a[0]
+            >>> fn = GetValue().ONLY(Struct).a[0]
             >>> fn(dict(a=[0,1]))
             Traceback (most recent call last):
               ...
