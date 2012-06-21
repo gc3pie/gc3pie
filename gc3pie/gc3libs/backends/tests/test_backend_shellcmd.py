@@ -55,19 +55,27 @@ type=none
 """
 
     def setUp(self):        
-        (fd, self.tmpfile) = tempfile.mkstemp()
+        (fd, cfgfile) = tempfile.mkstemp()
         f = os.fdopen(fd, 'w+')
         f.write(TestBackendShellcmd.CONF)
         f.close()
+        self.files_to_remove = [cfgfile]
 
         self.cfg = gc3libs.config.Configuration()
-        self.cfg.merge_file(self.tmpfile)
+        self.cfg.merge_file(cfgfile)
 
         self.core = gc3libs.core.Core(self.cfg)
         self.backend = self.core.get_backend('localhost_test')
+
+    def cleanup_file(self, fname):
+        self.files_to_remove.append(fname)
         
     def tearDown(self):
-        os.remove(self.tmpfile)
+        for fname in self.files_to_remove:
+            if os.path.isdir(fname):                
+                shutil.rmtree(fname)
+            else:
+                os.remove(fname)
 
     def test_backend_creation(self):
         """
@@ -95,6 +103,9 @@ type=none
             requested_cores = 1,
             )
         self.core.submit(app)
+        self.cleanup_file(tmpdir)
+        self.cleanup_file(app.execution.lrms_execdir)
+        
         # there's no SUBMITTED state here: jobs go immediately into RUNNING state
         assert_equal(app.execution.state, gc3libs.Run.State.SUBMITTED)
         assert_equal(self.backend._resource.free_slots,  1)
@@ -121,8 +132,6 @@ type=none
         assert_equal(self.backend._resource.user_queued, 0)
         assert_equal(self.backend._resource.user_run,    0)
 
-        # cleanup
-        shutil.rmtree(tmpdir, ignore_errors=True)
 
 
     @raises(gc3libs.exceptions.LRMSSubmitError)
@@ -139,6 +148,7 @@ type=none
             requested_cores = self.backend._resource.free_slots,
             )
         self.core.submit(app1)
+        self.cleanup_file(app1.execution.lrms_execdir)
         assert_equal(app1.execution.state, gc3libs.Run.State.SUBMITTED)
 
         # this fails, as the number of cores exceeds the resource total
@@ -153,6 +163,7 @@ type=none
             requested_cores = 1,
             )
         self.core.submit(app2)
+        self.cleanup_file(app2.execution.lrms_execdir)
         assert False # should not happen
 
 
