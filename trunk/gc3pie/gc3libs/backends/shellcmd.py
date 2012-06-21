@@ -29,20 +29,24 @@ import posix
 import shutil
 import sys
 import tempfile
+import psutil
 
 # GC3Pie imports
 import gc3libs
 import gc3libs.exceptions
 from gc3libs import log, Run
-from gc3libs.utils import same_docstring_as, samefile, copy_recursively
+from gc3libs.utils import same_docstring_as, samefile, copy_recursively, Struct
 from gc3libs.backends import LRMS
-
 
 
 class ShellcmdLrms(LRMS):
     """
     Execute an `Application`:class: instance as a local process.
     """
+    TIMEFMT = "WallTime=%es\nKernelTime=%Ss\nUserTime=%Us\nCPUUsage=%P\nMaxResidentMemory=%MkB\nAverageResidentMemory=%tkB\nAverageTotalMemory=%KkB\nAverageUnsharedMemory=%DkB\nAverageUnsharedStack=%pkB\nAverageSharedMemory=%XkB\nPageSize=%ZB\nMajorPageFaults=%F\nMinorPageFaults=%R\nSwaps=%W\nForcedSwitches=%c\nWaitSwitches=%w\nInputs=%I\nOutputs=%O\nSocketReceived=%r\nSocketSent=%s\nSignals=%k\nReturnCode=%x\n"
+    WRAPPER_DIR = 'shellcmd_wrapper.d'
+    WRAPPER_OUTPUT_FILENAME = 'resource_usage.txt'
+    WRAPPER_PID = 'wrapper.pid'
 
     def __init__(self, resource, auths):
         assert resource.type in [gc3libs.Default.SHELLCMD_LRMS,
@@ -144,41 +148,51 @@ class ShellcmdLrms(LRMS):
         stored into `app.execution.lrms_jobid`, and map the POSIX
         process status to GC3Libs `Run.State`.
         """
-        try:
-            pid = int(app.execution.lrms_jobid)
-            (pid_, status) = posix.waitpid(pid, posix.WNOHANG)
-            if pid_ == 0:
-                gc3libs.log.debug("Child process %d not yet done." % pid)
-                return Run.State.RUNNING
-            gc3libs.log.debug("Got status %d for child process PID %d" % (status, pid))
-        except OSError, ex:
-            if ex.errno == 10:
-                # XXX: is `InvalidArgument` the correct exception here?
-                raise gc3libs.exceptions.InvalidArgument(
-                    "Job '%s' refers to non-existent local process %s"
-                    % (app, app.execution.lrms_jobid))
-            else:
-                raise
-        except ValueError, ex:
-            # XXX: is `InvalidArgument` the correct exception here?
-            raise gc3libs.exceptions.InvalidArgument(
-                "Invalid field `lrms_jobid` in Job '%s':"
-                " expected a PID number, got '%s' (%s) instead"
-                % (app, app.execution.lrms_jobid, type(app.execution.lrms_jobid)))
+        wrapper_dir = os.path.join(
+            app.execution.lrms_execdir,
+            ShellcmdLrms.WRAPPER_DIR)
+        pidfile = open(os.path.join(wrapper_dir,
+                                    ShellcmdLrms.WRAPPER_PID))
+        pid = int(pidfile.read().strip())
+        pidfile.close()
 
-        # map POSIX status to GC3Libs `State`
-        if posix.WIFSTOPPED(status):
-            app.execution.state = Run.State.STOPPED
-            app.execution.returncode = status
-        elif posix.WIFSIGNALED(status) or posix.WIFEXITED(status):
-            app.execution.state = Run.State.TERMINATING
-            app.execution.returncode = status
-            # book-keeping
+        # I'm using try... except... instead of pid_exists() to avoid
+        # race conditions
+        try:
+            process = psutil.Process(pid)
+            gc3libs.log.debug("Child process %d not yet done." % pid)
+            if process.status in [ psutil.STATUS_STOPPED,
+                                   psutil.STATUS_TRACING_STOP]:
+                app.execution.state = Run.State.STOPPED
+            elif process.status in [ psutil.STATUS_RUNNING,
+                                     psutil.STATUS_SLEEPING,
+                                     psutil.STATUS_DISK_SLEEP ]:
+                app.execution.state = Run.State.RUNNING
+            else:
+                # This can probably happen only with zombies!
+                raise psutil.NoSuchProcess("Process %s in zombie status" % pid)
+
+        except psutil.NoSuchProcess:
+            # process is probably terminated. Check the wrapper
+            # output file.
+
+            # XXX: Free resources. A bit optimistic?
             self._resource.free_slots += app.requested_cores
             self._resource.user_run -= 1
-        else:
-            # no changes
-            pass
+
+            wrapper_filename = os.path.join(
+                app.execution.lrms_execdir,
+                ShellcmdLrms.WRAPPER_DIR,
+                ShellcmdLrms.WRAPPER_OUTPUT_FILENAME)
+
+            if os.path.isfile(wrapper_filename):
+                outcoming = self._parse_wrapper_output(wrapper_filename)
+                app.execution.state = Run.State.TERMINATING
+                app.execution.returncode = int(outcoming.ReturnCode)
+            else:
+                raise gc3libs.exceptions.InvalidArgument(
+                    "Job '%s' refers to process wrapper %s which ended unexpectedly"
+                    % (app, app.execution.lrms_jobid))
 
         return app.execution.state
 
@@ -284,13 +298,34 @@ class ShellcmdLrms(LRMS):
                     os.environ[k] = v
 
                 ## finally.. exec()
+                cmd = app.executable
                 if not os.path.isabs(app.executable) and os.path.exists(app.executable):
                     # local file
-                    os.execl(os.path.join(os.getcwd(), app.executable),
-                             app.executable, *app.arguments)
-                else:
-                    # search in path
-                    os.execlp(app.executable, app.executable, *app.arguments)
+                    cmd = os.path.join(os.getcwd(), app.executable)
+
+                # Create the directory in which the pid and the output
+                # from the wrapper script will be stored
+                wrapper_dir = os.path.join(
+                    execdir,
+                    ShellcmdLrms.WRAPPER_DIR)
+
+                if not os.path.isdir(wrapper_dir):
+                    os.mkdir(wrapper_dir)
+
+                if posix.fork(): # parent process, exits to avoid zombies
+                    sys.exit(0)
+
+                pidfile = open(os.path.join(wrapper_dir,
+                                            ShellcmdLrms.WRAPPER_PID), 'w')
+                pidfile.write(str(os.getpid()))
+                pidfile.write('\n')
+                pidfile.close()
+                os.execlp("/usr/bin/time", "/usr/bin/time",
+                          "-o", os.path.join(
+                              wrapper_dir,
+                              ShellcmdLrms.WRAPPER_OUTPUT_FILENAME),
+                          "-f", ShellcmdLrms.TIMEFMT,
+                          cmd, *app.arguments)
 
             except Exception, ex:
                 sys.excepthook(* sys.exc_info())
@@ -327,6 +362,21 @@ class ShellcmdLrms(LRMS):
                 return False
         return True
 
+    def _parse_wrapper_output(self, wrapper_filename):
+        """
+        Parse the file saved by the wrapper in
+        `ShellcmdLrms.WRAPPER_OUTPUT_FILENAME` inside the WRAPPER_DIR
+        in the job's execution directory and return a `Struct`:class:
+        containing the values found on the file.
+        """
+        wrapper_file = open(wrapper_filename)
+        wrapper_output = Struct()
+        for line in wrapper_file:
+            if '=' not in line: continue
+            k,v = line.strip().split('=', 1)
+            wrapper_output[k] = v
+
+        return wrapper_output
 
 ## main: run tests
 

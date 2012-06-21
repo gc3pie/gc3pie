@@ -74,7 +74,7 @@ type=none
         for fname in self.files_to_remove:
             if os.path.isdir(fname):                
                 shutil.rmtree(fname)
-            else:
+            elif os.path.exists(fname):
                 os.remove(fname)
 
     def test_backend_creation(self):
@@ -168,10 +168,10 @@ type=none
 
 
     def test_check_app_after_reloading_session(self):
-        """Check if we are able to check the status of a job after the
-        script which started the job has died.
+        """Check if we are able to check the status of a job after the script which started the job has died.
         """
         tmpdir = tempfile.mkdtemp(prefix=__name__, suffix='.d')
+        self.cleanup_file(tmpdir)
 
         app = gc3libs.Application(
             executable = '/usr/bin/env',
@@ -184,7 +184,8 @@ type=none
             requested_cores = 1,
             )
         self.core.submit(app)
-
+        self.cleanup_file(app.execution.lrms_execdir)
+        # import nose.tools; nose.tools.set_trace()
         pid = app.execution.lrms_jobid
 
         # Forget about the child process. 
@@ -193,8 +194,19 @@ type=none
         # The wrapper process should die and write the final status
         # and the output to a file, so that `Core` will be able to
         # retrieve it.
-        self.core.update_job_state(app)
-        
+
+        # wait until the test job is done, but timeout and raise an error
+        # if it takes too much time...
+        MAX_WAIT = 10 # seconds
+        WAIT = 0.1 # seconds
+        waited = 0
+        while app.execution.state != gc3libs.Run.State.TERMINATING and waited < MAX_WAIT:
+            time.sleep(WAIT)
+            waited += WAIT
+            self.core.update_job_state(app)
+
+        assert_equal(app.execution.state, gc3libs.Run.State.TERMINATING)
+        assert_equal(app.execution.returncode, 0)
 
 if __name__ =="__main__":
     import nose
