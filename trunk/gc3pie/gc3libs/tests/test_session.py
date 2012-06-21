@@ -193,7 +193,7 @@ class TestSession(object):
         for task_id in sess2.tasks.iterkeys():
             task = sess2.store.load(task_id)
             assert_equal(task, sess2.tasks[task_id])
-        for task2_id, task1_id in zip(sess2.tasks.keys(), self.sess.tasks.keys()):
+        for task2_id, task1_id in zip(sorted(sess2.tasks.keys()), sorted(self.sess.tasks.keys())):
             assert_equal(self.sess.tasks[task1_id],
                          sess2.tasks[task2_id])
 
