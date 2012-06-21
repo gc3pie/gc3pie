@@ -42,6 +42,7 @@ class TestBackendShellcmd(object):
 [resource/localhost_test]
 type=shellcmd
 transport=local
+time_cmd=/usr/bin/time
 max_cores=2
 max_cores_per_job=2
 max_memory_per_core=2
@@ -207,6 +208,9 @@ type=none
 
         assert_equal(app.execution.state, gc3libs.Run.State.TERMINATING)
         assert_equal(app.execution.returncode, 0)
+
+    def test_time_cmd_args(self):
+        assert_equal( self.backend.time_cmd , '/usr/bin/time')
 
 if __name__ =="__main__":
     import nose

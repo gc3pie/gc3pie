@@ -157,7 +157,7 @@ debug = 0
 # max_cores_per_job = 32
 # max_memory_per_core = 2
 # max_walltime = 12
-# ncores = 80
+# max_cores = 80
 # walltime = 12
 #
 #
@@ -171,8 +171,26 @@ debug = 0
 # max_cores_per_job = 80
 # max_memory_per_core = 2
 # max_walltime = 2
-# ncores = 80
+# max_cores = 80
 # # see http://gridengine.info/2005/11/04/immediate-accounting-data-flushing
 # # if you need to lower this
 # sge_accounting_delay = 15
 # walltime = 2
+
+# The following two sections should be enough to run on the local
+# machine only
+
+# [auth/noauth]
+# type=none
+#
+# [resource/localhost]
+# type=shellcmd
+# transport=local
+# time_cmd=/usr/bin/time
+# max_cores=2
+# max_cores_per_job=2
+# max_memory_per_core=2
+# max_walltime=2
+# architecture=x64_64
+# auth=noauth
+# enabled=True
