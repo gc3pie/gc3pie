@@ -156,6 +156,35 @@ type=none
         assert False # should not happen
 
 
-if __name__ == "__main__":
+    def test_check_app_after_reloading_session(self):
+        """Check if we are able to check the status of a job after the
+        script which started the job has died.
+        """
+        tmpdir = tempfile.mkdtemp(prefix=__name__, suffix='.d')
+
+        app = gc3libs.Application(
+            executable = '/usr/bin/env',
+            arguments = [],
+            inputs = [],
+            outputs = [],
+            output_dir = tmpdir,
+            stdout = "stdout.txt",
+            stderr = "stderr.txt",
+            requested_cores = 1,
+            )
+        self.core.submit(app)
+
+        pid = app.execution.lrms_jobid
+
+        # Forget about the child process. 
+        os.waitpid(pid, 0)
+
+        # The wrapper process should die and write the final status
+        # and the output to a file, so that `Core` will be able to
+        # retrieve it.
+        self.core.update_job_state(app)
+        
+
+if __name__ =="__main__":
     import nose
     nose.runmodule()
