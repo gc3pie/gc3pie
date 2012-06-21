@@ -313,7 +313,37 @@ class ShellcmdLrms(LRMS):
                     os.mkdir(wrapper_dir)
 
                 if posix.fork(): # parent process, exits to avoid zombies
-                    sys.exit(0)
+                    # The bug is cause by the fact that in order to
+                    # avoid creation of zombie processes we have to
+                    # *daemonize*, which basically means that we have
+                    # to do something like:
+                    #
+                    # if not posix.fork()
+                    #     # the child
+                    #     if not posix.fork(): 
+                    #         # the nephew
+                    #         os.execlp(<the program we want to run>)
+                    #     else: # still the child
+                    #         # exits, so that the nephew will not
+                    #         # become a zombie
+                    #         sys.exit(0)
+                    #
+                    # However, sys.exit() basically raises a
+                    # SystemExit exception, which is catched (and then
+                    # "ignored") by nose, so we would end up with a
+                    # lot of clones of the nosetests programs running
+                    # at the same time.
+                    #
+                    # To avoid this we call os.execlp('/bin/true')
+                    # instead, which will overwrite the current
+                    # instance of nosetests with /bin/true, which will
+                    # exit without problem.
+                    os.execlp('/bin/true', '/bin/true')
+                    
+                    # In case os.execlp() will fail we still call
+                    # sys.exit(0), which should be just fine if not
+                    # called from within nose.
+                    sys.exit(0) 
 
                 pidfile = open(os.path.join(wrapper_dir,
                                             ShellcmdLrms.WRAPPER_PID), 'w')
