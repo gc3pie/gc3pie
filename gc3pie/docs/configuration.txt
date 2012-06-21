@@ -200,9 +200,9 @@ value of the ``type`` key:
   * If ``type`` is ``arc1``, then the resource is accessed using the ARC grid middleware (version 1.1.x/1.0.x);
   * If ``type`` is ``arc0``, then the resource is accessed using the ARC grid middleware (version 0.8.x);
   * If ``type`` is ``sge``, then the resource is a `Grid Engine`_ batch system, to be accessed by an SSH connection to its front-end node.
-  * If ``type`` is ``subprocess``, then the resource is the computer where the GC3Pie script is running and applications are executed by just spawning a local UNIX process.
+  * If ``type`` is ``shellcmd``, then the resource is the computer where the GC3Pie script is running and applications are executed by just spawning a local UNIX process.
 
-All `[resource/{name}]`:file: sections (except those of ``subprocess``
+All `[resource/{name}]`:file: sections (except those of ``shellcmd``
 type) *must* reference a valid ``auth/***`` section. Resources of
 ``sge`` type can only reference :command:``ssh`` type sections.;
 resources of type ``arc0`` or ``arc1`` can only reference
@@ -216,9 +216,9 @@ Some configuration keys are commmon to all resource types:
   *  ``max_cores_per_job``: Maximum number of CPU cores that a job can request; a resource will be dropped during the brokering process if a job requests more cores than this.
   *  ``max_memory_per_core``: Max amount of memory (expressed in GBs) that a job can request.
   *  ``max_walltime``: Maximum job running time (in hours).
-  *  ``ncores``: Total number of cores provided by the resource.
+  *  ``max_cores``: Total number of cores provided by the resource.
   *  ``architecture``: Processor architecture.  Should be one of the strings ``x86_64`` (for 64-bit Intel/AMD/VIA processors), ``i686`` (for 32-bit Intel/AMD/VIA x86 processors), or ``x86_64,i686`` if both architectures are available on the resource.
-
+  *  ``time_cmd``: Used only when ``type`` is ``shellcmd``. The `time` program is used as wrapper for the application in order to collect informations about the execution when running without a real `LRMS`.
 
 ``arc0`` resources
 ~~~~~~~~~~~~~~~~~~

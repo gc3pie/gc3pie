@@ -74,6 +74,10 @@ class ShellcmdLrms(LRMS):
 
         self.isValid = True
 
+        # save `time` command.
+        resource.setdefault('time_cmd', 'time')
+        self.time_cmd = self._resource.time_cmd
+
     def is_valid(self):
         return self.isValid
 
@@ -350,7 +354,7 @@ class ShellcmdLrms(LRMS):
                 pidfile.write(str(os.getpid()))
                 pidfile.write('\n')
                 pidfile.close()
-                os.execlp("/usr/bin/time", "/usr/bin/time",
+                os.execlp(self.time_cmd, self.time_cmd,
                           "-o", os.path.join(
                               wrapper_dir,
                               ShellcmdLrms.WRAPPER_OUTPUT_FILENAME),
