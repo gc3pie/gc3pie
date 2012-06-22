@@ -1317,8 +1317,9 @@ class SessionBasedScript(_Script):
                 pass
         self.after_main_loop()
 
-        # Set the end timestamp in the session directory
-        self.session.set_end_timestamp()
+        if rc < 4:
+            # Set the end timestamp in the session directory
+            self.session.set_end_timestamp()
 
         # save the session again before exiting, so the file reflects
         # jobs' statuses
