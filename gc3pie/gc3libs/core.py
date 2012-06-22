@@ -286,7 +286,7 @@ specified in the configuration file.
                 # self.auths.get(lrms._resource.auth)
                 job.timestamp[Run.State.NEW] = time.time()
                 job.info = ("Submitting to '%s' at %s"
-                        % (job.resource_name,
+                        % (lrms._resource.name,
                            time.ctime(job.timestamp[Run.State.NEW])))
                 lrms.submit_job(app)
             except Exception, ex:
