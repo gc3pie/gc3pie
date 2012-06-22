@@ -59,7 +59,7 @@ class Session(list):
         >>> import tempfile; tmpdir = tempfile.mktemp(dir='.')
         >>> session = Session(tmpdir)
         >>> sorted(os.listdir(tmpdir))
-        ['session_ids.txt', 'store.url']
+        ['created', 'session_ids.txt', 'store.url']
 
     When a `Session` object is created with a `path` argument pointing
     to an existing valid session, the index of jobs is automatically
@@ -123,6 +123,8 @@ class Session(list):
 
     INDEX_FILENAME = 'session_ids.txt'
     STORE_URL_FILENAME = "store.url"
+    TIMESTAMP_FILES = {'start': 'created',
+                       'end'  : 'finished'}
 
     DEFAULT_JOBS_DIR = 'jobs'
 
@@ -146,6 +148,9 @@ class Session(list):
         """
         self.path = os.path.abspath(path)
         self.tasks = dict()
+        # Session not yet created
+        self.created = -1
+        self.finished = -1
 
         # check if there is an old-style session to load
         oldstyle_index = self.path + '.csv'
@@ -185,6 +190,7 @@ class Session(list):
         self.store = gc3libs.persistence.make_store(self.store_url, **kw)
         self._save_store_url_file()
         self._save_index_file()
+        self.set_start_timestamp()
 
     def _convert_oldstyle_session(self, index_csv, jobs_dir):
         """
@@ -271,6 +277,9 @@ class Session(list):
                 gc3libs.log.error(
                     "Additionally, got a %s while moving back '%s' to '%s': %s",
                     err.__class__.__name__, new_jobs_dir, jobs_dir, str(err))
+        # Try to guess when the session has been started
+        self.created = os.stat(index_csv).st_ctime
+        self.set_start_timestamp(self.created)
 
         # if we got this far, everything is fine and we can remove the
         # old index (and ignore any related error)
@@ -310,6 +319,14 @@ class Session(list):
         except:
             idx_fd.close()
             raise
+
+        try:
+            start_file = os.path.join(
+                self.path, self.TIMESTAMP_FILES['start'])
+            self.created = os.stat(start_file).st_mtime
+        except OSError:
+            gc3libs.log.warning(
+                "Unable to recover starting time from existing session: file %s is missing." % (start_file))
 
         for task_id in ids:
             try:
@@ -505,6 +522,43 @@ class Session(list):
         store_url_filename = os.path.join(self.path, self.STORE_URL_FILENAME)
         gc3libs.utils.write_contents(store_url_filename, self.store_url)
 
+    def _touch_file(self, filename, time=None):
+        """
+        Touch a file which is inside the session directory, updating
+        modification and access time to `time` and creating the file
+        if it does not exists.
+
+        If `time` is None, the current time will be used.
+
+        It returns the value used for `time`
+        """
+        filename = os.path.join(self.path, filename)
+        open(filename, 'a').close()
+        if time is None:
+            os.utime(filename, None)
+        else:
+            os.utime(filename, (time, time))
+        return os.stat(filename).st_mtime
+
+    def set_start_timestamp(self, time=None):
+        """
+        Create a file named `created` in the session directory. It's
+        creation/modification time will be used to know when the
+        session has sarted.
+        """
+        self.created = self._touch_file(self.TIMESTAMP_FILES['start'])
+
+    def set_end_timestamp(self, time=None):
+        """
+        Create a file named `finished` in the session directory. It's
+        creation/modification time will be used to know when the
+        session has finished.
+
+        Please note that `Session` does not know when a session is
+        finished, so this method should be called by a
+        `SessionBasedScript`:class: class.
+        """
+        self.finished = self._touch_file(self.TIMESTAMP_FILES['end'])
 
 
 ## main: run tests

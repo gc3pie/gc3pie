@@ -27,7 +27,7 @@ import os
 import shutil
 import tempfile
 
-from nose.tools import assert_true, assert_equal, raises, set_trace
+from nose.tools import assert_true, assert_false, assert_equal, raises, set_trace
 from nose.plugins.skip import SkipTest
 
 import sqlalchemy
@@ -114,7 +114,7 @@ class TestOldstyleConversion:
         assert os.path.isdir(self.sess.path)
         assert not os.path.exists(self.index_csv)
         assert not os.path.exists(self.jobs_dir)
-
+        assert self.sess.created > 0
 
 class TestSession(object):
     def setUp(self):
@@ -211,6 +211,29 @@ class TestSession(object):
         extraid = self.sess.store.save(obj1)
         obj2 = self.sess.load(extraid)
         assert_equal(obj1, obj2)
+
+    def test_creation_of_timestamp_files(self):
+        start_file = os.path.join(self.sess.path,
+                                  self.sess.TIMESTAMP_FILES['start'])
+        end_file = os.path.join(self.sess.path,
+                                  self.sess.TIMESTAMP_FILES['end'])
+
+        assert_true(os.path.exists(start_file))
+        assert_false(os.path.exists(end_file))
+
+        assert_equal(os.stat(start_file).st_mtime, self.sess.created)
+
+        self.sess.set_end_timestamp()
+        assert_true(os.path.exists(end_file))
+        assert_equal(os.stat(end_file).st_mtime, self.sess.finished)
+
+    def test_load_session_reads_session_start_time(self):
+        """Check if the load_session method is able to read the creation time from the `created` file"""
+        session2 = Session(self.sess.path)
+        start_file = os.path.join(self.sess.path,
+                                  self.sess.TIMESTAMP_FILES['start'])
+        assert_equal(os.stat(start_file).st_mtime, self.sess.created)
+        assert_equal(os.stat(start_file).st_mtime, session2.created)
 
 
 class StubForSqlSession(TestSession):
