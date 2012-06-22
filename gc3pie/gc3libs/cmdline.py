@@ -1317,7 +1317,7 @@ class SessionBasedScript(_Script):
                 pass
         self.after_main_loop()
 
-        if rc < 4:
+        if rc in [0, 2]:
             # Set the end timestamp in the session directory
             self.session.set_end_timestamp()
 
