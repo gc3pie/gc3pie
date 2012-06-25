@@ -230,62 +230,69 @@ class GeotopApplication(Application):
             GEOTOP_OUTPUT_ARCHIVE,
             ]
 
-        # move files one level up, except the ones listed in `exclude`
-        for entry in os.listdir(tmp_output_dir):
-            src_entry = os.path.join(tmp_output_dir, entry)
-            gc3libs.log.debug("Considering entry '%s' ...", src_entry)
-            # concatenate all output files together
-            if entry == self.stdout:
-                gc3libs.utils.cat(src_entry, output=os.path.join(self.simulation_dir, entry), append=True)
-                # try remove it
-                os.remove(src_entry)
-                gc3libs.log.debug("  ... appended to '%s'", os.path.join(self.simulation_dir, entry))
-                continue
-            if entry == self.stderr:
-                gc3libs.utils.cat(src_entry, output=os.path.join(self.simulation_dir, entry), append=True)
-                # try remove it
-                os.remove(src_entry)
-                gc3libs.log.debug("  ... appended to '%s'", os.path.join(self.simulation_dir, entry))
-                continue
-            if entry in exclude or (entry.startswith('script.') and entry.endswith('.sh')):
-                # delete entry and continue with next one
-                os.remove(src_entry)
-                gc3libs.log.debug("  ... it's a GC3Pie auxiliary file, ignore it!",)
-                continue
-
-            # now really move file one level up
-            dest_entry = os.path.join(self.simulation_dir, entry)
-            if os.path.exists(dest_entry):
-                # backup with numerical suffix
-                # gc3libs.utils.backup(dest_entry)
-                shutil.rmtree(dest_entry, ignore_errors=True)
-            os.rename(os.path.join(tmp_output_dir, entry), dest_entry)
-            gc3libs.log.debug("  ... moved to '%s'", os.path.join(dest_entry))
-        # os.removedirs(tmp_output_dir)
-        shutil.rmtree(tmp_output_dir, ignore_errors=True)
-
-        # search for termination files
-        if (os.path.exists(os.path.join(self.simulation_dir, '_SUCCESSFUL_RUN'))
-            or os.path.exists(os.path.join(self.simulation_dir, 'out', '_SUCCESSFUL_RUN'))
-            # XXX: why are we looking for '.old' files??
-            or os.path.exists(os.path.join(self.simulation_dir, '_SUCCESSFUL_RUN.old'))
-            or os.path.exists(os.path.join(self.simulation_dir,'out', '_SUCCESSFUL_RUN.old'))):
-            self.execution.returncode = (0, posix.EX_OK)
-        elif (os.path.exists(os.path.join(self.simulation_dir, '_FAILED_RUN'))
-              or os.path.exists(os.path.join(self.simulation_dir, '_FAILED_RUN'))
-              # XXX: why are we looking for '.old' files??
-              or os.path.exists(os.path.join(self.simulation_dir, 'out', '_FAILED_RUN.old'))
-              or os.path.exists(os.path.join(self.simulation_dir, 'out', '_FAILED_RUN.old'))):
+        if not os.path.isdir(tmp_output_dir):
+            # output folder not available
+            # log failure and stop here
+            gc3libs.log.warning("Output folder '%s' not found. Cannot process any further" % tmp_output_dir)
             # use exit code 100 to indicate total failure
             self.execution.returncode = (0, 100)
         else:
-            # should be resubmitted
-            # call _scan_and_tar to create new archive
-            # XXX: To consider a better way of handling this
-            # at the moment the entire input archive is recreated
-            gc3libs.log.info("Updating tar archive for resubmission.")
-            inputs = dict(self._scan_and_tar(self.simulation_dir))
-            # self._scan_and_tar(self.simulation_dir)
+            # move files one level up, except the ones listed in `exclude`
+            for entry in os.listdir(tmp_output_dir):
+                src_entry = os.path.join(tmp_output_dir, entry)
+                gc3libs.log.debug("Considering entry '%s' ...", src_entry)
+                # concatenate all output files together
+                if entry == self.stdout:
+                    gc3libs.utils.cat(src_entry, output=os.path.join(self.simulation_dir, entry), append=True)
+                    # try remove it
+                    os.remove(src_entry)
+                    gc3libs.log.debug("  ... appended to '%s'", os.path.join(self.simulation_dir, entry))
+                    continue
+                if entry == self.stderr:
+                    gc3libs.utils.cat(src_entry, output=os.path.join(self.simulation_dir, entry), append=True)
+                    # try remove it
+                    os.remove(src_entry)
+                    gc3libs.log.debug("  ... appended to '%s'", os.path.join(self.simulation_dir, entry))
+                    continue
+                if entry in exclude or (entry.startswith('script.') and entry.endswith('.sh')):
+                    # delete entry and continue with next one
+                    os.remove(src_entry)
+                    gc3libs.log.debug("  ... it's a GC3Pie auxiliary file, ignore it!",)
+                    continue
+
+                # now really move file one level up
+                dest_entry = os.path.join(self.simulation_dir, entry)
+                if os.path.exists(dest_entry):
+                    # backup with numerical suffix
+                    # gc3libs.utils.backup(dest_entry)
+                    shutil.rmtree(dest_entry, ignore_errors=True)
+                os.rename(os.path.join(tmp_output_dir, entry), dest_entry)
+                gc3libs.log.debug("  ... moved to '%s'", os.path.join(dest_entry))
+            # os.removedirs(tmp_output_dir)
+            shutil.rmtree(tmp_output_dir, ignore_errors=True)
+
+            # search for termination files
+            if (os.path.exists(os.path.join(self.simulation_dir, '_SUCCESSFUL_RUN'))
+                or os.path.exists(os.path.join(self.simulation_dir, 'out', '_SUCCESSFUL_RUN'))
+                # XXX: why are we looking for '.old' files??
+                or os.path.exists(os.path.join(self.simulation_dir, '_SUCCESSFUL_RUN.old'))
+                or os.path.exists(os.path.join(self.simulation_dir,'out', '_SUCCESSFUL_RUN.old'))):
+                self.execution.returncode = (0, posix.EX_OK)
+            elif (os.path.exists(os.path.join(self.simulation_dir, '_FAILED_RUN'))
+                or os.path.exists(os.path.join(self.simulation_dir, '_FAILED_RUN'))
+                # XXX: why are we looking for '.old' files??
+                or os.path.exists(os.path.join(self.simulation_dir, 'out', '_FAILED_RUN.old'))
+                or os.path.exists(os.path.join(self.simulation_dir, 'out', '_FAILED_RUN.old'))):
+                # use exit code 100 to indicate total failure
+                self.execution.returncode = (0, 100)
+            else:
+                # should be resubmitted
+                # call _scan_and_tar to create new archive
+                # XXX: To consider a better way of handling this
+                # at the moment the entire input archive is recreated
+                gc3libs.log.info("Updating tar archive for resubmission.")
+                inputs = dict(self._scan_and_tar(self.simulation_dir))
+                # self._scan_and_tar(self.simulation_dir)
 
 
 class GeotopTask(RetryableTask, gc3libs.utils.Struct):
