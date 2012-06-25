@@ -46,15 +46,24 @@ sys.path.append('/usr/lib/pymodules/python%d.%d/'
                 % sys.version_info[:2])
 try:
     import arclib
+    use_arc = True
 except ImportError:
-    gc3libs.log.error('Failed importing required arclib module')
-    raise gc3libs.exceptions.LRMSError("Failed importing required arclib module")
+    use_arc = False
+    
+    # gc3libs.log.error('Failed importing required arclib module')
+    # raise gc3libs.exceptions.LRMSError("Failed importing required arclib module")
 
 class ArcLrms(LRMS):
     """
     Manage jobs through the ARC middleware.
     """
     def __init__(self,resource, auths):
+
+        # check if arc module has been imported
+        if not use_arc:
+            gc3libs.log.error('Failed importing arclib module')
+            raise gc3libs.exceptions.LRMSError("Failed importing arclib module")        
+        
         # Normalize resource types
         assert resource.type == gc3libs.Default.ARC0_LRMS, \
             "ArcLRMS.__init__(): Failed. Resource type expected '%s'. Received '%s'" \
@@ -396,8 +405,13 @@ class ArcLrms(LRMS):
             # (at least in some cases); let's make one up based on
             # some crude heuristics
             if arc_job.errors != '':
+                # XXX: how to deal with
+                # 'Data staging failed (pre-processing); Failed in files upload (post-processing)'
                 job.log("ARC reported error: %s" % arc_job.errors)
-                job.returncode = (Run.Signals.RemoteError, -1)
+                if "Data staging failed" in arc_job.errors:
+                    job.returncode = (Run.Signals.DataStagingFailure, -1)
+                else:
+                    job.returncode = (Run.Signals.RemoteError, -1)
             # FIXME: we should introduce a kind of "wrong requirements" error
             elif (arc_job.requested_wall_time is not None
                   and arc_job.requested_wall_time != -1
