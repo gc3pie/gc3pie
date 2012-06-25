@@ -116,7 +116,7 @@ specified in the configuration file.
         except KeyError:
             raise gc3libs.exceptions.InvalidResourceName(
                 "Cannot find computational resource '%s'" %
-                resource_name)
+                name)
 
 
     def select_resource(self, match):
