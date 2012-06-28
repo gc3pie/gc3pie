@@ -355,7 +355,7 @@ class BatchSystem(LRMS):
 
         except Exception, ex:
             # self.transport.close()
-            log.error("Error in querying PBS/Torque resource '%s': %s: %s",
+            log.error("Error in querying Batch resource '%s': %s: %s",
                     self._resource.name, ex.__class__.__name__, str(ex))
             raise
         # If we reach this point it means that we don't actually know
