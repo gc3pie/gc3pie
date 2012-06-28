@@ -48,6 +48,7 @@ if not sys.path.count(path2SrcPy):
 from plotSimulation import plotSimulation
 from plotAggregate import makeAggregatePlot
 from pymods.classes.tableDict import tableDict
+from plotOwnership import plotOwnerProfiles
 
 path2Pymods = os.path.join(os.path.dirname(__file__), '../')
 if not sys.path.count(path2Pymods):
@@ -116,50 +117,56 @@ class housingApplication(Application):
             except:
                 logger.warning('could not delete wront output dir = %s' % wrong_output_dir)
 
-        # set the exitcode based on postprocessing the main output file
-        aggregateOut = os.path.join(output_dir, 'aggregate.out')
-        genParametersFile = os.path.join(os.getcwd(), 'localBaseDir', 'input', 'genParameters.in')
-        ctry =       getParameter(genParametersFile, 'ctry', 'space-separated')
-        if ctry == 'us':
-            curPanel = 'PSID'
-        elif ctry == 'de':
-            curPanel = 'SOEP'
-        elif ctry == 'uk':
-            curPanel = 'BHPS'
-        else: 
-            logger.critical('unknown profile %s' % profile)
-            os.exit(1)        
-        empOwnershipFile = os.path.join(os.path.split(output_dir)[0], 'input', curPanel + 'OwnershipProfilealleduc.out')
-        ownershipTableFile = os.path.join(output_dir, 'ownershipTable.out')
-        if os.path.exists(aggregateOut):
-            self.execution.exitcode = 0
-            # make plot of predicted vs empirical ownership profile
-            aggregateOutTable = tableDict.fromTextFile(aggregateOut, width = 20, prec = 10)
-            aggregateOutTable.keep(['age', 'owner'])
-            aggregateOutTable.rename('owner', 'thOwnership')
-            empOwnershipTable = tableDict.fromTextFile(empOwnershipFile, width = 20, prec = 10)
-            empOwnershipTable.rename('PrOwnership', 'empOwnership')
-            ownershipTable = aggregateOutTable.merged(empOwnershipTable, 'age')
-            ownershipTable.drop('_merge')
-            yVars = ['thOwnership', 'empOwnership']
-            # add the individual simulations
-            for profile in [ '1', '2', '3' ]:
-                profileOwnershipFile = os.path.join(output_dir, 'simulation_' + profile + '.out')
-                if not os.path.exists(profileOwnershipFile): continue
-                profileOwnershipTable = tableDict.fromTextFile(profileOwnershipFile, width = 20, prec = 10)
-                profileOwnershipTable.keep(['age', 'owner'])
-                profileOwnershipTable.rename('owner', 'thOwnership_' + profile)
-                ownershipTable.merge(profileOwnershipTable, 'age')
-                ownershipTable.drop('_merge')  
-                yVars.append('thOwnership_' + profile)
-            f = open(ownershipTableFile, 'w')
-            print >> f, ownershipTable
-            f.close()
-            try:
-                plotSimulation(table = ownershipTableFile, xVar = 'age', yVars = yVars, yVarRange = (0., 1.), figureFile = os.path.join(self.output_dir, 'ownership.png'), verb = 'CRITICAL')
-            except:
-                logger.debug('couldnt make ownershipTableFile')
 
+        ## set the exitcode based on postprocessing the main output file
+        #aggregateOut = os.path.join(output_dir, 'aggregate.out')
+        #genParametersFile = os.path.join(os.getcwd(), 'localBaseDir', 'input', 'genParameters.in')
+        #ctry =       getParameter(genParametersFile, 'ctry', 'space-separated')
+        #if ctry == 'us':
+            #curPanel = 'PSID'
+        #elif ctry == 'de':
+            #curPanel = 'SOEP'
+        #elif ctry == 'uk':
+            #curPanel = 'BHPS'
+        #else: 
+            #logger.critical('unknown profile %s' % profile)
+            #os.exit(1)        
+        #empOwnershipFile = os.path.join(os.path.split(output_dir)[0], 'input', curPanel + 'OwnershipProfilealleduc.out')
+        #ownershipTableFile = os.path.join(output_dir, 'ownershipTable.out')
+        #if os.path.exists(aggregateOut):
+            #self.execution.exitcode = 0
+            ## make plot of predicted vs empirical ownership profile
+            #aggregateOutTable = tableDict.fromTextFile(aggregateOut, width = 20, prec = 10)
+            #aggregateOutTable.keep(['age', 'owner'])
+            #aggregateOutTable.rename('owner', 'thOwnership')
+            #empOwnershipTable = tableDict.fromTextFile(empOwnershipFile, width = 20, prec = 10)
+            #empOwnershipTable.rename('PrOwnership', 'empOwnership')
+            #ownershipTable = aggregateOutTable.merged(empOwnershipTable, 'age')
+            #ownershipTable.drop('_merge')
+            #yVars = ['thOwnership', 'empOwnership']
+            ## add the individual simulations
+            #for profile in [ '1', '2', '3' ]:
+                #profileOwnershipFile = os.path.join(output_dir, 'simulation_' + profile + '.out')
+                #if not os.path.exists(profileOwnershipFile): continue
+                #profileOwnershipTable = tableDict.fromTextFile(profileOwnershipFile, width = 20, prec = 10)
+                #profileOwnershipTable.keep(['age', 'owner'])
+                #profileOwnershipTable.rename('owner', 'thOwnership_' + profile)
+                #ownershipTable.merge(profileOwnershipTable, 'age')
+                #ownershipTable.drop('_merge')  
+                #yVars.append('thOwnership_' + profile)
+            #f = open(ownershipTableFile, 'w')
+            #print >> f, ownershipTable
+            #f.close()
+            #try:
+                #plotSimulation(table = ownershipTableFile, xVar = 'age', yVars = yVars, yVarRange = (0., 1.), figureFile = os.path.join(self.output_dir, 'ownership.png'), verb = 'CRITICAL')
+            #except:
+                #logger.debug('couldnt make ownershipTableFile')
+
+            #try:
+                #self.execution.exitcode = plotOwnerProfiles(path2input = os.path.join(os.getcwd(), 'localBaseDir', 'input'), 
+                                                        #path2output = output_dir, simuFileName = 'aggregate.out')
+            #except:
+                #logger.debug('couldnt make ownerprofile plot. plotOwnerProfiles crashed, couldnt even set exitcode. ')
             # make plot of life-cycle simulation (all variables)
             try:                
                 makeAggregatePlot(self.output_dir)
