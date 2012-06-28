@@ -278,7 +278,7 @@ class Session(list):
                     "Additionally, got a %s while moving back '%s' to '%s': %s",
                     err.__class__.__name__, new_jobs_dir, jobs_dir, str(err))
         # Try to guess when the session has been started
-        statinfo = os.stat(index_csv).st_ctime
+        statinfo = os.stat(index_csv)
         self.created = min(statinfo.st_ctime,
                            statinfo.st_mtime,
                            statinfo.st_atime)
