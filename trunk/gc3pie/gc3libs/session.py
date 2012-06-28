@@ -25,6 +25,7 @@ __version__ = '$Revision$'
 # stdlib imports
 import csv
 import os
+import sys
 import shutil
 
 # GC3Pie imports
@@ -151,6 +152,7 @@ class Session(list):
         # Session not yet created
         self.created = -1
         self.finished = -1
+        self.cmdline = kw.get('cmdline', None)
 
         # check if there is an old-style session to load
         oldstyle_index = self.path + '.csv'
@@ -190,6 +192,14 @@ class Session(list):
         self.store = gc3libs.persistence.make_store(self.store_url, **kw)
         self._save_store_url_file()
         self._save_index_file()
+
+        # Save the current command line on ``created`` file.
+        fd = open(os.path.join(
+            self.path,
+            self.TIMESTAMP_FILES['start']),'w')
+        fd.write(str.join(' ', sys.argv)+'\n')
+        fd.close()
+
         self.set_start_timestamp()
 
     def _convert_oldstyle_session(self, index_csv, jobs_dir):
