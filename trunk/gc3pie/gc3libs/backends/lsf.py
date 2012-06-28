@@ -41,6 +41,7 @@ from gc3libs.utils import *
 
 import transport
 
+import batch
 
 # Examples of LSF commands output used to build this backend:
 # $ bsub -W 00:10 -n 1 -R "rusage[mem=1800]" < script.sh
@@ -368,7 +369,7 @@ def _make_remote_and_local_path_pair(transport, job, remote_relpath, local_root_
 
 
 
-class LsfLrms(LRMS):
+class LsfLrms(batch.BatchSystem):
     """
     Job control on LSF clusters (possibly by connecting via SSH to a submit node).
     """
@@ -590,32 +591,8 @@ class LsfLrms(LRMS):
         job.state = state
         return state
 
-
-    @same_docstring_as(LRMS.cancel_job)
-    def cancel_job(self, app):
-        job = app.execution
-        try:
-            self.transport.connect()
-
-            _command = ('bkill %s' % job.lrms_jobid)
-            exit_code, stdout, stderr = self.transport.execute_command(_command)
-            if exit_code != 0 and ('Job has already finished' not in stderr):
-                log.error("Failed executing remote LSF command '%s'; exit status: %d" % (_command,exit_code))
-                log.debug("Remote LSF command returned stdout: %s" % stdout)
-                log.debug("Remote LSF command returned stderr: %s" % stderr)
-                if exit_code == 127:
-                    # failed executing remote command
-                    raise gc3libs.exceptions.LRMSError('Failed executing remote command')
-
-            # self.transport.close()
-            return job
-
-        except:
-            # self.transport.close()
-            log.critical('Failure in checking status')
-            raise
-
-
+    def _cancel_command(self, jobid):
+        return "bkill %s" % jobid
 
     @same_docstring_as(LRMS.free)
     def free(self, app):

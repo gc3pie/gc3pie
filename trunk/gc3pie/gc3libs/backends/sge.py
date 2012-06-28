@@ -41,6 +41,7 @@ from gc3libs.utils import same_docstring_as
 
 import transport
 
+import batch
 
 def _int_floor(s):
     return int(float(s))
@@ -304,7 +305,7 @@ def _make_remote_and_local_path_pair(transport, job, remote_relpath, local_root_
 
 
 
-class SgeLrms(LRMS):
+class SgeLrms(batch.BatchSystem):
     """
     Job control on SGE clusters (possibly by connecting via SSH to a submit node).
     """
@@ -596,34 +597,8 @@ class SgeLrms(LRMS):
             job.state = state
         return state
 
-
-    @same_docstring_as(LRMS.cancel_job)
-    def cancel_job(self, app):
-        job = app.execution
-        try:
-            self.transport.connect()
-
-            _command = 'qdel '+job.lrms_jobid
-            exit_code, stdout, stderr = self.transport.execute_command(_command)
-            if exit_code != 0:
-                # It is possible that 'qdel' fails because job has been already completed
-                # thus the cancel_job behaviour should be to
-                log.error('Failed executing remote command: %s. exit status %d' % (_command,exit_code))
-                log.debug("remote command returned stdout: %s" % stdout)
-                log.debug("remote command returned stderr: %s" % stderr)
-                if exit_code == 127:
-                    # failed executing remote command
-                    raise gc3libs.exceptions.LRMSError('Failed executing remote command')
-
-            # self.transport.close()
-            return job
-
-        except:
-            # self.transport.close()
-            log.critical('Failure in checking status')
-            raise
-
-
+    def _cancel_command(self, jobid):
+        return "qdel %s" % jobid
 
     @same_docstring_as(LRMS.free)
     def free(self, app):
