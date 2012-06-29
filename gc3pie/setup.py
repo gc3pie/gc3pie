@@ -87,6 +87,7 @@ setuptools.setup(
             'gstat = gc3utils.frontend:main',
             'gsub = gc3utils.frontend:main',
             'gtail = gc3utils.frontend:main',
+            'gsession = gc3utils.frontend:main',
             ],
        },
 
