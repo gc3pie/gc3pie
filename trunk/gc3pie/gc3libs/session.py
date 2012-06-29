@@ -129,7 +129,7 @@ class Session(list):
 
     DEFAULT_JOBS_DIR = 'jobs'
 
-    def __init__(self, path, store_url=None, **kw):
+    def __init__(self, path, store_url=None, create=True, **kw):
         """
         First argument `path` is the path to the session directory.
 
@@ -142,6 +142,10 @@ class Session(list):
           The optional `store_url` argument and following keyword arguments
           are used if and only if a new session is being *created*; they are
           ignored when loading existing sessions!
+
+        The `create` argument is used to control the behavior in case the session does not exists.
+        If `create` is `False` and the session does not exists an error will be raised.
+        If `create` is `True` and the session does not exists then a new session will be created.
 
         By default `gc3libs.persistence.filesystem.FileSystemStore`:class:
         (which see) is used for providing the session with a store.
@@ -178,7 +182,11 @@ class Session(list):
                 else:
                     raise
         else:
-            self._create_session(store_url, **kw)
+            if create:
+                self._create_session(store_url, **kw)
+            else:
+                raise gc3libs.exceptions.InvalidArgument(
+                    "Session '%s' not found" % self.path)
 
     def _create_session(self, store_url, **kw):
         if store_url:

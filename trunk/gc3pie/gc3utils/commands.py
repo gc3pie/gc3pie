@@ -88,7 +88,12 @@ force removal of a job regardless.
                        help="Remove job even when not in terminal state.")
 
     def main(self):
-        self.session = Session(self.params.session)
+        try:
+            self.session = Session(self.params.session, create=False)
+        except gc3libs.exceptions.InvalidArgument, ex:
+            # session not found?
+            raise RuntimeError('Session %s not found' % self.params.session)
+
         if self.params.all and len(self.params.args) > 0:
             raise gc3libs.exceptions.InvalidUsage("Option '-A' conflicts with list of job IDs to remove.")
 
@@ -198,7 +203,12 @@ GC3Libs internals.
                        " MUST be used together with '--print'.")
 
     def main(self):
-        self.session = Session(self.params.session)
+        try:
+            self.session = Session(self.params.session, create=False)
+        except gc3libs.exceptions.InvalidArgument, ex:
+            # session not found?
+            raise RuntimeError('Session %s not found' % self.params.session)
+
         if self.params.csv and self.params.tabular:
             raise gc3libs.exceptions.InvalidUsage(
                 "Conflicting options `-c`/`--csv` and `-t`/`--tabular`."
@@ -315,7 +325,12 @@ is canceled before re-submission.
                        help='Guaranteed minimal duration of job, in hours.')
 
     def main(self):
-        self.session = Session(self.params.session)
+        try:
+            self.session = Session(self.params.session, create=False)
+        except gc3libs.exceptions.InvalidArgument, ex:
+            # session not found?
+            raise RuntimeError('Session %s not found' % self.params.session)
+
         if len(self.params.args) == 0:
             self.log.error("No job IDs given on command line: nothing to do."
                            " Type '%s --help' for usage help."
@@ -394,7 +409,12 @@ Print job state.
 
     def main(self):
         # by default, update job statuses
-        self.session = Session(self.params.session)
+        try:
+            self.session = Session(self.params.session, create=False)
+        except gc3libs.exceptions.InvalidArgument, ex:
+            # session not found?
+            raise RuntimeError('Session %s not found' % self.params.session)
+
         if 'update' not in self.params:
             self.params.update = True
         assert self.params.update in [True, False]
@@ -539,7 +559,12 @@ released once the output files have been fetched.
                        help="Overwrite files in destination directory")
 
     def main(self):
-        self.session = Session(self.params.session)
+        try:
+            self.session = Session(self.params.session, create=False)
+        except gc3libs.exceptions.InvalidArgument, ex:
+            # session not found?
+            raise RuntimeError('Session %s not found' % self.params.session)
+
         if len(self.params.args) == 0:
             self.log.error("No job IDs given on command line: nothing to do."
                            " Type '%s --help' for usage help."
@@ -603,7 +628,12 @@ error occurred.
                        help="Remove all stored jobs. USE WITH CAUTION!")
 
     def main(self):
-        self.session = Session(self.params.session)
+        try:
+            self.session = Session(self.params.session, create=False)
+        except gc3libs.exceptions.InvalidArgument, ex:
+            # session not found?
+            raise RuntimeError('Session %s not found' % self.params.session)
+
         if self.params.all and len(self.params.args) > 0:
             raise gc3libs.exceptions.InvalidUsage("Option '-A' conflicts with list of job IDs to remove.")
 
@@ -668,7 +698,12 @@ as more lines are written to the given stream.
         self.add_param("-n", "--lines", dest="num_lines", type=int, default=10, help="output  the  last N lines, instead of the last 10")
 
     def main(self):
-        self.session = Session(self.params.session)
+        try:
+            self.session = Session(self.params.session, create=False)
+        except gc3libs.exceptions.InvalidArgument, ex:
+            # session not found?
+            raise RuntimeError('Session %s not found' % self.params.session)
+
         if len(self.params.jobid) != 1:
             raise gc3libs.exceptions.InvalidUsage("This command takes only one argument: the Job ID.")
         jobid = self.params.jobid[0]
@@ -731,7 +766,12 @@ List status of computational resources.
                        " in `glist` output.)")
 
     def main(self):
-        self.session = Session(self.params.session)
+        try:
+            self.session = Session(self.params.session, create=False)
+        except gc3libs.exceptions.InvalidArgument, ex:
+            # session not found?
+            raise RuntimeError('Session %s not found' % self.params.session)
+
         if len(self.params.args) > 0:
             self._select_resources(* self.params.args)
             self.log.info("Retained only resources: %s",
@@ -766,3 +806,91 @@ List status of computational resources.
             output_if_exists('max_walltime', "Max walltime per job (minutes)")
             output_if_exists('applications', "Supported applications")
             print(table.draw())
+
+
+class cmd_gsession(_BaseCmd):
+    """
+Manage sessions
+    """
+
+    # Setup methods
+
+    def _add_subcmd(self, name, func, help=None):
+        subparser = self.subparsers.add_parser(name, help=help)
+        subparser.set_defaults(func=func)
+        subparser.add_argument('session')
+        subparser.add_argument('-v', '--verbose', action='count')
+
+    def setup_args(self):
+        self.subparsers = self.argparser.add_subparsers()
+        self._add_subcmd(
+            'abort',
+            self.abort_session,
+            help="Kill all jobs related to a session and remove it from disk")
+        self._add_subcmd(
+            'delete',
+            self.delete_session,
+            help="Delete a session from disk")
+        self._add_subcmd(
+            'list',
+            self.list_jobs,
+            help="List jobs related to a session")
+
+    def main(self):
+        import gc3utils.commands
+        return self.params.func()
+
+    # "working" methods
+    def abort_session(self):
+        """
+        Called with subcommand `abort`.
+
+        This method will open
+        the desired session and will kill all the jobs which belongs
+        to that session and remove them from store.
+        """
+        try:
+            self.session = Session(self.params.session, create=False)
+        except gc3libs.exceptions.InvalidArgument, ex:
+            raise RuntimeError('Session %s not found' % self.params.session)
+
+        for task_id in self.session.tasks:
+            self.session.tasks[task_id].kill()
+            self.session.remove(task_id)
+        if self.session.tasks:
+            raise RuntimeError("Not all tasks have been removed from the session")
+        return 0
+
+    def delete_session(self):
+        """
+        Called with subcommand `delete`.
+
+        This method will first call `abort` and then remove the
+        current session.
+
+        If the `abort` will fail or not all tasks have been removed
+        from the session, it will not delete the session and will exit
+        with exit value `1`.
+        """
+        try:
+            rc = self.abort_session()
+            if rc != 0:
+                return rc
+        except gc3libs.exceptions.InvalidArgument, ex:
+            raise RuntimeError('Session %s not found' % self.params.session)
+
+        # XXX: FIXME: self.session is created in abort_session()
+        if self.session.tasks:
+            raise RuntimeError("Session %s not empty: not deleting it" % self.params.session)
+        self.session.destroy()
+        return 0
+
+    def list_jobs(self):
+        """
+        Called when subcommand is `list`.
+
+        This method basically call the command "glist -n -v -s SESSION"
+        """
+        cmd = gc3utils.commands.cmd_glist
+        sys.argv = ['glist', '-n', '-v', '-s', self.params.session]
+        return cmd().run()
