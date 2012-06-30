@@ -742,7 +742,7 @@ if __name__ == '__main__':
     except:
         logger.critical('problem creating combineRunningTimes. Investigate...')
     # some find commands to copy result graphs to a common directory. 
-    os.system("find -maxdepth 1 -type d -iregex './p.*' -exec bash -c 'x='{}' && mkdir -p ownerPlots && y=${x#./} && echo $y && cp ${y}/output/ownership.png ownerPlots/${y}.png 2>/dev/null' \; ; ld ownerPlots/")
+    os.system("find -maxdepth 1 -type d -iregex './p.*' -exec bash -c 'x='{}' && mkdir -p ownerPlots && y=${x#./} && echo $y && cp ${y}/output/ownership_aggregate.out.png ownerPlots/${y}.png 2>/dev/null' \; ; ld ownerPlots/")
     os.system("find -maxdepth 1 -type d -iregex './p.*' -exec bash -c 'x='{}' && mkdir -p aggregatePlots && y=${x#./} && echo $y && cp ${y}/output/aggregate.png aggregatePlots/${y}.png' \; ; ld aggregatePlots/")
     os.system("find -maxdepth 1 -type d -iregex './p.*' -exec bash -c 'x='{}' && mkdir -p ownerBdry && y=${x#./} && echo $y && cp ${y}/output/ownerBdry1.png ownerBdry/${y}.png' \; ; ld ownerBdry")
     
