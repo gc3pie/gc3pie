@@ -248,7 +248,9 @@ class ArcLrms(LRMS):
         Return the GC3Pie state corresponding to the given ARC status.
 
         See `update_job_state`:meth: for a complete table of the
-        correspondence.
+        correspondence.  ARC0 job states are documented in
+        `<http://www.nordugrid.org/documents/arc_infosys.pdf>` on page
+        39.
 
         :param str status: ARC0 job status.
 
@@ -257,24 +259,32 @@ class ArcLrms(LRMS):
         """
         try:
             return {
-                'ACCEPTED':  Run.State.SUBMITTED,
                 'ACCEPTING': Run.State.SUBMITTED,
-                'SUBMIT':    Run.State.SUBMITTED,
-                'SUBMITTING':Run.State.SUBMITTED,
+                'ACCEPTED':  Run.State.SUBMITTED,
                 'PREPARING': Run.State.SUBMITTED,
                 'PREPARED':  Run.State.SUBMITTED,
+                'SUBMITTING':Run.State.SUBMITTED,
+                'SUBMIT':    Run.State.SUBMITTED,
                 'INLRMS:Q':  Run.State.SUBMITTED,
                 'INLRMS:R':  Run.State.RUNNING,
-                'INLRMS:O':  Run.State.STOPPED,
-                'INLRMS:E':  Run.State.STOPPED,
-                'INLRMS:X':  Run.State.STOPPED,
+                'INLRMS:E':  Run.State.RUNNING,
+                'INLRMS:O':  Run.State.RUNNING,
                 'INLRMS:S':  Run.State.STOPPED,
                 'INLRMS:H':  Run.State.STOPPED,
+                # XXX: it seems that `INLRMS:X` is a notation used in
+                # the manual to mean `INLRMS:*`, i.e., any of the
+                # above, not an actual state ...
+                'INLRMS:X':  Run.State.STOPPED,
+                # the `-ING` states below are used by ARC to mean that
+                # the GM has received a request for action but the job
+                # has not yet terminated; in particular, the output is
+                # not yet ready for retrieval, which is why we map
+                # them to `RUNNING`.
                 'FINISHING': Run.State.RUNNING,
+                'KILLING':   Run.State.RUNNING, # ARC GM is sending signal
                 'EXECUTED':  Run.State.RUNNING,
-                'FINISHED':  Run.State.TERMINATING,
-                'CANCELING': Run.State.TERMINATING,
-                'KILLING':   Run.State.TERMINATING,
+                'FINISHING': Run.State.RUNNING,
+                'CANCELING': Run.State.RUNNING,
                 'FINISHED':  Run.State.TERMINATING,
                 'FAILED':    Run.State.TERMINATING,
                 'KILLED':    Run.State.TERMINATED,
