@@ -98,7 +98,11 @@ class Persistable(object):
     when a container holding a reference to it is saved.
 
     """
-    pass
+    def __str__(self):
+        try:
+            return str(self.persistent_id)
+        except AttributeError:
+            return super(Persistable, self).__str__()
 
 
 
