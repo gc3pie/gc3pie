@@ -389,9 +389,6 @@ import logbook
 ## custom application class
 
 
-
-
-
 class ghousing(SessionBasedScript, paraLoop):
     """
 Read `.loop` files and execute the `housingOut` program accordingly.
@@ -538,9 +535,28 @@ Read `.loop` files and execute the `housingOut` program accordingly.
 
         inputs = self._search_for_input_files(self.params.args)
         
+        # create a tar.gz archive of the code
+        import tarfile
+        tar = tarfile.open(os.path.join(os.getcwd(), 'codeBase.tar.gz'), "w:gz")
+        for name in [self.params.initial, os.path.join(self.params.initial, '../code')]:
+            tar.add(name)
+        tar.close()        
+        #codeBaseFolder = os.path.join(os.getcwd(), 'codeBase/')
+        #codeFolder = os.path.join(self.params.initial, '../code/')
+        #shutil.copytree(self.params.initial, os.path.join(codeBaseFolder, 'base'))
+        #shutil.copytree(codeFolder, os.path.join(codeBaseFolder, 'code'))
+        
         # Copy base dir
         localBaseDir = os.path.join(os.getcwd(), 'localBaseDir')
         gc3libs.utils.copytree(self.params.initial, localBaseDir)
+
+        # update ctry Parameters. Important, before I do the para.loop adjustments
+        genParametersFile = os.path.join(localBaseDir, 'genParameters.in')
+        ctryParametersFile = os.path.join(localBaseDir, 'ctryParameters.in')
+        updateCtryParametersFile = bool(getParameter(genParametersFile, 'updateCtryParametersFile', 'space-separated'))
+        ctry = getParameter(genParametersFile, 'ctry', 'space-separated')
+        if updateCtryParametersFile:
+            shutil.copy(os.path.join(localBaseDir, ctry + 'CtryParameters.in'), os.path.join(localBaseDir, 'ctryParameters.in'))
 
         for para_loop in inputs:
             path_to_base_dir = os.path.dirname(para_loop)
@@ -723,6 +739,7 @@ if __name__ == '__main__':
     #logger.info('Starting: \n%s' % ' '.join(sys.argv))
     logger.info('\n%s - Starting: \n%s' % (getDateTimeStr(), ' '.join(sys.argv)))
     os.system('cat ghousing.log')
+    os.system('cd ~/workspace/housingProj/model/code && hg log > ' + os.path.join(os.getcwd(), 'hgLog'))
     #os._exit(1)
     ghousing().run()
     #from guppy import hpy
