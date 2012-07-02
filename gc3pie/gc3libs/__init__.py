@@ -1494,8 +1494,7 @@ class Run(Struct):
 
         """
         self._ref = attach
-        if not hasattr(self, '_state'):
-            self._state = Run.State.NEW
+        self._state = Run.State.NEW
         self._exitcode = None
         self._signal = None
 
