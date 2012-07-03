@@ -116,7 +116,7 @@ class CryptoApplication(gc3libs.Application):
         """
         # XXX: need to gather more info on how to post-process.
         # for the moment do nothing and report job's exit status
-
+        
         if self.execution.exitcode:
             gc3libs.log.debug(
                 'Application terminated. postprocessing with execution.exicode %d',
@@ -125,6 +125,37 @@ class CryptoApplication(gc3libs.Application):
             gc3libs.log.debug(
                 'Application terminated. No exitcode available')
 
+        if self.execution.signal == 123:
+            # Assume Data staging problem
+            # resubmit
+            self.execution.returncode = (0, 99)
+    
+class CryptoTask(RetryableTask, gc3libs.utils.Struct):
+    """
+    Run ``gnfs-cmd`` on a given range
+    """
+    def __init__(self, start, extent, gnfs_location, input_files_archive, output, **kw):
+        RetryableTask.__init__(
+            self,
+            # task name
+            "LACAL_"+str(start), # jobname
+            # actual computational job
+            CryptoApplication(start, extent, gnfs_location, input_files_archive, output, **kw),
+            # keyword arguments
+            **kw)
+
+
+    def retry(self):
+        """
+        Resubmit a cryto application instance iff it exited with code 99.
+
+        *Note:* There is currently no upper limit on the number of
+        resubmissions!
+        """
+        if self.task.execution.exitcode == 99:
+            return True
+        else:
+            return False
 
 class CryptoChunkedParameterSweep(ChunkedParameterSweep):
     """
@@ -159,7 +190,8 @@ class CryptoChunkedParameterSweep(ChunkedParameterSweep):
         Create a new `CryptoApplication` for computing the range
         `param` to `param+self.parameter_count_increment`.
         """
-        return CryptoApplication(
+        # return CryptoApplication(
+        return CryptoTask(
             param, self.step, self.gnfs_location, self.input_files_archive, self.output_folder, **self.kw.copy())
 
 
