@@ -551,12 +551,28 @@ Read `.loop` files and execute the `housingOut` program accordingly.
         gc3libs.utils.copytree(self.params.initial, localBaseDir)
 
         # update ctry Parameters. Important, before I do the para.loop adjustments
-        genParametersFile = os.path.join(localBaseDir, 'genParameters.in')
-        ctryParametersFile = os.path.join(localBaseDir, 'ctryParameters.in')
+        ctryInParaLoop = False
+        for para_loop in inputs:
+            if os.path.isdir(para_loop):
+                para_loop = os.path.join(para_loop, 'para.loop')    
+            paraLoopFile = open(para_loop, 'r')
+            paraLoopFile.readline()
+            for line in paraLoopFile:
+                if not line.rstrip(): continue
+                eles = line.split()
+                var = eles[0]
+                val = eles[6]
+                if var == 'ctry':
+                    ctryInParaLoop = True
+                    ctry = val
+        localBaseDirInputFolder = os.path.join(localBaseDir, 'input')
+        genParametersFile = os.path.join(localBaseDirInputFolder, 'genParameters.in')
+        ctryParametersFile = os.path.join(localBaseDirInputFolder, 'ctryParameters.in')
         updateCtryParametersFile = bool(getParameter(genParametersFile, 'updateCtryParametersFile', 'space-separated'))
-        ctry = getParameter(genParametersFile, 'ctry', 'space-separated')
+        if not ctryInParaLoop:
+            ctry = getParameter(genParametersFile, 'ctry', 'space-separated')
         if updateCtryParametersFile:
-            shutil.copy(os.path.join(localBaseDir, ctry + 'CtryParameters.in'), os.path.join(localBaseDir, 'ctryParameters.in'))
+            shutil.copy(os.path.join(localBaseDirInputFolder, ctry + 'CtryParameters.in'), os.path.join(localBaseDirInputFolder, 'ctryParameters.in'))
 
         for para_loop in inputs:
             path_to_base_dir = os.path.dirname(para_loop)
