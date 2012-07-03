@@ -43,7 +43,7 @@ import gc3libs.utils
 from gc3libs.dag import SequentialTaskCollection, ParallelTaskCollection, ChunkedParameterSweep
 
 class ApplicakeApplication(Application):
-    def __init__(self, applic, input_file, output_file, output_dir, *args=None):
+    def __init__(self, applic, input_file, output_file, output_dir, args=None):
 
         arguments = [ applic, input_file, output_file ]
         arguments += args
