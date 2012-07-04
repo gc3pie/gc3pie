@@ -71,6 +71,7 @@ class Default(object):
     JOBS_DIR = os.path.join(RCDIR, "jobs")
     ARC0_LRMS = 'arc0'
     ARC1_LRMS = 'arc1'
+    ARC2_LRMS = 'arc2'
     ARC_CACHE_TIME = 30 #: only update ARC resources status every this seconds
     ARC_LOST_JOB_TIMEOUT = 1800 # previously: 4*ARC_CACHE_TIME #: consider a submitted job lost if it does not show up in the information system after this duration
     ARC_JOBLIST_LOCATION = os.path.expandvars("$HOME/.arc/jobs.xml")
@@ -89,9 +90,13 @@ class Default(object):
     PROXY_VALIDITY_THRESHOLD = 600 #: Proxy validity threshold in seconds. If proxy is expiring before the thresold, it will be marked as to be renewed.
 
     ARC1_LOGFILE = os.path.join(RCDIR, "arc1.log")
+    ARC_LOGFILE = os.path.join(RCDIR, "arc.log")
     ARC1_DEFAULT_SERVICE_TIMEOUT = 3 # max wait (seconds) for a service to respond; hopefully this impacts also LDAP searches
 
     PEEK_FILE_SIZE = 120 # expressed in bytes
+
+    CERTIFICATE_AUTHORITIES_DIR = "/etc/grid-security/certificates"
+    VOMS_DIR = "/etc/grid-security/vomsdir"
 
 from gc3libs.exceptions import *
 from gc3libs.persistence import Persistable
@@ -99,7 +104,7 @@ import gc3libs.url
 from gc3libs.utils import defproperty, deploy_configuration_file, Enum, Log, Struct, safe_repr
 
 
-class Task(Struct):
+class Task(Persistable, Struct):
     # XXX: alternative design: we could make Task take an additional
     # `job` parameter, which is the controlled job (i.e., the one that
     # `submit()` and friends act upon), defaulting to `self`.  This
@@ -165,11 +170,10 @@ class Task(Struct):
         self.execution = Run(attach=self)
         # `_grid` and `_attached` are set by `attach()`/`detach()`
         self._attached = False
-        self._grid = None
         if grid is not None:
             self.attach(grid)
         else:
-            self.detach()
+            self._grid = None
         self.changed = True
 
     # manipulate the "grid" interface used to control the associated job
@@ -537,7 +541,7 @@ def configure_logger(level=logging.ERROR,
 # directory"
 ANY_OUTPUT = '*'
 
-class Application(Persistable, Task):
+class Application(Task):
     """
     Support for running a generic application with the GC3Libs.
     The following parameters are *required* to create an `Application`
@@ -732,6 +736,7 @@ class Application(Persistable, Task):
       list of strings specifying the tags to request in each resource
       for submission; possibly empty.
     """
+
     def __init__(self, executable, arguments, inputs, outputs, output_dir, **kw):
         # required parameters
         self.executable = executable
@@ -1431,7 +1436,6 @@ class _Signals(object):
         else:
             raise gc3libs.exceptions.InvalidArgument("Unknown signal number %d" % signal_num)
 
-
 class Run(Struct):
     """
     A specialized `dict`-like object that keeps information about
@@ -1979,6 +1983,8 @@ class RetryableTask(Task):
         if (self.task.execution.state == Run.State.TERMINATED and own_state_old != Run.State.TERMINATED):
             self.execution.returncode = self.task.execution.returncode
             if self.retry():
+                # assign new Run
+                # self.task.execution = Run(attach=self)
                 self.retried += 1
                 self.task.submit(resubmit=True)
                 own_state_new = Run.State.RUNNING
