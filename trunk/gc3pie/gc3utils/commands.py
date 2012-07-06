@@ -779,7 +779,16 @@ List status of computational resources.
         Override `GC3UtilsScript`:class: `setup_args` method since we
         don't operate on single jobs.
         """
-        pass
+    def setup_args(self):
+        """
+        Override `GC3UtilsScript`:class: `setup_args` method since we
+        don't operate on jobs but on resources.
+        """
+        self.add_param('args',
+                       nargs='*',
+                       metavar='RESOURCE',
+                       help="Resource, string identifying the name of the resources to check.")
+
 
     def main(self):
 
