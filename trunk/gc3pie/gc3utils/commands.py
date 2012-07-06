@@ -21,9 +21,11 @@ Implementation of the `core` command-line front-ends.
 #
 __docformat__ = 'reStructuredText'
 __version__ = 'development version (SVN $Revision$)'
-__author__="Sergio Maffioletti <sergio.maffioletti@gc3.uzh.ch>, Riccardo Murri <riccardo.murri@uzh.ch>"
+__author__ = "Sergio Maffioletti <sergio.maffioletti@gc3.uzh.ch>, "
+"Riccardo Murri <riccardo.murri@uzh.ch>"
+"Antonio Messina <arcimboldo@gmail.com>"
 __date__ = '$Date$'
-__copyright__="Copyright (c) 2009-2011 Grid Computing Competence Center, University of Zurich"
+__copyright__ = "Copyright (c) 2009-2012 Grid Computing Competence Center, University of Zurich"
 
 
 ## stdlib imports
@@ -38,7 +40,7 @@ import time
 import types
 
 ## 3rd party modules
-import cli # pyCLI
+import cli  # pyCLI
 import cli.app
 
 ## local modules
@@ -165,7 +167,7 @@ force removal of a job regardless.
             except:
                 failed += 1
                 self.log.error("Failed removing '%s' from persistency layer."
-                                   " option '-f' harmless"% jobid)
+                                   " option '-f' harmless" % jobid)
                 continue
 
         # exit code is practically limited to 7 bits ...
@@ -218,6 +220,7 @@ GC3Libs internals.
             only_keys = self.params.keys.split(',')
         else:
             if self.params.verbose < 2:
+
                 def names_not_starting_with_underscore(name):
                     return not name.startswith('_')
                 only_keys = names_not_starting_with_underscore
@@ -251,10 +254,10 @@ GC3Libs internals.
 
         if self.params.tabular:
             # prepare table prettyprinter
-            table = Texttable(0) # max_width=0 => dynamically resize cells
+            table = Texttable(0)  # max_width=0 => dynamically resize cells
             table.set_cols_align(['l'] * (1 + len(only_keys)))
             if self.params.header:
-                table.set_deco(Texttable.HEADER) # also: .VLINES, .HLINES .BORDER
+                table.set_deco(Texttable.HEADER)  # also: .VLINES, .HLINES .BORDER
                 table.header(["Job ID"] + only_keys)
             else:
                 table.set_deco(0)
@@ -264,7 +267,7 @@ GC3Libs internals.
             if self.params.header:
                 csv_output.writerow(only_keys)
 
-        def cmp_by_jobid(x,y):
+        def cmp_by_jobid(x, y):
             return cmp(x.persistent_id, y.persistent_id)
         ok = 0
         for app in sorted(self._get_jobs(self.params.args), cmp=cmp_by_jobid):
@@ -299,7 +302,6 @@ GC3Libs internals.
         failed = len(self.params.args) - ok
         # exit code is practically limited to 7 bits ...
         return utils.ifelse(failed < 127, failed, 126)
-
 
 
 class cmd_gresub(_BaseCmd):
@@ -353,7 +355,7 @@ is canceled before re-submission.
             app = self.session.load(jobid.strip())
             app.attach(self._core)
             try:
-                app.update_state() # update state
+                app.update_state()  # update state
             except Exception, ex:
                 # ignore errors, and proceed to resubmission anyway
                 self.log.warning("Could not update state of %s: %s: %s",
@@ -392,7 +394,7 @@ Print job state.
         self.add_param("-L", "--lifetimes", "--print-lifetimes", nargs='?', metavar='FILE',
                        action='store', dest='lifetimes',
                        default=None,     # no option and no argument: discard data
-                       const=sys.stdout, # option given, but no argument
+                       const=sys.stdout,  # option given, but no argument
                        help="For each successful job, print"
                        " submission, start, and duration times."
                        " If FILE is omitted, report is printed to screen.")
@@ -448,7 +450,7 @@ Print job state.
         if self.params.keys is not None:
             keys = self.params.keys.split(',')
         else:
-            keys = [ ]
+            keys = []
 
         # init lifetimes report (if requested)
         if self.params.lifetimes is not None:
@@ -459,9 +461,9 @@ Print job state.
         # update states and compute statistics
         stats = utils.defaultdict(lambda: 0)
         tot = 0
-        rows = [ ]
+        rows = []
         for app in self._get_jobs(self.params.args):
-            tot += 1 # one more job successfully loaded
+            tot += 1  # one more job successfully loaded
             jobid = app.persistent_id
             if self.params.update:
                 app.attach(self._core)
@@ -469,7 +471,7 @@ Print job state.
                 self.session.store.replace(jobid, app)
             if states is None or app.execution.in_state(*states):
                 rows.append([jobid, app.execution.state, app.execution.info] +
-                            [ app.execution.get(name, "N/A") for name in keys ])
+                            [app.execution.get(name, "N/A") for name in keys])
             stats[app.execution.state] += 1
             if app.execution.state == Run.State.TERMINATED:
                 if app.execution.returncode == 0:
@@ -496,14 +498,14 @@ Print job state.
                             continue
                         terminated_at = timestamps['TERMINATING']
                         lifetimes_rows.append([jobid, submitted_at, running_at, terminated_at,
-                                               running_at-submitted_at, terminated_at-running_at])
+                                               running_at - submitted_at, terminated_at - running_at])
                 else:
                     stats['failed'] += 1
 
         if len(rows) > capacity and self.params.verbose == 0:
             # only print table with statistics
-            table = Texttable(0) # max_width=0 => dynamically resize cells
-            table.set_deco(0) # also: .VLINES, .HLINES .BORDER
+            table = Texttable(0)  # max_width=0 => dynamically resize cells
+            table.set_deco(0)  # also: .VLINES, .HLINES .BORDER
             table.set_cols_align(['r', 'c', 'r'])
             for state, num in sorted(stats.items()):
                 if (states is None) or (str(state) in states):
@@ -514,8 +516,8 @@ Print job state.
                         ])
         else:
             # print table of job status
-            table = Texttable(0) # max_width=0 => dynamically resize cells
-            table.set_deco(Texttable.HEADER) # also: .VLINES, .HLINES .BORDER
+            table = Texttable(0)  # max_width=0 => dynamically resize cells
+            table.set_deco(Texttable.HEADER)  # also: .VLINES, .HLINES .BORDER
             table.set_cols_align(['l'] * (3 + len(keys)))
             table.header(["Job ID", "State", "Info"] + keys)
             table.add_rows(sorted(rows), header=False)
@@ -604,7 +606,7 @@ released once the output files have been fetched.
                 self.session.store.replace(app.persistent_id, app)
 
             except Exception, ex:
-                print("Failed retrieving results of job '%s': %s"% (jobid, str(ex)))
+                print("Failed retrieving results of job '%s': %s" % (jobid, str(ex)))
                 failed += 1
                 continue
 
@@ -671,10 +673,10 @@ error occurred.
                     self.session.store.replace(jobid, app)
 
                     # or shall we simply return an ack message ?
-                    print("Sent request to cancel job '%s'."% jobid)
+                    print("Sent request to cancel job '%s'." % jobid)
 
             except Exception, ex:
-                print("Failed canceling job '%s': %s"% (jobid, str(ex)))
+                print("Failed canceling job '%s': %s" % (jobid, str(ex)))
                 failed += 1
                 continue
 
@@ -740,7 +742,7 @@ as more lines are written to the given stream.
                     print line.strip()
                 file_handle.close()
 
-        except gc3libs.exceptions.InvalidOperation: # Cannot `peek()` on a task collection
+        except gc3libs.exceptions.InvalidOperation:  # Cannot `peek()` on a task collection
             self.log.error("Task '%s' (of class '%s') has no defined output/error streams."
                            " Ignoring.", app.persistent_id, app.__class__.__name__)
             return 1
@@ -780,11 +782,13 @@ List status of computational resources.
         if self.params.update:
             self._core.update_resources()
         resources = self._core.get_resources()
-        def cmp_by_name(x,y):
+
+        def cmp_by_name(x, y):
             return cmp(x.name, y.name)
+
         for resource in sorted(resources, cmp=cmp_by_name):
-            table = Texttable(0) # max_width=0 => dynamically resize cells
-            table.set_deco(Texttable.HEADER | Texttable.BORDER) # also: .VLINES, .HLINES
+            table = Texttable(0)  # max_width=0 => dynamically resize cells
+            table.set_deco(Texttable.HEADER | Texttable.BORDER)  # also: .VLINES, .HLINES
             table.set_cols_align(['r', 'l'])
             table.header([resource.name, ""])
 
@@ -889,8 +893,8 @@ Manage sessions
         """
         Called when subcommand is `list`.
 
-        This method basically call the command "glist -n -v -s SESSION"
+        This method basically call the command "gstat -n -v -s SESSION"
         """
-        cmd = gc3utils.commands.cmd_glist
-        sys.argv = ['glist', '-n', '-v', '-s', self.params.session]
+        cmd = gc3utils.commands.cmd_gstat
+        sys.argv = ['gstat', '-n', '-v', '-s', self.params.session]
         return cmd().run()
