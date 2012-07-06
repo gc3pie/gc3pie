@@ -766,7 +766,9 @@ List status of computational resources.
                        " this comma-separated list. (Attribute name is as given in"
                        " the configuration file, or listed in the middle column"
                        " in `glist` output.)")
-        del self.actions['session']
+
+    def setup(self):
+        gc3libs.cmdline._Script.setup(self)
 
     def main(self):
 
