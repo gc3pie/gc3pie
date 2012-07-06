@@ -766,13 +766,9 @@ List status of computational resources.
                        " this comma-separated list. (Attribute name is as given in"
                        " the configuration file, or listed in the middle column"
                        " in `glist` output.)")
+        del self.actions['session']
 
     def main(self):
-        try:
-            self.session = Session(self.params.session, create=False)
-        except gc3libs.exceptions.InvalidArgument, ex:
-            # session not found?
-            raise RuntimeError('Session %s not found' % self.params.session)
 
         if len(self.params.args) > 0:
             self._select_resources(* self.params.args)
