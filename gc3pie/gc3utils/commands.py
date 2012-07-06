@@ -768,7 +768,18 @@ List status of computational resources.
                        " in `glist` output.)")
 
     def setup(self):
+        """
+        Override `GC3UtilsScript`:class: `setup` method since we
+        don't need any `session` argument.
+        """
         gc3libs.cmdline._Script.setup(self)
+
+    def setup_args(self):
+        """
+        Override `GC3UtilsScript`:class: `setup_args` method since we
+        don't operate on single jobs.
+        """
+        pass
 
     def main(self):
 
