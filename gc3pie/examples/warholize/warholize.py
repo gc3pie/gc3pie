@@ -114,21 +114,19 @@ class CreateLutApplication(ApplicationWithCachedResults):
     """Create the LUT for the image using 3 colors picked randomly
     from CreateLutApplication.colors"""
 
-    def __init__(self, input_image, output_file, output_dir, lcolor, mcolor, hcolor, working_dir):
+    def __init__(self, input_image, output_file, output_dir, colors, working_dir):
         self.lutfile = os.path.basename(output_file)
         self.working_dir = working_dir
         gc3libs.log.info("Creating lut file %s from %s using "
-                         "lowcolor: %s, midcolor: %s and highcolor: %s"% (
-            self.lutfile, input_image, lcolor, mcolor, hcolor))
+                         "colors: %s" % (
+            self.lutfile, input_image, str.join(", ", colors)))
         ApplicationWithCachedResults.__init__(
             self,
             executable = "convert",
             arguments = [
                 '-size',
-                '1x1',
-                'xc:%s' % lcolor,
-                'xc:%s' % mcolor,
-                'xc:%s' % hcolor,
+                '1x1'] + [
+                "xc:%s" % color for color in colors] + [
                 '+append',
                 '-resize',
                 '256x1!',
@@ -177,7 +175,7 @@ class ApplyLutApplication(ApplicationWithCachedResults):
 class TricolorizeImage(SequentialTaskCollection):
 
     def __init__(self, grayscaled_image, output_dir, output_file,
-                 lcolor, mcolor, hcolor, warhol_dir, grid=None):
+                 colors, warhol_dir, grid=None):
         self.grayscaled_image = grayscaled_image
         self.output_dir = output_dir
         self.warhol_dir = warhol_dir
@@ -196,7 +194,7 @@ class TricolorizeImage(SequentialTaskCollection):
                 self.grayscaled_image,
                 "%s.miff" % self.grayscaled_image,
                 self.output_dir,
-                lcolor, hcolor, mcolor, self.warhol_dir),
+                colors, self.warhol_dir),
             ]
 
         SequentialTaskCollection.__init__(self, self.jobname, self.tasks, grid)
@@ -220,10 +218,11 @@ class TricolorizeMultipleImages(ParallelTaskCollection):
               'indigo', 'navy', 'turquoise1', 'SeaGreen', 'gold',
               'orange', 'magenta']
 
-    def __init__(self, grayscaled_image, copies, output_dir, grid=None):
+    def __init__(self, grayscaled_image, copies, ncolors, output_dir, grid=None):
         gc3libs.log.info(
             "TricolorizeMultipleImages for %d copies run" % copies)
         self.jobname = "Warholizer_Parallel"
+        self.ncolors = ncolors
         ### XXX Why I have to use basename???
         self.output_dir = os.path.join(
             os.path.basename(output_dir), 'tricolorize')
@@ -232,9 +231,9 @@ class TricolorizeMultipleImages(ParallelTaskCollection):
         # Compute a unique sequence of random combination of
         # colors. Please note that we can have a maximum of N!/3! if N
         # is len(colors)
-        assert copies <= math.factorial(len(self.colors)) / 6
+        assert copies <= math.factorial(len(self.colors)) / math.factorial(ncolors)
 
-        combinations = [i for i in itertools.combinations(self.colors, 3)]
+        combinations = [i for i in itertools.combinations(self.colors, ncolors)]
         combinations = random.sample(combinations, copies)
 
         # Create all the single tasks
@@ -244,9 +243,7 @@ class TricolorizeMultipleImages(ParallelTaskCollection):
                 os.path.relpath(grayscaled_image),
                 "%s.%d" % (self.output_dir, i),
                 "%s.%d" % (grayscaled_image, i),
-                colors[0],
-                colors[1],
-                colors[2],
+                colors,
                 self.warhol_dir,
                 grid=grid))
 
@@ -313,7 +310,7 @@ class WarholizeWorkflow(SequentialTaskCollection):
     single `warholized` image.
     """
 
-    def __init__(self, input_image,  copies,
+    def __init__(self, input_image,  copies, ncolors,
                  grid=None, size=None, **kw):
         """XXX do we need input_image and output_image? I guess so?"""
         self.input_image = input_image
@@ -329,11 +326,11 @@ class WarholizeWorkflow(SequentialTaskCollection):
             x, y = size.split('x', 2)
             rows = math.sqrt(copies)
             self.resize = "%dx%d" % (int(x) / rows, int(y) / rows)
-        # XXX is this always defined starting from ...?
         # XXX: it is complaining about absolute path???
         # InvalidArgument: Remote paths not allowed to be absolute
         self.output_dir = os.path.relpath(kw.get('output_dir'))
 
+        self.ncolors = ncolors
         self.copies = copies
         # Check that copies is a perfect square
         if math.sqrt(self.copies) != int(math.sqrt(self.copies)):
@@ -362,7 +359,7 @@ class WarholizeWorkflow(SequentialTaskCollection):
         if isinstance(last, GrayScaleConvertApplication):
             self.add(TricolorizeMultipleImages(
                 os.path.join(self.output_dir, self.grayscaled_image),
-                self.copies,
+                self.copies, self.ncolors,
                 self.output_dir))
             return Run.State.RUNNING
         elif isinstance(last, TricolorizeMultipleImages):
@@ -387,6 +384,8 @@ class WarholizeScript(SessionBasedScript):
                        help="Resize the original image."
                        "Please note that the resulting image will be N times the size "
                        "specified here, where N is the argument of --copies.")
+        self.add_param('-n', '--num-colors', default=3, type=int,
+                       help="Number of colors to use. Default: 3")
 
     def new_tasks(self, extra):
         extra
@@ -399,7 +398,8 @@ class WarholizeScript(SessionBasedScript):
             yield ("Warholize.%d" % i,
                    WarholizeWorkflow,
                    [input_file,
-                    self.params.copies],
+                    self.params.copies,
+                    self.params.num_colors],
                    kw)
 
 
