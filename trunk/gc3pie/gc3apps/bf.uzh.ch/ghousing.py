@@ -44,7 +44,7 @@ if __name__ == '__main__':
         from pymods.support.support import rmFilesAndFolders
         curPath = os.getcwd()
         filesAndFolder = os.listdir(curPath)
-        if 'ghousing.csv' in filesAndFolder:
+        if 'ghousing.log' in filesAndFolder:
             if 'para.loop' in os.listdir(os.getcwd()):
                 shutil.copyfile(os.path.join(curPath, 'para.loop'), os.path.join('/tmp', 'para.loop'))
                 rmFilesAndFolders(curPath)
@@ -64,6 +64,7 @@ import os
 import re
 import sys
 import time
+import lockfile, cli
 
 from supportGc3 import lower, flatten, str2tuple, getIndex, extractVal, str2vals
 from supportGc3 import format_newVal, update_parameter_in_file, safe_eval, str2mat, mat2str, getParameter
@@ -449,23 +450,18 @@ Read `.loop` files and execute the `housingOut` program accordingly.
         gc3libs.utils.test_file(self.params.executable, os.R_OK|os.X_OK,
                                 gc3libs.exceptions.InvalidUsage)
         
-        
     def run(self):
         """
         Execute `cli.app.Application.run`:meth: if any exception is
         raised, catch it, output an error message and then exit with
         an appropriate error code.
         """
-        
-      #  return cli.app.CommandLineApp.run(self)
-        import lockfile     
-        import cli  
         try:
-            return cli.app.CommandLineApp.run(self)           
+            return cli.app.CommandLineApp.run(self)
         except gc3libs.exceptions.InvalidUsage, ex:
             # Fatal errors do their own printing, we only add a short usage message
             sys.stderr.write("Type '%s --help' to get usage help.\n" % self.name)
-            return 64 # EX_USAGE in /usr/include/sysexits.h
+            return 64  # EX_USAGE in /usr/include/sysexits.h
         except KeyboardInterrupt:
             sys.stderr.write("%s: Exiting upon user request (Ctrl+C)\n" % self.name)
             return 13
@@ -499,9 +495,81 @@ Read `.loop` files and execute the `housingOut` program accordingly.
                 msg %= (str(ex), self.name, str.join(' ', sys.argv[1:]))
             else:
                 msg %= (str(ex), self.name, '')
-            rc = 1      
-        except NotImplementedError, nE:
-            pass
+            rc = 1
+        #except Exception, ex:
+            #msg = "%s: %s" % (ex.__class__.__name__, str(ex))
+            #if isinstance(ex, cli.app.Abort):
+                #rc = (ex.status)
+            #elif isinstance(ex, EnvironmentError):
+                #rc = 74  # EX_IOERR in /usr/include/sysexits.h
+            #else:
+                ## generic error exit
+                #rc = 1
+        ## output error message and -maybe- backtrace...
+        #try:
+            #self.log.critical(msg,
+                              #exc_info=(self.params.verbose > self.verbose_logging_threshold + 2))
+        #except:
+            ## no logging setup, output to stderr
+            #sys.stderr.write("%s: FATAL ERROR: %s\n" % (self.name, msg))
+            #if self.params.verbose > self.verbose_logging_threshold + 2:
+                #sys.excepthook(* sys.exc_info())
+        ## ...and exit
+        #return 1
+
+        
+    #def run(self):
+        #"""
+        #Execute `cli.app.Application.run`:meth: if any exception is
+        #raised, catch it, output an error message and then exit with
+        #an appropriate error code.
+        #"""
+        
+      ##  return cli.app.CommandLineApp.run(self)
+        #import lockfile     
+        #import cli  
+        #try:
+            #return cli.app.CommandLineApp.run(self)           
+        #except gc3libs.exceptions.InvalidUsage, ex:
+            ## Fatal errors do their own printing, we only add a short usage message
+            #sys.stderr.write("Type '%s --help' to get usage help.\n" % self.name)
+            #return 64 # EX_USAGE in /usr/include/sysexits.h
+        #except KeyboardInterrupt:
+            #sys.stderr.write("%s: Exiting upon user request (Ctrl+C)\n" % self.name)
+            #return 13
+        #except SystemExit, ex:
+            #return ex.code
+        ## the following exception handlers put their error message
+        ## into `msg` and the exit code into `rc`; the closing stanza
+        ## tries to log the message and only outputs it to stderr if
+        ## this fails
+        #except lockfile.Error, ex:
+            #exc_info = sys.exc_info()
+            #msg = ("Error manipulating the lock file (%s: %s)."
+                   #" This likely points to a filesystem error"
+                   #" or a stale process holding the lock."
+                   #" If you cannot get this command to run after"
+                   #" a system reboot, please write to gc3pie@googlegroups.com"
+                   #" including any output you got by running '%s -vvvv %s'.")
+            #if len(sys.argv) > 0:
+                #msg %= (ex.__class__.__name__, str(ex),
+                        #self.name, str.join(' ', sys.argv[1:]))
+            #else:
+                #msg %= (ex.__class__.__name__, str(ex), self.name, '')
+            #rc = 1
+        #except AssertionError, ex:
+            #exc_info = sys.exc_info()
+            #msg = ("BUG: %s\n"
+                   #"Please send an email to gc3pie@googlegroups.com"
+                   #" including any output you got by running '%s -vvvv %s'."
+                   #" Thanks for your cooperation!")
+            #if len(sys.argv) > 0:
+                #msg %= (str(ex), self.name, str.join(' ', sys.argv[1:]))
+            #else:
+                #msg %= (str(ex), self.name, '')
+            #rc = 1      
+        #except NotImplementedError, nE:
+            #pass
         
     def new_tasks(self, extra):
         # Generating new tasks for both paramter files
