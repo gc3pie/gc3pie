@@ -143,14 +143,13 @@ Installation into a virtualenv has two distinct advantages:
    <http://code.google.com/p/gc3pie/wiki/ConfigurationFile>` provides
    an explanation of the syntax to use in configuration files.
 
-   An example configuration file, enabling access to the SMSCG_
-   infrastructure can be found at:
+   You can uncomment a few lines in the `example configuration file`_
+   provides to enable access to the SMSCG_ infrastructure.  Before you
+   can actually use this file, you will need to insert into it three
+   values, for which we can provide no default: ``aai_username``,
+   ``idp``, and ``vo``.
 
-     http://gc3pie.googlecode.com/svn/trunk/gc3pie/gc3libs/etc/gc3pie.conf.smscg
-
-   Before you can actually use this file, you will need to insert into
-   it three values, for which we can provide no
-   default: ``aai_username``, ``idp``, and ``vo``.
+   .. _`example configuration file`: http://gc3pie.googlecode.com/svn/trunk/gc3pie/gc3libs/etc/gc3pie.conf.example
 
    aai_username:
      This is the "username" you are asked for when accessing
