@@ -219,5 +219,5 @@ class DemoIteration(SequentialTaskCollection):
 
 # run script
 if __name__ == '__main__':
-    import gdemo
+    import gdemo_session
     Gdemo().run()
