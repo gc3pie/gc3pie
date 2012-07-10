@@ -185,14 +185,11 @@ ln -s '../src/gc3apps/codeml/gcodeml.py' bin/gcodeml</pre>
 working configuration file; <cite>the ConfigurationFile Wiki page
 &lt;http://code.google.com/p/gc3pie/wiki/ConfigurationFile&gt;</cite> provides
 an explanation of the syntax to use in configuration files.</p>
-<p>An example configuration file, enabling access to the <a class="reference external" href="http://www.smscg.ch/">SMSCG</a>
-infrastructure can be found at:</p>
-<blockquote>
-<div><p><a class="reference external" href="http://gc3pie.googlecode.com/svn/trunk/gc3pie/gc3libs/etc/gc3pie.conf.smscg">http://gc3pie.googlecode.com/svn/trunk/gc3pie/gc3libs/etc/gc3pie.conf.smscg</a></p>
-</div></blockquote>
-<p>Before you can actually use this file, you will need to insert into
-it three values, for which we can provide no
-default: <tt class="docutils literal"><span class="pre">aai_username</span></tt>, <tt class="docutils literal"><span class="pre">idp</span></tt>, and <tt class="docutils literal"><span class="pre">vo</span></tt>.</p>
+<p>You can uncomment a few lines in the <a class="reference external" href="http://gc3pie.googlecode.com/svn/trunk/gc3pie/gc3libs/etc/gc3pie.conf.example">example configuration file</a>
+provides to enable access to the <a class="reference external" href="http://www.smscg.ch/">SMSCG</a> infrastructure.  Before you
+can actually use this file, you will need to insert into it three
+values, for which we can provide no default: <tt class="docutils literal"><span class="pre">aai_username</span></tt>,
+<tt class="docutils literal"><span class="pre">idp</span></tt>, and <tt class="docutils literal"><span class="pre">vo</span></tt>.</p>
 <dl class="docutils">
 <dt>aai_username:</dt>
 <dd><p class="first last">This is the &#8220;username&#8221; you are asked for when accessing
