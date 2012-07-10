@@ -304,7 +304,7 @@ class SshTransport(Transport):
         try:
             # check connection first
             self.connect()
-            self.sftp.mkdir(dest, mode)
+            self.sftp.mkdirs(dest, mode)
         except IOError:
             # sftp.mkdir raises IOError if the directory exists;
             # ignore error and continue
