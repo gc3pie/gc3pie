@@ -314,20 +314,25 @@ def deploy_configuration_file(filename, template_filename=None):
         return True
     else:
         try:
+            from pkg_resources import Requirement, resource_filename, DistributionNotFound
+            import shutil
+        except ImportError, err:
+            raise gc3libs.exceptions.FatalError(
+                "Cannot import required Python modules: %s."
+                " Please check GC3Pie installation instructions at"
+                " http://gc3pie.googlecode.com/svn/trunk/gc3pie/docs/html/install.html"
+                % str(err))
+        try:
             # copy sample config file
             if not os.path.exists(dirname(filename)):
                 os.makedirs(dirname(filename))
-            from pkg_resources import Requirement, resource_filename, DistributionNotFound
             sample_config = resource_filename(Requirement.parse("gc3pie"),
                                               "gc3libs/etc/" + template_filename)
-            import shutil
             shutil.copyfile(sample_config, filename)
             return False
         except IOError, x:
             gc3libs.log.critical("CRITICAL ERROR: Failed copying configuration file: %s" % x)
             raise gc3libs.exceptions.NoConfigurationFile("No configuration file '%s' was found, and an attempt to create it failed. Aborting." % filename)
-        except ImportError:
-            raise gc3libs.exceptions.NoConfigurationFile("No configuration file '%s' was found. Aborting." % filename)
         except DistributionNotFound, ex:
             raise AssertionError("Cannot access resources for Python package: %s."
                                  " Installation error?" % str(ex))
