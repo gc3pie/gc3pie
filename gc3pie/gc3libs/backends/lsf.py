@@ -423,7 +423,7 @@ class LsfLrms(batch.BatchSystem):
         return "bjobs -w -W %s" % job.lrms_jobid
 
     def _acct_command(self, job):
-        retrun "bjobs -l %s" % job.lrms_jobid
+        return "bjobs -l %s" % job.lrms_jobid
 
     def _parse_stat_output(self, stdout):
         status_line = stdout.split('\n')[1]
