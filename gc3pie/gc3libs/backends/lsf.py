@@ -417,7 +417,7 @@ class LsfLrms(batch.BatchSystem):
 
     def _parse_submit_output(self, bsub_output):
         """Parse the ``bsub`` output for the local jobid."""
-        return self.get_jobid_from_submit_output(output, _bsub_jobid_re)
+        return self.get_jobid_from_submit_output(bsub_output, _bsub_jobid_re)
 
     def _stat_command(self, job):
         return "bjobs -w -W %s" % job.lrms_jobid
