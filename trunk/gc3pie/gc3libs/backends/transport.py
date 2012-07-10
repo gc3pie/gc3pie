@@ -301,14 +301,14 @@ class SshTransport(Transport):
             if dir in ['', '.']:
                 continue
             dest += '/' + dir
-            try:
-                # check connection first
-                self.connect()
-                self.sftp.mkdir(dest, mode)
-            except IOError:
-                # sftp.mkdir raises IOError if the directory exists;
-                # ignore error and continue
-                pass
+        try:
+            # check connection first
+            self.connect()
+            self.sftp.mkdir(dest, mode)
+        except IOError:
+            # sftp.mkdir raises IOError if the directory exists;
+            # ignore error and continue
+            pass
 
         
     @same_docstring_as(Transport.put)
