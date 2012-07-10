@@ -268,6 +268,30 @@ added.</p>
 (see the <tt class="docutils literal"><span class="pre">--session</span></tt> option) and start a new session
 afresh. Any information about jobs previously recorded
 in the session is lost.</td></tr>
+<tr><td class="option-group" colspan="2">
+<kbd><span class="option">-u</span>, <span class="option">--store-url <var>URL</var></span></kbd></td>
+</tr>
+<tr><td>&nbsp;</td><td><p class="first">Store GC3Pie job information at the persistent storage specified
+by <em>URL</em>.  The <em>URL</em> can be any form that is understood by the
+<tt class="xref py py-func docutils literal"><span class="pre">gc3libs.persistence.make_store()</span></tt> function (which see for
+details).  A few examples:</p>
+<ul class="simple">
+<li><tt class="file docutils literal"><span class="pre">sqlite</span></tt> &#8211; the jobs are stored in a SQLite3 database
+named <tt class="docutils literal"><span class="pre">jobs.db</span></tt> and contained in the session directory.</li>
+<li><tt class="file docutils literal"><em><span class="pre">/path/to/a/directory</span></em></tt> &#8211; the jobs are stored in the given
+directory, one file per job (this is the default format used by
+GC3Pie)</li>
+<li><tt class="file docutils literal"><span class="pre">sqlite:////</span><em><span class="pre">path/to/a/file.db</span></em></tt> &#8211; the jobs are stored in
+the given SQLite3 database file.</li>
+<li><tt class="file docutils literal"><span class="pre">mysql://user,passwd&#64;</span><em><span class="pre">server</span></em><span class="pre">/</span><em><span class="pre">dbname</span></em></tt> &#8211; jobs are stored
+in table <tt class="docutils literal"><span class="pre">store</span></tt> of the specified MySQL database.  The DB
+server and connection credentials (username, password) are also
+part of the <em>URL</em>.</li>
+</ul>
+<p class="last">If this option is omitted, GC3Pie&#8217;s <em>SessionBasedScript</em> defaults
+to storing jobs in the subdirectory <tt class="file docutils literal"><span class="pre">jobs</span></tt> of the session
+directory; each job is saved in a separate file.</p>
+</td></tr>
 </tbody>
 </table>
 </div></blockquote>
