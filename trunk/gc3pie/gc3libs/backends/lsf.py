@@ -423,7 +423,7 @@ class LsfLrms(batch.BatchSystem):
         return "bjobs -w -W %s" % job.lrms_jobid
 
     def _acct_command(self, job):
-        pass
+        retrun "bjobs -l %s" % job.lrms_jobid
 
     def _parse_stat_output(self, stdout):
         status_line = stdout.split('\n')[1]
@@ -439,7 +439,7 @@ class LsfLrms(batch.BatchSystem):
             return Run.State.RUNNING
         elif stat in [
             'DONE', # successful termination
-            'EXIT'  # job was killed / exit forced
+            'EXIT'  # job was killed / exit forced / script failed
             ]:
             return Run.State.TERMINATING
         else:

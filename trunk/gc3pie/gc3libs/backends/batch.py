@@ -28,6 +28,7 @@ import posixpath
 import sys
 import tempfile
 import stat
+import time
 
 import gc3libs
 from gc3libs import log, Run
@@ -319,7 +320,7 @@ class BatchSystem(LRMS):
                 if state == Run.State.UNKNOWN:
                     log.warning("unknown Batch job status , returning `UNKNOWN`")
                 job.state = state
-                return state
+                # return state
             # to increase readability, there is not `else:` block
 
             # In some batch systems, jobs disappeared from `*stat`
