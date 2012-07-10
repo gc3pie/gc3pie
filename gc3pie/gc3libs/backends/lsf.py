@@ -429,8 +429,8 @@ class LsfLrms(batch.BatchSystem):
         status_line = stdout.split('\n')[1]
         #
         fields = status_line.split()
-        assert fields[0] == job.lrms_jobid, \
-               "First field in `bjobs` output is not JobID!"
+        # assert fields[0] == job.lrms_jobid, \
+        #        "First field in `bjobs` output is not JobID!"
         stat = fields[2]
         log.debug("translating LSF's `bjobs` STAT '%s' to gc3libs.Run.State" % stat)
         if 'PEND' == stat:
