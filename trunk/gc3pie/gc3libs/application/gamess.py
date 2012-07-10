@@ -79,7 +79,7 @@ class GamessApplication(gc3libs.Application):
         #set job name
         kw['job_name'] = input_file_name_sans
         # build generic `Application` obj
-        gc3libs.Application.__init__(self, 
+        gc3libs.Application.__init__(self,
                                      executable = "/$GAMESS_LOCATION/nggms",
                                      arguments = arguments,
                                      inputs = [ inp_file_path ] + list(other_input_files),
@@ -95,16 +95,38 @@ class GamessApplication(gc3libs.Application):
     def terminated(self):
         """
         Append to log the termination status line as extracted from
-        the GAMESS '.out' file.  According to the normal/abnormal
-        termination of the GAMESS job, set the output code to 0 or 1,
-        or 2 if the fault was reported only by ``ddikick``.
+        the GAMESS '.out' file.
+
+        The job exit code `.execution.exitcode` is (re)set according
+        to the following table:
+
+        =====================  ===============================================
+        Exit code              Meaning
+        =====================  ===============================================
+        0                      the output file contains the string \
+                               ``EXECUTION OF GAMESS TERMINATED normally``
+        1                      the output file contains the string \
+                               ``EXECUTION OF GAMESS TERMINATED -ABNORMALLY-``
+        2                      the output file contains the string \
+                               ``ddikick exited unexpectedly``
+        70 (`os.EX_SOFTWARE`)  the output file cannot be read or \
+                               does not match any of the above patterns
+        =====================  ===============================================
+
         """
         gc3libs.log.debug("Running GamessApplication post-processing hook...")
         output_dir = self.output_dir
         output_filename = os.path.join(
             output_dir,
             os.path.splitext(os.path.basename(self.inp_file_path))[0] + '.out')
-        if os.path.exists(output_filename):
+        if not os.path.exists(output_filename):
+            # no output file, override exit code if it indicates success
+            if self.execution.exitcode == os.EX_OK:
+                self.execution.exitcode = os.EX_SOFTWARE
+        else:
+            # output file exists, start with pessimistic default and
+            # override if we find a "success" keyword
+            self.execution.exitcode = os.EX_SOFTWARE # internal software error
             gc3libs.log.debug("Trying to read GAMESS termination status"
                               " off output file '%s' ..." % output_filename)
             output_file = open(output_filename, 'r')
@@ -122,9 +144,14 @@ class GamessApplication(gc3libs.Application):
                         self.execution.info = line.strip().capitalize()
                         if match.group('ddikick_outcome') == 'unexpectedly':
                             self.execution.exitcode = 2
-                        elif match.group('ddikick_outcome') == 'gracefully':
-                            gc3libs.log.info('Setting exit code to 0')
-                            self.execution.exitcode = 0
+                        # If the GAMESS execution terminated normally, this would
+                        # have been catched by the test above; otherwise we risk here
+                        # setting the exitcode to EX_OK even if GAMESS didn't run at
+                        # all, but `ddikick` does not flag it as an error. (Not sure
+                        # this can actually happen, but better err on the safe side.)
+                        #elif match.group('ddikick_outcome') == 'gracefully':
+                        #    gc3libs.log.info('Setting exit code to 0')
+                        #    self.execution.exitcode = 0
                         break
                     else:
                         raise AssertionError(
@@ -133,7 +160,7 @@ class GamessApplication(gc3libs.Application):
                             " nor 'ddikick_outcome' did!")
             output_file.close()
 
-                             
+
     def qgms(self, resource, **kw):
         """
         Return a `qgms` invocation to run GAMESS-US with the
@@ -149,13 +176,13 @@ class GamessApplication(gc3libs.Application):
             # XXX: should this be an error instead?
             gc3libs.log.warning("Requested %d hours of wall-clock time,"
                                 " but setting running time limits is not supported by the `qgms` script."
-                                " Ignoring request, GAMESS job will be submitted with unspecified running time.", 
+                                " Ignoring request, GAMESS job will be submitted with unspecified running time.",
                                 self.requested_walltime)
         if self.requested_memory:
             # XXX: should this be an error instead?
             gc3libs.log.warning("Requested %d Gigabytes of memory per core,"
                                 " but setting memory limits is not supported by the `qgms` script."
-                                " Ignoring request, GAMESS job will be submitted with unspecified memory requirements.", 
+                                " Ignoring request, GAMESS job will be submitted with unspecified memory requirements.",
                                 self.requested_memory)
         if self.requested_cores:
             qgms += ' -n %d' % self.requested_cores
@@ -169,7 +196,7 @@ class GamessApplication(gc3libs.Application):
     # XXX: Assumes `qgms` is the correct way to run GAMESS on *any* batch system...
     qsub = qgms
 
-    
+
     def cmdline(self, resource, **kw):
         raise NotImplementedError(
             "There is currently no way of running GAMESS directly from the command-line."
@@ -217,7 +244,7 @@ class GamessAppPotApplication(GamessApplication,
         kw['job_name'] = input_file_name_sans
         # init superclass
         gc3libs.application.apppot.AppPotApplication.__init__(
-            self, 
+            self,
             executable = "localgms",
             # `rungms` has a fixed structure for positional arguments:
             # INPUT VERNO NCPUS; if one of them is to be omitted,
