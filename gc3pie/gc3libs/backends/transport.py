@@ -191,6 +191,19 @@ class SshTransport(Transport):
         self.port = port
         self.username = username
         self.ssh = paramiko.SSHClient()
+        self.ssh_config = paramiko.SSHConfig()
+        self.keyfile = None
+        try:
+            config_filename = os.path.expanduser('~/.ssh/config')
+            config_file = open(config_filename)
+            self.ssh_config.parse(config_file)
+            # Check if we have an ssh configuration stanza for this host
+            hostconfig = self.ssh_config.lookup(self.remote_frontend)
+            self.keyfile = hostconfig.get('identityfile', None)
+            config_file.close()
+        except IOError:
+            # File not found. Ignoring
+            pass
 
     @same_docstring_as(Transport.connect)
     def connect(self):
@@ -206,7 +219,8 @@ class SshTransport(Transport):
                 self.ssh.connect(self.remote_frontend,
                                  timeout=gc3libs.Default.SSH_CONNECT_TIMEOUT,
                                  username=self.username,
-                                 allow_agent=True)
+                                 allow_agent=True,
+                                 key_filename = self.keyfile)
                 self.sftp = self.ssh.open_sftp()
                 self._is_open = True
         except Exception, ex:
