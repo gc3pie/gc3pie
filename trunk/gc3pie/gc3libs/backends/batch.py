@@ -27,6 +27,7 @@ import os
 import posixpath
 import sys
 import tempfile
+import stat
 
 import gc3libs
 from gc3libs import log, Run
@@ -241,6 +242,8 @@ class BatchSystem(LRMS):
                 # upload script to remote location
                 self.transport.put(local_script_file.name,
                                    os.path.join(ssh_remote_folder, script_name))
+                # set execution mode on remote scritp
+                self.transport.chmod(os.path.join(ssh_remote_folder, script_name), stat.S_IXUSR)
                 # cleanup
                 local_script_file.close()
                 if os.path.exists(local_script_file.name):
