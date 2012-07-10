@@ -302,14 +302,15 @@ def deploy_configuration_file(filename, template_filename=None):
     over and then return `False`; in case the copy operations fails,
     a `NoConfigurationFile` exception is raised.
 
-    If parameter `filename` is not an absolute path, it is interpreted
-    as relative to `gc3libs.Default.RCDIR`; if `template_filename` is
-    `None`, then it is assumed to be the same as `filename`.
+    The `template_filename` is always resolved relative to GC3Libs'
+    'package resource' directory (i.e., the ``etc/`` directory in the
+    sources.  If `template_filename` is `None`, then it is assumed to
+    be the base name of `filename`.
     """
     if template_filename is None:
         template_filename = os.path.basename(filename)
     if not os.path.isabs(filename):
-        filename = os.path.join(gc3libs.Default.RCDIR, filename)
+        filename = os.path.abspath(filename)
     if os.path.exists(filename):
         return True
     else:
@@ -330,8 +331,8 @@ def deploy_configuration_file(filename, template_filename=None):
                                               "gc3libs/etc/" + template_filename)
             shutil.copyfile(sample_config, filename)
             return False
-        except IOError, x:
-            gc3libs.log.critical("CRITICAL ERROR: Failed copying configuration file: %s" % x)
+        except IOError, err:
+            gc3libs.log.critical("Failed copying configuration file: %s", err)
             raise gc3libs.exceptions.NoConfigurationFile("No configuration file '%s' was found, and an attempt to create it failed. Aborting." % filename)
         except DistributionNotFound, ex:
             raise AssertionError("Cannot access resources for Python package: %s."
