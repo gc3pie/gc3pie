@@ -70,13 +70,13 @@ app = GdemoSimpleApp()
 # create an instance of Core. Read configuration from your default
 # configuration file
 cfg = gc3libs.config.Configuration(*gc3libs.Default.CONFIG_FILE_LOCATIONS,
-                                   auto_enable_auth=True)
+                                   **{'auto_enable_auth': True})
 g = gc3libs.core.Core(cfg)
 
 # in case you want to select a specific resource, call
 # `Core.select_resource(...)`
-if len(sys.argv)>1:
-    g.select_resource(sys.argv[1])
+# if len(sys.argv)>1:
+#     g.select_resource(sys.argv[1])
 
 # Submit your application.
 g.submit(app)
