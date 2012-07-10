@@ -247,8 +247,8 @@ class BatchSystem(LRMS):
                     os.unlink(local_script_file.name)
 
             # Submit it
-            exit_code, stdout, stderr = self.transport.execute_command("/bin/sh -c 'cd %s && %s'"
-                                                                      % (ssh_remote_folder, _command))
+            exit_code, stdout, stderr = self.transport.execute_command(
+                "/bin/sh -c 'cd %s && %s %s'" % (ssh_remote_folder, _command, script_name))
 
             if exit_code != 0:
                 raise gc3libs.exceptions.LRMSError("Failed while executing command '%s' on resource '%s';"
