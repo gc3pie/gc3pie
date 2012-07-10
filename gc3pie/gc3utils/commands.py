@@ -368,7 +368,7 @@ is canceled before re-submission.
                 pass
 
             try:
-                app.submit()
+                app.submit(resubmit=True)
                 print("Successfully re-submitted %s; use the 'gstat' command to monitor its progress." % app)
                 self.session.store.replace(jobid, app)
             except Exception, ex:
