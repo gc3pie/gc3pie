@@ -128,7 +128,6 @@ class PbsLrms(batch.BatchSystem):
             script_name = '%s.%x.sh' % (app.get('application_tag', 'script'), 
                                         random.randint(0, sys.maxint))
             
-        qsub += ' ' + script_name
         return (qsub, script, script_name)
 
     def _stat_command(self, job):
