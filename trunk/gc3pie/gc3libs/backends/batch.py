@@ -328,16 +328,17 @@ class BatchSystem(LRMS):
             # we have to check some *accounting* command to check
             # the exit status.
             _command = self._acct_command(job)
-            log.debug("The `*stat` command returned no job information; trying with '%s'" % _command)
-            exit_code, stdout, stderr = self.transport.execute_command(_command)
-            if exit_code == 0:
-                jobstatus = self._parse_acct_output(stdout)
-                job.update(jobstatus)
-                if 'exit_status' in jobstatus:
-                    job.returncode = int(jobstatus['exit_status'])
-                state = Run.State.TERMINATING
-                return state
-            # to increase readability, there is not `else:` block
+            if _command:
+                log.debug("The `*stat` command returned no job information; trying with '%s'" % _command)
+                exit_code, stdout, stderr = self.transport.execute_command(_command)
+                if exit_code == 0:
+                    jobstatus = self._parse_acct_output(stdout)
+                    job.update(jobstatus)
+                    if 'exit_status' in jobstatus:
+                        job.returncode = int(jobstatus['exit_status'])
+                        state = Run.State.TERMINATING
+                    return state
+                # to increase readability, there is not `else:` block
 
             # No *stat command and no *acct command returned
             # correctly.
