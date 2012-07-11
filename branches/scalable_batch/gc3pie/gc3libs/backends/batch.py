@@ -35,11 +35,10 @@ from gc3libs import log, Run
 from gc3libs.backends import LRMS
 from gc3libs.utils import same_docstring_as
 import transport
+from gc3libs.utils import *
 
 
 # Define some commonly used functions
-
-
 
 # FIXME: (Riccardo?) thinks this function is completely wrong and only
 # exists to support GAMESS' ``qgms``, which does not allow users to
@@ -130,6 +129,38 @@ class BatchSystem(LRMS):
 
     def is_valid(self):
         return self.isValid
+
+    @cache_for(gc3libs.Default.ARC_CACHE_TIME)
+    def get_jobs(self):
+        """
+        Get all jobs belonging to a given user, possibly using session name reference when available
+        """
+        self.transport.connect()
+        _command = self._stat_command()
+        log.debug("checking remote job status with '%s'" % _command)
+        exit_code, stdout, stderr = self.transport.execute_command(_command)
+        if exit_code == 0:
+            self._lrms_jobs = self._parse_stat_output(stdout)
+        else:
+            # report error and return either None or the current no-updated list
+            gc3libs.log.error("Failed while checking remote job status. Command executed '%s', exit code '%d', stdout '%s', stderr '%s'"
+                              % (_command, exit_code, stdout, stderr))
+            
+        # In some batch systems, jobs disappeared from `*stat`
+        # output as soon as they are finished. In these cases,
+        # we have to check some *accounting* command to check
+        # the exit status.
+        _command = self._acct_command()
+        if _command:
+            log.debug("The `*stat` command returned no job information; trying with '%s'" % _command)
+            exit_code, stdout, stderr = self.transport.execute_command(_command)
+            if exit_code == 0:
+                self._lrms_jobs.update(self._parse_acct_output(stdout))
+            else:
+                gc3libs.log.error("Failed while checking remote job accounting. Command executed '%s', exit code '%d', stdout '%s', stderr '%s'"
+                                  % (_command, exit_code, stdout, stderr))
+
+        return self._lrms_jobs
 
     def get_jobid_from_submit_output(self, output, regexp):
         """Parse the output of the submission command. Regexp is
@@ -300,6 +331,8 @@ class BatchSystem(LRMS):
             log.critical("Failure submitting job to resource '%s' - see log file for errors"
                                   % self._resource.name)
             raise
+
+
     @same_docstring_as(LRMS.update_job_state)
     def update_job_state(self, app):
         try:
@@ -310,62 +343,77 @@ class BatchSystem(LRMS):
             raise gc3libs.exceptions.InvalidArgument("Job object is invalid: %s" % str(ex))
 
         try:
-            self.transport.connect()
-            _command = self._stat_command(job)
-            log.debug("checking remote job status with '%s'" % _command)
-            exit_code, stdout, stderr = self.transport.execute_command(_command)
-            if exit_code == 0:
-                state = self._parse_stat_output(stdout)
+            lrms_jobs_info = self._get_jobs()
+            lrms_job = lrms_jobs_info[job.lrms_jobid]
+        except AttributeError, ex:
+            # `job` has no `lrms_jobid`: object is invalid
+            raise gc3libs.exceptions.InvalidArgument(
+                "Job object is invalid: %s" % str(ex))
 
-                if state == Run.State.UNKNOWN:
-                    log.warning("unknown Batch job status , returning `UNKNOWN`")
-                job.state = state
-                # return state
-            # to increase readability, there is not `else:` block
+        # job.update(lrms_job)
 
-            # In some batch systems, jobs disappeared from `*stat`
-            # output as soon as they are finished. In these cases,
-            # we have to check some *accounting* command to check
-            # the exit status.
-            _command = self._acct_command(job)
-            log.debug("The `*stat` command returned no job information; trying with '%s'" % _command)
-            exit_code, stdout, stderr = self.transport.execute_command(_command)
-            if exit_code == 0:
-                jobstatus = self._parse_acct_output(stdout)
-                job.update(jobstatus)
-                if 'exit_status' in jobstatus:
-                    job.returncode = int(jobstatus['exit_status'])
-                state = Run.State.TERMINATING
-                return state
-            # to increase readability, there is not `else:` block
+        if 'exit_status' in lrms_job:
+            job.returncode = int(lrms_job['exit_status'])
+            state = Run.State.TERMINATING
+        return state
+
+            # self.transport.connect()
+            # _command = self._stat_command(job)
+            # log.debug("checking remote job status with '%s'" % _command)
+            # exit_code, stdout, stderr = self.transport.execute_command(_command)
+            # if exit_code == 0:
+            #     state = self._parse_stat_output(stdout)
+
+            #     if state == Run.State.UNKNOWN:
+            #         log.warning("unknown Batch job status , returning `UNKNOWN`")
+            #     job.state = state
+            #     # return state
+            # # to increase readability, there is not `else:` block
+
+            # # In some batch systems, jobs disappeared from `*stat`
+            # # output as soon as they are finished. In these cases,
+            # # we have to check some *accounting* command to check
+            # # the exit status.
+            # _command = self._acct_command(job)
+            # log.debug("The `*stat` command returned no job information; trying with '%s'" % _command)
+            # exit_code, stdout, stderr = self.transport.execute_command(_command)
+            # if exit_code == 0:
+            #     jobstatus = self._parse_acct_output(stdout)
+            #     job.update(jobstatus)
+            #     if 'exit_status' in jobstatus:
+            #         job.returncode = int(jobstatus['exit_status'])
+            #     state = Run.State.TERMINATING
+            #     return state
+            # # to increase readability, there is not `else:` block
 
             # No *stat command and no *acct command returned
             # correctly.
-            try:
-                if (time.time() - job.stat_failed_at) > self._resource.accounting_delay:
-                    # accounting info should be there, if it's not then job is definitely lost
-                    log.critical("Failed executing remote command: '%s'; exit status %d"
-                                 % (_command,exit_code))
-                    log.debug("Remote command returned stdout: %s" % stdout)
-                    log.debug("remote command returned stderr: %s" % stderr)
-                    raise paramiko.SSHException("Failed executing remote command: '%s'; exit status %d"
-                                                % (_command,exit_code))
-                else:
-                    # do nothing, let's try later...
-                    pass
-            except AttributeError:
-                # this is the first time `qstat` fails, record a timestamp and retry later
-                job.stat_failed_at = time.time()
 
-        except Exception, ex:
-            # self.transport.close()
-            log.error("Error in querying Batch resource '%s': %s: %s",
-                    self._resource.name, ex.__class__.__name__, str(ex))
-            raise
-        # If we reach this point it means that we don't actually know
-        # the current state of the job.
-        job.state = Run.state.UNKNOWN
-        return job.state
+        #     try:
+        #         if (time.time() - job.stat_failed_at) > self._resource.accounting_delay:
+        #             # accounting info should be there, if it's not then job is definitely lost
+        #             log.critical("Failed executing remote command: '%s'; exit status %d"
+        #                          % (_command,exit_code))
+        #             log.debug("Remote command returned stdout: %s" % stdout)
+        #             log.debug("remote command returned stderr: %s" % stderr)
+        #             raise paramiko.SSHException("Failed executing remote command: '%s'; exit status %d"
+        #                                         % (_command,exit_code))
+        #         else:
+        #             # do nothing, let's try later...
+        #             pass
+        #     except AttributeError:
+        #         # this is the first time `qstat` fails, record a timestamp and retry later
+        #         job.stat_failed_at = time.time()
+
+        # except Exception, ex:
+        #     # self.transport.close()
+        #     log.error("Error in querying Batch resource '%s': %s: %s",
+        #             self._resource.name, ex.__class__.__name__, str(ex))
+        #     raise
+        # # If we reach this point it means that we don't actually know
+        # # the current state of the job.
+        # job.state = Run.state.UNKNOWN
+        # return job.state
 
     @same_docstring_as(LRMS.peek)
     def peek(self, app, remote_filename, local_file, offset=0, size=None):
