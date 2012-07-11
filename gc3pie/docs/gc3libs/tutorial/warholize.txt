@@ -40,9 +40,9 @@ Introduction
 
 `Warholize` is a GC3Pie demo application to produce, from a generic
 image picture, a new picture like the famous Warhol's work:
-`Marylin`_. The script uses the powerful `ImageMagick`_ set of
-tools. This tutorial will assume that both `ImageMagick` and `GC3Pie`
-are already installed and configured.
+`Marylin`_. The script uses the powerful `ImageMagick`_ set of tools
+(at least version 6.3.5-7). This tutorial will assume that both
+`ImageMagick` and `GC3Pie` are already installed and configured.
 
 In order to produce a similar image we have to do a series of
 transformations on the picture:
@@ -337,7 +337,7 @@ and then we create our GrayScaleConvertApplication as::
           self.grayscaled_image = grayscaled_image
   
           arguments = [
-              input_image,
+              os.path.basename(input_image),
               '-colorspace',
               'gray',
               ]
