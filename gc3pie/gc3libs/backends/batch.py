@@ -247,7 +247,7 @@ class BatchSystem(LRMS):
                 self.transport.put(local_script_file.name,
                                    os.path.join(ssh_remote_folder, script_name))
                 # set execution mode on remote scritp
-                self.transport.chmod(os.path.join(ssh_remote_folder, script_name), stat.S_IXUSR)
+                self.transport.chmod(os.path.join(ssh_remote_folder, script_name), 0755)
                 # cleanup
                 local_script_file.close()
                 if os.path.exists(local_script_file.name):
@@ -328,8 +328,7 @@ class BatchSystem(LRMS):
                 job.state = state
                 if 'exit_status' in jobstatus:
                     job.returncode = int(jobstatus['exit_status'])
-
-                return state
+                    return state
             # to increase readability, there is not `else:` block
 
             # In some batch systems, jobs disappeared from `*stat`
