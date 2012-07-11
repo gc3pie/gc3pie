@@ -337,6 +337,17 @@ import batch
 
 _bsub_jobid_re = re.compile(r'^Job <(?P<jobid>\d+)> is submitted', re.I)
 
+# Job <850088>, Job Name <GdemoSimpleApp>, User <smaffiol>, Project <default>, Status <EXIT>, Queue <normal>, Command <./script.62b626ca7ad5acaf_01.sh>, Share group charged </smaffiol>
+# Wed Jul 11 14:11:10: Submitted from host <globus.vital-it.ch>, CWD <$HOME>, Output File (overwrite) <stdout.log>, Re-runnable, Login Shell </bin/sh>;
+# Wed Jul 11 14:11:47: Started on <cpt157>, Execution Home </home/smaffiol>, Execution CWD </home/smaffiol>;
+# Wed Jul 11 14:11:48: Exited with exit code 127. The CPU time used is 0.1 seconds.
+# Wed Jul 11 14:11:48: Completed <exit>.
+
+_bjobs_long_re = re.compile(
+    '(?P<end_time>[a-zA-Z]+\s+[a-zA-Z]+\s+\d+\s+\d+:\d+:\d+):\s+'
+    'Exited with exit code (?P<exit_status>\d+)[^0-9]+'
+    'The CPU time used is (?P<used_cpu_time>[0-9\.]+)\s+'
+    )
 
 
 def _make_remote_and_local_path_pair(transport, job, remote_relpath, local_root_dir, local_relpath):
@@ -423,8 +434,7 @@ class LsfLrms(batch.BatchSystem):
         return "bjobs -w -W %s" % job.lrms_jobid
 
     def _acct_command(self, job):
-        # return "bjobs -l %s" % job.lrms_jobid
-        pass
+        return "bjobs -l %s" % job.lrms_jobid
 
     def _parse_stat_output(self, stdout):
         status_line = stdout.split('\n')[1]
@@ -465,7 +475,14 @@ class LsfLrms(batch.BatchSystem):
         return jobstatus
 
     def _parse_acct_output(self, stdout):
-        pass
+        # output of bjobs -l is indented in order to stay under 80
+        # columns. This will make the parsing complicated.
+        stdout = stdout.replace('\n                     ','')
+        jobstatus = dict()
+        for line in stdout.split('\n'):
+            if _bjobs_long_re.match(line):
+                jobstatus.update(_bjobs_long_re.match(line).groupdict())
+        return jobstatus
 
     def _cancel_command(self, jobid):
         return "bkill %s" % jobid
