@@ -20,13 +20,29 @@
 GC3Pie tutorial - Warholize
 ===========================
 
+In this tutorial we will show you how to use GC3Pie libraries in order
+to build a command line script which will run a complex workflow with
+both parallel and sequential tasks.
+
+The tutorial itself contains the complete source code of the
+application (cfr. `Literate Programming`_ on Wikipedia), so that you
+will be able to produce a working ``warholize.py`` script and
+test/modify it you by downloading **pylit** from the `PyLit
+Homepage`_, and running the following command on the
+``gc3pie/docs/gc3libs/tutorial/warholize.txt`` file, from whitin the
+svn tree of GC3Pie::
+
+$    ./pylit warholize.txt warholize.py
+
 
 Introduction
 ------------
 
 `Warholize` is a GC3Pie demo application to produce, from a generic
 image picture, a new picture like the famous Warhol's work:
-`Marylin`_. The script use the powerful `ImageMagick`_ set of tools.
+`Marylin`_. The script uses the powerful `ImageMagick`_ set of
+tools. This tutorial will assume that both `ImageMagick` and `GC3Pie`
+are already installed and configured.
 
 In order to produce a similar image we have to do a series of
 transformations on the picture:
@@ -630,6 +646,10 @@ will be created.
 
 
 .. Links
+
+.. _`Literate Programming`: http://en.wikipedia.org/wiki/Literate_programming
+
+.. _`PyLit Homepage`: http://pylit.berlios.de/index.html
 
 .. _`Marylin`: http://artobserved.com/artists/andy-warhol/
 
