@@ -362,17 +362,20 @@ class SgeLrms(batch.BatchSystem):
     def _parse_stat_output(self, stdout):
         job_status = stdout.split()[4]
         log.debug("translating SGE's `qstat` code '%s' to gc3libs.Run.State" % job_status)
+
+        jobstatus = dict()
         if 'qw' in job_status:
-            return Run.State.SUBMITTED
+            jobstatus['state'] = Run.State.SUBMITTED
         elif 'r' in job_status or 'R' in job_status or 't' in job_status:
-            return Run.State.RUNNING
+            jobstatus['state'] = Run.State.RUNNING
         elif job_status in ['s', 'S', 'T'] or 'qh' in job_status:
-            return Run.State.STOPPED
+            jobstatus['state'] = Run.State.STOPPED
         elif job_status == 'E': # error condition
-            return Run.State.TERMINATING
+            jobstatus['state'] = Run.State.TERMINATING
         else:
             log.warning("unknown SGE job status '%s', returning `UNKNOWN`", job_status)
-            return Run.State.UNKNOWN
+            jobstatus['state'] = Run.State.UNKNOWN
+        return jobstatus
 
     def _acct_command(self, job):
         return "qacct -j %s" % job.lrms_jobid
