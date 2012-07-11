@@ -19,6 +19,7 @@ computational workflows in Python.
 .. toctree::
 
   overview
+  tutorial/warholize
   api
 
 
