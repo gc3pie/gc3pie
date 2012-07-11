@@ -34,27 +34,27 @@ basically have a sequence of tasks, but since step 2) need to create
 `N` different independent images, we can parallelize this step. In
 ASCII art, the workflow will looks like::
 
-                        .-------------------.
-                        | create grayscaled |
-                        |       image       |
-                        `-------------------'
-                        /      |      \      \
-                       /       |       \      \
-                      /        |        \      \
-        .------------.  .------------.       .------------.
-        | create LUT |  | create LUT |  ...  | create LUT |
-        `------------'  `------------'       `------------' 
-                   |           |         |      |       
-        .------------.  .------------.       .------------.
-        | apply  LUT |  |  apply LUT |  ...  |  apply LUT |
-        `------------'  `------------'       `------------'
-                     \         |        /      /
-                      \        |       /      /
-                       \       |      /      /
-                        .-------------------.
-                        | merge `colorized` |
-                        |       images      |
-                        `-------------------'
+.                        .-------------------.
+.                        | create grayscaled |
+.                        |       image       |
+.                        `-------------------'
+.                        /      |      \      \
+.                       /       |       \      \
+.                      /        |        \      \
+.        .------------.  .------------.       .------------.
+.        | create LUT |  | create LUT |  ...  | create LUT |
+.        `------------'  `------------'       `------------' 
+.                   |           |         |      |       
+.        .------------.  .------------.       .------------.
+.        | apply  LUT |  |  apply LUT |  ...  |  apply LUT |
+.        `------------'  `------------'       `------------'
+.                     \         |        /      /
+.                      \        |       /      /
+.                       \       |      /      /
+.                        .-------------------.
+.                        | merge `colorized` |
+.                        |       images      |
+.                        `-------------------'
 
 From top to bottom
 ------------------
@@ -76,6 +76,7 @@ Let's start importing it, among with the main `gc3libs` module::
 
     import gc3libs
     from gc3libs.cmdline import SessionBasedScript
+    import os
 
 and then, we create a class which inherits from it (in GC3Pie, most of
 the customization are done by inheriting from a more generic class)::
@@ -91,7 +92,7 @@ class, or add a `description` attribute.
 
 The way we want to use our script is straightforward::
 
-    warholize.py inputfile [inputfiles ...]
+    # warholize.py inputfile [inputfiles ...]
 
 and this will create a directory ``Warholized.<inputfile>`` in which
 there will be a file called ``warhol_<inputfile>`` containing the
@@ -113,6 +114,8 @@ can define a `setup_options` method and put in there some calls to
                            help="Resize the original image."
                            "Please note that the resulting image will be N times the size "
                            "specified here, where N is the argument of --copies.")
+            self.add_param('-n', '--num-colors', default=3, type=int,
+                           help="Number of colors to use. Default: 3")
 
 
 The *heart* of the script is, however, the `new_tasks` method, which
@@ -126,11 +129,12 @@ case it will be something like::
             gc3libs.log.info("Creating main sequential task")
             for (i, input_file) in enumerate(self.params.args):
                 kw = extra.copy()
-                kw['output_dir'] = 'Warholized.%s' % input_file
+                kw['output_dir'] = 'Warholized.%s' % os.path.basename(input_file)
                 yield ("Warholize.%d" % i,
                        WarholizeWorkflow,
                        [input_file,
-                        self.params.copies],
+                        self.params.copies,
+                        self.params.num_colors],
                        kw)
 
 `new_tasks` is used as a *generator* (but it could return a list as
@@ -153,14 +157,6 @@ pass all the arguments needed. In the order:
 In our case we yield a different `WarholizeWorkflow` task for each
 input file. These tasks will then run in parallel.
 
-Finally, in order to make the script *executable*, we add the
-following lines to the end of the file. The `WarholizeScritp().run()`
-call will be executed only when the file is run as a script, and will
-do all the magic related to argument parsing, creating the session
-etc...::
-
-    if __name__ == '__main__':
-        WarholizeScript().run()
 
 
 The workflows
@@ -175,12 +171,17 @@ use to create our workflow. The first one, `WarholizeWorkflow`, is a
 sequential one, so::
 
     from gc3libs.dag import SequentialTaskCollection, ParallelTaskCollection
-    import os
     import math
     from gc3libs import Run
 
     class WarholizeWorkflow(SequentialTaskCollection):
-        """Main workflow to create a warholized image"""
+        """
+        Main workflow.
+        """
+
+        def __init__(self, input_image,  copies, ncolors,
+                     grid=None, size=None, **kw):
+            """XXX do we need input_image and output_image? I guess so?"""
             self.input_image = input_image
             self.output_image = "warhol_%s" % input_image
             self.resize = False
@@ -189,6 +190,7 @@ sequential one, so::
                 "Producing a warholized version of input file %s "
                 "and store it in %s" % (input_image, self.output_image))
 
+
             if size:
                 x, y = size.split('x', 2)
                 rows = math.sqrt(copies)
@@ -196,10 +198,13 @@ sequential one, so::
 
             self.output_dir = os.path.relpath(kw.get('output_dir'))
 
+            self.ncolors = ncolors
             self.copies = copies
 
             # Check that copies is a perfect square
-            assert math.sqrt(self.copies) == int(math.sqrt(self.copies))
+            if math.sqrt(self.copies) != int(math.sqrt(self.copies)):
+                raise gc3libs.exceptions.InvalidArgument(
+                    "`copies` argument must be a perfect square.")
 
             self.jobname = kw.get('jobname', 'WarholizedWorkflow')
 
@@ -231,25 +236,19 @@ The `next` method will look like::
 
         def next(self, iteration):
             last = self.tasks[-1]
-    
+
             if isinstance(last, GrayScaleConvertApplication):
-                # We just created the grayscale version.
-                # Let's start with the multiple colorized versions
                 self.add(TricolorizeMultipleImages(
                     os.path.join(self.output_dir, self.grayscaled_image),
-                    self.copies,
+                    self.copies, self.ncolors,
                     self.output_dir))
                 return Run.State.RUNNING
-
             elif isinstance(last, TricolorizeMultipleImages):
-                # We have all the colorized images, let's merge them
-                # together.
                 self.add(MergeImagesApplication(
                     os.path.join(self.output_dir, self.grayscaled_image),
                     last.warhol_dir,
                     self.output_image))
                 return Run.State.RUNNING
-
             else:
                 self.execution.returncode = last.execution.returncode
                 return Run.State.TERMINATED
@@ -294,6 +293,8 @@ create a generic *cached* application which wraps
 
 and then we create our GrayScaleConvertApplication as::
 
+    # An useful function to copy files
+    from gc3libs.utils import copyfile
 
     class GrayScaleConvertApplication(ApplicationWithCachedResults):
         def __init__(self, input_image, grayscaled_image, output_dir, warhol_dir, resize=None):
@@ -317,8 +318,10 @@ and then we create our GrayScaleConvertApplication as::
                 executable = 'convert',
                 arguments = arguments + [grayscaled_image],
                 inputs = [input_image],
-                outputs = [grayscaled_image],  #'stderr.txt', 'stdout.txt'],
+                outputs = [grayscaled_image, 'stderr.txt', 'stdout.txt'],
                 output_dir = output_dir,
+                stdout = 'stdout.txt',
+                stderr = 'stderr.txt',
                 )
 
 Creating a `gc3libs.Application` is straigthforward: you just
@@ -336,9 +339,6 @@ for your application. It will be called after your application will
 terminate. In our case we want to copy the gray scale version of the
 image to the `warhol_dir`, so that it will be easily reachable by the
 other applications::
-
-    # An useful function to copy files
-    from gc3libs.utils import copyfile
 
         def terminated(self):
             """Move grayscale image to the main output dir"""
@@ -366,11 +366,12 @@ parallel, it inherits from `gc3libs.dag.ParallelTaskCollection`:class:
                   'indigo', 'navy', 'turquoise1', 'SeaGreen', 'gold',
                   'orange', 'magenta']
 
-        def __init__(self, grayscaled_image, copies, output_dir, grid=None):
+        def __init__(self, grayscaled_image, copies, ncolors, output_dir, grid=None):
             gc3libs.log.info(
                 "TricolorizeMultipleImages for %d copies run" % copies)
-
-            self.jobname = "Warholizer_Parallel.%s" % grayscaled_image
+            self.jobname = "Warholizer_Parallel"
+            self.ncolors = ncolors
+            ### XXX Why I have to use basename???
             self.output_dir = os.path.join(
                 os.path.basename(output_dir), 'tricolorize')
             self.warhol_dir = output_dir
@@ -378,9 +379,9 @@ parallel, it inherits from `gc3libs.dag.ParallelTaskCollection`:class:
             # Compute a unique sequence of random combination of
             # colors. Please note that we can have a maximum of N!/3! if N
             # is len(colors)
-            assert copies <= math.factorial(len(self.colors)) / 6
+            assert copies <= math.factorial(len(self.colors)) / math.factorial(ncolors)
 
-            combinations = [i for i in itertools.combinations(self.colors, 3)]
+            combinations = [i for i in itertools.combinations(self.colors, ncolors)]
             combinations = random.sample(combinations, copies)
 
             # Create all the single tasks
@@ -390,9 +391,7 @@ parallel, it inherits from `gc3libs.dag.ParallelTaskCollection`:class:
                     os.path.relpath(grayscaled_image),
                     "%s.%d" % (self.output_dir, i),
                     "%s.%d" % (grayscaled_image, i),
-                    colors[0],
-                    colors[1],
-                    colors[2],
+                    colors,
                     self.warhol_dir,
                     grid=grid))
 
@@ -411,9 +410,12 @@ the first job::
 
 
     class TricolorizeImage(SequentialTaskCollection):
-
+        """
+        Sequential workflow to produce a `tricolorized` version of a
+        grayscale image
+        """
         def __init__(self, grayscaled_image, output_dir, output_file,
-                     lcolor, mcolor, hcolor, warhol_dir, grid=None):
+                     colors, warhol_dir, grid=None):
             self.grayscaled_image = grayscaled_image
             self.output_dir = output_dir
             self.warhol_dir = warhol_dir
@@ -432,7 +434,7 @@ the first job::
                     self.grayscaled_image,
                     "%s.miff" % self.grayscaled_image,
                     self.output_dir,
-                    lcolor, hcolor, mcolor, self.warhol_dir),
+                    colors, self.warhol_dir),
                 ]
 
             SequentialTaskCollection.__init__(self, self.jobname, self.tasks, grid)
@@ -458,32 +460,22 @@ and over the same LUT, so::
         """Create the LUT for the image using 3 colors picked randomly
         from CreateLutApplication.colors"""
 
-        def __init__(self, input_image, output_file, output_dir, lcolor, mcolor, hcolor, working_dir):
+        def __init__(self, input_image, output_file, output_dir, colors, working_dir):
             self.lutfile = os.path.basename(output_file)
             self.working_dir = working_dir
             gc3libs.log.info("Creating lut file %s from %s using "
-                             "lowcolor: %s, midcolor: %s and highcolor: %s"% (
-                self.lutfile, input_image, lcolor, mcolor, hcolor))
+                             "colors: %s" % (
+                self.lutfile, input_image, str.join(", ", colors)))
             ApplicationWithCachedResults.__init__(
                 self,
                 executable = "convert",
                 arguments = [
                     '-size',
-                    '1x1',
-                    'xc:%s' % lcolor,
-                    'xc:%s' % mcolor,
-                    'xc:%s' % hcolor,
+                    '1x1'] + [
+                    "xc:%s" % color for color in colors] + [
                     '+append',
-                    '-filter',
-                    'triangle',
                     '-resize',
                     '256x1!',
-                    '-contrast-stretch',
-                    '0',
-                    '-virtual-pixel',
-                    'edge',
-                    '-fx',
-                    'u.p{(i-(w/2))*(100+0)/(100)+(w/2)-0,j}',
                     self.lutfile,
                     ],
                 inputs = [input_image],
@@ -562,8 +554,8 @@ easy to write such application::
                     "We would expect to have a perfect square"
                     "of images to merge, but we have %d instead" % len(input_files))
                 raise gc3libs.exceptions.InvalidArgument(
-                    "We would expect to have a perfect square of images "
-                    "to merge, but we have %d instead" % len(input_files))
+                    "We would expect to have a perfect square of images to merge, but we have %d instead" % len(input_files))
+
             ApplicationWithCachedResults.__init__(
                 self,
                 executable = 'montage',
@@ -590,6 +582,19 @@ easy to write such application::
                      self.input_dir)
 
 
+Making the script executable
+----------------------------
+
+Finally, in order to make the script *executable*, we add the
+following lines to the end of the file. The `WarholizeScritp().run()`
+call will be executed only when the file is run as a script, and will
+do all the magic related to argument parsing, creating the session
+etc...::
+
+    if __name__ == '__main__':
+        WarholizeScript().run()
+
+
 Testing
 -------
 
@@ -598,7 +603,7 @@ which can be found in the `miscelaneous` section of the `Signal and
 Image Processing Institute`_ page. Download the image, rename it as
 ``lena.tiff`` and run the following command::
 
-    ./warholize.py -C 1 lena.tiff --copies 9
+$    ./warholize.py -C 1 lena.tiff --copies 9
 
 (add ``-r localhost`` if your gc3pie.conf script support it and you
 want to test it locally). 

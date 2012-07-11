@@ -173,7 +173,10 @@ class ApplyLutApplication(ApplicationWithCachedResults):
 
 
 class TricolorizeImage(SequentialTaskCollection):
-
+    """
+    Sequential workflow to produce a `tricolorized` version of a
+    grayscale image
+    """
     def __init__(self, grayscaled_image, output_dir, output_file,
                  colors, warhol_dir, grid=None):
         self.grayscaled_image = grayscaled_image
@@ -297,17 +300,8 @@ class MergeImagesApplication(ApplicationWithCachedResults):
 
 
 class WarholizeWorkflow(SequentialTaskCollection):
-    """Main workflow.
-
-    The sequence of tasks is basically:
-
-    1) create a grayscaled version of the input image
-
-    2) run a `ParallelTaskCollection`:class: which will produce
-    `copies` different colorized versions of the grayscale image
-
-    3) merge together the `copies` images in order to create one
-    single `warholized` image.
+    """
+    Main workflow.
     """
 
     def __init__(self, input_image,  copies, ncolors,
@@ -326,12 +320,12 @@ class WarholizeWorkflow(SequentialTaskCollection):
             x, y = size.split('x', 2)
             rows = math.sqrt(copies)
             self.resize = "%dx%d" % (int(x) / rows, int(y) / rows)
-        # XXX: it is complaining about absolute path???
-        # InvalidArgument: Remote paths not allowed to be absolute
+
         self.output_dir = os.path.relpath(kw.get('output_dir'))
 
         self.ncolors = ncolors
         self.copies = copies
+
         # Check that copies is a perfect square
         if math.sqrt(self.copies) != int(math.sqrt(self.copies)):
             raise gc3libs.exceptions.InvalidArgument(
@@ -339,9 +333,6 @@ class WarholizeWorkflow(SequentialTaskCollection):
 
         self.jobname = kw.get('jobname', 'WarholizedWorkflow')
 
-        # XXX needs to create a temporary directory?
-
-        # These attributes are temporary files
         self.grayscaled_image = "grayscaled_%s" % self.input_image
 
         self.tasks = [
@@ -374,7 +365,9 @@ class WarholizeWorkflow(SequentialTaskCollection):
 
 
 class WarholizeScript(SessionBasedScript):
-    """Demo script to create a `Warholized` version of an image."""
+    """
+    Demo script to create a `Warholized` version of an image.
+    """
     version='1.0'
     
     def setup_options(self):
