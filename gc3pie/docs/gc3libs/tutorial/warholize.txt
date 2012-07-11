@@ -218,7 +218,7 @@ sequential one, so::
                    grid=None, size=None, **kw):
           """XXX do we need input_image and output_image? I guess so?"""
           self.input_image = input_image
-          self.output_image = "warhol_%s" % input_image
+          self.output_image = "warhol_%s" % os.path.basename(input_image)
           self.resize = False
   
           gc3libs.log.info(
@@ -243,7 +243,7 @@ sequential one, so::
   
           self.jobname = kw.get('jobname', 'WarholizedWorkflow')
   
-          self.grayscaled_image = "grayscaled_%s" % self.input_image
+          self.grayscaled_image = "grayscaled_%s" % os.path.basename(self.input_image)
   
 This is just parsing of the arguments. The last lines, instead,
 create the initial tasks that will be submitted. By now, we can submit
