@@ -1,0 +1,44 @@
+! EXAM 41.
+!   This job illustrates TDDFT/BLYP/6-31+G(d) for
+!   the 3 lowest singlet excited states of CO.
+!   Note the use of diffuse functions in the basis
+!   set, since excited states often have Rydberg
+!   character.
+!
+!   The geometry is optimized at the BLYP level,
+!   and is slightly longer than R0(exp)=1.128323.
+!   experimental Te is 8.06 to 1-pi,
+!                      8.17 to 1-sigma-minus
+!   Computational results on the log file show you
+!   that these two states arise from sigma->pi*,
+!   and pi->pi* excitations, respectively.
+!
+!   Of course, the first excited state need not
+!   have the same geometry as the ground state,
+!   so its gradient is rather big.
+!
+!  ground state FINAL E= -113.3036657071, in 19 iters
+!
+!  state excitation  transition dipole    oscillator
+!           ev       x       y       z     strength
+!  0 sig+   .000
+!  1  pi   8.107   .6618   .1110   .0000     .089
+!  2  pi   8.107   .1110  -.6618   .0000     .089
+!  3 sig-  9.407   .0000   .0000   .0000     .000
+!  The 'lambda diagnostic' for the pi state is 0.704
+!
+!  RMS gradient of 1st excited state= 0.091669172
+!
+ $contrl scftyp=rhf dfttyp=blyp tddft=excite
+         runtyp=gradient $end
+ $system timlim=4 $end
+ $tddft  nstate=3 mult=1 iroot=1 $end
+ $guess  guess=huckel $end
+ $basis  gbasis=N31 ngauss=6 diffsp=.T. ndfunc=1 $end
+ $data
+CO...excitation to the three lowest singlet states
+Cnv 4
+
+C    6.0   0.0   0.0   0.0
+O    8.0   0.0   0.0   1.1497297
+ $end 

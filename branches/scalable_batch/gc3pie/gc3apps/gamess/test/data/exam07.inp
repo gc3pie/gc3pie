@@ -1,0 +1,34 @@
+! EXAM07.
+!    1-A' HPO    RHF calculation using GAMESS.
+!    This job tests the HONDO integral and gradient package,
+!    due to the d function on phosphorus.  The input also
+!    illustrates the use of a more flexible basis set than
+!    the methylene examples.
+!    Although HUCKEL would be better, HCORE is tested.
+!
+!    The initial energy is -397.591203190,
+!    the FINAL E= -414.0945320827 after 18 iterations,
+!    The dipole moment is 2.535169.
+!    The RMS gradient is 0.023723712.
+!
+ $CONTRL SCFTYP=RHF RUNTYP=GRADIENT $END
+ $SYSTEM TIMLIM=1 $END
+ $GUESS  GUESS=HCORE $END
+ $DATA
+HP=O ... 3-21+G* RHF calculation at STO-2G* geometry
+Cs
+ 
+Phosphorus 15.0
+  N21 3
+  L 1
+    1 0.039  1.0  1.0
+  D 1
+    1 0.55   1.0
+ 
+Oxygen    8.0       1.439
+  N21  3
+ 
+Hydrogen  1.0      -0.3527854           1.36412
+  N21 3
+ 
+ $END

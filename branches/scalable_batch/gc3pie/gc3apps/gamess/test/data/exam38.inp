@@ -1,0 +1,33 @@
+! EXAM 38.
+!  Analytic gradients for Model Core Potentials,
+!  with a DZP quality basis, for BiCl3.  Model Core
+!  Potentials account for scalar relativity effects,
+!  and preserve all valence orbital radial nodes.
+!
+!  The latter point stands in contrast to the
+!  Effective Core Potential (ECP) pseudopotentials.
+!
+!  FINAL RHF E= -116.3966190322, RMS grad= 0.0053955
+!  FINAL RHF E= -116.3972798620, RMS grad= 0.0036800
+!  FINAL RHF E= -116.3976422737, RMS grad= 0.0014247
+!  FINAL RHF E= -116.3976891709, RMS grad= 0.0001137
+!  FINAL RHF E= -116.3976900833, RMS grad= 0.0000485
+!  FINAL RHF E= -116.3976902416, RMS grad= 0.0000001
+!
+ $contrl scftyp=rhf runtyp=optimize pp=mcp ispher=1
+         coord=zmt nzvar=6 $end
+ $system timlim=5 mwords=2 $end
+ $basis  gbasis=mcp-dzp $end
+ $statpt opttol=1.0d-5 $end
+ $data
+BiCl3
+Cnv 3
+
+Bi
+Cl  1 rBiCl
+Cl  1 rBiCl  2 aClBiCl
+Cl  1 rBiCl  2 aClBiCl  3 aClBiCl +1
+
+rBiCl=2.48
+aClBiCl=99.0
+ $end
