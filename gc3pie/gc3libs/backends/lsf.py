@@ -436,13 +436,27 @@ class LsfLrms(batch.BatchSystem):
         log.debug("translating LSF's `bjobs` STAT '%s' to gc3libs.Run.State" % stat)
 
         jobstatus = dict()
+        # LSF status mapping:
+        #
+        # PEND   => SUBMITTED
+        # RUN    => RUNNING
+        # PSUSP  => STOPPED
+        # USUSP  => STOPPED
+        # SSUSP  => STOPPED
+        # DONE   => TERMINATING
+        # EXIT   => TERMINATING
+        # ZOMBI  => TERMINATING
+        # UNKWN  => UNKNWON
         if 'PEND' == stat:
             jobstatus['state'] = Run.State.SUBMITTED
         elif 'RUN' == stat:
             jobstatus['state'] = Run.State.RUNNING
+        elif stat in ['PSUSP', 'USUSP', 'SSUSP']:
+            jobstatus['state'] = Run.State.STOPPED
         elif stat in [
-            'DONE', # successful termination
-            'EXIT'  # job was killed / exit forced / script failed
+            'DONE',  # successful termination
+            'EXIT',  # job was killed / exit forced
+            'ZOMBI', # job "killed" and unreachable
             ]:
             jobstatus['state'] = Run.State.TERMINATING
         else:
