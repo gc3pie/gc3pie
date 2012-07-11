@@ -394,7 +394,7 @@ class WarholizeScript(SessionBasedScript):
         gc3libs.log.info("Creating main sequential task")
         for (i, input_file) in enumerate(self.params.args):
             kw = extra.copy()
-            kw['output_dir'] = 'Warholized.%s' % input_file
+            kw['output_dir'] = 'Warholized.%s' % os.path.basename(input_file)
             yield ("Warholize.%d" % i,
                    WarholizeWorkflow,
                    [input_file,
