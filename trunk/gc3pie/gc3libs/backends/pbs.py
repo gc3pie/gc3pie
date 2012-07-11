@@ -122,7 +122,7 @@ class PbsLrms(batch.BatchSystem):
     def _submit_command(self, app):
         qsub, script = app.pbs_qsub(self._resource)
         if 'queue' in self._resource:
-            qsub += " -q %s" % self._resource['queue']
+            qsub += " -d $(pwd) -q %s" % self._resource['queue']
         if script is not None:
             # save script to a temporary file and submit that one instead
             script_name = '%s.%x.sh' % (app.get('application_tag', 'script'), 
