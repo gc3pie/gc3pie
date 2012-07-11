@@ -316,11 +316,10 @@ class BatchSystem(LRMS):
             exit_code, stdout, stderr = self.transport.execute_command(_command)
             if exit_code == 0:
                 state = self._parse_stat_output(stdout)
-
                 if state == Run.State.UNKNOWN:
                     log.warning("unknown Batch job status , returning `UNKNOWN`")
                 job.state = state
-                # return state
+                return state
             # to increase readability, there is not `else:` block
 
             # In some batch systems, jobs disappeared from `*stat`
@@ -338,7 +337,7 @@ class BatchSystem(LRMS):
                         job.returncode = int(jobstatus['exit_status'])
                         state = Run.State.TERMINATING
                     return state
-                # to increase readability, there is not `else:` block
+            # to increase readability, there is not `else:` block
 
             # No *stat command and no *acct command returned
             # correctly.
@@ -365,7 +364,7 @@ class BatchSystem(LRMS):
             raise
         # If we reach this point it means that we don't actually know
         # the current state of the job.
-        job.state = Run.state.UNKNOWN
+        job.state = Run.State.UNKNOWN
         return job.state
 
     @same_docstring_as(LRMS.peek)
