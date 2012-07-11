@@ -158,8 +158,11 @@ class BatchSystem(LRMS):
 
     def _parse_stat_output(self, stdout):
         """This method will parse the output of the stat command and
-        return the current status of the job. The return value must be
-        a valid `Run.State` state.
+        return the current status of the job. The return value will be
+        a dictionary which will be used to update job's information.
+
+        The only expected key is `state`, which must be a valid
+        `Run.State` state.
         """
         raise NotImplementedError("Abstract method `_parse_stat_output()` called - this should have been defined in a derived class.")
 
@@ -315,10 +318,17 @@ class BatchSystem(LRMS):
             log.debug("checking remote job status with '%s'" % _command)
             exit_code, stdout, stderr = self.transport.execute_command(_command)
             if exit_code == 0:
-                state = self._parse_stat_output(stdout)
+                jobstatus = self._parse_stat_output(stdout)
+                job.update(jobstatus)
+
+                state = jobstatus.get('state', Run.State.UNKNOWN)
+
                 if state == Run.State.UNKNOWN:
                     log.warning("unknown Batch job status , returning `UNKNOWN`")
                 job.state = state
+                if 'exit_status' in jobstatus:
+                    job.returncode = int(jobstatus['exit_status'])
+
                 return state
             # to increase readability, there is not `else:` block
 

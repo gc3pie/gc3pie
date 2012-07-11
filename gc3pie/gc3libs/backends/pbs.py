@@ -142,17 +142,20 @@ class PbsLrms(batch.BatchSystem):
         
         # parse `qstat` output
         job_status = stdout.split()[4]
+        jobstatus = dict()
         log.debug("translating PBS/Torque's `qstat` code '%s' to gc3libs.Run.State" % job_status)
         if job_status in ['Q', 'W']:
-            return Run.State.SUBMITTED
+            jobstatus['state'] = Run.State.SUBMITTED
         elif job_status in ['R']:
-            return Run.State.RUNNING
+            jobstatus['state'] =  Run.State.RUNNING
         elif job_status in ['S', 'H', 'T'] or 'qh' in job_status:
-            return Run.State.STOPPED
+            jobstatus['state'] = Run.State.STOPPED
         elif job_status in ['C', 'E']: 
-            return Run.State.TERMINATING 
+            jobstatus['state'] = Run.State.TERMINATING 
         else:
-            return Run.State.UNKNOWN
+            jobstatus['state'] = Run.State.UNKNOWN
+
+        return jobstatus
 
     def _parse_acct_output(self, stdout):
         retstatus = {}

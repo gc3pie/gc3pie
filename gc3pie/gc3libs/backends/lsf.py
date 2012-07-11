@@ -434,18 +434,21 @@ class LsfLrms(batch.BatchSystem):
         #        "First field in `bjobs` output is not JobID!"
         stat = fields[2]
         log.debug("translating LSF's `bjobs` STAT '%s' to gc3libs.Run.State" % stat)
+
+        jobstatus = dict()
         if 'PEND' == stat:
-            return Run.State.SUBMITTED
+            jobstatus['state'] = Run.State.SUBMITTED
         elif 'RUN' == stat:
-            return Run.State.RUNNING
+            jobstatus['state'] = Run.State.RUNNING
         elif stat in [
             'DONE', # successful termination
             'EXIT'  # job was killed / exit forced / script failed
             ]:
-            return Run.State.TERMINATING
+            jobstatus['state'] = Run.State.TERMINATING
         else:
             log.warning("unknown LSF job status '%s', returning `UNKNOWN`", stat)
-            return Run.State.UNKNOWN
+            jobstatus['state'] = Run.State.UNKNOWN
+        return jobstatus
 
     def _parse_acct_output(self, stdout):
         pass
