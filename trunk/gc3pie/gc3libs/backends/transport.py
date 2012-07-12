@@ -229,20 +229,49 @@ class SshTransport(Transport):
                 self.remote_frontend, ex.__class__.__name__, str(ex))
             self._is_open = False
 
-            # Warn user about possible problems with user keys
+            # Try to understand why the ssh connection failed.
             if isinstance(ex, paramiko.SSHException):
-                keyfiles = ["~/.ssh/id_dsa", "~/.ssh/id_rsa"]
                 if self.keyfile:
-                    if not os.path.isifle(self.keyfile):
+                    # ~/.ssh/config has a ItentityFile line for this host
+                    if not os.path.isfile(self.keyfile):
+                        # but the key does not exists
+                        # Note that in this case we should have received an IOError excepetion...
                         gc3libs.log.error(
                             "Key file %s not found. Please check your "
                             "ssh configuration file ~/.ssh/config" % self.keyfile)
-                    keyfiles.append(self.keyfile)
-                gc3libs.log.error(
-                    "Please check that the remote server `%s` allow you to connect as user `%s`"
-                    "using one of the following keys: `%s`" % (self.remote_frontend,
-                                                                  self.username,
-                                                                  str.join("`, `", keyfiles)))
+                    else:
+                        # but it's not working
+                        gc3libs.log.error(
+                            "Key file %s not accepted by remote host %s. Please check your setup." % (
+                                self.keyfile, self.remote_frontend))
+                elif not os.path.exists(
+                    os.path.expanduser("~/.ssh/id_dsa")) and \
+                    not os.path.exists(
+                    os.path.expanduser("~/.ssh/id_rsa")):
+                    # none of the standard keys exists
+                    gc3libs.log.error(
+                        "No ssh key found in `~/.ssh/`. Please create an ssh key in order to "
+                        "enable passwordless authentication to %s." % self.remote_frontend)
+                else:
+                    # some of the standard keys are present, but not working.
+                    a = paramiko.Agent()
+                    if not a.conn:
+                        # No ssh-agent is running
+                        gc3libs.log.error(
+                            "Remote host %s does not accept any of the standard ssh keys (~/.ssh/id_dsa, ~/.ssh/id_rsa). "
+                            "Please check your configuration" % self.remote_frontend)
+                    else:
+                        # ssh-agent is running
+                        if a.get_keys():
+                            # but none of the keys is working
+                            gc3libs.log.error(
+                                "ssh-agent is running but none of the keys (%d) is accepted by remote host %s."
+                                " Please, check your configuration." % (len(a.get_keys()), self.remote_frontend))
+                        else:
+                            # but it has no keys inside.
+                            gc3libs.log.error(
+                                "ssh-agent is running but no key has been added. Please add a key with `ssh-add` command.")
+
             raise gc3libs.exceptions.TransportError(
                 "Failed while connecting to remote host '%s': %s"
                 % (self.remote_frontend, str(ex)))
