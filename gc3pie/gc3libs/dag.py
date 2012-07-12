@@ -51,7 +51,7 @@ class TaskCollection(Task, gc3libs.utils.Struct):
     decides how to deduce a collective state based on the individual
     task states.
     """
-    
+
     def __init__(self, jobname, tasks=None, grid=None):
         if tasks is None:
             self.tasks = [ ]
@@ -74,12 +74,12 @@ class TaskCollection(Task, gc3libs.utils.Struct):
             task.attach(grid)
         Task.attach(self, grid)
 
-    
+
     def detach(self):
         for task in self.tasks:
             task.detach()
         Task.detach(self)
-    
+
 
     def add(self, task):
         """
@@ -125,12 +125,12 @@ class TaskCollection(Task, gc3libs.utils.Struct):
         for task in self.tasks:
             if output_dir is not None:
                 self._grid.fetch_output(
-                    task, 
+                    task,
                     os.path.join(output_dir, task.permanent_id),
                     overwrite,
                     **kw)
-    
-    
+
+
     def peek(self, what, offset=0, size=None, **kw):
         """
         Raise a `gc3libs.exceptions.InvalidOperation` error, as there
@@ -143,7 +143,7 @@ class TaskCollection(Task, gc3libs.utils.Struct):
     def progress(self):
         raise NotImplementedError("Called abstract method TaskCollection.progress() - this should be overridden in derived classes.")
 
-        
+
     def wait(self, interval=60):
         """
         Block until execution state reaches `TERMINATED`, then return
@@ -156,13 +156,13 @@ class TaskCollection(Task, gc3libs.utils.Struct):
         # call should suspend the current thread and wait for
         # notifications from the Engine, but:
         #  - there's no way to tell if we are running threaded,
-        #  - `self.grid` could be a `Core` instance, thus not capable 
+        #  - `self.grid` could be a `Core` instance, thus not capable
         #    of running independently.
         # For now this is a busy-wait loop, but we certainly need to revise this.
         while True:
             self.progress()
             if self.execution.state == Run.State.TERMINATED:
-                return [ task.execution.returncode 
+                return [ task.execution.returncode
                          for task in self.tasks ]
             time.sleep(interval)
 
@@ -171,9 +171,9 @@ class TaskCollection(Task, gc3libs.utils.Struct):
         """
         Return a dictionary mapping each state name into the count of
         tasks in that state. In addition, the following keys are defined:
-        
+
         * `ok`:  count of TERMINATED tasks with return code 0
-        
+
         * `failed`: count of TERMINATED tasks with nonzero return code
 
         * `total`: count of managed tasks, whatever their state
@@ -182,7 +182,7 @@ class TaskCollection(Task, gc3libs.utils.Struct):
         class is not contained in `only` are ignored.
 
         :param tuple only: Restrict counting to tasks of these classes.
-        
+
         """
         result = defaultdict(lambda: 0)
         for task in self.tasks:
@@ -205,7 +205,7 @@ class TaskCollection(Task, gc3libs.utils.Struct):
 
 class SequentialTaskCollection(TaskCollection):
     """
-    A `SequentialTaskCollection` runs its tasks one at a time.  
+    A `SequentialTaskCollection` runs its tasks one at a time.
 
     After a task has completed, the `next` method is called with the
     index of the finished task in the `self.tasks` list; the return
@@ -218,7 +218,7 @@ class SequentialTaskCollection(TaskCollection):
     `TERMINATED` when all tasks have been run.
     """
 
-    def __init__(self, jobname, tasks, grid=None):
+    def __init__(self, jobname, tasks, grid=None, **kw):
         # XXX: check that `tasks` is a sequence type
         TaskCollection.__init__(self, jobname, tasks, grid)
         self._current_task = 0
@@ -235,7 +235,7 @@ class SequentialTaskCollection(TaskCollection):
         self.execution.returncode = (Run.Signals.Cancelled, -1)
         self.changed = True
 
- 
+
     def next(self, done):
         """
         Called by :meth:`progress` when a job is finished; if
@@ -254,7 +254,7 @@ class SequentialTaskCollection(TaskCollection):
             return Run.State.TERMINATED
         else:
             return Run.State.RUNNING
-    
+
 
     def progress(self):
         """
@@ -321,7 +321,7 @@ class SequentialTaskCollection(TaskCollection):
         else:
             self.execution.state = Run.State.RUNNING
         self.changed = True
-        
+
 
     def update_state(self, **kw):
         """
@@ -405,7 +405,7 @@ class StagedTaskCollection(SequentialTaskCollection):
             else:
                 raise AssertionError("Invalid return value from method `stage%d()` of"
                                      " `StagedTaskCollection` object %r:"
-                                     " must return `Task` instance or number" 
+                                     " must return `Task` instance or number"
                                      % (done+1, self))
         except AttributeError:
             self.execution.returncode = self.tasks[done].execution.returncode
@@ -421,10 +421,10 @@ class ParallelTaskCollection(TaskCollection):
     reached the same terminal status.
     """
 
-    def __init__(self, jobname, tasks=None, grid=None):
+    def __init__(self, jobname, tasks=None, grid=None, **kw):
         TaskCollection.__init__(self, jobname, tasks, grid)
 
-        
+
     def _state(self):
         """
         Return the state of the collection.
@@ -459,7 +459,7 @@ class ParallelTaskCollection(TaskCollection):
                 return state
         return Run.State.UNKNOWN
 
-    
+
     def kill(self, **kw):
         """
         Terminate all tasks in the collection, and set collection
@@ -488,7 +488,7 @@ class ParallelTaskCollection(TaskCollection):
             task.submit(resubmit, **kw)
         self.execution.state = self._state()
 
-        
+
     def update_state(self, **kw):
         """
         Update state of all tasks in the collection.
@@ -506,11 +506,11 @@ class ParallelTaskCollection(TaskCollection):
                     self.execution.exitcode = 1
             # FIXME: incorrectly sets `changed` each time it's called!
             self.changed = True
-        
+
 
 class ChunkedParameterSweep(ParallelTaskCollection):
 
-    def __init__(self, jobname, min_value, max_value, step, chunk_size, grid=None):
+    def __init__(self, jobname, min_value, max_value, step, chunk_size, grid=None, **kw):
         """
         Like `ParallelTaskCollection`, but generate a sequence of jobs
         with a parameter varying from `min_value` to `max_value` in
@@ -525,7 +525,7 @@ class ChunkedParameterSweep(ParallelTaskCollection):
         initial = [ self.new_task(param) for param in
                     range(min_value, self._floor, step) ]
         # start with the initial chunk of jobs
-        ParallelTaskCollection.__init__(self,jobname, initial, grid)
+        ParallelTaskCollection.__init__(self,jobname, initial, grid, **kw)
 
 
     def new_task(self, param, **kw):
@@ -557,8 +557,8 @@ class ChunkedParameterSweep(ParallelTaskCollection):
         # XXX: shall we als could jobs in Run.State.STOPPED ?
         num_running = len([task for task in self.tasks if
                            task.execution.state in  [ Run.State.NEW,
-                                                      Run.State.SUBMITTED, 
-                                                      Run.State.RUNNING ]]) 
+                                                      Run.State.SUBMITTED,
+                                                      Run.State.RUNNING ]])
                                                       # Run.State.UNKNOWN ]])
         # add more jobs if we're close to the end
         # XXX: why using 2*self.chunk_size as treshold ?
