@@ -228,6 +228,21 @@ class SshTransport(Transport):
                 "Could not create ssh connection to %s: %s: %s",
                 self.remote_frontend, ex.__class__.__name__, str(ex))
             self._is_open = False
+
+            # Warn user about possible problems with user keys
+            if isinstance(ex, paramiko.SSHException):
+                keyfiles = ["~/.ssh/id_dsa", "~/.ssh/id_rsa"]
+                if self.keyfile:
+                    if not os.path.isifle(self.keyfile):
+                        gc3libs.log.error(
+                            "Key file %s not found. Please check your "
+                            "ssh configuration file ~/.ssh/config" % self.keyfile)
+                    keyfiles.append(self.keyfile)
+                gc3libs.log.error(
+                    "Please check that the remote server `%s` allow you to connect as user `%s`"
+                    "using one of the following keys: `%s`" % (self.remote_frontend,
+                                                                  self.username,
+                                                                  str.join("`, `", keyfiles)))
             raise gc3libs.exceptions.TransportError(
                 "Failed while connecting to remote host '%s': %s"
                 % (self.remote_frontend, str(ex)))
