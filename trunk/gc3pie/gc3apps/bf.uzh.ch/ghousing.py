@@ -33,11 +33,14 @@ __docformat__ = 'reStructuredText'
 ## -x /home/benjamin/workspace/idrisk/model/bin/idRiskOut -b ../base/ para.loop  -C 1 -N
 ## Need to set path to linux kernel and apppot, e.g.: export PATH=$PATH:~/workspace/apppot:~/workspace/
 
+# Preliminary imports
+import os, shutil
+
 ## Remove all files in curPath if -N option specified. 
 if __name__ == '__main__':    
     import sys
     if '-N' in sys.argv:
-        import os, shutil
+
         path2Pymods = os.path.join(os.path.dirname(__file__), '../')
         if not sys.path.count(path2Pymods):
             sys.path.append(path2Pymods)
@@ -60,7 +63,6 @@ if __name__ == "__main__":
 
 # std module imports
 import numpy as np
-import os
 import re
 import sys
 import time
