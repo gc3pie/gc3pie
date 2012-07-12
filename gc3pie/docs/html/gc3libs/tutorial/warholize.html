@@ -81,9 +81,9 @@ svn tree of GC3Pie:</p>
 <h2>Introduction<a class="headerlink" href="#introduction" title="Permalink to this headline">¶</a></h2>
 <p><cite>Warholize</cite> is a GC3Pie demo application to produce, from a generic
 image picture, a new picture like the famous Warhol&#8217;s work:
-<a class="reference external" href="http://artobserved.com/artists/andy-warhol/">Marylin</a>. The script uses the powerful <a class="reference external" href="http://www.imagemagick.org/">ImageMagick</a> set of
-tools. This tutorial will assume that both <cite>ImageMagick</cite> and <cite>GC3Pie</cite>
-are already installed and configured.</p>
+<a class="reference external" href="http://artobserved.com/artists/andy-warhol/">Marylin</a>. The script uses the powerful <a class="reference external" href="http://www.imagemagick.org/">ImageMagick</a> set of tools
+(at least version 6.3.5-7). This tutorial will assume that both
+<cite>ImageMagick</cite> and <cite>GC3Pie</cite> are already installed and configured.</p>
 <p>In order to produce a similar image we have to do a series of
 transformations on the picture:</p>
 <ol class="arabic">
@@ -244,7 +244,7 @@ sequential one, so:</p>
                  <span class="n">grid</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">size</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kw</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;XXX do we need input_image and output_image? I guess so?&quot;&quot;&quot;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">input_image</span> <span class="o">=</span> <span class="n">input_image</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">output_image</span> <span class="o">=</span> <span class="s">&quot;warhol_</span><span class="si">%s</span><span class="s">&quot;</span> <span class="o">%</span> <span class="n">input_image</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">output_image</span> <span class="o">=</span> <span class="s">&quot;warhol_</span><span class="si">%s</span><span class="s">&quot;</span> <span class="o">%</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">basename</span><span class="p">(</span><span class="n">input_image</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">resize</span> <span class="o">=</span> <span class="bp">False</span>
 
         <span class="n">gc3libs</span><span class="o">.</span><span class="n">log</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
@@ -269,7 +269,7 @@ sequential one, so:</p>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">jobname</span> <span class="o">=</span> <span class="n">kw</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;jobname&#39;</span><span class="p">,</span> <span class="s">&#39;WarholizedWorkflow&#39;</span><span class="p">)</span>
 
-        <span class="bp">self</span><span class="o">.</span><span class="n">grayscaled_image</span> <span class="o">=</span> <span class="s">&quot;grayscaled_</span><span class="si">%s</span><span class="s">&quot;</span> <span class="o">%</span> <span class="bp">self</span><span class="o">.</span><span class="n">input_image</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">grayscaled_image</span> <span class="o">=</span> <span class="s">&quot;grayscaled_</span><span class="si">%s</span><span class="s">&quot;</span> <span class="o">%</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">basename</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">input_image</span><span class="p">)</span>
 </pre></div>
 </div>
 <p>This is just parsing of the arguments. The last lines, instead,
@@ -359,7 +359,7 @@ create a generic <em>cached</em> application which wraps
         <span class="bp">self</span><span class="o">.</span><span class="n">grayscaled_image</span> <span class="o">=</span> <span class="n">grayscaled_image</span>
 
         <span class="n">arguments</span> <span class="o">=</span> <span class="p">[</span>
-            <span class="n">input_image</span><span class="p">,</span>
+            <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">basename</span><span class="p">(</span><span class="n">input_image</span><span class="p">),</span>
             <span class="s">&#39;-colorspace&#39;</span><span class="p">,</span>
             <span class="s">&#39;gray&#39;</span><span class="p">,</span>
             <span class="p">]</span>
@@ -640,9 +640,13 @@ call will be executed only when the file is run as a script, and will
 do all the magic related to argument parsing, creating the session
 etc...:</p>
 <div class="highlight-python"><div class="highlight"><pre><span class="k">if</span> <span class="n">__name__</span> <span class="o">==</span> <span class="s">&#39;__main__&#39;</span><span class="p">:</span>
-    <span class="n">WarholizeScript</span><span class="p">()</span><span class="o">.</span><span class="n">run</span><span class="p">()</span>
+    <span class="kn">import</span> <span class="nn">warholize</span>
+    <span class="n">warholize</span><span class="o">.</span><span class="n">WarholizeScript</span><span class="p">()</span><span class="o">.</span><span class="n">run</span><span class="p">()</span>
 </pre></div>
 </div>
+<p>Please note that the <tt class="docutils literal"><span class="pre">import</span> <span class="pre">warholize</span></tt> statement is important to
+address <a class="reference external" href="http://code.google.com/p/gc3pie/issues/detail?id=95">issue 95</a> and make the gc3pie scripts work with your current
+session (<cite>gstat</cite>, <cite>ginfo</cite>...)</p>
 </div>
 <div class="section" id="testing">
 <h2>Testing<a class="headerlink" href="#testing" title="Permalink to this headline">¶</a></h2>
