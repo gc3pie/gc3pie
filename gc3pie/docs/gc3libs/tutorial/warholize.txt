@@ -625,8 +625,12 @@ do all the magic related to argument parsing, creating the session
 etc...::
 
   if __name__ == '__main__':
-      WarholizeScript().run()
+      import warholize
+      warholize.WarholizeScript().run()
   
+Please note that the ``import warholize`` statement is important to
+address `issue 95`_ and make the gc3pie scripts work with your current
+session (`gstat`, `ginfo`...)
   
 Testing
 -------
@@ -658,3 +662,5 @@ will be created.
 .. _`PyCLI`: http://packages.python.org/pyCLI/
 
 .. _`Signal and Image Processing Institute`: http://sipi.usc.edu/database/?volume=misc
+
+.. _`issue 95`: http://code.google.com/p/gc3pie/issues/detail?id=95
