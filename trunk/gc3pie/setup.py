@@ -88,6 +88,7 @@ setuptools.setup(
             'gsub = gc3utils.frontend:main',
             'gtail = gc3utils.frontend:main',
             'gsession = gc3utils.frontend:main',
+            'gselect = gc3utils.frontend:main',
             ],
        },
 
@@ -103,8 +104,12 @@ setuptools.setup(
         'texttable',
         # pyCLI -- object-oriented command-line app programming
         'pyCLI>=2.0.3',
+        # Needed by SqlStore
         'sqlalchemy',
+        # Needed by ShellCmd backend
         'psutil',
+        # Needed for parsing human-readable dates (gselect uses it).
+        'parsedatetime',
         # Unum -- define and manipulate quantities with units attached
         #'Unum',
         ],

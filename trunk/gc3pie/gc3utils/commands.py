@@ -38,10 +38,12 @@ import tarfile
 from texttable import Texttable
 import time
 import types
+import re
 
 ## 3rd party modules
 import cli  # pyCLI
 import cli.app
+from parsedatetime import parsedatetime
 
 ## local modules
 from gc3libs import Application, Run
@@ -916,3 +918,231 @@ Manage sessions
         cmd = gc3utils.commands.cmd_gstat
         sys.argv = ['gstat', '-n', '-v', '-s', self.params.session]
         return cmd().run()
+
+
+class cmd_gselect(_BaseCmd):
+    """
+Select job IDs based on specific criteria
+    """
+    def setup_args(self):
+        # No positional arguments allowed
+        pass
+
+    def setup_options(self):
+        self.add_param(
+            '--state',            
+            help="Accepts a comma separated list of states. It will select all the jobs in one of the specified states. Valid states are: %s" % str.join(", ", (state.lower() for state in Run.State)),
+            )
+
+        # Regexp options
+        self.regexp_names = ['name', 'iname', 'jobid', 'ijobid']
+        for re_name in self.regexp_names:
+            cistring = ''
+            if re_name[0] == 'i': cistring='case insensitive '
+            self.add_param(
+                '--%s' % re_name,
+                dest='regexp_%s' % re_name,
+                metavar='REGEXP',
+                help="Select jobs with %s which matches the supplied %s REGEXP." % (re_name, cistring),
+                )
+
+        self.add_param(
+            '--submitted-after',
+            metavar='DATE',
+            help="Select jobs sumitted after the specified date",
+            )
+        self.add_param(
+            '--submitted-before',
+            metavar='DATE',
+            help="Select jobs sumitted before the specified date",
+            )
+        self.add_param(
+            '--ifile',
+            metavar='FILE',
+            help="Select jobs which with input file FILE (only the filename is considered, not the full path).",
+            )
+        self.add_param(
+            '--ofile',
+            metavar='FILE',
+            help="Select jobs which with output file FILE (only the filename is considered, not the full path).",
+            )
+
+    def parse_args(self):
+        # Parse regexp(s)
+        for option in self.regexp_names:
+            re_name = "regexp_%s" % option
+            re_attribute = getattr(self.params, re_name)
+            if re_attribute:
+                try:
+                    options = 0
+                    if option[0] == 'i': options=re.I
+                    setattr(self.params, re_name, re.compile(".*%s.*" % re_attribute, options))
+                except re.error, ex:
+                    raise gc3libs.exceptions.InvalidUsage(
+                        "Regexp `%s` for option `--%s` is invalid: %s" % (
+                            re_attribute, option, str(ex)))
+
+        # parse state(s)
+        if self.params.state:
+            self.states = set((i.upper() for i in self.params.state.split(',')))
+            invalid = self.states.difference(Run.State)
+            if invalid:
+                raise gc3libs.exceptions.InvalidUsage(
+                    "Invalid state(s): %s" % str.join(", ", invalid))
+
+        # parse date(s)
+        self.submission_start = None
+
+        if self.params.submitted_after is not None:
+            if self.params.submitted_after == '':
+                gc3libs.log.warning("Empty date as argument of --submitted-after will be interpreted as `now`")
+
+            try:
+                self.submission_start = time.mktime(
+                    parsedatetime.Calendar().parse(
+                        self.params.submitted_after)[0])
+                self.submission_end = time.mktime(
+                    parsedatetime.Calendar().parse('31 Dec 9999')[0])
+
+            except Exception, ex:
+                raise gc3libs.exceptions.InvalidUsage(
+                    "Invalid value `%s` for --submitted-after argument: %s" % (self.params.submitted_after, str(ex)))
+
+        if self.params.submitted_before is not None:
+            if self.params.submitted_before == '':
+                gc3libs.log.warning(
+                    "Empty date as argument of --submitted-before will be interpreted as `now`")
+
+            try:
+                self.submission_end = time.mktime(
+                    parsedatetime.Calendar().parse(
+                        self.params.submitted_before)[0])
+                if not self.submission_start:
+                    self.submission_start = time.mktime(
+                        parsedatetime.Calendar().parse('1 Jan 1978')[0])
+
+            except Exception, ex:
+                raise gc3libs.exceptions.InvalidUsage(
+                    "Invalid value `%s` for --submitted-before argument: %s" % (self.params.submitted_before, str(ex)))
+
+    def filter_by_regexp(self, job_list, regexp, attribute='jobname'):
+        """
+        Filter `job_list` by selecting only the jobs which name match
+        the supplied regexps
+
+        Returns an updated dictionaty.
+        """
+        # I know this could be written in one line but it would be
+        # quite harder to read.
+        matching_jobs = []
+        for job in job_list:
+            try:
+                attrvalue = getattr(job, attribute)
+            except:
+                continue
+            if regexp.match(attrvalue):
+                matching_jobs.append(job)
+        return matching_jobs
+
+    def filter_by_state(self, job_list):
+        """
+        Filter `job_list` by selecting only the jobs which
+        match the desired state(s).
+
+        Returns an updated dictionaty.
+        """
+        matching_jobs = []
+        for job in job_list:
+            if job.execution.state in self.states:
+                matching_jobs.append(job)
+        return matching_jobs
+
+    def filter_by_iofile(self, job_list, ifile=None, ofile=None):
+        """
+        Filter `job_list` based on the input or output files
+        """
+        matching_jobs = []
+        for job in job_list:
+            try:
+                inputs = [os.path.basename(file.path) for file in job.inputs]
+            except AttributeError:
+                inputs = []
+            try:
+                outputs = [os.path.basename(file.path) for file in job.outputs]
+            except AttributeError:
+                inputs = []
+            toadd = True
+            if ifile and ifile not in inputs:
+                toadd = False
+            if ofile and ofile not in outputs:
+                toadd = False
+            if toadd:
+                matching_jobs.append(job)
+        return matching_jobs
+        
+
+    def filter_by_submission_date(self, job_list):
+        """
+        Filter `job_list`
+        """
+        matching_jobs = []
+        for job in job_list.iteritems():
+            submission_time = job.execution.timestamp.get(Run.State.SUBMITTED)
+            if not submission_time:
+                # ShellCmd backend does not support `SUBMITTED` status:
+                submission_time = job.execution.timestamp.get(Run.State.RUNNING)
+
+            if submission_time is not None and submission_time <= self.submission_end and submission_time >= self.submission_start:
+                matching_jobs.append(job)
+        return matching_jobs
+
+    def main(self):
+        try:
+            self.session = Session(self.params.session, create=False)
+            self.store = self.session.store
+        except gc3libs.exceptions.InvalidArgument, ex:
+            # session not found?
+            raise RuntimeError('Session %s not found' % self.params.session)
+
+        # Load tasks from the store
+        current_jobs = [self.store.load(jobid) for jobid in self.store.list()]
+
+        # Filter by regexp(s)
+        if self.params.regexp_name:
+            current_jobs = self.filter_by_regexp(current_jobs,
+                                                 self.params.regexp_name,
+                                                 attribute='jobname',
+                                                 )
+        if self.params.regexp_iname:
+            current_jobs = self.filter_by_regexp(current_jobs,
+                                                 self.params.regexp_iname,
+                                                 attribute='jobname',
+                                                 )
+
+        if self.params.regexp_jobid:
+            current_jobs = self.filter_by_regexp(current_jobs,
+                                                 self.params.regexp_jobid,
+                                                 attribute='persistent_id',
+                                                 )
+        if self.params.regexp_ijobid:
+            current_jobs = self.filter_by_regexp(current_jobs,
+                                                 self.params.regexp_ijobid,
+                                                 attribute='persistent_id',
+                                                 )
+
+        # Filter by state
+        if self.params.state:
+            current_jobs = self.filter_by_state(current_jobs)
+
+        # Filter by submission date
+        if self.submission_start:
+            current_jobs = self.filter_by_submission_date(current_jobs)
+
+        current_jobs = self.filter_by_iofile(current_jobs,
+                                             self.params.ifile,
+                                             self.params.ofile)
+
+        # Print job remaining job names
+        if current_jobs:
+            print str.join(" ", [job.persistent_id for job in current_jobs])
+
