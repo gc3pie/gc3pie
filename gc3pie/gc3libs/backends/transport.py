@@ -28,6 +28,7 @@ __version__ = 'development version (SVN $Revision$)'
 
 import os
 import os.path
+import errno
 
 from gc3libs.utils import same_docstring_as
 import gc3libs.exceptions
@@ -596,8 +597,11 @@ class LocalTransport(Transport):
 
     @same_docstring_as(Transport.makedirs)
     def makedirs(self, path, mode=0777):
-        os.makedirs(path, mode)
-
+        try:
+            os.makedirs(path, mode)
+        except OSError, e:
+            if e.errno == errno.EEXIST:
+                pass
 
     @same_docstring_as(Transport.put)
     def put(self, source, destination):
