@@ -938,12 +938,15 @@ Select job IDs based on specific criteria
         self.regexp_names = ['name', 'iname', 'jobid', 'ijobid']
         for re_name in self.regexp_names:
             cistring = ''
-            if re_name[0] == 'i': cistring='case insensitive '
+            visible_name = re_name
+            if re_name[0] == 'i':
+                cistring='case insensitive '
+                visible_name = re_name[1:]
             self.add_param(
                 '--%s' % re_name,
                 dest='regexp_%s' % re_name,
                 metavar='REGEXP',
-                help="Select jobs with %s which matches the supplied %s REGEXP." % (re_name, cistring),
+                help="Select jobs with %s which matches the supplied %s REGEXP." % (visible_name, cistring),
                 )
 
         self.add_param(
@@ -1001,6 +1004,10 @@ Select job IDs based on specific criteria
                 self.submission_start = time.mktime(
                     parsedatetime.Calendar().parse(
                         self.params.submitted_after)[0])
+                # We always match comparing start and end date, so we
+                # need a fake end date which will always be valid, and
+                # we will replace it later in case an end date was
+                # provided from command line
                 self.submission_end = time.mktime(
                     parsedatetime.Calendar().parse('31 Dec 9999')[0])
 
@@ -1018,6 +1025,9 @@ Select job IDs based on specific criteria
                     parsedatetime.Calendar().parse(
                         self.params.submitted_before)[0])
                 if not self.submission_start:
+                    # We always match comparing start and end date, so
+                    # we need a fake start date in case it has not
+                    # been provided from the command line
                     self.submission_start = time.mktime(
                         parsedatetime.Calendar().parse('1 Jan 1978')[0])
 
@@ -1027,10 +1037,10 @@ Select job IDs based on specific criteria
 
     def filter_by_regexp(self, job_list, regexp, attribute='jobname'):
         """
-        Filter `job_list` by selecting only the jobs which name match
-        the supplied regexps
+        Filter `job_list` by selecting only the jobs which attribute
+        `attribute` match the supplied regexp.
 
-        Returns an updated dictionaty.
+        Returns an updated job list.
         """
         # I know this could be written in one line but it would be
         # quite harder to read.
@@ -1049,7 +1059,7 @@ Select job IDs based on specific criteria
         Filter `job_list` by selecting only the jobs which
         match the desired state(s).
 
-        Returns an updated dictionaty.
+        Returns an updated job list.
         """
         matching_jobs = []
         for job in job_list:
@@ -1059,7 +1069,11 @@ Select job IDs based on specific criteria
 
     def filter_by_iofile(self, job_list, ifile=None, ofile=None):
         """
-        Filter `job_list` based on the input or output files
+        Filter `job_list` based on the *basename* of their input or
+        output files. It will return any file which matches both
+        `ifile` and `ofile`.
+
+        Returns an updated job list.
         """
         matching_jobs = []
         for job in job_list:
@@ -1083,7 +1097,11 @@ Select job IDs based on specific criteria
 
     def filter_by_submission_date(self, job_list):
         """
-        Filter `job_list`
+        Filter `job_list` by submission date. Only job which have been
+        submitted within the range specified by command line will be
+        selected.
+
+        Returns an updated job list.
         """
         matching_jobs = []
         for job in job_list.iteritems():
