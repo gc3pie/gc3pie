@@ -220,4 +220,4 @@ class DemoIteration(SequentialTaskCollection):
 # run script
 if __name__ == '__main__':
     import gdemo_session
-    Gdemo().run()
+    gdemo_session.Gdemo().run()

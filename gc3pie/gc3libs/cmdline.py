@@ -597,6 +597,12 @@ class GC3UtilsScript(_Script):
                        metavar='JOBID',
                        help="Job ID string identifying the jobs to operate upon.")
 
+    def parse_args(self):
+        if '-' in self.params.args:
+            # Get input arguments *also* from standard input
+            self.params.args.remove('-')
+            self.params.args.extend(sys.stdin.read().split())
+
     ##
     ## pyCLI INTERFACE METHODS
     ##
