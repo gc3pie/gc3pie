@@ -596,7 +596,7 @@ class LocalTransport(Transport):
 
     @same_docstring_as(Transport.makedirs)
     def makedirs(self, path, mode=0777):
-        os.path.makedirs(path, mode)
+        os.makedirs(path, mode)
 
 
     @same_docstring_as(Transport.put)
