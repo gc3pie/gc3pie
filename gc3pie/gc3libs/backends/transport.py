@@ -29,6 +29,7 @@ __version__ = 'development version (SVN $Revision$)'
 import os
 import os.path
 import errno
+import shutil
 
 from gc3libs.utils import same_docstring_as
 import gc3libs.exceptions
@@ -653,7 +654,7 @@ class LocalTransport(Transport):
         try:
             gc3libs.log.debug("LocalTransport.remove_tree():"
                               " removing local directory tree '%s'" % path)
-            return os.removedirs(path)
+            return shutil.rmtree(path)
         except Exception, ex:
             raise gc3libs.exceptions.TransportError("Could not remove directory tree '%s': %s: %s" 
                                      % (path, ex.__class__.__name__, str(ex)))
