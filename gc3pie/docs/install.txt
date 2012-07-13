@@ -45,8 +45,8 @@ Installation into a virtualenv has two distinct advantages:
        standard library, but sometimes it needs separate installation)
      - a C/C++ compiler (this is usually installed by default).
 
-   In order to use the ARC backend (required for SMSCG), you need the
-   NorduGrid/ARC binaries and a working ``slcs-init`` command
+   If you intend to use also the ARC backend (required for SMSCG), 
+   you need the NorduGrid/ARC binaries and a working ``slcs-init`` command
    installed on the same machine where GC3Pie is.  You can find
    instructions for installing it at:
 
@@ -77,11 +77,12 @@ Installation into a virtualenv has two distinct advantages:
       mkdir -p $HOME/lib/python
       python setup.py install --home $HOME
 
-   (You will also need to add the two `export` lines above to the
-   `$HOME/.bashrc` file -if using the `bash` shell- or to the
-   `$HOME/.cshrc` file -if using the `tcsh` shell.)
+   You will also *have to* add the two `export` lines above to the:
 
-   In any case, once `virtualenv`_ has been installed, you can exit
+   * `$HOME/.bashrc` file, if using the `bash` shell or to the
+   * `$HOME/.cshrc` file, if using the `tcsh` shell.
+ 
+   In any case, once `virtualenv` has been installed, you can exit
    its directory and remove it::
 
       cd ..
@@ -96,8 +97,8 @@ Installation into a virtualenv has two distinct advantages:
        source bin/activate
 
    In this step and in the following ones, the directory
-   ``$HOME/gc3pie`` is be the installation folder of GC3Pie.  You can
-   change this to another directory path; any directory that's
+   ``$HOME/gc3pie`` is going to be the installation folder of GC3Pie. 
+   You can change this to another directory path; any directory that's
    writable by your Linux account will be OK.
 
    If you are installing system-wide as ``root``, we suggest you
@@ -139,36 +140,49 @@ Installation into a virtualenv has two distinct advantages:
 
 
 6. Before you can actually run the GC3Pie, you need to have a
-   working configuration file; `the ConfigurationFile Wiki page
-   <http://code.google.com/p/gc3pie/wiki/ConfigurationFile>` provides
-   an explanation of the syntax to use in configuration files.
+   working configuration file; `the ConfigurationFile Wiki page <http://code.google.com/p/gc3pie/wiki/ConfigurationFile/>`_
+   provides an explanation of the syntax.
 
-   You can uncomment a few lines in the `example configuration file`_
-   provides to enable access to the SMSCG_ infrastructure.  Before you
-   can actually use this file, you will need to insert into it three
-   values, for which we can provide no default: ``aai_username``,
-   ``idp``, and ``vo``.
+   The `example configuration file <http://gc3pie.googlecode.com/svn/trunk/gc3pie/gc3libs/etc/gc3pie.conf.example/>`_
+   can be used as a startup point if you want to enable access to the SMSCG_ infrastructure.  
+   Before you can actually use this file, you will need to: 
+   
+   * insert into it three values, for which we `can NOT` provide defaults:
 
-   .. _`example configuration file`: http://gc3pie.googlecode.com/svn/trunk/gc3pie/gc3libs/etc/gc3pie.conf.example
+    1. ``aai_username``:
+        This is the "username" you are asked for when accessing
+        any SWITCHaai_/Shibboleth web page, e.g., https://gc3-aai01.uzh.ch/secure/
 
-   aai_username:
-     This is the "username" you are asked for when accessing
-     any SWITCHaai_/Shibboleth web page, e.g., https://gc3-aai01.uzh.ch/secure/
+    2. ``idp``:
+        Find this out with the command "slcs-info": it prints a list of
+        IdP (Identity Provider IDs) followed by the human-readable name
+        of the associated institution. Pick the one that corresponds to
+        you University.  It is always the last two components of the
+        University's Internet domain name (e.g., "uzh.ch" or "ethz.ch").
 
-   idp:
-     Find this out with the command "slcs-info": it prints a list of
-     IdP (Identity Provider IDs) followed by the human-readable name
-     of the associated institution. Pick the one that corresponds to
-     you University.  It is always the last two components of the
-     University's Internet domain name (e.g., "uzh.ch" or "ethz.ch").
-
-   vo:
-     In order to use SMSCG, you must sign up to a VO (Virtual
-     Organisation).  One the words "life", "earth", "atlas" or
-     "crypto" should be here.  Find out more at:
-     http://www.smscg.ch/www/user/
+    3. ``vo``:
+        In order to use SMSCG, you must sign up to a VO (Virtual
+        Organisation).  One the words "life", "earth", "atlas" or
+        "crypto" should be here. Find out more at:  http://www.smscg.ch/www/user/
 
 
+    Please, remember to uncomment the three lines, too.       
+
+   * Enable the SMSCG_ resource in the ``Examples`` section of the file.
+     To do this simply uncomment the following lines::
+
+        # [resource/smscg]
+        # enabled = false
+        # name = smscg
+        # type = arc0
+        # auth = smscg
+        # arc_ldap = ldap://giis.smscg.ch:2135/o=grid/mds-vo-name=Switzerland
+        # max_cores_per_job = 256
+        # max_memory_per_core = 2
+        # max_walltime = 24
+        # ncores = 8000
+        # architecture = i686, x86_64
+    
 7. Now you can check your GC3Pie installation; just type the command:: 
 
      gc3utils --help

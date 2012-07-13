@@ -3,16 +3,13 @@
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
   "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 
-
 <html xmlns="http://www.w3.org/1999/xhtml">
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     
-    <title>GC3Libs programming API &mdash; gc3pie development (SVN $Revision$) documentation</title>
-    
+    <title>GC3Libs programming API &mdash; gc3pie vdevelopment (SVN $Revision$) documentation</title>
     <link rel="stylesheet" href="../_static/default.css" type="text/css" />
     <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
-    
     <script type="text/javascript">
       var DOCUMENTATION_OPTIONS = {
         URL_ROOT:    '../',
@@ -25,7 +22,7 @@
     <script type="text/javascript" src="../_static/jquery.js"></script>
     <script type="text/javascript" src="../_static/underscore.js"></script>
     <script type="text/javascript" src="../_static/doctools.js"></script>
-    <link rel="top" title="gc3pie development (SVN $Revision$) documentation" href="../index.html" />
+    <link rel="top" title="gc3pie vdevelopment (SVN $Revision$) documentation" href="../index.html" />
     <link rel="up" title="GC3Libs" href="index.html" />
     <link rel="next" title="Contributing to GC3Pie" href="../contributing.html" />
     <link rel="prev" title="GC3Pie tutorial - Warholize" href="tutorial/warholize.html" />
@@ -53,7 +50,7 @@
         <li class="right" >
           <a href="tutorial/warholize.html" title="GC3Pie tutorial - Warholize"
              accesskey="P">previous</a> |</li>
-        <li><a href="../index.html">gc3pie development (SVN $Revision$) documentation</a> &raquo;</li>
+        <li><a href="../index.html">gc3pie vdevelopment (SVN $Revision$) documentation</a> &raquo;</li>
           <li><a href="index.html" accesskey="U">GC3Libs</a> &raquo;</li> 
       </ul>
     </div>  
@@ -406,18 +403,6 @@ a &#8216;str&#8217;!</p>
 <em class="property">class </em><tt class="descclassname">gc3libs.</tt><tt class="descname">Default</tt><a class="headerlink" href="#gc3libs.Default" title="Permalink to this definition">¶</a></dt>
 <dd><p>A namespace for all constants and default values used in the
 GC3Libs package.</p>
-<dl class="attribute">
-<dt id="gc3libs.Default.ARC_CACHE_TIME">
-<tt class="descname">ARC_CACHE_TIME</tt><em class="property"> = 30</em><a class="headerlink" href="#gc3libs.Default.ARC_CACHE_TIME" title="Permalink to this definition">¶</a></dt>
-<dd><p>only update ARC resources status every this seconds</p>
-</dd></dl>
-
-<dl class="attribute">
-<dt id="gc3libs.Default.PROXY_VALIDITY_THRESHOLD">
-<tt class="descname">PROXY_VALIDITY_THRESHOLD</tt><em class="property"> = 600</em><a class="headerlink" href="#gc3libs.Default.PROXY_VALIDITY_THRESHOLD" title="Permalink to this definition">¶</a></dt>
-<dd><p>Proxy validity threshold in seconds. If proxy is expiring before the thresold, it will be marked as to be renewed.</p>
-</dd></dl>
-
 </dd></dl>
 
 <dl class="class">
@@ -559,18 +544,18 @@ to be obeyed on every known system):</p>
 <col width="86%" />
 </colgroup>
 <thead valign="bottom">
-<tr class="row-odd"><th class="head">Bit</th>
+<tr><th class="head">Bit</th>
 <th class="head">Encodes...</th>
 </tr>
 </thead>
 <tbody valign="top">
-<tr class="row-even"><td>0..7</td>
+<tr><td>0..7</td>
 <td>signal number</td>
 </tr>
-<tr class="row-odd"><td>8</td>
+<tr><td>8</td>
 <td>1 if program dumped core.</td>
 </tr>
-<tr class="row-even"><td>9..16</td>
+<tr><td>9..16</td>
 <td>exit code</td>
 </tr>
 </tbody>
@@ -640,36 +625,36 @@ errors (see <cite>Run.Signals</cite>).</p>
 <col width="22%" />
 </colgroup>
 <thead valign="bottom">
-<tr class="row-odd"><th class="head">Run.State value</th>
+<tr><th class="head">Run.State value</th>
 <th class="head">purpose</th>
 <th class="head">can change to</th>
 </tr>
 </thead>
 <tbody valign="top">
-<tr class="row-even"><td>NEW</td>
+<tr><td>NEW</td>
 <td>Job has not yet been submitted/started (i.e., gsub not called)</td>
 <td>SUBMITTED (by gsub)</td>
 </tr>
-<tr class="row-odd"><td>SUBMITTED</td>
+<tr><td>SUBMITTED</td>
 <td>Job has been sent to execution resource</td>
 <td>RUNNING, STOPPED</td>
 </tr>
-<tr class="row-even"><td>STOPPED</td>
+<tr><td>STOPPED</td>
 <td>Trap state: job needs manual intervention (either user-
 or sysadmin-level) to resume normal execution</td>
 <td>TERMINATING(by gkill),
 SUBMITTED (by miracle)</td>
 </tr>
-<tr class="row-odd"><td>RUNNING</td>
+<tr><td>RUNNING</td>
 <td>Job is executing on remote resource</td>
 <td>TERMINATING</td>
 </tr>
-<tr class="row-even"><td>TERMINATING</td>
+<tr><td>TERMINATING</td>
 <td>Job has finished execution on remote resource;
 output not yet retrieved</td>
 <td>TERMINATED</td>
 </tr>
-<tr class="row-odd"><td>TERMINATED</td>
+<tr><td>TERMINATED</td>
 <td>Job execution is finished (correctly or not)
 and will not be resumed; output has been retrieved</td>
 <td>None: final state</td>
@@ -769,7 +754,7 @@ into the directory whose path is stored in instance attribute
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">Path to the directory where the job output has been
+<tr class="field"><th class="field-name">Returns:</th><td class="field-body">Path to the directory where the job output has been
 collected.</td>
 </tr>
 </tbody>
@@ -835,10 +820,10 @@ yet in <cite>TERMINATED</cite> state, calling <cite>progress</cite> returns <cit
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Raises :</th><td class="field-body">exception <tt class="xref py py-class docutils literal"><span class="pre">UnexpectedStateError</span></tt> if the
+<tr class="field"><th class="field-name">Raises :</th><td class="field-body">exception <tt class="xref py py-class docutils literal"><span class="pre">UnexpectedStateError</span></tt> if the
 associated job goes into state <cite>STOPPED</cite> or <cite>UNKNOWN</cite></td>
 </tr>
-<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">final returncode, or <cite>None</cite> if the execution
+<tr class="field"><th class="field-name">Returns:</th><td class="field-body">final returncode, or <cite>None</cite> if the execution
 state is not <cite>TERMINATED</cite>.</td>
 </tr>
 </tbody>
@@ -937,7 +922,7 @@ automatically fetch the output.</p>
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>interval</strong> (<em>integer</em>) &#8211; Poll job state every this number of seconds</td>
+<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><strong>interval</strong> (<em>integer</em>) &#8211; Poll job state every this number of seconds</td>
 </tr>
 </tbody>
 </table>
@@ -1048,21 +1033,21 @@ are used, with the following meaning:</p>
 <col width="95%" />
 </colgroup>
 <thead valign="bottom">
-<tr class="row-odd"><th class="head">Bit</th>
+<tr><th class="head">Bit</th>
 <th class="head">Meaning</th>
 </tr>
 </thead>
 <tbody valign="top">
-<tr class="row-even"><td>0</td>
+<tr><td>0</td>
 <td>Set if a fatal error occurred: the script could not complete</td>
 </tr>
-<tr class="row-odd"><td>1</td>
+<tr><td>1</td>
 <td>Set if there are jobs in <cite>FAILED</cite> state</td>
 </tr>
-<tr class="row-even"><td>2</td>
+<tr><td>2</td>
 <td>Set if there are jobs in <cite>RUNNING</cite> or <cite>SUBMITTED</cite> state</td>
 </tr>
-<tr class="row-odd"><td>3</td>
+<tr><td>3</td>
 <td>Set if there are jobs in <cite>NEW</cite> state</td>
 </tr>
 </tbody>
@@ -1228,7 +1213,7 @@ infact, that you can pass as second argument to the
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
 <li><strong>output</strong> &#8211; An output stream (file-like object)</li>
 <li><strong>states</strong> &#8211; List of states (<cite>Run.State</cite> items) to consider.</li>
 <li><strong>only</strong> &#8211; Root class (or tuple of root classes) of tasks to consider.</li>
@@ -1434,7 +1419,7 @@ of the states <cite>NEW</cite> or <cite>SUBMITTED</cite>; an
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Raise :</th><td class="field-body"><cite>gc3libs.exceptions.OutputNotAvailableError</cite> if no
+<tr class="field"><th class="field-name">Raise :</th><td class="field-body"><cite>gc3libs.exceptions.OutputNotAvailableError</cite> if no
 output can be fetched from the remote job (e.g., the
 Application/Task object is in <cite>NEW</cite> or <cite>SUBMITTED</cite>
 state, indicating the remote job has not started
@@ -1457,7 +1442,7 @@ will be raised in this case.</p>
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Raise :</th><td class="field-body"><cite>gc3libs.exceptions.InvalidOperation</cite> if <cite>app.execution.state</cite>
+<tr class="field"><th class="field-name">Raise :</th><td class="field-body"><cite>gc3libs.exceptions.InvalidOperation</cite> if <cite>app.execution.state</cite>
 differs from <cite>Run.State.TERMINATED</cite>.</td>
 </tr>
 </tbody>
@@ -1534,7 +1519,7 @@ state when this call returns.</p>
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Raise :</th><td class="field-body"><cite>gc3libs.exceptions.InputFileError</cite> if an input file
+<tr class="field"><th class="field-name">Raise :</th><td class="field-body"><cite>gc3libs.exceptions.InputFileError</cite> if an input file
 does not exist or cannot otherwise be read.</td>
 </tr>
 </tbody>
@@ -1554,12 +1539,12 @@ appropriate handler method on the application/task object.</p>
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Raise :</th><td class="field-body"><cite>gc3libs.exceptions.InvalidArgument</cite> in case one of
+<tr class="field"><th class="field-name">Raise :</th><td class="field-body"><cite>gc3libs.exceptions.InvalidArgument</cite> in case one of
 the passed <cite>Application</cite> or <cite>Task</cite> objects is
 invalid. This can stop updating the state of other
 objects in the argument list.</td>
 </tr>
-<tr class="field-even field"><th class="field-name">Raise :</th><td class="field-body"><cite>gc3libs.exceptions.ConfigurationError</cite> if the
+<tr class="field"><th class="field-name">Raise :</th><td class="field-body"><cite>gc3libs.exceptions.ConfigurationError</cite> if the
 configuration of this <cite>Core</cite> object is invalid or
 otherwise inconsistent (e.g., a resource references a
 non-existing auth section).</td>
@@ -1897,7 +1882,7 @@ class is not contained in <cite>only</cite> are ignored.</p>
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>only</strong> (<em>tuple</em>) &#8211; Restrict counting to tasks of these classes.</td>
+<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><strong>only</strong> (<em>tuple</em>) &#8211; Restrict counting to tasks of these classes.</td>
 </tr>
 </tbody>
 </table>
@@ -1919,7 +1904,7 @@ fetch the output.</p>
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>interval</strong> (<em>integer</em>) &#8211; Poll job state every this number of seconds</td>
+<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><strong>interval</strong> (<em>integer</em>) &#8211; Poll job state every this number of seconds</td>
 </tr>
 </tbody>
 </table>
@@ -2329,49 +2314,49 @@ object that cannot be changed after creation.</p>
 <col width="29%" />
 </colgroup>
 <thead valign="bottom">
-<tr class="row-odd"><th class="head">Attribute</th>
+<tr><th class="head">Attribute</th>
 <th class="head">Index</th>
 <th class="head">Value</th>
 <th class="head">Value if not present</th>
 </tr>
 </thead>
 <tbody valign="top">
-<tr class="row-even"><td>scheme</td>
+<tr><td>scheme</td>
 <td>0</td>
 <td>URL scheme specifier</td>
 <td>empty string</td>
 </tr>
-<tr class="row-odd"><td>netloc</td>
+<tr><td>netloc</td>
 <td>1</td>
 <td>Network location part</td>
 <td>empty string</td>
 </tr>
-<tr class="row-even"><td>path</td>
+<tr><td>path</td>
 <td>2</td>
 <td>Hierarchical path</td>
 <td>empty string</td>
 </tr>
-<tr class="row-odd"><td>query</td>
+<tr><td>query</td>
 <td>3</td>
 <td>Query component</td>
 <td>empty string</td>
 </tr>
-<tr class="row-even"><td>hostname</td>
+<tr><td>hostname</td>
 <td>4</td>
 <td>Host name (lower case)</td>
 <td>None</td>
 </tr>
-<tr class="row-odd"><td>port</td>
+<tr><td>port</td>
 <td>5</td>
 <td>Port number as integer (if present)</td>
 <td>None</td>
 </tr>
-<tr class="row-even"><td>username</td>
+<tr><td>username</td>
 <td>6</td>
 <td>User name</td>
 <td>None</td>
 </tr>
-<tr class="row-odd"><td>password</td>
+<tr><td>password</td>
 <td>7</td>
 <td>Password</td>
 <td>None</td>
@@ -3151,9 +3136,9 @@ seconds) while trying to acquire the lock, or raise a
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Raise :</th><td class="field-body">LockTimeout, IOError, OSError</td>
+<tr class="field"><th class="field-name">Raise :</th><td class="field-body">LockTimeout, IOError, OSError</td>
 </tr>
-<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">A positive integer number, monotonically increasing with
+<tr class="field"><th class="field-name">Returns:</th><td class="field-body">A positive integer number, monotonically increasing with
 every call.  A list of such numbers if argument <cite>qty</cite> is a
 positive integer.</td>
 </tr>
@@ -3268,7 +3253,7 @@ semantics and the meaning of <cite>path</cite> and <cite>mode</cite>.</p>
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
 <li><strong>path</strong> &#8211; Filesystem path to test.</li>
 <li><strong>mode</strong> &#8211; See <tt class="xref py py-func docutils literal"><span class="pre">os.access()</span></tt></li>
 <li><strong>exception</strong> &#8211; Class of exception to raise if test fails.</li>
@@ -3428,7 +3413,7 @@ arguments, the following ones can be given to steer the AppPot
 execution:</p>
 <ul class="simple">
 <li><cite>apppot_img</cite>: Path or URL to the AppPot system image to use.
-If <tt class="docutils literal"><span class="pre">None</span></tt> (default), then the default AppPot system image
+If <tt class="xref docutils literal"><span class="pre">None</span></tt> (default), then the default AppPot system image
 on the remote system is used.</li>
 <li><cite>apppot_changes</cite>: Path or URL to an AppPot changes file to be merged
 at system startup.</li>
@@ -3509,7 +3494,7 @@ name; subsequent positional arguments are additional input files,
 that are added to the <cite>Application.inputs</cite> list, but not otherwise
 treated specially.</p>
 <p>The <cite>verno</cite> parameter is used to request a specific version of
-GAMESS-US; if the default value <tt class="docutils literal"><span class="pre">None</span></tt> is used, the default
+GAMESS-US; if the default value <tt class="xref docutils literal"><span class="pre">None</span></tt> is used, the default
 version of GAMESS-US at the executing site is run.</p>
 <p>Any other keyword parameter that is valid in the <cite>Application</cite>
 class can be used here as well, with the exception of <cite>input</cite> and
@@ -3542,21 +3527,21 @@ to the following table:</p>
 <col width="84%" />
 </colgroup>
 <thead valign="bottom">
-<tr class="row-odd"><th class="head">Exit code</th>
+<tr><th class="head">Exit code</th>
 <th class="head">Meaning</th>
 </tr>
 </thead>
 <tbody valign="top">
-<tr class="row-even"><td>0</td>
+<tr><td>0</td>
 <td>the output file contains the string                                <tt class="docutils literal"><span class="pre">EXECUTION</span> <span class="pre">OF</span> <span class="pre">GAMESS</span> <span class="pre">TERMINATED</span> <span class="pre">normally</span></tt></td>
 </tr>
-<tr class="row-odd"><td>1</td>
+<tr><td>1</td>
 <td>the output file contains the string                                <tt class="docutils literal"><span class="pre">EXECUTION</span> <span class="pre">OF</span> <span class="pre">GAMESS</span> <span class="pre">TERMINATED</span> <span class="pre">-ABNORMALLY-</span></tt></td>
 </tr>
-<tr class="row-even"><td>2</td>
+<tr><td>2</td>
 <td>the output file contains the string                                <tt class="docutils literal"><span class="pre">ddikick</span> <span class="pre">exited</span> <span class="pre">unexpectedly</span></tt></td>
 </tr>
-<tr class="row-odd"><td>70 (<cite>os.EX_SOFTWARE</cite>)</td>
+<tr><td>70 (<cite>os.EX_SOFTWARE</cite>)</td>
 <td>the output file cannot be read or                                does not match any of the above patterns</td>
 </tr>
 </tbody>
@@ -3629,7 +3614,7 @@ authorization credentials are valid and getting/renewing them).</li>
 <cite>Auth</cite> objects by allowing only one live instance per type, and
 returning it when requested.</li>
 </ul>
-<div class="admonition-fixme admonition">
+<div class="admonition-fixme admonition ">
 <p class="first admonition-title">FIXME</p>
 <p>There are several problems with this approach:</p>
 <ul class="last simple">
@@ -3711,53 +3696,53 @@ specified at construction time and changed never after:</p>
 <col width="21%" />
 </colgroup>
 <thead valign="bottom">
-<tr class="row-odd"><th class="head">Attribute name</th>
+<tr><th class="head">Attribute name</th>
 <th class="head">Type</th>
 <th class="head">Required?</th>
 </tr>
 </thead>
 <tbody valign="top">
-<tr class="row-even"><td>arc_ldap</td>
+<tr><td>arc_ldap</td>
 <td>string</td>
 <td>&nbsp;</td>
 </tr>
-<tr class="row-odd"><td>architecture</td>
+<tr><td>architecture</td>
 <td>set of string</td>
 <td>yes</td>
 </tr>
-<tr class="row-even"><td>auth</td>
+<tr><td>auth</td>
 <td>string</td>
 <td>yes</td>
 </tr>
-<tr class="row-odd"><td>frontend</td>
+<tr><td>frontend</td>
 <td>string</td>
 <td>yes</td>
 </tr>
-<tr class="row-even"><td>gamess_location</td>
+<tr><td>gamess_location</td>
 <td>string</td>
 <td>&nbsp;</td>
 </tr>
-<tr class="row-odd"><td>max_cores_per_job</td>
+<tr><td>max_cores_per_job</td>
 <td>int</td>
 <td>yes</td>
 </tr>
-<tr class="row-even"><td>max_memory_per_core</td>
+<tr><td>max_memory_per_core</td>
 <td>int</td>
 <td>yes</td>
 </tr>
-<tr class="row-odd"><td>max_walltime</td>
+<tr><td>max_walltime</td>
 <td>int</td>
 <td>yes</td>
 </tr>
-<tr class="row-even"><td>name</td>
+<tr><td>name</td>
 <td>string</td>
 <td>yes</td>
 </tr>
-<tr class="row-odd"><td>max_cores</td>
+<tr><td>max_cores</td>
 <td>int</td>
 <td>&nbsp;</td>
 </tr>
-<tr class="row-even"><td>type</td>
+<tr><td>type</td>
 <td>string</td>
 <td>yes</td>
 </tr>
@@ -3774,25 +3759,25 @@ by the <cite>get_resource_status()</cite> method or similar):</p>
 <col width="21%" />
 </colgroup>
 <thead valign="bottom">
-<tr class="row-odd"><th class="head">Attribute name</th>
+<tr><th class="head">Attribute name</th>
 <th class="head">Type</th>
 <th class="head">Required?</th>
 </tr>
 </thead>
 <tbody valign="top">
-<tr class="row-even"><td>free_slots</td>
+<tr><td>free_slots</td>
 <td>int</td>
 <td>&nbsp;</td>
 </tr>
-<tr class="row-odd"><td>user_run</td>
+<tr><td>user_run</td>
 <td>int</td>
 <td>&nbsp;</td>
 </tr>
-<tr class="row-even"><td>user_queued</td>
+<tr><td>user_queued</td>
 <td>int</td>
 <td>&nbsp;</td>
 </tr>
-<tr class="row-odd"><td>queued</td>
+<tr><td>queued</td>
 <td>int</td>
 <td>&nbsp;</td>
 </tr>
@@ -3990,69 +3975,69 @@ corresponding <cite>Run.State</cite>; see <cite>Run.State</cite> for more detail
 <col width="44%" />
 </colgroup>
 <thead valign="bottom">
-<tr class="row-odd"><th class="head">ARC job status</th>
+<tr><th class="head">ARC job status</th>
 <th class="head"><cite>Run.State</cite></th>
 </tr>
 </thead>
 <tbody valign="top">
-<tr class="row-even"><td>ACCEPTED</td>
+<tr><td>ACCEPTED</td>
 <td>SUBMITTED</td>
 </tr>
-<tr class="row-odd"><td>ACCEPTING</td>
+<tr><td>ACCEPTING</td>
 <td>SUBMITTED</td>
 </tr>
-<tr class="row-even"><td>SUBMITTING</td>
+<tr><td>SUBMITTING</td>
 <td>SUBMITTED</td>
 </tr>
-<tr class="row-odd"><td>PREPARING</td>
+<tr><td>PREPARING</td>
 <td>SUBMITTED</td>
 </tr>
-<tr class="row-even"><td>PREPARED</td>
+<tr><td>PREPARED</td>
 <td>SUBMITTED</td>
 </tr>
-<tr class="row-odd"><td>INLRMS:Q</td>
+<tr><td>INLRMS:Q</td>
 <td>SUBMITTED</td>
 </tr>
-<tr class="row-even"><td>INLRMS:R</td>
+<tr><td>INLRMS:R</td>
 <td>RUNNING</td>
 </tr>
-<tr class="row-odd"><td>INLRMS:O</td>
+<tr><td>INLRMS:O</td>
 <td>STOPPED</td>
 </tr>
-<tr class="row-even"><td>INLRMS:E</td>
+<tr><td>INLRMS:E</td>
 <td>STOPPED</td>
 </tr>
-<tr class="row-odd"><td>INLRMS:X</td>
+<tr><td>INLRMS:X</td>
 <td>STOPPED</td>
 </tr>
-<tr class="row-even"><td>INLRMS:S</td>
+<tr><td>INLRMS:S</td>
 <td>STOPPED</td>
 </tr>
-<tr class="row-odd"><td>INLRMS:H</td>
+<tr><td>INLRMS:H</td>
 <td>STOPPED</td>
 </tr>
-<tr class="row-even"><td>FINISHING</td>
+<tr><td>FINISHING</td>
 <td>RUNNING</td>
 </tr>
-<tr class="row-odd"><td>EXECUTED</td>
+<tr><td>EXECUTED</td>
 <td>RUNNING</td>
 </tr>
-<tr class="row-even"><td>FINISHED</td>
+<tr><td>FINISHED</td>
 <td>TERMINATING</td>
 </tr>
-<tr class="row-odd"><td>CANCELING</td>
+<tr><td>CANCELING</td>
 <td>TERMINATING</td>
 </tr>
-<tr class="row-even"><td>FINISHED</td>
+<tr><td>FINISHED</td>
 <td>TERMINATING</td>
 </tr>
-<tr class="row-odd"><td>FAILED</td>
+<tr><td>FAILED</td>
 <td>TERMINATING</td>
 </tr>
-<tr class="row-even"><td>KILLED</td>
+<tr><td>KILLED</td>
 <td>TERMINATED</td>
 </tr>
-<tr class="row-odd"><td>DELETED</td>
+<tr><td>DELETED</td>
 <td>TERMINATED</td>
 </tr>
 </tbody>
@@ -4166,45 +4151,45 @@ corresponding <cite>Run.State</cite>; see <cite>Run.State</cite> for more detail
 <col width="44%" />
 </colgroup>
 <thead valign="bottom">
-<tr class="row-odd"><th class="head">ARC job status</th>
+<tr><th class="head">ARC job status</th>
 <th class="head"><cite>Run.State</cite></th>
 </tr>
 </thead>
 <tbody valign="top">
-<tr class="row-even"><td>ACCEPTED</td>
+<tr><td>ACCEPTED</td>
 <td>SUBMITTED</td>
 </tr>
-<tr class="row-odd"><td>SUBMITTING</td>
+<tr><td>SUBMITTING</td>
 <td>SUBMITTED</td>
 </tr>
-<tr class="row-even"><td>PREPARING</td>
+<tr><td>PREPARING</td>
 <td>SUBMITTED</td>
 </tr>
-<tr class="row-odd"><td>QUEUING</td>
+<tr><td>QUEUING</td>
 <td>SUBMITTED</td>
 </tr>
-<tr class="row-even"><td>RUNNING</td>
+<tr><td>RUNNING</td>
 <td>RUNNING</td>
 </tr>
-<tr class="row-odd"><td>FINISHING</td>
+<tr><td>FINISHING</td>
 <td>RUNNING</td>
 </tr>
-<tr class="row-even"><td>FINISHED</td>
+<tr><td>FINISHED</td>
 <td>TERMINATING</td>
 </tr>
-<tr class="row-odd"><td>FAILED</td>
+<tr><td>FAILED</td>
 <td>TERMINATING</td>
 </tr>
-<tr class="row-even"><td>KILLED</td>
+<tr><td>KILLED</td>
 <td>TERMINATED</td>
 </tr>
-<tr class="row-odd"><td>DELETED</td>
+<tr><td>DELETED</td>
 <td>TERMINATED</td>
 </tr>
-<tr class="row-even"><td>HOLD</td>
+<tr><td>HOLD</td>
 <td>STOPPED</td>
 </tr>
-<tr class="row-odd"><td>OTHER</td>
+<tr><td>OTHER</td>
 <td>UNKNOWN</td>
 </tr>
 </tbody>
@@ -4383,7 +4368,7 @@ otherwise overwritten.</p>
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">See :</th><td class="field-body"><cite>LRMS.submit_job</cite></td>
+<tr class="field"><th class="field-name">See :</th><td class="field-body"><cite>LRMS.submit_job</cite></td>
 </tr>
 </tbody>
 </table>
@@ -4614,7 +4599,7 @@ as more lines are written to the given stream.</p>
 <div id="searchbox" style="display: none">
   <h3>Quick search</h3>
     <form class="search" action="../search.html" method="get">
-      <input type="text" name="q" />
+      <input type="text" name="q" size="18" />
       <input type="submit" value="Go" />
       <input type="hidden" name="check_keywords" value="yes" />
       <input type="hidden" name="area" value="default" />
@@ -4643,14 +4628,14 @@ as more lines are written to the given stream.</p>
         <li class="right" >
           <a href="tutorial/warholize.html" title="GC3Pie tutorial - Warholize"
              >previous</a> |</li>
-        <li><a href="../index.html">gc3pie development (SVN $Revision$) documentation</a> &raquo;</li>
+        <li><a href="../index.html">gc3pie vdevelopment (SVN $Revision$) documentation</a> &raquo;</li>
           <li><a href="index.html" >GC3Libs</a> &raquo;</li> 
       </ul>
     </div>
 
     <div class="footer">
         &copy; Copyright 2010-2012, Grid Computing Competence Centre, University of Zurich.
-      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.1.3.
+      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.0.7.
     </div>
 <div class="footer">This page uses <a href="http://analytics.google.com/">
 Google Analytics</a> to collect statistics. You can disable it by blocking
