@@ -142,8 +142,13 @@ class ShellcmdLrms(LRMS):
             if r == gc3libs.ANY_OUTPUT:
                 r = ''
                 relative_dest_path = ''
-            copy_recursively(os.path.join(app.execution.lrms_execdir, r),
-                             os.path.join(download_dir, relative_dest_path))
+            try:
+                copy_recursively(os.path.join(app.execution.lrms_execdir, r),
+                                 os.path.join(download_dir, relative_dest_path))
+            except IOError, ex:
+                gc3libs.log.warning(
+                        "Ignoring missing file %s" % (r))
+                continue
 
 
     def update_job_state(self, app):
