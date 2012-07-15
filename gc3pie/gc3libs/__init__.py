@@ -1159,7 +1159,7 @@ class Application(Task):
         method in derived classes to provide appropriate invocation
         templates.
         """
-        return unicode.join(u" ", [self.executable] + self.arguments)
+        return unicode.join(u" ", [self.executable] + ['"%s"' % i for i in self.arguments])
 
 
     def qsub(self, resource, _suppress_warning=False, **kw):
