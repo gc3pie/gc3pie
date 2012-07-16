@@ -212,7 +212,7 @@ class SshTransport(Transport):
         try:
             self.transport_channel = self.ssh.get_transport()
             if not self._is_open or self.transport_channel == None or not self.transport_channel.is_active():
-                gc3libs.log.info("Opening SshTransport... ")
+                gc3libs.log.debug("Opening SshTransport... ")
                 self.ssh.load_system_host_keys()
                 self.ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
                 gc3libs.log.debug(
@@ -523,7 +523,7 @@ class LocalTransport(Transport):
 
     @same_docstring_as(Transport.connect)
     def connect(self):
-        gc3libs.log.info("Opening LocalTransport... ")
+        gc3libs.log.debug("Opening LocalTransport... ")
         self._is_open = True
 
     @same_docstring_as(Transport.chmod)
@@ -660,5 +660,5 @@ class LocalTransport(Transport):
 
     @same_docstring_as(Transport.close)
     def close(self):
-        gc3libs.log.info("Closing LocalTransport... ")
+        gc3libs.log.debug("Closing LocalTransport... ")
         self._is_open = False
