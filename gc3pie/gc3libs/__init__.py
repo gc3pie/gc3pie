@@ -1250,7 +1250,7 @@ class Application(Task):
         Override this method in application-specific classes to
         provide appropriate invocation templates.
         """
-        bsub = ('bsub -L /bin/sh -n %d' % self.requested_cores)
+        bsub = ('bsub -cwd . -L /bin/sh -n %d' % self.requested_cores)
         if self.requested_walltime:
             # LSF wants walltime as HH:MM (days expressed as many hours)
             bsub += ' -W %02d:00' % self.requested_walltime
