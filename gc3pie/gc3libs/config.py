@@ -337,6 +337,7 @@ class Configuration(gc3libs.utils.Struct):
         # old key name         new key name
         # ===================  ===================
         'ncores':              'max_cores',
+        'sge_accounting_delay':'accounting_delay',
         }
 
     @staticmethod

@@ -114,6 +114,9 @@ class BatchSystem(LRMS):
         if self._resource.max_walltime > 0:
             # Convert from hours to minutes
             self._resource.max_walltime = self._resource.max_walltime * 60
+
+        self._resource.setdefault('accounting_delay', 15)
+
         # You are supposed to inherit the BatchSystem class, call the
         # parent's __init__ with
         #

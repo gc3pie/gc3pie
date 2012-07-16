@@ -180,4 +180,4 @@ architecture=x64_64
 # max_walltime = 72
 # # see http://gridengine.info/2005/11/04/immediate-accounting-data-flushing
 # # if you need to lower this
-# sge_accounting_delay = 15
+# accounting_delay = 15
