@@ -314,11 +314,6 @@ class SgeLrms(batch.BatchSystem):
             "SgeLRMS.__init__(): Failed. Resource type expected 'sge'. Received '%s'" \
             % resource.type
         batch.BatchSystem.__init__(self, resource, auths)
-
-        # set defaults
-        self._resource.setdefault('sge_accounting_delay', 15)
-        auth = auths.get(resource.auth)
-
         self.isValid = 1
 
     def _submit_command(self, app):
@@ -326,6 +321,8 @@ class SgeLrms(batch.BatchSystem):
         if script is not None:
             script_name = '%s.%x.sh' % (app.get('application_tag', 'script'),
                                         random.randint(0, sys.maxint))
+        else:
+            script_name = ''
         return (qsub, script, script_name)
 
     def _parse_submit_output(self, output):

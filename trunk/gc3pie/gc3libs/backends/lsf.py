@@ -398,6 +398,8 @@ class LsfLrms(batch.BatchSystem):
         if script is not None:
             script_name = '%s.%x.sh' % (app.get('application_tag', 'script'),
                                         random.randint(0, sys.maxint))
+        else:
+            script_name = ''
         return (bsub, script, script_name)
 
     def _parse_submit_output(self, bsub_output):
