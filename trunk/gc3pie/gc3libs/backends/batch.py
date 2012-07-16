@@ -257,7 +257,7 @@ class BatchSystem(LRMS):
                 "/bin/sh -c 'cd %s && %s %s'"
                 % (ssh_remote_folder, _command,
                    # ignore script name if there is no script to submit
-                   ifelse(script is not None, script_name, '')))
+                   ifelse(script is not None, ('./' + script_name), '')))
 
             if exit_code != 0:
                 raise gc3libs.exceptions.LRMSError(
