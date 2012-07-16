@@ -6,7 +6,7 @@ execute commands and copy/move files irrespective of whether the
 destination is the local computer or a remote front-end that we access
 via SSH.
 """
-# Copyright (C) 2009-2011 GC3, University of Zurich. All rights reserved.
+# Copyright (C) 2009-2012 GC3, University of Zurich. All rights reserved.
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
@@ -55,16 +55,16 @@ class Transport(object):
 
     def execute_command(self, command):
         """
-        Execute a command using the available tranport media.  
-        The command's input and output streams are returned 
+        Execute a command using the available tranport media.
+        The command's input and output streams are returned
         as python ``file``-like objects representing exit_status, stdout, stderr.
 
         :param string command: the command to execute
 
         :return: the exit_status (int), stdout (ChannelFile), and stderr (ChannelFile) of the executing command
-       
+
         :raise TransportException: if fails to execute the command
-        
+
         """
         raise NotImplementedError("Abstract method `Transport.execute_command()` called - this should have been defined in a derived class.")
 
@@ -80,10 +80,10 @@ class Transport(object):
         The list is in arbitrary order.  It does not include the special
         entries ``.`` and ``..`` even if they are present in the folder.
         This method is meant to mirror ``os.listdir`` as closely as possible.
-        
+
         :param string path: path to list (defaults to ``.``)
         :return: list of filenames (string)
-        
+
         """
         raise NotImplementedError("Abstract method `Transport.listdir()` called - this should have been defined in a derived class.")
 
@@ -92,7 +92,7 @@ class Transport(object):
         Recursive directory creation function. Makes all
         intermediate-level directories needed to contain the leaf
         directory.
-        
+
         :param string path: Remote path to directory to be created.
         :return: None
         """
@@ -101,31 +101,31 @@ class Transport(object):
 
     def open(self, source, mode, bufsize=-1):
         """
-        Open a file. The arguments are the same as for python's built-in ``file`` 
-        (aka ``open``).  A file-like object is returned, which closely mimics 
+        Open a file. The arguments are the same as for python's built-in ``file``
+        (aka ``open``).  A file-like object is returned, which closely mimics
         the behavior of a normal python file object.
-        
+
         :param str source: name of the file to open
         :param str mode: mode to open in, as in Python built-in `open`
         :param bufsize: desired buffering (-1 = default buffer size)
 
         :return: a `file` object representing the open file
-        
-        :raise IOError: if the file could not be opened.        
+
+        :raise IOError: if the file could not be opened.
         """
         raise NotImplementedError("Abstract method `Transport.open()` called - this should have been defined in a derived class.")
 
     def put(self, source, destination):
         """
         Copy the file source to the file or directory destination.
-        If destination is a directory, a file with the same basename 
-        as source is created (or overwritten) in the directory specified. 
+        If destination is a directory, a file with the same basename
+        as source is created (or overwritten) in the directory specified.
 
-        Permission bits are copied. source and destination are path 
+        Permission bits are copied. source and destination are path
         names given as strings.
 
-        Any exception raised by operations will be passed through.  
-        
+        Any exception raised by operations will be passed through.
+
         :param str source: the file to copy
         :param str destination: the destination file or directory
         """
@@ -134,10 +134,10 @@ class Transport(object):
     def get(self, source, destination, ignore_nonexisting=False):
         """
         Copy the file source to the file or directory destination.
-        If destination is a directory, a file with the same basename 
-        as source is created (or overwritten) in the directory specified. 
+        If destination is a directory, a file with the same basename
+        as source is created (or overwritten) in the directory specified.
 
-        Permission bits are copied. source and destination are path 
+        Permission bits are copied. source and destination are path
         names given as strings.
 
         Any exception raised by operations will be passed through,
@@ -216,7 +216,7 @@ class SshTransport(Transport):
                 self.ssh.load_system_host_keys()
                 self.ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
                 gc3libs.log.debug(
-                    "Connecting to host '%s' as user '%s' via SSH ...", 
+                    "Connecting to host '%s' as user '%s' via SSH ...",
                     self.remote_frontend, self.username)
                 self.ssh.connect(self.remote_frontend,
                                  timeout=gc3libs.Default.SSH_CONNECT_TIMEOUT,
@@ -287,7 +287,7 @@ class SshTransport(Transport):
             self.sftp.chmod(path, mode)
         except Exception, ex:
             raise gc3libs.exceptions.TransportError(
-                "Error changing remote path '%s' mode to 0%o: %s: %s" 
+                "Error changing remote path '%s' mode to 0%o: %s: %s"
                 % (path, mode, ex.__class__.__name__, str(ex)))
 
 
@@ -300,12 +300,12 @@ class SshTransport(Transport):
             stdout = stdout_stream.read()
             stderr = stderr_stream.read()
             exitcode = stdout_stream.channel.recv_exit_status()
-            gc3libs.log.debug("Executed command '%s' on host '%s'; exit code: %d" 
+            gc3libs.log.debug("Executed command '%s' on host '%s'; exit code: %d"
                               % (command, self.remote_frontend, exitcode))
-                
+
             return exitcode, stdout, stderr
         except Exception, ex:
-            raise gc3libs.exceptions.TransportError("Failed executing remote command '%s': %s: %s" 
+            raise gc3libs.exceptions.TransportError("Failed executing remote command '%s': %s: %s"
                                             % (command, ex.__class__.__name__, str(ex)))
 
 
@@ -324,7 +324,7 @@ class SshTransport(Transport):
             else:
                 raise
 
-    
+
     @same_docstring_as(Transport.listdir)
     def listdir(self, path):
         try:
@@ -333,7 +333,7 @@ class SshTransport(Transport):
             return self.sftp.listdir(path)
         except Exception, ex:
             raise gc3libs.exceptions.TransportError("Could not list directory '%s' on host '%s': %s: %s"
-                                            % (path, self.remote_frontend, 
+                                            % (path, self.remote_frontend,
                                                ex.__class__.__name__, str(ex)))
 
     @same_docstring_as(Transport.makedirs)
@@ -356,11 +356,11 @@ class SshTransport(Transport):
                 # ignore error and continue
                 pass
 
-        
+
     @same_docstring_as(Transport.put)
     def put(self, source, destination):
         gc3libs.log.debug("SshTransport.put(): local source: '%s';"
-                          " remote destination: '%s'; remote host: '%s'." 
+                          " remote destination: '%s'; remote host: '%s'."
                           % (source, destination, self.remote_frontend))
         try:
             destdir = os.path.dirname(destination)
@@ -377,14 +377,14 @@ class SshTransport(Transport):
         except Exception, ex:
             raise gc3libs.exceptions.TransportError(
                 "Could not upload '%s' to '%s' on host '%s': %s: %s"
-                % (source, destination, self.remote_frontend, 
+                % (source, destination, self.remote_frontend,
                    ex.__class__.__name__, str(ex)))
 
 
     @same_docstring_as(Transport.get)
     def get(self, source, destination, ignore_nonexisting=False):
         try:
-            gc3libs.log.debug("SshTranport.get(): remote source %s; remote host: %s; local destination: %s." 
+            gc3libs.log.debug("SshTranport.get(): remote source %s; remote host: %s; local destination: %s."
                               % (source, self.remote_frontend, destination))
             if self.isdir(source):
                 # recursively descend it
@@ -403,7 +403,7 @@ class SshTransport(Transport):
                     and isinstance(ex, IOError) and ex.errno == 2):
                 raise gc3libs.exceptions.TransportError(
                     "Could not download '%s' on host '%s' to '%s': %s: %s"
-                    % (source, self.remote_frontend, destination, 
+                    % (source, self.remote_frontend, destination,
                        ex.__class__.__name__, str(ex)))
 
     @same_docstring_as(Transport.remove)
@@ -417,7 +417,7 @@ class SshTransport(Transport):
             raise gc3libs.exceptions.TransportError("Could not remove '%s' on host '%s': %s: %s"
                                             % (path, self.remote_frontend,
                                                ex.__class__.__name__, str(ex)))
-        
+
     @same_docstring_as(Transport.remove_tree)
     def remove_tree(self, path):
         try:
@@ -430,7 +430,7 @@ class SshTransport(Transport):
             _command = "rm -rf '%s'" % path
             exit_code, stdout, stderr = self.execute_command(_command)
             if exit_code != 0:
-                raise Exception("Remote command '%s' failed with code %d: %s" 
+                raise Exception("Remote command '%s' failed with code %d: %s"
                                 % (_command, exit_code, stderr))
         except Exception, ex:
             raise gc3libs.exceptions.TransportError("Could not remove tree '%s' on host '%s': %s: %s"
@@ -447,7 +447,7 @@ class SshTransport(Transport):
             raise gc3libs.exceptions.TransportError("Could not open file '%s' on host '%s': %s: %s"
                                             % (source, self.remote_frontend,
                                                ex.__class__.__name__, str(ex)))
-                       
+
     @same_docstring_as(Transport.close)
     def close(self):
         """
@@ -484,22 +484,22 @@ class LocalTransport(Transport):
         """
         Getting process state.
         params: pid - process id
-        
+
         return:
         0 (process terminated)
         1 (process running)
         -N (when available, process terminated with N exit code)
- 
+
         raise: IOError if status file cannot be accessed
         TransportError if any other Exception is raised
         """
-        
+
         if (not self._process is None) and (_process.pid == pid):
             return self._process.poll()
         else:
 
             statfile = os.path.join(self.procloc, str(pid), "stat")
-        
+
             try:
                 if not os.path.exists(statfile):
                     return '0'
@@ -532,7 +532,7 @@ class LocalTransport(Transport):
             os.chmod(path, mode)
         except Exception, ex:
             raise gc3libs.exceptions.TransportError(
-                "Error changing local path '%s' mode to 0%o: %s: %s" 
+                "Error changing local path '%s' mode to 0%o: %s: %s"
                 % (path, mode, ex.__class__.__name__, str(ex)))
 
     def execute_command_and_detach(self, command):
@@ -544,7 +544,7 @@ class LocalTransport(Transport):
             _process = subprocess.Popen(command, close_fds=True, stdout=subprocess.PIPE, shell=True)
             return _process.pid
         except Exception, ex:
-            raise gc3libs.exceptions.TransportError("Failed executing command '%s': %s: %s" 
+            raise gc3libs.exceptions.TransportError("Failed executing command '%s': %s: %s"
                                      % (command, ex.__class__.__name__, str(ex)))
 
 
@@ -563,21 +563,19 @@ class LocalTransport(Transport):
         try:
             self._process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, close_fds=True, shell=True)
 
-            exitcode = self._process.wait()
+            stdout, stderr = self._process.communicate()
+            exitcode = os.WEXITSTATUS(self._process.returncode)
 
-            stdout = self._process.stdout.read()
-            stderr = self._process.stderr.read()
-
-            gc3libs.log.debug("Executed local command '%s', got exit status: %d" 
+            gc3libs.log.debug("Executed local command '%s', got exit status: %d"
                               % (command, exitcode))
 
             return exitcode, stdout, stderr
 
         except Exception, ex:
-            raise gc3libs.exceptions.TransportError("Failed executing command '%s': %s: %s" 
+            raise gc3libs.exceptions.TransportError("Failed executing command '%s': %s: %s"
                                      % (command, ex.__class__.__name__, str(ex)))
 
-        
+
     @same_docstring_as(Transport.isdir)
     def isdir(self, path):
         return os.path.isdir(path)
@@ -592,7 +590,7 @@ class LocalTransport(Transport):
         try:
             return os.listdir(path)
         except Exception, ex:
-            raise gc3libs.exceptions.TransportError("Could not list local directory '%s': %s: %s" 
+            raise gc3libs.exceptions.TransportError("Could not list local directory '%s': %s: %s"
                                      % (path, ex.__class__.__name__, str(ex)))
 
 
@@ -621,7 +619,7 @@ class LocalTransport(Transport):
                                     " ('%s'). Ignoring." % source)
                 return True
         except Exception, ex:
-            raise gc3libs.exceptions.TransportError("Could not copy '%s' to '%s': %s: %s" 
+            raise gc3libs.exceptions.TransportError("Could not copy '%s' to '%s': %s: %s"
                                      % (source, destination, ex.__class__.__name__, str(ex)))
 
 
@@ -641,7 +639,7 @@ class LocalTransport(Transport):
             gc3libs.log.debug("Removing %s", path)
             return os.remove(path)
         except Exception, ex:
-            raise gc3libs.exceptions.TransportError("Could not remove file '%s': %s: %s" 
+            raise gc3libs.exceptions.TransportError("Could not remove file '%s': %s: %s"
                                      % (path, ex.__class__.__name__, str(ex)))
 
 
@@ -656,7 +654,7 @@ class LocalTransport(Transport):
                               " removing local directory tree '%s'" % path)
             return shutil.rmtree(path)
         except Exception, ex:
-            raise gc3libs.exceptions.TransportError("Could not remove directory tree '%s': %s: %s" 
+            raise gc3libs.exceptions.TransportError("Could not remove directory tree '%s': %s: %s"
                                      % (path, ex.__class__.__name__, str(ex)))
 
 
@@ -664,4 +662,3 @@ class LocalTransport(Transport):
     def close(self):
         gc3libs.log.info("Closing LocalTransport... ")
         self._is_open = False
-
