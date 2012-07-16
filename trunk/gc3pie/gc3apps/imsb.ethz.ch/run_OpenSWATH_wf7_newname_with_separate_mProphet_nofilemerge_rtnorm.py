@@ -1,173 +1,329 @@
-#! /usr/bin/env python
-#
-#   imsb_example.py -- prototype of simple Xtandem workflow
-#
-#   Copyright (C) 2011, 2012 GC3, University of Zurich
-#
-#   This program is free software: you can redistribute it and/or modify
-#   it under the terms of the GNU General Public License as published by
-#   the Free Software Foundation, either version 3 of the License, or
-#   (at your option) any later version.
-#
-#   This program is distributed in the hope that it will be useful,
-#   but WITHOUT ANY WARRANTY; without even the implied warranty of
-#   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-#   GNU General Public License for more details.
-#
-#   You should have received a copy of the GNU General Public License
-#   along with this program.  If not, see <http://www.gnu.org/licenses/>.
-#
-"""
- prototype of simple Xtandem workflow
-"""
-
-__version__ = 'development version (SVN $Revision$)'
-# summary of user-visible changes
-__changelog__ = """
-"""
-__author__ = 'Sergio Maffioletti <sergio.maffioletti@gc3.uzh.ch>'
-__docformat__ = 'reStructuredText'
+from fnmatch import fnmatch
+import os
+import sys
 
 
-# run script, but allow GC3Pie persistence module to access classes defined here;
-# for details, see: http://code.google.com/p/gc3pie/issues/detail?id=95
-if __name__ == "__main__":
-    import imsb_example
-    ImsbExample().run()
-
-# gc3 library imports
 import gc3libs
-from gc3libs import Application, Run, Task, RetryableTask
-from gc3libs.cmdline import SessionBasedScript, executable_file
+from gc3libs.dag import ParallelTaskCollection, StagedTaskCollection
 import gc3libs.utils
-from gc3libs.dag import SequentialTaskCollection, ParallelTaskCollection, ChunkedParameterSweep
 
-class ApplicakeApplication(Application):
-    def __init__(self, applic, input_file, output_file, output_dir, args=None):
 
-        arguments = [ applic, input_file, output_file ]
-        arguments += args
+## local configuration constants
 
-        inputs[input_file] = os.path.basename(input_file)
+CONST = gc3libs.utils.Struct(
+    # one can use string literal here as well, like:
+    #  foo ='bar',
+    codedir = os.environ['codedir'],
+    openms_dir = os.environ['openms_dir'],
+    # used in MRMRTNormalizer
+    irt_library = os.environ['irt_library'],
+    # used in MRMAnalyzer
+    library = os.environ['library'],
+    min_upper_edge = os.environ['min_upper_edge'],
+    ini = os.environ['ini'],
+    threads = 2,
+    )
 
-        self.output_file = output_file
-        
+
+## auxiliary classes
+
+def replace_suffix(filename, old_suffix, new_suffix):
+    """
+    Replace `old_suffix` with `new_suffix`.
+    """
+    # remove extension
+    basename = filename[0:-len(old_suffix)]
+    # re-add new one
+    return (basename + new_suffix)
+
+
+def make_identifier(string):
+    """
+    Replace all non-alphanumeric characters in `string` with underscores.
+    """
+    return str.join('', [(c if c.isalnum() else '_') for c in string])
+
+
+class ProcessFilesInParallel(ParallelTaskCollection):
+    """
+    For each file in directory `directory` that matches `pattern`
+    (shell glob pattern), construct a `Task` by calling `task_ctor`
+    with the full pathname as unique argument.
+
+    Run the resulting task collection in parallel and wait for all
+    tasks to end.
+    """
+
+    def __init__(self, directory, pattern, task_ctor,
+                 grid=None, **kw):
+        tasks = [ ]
+        for filename in os.listdir(directory):
+            if not fnmatch.fnmatch(filename, pattern):
+                continue
+            pathname = os.path.join(directory, filename)
+            tasks.append(task_ctor(pathname, **kw))
+
+        ParallelTaskCollection.__init__(
+            self,
+            # job name
+            make_identifier("Process %s files in directory %s" % (pattern, directory)),
+            # list of tasks to execute
+            tasks,
+            # boilerplate
+            grid=grid, **kw)
+
+
+## define our workflow, top to bottom
+
+class SwathWorkflow(StagedTaskCollection):
+    """
+    Process all the `.mzXML` files in a given directory.
+    """
+
+    def __init__(self, directory, basename,
+                 grid=None, **kw):
+        self.directory = directory
+        self.basename = basename
+        StagedTaskCollection.__init__(self, grid=None, **kw)
+
+    def stage0(self):
+        """
+        Run chroma extraction on `*.mzML.gz` files, and produce:
+          - one `rtnorm.trafoXML` file;
+          - many `._chrom.mzML` files, one per input file.
+
+        """
+        return SwathWorkflowStage0(self.directory, self.basename, pattern='*.mzML.gz')
+
+    def stage1(self):
+        """
+        Run MRMAnalyzer on `*._chrom.mzML` files and produce `*_.featureXML` ones.
+        """
+        directory = self.tasks[0].output_dir
+        # FIXME: MRMAnalyzerApp needs 3 files!!!
+        return ProcessFilesInParallel(directory, self.basename, '*._chrom.mzML',
+                                      MRMAnalyzerApplication)
+
+    def stage2(self):
+        """
+        Run FeatureXMLToTSV on `*_.featureXML` files and produce `*_.short_format.csv` ones.
+        """
+        directory = self.tasks[1].output_dir
+        return ProcessFilesInParallel(directory, self.basename, '*_.featureXML',
+                                      FeatureXMLToTSVApplication)
+
+    # def stage3(self):
+    #     """
+    #     Run MProphet on `*_.short_format.csv` files.
+    #     """
+    #     directory = self.tasks[2].output_dir
+    #     return ProcessFilesInParallel(directory, self.basename, '*_.short_format.csv',
+    #                                   MProphetApplication)
+
+
+class SwathWorkflowStage0(ParallelTaskCollection):
+    """
+    Two sequences running in parallel:
+
+      - chroma extraction (long job)
+      - chroma extraction (short job) + file merger + MRT normalization
+    """
+    def __init__(self, directory, basename, pattern, grid=None, **kw):
+        self.directory = directory
+        self.basename = basename
+        self.pattern = basename + pattern
+        self.kw = kw
+        ParallelTaskCollection.__init__(
+            self,
+            # jobname
+            make_identifier("Stage 0 of Swath workflow in directory %s processing files %s" % (directory, pattern)),
+            # tasks
+            [
+                ProcessFilesInParallel(directory, pattern, ChromaExtractLong, **kw),
+                ChromaExtractShortPlusNormalization(directory, pattern, **kw),
+            ],
+            # boilerplate
+            grid=grid, **kw)
+
+    def terminated(self):
+        self.trafoxml_file = self.tasks[1].trafoxml_file
+        # map mzML.gz files to the corresponding `._chom.mzML` file
+        # (which might be in a different directory)
+        self.chrom_files = { }
+        for chromalong_task in self.tasks[0].tasks:
+            infile = os.path.basename(chromalong_task.mzmlgz_file)
+            outfile = os.path.join(chromalong_task.output_dir,
+                                   replace_suffix(infile, '.mzML.gz', '._chrom.mzML'))
+            self.chrom_files[infile] = outfile
+
+
+class ChromaExtractLong(Application):
+    def __init__(self, path, **kw):
+        outfile = replace_suffix(
+            os.path.basename(path, '.mzML.gz', '._chrom.mzML'))
         Application.__init__(
             self,
-            # executable = executable_name,
-            executable = "applicake_wrap.py",
-            # GEOtop requires only one argument: the simulation directory
-            # In our case, since all input files are staged to the
-            # execution directory, the only argument is fixed to ``.``
-            arguments = arguments,
-            inputs = inputs,
-            outputs = [ self.output_file ],
-            # outputs = outputs,
-            output_dir = output_dir,
-            stdout = 'applicake.log',
-            join=True,
-            tags = [ 'ENV/APPLICAKE-1.0' ],
-            **kw)
-
-    def termianted(self):
-        # If output file not present
-        # simply retry task
-        if not os.path.isfile(self.output_file):
-            # XXX: choose either to terminate and fail the whole sequence, or to retry the task
-            self.execution.exitcode == 99
-        else:
-            self.execution.exitcode == 0
-
-class ApplicakeTask(RetriableTask):
-    def __init__(self, applic, input_file, output_file, output_dir, **kw):
-        RetryableTask.__init__(
-            self,
-            # task name
-            "IMSB_"+str(applic), # jobname
-            # actual computational job
-            ApplicakeApplication(applic, input_file, output_file, output_dir, **kw)
-            # keyword arguments
-            **kw)
-
-    def retry(self):
-        if self.task.execution.exitcode == 99:
-            return True
-        else:
-            return False
-
-class ImsbSequence(SequentialTaskCollection):
-
-    def __init__(self, input_files_path, output_folder, grid=None, **kw):
-        """
-        considering that the sequence is pre-defined
-        we can wimply create the whole sequence as part of the initialization process
-        """
-        self.jobname = "IMSB_Sequence"
-
-        # Define the sequence
-        task_list = []
-
-        # Task 1:  Run ExtractChromatogram for the RT Peptides
-        task_list.append(ExtractChromatogramParallel(input_files_path, output_folder, **kw))
-
-        # Task 2: merge files and run RT Normalizer
-        task_list.append(FileMergerApplication(output_folder, **kw))
-
-        # Task 3: Run ExtractChromatogram
-        # Compress is postprocess of the whole Task
-        task_list.append(ExtractChromatogramParallel(input_files_path, output_folder, **kw))
-
-        # Task 4: Step 2 MRMAnalyzer
-        # Compress is postprocess of the whole Task
-        task_list.append(MRMAnalyzerParallel(input_files_path,output_folder,**kw))
-
-        # Task 5: Step 3 FeatureXMLToTSV on files featureXML
-        # Compress is postprocess of the whole Task
-        task_list.append(FeatureXMLToTSVParallel(input_files_path,output_folder,**kw))
-
-        # Task 6: mprophet from *_.short_format.csv
-        # Compress and additional log information are postprocess of the whole Task
-        task_list.append(mQuest_mProphetParallel(input_files_path, output_folder, **kw))
-
-        # Task 7: fdr_cutoff.py and count_pep_prot.py
-        # for fdr in 0.20 0.15 0.10 0.05  0.01 0.002 0.001;
-        # should they run locally ?
-        task_list.append(CheckResultsParallel(output_folder, **kw))
-
-        # Init
-        SequentialTaskCollection.__init__(self, self.jobname, task_list, grid)
-
-    
-    def __str__(self):
-        return self.jobname
-
-    def next(self, done):
-        if self.tasks[done].execution.returncode != 0:
-            # Consider terminate the whole sequence
-            self.execution.returncode = self.tasks[done].execution.returncode
-            return Run.State.TERMINATED
-
-
-        
-        
-class ImsbExample(SessionBasedScript):
-    """
-    prototype of simple Xtandem workflow
-    """
-
-    def new_tasks(self, extra):
-        for path in self._validate_input_folders(self.params.args):
-            # construct GEOtop job
-            yield (
-                # job name
-                gc3libs.utils.basename_sans(path),
-                # task constructor
-                ImsbSequence,
-                [ # parameters passed to the constructor, see `ImsbSequence.__init__`
-                    path,                   # path to the directory containing input files
+            executable="ChromatogramExtractor",
+            arguments = [
+                '-in', path,
+                '-tr', CONST.library,
+                '-out', outfile,
+                '-is_swath',
+                '-min_upper_edge_dist', CONST.min_upper_edge,
+                '-threads', CONST.threads,
                 ],
-                # extra keyword arguments passed to the constructor,
-                # see `GeotopTask.__init__`
-                extra.copy()
-                )
+            inputs=[path],
+            outputs=[outfile],
+            **kw)
+        self.mzmlgz_file = path
+        self.outfile = outfile
 
+    def terminated(self):
+        self.chrom_file = os.path.join(self.output_dir, self.outfile)
+
+
+class ChromaExtractShortPlusNormalization(StagedTaskCollection):
+    """
+    Run the following steps in sequence:
+
+    1. Run chroma extraction (short version) for each file in directory matching the given pattern;
+    2. Merge all produced files;
+    3. Run MRMRTNormalizer on the merged file.
+    """
+    def __init__(self, directory, basename, pattern,
+                 grid=None, **kw):
+        self.directory = directory
+        self.basename = basename
+        self.pattern = basename + pattern
+        self.kw = kw
+        StagedTaskCollection.__init__(self, grid=None, **kw)
+
+    def stage0(self):
+        """
+        Run chroma extraction (short).
+        """
+        return ProcessFilesInParallel(self.directory, self.pattern, ChromaExtractShort,
+                                      **self.kw)
+
+    def stage1(self):
+        """
+        Merge all produced files.
+        """
+        directory = self.tasks[0].output_dir
+        in_files = [ os.path.join(directory, filename)
+                     for filename in os.listdir(directory)
+                     if fnmatch(filename, self.pattern) ]
+        outfile = self.basename + '.rtnorm.chrom.mzML'
+        return Application(
+            executable="FileMerger",
+            arguments=["-in"] + in_files + ["-out", outfile],
+            inputs=in_files,
+            outputs=[outfile],
+            # record this for ease of referencing from other jobs
+            outfilename=outfile,
+            # std options from the script
+            **self.kw)
+
+    def stage2(self):
+        """
+        Run MRMRTNormalizer on the `.rtnorm.chrom.mzML` file.
+        """
+        directory = self.tasks[1].output_dir
+        infile = os.path.join(directory, self.tasks[1].outfilename)
+        outfile = self.basename + '.rtnorm.trafoXML'
+        return Application(
+            executable="MRMRTNormalizer",
+            arguments=['-in', infile, '-tr', cfg.irt_library, '-out', outfile],
+            inputs=[infile],
+            outputs=[outfile],
+            # record this for ease of referencing from other jobs
+            outfilename=outfile,
+            # std options from the script
+            **self.kw)
+
+    def terminated(self):
+        """
+        Define the `self.trafoxml_file` attribute to the full path name
+        of the `.rtnorm.trafoXML` output file.
+        """
+        self.trafoxml_file = os.path.join(self.tasks[2].output_dir,
+                                          self.basename + '.rtnorm.trafoXML')
+
+
+class ChromaExtractShort(Application):
+    def __init__(self, path, **kw):
+        outfile = replace_suffix(
+            os.path.basename(path, '.mzML.gz', '._rtnorm.chrom.mzML'))
+        Application.__init__(
+            self,
+            executable="ChromatogramExtractor",
+            arguments = [
+                '-in', path,
+                '-tr', CONST.irt_library,
+                '-out', outfile,
+                '-is_swath',
+                '-min_upper_edge_dist', CONST.min_upper_edge,
+                '-threads', CONST.threads,
+                ],
+            inputs=[path],
+            outputs=[outfile],
+            **kw)
+        self.mzmlgz_file = path
+        self.outfile = outfile
+
+    def terminated(self):
+        self.chrom_file = os.path.join(self.output_dir, self.outfile)
+
+
+class MRMAnalyzerApplication(Application):
+    def __init__(self, mzmlgz_file, trafoxml_file, chrom_file, **kw):
+        assert mzmlgz_filename.endswith('.mzML.gz')
+        assert trafoxml_file.endswith('rtnorm.trafoXML')
+        outfile = replace_suffix(mzmlgz_file, '.mzML.gz', '_.featureXML')
+        Application.__init__(
+            self,
+            executable="MRMAnalyzer",
+            arguments=[
+                '-in', chrom_file,
+                '-swath_files', mzmlgz_file,
+                '-tr', CONST.library,
+                '-out', outfile,
+                '-min_upper_edge_dist', CONST.min_upper_edge,
+                '-ini', CONST.ini,
+                '-rt_norm', trafoxml_file,
+                '-threads', CONST.threads,
+                ],
+            inputs=[mzmlgz_file, trafoxml_file, chrom_file],
+            outputs=[outfile],
+            **kw)
+
+
+class FeatureXMLToTSVApplication(Application):
+    def __init__(self, path):
+        assert path.endswith('_.featureXML')
+        outfile = replace_suffix(mzmlgz_file, '_.featureXML',
+                                              '_.short_format.csv')
+        Application.__init__(
+            self,
+            executable="FeatureXMLToTSV",
+            arguments=[
+                '-tr', CONST.library,
+                '-in', path,
+                '-out', outfile,
+                '-short_format',
+                '-threads', CONST.threads,
+                ],
+            inputs=[path],
+            outputs=[outfile],
+            **kw)
+
+
+# class MProphetApplication(Application):
+#     def __init__(self, path):
+#         Application.__init__(
+#             self,
+#             executable="MProphet",
+#             arguments=[],
+#             inputs=[path],
+#             outputs=[outfile],
+#             **kw)
