@@ -317,13 +317,7 @@ class SgeLrms(batch.BatchSystem):
         self.isValid = 1
 
     def _submit_command(self, app):
-        qsub, script = app.qsub(self._resource)
-        if script is not None:
-            script_name = '%s.%x.sh' % (app.get('application_tag', 'script'),
-                                        random.randint(0, sys.maxint))
-        else:
-            script_name = ''
-        return (qsub, script, script_name)
+        return app.qsub(self._resource)
 
     def _parse_submit_output(self, output):
         """Parse the ``qsub`` output for the local jobid."""

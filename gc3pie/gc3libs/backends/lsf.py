@@ -394,13 +394,11 @@ class LsfLrms(batch.BatchSystem):
         self.isValid = 1
 
     def _submit_command(self, app):
-        bsub, script = app.bsub(self._resource)
-        if script is not None:
-            script_name = '%s.%x.sh' % (app.get('application_tag', 'script'),
-                                        random.randint(0, sys.maxint))
-        else:
-            script_name = ''
-        return (bsub, script, script_name)
+        # LSF's `bsub` allows one to submit scripts and binaries with
+        # the same syntax, so we do not need to create an auxiliary
+        # submission script and can just specify the command on the
+        # command-line
+        return (app.bsub(self._resource), None)
 
     def _parse_submit_output(self, bsub_output):
         """Parse the ``bsub`` output for the local jobid."""
