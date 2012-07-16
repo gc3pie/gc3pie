@@ -33,7 +33,7 @@ import time
 import gc3libs
 from gc3libs import log, Run
 from gc3libs.backends import LRMS
-from gc3libs.utils import same_docstring_as
+from gc3libs.utils import ifelse, same_docstring_as
 import transport
 
 
@@ -251,7 +251,10 @@ class BatchSystem(LRMS):
 
             # Submit it
             exit_code, stdout, stderr = self.transport.execute_command(
-                "/bin/sh -c 'cd %s && %s %s'" % (ssh_remote_folder, _command, script_name))
+                "/bin/sh -c 'cd %s && %s %s'"
+                % (ssh_remote_folder, _command,
+                   # ignore script name if there is no script to submit
+                   ifelse(script is not None, script_name, '')))
 
             if exit_code != 0:
                 raise gc3libs.exceptions.LRMSError("Failed while executing command '%s' on resource '%s';"

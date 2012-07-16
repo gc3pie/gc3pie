@@ -73,14 +73,14 @@ def count_jobs(qstat_output, whoami):
             total_running += 1
             if m.group('username') == whoami:
                 own_running += 1
-        elif m.group('state') in ['Q']: 
+        elif m.group('state') in ['Q']:
             total_queued += 1
             if m.group('username') == whoami:
                 own_queued += 1
         log.info("running: %d, queued: %d" % (total_running, total_queued))
 
     return (total_running, total_queued, own_running, own_queued)
-        
+
 
 _qsub_jobid_re = re.compile(r'(?P<jobid>\d+.*)', re.I)
 _tracejob_last_re = re.compile('(?P<end_time>\d+/\d+/\d+\s+\d+:\d+:\d+)\s+.\s+Exit_status=(?P<exit_status>\d+)\s+'
@@ -118,16 +118,17 @@ class PbsLrms(batch.BatchSystem):
 
     def _parse_submit_output(self, output):
         return self.get_jobid_from_submit_output( output,_qsub_jobid_re)
-                                                 
+
     def _submit_command(self, app):
         qsub, script = app.pbs_qsub(self._resource)
         if 'queue' in self._resource:
             qsub += " -d $(pwd) -q %s" % self._resource['queue']
         if script is not None:
             # save script to a temporary file and submit that one instead
-            script_name = '%s.%x.sh' % (app.get('application_tag', 'script'), 
+            script_name = '%s.%x.sh' % (app.get('application_tag', 'script'),
                                         random.randint(0, sys.maxint))
-            
+        else:
+            script_name = ''
         return (qsub, script, script_name)
 
     def _stat_command(self, job):
@@ -135,10 +136,10 @@ class PbsLrms(batch.BatchSystem):
 
     def _acct_command(self, job):
         return  'tracejob %s' % job.lrms_jobid
-        
+
     def _parse_stat_output(self, stdout):
         # check that passed object obeys contract
-        
+
         # parse `qstat` output
         job_status = stdout.split()[4]
         jobstatus = dict()
@@ -149,8 +150,8 @@ class PbsLrms(batch.BatchSystem):
             jobstatus['state'] =  Run.State.RUNNING
         elif job_status in ['S', 'H', 'T'] or 'qh' in job_status:
             jobstatus['state'] = Run.State.STOPPED
-        elif job_status in ['C', 'E']: 
-            jobstatus['state'] = Run.State.TERMINATING 
+        elif job_status in ['C', 'E']:
+            jobstatus['state'] = Run.State.TERMINATING
         else:
             jobstatus['state'] = Run.State.UNKNOWN
 
@@ -165,11 +166,11 @@ class PbsLrms(batch.BatchSystem):
             elif _tracejob_queued_re.match(line):
                 retstatus.update(_tracejob_queued_re.match(line).groupdict())
         return retstatus
-        
+
     def _cancel_command(self, jobid):
         return "qdel %s" % jobid
-    
-                
+
+
     @same_docstring_as(LRMS.get_resource_status)
     def get_resource_status(self):
         try:
@@ -183,7 +184,7 @@ class PbsLrms(batch.BatchSystem):
             # self.transport.close()
 
             log.debug("Computing updated values for total/available slots ...")
-            (total_running, self._resource.queued, 
+            (total_running, self._resource.queued,
              self._resource.user_run, self._resource.user_queued) = count_jobs(qstat_stdout, username)
             self._resource.total_run = total_running
             self._resource.free_slots = -1
