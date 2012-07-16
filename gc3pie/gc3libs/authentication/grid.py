@@ -49,17 +49,22 @@ sys.path.append('/opt/nordugrid/lib/python%d.%d/site-packages'
 sys.path.append('/usr/lib/pymodules/python%d.%d/'
                 % sys.version_info[:2])
 
+# XXX: current behaviour: prefer ARC0 libraries over ARC1
+# in current ARC client deployment, we install both ARC1 and ARC0
+# libraries. Being ARC1 libraries still unreliable, we preffer using
+# ARC0.
 arc_flavour = None
 try:
     import arclib
     arc_flavour = Default.ARC0_LRMS
 except ImportError, ex:
-    gc3libs.log.warning("Could not import ARC0 libraries: %s", str(ex))
-try:
-    import arc
-    arc_flavour = Default.ARC1_LRMS
-except ImportError, ex:
-    gc3libs.log.warning("Could not import ARC1 libraries: %s", str(ex))
+    # gc3libs.log.warning("Could not import ARC0 libraries: %s", str(ex))
+    try:
+        import arc
+        arc_flavour = Default.ARC1_LRMS
+    except ImportError, ex:
+        # gc3libs.log.warning("Could not import ARC1 libraries: %s", str(ex))
+        pass
 
 
 ## random password generator
@@ -72,6 +77,13 @@ def random_password(length=24):
 class GridAuth(object):
 
     def __init__(self, **auth):
+
+        # check which arc flavor is used
+        if not arc_flavour:
+            gc3libs.log.error("Authentication could not be verified. Failed loading any ARC module")
+            # XXX: should stop here ?
+        else:
+            gc3libs.log.info("Authentication verified using module '%s'" % arc_flavour.upper())
 
         try:
             # test validity
@@ -104,7 +116,7 @@ class GridAuth(object):
                     # w/out the copy directory
                     gc3libs.log.warning(
                         "auth/%s: 'private_credentials_copy' is set,"
-                        " but no value for 'private_directory_copy' was passed:"
+                        " but no value for 'private_copy_directory' was passed:"
                         " the setting is ineffective"
                         " and no private copy will be kept.", auth['name'])
                     auth['private_credentials_copy'] = False
@@ -172,6 +184,12 @@ class GridAuth(object):
             self.proxy_valid = False
         else:
             self.proxy_valid = (0 != self._expiration_time)
+
+        if self.type == 'voms-proxy' and not self.is_voms():
+            gc3libs.log.error("Failed while verifying voms attributes")
+            self.proxy_valid = False
+            # XXX: reset expiration time to circumvent caching
+            self._expiration_time = 0
 
         return (self.user_cert_valid and self.proxy_valid)
 
@@ -408,6 +426,7 @@ class GridAuth(object):
             # use ARC1 libraries
             try:
                 userconfig = arc.UserConfig()
+
                 if cert_type == "proxy":
                     cert = arc.Credential(userconfig.ProxyPath(), "", "", "")
                 elif cert_type == "usercert":
@@ -433,6 +452,55 @@ class GridAuth(object):
                                            time.localtime(expires)))
             return expires
 
+    @staticmethod
+    def is_voms():
+        global arc_flavour # module-level constant
+
+        if arc_flavour == Default.ARC0_LRMS:
+            cert = arclib.Certificate(arclib.PROXY)
+            if cert.GetSN().endswith('proxy'):
+                # non RFC compliant proxy
+                gc3libs.log.error("Proxy not in RFC compliant format")
+                return False
+            return True
+
+        elif arc_flavour == Default.ARC1_LRMS:
+            try:
+                userconfig = arc.UserConfig()
+                voms_trust_dn = arc.VOMSTrustList()
+                voms_trust_dn.AddRegex(".*")
+                voms_attributes = arc.VOMSACInfoVector()
+                cert = arc.Credential(userconfig.ProxyPath(), "", "", "")
+
+                # check first RFC compliant voms proxy
+                if cert.GetDN().endswith('proxy'):
+                    # non RFC compliant proxy
+                    gc3libs.log.error("Proxy not in RFC compliant format")
+                    return False
+                
+                if not userconfig.CACertificatesDirectory():
+                    cadir = gc3libs.Default.CERTIFICATE_AUTHORITIES_DIR
+                else:
+                    cadir = userconfig.CACertificatesDirectory()
+                # XXX: for VOMS_DIR use same approach as arcproxy
+                vomsdir = os.getenv("X509_VOMS_DIR")
+                if not vomsdir:
+                    vomsdir = gc3libs.Default.VOMS_DIR
+                arc.parseVOMSAC(cert, cadir, vomsdir, voms_trust_dn, voms_attributes, True, True)
+                if voms_attributes.size() > 0:
+                    # XXX: for the moment, check only the first entry
+                    voms_attribute = voms_attributes[0]
+                    if hasattr(voms_attribute,'voname'):
+                        # XXX: Assume this is enough ?
+                        gc3libs.log.info("Found valid voms proxy of VOname '%s'" % voms_attribute.voname)
+                        return True
+                else:
+                    # No attributes found
+                    gc3libs.log.error("No voms attributes found. Is it a grid-proxy ?")
+                    return False
+            except Exception as ex:
+                gc3libs.log.error("Exception in ARC1 libraries: %s %s" % (ex.__class__,ex.message))
+                return False
 
 Auth.register('grid-proxy', GridAuth)
 Auth.register('voms-proxy', GridAuth)
