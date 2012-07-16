@@ -693,8 +693,15 @@ Optionally, keep running and displaying the last part of the file
 as more lines are written to the given stream.
     """
     def setup_args(self):
-        self.add_param("jobid", nargs=1)
-
+        """
+        Override `GC3UtilsScript`:class: `setup_args` method since we
+        don't operate on single jobs.
+        """
+        self.add_param('args',
+                       nargs=1,
+                       metavar='JOBID',
+                       help="Job ID string identifying the single job to operate upon.")
+        
     def setup_options(self):
         self.add_param("-e", "--stderr", action="store_true", dest="stderr", default=False, help="show stderr of the job")
         self.add_param("-f", "--follow", action="store_true", dest="follow", default=False, help="output appended data as the file grows")
@@ -707,50 +714,63 @@ as more lines are written to the given stream.
         except gc3libs.exceptions.InvalidArgument, ex:
             # session not found?
             raise RuntimeError('Session %s not found' % self.params.session)
-
-        if len(self.params.jobid) != 1:
-            raise gc3libs.exceptions.InvalidUsage("This command takes only one argument: the Job ID.")
-        jobid = self.params.jobid[0]
+        
+        if len(self.params.args) == 0:
+            self.log.error("No job IDs given on command line: nothing to do."
+                           " Type '%s --help' for usage help."
+                           # if we were called with an absolute path,
+                           # presume the command has been found by the
+                           # shell through PATH and just print the command name,
+                           # otherwise print the exact path name.
+                           % utils.ifelse(os.path.isabs(sys.argv[0]),
+                                        os.path.basename(sys.argv[0]),
+                                        sys.argv[0]))
 
         if self.params.stderr:
             stream = 'stderr'
         else:
             stream = 'stdout'
+        failed = 0
 
-        app = self.session.load(jobid)
-        if app.execution.state == Run.State.UNKNOWN \
-                or app.execution.state == Run.State.SUBMITTED \
-                or app.execution.state == Run.State.NEW:
-            raise RuntimeError('Job output not yet available')
-        app.attach(self._core)
+        for jobid in self.params.args:
+            try:
+                app = self.session.load(jobid)
+                if app.execution.state == Run.State.UNKNOWN \
+                       or app.execution.state == Run.State.SUBMITTED \
+                       or app.execution.state == Run.State.NEW:
+                    raise RuntimeError('Job output not yet available')
+                app.attach(self._core)
 
-        try:
-            if self.params.follow:
-                where = 0
-                while True:
-                    file_handle = app.peek(stream)
-                    self.log.debug("Seeking position %d in stream %s" % (where, stream))
-                    file_handle.seek(where)
-                    for line in file_handle.readlines():
-                        print line.strip()
-                    where = file_handle.tell()
-                    self.log.debug("Read up to position %d in stream %s" % (where, stream))
-                    file_handle.close()
-                    time.sleep(5)
-            else:
-                estimated_size = gc3libs.Default.PEEK_FILE_SIZE * self.params.num_lines
-                file_handle = app.peek(stream, offset=-estimated_size, size=estimated_size)
-                for line in file_handle.readlines()[-(self.params.num_lines):]:
-                    print line.strip()
-                file_handle.close()
+                try:
+                    if self.params.follow:
+                        where = 0
+                        while True:
+                            file_handle = app.peek(stream)
+                            self.log.debug("Seeking position %d in stream %s" % (where, stream))
+                            file_handle.seek(where)
+                            for line in file_handle.readlines():
+                                print line.strip()
+                            where = file_handle.tell()
+                            self.log.debug("Read up to position %d in stream %s" % (where, stream))
+                            file_handle.close()
+                            time.sleep(5)
+                    else:
+                        estimated_size = gc3libs.Default.PEEK_FILE_SIZE * self.params.num_lines
+                        file_handle = app.peek(stream, offset=-estimated_size, size=estimated_size)
+                        for line in file_handle.readlines()[-(self.params.num_lines):]:
+                            print line.strip()
+                        file_handle.close()
 
-        except gc3libs.exceptions.InvalidOperation:  # Cannot `peek()` on a task collection
-            self.log.error("Task '%s' (of class '%s') has no defined output/error streams."
-                           " Ignoring.", app.persistent_id, app.__class__.__name__)
-            return 1
-
-        return 0
-
+                except gc3libs.exceptions.InvalidOperation:  # Cannot `peek()` on a task collection
+                    self.log.error("Task '%s' (of class '%s') has no defined output/error streams."
+                                   " Ignoring.", app.persistent_id, app.__class__.__name__)
+                    failed += 1
+            except Exception, ex:
+                print("Failed while reading content of %s for job '%s': %s" % (stream, jobid, str(ex)))
+                failed += 1
+                
+        # exit code is practically limited to 7 bits ...
+        return utils.ifelse(failed < 127, failed, 126)
 
 class cmd_glist(_BaseCmd):
     """
