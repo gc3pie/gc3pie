@@ -1170,11 +1170,16 @@ class Application(Task):
         # Use with care and don't depend on it!
         """
         Get an SGE ``qsub`` command-line invocation for submitting an
-        instance of this application.  Return a pair `(cmd, script)`,
-        where `cmd` is the command to run to submit an instance of
-        this application to the SGE batch system, and `script` --if
-        it's not `None`-- is written to a new file, whose name is then
-        appended to `cmd`.
+        instance of this application.
+
+        Return a pair `(cmd, script)`, where `cmd` is the command to
+        run to submit an instance of this application to the SGE batch
+        system, and `script` is written to a new file, whose name is
+        then appended to `cmd`.  (SGE `qsub` needs an extra option
+        ``-by`` if the command being submitted is a binary; since we
+        cannot know, `Application.qsub` must return an auxiliary
+        script as second argument, whose purpose is only to launch the
+        application.)
 
         In the construction of the command-line invocation, one should
         assume that all the input files (as named in `Application.inputs`)
@@ -1232,11 +1237,9 @@ class Application(Task):
         # Use with care and don't depend on it!
         """
         Get an LSF ``qsub`` command-line invocation for submitting an
-        instance of this application.  Return a pair `(cmd, script)`,
-        where `cmd` is the command to run to submit an instance of
-        this application to the LSF batch system, and `script` --if
-        it's not `None`-- is written to a new file, whose name is then
-        appended to `cmd`.
+        instance of this application.  Return a string `cmd`
+        containing the command to run to submit an instance of this
+        application to the LSF batch system.
 
         In the construction of the command-line invocation, one should
         assume that all the input files (as named in `Application.inputs`)
@@ -1244,45 +1247,42 @@ class Application(Task):
         files should be created in this same directory.
 
         The default implementation just prefixes any output from the
-        `cmdline` method with an SGE ``bsub`` invocation of the form
+        `cmdline` method with an LSF ``bsub`` invocation of the form
         ``bsub -L /bin/sh`` + resource limits.
 
         Override this method in application-specific classes to
         provide appropriate invocation templates.
         """
-        bsub = ('bsub -cwd . -L /bin/sh -n %d' % self.requested_cores)
+        bsub = ['bsub', '-cwd', '.', '-L', '/bin/sh', '-n' ('%d' % self.requested_cores)]
         if self.requested_walltime:
             # LSF wants walltime as HH:MM (days expressed as many hours)
-            bsub += ' -W %02d:00' % self.requested_walltime
+            bsub += ['-W', ('%02d:00' % self.requested_walltime)]
         if self.requested_memory:
             # LSF uses `rusage[mem=...]` for memory limits (number of MBs)
-            bsub += (' -R rusage[mem=%d]' % 1000*self.requested_memory)
-        if self.join:
-            log.warning("Application requested joining STDOUT/STDERR into a single file"
-                        " but this feature is not supported by LSF."
-                        " Ignoring requirement.")
+            bsub += ['-R', ('rusage[mem=%d]' % 1000*self.requested_memory)]
         if self.stdout:
-            bsub += ' -oo %s' % self.stdout
+            bsub += ['-oo', ('%s' % self.stdout)]
+            if not self.join and not self.stderr:
+                # LSF joins STDERR and STDOUT by default, so redirect STDERR away
+                bsub += ['-eo', '/dev/null']
         if self.stdin:
             # `self.stdin` is the full pathname on the GC3Pie client host;
             # it is copied to its basename on the execution host
-            bsub += ' -i %s' % os.path.basename(self.stdin)
+            bsub += ['-i', ('%s' % os.path.basename(self.stdin))]
         if self.stderr:
-            # from the bsub(1) man page: "If both the -j y and the -e
-            # options are present, Grid Engine sets but ignores the
-            # error-path attribute."
-            bsub += ' -eo %s' % self.stderr
+            bsub += ['-eo', ('%s' % self.stderr)]
         try:
             if self.jobname:
-                bsub += " -J '%s'" % self.jobname
+                bsub += ['-J', ('%s' % self.jobname)]
         except:
             pass
-        return (bsub, self.cmdline(resource))
+        bsub += [self.cmdline(resource)]
+        return bsub.join(' ')
 
     def pbs_qsub(self, resource, _suppress_warning=False, **kw):
         """
-        Similar to ``qsub()`` but will work with a PBS/Torque resource
-        manager
+        Similar to `qsub()`, but will work with a PBS/Torque resource
+        manager.
         """
         qsub = ['qsub']
         if self.requested_walltime:
@@ -1305,7 +1305,6 @@ class Application(Task):
             qsub.append('-o %s' % self.stdout)
         if self.requested_cores > 1:
             qsub.append('-l nodes=%d' % self.requested_cores)
-
         qsub.append('-N "%s"' % self.jobname)
         return (" ".join(qsub), self.cmdline(resource))
 

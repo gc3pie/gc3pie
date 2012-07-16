@@ -25,6 +25,7 @@ __version__ = 'development version (SVN $Revision$)'
 
 import os
 import posixpath
+import random
 import sys
 import tempfile
 import stat
@@ -236,8 +237,11 @@ class BatchSystem(LRMS):
                                               app.executable), 0755)
 
         try:
-            _command, script, script_name = self._submit_command(app)
+            _command, script = self._submit_command(app)
             if script is not None:
+                # create temporary script name
+                # XXX: The `uuid` module is available from Py 2.5 onwards
+                script_name = ('./script.%x.sh' % random.randint(0, sys.maxint))
                 # save script to a temporary file and submit that one instead
                 local_script_file = tempfile.NamedTemporaryFile()
                 local_script_file.write(script)
@@ -245,19 +249,20 @@ class BatchSystem(LRMS):
                 # upload script to remote location
                 self.transport.put(local_script_file.name,
                                    os.path.join(ssh_remote_folder, script_name))
-                # set execution mode on remote scritp
+                # set execution mode on remote script
                 self.transport.chmod(os.path.join(ssh_remote_folder, script_name), 0755)
                 # cleanup
                 local_script_file.close()
                 if os.path.exists(local_script_file.name):
                     os.unlink(local_script_file.name)
+            else:
+                # we still need a script name even if there is no script to submit
+                script_name = ''
 
             # Submit it
             exit_code, stdout, stderr = self.transport.execute_command(
                 "/bin/sh -c 'cd %s && %s %s'"
-                % (ssh_remote_folder, _command,
-                   # ignore script name if there is no script to submit
-                   ifelse(script is not None, ('./' + script_name), '')))
+                % (ssh_remote_folder, _command, script_name))
 
             if exit_code != 0:
                 raise gc3libs.exceptions.LRMSError(
