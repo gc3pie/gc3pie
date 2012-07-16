@@ -122,8 +122,7 @@ class BatchSystem(LRMS):
         #
         #    batch.BatchSystem.__init__(*args)
         #
-        # do some additional checks and then and set `self.isValid` to
-        # `1'
+        # do some additional checks and then and set `self.isValid` to `1'
         self.isValid = 0
 
 
@@ -202,9 +201,10 @@ class BatchSystem(LRMS):
             if exit_code == 0:
                 ssh_remote_folder = stdout.split('\n')[0]
             else:
-                raise gc3libs.exceptions.LRMSError("Failed while executing command '%s' on resource '%s';"
-                                " exit code: %d, stderr: '%s'."
-                                % (_command, self._resource, exit_code, stderr))
+                raise gc3libs.exceptions.LRMSError(
+                    "Failed executing command '%s' on resource '%s';"
+                    " exit code: %d, stderr: '%s'."
+                    % (_command, self._resource, exit_code, stderr))
         except gc3libs.exceptions.TransportError, x:
             raise
         except:
@@ -260,9 +260,10 @@ class BatchSystem(LRMS):
                    ifelse(script is not None, script_name, '')))
 
             if exit_code != 0:
-                raise gc3libs.exceptions.LRMSError("Failed while executing command '%s' on resource '%s';"
-                                " exit code: %d, stderr: '%s'."
-                                % (_command, self._resource, exit_code, stderr))
+                raise gc3libs.exceptions.LRMSError(
+                    "Failed executing command '%s' on resource '%s';"
+                    " exit code: %d, stderr: '%s'."
+                    % (_command, self._resource, exit_code, stderr))
 
             jobid = self._parse_submit_output(stdout)
             log.debug('Job submitted with jobid: %s', jobid)
@@ -357,11 +358,12 @@ class BatchSystem(LRMS):
                 if (time.time() - job.stat_failed_at) > self._resource.accounting_delay:
                     # accounting info should be there, if it's not then job is definitely lost
                     log.critical("Failed executing remote command: '%s'; exit status %d"
-                                 % (_command,exit_code))
+                                 % (_command, exit_code))
                     log.debug("Remote command returned stdout: %s" % stdout)
                     log.debug("remote command returned stderr: %s" % stderr)
-                    raise paramiko.SSHException("Failed executing remote command: '%s'; exit status %d"
-                                                % (_command,exit_code))
+                    raise gc3libs.exceptions.LRMSError(
+                        "Failed executing remote command: '%s'; exit status %d"
+                        % (_command,exit_code))
                 else:
                     # do nothing, let's try later...
                     pass
@@ -430,12 +432,14 @@ class BatchSystem(LRMS):
             if exit_code != 0:
                 # It is possible that 'qdel' fails because job has been already completed
                 # thus the cancel_job behaviour should be to
-                log.error('Failed executing remote command: %s. exit status %d' % (_command,exit_code))
-                log.debug("remote command returned stdout: %s" % stdout)
-                log.debug("remote command returned stderr: %s" % stderr)
+                log.error("Failed executing remote command '%s'; exit status %d",
+                          _command, exit_code)
+                log.debug("  remote command returned stdout '%s'", stdout)
+                log.debug("  remote command returned stderr '%s'", stderr)
                 if exit_code == 127:
-                    # failed executing remote command
-                    raise gc3libs.exceptions.LRMSError('Failed executing remote command')
+                    # no such command
+                    raise gc3libs.exceptions.LRMSError(
+                        "Cannot execute remote command '%s'" % _command)
 
             # self.transport.close()
             return job
