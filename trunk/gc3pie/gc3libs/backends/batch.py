@@ -98,20 +98,16 @@ class BatchSystem(LRMS):
 
         self._resource = resource
 
-        # set defaults
-        auth = auths.get(resource.auth)
-
-        self._ssh_username = auth.username
-
         if resource.transport == 'local':
             self.transport = transport.LocalTransport()
         elif resource.transport == 'ssh':
+            auth = auths.get(resource.auth)
+            self._ssh_username = auth.username
             self.transport = transport.SshTransport(self._resource.frontend,
                                                     username=self._ssh_username)
         else:
             raise gc3libs.exceptions.TransportError("Unknown transport '%s'", resource.transport)
 
-        # XXX: does Ssh really needs this ?
         self._resource.max_cores = int(self._resource.max_cores)
         self._resource.max_memory_per_core = int(self._resource.max_memory_per_core) * 1000
         self._resource.max_walltime = int(self._resource.max_walltime)

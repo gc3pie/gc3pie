@@ -390,33 +390,7 @@ class LsfLrms(batch.BatchSystem):
         assert resource.type == gc3libs.Default.LSF_LRMS, \
             "LsfLRMS.__init__(): Failed. Resource type expected 'lsf'. Received '%s'" \
             % resource.type
-
-        # checking mandatory resource attributes
-        resource.frontend
-        resource.transport
-
-        self._resource = resource
-
-        # set defaults
-        auth = auths.get(resource.auth)
-        self._ssh_username = auth.username
-
-        if resource.transport == 'local':
-            self.transport = transport.LocalTransport()
-        elif resource.transport == 'ssh':
-            self.transport = transport.SshTransport(self._resource.frontend,
-                                                    username=self._ssh_username)
-        else:
-            raise gc3libs.exceptions.TransportError("Unknown transport '%s'", resource.transport)
-
-        # XXX: does Ssh really needs this ?
-        self._resource.max_cores = int(self._resource.max_cores)
-        self._resource.max_memory_per_core = int(self._resource.max_memory_per_core) * 1000
-        self._resource.max_walltime = int(self._resource.max_walltime)
-        if self._resource.max_walltime > 0:
-            # Convert from hours to minutes
-            self._resource.max_walltime = self._resource.max_walltime * 60
-
+        batch.BatchSystem.__init__(self, resource, auths)
         self.isValid = 1
 
     def _submit_command(self, app):

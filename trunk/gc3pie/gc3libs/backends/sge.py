@@ -313,35 +313,11 @@ class SgeLrms(batch.BatchSystem):
         assert resource.type == gc3libs.Default.SGE_LRMS, \
             "SgeLRMS.__init__(): Failed. Resource type expected 'sge'. Received '%s'" \
             % resource.type
-
-        # checking mandatory resource attributes
-        resource.name
-        resource.frontend
-        resource.transport
-
-        self._resource = resource
+        batch.BatchSystem.__init__(self, resource, auths)
 
         # set defaults
         self._resource.setdefault('sge_accounting_delay', 15)
         auth = auths.get(resource.auth)
-
-        self._ssh_username = auth.username
-
-        if resource.transport == 'local':
-            self.transport = transport.LocalTransport()
-        elif resource.transport == 'ssh':
-            self.transport = transport.SshTransport(self._resource.frontend,
-                                                    username=self._ssh_username)
-        else:
-            raise gc3libs.exceptions.TransportError("Unknown transport '%s'", resource.transport)
-
-        # XXX: does Ssh really needs this ?
-        self._resource.max_cores = int(self._resource.max_cores)
-        self._resource.max_memory_per_core = int(self._resource.max_memory_per_core) * 1000
-        self._resource.max_walltime = int(self._resource.max_walltime)
-        if self._resource.max_walltime > 0:
-            # Convert from hours to minutes
-            self._resource.max_walltime = self._resource.max_walltime * 60
 
         self.isValid = 1
 
@@ -414,7 +390,7 @@ class SgeLrms(batch.BatchSystem):
                           " no mapping defined for it"
                           " in 'gc3libs/backends/sge.py'."
                           % (key,value))
-                    
+
         return jobstatus
 
     def _cancel_command(self, jobid):
