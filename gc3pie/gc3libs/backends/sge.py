@@ -317,7 +317,8 @@ class SgeLrms(batch.BatchSystem):
         self.isValid = 1
 
     def _submit_command(self, app):
-        return app.qsub(self._resource)
+        sub_argv, app_argv = app.qsub(self._resource)
+        return (str.join(' ', sub_argv), str.join(' ', app_argv))
 
     def _parse_submit_output(self, output):
         """Parse the ``qsub`` output for the local jobid."""

@@ -237,32 +237,32 @@ class BatchSystem(LRMS):
                                               app.executable), 0755)
 
         try:
-            _command, script = self._submit_command(app)
-            if script is not None:
+            sub_cmd, aux_script = self._submit_command(app)
+            if aux_script != '':
                 # create temporary script name
                 # XXX: The `uuid` module is available from Py 2.5 onwards
-                script_name = ('./script.%x.sh' % random.randint(0, sys.maxint))
+                script_filename = ('./script.%x.sh' % random.randint(0, sys.maxint))
                 # save script to a temporary file and submit that one instead
                 local_script_file = tempfile.NamedTemporaryFile()
-                local_script_file.write(script)
+                local_script_file.write(aux_script)
                 local_script_file.flush()
                 # upload script to remote location
                 self.transport.put(local_script_file.name,
-                                   os.path.join(ssh_remote_folder, script_name))
+                                   os.path.join(ssh_remote_folder, script_filename))
                 # set execution mode on remote script
-                self.transport.chmod(os.path.join(ssh_remote_folder, script_name), 0755)
+                self.transport.chmod(os.path.join(ssh_remote_folder, script_filename), 0755)
                 # cleanup
                 local_script_file.close()
                 if os.path.exists(local_script_file.name):
                     os.unlink(local_script_file.name)
             else:
                 # we still need a script name even if there is no script to submit
-                script_name = ''
+                script_filename = ''
 
             # Submit it
             exit_code, stdout, stderr = self.transport.execute_command(
                 "/bin/sh -c 'cd %s && %s %s'"
-                % (ssh_remote_folder, _command, script_name))
+                % (ssh_remote_folder, sub_cmd, script_filename))
 
             if exit_code != 0:
                 raise gc3libs.exceptions.LRMSError(

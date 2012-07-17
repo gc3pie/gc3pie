@@ -398,7 +398,8 @@ class LsfLrms(batch.BatchSystem):
         # the same syntax, so we do not need to create an auxiliary
         # submission script and can just specify the command on the
         # command-line
-        return (app.bsub(self._resource), None)
+        sub_argv, app_argv = app.bsub(self._resource)
+        return (str.join(' ', sub_argv + app_argv), '')
 
     def _parse_submit_output(self, bsub_output):
         """Parse the ``bsub`` output for the local jobid."""
