@@ -1277,7 +1277,7 @@ class Application(Task):
         except:
             pass
         bsub += [self.cmdline(resource)]
-        return bsub.join(' ')
+        return str.join(' ', bsub)
 
     def pbs_qsub(self, resource, _suppress_warning=False, **kw):
         """
