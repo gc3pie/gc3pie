@@ -163,38 +163,43 @@ class GamessApplication(gc3libs.Application):
 
     def qgms(self, resource, **kw):
         """
-        Return a `qgms` invocation to run GAMESS-US with the
-        parameters embedded in this object.
+        Return the *argv*-vector for invoking `qgms` to run GAMESS-US
+        with the parameters embedded in this object.
         """
         try:
-            qgms = os.path.join(resource.gamess_location, 'qgms')
+            qgms_argv = [ os.path.join(resource.gamess_location, 'qgms') ]
         except AttributeError:
-            raise gc3libs.exceptions.ConfigurationError("Missing configuration parameter `gamess_location` on resource '%s'.",
-                                     resource.name)
+            raise gc3libs.exceptions.ConfigurationError(
+                "Missing configuration parameter `gamess_location` on resource '%s'.",
+                resource.name)
 
         if self.requested_walltime:
             # XXX: should this be an error instead?
-            gc3libs.log.warning("Requested %d hours of wall-clock time,"
-                                " but setting running time limits is not supported by the `qgms` script."
-                                " Ignoring request, GAMESS job will be submitted with unspecified running time.",
-                                self.requested_walltime)
+            gc3libs.log.warning(
+                "Requested %d hours of wall-clock time,"
+                " but setting running time limits is not supported by the `qgms` script."
+                " Ignoring request, GAMESS job will be submitted with unspecified running time.",
+                self.requested_walltime)
         if self.requested_memory:
             # XXX: should this be an error instead?
-            gc3libs.log.warning("Requested %d Gigabytes of memory per core,"
-                                " but setting memory limits is not supported by the `qgms` script."
-                                " Ignoring request, GAMESS job will be submitted with unspecified memory requirements.",
-                                self.requested_memory)
+            gc3libs.log.warning(
+                "Requested %d Gigabytes of memory per core,"
+                " but setting memory limits is not supported by the `qgms` script."
+                " Ignoring request, GAMESS job will be submitted with unspecified memory requirements.",
+                self.requested_memory)
         if self.requested_cores:
-            qgms += ' -n %d' % self.requested_cores
+            qgms_argv += ['-n', '%d' % self.requested_cores]
         # silently ignore `self.job_name`: `qgms` will set it to a default
 
         # finally, add the input files
-        qgms += ' ' + str.join(" ", [ os.path.basename(r) for r in self.inputs.values() ])
-        return (qgms, None)
+        qgms_argv += [ os.path.basename(r) for r in self.inputs.values() ]
+        return (qgms_argv, [])
 
-
-    # XXX: Assumes `qgms` is the correct way to run GAMESS on *any* batch system...
+    # XXX: Assumes `qgms` is the correct way to run GAMESS on *any*
+    # batch system, which it's not... see Issue 3
     qsub = qgms
+    qsub_pbs = qgms
+    bsub = qgms
 
 
     def cmdline(self, resource, **kw):

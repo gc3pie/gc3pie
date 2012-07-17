@@ -120,16 +120,10 @@ class PbsLrms(batch.BatchSystem):
         return self.get_jobid_from_submit_output( output,_qsub_jobid_re)
 
     def _submit_command(self, app):
-        qsub, script = app.pbs_qsub(self._resource)
+        qsub_argv, app_argv = app.pbs_qsub(self._resource)
         if 'queue' in self._resource:
-            qsub += " -d $(pwd) -q %s" % self._resource['queue']
-        if script is not None:
-            # save script to a temporary file and submit that one instead
-            script_name = '%s.%x.sh' % (app.get('application_tag', 'script'),
-                                        random.randint(0, sys.maxint))
-        else:
-            script_name = ''
-        return (qsub, script, script_name)
+            qsub_argv += ['-d', '.', '-q', ('%s' % self._resource['queue'])]
+        return (str.join(' ', qsub_argv), str.join(' ', app_argv))
 
     def _stat_command(self, job):
         return "qstat %s | grep ^%s" % (job.lrms_jobid,job.lrms_jobid)
