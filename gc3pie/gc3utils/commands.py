@@ -1180,7 +1180,7 @@ Select job IDs based on specific criteria
                                              self.params.ifile,
                                              self.params.ofile)
 
-        # Print job remaining job names
+        # Print remaining job IDs
         if current_jobs:
-            print str.join(" ", [job.persistent_id for job in current_jobs])
+            print str.join(" ", [str(job.persistent_id) for job in current_jobs])
 
