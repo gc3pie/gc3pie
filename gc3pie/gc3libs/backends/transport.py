@@ -302,11 +302,11 @@ class SshTransport(Transport):
             exitcode = stdout_stream.channel.recv_exit_status()
             gc3libs.log.debug("Executed command '%s' on host '%s'; exit code: %d"
                               % (command, self.remote_frontend, exitcode))
-
             return exitcode, stdout, stderr
         except Exception, ex:
-            raise gc3libs.exceptions.TransportError("Failed executing remote command '%s': %s: %s"
-                                            % (command, ex.__class__.__name__, str(ex)))
+            raise gc3libs.exceptions.TransportError(
+                "Failed executing remote command '%s': %s: %s"
+                % (command, ex.__class__.__name__, str(ex)))
 
 
     @same_docstring_as(Transport.isdir)

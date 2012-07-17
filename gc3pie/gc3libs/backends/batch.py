@@ -311,6 +311,8 @@ class BatchSystem(LRMS):
             log.critical("Failure submitting job to resource '%s' - see log file for errors"
                                   % self._resource.name)
             raise
+
+
     @same_docstring_as(LRMS.update_job_state)
     def update_job_state(self, app):
         state = Run.State.UNKNOWN
@@ -324,38 +326,43 @@ class BatchSystem(LRMS):
         try:
             self.transport.connect()
             _command = self._stat_command(job)
-            log.debug("checking remote job status with '%s'" % _command)
+            log.debug("Checking remote job status with '%s' ..." % _command)
             exit_code, stdout, stderr = self.transport.execute_command(_command)
             if exit_code == 0:
                 jobstatus = self._parse_stat_output(stdout)
                 job.update(jobstatus)
 
                 state = jobstatus.get('state', Run.State.UNKNOWN)
-
                 if state == Run.State.UNKNOWN:
-                    log.warning("unknown Batch job status , returning `UNKNOWN`")
+                    log.warning(
+                        "Unknown batch job status '%s',"
+                        " setting GC3Pie job state to `UNKNOWN`",
+                        jobstatus.get('state', ''))
                 job.state = state
-                if 'exit_status' in jobstatus:
-                    job.returncode = int(jobstatus['exit_status'])
-                    return state
-            # to increase readability, there is not `else:` block
 
-            # In some batch systems, jobs disappeared from `*stat`
+                if 'exit_status' in jobstatus:
+                    job.exitcode = int(jobstatus['exit_status'])
+                    # XXX: we should set the `signal` part accordingly
+                    job.signal = 0
+
+                return job.state
+
+            # In some batch systems, jobs disappear from qstat
             # output as soon as they are finished. In these cases,
             # we have to check some *accounting* command to check
             # the exit status.
             _command = self._acct_command(job)
             if _command:
-                log.debug("The `*stat` command returned no job information; trying with '%s'" % _command)
+                log.debug("The `qstat`/`bjobs` command returned no job information;"
+                          " trying with '%s' instead ..." % _command)
                 exit_code, stdout, stderr = self.transport.execute_command(_command)
                 if exit_code == 0:
                     jobstatus = self._parse_acct_output(stdout)
                     job.update(jobstatus)
                     if 'exit_status' in jobstatus:
                         job.returncode = int(jobstatus['exit_status'])
-                        state = Run.State.TERMINATING
-                    return state
-            # to increase readability, there is not `else:` block
+                        job.state = Run.State.TERMINATING
+                    return job.state
 
             # No *stat command and no *acct command returned
             # correctly.
@@ -364,14 +371,14 @@ class BatchSystem(LRMS):
                     # accounting info should be there, if it's not then job is definitely lost
                     log.critical("Failed executing remote command: '%s'; exit status %d"
                                  % (_command, exit_code))
-                    log.debug("Remote command returned stdout: %s" % stdout)
-                    log.debug("remote command returned stderr: %s" % stderr)
+                    log.debug("  remote command returned stdout: '%s'" % stdout)
+                    log.debug("  remote command returned stderr: '%s'" % stderr)
                     raise gc3libs.exceptions.LRMSError(
                         "Failed executing remote command: '%s'; exit status %d"
                         % (_command,exit_code))
                 else:
                     # do nothing, let's try later...
-                    pass
+                    return job.state
             except AttributeError:
                 # this is the first time `qstat` fails, record a timestamp and retry later
                 job.stat_failed_at = time.time()
