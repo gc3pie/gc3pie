@@ -865,7 +865,11 @@ Manage sessions
         subparser.add_argument('session')
         subparser.add_argument('-v', '--verbose', action='count')
 
-    def setup_args(self):
+
+
+    def setup(self):
+        gc3libs.cmdline._Script.setup(self)
+
         self.subparsers = self.argparser.add_subparsers()
         self._add_subcmd(
             'abort',
