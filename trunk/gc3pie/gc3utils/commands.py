@@ -950,23 +950,19 @@ Select job IDs based on specific criteria
 
     def setup_options(self):
         self.add_param(
+            '-l',
             '--state',            
             help="Accepts a comma separated list of states. It will select all the jobs in one of the specified states. Valid states are: %s" % str.join(", ", (state.lower() for state in Run.State)),
             )
 
         # Regexp options
-        self.regexp_names = ['name', 'iname', 'jobid', 'ijobid']
+        self.regexp_names = ['name', 'jobid', ]
         for re_name in self.regexp_names:
-            cistring = ''
-            visible_name = re_name
-            if re_name[0] == 'i':
-                cistring='case insensitive '
-                visible_name = re_name[1:]
             self.add_param(
                 '--%s' % re_name,
                 dest='regexp_%s' % re_name,
                 metavar='REGEXP',
-                help="Select jobs with %s which matches the supplied %s REGEXP." % (visible_name, cistring),
+                help="Select jobs with %s which matches the supplied REGEXP (case insensitive)." % (re_name),
                 )
 
         self.add_param(
@@ -980,12 +976,12 @@ Select job IDs based on specific criteria
             help="Select jobs sumitted before the specified date",
             )
         self.add_param(
-            '--ifile',
+            '--input-file',
             metavar='FILE',
             help="Select jobs which with input file FILE (only the filename is considered, not the full path).",
             )
         self.add_param(
-            '--ofile',
+            '--output-file',
             metavar='FILE',
             help="Select jobs which with output file FILE (only the filename is considered, not the full path).",
             )
@@ -997,9 +993,7 @@ Select job IDs based on specific criteria
             re_attribute = getattr(self.params, re_name)
             if re_attribute:
                 try:
-                    options = 0
-                    if option[0] == 'i': options=re.I
-                    setattr(self.params, re_name, re.compile(".*%s.*" % re_attribute, options))
+                    setattr(self.params, re_name, re.compile(".*%s.*" % re_attribute, re.I))
                 except re.error, ex:
                     raise gc3libs.exceptions.InvalidUsage(
                         "Regexp `%s` for option `--%s` is invalid: %s" % (
@@ -1098,11 +1092,11 @@ Select job IDs based on specific criteria
         matching_jobs = []
         for job in job_list:
             try:
-                inputs = [os.path.basename(file.path) for file in job.inputs]
+                inputs = [os.path.basename(url.path) for url in job.inputs]
             except AttributeError:
                 inputs = []
             try:
-                outputs = [os.path.basename(file.path) for file in job.outputs]
+                outputs = [os.path.basename(file) for file in job.outputs]
             except AttributeError:
                 inputs = []
             toadd = True
@@ -1151,20 +1145,10 @@ Select job IDs based on specific criteria
                                                  self.params.regexp_name,
                                                  attribute='jobname',
                                                  )
-        if self.params.regexp_iname:
-            current_jobs = self.filter_by_regexp(current_jobs,
-                                                 self.params.regexp_iname,
-                                                 attribute='jobname',
-                                                 )
 
         if self.params.regexp_jobid:
             current_jobs = self.filter_by_regexp(current_jobs,
                                                  self.params.regexp_jobid,
-                                                 attribute='persistent_id',
-                                                 )
-        if self.params.regexp_ijobid:
-            current_jobs = self.filter_by_regexp(current_jobs,
-                                                 self.params.regexp_ijobid,
                                                  attribute='persistent_id',
                                                  )
 
@@ -1177,8 +1161,8 @@ Select job IDs based on specific criteria
             current_jobs = self.filter_by_submission_date(current_jobs)
 
         current_jobs = self.filter_by_iofile(current_jobs,
-                                             self.params.ifile,
-                                             self.params.ofile)
+                                             self.params.input_file,
+                                             self.params.output_file)
 
         # Print remaining job IDs
         if current_jobs:
