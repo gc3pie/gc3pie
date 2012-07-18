@@ -935,8 +935,10 @@ Manage sessions
 
         This method basically call the command "gstat -n -v -s SESSION"
         """
+        self.session = Session(self.params.session, create=False)
+        job_ids = self.session.tasks.keys()
         cmd = gc3utils.commands.cmd_gstat
-        sys.argv = ['gstat', '-n', '-v', '-s', self.params.session]
+        sys.argv = ['gstat', '-n', '-v', '-s', self.params.session] + job_ids
         return cmd().run()
 
 
