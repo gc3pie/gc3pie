@@ -121,7 +121,7 @@ force removal of a job regardless.
         failed = 0
         for jobid in args:
             try:
-                app = self.session.load(jobid)
+                app = self.session.store.load(jobid)
                 app.attach(self._core)
 
                 if app.execution.state != Run.State.NEW:
@@ -164,7 +164,12 @@ force removal of a job regardless.
                     continue
 
             try:
-                self.session.remove(jobid)
+                if jobid in self.session.tasks:
+                    self.session.remove(jobid)
+                else:
+                    # if jobid is not a toplevel job Session.remove()
+                    # will raise an error.
+                    self.session.store.remove(jobid)
                 self.log.info("Removed job '%s'", jobid)
             except:
                 failed += 1
