@@ -457,7 +457,11 @@ class GridAuth(object):
         global arc_flavour # module-level constant
 
         if arc_flavour == Default.ARC0_LRMS:
-            cert = arclib.Certificate(arclib.PROXY)
+            try:
+                cert = arclib.Certificate(arclib.PROXY)
+            except Exception, e:
+                gc3libs.log.warning("Ignoring error while checking Voms certificate: %s" % str(e))
+                return False
             if cert.GetSN().endswith('proxy'):
                 # non RFC compliant proxy
                 gc3libs.log.error("Proxy not in RFC compliant format")
