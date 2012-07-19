@@ -66,30 +66,14 @@ transformations on the picture:
 
 Clearly, step 2) depends on the step 1), and 3) depends on 2), so we
 basically have a sequence of tasks, but since step 2) need to create
-`N` different independent images, we can parallelize this step. In
-ASCII art, the workflow will looks like::
+`N` different independent images, we can parallelize this step. 
 
-.                        .-------------------.
-.                        | create grayscaled |
-.                        |       image       |
-.                        `-------------------'
-.                        /      |      \      \
-.                       /       |       \      \
-.                      /        |        \      \
-.        .------------.  .------------.       .------------.
-.        | create LUT |  | create LUT |  ...  | create LUT |
-.        `------------'  `------------'       `------------' 
-.                   |           |         |      |       
-.        .------------.  .------------.       .------------.
-.        | apply  LUT |  |  apply LUT |  ...  |  apply LUT |
-.        `------------'  `------------'       `------------'
-.                     \         |        /      /
-.                      \        |       /      /
-.                       \       |      /      /
-.                        .-------------------.
-.                        | merge `colorized` |
-.                        |       images      |
-.                        `-------------------'
+
+.. figure:: workflow.png
+   :align: center
+   :alt: workflow of the `warholize` script
+
+   Workflow of the `warholize` script
 
 From top to bottom
 ------------------
@@ -646,8 +630,13 @@ $    ./warholize.py -C 1 lena.tiff --copies 9
 want to test it locally). 
 
 After completion a file ``Warholized.lena.tiff/warhol_lena.tiff``
-will be created.
+will be created. 
 
+.. figure:: warholized_lena.jpg
+   :align: center
+   :alt: warholized version of Lena
+
+   Warholized version of `Lena`
 
 .. Links
 
