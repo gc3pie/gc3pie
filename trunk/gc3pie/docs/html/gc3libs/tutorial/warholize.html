@@ -106,29 +106,10 @@ our <cite>warholized</cite> image.</p>
 </ol>
 <p>Clearly, step 2) depends on the step 1), and 3) depends on 2), so we
 basically have a sequence of tasks, but since step 2) need to create
-<cite>N</cite> different independent images, we can parallelize this step. In
-ASCII art, the workflow will looks like:</p>
-<div class="highlight-python"><pre>.                        .-------------------.
-.                        | create grayscaled |
-.                        |       image       |
-.                        `-------------------'
-.                        /      |      \      \
-.                       /       |       \      \
-.                      /        |        \      \
-.        .------------.  .------------.       .------------.
-.        | create LUT |  | create LUT |  ...  | create LUT |
-.        `------------'  `------------'       `------------'
-.                   |           |         |      |
-.        .------------.  .------------.       .------------.
-.        | apply  LUT |  |  apply LUT |  ...  |  apply LUT |
-.        `------------'  `------------'       `------------'
-.                     \         |        /      /
-.                      \        |       /      /
-.                       \       |      /      /
-.                        .-------------------.
-.                        | merge `colorized` |
-.                        |       images      |
-.                        `-------------------'</pre>
+<cite>N</cite> different independent images, we can parallelize this step.</p>
+<div class="figure align-center">
+<img alt="workflow of the `warholize` script" src="../../_images/workflow.png" />
+<p class="caption">Workflow of the <cite>warholize</cite> script</p>
 </div>
 </div>
 <div class="section" id="from-top-to-bottom">
@@ -660,6 +641,10 @@ Image Processing Institute</a> page. Download the image, rename it as
 want to test it locally).</p>
 <p>After completion a file <tt class="docutils literal"><span class="pre">Warholized.lena.tiff/warhol_lena.tiff</span></tt>
 will be created.</p>
+<div class="figure align-center">
+<img alt="warholized version of Lena" src="../../_images/warholized_lena.jpg" />
+<p class="caption">Warholized version of <cite>Lena</cite></p>
+</div>
 </div>
 </div>
 
