@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/env python
 # summary of user-visible changes
 __changelog__ = """
   2012-07-17:
@@ -11,41 +11,37 @@ if __name__ == '__main__':
 	import gzods
 	gzods.ZodsScript().run()
 
-from gc3libs.cmdline import SessionBasedScript
-import gc3libs
 import os
-from xml.dom import minidom
+import xml.dom.minidom 
+import gc3libs
+import gc3libs.cmdline 
 
 class GzodsApp(gc3libs.Application):
     """
-    This application will run ZODS input files on distributed resources 
-    and retrive the output in subdirectories named Zods* 
-    inside the current directory. The script assumes that input files are named input.xml
-    Example shows how to run the app on 5 cores from current directory:
-    ./gzods . -c 5 -N    
+    This class is derived from gc3libs.Application and defines ZODS app with its input and output files. 
     """
     def __init__(self, filename,**kw):
-        (input1, input2) = self.check_input(filename)
+        if self.check_input(filename) == None:
+		gc3libs.log.warning("Input files for ZODS app was not detected.")
+		return None
+	(input1, input2) = self.check_input(filename)
         
-	self.ListOfFiles = [] 
-	self.ListOfFiles.append(filename)
-	gc3libs.log.info("List of detected input files %s", self.ListOfFiles)
+	gc3libs.log.debug("Detected input file for ZODS: %s", filename)
 	gc3libs.Application.__init__(
             self,
             tags=["APPS/CHEM/ZODS-01"],
 	    executable = '$MPIRUN', # mandatory
-            arguments = ["-n", kw['requested_cores'], '$ZODS_BINDIR/simulator','input.xml'],                
-            inputs = [filename, input1, input2],                  # mandatory, inputs are files that will be copied to the site
+            arguments = ["-n", kw['requested_cores'], '$ZODS_BINDIR/simulator',filename],                
+            inputs = [filename, input1, input2],    # mandatory, inputs are files that will be copied to the site
             outputs = ['zods.txt'],                 # mandatory
             stderr = "stderr.txt",
-	    stdout = "zods.txt",
+	    stdout = "stdout.txt",
 	    **kw	)
 
 
     def terminated(self):
         filename = os.path.join(self.output_dir, self.stdout)
-        gc3libs.log.info("FILENAME %s", filename)
-        gc3libs.log.info("TERMINATED")
+        gc3libs.log.debug("ZODS single job based on %s has TERMINATED", filename)
 
 
 # Detect the following references to external files in input.xml
@@ -55,28 +51,37 @@ class GzodsApp(gc3libs.Application):
 # <reference_intensities file_format="xml" file_name="data.xml"/>
  
     def check_input(self,filename):
-	gc3libs.log.info("Checking the input file: %s", filename)
-	DOMTree = minidom.parse(filename)
+	if os.path.exists(filename) == False:
+		gc3libs.log.warning("The file %s DOES NOT exists.", filename)
+		return None
+	basedir = os.path.dirname(filename)
+	DOMTree = xml.dom.minidom.parse(filename)
 	cNodes = DOMTree.childNodes
 	if len(cNodes[0].getElementsByTagName('reference_intensities')) > 0 and len(cNodes[0].getElementsByTagName('average_structure')) > 0:
 		data_file = cNodes[0].getElementsByTagName('reference_intensities')[0].getAttribute('file_name')
 		avg_file = cNodes[0].getElementsByTagName('average_structure')[0].getElementsByTagName('file')[0].getAttribute('name')
-        	if os.path.exists(avg_file)  == False or os.path.exists(data_file) == False:
-			gc3libs.log.debug("Averaged structure file %s or reference intensities file %s DO NOT exist.", avg_file, data_file)
-			return ("","")
+		data_file = os.path.join(basedir,data_file)
+		avg_file = os.path.join(basedir,avg_file)
+		gc3libs.log.debug("%s references to the following files: %s and  %s.", filename, avg_file, data_file)
+		if os.path.exists(avg_file)  == False or os.path.exists(data_file) == False:
+			gc3libs.log.warning("Averaged structure file %s or reference intensities file %s DO NOT exist.", avg_file, data_file)
+			return None
 		else:
-			gc3libs.log.info("Averaged structure file %s or reference intensities file %s DO exist.", avg_file, data_file)
+			gc3libs.log.debug("Averaged structure file %s or reference intensities file %s DO exist.", avg_file, data_file)
 			return (data_file, avg_file)
 	else:
 		gc3libs.log.debug("The input file is NOT a valid XML file for ZODS application.")
-		return False
+		return None
 	
-class ZodsScript(SessionBasedScript):
+class ZodsScript(gc3libs.cmdline.SessionBasedScript):
 	"""
-Scan the specified INPUTDIR directories recursively for '.xml' files,
-and submit a ZODS job for each input file found; job progress is
+Thiss application will run ZODS app on distributed resources.
+The script scans the specified INPUTDIR directories recursively for '.xml' files,
+and submits a ZODS job for each input file found; job progress is
 monitored and, when a job is done, its output files are retrieved back
 into the same directory where the '.xml' file is.
+Example run on 5 cores:
+./gzods dirWithInputFiles -c 5
 	"""
 	version = "1.0"
 
@@ -86,8 +91,8 @@ into the same directory where the '.xml' file is.
  	   	self.log.info("Please specify the directory with input files")
 		return 		
  	   self.log.info("Analayzed dirs =%s", self.params.args)
-	   listOfFiles = self._search_for_input_files(self.params.args, pattern="input.xml")
-	   gc3libs.log.info("List of detected input files for ZODS: %s", listOfFiles) 
+	   listOfFiles = self._search_for_input_files(self.params.args, pattern="input*.xml")
+	   gc3libs.log.debug("List of detected input files for ZODS: %s", listOfFiles) 
 	   for i, filename in enumerate(listOfFiles):
 		tasks.append(("Zods"+str(i), GzodsApp, [filename], extra.copy())) 	 
 	   return tasks
