@@ -70,9 +70,9 @@ to build a command line script which will run a complex workflow with
 both parallel and sequential tasks.</p>
 <p>The tutorial itself contains the complete source code of the
 application (cfr. <a class="reference external" href="http://en.wikipedia.org/wiki/Literate_programming">Literate Programming</a> on Wikipedia), so that you
-will be able to produce a working <tt class="docutils literal"><span class="pre">warholize.py</span></tt> script and
-test/modify it you by downloading <strong>pylit</strong> from the <a class="reference external" href="http://pylit.berlios.de/index.html">PyLit
-Homepage</a>, and running the following command on the
+will be able to test/modify it and produce a working <tt class="docutils literal"><span class="pre">warholize.py</span></tt>
+script by downloading <strong>pylit</strong> from the <a class="reference external" href="http://pylit.berlios.de/index.html">PyLit Homepage</a> and running
+the following command on the
 <tt class="docutils literal"><span class="pre">gc3pie/docs/gc3libs/tutorial/warholize.txt</span></tt> file, from whitin the
 svn tree of GC3Pie:</p>
 <div class="highlight-python"><pre>$    ./pylit warholize.txt warholize.py</pre>
@@ -355,7 +355,7 @@ renamed.</p>
 <p>To do any kind of post processing you can define a <cite>terminate</cite> method
 for your application. It will be called after your application will
 terminate. In our case we want to copy the gray scale version of the
-image to the <cite>warhol_dir</cite>, so that it will be easily reachable by the
+image to the <cite>warhol_dir</cite>, so that it will be easily reachable by all
 other applications:</p>
 <div class="highlight-python"><div class="highlight"><pre><span class="k">def</span> <span class="nf">terminated</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;Move grayscale image to the main output dir&quot;&quot;&quot;</span>
