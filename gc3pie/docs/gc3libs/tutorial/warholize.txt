@@ -26,9 +26,9 @@ both parallel and sequential tasks.
 
 The tutorial itself contains the complete source code of the
 application (cfr. `Literate Programming`_ on Wikipedia), so that you
-will be able to produce a working ``warholize.py`` script and
-test/modify it you by downloading **pylit** from the `PyLit
-Homepage`_, and running the following command on the
+will be able to test/modify it and produce a working ``warholize.py``
+script by downloading **pylit** from the `PyLit Homepage`_ and running
+the following command on the
 ``gc3pie/docs/gc3libs/tutorial/warholize.txt`` file, from whitin the
 svn tree of GC3Pie::
 
@@ -337,7 +337,7 @@ renamed.
 To do any kind of post processing you can define a `terminate` method
 for your application. It will be called after your application will
 terminate. In our case we want to copy the gray scale version of the
-image to the `warhol_dir`, so that it will be easily reachable by the
+image to the `warhol_dir`, so that it will be easily reachable by all
 other applications::
 
       def terminated(self):
