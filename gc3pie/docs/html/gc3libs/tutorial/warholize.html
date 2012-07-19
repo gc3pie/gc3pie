@@ -122,16 +122,19 @@ the single execution units which compose the application.</p>
 <h2>The script<a class="headerlink" href="#the-script" title="Permalink to this headline">¶</a></h2>
 <p>The <cite>SessionBasedScript</cite> class in the <cite>gc3libs.cmdline</cite> module is used
 to create a generic script. It already have all what is needed to read
-gc3pie configuration files, manage resources etc. The only thing
-missing is, well, your application!</p>
-<p>Let&#8217;s start importing it, among with the main <cite>gc3libs</cite> module:</p>
-<div class="highlight-python"><div class="highlight"><pre><span class="kn">import</span> <span class="nn">gc3libs</span>
+gc3pie configuration files, manage resources, schedule jobs etc. The
+only missing thing is, well, your application!</p>
+<p>Let&#8217;s start by creating a new empty file and importing some basic
+modules:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">import</span> <span class="nn">gc3libs</span>
 <span class="kn">from</span> <span class="nn">gc3libs.cmdline</span> <span class="kn">import</span> <span class="n">SessionBasedScript</span>
-<span class="kn">import</span> <span class="nn">os</span>
 </pre></div>
 </div>
-<p>and then, we create a class which inherits from it (in GC3Pie, most of
-the customization are done by inheriting from a more generic class):</p>
+<p>we then create a class which inherits from <cite>SessionBasedScript</cite> (in
+GC3Pie, most of the customizations are done by inheriting from a more
+generic class and overriding the <cite>__init__</cite> method and possibly
+others):</p>
 <div class="highlight-python"><div class="highlight"><pre><span class="k">class</span> <span class="nc">WarholizeScript</span><span class="p">(</span><span class="n">SessionBasedScript</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Demo script to create a `Warholized` version of an image.</span>
@@ -139,40 +142,37 @@ the customization are done by inheriting from a more generic class):</p>
     <span class="n">version</span><span class="o">=</span><span class="s">&#39;1.0&#39;</span>
 </pre></div>
 </div>
-<p>Please note that you must either write a small docstring for that
-class, or add a <cite>description</cite> attribute.</p>
+<p>Please note that you must either write a small docstring, or add a
+<cite>description</cite> attribute. These values are used when the script is
+called with options <tt class="docutils literal"><span class="pre">--help</span></tt> or <tt class="docutils literal"><span class="pre">--version</span></tt>, which are
+automatically added by GC3Pie.</p>
 <p>The way we want to use our script is straightforward:</p>
 <div class="highlight-python"><pre>$  warholize.py inputfile [inputfiles ...]</pre>
 </div>
 <p>and this will create a directory <tt class="docutils literal"><span class="pre">Warholized.&lt;inputfile&gt;</span></tt> in which
 there will be a file called <tt class="docutils literal"><span class="pre">warhol_&lt;inputfile&gt;</span></tt> containing the
 desired warholized image (and a lot of temporary files, at least for now).</p>
-<p>But we may want to add some optional argument to the script, in order
+<p>But we may want to add some additional options to the script, in order
 to decide how many colorized pictures the warholized image will be
 made of, or if we want to resize the image. <cite>SessionBasedScript</cite> uses
-the <a class="reference external" href="http://packages.python.org/pyCLI/">PyCLI</a> module which is in turn a wrapper around standard
-<cite>argparse</cite> (or <cite>optparse</cite>) python modules. To customize the script you
-can define a <cite>setup_options</cite> method and put in there some calls to
-<cite>SessionBasedScript.add_param()</cite>, which is inherited from
-<cite>cli.app.CommandLineApp</cite>:</p>
+the <a class="reference external" href="http://packages.python.org/pyCLI/">PyCLI</a> module which is, in turn, a wrapper around standard
+<a class="reference external" href="http://docs.python.org/library/argparse.html">argparse</a> (or <a class="reference external" href="http://docs.python.org/library/optparse.html">optparse</a> for older pythons) module. To customize
+the script you may define a <cite>setup_options</cite> method and put in there
+some calls to <cite>SessionBasedScript.add_param()</cite>, which is inherited
+from <cite>cli.app.CommandLineApp</cite>:</p>
 <div class="highlight-python"><div class="highlight"><pre><span class="k">def</span> <span class="nf">setup_options</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
     <span class="bp">self</span><span class="o">.</span><span class="n">add_param</span><span class="p">(</span><span class="s">&#39;--copies&#39;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">int</span><span class="p">,</span>
                    <span class="n">help</span><span class="o">=</span><span class="s">&quot;Number of copyes (Default:4). It has to be a perfect square!&quot;</span><span class="p">)</span>
-    <span class="bp">self</span><span class="o">.</span><span class="n">add_param</span><span class="p">(</span><span class="s">&#39;--size&#39;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span>
-                   <span class="n">help</span><span class="o">=</span><span class="s">&quot;Resize the original image.&quot;</span>
-                   <span class="s">&quot;Please note that the resulting image will be N times the size &quot;</span>
-                   <span class="s">&quot;specified here, where N is the argument of --copies.&quot;</span><span class="p">)</span>
-    <span class="bp">self</span><span class="o">.</span><span class="n">add_param</span><span class="p">(</span><span class="s">&#39;-n&#39;</span><span class="p">,</span> <span class="s">&#39;--num-colors&#39;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">int</span><span class="p">,</span>
-                   <span class="n">help</span><span class="o">=</span><span class="s">&quot;Number of colors to use. Default: 3&quot;</span><span class="p">)</span>
 </pre></div>
 </div>
+<p>In this example we will accept a <tt class="docutils literal"><span class="pre">--copies</span></tt> option to define how
+many colorized copies the final picture will be made of. Please refer
+to the documentation of the <a class="reference external" href="http://packages.python.org/pyCLI/">PyCLI</a> module for details on the syntax
+of the <cite>add_param</cite> method.</p>
 <p>The <em>heart</em> of the script is, however, the <cite>new_tasks</cite> method, which
 will be called to create the initial tasks of the scripts. In our
 case it will be something like:</p>
 <div class="highlight-python"><div class="highlight"><pre><span class="k">def</span> <span class="nf">new_tasks</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">extra</span><span class="p">):</span>
-    <span class="n">extra</span>
-    <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">params</span><span class="o">.</span><span class="n">size</span><span class="p">:</span>
-        <span class="n">extra</span><span class="p">[</span><span class="s">&#39;size&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">params</span><span class="o">.</span><span class="n">size</span>
     <span class="n">gc3libs</span><span class="o">.</span><span class="n">log</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&quot;Creating main sequential task&quot;</span><span class="p">)</span>
     <span class="k">for</span> <span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="n">input_file</span><span class="p">)</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">params</span><span class="o">.</span><span class="n">args</span><span class="p">):</span>
         <span class="n">kw</span> <span class="o">=</span> <span class="n">extra</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
@@ -180,18 +180,17 @@ case it will be something like:</p>
         <span class="k">yield</span> <span class="p">(</span><span class="s">&quot;Warholize.</span><span class="si">%d</span><span class="s">&quot;</span> <span class="o">%</span> <span class="n">i</span><span class="p">,</span>
                <span class="n">WarholizeWorkflow</span><span class="p">,</span>
                <span class="p">[</span><span class="n">input_file</span><span class="p">,</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">params</span><span class="o">.</span><span class="n">copies</span><span class="p">,</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">params</span><span class="o">.</span><span class="n">num_colors</span><span class="p">],</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">params</span><span class="o">.</span><span class="n">copies</span><span class="p">,],</span>
                <span class="n">kw</span><span class="p">)</span>
 </pre></div>
 </div>
 <p><cite>new_tasks</cite> is used as a <em>generator</em> (but it could return a list as
 well). Each <em>yielded</em> object is a tuple which rapresents a generic
-Task. In GC3Pie, a task is either a single task or a complex workflow,
-and rapresents an <em>execution unit</em>. In our case we create a
+Task. In GC3Pie, a task is either a single application or a complex
+workflow, and rapresents an <em>execution unit</em>. In our case we create a
 <cite>WarholizeWorkflow</cite> task which is the workflow described before. We
 don&#8217;t create an instance of the task from whitin <cite>new_tasks</cite>, but we
-pass all the arguments needed. In the order:</p>
+pass all the arguments needed to create one. In the order:</p>
 <blockquote>
 <div><ul class="simple">
 <li>The job name (used to identify the task inside the session)</li>
@@ -202,16 +201,25 @@ constructor of the class</li>
 </ul>
 </div></blockquote>
 <p>In our case we yield a different <cite>WarholizeWorkflow</cite> task for each
-input file. These tasks will then run in parallel.</p>
+input file. These tasks will run in parallel.</p>
+<p>Please note that we are using the <cite>gc3libs.log</cite> module to log
+informations about the execution. This module works like the
+<a class="reference external" href="http://docs.python.org/library/logging.html">logging</a> module and has methods like <cite>error</cite>, <cite>warning</cite>, <cite>info</cite> or
+<cite>debug</cite>, but its logging level is automatically configured by
+<cite>SessionBasedScript</cite>&#8216;s constructor.  This way you can increase the
+verbosity of your script by simply adding <tt class="docutils literal"><span class="pre">-v</span></tt> options from the
+command line.</p>
 </div>
 <div class="section" id="the-workflows">
 <h2>The workflows<a class="headerlink" href="#the-workflows" title="Permalink to this headline">¶</a></h2>
 <div class="section" id="main-sequential-workflow">
 <h3>Main sequential workflow<a class="headerlink" href="#main-sequential-workflow" title="Permalink to this headline">¶</a></h3>
-<p>The module <cite>gc3libs.dag</cite> contains two main objects,
-<cite>SequentialTaskCollection</cite> and <cite>ParallelTaskCollection</cite> which we will
-use to create our workflow. The first one, <cite>WarholizeWorkflow</cite>, is a
-sequential one, so:</p>
+<p>The module <cite>gc3libs.dag</cite> contains two main objects:
+<cite>SequentialTaskCollection</cite> and <cite>ParallelTaskCollection</cite>. They execute
+tasks in serial and in parallel, respectively. We will use both of
+them to create our workflow; the first one, <cite>WarholizeWorkflow</cite>, is a
+sequential task, therefore we have to inherit from
+<cite>SequentialTaskCollection</cite> and customize its <cite>__init__</cite> method:</p>
 <div class="highlight-python"><div class="highlight"><pre><span class="kn">from</span> <span class="nn">gc3libs.dag</span> <span class="kn">import</span> <span class="n">SequentialTaskCollection</span><span class="p">,</span> <span class="n">ParallelTaskCollection</span>
 <span class="kn">import</span> <span class="nn">math</span>
 <span class="kn">from</span> <span class="nn">gc3libs</span> <span class="kn">import</span> <span class="n">Run</span>
@@ -221,26 +229,16 @@ sequential one, so:</p>
 <span class="sd">    Main workflow.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
-    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">input_image</span><span class="p">,</span>  <span class="n">copies</span><span class="p">,</span> <span class="n">ncolors</span><span class="p">,</span>
-                 <span class="n">grid</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">size</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kw</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;XXX do we need input_image and output_image? I guess so?&quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">input_image</span><span class="p">,</span>  <span class="n">copies</span><span class="p">,</span> <span class="n">grid</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kw</span><span class="p">):</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">input_image</span> <span class="o">=</span> <span class="n">input_image</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">output_image</span> <span class="o">=</span> <span class="s">&quot;warhol_</span><span class="si">%s</span><span class="s">&quot;</span> <span class="o">%</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">basename</span><span class="p">(</span><span class="n">input_image</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">resize</span> <span class="o">=</span> <span class="bp">False</span>
 
         <span class="n">gc3libs</span><span class="o">.</span><span class="n">log</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
             <span class="s">&quot;Producing a warholized version of input file </span><span class="si">%s</span><span class="s"> &quot;</span>
             <span class="s">&quot;and store it in </span><span class="si">%s</span><span class="s">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">input_image</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">output_image</span><span class="p">))</span>
 
-
-        <span class="k">if</span> <span class="n">size</span><span class="p">:</span>
-            <span class="n">x</span><span class="p">,</span> <span class="n">y</span> <span class="o">=</span> <span class="n">size</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s">&#39;x&#39;</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
-            <span class="n">rows</span> <span class="o">=</span> <span class="n">math</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">copies</span><span class="p">)</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">resize</span> <span class="o">=</span> <span class="s">&quot;</span><span class="si">%d</span><span class="s">x</span><span class="si">%d</span><span class="s">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="o">/</span> <span class="n">rows</span><span class="p">,</span> <span class="nb">int</span><span class="p">(</span><span class="n">y</span><span class="p">)</span> <span class="o">/</span> <span class="n">rows</span><span class="p">)</span>
-
         <span class="bp">self</span><span class="o">.</span><span class="n">output_dir</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">relpath</span><span class="p">(</span><span class="n">kw</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;output_dir&#39;</span><span class="p">))</span>
 
-        <span class="bp">self</span><span class="o">.</span><span class="n">ncolors</span> <span class="o">=</span> <span class="n">ncolors</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">copies</span> <span class="o">=</span> <span class="n">copies</span>
 
         <span class="c"># Check that copies is a perfect square</span>
@@ -249,41 +247,46 @@ sequential one, so:</p>
                 <span class="s">&quot;`copies` argument must be a perfect square.&quot;</span><span class="p">)</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">jobname</span> <span class="o">=</span> <span class="n">kw</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;jobname&#39;</span><span class="p">,</span> <span class="s">&#39;WarholizedWorkflow&#39;</span><span class="p">)</span>
-
         <span class="bp">self</span><span class="o">.</span><span class="n">grayscaled_image</span> <span class="o">=</span> <span class="s">&quot;grayscaled_</span><span class="si">%s</span><span class="s">&quot;</span> <span class="o">%</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">basename</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">input_image</span><span class="p">)</span>
 </pre></div>
 </div>
-<p>This is just parsing of the arguments. The last lines, instead,
-create the initial tasks that will be submitted. By now, we can submit
+<p>Up to now we just parsed the arguments. The following lines, instead,
+create the first task that we want to execute. By now, we can create
 only the first one, <cite>GrayScaleConvertApplication</cite>, which will produce
 a grayscale image from the input file:</p>
 <div class="highlight-python"><div class="highlight"><pre><span class="bp">self</span><span class="o">.</span><span class="n">tasks</span> <span class="o">=</span> <span class="p">[</span>
     <span class="n">GrayScaleConvertApplication</span><span class="p">(</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">input_image</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">grayscaled_image</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">output_dir</span><span class="p">,</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">output_dir</span><span class="p">,</span> <span class="n">resize</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">resize</span><span class="p">),</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">output_dir</span><span class="p">),</span>
     <span class="p">]</span>
-
-<span class="n">SequentialTaskCollection</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span>
+</pre></div>
+</div>
+<p>Finally, we call the parent&#8217;s constructor.:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="n">SequentialTaskCollection</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">jobname</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">tasks</span><span class="p">,</span> <span class="n">grid</span><span class="o">=</span><span class="n">grid</span><span class="p">)</span>
 </pre></div>
 </div>
-<p>Finally, we to call the parent&#8217;s constructor.</p>
 <p>This will create the initial task list, but we have to run also step 2
-and 3. This is done by creating a <cite>next</cite> method. This method will be
-called after all the tasks in <cite>self.tasks</cite> are finished. We cannot
+and 3, and this is done by creating a <cite>next</cite> method. This method will
+be called after all the tasks in <cite>self.tasks</cite> are finished. We cannot
 create all the jobs at once because we don&#8217;t have all the needed input
-files yet.</p>
-<p>The <cite>next</cite> method will look like:</p>
+files yet. Please note that by creating the tasks in the <cite>next</cite> method
+you could decide <em>at runtime</em> which tasks to run next and what
+arguments we may want to give to them.</p>
+<p>In our case, however, the <cite>next</cite> method is quite simple:</p>
 <div class="highlight-python"><div class="highlight"><pre><span class="k">def</span> <span class="nf">next</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">iteration</span><span class="p">):</span>
     <span class="n">last</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">tasks</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
 
-    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">last</span><span class="p">,</span> <span class="n">GrayScaleConvertApplication</span><span class="p">):</span>
+    <span class="k">if</span> <span class="n">iteration</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="c"># first time we got called.  We have the grayscaled image,</span>
+        <span class="c"># we have to run the Tricolorize task.</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">TricolorizeMultipleImages</span><span class="p">(</span>
             <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">output_dir</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">grayscaled_image</span><span class="p">),</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">copies</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">ncolors</span><span class="p">,</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">output_dir</span><span class="p">))</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">copies</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">output_dir</span><span class="p">))</span>
         <span class="k">return</span> <span class="n">Run</span><span class="o">.</span><span class="n">State</span><span class="o">.</span><span class="n">RUNNING</span>
-    <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">last</span><span class="p">,</span> <span class="n">TricolorizeMultipleImages</span><span class="p">):</span>
+    <span class="k">elif</span> <span class="n">iteration</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+        <span class="c"># second time, we already have the colorized images, we</span>
+        <span class="c"># have to merge them together.</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">MergeImagesApplication</span><span class="p">(</span>
             <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">output_dir</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">grayscaled_image</span><span class="p">),</span>
             <span class="n">last</span><span class="o">.</span><span class="n">warhol_dir</span><span class="p">,</span>
@@ -304,38 +307,18 @@ next step, and we return the current state, which will be
 <div class="section" id="step-one-convert-to-grayscale">
 <h3>Step one: convert to grayscale<a class="headerlink" href="#step-one-convert-to-grayscale" title="Permalink to this headline">¶</a></h3>
 <p><cite>GrayScaleConvertApplication</cite> is the application responsible to
-convert to grayscale the input image, and resize it if needed. To
-create an application we usually inherit from the
-<cite>gc3libs.Application</cite> class, but in our case we want each application
-<em>not to produce output if it already exists</em>, so first of all we
-create a generic <em>cached</em> application which wraps
-<cite>gc3libs.Application</cite>:</p>
-<div class="highlight-python"><div class="highlight"><pre><span class="k">class</span> <span class="nc">ApplicationWithCachedResults</span><span class="p">(</span><span class="n">gc3libs</span><span class="o">.</span><span class="n">Application</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">    Just like `gc3libs.Application`, but do not run at all</span>
-<span class="sd">    if the expected result is already present on the filesystem.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
-    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">executable</span><span class="p">,</span> <span class="n">arguments</span><span class="p">,</span> <span class="n">inputs</span><span class="p">,</span> <span class="n">outputs</span><span class="p">,</span> <span class="o">**</span><span class="n">kw</span><span class="p">):</span>
-        <span class="n">gc3libs</span><span class="o">.</span><span class="n">Application</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">executable</span><span class="p">,</span> <span class="n">arguments</span><span class="p">,</span> <span class="n">inputs</span><span class="p">,</span> <span class="n">outputs</span><span class="p">,</span> <span class="o">**</span><span class="n">kw</span><span class="p">)</span>
-        <span class="c"># check if all the output files are already available</span>
-
-        <span class="n">all_outputs_available</span> <span class="o">=</span> <span class="bp">True</span>
-        <span class="k">for</span> <span class="n">output</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">outputs</span><span class="o">.</span><span class="n">values</span><span class="p">():</span>
-            <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span>
-                <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">output_dir</span><span class="p">,</span> <span class="n">output</span><span class="o">.</span><span class="n">path</span><span class="p">)):</span>
-                <span class="n">all_outputs_available</span> <span class="o">=</span> <span class="bp">False</span>
-        <span class="k">if</span> <span class="n">all_outputs_available</span><span class="p">:</span>
-            <span class="c"># skip execution altogether</span>
-            <span class="n">gc3libs</span><span class="o">.</span><span class="n">log</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&quot;Skipping execution since all output files are availables&quot;</span><span class="p">)</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">execution</span><span class="o">.</span><span class="n">state</span> <span class="o">=</span> <span class="n">Run</span><span class="o">.</span><span class="n">State</span><span class="o">.</span><span class="n">TERMINATED</span>
-</pre></div>
+convert to grayscale the input image. The command we want to execute
+is:</p>
+<div class="highlight-python"><pre>$    convert -colorspace gray &lt;input_image&gt; grayscaled_&lt;input_image&gt;</pre>
 </div>
-<p>and then we create our GrayScaleConvertApplication as:</p>
+<p>To create a generic application we create a class which inherit from
+<cite>gc3libs.Application</cite> and we usually only need to customize the
+<cite>__init__</cite> method:</p>
 <div class="highlight-python"><div class="highlight"><pre><span class="c"># An useful function to copy files</span>
 <span class="kn">from</span> <span class="nn">gc3libs.utils</span> <span class="kn">import</span> <span class="n">copyfile</span>
 
-<span class="k">class</span> <span class="nc">GrayScaleConvertApplication</span><span class="p">(</span><span class="n">ApplicationWithCachedResults</span><span class="p">):</span>
-    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">input_image</span><span class="p">,</span> <span class="n">grayscaled_image</span><span class="p">,</span> <span class="n">output_dir</span><span class="p">,</span> <span class="n">warhol_dir</span><span class="p">,</span> <span class="n">resize</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+<span class="k">class</span> <span class="nc">GrayScaleConvertApplication</span><span class="p">(</span><span class="n">gc3libs</span><span class="o">.</span><span class="n">Application</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">input_image</span><span class="p">,</span> <span class="n">grayscaled_image</span><span class="p">,</span> <span class="n">output_dir</span><span class="p">,</span> <span class="n">warhol_dir</span><span class="p">):</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">warhol_dir</span> <span class="o">=</span> <span class="n">warhol_dir</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">grayscaled_image</span> <span class="o">=</span> <span class="n">grayscaled_image</span>
 
@@ -344,14 +327,12 @@ create a generic <em>cached</em> application which wraps
             <span class="s">&#39;-colorspace&#39;</span><span class="p">,</span>
             <span class="s">&#39;gray&#39;</span><span class="p">,</span>
             <span class="p">]</span>
-        <span class="k">if</span> <span class="n">resize</span><span class="p">:</span>
-            <span class="n">arguments</span><span class="o">.</span><span class="n">extend</span><span class="p">([</span><span class="s">&#39;-geometry&#39;</span><span class="p">,</span> <span class="n">resize</span><span class="p">])</span>
 
         <span class="n">gc3libs</span><span class="o">.</span><span class="n">log</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
             <span class="s">&quot;Craeting  GrayScale convert application from file </span><span class="si">%s</span><span class="s">&quot;</span>
             <span class="s">&quot;to file </span><span class="si">%s</span><span class="s">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">input_image</span><span class="p">,</span> <span class="n">grayscaled_image</span><span class="p">))</span>
 
-        <span class="n">ApplicationWithCachedResults</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span>
+        <span class="n">gc3libs</span><span class="o">.</span><span class="n">Application</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span>
             <span class="bp">self</span><span class="p">,</span>
             <span class="n">executable</span> <span class="o">=</span> <span class="s">&#39;convert&#39;</span><span class="p">,</span>
             <span class="n">arguments</span> <span class="o">=</span> <span class="n">arguments</span> <span class="o">+</span> <span class="p">[</span><span class="n">grayscaled_image</span><span class="p">],</span>
@@ -388,10 +369,13 @@ other applications:</p>
 <div class="section" id="step-two-parallel-workflow-to-create-colorized-images">
 <h2>Step two: parallel workflow to create colorized images<a class="headerlink" href="#step-two-parallel-workflow-to-create-colorized-images" title="Permalink to this headline">¶</a></h2>
 <p>The <cite>TricolorizeMultipleImages</cite> is responsible to create multiple
-versions of the grayscale image with different coloration. It does it
-by running multiple instance of <cite>TricolorizeImage</cite> with different
-color arguments. Since we want to run the various colorization in
-parallel, it inherits from <cite>gc3libs.dag.ParallelTaskCollection</cite> class:</p>
+versions of the grayscale image with different coloration chosen
+randomly from a list of available colors. It does it by running
+multiple instance of <cite>TricolorizeImage</cite> with different
+arguments. Since we want to run the various colorization in parallel,
+it inherits from <cite>gc3libs.dag.ParallelTaskCollection</cite> class. Like we
+did for <cite>GrayScaleConvertApplication</cite>, we only need to customize the
+constructor <cite>__init__</cite>, creating the various subtasks we want to run:</p>
 <div class="highlight-python"><div class="highlight"><pre><span class="kn">import</span> <span class="nn">itertools</span>
 <span class="kn">import</span> <span class="nn">random</span>
 
@@ -400,11 +384,11 @@ parallel, it inherits from <cite>gc3libs.dag.ParallelTaskCollection</cite> class
               <span class="s">&#39;indigo&#39;</span><span class="p">,</span> <span class="s">&#39;navy&#39;</span><span class="p">,</span> <span class="s">&#39;turquoise1&#39;</span><span class="p">,</span> <span class="s">&#39;SeaGreen&#39;</span><span class="p">,</span> <span class="s">&#39;gold&#39;</span><span class="p">,</span>
               <span class="s">&#39;orange&#39;</span><span class="p">,</span> <span class="s">&#39;magenta&#39;</span><span class="p">]</span>
 
-    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">grayscaled_image</span><span class="p">,</span> <span class="n">copies</span><span class="p">,</span> <span class="n">ncolors</span><span class="p">,</span> <span class="n">output_dir</span><span class="p">,</span> <span class="n">grid</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">grayscaled_image</span><span class="p">,</span> <span class="n">copies</span><span class="p">,</span> <span class="n">output_dir</span><span class="p">,</span> <span class="n">grid</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
         <span class="n">gc3libs</span><span class="o">.</span><span class="n">log</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
             <span class="s">&quot;TricolorizeMultipleImages for </span><span class="si">%d</span><span class="s"> copies run&quot;</span> <span class="o">%</span> <span class="n">copies</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">jobname</span> <span class="o">=</span> <span class="s">&quot;Warholizer_Parallel&quot;</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">ncolors</span> <span class="o">=</span> <span class="n">ncolors</span>
+        <span class="n">ncolors</span> <span class="o">=</span> <span class="mi">3</span>
         <span class="c">### XXX Why I have to use basename???</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">output_dir</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span>
             <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">basename</span><span class="p">(</span><span class="n">output_dir</span><span class="p">),</span> <span class="s">&#39;tricolorize&#39;</span><span class="p">)</span>
@@ -433,14 +417,17 @@ parallel, it inherits from <cite>gc3libs.dag.ParallelTaskCollection</cite> class
 </pre></div>
 </div>
 <p>The main loop will fill the <cite>self.tasks</cite> list with various
-<cite>TricolorizedImage</cite>, each one with an unique combination of three
-colors to use to generate the colorized image.</p>
+<cite>TricolorizedImage</cite> tasks, each one with an unique combination of
+three colors to use to generate the colorized image. The GC3Pie
+framework will then run these tasks in parallel, on any available
+resource.</p>
 <p>The <cite>TricolorizedImage</cite> class is indeed a <cite>SequentialTaskCollection</cite>,
 since it has to generate the LUT first, and then apply it to the
-grayscale image. Again, the constructor of the class will add the
-first job (<cite>CreateLutApplication</cite>), and the <cite>next</cite> method will take
-care of running the <cite>ApplyLutApplication</cite> application on the output of
-the first job:</p>
+grayscale image. We already saw how to create a
+<cite>SequentialTaskCollection</cite>: we modify the constructor in order to add
+the first job (<cite>CreateLutApplication</cite>), and the <cite>next</cite> method will
+take care of running the <cite>ApplyLutApplication</cite> application on the
+output of the first job:</p>
 <div class="highlight-python"><div class="highlight"><pre><span class="k">class</span> <span class="nc">TricolorizeImage</span><span class="p">(</span><span class="n">SequentialTaskCollection</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Sequential workflow to produce a `tricolorized` version of a</span>
@@ -473,7 +460,9 @@ the first job:</p>
 
     <span class="k">def</span> <span class="nf">next</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">iteration</span><span class="p">):</span>
         <span class="n">last</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">tasks</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
-        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">last</span><span class="p">,</span> <span class="n">CreateLutApplication</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">iteration</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="c"># First time we got called. The LUT has been created, we</span>
+            <span class="c"># have to apply it to the grayscale image</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">ApplyLutApplication</span><span class="p">(</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">grayscaled_image</span><span class="p">,</span>
                 <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">last</span><span class="o">.</span><span class="n">output_dir</span><span class="p">,</span> <span class="n">last</span><span class="o">.</span><span class="n">lutfile</span><span class="p">),</span>
@@ -486,9 +475,13 @@ the first job:</p>
 </pre></div>
 </div>
 <p>The <cite>CreateLutApplication</cite> is again an application which inherits from
-<cite>ApplicationWithCachedResults</cite> because we don&#8217;t want to compute over
-and over the same LUT, so:</p>
-<div class="highlight-python"><div class="highlight"><pre><span class="k">class</span> <span class="nc">CreateLutApplication</span><span class="p">(</span><span class="n">ApplicationWithCachedResults</span><span class="p">):</span>
+<cite>gc3libs.Application</cite>. The command we want to execute is something
+like:</p>
+<div class="highlight-python"><pre>$    convert -size 1x1 xc:&lt;color1&gt; xc:&lt;color2&gt; xc:&lt;color3&gt; +append -resize 256x1! &lt;output_file.miff&gt;</pre>
+</div>
+<p>This will basically create an image 256x1 pixels big, made of a
+gradient using all the listed colors. The code will look like:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="k">class</span> <span class="nc">CreateLutApplication</span><span class="p">(</span><span class="n">gc3libs</span><span class="o">.</span><span class="n">Application</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;Create the LUT for the image using 3 colors picked randomly</span>
 <span class="sd">    from CreateLutApplication.colors&quot;&quot;&quot;</span>
 
@@ -498,7 +491,7 @@ and over the same LUT, so:</p>
         <span class="n">gc3libs</span><span class="o">.</span><span class="n">log</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&quot;Creating lut file </span><span class="si">%s</span><span class="s"> from </span><span class="si">%s</span><span class="s"> using &quot;</span>
                          <span class="s">&quot;colors: </span><span class="si">%s</span><span class="s">&quot;</span> <span class="o">%</span> <span class="p">(</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">lutfile</span><span class="p">,</span> <span class="n">input_image</span><span class="p">,</span> <span class="nb">str</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="s">&quot;, &quot;</span><span class="p">,</span> <span class="n">colors</span><span class="p">)))</span>
-        <span class="n">ApplicationWithCachedResults</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span>
+        <span class="n">gc3libs</span><span class="o">.</span><span class="n">Application</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span>
             <span class="bp">self</span><span class="p">,</span>
             <span class="n">executable</span> <span class="o">=</span> <span class="s">&quot;convert&quot;</span><span class="p">,</span>
             <span class="n">arguments</span> <span class="o">=</span> <span class="p">[</span>
@@ -518,8 +511,18 @@ and over the same LUT, so:</p>
             <span class="p">)</span>
 </pre></div>
 </div>
-<p>And the <cite>ApplyLutApplication</cite> as well:</p>
-<div class="highlight-python"><div class="highlight"><pre><span class="k">class</span> <span class="nc">ApplyLutApplication</span><span class="p">(</span><span class="n">ApplicationWithCachedResults</span><span class="p">):</span>
+<p>Similarly, the  <cite>ApplyLutApplication</cite> application will run the
+following command:</p>
+<div class="highlight-python"><pre>$    convert grayscaled_&lt;input_image&gt; &lt;lutfile.N.miff&gt; -clut grayscaled_&lt;input_image&gt;.&lt;N&gt;</pre>
+</div>
+<p>This command will apply the LUT to the grayscaled image: it will
+modify the grayscaled image by <cite>coloring</cite> a generic pixel with a
+luminosity value of <cite>n</cite> (which will be an integer value from 0 to 255,
+of course) with the color at position <cite>n</cite> in the LUT image (actually,
+<cite>n+1</cite>). Each <cite>ApplyLutApplication</cite> will save the resulting image to a
+file named as <tt class="docutils literal"><span class="pre">grayscaled_&lt;input_image&gt;.&lt;N&gt;</span></tt>.</p>
+<p>The class will look like:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="k">class</span> <span class="nc">ApplyLutApplication</span><span class="p">(</span><span class="n">gc3libs</span><span class="o">.</span><span class="n">Application</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;Apply the LUT computed by `CreateLutApplication` to</span>
 <span class="sd">    `image_file`&quot;&quot;&quot;</span>
 
@@ -529,7 +532,7 @@ and over the same LUT, so:</p>
         <span class="bp">self</span><span class="o">.</span><span class="n">working_dir</span> <span class="o">=</span> <span class="n">working_dir</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">output_file</span> <span class="o">=</span> <span class="n">output_file</span>
 
-        <span class="n">ApplicationWithCachedResults</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span>
+        <span class="n">gc3libs</span><span class="o">.</span><span class="n">Application</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span>
             <span class="bp">self</span><span class="p">,</span>
             <span class="n">executable</span> <span class="o">=</span> <span class="s">&quot;convert&quot;</span><span class="p">,</span>
             <span class="n">arguments</span> <span class="o">=</span> <span class="p">[</span>
@@ -544,15 +547,17 @@ and over the same LUT, so:</p>
             <span class="n">stdout</span> <span class="o">=</span> <span class="s">&#39;stdout.txt&#39;</span><span class="p">,</span>
             <span class="n">stderr</span> <span class="o">=</span> <span class="s">&#39;stderr.txt&#39;</span><span class="p">,</span>
             <span class="p">)</span>
-
-    <span class="k">def</span> <span class="nf">terminated</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Copy colorized image to the output dir&quot;&quot;&quot;</span>
-        <span class="n">copyfile</span><span class="p">(</span>
-            <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">output_dir</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">output_file</span><span class="p">),</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">working_dir</span><span class="p">)</span>
 </pre></div>
 </div>
-<p>which will copy the colorized image file in the top level directory,
+<p>The <cite>terminated</cite> method:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="k">def</span> <span class="nf">terminated</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Copy colorized image to the output dir&quot;&quot;&quot;</span>
+    <span class="n">copyfile</span><span class="p">(</span>
+        <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">output_dir</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">output_file</span><span class="p">),</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">working_dir</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>will copy the colorized image file in the top level directory,
 so that it will be easier for the last application to find all the
 needed files.</p>
 <div class="section" id="step-three-merge-all-them-together">
@@ -561,11 +566,14 @@ needed files.</p>
 files named after <tt class="docutils literal"><span class="pre">grayscaled_&lt;input_image&gt;.N</span></tt> with N a sequential
 integer and <tt class="docutils literal"><span class="pre">&lt;input_image&gt;</span></tt> the name of the original image. The last
 application, <cite>MergeImagesApplication</cite>, will produce a
-<tt class="docutils literal"><span class="pre">warhol_&lt;input_image&gt;</span></tt> imagme merging all of them. Now it should be
-easy to write such application:</p>
+<tt class="docutils literal"><span class="pre">warhol_&lt;input_image&gt;</span></tt> image by merging all of them using the
+command:</p>
+<div class="highlight-python"><pre>$    montage grayscaled_&lt;input_image&gt;.* -tile 3x3 -geometry +5+5 -background white warholized_&lt;input_image&gt;</pre>
+</div>
+<p>Now it should be easy to write such application:</p>
 <div class="highlight-python"><div class="highlight"><pre><span class="kn">import</span> <span class="nn">re</span>
 
-<span class="k">class</span> <span class="nc">MergeImagesApplication</span><span class="p">(</span><span class="n">ApplicationWithCachedResults</span><span class="p">):</span>
+<span class="k">class</span> <span class="nc">MergeImagesApplication</span><span class="p">(</span><span class="n">gc3libs</span><span class="o">.</span><span class="n">Application</span><span class="p">):</span>
     <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">grayscaled_image</span><span class="p">,</span> <span class="n">input_dir</span><span class="p">,</span> <span class="n">output_file</span><span class="p">):</span>
         <span class="n">ifile_regexp</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span>
             <span class="s">&quot;</span><span class="si">%s</span><span class="s">.[0-9]+&quot;</span> <span class="o">%</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">basename</span><span class="p">(</span><span class="n">grayscaled_image</span><span class="p">))</span>
@@ -585,7 +593,7 @@ easy to write such application:</p>
             <span class="k">raise</span> <span class="n">gc3libs</span><span class="o">.</span><span class="n">exceptions</span><span class="o">.</span><span class="n">InvalidArgument</span><span class="p">(</span>
                 <span class="s">&quot;We would expect to have a perfect square of images to merge, but we have </span><span class="si">%d</span><span class="s"> instead&quot;</span> <span class="o">%</span> <span class="nb">len</span><span class="p">(</span><span class="n">input_files</span><span class="p">))</span>
 
-        <span class="n">ApplicationWithCachedResults</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span>
+        <span class="n">gc3libs</span><span class="o">.</span><span class="n">Application</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span>
             <span class="bp">self</span><span class="p">,</span>
             <span class="n">executable</span> <span class="o">=</span> <span class="s">&#39;montage&#39;</span><span class="p">,</span>
             <span class="n">arguments</span> <span class="o">=</span> <span class="n">input_filenames</span> <span class="o">+</span> <span class="p">[</span>
@@ -603,12 +611,6 @@ easy to write such application:</p>
             <span class="n">stdout</span> <span class="o">=</span> <span class="s">&#39;stdout.txt&#39;</span><span class="p">,</span>
             <span class="n">stderr</span> <span class="o">=</span> <span class="s">&#39;stderr.txt&#39;</span><span class="p">,</span>
             <span class="p">)</span>
-
-    <span class="k">def</span> <span class="nf">terminated</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Copy output file to main directory&quot;&quot;&quot;</span>
-        <span class="n">copyfile</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">output_dir</span><span class="p">,</span>
-                              <span class="bp">self</span><span class="o">.</span><span class="n">output_file</span><span class="p">),</span>
-                 <span class="bp">self</span><span class="o">.</span><span class="n">input_dir</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
@@ -639,7 +641,7 @@ Image Processing Institute</a> page. Download the image, rename it as
 </div>
 <p>(add <tt class="docutils literal"><span class="pre">-r</span> <span class="pre">localhost</span></tt> if your gc3pie.conf script support it and you
 want to test it locally).</p>
-<p>After completion a file <tt class="docutils literal"><span class="pre">Warholized.lena.tiff/warhol_lena.tiff</span></tt>
+<p>After completion a file <tt class="docutils literal"><span class="pre">Warholized.lena.tiff/output/warhol_lena.tiff</span></tt>
 will be created.</p>
 <div class="figure align-center">
 <img alt="warholized version of Lena" src="../../_images/warholized_lena.jpg" />
