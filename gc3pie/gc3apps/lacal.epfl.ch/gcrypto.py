@@ -258,6 +258,10 @@ of newly-created jobs so that this limit is never exceeded.
         self.add_param('slice', type=positive_int,
                   help="Positive integer value of the increment.")
 
+    def parse_args(self):
+        if self.params.range_end <= self.params.range_start:
+            # Failed
+            raise ValueError("End range cannot be smaller than Start range. Start range %d. End range %d" % (self.params.range_start, self.params.range_end))
 
     def setup_options(self):
         self.add_param("-i", "--input-files", metavar="PATH",
