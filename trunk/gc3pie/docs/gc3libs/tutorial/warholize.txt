@@ -88,17 +88,20 @@ The script
 
 The `SessionBasedScript` class in the `gc3libs.cmdline` module is used
 to create a generic script. It already have all what is needed to read
-gc3pie configuration files, manage resources etc. The only thing
-missing is, well, your application!
+gc3pie configuration files, manage resources, schedule jobs etc. The
+only missing thing is, well, your application!
 
-Let's start importing it, among with the main `gc3libs` module::
+Let's start by creating a new empty file and importing some basic
+modules::
 
+  import os
   import gc3libs
   from gc3libs.cmdline import SessionBasedScript
-  import os
   
-and then, we create a class which inherits from it (in GC3Pie, most of
-the customization are done by inheriting from a more generic class)::
+we then create a class which inherits from `SessionBasedScript` (in
+GC3Pie, most of the customizations are done by inheriting from a more
+generic class and overriding the `__init__` method and possibly
+others)::
 
   class WarholizeScript(SessionBasedScript):
       """
@@ -106,8 +109,10 @@ the customization are done by inheriting from a more generic class)::
       """
       version='1.0'
   
-Please note that you must either write a small docstring for that
-class, or add a `description` attribute.
+Please note that you must either write a small docstring, or add a
+`description` attribute. These values are used when the script is
+called with options ``--help`` or ``--version``, which are
+automatically added by GC3Pie.
 
 The way we want to use our script is straightforward::
 
@@ -117,34 +122,29 @@ and this will create a directory ``Warholized.<inputfile>`` in which
 there will be a file called ``warhol_<inputfile>`` containing the
 desired warholized image (and a lot of temporary files, at least for now).
 
-But we may want to add some optional argument to the script, in order
+But we may want to add some additional options to the script, in order
 to decide how many colorized pictures the warholized image will be
 made of, or if we want to resize the image. `SessionBasedScript` uses
-the `PyCLI`_ module which is in turn a wrapper around standard
-`argparse` (or `optparse`) python modules. To customize the script you
-can define a `setup_options` method and put in there some calls to
-`SessionBasedScript.add_param()`, which is inherited from
-`cli.app.CommandLineApp`::
+the `PyCLI`_ module which is, in turn, a wrapper around standard
+`argparse`_ (or `optparse`_ for older pythons) module. To customize
+the script you may define a `setup_options` method and put in there
+some calls to `SessionBasedScript.add_param()`, which is inherited
+from `cli.app.CommandLineApp`::
 
       def setup_options(self):
           self.add_param('--copies', default=4, type=int,
                          help="Number of copyes (Default:4). It has to be a perfect square!")
-          self.add_param('--size', default=None,
-                         help="Resize the original image."
-                         "Please note that the resulting image will be N times the size "
-                         "specified here, where N is the argument of --copies.")
-          self.add_param('-n', '--num-colors', default=3, type=int,
-                         help="Number of colors to use. Default: 3")
   
-  
+In this example we will accept a ``--copies`` option to define how
+many colorized copies the final picture will be made of. Please refer
+to the documentation of the `PyCLI`_ module for details on the syntax
+of the `add_param` method.
+
 The *heart* of the script is, however, the `new_tasks` method, which
 will be called to create the initial tasks of the scripts. In our
 case it will be something like::
 
       def new_tasks(self, extra):
-          extra
-          if self.params.size:
-              extra['size'] = self.params.size
           gc3libs.log.info("Creating main sequential task")
           for (i, input_file) in enumerate(self.params.args):
               kw = extra.copy()
@@ -152,17 +152,16 @@ case it will be something like::
               yield ("Warholize.%d" % i,
                      WarholizeWorkflow,
                      [input_file,
-                      self.params.copies,
-                      self.params.num_colors],
+                      self.params.copies,],
                      kw)
   
 `new_tasks` is used as a *generator* (but it could return a list as
 well). Each *yielded* object is a tuple which rapresents a generic
-Task. In GC3Pie, a task is either a single task or a complex workflow,
-and rapresents an *execution unit*. In our case we create a
+Task. In GC3Pie, a task is either a single application or a complex
+workflow, and rapresents an *execution unit*. In our case we create a
 `WarholizeWorkflow` task which is the workflow described before. We
 don't create an instance of the task from whitin `new_tasks`, but we
-pass all the arguments needed. In the order:
+pass all the arguments needed to create one. In the order:
 
   * The job name (used to identify the task inside the session)
 
@@ -174,9 +173,15 @@ pass all the arguments needed. In the order:
     constructor of the class
 
 In our case we yield a different `WarholizeWorkflow` task for each
-input file. These tasks will then run in parallel.
+input file. These tasks will run in parallel.
 
-
+Please note that we are using the `gc3libs.log` module to log
+informations about the execution. This module works like the
+`logging`_ module and has methods like `error`, `warning`, `info` or
+`debug`, but its logging level is automatically configured by
+`SessionBasedScript`'s constructor.  This way you can increase the
+verbosity of your script by simply adding ``-v`` options from the
+command line.
 
 The workflows
 -------------
@@ -184,10 +189,12 @@ The workflows
 Main sequential workflow
 ++++++++++++++++++++++++
 
-The module `gc3libs.dag` contains two main objects,
-`SequentialTaskCollection` and `ParallelTaskCollection` which we will
-use to create our workflow. The first one, `WarholizeWorkflow`, is a
-sequential one, so::
+The module `gc3libs.dag` contains two main objects:
+`SequentialTaskCollection` and `ParallelTaskCollection`. They execute
+tasks in serial and in parallel, respectively. We will use both of
+them to create our workflow; the first one, `WarholizeWorkflow`, is a
+sequential task, therefore we have to inherit from
+`SequentialTaskCollection` and customize its `__init__` method::
 
   from gc3libs.dag import SequentialTaskCollection, ParallelTaskCollection
   import math
@@ -198,26 +205,16 @@ sequential one, so::
       Main workflow.
       """
   
-      def __init__(self, input_image,  copies, ncolors,
-                   grid=None, size=None, **kw):
-          """XXX do we need input_image and output_image? I guess so?"""
+      def __init__(self, input_image,  copies, grid=None, **kw):
           self.input_image = input_image
           self.output_image = "warhol_%s" % os.path.basename(input_image)
-          self.resize = False
   
           gc3libs.log.info(
               "Producing a warholized version of input file %s "
               "and store it in %s" % (input_image, self.output_image))
-  
-  
-          if size:
-              x, y = size.split('x', 2)
-              rows = math.sqrt(copies)
-              self.resize = "%dx%d" % (int(x) / rows, int(y) / rows)
-  
+    
           self.output_dir = os.path.relpath(kw.get('output_dir'))
   
-          self.ncolors = ncolors
           self.copies = copies
   
           # Check that copies is a perfect square
@@ -226,43 +223,48 @@ sequential one, so::
                   "`copies` argument must be a perfect square.")
   
           self.jobname = kw.get('jobname', 'WarholizedWorkflow')
-  
           self.grayscaled_image = "grayscaled_%s" % os.path.basename(self.input_image)
   
-This is just parsing of the arguments. The last lines, instead,
-create the initial tasks that will be submitted. By now, we can submit
+Up to now we just parsed the arguments. The following lines, instead,
+create the first task that we want to execute. By now, we can create
 only the first one, `GrayScaleConvertApplication`, which will produce
 a grayscale image from the input file::
 
           self.tasks = [
               GrayScaleConvertApplication(
                   self.input_image, self.grayscaled_image, self.output_dir,
-                  self.output_dir, resize=self.resize),
+                  self.output_dir),
               ]
+
+Finally, we call the parent's constructor.::
   
           SequentialTaskCollection.__init__(
               self, self.jobname, self.tasks, grid=grid)
   
-Finally, we to call the parent's constructor.
 
 This will create the initial task list, but we have to run also step 2
-and 3. This is done by creating a `next` method. This method will be
-called after all the tasks in `self.tasks` are finished. We cannot
+and 3, and this is done by creating a `next` method. This method will
+be called after all the tasks in `self.tasks` are finished. We cannot
 create all the jobs at once because we don't have all the needed input
-files yet.
+files yet. Please note that by creating the tasks in the `next` method
+you could decide *at runtime* which tasks to run next and what
+arguments we may want to give to them. 
 
-The `next` method will look like::
+In our case, however, the `next` method is quite simple::
 
       def next(self, iteration):
           last = self.tasks[-1]
-  
-          if isinstance(last, GrayScaleConvertApplication):
+
+          if iteration == 0:
+              # first time we got called.  We have the grayscaled image,
+              # we have to run the Tricolorize task.
               self.add(TricolorizeMultipleImages(
                   os.path.join(self.output_dir, self.grayscaled_image),
-                  self.copies, self.ncolors,
-                  self.output_dir))
+                  self.copies, self.output_dir))
               return Run.State.RUNNING
-          elif isinstance(last, TricolorizeMultipleImages):
+          elif iteration == 1:
+              # second time, we already have the colorized images, we
+              # have to merge them together.
               self.add(MergeImagesApplication(
                   os.path.join(self.output_dir, self.grayscaled_image),
                   last.warhol_dir,
@@ -284,39 +286,20 @@ Step one: convert to grayscale
 ++++++++++++++++++++++++++++++
 
 `GrayScaleConvertApplication` is the application responsible to
-convert to grayscale the input image, and resize it if needed. To
-create an application we usually inherit from the
-`gc3libs.Application` class, but in our case we want each application
-*not to produce output if it already exists*, so first of all we
-create a generic *cached* application which wraps
-`gc3libs.Application`::
+convert to grayscale the input image. The command we want to execute
+is::
 
-  class ApplicationWithCachedResults(gc3libs.Application):
-      """
-      Just like `gc3libs.Application`, but do not run at all
-      if the expected result is already present on the filesystem.
-      """
-      def __init__(self, executable, arguments, inputs, outputs, **kw):
-          gc3libs.Application.__init__(self, executable, arguments, inputs, outputs, **kw)
-          # check if all the output files are already available
-  
-          all_outputs_available = True
-          for output in self.outputs.values():
-              if not os.path.exists(
-                  os.path.join(self.output_dir, output.path)):
-                  all_outputs_available = False
-          if all_outputs_available:
-              # skip execution altogether
-              gc3libs.log.info("Skipping execution since all output files are availables")
-              self.execution.state = Run.State.TERMINATED
-  
-and then we create our GrayScaleConvertApplication as::
+$    convert -colorspace gray <input_image> grayscaled_<input_image>
+
+To create a generic application we create a class which inherit from
+`gc3libs.Application` and we usually only need to customize the
+`__init__` method::
 
   # An useful function to copy files
   from gc3libs.utils import copyfile
   
-  class GrayScaleConvertApplication(ApplicationWithCachedResults):
-      def __init__(self, input_image, grayscaled_image, output_dir, warhol_dir, resize=None):
+  class GrayScaleConvertApplication(gc3libs.Application):
+      def __init__(self, input_image, grayscaled_image, output_dir, warhol_dir):
           self.warhol_dir = warhol_dir
           self.grayscaled_image = grayscaled_image
   
@@ -325,14 +308,12 @@ and then we create our GrayScaleConvertApplication as::
               '-colorspace',
               'gray',
               ]
-          if resize:
-              arguments.extend(['-geometry', resize])
   
           gc3libs.log.info(
               "Craeting  GrayScale convert application from file %s"
               "to file %s" % (input_image, grayscaled_image))
   
-          ApplicationWithCachedResults.__init__(
+          gc3libs.Application.__init__(
               self,
               executable = 'convert',
               arguments = arguments + [grayscaled_image],
@@ -364,16 +345,19 @@ other applications::
           copyfile(
               os.path.join(self.output_dir, self.grayscaled_image),
               self.warhol_dir)
-  
+
   
 Step two: parallel workflow to create colorized images
 ------------------------------------------------------
 
 The `TricolorizeMultipleImages` is responsible to create multiple
-versions of the grayscale image with different coloration. It does it
-by running multiple instance of `TricolorizeImage` with different
-color arguments. Since we want to run the various colorization in
-parallel, it inherits from `gc3libs.dag.ParallelTaskCollection` class::
+versions of the grayscale image with different coloration chosen
+randomly from a list of available colors. It does it by running
+multiple instance of `TricolorizeImage` with different
+arguments. Since we want to run the various colorization in parallel,
+it inherits from `gc3libs.dag.ParallelTaskCollection` class. Like we
+did for `GrayScaleConvertApplication`, we only need to customize the
+constructor `__init__`, creating the various subtasks we want to run::
 
   import itertools
   import random
@@ -383,11 +367,11 @@ parallel, it inherits from `gc3libs.dag.ParallelTaskCollection` class::
                 'indigo', 'navy', 'turquoise1', 'SeaGreen', 'gold',
                 'orange', 'magenta']
   
-      def __init__(self, grayscaled_image, copies, ncolors, output_dir, grid=None):
+      def __init__(self, grayscaled_image, copies, output_dir, grid=None):
           gc3libs.log.info(
               "TricolorizeMultipleImages for %d copies run" % copies)
           self.jobname = "Warholizer_Parallel"
-          self.ncolors = ncolors
+          ncolors = 3
           ### XXX Why I have to use basename???
           self.output_dir = os.path.join(
               os.path.basename(output_dir), 'tricolorize')
@@ -415,15 +399,18 @@ parallel, it inherits from `gc3libs.dag.ParallelTaskCollection` class::
           ParallelTaskCollection.__init__(self, self.jobname, self.tasks, grid)
   
 The main loop will fill the `self.tasks` list with various
-`TricolorizedImage`, each one with an unique combination of three
-colors to use to generate the colorized image.
+`TricolorizedImage` tasks, each one with an unique combination of
+three colors to use to generate the colorized image. The GC3Pie
+framework will then run these tasks in parallel, on any available
+resource.
 
 The `TricolorizedImage` class is indeed a `SequentialTaskCollection`,
 since it has to generate the LUT first, and then apply it to the
-grayscale image. Again, the constructor of the class will add the
-first job (`CreateLutApplication`), and the `next` method will take
-care of running the `ApplyLutApplication` application on the output of
-the first job::
+grayscale image. We already saw how to create a
+`SequentialTaskCollection`: we modify the constructor in order to add
+the first job (`CreateLutApplication`), and the `next` method will
+take care of running the `ApplyLutApplication` application on the
+output of the first job::
 
 
   class TricolorizeImage(SequentialTaskCollection):
@@ -458,7 +445,9 @@ the first job::
   
       def next(self, iteration):
           last = self.tasks[-1]
-          if isinstance(last, CreateLutApplication):
+          if iteration == 0:
+              # First time we got called. The LUT has been created, we
+              # have to apply it to the grayscale image
               self.add(ApplyLutApplication(
                   self.grayscaled_image,
                   os.path.join(last.output_dir, last.lutfile),
@@ -468,12 +457,17 @@ the first job::
           else:
               self.execution.returncode = last.execution.returncode
               return Run.State.TERMINATED
-  
-The `CreateLutApplication` is again an application which inherits from
-`ApplicationWithCachedResults` because we don't want to compute over
-and over the same LUT, so::
 
-  class CreateLutApplication(ApplicationWithCachedResults):
+The `CreateLutApplication` is again an application which inherits from
+`gc3libs.Application`. The command we want to execute is something
+like::
+
+$    convert -size 1x1 xc:<color1> xc:<color2> xc:<color3> +append -resize 256x1! <output_file.miff>
+
+This will basically create an image 256x1 pixels big, made of a
+gradient using all the listed colors. The code will look like::
+
+  class CreateLutApplication(gc3libs.Application):
       """Create the LUT for the image using 3 colors picked randomly
       from CreateLutApplication.colors"""
   
@@ -483,7 +477,7 @@ and over the same LUT, so::
           gc3libs.log.info("Creating lut file %s from %s using "
                            "colors: %s" % (
               self.lutfile, input_image, str.join(", ", colors)))
-          ApplicationWithCachedResults.__init__(
+          gc3libs.Application.__init__(
               self,
               executable = "convert",
               arguments = [
@@ -502,9 +496,21 @@ and over the same LUT, so::
               stderr = 'stderr.txt',
               )
   
-And the `ApplyLutApplication` as well::
+Similarly, the  `ApplyLutApplication` application will run the
+following command::
 
-  class ApplyLutApplication(ApplicationWithCachedResults):
+$    convert grayscaled_<input_image> <lutfile.N.miff> -clut grayscaled_<input_image>.<N>
+
+This command will apply the LUT to the grayscaled image: it will
+modify the grayscaled image by `coloring` a generic pixel with a
+luminosity value of `n` (which will be an integer value from 0 to 255,
+of course) with the color at position `n` in the LUT image (actually,
+`n+1`). Each `ApplyLutApplication` will save the resulting image to a
+file named as ``grayscaled_<input_image>.<N>``.
+
+The class will look like::
+
+  class ApplyLutApplication(gc3libs.Application):
       """Apply the LUT computed by `CreateLutApplication` to
       `image_file`"""
   
@@ -514,7 +520,7 @@ And the `ApplyLutApplication` as well::
           self.working_dir = working_dir
           self.output_file = output_file
   
-          ApplicationWithCachedResults.__init__(
+          gc3libs.Application.__init__(
               self,
               executable = "convert",
               arguments = [
@@ -530,13 +536,15 @@ And the `ApplyLutApplication` as well::
               stderr = 'stderr.txt',
               )
   
+The `terminated` method::
+
       def terminated(self):
           """Copy colorized image to the output dir"""
           copyfile(
               os.path.join(self.output_dir, self.output_file),
               self.working_dir)
   
-which will copy the colorized image file in the top level directory,
+will copy the colorized image file in the top level directory,
 so that it will be easier for the last application to find all the
 needed files.
 
@@ -548,12 +556,16 @@ At this point we will have in the main output directory a bunch of
 files named after ``grayscaled_<input_image>.N`` with N a sequential
 integer and ``<input_image>`` the name of the original image. The last
 application, `MergeImagesApplication`, will produce a
-``warhol_<input_image>`` imagme merging all of them. Now it should be
-easy to write such application::
+``warhol_<input_image>`` image by merging all of them using the
+command::
+
+$    montage grayscaled_<input_image>.* -tile 3x3 -geometry +5+5 -background white warholized_<input_image>
+
+Now it should be easy to write such application::
 
   import re
   
-  class MergeImagesApplication(ApplicationWithCachedResults):
+  class MergeImagesApplication(gc3libs.Application):
       def __init__(self, grayscaled_image, input_dir, output_file):
           ifile_regexp = re.compile(
               "%s.[0-9]+" % os.path.basename(grayscaled_image))
@@ -573,7 +585,7 @@ easy to write such application::
               raise gc3libs.exceptions.InvalidArgument(
                   "We would expect to have a perfect square of images to merge, but we have %d instead" % len(input_files))
   
-          ApplicationWithCachedResults.__init__(
+          gc3libs.Application.__init__(
               self,
               executable = 'montage',
               arguments = input_filenames + [
@@ -591,12 +603,6 @@ easy to write such application::
               stdout = 'stdout.txt',
               stderr = 'stderr.txt',
               )
-  
-      def terminated(self):
-          """Copy output file to main directory"""
-          copyfile(os.path.join(self.output_dir,
-                                self.output_file),
-                   self.input_dir)
   
   
 Making the script executable
@@ -629,7 +635,7 @@ $    ./warholize.py -C 1 lena.tiff --copies 9
 (add ``-r localhost`` if your gc3pie.conf script support it and you
 want to test it locally). 
 
-After completion a file ``Warholized.lena.tiff/warhol_lena.tiff``
+After completion a file ``Warholized.lena.tiff/output/warhol_lena.tiff``
 will be created. 
 
 .. figure:: warholized_lena.jpg
@@ -649,6 +655,12 @@ will be created.
 .. _`ImageMagick`: http://www.imagemagick.org/
 
 .. _`PyCLI`: http://packages.python.org/pyCLI/
+
+.. _`argparse`: http://docs.python.org/library/argparse.html
+
+.. _`logging`: http://docs.python.org/library/logging.html
+
+.. _`optparse`: http://docs.python.org/library/optparse.html
 
 .. _`Signal and Image Processing Institute`: http://sipi.usc.edu/database/?volume=misc
 
