@@ -58,7 +58,7 @@ class GzodsApp(gc3libs.Application):
         gc3libs.log.debug("Detected input files for ZODS: %s, %s and %s.", filename, input1, input2)
         gc3libs.Application.__init__(
             self,
-            tags=["APPS/CHEM/ZODS-01"],
+            tags=["APPS/CHEM/ZODS-0.315"],
             executable = '$MPIRUN', # mandatory
             arguments = [
                 # these are arguments to `mpirun`
