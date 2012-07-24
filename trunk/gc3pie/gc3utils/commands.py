@@ -477,7 +477,12 @@ Print job state.
                 app.update_state()
                 self.session.store.replace(jobid, app)
             if states is None or app.execution.in_state(*states):
-                rows.append([jobid, app.execution.state, app.execution.info] +
+                # XXX: use `... if ... else ...` in Py > 2.4
+                if hasattr(app, 'jobname'):
+                    jobname = app.jobname
+                else:
+                    jobname = ''
+                rows.append([jobid, jobname, app.execution.state, app.execution.info] +
                             [app.execution.get(name, "N/A") for name in keys])
             stats[app.execution.state] += 1
             if app.execution.state == Run.State.TERMINATED:
@@ -525,8 +530,8 @@ Print job state.
             # print table of job status
             table = Texttable(0)  # max_width=0 => dynamically resize cells
             table.set_deco(Texttable.HEADER)  # also: .VLINES, .HLINES .BORDER
-            table.set_cols_align(['l'] * (3 + len(keys)))
-            table.header(["Job ID", "State", "Info"] + keys)
+            table.set_cols_align(['l'] * (4 + len(keys)))
+            table.header(["JobID", "Job name", "State", "Info"] + keys)
             table.add_rows(sorted(rows), header=False)
         print(table.draw())
 
@@ -706,7 +711,7 @@ as more lines are written to the given stream.
                        nargs=1,
                        metavar='JOBID',
                        help="Job ID string identifying the single job to operate upon.")
-        
+
     def setup_options(self):
         self.add_param("-e", "--stderr", action="store_true", dest="stderr", default=False, help="show stderr of the job")
         self.add_param("-f", "--follow", action="store_true", dest="follow", default=False, help="output appended data as the file grows")
@@ -719,7 +724,7 @@ as more lines are written to the given stream.
         except gc3libs.exceptions.InvalidArgument, ex:
             # session not found?
             raise RuntimeError('Session %s not found' % self.params.session)
-        
+
         if len(self.params.args) == 0:
             self.log.error("No job IDs given on command line: nothing to do."
                            " Type '%s --help' for usage help."
@@ -773,7 +778,7 @@ as more lines are written to the given stream.
             except Exception, ex:
                 print("Failed while reading content of %s for job '%s': %s" % (stream, jobid, str(ex)))
                 failed += 1
-                
+
         # exit code is practically limited to 7 bits ...
         return utils.ifelse(failed < 127, failed, 126)
 
@@ -962,7 +967,7 @@ Select job IDs based on specific criteria
     def setup_options(self):
         self.add_param(
             '-l',
-            '--state',            
+            '--state',
             help="Accepts a comma separated list of states. It will select all the jobs in one of the specified states. Valid states are: %s" % str.join(", ", (state.lower() for state in Run.State)),
             )
 
@@ -1118,7 +1123,7 @@ Select job IDs based on specific criteria
             if toadd:
                 matching_jobs.append(job)
         return matching_jobs
-        
+
 
     def filter_by_submission_date(self, job_list):
         """
@@ -1178,4 +1183,3 @@ Select job IDs based on specific criteria
         # Print remaining job IDs
         if current_jobs:
             print str.join(" ", [str(job.persistent_id) for job in current_jobs])
-
