@@ -40,6 +40,7 @@ from gc3libs import Run
 import gc3libs.config
 import gc3libs.core
 import gc3libs.template
+from gc3libs.backends.shellcmd import ShellcmdLrms
 
 
 def _setup_config_file(confstr):
@@ -70,12 +71,11 @@ architecture = x86_64
     try:
         cfg = gc3libs.config.Configuration(tmpfile)
         resources = cfg.make_resources()
-        # test defaults
-        assert resources['test'].enabled
+        # resources are enabled by default
+        assert 'test' in resources
+        assert_is_instance(resources['test'], ShellcmdLrms)
         # test types
         assert_is_instance(resources['test']['name'],         str)
-        assert_is_instance(resources['test']['type'],         str)
-        assert_is_instance(resources['test']['auth'],         str)
         assert_is_instance(resources['test']['max_cores_per_job'], int)
         assert_is_instance(resources['test']['max_memory_per_core'], int)
         assert_is_instance(resources['test']['max_walltime'], int)
@@ -83,8 +83,6 @@ architecture = x86_64
         assert_is_instance(resources['test']['architecture'], set)
         # test parsed values
         assert_equal(resources['test']['name'],            'test')
-        assert_equal(resources['test']['type'],        'shellcmd')
-        assert_equal(resources['test']['auth'],             'ssh')
         assert_equal(resources['test']['max_cores_per_job'],    2)
         assert_equal(resources['test']['max_memory_per_core'],  2)
         assert_equal(resources['test']['max_walltime'],         8)
@@ -318,7 +316,6 @@ username = gc3pie
 [resource/test]
 # omit one line below
 type = shellcmd
-auth = ssh
 max_cores_per_job = 2
 max_memory_per_core = 2
 max_walltime = 8
@@ -336,12 +333,16 @@ architecture = x86_64
             test_mandatory_configuration_options.__doc__ + (" (omit '%s')" % lines[omit]))
         yield _check_bad_conf, bad_conf
 
-@raises(gc3libs.exceptions.ConfigurationError)
+@raises(TypeError, gc3libs.exceptions.ConfigurationError)
 def _check_bad_conf(conf):
     tmp = _setup_config_file(conf)
     cfg = gc3libs.config.Configuration(tmp)
+    # first check that errors are swallowed
+    resources = cfg.make_resources()
+    assert_equal(len(resources), 0)
+    # next check that configuration error is raised
     try:
-        resources = cfg.make_resources()
+        resources = cfg.make_resources(ignore_errors=False)
     finally:
         os.remove(tmp)
 
