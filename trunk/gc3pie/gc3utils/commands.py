@@ -809,11 +809,6 @@ List status of computational resources.
     def setup_args(self):
         """
         Override `GC3UtilsScript`:class: `setup_args` method since we
-        don't operate on single jobs.
-        """
-    def setup_args(self):
-        """
-        Override `GC3UtilsScript`:class: `setup_args` method since we
         don't operate on jobs but on resources.
         """
         self.add_param('args',
@@ -821,9 +816,7 @@ List status of computational resources.
                        metavar='RESOURCE',
                        help="Resource, string identifying the name of the resources to check.")
 
-
     def main(self):
-
         if len(self.params.args) > 0:
             self._select_resources(* self.params.args)
             self.log.info("Retained only resources: %s",
@@ -831,6 +824,7 @@ List status of computational resources.
 
         if self.params.update:
             self._core.update_resources()
+
         resources = self._core.get_resources()
 
         def cmp_by_name(x, y):

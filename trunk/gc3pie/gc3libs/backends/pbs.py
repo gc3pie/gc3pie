@@ -97,32 +97,35 @@ class PbsLrms(batch.BatchSystem):
     """
     Job control on PBS/Torque clusters (possibly by connecting via SSH to a submit node).
     """
-    def __init__(self, resource, auths):
-        """
-        Create an `PbsLRMS` instance from a `Resource` object.
+    def __init__(self, name,
+                 # this are inherited from the base LRMS class
+                 architecture, max_cores, max_cores_per_job,
+                 max_memory_per_core, max_walltime,
+                 auth, # ignored if `transport` is 'local'
+                 # these are inherited from `BatchSystem`
+                 frontend, transport,
+                 accounting_delay = 15,
+                 # these are specific to this backend
+                 queue = None,
+                 **kw):
 
-        For a `Resource` object `r` to be a valid `PbsLRMS` construction
-        parameter, the following conditions must be met:
-          * `r.type` must have value `Default.PBS_LRMS`;
-          * `r.frontend` must be a string, containing the FQDN of an PBS/Torque cluster submit node;
-          * `r.auth` must be a valid key to pass to `Auth.get()`.
-        """
-        # XXX: should these be `InternalError` instead?
-        assert resource.type == gc3libs.Default.PBS_LRMS, \
-            "PbsLRMS.__init__(): Failed. Resource type expected 'pbs'. Received '%s'" \
-            % resource.type
+        # init base class
+        batch.BatchSystem.__init__(
+            self, name,
+            architecture, max_cores, max_cores_per_job,
+            max_memory_per_core, max_walltime, auth,
+            frontend, transport, accounting_delay)
 
-        batch.BatchSystem.__init__(self, resource, auths)
-        self.isValid = 1
+        self.queue = queue
 
 
     def _parse_submit_output(self, output):
         return self.get_jobid_from_submit_output( output,_qsub_jobid_re)
 
     def _submit_command(self, app):
-        qsub_argv, app_argv = app.pbs_qsub(self._resource)
-        if 'queue' in self._resource:
-            qsub_argv += ['-d', '.', '-q', ('%s' % self._resource['queue'])]
+        qsub_argv, app_argv = app.pbs_qsub(self)
+        if self.queue is not None:
+            qsub_argv += ['-d', '.', '-q', ('%s' % self['queue'])]
         return (str.join(' ', qsub_argv), str.join(' ', app_argv))
 
     def _stat_command(self, job):
@@ -166,6 +169,7 @@ class PbsLrms(batch.BatchSystem):
 
 
     @same_docstring_as(LRMS.get_resource_status)
+    @LRMS.authenticated
     def get_resource_status(self):
         try:
             self.transport.connect()
@@ -178,11 +182,11 @@ class PbsLrms(batch.BatchSystem):
             # self.transport.close()
 
             log.debug("Computing updated values for total/available slots ...")
-            (total_running, self._resource.queued,
-             self._resource.user_run, self._resource.user_queued) = count_jobs(qstat_stdout, username)
-            self._resource.total_run = total_running
-            self._resource.free_slots = -1
-            self._resource.used_quota = -1
+            (total_running, self.queued,
+             self.user_run, self.user_queued) = count_jobs(qstat_stdout, username)
+            self.total_run = total_running
+            self.free_slots = -1
+            self.used_quota = -1
 
             log.info("Updated resource '%s' status:"
                      " free slots: %d,"
@@ -190,14 +194,14 @@ class PbsLrms(batch.BatchSystem):
                      " own running jobs: %d,"
                      " own queued jobs: %d,"
                      " total queued jobs: %d",
-                     self._resource.name,
-                     self._resource.free_slots,
-                     self._resource.total_run,
-                     self._resource.user_run,
-                     self._resource.user_queued,
-                     self._resource.queued,
+                     self.name,
+                     self.free_slots,
+                     self.total_run,
+                     self.user_run,
+                     self.user_queued,
+                     self.queued,
                      )
-            return self._resource
+            return self
 
         except Exception, ex:
             # self.transport.close()

@@ -46,45 +46,64 @@ sys.path.append('/usr/lib/pymodules/python%d.%d/'
                 % sys.version_info[:2])
 try:
     import arclib
-    use_arc = True
+    have_arclib_module = True
 except ImportError:
-    use_arc = False
-    
-    # gc3libs.log.error('Failed importing required arclib module')
-    # raise gc3libs.exceptions.LRMSError("Failed importing required arclib module")
+    have_arclib_module = False
+
 
 class ArcLrms(LRMS):
     """
     Manage jobs through the ARC middleware.
+
+    In addition to attributes
+
+      ===================  ============== =========
+      Attribute name       Type           Required?
+      ===================  ============== =========
+      arc_ldap             string
+      frontend             string         yes
+      ===================  ============== =========
+
+
     """
-    def __init__(self,resource, auths):
+    def __init__(self, name,
+                 # this are inherited from the base LRMS class
+                 architecture, max_cores, max_cores_per_job,
+                 max_memory_per_core, max_walltime, auth,
+                 # these are specific to the ARC0 backend
+                 arc_ldap=None,
+                 frontend=None,
+                 lost_job_timeout=gc3libs.Default.ARC_LOST_JOB_TIMEOUT,
+                 **kw):
 
         # check if arc module has been imported
-        if not use_arc:
-            gc3libs.log.error('Failed importing arclib module')
-            raise gc3libs.exceptions.LRMSError("Failed importing arclib module")        
-        
-        # Normalize resource types
-        assert resource.type == gc3libs.Default.ARC0_LRMS, \
-            "ArcLRMS.__init__(): Failed. Resource type expected '%s'. Received '%s'" \
-            % (gc3libs.Default.ARC0_LRMS, resource.type)
+        if not have_arclib_module:
+            raise gc3libs.exceptions.LRMSError(
+                "Could not import ARClib module, disable ARC0 resources.")
 
-        self._resource = resource
+        # init base class
+        LRMS.__init__(
+            self, name,
+            architecture, max_cores, max_cores_per_job,
+            max_memory_per_core, max_walltime, auth)
 
-        self.auths = auths
+        # ARC0-specific setup
+        self.lost_job_timeout = lost_job_timeout
+        self.arc_ldap = arc_ldap
+        if frontend is None:
+            if self.arc_ldap is not None:
+                # extract frontend information from arc_ldap entry
+                try:
+                    resource_url = gc3libs.url.Url(arc_ldap)
+                    self.frontend = resource_url.hostname
+                except Exception, err:
+                    raise gc3libs.exceptions.ConfigurationError(
+                        "Configuration error: resource '%s' has no valid 'arc_ldap' setting: %s: %s"
+                        % (name, err.__class__.__name__, err.message))
+            else:
+                self.frontend = None
 
-        self._resource.max_cores = int(resource.max_cores)
-        self._resource.max_memory_per_core = int(resource.max_memory_per_core) * 1000
-        self._resource.max_walltime = int(resource.max_walltime)
-        if self._resource.max_walltime > 0:
-            # Convert from hours to minutes
-            self._resource.max_walltime = self._resource.max_walltime * 60
-
-        if hasattr(self._resource, 'lost_job_timeout'):
-            self._resource.lost_job_timeout = int(resource.lost_job_timeout)
-        else:
-            self._resource.lost_job_timeout = gc3libs.Default.ARC_LOST_JOB_TIMEOUT
-
+        # prevent ARClib logging to STDERR
         arcnotifier = arclib.Notify_getNotifier()
         arcnotifier.SetOutStream(arcnotifier.GetNullStream())
         # DEBUG: uncomment the following to print all ARC messages
@@ -94,15 +113,10 @@ class ArcLrms(LRMS):
 
         self.targets_blacklist = []
 
-        self.isValid = 1
-
-    def is_valid(self):
-        return self.isValid
-
 
     @same_docstring_as(LRMS.cancel_job)
+    @LRMS.authenticated
     def cancel_job(self, app):
-        self.auths.get(self._resource.auth)
         try:
             arclib.CancelJob(app.execution.lrms_jobid)
         except Exception, ex:
@@ -145,11 +159,11 @@ class ArcLrms(LRMS):
         attribute, or the default GIIS) and return the corresponding
         `arclib.Cluster` object.
         """
-        if hasattr(self._resource,'arc_ldap'):
+        if self.arc_ldap is not None:
             log.info("Updating ARC resource information from '%s'"
-                      % self._resource.arc_ldap)
-            return arclib.GetClusterResources(arclib.URL(self._resource.arc_ldap),
-                                              True, '', 1)
+                      % self.arc_ldap)
+            return arclib.GetClusterResources(
+                arclib.URL(self.arc_ldap), True, '', 1)
         else:
             log.info("Updating ARC resource information from default GIIS")
             return arclib.GetClusterResources()
@@ -171,7 +185,7 @@ class ArcLrms(LRMS):
         log.debug('Arc0LRMS._get_clusters() returned %d cluster resources.' % len(clusters))
         job_list = arclib.GetAllJobs(clusters, True, '', 3)
         log.info("Updating list of jobs belonging to resource '%s': got %d jobs."
-                 % (self._resource.name, len(job_list)))
+                 % (self.name, len(job_list)))
         for job in job_list:
             jobs[job.id] = job
         return jobs
@@ -192,21 +206,12 @@ class ArcLrms(LRMS):
 
 
     @same_docstring_as(LRMS.submit_job)
+    @LRMS.authenticated
     def submit_job(self, app):
         job = app.execution
 
-        # try:
-        #     # job.execution_target
-        #     self.target_blacklist = job.execution_target
-        # except AttributeError:
-        #     # no execution_target, this is the first submission
-        #     # ignore and continue
-        #     pass
-
-        self.auths.get(self._resource.auth)
-
         # Initialize xrsl
-        xrsl = app.xrsl(self._resource)
+        xrsl = app.xrsl(self)
         log.debug("Application provided XRSL: %s" % xrsl)
         try:
             xrsl = arclib.Xrsl(xrsl)
@@ -297,6 +302,7 @@ class ArcLrms(LRMS):
     # ARC refreshes the InfoSys every 30 seconds by default;
     # there's no point in querying it more often than this...
     @cache_for(gc3libs.Default.ARC_CACHE_TIME)
+    @LRMS.authenticated
     def update_job_state(self, app):
         """
         Query the state of the ARC0 job associated with `app` and
@@ -337,7 +343,6 @@ class ArcLrms(LRMS):
         found its way to the infosys.
         """
         job = app.execution
-        self.auths.get(self._resource.auth)
 
         # initialize the unknown counter
         if not hasattr(job, 'unknown_iteration'):
@@ -375,14 +380,14 @@ class ArcLrms(LRMS):
                 #     gc3libs.log.warning("Failed updating job status. Assume transient information system failure. Return unchanged status.")
                 # # return job.state
             elif (job.state == Run.State.SUBMITTED
-                and now - job.state_last_changed < self._resource.lost_job_timeout):
+                and now - job.state_last_changed < self.lost_job_timeout):
                 gc3libs.log.warning("Failed updating job status. Assume job was recently submitted. Return unchanged status.")
                 # assume the job was recently submitted, hence the
                 # information system knows nothing about it; just
                 # ignore the error and return the object unchanged
                 # return job.state
             elif (job.state in [ Run.State.SUBMITTED, Run.State.RUNNING ]
-                  and now - job._arc0_state_last_checked < self._resource.lost_job_timeout):
+                  and now - job._arc0_state_last_checked < self.lost_job_timeout):
                 gc3libs.log.warning("Failed updating job status. Assume transient information system failure. Return unchanged status.")
                 # assume transient information system failure;
                 # ignore the error and return object unchanged
@@ -494,14 +499,13 @@ class ArcLrms(LRMS):
 
 
     @same_docstring_as(LRMS.get_results)
+    @LRMS.authenticated
     def get_results(self, app, download_dir, overwrite=False):
         # XXX: can raise encoding/decoding error if `download_dir`
         # is not ASCII, but the ARClib bindings don't accept
         # Python `unicode` strings.
 
         download_dir = str(download_dir)
-
-        self.auths.get(self._resource.auth)
 
         job = app.execution
 
@@ -526,10 +530,8 @@ class ArcLrms(LRMS):
         return
 
     @same_docstring_as(LRMS.free)
+    @LRMS.authenticated
     def free(self, app):
-
-        self.auths.get(self._resource.auth)
-
         job = app.execution
         jftpc = arclib.JobFTPControl()
 
@@ -542,20 +544,19 @@ class ArcLrms(LRMS):
 
 
     @cache_for(gc3libs.Default.ARC_CACHE_TIME)
+    @LRMS.authenticated
     def get_resource_status(self):
-        # Get dynamic information out of the attached ARC subsystem
-        # (being it a single resource or a grid)
-        # Fill self._resource object with dynamic information
-        # return self._resource
+        """
+        Get dynamic information from the ARC infosystem and set
+        attributes on the current object accordingly.
 
-        # dynamic information required (at least those):
-        # total_queued
-        # free_slots
-        # user_running
-        # user_queued
+        The following attributes are set:
 
-        self.auths.get(self._resource.auth)
-
+        * total_queued
+        * free_slots
+        * user_running
+        * user_queued
+        """
         total_queued = 0
         free_slots = 0
         user_running = 0
@@ -600,34 +601,33 @@ class ArcLrms(LRMS):
             elif 'INLRMS:Q' in job.status:
                 user_queued = user_queued + 1
 
-        self._resource.queued = total_queued
-        self._resource.free_slots = free_slots
-        self._resource.user_queued = user_queued
-        self._resource.user_run = user_running
-        self._resource.used_quota = -1
+        self.queued = total_queued
+        self.free_slots = free_slots
+        self.user_queued = user_queued
+        self.user_run = user_running
+        self.used_quota = -1
 
         log.info("Updated resource '%s' status:"
                           " free slots: %d,"
                           " own running jobs: %d,"
                           " own queued jobs: %d,"
                           " total queued jobs: %d",
-                          self._resource.name,
-                          self._resource.free_slots,
-                          self._resource.user_run,
-                          self._resource.user_queued,
-                          self._resource.queued,
+                          self.name,
+                          self.free_slots,
+                          self.user_run,
+                          self.user_queued,
+                          self.queued,
                           )
-        return self._resource
+        return self
 
 
     @same_docstring_as(LRMS.peek)
+    @LRMS.authenticated
     def peek(self, app, remote_filename, local_file, offset=0, size=None):
         job = app.execution
 
         assert job.has_key('lrms_jobid'), \
             "Missing attribute `lrms_jobid` on `Job` instance passed to `ArcLrms.peek`."
-
-        self.auths.get(self._resource.auth)
 
         if size is None:
             size = sys.maxint
@@ -663,7 +663,7 @@ class ArcLrms(LRMS):
         Supported protocols: file, gsiftp, srm, http, https
         """
         for url in data_file_list:
-            log.debug("Resource %s: checking URL '%s' ..." % (self._resource.name, url))
+            log.debug("Resource %s: checking URL '%s' ..." % (self.name, url))
             if not url.scheme in ['srm', 'lfc', 'file', 'http', 'gsiftp', 'https']:
                 return False
         return True

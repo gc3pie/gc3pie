@@ -34,6 +34,7 @@ import gc3libs
 import gc3libs.authentication
 from gc3libs.compat.collections import defaultdict
 import gc3libs.utils
+from gc3libs.utils import defproperty
 
 
 ## auxiliary methods for `Configuration`
@@ -86,7 +87,7 @@ class Configuration(gc3libs.utils.Struct):
       `merge_file`:meth:);
     * validating the loaded values;
     * instanciating the internal GC3Pie objects resulting from the
-      configuration (methods `make_auths`:meth: and
+      configuration (methods `make_auth`:meth: and
       `make_resource`:meth:).
 
     The constructor takes a list of files to load (`locations`) and a
@@ -129,6 +130,8 @@ class Configuration(gc3libs.utils.Struct):
     """
 
     def __init__(self, *locations, **kw):
+        self._auth_factory = None
+
         # these fields are required
         self.resources = defaultdict(gc3libs.utils.Struct)
         self.auths = defaultdict(gc3libs.utils.Struct)
@@ -185,8 +188,8 @@ class Configuration(gc3libs.utils.Struct):
         """
         Read configuration files and merge the settings into this `Configuration` object.
 
-        Contrary to `load`:meth: (which see), the file name is
-        taken literally and an error is raised if it cannot be read
+        Contrary to `load`:meth: (which see), the file name is taken
+        literally and an error is raised if the file cannot be read
         for whatever reason.
 
         Any parameter which is set in the configuration files
@@ -239,10 +242,10 @@ class Configuration(gc3libs.utils.Struct):
           Attribute name       Type
           ===================  ==============
           architecture         set of strings
+          max_cores            int
           max_cores_per_job    int
           max_memory_per_core  int
           max_walltime         int
-          max_cores            int
           ===================  ==============
 
         Any attribute not mentioned in the above table will have type
@@ -282,7 +285,7 @@ class Configuration(gc3libs.utils.Struct):
                     gc3libs.log.debug(
                         "Config._parse(): Auth '%s' defined by: %s.",
                         name, str.join(', ', [
-                            ("%s=%r" % (k,v)) for k,v in auths[name].iteritems()
+                            ("%s=%r" % (k,v)) for k,v in sorted(auths[name].iteritems())
                             ]))
 
             elif  sectname.startswith('resource/'):
@@ -292,29 +295,14 @@ class Configuration(gc3libs.utils.Struct):
                                   " Read configuration stanza for resource '%s'." % name)
 
                 config_items = dict(parser.items(sectname))
-                self._perform_key_renames(config_items,      self._renamed_keys,   filename)
-                self._perform_renamed_values(config_items,   self._renamed_values, filename)
+                self._perform_key_renames(config_items, self._renamed_keys, filename)
+                self._perform_value_updates(config_items, self._updated_values, filename)
                 try:
-                    self._perform_type_conversions(config_items, self._convert,        filename)
+                    self._perform_type_conversions(config_items, self._convert, filename)
                 except Exception, err:
                     raise gc3libs.exceptions.ConfigurationError(
                         "Incorrect entry for resource '%s' in configuration file '%s': %s"
                         % (name, filename, str(err)))
-
-                if 'type' in config_items:
-                    # validity checks
-                    if config_items['type'] not in [
-                        gc3libs.Default.ARC0_LRMS,
-                        gc3libs.Default.ARC1_LRMS,
-                        gc3libs.Default.SGE_LRMS,
-                        gc3libs.Default.PBS_LRMS,
-                        gc3libs.Default.LSF_LRMS,
-                        gc3libs.Default.SHELLCMD_LRMS,
-                        ]:
-                        raise gc3libs.exceptions.ConfigurationError(
-                            "Configuration error in file '%s':"
-                            " '%s' is no valid resource type.",
-                            filename, config_items['type'])
 
                 resources[name].update(config_items)
                 resources[name]['name'] = name
@@ -322,7 +310,7 @@ class Configuration(gc3libs.utils.Struct):
                     gc3libs.log.debug(
                         "Config._parse(): Resource '%s' defined by: %s.",
                         name, str.join(', ', [
-                            ("%s=%r" % (k,v)) for k,v in resources[name].iteritems()
+                            ("%s=%r" % (k,v)) for k,v in sorted(resources[name].iteritems())
                             ]))
 
             else:
@@ -359,9 +347,9 @@ class Configuration(gc3libs.utils.Struct):
                     config_items[newkey] = config_items[oldkey]
                 del config_items[oldkey]
 
-    _renamed_values = {
-        # key name             old value            new value
-        # ===================  ===================  ==================
+    _updated_values = {
+        # key name  old value            new value
+        # ========  ===================  ==================
         'type': {
             # old value     new value
             # ============  ==================
@@ -372,7 +360,7 @@ class Configuration(gc3libs.utils.Struct):
         }
 
     @staticmethod
-    def _perform_renamed_values(config_items, renames, filename):
+    def _perform_value_updates(config_items, renames, filename):
         for key, changed in renames.iteritems():
             if key in config_items:
                 value = config_items[key]
@@ -410,77 +398,120 @@ class Configuration(gc3libs.utils.Struct):
                         % (key, err.__class__.__name__, str(err)))
 
 
-    def make_auths(self):
-        try:
-            return gc3libs.authentication.Auth(self.auths, self.auto_enable_auth)
-        except Exception, ex:
-            gc3libs.log.critical('Failed initializing Auth module: %s: %s',
-                                 ex.__class__.__name__, str(ex))
-            raise
+    @defproperty
+    def auth_factory():
+        """
+        The instance of `gc3libs.authentication.Auth`:class: used to
+        manage auth access for the resources.
+
+        This is a *read-only* attribute, created upon first access
+        with the values set in `self.auths` and `self.auto_enabled`.
+        """
+        def fget(self):
+            if self._auth_factory is None:
+                try:
+                    self._auth_factory = gc3libs.authentication.Auth(self.auths, self.auto_enable_auth)
+                except Exception, err:
+                    gc3libs.log.critical(
+                        "Failed initializing Auth module: %s: %s",
+                        ex.__class__.__name__, str(err))
+                    raise
+            return self._auth_factory
+        return locals()
+
+
+    def make_auth(self, name):
+        # use `lambda` for delayed evaluation
+        return (lambda **kw: self.auth_factory.get(name, **kw))
 
 
     def make_resources(self):
         resources = { }
         for name, resdict in self.resources.iteritems():
-            resobj = self._make_resource(resdict)
-            assert name == resobj.name
-            if not resobj.enabled:
-                gc3libs.log.info(
-                    "Dropping computational resource '%s'"
-                    " because of 'enabled=False' setting"
-                    " in configuration file.",
-                    name)
+            try:
+                backend = self._make_resource(resdict)
+                if backend is None: # resource is disabled
+                    continue
+                assert name == backend.name
+            except Exception, err:
+                gc3libs.log.warning(
+                    "Failed creating backend for resource '%s' of type '%s': %s: %s",
+                    resdict['name'], resdict['type'],
+                    err.__class__.__name__, str(err), exc_info=__debug__)
                 continue
-            resources[name] = resobj
+            resources[name] = backend
         return resources
 
 
-    @staticmethod
-    def _make_resource(resdict):
+    def _make_resource(self, resdict):
         """
-        Return a `Resource` object initialized from the key/value pairs in `resdict`.
+        Return a backend initialized from the key/value pairs in `resdict`.
         """
+        # name' should have been defined by the caller, so if it's
+        # missing it's an internal coherency error
+        assert 'name' in resdict, (
+            "Invalid resource definition '%s': missing required key 'name'."
+            % resdict)
+
+        # default values
+        resdict.setdefault('enabled', True)
+        if not resdict['enabled']:
+            gc3libs.log.info(
+                "Dropping computational resource '%s'"
+                " because of 'enabled=False' setting"
+                " in configuration file.",
+                resdict['name'])
+            return None
+
         if __debug__:
             gc3libs.log.debug(
                 "Creating resource '%s' defined by: %s.",
                 resdict['name'], str.join(', ', [
-                    ("%s=%r" % (k,v)) for k,v in resdict.iteritems()
+                    ("%s=%r" % (k,v)) for k,v in sorted(resdict.iteritems())
                     ]))
 
+        # sanity check
+        if 'type' not in resdict:
+            raise gc3libs.exceptions.ConfigurationError(
+                "Missing required parameter 'type' in resource definition %s."
+                % resdict)
+
+        # XXX: should be done by the backend constructor!?
+        if 'architecture' not in resdict:
+            raise gc3libs.exceptions.ConfigurationError(
+                "No architecture specified for resource '%s'"
+                % resdict['name'])
+
+        if 'auth' in resdict:
+            resdict['auth'] = self.make_auth(resdict['auth'])
+
         try:
-            resobj = gc3libs.Resource.Resource(**dict(resdict))
-        except Exception, err:
-            raise gc3libs.exceptions.ConfigurationError(
-                "Could not create resource '%s': %s."
-                " Please check configuration file(s)."
-                % (resdict['name'], str(err)))
-
-        if 'enabled' not in resobj:
-            # resources are enabled by default
-            resobj.enabled = True
-
-        # XXX: should be done by the backend constructor!?
-        if 'architecture' not in resobj:
-            raise gc3libs.exceptions.ConfigurationError(
-                "No architecture specified for resource '%s'" % resobj.name)
-
-        # XXX: should be done by the backend constructor!?
-        if (resobj.type in [gc3libs.Default.ARC0_LRMS, gc3libs.Default.ARC1_LRMS]
-            and 'frontend' not in resobj):
-            # extract frontend information from arc_ldap entry
-            try:
-                resource_url = gc3libs.url.Url(resobj.arc_ldap)
-                resobj.frontend = resource_url.hostname
-            except Exception, err:
+            if resdict['type'] == gc3libs.Default.ARC0_LRMS:
+                from gc3libs.backends.arc0 import ArcLrms
+                return ArcLrms(**resdict)
+            elif resdict['type'] == gc3libs.Default.ARC1_LRMS:
+                from gc3libs.backends.arc1 import Arc1Lrms
+                return Arc1Lrms(**resdict)
+            elif resdict['type'] == gc3libs.Default.SGE_LRMS:
+                from gc3libs.backends.sge import SgeLrms
+                return SgeLrms(**resdict)
+            elif resdict['type'] == gc3libs.Default.PBS_LRMS:
+                from gc3libs.backends.pbs import PbsLrms
+                return PbsLrms(**resdict)
+            elif resdict['type'] == gc3libs.Default.LSF_LRMS:
+                from gc3libs.backends.lsf import LsfLrms
+                return LsfLrms(**resdict)
+            elif resdict['type'] == gc3libs.Default.SHELLCMD_LRMS:
+                from gc3libs.backends.shellcmd import ShellcmdLrms
+                return ShellcmdLrms(**resdict)
+            else:
                 raise gc3libs.exceptions.ConfigurationError(
-                    "Configuration error: resource '%s' has no valid 'arc_ldap' setting: %s: %s"
-                    % (name, err.__class__.__name__, err.message))
-
-        gc3libs.log.debug(
-            "Created resource '%s' of type %s.",
-            resobj.name, resobj.type)
-        return resobj
-
+                    "Unknown resource type '%s'" % resdict['type'])
+        except Exception, err:
+            gc3libs.log.error(
+                "Could not create resource '%s': %s. Configuration file problem?"
+                % (resdict['name'], str(err)))
+            raise
 
 
 ## main: run tests

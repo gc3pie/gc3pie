@@ -35,7 +35,7 @@ import gc3libs
 from gc3libs import log, Run
 from gc3libs.backends import LRMS
 from gc3libs.utils import ifelse, same_docstring_as
-import transport
+import gc3libs.backends.transport
 
 
 # Define some commonly used functions
@@ -91,44 +91,44 @@ def make_remote_and_local_path_pair(transport, job, remote_relpath, local_root_d
 
 
 class BatchSystem(LRMS):
-    def __init__(self, resource, auths):
-        # checking mandatory resource attributes
-        resource.name
-        resource.frontend
-        resource.transport
+    """
+    Base class for backends dealing with a batch-queue system (e.g.,
+    PBS/TORQUE, Grid Engine, etc.)
 
-        self._resource = resource
+    This is an abstract class, that you should subclass in order to
+    interface with a given batch queuing system. (Remember to call
+    this class' constructor in the derived class ``__init__`` method.)
 
-        if resource.transport == 'local':
-            self.transport = transport.LocalTransport()
-        elif resource.transport == 'ssh':
-            auth = auths.get(resource.auth)
+    """
+    def __init__(self, name,
+                 # this are inherited from the base LRMS class
+                 architecture, max_cores, max_cores_per_job,
+                 max_memory_per_core, max_walltime,
+                 auth, # ignored if `transport` is 'local'
+                 # these are specific to the this backend
+                 frontend, transport,
+                 accounting_delay = 15,
+                 **kw):
+
+        # init base class
+        LRMS.__init__(
+            self, name,
+            architecture, max_cores, max_cores_per_job,
+            max_memory_per_core, max_walltime, auth)
+
+        # backend-specific setup
+        self.frontend = frontend
+        if transport == 'local':
+            self.transport = gc3libs.backends.transport.LocalTransport()
+        elif transport == 'ssh':
+            auth = self._auth_fn()
             self._ssh_username = auth.username
-            self.transport = transport.SshTransport(self._resource.frontend,
-                                                    username=self._ssh_username)
+            self.transport = gc3libs.backends.transport.SshTransport(
+                frontend, username=self._ssh_username)
         else:
-            raise gc3libs.exceptions.TransportError("Unknown transport '%s'", resource.transport)
+            raise gc3libs.exceptions.TransportError(
+                "Unknown transport '%s'" % transport)
 
-        self._resource.max_cores = int(self._resource.max_cores)
-        self._resource.max_memory_per_core = int(self._resource.max_memory_per_core) * 1000
-        self._resource.max_walltime = int(self._resource.max_walltime)
-        if self._resource.max_walltime > 0:
-            # Convert from hours to minutes
-            self._resource.max_walltime = self._resource.max_walltime * 60
-
-        self._resource.setdefault('accounting_delay', 15)
-
-        # You are supposed to inherit the BatchSystem class, call the
-        # parent's __init__ with
-        #
-        #    batch.BatchSystem.__init__(*args)
-        #
-        # do some additional checks and then and set `self.isValid` to `1'
-        self.isValid = 0
-
-
-    def is_valid(self):
-        return self.isValid
 
     def get_jobid_from_submit_output(self, output, regexp):
         """Parse the output of the submission command. Regexp is
@@ -187,6 +187,7 @@ class BatchSystem(LRMS):
         """
         raise NotImplementedError("Abstract method `_cancel_command()` called - this should have been defined in a derived class.")
 
+    @LRMS.authenticated
     def submit_job(self, app):
         """This method will create a remote directory to store job's
         sandbox, and will copy the sandbox in there.
@@ -205,7 +206,7 @@ class BatchSystem(LRMS):
                 raise gc3libs.exceptions.LRMSError(
                     "Failed executing command '%s' on resource '%s';"
                     " exit code: %d, stderr: '%s'."
-                    % (_command, self._resource, exit_code, stderr))
+                    % (_command, self.name, exit_code, stderr))
         except gc3libs.exceptions.TransportError, x:
             raise
         except:
@@ -226,7 +227,7 @@ class BatchSystem(LRMS):
                     self.transport.chmod(remote_path, 0755)
             except:
                 log.critical("Copying input file '%s' to remote cluster '%s' failed",
-                                      local_path.path, self._resource.frontend)
+                                      local_path.path, self.frontend)
                 # self.transport.close()
                 raise
 
@@ -268,13 +269,13 @@ class BatchSystem(LRMS):
                 raise gc3libs.exceptions.LRMSError(
                     "Failed executing command '%s' on resource '%s';"
                     " exit code: %d, stderr: '%s'."
-                    % (_command, self._resource, exit_code, stderr))
+                    % (_command, self.name, exit_code, stderr))
 
             jobid = self._parse_submit_output(stdout)
             log.debug('Job submitted with jobid: %s', jobid)
             # self.transport.close()
 
-            job.execution_target = self._resource.frontend
+            job.execution_target = self.frontend
 
             job.lrms_jobid = jobid
             job.lrms_jobname = jobid
@@ -296,7 +297,7 @@ class BatchSystem(LRMS):
                 else:
                     job.stderr_filename = '%s.e%s' % (job.lrms_jobname, jobid)
             job.log.append('Submitted to PBS/Torque @ %s with jobid %s'
-                           % (self._resource.name, jobid))
+                           % (self.name, jobid))
             job.log.append("Batch submission output:\n"
                            "  === stdout ===\n%s"
                            "  === stderr ===\n%s"
@@ -309,11 +310,12 @@ class BatchSystem(LRMS):
         except:
             # self.transport.close()
             log.critical("Failure submitting job to resource '%s' - see log file for errors"
-                                  % self._resource.name)
+                                  % self.name)
             raise
 
 
     @same_docstring_as(LRMS.update_job_state)
+    @LRMS.authenticated
     def update_job_state(self, app):
         state = Run.State.UNKNOWN
         try:
@@ -367,7 +369,7 @@ class BatchSystem(LRMS):
             # No *stat command and no *acct command returned
             # correctly.
             try:
-                if (time.time() - job.stat_failed_at) > self._resource.accounting_delay:
+                if (time.time() - job.stat_failed_at) > self.accounting_delay:
                     # accounting info should be there, if it's not then job is definitely lost
                     log.critical("Failed executing remote command: '%s'; exit status %d"
                                  % (_command, exit_code))
@@ -386,7 +388,7 @@ class BatchSystem(LRMS):
         except Exception, ex:
             # self.transport.close()
             log.error("Error in querying Batch resource '%s': %s: %s",
-                    self._resource.name, ex.__class__.__name__, str(ex))
+                    self.name, ex.__class__.__name__, str(ex))
             raise
         # If we reach this point it means that we don't actually know
         # the current state of the job.
@@ -394,6 +396,7 @@ class BatchSystem(LRMS):
         return job.state
 
     @same_docstring_as(LRMS.peek)
+    @LRMS.authenticated
     def peek(self, app, remote_filename, local_file, offset=0, size=None):
         job = app.execution
         assert job.has_key('ssh_remote_folder'), \
@@ -435,6 +438,7 @@ class BatchSystem(LRMS):
         return True
 
     @same_docstring_as(LRMS.cancel_job)
+    @LRMS.authenticated
     def cancel_job(self, app):
         job = app.execution
         try:
@@ -462,6 +466,7 @@ class BatchSystem(LRMS):
             raise
 
     @same_docstring_as(LRMS.free)
+    @LRMS.authenticated
     def free(self, app):
 
         job = app.execution
@@ -474,6 +479,7 @@ class BatchSystem(LRMS):
         return
 
     @same_docstring_as(LRMS.get_results)
+    @LRMS.authenticated
     def get_results(self, app, download_dir, overwrite=False):
         if app.output_base_url is not None:
             raise gc3libs.exceptions.UnrecoverableDataStagingError(
@@ -521,6 +527,7 @@ class BatchSystem(LRMS):
             raise
 
     @same_docstring_as(LRMS.validate_data)
+    @LRMS.authenticated
     def close(self):
         self.transport.close()
 

@@ -299,25 +299,25 @@ class SgeLrms(batch.BatchSystem):
     """
     Job control on SGE clusters (possibly by connecting via SSH to a submit node).
     """
-    def __init__(self, resource, auths):
-        """
-        Create an `SgeLRMS` instance from a `Resource` object.
+    def __init__(self, name,
+                 # this are inherited from the base LRMS class
+                 architecture, max_cores, max_cores_per_job,
+                 max_memory_per_core, max_walltime,
+                 auth, # ignored if `transport` is 'local'
+                 # these are inherited from the `BatchSystem` class
+                 frontend, transport,
+                 accounting_delay = 15,
+                 **kw):
 
-        For a `Resource` object `r` to be a valid `SgeLRMS` construction
-        parameter, the following conditions must be met:
-          * `r.type` must have value `Default.SGE_LRMS`;
-          * `r.frontend` must be a string, containing the FQDN of an SGE cluster submit node;
-          * `r.auth` must be a valid key to pass to `Auth.get()`.
-        """
-        # XXX: should these be `InternalError` instead?
-        assert resource.type == gc3libs.Default.SGE_LRMS, \
-            "SgeLRMS.__init__(): Failed. Resource type expected 'sge'. Received '%s'" \
-            % resource.type
-        batch.BatchSystem.__init__(self, resource, auths)
-        self.isValid = 1
+        # init base class
+        batch.BatchSystem.__init__(
+            self, name,
+            architecture, max_cores, max_cores_per_job,
+            max_memory_per_core, max_walltime, auth,
+            frontend, transport, accounting_delay)
 
     def _submit_command(self, app):
-        sub_argv, app_argv = app.qsub(self._resource)
+        sub_argv, app_argv = app.qsub(self)
         return (str.join(' ', sub_argv), str.join(' ', app_argv))
 
     def _parse_submit_output(self, output):
@@ -389,6 +389,7 @@ class SgeLrms(batch.BatchSystem):
         return "qdel %s" % jobid
 
     @same_docstring_as(LRMS.get_resource_status)
+    @LRMS.authenticated
     def get_resource_status(self):
         try:
             self.transport.connect()
@@ -405,24 +406,24 @@ class SgeLrms(batch.BatchSystem):
             # self.transport.close()
 
             log.debug("Computing updated values for total/available slots ...")
-            (total_running, self._resource.queued,
-             self._resource.user_run, self._resource.user_queued) = count_jobs(qstat_stdout, username)
+            (total_running, self.queued,
+             self.user_run, self.user_queued) = count_jobs(qstat_stdout, username)
             slots = compute_nr_of_slots(qstat_F_stdout)
-            self._resource.free_slots = int(slots['global']['available'])
-            self._resource.used_quota = -1
+            self.free_slots = int(slots['global']['available'])
+            self.used_quota = -1
 
             log.info("Updated resource '%s' status:"
                      " free slots: %d,"
                      " own running jobs: %d,"
                      " own queued jobs: %d,"
                      " total queued jobs: %d",
-                     self._resource.name,
-                     self._resource.free_slots,
-                     self._resource.user_run,
-                     self._resource.user_queued,
-                     self._resource.queued,
+                     self.name,
+                     self.free_slots,
+                     self.user_run,
+                     self.user_queued,
+                     self.queued,
                      )
-            return self._resource
+            return self
 
         except Exception, ex:
             # self.transport.close()
