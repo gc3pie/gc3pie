@@ -376,29 +376,30 @@ class LsfLrms(batch.BatchSystem):
     """
     Job control on LSF clusters (possibly by connecting via SSH to a submit node).
     """
-    def __init__(self, resource, auths):
-        """
-        Create an `LsfLRMS` instance from a `Resource` object.
+    def __init__(self, name,
+                 # this are inherited from the base LRMS class
+                 architecture, max_cores, max_cores_per_job,
+                 max_memory_per_core, max_walltime,
+                 auth, # ignored if `transport` is 'local'
+                 # these are inherited from `BatchSystem`
+                 frontend, transport,
+                 accounting_delay = 15,
+                 # these are specific to this backend
+                 **kw):
 
-        For a `Resource` object `r` to be a valid `SgeLRMS` construction
-        parameter, the following conditions must be met:
-          * `r.type` must have value `Default.SGE_LRMS`;
-          * `r.frontend` must be a string, containing the FQDN of an SGE cluster submit node;
-          * `r.auth` must be a valid key to pass to `Auth.get()`.
-        """
-        # XXX: should these be `InternalError` instead?
-        assert resource.type == gc3libs.Default.LSF_LRMS, \
-            "LsfLRMS.__init__(): Failed. Resource type expected 'lsf'. Received '%s'" \
-            % resource.type
-        batch.BatchSystem.__init__(self, resource, auths)
-        self.isValid = 1
+        # init base class
+        batch.BatchSystem.__init__(
+            self, name,
+            architecture, max_cores, max_cores_per_job,
+            max_memory_per_core, max_walltime, auth,
+            frontend, transport, accounting_delay)
 
     def _submit_command(self, app):
         # LSF's `bsub` allows one to submit scripts and binaries with
         # the same syntax, so we do not need to create an auxiliary
         # submission script and can just specify the command on the
         # command-line
-        sub_argv, app_argv = app.bsub(self._resource)
+        sub_argv, app_argv = app.bsub(self)
         return (str.join(' ', sub_argv + app_argv), '')
 
     def _parse_submit_output(self, bsub_output):
@@ -464,11 +465,12 @@ class LsfLrms(batch.BatchSystem):
 
 
     @cache_for(gc3libs.Default.ARC_CACHE_TIME)
+    @LRMS.authenticated
     def get_resource_status(self):
         """
         Get dynamic information out of the LSF subsystem.
 
-        return self._resource
+        return self
 
         dynamic information required (at least those):
         total_queued
@@ -484,7 +486,7 @@ class LsfLrms(batch.BatchSystem):
 
             # Run lhosts to get the list of available nodes and their
             # related number of cores
-            # used to compute self._resource.total_slots
+            # used to compute self.total_slots
             # lhost output format:
             # ($nodeid,$OStype,$model,$cpuf,$ncpus,$maxmem,$maxswp)
             log.debug("Running `lshosts -w`... ")
@@ -505,7 +507,7 @@ class LsfLrms(batch.BatchSystem):
 
             # Run bhosts to get information about the number of
             # occupied slots for each node
-            # used to compute self._resource.free_slots
+            # used to compute self.free_slots
             # bhosts output format:
             # HOST_NAME          STATUS          JL/U    MAX  NJOBS    RUN  SSUSP  USUSP    RSV
             # a3000              closed_Full     -      4      4      4      0      0      0
@@ -546,7 +548,7 @@ class LsfLrms(batch.BatchSystem):
                 bqueues_output.pop(0)
 
             # Run bjobs to get information about the jobs for a given user
-            # used to compute  self._resource.user_run and self._resource.user_queued
+            # used to compute  self.user_run and self.user_queued
             # bjobs output format:
             # JOBID   USER    STAT  QUEUE      FROM_HOST   EXEC_HOST   JOB_NAME   SUBMIT_TIME
             log.debug("Runing 'bjobs '... ")
@@ -568,29 +570,29 @@ class LsfLrms(batch.BatchSystem):
 
             # self.transport.close()
 
-            # compute self._resource.total_slots
-            self._resource.max_cores = 0
+            # compute self.total_slots
+            self.max_cores = 0
             for line in lhosts_output:
                 # HOST_NAME      type    model  cpuf ncpus maxmem maxswp server RESOURCES
                 (hostname, h_type, h_model, h_cpuf, h_ncpus) = line.strip().split()[0:5]
                 try:
-                    self._resource.max_cores +=  int(h_ncpus)
+                    self.max_cores +=  int(h_ncpus)
                 except ValueError:
                     # h_ncpus == '-'
                     pass
 
             # compute total queued
-            self._resource.queued = 0
+            self.queued = 0
             running_jobs = 0
             for line in bqueues_output:
                 # QUEUE_NAME      PRIO STATUS          MAX JL/U JL/P JL/H NJOBS  PEND   RUN  SUSP
                 (queue_name, priority, status, max_j, jlu, jlp, jlh, n_jobs, j_pend, j_run, j_susp) = line.split()
-                self._resource.queued += int(j_pend)
+                self.queued += int(j_pend)
                 running_jobs += int(j_run)
 
-            self._resource.free_slots = self._resource.max_cores - running_jobs
+            self.free_slots = self.max_cores - running_jobs
 
-            # # compute self._resource.free_slots
+            # # compute self.free_slots
             # total_jobs = 0
 
             # for line in bhosts_output:
@@ -604,11 +606,11 @@ class LsfLrms(batch.BatchSystem):
             #         pass
 
 
-            # self._resource.free_slots = self._resource.max_cores - total_jobs
+            # self.free_slots = self.max_cores - total_jobs
 
             # user runing/queued
-            self._resource.user_run = 0
-            self._resource.user_queued = 0
+            self.user_run = 0
+            self.user_queued = 0
 
             queued_status = ['PEND', 'PSUSP', 'USUSP', 'SSUSP', 'WAIT', 'ZOMBI']
 
@@ -629,22 +631,22 @@ class LsfLrms(batch.BatchSystem):
                         n_name = node
                 try:
                     if stat in queued_status:
-                        self._resource.user_queued += int(cores)
+                        self.user_queued += int(cores)
                     else:
-                        self._resource.user_run += int(cores)
+                        self.user_run += int(cores)
                 except ValueError:
                     # core == '-'
                     pass
 
             # log.info("Not updated resource '%s' status (see `backends/lsf.py`),"
-            #          "using hardcoded defaults!!", self._resource.name)
-            # self._resource.user_run = 0
-            # self._resource.user_queued = 0
-            # self._resource.free_slots = 800
-            # self._resource.used_quota = -1
-            # self._resource.queued = 0
+            #          "using hardcoded defaults!!", self.name)
+            # self.user_run = 0
+            # self.user_queued = 0
+            # self.free_slots = 800
+            # self.used_quota = -1
+            # self.queued = 0
 
-            return self._resource
+            return self
 
         except Exception, ex:
             # self.transport.close()

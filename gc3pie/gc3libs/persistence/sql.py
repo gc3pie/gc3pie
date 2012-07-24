@@ -164,6 +164,7 @@ class SqlStore(Store):
             sqla.Column('state',
                         sqla.VARCHAR(length=128)))
 
+        # create internal rep of table
         self.extra_fields = dict()
         for col, func in extra_fields.iteritems():
             assert isinstance(col, sqla.Column)

@@ -416,7 +416,16 @@ class _Script(cli.app.CommandLineApp):
         # Read config file(s) from command line
         self.params.config_files = self.params.config_files.split(',')
         # interface to the GC3Libs main functionality
-        self._core = self._make_core(self.params.config_files)
+        self.config = self._make_config(self.params.config_files)
+        try:
+            self._core = gc3libs.core.Core(self.config)
+        except gc3libs.exceptions.NoResources:
+            # translate internal error `NoResources` to a
+            # user-readable message.
+            raise gc3libs.exceptions.FatalError(
+                "No computational resources defined."
+                " Please edit the configuration file(s): '%s'."
+                % (str.join("', '", self.params.config_files)))
 
         # call hook methods from derived classes
         self.parse_args()
@@ -496,42 +505,37 @@ class _Script(cli.app.CommandLineApp):
     ## should be no need to do so.
     ##
 
-    def _make_core(self,
-                   config_file_locations=gc3libs.Default.CONFIG_FILE_LOCATIONS,
-                   auto_enable_auth=True):
+    def _make_config(self,
+                     config_file_locations=gc3libs.Default.CONFIG_FILE_LOCATIONS,
+                     **kw):
         """
-        Return a `gc3libs.core.Core` instance configured by parsing
+        Return a `gc3libs.config.Configuration`:class: instance configured by parsing
         the configuration file(s) located at `config_file_locations`.
         Order of configuration files matters: files read last
         overwrite settings from previously-read ones; list the most
         specific configuration files last.
 
-        If `auto_enable_auth` is `True` (default), then `Core` will
-        try to renew expired credentials; this requires interaction
-        with the user and will certainly fail unless stdin & stdout
-        are connected to a terminal.
+        Any additional keyword arguments are passed unchanged to the
+        `gc3libs.config.Configuration`:class: constructor.  In
+        particular, the `auto_enable_auth` parameter for the
+        `Configuration` constructor is `True` if not set differently
+        here as a keyword argument.
         """
         # ensure a configuration file exists in the most specific location
         for location in reversed(config_file_locations):
             if os.access(os.path.dirname(location), os.W_OK | os.X_OK) \
                     and not gc3libs.utils.deploy_configuration_file(location, "gc3pie.conf.example"):
                 # warn user
-                self.log.warning("No configuration file '%s' was found;"
-                                 " a sample one has been copied in that location;"
-                                 " please edit it and define resources." % location)
+                self.log.warning(
+                    "No configuration file '%s' was found;"
+                    " a sample one has been copied in that location;"
+                    " please edit it and define resources." % location)
+        # set defaults
+        kw.setdefault('auto_enable_auth', True)
         try:
-            self.log.debug('Creating instance of Core ...')
-            cfg = gc3libs.config.Configuration(
-                *config_file_locations,
-                **{'auto_enable_auth': auto_enable_auth})
-            return gc3libs.core.Core(cfg)
-        except gc3libs.exceptions.NoResources:
-            raise gc3libs.exceptions.FatalError(
-                "No computational resources defined."
-                " Please edit the configuration file(s): '%s'."
-                % (str.join("', '", config_file_locations)))
+            return gc3libs.config.Configuration(*config_file_locations, **kw)
         except:
-            self.log.debug("Failed loading config file from '%s'",
+            self.log.error("Failed loading config file(s) from '%s'",
                            str.join("', '", config_file_locations))
             raise
 
@@ -1214,7 +1218,7 @@ class SessionBasedScript(_Script):
         self.session = self._make_session(self.session_uri.path, self.params.store_url)
 
         ## keep a copy of the credentials in the session dir
-        self._core.auths.add_params(private_copy_directory=self.session.path)
+        self.config.auth_factory.add_params(private_copy_directory=self.session.path)
 
         # XXX: ARClib errors out if the download directory already exists, so
         # we need to make sure that each job downloads results in a new one.

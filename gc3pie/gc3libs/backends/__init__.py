@@ -24,81 +24,119 @@ __version__ = 'development version (SVN $Revision$)'
 
 import gc3libs
 import gc3libs.exceptions
+from gc3libs.compat.functools import wraps
 
 
 class LRMS(object):
     """Base class for interfacing with a computing resource.
 
-    The following attributes are statically provided, i.e., they are
-    specified at construction time and changed never after:
+    The following construction parameters are also set as instance
+    attributes.  All of them are mandatory, except `auth`.
 
-      ===================  ============== =========
-      Attribute name       Type           Required?
-      ===================  ============== =========
-      arc_ldap             string
-      architecture         set of string  yes
-      auth                 string         yes
-      frontend             string         yes
-      gamess_location      string
-      max_cores_per_job    int            yes
-      max_memory_per_core  int            yes
-      max_walltime         int            yes
-      name                 string         yes
-      max_cores            int
-      type                 string         yes
-      ===================  ============== =========
+    +=====================+==============+===============================+
+    |Attribute name       |Expected Type |Meaning                        |
+    +=====================+==============+===============================+
+    |`name`               |string        |A unique identifier for this   |
+    |                     |              |resource, used for generating  |
+    |                     |              |error message.                 |
+    +---------------------+--------------+-------------------------------+
+    |`architecture`       |set of        |Should contain one entry per   |
+    |                     |`Run.Arch`    |each architecture              |
+    |                     |values        |supported. Valid architecture  |
+    |                     |              |values are constants in the    |
+    |                     |              |`gc3libs.Run.Arch` class.      |
+    +---------------------+--------------+-------------------------------+
+    |`auth`               |string        |A `gc3libs.authentication.Auth`|
+    |                     |              |instance that will be used to  |
+    |                     |              |access the computational       |
+    |                     |              |resource associated with this  |
+    |                     |              |backend.  The default value    |
+    |                     |              |`None` is used to mean that no |
+    |                     |              |authentication credentials are |
+    |                     |              |needed (e.g., access to the    |
+    |                     |              |resource has been              |
+    |                     |              |pre-authenticated) or is       |
+    |                     |              |managed outside of GC3Pie).    |
+    +---------------------+--------------+-------------------------------+
+    |`max_cores`          |int           |Maximum number of CPU cores    |
+    |                     |              |that GC3Pie can allocate on    |
+    |                     |              |this resource.                 |
+    +---------------------+--------------+-------------------------------+
+    |`max_cores_per_job`  |int           |Maximum number of CPU cores    |
+    |                     |              |that GC3Pie can allocate on    |
+    |                     |              |this resource *for a single    |
+    |                     |              |job*.                          |
+    +---------------------+--------------+-------------------------------+
+    |`max_memory_per_core`|int           |Maximum memory (in GBs) that   |
+    |                     |              |GC3Pie can allocate to jobs on |
+    |                     |              |this resource.  The value is   |
+    |                     |              |*per core*, so the actual      |
+    |                     |              |amount allocated to a single   |
+    |                     |              |job is the value of this entry |
+    |                     |              |multiplied by the number of    |
+    |                     |              |cores requested by the job.    |
+    +---------------------+--------------+-------------------------------+
+    |`max_walltime`       |int           |Maximum wall-clock time (in    |
+    |                     |              |seconds) that can be allotted  |
+    |                     |              |to a single job running on this|
+    |                     |              |resource.                      |
+    +---------------------+--------------+-------------------------------+
 
-    The following attributes are dynamically provided (i.e., defined
-    by the `get_resource_status()` method or similar):
+    The above should be considered *immutable* attributes: they are
+    specified at construction time and changed never after.
 
-      ===================  ============== =========
-      Attribute name       Type           Required?
-      ===================  ============== =========
-      free_slots           int
-      user_run             int
-      user_queued          int
-      queued               int
-      ===================  ============== =========
+    The following attributes are instead dynamically provided (i.e.,
+    defined by the `get_resource_status()` method or similar), thus
+    can change over the lifetime of the object:
+
+    ===================  =====
+    Attribute name       Type
+    ===================  =====
+    free_slots           int
+    user_run             int
+    user_queued          int
+    queued               int
+    ===================  =====
 
     """
-    def __init__(self, name, type, auth, architecture,
-                 max_cores_per_job, max_memory_per_core, max_walltime, **kw):
-
+    def __init__(self, name,
+                 architecture, max_cores, max_cores_per_job,
+                 max_memory_per_core, max_walltime, auth=None):
         self.name = str(name)
-        self.type = str(type)
-        self.auth = str(auth)
+        self.updated = False
 
         if len(architecture) == 0:
             raise gc3libs.exceptions.InvalidType(
                 "Empty value list for mandatory attribute 'architecture'")
         self.architecture = architecture
 
-        try:
-            self.max_cores_per_job = int(max_cores_per_job)
-        except ValueError:
-            raise InvalidValue(
-                "Mandatory attribute 'max_cores_per_job' should be integer, got '%s' instead."
-                % max_cores_per_job)
+        self.max_cores = int(max_cores)
+        self.max_cores_per_job = int(max_cores_per_job)
+        self.max_memory_per_core = int(max_memory_per_core)
+        self.max_walltime = int(max_walltime)
 
-        try:
-            self.max_memory_per_core = int(max_memory_per_core)
-        except ValueError:
-            raise InvalidValue(
-                "Mandatory attribute 'max_memory_per_core' should be integer, got '%s' instead."
-                % max_cores_per_job)
+        # see `authenticated` below
+        self._auth_fn = auth
 
-        try:
-            self.max_walltime = int(max_walltime)
-        except ValueError:
-            raise InvalidValue(
-                "Mandatory attribute 'max_walltime' should be integer, got '%s' instead."
-                % max_cores_per_job)
+        gc3libs.log.info(
+            "Computational resource '%s' initialized successfully.", self.name)
 
-        # additional keyword args set attributes
-        for k,v in kw.iteritems():
-            setattr(self, k, v)
 
-        gc3libs.log.info("Resource '%s' initialized successfully.", self.name)
+    @staticmethod
+    def authenticated(fn):
+        """
+        Decorator: mark a function as requiring authentication.
+
+        Each invocation of the decorated function causes a call to the
+        `get` method of the authentication object (configured with the
+        `auth` parameter to the class constructor).
+        """
+        @wraps(fn)
+        def wrapper(self, *args, **kwargs):
+            if self._auth_fn is not None:
+                self._auth_fn()
+            return fn(self, *args, **kwargs)
+        return wrapper
 
 
     def cancel_job(self, app):
@@ -143,13 +181,6 @@ class LRMS(object):
         corresponding `Run.State`; see `Run.State` for more details.
         """
         raise NotImplementedError("Abstract method `LRMS.update_state()` called - this should have been defined in a derived class.")
-
-    def is_valid(self):
-        """
-        Determine if a provided LRMS instance is valid.
-        Returns True or False.
-        """
-        raise NotImplementedError("Abstract method `LRMS.is_valid()` called - this should have been defined in a derived class.")
 
     def submit_job(self, application, job):
         """

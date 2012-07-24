@@ -42,44 +42,59 @@ from gc3libs.backends import LRMS
 class ShellcmdLrms(LRMS):
     """
     Execute an `Application`:class: instance as a local process.
+
+    Construction of an instance of `ShellcmdLrms` takes the following
+    optional parameters (in addition to any parameters taken by the
+    base class `LRMS`:class:):
+
+    :param str time_cmd:
+      Path to the GNU ``time`` command.  Default is
+      `/usr/bin/time`:file: which is correct on all known Linux
+      distributions.
+
+      This backend uses many of the
+      extended features of GNU ``time``, so the shell-builtins or the
+      BSD ``time`` will not work.
+
+    :param str spooldir:
+      Path to a filesystem location where to create
+      temporary working directories for processes executed through
+      this backend. The default value `None` means to use ``$TMPDIR``
+      or `/tmp`:file: (see `tempfile.mkftemp` for details).
     """
+
+    # this matches what the ARC grid-manager does
     TIMEFMT = "WallTime=%es\nKernelTime=%Ss\nUserTime=%Us\nCPUUsage=%P\nMaxResidentMemory=%MkB\nAverageResidentMemory=%tkB\nAverageTotalMemory=%KkB\nAverageUnsharedMemory=%DkB\nAverageUnsharedStack=%pkB\nAverageSharedMemory=%XkB\nPageSize=%ZB\nMajorPageFaults=%F\nMinorPageFaults=%R\nSwaps=%W\nForcedSwitches=%c\nWaitSwitches=%w\nInputs=%I\nOutputs=%O\nSocketReceived=%r\nSocketSent=%s\nSignals=%k\nReturnCode=%x\n"
-    WRAPPER_DIR = 'shellcmd_wrapper.d'
+    WRAPPER_DIR = '.gc3pie_shellcmd'
     WRAPPER_OUTPUT_FILENAME = 'resource_usage.txt'
     WRAPPER_PID = 'wrapper.pid'
 
-    def __init__(self, resource, auths):
-        assert resource.type in [gc3libs.Default.SHELLCMD_LRMS,
-                                 gc3libs.Default.SUBPROCESS_LRMS], \
-            "ShellcmdLrms.__init__():" \
-            " Expected resource type 'shellcmd', got '%s' instead" \
-            % resource.type
+    def __init__(self, name,
+                 # these parameters are inherited from the `LRMS` class
+                 architecture, max_cores, max_cores_per_job,
+                 max_memory_per_core, max_walltime, auth=None,
+                 # these are specific to `ShellcmdLrms`
+                 time_cmd='/usr/bin/time',
+                 spooldir=None,
+                 **kw):
 
-        # checking mandatory resource attributes
-        resource.name
-        resource.max_cores
-
-        # ok, save resource parameters
-        self._resource = resource
+        # init base class
+        LRMS.__init__(
+            self, name,
+            architecture, max_cores, max_cores_per_job,
+            max_memory_per_core, max_walltime, auth)
 
         # use `max_cores` as the max number of processes to allow
-        self._resource.free_slots = int(resource.max_cores)
-        self._resource.user_run = 0
-        self._resource.user_queued = 0
-        self._resource.queued = 0
+        self.free_slots = int(max_cores)
+        self.user_run = 0
+        self.user_queued = 0
+        self.queued = 0
 
-        if not hasattr(self._resource, 'spooldir'):
-            # default is to use $TMPDIR or '/tmp' (see `tempfile.mkftemp`)
-            self._resource.spooldir = None
+        # GNU time is needed
+        self.time_cmd = time_cmd
 
-        self.isValid = True
-
-        # save `time` command.
-        resource.setdefault('time_cmd', 'time')
-        self.time_cmd = self._resource.time_cmd
-
-    def is_valid(self):
-        return self.isValid
+        # default is to use $TMPDIR or '/tmp' (see `tempfile.mkftemp`)
+        self.spooldir = spooldir
 
 
     def cancel_job(self, app):
@@ -93,7 +108,7 @@ class ShellcmdLrms(LRMS):
             pid = int(app.execution.lrms_jobid)
             posix.kill(pid, 15)
             # XXX: should we check that the process actually died?
-            self._resource.free_slots += app.requested_cores
+            self.free_slots += app.requested_cores
         except OSError, ex:
             if ex.errno == 10:
                 raise gc3libs.exceptions.InvalidArgument(
@@ -128,7 +143,7 @@ class ShellcmdLrms(LRMS):
     def get_resource_status(self):
         # if we have been doing our own book-keeping well, then
         # there's no resource status to update
-        return self._resource
+        return self
 
 
     @same_docstring_as(LRMS.get_results)
@@ -186,8 +201,8 @@ class ShellcmdLrms(LRMS):
             # output file.
 
             # XXX: Free resources. A bit optimistic?
-            self._resource.free_slots += app.requested_cores
-            self._resource.user_run -= 1
+            self.free_slots += app.requested_cores
+            self.user_run -= 1
 
             wrapper_filename = os.path.join(
                 app.execution.lrms_execdir,
@@ -212,10 +227,10 @@ class ShellcmdLrms(LRMS):
 
         :see: `LRMS.submit_job`
         """
-        if self._resource.free_slots == 0:
+        if self.free_slots == 0:
             raise gc3libs.exceptions.LRMSSubmitError(
                 "Resource %s already running maximum allowed number of jobs"
-                " (increase 'max_cores' to raise)." % self._resource.name)
+                " (increase 'max_cores' to raise)." % self.name)
 
         gc3libs.log.debug("Executing local command '%s %s' ..."
                           % (app.executable, str.join(" ", app.arguments)))
@@ -227,7 +242,7 @@ class ShellcmdLrms(LRMS):
 
         ## determine execution directory
         execdir = tempfile.mkdtemp(prefix='gc3libs.', suffix='.tmp.d',
-                                   dir=self._resource.spooldir)
+                                   dir=self.spooldir)
 
         ## generate child process
         pid = posix.fork()
@@ -237,8 +252,8 @@ class ShellcmdLrms(LRMS):
             app.execution.lrms_execdir = execdir
             app.execution.state = Run.State.RUNNING
             # book-keeping
-            self._resource.free_slots -= app.requested_cores
-            self._resource.user_run += 1
+            self.free_slots -= app.requested_cores
+            self.user_run += 1
 
         else: # child process
             try:
@@ -329,7 +344,7 @@ class ShellcmdLrms(LRMS):
                     #
                     # if not posix.fork()
                     #     # the child
-                    #     if not posix.fork(): 
+                    #     if not posix.fork():
                     #         # the nephew
                     #         os.execlp(<the program we want to run>)
                     #     else: # still the child
@@ -348,11 +363,11 @@ class ShellcmdLrms(LRMS):
                     # instance of nosetests with /bin/true, which will
                     # exit without problem.
                     os.execlp('/bin/true', '/bin/true')
-                    
+
                     # In case os.execlp() will fail we still call
                     # sys.exit(0), which should be just fine if not
                     # called from within nose.
-                    sys.exit(0) 
+                    sys.exit(0)
 
                 pidfile = open(os.path.join(wrapper_dir,
                                             ShellcmdLrms.WRAPPER_PID), 'w')

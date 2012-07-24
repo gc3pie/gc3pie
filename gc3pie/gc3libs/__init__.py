@@ -948,38 +948,35 @@ class Application(Task):
             assert (lrms is not None), \
                 "Application.compatible_resources():" \
                 " expected `LRMS` object, got `None` instead."
-            if not lrms.is_valid():
-                gc3libs.log.debug("Ignoring invalid LRMS object '%s'" % lrms)
-                continue
             gc3libs.log.debug(
                 "Checking resource '%s' for compatibility with application requirements"
-                % lrms._resource.name)
+                % lrms.name)
             # if architecture is specified, check that it matches the resource one
             if (self.requested_architecture is not None
-                and self.requested_architecture not in lrms._resource.architecture):
+                and self.requested_architecture not in lrms.architecture):
                 gc3libs.log.info("Rejecting resource '%s': requested a different architecture (%s) than what resource provides (%s)"
-                                 % (lrms._resource.name, self.requested_architecture,
-                                    str.join(', ', [str(arch) for arch in lrms._resource.architecture ])))
+                                 % (lrms.name, self.requested_architecture,
+                                    str.join(', ', [str(arch) for arch in lrms.architecture ])))
                 continue
             # check that Application requirements are within resource limits
             if (self.requested_cores is not None
-                and int(self.requested_cores) > int(lrms._resource.max_cores_per_job or sys.maxint)):
+                and int(self.requested_cores) > int(lrms.max_cores_per_job or sys.maxint)):
                 gc3libs.log.info("Rejecting resource '%s': requested more cores (%d) that resource provides (%d)"
-                                 % (lrms._resource.name, self.requested_cores, lrms._resource.max_cores_per_job))
+                                 % (lrms.name, self.requested_cores, lrms.max_cores_per_job))
                 continue
             if (self.requested_memory is not None
-                and int(self.requested_memory) > int(lrms._resource.max_memory_per_core or sys.maxint)):
+                and int(self.requested_memory) > int(lrms.max_memory_per_core or sys.maxint)):
                 gc3libs.log.info("Rejecting resource '%s': requested more memory per core (%d GB) that resource provides (%d GB)"
-                                 % (lrms._resource.name, self.requested_memory, lrms._resource.max_memory_per_core))
+                                 % (lrms.name, self.requested_memory, lrms.max_memory_per_core))
                 continue
             if (self.requested_walltime is not None
-                and int(self.requested_walltime) > int(lrms._resource.max_walltime or sys.maxint)):
+                and int(self.requested_walltime) > int(lrms.max_walltime or sys.maxint)):
                 gc3libs.log.info("Rejecting resource '%s': requested a longer duration (%d s) that resource provides (%s h)"
-                                 % (lrms._resource.name, self.requested_walltime, lrms._resource.max_walltime))
+                                 % (lrms.name, self.requested_walltime, lrms.max_walltime))
                 continue
             if not lrms.validate_data(self.inputs.keys()) or not lrms.validate_data(self.outputs.values()):
                 gc3libs.log.info("Rejecting resource '%s': input/output data protocol not supported."
-                                 % lrms._resource.name)
+                                 % lrms.name)
                 continue
 
             selected.append(lrms)
@@ -999,10 +996,10 @@ class Application(Task):
         finally, should all preceding parameters compare equal, `a` is
         preferred over `b` if it has less running jobs from the same user.
         """
-        a_ = (a._resource.user_queued, -a._resource.free_slots,
-              a._resource.queued, a._resource.user_run)
-        b_ = (b._resource.user_queued, -b._resource.free_slots,
-              b._resource.queued, b._resource.user_run)
+        a_ = (a.user_queued, -a.free_slots,
+              a.queued, a.user_run)
+        b_ = (b.user_queued, -b.free_slots,
+              b.queued, b.user_run)
         return cmp(a_, b_)
 
     def rank_resources(self, resources):
@@ -1020,8 +1017,8 @@ class Application(Task):
 
         if 'execution_targets' in self.execution:
             for lrms in selected:
-                if ('frontend' in lrms._resource
-                    and lrms._resource.frontend in self.execution.execution_targets):
+                if (hasattr(lrms, 'frontend')
+                    and lrms.frontend in self.execution.execution_targets):
                     # append resource to the bottom of the list
                     selected.remove(lrms)
                     selected.append(lrms)

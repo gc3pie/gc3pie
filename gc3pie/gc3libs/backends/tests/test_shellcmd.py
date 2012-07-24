@@ -55,7 +55,7 @@ enabled=True
 type=none
 """
 
-    def setUp(self):        
+    def setUp(self):
         (fd, cfgfile) = tempfile.mkstemp()
         f = os.fdopen(fd, 'w+')
         f.write(TestBackendShellcmd.CONF)
@@ -70,10 +70,10 @@ type=none
 
     def cleanup_file(self, fname):
         self.files_to_remove.append(fname)
-        
+
     def tearDown(self):
         for fname in self.files_to_remove:
-            if os.path.isdir(fname):                
+            if os.path.isdir(fname):
                 shutil.rmtree(fname)
             elif os.path.exists(fname):
                 os.remove(fname)
@@ -82,9 +82,9 @@ type=none
         """
         Test that the initial resource parameters match those specified in the test config.
         """
-        assert_equal(self.backend._resource.free_slots, 2)
-        assert_equal(self.backend._resource.user_run, 0)
-        assert_equal(self.backend._resource.user_queued, 0)
+        assert_equal(self.backend.free_slots, 2)
+        assert_equal(self.backend.user_run, 0)
+        assert_equal(self.backend.user_queued, 0)
 
 
     def test_submission_ok(self):
@@ -106,12 +106,12 @@ type=none
         self.core.submit(app)
         self.cleanup_file(tmpdir)
         self.cleanup_file(app.execution.lrms_execdir)
-        
+
         # there's no SUBMITTED state here: jobs go immediately into RUNNING state
         assert_equal(app.execution.state, gc3libs.Run.State.SUBMITTED)
-        assert_equal(self.backend._resource.free_slots,  1)
-        assert_equal(self.backend._resource.user_queued, 0)
-        assert_equal(self.backend._resource.user_run,    1)
+        assert_equal(self.backend.free_slots,  1)
+        assert_equal(self.backend.user_queued, 0)
+        assert_equal(self.backend.user_run,    1)
 
         # wait until the test job is done, but timeout and raise an error
         # if it takes too much time...
@@ -123,15 +123,15 @@ type=none
             waited += WAIT
             self.core.update_job_state(app)
         assert_equal(app.execution.state, gc3libs.Run.State.TERMINATING)
-        assert_equal(self.backend._resource.free_slots,  2)
-        assert_equal(self.backend._resource.user_queued, 0)
-        assert_equal(self.backend._resource.user_run,    0)
+        assert_equal(self.backend.free_slots,  2)
+        assert_equal(self.backend.user_queued, 0)
+        assert_equal(self.backend.user_run,    0)
 
         self.core.fetch_output(app)
         assert_equal(app.execution.state, gc3libs.Run.State.TERMINATED)
-        assert_equal(self.backend._resource.free_slots,  2)
-        assert_equal(self.backend._resource.user_queued, 0)
-        assert_equal(self.backend._resource.user_run,    0)
+        assert_equal(self.backend.free_slots,  2)
+        assert_equal(self.backend.user_queued, 0)
+        assert_equal(self.backend.user_run,    0)
 
 
 
@@ -146,7 +146,7 @@ type=none
             output_dir = ".",
             stdout = "stdout.txt",
             stderr = "stderr.txt",
-            requested_cores = self.backend._resource.free_slots,
+            requested_cores = self.backend.free_slots,
             )
         self.core.submit(app1)
         self.cleanup_file(app1.execution.lrms_execdir)
@@ -189,7 +189,7 @@ type=none
         # import nose.tools; nose.tools.set_trace()
         pid = app.execution.lrms_jobid
 
-        # Forget about the child process. 
+        # Forget about the child process.
         os.waitpid(pid, 0)
 
         # The wrapper process should die and write the final status
