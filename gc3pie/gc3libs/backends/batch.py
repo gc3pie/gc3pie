@@ -466,8 +466,6 @@ class BatchSystem(LRMS):
 
         job = app.execution
         try:
-            log.debug("Connecting to cluster frontend '%s' as user '%s' via SSH ...",
-                           self._resource.frontend, self._ssh_username)
             self.transport.connect()
             self.transport.remove_tree(job.ssh_remote_folder)
         except:
