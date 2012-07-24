@@ -421,11 +421,27 @@ class Configuration(gc3libs.utils.Struct):
 
 
     def make_auth(self, name):
+        """
+        Return factory for auth credentials configured in section ``[auth/name]``.
+        """
         # use `lambda` for delayed evaluation
         return (lambda **kw: self.auth_factory.get(name, **kw))
 
 
-    def make_resources(self):
+    def make_resources(self, ignore_errors=True):
+        """
+        Make backend objects corresponding to the configured resources.
+
+        Return a dictionary, mapping the resource name (string) into
+        the corresponding backend object.
+
+        By default, errors in constructing backends (e.g., due to a
+        bad configuration) are silently ignored: the offending
+        configuration is just dropped.  This can be changed by setting
+        the optional argument `ignore_errors` to `False`: in this
+        case, an exception is raised whenever we fail to construct a
+        backend.
+        """
         resources = { }
         for name, resdict in self.resources.iteritems():
             try:
@@ -436,9 +452,13 @@ class Configuration(gc3libs.utils.Struct):
             except Exception, err:
                 gc3libs.log.warning(
                     "Failed creating backend for resource '%s' of type '%s': %s: %s",
-                    resdict['name'], resdict['type'],
+                    resdict.get('name', '(unknown name)'),
+                    resdict.get('type', '(unknown type)'),
                     err.__class__.__name__, str(err), exc_info=__debug__)
-                continue
+                if ignore_errors:
+                    continue
+                else:
+                    raise
             resources[name] = backend
         return resources
 

@@ -23,11 +23,12 @@ __version__ = 'development version (SVN $Revision$)'
 
 
 import gc3libs
-import gc3libs.exceptions
 from gc3libs.compat.functools import wraps
+import gc3libs.exceptions
+import gc3libs.utils
 
 
-class LRMS(object):
+class LRMS(gc3libs.utils.Struct):
     """Base class for interfacing with a computing resource.
 
     The following construction parameters are also set as instance
