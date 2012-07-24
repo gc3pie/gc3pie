@@ -140,7 +140,9 @@ file `input.xml` using on 5 CPUs::
            tasks=[]
            listOfFiles = self._search_for_input_files(self.params.args, pattern="input*.xml")
            gc3libs.log.debug("List of detected input files for ZODS: %s", listOfFiles)
-           for i, filename in enumerate(listOfFiles):
-               filename = os.path.abspath(filename)
-               tasks.append(("Zods"+str(i), GzodsApp, [filename], extra.copy()))
+           for filename in listOfFiles:
+               filepath = os.path.abspath(filename)
+               # job name comes from input file name, minus the `.xml` ext
+               jobname = os.path.basename(filename)[:-len('.xml')]
+               tasks.append((jobname, GzodsApp, [filepath], extra.copy()))
            return tasks
