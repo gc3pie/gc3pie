@@ -1163,7 +1163,7 @@ class Application(Task):
         return [self.executable] + ['"%s"' % i for i in self.arguments]
 
 
-    def qsub(self, resource, _suppress_warning=False, **kw):
+    def qsub_sge(self, resource, _suppress_warning=False, **kw):
         # XXX: the `_suppress_warning` switch is only provided for
         # some applications to make use of this generic method without
         # logging the user-level warning, because, e.g., it has already
@@ -1282,10 +1282,9 @@ class Application(Task):
         return (bsub, self.cmdline(resource))
 
 
-    def pbs_qsub(self, resource, _suppress_warning=False, **kw):
+    def qsub_pbs(self, resource, _suppress_warning=False, **kw):
         """
-        Similar to `qsub()`, but will work with a PBS/Torque resource
-        manager.
+        Similar to `qsub_sge()`, but for the PBS/TORQUE resource manager.
         """
         qsub = ['qsub']
         if self.requested_walltime:

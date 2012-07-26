@@ -320,7 +320,7 @@ class SgeLrms(batch.BatchSystem):
             frontend, transport, accounting_delay)
 
     def _submit_command(self, app):
-        sub_argv, app_argv = app.qsub(self)
+        sub_argv, app_argv = app.qsub_sge(self)
         return (str.join(' ', sub_argv), str.join(' ', app_argv))
 
     def _parse_submit_output(self, output):

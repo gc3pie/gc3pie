@@ -126,7 +126,7 @@ class PbsLrms(batch.BatchSystem):
         return self.get_jobid_from_submit_output( output,_qsub_jobid_re)
 
     def _submit_command(self, app):
-        qsub_argv, app_argv = app.pbs_qsub(self)
+        qsub_argv, app_argv = app.qsub_pbs(self)
         if self.queue is not None:
             qsub_argv += ['-d', '.', '-q', ('%s' % self.queue)]
         return (str.join(' ', qsub_argv), str.join(' ', app_argv))
