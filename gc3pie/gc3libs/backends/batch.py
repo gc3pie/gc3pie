@@ -100,6 +100,13 @@ class BatchSystem(LRMS):
     this class' constructor in the derived class ``__init__`` method.)
 
     """
+
+    _batchsys_name = 'batch queueing system'
+    """
+    A human-readable identifier for the batch queueing system
+    class/type (e.g., PBS, LSF, etc.).
+    """
+
     def __init__(self, name,
                  # this are inherited from the base LRMS class
                  architecture, max_cores, max_cores_per_job,
@@ -296,9 +303,9 @@ class BatchSystem(LRMS):
                     job.stderr_filename = app.stderr
                 else:
                     job.stderr_filename = '%s.e%s' % (job.lrms_jobname, jobid)
-            job.log.append('Submitted to PBS/Torque @ %s with jobid %s'
-                           % (self.name, jobid))
-            job.log.append("Batch submission output:\n"
+            job.log.append('Submitted to %s @ %s, got jobid %s'
+                           % (self._batchsys_name, self.name, jobid))
+            job.log.append("Submission command output:\n"
                            "  === stdout ===\n%s"
                            "  === stderr ===\n%s"
                            "  === end ===\n"

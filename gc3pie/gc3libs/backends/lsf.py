@@ -376,6 +376,9 @@ class LsfLrms(batch.BatchSystem):
     """
     Job control on LSF clusters (possibly by connecting via SSH to a submit node).
     """
+
+    _batchsys_name = 'LSF'
+
     def __init__(self, name,
                  # this are inherited from the base LRMS class
                  architecture, max_cores, max_cores_per_job,
