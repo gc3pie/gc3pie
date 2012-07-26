@@ -197,7 +197,7 @@ class GamessApplication(gc3libs.Application):
 
     # XXX: Assumes `qgms` is the correct way to run GAMESS on *any*
     # batch system, which it's not... see Issue 3
-    qsub = qgms
+    qsub_sge = qgms
     qsub_pbs = qgms
     bsub = qgms
 
@@ -272,8 +272,10 @@ class GamessAppPotApplication(GamessApplication,
     # definitions made by `GamessApplication`.  This can go away
     # once `GamessApplication` has a sane interface for running
     # GAMESS (see Issue 3 on the web site).
-    qsub = gc3libs.Application.qsub
+    bsub = gc3libs.Application.bsub
     cmdline = gc3libs.Application.cmdline
+    qsub_pbs = gc3libs.Application.qsub_pbs
+    qsub_sge = gc3libs.Application.qsub_sge
 
 
 
