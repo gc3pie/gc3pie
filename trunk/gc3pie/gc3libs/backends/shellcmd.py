@@ -409,7 +409,7 @@ class ShellcmdLrms(LRMS):
         Return `False` if any of the URLs in `data_file_list` cannot
         be handled by this backend.
 
-        The `shellcmd`:module: backend can only handle ``file`` URLs.
+        The `shellcmd`:mod: backend can only handle ``file`` URLs.
         """
         for url in data_file_list:
             if not url.scheme in ['file']:
