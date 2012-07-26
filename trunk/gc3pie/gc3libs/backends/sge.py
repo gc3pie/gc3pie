@@ -299,6 +299,9 @@ class SgeLrms(batch.BatchSystem):
     """
     Job control on SGE clusters (possibly by connecting via SSH to a submit node).
     """
+
+    _batchsys_name = 'Grid Engine'
+
     def __init__(self, name,
                  # this are inherited from the base LRMS class
                  architecture, max_cores, max_cores_per_job,
