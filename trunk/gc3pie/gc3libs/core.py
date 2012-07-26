@@ -340,6 +340,7 @@ specified in the configuration file.
                         app.changed = True
                         # set log information accordingly
                         if (app.execution.state == Run.State.TERMINATING
+                            and app.execution.returncode is not None
                             and app.execution.returncode != 0):
                             # there was some error, try to explain
                             app.execution.info = ("Execution failed on resource: %s" % app.execution.resource_name)
