@@ -34,7 +34,7 @@ class LRMS(gc3libs.utils.Struct):
     The following construction parameters are also set as instance
     attributes.  All of them are mandatory, except `auth`.
 
-    +=====================+==============+===============================+
+    +---------------------+--------------+-------------------------------+
     |Attribute name       |Expected Type |Meaning                        |
     +=====================+==============+===============================+
     |`name`               |string        |A unique identifier for this   |
