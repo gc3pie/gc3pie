@@ -419,58 +419,77 @@ class LsfLrms(batch.BatchSystem):
         return self.get_jobid_from_submit_output(bsub_output, _bsub_jobid_re)
 
     def _stat_command(self, job):
-        return ("%s -w -W %s" % (self._bjobs, job.lrms_jobid))
+        return ("%s -l %s" % (self._bjobs, job.lrms_jobid))
 
     def _acct_command(self, job):
         return ("%s -l %s" % (self._bjobs, job.lrms_jobid))
 
-    def _parse_stat_output(self, stdout):
-        status_line = stdout.split('\n')[1]
-        #
-        fields = status_line.split()
-        # assert fields[0] == job.lrms_jobid, \
-        #        "First field in `bjobs` output is not JobID!"
-        stat = fields[2]
-        log.debug("translating LSF's `bjobs` status '%s' to gc3libs.Run.State ...", stat)
+    @staticmethod
+    def _lsf_state_to_gc3pie_state(stat):
+        log.debug("Translating LSF's `bjobs` status '%s' to gc3libs.Run.State ...", stat)
+        try:
+            return {
+            # LSF 'stat' mapping:
+                'PEND'  : Run.State.SUBMITTED,
+                'RUN'   : Run.State.RUNNING,
+                'PSUSP' : Run.State.STOPPED,
+                'USUSP' : Run.State.STOPPED,
+                'SSUSP' : Run.State.STOPPED,
+                # DONE = successful termination
+                'DONE'  : Run.State.TERMINATING,
+                # EXIT = job was killed / exit forced
+                'EXIT'  : Run.State.TERMINATING,
+                # ZOMBI = job "killed" and unreachable
+                'ZOMBI' : Run.State.TERMINATING,
+                'UNKWN' : Run.State.UNKNOWN,
+                }[stat]
+        except KeyError:
+            log.warning("Unknown LSF job status '%s', returning `UNKNOWN`", stat)
+            return Run.State.UNKNOWN
 
-        jobstatus = dict()
-        # LSF status mapping:
-        #
-        # PEND   => SUBMITTED
-        # RUN    => RUNNING
-        # PSUSP  => STOPPED
-        # USUSP  => STOPPED
-        # SSUSP  => STOPPED
-        # DONE   => TERMINATING
-        # EXIT   => TERMINATING
-        # ZOMBI  => TERMINATING
-        # UNKWN  => UNKNWON
-        if 'PEND' == stat:
-            jobstatus['state'] = Run.State.SUBMITTED
-        elif 'RUN' == stat:
-            jobstatus['state'] = Run.State.RUNNING
-        elif stat in ['PSUSP', 'USUSP', 'SSUSP']:
-            jobstatus['state'] = Run.State.STOPPED
-        elif stat in [
-            'DONE',  # successful termination
-            'EXIT',  # job was killed / exit forced
-            'ZOMBI', # job "killed" and unreachable
-            ]:
-            jobstatus['state'] = Run.State.TERMINATING
-        else:
-            log.warning("unknown LSF job status '%s', returning `UNKNOWN`", stat)
-            jobstatus['state'] = Run.State.UNKNOWN
-        return jobstatus
+    _status_re = re.compile(r'Status <(?P<state>[A-Z]+)>', re.M)
+    _unsuccessful_exit_re = re.compile(r'Exited with exit code (?P<exit_status>[0-9]+).', re.M)
+    _cpu_time_re = re.compile(r'The CPU time used is (?P<cputime>[0-9]+(\.[0-9]+)?) seconds', re.M)
 
-    def _parse_acct_output(self, stdout):
-        # output of bjobs -l is indented in order to stay under 80
-        # columns. This will make the parsing complicated.
-        stdout = stdout.replace('\n                     ','')
-        jobstatus = dict()
+    @staticmethod
+    def _parse_stat_output(stdout):
+        # LSF `bjobs -l` uses a LDIF-style continuation lines, wherein
+        # a line is truncated at 79 characters and continues upon the
+        # next one; continuation lines start with a fixed amount of
+        # whitespace.  Join continuation lines, so that we can work on
+        # a single block of text.
+        lines = [ ]
         for line in stdout.split('\n'):
-            if _bjobs_long_re.match(line):
-                jobstatus.update(_bjobs_long_re.match(line).groupdict())
+            if len(line) == 0:
+                continue
+            if str.isspace(line[0]):
+                lines[-1] += line.lstrip()
+            else:
+                lines.append(line)
+
+        # now rebuild stdout by joining the reconstructed lines
+        stdout = str.join('\n', lines)
+
+        jobstatus = gc3libs.utils.Struct()
+        # XXX: this only works if the current status is the first one
+        # reported in STDOUT ...
+        match = LsfLrms._status_re.search(stdout)
+        if match:
+            stat = match.group('state')
+            jobstatus.state = LsfLrms._lsf_state_to_gc3pie_state(stat)
+            if stat == 'DONE':
+                # DONE = success
+                jobstatus.exit_status = 0
+            elif stat == 'EXIT':
+                # EXIT = job exited with exit code != 0
+                match = LsfLrms._unsuccessful_exit_re.search(stdout)
+                if match:
+                    log.debug("LSF says: '%s'", match.group(0))
+                    jobstatus.exit_status = int(match.group('exit_status'))
         return jobstatus
+
+    # The same command is used in LSF to get the status and the accouting info
+    _parse_acct_output = _parse_stat_output
 
     def _cancel_command(self, jobid):
         return ("%s %s" % (self._bkill, jobid))
