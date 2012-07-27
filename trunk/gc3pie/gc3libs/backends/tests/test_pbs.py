@@ -2,7 +2,7 @@
 #
 """
 """
-# Copyright (C) 2011, GC3, University of Zurich. All rights reserved.
+# Copyright (C) 2011, 2012, GC3, University of Zurich. All rights reserved.
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
@@ -21,6 +21,17 @@
 __docformat__ = 'reStructuredText'
 __version__ = '$Revision$'
 
+import os
+import tempfile
+
+from nose.tools import assert_equal
+
+import gc3libs
+import gc3libs.core
+import gc3libs.config
+
+from faketransport import FakeTransport
+
 
 def correct_submit(jobid=123):
     out = """%s
@@ -32,7 +43,7 @@ def tracejob_notfound(jobid=123):
 /var/spool/torque/mom_logs/20120309: No such file or directory
 /var/spool/torque/sched_logs/20120309: No such file or directory
 """
-    
+
     return (0, "", err)
 
 def correct_qstat_queued(jobid=123):
@@ -98,7 +109,7 @@ Job: %s
 /var/spool/torque/mom_logs/20120309: No such file or directory
 /var/spool/torque/sched_logs/20120309: No such file or directory
 """
-    
+
     return (0, out, err)
 
 
@@ -122,17 +133,9 @@ def qdel_failed_acl(jobid=123):
 """ % jobid
     out = ""
     return (159, out, err)
-    
-from gc3libs.Resource import Resource
-from gc3libs.authentication import Auth
-import gc3libs, gc3libs.core, gc3libs.config
-
-import tempfile, os
 
 #import gc3libs.Run.State as State
 State = gc3libs.Run.State
-
-from faketransport import FakeTransport
 
 
 class FakeApp(gc3libs.Application):
@@ -150,7 +153,7 @@ class FakeApp(gc3libs.Application):
 
 
 class TestBackendPbs(object):
-    
+
     CONF="""
 [resource/example]
 type=pbs
@@ -169,7 +172,7 @@ enabled=True
 type=ssh
 username=NONEXISTENT
 """
-    def setUp(self):        
+    def setUp(self):
         (fd, self.tmpfile) = tempfile.mkstemp()
         f = os.fdopen(fd, 'w+')
         f.write(TestBackendPbs.CONF)
@@ -187,7 +190,7 @@ username=NONEXISTENT
         self.transport.expected_answer['qstat'] = qstat_notfound()
         self.transport.expected_answer['tracejob'] = tracejob_notfound()
         self.transport.expected_answer['qdel'] = qdel_notfound()
-        
+
     def tearDown(self):
         os.remove(self.tmpfile)
 
@@ -228,13 +231,13 @@ username=NONEXISTENT
 
         # Update state. We would expect the job to be RUNNING
         self.transport.expected_answer['qstat'] = correct_qstat_running()
-        self.transport.expected_answer['tracejob'] = correct_tracejob_running()    
+        self.transport.expected_answer['tracejob'] = correct_tracejob_running()
         self.core.update_job_state(app)
         assert app.execution.state == State.RUNNING
 
         # Job done. qstat doesn't find it, tracejob should.
         self.transport.expected_answer['qstat'] = qstat_notfound()
-        self.transport.expected_answer['tracejob'] = correct_tracejob_done()    
+        self.transport.expected_answer['tracejob'] = correct_tracejob_done()
         self.core.update_job_state(app)
         assert app.execution.state == State.TERMINATING
 
@@ -243,7 +246,7 @@ username=NONEXISTENT
         app = FakeApp()
         self.transport.expected_answer['qsub'] = correct_submit()
         self.core.submit(app)
-        self.transport.expected_answer['tracejob'] = correct_tracejob_done()    
+        self.transport.expected_answer['tracejob'] = correct_tracejob_done()
         self.core.update_job_state(app)
         assert app.execution.state == State.TERMINATING
 
@@ -274,7 +277,46 @@ username=NONEXISTENT
         self.transport.expected_answer['qdel'] = qdel_failed_acl()
         self.core.kill(app)
         assert app.execution.state == State.TERMINATED
-    
+
+def test_get_command():
+    (fd, tmpfile) = tempfile.mkstemp()
+    f = os.fdopen(fd, 'w+')
+    f.write("""
+[auth/ssh]
+type=ssh
+username=NONEXISTENT
+
+[resource/example]
+# mandatory stuff
+type=pbs
+auth=ssh
+transport=ssh
+frontend=example.org
+max_cores_per_job=128
+max_memory_per_core=2
+max_walltime=2
+max_cores=80
+architecture=x86_64
+
+# alternate command paths
+qsub = /usr/local/bin/qsub -q testing
+qstat = /usr/local/bin/qstat
+qdel = /usr/local/bin/qdel # comments are ignored!
+tracejob = /usr/local/sbin/tracejob
+""")
+    f.close()
+
+    cfg = gc3libs.config.Configuration()
+    cfg.merge_file(tmpfile)
+    b = cfg.make_resources()['example']
+
+    assert_equal(b.qsub, ['/usr/local/bin/qsub', '-q', 'testing'])
+
+    assert_equal(b._qstat,    '/usr/local/bin/qstat')
+    assert_equal(b._qdel,     '/usr/local/bin/qdel')
+    assert_equal(b._tracejob, '/usr/local/sbin/tracejob')
+
+
 if __name__ == "__main__":
     import nose
     nose.runmodule()

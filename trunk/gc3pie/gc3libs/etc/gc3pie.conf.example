@@ -181,3 +181,33 @@ architecture=x64_64
 # # see http://gridengine.info/2005/11/04/immediate-accounting-data-flushing
 # # if you need to lower this
 # accounting_delay = 15
+# # you can specify alternate paths to the SGE commands, e.g., to use
+# # wrapper scripts or to specify addtional options; GC3Pie will *append*
+# # the standard arguments to what you specify here
+# #qsub = /usr/local/bin/qsub -q whatever.q
+# #qstat = /usr/local/bin/qstat
+# #qacct = /usr/local/sbin/qacct.sh
+# #qdel = /usr/local/bin/qdel
+
+# 4) A single LSF cluster, accessed directly (i.e., GC3Pie must be
+# running on the cluster front-end node):
+#
+# [resource/brutus]
+# enabled = no
+# type = lsf
+# auth = none
+# transport = local
+# frontend = brutus.ethz.ch
+# architecture = x86_64
+# max_cores = 8192
+# max_cores_per_job = 1024
+# max_memory_per_core = 3
+# max_walltime = 72
+# # you can specify alternate paths to the LSF commands, e.g., to use
+# # wrapper scripts or to specify addtional options; GC3Pie will *append*
+# # the standard arguments to what you specify here
+# #bsub = bsub -R lustre
+# #bjobs = bjobs
+# #bkill = /path/to/my/bkill.sh
+# #bqueues = bqueues
+# #lshosts = lshosts
