@@ -1201,7 +1201,8 @@ class Application(Task):
         provide appropriate invocation templates and/or add different
         submission options.
         """
-        qsub = ['qsub', '-cwd', '-S', '/bin/sh']
+        qsub = resource.qsub
+        qsub += ['-cwd', '-S', '/bin/sh']
         if self.requested_walltime:
             # SGE uses `s_rt` for wall-clock time limit, expressed in seconds
             qsub += ['-l', 's_rt=%d' % (3600 * self.requested_walltime)]
@@ -1259,7 +1260,8 @@ class Application(Task):
         provide appropriate invocation templates and/or add
         resource-specific submission options.
         """
-        bsub = ['bsub', '-cwd', '.', '-L', '/bin/sh', '-n', ('%d' % self.requested_cores)]
+        bsub = resource.bsub
+        bsub += ['-cwd', '.', '-L', '/bin/sh', '-n', ('%d' % self.requested_cores)]
         if self.requested_walltime:
             # LSF wants walltime as HH:MM (days expressed as many hours)
             bsub += ['-W', ('%02d:00' % self.requested_walltime)]
@@ -1286,7 +1288,7 @@ class Application(Task):
         """
         Similar to `qsub_sge()`, but for the PBS/TORQUE resource manager.
         """
-        qsub = ['qsub']
+        qsub = resource.qsub
         if self.requested_walltime:
             qsub += ['-l', 'walltime=%s' % (3600 * self.requested_walltime)]
         if self.requested_memory:

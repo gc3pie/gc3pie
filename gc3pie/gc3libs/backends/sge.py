@@ -317,7 +317,15 @@ class SgeLrms(batch.BatchSystem):
             self, name,
             architecture, max_cores, max_cores_per_job,
             max_memory_per_core, max_walltime, auth,
-            frontend, transport, accounting_delay)
+            frontend, transport, accounting_delay, **kw)
+
+        self.qsub = self._get_command_argv('qsub')
+
+        # GridEngine commands
+        self._qacct = self._get_command('qacct')
+        self._qdel = self._get_command('qdel')
+        self._qstat = self._get_command('qstat')
+
 
     def _submit_command(self, app):
         sub_argv, app_argv = app.qsub_sge(self)
@@ -328,7 +336,7 @@ class SgeLrms(batch.BatchSystem):
         return self.get_jobid_from_submit_output(output, _qsub_jobid_re)
 
     def _stat_command(self, job):
-        return "qstat | egrep  '^ *%s'" % job.lrms_jobid
+        return ("%s | egrep  '^ *%s'" % (self._qstat, job.lrms_jobid))
 
     def _parse_stat_output(self, stdout):
         job_status = stdout.split()[4]
@@ -349,7 +357,7 @@ class SgeLrms(batch.BatchSystem):
         return jobstatus
 
     def _acct_command(self, job):
-        return "qacct -j %s" % job.lrms_jobid
+        return ("%s -j %s" % (self._qacct, job.lrms_jobid))
 
     def _parse_acct_output(self, stdout):
         jobstatus = dict()
@@ -389,7 +397,7 @@ class SgeLrms(batch.BatchSystem):
         return jobstatus
 
     def _cancel_command(self, jobid):
-        return "qdel %s" % jobid
+        return ("%s %s" % (self._qdel, jobid))
 
     @same_docstring_as(LRMS.get_resource_status)
     @LRMS.authenticated
@@ -398,12 +406,12 @@ class SgeLrms(batch.BatchSystem):
             self.transport.connect()
 
             username = self._ssh_username
-            log.debug("Running `qstat -U %s`...", username)
-            _command = "qstat -U "+username
+            _command = ("%s -U %s" % (self._qstat, username))
+            log.debug("Running `%s`...", _command)
             exit_code, qstat_stdout, stderr = self.transport.execute_command(_command)
 
-            log.debug("Running `qstat -F -U %s`...", username)
-            _command = "qstat -F -U "+username
+            _command = ("%s -F -U %s" % (self._qstat, username))
+            log.debug("Running `%s`...", _command)
             exit_code, qstat_F_stdout, stderr = self.transport.execute_command(_command)
 
             # self.transport.close()

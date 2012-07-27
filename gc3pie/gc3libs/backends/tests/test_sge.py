@@ -2,7 +2,7 @@
 #
 """
 """
-# Copyright (C) 2011, GC3, University of Zurich. All rights reserved.
+# Copyright (C) 2011, 2012, GC3, University of Zurich. All rights reserved.
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
@@ -21,20 +21,34 @@
 __docformat__ = 'reStructuredText'
 __version__ = '$Revision$'
 
+import os
+import tempfile
+
+from nose.tools import assert_equal
+
+import gc3libs
+import gc3libs.core
+import gc3libs.config
+State = gc3libs.Run.State
+
+from faketransport import FakeTransport
+
+
+
 
 def correct_submit(jobid=123):
     out = """Your job %s ("DemoPBSApp") has been submitted
-""" % jobid    
+""" % jobid
     return (0, out, "")
 
 def correct_qstat_queued(jobid=123):
-    out = """  %s 0.00000 DemoPBSApp antonio      qw    03/15/2012 08:53:34                                    1        
+    out = """  %s 0.00000 DemoPBSApp antonio      qw    03/15/2012 08:53:34                                    1
 """ % jobid
     return (0, out, "")
 
 
 def correct_qstat_running(jobid=123):
-    out = """  %s 0.55500 DemoPBSApp antonio      r     03/15/2012 08:53:42 all.q@compute-0-2.local            1        
+    out = """  %s 0.55500 DemoPBSApp antonio      r     03/15/2012 08:53:42 all.q@compute-0-2.local            1
 """ % jobid
     return (0, out, "")
 
@@ -43,7 +57,7 @@ def qacct_notfound(jobid=123):
 """ % jobid
     return (1, "", err)
 
-def qdel_notfound(jobid=123):    
+def qdel_notfound(jobid=123):
     return (1,"",  """denied: job "%s" does not exist""" % jobid)
 
 def qstat_notfound(jobid=123):
@@ -52,50 +66,50 @@ def qstat_notfound(jobid=123):
 def correct_qacct_done(jobid=123):
     out = """
 ==============================================================
-qname        all.q               
-hostname     compute-0-2.local   
-group        antonio             
-owner        antonio             
-project      NONE                
-department   defaultdepartment   
-jobname      DemoPBSApp          
+qname        all.q
+hostname     compute-0-2.local
+group        antonio
+owner        antonio
+project      NONE
+department   defaultdepartment
+jobname      DemoPBSApp
 jobnumber    %s
 taskid       undefined
-account      sge                 
-priority     0                   
+account      sge
+priority     0
 qsub_time    Thu Mar 15 08:42:46 2012
 start_time   Thu Mar 15 08:43:00 2012
 end_time     Thu Mar 15 08:43:10 2012
-granted_pe   NONE                
-slots        1                   
-failed       0    
-exit_status  0                   
-ru_wallclock 10           
-ru_utime     0.154        
-ru_stime     0.094        
-ru_maxrss    0                   
-ru_ixrss     0                   
-ru_ismrss    0                   
-ru_idrss     0                   
-ru_isrss     0                   
-ru_minflt    22296               
-ru_majflt    0                   
-ru_nswap     0                   
-ru_inblock   0                   
-ru_oublock   0                   
-ru_msgsnd    0                   
-ru_msgrcv    0                   
-ru_nsignals  0                   
-ru_nvcsw     306                 
-ru_nivcsw    157                 
-cpu          0.248        
-mem          0.000             
-io           0.006             
-iow          0.000             
+granted_pe   NONE
+slots        1
+failed       0
+exit_status  0
+ru_wallclock 10
+ru_utime     0.154
+ru_stime     0.094
+ru_maxrss    0
+ru_ixrss     0
+ru_ismrss    0
+ru_idrss     0
+ru_isrss     0
+ru_minflt    22296
+ru_majflt    0
+ru_nswap     0
+ru_inblock   0
+ru_oublock   0
+ru_msgsnd    0
+ru_msgrcv    0
+ru_nsignals  0
+ru_nvcsw     306
+ru_nivcsw    157
+cpu          0.248
+mem          0.000
+io           0.006
+iow          0.000
 maxvmem      13.152M
 arid         undefined
 """ % jobid
-    
+
     return (0, out, "")
 
 
@@ -112,7 +126,7 @@ Exiting.
 # """
 #     return (159, out, err)
 
-def qdel_success(jobid=123):    
+def qdel_success(jobid=123):
     return (0, "antonio has registered the job %s for deletion" % jobid, "")
 
 def qdel_failed_acl(jobid=123):
@@ -120,15 +134,6 @@ def qdel_failed_acl(jobid=123):
 """ % jobid
     out = ""
     return (1, out, err)
-    
-from gc3libs.Resource import Resource
-from gc3libs.authentication import Auth
-import gc3libs, gc3libs.core, gc3libs.config
-#import gc3libs.Run.State as State
-State = gc3libs.Run.State
-
-import tempfile, os
-from faketransport import FakeTransport
 
 
 class FakeApp(gc3libs.Application):
@@ -146,7 +151,7 @@ class FakeApp(gc3libs.Application):
 
 
 class TestBackendSge(object):
-    
+
     CONF="""
 [resource/example]
 type=sge
@@ -165,7 +170,7 @@ enabled=True
 type=ssh
 username=NONEXISTENT
 """
-    def setUp(self):        
+    def setUp(self):
         (fd, self.tmpfile) = tempfile.mkstemp()
         f = os.fdopen(fd, 'w+')
         f.write(TestBackendSge.CONF)
@@ -183,7 +188,7 @@ username=NONEXISTENT
         self.transport.expected_answer['qstat'] = qstat_notfound()
         self.transport.expected_answer['tracejob'] = qacct_notfound()
         self.transport.expected_answer['qdel'] = qdel_notfound()
-        
+
     def tearDown(self):
         os.remove(self.tmpfile)
 
@@ -236,13 +241,13 @@ username=NONEXISTENT
 
         # Update state. We would expect the job to be RUNNING
         self.transport.expected_answer['qstat'] = correct_qstat_running()
-        self.transport.expected_answer['qacct'] = qacct_notfound()    
+        self.transport.expected_answer['qacct'] = qacct_notfound()
         self.core.update_job_state(app)
         assert app.execution.state == State.RUNNING
 
         # Job done. qstat doesn't find it, qacct should.
         self.transport.expected_answer['qstat'] = qstat_notfound()
-        self.transport.expected_answer['qacct'] = correct_qacct_done()    
+        self.transport.expected_answer['qacct'] = correct_qacct_done()
         self.core.update_job_state(app)
         assert app.execution.state == State.TERMINATING
 
@@ -251,7 +256,7 @@ username=NONEXISTENT
         app = FakeApp()
         self.transport.expected_answer['qsub'] = correct_submit()
         self.core.submit(app)
-        self.transport.expected_answer['qacct'] = correct_qacct_done()    
+        self.transport.expected_answer['qacct'] = correct_qacct_done()
         self.core.update_job_state(app)
         assert app.execution.state == State.TERMINATING
 
@@ -280,7 +285,48 @@ username=NONEXISTENT
         self.transport.expected_answer['qdel'] = qdel_failed_acl()
         self.core.kill(app)
         assert app.execution.state == State.TERMINATED
-    
+
+
+
+def test_get_command():
+    (fd, tmpfile) = tempfile.mkstemp()
+    f = os.fdopen(fd, 'w+')
+    f.write("""
+[auth/ssh]
+type=ssh
+username=NONEXISTENT
+
+[resource/example]
+# mandatory stuff
+type=sge
+auth=ssh
+transport=ssh
+frontend=example.org
+max_cores_per_job=128
+max_memory_per_core=2
+max_walltime=2
+max_cores=80
+architecture=x86_64
+
+# alternate command paths
+qsub = /usr/local/bin/qsub -q testing
+qacct = /usr/local/sbin/qacct
+qstat = /usr/local/bin/qstat
+qdel = /usr/local/bin/qdel # comments are ignored!
+""")
+    f.close()
+
+    cfg = gc3libs.config.Configuration()
+    cfg.merge_file(tmpfile)
+    b = cfg.make_resources()['example']
+
+    assert_equal(b.qsub, ['/usr/local/bin/qsub', '-q', 'testing'])
+
+    assert_equal(b._qacct, '/usr/local/sbin/qacct')
+    assert_equal(b._qdel,  '/usr/local/bin/qdel')
+    assert_equal(b._qstat, '/usr/local/bin/qstat')
+
+
 if __name__ == "__main__":
     import nose
     nose.runmodule()

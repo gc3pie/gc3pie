@@ -395,7 +395,16 @@ class LsfLrms(batch.BatchSystem):
             self, name,
             architecture, max_cores, max_cores_per_job,
             max_memory_per_core, max_walltime, auth,
-            frontend, transport, accounting_delay)
+            frontend, transport, accounting_delay, **kw)
+
+        self.bsub = self._get_command_argv('bsub')
+
+        # LSF commands
+        self._bjobs = self._get_command('bjobs')
+        self._bkill = self._get_command('bkill')
+        self._bqueues = self._get_command('bqueues')
+        self._lshosts = self._get_command('lshosts')
+
 
     def _submit_command(self, app):
         # LSF's `bsub` allows one to submit scripts and binaries with
@@ -410,10 +419,10 @@ class LsfLrms(batch.BatchSystem):
         return self.get_jobid_from_submit_output(bsub_output, _bsub_jobid_re)
 
     def _stat_command(self, job):
-        return "bjobs -w -W %s" % job.lrms_jobid
+        return ("%s -w -W %s" % (self._bjobs, job.lrms_jobid))
 
     def _acct_command(self, job):
-        return "bjobs -l %s" % job.lrms_jobid
+        return ("%s -l %s" % (self._bjobs, job.lrms_jobid))
 
     def _parse_stat_output(self, stdout):
         status_line = stdout.split('\n')[1]
@@ -422,7 +431,7 @@ class LsfLrms(batch.BatchSystem):
         # assert fields[0] == job.lrms_jobid, \
         #        "First field in `bjobs` output is not JobID!"
         stat = fields[2]
-        log.debug("translating LSF's `bjobs` STAT '%s' to gc3libs.Run.State" % stat)
+        log.debug("translating LSF's `bjobs` status '%s' to gc3libs.Run.State ...", stat)
 
         jobstatus = dict()
         # LSF status mapping:
@@ -464,7 +473,7 @@ class LsfLrms(batch.BatchSystem):
         return jobstatus
 
     def _cancel_command(self, jobid):
-        return "bkill %s" % jobid
+        return ("%s %s" % (self._bkill, jobid))
 
 
     @cache_for(gc3libs.Default.ARC_CACHE_TIME)
@@ -492,8 +501,8 @@ class LsfLrms(batch.BatchSystem):
             # used to compute self.total_slots
             # lhost output format:
             # ($nodeid,$OStype,$model,$cpuf,$ncpus,$maxmem,$maxswp)
-            log.debug("Running `lshosts -w`... ")
-            _command = "lshosts -w"
+            _command = ('%s -w' % self._lshosts)
+            log.debug("Running `%s`... ", _command)
             exit_code, stdout, stderr = self.transport.execute_command(_command)
             if exit_code != 0:
                 # Stop and do not continue
@@ -534,8 +543,8 @@ class LsfLrms(batch.BatchSystem):
 
             # Run bqueues to get information about the status of system queues
             # used to build running_jobs and queued
-            log.debug("Running `bqueues`... ")
-            _command = "bqueues"
+            _command = self._bqueues
+            log.debug("Running `%s`... ", _command)
             exit_code, stdout, stderr = self.transport.execute_command(_command)
 
             if exit_code != 0:
@@ -554,8 +563,8 @@ class LsfLrms(batch.BatchSystem):
             # used to compute  self.user_run and self.user_queued
             # bjobs output format:
             # JOBID   USER    STAT  QUEUE      FROM_HOST   EXEC_HOST   JOB_NAME   SUBMIT_TIME
-            log.debug("Runing 'bjobs '... ")
-            _command = "bjobs"
+            _command = self._bjobs
+            log.debug("Runing `%s`... ", _command)
             exit_code, stdout, stderr = self.transport.execute_command(_command)
 
             if exit_code != 0:

@@ -26,9 +26,10 @@ __version__ = 'development version (SVN $Revision$)'
 import os
 import posixpath
 import random
+import shlex
+import stat
 import sys
 import tempfile
-import stat
 import time
 
 import gc3libs
@@ -121,7 +122,7 @@ class BatchSystem(LRMS):
         LRMS.__init__(
             self, name,
             architecture, max_cores, max_cores_per_job,
-            max_memory_per_core, max_walltime, auth)
+            max_memory_per_core, max_walltime, auth, **kw)
 
         # backend-specific setup
         self.frontend = frontend
@@ -146,6 +147,75 @@ class BatchSystem(LRMS):
                 return match.group('jobid')
         raise gc3libs.exceptions.InternalError("Could not extract jobid from qsub output '%s'"
                             % qsub_output.rstrip())
+
+    def _get_command_argv(self, name, default=None):
+        """
+        Return an *argv*-style array for invoking command `name`.
+
+        The command name is looked up in this resource's configuration
+        parameters, and, if found, the associated string is split into
+        words (according to the normal POSIX shell rules) and this
+        list of words is returned::
+
+          | >>> b = BatchSystem(..., bsub='/usr/local/bin/bsub -R lustre')
+          | >>> b._get_command('bsub')
+          | ['/usr/local/bin/bsub', '-R', 'lustre']
+
+        Otherwise, if no configuration parameter by name `name` is
+        found, then second argument `default` is returned as the sole
+        member of the *argv*-array::
+
+          | >>> b = BatchSystem(...)
+          | >>> b._get_command('foo', 'bar')
+          | ['bar']
+
+        If `default` is `None`, then the value of `name` is used
+        instead::
+
+          | >>> b._get_command('baz')
+          | ['baz']
+
+        """
+        if default is None:
+            default = name
+        # lookup the command name in the resource config parameters;
+        # return it unchanged as a default
+        cmd = self.get(name, default)
+        # return argv-style array
+        return shlex.split(cmd, comments=True)
+
+    def _get_command(self, name, default=None):
+        """
+        Return an command-line (string) for invoking command `name`.
+
+        The command name is looked up in this resource's configuration
+        parameters, and, if found, the associated string is returned::
+
+          | >>> b = BatchSystem(..., bsub='/usr/local/bin/bsub -R lustre')
+          | >>> b._get_command('bsub')
+          | '/usr/local/bin/bsub -R lustre'
+
+        Otherwise, if no configuration parameter by name `name` is
+        found, then second argument `default` is returned::
+        member of the *argv*-array::
+
+          | >>> b = BatchSystem(...)
+          | >>> b._get_command('foo', 'bar')
+          | 'bar'
+
+        If `default` is `None`, then the value of `name` is used
+        instead::
+
+          | >>> b._get_command('baz')
+          | 'baz'
+
+        """
+        if default is None:
+            default = name
+        # lookup the command name in the resource config parameters;
+        # return it unchanged as a default
+        argv = self._get_command_argv(name, default)
+        return str.join(' ', argv)
 
     def _submit_command(self, app):
         """This method returns a string containing the command to

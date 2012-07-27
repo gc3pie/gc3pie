@@ -117,9 +117,16 @@ class PbsLrms(batch.BatchSystem):
             self, name,
             architecture, max_cores, max_cores_per_job,
             max_memory_per_core, max_walltime, auth,
-            frontend, transport, accounting_delay)
+            frontend, transport, accounting_delay, **kw)
 
+        # backend-specific setup
         self.queue = queue
+        self.qsub = self._get_command_argv('qsub')
+
+        # PBS/TORQUE commands
+        self._qdel = self._get_command('qdel')
+        self._qstat = self._get_command('qstat')
+        self._tracejob = self._get_command('tracejob')
 
 
     def _parse_submit_output(self, output):
@@ -132,10 +139,10 @@ class PbsLrms(batch.BatchSystem):
         return (str.join(' ', qsub_argv), str.join(' ', app_argv))
 
     def _stat_command(self, job):
-        return "qstat %s | grep ^%s" % (job.lrms_jobid,job.lrms_jobid)
+        return "%s %s | grep ^%s" % (self._qstat, job.lrms_jobid,job.lrms_jobid)
 
     def _acct_command(self, job):
-        return  'tracejob %s' % job.lrms_jobid
+        return  '%s %s' % (self._tracejob, job.lrms_jobid)
 
     def _parse_stat_output(self, stdout):
         # check that passed object obeys contract
@@ -168,7 +175,7 @@ class PbsLrms(batch.BatchSystem):
         return retstatus
 
     def _cancel_command(self, jobid):
-        return "qdel %s" % jobid
+        return ("%s %s" % (self._qdel, jobid))
 
 
     @same_docstring_as(LRMS.get_resource_status)
@@ -178,8 +185,8 @@ class PbsLrms(batch.BatchSystem):
             self.transport.connect()
 
             username = self._ssh_username
-            log.debug("Running `qstat -a`...")
-            _command = "qstat -a"
+            _command = ('%s -a' % self._qstat)
+            log.debug("Running `%s`...", _command)
             exit_code, qstat_stdout, stderr = self.transport.execute_command(_command)
 
             # self.transport.close()

@@ -102,7 +102,11 @@ class LRMS(gc3libs.utils.Struct):
     """
     def __init__(self, name,
                  architecture, max_cores, max_cores_per_job,
-                 max_memory_per_core, max_walltime, auth=None):
+                 max_memory_per_core, max_walltime, auth=None,
+                 # additional arguments can set instance attributes
+                 **kw):
+        gc3libs.utils.Struct.__init__(self, **kw)
+
         self.name = str(name)
         self.updated = False
 
