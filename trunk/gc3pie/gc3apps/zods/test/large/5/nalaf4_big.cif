@@ -1,0 +1,205 @@
+ 
+data_nalafsmall 
+ 
+_audit_creation_method            SHELXL-97 
+_chemical_name_systematic 
+; 
+ ? 
+; 
+_chemical_name_common             ? 
+_chemical_melting_point           ? 
+_chemical_formula_moiety          ? 
+_chemical_formula_sum 
+ 'F4 La Na' 
+_chemical_formula_weight          237.90 
+ 
+loop_ 
+ _atom_type_symbol 
+ _atom_type_description 
+ _atom_type_scat_dispersion_real 
+ _atom_type_scat_dispersion_imag 
+ _atom_type_scat_source 
+ 'F'  'F'   0.0096   0.0061 
+ 'International Tables Vol C Tables 4.2.6.8 and 6.1.1.4' 
+ 'Na'  'Na'   0.0218   0.0150 
+ 'International Tables Vol C Tables 4.2.6.8 and 6.1.1.4' 
+ 'La'  'La'  -0.6411   1.6148 
+ 'International Tables Vol C Tables 4.2.6.8 and 6.1.1.4' 
+ 
+_symmetry_cell_setting            ? 
+_symmetry_space_group_name_H-M    ? 
+ 
+loop_ 
+ _symmetry_equiv_pos_as_xyz 
+ 'x, y, z' 
+ '-y, x-y, z' 
+ '-x+y, -x, z' 
+ 'x, y, -z' 
+ '-y, x-y, -z' 
+ '-x+y, -x, -z' 
+ 'x, y, z+1/2' 
+ '-y, x-y, z+1/2' 
+ '-x+y, -x, z+1/2' 
+ 'x, y, -z+1/2' 
+ '-y, x-y, -z+1/2' 
+ '-x+y, -x, -z+1/2' 
+ 
+_cell_length_a                    6.1863(9) 
+_cell_length_b                    6.1863(9) 
+_cell_length_c                    7.6676(8) 
+_cell_angle_alpha                 90.00 
+_cell_angle_beta                  90.00 
+_cell_angle_gamma                 120.00 
+_cell_volume                      127.06(4) 
+_cell_formula_units_Z             1.50 
+_cell_measurement_temperature     293(2) 
+_cell_measurement_reflns_used     ? 
+_cell_measurement_theta_min       ? 
+_cell_measurement_theta_max       ? 
+ 
+_exptl_crystal_description        ? 
+_exptl_crystal_colour             ? 
+_exptl_crystal_size_max           ? 
+_exptl_crystal_size_mid           ? 
+_exptl_crystal_size_min           ? 
+_exptl_crystal_density_meas       ? 
+_exptl_crystal_density_diffrn     4.664 
+_exptl_crystal_density_method     'not measured' 
+_exptl_crystal_F_000              156 
+_exptl_absorpt_coefficient_mu     6.682 
+_exptl_absorpt_correction_type    ? 
+_exptl_absorpt_correction_T_min   ? 
+_exptl_absorpt_correction_T_max   ? 
+_exptl_absorpt_process_details    ? 
+ 
+_exptl_special_details 
+; 
+ ? 
+; 
+ 
+_diffrn_ambient_temperature       293(2) 
+_diffrn_radiation_wavelength      0.33000 
+_diffrn_radiation_type            ? 
+_diffrn_radiation_source          'fine-focus sealed tube' 
+_diffrn_radiation_monochromator   graphite 
+_diffrn_measurement_device_type   ? 
+_diffrn_measurement_method        ? 
+_diffrn_detector_area_resol_mean  ? 
+_diffrn_standards_number          ? 
+_diffrn_standards_interval_count  ? 
+_diffrn_standards_interval_time   ? 
+_diffrn_standards_decay_%         ? 
+_diffrn_reflns_number             1335 
+_diffrn_reflns_av_R_equivalents   0.0321 
+_diffrn_reflns_av_sigmaI/netI     0.0199 
+_diffrn_reflns_limit_h_min        -8 
+_diffrn_reflns_limit_h_max        7 
+_diffrn_reflns_limit_k_min        -7 
+_diffrn_reflns_limit_k_max        8 
+_diffrn_reflns_limit_l_min        -4 
+_diffrn_reflns_limit_l_max        4 
+_diffrn_reflns_theta_min          1.76 
+_diffrn_reflns_theta_max          12.40 
+_reflns_number_total              219 
+_reflns_number_gt                 219 
+_reflns_threshold_expression      >2sigma(I) 
+ 
+_computing_data_collection        ? 
+_computing_cell_refinement        ? 
+_computing_data_reduction         ? 
+_computing_structure_solution     'SHELXS-97 (Sheldrick, 1990)' 
+_computing_structure_refinement   'SHELXL-97 (Sheldrick, 1997)' 
+_computing_molecular_graphics     ? 
+_computing_publication_material   ? 
+ 
+_refine_special_details 
+; 
+ Refinement of F^2^ against ALL reflections.  The weighted R-factor wR and 
+ goodness of fit S are based on F^2^, conventional R-factors R are based 
+ on F, with F set to zero for negative F^2^. The threshold expression of 
+ F^2^ > 2sigma(F^2^) is used only for calculating R-factors(gt) etc. and is 
+ not relevant to the choice of reflections for refinement.  R-factors based 
+ on F^2^ are statistically about twice as large as those based on F, and R- 
+ factors based on ALL data will be even larger. 
+; 
+ 
+_refine_ls_structure_factor_coef  Fsqd  
+_refine_ls_matrix_type            full 
+_refine_ls_weighting_scheme       calc  
+_refine_ls_weighting_details 
+ 'calc w=1/[\s^2^(Fo^2^)+(0.0170P)^2^+0.0000P] where P=(Fo^2^+2Fc^2^)/3' 
+_atom_sites_solution_primary      direct 
+_atom_sites_solution_secondary    difmap 
+_atom_sites_solution_hydrogens    geom 
+_refine_ls_hydrogen_treatment     mixed 
+_refine_ls_extinction_method      none 
+_refine_ls_extinction_coef        ? 
+_refine_ls_abs_structure_details 
+ 'Flack H D (1983), Acta Cryst. A39, 876-881' 
+_refine_ls_abs_structure_Flack    0.75(19) 
+_refine_ls_number_reflns          219 
+_refine_ls_number_parameters      21 
+_refine_ls_number_restraints      0 
+_refine_ls_R_factor_all           0.0382 
+_refine_ls_R_factor_gt            0.0382 
+_refine_ls_wR_factor_ref          0.0926 
+_refine_ls_wR_factor_gt           0.0926 
+_refine_ls_goodness_of_fit_ref    3.662 
+_refine_ls_restrained_S_all       3.662 
+_refine_ls_shift/su_max           1.216 
+_refine_ls_shift/su_mean          0.058 
+ 
+loop_ 
+ _atom_site_label 
+ _atom_site_type_symbol 
+ _atom_site_fract_x 
+ _atom_site_fract_y 
+ _atom_site_fract_z 
+ _atom_site_U_iso_or_equiv 
+ _atom_site_adp_type 
+ _atom_site_occupancy 
+ _atom_site_symmetry_multiplicity 
+ _atom_site_calc_flag 
+ _atom_site_refinement_flags 
+ _atom_site_disorder_assembly 
+ _atom_site_disorder_group 
+La1 La 0.0000 0.0000 0.0000 0.0049(4) Uani 1 6 d S . . 
+La2 La 0.6667 0.3333 0.25000 0.0100(6) Uani 0.50 6 d SP . . 
+Na1 Na 0.3333 0.6667 0.3365 0.059(6) Uani 0.50 3 d SP . . 
+Na2 Na 0.6667 0.3333 0.25000 0.0100(6) Uani 0.50 6 d SP . . 
+F1 F 0.6290(7) 0.0367(9) 0.00 0.0112(19) Uani 1 2 d S . . 
+F2 F 0.7322(5) 0.7531(5) 0.25000 0.030(3) Uani 1 2 d S . . 
+ 
+loop_ 
+ _atom_site_aniso_label 
+ _atom_site_aniso_U_11 
+ _atom_site_aniso_U_22 
+ _atom_site_aniso_U_33 
+ _atom_site_aniso_U_23 
+ _atom_site_aniso_U_13 
+ _atom_site_aniso_U_12 
+La1 0.00142(3) 0.00142(3) 0.00090(4) 0.000 0.000 0.00071(1) 
+La2 0.00128(4) 0.00128(4) 0.00192(9) 0.000 0.000 0.00064(2) 
+Na1 0.00298(19) 0.00298(19) 0.00646(92) 0.000 0.000 0.00149(10) 
+Na2 0.00128(4) 0.00128(4) 0.00192(9) 0.000 0.000 0.00064(2) 
+F1 0.00204(4) 0.002804(18) 0.0022(24) 0.000 0.000 0.00137(11) 
+F2 0.00174(15) 0.00169(14) 0.00130(13) 0.000 0.000 0.00056(13) 
+ 
+_geom_special_details 
+; 
+F1 0.00204(4) 0.002804(18) 0.00483(24) 0.000 0.000 0.00137(11) 
+ All esds (except the esd in the dihedral angle between two l.s. planes) 
+ are estimated using the full covariance matrix.  The cell esds are taken 
+ into account individually in the estimation of esds in distances, angles 
+ and torsion angles; correlations between esds in cell parameters are only 
+ used when they are defined by crystal symmetry.  An approximate (isotropic) 
+ treatment of cell esds is used for estimating esds involving l.s. planes. 
+; 
+ 
+ 
+_diffrn_measured_fraction_theta_max    1.000 
+_diffrn_reflns_theta_full              12.40 
+_diffrn_measured_fraction_theta_full   1.000 
+_refine_diff_density_max    0.941 
+_refine_diff_density_min   -2.828 
+_refine_diff_density_rms    0.609 
