@@ -451,6 +451,8 @@ class LsfLrms(batch.BatchSystem):
     _unsuccessful_exit_re = re.compile(r'Exited with exit code (?P<exit_status>[0-9]+).', re.M)
     _cpu_time_re = re.compile(r'The CPU time used is (?P<cputime>[0-9]+(\.[0-9]+)?) seconds', re.M)
 
+    _CONTINUATION_LINE_START = '                     '
+
     @staticmethod
     def _parse_stat_output(stdout):
         # LSF `bjobs -l` uses a LDIF-style continuation lines, wherein
@@ -462,8 +464,8 @@ class LsfLrms(batch.BatchSystem):
         for line in stdout.split('\n'):
             if len(line) == 0:
                 continue
-            if str.isspace(line[0]):
-                lines[-1] += line.lstrip()
+            if line.startswith(LsfLrms._CONTINUATION_LINE_START):
+                lines[-1] += line[len(LsfLrms._CONTINUATION_LINE_START):]
             else:
                 lines.append(line)
 
@@ -486,6 +488,7 @@ class LsfLrms(batch.BatchSystem):
                 if match:
                     log.debug("LSF says: '%s'", match.group(0))
                     jobstatus.exit_status = int(match.group('exit_status'))
+        assert 'state' in jobstatus
         return jobstatus
 
     # The same command is used in LSF to get the status and the accouting info
