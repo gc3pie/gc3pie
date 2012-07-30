@@ -393,23 +393,32 @@ class StagedTaskCollection(SequentialTaskCollection):
 
 
     def next(self, done):
+        # get next stage (1); if none exists, log it and exit
         try:
             next_stage_fn = getattr(self, "stage%d" % (done+1))
-            next_stage = next_stage_fn()
-            if isinstance(next_stage, Task):
-                self.add(next_stage)
-                return Run.State.RUNNING
-            elif isinstance(next_stage, (int, long, tuple)):
-                self.execution.returncode = next_stage
-                return Run.State.TERMINATED
-            else:
-                raise AssertionError("Invalid return value from method `stage%d()` of"
-                                     " `StagedTaskCollection` object %r:"
-                                     " must return `Task` instance or number"
-                                     % (done+1, self))
         except AttributeError:
+            gc3libs.log.debug("StagedTaskCollection '%s' has no stage%d,"
+                              " ending sequence now.", self, (done+1))
             self.execution.returncode = self.tasks[done].execution.returncode
             return Run.State.TERMINATED
+        # get next stage (2); if we get an error here, something is wrong in the code
+        try:
+            next_stage = next_stage_fn()
+        except AttributeError, err:
+            raise AssertionError("Invalid `StagedTaskCollection` instance %r: %s"
+                                 % (self, str(err)))
+        # add next stage to the collection, or end graciously
+        if isinstance(next_stage, Task):
+            self.add(next_stage)
+            return Run.State.RUNNING
+        elif isinstance(next_stage, (int, long, tuple)):
+            self.execution.returncode = next_stage
+            return Run.State.TERMINATED
+        else:
+            raise AssertionError("Invalid return value from method `stage%d()` of"
+                                 " `StagedTaskCollection` object %r:"
+                                 " must return `Task` instance or number"
+                                 % (done+1, self))
 
 
 
