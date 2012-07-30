@@ -170,10 +170,10 @@ class Task(Persistable, Struct):
         self.execution = Run(attach=self)
         # `_grid` and `_attached` are set by `attach()`/`detach()`
         self._attached = False
+        if '_grid' not in self:
+            self._grid = None
         if grid is not None:
             self.attach(grid)
-        else:
-            self._grid = None
         self.changed = True
 
     # manipulate the "grid" interface used to control the associated job
