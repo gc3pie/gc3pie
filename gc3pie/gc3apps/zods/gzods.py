@@ -59,7 +59,7 @@ class GzodsApp(gc3libs.Application):
         gc3libs.Application.__init__(
             self,
             tags=["APPS/CHEM/ZODS-0.319"],
-            executable = '$MPIRUN', # mandatory
+            executable = '$MPIEXEC', # mandatory
             arguments = [
                 # these are arguments to `mpirun`
                 "-n", kw['requested_cores'],
