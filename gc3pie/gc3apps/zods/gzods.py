@@ -67,9 +67,9 @@ class GzodsApp(gc3libs.Application):
                 '$ZODS_BINDIR/simulator', os.path.basename(filename),
             ],
             inputs = [filename, input1, input2],    # mandatory, inputs are files that will be copied to the site
-            outputs = gc3libs.ANY_OUTPUT,                 # mandatory
-            stderr = "stderr.txt",
-            stdout = "stdout.txt",
+            outputs = gc3libs.ANY_OUTPUT,           # mandatory
+            stdout = "stdout+err.txt",
+            join=True,
             **kw)
 
 
