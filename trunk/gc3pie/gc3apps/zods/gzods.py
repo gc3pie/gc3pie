@@ -28,6 +28,9 @@ __version__ = 'development version (SVN $Revision$)'
 __changelog__ = """
   2012-07-17:
     * Initial releases.
+  2012-07-31:
+    * Added support for submission of multiple files.
+
 """
 __author__ = 'Lukasz Miroslaw <lukasz.miroslaw@uzh.ch>'
 __docformat__ = 'reStructuredText'
@@ -52,10 +55,14 @@ class GzodsApp(gc3libs.Application):
         if self.check_input(filename) is None:
                 gc3libs.log.warning("Input files for ZODS app was not detected.")
                 return None
-        (input1, input2) = self.check_input(filename)
+        (input1, input2, input3) = self.check_input(filename)
         input1 = os.path.abspath(input1)
         input2 = os.path.abspath(input2)
-        gc3libs.log.debug("Detected input files for ZODS: %s, %s and %s.", filename, input1, input2)
+	# Optional file for restarting the job
+	if input3 is not "":
+		input3 = os.path.abspath(input3)
+        
+	gc3libs.log.debug("Detected input files for ZODS: %s, %s and %s.", filename, input1, input2, input3)
         gc3libs.Application.__init__(
             self,
             tags=["APPS/CHEM/ZODS-0.326"],
@@ -66,7 +73,7 @@ class GzodsApp(gc3libs.Application):
                 # this is the real ZODS command-line
                 '$ZODS_BINDIR/simulator', os.path.basename(filename),
             ],
-            inputs = [filename, input1, input2],    # mandatory, inputs are files that will be copied to the site
+            inputs = [filename, input1, input2, input3],    # mandatory, inputs are files that will be copied to the site
             outputs = gc3libs.ANY_OUTPUT,           # mandatory
             stdout = "stdout+err.txt",
             join=True,
@@ -79,16 +86,25 @@ class GzodsApp(gc3libs.Application):
         for output in self.outputs:
                 gc3libs.log.debug("Retrieved the following file from ZODS job %s", output)
 
-# Detect the following references to external files in input.xml
-#   <average_structure>
-#      <file format="cif" name="californium_simple_3.cif"/>
-#   </average_structure>
-# <reference_intensities file_format="xml" file_name="data.xml"/>
-
+	"""	 
+	Detect the following references to external files in input.xml
+	input1: 
+	<average_structure>
+           <file format="cif" name="californium_simple_3.cif"/>
+        </average_structure>
+        input2:
+	<reference_intensities file_format="xml" file_name="data.xml"/>
+	input3:
+	<optimization method>
+		<restart file="diff_ev2.xml" />
+	</optimization method>
+	
+	"""
     def check_input(self,filename):
-        if not os.path.exists(filename):
+       	
+	if not os.path.exists(filename):
             raise RuntimeError("Input file '%s' DOES NOT exists." % filename)
-        basedir = os.path.dirname(filename)
+	basedir = os.path.dirname(filename)
         DOMTree = xml.dom.minidom.parse(filename)
         cNodes = DOMTree.childNodes
         if len(cNodes[0].getElementsByTagName('reference_intensities')) > 0 and len(cNodes[0].getElementsByTagName('average_structure')) > 0:
@@ -106,9 +122,16 @@ class GzodsApp(gc3libs.Application):
                     " averaged structure file '%s'"
                     " and reference intesities file '%s'.",
                     filename, avg_file, data_file)
-                return (data_file, avg_file)
-        else:
-            raise RuntimeError("Input file '%s' is NOT a valid XML file for ZODS application." % filename)
+		if len(cNodes[0].getElementsByTagName('run_type')) > 0:
+			restart_file = cNodes[0].getElementsByTagName('optimization_method')[0].getElementsByTagName('restart')[0].getAttribute('file')
+            		restart_file = os.path.join(basedir,restart_file)
+            		#restart_file = os.path.abspath(restart_file)
+			if os.path.exists(restart_file)  == False:
+                		raise RuntimeError("Input file '%s' references a file '%s' that DOES NOT exists." % (filename, restart_file))
+			else:
+            			gc3libs.log.debug("%s references also a restart file: %s.", filename, restart_file)
+                
+		return (data_file, avg_file, restart_file)
 
 
 class ZodsScript(gc3libs.cmdline.SessionBasedScript):
