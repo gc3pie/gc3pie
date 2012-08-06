@@ -23,7 +23,7 @@
         University of Zurich \\
         E-mail: \email{riccardo.murri@gmail.com}}
 
-\abstract{This paper present GC3Pie, a python library to ease the
+\abstract{This paper present GC3Pie \cite{gc3pie}, a python library to ease the
   development of scalable and robust High Throughput data analysis
   tools. Most of the current distributed computing middlewares as well
   as most of the in-house grown scripts fall short in reaching the
@@ -77,7 +77,7 @@ scientific investigations is growing.
 GC3Pie addresses the challenges of distributed programming by
 providing an abstraction that isolates the developer from system-level
 details. The programming model specifies simple data structures and
-interfaces to steer the behaviour of the underlying system in an
+interfaces to steer the behavior of the underlying system in an
 application-centric perspective.
 GC3Pie maintains a separation of what applications are to be executed
 and how those executions are actually carried out on the underlying
@@ -95,7 +95,7 @@ control of the underlying computing and data infrastructure, as
 opposite of current middleware stacks that are trying to embody the
 control of the execution logic thus reducing the flexibility at
 application level that are prevented to define their own
-expected behaviour of the system.
+expected behavior of the system.
 
 % \section{Related Works}
 % Ganga, Saga, P-GRADE
@@ -107,6 +107,10 @@ including \acs{ARC}-based computational grids \cite{arc}.  It also
 provides facilities for implementing command-line driver scripts, in
 the form of Python object classes whose behavior can be customized by
 overriding specified object methods.
+GC3Pie comes with backends that allow to easily integrate SGE and LSF
+controlled batch clusters and with an ARC backends that makes fully
+use of the powerfull ARC client libraries to access ARC-based systems
+as well as gLite \cite{glite} CREAM-CE-based systems.
 
 The GC3Pie is comprised of two main components: 
 
@@ -211,7 +215,7 @@ The unit of job composition is called a \texttt{Task} in GC3Libs. An
 \texttt{Task}. However, a single task can be composed of many
 applications. A task is a composite object: tasks can be composed of
 other tasks. Workflows are built by composing tasks in different
-ways. A ``workflow'' is a task, too.
+ways. A workflow is a \texttt{Task}, too.
 
 GC3Pie provides composition operators, that allow treating a
 collection of tasks as a single whole
@@ -233,13 +237,12 @@ is invoked in between each step, which can terminate execution early
 (e.g., in case of errors), but also alter the list of planned tasks.
 
 
-\section{GC3Pie in action: gcrypto}
-gcrypto is a utility for supporting the large scale execution of
-cryptographic applications like the factorization of the 768-bit
-number RSA-768 by the number field sieve factoring method \cite{hetero2012}
-% What is the application and the usecase ?
-Like a for-loop, the gcrypto driver script takes as input three
-mandatory arguments:
+\section{GC3Pie in action: \texttt{gcrypto}}
+\texttt{gcrypto} is a utility for supporting the large scale execution
+of cryptographic applications like the factorization of the 768-bit
+number RSA-768 by the number field sieve factoring method
+\cite{hetero2012}. Like a for-loop, the \texttt{gcrypto} driver script
+takes as input three mandatory arguments:
 \begin{itemize}
 \item{\it RANGE\_START}: initial value of the range (e.g., 800000000)
 \item{\it RANGE\_END} final value of the range (e.g., 1200000000)
@@ -259,15 +262,14 @@ range 800001000 to 800002000, and so on.
 Jobs progress is monitored and, when a job is done, output is
 retrieved back.
 
-The `gcrypto` command keeps a record of jobs (submitted, executed and
+The \texttt{gcrypto} command keeps a record of jobs (submitted, executed and
 pending) in a session file (set name with the '-s' option); at each
 invocation of the command, the status of all recorded jobs is updated,
 output from finished jobs is collected, and a summary table of all
-known jobs is printed.  New jobs are added to the session if new input
-files are added to the command line.
+known jobs is printed. 
 
 Due to the very large number of embarrassingly parallel jobs that could be
-created with this usecase, gcrypto uses a {\it ChunkedParameterSweep}
+created with this usecase, \texttt{gcrypto} uses a {\it ChunkedParameterSweep}
 collection to group all executions. This particular data structure is
 like {\it ParallelTaskCollection} as it allows to define a parallel
 execution of the defined tasks, but generate a sequence of jobs with a
@@ -280,9 +282,26 @@ grid=None)
 
 Only \emph{chunk\_size} jobs are generated at a time, to distribute the
 burden of job creation along the whole run.
-Gcrypto has been used in production on the NGI-CH national
+\texttt{Gcrypto} has been used in production on the NGI-CH national
 infrastructure SMSCG \cite{smscg} with an initial range 800M - 1200M
-with step 1000; that produced 1.6M cpu\_hours.
+with step 1000; that produced 1.6M cpu\_hours. SMSCG is mostly based
+on the ARC middleware.
+
+\section{Related Works}
+% XXX: check what Ganga can and cannot do in repsect of workflow
+Ganga \cite{ganga} is an easy-to-use frontend for job definition and
+management, implemented in Python. It has been mainly developed to
+meet the needs of the ATLAS and LHCb for a Grid user interface. Ganga
+supports large scale job handling through various plugins deriving
+from template ones like the ''splitting'' and the ''merging''. This
+approach has been demonstrated to be effective for parameter-sweep
+like type of computations. While Ganga provides data structure
+to define large collection of Job management similar to those defined
+by GC3Pie, it does not provide mechanisms to let applications to
+influence the job management lifecycle (e.g. take application-specific
+actions upon job state transition). While GC3Pie comes with fully
+fledged support for Task and Collection compositions, Ganga only
+provides composition primitives in the form of splitting and merging.
 
 \section{Conclusions}
 % \item Where we are: 
@@ -323,6 +342,10 @@ reliability metric, etc.)
     Stockinger: A heterogeneous computing environment to solve the
     768-bit RSA challenge. Cluster Computing 15(1): 53-68 (2012).
   \bibitem{smscg} http://www.smscg.ch
+  \bibitem{glite} CREAM Computing
+    Element. https://wiki.italiangrid.it/CREAM
+  \bibitem{gc3pie} GC3Pie. http://code.google.com/p/gc3pie/
+  \bibitem{ganga} Ganga. http://ganga.web.cern.ch/ganga/
 \end{thebibliography}
 
 \end{document}

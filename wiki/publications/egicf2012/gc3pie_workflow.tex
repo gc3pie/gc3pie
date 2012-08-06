@@ -12,7 +12,7 @@
 \acrodef{ARC}{Advanced Resource Connector}
 \acrodef{xRSL}{Extended Resource Specification Language}
 
-\title{Computational workflows with GC3Pie}
+\title{Computational workflows with GC3Pe}
 
 \ShortTitle{Computational workflows with GC3Pie}
 
@@ -35,7 +35,7 @@
 
 \abstract{
   % Intro va rifatta probabilmente.
-  This paper present GC3Pie, a python library to ease the
+  This paper present GC3Pie \cite{gc3pie}, a python library to ease the
   development of scalable and robust High Throughput data analysis
   tools. Most of the current distributed computing middlewares as well
   as most of the in-house grown scripts fall short in reaching the
@@ -46,13 +46,13 @@
   interfaces to steer the behaviour of the underlying system in an
   application-centric perspective. The goal of GC3Pie is to embody the
   common execution and monitorig processing part of large data
-  analysys while moving most decision making logic to the application
-  level; like, for example, the reaction of certain types of failures,
+  analysis while moving most decision making logic to the application
+  level; like, for example, the reaction to certain types of failures,
   the validation of the application execution or the brokering of the
   computing resources driven by application fidelity metrics.
   This allows to write application specific tools that take full
   control of the underlying computing and data infrastructure, as
-  opposite of current middleware stacks that are trying to embody the
+  opposite to current middleware stacks that are trying to embody the
   full control of the execution logic thus reducing the flexibility of
   the entire system as they prevent applications to define their own
   expected behaviour of the system.}
@@ -87,10 +87,10 @@ expressed in a plain programming language. This means that it is easy
 to create loops and conditionally branch execution, for example.
  
 Unlike other Python frameworks for distributing computation, e.g.,
-Celery or Pyro, GC3Pie is designed to coordinate the execution of
-independent Applications (often pre-existing and written in another
-language): with GC3Pie you write Python code to steer the computation,
-not to perform it. 
+Celery \cite{celery} or Pyro \cite{pyro}, GC3Pie is designed to
+coordinate the execution of independent Applications (often
+pre-existing and written in another language): with GC3Pie you write
+Python code to steer the computation, not to perform it. 
 
 \section{Workflows with GC3Pie}
 GC3Pie encourages a compositional approach for building workflows: the
@@ -220,7 +220,6 @@ class \textcolor{YellowGreen}{GFPParallel}(\textcolor{Lavender}{ParallelTaskColl
     \end{minipage}
   \end{center}
 
-
 \texttt{Applications} are the basic Tasks that comprise a workflow in
 GC3Pie. An Application is just a UNIX process, i.e., any command that
 can be run from the shell command line.  The Application class should
@@ -254,6 +253,25 @@ def __init__(self, ...):
 \label{fig1}
 \end{figure}
 
+
+The workflow has been integrated in a suite called \texttt{gpremium} that has
+been used by a research group from the Department of Banking and
+Finance a the University of Zurich
+(http://www.bf.uzh.ch/). A
+total of 796024062 jobs and an aggregated walltime of 221118 cpu/hours
+has been generated through the \texttt{gpremium} suite.
+
+
+\section{Conclusion}
+This paper has presented how complex computational workflows could be
+programmatically model using the GC3Pie framework. Instead of
+expressing the workflow logic using a defined workflow description
+language as in many data-driven systems, GC3Pie allows to use simple
+and yet effective data structures to programmatically compose tasks.
+GC3Pie is an open source project under GPL license available at at
+http://code.google.com/p/gc3pie/.
+
+
 \begin{thebibliography}{99}
   \bibitem{Jones2011} Jonen B., Scheuring S. Time-Varying International
     Diversification and the Forward Premium (working paper). Institut
@@ -261,6 +279,12 @@ def __init__(self, ...):
   \bibitem{Prince2005} Price K.V., Storn R.M., Lampinen J.A. Differential
     evolution: a practical approach to global optimization. Springer,
     2005.
+  \bibitem{pyro} Pyro: http://packages.python.org/Pyro4/
+  \bibitem{celery} Celery: Distributed Task Queue
+    http://celeryproject.org/
+  \bibitem{gc3pie} GC3Pie. http://code.google.com/p/gc3pie/
+  \bibitem{gpremium} Gpremium, is a GC3Pie application available
+    throught the GC3Pie repository. http://code.google.com/p/gc3pie/
 \end{thebibliography}
 
 \end{document}
