@@ -1042,7 +1042,7 @@ class Application(Task):
                 '(executable="%s")' % utils.ifelse(self.executable.startswith('./'),
                                                    self.executable[2:],
                                                    self.executable),
-                '(gmlog=".arc")', # FIXME: should check if conflicts with any input/output files
+                '(gmlog=".gc3pie_arc")', # FIXME: should check if conflicts with any input/output files
                 ])
         # treat 'arguments' separately
         if self.arguments:
