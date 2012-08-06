@@ -971,7 +971,7 @@ class Application(Task):
                 continue
             if (self.requested_walltime is not None
                 and int(self.requested_walltime) > int(lrms.max_walltime or sys.maxint)):
-                gc3libs.log.info("Rejecting resource '%s': requested a longer duration (%d s) that resource provides (%s h)"
+                gc3libs.log.info("Rejecting resource '%s': requested a longer duration (%d h) that resource provides (%s h)"
                                  % (lrms.name, self.requested_walltime, lrms.max_walltime))
                 continue
             if not lrms.validate_data(self.inputs.keys()) or not lrms.validate_data(self.outputs.values()):
