@@ -1037,7 +1037,7 @@ class Application(Task):
         # XXX: ARC0 seems to behave inconsistently if './something' is
         # given as `executable`; however, commands run fine without
         # the leading `./`, so let us just remove it and hope for the best.
-        xrsl= unicode.join(u' ', [
+        xrsl= str.join(' ', [
                 '&',
                 '(executable="%s")' % utils.ifelse(self.executable.startswith('./'),
                                                    self.executable[2:],
@@ -1046,7 +1046,7 @@ class Application(Task):
                 ])
         # treat 'arguments' separately
         if self.arguments:
-            xrsl += '(arguments=%s)' % unicode.join(u' ', [('"%s"' % x) for x in self.arguments])
+            xrsl += '(arguments=%s)' % str.join(' ', [('"%s"' % x) for x in self.arguments])
         # preserve execute permission on all input files
         executables = [ ]
         for l, r in self.inputs.iteritems():
@@ -1054,7 +1054,7 @@ class Application(Task):
                 executables.append(r)
         if len(executables) > 0:
             xrsl += ('(executables=%s)'
-                     % unicode.join(u' ', [(u'"%s"' % x) for x in executables]))
+                     % str.join(' ', [('"%s"' % x) for x in executables]))
         if self.stdin:
             xrsl += '(stdin="%s")' % self.stdin
         if self.join:
@@ -1067,7 +1067,7 @@ class Application(Task):
             xrsl += '(stderr="%s")' % self.stderr
         if len(self.inputs) > 0:
             xrsl += ('(inputFiles=%s)'
-                     % unicode.join(u' ', [ (u'("%s" "%s")' % (r, l))
+                     % str.join(' ', [ ('("%s" "%s")' % (r, l))
                                        for (l,r) in self.inputs.items() ]))
         if len(self.outputs) > 0:
             # XXX: this can go away when we have the ternary operator
@@ -1100,32 +1100,32 @@ class Application(Task):
                                         if (remotename != self.stdout
                                             and remotename != self.stderr)]]
             if len(outputs_) > 0:
-                xrsl += (u'(outputFiles=%s)' % unicode.join(u' ', outputs_))
+                xrsl += ('(outputFiles=%s)' % str.join(' ', outputs_))
         if len(self.tags) > 0:
-            xrsl += unicode.join(u'\n', [
-                    (u'(runTimeEnvironment="%s")' % rte) for rte in self.tags ])
+            xrsl += str.join('\n', [
+                    ('(runTimeEnvironment="%s")' % rte) for rte in self.tags ])
         if len(self.environment) > 0:
-            xrsl += (u'(environment=%s)' %
-                     unicode.join(u' ', [ (u'("%s" "%s")' % kv) for kv in self.environment ]))
+            xrsl += ('(environment=%s)' %
+                     str.join(' ', [ ('("%s" "%s")' % kv) for kv in self.environment ]))
         if self.requested_walltime:
-            xrsl += u'(wallTime="%d hours")' % self.requested_walltime
+            xrsl += '(wallTime="%d hours")' % self.requested_walltime
         if self.requested_memory:
-            xrsl += u'(memory="%d")' % (1000 * self.requested_memory)
+            xrsl += '(memory="%d")' % (1000 * self.requested_memory)
         if self.requested_cores:
-            xrsl += u'(count="%d")' % self.requested_cores
+            xrsl += '(count="%d")' % self.requested_cores
         # XXX: the xRSL specification states that the "architecture" value
         # is matched against the value reported as `uname -a` on the cluster,
         # but different Linux distributions use "i386", "i586" and "i686"
         # as `uname -a` values, so there is no single value that can
         # match any x86 arch...
         if self.requested_architecture is not None:
-            xrsl += u'(architecture="%s")' % self.requested_architecture
+            xrsl += '(architecture="%s")' % self.requested_architecture
         if self.jobname:
-            xrsl += u'(jobname="%s")' % self.jobname
+            xrsl += '(jobname="%s")' % self.jobname
 
         # XXX: experimental
         # this should be harmless if cache registration would not work
-        xrsl += u'(cache="yes")'
+        xrsl += '(cache="yes")'
 
         # WARNING: ARClib SWIG bindings cannot resolve the overloaded
         # constructor if the argument is a Python "unicode" object;
