@@ -928,17 +928,6 @@ class Application(Task):
             return safe_repr(self)
 
 
-    def clone(self):
-        """
-        Return a deep copy of this `Application` object, with the
-        `.execution` instance variable reset to a fresh new instance
-        of `Run`.
-        """
-        new = copy.deepcopy(self)
-        new.execution = Run()
-        return new
-
-
     def compatible_resources(self, resources):
         """
         Return a list of compatible resources.
