@@ -830,8 +830,9 @@ class SessionBasedScript(_Script):
                 continue
             #self.log.debug("New job '%s', adding it to session." % jobname)
             kwargs.setdefault('jobname', jobname)
-            kwargs.setdefault('requested_memory', self.params.memory_per_core)
             kwargs.setdefault('requested_cores', self.params.ncores)
+            kwargs.setdefault('requested_memory',
+                              self.params.ncores * self.params.memory_per_core)
             kwargs.setdefault('requested_walltime', self.params.walltime)
             kwargs.setdefault('output_dir',
                               self.make_directory_path(self.params.output,

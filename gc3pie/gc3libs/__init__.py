@@ -964,9 +964,9 @@ class Application(Task):
                                  % (lrms.name, self.requested_cores, lrms.max_cores_per_job))
                 continue
             if (self.requested_memory is not None
-                and self.requested_memory > lrms.max_memory_per_core):
-                gc3libs.log.info("Rejecting resource '%s': requested more memory per core (%d GB) that resource provides (%d GB)"
-                                 % (lrms.name, self.requested_memory, lrms.max_memory_per_core))
+                and self.requested_memory > self.requested_cores * lrms.max_memory_per_core):
+                gc3libs.log.info("Rejecting resource '%s': requested more memory (%d GB) that resource provides (%d GB, %d GB per CPU core)"
+                                 % (lrms.name, self.requested_memory, self.requested_cores*lrms.max_memory_per_core, lrms.max_memory_per_core))
                 continue
             if (self.requested_walltime is not None
                 and self.requested_walltime > lrms.max_walltime):
