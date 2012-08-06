@@ -959,18 +959,17 @@ class Application(Task):
                                     str.join(', ', [str(arch) for arch in lrms.architecture ])))
                 continue
             # check that Application requirements are within resource limits
-            if (self.requested_cores is not None
-                and int(self.requested_cores) > int(lrms.max_cores_per_job or sys.maxint)):
+            if self.requested_cores > lrms.max_cores_per_job:
                 gc3libs.log.info("Rejecting resource '%s': requested more cores (%d) that resource provides (%d)"
                                  % (lrms.name, self.requested_cores, lrms.max_cores_per_job))
                 continue
             if (self.requested_memory is not None
-                and int(self.requested_memory) > int(lrms.max_memory_per_core or sys.maxint)):
+                and self.requested_memory > lrms.max_memory_per_core):
                 gc3libs.log.info("Rejecting resource '%s': requested more memory per core (%d GB) that resource provides (%d GB)"
                                  % (lrms.name, self.requested_memory, lrms.max_memory_per_core))
                 continue
             if (self.requested_walltime is not None
-                and int(self.requested_walltime) > int(lrms.max_walltime or sys.maxint)):
+                and self.requested_walltime > lrms.max_walltime):
                 gc3libs.log.info("Rejecting resource '%s': requested a longer duration (%d h) that resource provides (%s h)"
                                  % (lrms.name, self.requested_walltime, lrms.max_walltime))
                 continue
