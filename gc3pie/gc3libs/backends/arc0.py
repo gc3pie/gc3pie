@@ -39,7 +39,7 @@ from gc3libs import log, Run
 from gc3libs.backends import LRMS
 import gc3libs.exceptions
 from gc3libs.utils import *
-from gc3libs.Resource import Resource
+# from gc3libs.Resource import Resource
 
 # this is where arc0 libraries are installed from release 11.05
 sys.path.append('/usr/lib/pymodules/python%d.%d/'
@@ -112,7 +112,6 @@ class ArcLrms(LRMS):
         #arcnotifier.SetNotifyTimeStamp(True)
 
         self.targets_blacklist = []
-
 
     @same_docstring_as(LRMS.cancel_job)
     @LRMS.authenticated
@@ -562,6 +561,7 @@ class ArcLrms(LRMS):
         user_running = 0
         user_queued = 0
 
+
         def _normalize_value(val):
             # an ARC value may contains -1 when the subsystem cannot
             # get/resolve it we treat then these values as 0
@@ -618,6 +618,7 @@ class ArcLrms(LRMS):
                           self.user_queued,
                           self.queued,
                           )
+
         return self
 
 
