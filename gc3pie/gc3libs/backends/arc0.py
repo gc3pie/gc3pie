@@ -39,7 +39,6 @@ from gc3libs import log, Run
 from gc3libs.backends import LRMS
 import gc3libs.exceptions
 from gc3libs.utils import *
-# from gc3libs.Resource import Resource
 
 # this is where arc0 libraries are installed from release 11.05
 sys.path.append('/usr/lib/pymodules/python%d.%d/'

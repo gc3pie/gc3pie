@@ -45,7 +45,6 @@ from gc3libs.backends.lsf import LsfLrms
 from gc3libs.backends.shellcmd import ShellcmdLrms
 from gc3libs.authentication import Auth
 import gc3libs.exceptions
-# import gc3libs.Resource as Resource
 import gc3libs.scheduler as scheduler
 import gc3libs.utils as utils
 
