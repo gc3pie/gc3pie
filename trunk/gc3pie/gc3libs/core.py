@@ -45,7 +45,7 @@ from gc3libs.backends.lsf import LsfLrms
 from gc3libs.backends.shellcmd import ShellcmdLrms
 from gc3libs.authentication import Auth
 import gc3libs.exceptions
-import gc3libs.Resource as Resource
+# import gc3libs.Resource as Resource
 import gc3libs.scheduler as scheduler
 import gc3libs.utils as utils
 
@@ -373,6 +373,13 @@ specified in the configuration file.
                 app.changed = True
                 continue
 
+
+            except gc3libs.exceptions.InvalidResourceName, irn:
+                # could be the corresponding LRMS has been removed because of an unrecoverable error
+                # mark application as state UNKNOWN
+                gc3libs.log.warning("Failed while retrieving resource %s from core.Detailed Error message: %s" % (app.execution.resource_name, str(irn)))
+                continue
+
             # XXX: Re-enabled the catch-all clause otherwise the loop stops at the first erroneous iteration
             except Exception, ex:
                 gc3libs.log.warning("Ignored error in Core.update_job_state(): %s", str(ex))
@@ -463,6 +470,14 @@ specified in the configuration file.
             # clear previous data staging errors
             if job.signal == Run.Signals.DataStagingFailure:
                 job.signal = 0
+        except gc3libs.exceptions.InvalidResourceName, irn:
+            gc3libs.log.warning("Failed while retrieving resource %s from core.Detailed Error message: %s" % (app.execution.resource_name, str(irn)))
+            ex = app.fetch_output_error(ex)
+            if isinstance(ex, Exception):
+                job.info = ("No output could be retrieved: %s" % str(ex))
+                raise ex
+            else:
+                return
         except gc3libs.exceptions.RecoverableDataStagingError, rex:
             job.info = ("Temporary failure when retrieving results: %s. Ignoring error, try again." % str(rex))
             return
@@ -527,9 +542,12 @@ specified in the configuration file.
         """Implementation of `kill` on `Application` objects."""
         job = app.execution
         auto_enable_auth = kw.get('auto_enable_auth', self.auto_enable_auth)
-        lrms = self.get_backend(job.resource_name)
-        # self.auths.get(lrms.auth)
-        lrms.cancel_job(app)
+        try:
+            lrms = self.get_backend(job.resource_name)
+            # self.auths.get(lrms._resource.auth)
+            lrms.cancel_job(app)
+        except gc3libs.exceptions.InvalidResourceName, irn:
+            gc3libs.log.warning("Failed while retrieving resource %s from core.Detailed Error message: %s" % (app.execution.resource_name, str(irn)))
         gc3libs.log.debug("Setting job '%s' status to TERMINATED"
                           " and returncode to SIGCANCEL" % job)
         app.changed = True
