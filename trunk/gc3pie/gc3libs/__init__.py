@@ -1030,7 +1030,7 @@ class Application(Task):
         .. warning::
 
           WARNING: ARClib SWIG bindings cannot resolve the overloaded
-          constructor if the xRSL stringargument is a Python 'unicode'
+          constructor if the xRSL string argument is a Python 'unicode'
           object; if you overload this method, force the result to be
           a 'str'!
         """
@@ -1110,7 +1110,8 @@ class Application(Task):
         if self.requested_walltime:
             xrsl += '(wallTime="%d hours")' % self.requested_walltime
         if self.requested_memory:
-            xrsl += '(memory="%d")' % (1000 * self.requested_memory)
+            # ARC's "memory" is memory per "rank" (= core in MPI-speak)
+            xrsl += '(memory="%d")' % (1000 * self.requested_memory / self.requested_cores)
         if self.requested_cores:
             xrsl += '(count="%d")' % self.requested_cores
         # XXX: the xRSL specification states that the "architecture" value
