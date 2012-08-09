@@ -30,7 +30,8 @@ __changelog__ = """
     * Initial releases.
   2012-07-31:
     * Added support for submission of multiple files.
-
+  2012-08-06:
+    * Added support of restarting the job
 """
 __author__ = 'Lukasz Miroslaw <lukasz.miroslaw@uzh.ch>'
 __docformat__ = 'reStructuredText'
@@ -43,6 +44,7 @@ if __name__ == '__main__':
 
 import os
 import xml.dom.minidom
+from xml.etree.ElementTree  import ElementTree
 import gc3libs
 import gc3libs.cmdline
 
@@ -104,7 +106,14 @@ class GzodsApp(gc3libs.Application):
             raise RuntimeError("Input file '%s' DOES NOT exists." % filename)
 	basedir = os.path.dirname(filename)
         DOMTree = xml.dom.minidom.parse(filename)
-        cNodes = DOMTree.childNodes
+        tree = ElementTree()
+	XMLTree = tree.parse(filename)
+#	print ElementTree.tostring(XMLTree)
+	if XMLTree.find("reference_intensities"):
+            	gc3libs.log.debug("AAAAaaa")
+		if XMLTree.find("average_structure"):
+            		gc3libs.log.debug("AAAAaaa")
+	cNodes = DOMTree.childNodes
         if len(cNodes[0].getElementsByTagName('reference_intensities')) > 0 and len(cNodes[0].getElementsByTagName('average_structure')) > 0:
             data_file = cNodes[0].getElementsByTagName('reference_intensities')[0].getAttribute('file_name')
             avg_file = cNodes[0].getElementsByTagName('average_structure')[0].getElementsByTagName('file')[0].getAttribute('name')
@@ -122,17 +131,18 @@ class GzodsApp(gc3libs.Application):
                     filename, avg_file, data_file)
 		if len(cNodes[0].getElementsByTagName('run_type')) > 0:
 			if len(cNodes[0].getElementsByTagName('optimization_method')) > 0:
-				restart_file = cNodes[0].getElementsByTagName('optimization_method')[0].getElementsByTagName('restart')[0].getAttribute('file')
-            			restart_file = os.path.join(basedir,restart_file)
-            			#restart_file = os.path.abspath(restart_file)
-				if os.path.exists(restart_file)  == False:
-                			raise RuntimeError("Input file '%s' references a file '%s' that DOES NOT exists." % (filename, restart_file))
-				else:
-            				gc3libs.log.debug("%s references also a restart file: %s.", filename, restart_file)
+				if len(cNodes[0].getElementsByTagName('restart')) > 0:
+					restart_file = cNodes[0].getElementsByTagName('optimization_method')[0].getElementsByTagName('restart')[0].getAttribute('file')
+            				restart_file = os.path.join(basedir,restart_file)
+            				#restart_file = os.path.abspath(restart_file)
+					if os.path.exists(restart_file)  == False:
+                				raise RuntimeError("Input file '%s' references a file '%s' that DOES NOT exists." % (filename, restart_file))
+					else:
+            					gc3libs.log.debug("%s references also a restart file: %s.", filename, restart_file)
                 
-				return (data_file, avg_file, restart_file)
-			else:
-				return (data_file, avg_file)
+					return (data_file, avg_file, restart_file)
+				else:
+					return (data_file, avg_file)
 
 
 class ZodsScript(gc3libs.cmdline.SessionBasedScript):
