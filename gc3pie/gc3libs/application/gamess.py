@@ -56,31 +56,29 @@ class GamessApplication(gc3libs.Application):
         output_file_name = input_file_name_sans + '.dat'
         # add defaults to `kw` if not already present
         kw.setdefault('stdout', input_file_name_sans + '.out')
-        kw.setdefault('application_tag', "gamess")
-        if 'tags' in kw:
-            # FIXME: should be APPS/CHEM/GAMESS-${verno}
-            kw['tags'].append("APPS/CHEM/GAMESS-2010")
+        kw.setdefault('tags', list())
+        self.verno = kw.get('verno', None)
+        if self.verno is not None:
+            kw['tags'].append("APPS/CHEM/GAMESS-%s" % self.verno)
         else:
-            kw['tags'] = [ "APPS/CHEM/GAMESS-2010" ]
-        arguments = [ input_file_name ]
-        # FIXME: enable when the GAMESS invocation script conforms to
-        # the `rungms` interface; see Issue 3.
-        # # `rungms` has a fixed structure for positional arguments:
-        # # INPUT VERNO NCPUS; if one of them is to be omitted,
-        # # we use the empty string instead.
-        # arguments = [
-        #     input_file_name,
-        #     str(kw.get('verno') or ""),
-        #     str(kw.get('requested_cores') or "")
-        #     ],
-        #if kw.has_key('extbas') is not None:
-        #    other_input_files += extbas
-        #    arguments.extend(['--extbas', os.path.basename(extbas)])
+            # no VERNO specified
+            kw['tags'].append("APPS/CHEM/GAMESS")
+        # `rungms` has a fixed structure for positional arguments:
+        # INPUT VERNO NCPUS; if one of them is to be omitted,
+        # we use the empty string instead.
+        arguments = [
+            input_file_name,
+            str(kw.get('verno') or ""),
+            str(kw.get('requested_cores') or "")
+            ]
+        if 'extbas' in kw:
+           other_input_files += kw['extbas']
+           arguments.extend(['--extbas', os.path.basename(kw['extbas'])])
         #set job name
         kw['job_name'] = input_file_name_sans
         # build generic `Application` obj
         gc3libs.Application.__init__(self,
-                                     executable = "/$GAMESS_LOCATION/nggms",
+                                     executable = "/$RUNGMS", # XXX: should be: "rungms",
                                      arguments = arguments,
                                      inputs = [ inp_file_path ] + list(other_input_files),
                                      outputs = [ output_file_name ],
