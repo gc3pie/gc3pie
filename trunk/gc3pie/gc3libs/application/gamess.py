@@ -283,3 +283,5 @@ if "__main__" == __name__:
     import doctest
     doctest.testmod(name="gamess",
                     optionflags=doctest.NORMALIZE_WHITESPACE)
+
+
