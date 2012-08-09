@@ -16,7 +16,11 @@ class TestLine:
 		self.LTolerances = [] #tolerances
 		self.LLabel = [] #Label, such as energy, gradient, etc. 
 		self.DEBUG = False
-		
+	        
+		import sys
+        	mod = sys.modules[__name__]
+        	mod = sys.modules[TestLine.__class__.__module__]
+		#__module__ = "TestLine"	
 	def debug(self):
 		self.DEBUG = True
 		
