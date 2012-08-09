@@ -117,9 +117,9 @@ class GamessTst:
 		else:
 			print NumberOfCorrectTests,"out of",NumberOfTests, "terminated normally."
 		if NumberOfIncorrectResults == 0:
-			print "All job(s) got correct numerical results."
+			gc3libs.log.info("All job(s) got correct numerical results.")
 		else:
-			print NumberOfIncorrectResults, "job(s) got incorrect numerical results. Please examine why."
+			gc3libs.log.info("%d job(s) got incorrect numerical results. Please examine why.", NumberOfIncorrectResults) 
 
 	#Predefined tolerances
 	
