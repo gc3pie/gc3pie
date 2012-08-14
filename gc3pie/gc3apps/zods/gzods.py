@@ -57,16 +57,16 @@ class GzodsApp(gc3libs.Application):
         if self.check_input(filename) is None:
                 gc3libs.log.warning("Input files for ZODS app was not detected.")
                 return None
-	inputFiles = self.check_input(filename)
-	gc3libs.log.debug("Detected input files for ZODS: %s, and %s.", filename, [inputFiles])
-	myinputs = [filename]
-	for inputFile in inputFiles:
-        	inputFile = os.path.abspath(inputFile)
-	        myinputs.append(inputFile)	
-        
-	gc3libs.Application.__init__(
+        inputFiles = self.check_input(filename)
+        gc3libs.log.debug("Detected input files for ZODS: %s, and %s.", filename, [inputFiles])
+        myinputs = [filename]
+        for inputFile in inputFiles:
+                inputFile = os.path.abspath(inputFile)
+                myinputs.append(inputFile)
+
+        gc3libs.Application.__init__(
             self,
-            tags=["APPS/CHEM/ZODS-0.326"],
+            tags=["APPS/CHEM/ZODS-0.335"],
             executable = '$MPIEXEC', # mandatory
             arguments = [
                 # these are arguments to `mpirun`
@@ -87,9 +87,9 @@ class GzodsApp(gc3libs.Application):
         for output in self.outputs:
                 gc3libs.log.debug("Retrieved the following file from ZODS job %s", output)
 
-		 
+
 #	Detect the following references to external files in input.xml
-#	input1: 
+#	input1:
 #	<average_structure>
 #          <file format="cif" name="californium_simple_3.cif"/>
 #        </average_structure>
@@ -99,21 +99,21 @@ class GzodsApp(gc3libs.Application):
 #	<optimization method>
 #		<restart file="diff_ev2.xml" />
 #	</optimization method>
-	
+
     def check_input(self,filename):
-       	
-	if not os.path.exists(filename):
+
+        if not os.path.exists(filename):
             raise RuntimeError("Input file '%s' DOES NOT exists." % filename)
-	basedir = os.path.dirname(filename)
+        basedir = os.path.dirname(filename)
         DOMTree = xml.dom.minidom.parse(filename)
         tree = ElementTree()
-	XMLTree = tree.parse(filename)
+        XMLTree = tree.parse(filename)
 #	print ElementTree.tostring(XMLTree)
-	if XMLTree.find("reference_intensities"):
-            	gc3libs.log.debug("AAAAaaa")
-		if XMLTree.find("average_structure"):
-            		gc3libs.log.debug("AAAAaaa")
-	cNodes = DOMTree.childNodes
+        if XMLTree.find("reference_intensities"):
+                gc3libs.log.debug("AAAAaaa")
+                if XMLTree.find("average_structure"):
+                        gc3libs.log.debug("AAAAaaa")
+        cNodes = DOMTree.childNodes
         if len(cNodes[0].getElementsByTagName('reference_intensities')) > 0 and len(cNodes[0].getElementsByTagName('average_structure')) > 0:
             data_file = cNodes[0].getElementsByTagName('reference_intensities')[0].getAttribute('file_name')
             avg_file = cNodes[0].getElementsByTagName('average_structure')[0].getElementsByTagName('file')[0].getAttribute('name')
@@ -129,20 +129,20 @@ class GzodsApp(gc3libs.Application):
                     " averaged structure file '%s'"
                     " and reference intesities file '%s'.",
                     filename, avg_file, data_file)
-		if len(cNodes[0].getElementsByTagName('run_type')) > 0:
-			if len(cNodes[0].getElementsByTagName('optimization_method')) > 0:
-				if len(cNodes[0].getElementsByTagName('restart')) > 0:
-					restart_file = cNodes[0].getElementsByTagName('optimization_method')[0].getElementsByTagName('restart')[0].getAttribute('file')
-            				restart_file = os.path.join(basedir,restart_file)
-            				#restart_file = os.path.abspath(restart_file)
-					if os.path.exists(restart_file)  == False:
-                				raise RuntimeError("Input file '%s' references a file '%s' that DOES NOT exists." % (filename, restart_file))
-					else:
-            					gc3libs.log.debug("%s references also a restart file: %s.", filename, restart_file)
-                
-					return (data_file, avg_file, restart_file)
-				else:
-					return (data_file, avg_file)
+                if len(cNodes[0].getElementsByTagName('run_type')) > 0:
+                        if len(cNodes[0].getElementsByTagName('optimization_method')) > 0:
+                                if len(cNodes[0].getElementsByTagName('restart')) > 0:
+                                        restart_file = cNodes[0].getElementsByTagName('optimization_method')[0].getElementsByTagName('restart')[0].getAttribute('file')
+                                        restart_file = os.path.join(basedir,restart_file)
+                                        #restart_file = os.path.abspath(restart_file)
+                                        if os.path.exists(restart_file)  == False:
+                                                raise RuntimeError("Input file '%s' references a file '%s' that DOES NOT exists." % (filename, restart_file))
+                                        else:
+                                                gc3libs.log.debug("%s references also a restart file: %s.", filename, restart_file)
+
+                                        return (data_file, avg_file, restart_file)
+                                else:
+                                        return (data_file, avg_file)
 
 
 class ZodsScript(gc3libs.cmdline.SessionBasedScript):
