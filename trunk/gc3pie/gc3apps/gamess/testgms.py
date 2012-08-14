@@ -8,119 +8,12 @@ import pprint
 import gc3libs
 
 #import gmsPattern
-import testLine
 from testLine import TestLine
 from testNextLine import TestNextLine
 
 #This class is responsible for running the tests. Directory with log files.
 class GamessTst:
-
-	def __init__(self, directory):
- 		self.L = []
- 		self.dirLog = directory
-		os.chdir(self.dirLog);
-	
-	def _getInputFiles(self):
-		#return os.path.list('*.inp')
-		return [exam01.inp, exam39.inp]
-		
-	def prepareInputFiles(self):
-		listOfFiles = _getInputFiles(self)
-		for filename in listOfFiles:
-			FILE = open(filename, 'w')
-			lines = FILE.readlines()	
-			posLine = self.grep("\$[A-Za-z]+", FILE)
-			FILE.close()
-			
-			if len(isOK) == 0:
-				#LFailedTestNames.append(filename)
-				#LFailedTqestDesc.append("The file DID NOT terminated normally.")
-				continue
- 		 
-#		lenLines = len(lines) 		 
-#		if (whichFollowing > 0 ): 
-# 			sum = whichFollowing+num
-#			if (sum < lenLines-1):
-#					targetLine = lines[num+whichFollowing]
-#			else:
-#				if (self.DEBUG):
-#					print "Out of boundary. Skipping."
-#					print "Length of file is:",lenLines, " and the extracted line has a number ", whichFollowing
-#				return ""						
-#		return targetLine	
-		
-	def addTest(self, test):
- 		self.L.append(test)
-	
-	def grep(self,pattern,fileObj):
-		r=[]
-  		for line in fileObj:
-			if re.search(pattern,line):
-				r.append(line)
-		return r
-	
-	def run(self):
-		gc3libs.log.info("Checking the results of your test GAMESS calculations, the output files (exam??.out) will be taken from %s directory.", TestSet.dirLog)
-	    #print TestS
-		LFailedTestNames = []  
-		LFailedTestDesc = []  
-		NumberOfTests = len(self.L)
-		NumberOfCorrectTests = 0
-		if len(self.L) == 0:
-		   #self.log.warning("The test list is empty.")
-		   gc3libs.log.debug("The test list is empty.")
-		   return
-		for test in self.L:
-			filename = test.name
-			
-			#Check if the file exists
-			if os.path.exists(filename) == False:
-					LFailedTestNames.append(filename)
-					LFailedTestDesc.append("The file DOES NOT exist.")
-					continue
-			#Check if the test terminated normally
-			FILE = open(filename, 'r')
-			isOK = self.grep("TERMINATED+\s+NORMALLY", FILE)	
-			FILE.close()
-			if len(isOK) == 0:
-				LFailedTestNames.append(filename)
-				LFailedTqestDesc.append("The file DID NOT terminated normally.")
-				continue
-			NumberOfCorrectTests = NumberOfCorrectTests + 1	
-		
-		if len(LFailedTestNames) > 0:
-			gc3libs.log.info("Please check carefully each of the following runs as these tests will not be executed:")
-			for test, desc in zip(LFailedTestNames, LFailedTestDesc):
-				print test, ": ", desc
-			gc3libs.log.info("Running the remaining %s",NumberOfCorrectTests," tests. ")
-		else:
-			gc3libs.log.info("Detected %s",NumberOfCorrectTests, "tests.")
-			
-		NumberOfIncorrectResults = 0
-		for test in self.L:
-			if test.name in LFailedTestNames:
-				continue
-			
-			(isCorrect, str) = test.run()
-			
-			finalString = test.name + ":" + str 
-			if (isCorrect):
-				print '%-89s    %s' %(finalString, "Passed.")
-			else:
-				NumberOfIncorrectResults = NumberOfIncorrectResults + 1
-				LFailedTestNames.append(filename)
-				LFailedTestDesc.append("!!FAILED")
-				print '%-89s    %s' %(finalString, "!!FAILED.")
-			 
-		if NumberOfCorrectTests != NumberOfTests:
-			print "Only", NumberOfCorrectTests,"out of",NumberOfTests, "terminated normally."
-		else:
-			print NumberOfCorrectTests,"out of",NumberOfTests, "terminated normally."
-		if NumberOfIncorrectResults == 0:
-			gc3libs.log.info("All job(s) got correct numerical results.")
-		else:
-			gc3libs.log.info("%d job(s) got incorrect numerical results. Please examine why.", NumberOfIncorrectResults) 
-
+       
 	#Predefined tolerances
 	
 	tolC =  0.3
@@ -159,76 +52,201 @@ class GamessTst:
 # tols are tolerances, digs are the numbers of sig. digits.
 # C percent (%), such as reference weight in MCQDPT
 
- 
- 
-#NOTES:
-#Incorrect grepex expression is not supported. Example:grepLinesAndAnalyze("TOTAL \s INTERACTION \s (DELTA", .. will raise a traceback.
-#Special characters such as : < ( * need to be defined as /< /( /*
-#head -2 | tail -1 is translated into "2"
-#Interesting cases: exam39
 
-#TUTORIAL
-# Each test is started with a search for a regular expression. The regular expression
-# outputs either a single line or a group of lines. 
-# matchedLinePosition defines which matched line to select: first, last or Nth line. (tail | head | "" | "2" | 2)
-# and returns ONE final line with target information.
-# 
-# There are two cases. 
-# 1. If you want to extract the values from the target line run grepLinesAndAnalyze.
-# 2. If you want to extract the values from the line that FOLLOWS the target line run grepAndFollow.
+	def __init__(self, directory):
+ 		self.L = []
+ 		self.exQ = []
+		self.listOfTests = []
+		self.dirLog = directory
+		os.chdir(self.dirLog)
+	
+	def _getInputFiles(self):
+		#return os.path.list('*.inp')
+		return [exam01.inp, exam39.inp]
+		
+	def prepareInputFiles(self):
+		listOfFiles = _getInputFiles(self)
+		for filename in listOfFiles:
+			FILE = open(filename, 'w')
+			lines = FILE.readlines()	
+			posLine = self.grep("\$[A-Za-z]+", FILE)
+			FILE.close()
+			
+			if len(isOK) == 0:
+				#LFailedTestNames.append(filename)
+				#LFailedTqestDesc.append("The file DID NOT terminated normally.")
+				continue
+ 		 
+#		lenLines = len(lines) 		 
+#		if (whichFollowing > 0 ): 
+# 			sum = whichFollowing+num
+#			if (sum < lenLines-1):
+#					targetLine = lines[num+whichFollowing]
+#			else:
+#				if (self.DEBUG):
+#					print "Out of boundary. Skipping."
+#					print "Length of file is:",lenLines, " and the extracted line has a number ", whichFollowing
+#				return ""						
+#		return targetLine	
+		
+	def addTest(self, fileName):
+ 		#self.L.append(testName)
+		self.listOfTests.append(fileName)
 
-# positionInLine extracts the value from the target line by extracting the column WITHIN the line.
-# Example: positionInLine =  "4" | 4
-# Value defines a value which will be compared with the value extracted from the file.
-# Tol - acceptable difference between Value and value extracted from the text		
+	def appendExecutionQueue(self, obj):
+		self.exQ.append(obj)
+
+	def grep(self,pattern,fileObj):
+		r=[]
+  		for line in fileObj:
+			if re.search(pattern,line):
+				r.append(line)
+		return r
+	
+	def runAll(self):
+		gc3libs.log.info("Checking the results of your test GAMESS calculations, the output files (exam??.out) will be taken from %s directory.", TestSet.dirLog)
+	    #print TestS
+		LFailedTestNames = []  
+		LFailedTestDesc = []  
+		NumberOfTests = len(self.L)
+		NumberOfCorrectTests = 0
+		if len(self.L) == 0:
+		   #self.log.warning("The test list is empty.")
+		   gc3libs.log.debug("The test list is empty.")
+		   return
+		#Each INP file shold have a GAMESS OUT file that terminated normally
+		for testName in self.listOfTests:
+			filename = os.join(testName, *.out) #test.name #getCurrentFileName()
+		#gc3libs.log.info("Testing filename %s", filename)	
+			#Check if the file exists
+			if os.path.exists(filename) == False:
+					LFailedTestNames.append(filename)
+					LFailedTestDesc.append("The file DOES NOT exist.")
+					continue
+			#Check if the test terminated normally
+			FILE = open(filename, 'r')
+			isOK = self.grep("TERMINATED+\s+NORMALLY", FILE)	
+			FILE.close()
+			if len(isOK) == 0:
+				LFailedTestNames.append(filename)
+				LFailedTestDesc.append("The file DID NOT terminated normally.")
+				continue
+			NumberOfCorrectTests = NumberOfCorrectTests + 1	
+		
+		if len(LFailedTestNames) > 0:
+			gc3libs.log.info("Please check carefully each of the following runs as these tests will not be executed:")
+			for test, desc in zip(LFailedTestNames, LFailedTestDesc):
+				print test, ": ", desc
+			gc3libs.log.info("Running the remaining %s",NumberOfCorrectTests," tests. ")
+		else:
+			gc3libs.log.info("Detected %s",NumberOfCorrectTests, "tests.")
+			
+		NumberOfIncorrectResults = 0
+		for testName, queue in zip(self.listOfTests, self.exQ):
+			if testName in LFailedTestNames:
+				continue
+			for obj in queue:
+				(isCorrect, str) = obj.run()
+				
+				finalString = testNname + ":" + str 
+				if (isCorrect):
+					print '%-89s    %s' %(finalString, "Passed.")
+				else:
+					NumberOfIncorrectResults = NumberOfIncorrectResults + 1
+					LFailedTestNames.append(filename)
+					LFailedTestDesc.append("!!FAILED")
+					print '%-89s    %s' %(finalString, "!!FAILED.")
+				 
+		if NumberOfCorrectTests != NumberOfTests:
+			print "Only", NumberOfCorrectTests,"out of",NumberOfTests, "terminated normally."
+		else:
+			print NumberOfCorrectTests,"out of",NumberOfTests, "terminated normally."
+		if NumberOfIncorrectResults == 0:
+			gc3libs.log.info("All job(s) got correct numerical results.")
+		else:
+			gc3libs.log.info("%d job(s) got incorrect numerical results. Please examine why.", NumberOfIncorrectResults) 
+
+
+	def scanGAMESSinputFile(self,filenameINP, filenameOUT):
+		try:	
+			file = open(filenameINP, 'r') #"./data/exam01.inp", 'r')
+			foundlines = self.grep("GC3", file)	
+			file.close()
+		except IOError:
+			raise IOError("There is a problem with a file %s.", filenameINP) 
+		if os.path.exists(filenameOUT) == False:
+			raise IOError("The file %s does not exists.", filenameOUT) 
+			
+			
+		i=0
+		paramList = []
+		functionList = []
+		labelAnalyze ="grepLinesAndAnalyze"
+		labelFollow = "grepAndFollow"  
+		suffix1 = len(labelAnalyze+"(")
+		suffix2 = len(labelFollow+"(")
+
+		#print filename
+		for line in foundlines:
+		    #print i, line
+		    if  line.find(labelAnalyze)> 0:
+			pos1 = line.find(labelAnalyze)+suffix1  
+			end = line.find(")")
+			arg1 = line[pos1:end]
+			#print "after grepanalyze:", line[pos1:end]
+			paramList.append(arg1)
+			functionList.append(labelAnalyze)
+			pos1 = -1
+			continue
+		    if line.find(labelFollow) > 0:
+			#print "line", line
+			pos2 = line.find(labelFollow) + suffix2
+			end = line.find(")")
+			arg2 = line[pos2:end]
+			#print "after grepandfollow:", line[pos2:end]
+			pos2 = -1
+			functionList.append(labelFollow)
+			paramList.append(arg2)	
+			continue 	
+
+		for args,function in zip(paramList, functionList):
+			 argList = args.split(",")
+
+			 for arg in argList:
+				arg = re.sub(r"[ \"]", r"", arg) 
+			 try:
+				if function==labelFollow:
+					app = TestNextLine(filenameOUT)
+					fn = getattr(app, labelFollow)   
+					fn(argList[0], argList[1], argList[2], int(argList[3]), float(argList[4]), argList[5], argList[6])
+					self.addExecutionQueue(app)
+	   			elif function==labelAnalyze:
+					app = TestLine(filenameOUT)
+					fn = getattr(app, labelAnalyze)   
+					fn(argList[0], argList[1], int(argList[2]), float(argList[3]), argList[4], argList[5])
+					self.appendExecutionQueue(app)
+				
+			 except AttributeError:
+				gc3libs.log.debug("Attribute error. arguments %s are incorrect", args)                                                                           		
+			 #app.debug() # for testing purposes
+			 
+#ex1.debug()
+#ex1.grepLinesAndAnalyze("FINAL \s+ RHF", "tail", 5, -37.2380397698, GamessTst.tolE, "Eerr")
+#ex1.grepLinesAndAnalyze("RMS \s+ G", "tail", 8, .0000004, GamessTst.tolG, "Gerr")
+
+#ex2 = TestNextLine("exam04.out")
+#ex2.grepAndFollow("OVERLAP\s+LOW", "head","head", 8, 0.64506, GamessTst.tolO, "Oerr")  
+#ex2.grepAndFollow("DEBYE", "head","1", 4, 1.249835, GamessTst.tolD, "Derr") #works with head and index 1
 
 TestSet = GamessTst(".")
 TestSetNew = GamessTst(".")
-#TestSetNew.add("exam01.out")
-#TestSetNew.add("exam01.out")
+TestSetNew.addTest("exam01.inp") #Add app to a list of tests
+TestSetNew.scanGAMESSinputFile("./data/exam01.inp","exam01.out")
+TestSetNew.scanGAMESSinputFile("./data/exam04.inp","exam04.out")
 
-
-FILE = open("./data/exam01.inp", 'r')
-foundLines = TestSetNew.grep("GC3", FILE)	
-FILE.close()
-i=0
-r = []
-#print filename
-for line in foundLines:
-    print i, line
-    pos1 = line.find("grepLines") 
-    pos2 = line.find("grepAndFollow")
-    print "POS", pos1, pos2
-    if pos1 > 0:
-	arg = line[pos1:]
-	#print "AFTER", line[pos:]
-    if pos2 > 0:
-	arg = line[pos2:]
-	#print "AF", line[pos2:] 	
-    r.append(arg)
-
-print r
-print sys.modules.keys()
-ex1 = TestLine("exam01.out")
-functionName = r[0]
-myappName = "testLine"
-app = sys.modules[myappName]
-print app
-#fn = getattr(app, "TestLine."+functionName)
-fn = getattr(app, functionName)
-fn()
-
-#ex1.debug()
-ex1.grepLinesAndAnalyze("FINAL \s+ RHF", "tail", 5, -37.2380397698, GamessTst.tolE, "Eerr")
-ex1.grepLinesAndAnalyze("RMS \s+ G", "tail", 8, .0000004, GamessTst.tolG, "Gerr")
-
-ex2 = TestNextLine("exam04.out")
-ex2.grepAndFollow("OVERLAP\s+LOW", "head","head", 8, 0.64506, GamessTst.tolO, "Oerr")  
-ex2.grepAndFollow("DEBYE", "head","1", 4, 1.249835, GamessTst.tolD, "Derr") #works with head and index 1
-
-TestSetNew.addTest(ex1)
-TestSetNew.addTest(ex2)
-TestSetNew.run()
+#TestSetNew.addTest(ex1)
+#TestSetNew.addTest(ex2)
+TestSetNew.runAll()
   
 #example1 = gmsPattern.GamessPattern("exam01.out")
 #example1.grepLinesAndAnalyze("FINAL \s+ RHF", "tail", 5, -37.2380397698, GamessTst.tolE, "Eerr")
@@ -564,3 +582,25 @@ TestSetNew.run()
 
 #Separate into 2 classes. 
 # ! GC3: <name of class, parameters> # so I know which method to run
+
+ 
+#NOTES:
+#Incorrect grepex expression is not supported. Example:grepLinesAndAnalyze("TOTAL \s INTERACTION \s (DELTA", .. will raise a traceback.
+#Special characters such as : < ( * need to be defined as /< /( /*
+#head -2 | tail -1 is translated into "2"
+#Interesting cases: exam39
+
+#TUTORIAL
+# Each test is started with a search for a regular expression. The regular expression
+# outputs either a single line or a group of lines. 
+# matchedLinePosition defines which matched line to select: first, last or Nth line. (tail | head | "" | "2" | 2)
+# and returns ONE final line with target information.
+# 
+# There are two cases. 
+# 1. If you want to extract the values from the target line run grepLinesAndAnalyze.
+# 2. If you want to extract the values from the line that FOLLOWS the target line run grepAndFollow.
+
+# positionInLine extracts the value from the target line by extracting the column WITHIN the line.
+# Example: positionInLine =  "4" | 4
+# Value defines a value which will be compared with the value extracted from the file.
+# Tol - acceptable difference between Value and value extracted from the text		

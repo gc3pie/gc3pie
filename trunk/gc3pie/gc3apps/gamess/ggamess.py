@@ -90,7 +90,8 @@ of newly-created jobs so that this limit is never exceeded.
 
 
     def new_tasks(self, extra):
-        # setup AppPot parameters
+        self.collectTests()
+	# setup AppPot parameters
         use_apppot = False
         apppot_img = None
         apppot_changes = None
@@ -127,6 +128,15 @@ of newly-created jobs so that this limit is never exceeded.
                 # keyword arguments, see `GamessApplication.__init__`
                 kwargs)
 
+    def collectTests(self):
+	#files = os.listdir("./test/data")
+        inputs = self._search_for_input_files(self.params.args)
+	
+	for fileName in inputs:
+		pass	
+	
+
+# TODO: Search for inp files in dir. Collect a list of tests. Execute them.
     def terminated(self):
 	pass
 # run it
