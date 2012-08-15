@@ -32,7 +32,6 @@ import time
 from nose.tools import raises, assert_equal
 
 import gc3libs
-from gc3libs.Resource import Resource
 from gc3libs.authentication import Auth
 import gc3libs.core, gc3libs.config
 
