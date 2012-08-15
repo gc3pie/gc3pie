@@ -257,8 +257,8 @@ of newly-created jobs so that this limit is never exceeded.
                 sqla.Column('cpu',                sqla.TEXT())    : GetValue(default=None) .cpuinfo                           ,#.ONLY(CodemlApplication), # CPU model of the worker node
                 sqla.Column('codeml_walltime_h0', sqla.INTEGER()) : GetValue()             .time_used[0]                      ,#.ONLY(CodemlApplication), # time used by the codeml H0 run (sec)
                 sqla.Column('codeml_walltime_h1', sqla.INTEGER()) : GetValue()             .time_used[1]                      ,#.ONLY(CodemlApplication), # time used by the codeml H1 run (sec)
-                sqla.Column('aln_len',            sqla.TEXT())    : GetValue()             .aln_info[0]['aln_len']                                    , # alignement length
-                sqla.Column('seq',                sqla.TEXT())    : GetValue()             .aln_info[0]['n_seq']                                      , # num of sequences
+                sqla.Column('aln_len',            sqla.TEXT())    : GetValue()             .aln_info['aln_len']                                    , # alignement length
+                sqla.Column('seq',                sqla.TEXT())    : GetValue()             .aln_info['n_seq']                                      , # num of sequences
                 sqla.Column('requested_walltime', sqla.INTEGER()) : GetValue(default=None) .requested_walltime                ,#.ONLY(CodemlApplication), # requested walltime
                 sqla.Column('requested_cores',    sqla.INTEGER()) : GetValue(default=None) .requested_cores                   ,#.ONLY(CodemlApplication), # num of cores requested
                 sqla.Column('tags',               sqla.TEXT())    : GetValue()             .tags[0]                           ,#.ONLY(CodemlApplication), # run-time env.s (RTE) requested; e.g. 'APPS/BIO/CODEML-4.4.3'
