@@ -95,8 +95,24 @@ class CodemlApplication(gc3libs.Application):
                 for (key, path) in CodemlApplication.aux_files(ctl).items():
                     if key in ['seqfile', 'treefile'] and path not in inputs:
                         inputs[path] = os.path.basename(path)
-                    if key == 'outfile' and path not in outputs:
+
+                    if key == 'seqfile':
+                        # Parse phy files and fill `aln_info` attribute
+                        try:
+                            fd = open(path)
+                            aln_infos = fd.readline().strip().split()
+                            self.aln_info = {
+                                'n_seq'   : int(aln_infos[0]),
+                                'aln_len' : int(aln_infos[1]),
+                                }
+                        except Exception, ex:
+                            gc3libs.log.warning("Unable parse `n_seq` and `aln_len` values from `.phy` file `%s`: %s" % (path, ex))
+                        finally:
+                            fd.close()
+
+                    elif key == 'outfile' and path not in outputs:
                         outputs.append(path)
+
                 inputs[ctl] = os.path.basename(ctl)
             # if the phy/nwk files are not found, `aux_files` raises
             # an exception; catch it here and ignore the '.ctl' file
