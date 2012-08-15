@@ -502,7 +502,7 @@ class GridAuth(object):
                     # No attributes found
                     gc3libs.log.error("No voms attributes found. Is it a grid-proxy ?")
                     return False
-            except Exception as ex:
+            except Exception, ex:
                 gc3libs.log.error("Exception in ARC1 libraries: %s %s" % (ex.__class__,ex.message))
                 return False
 
