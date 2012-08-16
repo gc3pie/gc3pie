@@ -1,10 +1,10 @@
 #! /usr/bin/env python
-import code
+#import code
 
 import os.path
 import sys
 import re
-import pprint
+#import pprint
 import gc3libs
 
 #import gmsPattern
@@ -12,7 +12,7 @@ from testLine import TestLine
 from testNextLine import TestNextLine
 
 #This class is responsible for running the tests. Directory with log files.
-class GamessTst:
+class GamessTestSuite:
        
 	#Predefined tolerances
 	
@@ -116,7 +116,11 @@ class GamessTst:
 		   return
 		#Each INP file shold have a GAMESS OUT file that terminated normally
 		for testName in self.listOfTests:
-			filename = os.join(testName, *.out) #test.name #getCurrentFileName()
+			filename = os.split(testName, '.')
+			if len(filename) > 1:
+				print filename[0] 
+				print filename[1]
+			#:, *.out) #test.name #getCurrentFileName()
 		#gc3libs.log.info("Testing filename %s", filename)	
 			#Check if the file exists
 			if os.path.exists(filename) == False:
@@ -211,7 +215,7 @@ class GamessTst:
 
 		for args,function in zip(paramList, functionList):
 			 argList = args.split(",")
-
+			 print argList
 			 for arg in argList:
 				arg = re.sub(r"[ \"]", r"", arg) 
 			 try:
@@ -238,11 +242,11 @@ class GamessTst:
 #ex2.grepAndFollow("OVERLAP\s+LOW", "head","head", 8, 0.64506, GamessTst.tolO, "Oerr")  
 #ex2.grepAndFollow("DEBYE", "head","1", 4, 1.249835, GamessTst.tolD, "Derr") #works with head and index 1
 
-TestSet = GamessTst(".")
-TestSetNew = GamessTst(".")
+TestSet = GamessTestSuite(".")
+TestSetNew = GamessTestSuite(".")
 TestSetNew.addTest("exam01.inp") #Add app to a list of tests
-TestSetNew.scanGAMESSinputFile("./data/exam01.inp","exam01.out")
-TestSetNew.scanGAMESSinputFile("./data/exam04.inp","exam04.out")
+TestSetNew.scanGAMESSinputFile("./test/data/exam01.inp","test/exam01.out")
+TestSetNew.scanGAMESSinputFile("./test/data/exam04.inp","test/exam04.out")
 
 #TestSetNew.addTest(ex1)
 #TestSetNew.addTest(ex2)
