@@ -33,12 +33,16 @@ __changelog__ = """
     * Allow running GAMESS from an AppPot container.
   2010-12-20:
     * Initial release, forked off the ``grosetta`` sources.
+  2012-16-8: 
+    * Modification of terminated().
+    * Correct execution: ./ggamess.py -R 2011R1 test/data/exam01.inp -N 
 """
 __author__ = 'Riccardo Murri <riccardo.murri@uzh.ch>'
 __docformat__ = 'reStructuredText'
 
 
 import gc3libs
+from testUtils import GamessTestSuite
 from gc3libs.application.gamess import GamessApplication, GamessAppPotApplication
 from gc3libs.cmdline import SessionBasedScript, existing_file
 
@@ -131,9 +135,12 @@ of newly-created jobs so that this limit is never exceeded.
     def collectTests(self):
 	#files = os.listdir("./test/data")
         inputs = self._search_for_input_files(self.params.args)
-	
-	for fileName in inputs:
-		pass	
+ 	print inputs
+	testSet = GamessTestSuite(".")	
+	testSet.scanGAMESSinputFile("./test/data/exam01.inp","test/exam01.out")
+
+	#for fileName in inputs:
+	#pass	
 	
 
 # TODO: Search for inp files in dir. Collect a list of tests. Execute them.
