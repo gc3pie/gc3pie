@@ -632,6 +632,7 @@ class GC3UtilsScript(_Script):
         self.add_param("-s",
                        "--session",
                        action="store",
+                       required=True,
                        default=gc3libs.Default.JOBS_DIR,
                        help="Directory where job information will be stored.")
 
