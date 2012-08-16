@@ -114,16 +114,6 @@ setuptools.setup(
         #'Unum',
         ],
 
-    # additional non-Python files to be bundled in the package
-    package_data = {
-        'gc3libs': [
-            'etc/codeml.pl',
-            'etc/gc3pie.conf.example',
-            'etc/logging.conf.example',
-            'etc/rosetta.sh',
-            ],
-        },
-
     # `zip_safe` can ease deployment, but is only allowed if the package
     # do *not* do any __file__/__path__ magic nor do they access package data
     # files by file name (use `pkg_resources` instead).
