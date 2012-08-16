@@ -23,6 +23,7 @@ Simple interface to the CODEML application.
 __version__ = '1.2 (SVN $Revision$)'
 __changelog__ = """
 Summary of user-visible changes:
+* 16-08-2011 AM: Extract aln_info from the .phy file and record it
 * 14-12-2011 SM: Parse `Time used:` line with hours now
 * 21-11-2011 RM: Mark job as successful if the output file parses OK
 * 29-04-2011 HS: changed to use RTE
@@ -51,24 +52,21 @@ import gc3libs.utils
 class CodemlApplication(gc3libs.Application):
     """
     Run a CODEML job with the specified '.ctl' files.
-    
+
     The given '.ctl' input files are parsed and the '.phy' and
     '.nwk' files mentioned therein are added to the list of files
     to be copied to the execution site.
     """
-    
-    def __init__(self, *ctls, **kw):
-        gc3libs.log.debug("codeml.py path %s", os.path.abspath(sys.argv[0])) # AK: DEBUG
 
+    def __init__(self, *ctls, **kw):
         # optional keyword argument 'codeml', defaulting to None
         codeml = kw.get('codeml', None)
 
         # we're submitting CODEML jobs thorugh the support script
         # "codeml.pl", so do the specific setup tailored to this
         # script' usage
-        codeml_pl = resource_filename(Requirement.parse("gc3pie"), 
+        codeml_pl = resource_filename(Requirement.parse("gc3pie"),
                                       "gc3libs/etc/codeml.pl")
-        gc3libs.log.debug("codeml.pl path %s", codeml_pl) # AK: DEBUG 
 
         # need to send the PERL driver script, and the binary only
         # if we're not using the RTE
@@ -105,10 +103,15 @@ class CodemlApplication(gc3libs.Application):
                                 'n_seq'   : int(aln_infos[0]),
                                 'aln_len' : int(aln_infos[1]),
                                 }
-                        except Exception, ex:
-                            gc3libs.log.warning("Unable parse `n_seq` and `aln_len` values from `.phy` file `%s`: %s" % (path, ex))
-                        finally:
                             fd.close()
+                        except Exception, ex:
+                            gc3libs.log.warning(
+                                "Unable to parse `n_seq` and `aln_len` values"
+                                " from `.phy` file `%s`: %s", path, str(ex))
+                            try:
+                                fd.close()
+                            except:
+                                pass
 
                     elif key == 'outfile' and path not in outputs:
                         outputs.append(path)
@@ -148,7 +151,7 @@ class CodemlApplication(gc3libs.Application):
         self.exists = [None] * len(ctls)
         self.valid = [None] * len(ctls)
         self.time_used = [None] * len(ctls)
-        
+
 
 
 
@@ -156,7 +159,7 @@ class CodemlApplication(gc3libs.Application):
     _assignment_re = re.compile('\s* = \s*', re.X)
     _aux_file_keys = [ 'seqfile', 'treefile', 'outfile' ]
 
-    
+
     # aux function to get thw seqfile and treefile paths
     @staticmethod
     def aux_files(ctl_path):
@@ -279,7 +282,7 @@ class CodemlApplication(gc3libs.Application):
             self.execution.exitcode = 127
             return
 
-        outputs = [ os.path.join(download_dir, filename) 
+        outputs = [ os.path.join(download_dir, filename)
                     for filename in fnmatch.filter(os.listdir(download_dir), '*.mlc') ]
         if len(outputs) == 0:
             # no output retrieved, did ``codeml`` run at all?
@@ -310,12 +313,12 @@ class CodemlApplication(gc3libs.Application):
                     self.exists[n] = True
                     self.valid[n] = True
                     self.time_used[n] = duration
-                    
+
         # if output files parsed OK, then override the exit code and
         # mark the job as successful
         if failed == 0:
             self.execution.returncode = (0, 0)
-        
+
         # set object attributes based on tag lines in the output
         stdout_path = os.path.join(download_dir, self.stdout)
         if os.path.exists(stdout_path):
@@ -342,4 +345,3 @@ class CodemlApplication(gc3libs.Application):
 
         # all done
         return
-            
