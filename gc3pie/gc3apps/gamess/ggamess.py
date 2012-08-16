@@ -40,12 +40,11 @@ __changelog__ = """
 __author__ = 'Riccardo Murri <riccardo.murri@uzh.ch>'
 __docformat__ = 'reStructuredText'
 
-
+import os
 import gc3libs
 from testUtils import GamessTestSuite
 from gc3libs.application.gamess import GamessApplication, GamessAppPotApplication
 from gc3libs.cmdline import SessionBasedScript, existing_file
-
 
 class GGamessScript(SessionBasedScript):
     """
@@ -94,7 +93,7 @@ of newly-created jobs so that this limit is never exceeded.
 
 
     def new_tasks(self, extra):
-        self.collectTests()
+        self.collectTests(extra)
 	# setup AppPot parameters
         use_apppot = False
         apppot_img = None
@@ -132,15 +131,28 @@ of newly-created jobs so that this limit is never exceeded.
                 # keyword arguments, see `GamessApplication.__init__`
                 kwargs)
 
-    def collectTests(self):
+    def collectTests(self,extra):
+	#kwargs = extra.copy()
+	#print kwargs['output_dir']
+	#output_dir = self.output_dir
+	#print output_dir
 	#files = os.listdir("./test/data")
         inputs = self._search_for_input_files(self.params.args)
- 	print inputs
+ 	print 'INPUTS', inputs
+	#print self.outputs
 	testSet = GamessTestSuite(".")	
-	testSet.scanGAMESSinputFile("./test/data/exam01.inp","test/exam01.out")
-
-	#for fileName in inputs:
-	#pass	
+	#testSet.scanGAMESSinputFile("./test/data/exam04.inp","test/exam04.out")
+	for fileNameInput in inputs:
+		fileName = os.path.split(fileNameInput)
+		fileName = 'test/' + fileName[1]
+		#print fileName
+		fileName = os.path.splitext(fileName)
+		fileNameOutput = fileName[0] + '.out'
+		if os.path.exists(fileNameOutput):
+			testSet.scanGAMESSinputFile(fileNameInput, fileNameOutput)
+		else:
+			gc3libs.log.info("File %s does not exist", fileNameOutput)
+	testSet.runAll()
 	
 
 # TODO: Search for inp files in dir. Collect a list of tests. Execute them.

@@ -108,18 +108,19 @@ class GamessTestSuite:
 	    #print TestS
 		LFailedTestNames = []  
 		LFailedTestDesc = []  
-		NumberOfTests = len(self.L)
+		NumberOfTests = len(self.listOfTests)
 		NumberOfCorrectTests = 0
-		if len(self.L) == 0:
+		if len(self.listOfTests) == 0:
 		   #self.log.warning("The test list is empty.")
 		   gc3libs.log.debug("The test list is empty.")
 		   return
 		#Each INP file shold have a GAMESS OUT file that terminated normally
 		for testName in self.listOfTests:
-			filename = os.split(testName, '.')
+			filename = os.path.splitext(testName)
+			print filename
 			if len(filename) > 1:
-				print filename[0] 
-				print filename[1]
+				filename = filename[0] + '.out' 
+				print filename
 			#:, *.out) #test.name #getCurrentFileName()
 		#gc3libs.log.info("Testing filename %s", filename)	
 			#Check if the file exists
@@ -146,20 +147,19 @@ class GamessTestSuite:
 			gc3libs.log.info("Detected %s",NumberOfCorrectTests, "tests.")
 			
 		NumberOfIncorrectResults = 0
-		for testName, queue in zip(self.listOfTests, self.exQ):
+		for testName, testObj in zip(self.listOfTests, self.exQ):
 			if testName in LFailedTestNames:
 				continue
-			for obj in queue:
-				(isCorrect, str) = obj.run()
-				
-				finalString = testNname + ":" + str 
-				if (isCorrect):
-					print '%-89s    %s' %(finalString, "Passed.")
-				else:
-					NumberOfIncorrectResults = NumberOfIncorrectResults + 1
-					LFailedTestNames.append(filename)
-					LFailedTestDesc.append("!!FAILED")
-					print '%-89s    %s' %(finalString, "!!FAILED.")
+			(isCorrect, str) = testObj.run()
+			
+			finalString = testName + ":" + str 
+			if (isCorrect):
+				print '%-89s    %s' %(finalString, "Passed.")
+			else:
+				NumberOfIncorrectResults = NumberOfIncorrectResults + 1
+				LFailedTestNames.append(filename)
+				LFailedTestDesc.append("!!FAILED")
+				print '%-89s    %s' %(finalString, "!!FAILED.")
 				 
 		if NumberOfCorrectTests != NumberOfTests:
 			print "Only", NumberOfCorrectTests,"out of",NumberOfTests, "terminated normally."
@@ -215,7 +215,7 @@ class GamessTestSuite:
 
 		for args,function in zip(paramList, functionList):
 			 argList = args.split(",")
-			 print argList
+			 #print argList
 			 for arg in argList:
 				arg = re.sub(r"[ \"]", r"", arg) 
 			 try:
@@ -246,7 +246,7 @@ TestSet = GamessTestSuite(".")
 TestSetNew = GamessTestSuite(".")
 TestSetNew.addTest("exam01.inp") #Add app to a list of tests
 TestSetNew.scanGAMESSinputFile("./test/data/exam01.inp","test/exam01.out")
-TestSetNew.scanGAMESSinputFile("./test/data/exam04.inp","test/exam04.out")
+#TestSetNew.scanGAMESSinputFile("./test/data/exam04.inp","test/exam04.out")
 
 #TestSetNew.addTest(ex1)
 #TestSetNew.addTest(ex2)
