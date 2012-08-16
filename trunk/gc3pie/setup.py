@@ -113,6 +113,30 @@ setuptools.setup(
         # Unum -- define and manipulate quantities with units attached
         #'Unum',
         ],
+    # additional non-Python files to be bundled in the package
+    data_files = [
+        ('etc', [
+            'gc3libs/etc/codeml.pl',
+            'gc3libs/etc/gc3pie.conf.example',
+            'gc3libs/etc/logging.conf.example',
+            'gc3libs/etc/rosetta.sh',
+            ],),
+        ('gc3apps', [
+            'gc3apps/gc3.uzh.ch/gridrun.py',
+            'gc3apps/zods/gzods.py',
+            'gc3apps/geotop/ggeotop.py',
+            'gc3apps/geotop/ggeotop_utils.py',
+            'gc3apps/ieu.uzh.ch/gmhc_coev.py',
+            'gc3apps/turbomole/gricomp.py',
+            'gc3apps/rosetta/gdocking.py',
+            'gc3apps/rosetta/grosetta.py',
+            'gc3apps/lacal.epfl.ch/gcrypto.py',
+            'gc3apps/codeml/gcodeml.py',
+            'gc3apps/gamess/grundb.py',
+            'gc3apps/gamess/ggamess.py',
+            ],),
+        ],
+
 
     # `zip_safe` can ease deployment, but is only allowed if the package
     # do *not* do any __file__/__path__ magic nor do they access package data
