@@ -41,6 +41,7 @@ __author__ = 'Riccardo Murri <riccardo.murri@uzh.ch>'
 __docformat__ = 'reStructuredText'
 
 import os
+import sys
 import gc3libs
 from testUtils import GamessTestSuite
 from gc3libs.application.gamess import GamessApplication, GamessAppPotApplication
@@ -93,7 +94,6 @@ of newly-created jobs so that this limit is never exceeded.
 
 
     def new_tasks(self, extra):
-        self.collectTests(extra)
 	# setup AppPot parameters
         use_apppot = False
         apppot_img = None
@@ -130,34 +130,51 @@ of newly-created jobs so that this limit is never exceeded.
                 parameters,
                 # keyword arguments, see `GamessApplication.__init__`
                 kwargs)
-
-    def collectTests(self,extra):
-	#kwargs = extra.copy()
-	#print kwargs['output_dir']
-	#output_dir = self.output_dir
-	#print output_dir
-	#files = os.listdir("./test/data")
+    def after_main_loop(self):
+	print "AFTER MAIN LOOP. I would like to get all information about the finished tasks from the session"
+	#print "PARAMS", self.params
+	# build job list
         inputs = self._search_for_input_files(self.params.args)
- 	print 'INPUTS', inputs
-	#print self.outputs
-	testSet = GamessTestSuite(".")	
-	#testSet.scanGAMESSinputFile("./test/data/exam04.inp","test/exam04.out")
-	for fileNameInput in inputs:
-		fileName = os.path.split(fileNameInput)
-		fileName = 'test/' + fileName[1]
-		#print fileName
-		fileName = os.path.splitext(fileName)
-		fileNameOutput = fileName[0] + '.out'
-		if os.path.exists(fileNameOutput):
-			testSet.scanGAMESSinputFile(fileNameInput, fileNameOutput)
-		else:
-			gc3libs.log.info("File %s does not exist", fileNameOutput)
-	testSet.runAll()
+	input_list = []
+	for myinput in inputs:
+		input_list.append(myinput)
+	output_dirs = []
+ 	input_list.sort()
+ 	print 'INPUTSsearch', input_list
+        
+	jobs = list(self.session)
+	for job in jobs:
+	 	output_dirs.append(job.output_dir) 
+ 	output_dirs.sort()
+ 	print 'OUTPUTs', output_dirs
 	
+	testSet = GamessTestSuite(".")	
+	output_list = self.get_output_files_to_analyze(input_list, output_dirs)
+	for file_input, file_output in zip(input_list,output_list):
+		print "I/O", file_input, file_output
+		testSet.scanGAMESSinputFile(file_input, file_output)
+	testSet.runAll()
 
-# TODO: Search for inp files in dir. Collect a list of tests. Execute them.
-    def terminated(self):
-	pass
+# Given a list of input files and list of output dirs from the session, generate a list of possible paths to output files
+    def get_output_files_to_analyze(self, myinputs, myoutput_dirs):
+	list_of_files_to_analyze = []
+	for fileNameInput, output_dir in zip(myinputs, myoutput_dirs):
+		fileName = os.path.split(fileNameInput)
+		if len(fileName) > 1:
+			fileName = os.path.join(output_dir, fileName[1])
+			#print "1stage", fileName
+			fileName = os.path.splitext(fileName)
+			fileNameOutput = fileName[0] + '.out'
+			#print "2stage",fileNameOutput
+			if os.path.exists(fileNameOutput):
+				list_of_files_to_analyze.append(fileNameOutput)
+			else:
+				gc3libs.log.info("File %s does not exist", fileNameOutput)
+				continue
+		else:
+			raise IOError("ggamess.py: Incorrect path of %s.", fileName)
+	return list_of_files_to_analyze
+	
 # run it
 if __name__ == '__main__':
     GGamessScript().run()
