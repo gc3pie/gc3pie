@@ -2,8 +2,7 @@
 # @(#)install.sh
 #
 #
-#   Copyright (C) 2012 by Antonio Messina <amessina@ictp.it> for the 
-#   Abdus Salam International Center for Theoretical Phisics (ICTP). 
+#  Copyright (C) 2012 GC3, University of Zurich. All rights reserved.
 #
 #
 #  This program is free software; you can redistribute it and/or modify it
@@ -27,55 +26,95 @@ GC3_SVN_URL="http://gc3pie.googlecode.com/svn/trunk/gc3pie"
 # Defaults
 VENVDIR=$HOME/gc3pie
 DEVELOP=0
-WITHAPPS=0
+WITHAPPS=1
 OVERWRITEDIR=0
 ASKCONFIRMATION=1
 
-# Download command
-if [ $(which curl) ]; then
-    dl_cmd="curl -L -s -o"
-else
-    dl_cmd="wget -O"
-fi
-
 # Auxiliary functions
+
+die () {
+  rc="$1"
+  shift
+  (echo -n "$PROG: ERROR: ";
+      if [ $# -gt 0 ]; then echo "$@"; else cat; fi) 1>&2
+  exit $rc
+}
+
+have_command () {
+  type "$1" >/dev/null 2>/dev/null
+}
+
+require_command () {
+  if ! have_command "$1"; then
+    die 1 "Could not find required command '$1' in system PATH. Aborting."
+  fi
+}
 
 function install_virtualenv(){
     DESTDIR=$1
-    $dl_cmd virtualenv.py $VIRTUALENV_URL
 
-    python virtualenv.py --system-site-packages $DESTDIR    
+    $dl_cmd virtualenv.py $VIRTUALENV_URL
+    python virtualenv.py --system-site-packages $DESTDIR  
 }
 
 function install_gc3pie_via_pip(){
 
     pipbin=($VENVDIR/bin/pip*)
     if [ ${#pipbin[*]} -lt 1 ]; then
-        echo "No PIP binary found. Error in creating the Virtual Environment"
+cat 1>&2 <<EOF
+===============================================
+GC3Pie install: ERROR: 'pip' command not found.
+===============================================
+
+The script was unable to create a valid virtual environment. If the
+above output does not help you in solving the issue, please contact
+the GC3Pie team by sending an email to gc3pie@googlegroups.com
+
+Remember to attach the full output of the script, in order to help us
+to identify the problem.
+
+Aborting installation!"
+EOF
         exit 1
     fi
     pip=${pipbin[0]}
-    echo "Installing GC3Pie from PIP package $GC3_URL"
+    echo "Installing GC3Pie from PIP package"
     $pip install gc3pie
 }
 
 function install_gc3pie_via_svn(){
 
-    which svn >&/dev/null
+    have_command svn
     if [ $? -ne 0 ]
     then
-        echo "Unable to find Subversion binary!"
-        echo "GC3Pie development branch installation *needs* subversion."
-        echo "Please, install it using the software manager of your distribution"
-        echo "or downloading it from http://subversion.tigris.org/"
+        cat 1>&2 <<EOF
+=====================================================
+GC3Pie install: ERROR: Unable to find 'svn' command!"
+=====================================================
+
+GC3Pie development branch installation *needs* subversion.
+Please, install it using the software manager of your distribution
+or downloading it from http://subversion.tigris.org/
+
+Aborting installation!
+EOF
         exit 1
     fi
 
-    which cc >&/dev/null
+    have_command $CC || have_command cc
     if [ $? -ne 0 ]
     then
-        echo "Unable to find a C compiler"
-        echo "GC3Pie development branch installation *needs* a C compiler"
+        cat 1>&2 <<EOF
+====================================================
+GC3Pie install: ERROR: Unable to find a C compiler!"
+====================================================
+
+GC3Pie development branch installation *needs* a C compiler. Please,
+install one using the software manager of your distribution.
+
+Aborting installation!
+EOF
+        exit 1
     fi
 
     (
@@ -128,18 +167,44 @@ $0 [OPTIONS]
 
 Options
 
-      --add-file=FILE        add given FILE to the archive (useful if its name
       -d, --target=DIRECTORY Install GC3Pie virtual environment int DIRECTORY.
                              (Default: $VENVDIR)
       --develop              Install development version. Requires svn and gcc.
-      --gc3apps              Install extra GC3 applications, like gcodeml, rosetta, turbomole and gamess.
+      --no-gc3apps           Do not install extra GC3 applications, like gcodeml, grosetta and gamess.
       --overwrite            Remove target directory if it already exists.
-      --batch                Run in batch mode, without asking confirmation.
+      --yes                  Do not ask for confirmation: assume a 'yes' reply to every question.
       -h, --help             print this help
 EOF
 }
 
-ARGS=$(getopt -o "d:h" -l "target:,help,develop,gc3apps,overwrite,batch" -- "$@")
+# Download command
+if have_command curl
+then
+    dl_cmd="curl -L -s -o"
+elif have_command wget
+then
+    dl_cmd="wget -O"
+else
+    cat 1>&2 <<EOF
+=========================================================
+GC3Pie install: ERROR: No 'curl' or 'wget' command found.
+=========================================================
+
+The script needs either 'curl' or 'wget' commands to run. 
+Please, install at least one of them using the software manager of
+your distribution, or downloading it from internet.
+
+wget: http://www.gnu.org/software/wget/
+
+curl: http://curl.haxx.se/
+
+Aborting installation!
+EOF
+    exit 1
+fi
+
+
+ARGS=$(getopt -o "d:h" -l "target:,help,develop,no-gc3apps,overwrite,yes" -- "$@")
 eval set  -- "$ARGS"
 
 # Main program
@@ -159,15 +224,15 @@ do
             shift
             DEVELOP=1
             ;;
-        --gc3apps)
+        --no-gc3apps)
             shift
-            WITHAPPS=1
+            WITHAPPS=0
             ;;
         --overwrite)
             shift
             OVERWRITEDIR=1
             ;;
-        --batch)
+        --yes)
             shift
             ASKCONFIRMATION=0
             ;;
@@ -207,9 +272,10 @@ then
     read -p "Are you ready to proceed? [yN] " yn
     if [ "$yn" != "y" -a "$yn" != "Y" ]
     then
-        echo "Aborting installation"
+        echo "Aborting installation as requested"
         exit 0
     fi
+    echo
 fi
 
 
@@ -218,25 +284,51 @@ if [ -d $VENVDIR ]
 then
     if [ $OVERWRITEDIR -eq 0 ]
     then
-        echo "Directory $VENVDIR already exists."
-        echo "Please specify a different one using the --target option"
-        echo "or force installation using --overwrite option."
+cat 1>&2 <<EOF
+=============================================================================================
+GC3Pie install: ERROR: Unable to create a virtualenv in "$VENVDIR": directory already exists.
+=============================================================================================
+
+The script was unable to create a virtual environment in "$VENVDIR"
+because the directory already exists.
+
+In order to proceed, you must take one of the following action:
+
+* delete the directory, or
+
+* run this script again adding '--overwrite' option, which will
+  overwrite the $VENVDIR directory, or
+
+* specify a different path by running this script again adding the
+  option "--target" followed by a non-existent directory.
+
+Aborting installation!
+EOF
         exit 1
     else
         echo "Removing directory $VENVDIR as requested."
         rm -rf $VENVDIR
     fi
-else
-    echo "Installing GC3Pie virtualenv in $VENVDIR"
 fi
 
+echo "Installing GC3Pie virtualenv in $VENVDIR"
 install_virtualenv $VENVDIR
-
 if [ $? -ne 0 ]
 then
-    echo "Error installing virtualenv in $VENVDIR. GC3Pie is NOT installed!"
-    echo "Please, check previous logs and send an email to gc3pie@googlegroups.com"
-    echo "with the full output if you need help."
+    cat 1>&2 <<EOF
+===========================================================================================================
+GC3Pie install: ERROR: Unable to create a new virtualenv in $VENVDIR: "virtualenv.py" script exit status: $?
+===========================================================================================================
+
+The script was unable to create a valid virtual environment. If the
+above output does not help you in solving the issue, please contact
+the GC3Pie team by sending an email to gc3pie@googlegroups.com
+
+Remember to attach the full output of the script, in order to help us
+to identify the problem.
+
+Aborting installation!
+EOF
     exit 1
 fi
 
