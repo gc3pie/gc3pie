@@ -20,7 +20,7 @@
 """
 Simple interface to the CODEML application.
 """
-__version__ = '2.0.0-a1 (SVN $Revision$)'
+__version__ = '1.2 (SVN $Revision$)'
 __changelog__ = """
 Summary of user-visible changes:
 * 16-08-2011 AM: Extract aln_info from the .phy file and record it
