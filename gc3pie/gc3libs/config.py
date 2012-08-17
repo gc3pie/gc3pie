@@ -25,6 +25,7 @@ __version__ = '$Revision$'
 
 # stdlib imports
 import ConfigParser
+import inspect
 import os
 import re
 import sys
@@ -508,25 +509,47 @@ class Configuration(gc3libs.utils.Struct):
         try:
             if resdict['type'] == gc3libs.Default.ARC0_LRMS:
                 from gc3libs.backends.arc0 import ArcLrms
-                return ArcLrms(**dict(resdict))
+                cls = ArcLrms
             elif resdict['type'] == gc3libs.Default.ARC1_LRMS:
                 from gc3libs.backends.arc1 import Arc1Lrms
                 return Arc1Lrms(**dict(resdict))
             elif resdict['type'] == gc3libs.Default.SGE_LRMS:
                 from gc3libs.backends.sge import SgeLrms
-                return SgeLrms(**dict(resdict))
+                cls = SgeLrms
             elif resdict['type'] == gc3libs.Default.PBS_LRMS:
                 from gc3libs.backends.pbs import PbsLrms
-                return PbsLrms(**dict(resdict))
+                cls = PbsLrms
             elif resdict['type'] == gc3libs.Default.LSF_LRMS:
                 from gc3libs.backends.lsf import LsfLrms
-                return LsfLrms(**dict(resdict))
+                cls = LsfLrms
             elif resdict['type'] == gc3libs.Default.SHELLCMD_LRMS:
                 from gc3libs.backends.shellcmd import ShellcmdLrms
-                return ShellcmdLrms(**dict(resdict))
+                cls = ShellcmdLrms
             else:
                 raise gc3libs.exceptions.ConfigurationError(
                     "Unknown resource type '%s'" % resdict['type'])
+            # check that required parameters are given, and try to
+            # give a sensible error message if not; if we do not
+            # do this, users see a traceback like this::
+            #
+            #   gc3.gc3libs: ERROR: Could not create resource 'schroedinger-via-ssh': __init__() takes at least 10 non-keyword arguments (9 given). Configuration file problem?
+            #
+            # which gives no clue about what to correct!
+            args, varargs, keywords, defaults = inspect.getargspec(cls.__init__)
+            if defaults is not None:
+                # `defaults` is a list of default values for the last N args
+                defaulted = dict((argname, value)
+                                for argname, value in zip(reversed(args),
+                                                          reversed(defaults)))
+            else:
+                # no default values at all
+                defaulted = { }
+            for argname in args[1:]: # skip `self`
+                if argname not in resdict and argname not in defaulted:
+                    raise gc3libs.exceptions.ConfigurationError(
+                        "Missing required configuration parameter '%s' for resource '%s'"
+                        % (argname, resdict['name']))
+            return cls(**dict(resdict))
         except Exception, err:
             gc3libs.log.error(
                 "Could not create resource '%s': %s. Configuration file problem?"
