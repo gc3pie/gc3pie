@@ -166,6 +166,7 @@ class Task(Persistable, Struct):
                      :class:`gc3libs.Core` instance, or anything
                      implementing the same interface.
         """
+        Struct.__init__(self, **kw)
         self.jobname = name
         self.execution = Run(attach=self)
         # `_grid` and `_attached` are set by `attach()`/`detach()`
@@ -841,9 +842,6 @@ class Application(Task):
         Task.__init__(self,
                       jobname,
                       kw.pop('grid', None))
-
-        # any additional param
-        Struct.__init__(self, **kw)
 
         # for k,v in self.outputs.iteritems():
         #     gc3libs.log.debug("outputs[%s]=%s", repr(k), repr(v))
