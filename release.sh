@@ -9,10 +9,11 @@ Usage: $PROG PATH VERSION
 Release the sources at PATH  as gc3pie-VERSION.
 In detail, this does the following:
   - checks that there are no uncommitted changes
+  - commits BRANCH to tags/VERSION
   - sets the '__version__' attribute in every module to VERSION;
   - updates the documentation
   - checks that ./setup.py can build the package
-  - commits the sources to SVN and tags them
+  - commits the sources to SVN
   - uploads the source package to PyPI
 
 Options:
@@ -61,15 +62,15 @@ python -c 'import sphinx' 2>/dev/null \
 
 ## parse command-line 
 
-unset maybe
-unset debug
+maybe=""
+debug=""
 
 if [ "x$(getopt -T)" == 'x--' ]; then
     # old-style getopt, use compatibility syntax
     set -- $(getopt 'hnx' "$@")
 else
     # GNU getopt
-    set -- $(getopt --shell sh -l 'help' -o 'hnx' -- "$@")
+    set -- $(getopt --shell sh -l 'help,test,debug,just-print' -o 'hnx' -- "$@")
 fi
 while [ $# -gt 0 ]; do
     case "$1" in
@@ -110,6 +111,14 @@ if [ -n "$svn_st" ]; then
     die 1 "There are uncommitted changes in SVN tree (run 'svn status' to check); cannot continue."
 fi
 
+popd
+echo Creating "$version" tag
+$maybe svn cp $branch tags/$version
+set +e
+
+pushd tags/$version \
+    || die 1 "Cannot change directory to tag tags/$version"
+
 
 echo Setting the '__version__' attribute in every module to $version ...
 set -e
@@ -132,15 +141,9 @@ if ! (cd gc3pie; ./setup.py sdist); then
     die 1 "Could not build the python package with './setup.py sdist'."
 fi
 
-
 echo Committing sources to SVN and creating "$version" tag ...
 set -e
-$maybe svn commit -m"Version $version"
-
-svn_url=$(svn info | egrep '^URL:' | cut -d' ' -f2-)
-svn_dest_url=$(echo $svn_url | sed -e "s|/$branch|/tags/$version|;")
-$maybe svn cp "$svn_url" "$svn_dest_url" -m"Tagged '$branch' as 'tags/$version'"
-set +e
+$maybe svn commit -m"Tagged branch '$branch' to 'tags/$version'"
 
 
 echo Uploading source package to PyPI ...
