@@ -55,8 +55,12 @@ class GzodsApp(gc3libs.Application):
     """
     def __init__(self, filename,**kw):
         if self.check_input(filename) is None:
-                gc3libs.log.warning("Input files for ZODS app was not detected.")
-                return None
+                raise gc3libs.exceptions.InputFileError(
+                        "Cannot find auxiliary files for input file '%s'."
+                        " (Auxiliary files are the average structure '.cif' file,"
+                        " the reference intensities file,"
+                        " and -optionally- the restart file.)"
+                        % (filename,))
         inputFiles = self.check_input(filename)
         gc3libs.log.debug("Detected input files for ZODS: %s, and %s.", filename, [inputFiles])
         myinputs = [filename]
