@@ -1,0 +1,35 @@
+! EXAM28.  Morokuma energy decomposition.
+! This run duplicates a result from Table 16 of 
+! H.Umeyama, K.Morokuma, J.Am.Chem.Soc. 99,1316(1977)
+!
+!             GAMESS   literature
+!       ES=   -14.02     -14.0
+!       EX=     8.98       9.0
+!       PL=    -1.12      -1.1
+!       CT=    -2.37      -2.4
+!      MIX=    -0.43      -0.4
+!     total    -8.96      -9.0
+!
+ $contrl scftyp=rhf runtyp=morokuma coord=zmt $end
+ $system timlim=1 $end
+ $basis  gbasis=n31 ngauss=4 $end
+ $guess  guess=huckel $end
+ $morokm iatm(1)=3 $end
+ $data
+water-ammonia dimer
+Cs
+
+H
+O 1 rOH
+H 2 rOH 1 aHOH
+N 2  R  1 aHOH    3    0.0
+H 4 rNH 3 aHNaxis 1  180.0
+H 4 rNH 3 aHNaxis 5 +120.0
+H 4 rNH 3 aHNaxis 5 -120.0
+
+rOH=0.956
+aHOH=105.2
+rNH=1.0124
+aHNaxis=112.1451  ! makes HNH=106.67
+R=2.93
+ $end

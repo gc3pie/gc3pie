@@ -1,0 +1,230 @@
+.. Hey Emacs, this is -*- rst -*-
+
+   This file follows reStructuredText markup syntax; see
+   http://docutils.sf.net/rst.html for more information.
+
+
+.. _`session-based script`:
+
+Introduction to *session-based* scripts
+=======================================
+
+All GC3Apps scripts derive their core functionality from a common
+blueprint, named a *session-based script*.  The purpose of this
+section is to describe this common functionality; script-specific
+sections detail the scope and options that are unique to a given
+script.  Readers interested in Python programming can find the
+complete documentation about the *session-based script* :term:`API` in
+the `SessionBasedScript`:class: section.
+
+The functioning of GC3Apps scripts revolves around a so-called
+*session*.  A :term:`session` is just a named collection of jobs.  For
+instance, you could group into a single session jobs that analyze a
+set of related files.
+
+Each time it is run, a GC3Apps script performs the
+following steps:
+
+1. Reads the session directory and loads all stored jobs into memory.
+   If the session directory does not exist, one will be created with
+   empty contents.
+
+2. Scans the command-line input arguments: if existing jobs do not
+   suffice to analyze the input data, new jobs are added to the
+   session.
+
+3. The status of all existing jobs is updated, output from finished jobs
+   is collected, and new jobs are submitted.
+
+   Finally, a summary table of all known jobs is printed.  (To control
+   the amount of printed information, see the ``-l`` command-line
+   option below.)
+
+4. If the ``-C`` command-line option was given (see below), waits
+   the specified amount of seconds, and then goes back to step 3.
+
+   Execution can be interrupted at any time by pressing :kbd:`Ctrl+C`.
+
+
+Basic command-line usage and options
+------------------------------------
+
+The exact command-line usage of *session-based scripts* varies from
+one script to the other, so please consult the documentation page for
+your application.  There are quite a number of common options and
+behaviors, however, which are described here.
+
+Continuous execution
+~~~~~~~~~~~~~~~~~~~~
+
+While single-pass execution of a GC3Apps script is possible (and
+sometimes used), it is much more common to keep the script running
+and let it manage jobs until all are finished.  This is accomplished
+with the following command-line option:
+
+  -C NUM, --continuous NUM
+    Keep running, monitoring jobs and possibly submitting
+    new ones or fetching results every NUM seconds.
+
+    When all jobs are finished, a GC3Apps script exits even if the
+    ``-C`` option is given.
+
+Verbose listing of jobs
+~~~~~~~~~~~~~~~~~~~~~~~
+
+Only a summary of job states is printed by default at the end of step
+3., together with the count of jobs that are in the specified state.
+Use the ``-l`` option (see below) to get a detailed listing of all
+jobs.
+
+  -l STATE, --state STATE
+    Print a table of jobs including their status.
+  
+    The *STATE* argument restricts output to jobs in that particular
+    state.  It can be a single :term:`state` word (e.g., ``RUNNING``)
+    or a comma-separated list thereof (e.g.,
+    ``NEW,SUBMITTED,RUNNING``).
+
+    The pseudo-states ``ok`` and ``failed`` are also allowed for
+    selecting jobs in ``TERMINATED`` state with exit code
+    (respectively) 0 or nonzero.
+
+    If *STATE* is omitted, no restriction is placed on job states, and
+    a table of *all* jobs is printed.
+
+Maximum number of concurrent jobs
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+There is a maximum number of jobs that can be in ``SUBMITTED`` or
+``RUNNING`` state at a given time.  GC3Apps scripts will delay
+submission of newly-created jobs so that this limit is never
+exceeded.  The default limit is 50, but it can be changed with the
+following command-line option:
+
+  -J NUM, --max-running NUM
+    Set the maximum NUMber of jobs (default: 50) in ``SUBMITTED``
+    or ``RUNNING`` state.
+
+Location of output files
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+By default, output files are placed in the same directory where the
+corresponding input file resides.  This can be changed with the
+following option; it is also possible to specify output locations that
+vary depending on certain job features.
+
+  -o DIRECTORY, --output DIRECTORY
+    Output files from all jobs will be collected in the specified
+    *DIRECTORY* path.  If the destination directory does not exist, it
+    is created.
+
+
+Job control options
+-------------------
+
+These command-line options control the requirements and constraints of
+*new jobs*.  Indeed, note that changing the arguments to these options
+*does not* change the corresponding requirements on jobs that already
+exist in the session.
+
+  -c NUM, --cpu-cores NUM
+    Set the number of CPU cores required for each job
+    (default: 1).  *NUM* must be a whole number.
+
+  -m GIGABYTES, --memory-per-core GIGABYTES
+    Set the amount of memory required per execution core,
+    in gigabytes (Default: 2). Currently, *GIGABYTES* can
+    only be an integer number; fractional amounts are
+    discarded.
+
+  -r NAME, --resource NAME
+    Submit jobs to a specific :term:`resource`. ``NAME`` is a
+    reource name or comma-separated list of resource names.
+    Use the command `glist` to list available resources.
+
+  -w DURATION, --wall-clock-time DURATION
+    Set the time limit for each job (default is '8' for
+    '8 hours'). Jobs exceeding this limit will be stopped
+    and considered as *failed*. The duration can be
+    expressed as a whole number (indicating the duration
+    in hours) or as a string in the form 'hours:minutes'.
+
+
+Session control options
+-----------------------
+
+This set of options control the placement and contents of the :term:`session`.
+
+  -s PATH, --session PATH
+    Store the session information in the directory at *PATH*.
+    (By default, this is a subdirectory of the current directory,
+    named after the script you are executing.)
+    
+    If *PATH* is an existing directory, it will be used for storing job
+    information, and an index file (with suffix ``.csv``) will be
+    created in it. Otherwise, the job information will be stored in a
+    directory named after *PATH* with a suffix ``.jobs`` appended, and
+    the index file will be named after *PATH* with a suffix ``.csv``
+    added.
+
+  -N, --new-session     
+    Discard any information saved in the session directory
+    (see the ``--session`` option) and start a new session
+    afresh. Any information about jobs previously recorded
+    in the session is lost.
+
+  -u, --store-url URL
+    
+    Store GC3Pie job information at the persistent storage specified
+    by *URL*.  The *URL* can be any form that is understood by the
+    `gc3libs.persistence.make_store`:func: function (which see for
+    details).  A few examples:
+
+    * `sqlite`:file: -- the jobs are stored in a SQLite3 database
+      named ``jobs.db`` and contained in the session directory.
+    * `{/path/to/a/directory}`:file: -- the jobs are stored in the given
+      directory, one file per job (this is the default format used by
+      GC3Pie)
+    * `sqlite:////{path/to/a/file.db}`:file: -- the jobs are stored in
+      the given SQLite3 database file.
+    * `mysql://user,passwd@{server}/{dbname}`:file: -- jobs are stored
+      in table ``store`` of the specified MySQL database.  The DB
+      server and connection credentials (username, password) are also
+      part of the *URL*.
+
+    If this option is omitted, GC3Pie's *SessionBasedScript* defaults
+    to storing jobs in the subdirectory `jobs`:file: of the session
+    directory; each job is saved in a separate file.
+
+
+Exit code
+---------
+
+A GC3Apps script exits when all jobs are finished, when some error
+occurred that prevented the script from completing, or when a user
+interrupts it with :kbd:`Ctrl+C`
+
+In any case, the exit code of GC3Apps scripts tracks job status (in
+the following sense).  The exitcode is a bitfield; the 4
+least-significant bits are assigned a meaning according to the
+following table:
+
+  ===    ============================================================
+  Bit    Meaning
+  ===    ============================================================
+  0      Set if a fatal error occurred: the script could not complete
+  1      Set if there are jobs in ``FAILED`` state
+  2      Set if there are jobs in ``RUNNING`` or ``SUBMITTED`` state
+  3      Set if there are jobs in ``NEW`` state
+  ===    ============================================================
+
+This boils down to the following rules:
+
+* exitcode is 0: all jobs are `DONE`, no further action will be taken
+  by the script (which exists immediately if called again on the same
+  session). 
+* exitcode is 1: an error interrupted the script execution.
+* exitcode is 2: all jobs finished, but some are in `FAILED` state.
+* exitcode > 3: run the script again to make jobs progress.
+
+..  LocalWords:  Ctrl kbd SessionBasedScript

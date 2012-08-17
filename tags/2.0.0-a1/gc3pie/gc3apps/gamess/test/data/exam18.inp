@@ -1,0 +1,20 @@
+! EXAM 18.
+!  diatomic P2...analytic hessian using effective core potential
+!  See Stevens,Basch,Krauss, J.Chem.Phys. 81,6026-33(1984).
+!  GAMESS FINAL E= -12.6956518722, with vibrational FREQ=913.17
+!  A separate run gives E(P)= -6.32635, so De= 26.95 kcal/mol
+!
+ $CONTRL SCFTYP=RHF RUNTYP=HESSIAN PP=SBKJC NZVAR=1 $END
+ $SYSTEM TIMLIM=1 $END
+ $GUESS  GUESS=HUCKEL $END
+ $ZMAT   IZMAT(1)=1,1,2 $END
+ $DATA
+diatomic phosphorous
+Dnh 4
+ 
+PHOSPHORUS 15.0   0.0000000000   0.0000000000   0.9393077548
+   SBKJC
+   D 1
+     1 0.45 1.0
+ 
+ $END

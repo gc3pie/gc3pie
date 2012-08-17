@@ -1,0 +1,24 @@
+! EXAM08.
+!    1-A-1 H2O    RHF + MP2 gradient calculation.
+!    This job generates RHF orbitals which should be saved
+!    for use with EXAM9.  This run, together with EXAM9,
+!    shows a much more typical MCSCF calculation, which
+!    should always be started with some sort of SCF MOs.
+!    This job also tests the 2nd order Moller-Plesset code,
+!    exercizing the parallel code for this, even if p=1.
+!
+!    The FINAL E is -75.5854099068 after 10 iterations.
+!    E(MP2) is -75.7060362006, RMS grad=0.017449522
+!    dipole moments are SCF=2.435689, MP2=2.329368
+!
+ $CONTRL SCFTYP=RHF MPLEVL=2 RUNTYP=GRADIENT $END
+ $SYSTEM TIMLIM=1 MEMDDI=1 PARALL=.TRUE. $END
+ $BASIS  GBASIS=N21 NGAUSS=3 $END
+ $GUESS  GUESS=HUCKEL $END
+ $DATA
+Water...RHF/3-21G...exp.geom...R(OH)=0.95781,A(HOH)=104.4776
+Cnv      2
+
+OXYGEN     8.0
+HYDROGEN   1.0   0.0     0.7572157    0.5865358
+ $END

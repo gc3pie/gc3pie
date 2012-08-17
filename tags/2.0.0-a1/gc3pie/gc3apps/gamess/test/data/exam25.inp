@@ -1,0 +1,162 @@
+! EXAM25.
+!   Illustration of coordinate systems for geometry searches.
+!   Arbitrary molecule, chosen to illustrate ring, methyl on
+!   ring, methine H10, imino in ring, methylene in ring.
+!
+!      H8 H9
+!        \|
+!      H7-C6  O1---O5   H13
+!          \ /       \ /
+!           C2       C4
+!          /  \     /  \
+!         H10    N3     H12
+!                |
+!                H11
+!                       
+!   The initial AM1 energy is -48.6594935, RMS=0.0200113
+!                      final E    final RMS  #steps
+!   Cartesians       -48.7022572  0.0000259    44
+!   dangling Z-mat   the OO bond crashes on 1st step
+!   good Z-matrix    -48.7022550  0.0000137    27
+!   deloc. coords.   -48.7022538  0.0000249    23
+!   nat. internals   -48.7022570  0.0000207    15
+!
+!   Note that the delocalized coordinates have very easy
+!   input compared to the natural internals, and take many
+!   fewer steps to converge than Cartesian coordinates.
+!
+ $contrl scftyp=rhf runtyp=optimize coord=zmt $end
+ $system timlim=1 $end
+ $statpt hess=guess nstep=100 nprt=-1 npun=-2 $end
+ $basis  gbasis=am1 $end
+ $guess  guess=huckel $end
+ $data
+Illustration of coordinate systems
+C1
+O
+C 1 rCOa
+N 2 rCNa 1 aNCO
+C 3 rCNb 2 aCNC  1 wCNCO
+O 4 rCOb 3 aOCN  2 wOCNC
+C 2 rCC  1 aCCO  5 wCCOO
+H 6 rCH1 2 aHCC1 1 wHCCO1
+H 6 rCH2 2 aHCC2 1 wHCCO2
+H 6 rCH3 2 aHCC3 1 wHCCO3
+H 2 rCHa 1 aHCOa 5 wHCOOa
+H 3 rNH  2 aHNC  1 wHNCO
+H 4 rCHb 5 aHCOb 1 wHCOOb
+H 4 rCHc 5 aHCOc 1 wHCOOc
+
+rCOa=1.43
+rCNa=1.47
+rCNb=1.47
+rCOb=1.43
+aNCO=106.0
+aCNC=104.0
+aOCN=106.0
+wCNCO=30.0
+wOCNC=-30.0
+rCC=1.54
+aCCO=110.0
+wCCOO=-150.0
+rCH1=1.09
+rCH2=1.09
+rCH3=1.09
+aHCC1=109.0
+aHCC2=109.0
+aHCC3=109.0
+wHCCO1=60.0
+wHCCO2=-60.0
+wHCCO3=180.0
+rCHa=1.09
+aHCOa=110.0
+wHCOOa=100.0
+rNH=1.01
+aHNC=110.0
+wHNCO=170.0
+rCHb=1.09
+rCHc=1.09
+aHCOb=110.0
+aHCOc=110.0
+wHCOOb=150.0
+wHCOOc=-100.0
+ $end
+
+To use Cartesian coordinates:
+--- $contrl nzvar=0 $end
+
+To use conventional Z-matrix, with a dangling O-O bond:
+--- $contrl nzvar=33 $end
+
+To use well chosen internals, with all 5 ring bonds defined:
+--- $contrl nzvar=33 $end
+--- $zmat   izmat(1)=1,1,2,  1,2,3,  1,3,4,  1,4,5,  1,5,1,
+     2,1,2,3,  2,5,4,3,  3,5,1,2,3,  3,1,5,4,3,
+     1,6,2,  2,6,2,1,  3,6,2,1,5,  
+     1,6,7,  1,6,8,  1,6,9,  2,7,6,2,  2,8,6,2,  2,9,6,2,  
+     3,7,6,2,1,  3,8,6,2,1,  3,9,6,2,1,
+     1,10,2,  2,10,2,1,  3,10,2,1,5,
+     1,11,3,  2,11,3,2,  3,11,3,2,1,
+     1,12,4,  2,12,4,5,  3,12,4,5,1,  
+     1,13,4,  2,13,4,5,  3,13,4,5,1 $end
+
+To use delocalized coordinates:
+--- $contrl nzvar=33 $end
+--- $zmat   dlc=.true. auto=.true. $end
+
+To use natural internal coordinates:
+ $contrl nzvar=44 $end
+ $zmat   izmat(1)=1,1,2, 1,2,3, 1,3,4, 1,4,5, 1,5,1, ! ring !
+     2,5,1,2,   2,1,2,3,   2,2,3,4,   2,3,4,5,   2,4,5,1,
+     3,5,1,2,3, 3,1,2,3,4, 3,2,3,4,5, 3,3,4,5,1, 3,4,5,1,2,
+        1,2,6,  2,6,2,1,  2,6,2,3,  4,6,2,1,3,  ! methyl C !
+     1,6,7,  1,6,8,  1,6,9,                    ! methyl Hs !
+     2,7,6,8,  2,8,6,9,  2,9,6,7,  2,9,6,2,  2,7,6,2,
+     2,8,6,2,  3,7,6,2,1,
+        1,10,2,  2,10,2,1,  2,10,2,3,  2,10,2,6, ! methine !
+        1,11,3,  2,11,3,2,  2,11,3,4,  4,11,3,2,4, ! imino !
+    1,12,4,  1,13,4,                           ! methylene !
+     2,12,4,13,  2,12,4,3,  2,13,4,3,  2,12,4,5,  2,13,4,5
+
+        ijS(1)=1,1,  2,2,  3,3,  4,4,  5,5,         ! ring !
+          6,6, 7,6, 8,6, 9,6,10,6,
+               7,7, 8,7, 9,7,10,7,
+         11,8,12,8,13,8,14,8,15,8,
+         11,9,12,9,     14,9,15,9,
+               16,10,   17,11,18,11,   19,12,   ! methyl C !
+         20,13,  21,14,  22,15,                ! methyl Hs !
+         23,16, 24,16, 25,16, 26,16, 27,16, 28,16,
+         23,17, 24,17, 25,17,
+                24,18, 25,18,
+                              26,19, 27,19, 28,19,
+                                     27,20, 28,20,
+         29,21,
+            30,22,    31,23,32,23,33,23,
+              32,24,33,24,                       ! methine !
+            34,25,  35,26,36,26,  37,27,           ! imino !
+         38,28,  39,29,                        ! methylene !
+         40,30, 41,30, 42,30, 43,30, 44,30,
+                41,31, 42,31, 43,31, 44,31,
+                41,32, 42,32, 43,32, 44,32,
+                41,33, 42,33, 43,33, 44,33
+
+        Sij(1)=1.0, 1.0, 1.0, 1.0, 1.0,             ! ring !
+            1.0, -0.8090, 0.3090,  0.3090, -0.8090,
+                 -1.1180, 1.8090, -1.8090, 1.1180,
+            0.3090, -0.8090, 1.0, -0.8090, 0.3090,
+            -1.8090, 1.1180,      -1.1180, 1.8090,
+                    1.0,   1.0,-1.0,   1.0,     ! methyl C !
+         1.0,   1.0,   1.0,                    ! methyl Hs !
+         1.0, 1.0, 1.0,-1.0,-1.0,-1.0,
+         2.0,-1.0,-1.0,
+              1.0,-1.0,
+                        2.0,-1.0,-1.0,
+                             1.0,-1.0,
+         1.0,
+            1.0,     2.0,-1.0,-1.0,   1.0,-1.0,  ! methine !
+            1.0,   1.0,-1.0,    1.0,               ! imino !
+         1.0,  1.0,                            ! methylene !
+         4.0, 1.0, 1.0, 1.0, 1.0,
+              1.0,-1.0, 1.0,-1.0,
+              1.0, 1.0,-1.0,-1.0,
+              1.0,-1.0,-1.0, 1.0    $end

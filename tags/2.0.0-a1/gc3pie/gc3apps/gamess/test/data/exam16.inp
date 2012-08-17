@@ -1,0 +1,33 @@
+! EXAM 16.
+!  ROHF/GVB on Si 3-P state, using Gordon's 6-31G basis.
+!
+!  The purpose of this example is two-fold, namely to
+!  show off the open shell capabilities of the GVB code,
+!  and to emphasize that the 6-31G basis for Si in GAMESS
+!  is Mark Gordon's version.  The basis stored in GAMESS is
+!  completely optimized, whereas Pople's uses the core from
+!  from a 6-21G set, reoptimizing only the -31G part.
+!  The energy from Pople's basis would be only -288.828405.
+!
+!  Jacobi diagonalization is intrinsically slow, but in this
+!  case results in pure subspecies in degenerate p irreps.
+!  In fact, these may be labeled in the highest Abelian
+!  subgroup of the atomic point group Kh.
+!
+!  The FINAL energy is -288.8285729745 after 7 iterations.
+!
+ $CONTRL SCFTYP=GVB MULT=3 $END
+ $SYSTEM TIMLIM=1 KDIAG=3 $END
+ $BASIS  GBASIS=N31 NGAUSS=6 $END
+ $DATA
+Si...3-P term...ROHF in full Kh symmetry
+Dnh 2
+
+Silicon     14.
+ $END
+ $GUESS  GUESS=HUCKEL $END
+ $SCF    NCO=6  NSETO=1  NO=3   COUPLE=.TRUE.
+         F(1)=1.0, 0.333333333333333
+         ALPHA(1)=2.0,  0.66666666666667,  0.16666666666667
+         BETA(1)=-1.0, -0.33333333333333, -0.16666666666667
+ $END

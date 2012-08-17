@@ -1,0 +1,104 @@
+
+!=============================================================================
+!  RUN DEFINITION
+!=============================================================================
+Latitude               = 46.42
+Longitude              = 9.82
+TimeStepEnergyAndWater = 3600
+InitDateDDMMYYYYhhmm   = 01/07/2009 00:00
+EndDateDDMMYYYYhhmm    = 02/07/2009 00:00                     
+NumSimulationTimes     = 1
+DtPlotPoint            = 1
+
+
+!=============================================================================
+!  MODEL SETTINGS
+!=============================================================================
+PointSim      = 1
+WaterBalance  = 0
+EnergyBalance = 1
+StandardTimeSimulation = 0
+
+!=============================================================================
+!  INPUT
+!=============================================================================
+!--- METEO FILE ---------------------------
+NumberOfMeteoStations        = 2
+MeteoStationElevation        = 3315, 3315
+MeteoStationWindVelocitySensorHeight = 10
+MeteoStationTemperatureSensorHeight  = 10
+MeteoFile                   = "/in/meteo"
+HeaderDateDDMMYYYYhhmmMeteo = "Date"
+HeaderIPrec                 = "Iprec"
+HeaderWindX                 = "WindX"
+HeaderWindY                 = "WindY"
+HeaderRH                    = "RelH"
+HeaderAirTemp               = "AirT"
+HeaderSWglobal              = "rad"
+HeaderCloudSWTransmissivity = "CloudTrans"
+
+!--- TOPOGRAPHY FILE -----------------------
+PointFile                   = "in/listpoints"
+HeaderPointID				= "ID"
+HeaderPointElevation     	= "ele"
+HeaderPointLandCoverType 	= "landcover"
+HeaderPointSoilType 		= "soil"
+HeaderPointSlope         	= "slp"
+HeaderPointAspect        	= "asp"
+HeaderPointSkyViewFactor 	= "sky"
+HeaderPointDepthFreeSurface = "free"
+HeaderPointMaxSWE 			= "maxswe"
+HeaderPointHorizon 			= "hor"
+
+
+!=============================================================================
+!  SOIL SETTINGS
+!=============================================================================
+
+!--- DISCRETIZATION AND INIT ------------------
+SoilLayerThicknesses   = 50, 100, 200, 350, 500, 800 
+InitWaterTableDepth    = 200
+InitSoilTemp           = -1
+
+!--- SOIL PROPERTIES --------------------------
+ThetaSat = 0.02
+ThetaRes = 0.005
+AlphaVanGenuchten             = 0.001
+NVanGenuchten                 = 1.1
+NormalHydrConductivity        = 1E-6
+LateralHydrConductivity       = 1E-6
+ThermalCapacitySoilSolids     =2250000
+ThermalConductivitySoilSolids =2.5
+
+
+!=============================================================================
+! POINT OUTPUT: SOIL 
+!=============================================================================
+
+!--- STRUCTURE ------------
+SoilAveragedTempProfileFileWriteend = "out/ground"
+SoilPlotDepths = 100
+
+!--- VARIABLES ------------
+DefaultSoil = 0
+DateSoil    = 1
+PeriodSoil  = 2
+RunSoil     = 3
+IDPointSoil = 4 
+TempSoil    = 5
+
+
+!=============================================================================
+! POINT OUTPUT: SURFAEC FLUXES AND PROPERTIES 
+!=============================================================================
+
+!--- STRUCTURE ------------
+PointOutputFileWriteEnd = "out/surface"
+
+!--- VARIABLES ------------
+DefaultPoint                =  0
+DatePoint                   =  1
+PeriodPoint                 =  2
+RunPoint                    =  3
+IDPointPoint                =  4
+AirTempPoint                =  5
