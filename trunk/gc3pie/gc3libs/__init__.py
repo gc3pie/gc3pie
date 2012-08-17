@@ -845,10 +845,10 @@ class Application(Task):
         # any additional param
         Struct.__init__(self, **kw)
 
-        for k,v in self.outputs.iteritems():
-            gc3libs.log.debug("outputs[%s]=%s", repr(k), repr(v))
-        for k,v in self.inputs.iteritems():
-            gc3libs.log.debug("inputs[%s]=%s", repr(k), repr(v))
+        # for k,v in self.outputs.iteritems():
+        #     gc3libs.log.debug("outputs[%s]=%s", repr(k), repr(v))
+        # for k,v in self.inputs.iteritems():
+        #     gc3libs.log.debug("inputs[%s]=%s", repr(k), repr(v))
 
 
     @staticmethod
