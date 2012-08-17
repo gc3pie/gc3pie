@@ -57,6 +57,7 @@ class GamessTestSuite:
  		self.L = []
  		self.exQ = []
 		self.listOfTests = []
+		self.list_of_analyzed_files = []
 		self.dirLog = directory
 		os.chdir(self.dirLog)
 	
@@ -89,10 +90,11 @@ class GamessTestSuite:
 #				return ""						
 #		return targetLine	
 		
-	def addTest(self, fileName):
+	def addTest(self, file_in, file_out):
  		#self.L.append(testName)
-		self.listOfTests.append(fileName)
-
+		self.listOfTests.append(file_in)
+		self.list_of_analyzed_files.append(file_out)
+	
 	def appendExecutionQueue(self, obj):
 		self.exQ.append(obj)
 
@@ -115,31 +117,31 @@ class GamessTestSuite:
 		   gc3libs.log.debug("The test list is empty.")
 		   return
 		#Each INP file shold have a GAMESS OUT file that terminated normally
-		for testName in self.listOfTests:
-			filename = os.path.splitext(testName)
-			print filename
-			if len(filename) > 1:
-				filename = filename[0] + '.out' 
-				print filename
-			#:, *.out) #test.name #getCurrentFileName()
-		#gc3libs.log.info("Testing filename %s", filename)	
+		for file_input, file_output in zip(self.listOfTests, self.list_of_analyzed_files):
+			#print "runAll I", file_input
+			#print "runAll O", file_output
+			#gc3libs.log.info("Testing filename %s", filename)	
 			#Check if the file exists
-			if os.path.exists(filename) == False:
+			#TODO: This might be not needed
+			if os.path.exists(file_input) == False:
 					LFailedTestNames.append(filename)
 					LFailedTestDesc.append("The file DOES NOT exist.")
+					print "Somethings is wrong"
 					continue
 			#Check if the test terminated normally
-			FILE = open(filename, 'r')
+			FILE = open(file_output, 'r')
 			isOK = self.grep("TERMINATED+\s+NORMALLY", FILE)	
 			FILE.close()
 			if len(isOK) == 0:
-				LFailedTestNames.append(filename)
+				LFailedTestNames.append(file_output)
 				LFailedTestDesc.append("The file DID NOT terminated normally.")
+				print "Somethings is wrong"
 				continue
 			NumberOfCorrectTests = NumberOfCorrectTests + 1	
 		
 		if len(LFailedTestNames) > 0:
 			gc3libs.log.info("Please check carefully each of the following runs as these tests will not be executed:")
+			print "Please check carefully each of the following runs as these tests will not be executed:"
 			for test, desc in zip(LFailedTestNames, LFailedTestDesc):
 				print test, ": ", desc
 			gc3libs.log.info("Running the remaining %s",NumberOfCorrectTests," tests. ")
@@ -147,7 +149,10 @@ class GamessTestSuite:
 			gc3libs.log.info("Detected %s",NumberOfCorrectTests, "tests.")
 			
 		NumberOfIncorrectResults = 0
+		print "list", self.listOfTests
+		print "queue", self.exQ
 		for testName, testObj in zip(self.listOfTests, self.exQ):
+			print testName
 			if testName in LFailedTestNames:
 				continue
 			(isCorrect, str) = testObj.run()
@@ -171,16 +176,17 @@ class GamessTestSuite:
 			gc3libs.log.info("%d job(s) got incorrect numerical results. Please examine why.", NumberOfIncorrectResults) 
 
 
-	def scanGAMESSinputFile(self,filenameINP, filenameOUT):
+	def generate_tests(self,filenameINP, filenameOUT):
 		try:	
-			file = open(filenameINP, 'r') #"./data/exam01.inp", 'r')
+			file = open(filenameINP, 'r') 
 			foundlines = self.grep("GC3", file)	
 			file.close()
 		except IOError:
 			raise IOError("There is a problem with a file %s.", filenameINP) 
 		if os.path.exists(filenameOUT) == False:
 			raise IOError("The file %s does not exists.", filenameOUT) 
-			
+		if len(foundlines) > 0 :
+			self.addTest(filenameINP, filenameOUT)		
 			
 		i=0
 		paramList = []
@@ -212,10 +218,11 @@ class GamessTestSuite:
 			functionList.append(labelFollow)
 			paramList.append(arg2)	
 			continue 	
-
+		i = 0
 		for args,function in zip(paramList, functionList):
+			 print i
+			 i = i + 1
 			 argList = args.split(",")
-			 #print argList
 			 for arg in argList:
 				arg = re.sub(r"[ \"]", r"", arg) 
 			 try:
@@ -244,8 +251,7 @@ class GamessTestSuite:
 
 TestSet = GamessTestSuite(".")
 TestSetNew = GamessTestSuite(".")
-TestSetNew.addTest("exam01.inp") #Add app to a list of tests
-TestSetNew.scanGAMESSinputFile("./test/data/exam01.inp","test/exam01.out")
+#TestSetNew.generate_tests("./test/data/exam01.inp","test/exam01.out")
 #TestSetNew.scanGAMESSinputFile("./test/data/exam04.inp","test/exam04.out")
 
 #TestSetNew.addTest(ex1)

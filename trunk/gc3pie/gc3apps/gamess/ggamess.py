@@ -130,29 +130,34 @@ of newly-created jobs so that this limit is never exceeded.
                 parameters,
                 # keyword arguments, see `GamessApplication.__init__`
                 kwargs)
+    
     def after_main_loop(self):
-	print "AFTER MAIN LOOP. I would like to get all information about the finished tasks from the session"
 	#print "PARAMS", self.params
 	# build job list
         inputs = self._search_for_input_files(self.params.args)
 	input_list = []
+
+	# transform set with input files to a list	
 	for myinput in inputs:
 		input_list.append(myinput)
 	output_dirs = []
- 	input_list.sort()
- 	print 'INPUTSsearch', input_list
         
 	jobs = list(self.session)
+
+	#list of output directories
 	for job in jobs:
 	 	output_dirs.append(job.output_dir) 
+ 	#sort both list to make sure they correspond to the same files
+	input_list.sort()
  	output_dirs.sort()
- 	print 'OUTPUTs', output_dirs
+ 	#print 'INPUTSsearch', input_list
+ 	#print 'OUTPUTs', output_dirs
 	
 	testSet = GamessTestSuite(".")	
 	output_list = self.get_output_files_to_analyze(input_list, output_dirs)
 	for file_input, file_output in zip(input_list,output_list):
-		print "I/O", file_input, file_output
-		testSet.scanGAMESSinputFile(file_input, file_output)
+		#print "I/O", file_input, file_output
+		testSet.generate_tests(file_input, file_output)
 	testSet.runAll()
 
 # Given a list of input files and list of output dirs from the session, generate a list of possible paths to output files
