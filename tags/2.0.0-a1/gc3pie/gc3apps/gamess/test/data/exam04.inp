@@ -1,0 +1,40 @@
+! EXAM04.
+!    1-A-1 CH2    TCSCF calculation on methylene.
+!    The wavefunction has two configurations, exciting
+!    the carbon sigma lone pair into the out of plane p.
+!
+!    Note that the Z-matrix used to input the molecule
+!    can include identifying integers after the element
+!    symbol, and that the connectivity can then be given
+!    using these labels rather than integers.
+!
+!    This job tests the GVB wavefunction and gradient.
+!
+!    The initial GVB-PP(1) energy is -37.187342653.
+!    The FINAL energy is -37.2562020559 after 10 iters.
+!    The GVB CI coefs are 0.977505 and -0.210911, giving
+!    a pair overlap of 0.64506.
+!    Mulliken, Lowdin charges for C are 0.020810, 0.055203.
+!    The dipole moment is 1.249835.
+!    The RMS gradient = 0.019618475.
+!
+! GC3: grepAndFollow("OVERLAP\s+LOW", "head","head", 8, 0.64506, GamessTst.tolO, "Oerr")
+! GC3: grepAndFollow("DEBYE", "head","1", 4, 1.249835, GamessTst.tolD, "Derr") #works with head and index 1
+
+ $CONTRL SCFTYP=GVB  RUNTYP=GRADIENT  COORD=ZMT  $END
+ $SYSTEM TIMLIM=1 $END
+ $BASIS  GBASIS=STO NGAUSS=2 $END
+ $SCF    NCO=3  NSETO=0  NPAIR=1  $END
+ $DATA
+Methylene...1-A-1 state...GVB...one geminal pair...STO-2G
+Cnv  2
+
+C1
+H1  C1 rCH
+H2  C1 rCH  H1 aHCH
+
+rCH=1.09
+aHCH=99.0
+ $END
+! normally a GVB-PP calculation will use GUESS=MOREAD
+ $GUESS  GUESS=HUCKEL  $END

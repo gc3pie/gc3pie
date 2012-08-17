@@ -1,0 +1,22 @@
+! EXAM24.
+!  Self-consistent reaction field test, of water in water.
+!  Cavity radius is calculated from the 1.00 g/cm**3 density.
+!  FINAL energy is -74.9666740766 after 12 iterations
+!  Induced dipole= -0.03663, RMS gradient= 0.033467686
+!
+ $contrl scftyp=rhf runtyp=gradient coord=zmt $end
+ $system timlim=1 $end
+ $basis  gbasis=sto ngauss=3 $end
+ $guess  guess=huckel $end
+ $scrf   radius=1.93 dielec=80.0 $end
+ $data
+water in water, arbitrary geometry
+Cnv 2
+
+O
+H 1 rOH
+H 1 rOH 2 aHOH 
+
+rOH = 0.95
+aHOH = 104.5
+ $end

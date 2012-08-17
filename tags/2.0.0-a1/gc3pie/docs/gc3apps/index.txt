@@ -1,0 +1,45 @@
+.. Hey Emacs, this is -*- rst -*-
+
+   This file follows reStructuredText markup syntax; see
+   http://docutils.sf.net/rst.html for more information.
+
+.. include:: ../global.inc
+
+
+.. _gc3apps:
+
+-----------------------
+ The GC3Apps software
+-----------------------
+
+GC3Apps is a collection command line front-end to manage submission of
+a (potentially) large number of computational :term:`job` to different
+batch processing systems.  For example, the GC3Apps commands
+`ggamess`:command: can run GAMESS_ jobs on the SMSCG_ infrastructure
+and on any computational cluster you can ``ssh``:command: into.
+
+This chapter is a tutorial for the GC3Apps command-line scripts: it
+explains the common concepts and features, then goes on to describe
+the specifics of each command in larger detail.
+
+All GC3Apps scripts share a common set of functionalities, which are
+derive from a common blueprint, named a *session-based script*,
+described in Section `session-based script`:ref: below.  Script-specific
+sections detail the scope and options that are unique to a given
+script.
+
+If you find a technical term whose meaning is not clear to you, please
+look it up in the :ref:`glossary`. (But feel free to ask on the
+`GC3Pie mailing list`_ if it's still unclear!)
+
+.. toctree::
+
+   intro
+   gcodeml
+   ggamess
+   ggeotop
+   grosetta
+   gcrypto
+   
+
+
