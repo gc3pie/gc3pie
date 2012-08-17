@@ -1,0 +1,467 @@
+.. Hey Emacs, this is -*- rst -*-
+
+   This file follows reStructuredText markup syntax; see
+   http://docutils.sf.net/rst.html for more information.
+
+.. include:: ../global.inc
+
+
+.. _grosetta:
+
+The `grosetta`:command: and `gdocking`:command: scripts
+=======================================================
+
+GC3Apps provide two scripts to drive execution of applications
+(*protocols*, in Rosetta_ terminology) from the Rosetta_
+bioinformatics suite.
+
+The purpose of `grosetta`:command: and `gdocking`:command: is to
+execute *several concurrent runs* of minirosetta_ or `docking_protocol`_
+on a set of input files, and collect the generated output.  These runs
+are performed in parallel using every available GC3Pie :term:`resource`;
+you can of course control how many runs should be executed and select
+what output files you want from each one.
+
+The script `grosetta`:command: is a relatively generic front-end that
+executes the minirosetta_ program by default (but a different
+application can be chosen with the ``-x`` `command-line
+option`:term:).  The `gdocking`:command: script is specialized for
+running Rosetta_'s `docking_protocol`_ program.
+
+.. _`minirosetta`: http://www.rosettacommons.org/manuals/archive/rosetta3.4_user_guide/de/daa/boinc_minirosetta_usage.html
+.. _`docking_protocol`: http://www.rosettacommons.org/manuals/archive/rosetta3.4_user_guide/d0/de4/docking_protocol.html
+
+
+Introduction
+------------
+
+The `grosetta`:command: and `gdocking`:command: execute *several runs*
+of minirosetta_ or `docking_protocol`_ on a set of input files, and
+collect the generated output.  These runs are performed in parallel,
+up to a limit that can be configured with the ``-J`` `command-line
+option`:term:.  You can of course control how many runs should be
+executed and select what output files you want from each one.
+
+.. note::
+
+   The `grosetta`:command: and `gdocking`:command: scripts are very
+   similar in usage.  In the following, whatever is written about
+   `grosetta`:command: applies to `gdocking`:command: as well; the
+   differences will be pointed out on a case-by-case basis.
+
+In more detail, `grosetta`:command: does the following:
+
+1. Reads the `session`:term: (specified on the command line with the
+   ``--session`` option) and loads all stored jobs into memory.
+   If the session directory does not exist, one will be created with
+   empty contents.
+
+2. Scans the input file names given on the command-line, and generates
+   a number of identical computational jobs, all running the same
+   Rosetta_ program on the same set of input files.  The objective is
+   to compute a specified number *P* of decoys of any given PDB file.
+
+   The number *P* of wanted decoys can be set with the
+   ``--total-decoys`` option (see below).  The option
+   ``--decoys-per-job`` can set the number of decoys that each
+   computational job can compute; this should be a guessed based on
+   the maximum allowed run time of each job and the time taken by the
+   Rosetta_ protocol to compute a single decoy.
+
+3. Updates the state of all existing jobs, collects output from
+   finished jobs, and submits new jobs generated in step 2.
+
+   Finally, a summary table of all known jobs is printed.  (To control
+   the amount of printed information, see the ``-l`` command-line
+   option in the `session-based script`:ref: section.)
+
+4. If the ``-C`` command-line option was given (see below), waits
+   the specified amount of seconds, and then goes back to step 3.
+
+   The program `grosetta`:command: exits when all jobs have run to
+   completion, i.e., when the wanted number of decoys have been
+   computed.
+
+   Execution can be interrupted at any time by pressing :kbd:`Ctrl+C`.
+   If the execution has been interrupted, it can be resumed at a later
+   stage by calling `grosetta`:command: with exactly the same
+   command-line options.
+
+The `gdocking`:command: program works in exactly the same way, with
+the important exception that `gdocking`:command: uses a separate
+Rosetta_ `docking_protocol`_ program invocation *per input file*.
+
+
+
+Command-line invocation of `grosetta`:command:
+----------------------------------------------
+
+The `grosetta`:command: script is based on GC3Pie's `session-based
+script <session-based script>`:ref: model; please read also the
+`session-based script`:ref: section for an introduction to sessions
+and generic command-line options.
+
+A `grosetta`:command: command-line is constructed as follows:
+
+1. The 1st argument is the *flags* file, containing options to pass to
+   every executed Rosetta_ program;
+2. then follows any number of input files (copied from your PC to the execution site);
+3. then a literal colon character ``:``;
+4. finally, you can list any number of output file patterns (copied
+   back from the execution site to your PC); wildcards (e.g., "*.pdb")
+   are allowed, but you must enclose them in quotes.  Note that:
+
+   - you can omit the output files: the default is ``"*.pdb" "*.sc" "*.fasc"``
+   - if you omit the output files patterns, omit the colon as well
+
+  **Example 1.** The following command-line invocation uses
+  `grosetta`:command: to run minirosetta_ on the molecule files
+  ``1bjpA.pdb``, ``1ca7A.pdb``, and ``1cgqA.pdb``.  The ``flags`` file
+  (1st command-line argument) is a text file containing options to pass
+  to the actual minirosetta_ program.  Additional input files are
+  specified on the command line between the ``flags`` file and the PDB
+  input files.
+
+  ::
+
+      $ grosetta flags alignment.filt query.fasta query.psipred_ss2 boinc_aaquery03_05.200_v1_3.gz boinc_aaquery09_05.200_v1_3.gz 1bjpA.pdb 1ca7A.pdb 1cgqA.pdb
+
+   You can see that the listing of output patterns has been omitted,
+   so `grosetta`:command: will use the default and retrieve all
+   `*.pdb`:file:, `*.sc`:file: and `*.fasc`:file: files.
+
+There will be a number of *identical* jobs being executed as a result
+of a `grosetta`:command: or `gdocking`:command: invocation; this
+number depends on the ratio of the values given to options ``-P`` 
+and ``-p``:
+
+  -P NUM, --total-decoys NUM
+    Compute *NUM* decoys per input file.
+
+  -p NUM, --decoys-per-job NUM
+    Compute *NUM* decoys in a single job (default: 1). This
+    parameter should be tuned so that the running time of
+    a single job does not exceed the maximum wall-clock
+    time (see the ``--wall-clock-time`` command-line option in
+    `session-based script`:ref:).
+
+If you omit ``-P`` and ``-p``, they both default to 1, i.e.,
+one job will be created (as in the *example 1.* above).
+
+  **Example 2.** The following command-line invocation will run 3 parallel
+  instances of minirosetta_, each of which generates 2 decoys (save the
+  last one, which only generates 1 decoy) of the molecule described in
+  file ``1bjpA.pdb``::
+
+      $ grosetta --session SAMPLE_SESSION --total-decoys 5 --decoys-per-job 2 flags alignment.filt query.fasta query.psipred_ss2 boinc_aaquery03_05.200_v1_3.gz boinc_aaquery09_05.200_v1_3.gz 1bjpA.pdb
+
+  In this example, job information is stored into session
+  ``SAMPLE_SESSION`` (see the documentation of the ``--session`` option
+  in `session-based script`:ref:).  The command above creates the jobs,
+  submits them, and finally prints the following status report::
+
+      Status of jobs in the 'SAMPLE_SESSION' session: (at 10:53:46, 02/28/12)
+              NEW   0/3    (0.0%)  
+          RUNNING   0/3    (0.0%)  
+          STOPPED   0/3    (0.0%)  
+        SUBMITTED   3/3   (100.0%) 
+       TERMINATED   0/3    (0.0%)  
+      TERMINATING   0/3    (0.0%)  
+            total   3/3   (100.0%) 
+   
+  Note that the status report counts the number of *jobs in the
+  session*, not the total number of decoys being generated.  (Feel
+  free to report this as a bug.)
+
+Calling ``grosetta`` over and over again will result in the same jobs
+being monitored; to create new jobs, change the command line and raise
+the value for ``-P`` or ``-p``.  (To completely erase an existing
+session and start over, use the ``--new-session`` option, as per
+`session-based script <session-based script>`:ref: documentation.)
+
+The ``-C`` option tells `grosetta`:command: to continue running until
+all jobs have finished running and the output files have been
+correctly retrieved.  On successful completion, the command given in
+*example 2.* above, would print::
+
+    Status of jobs in the 'SAMPLE_SESSION' session: (at 11:05:50, 02/28/12)
+            NEW   0/3    (0.0%)  
+        RUNNING   0/3    (0.0%)  
+        STOPPED   0/3    (0.0%)  
+      SUBMITTED   0/3    (0.0%)  
+     TERMINATED   3/3   (100.0%) 
+    TERMINATING   0/3    (0.0%)  
+             ok   3/3   (100.0%) 
+          total   3/3   (100.0%) 
+
+The three jobs are named ``0--1``, ``2--3`` and ``4--5`` (you could
+see this by passing the ``-l`` option to `grosetta`:command:); each of
+these jobs will create an output directory named after the job.
+
+In general, `grosetta`:command: jobs are named `{N}--{M}`:file: with
+*N* and *M* being two integers from 0 up to the value specified with
+option ``--total-decoys``.  Jobs generated by `gdocking`:command: are
+instead named after the input file, with a `.{N}--{M}`:file: suffix
+added.
+
+For each job, the set of output files is automatically retrieved and
+placed in the locations described below.  
+
+.. note::
+
+   The naming and contents of output files differ between
+   `grosetta`:command: and `gdocking`:command:.  Refer to the
+   appropriate section below!
+
+
+Output files for `grosetta`:command:
+------------------------------------
+
+Upon successful completion, the output directory of each
+`grosetta`:command: job contains:
+
+* A copy of the *input* PDB files;
+* Additional ``.pdb`` files named `S_{random string}.pdb`:file:,
+  generated by minirosetta_ during its run;
+* A file `score.sc`:file:;
+* Files `minirosetta.static.log`:file:, `minirosetta.static.stdout.txt`:file:
+  and `minirosetta.static.stderr.txt`:file:.
+
+The `minirosetta.static.log`:file: file contains the output log of the
+minirosetta_ execution.  For each of the ``S_*.pdb`` files above, a
+line like the following should be present in the log file (the file
+name and number of elapsed seconds will of course vary!)::
+
+    protocols.jd2.JobDistributor: S_1CA7A_1_0001 reported success in 124 seconds
+
+The `minirosetta.static.stdout.txt`:file: contains a copy of the
+minirosetta_ output log, plus the output of the wrapper script.
+In case of successful minirosetta_ run, the last line of this file
+will read::
+
+    minirosetta.static: All done, exitcode: 0
+
+
+Output files for `gdocking`:command:
+------------------------------------
+
+Execution of ``gdocking`` yields the following output:
+
+* For each ``.pdb`` input file, a ``.decoys.tar`` file (e.g., for
+  ``1bjpa.pdb`` input, a ``1bjpa.decoys.tar`` output is produced),
+  which contains the ``.pdb`` files of the decoys produced by
+  `gdocking`:command:.
+* For each successful job, a `.N--M` directory: e.g., for the
+  ``1bjpa.1--2`` job, a ``1bjpa.1--2/`` directory is created, with the
+  following content:
+
+  - ``docking_protocol.log``: output of Rosetta's ``docking_protocol`` program;
+  - ``docking_protocol.stderr.txt``, ``docking_protocol.stdout.txt``: obvoius meaning.  The "stdout" file contains a copy of the ``docking_protocol.log`` contents, plus the output from the wrapper script.
+  - ``docking_protocol.tar.gz``: the ``.pdb`` decoy files produced by the job.
+
+The following scheme summarizes the location of `gdocking`:command:
+output files::
+
+    (directory where gdocking is run)/
+      |
+      +- file1.pdb      Original input file
+      |
+      +- file1.N--M/    Directory collecting job outputs from job file1.N--M
+      |    |
+      |    +- docking_protocol.tar.gz
+      |    +- docking_protocol.log
+      |    +- docking_protocol.stderr.txt
+      |    ... etc
+      |
+      +- file1.N--M.fasc   FASC file for decoys N to M [1]
+      |
+      +- file1.decoys.tar  tar archive of PDB file of all decoys
+      |                    generated corresponding to 'file1.pdb' [2]
+      |
+      ...
+
+Let *P* be the total number of decoys (the argument to the ``-P`` option),
+and *p* be the number of decoys per job (argument to the ``-p`` option).
+Then you would get in a single directory:
+
+1. *(P/p)* different ``.fasc`` files, corresponding to the *(P/p)*
+   jobs;
+2. *P* different ``.pdb`` files, named `a_file.0.pdb`:file: to
+   `a_file.{(P-1)}.pdb`:file:
+
+
+Example usage
+-------------
+
+This section contains commented example sessions with
+`grosetta`:command:.  All the files used in this example are available
+in the `GC3Pie Rosetta test`_ directory (courtesy of `Lars
+Malmstroem`_).
+
+.. _`gc3pie rosetta test`: http://code.google.com/p/gc3pie/source/browse/#svn%2Ftrunk%2Fgc3pie%2Fgc3apps%2Frosetta%2Ftest
+.. _`Lars Malmstroem`: http://www.imsb.ethz.ch/researchgroup/malars
+
+Manage a set of jobs from start to end
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+*In typical operation,* one calls `grosetta`:command: with the ``-C``
+option and lets it manage a set of jobs until completion.
+
+So, to generate one decoy from a set of given input files, one can use
+the following command-line invocation::
+
+        $ grosetta -s example -C 120 -P 1 -p 1 \
+            flags alignment.filt query.fasta \
+            query.psipred_ss2 boinc_aaquery03_05.200_v1_3.gz \
+            boinc_aaquery09_05.200_v1_3.gz 1bjpA.pdb 1ca7A.pdb \
+            2fltA.pdb 2fm7A.pdb 2op8A.pdb 2ormA.pdb 2os5A.pdb \
+            3c6vA.pdb
+
+The ``-s example`` option tells `grosetta`:command: to store
+information about the computational jobs in the ``example.jobs``
+directory. 
+
+The ``-C 120`` option tells `grosetta`:command: to update job state
+every 120 seconds; output from finished jobs is retrieved and new jobs
+are submitted at the same interval.
+
+The ``-P 1`` and ``-p 1`` options set the total number of decoys to
+compute and the maximum number of decoys that a single computational
+job can handle.  These values can be arbitrarily high (however the *p*
+value should be such that the computational job can actually compute
+that many decoys in the allotted `wall-clock time <walltime>`:term:).
+
+The above command will start by printing a status report like the
+following:: 
+
+        Status of jobs in the 'example.csv' session:
+         SUBMITTED   1/1 (100.0%)
+
+It will continue printing an updated status report every 120 seconds
+until the requested number of decoys (set by the ``-P`` option) has
+been computed.
+
+In GC3Pie terminology when a job is finished and its output has been
+successfully retrieved, the job is marked as ``TERMINATED``::
+
+        Status of jobs in the 'example.csv' session:
+         TERMINATED   1/1 (100.0%)
+
+
+Managing a session by repeated `grosetta`:command: invocation
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+We now show how one can obtain the same result by calling
+`grosetta`:command: multiple times (there could be hours of
+interruption between one invocation and the next one).  
+
+.. note::
+
+   This is not the typical mode of operating with `grosetta`:command:,
+   but may still be useful in certain settings.
+
+1. Create a session (1 job only, since no ``-P`` option is given); the
+   session name is chosen with the ``-s`` (short for ``--session``)
+   option.  You should take care of re-using the same session name
+   with subsequent commands.
+
+   ::
+
+        $ grosetta -s example flags alignment.filt query.fasta \
+            query.psipred_ss2 boinc_aaquery03_05.200_v1_3.gz \
+            boinc_aaquery09_05.200_v1_3.gz 1bjpA.pdb 1ca7A.pdb \
+            2fltA.pdb 2fm7A.pdb 2op8A.pdb 2ormA.pdb 2os5A.pdb
+        Status of jobs in the 'example.csv' session:
+         SUBMITTED   1/1 (100.0%)
+
+2. Now we call `grosetta`:command: again, and request that 3 decoys be
+   computed starting from a single PDB file (``--total-decoys 3`` on
+   the command line).  Since we are submitting a single PDB file, the
+   3 decoys will be computed all in a single run, so the
+   ``--decoys-per-job`` option will have value ``3``.
+
+   ::
+
+        $ grosetta -s example --total-decoys 3 --decoys-per-job 3 \
+            flags alignment.filt query.fasta \
+            query.psipred_ss2 boinc_aaquery03_05.200_v1_3.gz \
+            boinc_aaquery09_05.200_v1_3.gz 3c6vA.pdb
+        Status of jobs in the 'example.csv' session:
+         SUBMITTED   3/3 (100.0%)
+
+   Note that 3 jobs were submitted: `grosetta`:command: interprets the
+   ``--total-decoys`` option globally, and adds one job to compute the
+   2 missing decoys from the file set from step 1.  (This is currently
+   a limitation of `grosetta`:command:)
+
+   From here on, one could simply run ``grosetta -C 120`` and let it
+   manage the session until completion of all jobs, as in the example
+   `Manage a set of jobs from start to end`_ above.  For the sake of
+   showing how the use of several command-line options of
+   `grosetta`:command:, we shall further show how manage the session
+   by repeated separate invocations.
+
+3. Next step is to monitor the session, so we add the command-line
+   option ``-l`` which tells `grosetta`:command: to list all the jobs
+   with their status.  Also note that we keep the ``-s example``
+   option to tell `grosetta`:command: that we would like to operate on
+   the session named *example*.
+
+   All non-option arguments can be omitted: as long
+   as the total number of decoys is unchanged, they're not needed.
+
+   ::
+
+        $ grosetta -s example -l
+        Decoys Nr.       State (JobID)       Info
+        ================================================================================
+        0--1             RUNNING (job.766)   Running at Mon Dec 20 19:32:08 2010
+        2--3             RUNNING (job.767)   Running at Mon Dec 20 19:33:23 2010
+        0--2             RUNNING (job.768)   Running at Mon Dec 20 19:33:43 2010
+
+   Without the ``-l`` option only a summary of job statuses is presented::
+
+        $ grosetta -s example
+        Status of jobs in the 'grosetta.csv' session:
+         RUNNING     3/3 (100.0%)
+
+   Alternatively, we can keep the command line arguments used in the
+   previous invocation: they will be ignored since they do not add any
+   new job (the number of decoys to compute is always 1)::
+
+        $ grosetta -s example -l flags alignment.filt query.fasta \
+            query.psipred_ss2 boinc_aaquery03_05.200_v1_3.gz \
+            boinc_aaquery09_05.200_v1_3.gz 1bjpA.pdb 1ca7A.pdb \
+            2fltA.pdb 2fm7A.pdb 2op8A.pdb 2ormA.pdb 2os5A.pdb \
+            3c6vA.pdb
+        Decoys Nr.       State (JobID)       Info
+        ================================================================================
+        0--1             RUNNING (job.766)
+        2--3             RUNNING (job.767)   Running at Mon Dec 20 19:33:23 2010
+        0--2             RUNNING (job.768)   Running at Mon Dec 20 19:33:43 2010
+
+   Note that the ``-l`` option is available also in combination with
+   the ``-C`` option (see `Manage a set of jobs from start to end`_).
+
+4. Calling ``grosetta`` again when jobs are done triggers automated
+   download of the results::
+
+        $ ../grosetta.py
+        File downloaded:
+        gsiftp://idgc3grid01.uzh.ch:2811/jobs/214661292869757468202765/minirosetta.static.stdout.txt
+        File downloaded:
+        gsiftp://idgc3grid01.uzh.ch:2811/jobs/214661292869757468202765/minirosetta.static.log
+         ...
+        File downloaded:
+        gsiftp://idgc3grid01.uzh.ch:2811/jobs/214661292869757468202765/.arc/input
+        Status of jobs in the 'grosetta.csv' session:
+         TERMINATED  1/1 (100.0%)
+         ok          1/1 (100.0%)
+
+   The ``-l`` option comes handy to see what directory contains the
+   job output::
+
+        $ grosetta -l
+        Decoys Nr.       State (JobID)         Info
+        ==================================================================================
+        0--1             TERMINATED (job.766)  Output retrieved into directory '/tmp/0--1'

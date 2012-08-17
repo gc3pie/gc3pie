@@ -1,0 +1,364 @@
+.. Hey Emacs, this is -*- rst -*-
+
+   This file follows reStructuredText markup syntax; see
+   http://docutils.sf.net/rst.html for more information.
+
+.. include:: global.inc
+
+
+.. _configuration:
+
+Configuration File
+==================
+
+
+Location
+--------
+
+All commands in `GC3Apps`:ref: and `GC3Utils`:ref: read two
+configuration files at startup:
+
+  * system-wide one located at :file:``/etc/gc3/gc3pie.conf``, and
+  * a user-private one at :file:``~/.gc3/gc3pie.conf``.
+
+Both files use the same format. The system-wide one is read first, so
+that users can override the system-level configuration in their private file.
+Configuration data from corresponding sections in the two
+configuration files is merged; the value in the user-private file
+overrides the one from the system-wide configuration.
+
+If you try to start any GC3Utils command without having a
+configuration file, a sample one will be copied to the user-private
+location :file:``~/.gc3/gc3pie.conf`` and an error message will be
+displayed, directing you to edit the sample file before retrying.
+
+
+Configuration file format
+-------------------------
+
+The GC3Pie configuration file follows the format understood by
+`Python *ConfigParser* <http://docs.python.org/library/configparser.html>`, 
+which is very close to the syntax used in MS-Windows ``.INI`` files.
+See http://docs.python.org/library/configparser.html for reference.
+
+The GC3Libs configuration file consists of several configuration
+blocks.  Each configuration block (section) starts with a keyword in
+square brackets and contains the configuration options for a specific
+part.
+
+The following sections are used by the GC3Apps/GC3Utils programs:
+
+  - ``[DEFAULT]`` -- this is for global settings.
+  - `[auth/{name}]`:file: -- these are for settings related to identity/authentication (identifying yourself to clusters & grids).
+  - `[resource/{name}]`:file: -- these are for settings related to a specific computing resource (cluster, grid, etc.)
+
+Sections with other names are allowed but will be ignored.
+
+
+The ``DEFAULT`` section
+-----------------------
+
+The ``[DEFAULT]`` section is optional.  
+
+Values defined in the ``[DEFAULT]`` section can be used to insert
+values in other sections, using the ``%(name)s`` syntax.  See
+documentation of the `Python *SafeConfigParser*
+<http://docs.python.org/library/configparser.html>`_ object at
+http://docs.python.org/library/configparser.html for an example.
+
+
+``auth`` sections
+-----------------
+
+There can be more than one ``[auth]`` section.  
+
+Each authentication section must begin with a line of the form:
+
+    `[auth/{name}]`:file:
+
+where the `{name}`:file: portion is any alphanumeric string.
+
+You can have as many `[auth/{name}]`:file: sections as you want; any
+name is allowed provided it's composed only of letters, numbers and
+the underscore character ``_``.
+
+This allows you to define different auth methods for different
+resources.  Each `[resource/{name}]`:file: section will reference one
+(and one only) authentication section.
+
+
+Authentication types
+~~~~~~~~~~~~~~~~~~~~
+
+Each ``auth`` section *must* specify a ``type`` setting.
+
+`` type `` defines the authentication type that will be used to access
+a resource. There are three supported authentication types:
+
+  * ``ssh``; use this for resources that will be accessed by opening an SSH connection to the front-end node of a cluster.
+  * ``voms-proxy``: uses ``voms-proxy-init`` to generate a proxy; use for resources that require a VOMS-enabled Grid proxy.
+  * ``grid-proxy``: uses ``grid-proxy-init`` to generate a proxy; use for resources that require a Grid proxy (but no VOMS extensions).
+
+For the ``ssh``-type auth, the following keys must be provided:
+
+  * ``type``: must be ``ssh``
+  * ``username``: must be the username to log in as on the remote machine
+
+Any other key/value pair will be ignored.
+
+For the ``voms-proxy`` type auth, the following keys must be provided:
+
+  * ``type``: must be ``voms-proxy``
+  * ``vo``: the VO to authenticate with (passed directly to
+    ``voms-proxy-init`` as argument to the ``--vo`` command-line
+    switch)
+  * ``cert_renewal_method``: see below.
+  * ``remember_password``: see below.
+
+Any other key/value pair will be ignored.
+
+For the ``grid-proxy`` type auth, the following keys must be provided:
+
+  * ``type``: must be ``grid-proxy``
+  * ``cert_renewal_method``: see below.
+  * ``remember_password``: see below.
+
+Any other key/value pair will be ignored.
+
+For the ``voms-proxy`` and ``grid-proxy`` authentication types, the
+``cert_renewal_method`` setting specifies whether GC3Libs should attempt
+to get a certificate if the current one is expired or otherwise invalid.
+Currently there are two supported ``cert_renewal_method`` types:
+
+  * ``slcs``: user certificate is generated through an invocation of the ``slcs-init``:command: program.
+  * ``manual``: user certificate is generated/renewed though an
+    external process and has to be performed by the user outside of
+    the scope of GC3Pie. In this case, if the user certificate is expired,
+    invalid or non-existent, GC3Pie will fail to authenticate.
+
+For the ``slcs`` certificate renewal method, the  following keys must be provided:
+
+  * ``aai_username``: passed directly to `slcs-init`:command: as argument to the ``--user`` command-line switch.
+  * ``idp``: passed directly to `slcs-init`:command: as argument to the ``--idp`` command-line switch.
+
+For the ``manual`` certificate renewal method, no additional keys are required.
+
+The ``remember_password`` entry (optional) must be set to a boolean
+value (the strings ``1`, ``yes``, ``true`` and ``on`` are interpreted
+as boolean "true"; any other value counts as "false").  If set to a
+true value, the ``remember_password`` entry instructs GC3Pie to keep
+the password used for this authentication in the program's main
+memory; this implies that you will be asked for the password at most
+once per program invocation.  This setting is optional, and defaults
+to "false". Keeping passwords in memory is bad security practice; do
+not set this option to "true" unless you understand the implications.
+
+*Example 1.* The following example ``auth`` section shows how to
+configure GC3Pie for using SWITCHaai_ SLCS_ services to generate a
+certificate and a VOMS_ proxy to access the Swiss National Distributed
+Computing Infrastructure SMSCG_:: 
+
+    [auth/smscg]
+    type = voms-proxy
+    cert_renewal_method = slcs
+    aai_username = <aai_user_name> # SWITCHaai/Shibboleth user name
+    idp= uzh.ch
+    vo = smscg
+
+*Example 2.* The following configuration sections are used to set up
+two different accounts, that GC3Pie programs can use.  Which account
+should be used on which computational resource is defined in the
+`resource sections`_ (see below). ::
+
+    [auth/ssh1]
+    type = ssh
+    username = murri # your username here
+
+    [auth/ssh2] # I use a different account name on some resources
+    type = ssh
+    username = rmurri 
+
+.. _slcs: http://www.switch.ch/grid/slcs/index.html
+.. _voms: http://vdt.cs.wisc.edu/components/voms.html
+
+
+``resource`` sections
+---------------------
+
+Each resource section must begin with a line of the form:
+
+    `[resource/{name}]`:file:
+
+You can have as many :file:`[resource/{name}]` sections as you want; this
+allows you to define many different resources.  Each `[resource/{name}]`:file:
+section must reference one (and one only) `[auth/{name}]`:file:
+section (by its ``auth`` key).
+
+Resources currently come in several flavours, distinguished by the
+value of the ``type`` key:
+
+  * If ``type`` is ``arc1``, then the resource is accessed using the ARC grid middleware (version 1.1.x/1.0.x);
+  * If ``type`` is ``arc0``, then the resource is accessed using the ARC grid middleware (version 0.8.x);
+  * If ``type`` is ``sge``, then the resource is a `Grid Engine`_ batch system, to be accessed by an SSH connection to its front-end node.
+  * If ``type`` is ``shellcmd``, then the resource is the computer where the GC3Pie script is running and applications are executed by just spawning a local UNIX process.
+
+All `[resource/{name}]`:file: sections (except those of ``shellcmd``
+type) *must* reference a valid ``auth/***`` section. Resources of
+``sge`` type can only reference :command:``ssh`` type sections.;
+resources of type ``arc0`` or ``arc1`` can only reference
+``[auth/***]`` sections whose type is ``voms-proxy`` or
+``grid-proxy``.
+
+Some configuration keys are commmon to all resource types:
+
+  *  ``type``: Resource type, see above.
+  *  ``auth``: the name of a valid `[auth/{name}]`:file: section; only the authentication section name (after the ``/``) must be specified.
+  *  ``max_cores_per_job``: Maximum number of CPU cores that a job can request; a resource will be dropped during the brokering process if a job requests more cores than this.
+  *  ``max_memory_per_core``: Max amount of memory (expressed in GBs) that a job can request.
+  *  ``max_walltime``: Maximum job running time (in hours).
+  *  ``max_cores``: Total number of cores provided by the resource.
+  *  ``architecture``: Processor architecture.  Should be one of the strings ``x86_64`` (for 64-bit Intel/AMD/VIA processors), ``i686`` (for 32-bit Intel/AMD/VIA x86 processors), or ``x86_64,i686`` if both architectures are available on the resource.
+  *  ``time_cmd``: Used only when ``type`` is ``shellcmd``. The `time` program is used as wrapper for the application in order to collect informations about the execution when running without a real `LRMS`.
+
+``arc0`` resources
+~~~~~~~~~~~~~~~~~~
+
+The ``arc_ldap`` key should be set to the LDAP URL of an ARC GIIS or
+GRIS.  If, in addition, the ``frontend`` key is also defined, then
+only queues belonging to the specified frontend will be considered for
+brokering.
+
+When a job has just been submitted, the ARC information system does
+not immediately report about it: the job will appear at the next cache
+update.  This creates a time window during which no information is
+reported about the job by ARC, as if it never existed.  In order not
+to mistake this for a "job lost" error, GC3Libs allow a "grace time":
+job information lookups are allowed to fail for a certain time span
+after submission. The duration of this time span is set with the optional
+``lost_job_timeout`` parameter, whose default is 4 times the ARC default
+cache time; this parameter should not be lower than twice the
+information system update frequency.
+
+  * ``lost_job_timeout``: Time (in seconds) a failure in job lookup in the information system will *not* be considered critical
+
+
+``arc1`` resources
+~~~~~~~~~~~~~~~~~~
+
+The ``arc_ldap`` key should be defined to a valid ARC1 information system URL.
+
+When a job has just been submitted, the ARC information system does
+not immediately report about it: the job will appear at the next cache
+update.  This creates a time window during which no information is
+reported about the job by ARC, as if it never existed.  In order not
+to mistake this for a "job lost" error, GC3Libs allow a "grace time":
+job information lookups are allowed to fail for a certain time span
+after submission. The duration of this time span is set with the optional
+``lost_job_timeout`` parameter, whose default is 4 times the ARC default
+cache time; this parameter should not be lower than twice the
+information system update frequency.
+
+  * ``lost_job_timeout``: Time (in seconds) a failure in job lookup in the information system will *not* be considered critical
+
+
+``sge`` resources
+~~~~~~~~~~~~~~~~~
+
+The following configuration keys are required in a ``sge``-type resource section:
+
+  * ``frontend``: should contain the `FQDN (Fully-qualified domain name)`:abbr: of the SGE front-end node. An SSH connection will be attempted to this node, in order to submit jobs and retrieve status info.
+  * ``transport``: Possible values are: ``ssh`` or ``local``.   If ``ssh``, we try to connect to the host specified in ``frontend`` via SSH in order to execute SGE commands.  If ``local``, the SGE commands are run directly on the machine where GC3Pie is installed.
+
+Since the installation path to supported applications is not known (there
+is no information system, differently from ARC), then the path must be
+specified here:
+
+  * ``gamess_location``: UNIX path name of the directory containing a valid `qgms`:command: script
+
+When a job has finished, the SGE batch system does not (by default)
+immediately write its information into the accounting database.  This
+creates a time window during which no information is reported about
+the job by SGE, as if it never existed.  In order not to mistake this
+for a "job lost" error, GC3Libs allow a "grace time": `qacct`:command: job
+information lookups are allowed to fail for a certain time span after
+the first time `qstat`:command: failed. The duration of this time span is set
+with the ``sge_accounting_delay`` parameter, whose default is 15 seconds
+(matches the default in SGE, as of release 6.2): 
+
+  * ``sge_accounting_delay``: Time (in seconds) a failure in `qacct`:command: will *not* be considered critical.
+
+
+Example ``resource`` sections
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+*Example 1.* This configuration stanza defines a resource ``smscg``
+representing the whole SMSCG_ infrastructure, accessed through the ARC
+(version 0.8.x) middleware::
+
+    [resource/smscg]
+    # A whole ARC-based Grid
+    type = arc0
+    auth = <voms_auth_name>
+    arc_ldap = ldap://giis.smscg.ch:2135/o=grid/mds-vo-name=Switzerland
+    # These values are correct as of 2011-02-28; please
+    # ask on the SMSCG mailing list if unsure.
+    max_cores_per_job = 256
+    max_memory_per_core = 3
+    max_walltime = 9999
+    ncores = 1200
+    architecture = x86_64, i686
+
+*Example 2.* This configuration stanza shows how to access a single
+cluster through the ARC middleware (version 1.x) using the name
+``idgc3grid01`` (which is also the internet host name of the cluster
+front-end)::
+
+    [resource/idgc3grid01]
+    # A single cluster, accessed through the ARC middleware
+    type = arc
+    auth = <auth_name> # pick a ``voms`` type auth
+    frontend = idgc3grid01.uzh.ch
+    name = gc3
+    arc_ldap = ldap://idgc3grid01.uzh.ch:2135/mds-vo-name=local,o=grid
+    max_cores_per_job = 32
+    max_memory_per_core = 2
+    max_walltime = 12
+    ncores = 80
+
+*Example 3.* This configuration stanza defines a resource to submit
+jobs to the `Grid Engine`_ cluster whose front-end host is
+``ocikbpra.uzh.ch``::
+
+    [resource/ocikbpra]
+    # A single SGE cluster, accessed by SSH'ing to the front-end node
+    type = sge
+    auth = <auth_name> # pick an ``ssh`` type auth, e.g., "ssh1"
+    transport = ssh
+    frontend = ocikbpra.uzh.ch
+    gamess_location = /share/apps/gamess
+    max_cores_per_job = 80
+    max_memory_per_core = 2
+    max_walltime = 2
+    ncores = 80
+
+
+Enabling/disabling selected resources
+-------------------------------------
+
+Any resource can be disabled by adding a line ``enabled = false`` to its
+configuration stanza.  Conversely, a line ``enabled = true`` will undo
+the effect of an ``enabled = false`` line (possibly found in a different
+configuration file).
+
+This way, resources can be temporarily disabled (e.g., the cluster is
+down for maintenance) without having to remove them from the
+configuration file.
+
+You can selectively disable or enable resources that are defined in
+the system-wide configuration file.  Two main use cases are supported:
+the system-wide configuration file :file:``/etc/gc3/gc3pie.conf`` lists and
+enables all available resources, and users can turn them off in their
+private configuration file :file:``~/.gc3/gc3pie.conf``; or the system-wide
+configuration can list all available resources but keep them disabled,
+and users can enable those they prefer in the private configuration
+file.
