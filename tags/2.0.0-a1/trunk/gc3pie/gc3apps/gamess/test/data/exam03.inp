@@ -1,0 +1,34 @@
+! EXAM03.
+!    3-B-1 CH2  ROHF calculation on methylene ground state.
+!    The wavefunction is a pure triplet state (<S**2> = 2),
+!    and so has a higher energy than the second example.
+!
+!    For COORD=CART, all atoms must be given, and as in the
+!    present case, these may be in an unoriented geometry.
+!    GAMESS deduces which atoms are unique, and orients
+!    the molecule appropriately.  The geometry here is thus
+!    identical to the second example.
+!
+!    This job tests the ROHF wavefunction and gradient code.
+!    It also tests the direct SCF procedure.
+!
+!    The initial energy is -37.228465066.
+!    The FINAL energy is -37.2778767090 after 7 iterations.
+!    Mulliken, Lowdin charges on C are -0.020346, 0.019470.
+!    The Hydrogen atom spin density is 0.0129735.
+!    The dipole moment is 0.025099 Debye.
+!    The RMS gradient is 0.027505548
+!
+ $CONTRL SCFTYP=ROHF MULT=3 RUNTYP=GRADIENT COORD=CART $END
+ $SYSTEM TIMLIM=1 $END
+ $SCF    DIRSCF=.TRUE. $END
+ $BASIS  GBASIS=STO NGAUSS=2 $END
+ $GUESS  GUESS=HUCKEL $END
+ $DATA
+Methylene...3-B-1 state...ROHF/STO-2G
+Cnv  2
+
+Hydrogen   1.0    0.82884     0.7079   0.0
+Carbon     6.0
+Hydrogen   1.0   -0.82884     0.7079   0.0
+ $END
