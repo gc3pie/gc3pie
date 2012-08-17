@@ -115,8 +115,8 @@ echo Setting the '__version__' attribute in every module to $version ...
 set -e
 find gc3pie -name '*.py' \
     | xargs egrep -l '^__version__ *=' \
-    | xargs $maybe sed -i -r -e "s|__version__ *= *'[0-9a-z\\.]+ *|__version__ = '$version |;"
-$maybe sed -i -r -e "s|version *= *[0-9a-z\\.\"']+|version = '$version'|;" \
+    | xargs $maybe sed -i -r -e "s|__version__ *= *'[0-9a-z\\.\-]+ *|__version__ = '$version |;"
+$maybe sed -i -r -e "s|version *= *[0-9a-z\\.\"'\-]+|version = '$version'|;" \
     gc3pie/setup.py
 set +e
 
