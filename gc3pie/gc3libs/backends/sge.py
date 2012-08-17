@@ -271,30 +271,6 @@ def _sge_filename_mapping(jobname, jobid, file_name):
         return file_name
 
 
-def _make_remote_and_local_path_pair(transport, job, remote_relpath, local_root_dir, local_relpath):
-    """
-    Return list of (remote_path, local_path) pairs corresponding to
-    """
-    # see https://github.com/fabric/fabric/issues/306 about why it is
-    # correct to use `posixpath.join` for remote paths (instead of `os.path.join`)
-    remote_path = posixpath.join(job.ssh_remote_folder,
-                                 _sge_filename_mapping(job.lrms_jobname, job.lrms_jobid,
-                                                       remote_relpath))
-    local_path = os.path.join(local_root_dir, local_relpath)
-    if transport.isdir(remote_path):
-        # recurse, accumulating results
-        result = [ ]
-        for entry in transport.listdir(remote_path):
-            result += _make_remote_and_local_path_pair(
-                transport, job,
-                posixpath.join(remote_relpath, entry),
-                local_path, entry)
-        return result
-    else:
-        return [(remote_path, local_path)]
-
-
-
 class SgeLrms(batch.BatchSystem):
     """
     Job control on SGE clusters (possibly by connecting via SSH to a submit node).
