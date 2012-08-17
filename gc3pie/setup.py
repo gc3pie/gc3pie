@@ -97,7 +97,7 @@ setuptools.setup(
         # paramiko and pycrypto are required for SSH operations
         # ("pycrypto" is actually a dependency of Paramiko, but
         # setuptools apparently does not process dependencies recursively)
-        'paramiko', 'pycrypto>=1.9', 
+        'paramiko', 'pycrypto>=1.9',
         # lockfile 0.9 dropped support for Python 2.4; let's stick with 0.8
         'lockfile==0.8',
         # texttable -- format tabular text output
@@ -107,7 +107,7 @@ setuptools.setup(
         # Needed by SqlStore
         'sqlalchemy',
         # Needed by ShellCmd backend
-        'psutil',
+        'psutil>=0.6.1',
         # Needed for parsing human-readable dates (gselect uses it).
         'parsedatetime',
         # Unum -- define and manipulate quantities with units attached
