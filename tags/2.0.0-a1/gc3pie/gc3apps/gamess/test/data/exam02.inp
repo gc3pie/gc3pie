@@ -1,0 +1,33 @@
+! EXAM02.
+!    3-B-1 CH2    UHF calculation on methylene ground state.
+!
+!    This test uses the default choice, COORD=UNIQUE, to
+!    enter the molecule.  Only the symmetry unique atoms
+!    are given, and they must be given in the orientation
+!    which GAMESS expects.
+!
+!    This job tests the UHF energy and the UHF gradient.
+!    In addition, the orbitals are localized.
+!
+!    The initial energy is -37.228465066.
+!    The FINAL energy is -37.2810867259 after 11 iterations.
+!    The unrestricted wavefunction has <S**2> = 2.013.
+!    Mulliken, Lowdin charges on C are -0.020584, 0.018720.
+!    The spin density at Hydrogen is -0.0167104.
+!    The dipole moment is 0.016188.
+!    The RMS gradient is 0.027589766.
+!    FINAL localization sums are 30.57 and 25.14 Debye**2.
+! GC3: grepAndFollow("OVERLAP\s+LOW", "head","head", 8, 0.64506, GamessTst.tolO, "Oerr")  
+! GC3: grepAndFollow("DEBYE", "head","1", 4, 1.249835, GamessTst.tolD, "Derr") #works with head and index 1
+
+ $CONTRL SCFTYP=UHF MULT=3 RUNTYP=GRADIENT LOCAL=BOYS $END
+ $SYSTEM TIMLIM=1 $END
+ $BASIS  GBASIS=STO NGAUSS=2 $END
+ $GUESS  GUESS=HUCKEL $END
+ $DATA
+Methylene...3-B-1 state...UHF/STO-2G
+Cnv  2
+
+Carbon     6.0
+Hydrogen   1.0    0.0      0.82884      0.7079
+ $END

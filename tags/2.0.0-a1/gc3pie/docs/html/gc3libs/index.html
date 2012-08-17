@@ -1,0 +1,225 @@
+
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>GC3Libs &mdash; gc3pie development (SVN $Revision$) documentation</title>
+    
+    <link rel="stylesheet" href="../_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../',
+        VERSION:     'development (SVN $Revision$)',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <link rel="top" title="gc3pie development (SVN $Revision$) documentation" href="../index.html" />
+    <link rel="next" title="Programming overview" href="overview.html" />
+    <link rel="prev" title="The GC3Utils software" href="../gc3utils.html" />
+ 
+<script type="text/javascript">
+  var _gaq = _gaq || [];
+  _gaq.push(['_setAccount', 'UA-23320630-1']);
+  _gaq.push(['_trackPageview']);
+</script>
+
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="overview.html" title="Programming overview"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="../gc3utils.html" title="The GC3Utils software"
+             accesskey="P">previous</a> |</li>
+        <li><a href="../index.html">gc3pie development (SVN $Revision$) documentation</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="gc3libs">
+<span id="id1"></span><h1>GC3Libs<a class="headerlink" href="#gc3libs" title="Permalink to this headline">¶</a></h1>
+<p>This document is the technical reference for the GC3Libs programming
+model, aimed at programmers who want to use GC3Libs to implement
+computational workflows in Python.</p>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="overview.html">Programming overview</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="overview.html#computational-job-lifecycle">Computational job lifecycle</a></li>
+<li class="toctree-l2"><a class="reference internal" href="overview.html#managing-jobs-with-gc3libs">Managing jobs with GC3Libs</a></li>
+<li class="toctree-l2"><a class="reference internal" href="overview.html#execution-model-of-gc3libs-applications">Execution model of GC3Libs applications</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="overview.html#application-exit-codes">Application exit codes</a></li>
+<li class="toctree-l3"><a class="reference internal" href="overview.html#application-execution-states">Application execution states</a></li>
+<li class="toctree-l3"><a class="reference internal" href="overview.html#computational-job-specification">Computational job specification</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="tutorial/warholize.html">GC3Pie tutorial - Warholize</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="tutorial/warholize.html#introduction">Introduction</a></li>
+<li class="toctree-l2"><a class="reference internal" href="tutorial/warholize.html#from-top-to-bottom">From top to bottom</a></li>
+<li class="toctree-l2"><a class="reference internal" href="tutorial/warholize.html#the-script">The script</a></li>
+<li class="toctree-l2"><a class="reference internal" href="tutorial/warholize.html#the-workflows">The workflows</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="tutorial/warholize.html#main-sequential-workflow">Main sequential workflow</a></li>
+<li class="toctree-l3"><a class="reference internal" href="tutorial/warholize.html#step-one-convert-to-grayscale">Step one: convert to grayscale</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="tutorial/warholize.html#step-two-parallel-workflow-to-create-colorized-images">Step two: parallel workflow to create colorized images</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="tutorial/warholize.html#step-three-merge-all-them-together">Step three: merge all them together</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="tutorial/warholize.html#making-the-script-executable">Making the script executable</a></li>
+<li class="toctree-l2"><a class="reference internal" href="tutorial/warholize.html#testing">Testing</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="api.html">GC3Libs programming API</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="api.html#module-gc3libs"><cite>gc3libs</cite></a></li>
+<li class="toctree-l2"><a class="reference internal" href="api.html#gc3libs-cmdline"><cite>gc3libs.cmdline</cite></a></li>
+<li class="toctree-l2"><a class="reference internal" href="api.html#gc3libs-core"><cite>gc3libs.core</cite></a></li>
+<li class="toctree-l2"><a class="reference internal" href="api.html#module-gc3libs.dag"><cite>gc3libs.dag</cite></a></li>
+<li class="toctree-l2"><a class="reference internal" href="api.html#module-gc3libs.exceptions"><cite>gc3libs.exceptions</cite></a></li>
+<li class="toctree-l2"><a class="reference internal" href="api.html#module-gc3libs.persistence"><cite>gc3libs.persistence</cite></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="api.html#a-usage-warning">A usage warning</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="api.html#module-gc3libs.template"><cite>gc3libs.template</cite></a></li>
+<li class="toctree-l2"><a class="reference internal" href="api.html#module-gc3libs.url"><cite>gc3libs.url</cite></a></li>
+<li class="toctree-l2"><a class="reference internal" href="api.html#module-gc3libs.utils"><cite>gc3libs.utils</cite></a></li>
+<li class="toctree-l2"><a class="reference internal" href="api.html#gc3libs-resource"><cite>gc3libs.Resource</cite></a></li>
+<li class="toctree-l2"><a class="reference internal" href="api.html#module-gc3libs.application"><cite>gc3libs.application</cite></a></li>
+<li class="toctree-l2"><a class="reference internal" href="api.html#module-gc3libs.application.apppot"><cite>gc3libs.application.apppot</cite></a></li>
+<li class="toctree-l2"><a class="reference internal" href="api.html#module-gc3libs.application.gamess"><cite>gc3libs.application.gamess</cite></a></li>
+<li class="toctree-l2"><a class="reference internal" href="api.html#module-gc3libs.application.rosetta"><cite>gc3libs.application.rosetta</cite></a></li>
+<li class="toctree-l2"><a class="reference internal" href="api.html#module-gc3libs.authentication"><cite>gc3libs.authentication</cite></a></li>
+<li class="toctree-l2"><a class="reference internal" href="api.html#module-gc3libs.authentication.ssh"><cite>gc3libs.authentication.ssh</cite></a></li>
+<li class="toctree-l2"><a class="reference internal" href="api.html#module-gc3libs.authentication.grid"><cite>gc3libs.authentication.grid</cite></a></li>
+<li class="toctree-l2"><a class="reference internal" href="api.html#module-gc3libs.backends"><cite>gc3libs.backends</cite></a></li>
+<li class="toctree-l2"><a class="reference internal" href="api.html#module-gc3libs.backends.arc0"><cite>gc3libs.backends.arc0</cite></a></li>
+<li class="toctree-l2"><a class="reference internal" href="api.html#gc3libs-backends-arc1"><cite>gc3libs.backends.arc1</cite></a></li>
+<li class="toctree-l2"><a class="reference internal" href="api.html#gc3libs-backends-lsf"><cite>gc3libs.backends.lsf</cite></a></li>
+<li class="toctree-l2"><a class="reference internal" href="api.html#gc3libs-backends-sge"><cite>gc3libs.backends.sge</cite></a></li>
+<li class="toctree-l2"><a class="reference internal" href="api.html#gc3libs-backends-shellcmd"><cite>gc3libs.backends.shellcmd</cite></a></li>
+<li class="toctree-l2"><a class="reference internal" href="api.html#gc3libs-backends-transport"><cite>gc3libs.backends.transport</cite></a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="api.html#gc3utils-modules">GC3Utils modules</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="api.html#module-gc3utils"><cite>gc3utils</cite></a></li>
+<li class="toctree-l2"><a class="reference internal" href="api.html#module-gc3utils.frontend"><cite>gc3utils.frontend</cite></a></li>
+<li class="toctree-l2"><a class="reference internal" href="api.html#gc3utils-commands"><cite>gc3utils.commands</cite></a></li>
+</ul>
+</li>
+</ul>
+</div>
+<div class="section" id="outline-of-the-contents">
+<h2>Outline of the contents<a class="headerlink" href="#outline-of-the-contents" title="Permalink to this headline">¶</a></h2>
+<p>The <cite>Programming overview &lt;overview&gt;</cite> section presents the main
+concepts behind GC3Libs programming.</p>
+<p>The <cite>GC3Libs modules &lt;api&gt;</cite> section is a comprehensive list of all
+the modules, classes and functions comprising GC3Libs; its content is
+automatically generated from docstrings in the source code.</p>
+<p>The <cite>Contributing to GC3Pie &lt;contributing&gt;</cite> chapter provides some
+instructions to prospective contributors: code organization, style and
+formatting guide, etc.</p>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="../index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">GC3Libs</a><ul>
+<li><a class="reference internal" href="#outline-of-the-contents">Outline of the contents</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="../gc3utils.html"
+                        title="previous chapter">The GC3Utils software</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="overview.html"
+                        title="next chapter">Programming overview</a></p>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="overview.html" title="Programming overview"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="../gc3utils.html" title="The GC3Utils software"
+             >previous</a> |</li>
+        <li><a href="../index.html">gc3pie development (SVN $Revision$) documentation</a> &raquo;</li> 
+      </ul>
+    </div>
+
+    <div class="footer">
+        &copy; Copyright 2010-2012, Grid Computing Competence Centre, University of Zurich.
+      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.1.3.
+    </div>
+<div class="footer">This page uses <a href="http://analytics.google.com/">
+Google Analytics</a> to collect statistics. You can disable it by blocking
+the JavaScript coming from www.google-analytics.com.
+<script type="text/javascript">
+  (function() {
+    var ga = document.createElement('script');
+    ga.src = ('https:' == document.location.protocol ?
+              'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+    ga.setAttribute('async', 'true');
+    document.documentElement.firstChild.appendChild(ga);
+  })();
+</script>
+</div>
+
+  </body>
+</html>

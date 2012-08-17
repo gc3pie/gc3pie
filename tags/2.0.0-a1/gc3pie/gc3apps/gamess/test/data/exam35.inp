@@ -1,0 +1,87 @@
+!   As atom...Test of relativistic energy correction,
+!   by the Douglas-Kroll transformation to 3rd order.
+!
+!   the FINAL DK3 energy is -2259.0955118173
+!   web page says           -2259.095511826
+!      <r(4s)>=1.997, <r(4p)>=2.504 Bohr
+!
+!   convergence of the DK transformation is typical,
+!      0th order -2234.2372862734 (non-relativistic)
+!      1st order -2264.6131852344
+!      2nd order -2258.9450216276
+!      3rd order -2259.0955118173
+!   in that 1st order way undershoots, 2nd order comes
+!   back close, and 3rd order is not insubstantial.
+!   Compare with -2259.456841 which is the point
+!   nucleus Dirac-Coulomb numerical Hartree-Fock from
+!   L.Visscher, K.G.Dyall
+!   At.Data Nucl.Data Tables 67, 207-224(1997)
+!
+!   The uncontracted 20s15p9d basis set below is from 
+!       T.Tsuchiya, M.Abe, T.Nakajima, K.Hirao
+!          J.Chem.Phys. 115, 4463-4472(2001)
+!   using exponents downloaded from the web page of
+!   this group at the University of Tokyo.  A general
+!   contraction of this basis can easily be obtained,
+!   by manipulating the $VEC coefs produced by this run,
+!   see ~/gamess/tools/dk3.f.
+!
+!   The semicolon divides two lines of input that happen
+!   to be given on a single physical line of the file.
+!
+ $contrl scftyp=rohf mult=4 relwfn=dk ispher=1 $end
+ $system timlim=2 mwords=2 $end
+ $relwfn norder=3 $end
+ $guess  guess=huckel $end
+ $radial nshell=2 idegsh(1)=1,3 memsh(1)=15, 16,17,18 $end
+ $data
+illustration of 3rd order Douglas-Kroll for As
+Dnh 2
+
+Arsenic 33.0
+   S 1 ; 1 7.2421890D+07 1.0
+   S 1 ; 1 7.7040750D+06 1.0
+   S 1 ; 1 1.3365730D+06 1.0
+   S 1 ; 1 3.0394350D+05 1.0
+   S 1 ; 1 8.3289250D+04 1.0
+   S 1 ; 1 2.5994450D+04 1.0
+   S 1 ; 1 8.9795770D+03 1.0
+   S 1 ; 1 3.3667950D+03 1.0
+   S 1 ; 1 1.3464700D+03 1.0
+   S 1 ; 1 5.6774580D+02 1.0
+   S 1 ; 1 2.4923080D+02 1.0
+   S 1 ; 1 1.1199520D+02 1.0
+   S 1 ; 1 4.6328140D+01 1.0
+   S 1 ; 1 2.2611220D+01 1.0
+   S 1 ; 1 1.0910110D+01 1.0
+   S 1 ; 1 4.5498340D+00 1.0
+   S 1 ; 1 2.1494630D+00 1.0
+   S 1 ; 1 1.0337510D+00 1.0
+   S 1 ; 1 3.0892460D-01 1.0
+   S 1 ; 1 1.1206710D-01 1.0
+   P 1 ; 1 4.9515580D+04 1.0
+   P 1 ; 1 8.4637830D+03 1.0
+   P 1 ; 1 2.2908560D+03 1.0
+   P 1 ; 1 7.7965970D+02 1.0
+   P 1 ; 1 3.0545690D+02 1.0
+   P 1 ; 1 1.3097990D+02 1.0
+   P 1 ; 1 5.9698960D+01 1.0
+   P 1 ; 1 2.8408790D+01 1.0
+   P 1 ; 1 1.3883000D+01 1.0
+   P 1 ; 1 6.6102210D+00 1.0
+   P 1 ; 1 3.0821260D+00 1.0
+   P 1 ; 1 1.3919830D+00 1.0
+   P 1 ; 1 4.8254700D-01 1.0
+   P 1 ; 1 1.9228260D-01 1.0
+   P 1 ; 1 7.2849660D-02 1.0
+   D 1 ; 1 7.1896480D+02 1.0
+   D 1 ; 1 2.0798400D+02 1.0
+   D 1 ; 1 7.9590850D+01 1.0
+   D 1 ; 1 3.4514110D+01 1.0
+   D 1 ; 1 1.5730540D+01 1.0
+   D 1 ; 1 7.2805600D+00 1.0
+   D 1 ; 1 3.3000700D+00 1.0
+   D 1 ; 1 1.4173160D+00 1.0
+   D 1 ; 1 5.4472730D-01 1.0
+ 
+ $end

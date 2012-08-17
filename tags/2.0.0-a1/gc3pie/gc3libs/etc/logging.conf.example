@@ -1,0 +1,76 @@
+# ~/.gc3/logging.conf
+#
+# Configuration file for gc3utils logging
+#
+# See http://docs.python.org/release/2.4/lib/logging-config-fileformat.html
+# for the syntax of the configuration directives.
+# In addition to the standard syntax, the following strings will be given
+# special treatment:
+#
+#   %(HOMEDIR)s   is substituted with the full path to the home directory
+#                  of the running user
+#
+#   %(RCDIR)s     is substituted with the full path to the directory where
+#                 the gc3utils configuration file resides
+#
+
+[loggers]
+keys=root,gc3
+
+[logger_root]
+# The "root" logger gets messages from all running code, not just gc3utils
+# (e.g., from Paramiko); dump all this into a logfile at the most verbose level
+level=NOTSET
+handlers=logfile
+
+[logger_gc3]
+# The "gc3" logger is the root logger for all GC3 stuff.  Each program
+# library requests a logger in this hierarchy, named after the
+# program/library name; for instance, "grosetta" uses the
+# "gc3.grosetta" logger, GC3Libs use the "gc3.gc3libs" logger, etc.
+# The GC3Utils are a slight exception to this rule, in that they use
+# "gc3.gc3utils" regardless of the actual invocation name.
+qualname=gc3
+# If you change this, it will take precedence over command-line options.
+level=NOTSET
+handlers=stderr
+# This ensures that anything is also logged by the root/logfile logger above.
+propagate=1
+
+# If you want to override log settings as used by the GC3Libs,
+# uncomment this section and alter it to your wishes.
+# [logger_gc3_gc3libs]
+# qualname=gc3.gc3libs
+# level=DEBUG
+# handlers=stderr
+# # This ensures that anything is also logged by the root/logfile logger above.
+# propagate=1
+
+[handlers]
+keys=logfile,stderr
+
+[handler_logfile]
+# verbose output to logfile located in ~/.gc3/gc3utils.log
+# rotate logfile on monday every week
+level=DEBUG
+class=handlers.TimedRotatingFileHandler
+args=('%(RCDIR)s/debug.log','w0',1,5)
+formatter=logfile
+
+[handler_stderr]
+# console output level should not be set here, as it
+# will limit the effectiveness of option "-v" 
+level=NOTSET
+class=StreamHandler
+args=(sys.stderr,)
+formatter=console
+
+[formatters]
+keys=logfile,console
+
+[formatter_logfile]
+format=[%(asctime)s] %(name)-12s %(levelname)-8s: %(message)s
+datefmt=%Y-%m-%d %H:%M:%S
+
+[formatter_console]
+format=%(name)s: %(levelname)s: %(message)s
