@@ -132,9 +132,11 @@ class GzodsApp(gc3libs.Application):
                     filename, avg_file, data_file)
         # Detect optional argument <restart>        
 	        if len(cNodes[0].getElementsByTagName('run_type')) > 0:
+            		gc3libs.log.debug("gzods.py: <run_type> tag detected.")
 			if len(cNodes[0].getElementsByTagName('optimization_method')) > 0:
+            			gc3libs.log.debug("gzods.py: <optimization_method> tag detected.")
 				if len(cNodes[0].getElementsByTagName('restart')) > 0:
-        				gc3libs.log.info("gzods.py: detected an optional restart file.")
+            				gc3libs.log.debug("gzods.py: <restart> tag and optional restart file detected.")
 	                                restart_file = cNodes[0].getElementsByTagName('optimization_method')[0].getElementsByTagName('restart')[0].getAttribute('file')
                                         restart_file = os.path.join(basedir,restart_file)
                                         #restart_file = os.path.abspath(restart_file)
@@ -144,6 +146,9 @@ class GzodsApp(gc3libs.Application):
                                                 gc3libs.log.info("gzods.py: %s references an optional restart file: %s.", filename, restart_file)
 
                                         return (data_file, avg_file, restart_file)
+                        	else:
+                                	return (data_file, avg_file)
+				
                         else:
                                 return (data_file, avg_file)
 
