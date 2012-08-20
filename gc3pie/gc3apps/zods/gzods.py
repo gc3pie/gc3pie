@@ -78,7 +78,7 @@ class GzodsApp(gc3libs.Application):
                 # this is the real ZODS command-line
                 '$ZODS_BINDIR/simulator', os.path.basename(filename),
             ],
-            inputs = myinputs,# [filename, inputFiles[0], inputFiles[1], inputFiles[1]],    # mandatory, inputs are files that will be copied to the site
+            inputs = myinputs,   # mandatory, inputs are files that will be copied to the site
             outputs = gc3libs.ANY_OUTPUT,           # mandatory
             stdout = "stdout+err.txt",
             join=True,
@@ -112,42 +112,40 @@ class GzodsApp(gc3libs.Application):
         DOMTree = xml.dom.minidom.parse(filename)
         tree = ElementTree()
         XMLTree = tree.parse(filename)
-#	print ElementTree.tostring(XMLTree)
-        if XMLTree.find("reference_intensities"):
-                gc3libs.log.debug("AAAAaaa")
-                if XMLTree.find("average_structure"):
-                        gc3libs.log.debug("AAAAaaa")
         cNodes = DOMTree.childNodes
+	
+	# Detect <reference_intensities> and <average_structure>
         if len(cNodes[0].getElementsByTagName('reference_intensities')) > 0 and len(cNodes[0].getElementsByTagName('average_structure')) > 0:
             data_file = cNodes[0].getElementsByTagName('reference_intensities')[0].getAttribute('file_name')
             avg_file = cNodes[0].getElementsByTagName('average_structure')[0].getElementsByTagName('file')[0].getAttribute('name')
             data_file = os.path.join(basedir,data_file)
             avg_file = os.path.join(basedir,avg_file)
-            gc3libs.log.debug("%s references to the following files: %s and  %s.", filename, avg_file, data_file)
+            gc3libs.log.debug("gzods.py: %s references to the following files: %s and  %s.", filename, avg_file, data_file)
             if os.path.exists(avg_file)  == False or os.path.exists(data_file) == False:
-                gc3libs.log.warning("Averaged structure file %s or reference intensities file %s DO NOT exist.", avg_file, data_file)
-                raise RuntimeError("Input file '%s' DOES NOT exists." % filename)
+                gc3libs.log.warning("gzods.py: Averaged structure file %s or reference intensities file %s DO NOT exist.", avg_file, data_file)
+                raise RuntimeError("gzods.py: Input file '%s' DOES NOT exists." % filename)
             else:
                 gc3libs.log.info(
                     "Input file '%s' references"
                     " averaged structure file '%s'"
                     " and reference intesities file '%s'.",
                     filename, avg_file, data_file)
-                if len(cNodes[0].getElementsByTagName('run_type')) > 0:
-                        if len(cNodes[0].getElementsByTagName('optimization_method')) > 0:
-                                if len(cNodes[0].getElementsByTagName('restart')) > 0:
-                                        restart_file = cNodes[0].getElementsByTagName('optimization_method')[0].getElementsByTagName('restart')[0].getAttribute('file')
+        # Detect optional argument <restart>        
+	        if len(cNodes[0].getElementsByTagName('run_type')) > 0:
+			if len(cNodes[0].getElementsByTagName('optimization_method')) > 0:
+				if len(cNodes[0].getElementsByTagName('restart')) > 0:
+        				gc3libs.log.info("gzods.py: detected an optional restart file.")
+	                                restart_file = cNodes[0].getElementsByTagName('optimization_method')[0].getElementsByTagName('restart')[0].getAttribute('file')
                                         restart_file = os.path.join(basedir,restart_file)
                                         #restart_file = os.path.abspath(restart_file)
                                         if os.path.exists(restart_file)  == False:
-                                                raise RuntimeError("Input file '%s' references a file '%s' that DOES NOT exists." % (filename, restart_file))
+                                                raise gc3libs.exceptions.InputFileError("gzods.py: Input file '%s' references a file '%s' that DOES NOT exists." % (filename, restart_file))
                                         else:
-                                                gc3libs.log.debug("%s references also a restart file: %s.", filename, restart_file)
+                                                gc3libs.log.info("gzods.py: %s references an optional restart file: %s.", filename, restart_file)
 
                                         return (data_file, avg_file, restart_file)
-                                else:
-                                        return (data_file, avg_file)
-
+                        else:
+                                return (data_file, avg_file)
 
 class ZodsScript(gc3libs.cmdline.SessionBasedScript):
         """
