@@ -319,12 +319,12 @@ class SgeLrms(batch.BatchSystem):
         log.debug("translating SGE's `qstat` code '%s' to gc3libs.Run.State" % job_status)
 
         jobstatus = dict()
-        if 'qw' in job_status:
+        if job_status in ['s', 'S', 'T'] or job_status.startswith('h'):
+            jobstatus['state'] = Run.State.STOPPED
+        elif 'qw' in job_status:
             jobstatus['state'] = Run.State.SUBMITTED
         elif 'r' in job_status or 'R' in job_status or 't' in job_status:
             jobstatus['state'] = Run.State.RUNNING
-        elif job_status in ['s', 'S', 'T'] or 'qh' in job_status:
-            jobstatus['state'] = Run.State.STOPPED
         elif job_status == 'E': # error condition
             jobstatus['state'] = Run.State.TERMINATING
         else:
@@ -386,9 +386,25 @@ class SgeLrms(batch.BatchSystem):
             log.debug("Running `%s`...", _command)
             exit_code, qstat_stdout, stderr = self.transport.execute_command(_command)
 
+            if exit_code != 0:
+                # Stop and do not continue
+                # XXX: raise LRMSError here
+                raise gc3libs.exceptions.LRMSError("SGE backend failed while executing [%s]."
+                                                   "Exit code: [%d]. Stdout: [%s]. Stderr: [%s]" %
+                                                   (_command, exit_code, stdout, stderr))
+
+
             _command = ("%s -F -U %s" % (self._qstat, username))
             log.debug("Running `%s`...", _command)
             exit_code, qstat_F_stdout, stderr = self.transport.execute_command(_command)
+
+            if exit_code != 0:
+                # Stop and do not continue
+                # XXX: raise LRMSError here
+                raise gc3libs.exceptions.LRMSError("SGE backend failed while executing [%s]."
+                                                   "Exit code: [%d]. Stdout: [%s]. Stderr: [%s]" %
+                                                   (_command, exit_code, stdout, stderr))
+
 
             # self.transport.close()
 

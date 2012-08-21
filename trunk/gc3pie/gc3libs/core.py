@@ -1050,7 +1050,12 @@ class Engine(object):
                 continue
             state = task.execution.state
             result[state] += 1
-        result[Run.State.STOPPED] = len(self._stopped)
+        # result[Run.State.STOPPED] = len(self._stopped)
+        for task in self._stopped:
+            if only and not isinstance(task, only):
+                continue
+            state = task.execution.state
+            result[state] += 1
         for task in self._to_kill:
             if only and not isinstance(task, only):
                 continue

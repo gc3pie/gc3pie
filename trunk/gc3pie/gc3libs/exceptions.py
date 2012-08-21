@@ -300,9 +300,14 @@ class UnexpectedStateError(TaskError):
     pass
 
 
-class TransportError(Error):
+class TransportError(UnrecoverableError):
     pass
 
+class RecoverableTransportError(RecoverableError):
+    pass
+
+class UnrecoverableTransportError(UnrecoverableError):
+    pass
 
 class UnknownJob(Error, ValueError):
     """
@@ -318,6 +323,13 @@ class UnknownJobState(Error, AssertionError):
     is not handled by the GC3Libs code.  Might actually mean that
     there is a version mismatch between GC3Libs and the Grid
     middleware used.
+    """
+    pass
+
+class ApplicationDescriptionError(FatalError):
+    """
+    Raised when the dumped description on a given Application produces something that the LRMS backend cannot process.
+    As an example, for arc backends, this error is raised when the parsing of the Application's XRSL fails
     """
     pass
 
