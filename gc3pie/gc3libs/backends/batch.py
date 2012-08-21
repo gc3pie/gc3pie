@@ -394,7 +394,8 @@ class BatchSystem(LRMS):
     @same_docstring_as(LRMS.update_job_state)
     @LRMS.authenticated
     def update_job_state(self, app):
-        state = Run.State.UNKNOWN
+        # XXX: this is irrelevant
+        # state = Run.State.UNKNOWN
         try:
             job = app.execution
             job.lrms_jobid
