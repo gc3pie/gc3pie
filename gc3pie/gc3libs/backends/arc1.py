@@ -28,6 +28,7 @@ import sys
 
 import itertools
 import os
+import shutil
 import time
 import tempfile
 
@@ -492,41 +493,75 @@ class Arc1Lrms(LRMS):
     @same_docstring_as(LRMS.get_results)
     @LRMS.authenticated
     def get_results(self, app, download_dir, overwrite=False):
+        jobid = app.execution.lrms_jobid
+
         # XXX: can raise encoding/decoding error if `download_dir`
         # is not ASCII, but the ARClib bindings don't accept
         # Python `unicode` strings.
-        completed = True
-
         download_dir = str(download_dir)
 
-        job = app.execution
-        c, j = self._get_job_and_controller(job.lrms_jobid)
+        c, j = self._get_job_and_controller(jobid)
 
-        log.debug("Downloading job output into '%s' ...", download_dir)
+        # as ARC complains when downloading to an already-existing
+        # directory, make a temporary directory for downloading files;
+        # then move files to their final destination and delete the
+        # temporary location.
+        tmp_download_dir = tempfile.mkdtemp(suffix='.d', dir=download_dir)
+
+        log.debug("Downloading %s output into temporary location '%s' ...", app, tmp_download_dir)
 
         # Get a list of downloadable files
         download_file_list = c.GetDownloadFiles(j.JobID);
 
         source_url = arc.URL(j.JobID.str())
-        destination_url = arc.URL(download_dir)
+        destination_url = arc.URL(tmp_download_dir)
 
         source_path_prefix = source_url.Path()
         destination_path_prefix = destination_url.Path()
 
+        errors = 0
         for remote_file in download_file_list:
             source_url.ChangePath(os.path.join(source_path_prefix,remote_file))
             destination_url.ChangePath(os.path.join(destination_path_prefix,remote_file))
-
             if not c.ARCCopyFile(source_url,destination_url):
-                log.warning("Failed downloading %s to %s" % (source_url.str(), destination_url.str()))
-                completed = False
-
-        if not completed:
+                log.warning("Failed downloading '%s' to '%s'",
+                            source_url.str(), destination_url.str())
+                errors += 1
+        if errors > 0:
+            # remove temporary download location
+            shutil.rmtree(tmp_download_dir, ignore_errors=True)
             raise gc3libs.exceptions.UnrecoverableDataStagingError(
-                "Unrecoverble Error: Failed downloading remote folder for job '%s': into %s"
-                % (job.lrms_jobid, download_dir))
+                "Failed downloading remote folder of job '%s' into '%s'."
+                " There were %d errors, reported at the WARNING level in log files."
+                % (jobid, download_dir, errors))
 
-        job.download_dir = download_dir
+        log.debug("Moving %s output into download location '%s' ...", app, download_dir)
+        entries = os.listdir(tmp_download_dir)
+        if not overwrite:
+            # raise an early error before we start mixing files from
+            # the old and new download directories
+            for entry in entries:
+                dst = os.path.join(download_dir, entry)
+                if os.path.exists(entry):
+                    # remove temporary download location
+                    shutil.rmtree(tmp_download_dir, ignore_errors=True)
+                    raise gc3libs.exceptions.UnrecoverableDataStagingError(
+                        "Entry '%s' in download directory '%s' already exists,"
+                        " and no overwriting was requested."
+                        % (entry, download_dir))
+        # move all entries to the final destination
+        for entry in entries:
+            src = os.path.join(tmp_download_dir, entry)
+            dst = os.path.join(download_dir, entry)
+            if os.path.isdir(dst):
+                shutil.rmtree(dst)
+            os.rename(src, dst)
+
+        # remove temporary download location (XXX: is it correct to ignore errors here?)
+        shutil.rmtree(tmp_download_dir, ignore_errors=True)
+
+        app.execution.download_dir = download_dir
+        return
 
 
     @same_docstring_as(LRMS.free)
