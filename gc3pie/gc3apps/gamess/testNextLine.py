@@ -17,6 +17,23 @@ class TestNextLine:
 		self.LTolerances = [] #tolerances
 		self.LLabel = [] #Label, such as energy, gradient, etc. 
 		self.DEBUG = False
+    #Predefined tolerances
+
+		self.tolC =  0.3
+		self.tolD =  0.0001
+		self.tolE =  0.00000001
+		self.tolG =  0.00001
+		self.tolH =  0.0001
+		self.tolI =  0.0001
+		self.tolL =  0.1
+		self.tolO =  0.0001
+		self.tolP =  0.0001
+		self.tolR =  0.0001
+		self.tolS =  0.01
+		self.tolT =  0.000001
+		self.tolV =  0.00000001
+		self.tolW =  0.1
+		self.tolX =  0.00001
 		
 	def debug(self):
 		self.DEBUG = True

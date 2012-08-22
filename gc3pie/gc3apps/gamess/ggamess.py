@@ -83,8 +83,10 @@ of newly-created jobs so that this limit is never exceeded.
                        dest='extbas',
                        type=existing_file, default=None,
                        help="Make the specified external basis file available to jobs.")
-
-
+	self.add_param("-t", "--test", action="count", #metavar='TEST', 
+		       dest="test", default=0,
+		       help="Execute tests defined in the input files.")
+	
     def __init__(self):
         SessionBasedScript.__init__(
             self,
@@ -130,8 +132,15 @@ of newly-created jobs so that this limit is never exceeded.
                 parameters,
                 # keyword arguments, see `GamessApplication.__init__`
                 kwargs)
+# This method is called after the session has been completed and the results are generated. The method is triggered with option -t.
     
     def after_main_loop(self):
+	print "SELF.", self.params.test
+	if self.params.test == 0:
+		gc3libs.log.info("ggamess.py: Tests were not executed")
+		print "NOT RUNNING TESTs"
+		return 
+
 	#print "PARAMS", self.params
 	# build job list
         inputs = self._search_for_input_files(self.params.args)
