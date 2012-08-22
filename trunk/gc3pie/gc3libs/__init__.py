@@ -43,6 +43,7 @@ import string
 import sys
 import time
 import types
+import subprocess
 
 import logging
 import logging.config
@@ -817,7 +818,12 @@ class Application(Task):
             and (gc3libs.ANY_OUTPUT not in self.outputs)
             and (self.stdout not in self.outputs)):
             self.outputs[self.stdout] = self.stdout
+
         self.stderr = kw.pop('stderr', None)
+        if self.stderr == self.stdout or self.stderr == subprocess.STDOUT:
+            self.join = True
+            self.stderr = self.stdout
+
         if self.stderr is not None and os.path.isabs(self.stderr):
             raise InvalidArgument(
                 "Absolute path '%s' passed as `Application.stderr`"
@@ -827,6 +833,7 @@ class Application(Task):
             and (self.stderr not in self.outputs)):
             self.outputs[self.stderr] = self.stderr
 
+        
         self.tags = kw.pop('tags', list())
 
         jobname = kw.pop('jobname', self.__class__.__name__)
