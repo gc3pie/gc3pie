@@ -567,27 +567,26 @@ def lock(path, timeout, create=True):
     return lck
 
 
-class Log(object):
+class History(object):
     """
     A list of messages with timestamps and (optional) tags.
 
-    The `append` method should be used to add a message to the `Log`::
+    The `append` method should be used to add a message to the `History`::
 
-      >>> L = Log()
+      >>> L = History()
       >>> L.append('first message')
       >>> L.append('second one')
 
-    The `last` method returns the text of the last message appended::
+    The `last` method returns the text of the last message appended, with its timestamp::
 
-      >>> L.last()
-      'second one'
+      >>> L.last().startswith('second one at')
+      True
 
-    Iterating over a `Log` instance returns message texts in the
-    temporal order they were added to the list::
+    Iterating over a `History` instance returns message texts in the
+    temporal order they were added to the list, with their timestamp::
 
-      >>> for msg in L: print(msg)
-      first message
-      second one
+      >>> for msg in L: print(msg) # doctest: +ELLIPSIS
+      first message ...
 
     """
     def __init__(self):
@@ -595,7 +594,7 @@ class Log(object):
 
     def append(self, message, *tags):
         """
-        Append a message to this `Log`.
+        Append a message to this `History`.
 
         The message is timestamped with the time at the moment of the
         call.
@@ -616,20 +615,26 @@ class Log(object):
         if len(self._messages) == 0:
             return ''
         else:
-            return self._messages[-1][0]
+            return self.format_message(self._messages[-1])
+
+    def format_message(self, message):
+        """
+        Return a formatted message, appending to the message its timestamp in human readable format.
+        """
+        return "%s at %s" % (message[0], time.asctime(time.localtime(message[1])))
 
     # shortcut for append
     def __call__(self, message, *tags):
-        """Shortcut for `Log.append` (which see)."""
+        """Shortcut for `History.append` (which see)."""
         self.append(message, *tags)
 
     def __iter__(self):
         """Iterate over messages in the temporal order they were added."""
-        return iter([record[0] for record in self._messages])
+        return iter([self.format_message(record) for record in self._messages])
 
     def __str__(self):
         """Return all messages texts in a single string, separated by newline characters."""
-        return str.join('\n', [record[0] for record in self._messages])
+        return str.join('\n', [self.format_message(record) for record in self._messages])
 
 
 def mkdir(path, mode=0777):

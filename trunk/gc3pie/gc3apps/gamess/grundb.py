@@ -220,7 +220,7 @@ class Job(Gc3utilsJob):
 
     def set_info(self, msg):
         self.info = msg
-        self.log.append(msg)
+        self.history.append(msg)
 
     def set_state(self, state):
         if state != self.state:
