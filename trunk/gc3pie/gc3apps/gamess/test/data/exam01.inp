@@ -17,9 +17,9 @@
 !    FINAL E= -37.2380396312, 5 iters, RMS grad= .0001615
 !    FINAL E= -37.2380397693, 5 iters, RMS grad= .0000067
 !    FINAL E= -37.2380397698, 3 iters, RMS grad= .0000004
-! GC3: grepLinesAndAnalyze("FINAL \s+ RHF", "tail", 5, -37.2380397698, GamessTst.tolE, "Eerr")
-! GC3: grepAndFollow("OVERLAP\s+LOW", "head","head", 8, 0.64506, GamessTst.tolO, "Oerr") 
-! GC3: grepLinesAndAnalyze("RMS \s+ G", "tail", 8, .0000004, GamessTst.tolG, "Gerr")
+! GC3: grepLinesAndAnalyze("FINAL \s+ RHF", "tail", 5, -37.2380397698, app.tolE, "Eerr")
+! GC3: grepAndFollow("OVERLAP\s+LOW", "head","head", 8, 0.64506, app.tolO, "Oerr") 
+! GC3: grepLinesAndAnalyze("RMS \s+ G", "tail", 8, .0000004, app.tolG, "Gerr")
 
  $CONTRL SCFTYP=RHF RUNTYP=OPTIMIZE COORD=ZMT NZVAR=0 $END
  $SYSTEM TIMLIM=1 $END

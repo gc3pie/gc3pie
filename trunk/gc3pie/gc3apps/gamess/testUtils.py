@@ -238,8 +238,8 @@ class GamessTestSuite:
 					self.appendExecutionQueue(app)
 				
 			 except AttributeError:
-				gc3libs.log.debug("Attribute error. arguments %s are incorrect", args)                                                                           		
-			 #app.debug() # for testing purposes
+			 	app.debug() # for testing purposes
+				gc3libs.log.debug("Attribute error. arguments %s in function %s from object %s on file %s are incorrect", args, function, app, filenameOUT)                                                                           		
 			 
 #ex1.debug()
 #ex1.grepLinesAndAnalyze("FINAL \s+ RHF", "tail", 5, -37.2380397698, GamessTst.tolE, "Eerr")
