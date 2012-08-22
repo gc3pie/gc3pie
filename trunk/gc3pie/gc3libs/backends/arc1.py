@@ -455,36 +455,10 @@ class Arc1Lrms(LRMS):
             # pass
         job.lrms_jobname = arc_job.Name
 
-        # XXX: do we need these?  they're already in `Application.stdout` and `Application.stderr`
-        job.stdout_filename = arc_job.StdOut
-        job.stderr_filename = arc_job.StdErr
-
-        #job.cores = arc_job.cpu_count
         job.original_exitcode = arc_job.ExitCode
         #job.used_walltime = arc_job.UsedTotalWallTime.GetPeriod() # exressed in sec.
         #job.used_cputime = arc_job.UsedTotalCPUTime.GetPeriod() # expressed in sec.
         job.used_memory = arc_job.UsedMainMemory # expressed in KiB
-
-        # update ARC-specific info
-        #job.arc_cluster = arc_job.cluster
-        #job.arc_cpu_count = arc_job.cpu_count
-        #job.arc_job_name = arc_job.Name
-        #job.arc_queue = arc_job.Queue
-        #job.arc_requested_cpu_time = arc_job.requested_cpu_time
-        #job.arc_requested_wall_time = arc_job.requested_wall_time
-        #job.arc_sstderr = arc_job.sstderr
-        #job.arc_sstdin = arc_job.sstdin
-        #job.arc_sstdout = arc_job.sstdout
-        #job.arc_used_cpu_time = arc_job.used_cpu_time
-        #job.arc_used_memory = arc_job.used_memory
-        #job.arc_used_wall_time = arc_job.used_wall_time
-        # FIXME: use Python's `datetime` types (RM)
-        #if arc_job.submission_time.GetTime() > -1:
-        #    job.arc_submission_time = str(arc_job.submission_time)
-        #if arc_job.completion_time.GetTime() > -1:
-        #    job.arc_completion_time = str(arc_job.completion_time)
-        #else:
-        #    job.arc_completion_time = ""
 
         job.state = state
         return state
