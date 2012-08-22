@@ -223,6 +223,8 @@ class TestSession(object):
         extraid = self.sess.store.save(obj1)
         obj2 = self.sess.load(extraid)
         assert_equal(obj1, obj2)
+        # remove object from the store, since self.sess.destroy() will
+        # not remove it!
         self.sess.store.remove(extraid)
 
     def test_creation_of_timestamp_files(self):
@@ -266,7 +268,10 @@ class StubForSqlSession(TestSession):
         assert_equal(len(rows), 1)
         assert_equal(rows[0][0], jobid)
 
-
+        # remove object from the store, since self.sess.destroy() will
+        # not remove it!
+        self.sess.store.remove(jobid)
+        
 class TestSqliteSession(StubForSqlSession):
 
     @classmethod
