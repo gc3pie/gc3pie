@@ -388,7 +388,6 @@ class SgeLrms(batch.BatchSystem):
 
             if exit_code != 0:
                 # Stop and do not continue
-                # XXX: raise LRMSError here
                 raise gc3libs.exceptions.LRMSError("SGE backend failed while executing [%s]."
                                                    "Exit code: [%d]. Stdout: [%s]. Stderr: [%s]" %
                                                    (_command, exit_code, stdout, stderr))
@@ -400,13 +399,10 @@ class SgeLrms(batch.BatchSystem):
 
             if exit_code != 0:
                 # Stop and do not continue
-                # XXX: raise LRMSError here
                 raise gc3libs.exceptions.LRMSError("SGE backend failed while executing [%s]."
                                                    "Exit code: [%d]. Stdout: [%s]. Stderr: [%s]" %
                                                    (_command, exit_code, stdout, stderr))
 
-
-            # self.transport.close()
 
             log.debug("Computing updated values for total/available slots ...")
             (total_running, self.queued,
@@ -429,7 +425,6 @@ class SgeLrms(batch.BatchSystem):
             return self
 
         except Exception, ex:
-            # self.transport.close()
             log.error("Error querying remote LRMS, see debug log for details.")
             log.debug("Error querying LRMS: %s: %s",
                       ex.__class__.__name__, str(ex))

@@ -287,7 +287,6 @@ class BatchSystem(LRMS):
         except gc3libs.exceptions.TransportError, x:
             raise
         except:
-            # self.transport.close()
             raise
                 # Copy the input file to remote directory.
         for local_path,remote_path in app.inputs.items():
@@ -305,7 +304,6 @@ class BatchSystem(LRMS):
             except:
                 log.critical("Copying input file '%s' to remote cluster '%s' failed",
                                       local_path.path, self.frontend)
-                # self.transport.close()
                 raise
 
         if app.executable.startswith('./'):
@@ -350,7 +348,6 @@ class BatchSystem(LRMS):
 
             jobid = self._parse_submit_output(stdout)
             log.debug('Job submitted with jobid: %s', jobid)
-            # self.transport.close()
 
             job.execution_target = self.frontend
 
@@ -385,7 +382,6 @@ class BatchSystem(LRMS):
             return job
 
         except:
-            # self.transport.close()
             log.critical("Failure submitting job to resource '%s' - see log file for errors"
                                   % self.name)
             raise
@@ -394,8 +390,6 @@ class BatchSystem(LRMS):
     @same_docstring_as(LRMS.update_job_state)
     @LRMS.authenticated
     def update_job_state(self, app):
-        # XXX: this is irrelevant
-        # state = Run.State.UNKNOWN
         try:
             job = app.execution
             job.lrms_jobid
@@ -464,7 +458,6 @@ class BatchSystem(LRMS):
                 job.stat_failed_at = time.time()
 
         except Exception, ex:
-            # self.transport.close()
             log.error("Error in querying Batch resource '%s': %s: %s",
                     self.name, ex.__class__.__name__, str(ex))
             raise
@@ -491,9 +484,7 @@ class BatchSystem(LRMS):
             remote_handler = self.transport.open(_remote_filename, mode='r', bufsize=-1)
             remote_handler.seek(offset)
             data = remote_handler.read(size)
-            # self.transport.close()
         except Exception, ex:
-            # self.transport.close()
             log.error("Could not read remote file '%s': %s: %s",
                               _remote_filename, ex.__class__.__name__, str(ex))
 
@@ -535,11 +526,9 @@ class BatchSystem(LRMS):
                     raise gc3libs.exceptions.LRMSError(
                         "Cannot execute remote command '%s'" % _command)
 
-            # self.transport.close()
             return job
 
         except:
-            # self.transport.close()
             log.critical('Failure in checking status')
             raise
 
@@ -597,11 +586,9 @@ class BatchSystem(LRMS):
                              " will not be overwritten!",
                              local_path)
 
-            # self.transport.close()
             return # XXX: should we return list of downloaded files?
 
         except:
-            # self.transport.close()
             raise
 
     @same_docstring_as(LRMS.validate_data)
