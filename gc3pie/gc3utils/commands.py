@@ -291,56 +291,38 @@ GC3Libs internals.
         def cmp_by_jobid(x, y):
             return cmp(x.persistent_id, y.persistent_id)
         ok = 0
-        if self.params.history:
-            timestamps = []
-            for app in self._get_jobs(self.params.args):
-                # since `_get_jobs` swallows any exception raised by
-                # invalid job IDs or corrupted files, let us determine the
-                # number of failures by counting the number of times we
-                # actually run this loop and then subtract from the number
-                # of times we *should* have run, i.e., the number of
-                # arguments we were passed.
-                ok += 1
-                for what,when in app.execution.log.iteritems():
-                    timestamps.append((float(when), str(app), what))
-
-            timestamps.sort(cmp=lambda x,y: cmp(x[0], y[0]))
-            for entry in timestamps:
-                print "%s %s: %s" % (
-                    time.strftime(
-                        "%b %d %H:%M:%S", time.localtime(entry[0])
-                        ),
-                    str(entry[1]),
-                    entry[2])
-
-        else:
-            for app in sorted(self._get_jobs(self.params.args), cmp=cmp_by_jobid):
-                # since `_get_jobs` swallows any exception raised by
-                # invalid job IDs or corrupted files, let us determine the
-                # number of failures by counting the number of times we
-                # actually run this loop and then subtract from the number
-                # of times we *should* have run, i.e., the number of
-                # arguments we were passed.
-                ok += 1
-                if self.params.tabular or self.params.csv:
-                    row = [str(app)]
-                    for key in only_keys:
-                        try:
-                            row.append(gc3libs.utils.getattr_nested(app, key))
-                        except AttributeError:
-                            row.append("N/A")
-                    if self.params.tabular:
-                        table.add_row(row)
-                    elif self.params.csv:
-                        csv_output.writerow(row)
+        for app in sorted(self._get_jobs(self.params.args), cmp=cmp_by_jobid):
+            # since `_get_jobs` swallows any exception raised by
+            # invalid job IDs or corrupted files, let us determine the
+            # number of failures by counting the number of times we
+            # actually run this loop and then subtract from the number
+            # of times we *should* have run, i.e., the number of
+            # arguments we were passed.
+            ok += 1
+            if self.params.tabular or self.params.csv:
+                row = [str(app)]
+                for key in only_keys:
+                    try:
+                        row.append(gc3libs.utils.getattr_nested(app, key))
+                    except AttributeError:
+                        row.append("N/A")
+                if self.params.tabular:
+                    table.add_row(row)
+                elif self.params.csv:
+                    csv_output.writerow(row)
+            elif self.params.history:
+                print(str(app.persistent_id))
+                indent=4*' '
+                for logentry in app.execution.log:
+                    print(indent + logentry)
+            else:
+                # usual YAML-like output
+                print(str(app.persistent_id))
+                if self.params.verbose == 0:
+                    utils.prettyprint(app.execution, indent=4, width=width, only_keys=only_keys)
                 else:
-                    # usual YAML-like output
-                    print(str(app.persistent_id))
-                    if self.params.verbose == 0:
-                        utils.prettyprint(app.execution, indent=4, width=width, only_keys=only_keys)
-                    else:
-                        # with `-v` and above, dump the whole `Application` object
-                        utils.prettyprint(app, indent=4, width=width, only_keys=only_keys)
+                    # with `-v` and above, dump the whole `Application` object
+                    utils.prettyprint(app, indent=4, width=width, only_keys=only_keys)
         if self.params.tabular:
             print(table.draw())
         failed = len(self.params.args) - ok
