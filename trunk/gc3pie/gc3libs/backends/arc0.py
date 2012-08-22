@@ -25,6 +25,7 @@ __version__ = 'development version (SVN $Revision$)'
 
 import sys
 import os
+import shutil
 import time
 import tempfile
 
@@ -496,33 +497,65 @@ class ArcLrms(LRMS):
     @same_docstring_as(LRMS.get_results)
     @LRMS.authenticated
     def get_results(self, app, download_dir, overwrite=False):
+        jobid = app.execution.lrms_jobid
+
         # XXX: can raise encoding/decoding error if `download_dir`
         # is not ASCII, but the ARClib bindings don't accept
         # Python `unicode` strings.
-
         download_dir = str(download_dir)
 
-        job = app.execution
+        # as ARC complains when downloading to an already-existing
+        # directory, make a temporary directory for downloading files;
+        # then move files to their final destination and delete the
+        # temporary location.
+        tmp_download_dir = tempfile.mkdtemp(suffix='.d', dir=download_dir)
 
-        jftpc = arclib.JobFTPControl()
-
-        log.debug("Downloading %s output into '%s' ...", app, download_dir)
+        log.debug("Downloading %s output into temporary location '%s' ...", app, tmp_download_dir)
         try:
-            jftpc.DownloadDirectory(job.lrms_jobid, download_dir)
-            job.download_dir = download_dir
+            jftpc = arclib.JobFTPControl()
+            jftpc.DownloadDirectory(jobid, tmp_download_dir)
         except arclib.FTPControlError, ex:
+            # remove temporary download location
+            shutil.rmtree(tmp_download_dir, ignore_errors=True)
             # FIXME: parsing error messages breaks if locale is not an
             # English-based one!
             if "Failed to allocate port for data transfer" in str(ex):
                 raise gc3libs.exceptions.RecoverableDataStagingError(
                     "Recoverable Error: Failed downloading remote folder '%s': %s"
-                    % (job.lrms_jobid, str(ex)))
+                    % (jobid, str(ex)))
             # critical error. consider job remote data as lost
             raise gc3libs.exceptions.UnrecoverableDataStagingError(
                 "Unrecoverable Error: Failed downloading remote folder '%s': %s"
-                % (job.lrms_jobid, str(ex)))
+                % (jobid, str(ex)))
 
+        log.debug("Moving %s output into download location '%s' ...", app, download_dir)
+        entries = os.listdir(tmp_download_dir)
+        if not overwrite:
+            # raise an early error before we start mixing files from
+            # the old and new download directories
+            for entry in entries:
+                dst = os.path.join(download_dir, entry)
+                if os.path.exists(entry):
+                    # remove temporary download location
+                    shutil.rmtree(tmp_download_dir, ignore_errors=True)
+                    raise gc3libs.exceptions.UnrecoverableDataStagingError(
+                        "Entry '%s' in download directory '%s' already exists,"
+                        " and no overwriting was requested."
+                        % (entry, download_dir))
+        # move all entries to the final destination
+        for entry in entries:
+            src = os.path.join(tmp_download_dir, entry)
+            dst = os.path.join(download_dir, entry)
+            if os.path.isdir(dst):
+                shutil.rmtree(dst)
+            os.rename(src, dst)
+
+        # remove temporary download location (XXX: is it correct to ignore errors here?)
+        shutil.rmtree(tmp_download_dir, ignore_errors=True)
+
+        app.execution.download_dir = download_dir
         return
+
 
     @same_docstring_as(LRMS.free)
     @LRMS.authenticated
