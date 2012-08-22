@@ -313,7 +313,7 @@ GC3Libs internals.
             elif self.params.history:
                 print(str(app.persistent_id))
                 indent=4*' '
-                for logentry in app.execution.log:
+                for logentry in app.execution.history:
                     print(indent + logentry)
             else:
                 # usual YAML-like output

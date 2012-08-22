@@ -102,7 +102,7 @@ class Default(object):
 from gc3libs.exceptions import *
 from gc3libs.persistence import Persistable
 import gc3libs.url
-from gc3libs.utils import defproperty, deploy_configuration_file, Enum, Log, Struct, safe_repr
+from gc3libs.utils import defproperty, deploy_configuration_file, Enum, History, Struct, safe_repr
 
 
 class Task(Persistable, Struct):
@@ -1445,7 +1445,7 @@ class Run(Struct):
     A `Run` object is guaranteed to have the following attributes:
 
       `log`
-        A `gc3libs.utils.Log` instance, recording human-readable text
+        A `gc3libs.utils.History` instance, recording human-readable text
         messages on events in this job's history.
 
       `info`
@@ -1507,8 +1507,8 @@ class Run(Struct):
 
         Struct.__init__(self, initializer, **keywd)
 
-        if 'log' not in self:
-            self.log = Log()
+        if 'history' not in self:
+            self.history = History()
         if 'timestamp' not in self:
             self.timestamp = { }
 
@@ -1516,7 +1516,7 @@ class Run(Struct):
     @defproperty
     def info():
         """
-        A simplified interface for reading/writing entries into `log`.
+        A simplified interface for reading/writing entries into `history`.
 
         Setting the `info` attribute appends a message to the log::
 
@@ -1527,14 +1527,14 @@ class Run(Struct):
         Getting the value of the `info` attribute returns the last
         message entered in the log::
 
-          >>> j1.info
-          u'a second message'
+          >>> j1.info # doctest: +ELLIPSIS
+          u'a second message ...'
 
         """
         def fget(self):
-            return self.log.last()
+            return self.history.last()
         def fset(self, value):
-            self.log.append(unicode(value))
+            self.history.append(unicode(value))
         return locals()
 
     # states that a `Run` can be in
@@ -1632,7 +1632,7 @@ class Run(Struct):
             if self._state != value:
                 self.state_last_changed = time.time()
                 self.timestamp[value] = time.time()
-                self.log.append('%s at %s' % (value, time.asctime()))
+                self.history.append(value)
                 if self._ref is not None:
                     # mark as changed
                     self._ref.changed = True

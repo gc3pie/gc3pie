@@ -373,9 +373,9 @@ class BatchSystem(LRMS):
                     job.stderr_filename = app.stderr
                 else:
                     job.stderr_filename = '%s.e%s' % (job.lrms_jobname, jobid)
-            job.log.append('Submitted to %s @ %s, got jobid %s'
+            job.history.append('Submitted to %s @ %s, got jobid %s'
                            % (self._batchsys_name, self.name, jobid))
-            job.log.append("Submission command output:\n"
+            job.history.append("Submission command output:\n"
                            "  === stdout ===\n%s"
                            "  === stderr ===\n%s"
                            "  === end ===\n"
