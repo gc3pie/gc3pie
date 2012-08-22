@@ -73,7 +73,7 @@ class Default(object):
     ARC1_LRMS = 'arc1'
     ARC2_LRMS = 'arc2'
     ARC_CACHE_TIME = 30 #: only update ARC resources status every this seconds
-    ARC_LOST_JOB_TIMEOUT = 180 # previously: 4*ARC_CACHE_TIME #: consider a submitted job lost if it does not show up in the information system after this duration
+    ARC_LOST_JOB_TIMEOUT = 4*ARC_CACHE_TIME #: consider a submitted job lost if it does not show up in the information system after this duration
     ARC_JOBLIST_LOCATION = os.path.expandvars("$HOME/.arc/jobs.xml")
 
     SGE_LRMS = 'sge'
@@ -213,7 +213,7 @@ class Task(Persistable, Struct):
         an exception :class:`TaskDetachedFromGridError` being thrown.
         """
         if self._attached:
-            #gc3libs.log.debug("Detaching %s from grid" % self)
+
             self._attached = False
             try:
                 self._grid.remove(self)
@@ -1977,8 +1977,6 @@ class RetryableTask(Task):
         if (self.task.execution.state == Run.State.TERMINATED and own_state_old != Run.State.TERMINATED):
             self.execution.returncode = self.task.execution.returncode
             if self.retry():
-                # assign new Run
-                # self.task.execution = Run(attach=self)
                 self.retried += 1
                 self.task.submit(resubmit=True)
                 own_state_new = Run.State.RUNNING
