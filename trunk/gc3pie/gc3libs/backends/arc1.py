@@ -132,13 +132,13 @@ class Arc1Lrms(LRMS):
         # arc_rootlogger.setThreshold(arc.DEBUG) # or .VERBOSE, .INFO, .WARNING, .ERROR
 
         # # Initialize the required ARC1 components
-        # log.info('Invoking arc.JobSupervisor')
+        # log.debug('Invoking arc.JobSupervisor')
         # self._jobsupervisor = arc.JobSupervisor(self._usercfg, [])
         # # XXX: we need to get what 'middleware' each controller can control
-        # log.info('Invoking arc.JobSupervisor.GetJobControllers')
+        # log.debug('Invoking arc.JobSupervisor.GetJobControllers')
         # self._controllers = self._jobsupervisor.GetJobControllers()
         # # XXX: can we also create the target ?
-        # log.info('Invoking arc.TargetGenerator')
+        # log.debug('Invoking arc.TargetGenerator')
         # self._target_generator = arc.TargetGenerator(self._usercfg, 0)
 
         gc3libs.log.info("ARC1 resource '%s' init: OK", self.name)
@@ -146,13 +146,13 @@ class Arc1Lrms(LRMS):
 
     def _get_JobSupervisor_and_JobController(self):
         # Initialize the required ARC1 components
-        log.info('Invoking arc.JobSupervisor')
+        log.debug('Invoking arc.JobSupervisor')
         self._jobsupervisor = arc.JobSupervisor(self._usercfg, [])
         # XXX: we need to get what 'middleware' each controller can control
-        log.info('Invoking arc.JobSupervisor.GetJobControllers')
+        log.debug('Invoking arc.JobSupervisor.GetJobControllers')
         self._controllers = self._jobsupervisor.GetJobControllers()
         # XXX: can we also create the target ?
-        log.info('Invoking arc.TargetGenerator')
+        log.debug('Invoking arc.TargetGenerator')
         self._target_generator = arc.TargetGenerator(self._usercfg, 0)
 
 
@@ -163,7 +163,7 @@ class Arc1Lrms(LRMS):
     def cancel_job(self, app):
         controller, job = self._get_job_and_controller(app.execution.lrms_jobid)
         try:
-            log.info("Calling arc.JobController.Cancel(job)")
+            log.debug("Calling arc.JobController.Cancel(job)")
             if not controller.CancelJob(job):
                 raise gc3libs.exceptions.LRMSError('arc.JobController.Cancel returned False')
         except Exception, ex:
@@ -183,13 +183,13 @@ class Arc1Lrms(LRMS):
         # tg = arc.TargetGenerator(self._usercfg, 1)
         # return tg.FoundTargets()
         # This methodd should spawn the ldapsearch to update the ExecutionTager information
-        log.info('Calling arc.TargetGenerator.RetrieveExecutionTargets')
+        log.debug('Calling arc.TargetGenerator.RetrieveExecutionTargets')
 
         self._get_JobSupervisor_and_JobController()
 
         self._target_generator.RetrieveExecutionTargets()
 
-        log.info('Calling arc.TargetGenerator.GetExecutionTargets()')
+        log.debug('Calling arc.TargetGenerator.GetExecutionTargets()')
         return self._target_generator.GetExecutionTargets()
         # execution_targets = self._target_generator.GetExecutionTargets()
         # for target in execution_targets:
@@ -209,9 +209,9 @@ class Arc1Lrms(LRMS):
         self._get_JobSupervisor_and_JobController()
 
         for c in self._controllers:
-            log.info("Calling JobController.GetJobInformation()")
+            log.debug("Calling JobController.GetJobInformation() ...")
             c.GetJobInformation()
-            log.info('controller returned [%d] jobs' % len(c.GetJobs()))
+            log.debug('... controller returned %d jobs' % len(c.GetJobs()))
         return itertools.chain(* [c.GetJobs() for c in self._controllers])
 
 
@@ -238,7 +238,7 @@ class Arc1Lrms(LRMS):
         self._iterjobs()
 
         for c in self._controllers:
-            log.info("Calling JobController.GetJobs in get_job_and_controller")
+            log.debug("Calling JobController.GetJobs in get_job_and_controller")
             jl = c.GetJobs()
             for j in jl:
                 if j.JobID.str() == jobid:
@@ -258,28 +258,28 @@ class Arc1Lrms(LRMS):
 
         jd = arc.JobDescription()
         jobdesclang = "nordugrid:xrsl"
-        log.info("Calling arc.JobDescription.Parse")
+        log.debug("Calling arc.JobDescription.Parse")
         arc.JobDescription.Parse(jd, xrsl, jobdesclang)
         # JobDescription::Parse(const std::string&, std::list<JobDescription>&, const std::string&, const std::string&) method instead.
 
 
         # perform brokering
-        log.info("Calling arc.BrokerLoader")
+        log.debug("Calling arc.BrokerLoader")
         ld = arc.BrokerLoader()
         broker = ld.load("Random", self._usercfg)
         # broker.PreFilterTargets(tg.GetExecutionTargets(), jd)
-        log.info("Calling arc.Broker.PreFilterTargets")
+        log.debug("Calling arc.Broker.PreFilterTargets")
         broker.PreFilterTargets(self._get_targets(), jd)
 
         submitted = False
         tried = 0
         j = arc.Job()
         while True:
-            log.info("Calling arc.Broker.GetBestTarget")
+            log.debug("Calling arc.Broker.GetBestTarget")
             target = broker.GetBestTarget()
             if not target:
                 break
-            log.info("Calling arc.ExecutionTarget.Submit")
+            log.debug("Calling arc.ExecutionTarget.Submit")
             submitted = target.Submit(self._usercfg, jd, j)
             if not submitted:
                 continue
@@ -568,13 +568,14 @@ class Arc1Lrms(LRMS):
     @LRMS.authenticated
     def free(self, app):
         controller, job = self._get_job_and_controller(app.execution.lrms_jobid)
-        log.info("Calling JobController.CleanJob")
+        log.debug("Calling JobController.CleanJob")
         if not controller.CleanJob(job):
-            log.error('arc1.JobController.CleanJob returned False')
+            log.error("arc1.JobController.CleanJob returned False for ARC job ID '%s'",
+                      app.execution.lrms_jobid)
         # XXX: this is necessary as the other component of arc library seems to refer to the job.xml file
-        # hopefully will be fixed soon
         # remove Job from job.xml file
-        log.info("Removing job from Jobfile %s" % gc3libs.Default.ARC_JOBLIST_LOCATION)
+        log.debug("Removing job '%s' from jobfile '%s'",
+                  app, gc3libs.Default.ARC_JOBLIST_LOCATION)
         job.RemoveJobsFromFile(gc3libs.Default.ARC_JOBLIST_LOCATION, [job.IDFromEndpoint])
 
 
@@ -632,7 +633,7 @@ class Arc1Lrms(LRMS):
         self.user_run = user_running
         self.used_quota = -1
 
-        log.info("Updated resource '%s' status:"
+        log.debug("Updated resource '%s' status:"
                           " free slots: %d,"
                           " own running jobs: %d,"
                           " own queued jobs: %d,"
