@@ -516,8 +516,6 @@ class LsfLrms(batch.BatchSystem):
         try:
             self.transport.connect()
 
-            # username = self._ssh_username
-
             # Run lhosts to get the list of available nodes and their
             # related number of cores
             # used to compute self.total_slots

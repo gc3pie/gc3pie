@@ -185,17 +185,15 @@ class PbsLrms(batch.BatchSystem):
         try:
             self.transport.connect()
 
-            username = self._ssh_username
             _command = ('%s -a' % self._qstat)
             log.debug("Running `%s`...", _command)
             exit_code, qstat_stdout, stderr = self.transport.execute_command(_command)
-
             if exit_code != 0:
-                # Stop and do not continue
-                raise gc3libs.exceptions.LRMSError("SGE backend failed while executing [%s]."
-                                                   "Exit code: [%d]. Stdout: [%s]. Stderr: [%s]" %
-                                                   (_command, exit_code, stdout, stderr))
-
+                # cannot continue
+                raise gc3libs.exceptions.LRMSError(
+                    "PBS backend failed executing '%s':"
+                    " exit code: %d; stdout: '%s', stderr: '%s'"
+                    % (_command, exit_code, stdout, stderr))
 
             log.debug("Computing updated values for total/available slots ...")
             (total_running, self.queued,
@@ -223,7 +221,7 @@ class PbsLrms(batch.BatchSystem):
             # self.transport.close()
             log.error("Error querying remote LRMS, see debug log for details.")
             log.debug("Error querying LRMS: %s: %s",
-                      ex.__class__.__name__, str(ex))
+                      ex.__class__.__name__, str(ex), exc_info=True)
             raise
 
 
