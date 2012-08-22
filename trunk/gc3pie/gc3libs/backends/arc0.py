@@ -32,10 +32,6 @@ import tempfile
 import warnings
 warnings.simplefilter("ignore")
 
-# NG's default packages install arclib into /opt/nordugrid/lib/pythonX.Y/site-packages;
-# add this anyway in case users did not set their PYTHONPATH correctly
-import sys
-
 from gc3libs import log, Run
 from gc3libs.backends import LRMS
 import gc3libs.exceptions
@@ -49,6 +45,17 @@ try:
     have_arclib_module = True
 except ImportError:
     have_arclib_module = False
+
+
+def _normalize_value(val):
+    """
+    ARC returns -1 when the subsystem cannot get/resolve a value; we
+    treat then these values as 0 instead.
+    """
+    if val < 0:
+        return 0
+    else:
+        return val
 
 
 class ArcLrms(LRMS):
@@ -140,7 +147,7 @@ class ArcLrms(LRMS):
         if not queues:
             # assume all available targes have been tried. Clean list and start over again
             queues = candidate_queues
-            del job.execution_targets[:]
+            job.execution_targets = [ ]
 
         return queues
 
@@ -185,6 +192,7 @@ class ArcLrms(LRMS):
         for job in job_list:
             jobs[job.id] = job
         return jobs
+
 
     # ARC refreshes the InfoSys every 30 seconds by default;
     # there's no point in querying it more often than this...
@@ -357,37 +365,31 @@ class ArcLrms(LRMS):
             # No job found.  This could be caused by the
             # information system not yet updated with the information
             # of the newly submitted job.
-            if not hasattr(job, 'state_last_changed'):
-                # XXX: compatibility with running sessions, remove before release
-                job.state_last_changed = time.time()
-                app.changed = True
-            if not hasattr(job, '_arc0_state_last_checked'):
-                # XXX: compatibility with running sessions, remove before release
-                job._arc0_state_last_checked = time.time()
-                app.changed = True
             now = time.time()
             if (now - job._arc0_state_last_checked) > gc3libs.Default.ARC_LOST_JOB_TIMEOUT:
                 if not job.state == Run.State.UNKNOWN:
                     # set to UNKNOWN
                     job.state = Run.State.UNKNOWN
-                    gc3libs.log.error("Failed updating job status for [%d] sec. Setting to Unknown state. " % gc3libs.Default.ARC_LOST_JOB_TIMEOUT)
+                    gc3libs.log.error(
+                        "Failed updating status of task '%s' for [%d] sec."
+                        " Setting to `UNKNOWN` state. ",
+                        app, gc3libs.Default.ARC_LOST_JOB_TIMEOUT)
                 # else:
                 #     # just record failure updating job state
                 #     gc3libs.log.warning("Failed updating job status. Assume transient information system failure. Return unchanged status.")
                 # # return job.state
             elif (job.state == Run.State.SUBMITTED
                 and now - job.state_last_changed < self.lost_job_timeout):
-                gc3libs.log.warning("Failed updating job status. Assume job was recently submitted. Return unchanged status.")
-                # assume the job was recently submitted, hence the
-                # information system knows nothing about it; just
-                # ignore the error and return the object unchanged
-                # return job.state
+                gc3libs.log.warning(
+                    "Failed updating state of task '%s'."
+                    " Assuming it was recently submitted;"
+                    " task state will not be changed.", app)
             elif (job.state in [ Run.State.SUBMITTED, Run.State.RUNNING ]
                   and now - job._arc0_state_last_checked < self.lost_job_timeout):
-                gc3libs.log.warning("Failed updating job status. Assume transient information system failure. Return unchanged status.")
-                # assume transient information system failure;
-                # ignore the error and return object unchanged
-                # return job.state
+                gc3libs.log.warning(
+                    "Failed updating state of task '%s'."
+                    " Assuming transient information system failure;"
+                    " task state will not be changed.", app)
             # # elif (job.state == Run.State.UNKNOWN
             # #       and job.unknown_iteration > gc3libs.Default.UNKNOWN_ITER_LIMIT):
             # #     # consider job as lost
@@ -403,7 +405,6 @@ class ArcLrms(LRMS):
 
             # End of except. Return job state
             return job.state
-
 
         job._arc0_state_last_checked = time.time()
 
@@ -451,11 +452,7 @@ class ArcLrms(LRMS):
             else:
                 # presume everything went well...
                 job.returncode = (0, 0)
-        job.lrms_jobname = arc_job.job_name # XXX: `lrms_jobname` is the name used in `sge.py`
-
-        # XXX: do we need these?  they're already in `Application.stdout` and `Application.stderr`
-        job.stdout_filename = arc_job.sstdout
-        job.stderr_filename = arc_job.sstderr
+        job.lrms_jobname = arc_job.job_name # see Issue #78
 
         # Common struture as described in Issue #78
         job.queue = arc_job.queue
@@ -464,31 +461,6 @@ class ArcLrms(LRMS):
         job.used_walltime = arc_job.used_wall_time # exressed in sec.
         job.used_cputime = arc_job.used_cpu_time # expressed in sec.
         job.used_memory = arc_job.used_memory # expressed in KiB
-
-        # if (arc_job.status == 'FAILED'):
-        #     job.error_log = arc_job.errors
-
-        # # update ARC-specific info
-        # job.arc_cluster = arc_job.cluster
-        # job.arc_cpu_count = arc_job.cpu_count
-        # job.arc_job_name = arc_job.job_name
-        # job.arc_queue = arc_job.queue
-        # job.arc_queue_rank = arc_job.queue_rank
-        # job.arc_requested_cpu_time = arc_job.requested_cpu_time
-        # job.arc_requested_wall_time = arc_job.requested_wall_time
-        # job.arc_sstderr = arc_job.sstderr
-        # job.arc_sstdin = arc_job.sstdin
-        # job.arc_sstdout = arc_job.sstdout
-        # job.arc_used_cpu_time = arc_job.used_cpu_time
-        # job.arc_used_memory = arc_job.used_memory
-        # job.arc_used_wall_time = arc_job.used_wall_time
-        # # FIXME: use Python's `datetime` types (RM)
-        # if arc_job.submission_time.GetTime() != -1:
-        #     job.arc_submission_time = str(arc_job.submission_time)
-        # if arc_job.completion_time.GetTime() != -1:
-        #     job.arc_completion_time = str(arc_job.completion_time)
-        # else:
-        #     job.arc_completion_time = ""
 
         job.state = state
         return state
@@ -589,15 +561,6 @@ class ArcLrms(LRMS):
         free_slots = 0
         user_running = 0
         user_queued = 0
-
-
-        def _normalize_value(val):
-            # an ARC value may contains -1 when the subsystem cannot
-            # get/resolve it we treat then these values as 0
-            if val < 0:
-                return 0
-            else:
-                return val
 
         queues = self._get_queues()
         if len(queues) == 0:
