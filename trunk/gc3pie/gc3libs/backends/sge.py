@@ -385,26 +385,23 @@ class SgeLrms(batch.BatchSystem):
             _command = ("%s -U %s" % (self._qstat, self._username))
             log.debug("Running `%s`...", _command)
             exit_code, qstat_stdout, stderr = self.transport.execute_command(_command)
-
             if exit_code != 0:
-                # Stop and do not continue
-                raise gc3libs.exceptions.LRMSError("SGE backend failed while executing [%s]."
-                                                   "Exit code: [%d]. Stdout: [%s]. Stderr: [%s]" %
-                                                   (_command, exit_code, stdout, stderr))
-
+                # cannot continue
+                raise gc3libs.exceptions.LRMSError(
+                    "SGE backend failed executing '%s':"
+                    "exit code: %d; stdout: '%s'; stderr: '%s'." %
+                    (_command, exit_code, stdout, stderr))
 
             _command = ("%s -F -U %s" % (self._qstat, self._username))
             log.debug("Running `%s`...", _command)
             exit_code, qstat_F_stdout, stderr = self.transport.execute_command(_command)
-
             if exit_code != 0:
-                # Stop and do not continue
-                raise gc3libs.exceptions.LRMSError("SGE backend failed while executing [%s]."
-                                                   "Exit code: [%d]. Stdout: [%s]. Stderr: [%s]" %
-                                                   (_command, exit_code, stdout, stderr))
+                # cannot continue
+                raise gc3libs.exceptions.LRMSError(
+                    "SGE backend failed executing '%s':"
+                    "exit code: %d; stdout: '%s'; stderr: '%s'." %
+                    (_command, exit_code, stdout, stderr))
 
-
-            log.debug("Computing updated values for total/available slots ...")
             (total_running, self.queued,
              self.user_run, self.user_queued) = count_jobs(qstat_stdout, self._username)
             slots = compute_nr_of_slots(qstat_F_stdout)
