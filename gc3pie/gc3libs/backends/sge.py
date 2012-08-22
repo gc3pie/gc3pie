@@ -23,6 +23,7 @@ __docformat__ = 'reStructuredText'
 __version__ = 'development version (SVN $Revision$)'
 
 
+from getpass import getuser
 import os
 import posixpath
 import random
@@ -381,8 +382,7 @@ class SgeLrms(batch.BatchSystem):
         try:
             self.transport.connect()
 
-            username = self._ssh_username
-            _command = ("%s -U %s" % (self._qstat, username))
+            _command = ("%s -U %s" % (self._qstat, self._username))
             log.debug("Running `%s`...", _command)
             exit_code, qstat_stdout, stderr = self.transport.execute_command(_command)
 
@@ -393,7 +393,7 @@ class SgeLrms(batch.BatchSystem):
                                                    (_command, exit_code, stdout, stderr))
 
 
-            _command = ("%s -F -U %s" % (self._qstat, username))
+            _command = ("%s -F -U %s" % (self._qstat, self._username))
             log.debug("Running `%s`...", _command)
             exit_code, qstat_F_stdout, stderr = self.transport.execute_command(_command)
 
@@ -406,7 +406,7 @@ class SgeLrms(batch.BatchSystem):
 
             log.debug("Computing updated values for total/available slots ...")
             (total_running, self.queued,
-             self.user_run, self.user_queued) = count_jobs(qstat_stdout, username)
+             self.user_run, self.user_queued) = count_jobs(qstat_stdout, self._username)
             slots = compute_nr_of_slots(qstat_F_stdout)
             self.free_slots = int(slots['global']['available'])
             self.used_quota = -1

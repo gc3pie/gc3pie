@@ -23,6 +23,8 @@ batch-like backends should inherit.
 __docformat__ = 'reStructuredText'
 __version__ = 'development version (SVN $Revision$)'
 
+
+from getpass import getuser
 import os
 import posixpath
 import random
@@ -128,11 +130,12 @@ class BatchSystem(LRMS):
         self.frontend = frontend
         if transport == 'local':
             self.transport = gc3libs.backends.transport.LocalTransport()
+            self._username = getuser()
         elif transport == 'ssh':
             auth = self._auth_fn()
-            self._ssh_username = auth.username
+            self._username = auth.username
             self.transport = gc3libs.backends.transport.SshTransport(
-                frontend, username=self._ssh_username)
+                frontend, username=self._username)
         else:
             raise gc3libs.exceptions.TransportError(
                 "Unknown transport '%s'" % transport)
