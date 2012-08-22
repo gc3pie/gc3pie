@@ -300,7 +300,7 @@ class UnexpectedStateError(TaskError):
     pass
 
 
-class TransportError(UnrecoverableError):
+class TransportError(Error):
     pass
 
 class RecoverableTransportError(RecoverableError):
