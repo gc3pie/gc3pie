@@ -301,7 +301,7 @@ GC3Libs internals.
                 # of times we *should* have run, i.e., the number of
                 # arguments we were passed.
                 ok += 1
-                for what,when in app.execution.timestamp.iteritems():
+                for what,when in app.execution.log.iteritems():
                     timestamps.append((float(when), str(app), what))
 
             timestamps.sort(cmp=lambda x,y: cmp(x[0], y[0]))
@@ -906,8 +906,6 @@ Manage sessions
         subparser.add_argument('session')
         subparser.add_argument('-v', '--verbose', action='count')
 
-
-
     def setup(self):
         gc3libs.cmdline._Script.setup(self)
 
@@ -919,11 +917,21 @@ Manage sessions
         self._add_subcmd(
             'delete',
             self.delete_session,
-            help="Delete a session from disk")
+            help="Delete a session from disk.")
         self._add_subcmd(
             'list',
             self.list_jobs,
-            help="List jobs related to a session")
+            help="List jobs related to a session.")
+
+        self._add_subcmd(
+            'log',
+            self.show_log,
+            help="Show log entries for the session.")
+
+    def setup_args(self):
+        # prevent GC3UtilsScript.setup_args() to add the default JOBID
+        # non optional argument
+        pass
 
     def main(self):
         import gc3utils.commands
@@ -985,6 +993,36 @@ Manage sessions
         cmd = gc3utils.commands.cmd_gstat
         sys.argv = ['gstat', '-n', '-v', '-s', self.params.session] + job_ids
         return cmd().run()
+
+    def show_log(self):
+        """
+        Called when subcommand is `log`.
+
+        This method will print the history of the jobs in SESSION in a
+        logfile fashon
+        """
+        self.session = Session(self.params.session, create=False)
+        timestamps = []
+        task_queue = list(self.session.tasks.values())
+        while task_queue:
+            app = task_queue.pop()
+            for what,when,tags in app.execution.log._messages:
+                timestamps.append((float(when), str(app), what))
+            try:
+                for child in app.tasks:
+                    task_queue.append(child)
+            except AttributeError:
+                # Application class does not have a `tasks` attribute
+                pass
+
+        timestamps.sort(cmp=lambda x,y: cmp(x[0], y[0]))
+        for entry in timestamps:
+            print "%s %s: %s" % (
+                time.strftime(
+                    "%b %d %H:%M:%S", time.localtime(entry[0])
+                    ),
+                str(entry[1]),
+                entry[2])
 
 
 class cmd_gselect(_BaseCmd):
