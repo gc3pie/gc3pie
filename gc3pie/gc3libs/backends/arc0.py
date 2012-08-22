@@ -133,12 +133,9 @@ class ArcLrms(LRMS):
         If all queues have been already tried, clear execution_targets list and
         start again.
         """
-        excluded_targets = job.execution_targets
-        queues = []
         # use queue.cluster.hostname to match entries from job.execution_targets list
-        for queue in candidate_queues:
-            if not queue.cluster.hostname in excluded_targets:
-                queues.append(queue)
+        queues = [ queue for queue in candidate_queues
+                   if queue.cluster.hostname not in job.execution_targets ]
         if not queues:
             # assume all available targes have been tried. Clean list and start over again
             queues = candidate_queues
