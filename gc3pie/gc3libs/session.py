@@ -368,7 +368,7 @@ class Session(list):
 
         """
         for task_id in self.tasks:
-            self.store.remove(task_id)
+            self._recursive_remove_from_store(task_id)
         if os.path.exists(self.path):
             shutil.rmtree(self.path)
 
@@ -425,13 +425,33 @@ class Session(list):
         if flush:
             self.flush()
 
+    def _recursive_remove_from_store(self, task_id):
+        """
+        Remove a task from the store and, if the object has a `tasks` attribute containing a list of other tasks, remove them from the store
+        """
+        queue = [task_id]
+        while queue:
+            toremove = queue.pop()
+            obj = self.store.load(toremove)
+            try:
+                for child in obj.tasks:
+                    queue.append(child.persistent_id)
+            except AttributeError:
+                pass
+            try:
+                self.store.remove(toremove)
+            except Exception, ex:
+                gc3libs.log.warning(
+                    "Error removing task id `%s` from the store:"
+                    " %s" % ex)
+
     def remove(self, task_id, flush=True):
         """
         Remove task identified by `task_id` from the current session
         *and* from the associated storage.
         """
+        self._recursive_remove_from_store(task_id)
         self.forget(task_id, flush)
-        self.store.remove(task_id)
 
     def __len__(self):
         return len(self.tasks)

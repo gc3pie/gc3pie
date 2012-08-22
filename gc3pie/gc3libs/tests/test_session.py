@@ -184,6 +184,18 @@ class TestSession(object):
         self.sess.remove(tid2)
         assert_equal(len(self.sess), 0)
 
+    def test_remove_children(self):
+        """
+        Test if the session is able to remove all children of a task
+        """
+        # Removing objects
+        obj = _PStruct(name='GC3')
+        obj.tasks = [_PStruct(name='GC3')]
+        id = self.sess.add(obj)
+        self.sess.remove(id)
+
+        assert len(self.sess.store.list()) == 0
+
     def test_reload_session(self):
         self.sess.add(_PStruct(a=1, b='foo'))
         self.sess.add(_PStruct(a=2, b='bar'))
@@ -211,6 +223,7 @@ class TestSession(object):
         extraid = self.sess.store.save(obj1)
         obj2 = self.sess.load(extraid)
         assert_equal(obj1, obj2)
+        self.sess.store.remove(extraid)
 
     def test_creation_of_timestamp_files(self):
         start_file = os.path.join(self.sess.path,
