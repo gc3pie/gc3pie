@@ -173,13 +173,6 @@ specified in the configuration file.
 
         auto_enable_auth = kw.get('auto_enable_auth', self.auto_enable_auth)
 
-        # XXX: we obsolete this check as we now move this responsibility
-        # within the LRMS
-        # check that all input files can be read
-        #for local_path in app.inputs:
-        #    gc3libs.utils.test_file(local_path, os.R_OK,
-        #                            gc3libs.exceptions.InputFileError)
-
         job = app.execution
         if resubmit:
             job.state = Run.State.NEW
@@ -190,14 +183,6 @@ specified in the configuration file.
             raise gc3libs.exceptions.NoResources(
                 "Could not initialize any computational resource"
                 " - please check log and configuration file.")
-
-        # # XXX: auth should probably become part of LRMS and controlled within it
-        # for _lrms in self._lrms_list:
-        #     try:
-        #         self.auths.get(_lrms.auth)
-        #     except Exception, ex:
-        #         gc3libs.log.warning('Failed obtaining auth. Error type %s, message %s' % (ex.__class__,str(ex)))
-        #         continue
 
         gc3libs.log.debug('Performing brokering ...')
         # decide which resource to use
@@ -245,7 +230,6 @@ specified in the configuration file.
             gc3libs.log.debug("Attempting submission to resource '%s'..."
                               % lrms.name)
             try:
-                # self.auths.get(lrms.auth)
                 job.timestamp[Run.State.NEW] = time.time()
                 job.info = ("Submitting to '%s' at %s"
                         % (lrms.name,
@@ -543,7 +527,6 @@ specified in the configuration file.
         auto_enable_auth = kw.get('auto_enable_auth', self.auto_enable_auth)
         try:
             lrms = self.get_backend(job.resource_name)
-            # self.auths.get(lrms._resource.auth)
             lrms.cancel_job(app)
         except gc3libs.exceptions.InvalidResourceName, irn:
             gc3libs.log.warning("Failed while retrieving resource %s from core.Detailed Error message: %s" % (app.execution.resource_name, str(irn)))
@@ -1050,7 +1033,6 @@ class Engine(object):
                 continue
             state = task.execution.state
             result[state] += 1
-        # result[Run.State.STOPPED] = len(self._stopped)
         for task in self._stopped:
             if only and not isinstance(task, only):
                 continue

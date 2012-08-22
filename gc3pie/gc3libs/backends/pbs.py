@@ -181,6 +181,7 @@ class PbsLrms(batch.BatchSystem):
     @same_docstring_as(LRMS.get_resource_status)
     @LRMS.authenticated
     def get_resource_status(self):
+        self._resource.updated = False
         try:
             self.transport.connect()
 
@@ -189,7 +190,12 @@ class PbsLrms(batch.BatchSystem):
             log.debug("Running `%s`...", _command)
             exit_code, qstat_stdout, stderr = self.transport.execute_command(_command)
 
-            # self.transport.close()
+            if exit_code != 0:
+                # Stop and do not continue
+                raise gc3libs.exceptions.LRMSError("SGE backend failed while executing [%s]."
+                                                   "Exit code: [%d]. Stdout: [%s]. Stderr: [%s]" %
+                                                   (_command, exit_code, stdout, stderr))
+
 
             log.debug("Computing updated values for total/available slots ...")
             (total_running, self.queued,

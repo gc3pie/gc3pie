@@ -126,7 +126,9 @@ class CryptoApplication(gc3libs.Application):
                 'Application terminated. No exitcode available')
 
         if self.execution.signal == 123:
-            # Assume Data staging problem
+            # XXX: this is fragile as it does not really applies to all
+            # DataStaging errors. 
+            # Assume Data staging problem at the beginning of the job
             # resubmit
             self.execution.returncode = (0, 99)
     
