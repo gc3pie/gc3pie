@@ -193,18 +193,6 @@ class GenericStoreChecks(object):
 
         obj = self.store.load(id)
 
-    def test_remove_children(self):
-        """
-        Test if the store is able to remove all children of a task
-        """
-        # Removing objects
-        obj = SimplePersistableObject('GC3')
-        obj.tasks = [SimplePersistableObject('GC3')]
-        id = self.store.save(obj)
-        self.store.remove(id)
-
-        assert len(self.store.list()) == 0
-
     def test_replace_method(self):
         """Test the `replace` method of the `SqlStore` class"""
         # 1) save a new object
