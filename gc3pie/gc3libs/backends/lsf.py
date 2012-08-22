@@ -525,59 +525,36 @@ class LsfLrms(batch.BatchSystem):
             log.debug("Running `%s`... ", _command)
             exit_code, stdout, stderr = self.transport.execute_command(_command)
             if exit_code != 0:
-                # Stop and do not continue
-                # XXX: raise LRMSError here
-                raise gc3libs.exceptions.LRMSError("LSF backend failed while executing [%s]."
-                                    "Exit code: [%d]. Stdout: [%s]. Stderr: [%s]" %
-                                    (_command, exit_code, stdout, stderr))
+                # cannot continue
+                raise gc3libs.exceptions.LRMSError(
+                    "LSF backend failed executing '%s':"
+                    "exit code: %d; stdout: '%s'; stderr: '%s'." %
+                    (_command, exit_code, stdout, stderr))
 
-            lhosts_output = []
             if stdout:
-                # Remove Header
                 lhosts_output = stdout.strip().split('\n')
+                # Remove Header
                 lhosts_output.pop(0)
-
-            # Run bhosts to get information about the number of
-            # occupied slots for each node
-            # used to compute self.free_slots
-            # bhosts output format:
-            # HOST_NAME          STATUS          JL/U    MAX  NJOBS    RUN  SSUSP  USUSP    RSV
-            # a3000              closed_Full     -      4      4      4      0      0      0
-            # log.debug("Running `bhosts -w`... ")
-            # _command = "bhosts -w"
-            # exit_code, stdout, stderr = self.transport.execute_command(_command)
-
-            # if exit_code != 0:
-            #     # Stop and do not continue
-            #     # XXX: raise LRMSError here
-            #     raise gc3libs.exceptions.LRMSError("LSF backend failed while executing [%s]."
-            #                         "Exit code: [%d]. Stdout: [%s]. Stderr: [%s]" %
-            #                         (_command, exit_code, stdout, stderr))
-
-            # bhosts_output = []
-            # if stdout:
-            #     # Remove Header
-            #     bhosts_output = stdout.strip().split('\n')
-            #     bhosts_output.pop(0)
-
+            else:
+                lhosts_output = [ ]
 
             # Run bqueues to get information about the status of system queues
             # used to build running_jobs and queued
             _command = self._bqueues
             log.debug("Running `%s`... ", _command)
             exit_code, stdout, stderr = self.transport.execute_command(_command)
-
             if exit_code != 0:
-                # Stop and do not continue
-                # XXX: raise LRMSError here
-                raise gc3libs.exceptions.LRMSError("LSF backend failed while executing [%s]."
-                                    "Exit code: [%d]. Stdout: [%s]. Stderr: [%s]" %
-                                    (_command, exit_code, stdout, stderr))
+                # cannot continue
+                raise gc3libs.exceptions.LRMSError(
+                    "LSF backend failed executing '%s':"
+                    "exit code: %d; stdout: '%s'; stderr: '%s'." %
+                    (_command, exit_code, stdout, stderr))
 
-            bqueues_output = []
             if stdout:
                 bqueues_output = stdout.strip().split('\n')
                 bqueues_output.pop(0)
+            else:
+                bqueues_output = [ ]
 
             # Run bjobs to get information about the jobs for a given user
             # used to compute  self.user_run and self.user_queued
@@ -586,21 +563,19 @@ class LsfLrms(batch.BatchSystem):
             _command = self._bjobs
             log.debug("Runing `%s`... ", _command)
             exit_code, stdout, stderr = self.transport.execute_command(_command)
-
             if exit_code != 0:
-                # Stop and do not continue
-                # XXX: raise LRMSError here
-                raise gc3libs.exceptions.LRMSError("LSF backend failed while executing [%s]."
-                                    "Exit code: [%d]. Stdout: [%s]. Stderr: [%s]" %
-                                    (_command, exit_code, stdout, stderr))
+                # cannot continue
+                raise gc3libs.exceptions.LRMSError(
+                    "LSF backend failed executing '%s':"
+                    "exit code: %d; stdout: '%s'; stderr: '%s'." %
+                    (_command, exit_code, stdout, stderr))
 
-            bjobs_output = []
             if stdout:
-                # Remove Header
                 bjobs_output = stdout.strip().split('\n')
+                # Remove Header
                 bjobs_output.pop(0)
-
-            # self.transport.close()
+            else:
+                bjobs_output = [ ]
 
             # compute self.total_slots
             self.max_cores = 0
@@ -624,28 +599,11 @@ class LsfLrms(batch.BatchSystem):
 
             self.free_slots = self.max_cores - running_jobs
 
-            # # compute self.free_slots
-            # total_jobs = 0
-
-            # for line in bhosts_output:
-            #     # HOST_NAME          STATUS          JL/U    MAX  NJOBS    RUN  SSUSP  USUSP    RSV
-            #     # a3000              closed_Full     -      4      4      4      0      0      0
-            #     njobs = line.strip().split()[4]
-            #     try:
-            #         total_jobs += int(njobs)
-            #     except ValueError:
-            #         # njobs == '-'
-            #         pass
-
-
-            # self.free_slots = self.max_cores - total_jobs
-
             # user runing/queued
             self.user_run = 0
             self.user_queued = 0
 
             queued_status = ['PEND', 'PSUSP', 'USUSP', 'SSUSP', 'WAIT', 'ZOMBI']
-
             for line in bjobs_output:
                 # JOBID   USER    STAT  QUEUE      FROM_HOST   EXEC_HOST   JOB_NAME   SUBMIT_TIME
                 (jobid, user, stat, queue, from_h, exec_h) = line.strip().split()[0:6]
@@ -669,14 +627,6 @@ class LsfLrms(batch.BatchSystem):
                 except ValueError:
                     # core == '-'
                     pass
-
-            # log.info("Not updated resource '%s' status (see `backends/lsf.py`),"
-            #          "using hardcoded defaults!!", self.name)
-            # self.user_run = 0
-            # self.user_queued = 0
-            # self.free_slots = 800
-            # self.used_quota = -1
-            # self.queued = 0
 
             return self
 
