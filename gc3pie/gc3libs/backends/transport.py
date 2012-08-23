@@ -30,6 +30,7 @@ import os
 import os.path
 import errno
 import shutil
+import getpass
 
 from gc3libs.utils import same_docstring_as
 import gc3libs.exceptions
@@ -67,6 +68,13 @@ class Transport(object):
 
         """
         raise NotImplementedError("Abstract method `Transport.execute_command()` called - this should have been defined in a derived class.")
+
+    def get_remote_username(self):
+        """
+        Return the user name (as a `str` object) used on the other end
+        of the transport.
+        """
+        raise NotImplementedError("Abstract method `Transport.get_remote_username()` called - this should have been defined in a derived class.")
 
     def isdir(self, path):
         """
@@ -308,6 +316,10 @@ class SshTransport(Transport):
                 "Failed executing remote command '%s': %s: %s"
                 % (command, ex.__class__.__name__, str(ex)))
 
+    @same_docstring_as(Transport.get_remote_username)
+    def get_remote_username(self):
+        (exitcode, stdout, stderr) = self.execute_command('whoami')
+        return stdout.strip()
 
     @same_docstring_as(Transport.isdir)
     def isdir(self, path):
@@ -575,6 +587,10 @@ class LocalTransport(Transport):
             raise gc3libs.exceptions.TransportError("Failed executing command '%s': %s: %s"
                                      % (command, ex.__class__.__name__, str(ex)))
 
+
+    @same_docstring_as(Transport.get_remote_username)
+    def get_remote_username(self):
+        return getpass.getuser()
 
     @same_docstring_as(Transport.isdir)
     def isdir(self, path):
