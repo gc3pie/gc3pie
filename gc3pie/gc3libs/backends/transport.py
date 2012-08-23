@@ -673,6 +673,14 @@ class LocalTransport(Transport):
             raise gc3libs.exceptions.TransportError("Could not remove directory tree '%s': %s: %s"
                                      % (path, ex.__class__.__name__, str(ex)))
 
+    @same_docstring_as(Transport.open)
+    def open(self, source, mode, bufsize=0):
+        try:
+            return open(source, mode, bufsize)
+        except Exception, ex:
+            raise gc3libs.exceptions.TransportError(
+                "Could not open file '%s' on host localhost: %s: %s"
+                % (source, ex.__class__.__name__, str(ex)))
 
     @same_docstring_as(Transport.close)
     def close(self):
