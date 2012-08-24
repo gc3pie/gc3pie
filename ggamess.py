@@ -137,7 +137,6 @@ of newly-created jobs so that this limit is never exceeded.
 # This method is called after the session has been completed and the results are generated. The method is triggered with option -t.
     
     def after_main_loop(self):
-	print "SELF.", self.params.test
 	if self.params.test is False:
 		gc3libs.log.debug("ggamess.py: Tests were not executed")
 		print "NOT RUNNING TESTs"
@@ -147,35 +146,19 @@ of newly-created jobs so that this limit is never exceeded.
 	# build job list
         inputs = self._search_for_input_files(self.params.args)
 	#print "OLD", inputs 
-	
-	#inputs = [task. for task in self.session_uri.path]
-	#input_list = []
-	#for app in self.session:
-	#	print "myI",app.outputs
-	#	print "myO",app.inputs
-	#	print "myOutDir", app.output_dir
-	
-	# transform set with input files to a list	
-	input_list = [myinput for myinput  in inputs]
-	#for myinput in inputs:
-	#	input_list.append(myinput)
-	#output_dirs = []
-	#jobs = list(self.session)
-
-	#list of output directories
-	#for job in jobs:
-	# 	output_dirs.append(job.output_dir) 
-	output_dirs = [job.output_dir for job in self.session]
-	#sort both list to make sure they correspond to the same files
-	input_list.sort()
- 	output_dirs.sort()
- 	#print 'INPUTSsearch', input_list
- 	#print 'OUTPUTs', output_dirs
+	myoutputs = []
+	for app in self.session:
+		output_abs_path = os.path.join(app.output_dir, app.outputs[app.stdout].path)
+		myoutputs.append(output_abs_path)
+	inputs = [app.inp_file_path for app in self.session]
+	print "OUTPUTS", myoutputs
+	print "INPUTS",inputs
 	
 	testSet = GamessTestSuite(".")	
-	output_list = self.get_output_files_to_analyze(input_list, output_dirs)
-	for file_input, file_output in zip(input_list,output_list):
-		#print "I/O", file_input, file_output
+	#output_list = self.get_output_files_to_analyze(inputs, myoutputs)
+	#import pdb;pdb.set_trace()
+	for file_input, file_output in zip(inputs, myoutputs):
+		print "I/O", file_input, file_output
 		testSet.generate_tests(file_input, file_output)
 	testSet.runAll()
 

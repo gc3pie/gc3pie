@@ -1,5 +1,6 @@
 import re	
 import os.path
+import gc3libs
 	
 #This class will be used to storne the patterns logic. Each pattern is assigned to a file. Each file can have 
 # multiple patterns. 
@@ -191,15 +192,13 @@ class TestNextLine:
 		finalFlag = True
 		testNo = 0
 		if (self.DEBUG):
-			print self.name, "ENTERING DEBUG MODE.", 
-			print "Parameters:"
-			print "LPattern", self.LPattern
-			print "LMatchedLine", self.LMatchedLine
-			print "LFollowingLine", self.LFollowingLine 
-			print "LPositionInLine", self.LPositionInLine 
-			print "LValues", self.LValues 
-			print "LTolerances", self.LTolerances 
-			print "\n"
+			gc3libs.log.debug("Test: %s", self.name)
+			gc3libs.log.debug("LPattern %s", self.LPattern)
+			gc3libs.log.debug("LMatchedLine %s", self.LMatchedLine)
+			gc3libs.log.debug("LFollowingLine %s", self.LFollowingLine) 
+			gc3libs.log.debug("LPositionInLine %s", self.LPositionInLine) 
+			gc3libs.log.debug("LValues %s", self.LValues)
+			gc3libs.log.debug("LTolerances %s", self.LTolerances) 
 		if (len(self.LPattern) == 0):
 			print "Empty test. Skipping."
 			return False
