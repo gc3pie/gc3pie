@@ -636,6 +636,9 @@ class History(object):
         """Return all messages texts in a single string, separated by newline characters."""
         return str.join('\n', [self.format_message(record) for record in self._messages])
 
+# for compatibility with existing running session (2012-08-24); remove later on
+Log = History
+
 
 def mkdir(path, mode=0777):
     """
