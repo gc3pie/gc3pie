@@ -3,7 +3,7 @@
 """
 Driver script for running the `forwardPremium` application on SMSCG.
 """
-# Copyright (C) 2011 University of Zurich. All rights reserved.
+# Copyright (C) 2011, 2012 University of Zurich. All rights reserved.
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -27,7 +27,7 @@ __changelog__ = """
 """
 __docformat__ = 'reStructuredText'
 
-# Call: 
+# Call:
 # -x /home/benjamin/workspace/idrisk/model/bin/idRiskOut -b /home/benjamin/workspace/idrisk/model/base para.loop -xVars 'wBarLower' -xVarsDom '-0.5 -0.35' -targetVars 'iBar_Shock0Agent0' --makePlots False -target_fx -0.5 -yC 4.9e-3 -sv info -C 10 -N -A '/home/benjamin/apppot0+ben.diskUpd.img'
 
 
@@ -46,8 +46,8 @@ path2Src = os.path.join(os.path.dirname(__file__), '../src')
 if not sys.path.count(path2Src):
     sys.path.append(path2Src)
 
-# Remove all files in curPath if -N option specified. 
-if __name__ == '__main__':    
+# Remove all files in curPath if -N option specified.
+if __name__ == '__main__':
     import sys
     if '-N' in sys.argv:
         import os, shutil
@@ -57,13 +57,13 @@ if __name__ == '__main__':
         from pymods.support.support import rmFilesAndFolders
         curPath = os.getcwd()
         filesAndFolder = os.listdir(curPath)
-        if 'gc3IdRisk.csv' in filesAndFolder or 'idRiskParaSearch.csv' in filesAndFolder or 'gidRiskParaSearchUML.csv' in filesAndFolder: # if another paraSearch was run in here before, clean up. 
+        if 'gc3IdRisk.csv' in filesAndFolder or 'idRiskParaSearch.csv' in filesAndFolder or 'gidRiskParaSearchUML.csv' in filesAndFolder: # if another paraSearch was run in here before, clean up.
             if 'para.loop' in os.listdir(os.getcwd()):
                 shutil.copyfile(os.path.join(curPath, 'para.loop'), os.path.join('/tmp', 'para.loop'))
                 rmFilesAndFolders(curPath)
                 shutil.copyfile(os.path.join('/tmp', 'para.loop'), os.path.join(curPath, 'para.loop'))
                 os.remove(os.path.join('/tmp', 'para.loop'))
-            else: 
+            else:
                 rmFilesAndFolders(curPath)
 
 # ugly workaround for Issue 95,
@@ -117,7 +117,7 @@ def engineProgress(self):
     The `max_in_flight` and `max_submitted` limits (if >0) are
     taken into account when attempting submission of tasks.
     """
-    # prepare 
+    # prepare
     currently_submitted = 0
     currently_in_flight = 0
     if self.max_in_flight > 0:
@@ -165,7 +165,7 @@ def engineProgress(self):
         #     # immediately on to client code and let it handle
         #     # this...
         #     raise
-        except: 
+        except:
         #     pass
             gc3libs.log.debug('Error in updating task. Raising error. ')
             raise
@@ -260,12 +260,12 @@ def engineProgress(self):
                         currently_in_flight += 1
                 except Exception, x:
 #                    sys.excepthook(*sys.exc_info()) # DEBUG
-                    import traceback                                                                                                                                                    
+                    import traceback
                     traceback.print_exc()
                     gc3libs.log.error("Ignored error in submitting task '%s': %s: %s"
                                       % (task, x.__class__.__name__, str(x)))
-                    task.execution.log("Submission failed: %s: %s" 
-                                       % (x.__class__.__name__, str(x)))
+                    task.execution.history("Submission failed: %s: %s"
+                                           % (x.__class__.__name__, str(x)))
             index += 1
     # remove tasks that transitioned to SUBMITTED state
     for index in reversed(transitioned):
@@ -291,7 +291,7 @@ def engineProgress(self):
                 task.execution.state = Run.State.TERMINATED
                 task.changed = True
             except Exception, x:
-                gc3libs.log.error("Ignored error in fetching output of task '%s': %s: %s" 
+                gc3libs.log.error("Ignored error in fetching output of task '%s': %s: %s"
                                   % (task, x.__class__.__name__, str(x)), exc_info=True)
             if task.execution.state == Run.State.TERMINATED:
                 self._terminated.append(task)
@@ -381,7 +381,7 @@ def post_run(self, returned):
             returned = int(returned)
         except:
             returned = 1
-        
+
     if self.exit_after_main:
         sys.exit(returned)
     else:
@@ -392,12 +392,12 @@ cli.app.Application.post_run = post_run
 
 def pre_run(self):
     """
-        Temporary overload for pre_run method of gc3libs.cmdline._Script. 
+        Temporary overload for pre_run method of gc3libs.cmdline._Script.
     """
     import cli # pyCLI
     import cli.app
     import cli._ext.argparse as argparse
-    from cli.util import ifelse, ismethodof  
+    from cli.util import ifelse, ismethodof
     import logging
     ## finish setup
     self.setup_options()
@@ -411,12 +411,12 @@ def pre_run(self):
     gc3libs.configure_logger(loglevel, self.name)
     self.log = logging.getLogger('gc3.gc3utils') # alternate: ('gc3.' + self.name)
     self.log.setLevel(loglevel)
-  
+
     self.log.propagate = True
     self.log.parent.propagate = False
-    # Changed to false since we want to avoid dealing with the root logger and catch the information directly. 
+    # Changed to false since we want to avoid dealing with the root logger and catch the information directly.
 
-# temporarily take out logging redirection    
+# temporarily take out logging redirection
 # #    from logging import getLogger
 #  #   from logbook.compat import redirect_logging
 #     from logbook.compat import RedirectLoggingHandler
@@ -428,16 +428,16 @@ def pre_run(self):
 #     print self.log.root.handlers
 
  #   self.log.critical('redirected gc3 log to ' + curFileName + '.log.')
-    
+
     # interface to the GC3Libs main functionality
     self._core = self._get_core()
 
     # call hook methods from derived classes
     self.parse_args()
-    
+
 logger = wrapLogger(loggerName = curFileName + '.log', streamVerb = 'INFO', logFile = os.path.join(os.getcwd(), curFileName + '.log'))
-gc3utilsLogger = wrapLogger(loggerName = 'gc3' + curFileName  + '.log', streamVerb = 'INFO', logFile = os.path.join(os.getcwd(), curFileName + '.log'), 
-                            streamFormat = '{record.time:%Y-%m-%d %H:%M:%S} - {record.channel}: {record.message}', 
+gc3utilsLogger = wrapLogger(loggerName = 'gc3' + curFileName  + '.log', streamVerb = 'INFO', logFile = os.path.join(os.getcwd(), curFileName + '.log'),
+                            streamFormat = '{record.time:%Y-%m-%d %H:%M:%S} - {record.channel}: {record.message}',
                             fileFormat = '{record.time:%Y-%m-%d %H:%M:%S} - {record.channel}: {record.message}')
 logger.debug('hello')
 
@@ -474,9 +474,9 @@ class solveParaCombination(SequentialTaskCollection):
         self.pathToExecutable = sessionParas['pathToExecutable']
         self.architecture     = sessionParas['architecture']
         self.localBaseDir     = sessionParas['localBaseDir']
-        
+
         self.paraFolder = os.path.join(os.getcwd(), sessionParas['jobname'])
-        
+
         self.wBarLower_task = idRiskParaSearchDriver(self.paraFolder, self.substs, solverParas, **sessionParas)
 
         SequentialTaskCollection.__init__(self, self.jobname, [self.wBarLower_task])
@@ -486,7 +486,7 @@ class solveParaCombination(SequentialTaskCollection):
     def __str__(self):
         return self.jobname
 
-    def next(self, *args): 
+    def next(self, *args):
         self.iter += 1
         if self.wBarLower_task.execution.returncode == 13:
             logger.critical('wBarLower failed. terminating para combo')
@@ -506,7 +506,7 @@ class solveParaCombination(SequentialTaskCollection):
 
 class idRiskParaSearchDriver(SequentialTaskCollection):
     '''
-      Script that executes optimization/solving. Each self.next is one iteration in the solver. 
+      Script that executes optimization/solving. Each self.next is one iteration in the solver.
     '''
 
     def __init__(self, paraFolder, substs, solverParas, **sessionParas):
@@ -519,7 +519,7 @@ class idRiskParaSearchDriver(SequentialTaskCollection):
         self.sessionParas     = sessionParas
         self.solverParas      = solverParas
         self.substs           = substs
- 
+
         self.paraFolder       = paraFolder
         self.iter             = 0
 
@@ -530,7 +530,7 @@ class idRiskParaSearchDriver(SequentialTaskCollection):
 
 
         self.costlyOptimizer = costlyOptimization.costlyOptimization(solverParas)
-        
+
         self.xVars       = solverParas['xVars']
         self.xParaCombos = solverParas['xInitialParaCombo']
         self.targetVars   = solverParas['targetVars']
@@ -547,12 +547,12 @@ class idRiskParaSearchDriver(SequentialTaskCollection):
     def __str__(self):
         return self.jobname
 
-    def next(self, *args): 
+    def next(self, *args):
         self.iter += 1
         logger.debug('')
         logger.debug('entering idRiskParaSearchDriver.next in iteration %s for variables %s and paraCombo %s' % (self.iter, self.solverParas['xVars'], self.jobname))
         logger.debug('')
-        # sometimes next is called even though run state is terminated. In this case simply return. 
+        # sometimes next is called even though run state is terminated. In this case simply return.
         if self.costlyOptimizer.converged:
             return Run.State.TERMINATED
         self.changed = True
@@ -563,7 +563,7 @@ class idRiskParaSearchDriver(SequentialTaskCollection):
         newVals = self.evaluator.target(self.xVars, self.xParaCombos, self.targetVars, self.target_fx)
         if newVals is None:
             logger.critical('')
-            logger.critical('FAILURE: newVals is None. Evaluating variable %s at guess \n%s failed' % (self.xVars, self.xParaCombos))	
+            logger.critical('FAILURE: newVals is None. Evaluating variable %s at guess \n%s failed' % (self.xVars, self.xParaCombos))
             logger.critical('')
             self.execution.returncode = 13
             self.failed = True
@@ -578,7 +578,7 @@ class idRiskParaSearchDriver(SequentialTaskCollection):
             self.execution.returncode = 13
             self.failed = True
             return Run.State.TERMINATED
-        else: 
+        else:
             logger.debug('updateInterpolationPoints successful')
         logger.debug('calling self.costlyOptimizer to check convergence')
         if not self.costlyOptimizer.checkConvergence():
@@ -586,7 +586,7 @@ class idRiskParaSearchDriver(SequentialTaskCollection):
             logger.debug('calling self.costlyOptimizer.updateApproximation')
             self.costlyOptimizer.updateApproximation()
             logger.debug('calling self.costlyOptimizer.generateNewGuess')
-            try: 
+            try:
                 self.xParaCombos = self.costlyOptimizer.generateNewGuess()
             except FloatingPointError:
                 logger.critical('')
@@ -613,7 +613,7 @@ class idRiskParaSearchDriver(SequentialTaskCollection):
 
 class idRiskParaSearchParallel(ParallelTaskCollection, paraLoop):
     '''
-      When initialized generates a number of Applications that are distributed on the grid. 
+      When initialized generates a number of Applications that are distributed on the grid.
     '''
 
     def __str__(self):
@@ -627,7 +627,7 @@ class idRiskParaSearchParallel(ParallelTaskCollection, paraLoop):
         self.jobname = 'evalSolverGuess' + '_' + sessionParas['jobname']
         for paraCombo in paraCombos:
             self.jobname += str(paraCombo)
-            
+
         self.substs       = substs
         self.optimFolder  = optimFolder
         self.solverParas  = solverParas
@@ -639,7 +639,7 @@ class idRiskParaSearchParallel(ParallelTaskCollection, paraLoop):
 
     def target(self, xVars, xParaCombos, targetVars, target_fx):
         '''
-          Method that builds an overview table for the jobs that were run and then returns the values. 
+          Method that builds an overview table for the jobs that were run and then returns the values.
         '''
         logger.debug('entering idRiskParaSearchParallel.target. Computing target for xVar = %s, xVals = \n%s, targetVars = %s' % (xVars, xParaCombos, targetVars))
         # Each line in the resulting table (overviewSimu) represents one paraCombo
@@ -657,16 +657,16 @@ class idRiskParaSearchParallel(ParallelTaskCollection, paraLoop):
         #overviewTable.order(['dy'] + xVars)
         #overviewTable.sort(['dy'] + xVars)
         logger.info('table for job: %s' % self.jobname)
-        logger.info(overviewTable) 
+        logger.info(overviewTable)
         # Could replace this with a check that every xVar value is in the table, then output the two relevant columns.
         result = np.array([])
         for ixParaCombo, xParaCombo in enumerate(xParaCombos):
-            overviewTableSub = copy.deepcopy(overviewTable)        
+            overviewTableSub = copy.deepcopy(overviewTable)
             for xVar, xVal in zip(xVars, xParaCombo):
                 overviewTableSub = overviewTableSub.getSubset( np.abs( overviewTableSub[xVar] - xVal ) < 1.e-8 )
             if len(overviewTableSub) == 0:
                 logger.critical('Cannot find value for xVal %s, i.e. overviewTableSub empty. Did you set the pythonPath?' % xVal)
-                result = np.append(result, None)                 
+                result = np.append(result, None)
 #                return None
             elif len(overviewTableSub) == 1:
                 #result.append(np.linalg.norm(np.array([ overviewTableSub[targetVars[ixVar]][0] for ixVar, var in enumerate(xVars) ]) - target_fx))
@@ -699,7 +699,7 @@ class idRiskParaSearchParallel(ParallelTaskCollection, paraLoop):
                 apppot_changes = apppot_file
             else:
                 apppot_img = apppot_file
-        
+
         pathToExecutable = sessionParas['pathToExecutable']
         localBaseDir     = sessionParas['localBaseDir']
         architecture     = sessionParas['architecture']
@@ -710,10 +710,10 @@ class idRiskParaSearchParallel(ParallelTaskCollection, paraLoop):
         for paraCombo in paraCombos:
             logger.debug('paraCombo = %s' % paraCombo)
             executable = os.path.basename(pathToExecutable)
-            inputs = { pathToExecutable:executable }        
+            inputs = { pathToExecutable:executable }
             # make a "stage" directory where input files are collected
             path_to_stage_dir = os.path.join(self.optimFolder, jobname)
-            
+
             # 2. apply substitutions to parameter files in local base dir
             for (path, changes) in substs.iteritems():
                 for (var, val, index, regex) in changes:
@@ -725,7 +725,7 @@ class idRiskParaSearchParallel(ParallelTaskCollection, paraLoop):
                     support.update_parameter_in_file(os.path.join(localBaseDir, path), xVar, 0, xVal, regex)
                     path_to_stage_dir += '_' + xVar + '=' + str(xVal)
             gc3libs.utils.mkdir(path_to_stage_dir)
-            prefix_len = len(path_to_stage_dir) + 1 
+            prefix_len = len(path_to_stage_dir) + 1
             # fill stage dir
             fillInputDir(localBaseDir, path_to_stage_dir)
             # 3. build input file list
@@ -747,7 +747,7 @@ class idRiskParaSearchParallel(ParallelTaskCollection, paraLoop):
             kwargs['join'] = True
             kwargs['output_dir'] = os.path.join(path_to_stage_dir, 'output')
             kwargs['requested_architecture'] = architecture
-            
+
             # adaptions for uml
             if use_apppot:
                 if apppot_img is not None:
@@ -762,7 +762,7 @@ class idRiskParaSearchParallel(ParallelTaskCollection, paraLoop):
                 cls = idRiskApppotApplication
                 callExecutable = '/home/user/job/' + executable
             else:
-                cls = idRiskApplication 
+                cls = idRiskApplication
                 callExecutable = './' + executable
             kwargs.setdefault('tags', [ ])
             print 'cls = %s' % cls
@@ -790,7 +790,7 @@ class idRiskParaSearchScript(SessionBasedScript, paraLoop):
 #idRiskApppotApplication
 #idRiskApplication,
         )
-        paraLoop.__init__(self, 'INFO')        
+        paraLoop.__init__(self, 'INFO')
 
     def setup_options(self):
         self.add_param("-b", "--initial", metavar="DIR",
@@ -809,7 +809,7 @@ class idRiskParaSearchScript(SessionBasedScript, paraLoop):
                        dest="architecture", default=Run.Arch.X86_64,
                        help="Processor architecture required by the executable"
                        " (one of: 'i686' or 'x86_64', without quotes)")
-        self.add_param("-mP", "--makePlots", metavar="ARCH", type = bool, 
+        self.add_param("-mP", "--makePlots", metavar="ARCH", type = bool,
                        dest="makePlots", default = True,
                        help="Generate population plots each iteration.  ")
         self.add_param("-xVars", "--xVars", metavar="ARCH",
@@ -827,7 +827,7 @@ class idRiskParaSearchScript(SessionBasedScript, paraLoop):
         self.add_param("-sv", "--solverVerb", metavar="ARCH",
                        dest="solverVerb", default = 'DEBUG',
                        help="Separate verbosity level for the global optimizer ")
-        self.add_param("-yC", "--yConvCrit", metavar="ARCH", type = float, 
+        self.add_param("-yC", "--yConvCrit", metavar="ARCH", type = float,
                        dest="convCrit", default = '1.e-2',
                        help="Convergence criteria for y variables. ")
         self.add_param("-A", "--apppot", metavar="PATH",
@@ -865,10 +865,10 @@ class idRiskParaSearchScript(SessionBasedScript, paraLoop):
         raised, catch it, output an error message and then exit with
         an appropriate error code.
         """
-        
+
       #  return cli.app.CommandLineApp.run(self)
-        import lockfile     
-        import cli  
+        import lockfile
+        import cli
         try:
             return cli.app.CommandLineApp.run(self)
         except gc3libs.exceptions.InvalidUsage, ex:
@@ -908,9 +908,9 @@ class idRiskParaSearchScript(SessionBasedScript, paraLoop):
                 msg %= (str(ex), self.name, str.join(' ', sys.argv[1:]))
             else:
                 msg %= (str(ex), self.name, '')
-            rc = 1        
+            rc = 1
 
-    def new_tasks(self, extra):     
+    def new_tasks(self, extra):
 
         paraLoopFile = self._search_for_input_files(self.params.args).pop()  # search_... returns set.
 
@@ -944,7 +944,7 @@ class idRiskParaSearchScript(SessionBasedScript, paraLoop):
             solverParas['plotting'] = self.params.makePlots
             solverParas['convCrit'] = self.params.convCrit
             yield (jobname, solveParaCombination, [ substs, solverParas ], sessionParas)
-            
+
 #def extractLinspace(strIn):
     #import re
     #if re.match('\s*linspace', strIn):
@@ -953,7 +953,7 @@ class idRiskParaSearchScript(SessionBasedScript, paraLoop):
         #args = [ float(arg) for arg in args] # assume we always want float for linspace
         #linSpaceVec = np.linspace(args[0], args[1], args[2])
         #return linSpaceVec
-    #else: 
+    #else:
         #print 'cannot find linspace in string'
         #os._exit()
 
@@ -976,7 +976,7 @@ def combineTables():
         #optimalRuns.order(['dy', 'wBarLower'])
         #optimalRuns.sort(['dy'])
         logger.info(optimalRuns)
-        f = open(os.path.join(os.getcwd(), 'optimalRuns'), 'w')  
+        f = open(os.path.join(os.getcwd(), 'optimalRuns'), 'w')
         print >> f, optimalRuns
         f.flush()
     #logger.info('Generating plot')
@@ -1003,7 +1003,7 @@ if __name__ == '__main__':
 #    os._exit(1)
     idRiskParaSearchScript().run()
 
-    logger.debug('combine resulting tables')    
+    logger.debug('combine resulting tables')
     combineTables()
     # tableList = [ os.path.join(os.getcwd(), folder, 'optimalRun') for folder in os.listdir(os.getcwd()) if os.path.isdir(folder) and not folder == 'localBaseDir' and not folder == 'idRiskParaSearch.jobs' ]
     # tableDicts = [ tableDict.fromTextFile(table, width = 20, prec = 10) for table in tableList if os.path.isfile(table)]
@@ -1015,7 +1015,7 @@ if __name__ == '__main__':
     #     #optimalRuns.order(['dy', 'wBarLower'])
     #     #optimalRuns.sort(['dy'])
     #     logger.info(optimalRuns)
-    #     f = open(os.path.join(os.getcwd(), 'optimalRuns'), 'w')  
+    #     f = open(os.path.join(os.getcwd(), 'optimalRuns'), 'w')
     #     print >> f, optimalRuns
     #     f.flush()
     # #logger.info('Generating plot')
@@ -1027,5 +1027,3 @@ if __name__ == '__main__':
     # # figureFile = os.path.join(os.getcwd(), 'optimalRunsPlot.eps')
     # # momentPlots(baseName = baseName, path = path, xVar = 'dy', overlay = overlay, conditions = conditions, tableFile = tableFile, figureFile = figureFile)
     logger.info('%s - main done' % (getDateTimeStr()))
-
-

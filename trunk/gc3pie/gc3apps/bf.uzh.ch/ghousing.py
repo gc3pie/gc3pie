@@ -3,7 +3,7 @@
 """
 Driver script for running the `housing` application on SMSCG.
 """
-# Copyright (C) 2011 University of Zurich. All rights reserved.
+# Copyright (C) 2011, 2012 University of Zurich. All rights reserved.
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -27,7 +27,7 @@ __changelog__ = """
 __docformat__ = 'reStructuredText'
 
 
-## Calls: 
+## Calls:
 ## -x /home/benjamin/workspace/fpProj/model/bin/forwardPremiumOut -b ../base/ para.loop  -C 1 -N -X i686
 ## 5-x /home/benjamin/workspace/idrisk/bin/idRiskOut -b ../base/ para.loop  -C 1 -N -X i686
 ## -x /home/benjamin/workspace/idrisk/model/bin/idRiskOut -b ../base/ para.loop  -C 1 -N
@@ -36,8 +36,8 @@ __docformat__ = 'reStructuredText'
 # Preliminary imports
 import os, shutil
 
-## Remove all files in curPath if -N option specified. 
-if __name__ == '__main__':    
+## Remove all files in curPath if -N option specified.
+if __name__ == '__main__':
     import sys
     if '-N' in sys.argv:
 
@@ -52,7 +52,7 @@ if __name__ == '__main__':
                 shutil.copyfile(os.path.join(curPath, 'para.loop'), os.path.join('/tmp', 'para.loop'))
                 rmFilesAndFolders(curPath)
                 shutil.copyfile(os.path.join('/tmp', 'para.loop'), os.path.join(curPath, 'para.loop'))
-            else: 
+            else:
                 rmFilesAndFolders(curPath)
 
 
@@ -133,7 +133,7 @@ def engineProgress(self):
     The `max_in_flight` and `max_submitted` limits (if >0) are
     taken into account when attempting submission of tasks.
     """
-    # prepare 
+    # prepare
     currently_submitted = 0
     currently_in_flight = 0
     if self.max_in_flight > 0:
@@ -181,7 +181,7 @@ def engineProgress(self):
             ## immediately on to client code and let it handle
             ## this...
             #raise
-        except: 
+        except:
             gc3libs.log.debug('Error in updating task. Raising error. ')
             raise
     # remove tasks that transitioned to other states
@@ -279,8 +279,8 @@ def engineProgress(self):
                     traceback.print_exc()
                     gc3libs.log.error("Ignored error in submitting task '%s': %s: %s"
                                       % (task, x.__class__.__name__, str(x)))
-                    task.execution.log("Submission failed: %s: %s" 
-                                       % (x.__class__.__name__, str(x)))
+                    task.execution.history("Submission failed: %s: %s"
+                                           % (x.__class__.__name__, str(x)))
                     #raise
                 #except Exception:
                     #gc3libs.log.error("Ignored error in submitting task. BJ addition")
@@ -309,7 +309,7 @@ def engineProgress(self):
                 task.execution.state = Run.State.TERMINATED
                 task.changed = True
             #except Exception, x:
-                #gc3libs.log.error("Ignored error in fetching output of task '%s': %s: %s" 
+                #gc3libs.log.error("Ignored error in fetching output of task '%s': %s: %s"
                                   #% (task, x.__class__.__name__, str(x)), exc_info=True)
             if task.execution.state == Run.State.TERMINATED:
                 self._terminated.append(task)
@@ -320,7 +320,7 @@ def engineProgress(self):
         # remove tasks for which final output has been retrieved
         for index in reversed(transitioned):
             del self._terminating[index]
-            
+
 import gc3libs.core
 gc3libs.core.Engine.progress = engineProgress
 
@@ -328,12 +328,12 @@ gc3libs.core.Engine.progress = engineProgress
 
 def pre_run(self):
     """
-        Temporary overload for pre_run method of gc3libs.cmdline._Script. 
+        Temporary overload for pre_run method of gc3libs.cmdline._Script.
     """
     import cli # pyCLI
     import cli.app
     import cli._ext.argparse as argparse
-    from cli.util import ifelse, ismethodof  
+    from cli.util import ifelse, ismethodof
     import logging
     ## finish setup
     self.setup_options()
@@ -347,11 +347,11 @@ def pre_run(self):
     gc3libs.configure_logger(loglevel, self.name)
     self.log = logging.getLogger('gc3.gc3utils') # alternate: ('gc3.' + self.name)
     self.log.setLevel(loglevel)
-  
+
     self.log.propagate = True
     self.log.parent.propagate = False
-    # Changed to false since we want to avoid dealing with the root logger and catch the information directly. 
-    
+    # Changed to false since we want to avoid dealing with the root logger and catch the information directly.
+
     from logging import getLogger
     from logbook.compat import redirect_logging
     from logbook.compat import RedirectLoggingHandler
@@ -363,16 +363,16 @@ def pre_run(self):
     print self.log.root.handlers
 
     self.log.critical('Successfully overridden gc3pie error handling. ')
-    
+
     # interface to the GC3Libs main functionality
     self._core = self._make_core()
 
     # call hook methods from derived classes
     self.parse_args()
-    
+
 logger = wrapLogger(loggerName = 'ghousing.log', streamVerb = 'INFO', logFile = os.path.join(os.getcwd(), 'ghousing.log'))
-gc3utilsLogger = wrapLogger(loggerName = 'gc3ghousing.log', streamVerb = 'INFO', logFile = os.path.join(os.getcwd(), 'ghousing.log'), 
-                            streamFormat = '{record.time:%Y-%m-%d %H:%M:%S} - {record.channel}: {record.message}', 
+gc3utilsLogger = wrapLogger(loggerName = 'gc3ghousing.log', streamVerb = 'INFO', logFile = os.path.join(os.getcwd(), 'ghousing.log'),
+                            streamFormat = '{record.time:%Y-%m-%d %H:%M:%S} - {record.channel}: {record.message}',
                             fileFormat = '{record.time:%Y-%m-%d %H:%M:%S} - {record.channel}: {record.message}')
 
 def dispatch_record(record):
@@ -451,7 +451,7 @@ Read `.loop` files and execute the `housingOut` program accordingly.
                                                   'housing')
         gc3libs.utils.test_file(self.params.executable, os.R_OK|os.X_OK,
                                 gc3libs.exceptions.InvalidUsage)
-        
+
     def run(self):
         """
         Execute `cli.app.Application.run`:meth: if any exception is
@@ -519,19 +519,19 @@ Read `.loop` files and execute the `housingOut` program accordingly.
         ## ...and exit
         #return 1
 
-        
+
     #def run(self):
         #"""
         #Execute `cli.app.Application.run`:meth: if any exception is
         #raised, catch it, output an error message and then exit with
         #an appropriate error code.
         #"""
-        
+
       ##  return cli.app.CommandLineApp.run(self)
-        #import lockfile     
-        #import cli  
+        #import lockfile
+        #import cli
         #try:
-            #return cli.app.CommandLineApp.run(self)           
+            #return cli.app.CommandLineApp.run(self)
         #except gc3libs.exceptions.InvalidUsage, ex:
             ## Fatal errors do their own printing, we only add a short usage message
             #sys.stderr.write("Type '%s --help' to get usage help.\n" % self.name)
@@ -569,10 +569,10 @@ Read `.loop` files and execute the `housingOut` program accordingly.
                 #msg %= (str(ex), self.name, str.join(' ', sys.argv[1:]))
             #else:
                 #msg %= (str(ex), self.name, '')
-            #rc = 1      
+            #rc = 1
         #except NotImplementedError, nE:
             #pass
-        
+
     def new_tasks(self, extra):
         # Generating new tasks for both paramter files
         self.logger.info('\ngenParamters.in: ')
@@ -604,18 +604,18 @@ Read `.loop` files and execute the `housingOut` program accordingly.
                 apppot_img = self.params.apppot
 
         inputs = self._search_for_input_files(self.params.args)
-        
+
         # create a tar.gz archive of the code
         import tarfile
         tar = tarfile.open(os.path.join(os.getcwd(), 'codeBase.tar.gz'), "w:gz")
         for name in [self.params.initial, os.path.join(self.params.initial, '../code')]:
             tar.add(name)
-        tar.close()        
+        tar.close()
         #codeBaseFolder = os.path.join(os.getcwd(), 'codeBase/')
         #codeFolder = os.path.join(self.params.initial, '../code/')
         #shutil.copytree(self.params.initial, os.path.join(codeBaseFolder, 'base'))
         #shutil.copytree(codeFolder, os.path.join(codeBaseFolder, 'code'))
-        
+
         # Copy base dir
         localBaseDir = os.path.join(os.getcwd(), 'localBaseDir')
         gc3libs.utils.copytree(self.params.initial, localBaseDir)
@@ -624,7 +624,7 @@ Read `.loop` files and execute the `housingOut` program accordingly.
         ctryInParaLoop = False
         for para_loop in inputs:
             if os.path.isdir(para_loop):
-                para_loop = os.path.join(para_loop, 'para.loop')    
+                para_loop = os.path.join(para_loop, 'para.loop')
             paraLoopFile = open(para_loop, 'r')
             paraLoopFile.readline()
             for line in paraLoopFile:
@@ -684,7 +684,7 @@ Read `.loop` files and execute the `housingOut` program accordingly.
 #                print 'inputs = %s' % inputs
 #                print 'outputs = %s' % outputs
 
-#                kwargs.setdefault('tags', [ ])	
+#                kwargs.setdefault('tags', [ ])
 
                 # adaptions for uml
                 if self.params.rte:
@@ -708,17 +708,17 @@ Read `.loop` files and execute the `housingOut` program accordingly.
 
 #                print 'kwargs = %s' % kwargs
                 # hand over job to create
-                yield (jobname, cls, [pathToExecutable, [], inputs, outputs], kwargs)                
-                
+                yield (jobname, cls, [pathToExecutable, [], inputs, outputs], kwargs)
+
 def fillInputDir(baseDir, input_dir):
     '''
-      Copy folder /input and all files in the base dir to input_dir. 
-      This is slightly more involved than before because we need to 
+      Copy folder /input and all files in the base dir to input_dir.
+      This is slightly more involved than before because we need to
       exclude the markov directory which contains markov information
-      for all country pairs. 
+      for all country pairs.
     '''
     gc3libs.utils.copytree(baseDir , input_dir)
-    
+
 def combinedThresholdPlot():
     import copy
     folders = [folder for folder in os.listdir(os.getcwd()) if os.path.isdir(folder) and not folder == 'localBaseDir' and not folder == 'ghousing.jobs']
@@ -733,15 +733,15 @@ def combinedThresholdPlot():
             table = copy.deepcopy(tableDicts[tableKey])
             table.keep(['age', 'yst1'])
             table.rename('yst1', tableKey)
-            if ixTable == 0: 
+            if ixTable == 0:
                 fullTable = copy.deepcopy(table)
-            else: 
+            else:
                 fullTable.merge(table, 'age')
                 if '_merge' in fullTable.cols:
                     fullTable.drop('_merge')
                 logger.info(fullTable)
         logger.info(fullTable)
-        f = open(os.path.join(os.getcwd(), 'ownerThresholds'), 'w')  
+        f = open(os.path.join(os.getcwd(), 'ownerThresholds'), 'w')
         print >> f, fullTable
         f.flush()
         ax = 3
@@ -761,27 +761,27 @@ def combinedOwnerSimuPlot():
             table = copy.deepcopy(tableDicts[tableKey])
             table.keep(['age', 'owner'])
             table.rename('owner', tableKey)
-            if ixTable == 0: 
+            if ixTable == 0:
                 fullTable = copy.deepcopy(table)
-            else: 
+            else:
                 fullTable.merge(table, 'age')
                 fullTable.drop('_merge')
             logger.info(fullTable)
 
         empOwnershipFile = os.path.join(os.getcwd(), 'localBaseDir', 'input', 'PSIDOwnershipProfilealleduc.out')
         empOwnershipTable = tableDict.fromTextFile(empOwnershipFile, width = 20, prec = 10)
-        empOwnershipTable.rename('PrOwnership', 'empOwnership') 
+        empOwnershipTable.rename('PrOwnership', 'empOwnership')
         fullTable.merge(empOwnershipTable, 'age')
         fullTable.drop('_merge')
         if fullTable:
             logger.info(fullTable)
-            f = open(os.path.join(os.getcwd(), 'ownerSimu'), 'w')  
+            f = open(os.path.join(os.getcwd(), 'ownerSimu'), 'w')
             print >> f, fullTable
             f.flush()
-        else: 
+        else:
             logger.info('no owner simus')
         logger.debug('done combinedOwnerSimuPlot')
-        
+
         plotSimulation(table = os.path.join(os.getcwd(), 'ownerSimu'), xVar = 'age', yVars = list(fullTable.cols), yVarRange = (0., 1.), figureFile = os.path.join(os.getcwd(), 'ownerSimu.png'), verb = 'CRITICAL' )
 
 def combineRunningTimes():
@@ -796,7 +796,7 @@ def combineRunningTimes():
         for line in lines:
             if line.find('Full running'):
                 match = re.match('(.*=)([0-9\.\s]*)(.*)', line.rstrip()).groups()
-                if not match: 
+                if not match:
                     runTimeSec = 0.
                 else:
                     runTimeSec = float(match [1].strip()) # in seconds
@@ -809,7 +809,7 @@ def combineRunningTimes():
         print >> f, '%s = %f12.1' % (key, runTimes[key])
     f.flush()
     f.close()
-    
+
 def getDateTimeStr():
     import datetime
     cDate = datetime.date.today()
@@ -830,24 +830,23 @@ if __name__ == '__main__':
     ghousing().run()
     #from guppy import hpy
     #h = hpy()
-    #print h.heap()     
+    #print h.heap()
     # create overview plots across parameter combinations
     try:
         combinedThresholdPlot()
     except:
         logger.critical('problem creating combinedThresholdPlot. Investigate...')
-    try: 
+    try:
         combinedOwnerSimuPlot()
     except:
         logger.critical('problem creating combinedOwnerSimuPlot. Investigate...')
-    try: 
+    try:
         combineRunningTimes()
     except:
         logger.critical('problem creating combineRunningTimes. Investigate...')
-    # some find commands to copy result graphs to a common directory. 
+    # some find commands to copy result graphs to a common directory.
     os.system("find -maxdepth 1 -type d -iregex './p.*' -exec bash -c 'x='{}' && mkdir -p ownerPlots && y=${x#./} && echo $y && cp ${y}/output/ownership_aggregate.out.png ownerPlots/${y}.png 2>/dev/null' \; ; ld ownerPlots/")
     os.system("find -maxdepth 1 -type d -iregex './p.*' -exec bash -c 'x='{}' && mkdir -p aggregatePlots && y=${x#./} && echo $y && cp ${y}/output/aggregate.png aggregatePlots/${y}.png' \; ; ld aggregatePlots/")
     os.system("find -maxdepth 1 -type d -iregex './p.*' -exec bash -c 'x='{}' && mkdir -p ownerBdry && y=${x#./} && echo $y && cp ${y}/output/ownerBdry1.png ownerBdry/${y}.png' \; ; ld ownerBdry")
-    
-    logger.info('main done')
 
+    logger.info('main done')

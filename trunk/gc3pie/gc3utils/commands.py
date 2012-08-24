@@ -988,7 +988,7 @@ Manage sessions
         task_queue = list(self.session.tasks.values())
         while task_queue:
             app = task_queue.pop()
-            for what,when,tags in app.execution.log._messages:
+            for what,when,tags in app.execution.history._messages:
                 timestamps.append((float(when), str(app), what))
             try:
                 for child in app.tasks:
