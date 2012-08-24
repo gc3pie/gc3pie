@@ -833,7 +833,6 @@ class Application(Task):
             and (self.stderr not in self.outputs)):
             self.outputs[self.stderr] = self.stderr
 
-        
         self.tags = kw.pop('tags', list())
 
         jobname = kw.pop('jobname', self.__class__.__name__)
@@ -846,9 +845,8 @@ class Application(Task):
             jobname = "GC3Pie.%s" % jobname
 
         # task setup; creates the `.execution` attribute as well
-        Task.__init__(self,
-                      jobname,
-                      kw.pop('grid', None))
+        kw.setdefault('grid', None)
+        Task.__init__(self, jobname, **kw)
 
         # for k,v in self.outputs.iteritems():
         #     gc3libs.log.debug("outputs[%s]=%s", repr(k), repr(v))
