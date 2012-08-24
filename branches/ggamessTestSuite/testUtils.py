@@ -95,9 +95,6 @@ class GamessTestSuite:
 		self.listOfTests.append(file_in)
 		self.list_of_analyzed_files.append(file_out)
 	
-	def appendExecutionQueue(self, obj):
-		self.exQ.append(obj)
-
 	def grep(self,pattern,fileObj):
 		r=[]
   		for line in fileObj:
@@ -125,12 +122,12 @@ class GamessTestSuite:
 			if os.path.exists(file_input) == False:
 					LFailedTestNames.append(filename)
 					LFailedTestDesc.append("The file DOES NOT exist.")
-					print "Somethings is wrong"
+					print "The input file DOES NOT exist."
 					continue
 			if os.path.exists(file_output) == False:
 					LFailedTestNames.append(filename)
 					LFailedTestDesc.append("The file DOES NOT exist.")
-					print "Somethings is wrong"
+					print "The output file DOES NOT exist."
 					continue
 			#Check if the test terminated normally
 			FILE = open(file_output, 'r')
@@ -139,7 +136,7 @@ class GamessTestSuite:
 			if len(isOK) == 0:
 				LFailedTestNames.append(file_output)
 				LFailedTestDesc.append("The file DID NOT terminated normally.")
-				print "Somethings is wrong"
+				print "The file DID NOT terminated normally."
 				continue
 			NumberOfCorrectTests = NumberOfCorrectTests + 1	
 		
@@ -148,20 +145,18 @@ class GamessTestSuite:
 			print "Please check carefully each of the following runs as these tests will not be executed:"
 			for test, desc in zip(LFailedTestNames, LFailedTestDesc):
 				print test, ": ", desc
-			gc3libs.log.info("Running the remaining %s",NumberOfCorrectTests," tests. ")
+			gc3libs.log.info("Running the remaining %s tests.",NumberOfCorrectTests)
 		else:
-			gc3libs.log.info("Detected %s",NumberOfCorrectTests, "tests.")
+			gc3libs.log.info("Detected %s tests.",NumberOfCorrectTests)
 			
 		NumberOfIncorrectResults = 0
 		print "list", len(self.listOfTests)
 		print "queue", len(self.exQ)
-		#print self.listOfTests
-		#print self.exQ
 		for testName, testObj in zip(self.listOfTests, self.exQ):
-			print testName
+			#print testName
 			if testName in LFailedTestNames:
 				continue
-			print "testOBJ", testObj
+			#print "testOBJ", testObj
 			(isCorrect, str) = testObj.run()
 			
 			finalString = testName + ":" + str 
@@ -202,7 +197,6 @@ class GamessTestSuite:
 		labelFollow = "grepAndFollow"  
 		suffix1 = len(labelAnalyze+"(")
 		suffix2 = len(labelFollow+"(")
-
 		#print filename
 		for line in foundlines:
 		    #print i, line
@@ -226,13 +220,17 @@ class GamessTestSuite:
 			paramList.append(arg2)	
 			continue 	
 		i = 0
+		#import pdb; pdb.set_trace()
 		for args,function in zip(paramList, functionList):
 			 #print i
 			 #i = i + 1
 			 argList = args.split(",")
+			 argListNew = []
 			 # Remove "" 
 			 for arg in argList:
-				arg = re.sub(r"[ \"]", r"", arg) 
+				argnew = re.sub(r"[ \"]", r"", arg)
+				argListNew.append(argnew) 
+			 argList = argListNew
 			 try:
 				if function==labelFollow:
 					app = TestNextLine(filenameOUT)
@@ -601,10 +599,6 @@ TestSetNew = GamessTestSuite(".")
 
 #python -m pdb ./gdemo.py
 
-#Separate into 2 classes. 
-# ! GC3: <name of class, parameters> # so I know which method to run
-
- 
 #NOTES:
 #Incorrect grepex expression is not supported. Example:grepLinesAndAnalyze("TOTAL \s INTERACTION \s (DELTA", .. will raise a traceback.
 #Special characters such as : < ( * need to be defined as /< /( /*
