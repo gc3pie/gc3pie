@@ -5,6 +5,8 @@
 !
 !    The FINAL energy is -75.5579181058 after 8 iterations.
 !
+! GC3: grepLinesAndAnalyze("FINAL \s GVB", "tail", 5, -75.5579181058, GamessTst.tolE, "Eerr")
+!
  $CONTRL SCFTYP=GVB  MULT=2  ICHARG=-1  UNITS=BOHR  $END
  $SYSTEM TIMLIM=1 $END
  $BASIS  GBASIS=DH NDFUNC=1 POLAR=DUNNING $END

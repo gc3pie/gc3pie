@@ -36,7 +36,9 @@ __changelog__ = """
   2012-16-8: 
     * Modification of terminated().
     * Correct execution: ./ggamess.py -R 2011R1 test/data/exam01.inp -N 
-"""
+  2012-16-23: 
+    * Pre-release of beta version 
+""" 
 __author__ = 'Riccardo Murri <riccardo.murri@uzh.ch>'
 __docformat__ = 'reStructuredText'
 
@@ -83,8 +85,8 @@ of newly-created jobs so that this limit is never exceeded.
                        dest='extbas',
                        type=existing_file, default=None,
                        help="Make the specified external basis file available to jobs.")
-	self.add_param("-t", "--test", action="count", #metavar='TEST', 
-		       dest="test", default=0,
+	self.add_param("-t", "--test", action="store_true", #metavar='TEST', 
+		       dest="test", default=False,
 		       help="Execute tests defined in the input files.")
 	
     def __init__(self):
@@ -136,27 +138,35 @@ of newly-created jobs so that this limit is never exceeded.
     
     def after_main_loop(self):
 	print "SELF.", self.params.test
-	if self.params.test == 0:
-		gc3libs.log.info("ggamess.py: Tests were not executed")
+	if self.params.test is False:
+		gc3libs.log.debug("ggamess.py: Tests were not executed")
 		print "NOT RUNNING TESTs"
 		return 
 
 	#print "PARAMS", self.params
 	# build job list
         inputs = self._search_for_input_files(self.params.args)
-	input_list = []
-
+	#print "OLD", inputs 
+	
+	#inputs = [task. for task in self.session_uri.path]
+	#input_list = []
+	#for app in self.session:
+	#	print "myI",app.outputs
+	#	print "myO",app.inputs
+	#	print "myOutDir", app.output_dir
+	
 	# transform set with input files to a list	
-	for myinput in inputs:
-		input_list.append(myinput)
-	output_dirs = []
-        
-	jobs = list(self.session)
+	input_list = [myinput for myinput  in inputs]
+	#for myinput in inputs:
+	#	input_list.append(myinput)
+	#output_dirs = []
+	#jobs = list(self.session)
 
 	#list of output directories
-	for job in jobs:
-	 	output_dirs.append(job.output_dir) 
- 	#sort both list to make sure they correspond to the same files
+	#for job in jobs:
+	# 	output_dirs.append(job.output_dir) 
+	output_dirs = [job.output_dir for job in self.session]
+	#sort both list to make sure they correspond to the same files
 	input_list.sort()
  	output_dirs.sort()
  	#print 'INPUTSsearch', input_list
@@ -173,6 +183,7 @@ of newly-created jobs so that this limit is never exceeded.
     def get_output_files_to_analyze(self, myinputs, myoutput_dirs):
 	list_of_files_to_analyze = []
 	for fileNameInput, output_dir in zip(myinputs, myoutput_dirs):
+		#print fileNameInput
 		fileName = os.path.split(fileNameInput)
 		if len(fileName) > 1:
 			fileName = os.path.join(output_dir, fileName[1])

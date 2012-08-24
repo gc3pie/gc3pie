@@ -14,6 +14,9 @@
 !    See ../gamess/tools/fmo for larger examples based on
 !    published data and examples involving bond fractioning.
 !
+! GC3: grepLinesAndAnalyze("cule\:\sEuncorr\(2\)=", "", 7, -224.910612407, GamessTst.tolE, "Eerr")
+! GC3: grepLinesAndAnalyze("\(2\) \s MAXIMUM\s GRADIENT", "", 9, 0.0267805, GamessTst.tolG, "Gerr")  
+!
  $contrl scftyp=rhf runtyp=gradient $end
  $system timlim=1 $end
  $basis  gbasis=sto ngauss=3 $end

@@ -17,9 +17,13 @@
 !    The dipole moment is 0.016188.
 !    The RMS gradient is 0.027589766.
 !    FINAL localization sums are 30.57 and 25.14 Debye**2.
-! GC3: grepAndFollow("OVERLAP\s+LOW", "head","head", 8, 0.64506, GamessTst.tolO, "Oerr")  
-! GC3: grepAndFollow("DEBYE", "head","1", 4, 1.249835, GamessTst.tolD, "Derr") #works with head and index 1
-
+!
+! GC3: grepLinesAndAnalyze("FINAL \s+UHF", "", 5, -37.2810867259, GamessTst.tolG, "Gerr")
+! GC3: grepLinesAndAnalyze("RMS \s+G", "", 4, 0.027589766, GamessTst.tolG, "Gerr")
+! GC3: grepLinesAndAnalyze("S-SQUARED", "", 3, 2.013, GamessTst.tolS, "Serr")
+! GC3: grepLinesAndAnalyze("FINAL+\s LOC", "head", 6, 30.57, GamessTst.tolL, "Lerr")
+! GC3: grepLinesAndAnalyze("FINAL+\s LOC", "tail", 6, 25.14, GamessTst.tolL, "Lerr")
+!
  $CONTRL SCFTYP=UHF MULT=3 RUNTYP=GRADIENT LOCAL=BOYS $END
  $SYSTEM TIMLIM=1 $END
  $BASIS  GBASIS=STO NGAUSS=2 $END
