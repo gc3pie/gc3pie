@@ -18,8 +18,11 @@
 !    The dipole moment is 1.249835.
 !    The RMS gradient = 0.019618475.
 !
-! GC3: grepAndFollow("OVERLAP\s+LOW", "head","head", 8, 0.64506, GamessTst.tolO, "Oerr")
+! GC3: grepLinesAndAnalyze("FINAL \s+GVB", "", 5, -37.2562020559, GamessTst.tolE, "Eerr")
+! GC3: grepLinesAndAnalyze("RMS \s+G", "", 4, 0.019618475, GamessTst.tolG, "Gerr")
+! GC3: grepAndFollow("OVERLAP\s+LOW", "head","head", 8, 0.64506, GamessTst.tolO, "Oerr")  
 ! GC3: grepAndFollow("DEBYE", "head","1", 4, 1.249835, GamessTst.tolD, "Derr") #works with head and index 1
+!
 
  $CONTRL SCFTYP=GVB  RUNTYP=GRADIENT  COORD=ZMT  $END
  $SYSTEM TIMLIM=1 $END

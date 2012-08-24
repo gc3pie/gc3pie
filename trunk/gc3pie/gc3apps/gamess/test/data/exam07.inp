@@ -11,6 +11,10 @@
 !    The dipole moment is 2.535169.
 !    The RMS gradient is 0.023723712.
 !
+! GC3: grepLinesAndAnalyze("FINAL \s+ RHF", "head", 5, -414.0945320827, GamessTst.tolE, "Eerr")
+! GC3: grepLinesAndAnalyze("RMS \s+G", "head", 4, 0.023723712, GamessTst.tolG, "Gerr")
+! GC3: grepAndFollow("DEBYE", "head", "head", 4, 2.535169, GamessTst.tolD, "Derr")
+!
  $CONTRL SCFTYP=RHF RUNTYP=GRADIENT $END
  $SYSTEM TIMLIM=1 $END
  $GUESS  GUESS=HCORE $END

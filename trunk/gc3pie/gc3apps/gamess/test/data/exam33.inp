@@ -21,6 +21,10 @@
 !
 !   FINAL E= -93.0223942017, 11 iters, RMS grad=0.045100935
 !
+! GC3: = gmsPattern.GamessPattern("exam33.out")
+! GC3: grepLinesAndAnalyze("FINAL \s MCSCF", "", 5, -93.0223942017, GamessTst.tolE, "Eerr")
+! GC3: grepLinesAndAnalyze("RMS \s G", "head", 4, 0.045100935, GamessTst.tolG, "Gerr")
+!
  $contrl scftyp=mcscf runtyp=gradient nzvar=3 $end
  $system timlim=3 mwords=2 memddi=1 $end
  $basis  gbasis=n31 ngauss=6 ndfunc=1 npfunc=1 $end

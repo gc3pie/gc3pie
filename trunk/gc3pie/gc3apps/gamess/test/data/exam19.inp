@@ -33,6 +33,9 @@
 ! Note that the lower multiplicity DRT1 is done in C1
 ! symmetry to generate both components of the delta state.
 !
+! GC3: grepLinesAndAnalyze("STATE\s\s\s 1:\sREL", "", 5, -15296.570, 0.05, "EAerr")
+! GC3: grepLinesAndAnalyze("STATE\s\s\s 2:\sREL", "", 5, -15296.432, 0.05, "EBerr")  
+!
  $CONTRL SCFTYP=NONE MULT=3 CITYP=GUGA RUNTYP=TRANSITN
          UNITS=BOHR $END
  $SYSTEM TIMLIM=1 $END

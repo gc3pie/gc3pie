@@ -70,7 +70,7 @@ class GamessTestSuite:
 		for filename in listOfFiles:
 			FILE = open(filename, 'w')
 			lines = FILE.readlines()	
-			posLine = self.grep("\$[A-Za-z]+", FILE)
+			posLine = self.grep(r"\$[A-Za-z]+", FILE)
 			FILE.close()
 			
 			if len(isOK) == 0:
@@ -107,7 +107,6 @@ class GamessTestSuite:
 	
 	def runAll(self):
 		gc3libs.log.info("Checking the results of your test GAMESS calculations, the output files (exam??.out) will be taken from %s directory.", TestSet.dirLog)
-	    #print TestS
 		LFailedTestNames = []  
 		LFailedTestDesc = []  
 		NumberOfTests = len(self.listOfTests)
@@ -115,7 +114,7 @@ class GamessTestSuite:
 		if len(self.listOfTests) == 0:
 		   #self.log.warning("The test list is empty.")
 		   gc3libs.log.debug("The test list is empty.")
-		   return
+		   raise RuntimeError("The list with tests is empty. The tests will not be run.")
 		#Each INP file shold have a GAMESS OUT file that terminated normally
 		for file_input, file_output in zip(self.listOfTests, self.list_of_analyzed_files):
 			#print "runAll I", file_input
@@ -124,6 +123,11 @@ class GamessTestSuite:
 			#Check if the file exists
 			#TODO: This might be not needed
 			if os.path.exists(file_input) == False:
+					LFailedTestNames.append(filename)
+					LFailedTestDesc.append("The file DOES NOT exist.")
+					print "Somethings is wrong"
+					continue
+			if os.path.exists(file_output) == False:
 					LFailedTestNames.append(filename)
 					LFailedTestDesc.append("The file DOES NOT exist.")
 					print "Somethings is wrong"
@@ -149,12 +153,15 @@ class GamessTestSuite:
 			gc3libs.log.info("Detected %s",NumberOfCorrectTests, "tests.")
 			
 		NumberOfIncorrectResults = 0
-		print "list", self.listOfTests
-		print "queue", self.exQ
+		print "list", len(self.listOfTests)
+		print "queue", len(self.exQ)
+		#print self.listOfTests
+		#print self.exQ
 		for testName, testObj in zip(self.listOfTests, self.exQ):
 			print testName
 			if testName in LFailedTestNames:
 				continue
+			print "testOBJ", testObj
 			(isCorrect, str) = testObj.run()
 			
 			finalString = testName + ":" + str 
@@ -162,7 +169,7 @@ class GamessTestSuite:
 				print '%-89s    %s' %(finalString, "Passed.")
 			else:
 				NumberOfIncorrectResults = NumberOfIncorrectResults + 1
-				LFailedTestNames.append(filename)
+				LFailedTestNames.append(testName)
 				LFailedTestDesc.append("!!FAILED")
 				print '%-89s    %s' %(finalString, "!!FAILED.")
 				 
@@ -175,7 +182,7 @@ class GamessTestSuite:
 		else:
 			gc3libs.log.info("%d job(s) got incorrect numerical results. Please examine why.", NumberOfIncorrectResults) 
 
-
+# Generate tests, e.g. call appropriate method from testLine and testNextLine class. If there is a "GC3" keyword in the INP file the test is added to a list of tests
 	def generate_tests(self,filenameINP, filenameOUT):
 		try:	
 			file = open(filenameINP, 'r') 
@@ -220,9 +227,10 @@ class GamessTestSuite:
 			continue 	
 		i = 0
 		for args,function in zip(paramList, functionList):
-			 print i
-			 i = i + 1
+			 #print i
+			 #i = i + 1
 			 argList = args.split(",")
+			 # Remove "" 
 			 for arg in argList:
 				arg = re.sub(r"[ \"]", r"", arg) 
 			 try:
@@ -230,13 +238,16 @@ class GamessTestSuite:
 					app = TestNextLine(filenameOUT)
 					fn = getattr(app, labelFollow)   
 					fn(argList[0], argList[1], argList[2], int(argList[3]), float(argList[4]), argList[5], argList[6])
-					self.addExecutionQueue(app)
+					self.exQ.append(app)
 	   			elif function==labelAnalyze:
 					app = TestLine(filenameOUT)
 					fn = getattr(app, labelAnalyze)   
 					fn(argList[0], argList[1], int(argList[2]), float(argList[3]), argList[4], argList[5])
-					self.appendExecutionQueue(app)
-				
+					self.exQ.append(app)
+			 except IndexError:
+			 	app.debug() # for testing purposes
+				gc3libs.log.debug("Index error. No. of arguments %d exceeds the required number %d. in file %s", len(argList), 7, filenameOUT)                                                                           		
+					
 			 except AttributeError:
 			 	app.debug() # for testing purposes
 				gc3libs.log.debug("Attribute error. arguments %s in function %s from object %s on file %s are incorrect", args, function, app, filenameOUT)                                                                           		
@@ -256,7 +267,7 @@ TestSetNew = GamessTestSuite(".")
 
 #TestSetNew.addTest(ex1)
 #TestSetNew.addTest(ex2)
-TestSetNew.runAll()
+#TestSetNew.runAll()
   
 #example1 = gmsPattern.GamessPattern("exam01.out")
 #example1.grepLinesAndAnalyze("FINAL \s+ RHF", "tail", 5, -37.2380397698, GamessTst.tolE, "Eerr")
@@ -306,8 +317,8 @@ TestSetNew.runAll()
 #example8 = gmsPattern.GamessPattern("exam08.out")
 #example8.grepLinesAndAnalyze("E\(MP2\)", "tail", 2, -75.7060362006, GamessTst.tolE, "Eerr")
 #example8.grepLinesAndAnalyze("RMS \s+G", "tail", 4, 0.017449522, GamessTst.tolG, "Gerr")
-##example8.grepAndFollow("DEBYE", "tail", "head", 4, 2.329368, GamessTst.tolD, "Derr")
 #example8.grepAndFollow("DEBYE", "tail", "1", 4, 2.329368, GamessTst.tolD, "Derr")
+##example8.grepAndFollow("DEBYE", "tail", "head", 4, 2.329368, GamessTst.tolD, "Derr")
 
 ##example8.debug()
 #set nD=0`grep -n DEBYE $1 | tail -1 | cut -d: -f1 | awk '{ print $1+1 }'`
@@ -528,8 +539,8 @@ TestSetNew.runAll()
 #select 5th line AFTER the matched one
 #example41.grepAndFollow("SUMMARY+\s OF+\sTDDFT+\s RESULTS", "head", 5, 4, 8.474, 0.001, "EXCerr eV")
 #example41.grepAndFollow("SUMMARY+\s OF+\sTDDFT+\s RESULTS", "head", 5, 8, 0.094, 0.001, "OSCerr")
-#set G=`grep "RMS G" $1 | tail -1 | awk '{ print $4 }'`0
 #example41.grepLinesAndAnalyze("RMS \s+G", "tail", 4, 0.112201641, GamessTst.tolG, "Gerr")
+#set G=`grep "RMS G" $1 | tail -1 | awk '{ print $4 }'`0
 
 #example42 = gmsPattern.GamessPattern("exam42.out")
 #select 5th line AFTER the matched one

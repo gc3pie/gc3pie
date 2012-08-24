@@ -14,6 +14,9 @@
 !  FINAL RHF E= -116.3976900833, RMS grad= 0.0000485
 !  FINAL RHF E= -116.3976902416, RMS grad= 0.0000001
 !
+! GC3: grepLinesAndAnalyze("FINAL \s RHF", "tail", 5, -116.3976902416, GamessTst.tolE, "Eerr")
+! GC3: grepLinesAndAnalyze("RMS \s G", "tail", 8, 0.0000001, GamessTst.tolG, "Gerr")
+!
  $contrl scftyp=rhf runtyp=optimize pp=mcp ispher=1
          coord=zmt nzvar=6 $end
  $system timlim=5 mwords=2 $end

@@ -47,6 +47,8 @@
 ! You can assist the run by giving a converged HF/6-31G(d)
 ! geometry in $DATA, although this is not necessary.
 !
+! GC3: grepLinesAndAnalyze("HEAT\s OF\s FORMATION\s \(298K\)", "tail", 5, -17.83, 0.01, "HEATerr kcal/mol")
+!
  $contrl scftyp=rhf runtyp=g3mp2 $end  
  $system timlim=2 mwords=2 memddi=5 $end
  $scf    dirscf=.true. $end

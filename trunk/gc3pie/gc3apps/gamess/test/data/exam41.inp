@@ -29,6 +29,10 @@
 !
 !  RMS gradient of 1st excited state= 0.091669172
 !
+! GC3: grepAndFollow("SUMMARY+\s OF+\sTDDFT+\s RESULTS", "head", 5, 4, 8.474, 0.001, "EXCerr eV")
+! GC3: grepAndFollow("SUMMARY+\s OF+\sTDDFT+\s RESULTS", "head", 5, 8, 0.094, 0.001, "OSCerr")
+! GC3: grepLinesAndAnalyze("RMS \s+G", "tail", 4, 0.112201641, GamessTst.tolG, "Gerr")
+!
  $contrl scftyp=rhf dfttyp=blyp tddft=excite
          runtyp=gradient $end
  $system timlim=4 $end

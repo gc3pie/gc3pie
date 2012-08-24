@@ -10,6 +10,9 @@
 !   the FINAL E= -76.5841347569, RMS gradient=0.0000007,
 !   R(CC)=1.21193 and R(CH)=1.07797.
 !
+! GC3: grepLinesAndAnalyze("FINAL \s R-SVWN", "tail", 5, -76.5841347569, GamessTst.tolE, "Eerr")
+! GC3: grepLinesAndAnalyze("RMS \s G", "tail", 8, 0.0000007, GamessTst.tolG, "Gerr") #TODO: 8-> 9 causes error!!!
+!
  $CONTRL SCFTYP=RHF DFTTYP=SVWN RUNTYP=OPTIMIZE NZVAR=5 $END
  $SYSTEM TIMLIM=3 $END
  $BASIS  GBASIS=N31 NGAUSS=6 NDFUNC=1 $END

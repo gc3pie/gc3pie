@@ -18,6 +18,10 @@
 !   H(XX)=0.301208  H(YY)=-0.258153  H(ZZ)=-0.043055
 !  Potential:  V(O)=-22.330374    V(H)=-1.006648
 !
+! GC3: grepLinesAndAnalyze("FINAL\sRHF", "tail", 5, -76.0440311075, GamessTst.tolE, "Eerr")
+! GC3: grepAndFollow("EFGZZ", "tail", "head", 3, -0.043055, GamessTst.tolG, "Gerr")  
+! GC3: grepAndFollow("ESU-CM", "tail", "head", 3, -1.296492, GamessTst.tolD, "Derr")  
+!
  $CONTRL SCFTYP=RHF RUNTYP=ENERGY UNITS=BOHR ISPHER=1 $END
  $SYSTEM TIMLIM=1 $END
  $GUESS  GUESS=HUCKEL $END
