@@ -960,8 +960,8 @@ class Engine(object):
                         gc3libs.log.debug("Ignored error in submitting task '%s': %s: %s",
                                           task, x.__class__.__name__, str(x), exc_info=True)
                         # record the fact in the task's history
-                        task.execution.log("Submission failed: %s: %s"
-                                           % (x.__class__.__name__, str(x)))
+                        task.execution.history("Submission failed: %s: %s"
+                                               % (x.__class__.__name__, str(x)))
                 index += 1
         # remove tasks that transitioned to SUBMITTED state
         for index in reversed(transitioned):
