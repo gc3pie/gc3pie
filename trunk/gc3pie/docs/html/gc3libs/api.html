@@ -275,14 +275,6 @@ resource-specific submission options.</p>
 </dd></dl>
 
 <dl class="method">
-<dt id="gc3libs.Application.clone">
-<tt class="descname">clone</tt><big>(</big><big>)</big><a class="headerlink" href="#gc3libs.Application.clone" title="Permalink to this definition">¶</a></dt>
-<dd><p>Return a deep copy of this <cite>Application</cite> object, with the
-<cite>.execution</cite> instance variable reset to a fresh new instance
-of <cite>Run</cite>.</p>
-</dd></dl>
-
-<dl class="method">
 <dt id="gc3libs.Application.cmdline">
 <tt class="descname">cmdline</tt><big>(</big><em>resource</em><big>)</big><a class="headerlink" href="#gc3libs.Application.cmdline" title="Permalink to this definition">¶</a></dt>
 <dd><p>Return list of command-line arguments for invoking the application.</p>
@@ -315,15 +307,14 @@ to change this behavior.</p>
 </dd></dl>
 
 <dl class="method">
-<dt id="gc3libs.Application.pbs_qsub">
-<tt class="descname">pbs_qsub</tt><big>(</big><em>resource</em>, <em>_suppress_warning=False</em>, <em>**kw</em><big>)</big><a class="headerlink" href="#gc3libs.Application.pbs_qsub" title="Permalink to this definition">¶</a></dt>
-<dd><p>Similar to <cite>qsub()</cite>, but will work with a PBS/Torque resource
-manager.</p>
+<dt id="gc3libs.Application.qsub_pbs">
+<tt class="descname">qsub_pbs</tt><big>(</big><em>resource</em>, <em>_suppress_warning=False</em>, <em>**kw</em><big>)</big><a class="headerlink" href="#gc3libs.Application.qsub_pbs" title="Permalink to this definition">¶</a></dt>
+<dd><p>Similar to <cite>qsub_sge()</cite>, but for the PBS/TORQUE resource manager.</p>
 </dd></dl>
 
 <dl class="method">
-<dt id="gc3libs.Application.qsub">
-<tt class="descname">qsub</tt><big>(</big><em>resource</em>, <em>_suppress_warning=False</em>, <em>**kw</em><big>)</big><a class="headerlink" href="#gc3libs.Application.qsub" title="Permalink to this definition">¶</a></dt>
+<dt id="gc3libs.Application.qsub_sge">
+<tt class="descname">qsub_sge</tt><big>(</big><em>resource</em>, <em>_suppress_warning=False</em>, <em>**kw</em><big>)</big><a class="headerlink" href="#gc3libs.Application.qsub_sge" title="Permalink to this definition">¶</a></dt>
 <dd><p>Get an SGE <tt class="docutils literal"><span class="pre">qsub</span></tt> command-line invocation for submitting an
 instance of this application.</p>
 <p>Return a pair <cite>(cmd_argv, app_argv)</cite>.  Both <cite>cmd_argv</cite> and
@@ -402,7 +393,7 @@ to produce XRSL tailored to your application.</p>
 <div class="admonition warning">
 <p class="first admonition-title">Warning</p>
 <p class="last">WARNING: ARClib SWIG bindings cannot resolve the overloaded
-constructor if the xRSL stringargument is a Python &#8216;unicode&#8217;
+constructor if the xRSL string argument is a Python &#8216;unicode&#8217;
 object; if you overload this method, force the result to be
 a &#8216;str&#8217;!</p>
 </div>
@@ -419,6 +410,12 @@ GC3Libs package.</p>
 <dt id="gc3libs.Default.ARC_CACHE_TIME">
 <tt class="descname">ARC_CACHE_TIME</tt><em class="property"> = 30</em><a class="headerlink" href="#gc3libs.Default.ARC_CACHE_TIME" title="Permalink to this definition">¶</a></dt>
 <dd><p>only update ARC resources status every this seconds</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="gc3libs.Default.ARC_LOST_JOB_TIMEOUT">
+<tt class="descname">ARC_LOST_JOB_TIMEOUT</tt><em class="property"> = 120</em><a class="headerlink" href="#gc3libs.Default.ARC_LOST_JOB_TIMEOUT" title="Permalink to this definition">¶</a></dt>
+<dd><p>consider a submitted job lost if it does not show up in the information system after this duration</p>
 </dd></dl>
 
 <dl class="attribute">
@@ -472,7 +469,7 @@ the execution state of an <cite>Application</cite> instance.</p>
 <blockquote>
 <div><dl class="docutils">
 <dt><cite>log</cite></dt>
-<dd>A <cite>gc3libs.utils.Log</cite> instance, recording human-readable text
+<dd>A <cite>gc3libs.utils.History</cite> instance, recording human-readable text
 messages on events in this job&#8217;s history.</dd>
 <dt><cite>info</cite></dt>
 <dd>A simplified interface for reading/writing messages to
@@ -506,11 +503,11 @@ constructor.</p>
 <dl class="attribute">
 <dt id="gc3libs.Run.exitcode">
 <tt class="descclassname">Run.</tt><tt class="descname">exitcode</tt><a class="headerlink" href="#gc3libs.Run.exitcode" title="Permalink to this definition">¶</a></dt>
-<dd><p>The &#8220;exit code&#8221; part of a <cite>Run.returncode</cite>, see
-<cite>os.WEXITSTATUS</cite>.  This is an 8-bit integer, whose meaning is
-entirely application-specific.  However, the value <cite>-1</cite> is
-used to mean that an error has occurred and the application
-could not end its execution normally.</p>
+<dd><p>The &#8220;exit code&#8221; part of a <cite>Run.returncode</cite>, see <cite>os.WEXITSTATUS</cite>.
+This is an 8-bit integer, whose meaning is entirely
+application-specific.  (However, the value <cite>255</cite> is often used
+to mean that an error has occurred and the application could
+not end its execution normally.)</p>
 </dd></dl>
 
 <dl class="method">
@@ -529,7 +526,7 @@ the following meaning:</p>
 <dl class="attribute">
 <dt id="gc3libs.Run.info">
 <tt class="descclassname">Run.</tt><tt class="descname">info</tt><a class="headerlink" href="#gc3libs.Run.info" title="Permalink to this definition">¶</a></dt>
-<dd><p>A simplified interface for reading/writing entries into <cite>log</cite>.</p>
+<dd><p>A simplified interface for reading/writing entries into <cite>history</cite>.</p>
 <p>Setting the <cite>info</cite> attribute appends a message to the log:</p>
 <div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">j1</span> <span class="o">=</span> <span class="n">Run</span><span class="p">()</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">j1</span><span class="o">.</span><span class="n">info</span> <span class="o">=</span> <span class="s">&#39;a message&#39;</span>
@@ -538,8 +535,8 @@ the following meaning:</p>
 </div>
 <p>Getting the value of the <cite>info</cite> attribute returns the last
 message entered in the log:</p>
-<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">j1</span><span class="o">.</span><span class="n">info</span>
-<span class="go">u&#39;a second message&#39;</span>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">j1</span><span class="o">.</span><span class="n">info</span> 
+<span class="go">u&#39;a second message ...&#39;</span>
 </pre></div>
 </div>
 </dd></dl>
@@ -1220,7 +1217,7 @@ description.</p>
 
 <dl class="method">
 <dt id="gc3libs.cmdline.SessionBasedScript.print_tasks_table">
-<tt class="descname">print_tasks_table</tt><big>(</big><em>output=&lt;open file '&lt;stdout&gt;'</em>, <em>mode 'w' at 0x2b0c3d6961e0&gt;</em>, <em>states=Enum(['TERMINATED'</em>, <em>'UNKNOWN'</em>, <em>'SUBMITTED'</em>, <em>'RUNNING'</em>, <em>'TERMINATING'</em>, <em>'STOPPED'</em>, <em>'NEW'])</em>, <em>only=&lt;type 'object'&gt;</em><big>)</big><a class="headerlink" href="#gc3libs.cmdline.SessionBasedScript.print_tasks_table" title="Permalink to this definition">¶</a></dt>
+<tt class="descname">print_tasks_table</tt><big>(</big><em>output=&lt;open file '&lt;stdout&gt;'</em>, <em>mode 'w' at 0x2b96266b01e0&gt;</em>, <em>states=Enum(['TERMINATED'</em>, <em>'UNKNOWN'</em>, <em>'SUBMITTED'</em>, <em>'RUNNING'</em>, <em>'TERMINATING'</em>, <em>'STOPPED'</em>, <em>'NEW'])</em>, <em>only=&lt;type 'object'&gt;</em><big>)</big><a class="headerlink" href="#gc3libs.cmdline.SessionBasedScript.print_tasks_table" title="Permalink to this definition">¶</a></dt>
 <dd><p>Output a text table to stream <cite>output</cite>, giving details about
 tasks in the given states.</p>
 <p>Optional second argument <cite>states</cite> restricts the listing to
@@ -1795,11 +1792,22 @@ they were given to the constructor, and sets the state to
 <dl class="method">
 <dt id="gc3libs.dag.SequentialTaskCollection.next">
 <tt class="descname">next</tt><big>(</big><em>done</em><big>)</big><a class="headerlink" href="#gc3libs.dag.SequentialTaskCollection.next" title="Permalink to this definition">¶</a></dt>
-<dd><p>Called by <a class="reference internal" href="#gc3libs.dag.SequentialTaskCollection.progress" title="gc3libs.dag.SequentialTaskCollection.progress"><tt class="xref py py-meth docutils literal"><span class="pre">progress()</span></tt></a> when a job is finished; if
-<cite>Run.State.TERMINATED</cite> is returned then no other jobs will be
-run; otherwise, the return value is assigned to
-<cite>execution.state</cite> and the next job in the <cite>self.tasks</cite> list is
-executed.</p>
+<dd><p>Return the state or task to run when step number <cite>done</cite> is completed.</p>
+<p>This method is called when a task is finished; the <cite>done</cite>
+argument contains the index number of the just-finished task
+into the <cite>self.tasks</cite> list.  In other words, the task that
+just completed is available as <cite>self.tasks[done]</cite>.</p>
+<p>The return value from <cite>next</cite> can be either a task state (i.e.,
+an instance of <cite>Run.State</cite>), or a valid index number for
+<cite>self.tasks</cite>. In the first case:</p>
+<ul class="simple">
+<li>if the return value is <cite>Run.State.TERMINATED</cite>,
+then no other jobs will be run;</li>
+<li>otherwise, the return value is assigned to <cite>execution.state</cite>
+and the next job in the <cite>self.tasks</cite> list is executed.</li>
+</ul>
+<p>If instead the return value is a (nonnegative) number, then
+tasks in the sequence will be re-run starting from that index.</p>
 <p>The default implementation runs tasks in the order they were
 given to the constructor, and sets the state to TERMINATED
 when all tasks have been run.  This method can (and should) be
@@ -1955,6 +1963,13 @@ passed instead).</li>
 state or function/method calling contract is violated.  Informally,
 this indicates a bug in the software.</li>
 </ul>
+<dl class="exception">
+<dt id="gc3libs.exceptions.ApplicationDescriptionError">
+<em class="property">exception </em><tt class="descclassname">gc3libs.exceptions.</tt><tt class="descname">ApplicationDescriptionError</tt><big>(</big><em>msg</em>, <em>do_log=True</em><big>)</big><a class="headerlink" href="#gc3libs.exceptions.ApplicationDescriptionError" title="Permalink to this definition">¶</a></dt>
+<dd><p>Raised when the dumped description on a given Application produces something that the LRMS backend cannot process.
+As an example, for arc backends, this error is raised when the parsing of the Application&#8217;s XRSL fails</p>
+</dd></dl>
+
 <dl class="exception">
 <dt id="gc3libs.exceptions.AuthError">
 <em class="property">exception </em><tt class="descclassname">gc3libs.exceptions.</tt><tt class="descname">AuthError</tt><big>(</big><em>msg</em>, <em>do_log=False</em><big>)</big><a class="headerlink" href="#gc3libs.exceptions.AuthError" title="Permalink to this definition">¶</a></dt>
@@ -2214,7 +2229,7 @@ texts coming from the same template.  Templates can be nested, and
 expansions generated recursviely.</p>
 <dl class="class">
 <dt id="gc3libs.template.Template">
-<em class="property">class </em><tt class="descclassname">gc3libs.template.</tt><tt class="descname">Template</tt><big>(</big><em>template</em>, <em>validator=&lt;function &lt;lambda&gt; at 0x3ef5398&gt;</em>, <em>**kw</em><big>)</big><a class="headerlink" href="#gc3libs.template.Template" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><tt class="descclassname">gc3libs.template.</tt><tt class="descname">Template</tt><big>(</big><em>template</em>, <em>validator=&lt;function &lt;lambda&gt; at 0x5743050&gt;</em>, <em>**kw</em><big>)</big><a class="headerlink" href="#gc3libs.template.Template" title="Permalink to this definition">¶</a></dt>
 <dd><p>A template object is a pair <cite>(obj, keywords)</cite>.  Methods are
 provided to substitute the keyword values into <cite>obj</cite>, and to
 iterate over expansions of the given keywords (optionally
@@ -2657,31 +2672,30 @@ label by string value:</p>
 </dd></dl>
 
 <dl class="class">
-<dt id="gc3libs.utils.Log">
-<em class="property">class </em><tt class="descclassname">gc3libs.utils.</tt><tt class="descname">Log</tt><a class="headerlink" href="#gc3libs.utils.Log" title="Permalink to this definition">¶</a></dt>
+<dt id="gc3libs.utils.History">
+<em class="property">class </em><tt class="descclassname">gc3libs.utils.</tt><tt class="descname">History</tt><a class="headerlink" href="#gc3libs.utils.History" title="Permalink to this definition">¶</a></dt>
 <dd><p>A list of messages with timestamps and (optional) tags.</p>
-<p>The <cite>append</cite> method should be used to add a message to the <cite>Log</cite>:</p>
-<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">L</span> <span class="o">=</span> <span class="n">Log</span><span class="p">()</span>
+<p>The <cite>append</cite> method should be used to add a message to the <cite>History</cite>:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">L</span> <span class="o">=</span> <span class="n">History</span><span class="p">()</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">L</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s">&#39;first message&#39;</span><span class="p">)</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">L</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s">&#39;second one&#39;</span><span class="p">)</span>
 </pre></div>
 </div>
-<p>The <cite>last</cite> method returns the text of the last message appended:</p>
-<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">L</span><span class="o">.</span><span class="n">last</span><span class="p">()</span>
-<span class="go">&#39;second one&#39;</span>
+<p>The <cite>last</cite> method returns the text of the last message appended, with its timestamp:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">L</span><span class="o">.</span><span class="n">last</span><span class="p">()</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s">&#39;second one at&#39;</span><span class="p">)</span>
+<span class="go">True</span>
 </pre></div>
 </div>
-<p>Iterating over a <cite>Log</cite> instance returns message texts in the
-temporal order they were added to the list:</p>
-<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="k">for</span> <span class="n">msg</span> <span class="ow">in</span> <span class="n">L</span><span class="p">:</span> <span class="k">print</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
-<span class="go">first message</span>
-<span class="go">second one</span>
+<p>Iterating over a <cite>History</cite> instance returns message texts in the
+temporal order they were added to the list, with their timestamp:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="k">for</span> <span class="n">msg</span> <span class="ow">in</span> <span class="n">L</span><span class="p">:</span> <span class="k">print</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span> 
+<span class="go">first message ...</span>
 </pre></div>
 </div>
 <dl class="method">
-<dt id="gc3libs.utils.Log.append">
-<tt class="descname">append</tt><big>(</big><em>message</em>, <em>*tags</em><big>)</big><a class="headerlink" href="#gc3libs.utils.Log.append" title="Permalink to this definition">¶</a></dt>
-<dd><p>Append a message to this <cite>Log</cite>.</p>
+<dt id="gc3libs.utils.History.append">
+<tt class="descname">append</tt><big>(</big><em>message</em>, <em>*tags</em><big>)</big><a class="headerlink" href="#gc3libs.utils.History.append" title="Permalink to this definition">¶</a></dt>
+<dd><p>Append a message to this <cite>History</cite>.</p>
 <p>The message is timestamped with the time at the moment of the
 call.</p>
 <p>The optional <cite>tags</cite> argument is a sequence of strings. Tags
@@ -2691,12 +2705,24 @@ not yet implemented.)</em></p>
 </dd></dl>
 
 <dl class="method">
-<dt id="gc3libs.utils.Log.last">
-<tt class="descname">last</tt><big>(</big><big>)</big><a class="headerlink" href="#gc3libs.utils.Log.last" title="Permalink to this definition">¶</a></dt>
+<dt id="gc3libs.utils.History.format_message">
+<tt class="descname">format_message</tt><big>(</big><em>message</em><big>)</big><a class="headerlink" href="#gc3libs.utils.History.format_message" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return a formatted message, appending to the message its timestamp in human readable format.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="gc3libs.utils.History.last">
+<tt class="descname">last</tt><big>(</big><big>)</big><a class="headerlink" href="#gc3libs.utils.History.last" title="Permalink to this definition">¶</a></dt>
 <dd><p>Return text of last message appended.
 If log is empty, return empty string.</p>
 </dd></dl>
 
+</dd></dl>
+
+<dl class="attribute">
+<dt id="gc3libs.utils.Log">
+<tt class="descclassname">gc3libs.utils.</tt><tt class="descname">Log</tt><a class="headerlink" href="#gc3libs.utils.Log" title="Permalink to this definition">¶</a></dt>
+<dd><p>alias of <a class="reference internal" href="#gc3libs.utils.History" title="gc3libs.utils.History"><tt class="xref py py-class docutils literal"><span class="pre">History</span></tt></a></p>
 </dd></dl>
 
 <dl class="class">
@@ -3085,7 +3111,7 @@ are not altered to reflect <cite>mode</cite>.</p>
 
 <dl class="function">
 <dt id="gc3libs.utils.prettyprint">
-<tt class="descclassname">gc3libs.utils.</tt><tt class="descname">prettyprint</tt><big>(</big><em>D</em>, <em>indent=0</em>, <em>width=0</em>, <em>maxdepth=None</em>, <em>step=4</em>, <em>only_keys=None</em>, <em>output=&lt;open file '&lt;stdout&gt;'</em>, <em>mode 'w' at 0x2b0c3d6961e0&gt;</em>, <em>_key_prefix=''</em>, <em>_exclude=None</em><big>)</big><a class="headerlink" href="#gc3libs.utils.prettyprint" title="Permalink to this definition">¶</a></dt>
+<tt class="descclassname">gc3libs.utils.</tt><tt class="descname">prettyprint</tt><big>(</big><em>D</em>, <em>indent=0</em>, <em>width=0</em>, <em>maxdepth=None</em>, <em>step=4</em>, <em>only_keys=None</em>, <em>output=&lt;open file '&lt;stdout&gt;'</em>, <em>mode 'w' at 0x2b96266b01e0&gt;</em>, <em>_key_prefix=''</em>, <em>_exclude=None</em><big>)</big><a class="headerlink" href="#gc3libs.utils.prettyprint" title="Permalink to this definition">¶</a></dt>
 <dd><p>Print dictionary instance <cite>D</cite> in a YAML-like format.
 Each output line consists of:</p>
 <blockquote>
@@ -3471,6 +3497,27 @@ class can be used here as well, with the exception of <cite>input</cite> and
 <cite>output</cite>.  Note that a GAMESS-US job is <em>always</em> submitted with
 <cite>join = True</cite>, therefore any <cite>stderr</cite> setting is ignored.</p>
 <dl class="method">
+<dt id="gc3libs.application.gamess.GamessAppPotApplication.bsub">
+<tt class="descname">bsub</tt><big>(</big><em>resource</em>, <em>_suppress_warning=False</em>, <em>**kw</em><big>)</big><a class="headerlink" href="#gc3libs.application.gamess.GamessAppPotApplication.bsub" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get an LSF <tt class="docutils literal"><span class="pre">qsub</span></tt> command-line invocation for submitting an
+instance of this application.  Return a pair <cite>(cmd_argv,
+app_argv)</cite>, where <cite>cmd_argv</cite> is a list containing the
+<em>argv</em>-vector of the command to run to submit an instance of
+this application to the LSF batch system, and <cite>app_argv</cite> is
+the <em>argv</em>-vector to use when invoking the application.</p>
+<p>In the construction of the command-line invocation, one should
+assume that all the input files (as named in <cite>Application.inputs</cite>)
+have been copied to the current working directory, and that output
+files should be created in this same directory.</p>
+<p>The default implementation just prefixes any output from the
+<cite>cmdline</cite> method with an LSF <tt class="docutils literal"><span class="pre">bsub</span></tt> invocation of the form
+<tt class="docutils literal"><span class="pre">bsub</span> <span class="pre">-cwd</span> <span class="pre">.</span> <span class="pre">-L</span> <span class="pre">/bin/sh</span></tt> + resource limits.</p>
+<p>Override this method in application-specific classes to
+provide appropriate invocation templates and/or add
+resource-specific submission options.</p>
+</dd></dl>
+
+<dl class="method">
 <dt id="gc3libs.application.gamess.GamessAppPotApplication.cmdline">
 <tt class="descname">cmdline</tt><big>(</big><em>resource</em><big>)</big><a class="headerlink" href="#gc3libs.application.gamess.GamessAppPotApplication.cmdline" title="Permalink to this definition">¶</a></dt>
 <dd><p>Return list of command-line arguments for invoking the application.</p>
@@ -3485,8 +3532,14 @@ classes to provide appropriate invocation templates.</p>
 </dd></dl>
 
 <dl class="method">
-<dt id="gc3libs.application.gamess.GamessAppPotApplication.qsub">
-<tt class="descname">qsub</tt><big>(</big><em>resource</em>, <em>_suppress_warning=False</em>, <em>**kw</em><big>)</big><a class="headerlink" href="#gc3libs.application.gamess.GamessAppPotApplication.qsub" title="Permalink to this definition">¶</a></dt>
+<dt id="gc3libs.application.gamess.GamessAppPotApplication.qsub_pbs">
+<tt class="descname">qsub_pbs</tt><big>(</big><em>resource</em>, <em>_suppress_warning=False</em>, <em>**kw</em><big>)</big><a class="headerlink" href="#gc3libs.application.gamess.GamessAppPotApplication.qsub_pbs" title="Permalink to this definition">¶</a></dt>
+<dd><p>Similar to <cite>qsub_sge()</cite>, but for the PBS/TORQUE resource manager.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="gc3libs.application.gamess.GamessAppPotApplication.qsub_sge">
+<tt class="descname">qsub_sge</tt><big>(</big><em>resource</em>, <em>_suppress_warning=False</em>, <em>**kw</em><big>)</big><a class="headerlink" href="#gc3libs.application.gamess.GamessAppPotApplication.qsub_sge" title="Permalink to this definition">¶</a></dt>
 <dd><p>Get an SGE <tt class="docutils literal"><span class="pre">qsub</span></tt> command-line invocation for submitting an
 instance of this application.</p>
 <p>Return a pair <cite>(cmd_argv, app_argv)</cite>.  Both <cite>cmd_argv</cite> and
@@ -3547,15 +3600,15 @@ with the parameters embedded in this object.</p>
 </dd></dl>
 
 <dl class="method">
-<dt id="gc3libs.application.gamess.GamessApplication.qsub">
-<tt class="descname">qsub</tt><big>(</big><em>resource</em>, <em>**kw</em><big>)</big><a class="headerlink" href="#gc3libs.application.gamess.GamessApplication.qsub" title="Permalink to this definition">¶</a></dt>
+<dt id="gc3libs.application.gamess.GamessApplication.qsub_pbs">
+<tt class="descname">qsub_pbs</tt><big>(</big><em>resource</em>, <em>**kw</em><big>)</big><a class="headerlink" href="#gc3libs.application.gamess.GamessApplication.qsub_pbs" title="Permalink to this definition">¶</a></dt>
 <dd><p>Return the <em>argv</em>-vector for invoking <cite>qgms</cite> to run GAMESS-US
 with the parameters embedded in this object.</p>
 </dd></dl>
 
 <dl class="method">
-<dt id="gc3libs.application.gamess.GamessApplication.qsub_pbs">
-<tt class="descname">qsub_pbs</tt><big>(</big><em>resource</em>, <em>**kw</em><big>)</big><a class="headerlink" href="#gc3libs.application.gamess.GamessApplication.qsub_pbs" title="Permalink to this definition">¶</a></dt>
+<dt id="gc3libs.application.gamess.GamessApplication.qsub_sge">
+<tt class="descname">qsub_sge</tt><big>(</big><em>resource</em>, <em>**kw</em><big>)</big><a class="headerlink" href="#gc3libs.application.gamess.GamessApplication.qsub_sge" title="Permalink to this definition">¶</a></dt>
 <dd><p>Return the <em>argv</em>-vector for invoking <cite>qgms</cite> to run GAMESS-US
 with the parameters embedded in this object.</p>
 </dd></dl>
@@ -3730,7 +3783,7 @@ cached instance is returned.</p>
 <p>Interface to different resource management systems for the GC3Libs.</p>
 <dl class="class">
 <dt id="gc3libs.backends.LRMS">
-<em class="property">class </em><tt class="descclassname">gc3libs.backends.</tt><tt class="descname">LRMS</tt><big>(</big><em>name</em>, <em>architecture</em>, <em>max_cores</em>, <em>max_cores_per_job</em>, <em>max_memory_per_core</em>, <em>max_walltime</em>, <em>auth=None</em><big>)</big><a class="headerlink" href="#gc3libs.backends.LRMS" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><tt class="descclassname">gc3libs.backends.</tt><tt class="descname">LRMS</tt><big>(</big><em>name</em>, <em>architecture</em>, <em>max_cores</em>, <em>max_cores_per_job</em>, <em>max_memory_per_core</em>, <em>max_walltime</em>, <em>auth=None</em>, <em>**kw</em><big>)</big><a class="headerlink" href="#gc3libs.backends.LRMS" title="Permalink to this definition">¶</a></dt>
 <dd><p>Base class for interfacing with a computing resource.</p>
 <p>The following construction parameters are also set as instance
 attributes.  All of them are mandatory, except <cite>auth</cite>.</p>
@@ -3948,7 +4001,7 @@ Return False otherwise</p>
 <p>Job control on ARC0 resources.</p>
 <dl class="class">
 <dt id="gc3libs.backends.arc0.ArcLrms">
-<em class="property">class </em><tt class="descclassname">gc3libs.backends.arc0.</tt><tt class="descname">ArcLrms</tt><big>(</big><em>name</em>, <em>architecture</em>, <em>max_cores</em>, <em>max_cores_per_job</em>, <em>max_memory_per_core</em>, <em>max_walltime</em>, <em>auth</em>, <em>arc_ldap=None</em>, <em>frontend=None</em>, <em>lost_job_timeout=1800</em>, <em>**kw</em><big>)</big><a class="headerlink" href="#gc3libs.backends.arc0.ArcLrms" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><tt class="descclassname">gc3libs.backends.arc0.</tt><tt class="descname">ArcLrms</tt><big>(</big><em>name</em>, <em>architecture</em>, <em>max_cores</em>, <em>max_cores_per_job</em>, <em>max_memory_per_core</em>, <em>max_walltime</em>, <em>auth</em>, <em>arc_ldap=None</em>, <em>frontend=None</em>, <em>lost_job_timeout=120</em>, <em>**kw</em><big>)</big><a class="headerlink" href="#gc3libs.backends.arc0.ArcLrms" title="Permalink to this definition">¶</a></dt>
 <dd><p>Manage jobs through the ARC middleware.</p>
 <p>In addition to attributes</p>
 <blockquote>
@@ -4164,7 +4217,7 @@ Return False otherwise</p>
 EMI-supported resources.)</p>
 <dl class="class">
 <dt id="gc3libs.backends.arc1.Arc1Lrms">
-<em class="property">class </em><tt class="descclassname">gc3libs.backends.arc1.</tt><tt class="descname">Arc1Lrms</tt><big>(</big><em>name</em>, <em>architecture</em>, <em>max_cores</em>, <em>max_cores_per_job</em>, <em>max_memory_per_core</em>, <em>max_walltime</em>, <em>auth</em>, <em>arc_ldap</em>, <em>frontend=None</em>, <em>lost_job_timeout=1800</em>, <em>**kw</em><big>)</big><a class="headerlink" href="#gc3libs.backends.arc1.Arc1Lrms" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><tt class="descclassname">gc3libs.backends.arc1.</tt><tt class="descname">Arc1Lrms</tt><big>(</big><em>name</em>, <em>architecture</em>, <em>max_cores</em>, <em>max_cores_per_job</em>, <em>max_memory_per_core</em>, <em>max_walltime</em>, <em>auth</em>, <em>arc_ldap</em>, <em>frontend=None</em>, <em>lost_job_timeout=120</em>, <em>**kw</em><big>)</big><a class="headerlink" href="#gc3libs.backends.arc1.Arc1Lrms" title="Permalink to this definition">¶</a></dt>
 <dd><p>Manage jobs through ARC&#8217;s <tt class="docutils literal"><span class="pre">libarcclient</span></tt>.</p>
 <dl class="method">
 <dt id="gc3libs.backends.arc1.Arc1Lrms.cancel_job">
@@ -4699,6 +4752,14 @@ with exit value <cite>1</cite>.</p>
 <tt class="descname">list_jobs</tt><big>(</big><big>)</big><a class="headerlink" href="#gc3utils.commands.cmd_gsession.list_jobs" title="Permalink to this definition">¶</a></dt>
 <dd><p>Called when subcommand is <cite>list</cite>.</p>
 <p>This method basically call the command &#8220;gstat -n -v -s SESSION&#8221;</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="gc3utils.commands.cmd_gsession.show_log">
+<tt class="descname">show_log</tt><big>(</big><big>)</big><a class="headerlink" href="#gc3utils.commands.cmd_gsession.show_log" title="Permalink to this definition">¶</a></dt>
+<dd><p>Called when subcommand is <cite>log</cite>.</p>
+<p>This method will print the history of the jobs in SESSION in a
+logfile fashon</p>
 </dd></dl>
 
 </dd></dl>
