@@ -238,11 +238,24 @@ class SequentialTaskCollection(TaskCollection):
 
     def next(self, done):
         """
-        Called by :meth:`progress` when a job is finished; if
-        `Run.State.TERMINATED` is returned then no other jobs will be
-        run; otherwise, the return value is assigned to
-        `execution.state` and the next job in the `self.tasks` list is
-        executed.
+        Return the state or task to run when step number `done` is completed.
+
+        This method is called when a task is finished; the `done`
+        argument contains the index number of the just-finished task
+        into the `self.tasks` list.  In other words, the task that
+        just completed is available as `self.tasks[done]`.
+
+        The return value from `next` can be either a task state (i.e.,
+        an instance of `Run.State`), or a valid index number for
+        `self.tasks`. In the first case:
+
+        - if the return value is `Run.State.TERMINATED`,
+          then no other jobs will be run;
+        - otherwise, the return value is assigned to `execution.state`
+          and the next job in the `self.tasks` list is executed.
+
+        If instead the return value is a (nonnegative) number, then
+        tasks in the sequence will be re-run starting from that index.
 
         The default implementation runs tasks in the order they were
         given to the constructor, and sets the state to TERMINATED
@@ -287,8 +300,8 @@ class SequentialTaskCollection(TaskCollection):
         return value.  Also, advance `self._current_task` if not at end
         of the list.
         """
-        state = self.next(self._current_task)
-        if state == Run.State.TERMINATED:
+        nxt = self.next(self._current_task)
+        if nxt == Run.State.TERMINATED:
             # set returncode when all tasks are terminated
             self.execution.returncode = 0 # optimistic start...
             # ...but override if something has gone wrong
@@ -299,9 +312,13 @@ class SequentialTaskCollection(TaskCollection):
             # returncode can be overridden in the `terminated()` hook
             self.execution.state = Run.State.TERMINATED
             self._current_task = None
-        else:
-            self.execution.state = state
+        elif nxt in Run.State:
+            self.execution.state = nxt
             self._current_task += 1
+        else:
+            # `nxt` must be a valid index into `self.tasks`
+            self._current_task = nxt
+            self.submit(resubmit=True)
         self.changed = True
 
 
@@ -321,6 +338,7 @@ class SequentialTaskCollection(TaskCollection):
         else:
             self.execution.state = Run.State.RUNNING
         self.changed = True
+        return self.execution.state
 
 
     def update_state(self, **kw):
@@ -335,18 +353,24 @@ class SequentialTaskCollection(TaskCollection):
             # update state of current task
             task = self.tasks[self._current_task]
             task.update_state(**kw)
-            #gc3libs.log.debug("Task #%d in state %s"
-            #                  % (self._current_task, task.execution.state))
+            gc3libs.log.debug("Task #%d in state %s"
+                             % (self._current_task, task.execution.state))
         # set state based on the state of current task
         if self._current_task == 0 and task.execution.state in [ Run.State.NEW, Run.State.SUBMITTED ]:
             self.execution.state = task.execution.state
         elif (task.execution.state == Run.State.TERMINATED
               and self._current_task == len(self.tasks)-1):
-            self.execution.state = self.next(self._current_task)
-            if self.execution.state not in [ Run.State.STOPPED,
-                                             Run.State.TERMINATED ]:
-                self._current_task += 1
-                self.changed = True
+            nxt = self.next(self._current_task)
+            if nxt in Run.State:
+                self.execution.state = nxt
+                if self.execution.state not in [ Run.State.STOPPED,
+                                                 Run.State.TERMINATED ]:
+                    self._current_task += 1
+                    self.changed = True
+            else:
+                # `nxt` must be a valid index into `self.tasks`
+                self._current_task = nxt
+                self.submit(resubmit=True)
         else:
             self.execution.state = Run.State.RUNNING
         return self.execution.state
