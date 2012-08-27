@@ -1697,11 +1697,11 @@ class Run(Struct):
     @defproperty
     def exitcode():
         """
-        The "exit code" part of a `Run.returncode`, see
-        `os.WEXITSTATUS`.  This is an 8-bit integer, whose meaning is
-        entirely application-specific.  However, the value `-1` is
-        used to mean that an error has occurred and the application
-        could not end its execution normally.
+        The "exit code" part of a `Run.returncode`, see `os.WEXITSTATUS`.
+        This is an 8-bit integer, whose meaning is entirely
+        application-specific.  (However, the value `255` is often used
+        to mean that an error has occurred and the application could
+        not end its execution normally.)
         """
         def fget(self):
             return self._exitcode
