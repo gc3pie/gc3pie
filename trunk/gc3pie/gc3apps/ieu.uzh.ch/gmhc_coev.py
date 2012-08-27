@@ -60,12 +60,29 @@ from gc3libs.compat.collections import defaultdict
 from gc3libs.dag import SequentialTaskCollection
 
 
+## auxilirary functions
+
+def _increase(value, inflection, ratio=2, increment=2):
+    """
+    Return increased `value`.
+
+    The new value is `value` multiplied by `ratio` if the product is
+    less than `inflection`; otherwise, it's `value` plus `increment`.
+    In other words, values grow exponentially until the inflection
+    point, after which they grow linearly.
+    """
+    if value > inflection:
+        return (ratio * value)
+    else:
+        return (value + increment)
+
+
 ## custom application class
 
 class GMhcCoevApplication(Application):
     """
     Custom class to wrap the execution of a single step of the
-    ``MHC_coev_*` program by T. Wilson.
+    ``MHC_coev_*`` program by A. B. Wilson and collaborators.
     """
     def __init__(self,
                  N, p_mut_coeff, choose_or_rand, sick_or_not, off_v_last,
@@ -97,7 +114,7 @@ class GMhcCoevApplication(Application):
                                  # the MatLab workspace, but allow 5
                                  # minutes for I/O before the job is
                                  # killed forcibly by the batch system
-                                 kw.get('requested_walltime')*60 - 20,
+                                 kw.get('requested_walltime')*60 - 5,
                                  N, p_mut_coeff, choose_or_rand, sick_or_not, off_v_last,
                                  ],
                              inputs = inputs,
@@ -108,13 +125,16 @@ class GMhcCoevApplication(Application):
                              tags = [ 'APPS/BIO/MHC_COEV-040711' ],
                              **kw)
 
+
 class GMhcCoevTask(SequentialTaskCollection):
     """
     Custom class to wrap the execution of the ``MHC_coev_*` program
-    by T. Wilson.  Execution continues in stepf of predefined duration
-    until a specified number of generations have been computed and
-    saved.  All the output files ever produced are collected in the
-    path specified by the `output_dir` parameter to `__init__`.
+    by A. B. Wilson and collaborators.
+
+    Execution continues in steps of predefined duration until a
+    specified number of generations have been computed and saved.  All
+    the output files ever produced are collected in the path specified
+    by the `output_dir` parameter to `__init__`.
 
     """
 
@@ -131,6 +151,7 @@ class GMhcCoevTask(SequentialTaskCollection):
         `generations_to_do` generations have been computed.
 
         :param int single_run_duration: Duration of a single step in minutes.
+        :param int   generations_to_do: Count of generations that ``MHC_coev`` should simulate.
 
         :param              N: Passed unchanged to the MHC_coev program.
         :param    p_mut_coeff: Passed unchanged to the MHC_coev program.
@@ -162,23 +183,30 @@ class GMhcCoevTask(SequentialTaskCollection):
 
         self.generations_done = 0
 
-        if kw.has_key('jobname'):
+        # make up a sensibel job name if there isn't one
+        if 'jobname' in kw:
             self.jobname = kw['jobname']
         else:
             if self.executable is None:
                 self.jobname = ('MHC_coev.%s.%s.%s.%s.%s'
-                                   % (N, p_mut_coeff, choose_or_rand, sick_or_not, off_v_last))
+                                % (N, p_mut_coeff, choose_or_rand, sick_or_not, off_v_last))
             else:
                 os.path.basename(self.executable)
 
+        # remove potentially conflicting kyword arguments
+        kw.pop('output_dir', None)
+        kw.pop('requested_walltime', None)
+
         # create initial task and register it
-        initial_task = GMhcCoevApplication(N, p_mut_coeff, choose_or_rand, sick_or_not, off_v_last,
-                                           output_dir = os.path.join(output_dir, 'tmp'),
-                                           executable = self.executable,
-                                           # XXX: rounds to the nearest hour in excess
-                                           required_walltime = (single_run_duration + 60) / 60,
-                                           **kw)
+        initial_task = GMhcCoevApplication(
+            N, p_mut_coeff, choose_or_rand, sick_or_not, off_v_last,
+            output_dir = os.path.join(output_dir, 'tmp'),
+            executable = self.executable,
+            # XXX: rounds to the nearest hour in excess
+            requested_walltime = (single_run_duration + 60) / 60,
+            **kw)
         SequentialTaskCollection.__init__(self, self.jobname, [initial_task], grid)
+
 
     # regular expression for extracting the generation no. from an output file name
     GENERATIONS_FILENAME_RE = re.compile(r'(?P<generation_no>[0-9]+)gen\.mat$')
@@ -190,19 +218,32 @@ class GMhcCoevTask(SequentialTaskCollection):
         ``latest_work.mat`` file.
         """
         task_output_dir = self.tasks[done].output_dir
+        if not os.path.exists(task_output_dir):
+            # no output, resubmit immediately
+            return done
+        stdout_filename = self.tasks[done].stdout
+        stderr_filename = self.tasks[done].stderr
+        last_run = self.tasks[done].execution
         exclude = [
             os.path.basename(self.tasks[done].executable),
-            self.tasks[done].stdout,
-            self.tasks[done].stderr,
+            stdout_filename,
+            stderr_filename,
             ]
-        # move files one level up, except the ones listed in `exclude`
+        # move files one level up, except the ones listed in
+        # `exclude`, and read the contents of STDOUT/STDERR into
+        # `job_out` and `job_err`
+        stdout_contents = ''
+        stderr_contents = ''
+        generation_files_count = 0
         for entry in os.listdir(task_output_dir):
             src_entry = os.path.join(task_output_dir, entry)
             # concatenate all output files together
-            if entry == self.tasks[done].stdout:
+            if entry == stdout_filename:
                 gc3libs.utils.cat(src_entry, output=os.path.join(self.output_dir, entry), append=True)
-            if entry == self.tasks[done].stderr:
+                stdout_contents = gc3libs.utils.read_contents(src_entry)
+            if entry == stderr_filename:
                 gc3libs.utils.cat(src_entry, output=os.path.join(self.output_dir, entry), append=True)
+                stderr_contents = gc3libs.utils.read_contents(src_entry)
             if entry in exclude or (entry.startswith('script.') and entry.endswith('.sh')):
                 # delete entry and continue with next one
                 os.remove(src_entry)
@@ -211,6 +252,7 @@ class GMhcCoevTask(SequentialTaskCollection):
             # generation no. and update the generation count
             match = GMhcCoevTask.GENERATIONS_FILENAME_RE.search(entry)
             if match:
+                generation_files_count += 1
                 generation_no = int(match.group('generation_no'))
                 self.generations_done = max(self.generations_done, generation_no)
             # now really move file one level up
@@ -220,6 +262,43 @@ class GMhcCoevTask(SequentialTaskCollection):
                 gc3libs.utils.backup(dest_entry)
             os.rename(os.path.join(task_output_dir, entry), dest_entry)
         os.removedirs(task_output_dir)
+
+        # scan for common failures and take correction measures
+        report = open(os.path.join(self.output_dir, stdout_filename), 'a')
+
+        # 0. did the job run at all?
+        if last_run.used_walltime < 5: # 5 minutes
+            report.write(
+                "gmhc_coev: Job %s did not run at all,"
+                " will try resubmitting to a different resource.\n"
+                % (self,))
+            # resubmit
+            return done
+
+        # 1. out of memory?
+        elif (# generic memory error (convert both values to MBs for comparison)
+            (last_run.used_memory / 1024) >= (self.extra.requested_memory * 1024)
+            # MATLAB-specific error condition
+            or (last_run.exitcode == 255
+                and ('Out of memory.' in stderr_contents
+                     or 'MATLAB:nomem' in stderr_contents))):
+            self.extra.requested_memory = _increase(self.extra.requested_memory, 8) # start growing linearly at 8GB
+            report.write(
+                "gmhc_coev: Possible out-of-memory condition detected in job %s,"
+                " will request %dGB for next run.\n"
+                % (self.tasks[done], self.requested_memory,))
+
+        # 2. not enough time to compute even one generation?
+        elif (generation_files_count == 0
+              # be sure that the job has run for at least the expected time, +/- 30 minutes
+              and (last_run.used_walltime / 60) > (self.single_run_duration - 30)):
+            self.single_run_duration = _increase(self.single_run_duration, 24*60,
+                                                 increase=4*60)
+            report.write(
+                "gmhc_coev: Job %s could not complete 1 generation in the allotted time,"
+                " will request %d minutes for next run.\n"
+                % (self.tasks[done], self.single_run_duration,))
+
         # if a `latest_work.mat` file exists, then we need
         # more time to compute the required number of generations
         latest_work = os.path.join(self.output_dir, 'latest_work.mat')
@@ -228,6 +307,10 @@ class GMhcCoevTask(SequentialTaskCollection):
         if self.generations_done < self.generations_to_do:
             gc3libs.log.debug("Computed %s generations, %s to do; submitting another job."
                               % (self.generations_done, self.generations_to_do))
+            report.write("gmhc_coev:"
+                         " Computed %s generations, %s to do; submitting another job.\n"
+                         % (self.generations_done, self.generations_to_do))
+            report.close()
             self.add(
                 GMhcCoevApplication(self.N, self.p_mut_coeff, self.choose_or_rand, self.sick_or_not, self.off_v_last,
                                     output_dir = os.path.join(self.output_dir, 'tmp'),
@@ -240,6 +323,10 @@ class GMhcCoevTask(SequentialTaskCollection):
         else:
             gc3libs.log.debug("Computed %s generations, no more to do."
                               % (self.generations_done))
+            report.write("gmhc_coev:"
+                         " Computed %s generations, no more to do.\n"
+                         % (self.generations_done,))
+            report.close()
             self.execution.returncode = self.tasks[done].execution.returncode
             return Run.State.TERMINATED
 
@@ -556,8 +643,6 @@ newly-created jobs so that this limit is never exceeded.
 
     @staticmethod
     def _params_to_str(N, p_mut_coeff, choose_or_rand, sick_or_not, off_v_last):
-        gc3libs.log.debug("_params_to_str(%r,%r,%r,%r,%r)"
-                          % (N, p_mut_coeff, choose_or_rand, sick_or_not, off_v_last))
         return str.join('__', [
             GMhcCoevScript._p_mut_coeff_to_str(p_mut_coeff),
             GMhcCoevScript._N_to_str(N),
