@@ -144,8 +144,8 @@ class FilesystemStore(Store):
                 % (obj.persistent_id, id_))
         # FIXME: compatibility fix for sessions whose lifetime extends
         # over r2623, REMOVE BEFORE RELEASE!
-        if hasattr(obj, "execution") and hasattr(obj.execution, "history") and not hasattr(obj.execution, "log"):
-            obj.execution.log = obj.execution.history
+        if hasattr(obj, "execution") and hasattr(obj.execution, "log") and not hasattr(obj.execution, "history"):
+            obj.execution.history = obj.execution.log
         return obj
 
     @same_docstring_as(Store.remove)
