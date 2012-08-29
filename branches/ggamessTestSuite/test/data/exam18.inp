@@ -4,8 +4,8 @@
 !  GAMESS FINAL E= -12.6956518722, with vibrational FREQ=913.17
 !  A separate run gives E(P)= -6.32635, so De= 26.95 kcal/mol
 !
-! GC3: grepLinesAndAnalyze("FINAL \s+ RHF", "", 5, -12.6956518722, GamessTst.tolE, "Eerr")
-! GC3: grepLinesAndAnalyze("FREQUENCY\:", "tail", 2, 913.17, GamessTst.tolW, "Werr")
+! ggamess test: grepLinesAndAnalyze("FINAL \s+ RHF", "", 5, -12.6956518722, GamessTst.tolE, "Eerr")
+! ggamess test: grepLinesAndAnalyze("FREQUENCY\:", "tail", 2, 913.17, GamessTst.tolW, "Werr")
 !
  $CONTRL SCFTYP=RHF RUNTYP=HESSIAN PP=SBKJC NZVAR=1 $END
  $SYSTEM TIMLIM=1 $END

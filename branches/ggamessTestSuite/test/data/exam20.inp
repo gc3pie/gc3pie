@@ -6,8 +6,8 @@
 !  optimal exponent turns out to be 0.036713, with a
 !  corresponding FINAL energy of -11.3010023066
 !
-! GC3: grepLinesAndAnalyze("FINAL \s+ RHF", "tail", 5, -11.3010023066, GamessTst.tolE, "Eerr")
-! GC3: grepLinesAndAnalyze("P(1)=", "tail", 2, 0.036713, GamessTst.tolW, "Werr")
+! ggamess test: grepLinesAndAnalyze("FINAL \s+ RHF", "tail", 5, -11.3010023066, GamessTst.tolE, "Eerr")
+! ggamess test: grepLinesAndAnalyze("P(1)=", "tail", 2, 0.036713, GamessTst.tolW, "Werr")
 !
 !
  $CONTRL SCFTYP=RHF RUNTYP=TRUDGE ICHARG=-1 PP=SBKJC $END

@@ -16,7 +16,7 @@
 !
 !  The FINAL energy is -288.8285729745 after 7 iterations.
 !
-! GC3: grepLinesAndAnalyze("FINAL \s GVB", "tail", 5, -288.8285729745, GamessTst.tolE, "Eerr")
+! ggamess test: grepLinesAndAnalyze("FINAL \s GVB", "tail", 5, -288.8285729745, GamessTst.tolE, "Eerr")
 !
  $CONTRL SCFTYP=GVB MULT=3 $END
  $SYSTEM TIMLIM=1 KDIAG=3 $END

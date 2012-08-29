@@ -20,8 +20,8 @@
 !  compared to the explicit CCSD/6-31G calculation:
 !        CCSD ENERGY= -600.7485966549 
 !
-! GC3: grepLinesAndAnalyze("FINAL", "tail", 5, -599.9687803934, GamessTst.tolE, "SCFerr")
-! GC3: grepLinesAndAnalyze("E\(MP2\)=", "tail", 2, -600.7532099625, GamessTst.tolE, "MP2err")
+! ggamess test: grepLinesAndAnalyze("FINAL", "tail", 5, -599.9687803934, GamessTst.tolE, "SCFerr")
+! ggamess test: grepLinesAndAnalyze("E\(MP2\)=", "tail", 2, -600.7532099625, GamessTst.tolE, "MP2err")
 !
  $CONTRL SCFTYP=RHF RUNTYP=ENERGY MPLEVL=2 COORD=ZMT $END
  $SYSTEM MWORDS=1 $END

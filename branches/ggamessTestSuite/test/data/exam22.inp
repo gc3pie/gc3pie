@@ -6,9 +6,9 @@
 !   E(MP2)= -94.2315757676, with RMS grad=0.003359469
 !   Dipoles for HF and MP2 are 2.049391 and 2.098487 D.
 !
-! GC3: grepLinesAndAnalyze("^E\(MP2\)", "head", 2, -94.2315757676, GamessTst.tolE, "Eerr")
-! GC3: grepLinesAndAnalyze("RMS \s+G", "head", 4, 0.003359469, GamessTst.tolG, "Gerr")
-! GC3: grepAndFollow("DEBYE", "tail", "head", 4, 2.098487, GamessTst.tolD, "Derr")
+! ggamess test: grepLinesAndAnalyze("^E\(MP2\)", "head", 2, -94.2315757676, GamessTst.tolE, "Eerr")
+! ggamess test: grepLinesAndAnalyze("RMS \s+G", "head", 4, 0.003359469, GamessTst.tolG, "Gerr")
+! ggamess test: grepAndFollow("DEBYE", "tail", "head", 4, 2.098487, GamessTst.tolD, "Derr")
 !
  $CONTRL SCFTYP=UHF MULT=3 RUNTYP=GRADIENT MPLEVL=2
          COORD=ZMT $END

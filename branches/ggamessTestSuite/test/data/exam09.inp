@@ -15,7 +15,7 @@
 !    with c(1) = 0.9884456 and dipole moment = 2.301620
 !    MRMP (single state MCQDPT) E(MP2) = -75.7109705651
 !
-! GC3: grepLinesAndAnalyze("E\(MP2\)", "tail", 12, -75.7109705643, GamessTst.tolE, "Eerr")
+! ggamess test: grepLinesAndAnalyze("E\(MP2\)", "tail", 12, -75.7109705643, GamessTst.tolE, "Eerr")
 !
  $CONTRL SCFTYP=MCSCF MPLEVL=2 $END
  $SYSTEM TIMLIM=1 $END

@@ -54,13 +54,13 @@ class GamessTestSuite:
 
 
 	def __init__(self, directory):
- 		self.L = []
+ 		#self.L = []
  		self.exQ = []
 		self.listOfTests = []
 		self.list_of_analyzed_files = []
 		self.dirLog = directory
 		os.chdir(self.dirLog)
-	
+	#For testing purposes	
 	def _getInputFiles(self):
 		#return os.path.list('*.inp')
 		return [exam01.inp, exam39.inp]
@@ -103,55 +103,52 @@ class GamessTestSuite:
 		return r
 	
 	def runAll(self):
-		gc3libs.log.info("Checking the results of your test GAMESS calculations, the output files (exam??.out) will be taken from %s directory.", TestSet.dirLog)
-		LFailedTestNames = []  
-		LFailedTestDesc = []  
-		NumberOfTests = len(self.listOfTests)
-		NumberOfCorrectTests = 0
-		if len(self.listOfTests) == 0:
-		   #self.log.warning("The test list is empty.")
-		   gc3libs.log.debug("The test list is empty.")
-		   raise RuntimeError("The list with tests is empty. The tests will not be run.")
+		#self.LFailedTestNames = []  
+		#self.LFailedTestDesc = []  
+		#self.NumberOfTests = len(self.listOfTests)
+		#self.NumberOfCorrectTests = 0
+		#if len(self.listOfTests) == 0:
+		#   gc3libs.log.debug("The test list is empty.")
+		#   raise RuntimeError("The list with tests is empty. The tests will not be run.")
 		#Each INP file shold have a GAMESS OUT file that terminated normally
-		for file_input, file_output in zip(self.listOfTests, self.list_of_analyzed_files):
+		#for file_input, file_output in zip(self.listOfTests, self.list_of_analyzed_files):
 			#print "runAll I", file_input
 			#print "runAll O", file_output
 			#gc3libs.log.info("Testing filename %s", filename)	
 			#Check if the file exists
 			#TODO: This might be not needed
-			if os.path.exists(file_input) == False:
-					LFailedTestNames.append(filename)
-					LFailedTestDesc.append("The file DOES NOT exist.")
-					print "The input file DOES NOT exist."
-					continue
-			if os.path.exists(file_output) == False:
-					LFailedTestNames.append(filename)
-					LFailedTestDesc.append("The file DOES NOT exist.")
-					print "The output file DOES NOT exist."
-					continue
+		#	if os.path.exists(file_input) == False:
+		#			LFailedTestNames.append(filename)
+		#			LFailedTestDesc.append("The file DOES NOT exist.")
+		#			gc3libs.log.debug("The input file %s DOES NOT exist.", file_input)
+		#			continue
+		#	if os.path.exists(file_output) == False:
+		#			LFailedTestNames.append(filename)
+		#			LFailedTestDesc.append("The file DOES NOT exist.")
+		#			gc3libs.log.debug("The output file %s DOES NOT exist.", fil_output)
+		#			continue
 			#Check if the test terminated normally
-			FILE = open(file_output, 'r')
-			isOK = self.grep("TERMINATED+\s+NORMALLY", FILE)	
-			FILE.close()
-			if len(isOK) == 0:
-				LFailedTestNames.append(file_output)
-				LFailedTestDesc.append("The file DID NOT terminated normally.")
-				print "The file DID NOT terminated normally."
-				continue
-			NumberOfCorrectTests = NumberOfCorrectTests + 1	
-		
-		if len(LFailedTestNames) > 0:
-			gc3libs.log.info("Please check carefully each of the following runs as these tests will not be executed:")
-			print "Please check carefully each of the following runs as these tests will not be executed:"
-			for test, desc in zip(LFailedTestNames, LFailedTestDesc):
-				print test, ": ", desc
-			gc3libs.log.info("Running the remaining %s tests.",NumberOfCorrectTests)
-		else:
-			gc3libs.log.info("Detected %s tests.",NumberOfCorrectTests)
-			
+		#	FILE = open(file_output, 'r')
+		#	isOK = self.grep("TERMINATED+\s+NORMALLY", FILE)	
+		#	FILE.close()
+		#	if len(isOK) == 0:
+		#		LFailedTestNames.append(file_output)
+		#		LFailedTestDesc.append("The file DID NOT terminated normally.")
+		#		gc3libs.log.debug("The file %s DID NOT terminated normally.", file_output)
+		#		continue
+		#	NumberOfCorrectTests = NumberOfCorrectTests + 1	
 		NumberOfIncorrectResults = 0
-		print "list", len(self.listOfTests)
-		print "queue", len(self.exQ)
+		
+		if len(self.LFailedTestNames) > 0:
+			gc3libs.log.info("Please check carefully each of the following runs as these tests will not be executed:")
+			for test, desc in zip(self.LFailedTestNames, self.LFailedTestDesc):
+				gc3libs.log.info( "%s : %s", test,desc)
+			gc3libs.log.info("Running the remaining %s tests.",self.NumberOfCorrectTests)
+		else:
+			gc3libs.log.info("Detected %s tests.",self.NumberOfCorrectTests)
+			
+		#print "list", len(self.listOfTests)
+		#print "queue", len(self.exQ)
 		for testName, testObj in zip(self.listOfTests, self.exQ):
 			#print testName
 			if testName in LFailedTestNames:
@@ -161,13 +158,14 @@ class GamessTestSuite:
 			
 			finalString = testName + ":" + str 
 			if (isCorrect):
-				print '%-89s    %s' %(finalString, "Passed.")
+				message = '%-89s    %s' %(finalString, "Passed.")
+				self.log.append(message) 
 			else:
 				NumberOfIncorrectResults = NumberOfIncorrectResults + 1
 				LFailedTestNames.append(testName)
 				LFailedTestDesc.append("!!FAILED")
-				print '%-89s    %s' %(finalString, "!!FAILED.")
-				 
+				message =  '%-89s    %s' %(finalString, "!!FAILED.")
+				self.log.append(message)
 		if NumberOfCorrectTests != NumberOfTests:
 			print "Only", NumberOfCorrectTests,"out of",NumberOfTests, "terminated normally."
 		else:
@@ -181,7 +179,7 @@ class GamessTestSuite:
 	def generate_tests(self,filenameINP, filenameOUT):
 		try:	
 			file = open(filenameINP, 'r') 
-			foundlines = self.grep("GC3", file)	
+			foundlines = self.grep("ggamess test", file)	
 			file.close()
 		except IOError:
 			raise IOError("There is a problem with a file %s.", filenameINP) 
@@ -199,7 +197,6 @@ class GamessTestSuite:
 		suffix2 = len(labelFollow+"(")
 		#print filename
 		for line in foundlines:
-		    #print i, line
 		    if  line.find(labelAnalyze)> 0:
 			pos1 = line.find(labelAnalyze)+suffix1  
 			end = line.find(")")
