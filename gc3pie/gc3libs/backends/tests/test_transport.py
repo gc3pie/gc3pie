@@ -24,6 +24,7 @@ __version__ = '$Revision$'
 # System imports
 import os
 import getpass
+import tempfile
 
 # Nose imports
 from nose.tools import assert_true, assert_false, assert_equal, raises, set_trace
@@ -81,15 +82,6 @@ class StubForTestTransport:
         self.transport.remove(os.path.join(self.tmpdir, 'testfile'))
         assert_equal(self.transport.listdir(self.tmpdir), [])
 
-    @raises(TransportError)
-    def test_open_failure_nonexistent_file(self):
-        fd = self.transport.open(
-            os.path.join(self.tmpdir, 'nonexistent'), 'r')
-
-    @raises(TransportError)
-    def test_open_failure_unauthorized(self):
-        fd = self.transport.open('/proc/kcore', 'r')
-
     def test_chmod(self):
         remotefile = os.path.join(self.tmpdir, 'unauth')
         fd = self.transport.open(remotefile, 'w+')
@@ -101,6 +93,37 @@ class StubForTestTransport:
             fd = self.transport.open(remotefile, 'r')
         except TransportError:
             pass
+
+    def test_get_and_put(self):
+        # create a local temporary file
+        (fd, tmpfile) = tempfile.mkstemp()
+        try:
+            os.write(fd, "Test file")
+            os.close(fd)
+
+            # copy it to the remote end using Transport.put()
+            destfile = os.path.join(self.tmpdir, os.path.basename(tmpfile))
+            self.transport.put(tmpfile, destfile)
+            # remove the local file
+            os.remove(tmpfile)
+
+            # get the file using Transport.get()
+            self.transport.get(destfile, tmpfile)
+
+            # check the content
+            fd = open(tmpfile)
+            assert_equal(fd.read(), "Test file")
+        finally:
+            os.remove(tmpfile)
+
+    @raises(TransportError)
+    def test_open_failure_nonexistent_file(self):
+        fd = self.transport.open(
+            os.path.join(self.tmpdir, 'nonexistent'), 'r')
+
+    @raises(TransportError)
+    def test_open_failure_unauthorized(self):
+        fd = self.transport.open('/proc/kcore', 'r')
 
     @raises(TransportError)
     def test_remove_failure(self):
