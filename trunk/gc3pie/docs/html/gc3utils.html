@@ -66,7 +66,7 @@
 <p>The GC3Utils are lower-level commands, provided to perform common
 operations on jobs, regardless of their type or the application they run.</p>
 <p>For instance, GC3Utils provide commands to obtain the list and status
-of computational resources (<strong class="command">glist</strong>); to clear the list of jobs from
+of computational resources (<strong class="command">gservers</strong>); to clear the list of jobs from
 old and failed ones (<strong class="command">gclean</strong>); to get detailed information on a
 submitted job (<strong class="command">ginfo</strong>, mainly for debugging purposes).</p>
 <p>This chapter is a tutorial for the GC3Utils command-line utilities.</p>
@@ -83,7 +83,7 @@ look it up in the <a class="reference internal" href="glossary.html#glossary"><e
 <li><a class="reference internal" href="#gget-retrieve-the-output-of-finished-jobs" id="id5"><strong class="command">gget</strong>: retrieve the output of finished jobs</a></li>
 <li><a class="reference internal" href="#gclean-remove-a-completed-job-from-the-status-list" id="id6"><strong class="command">gclean</strong>: remove a completed job from the status list</a></li>
 <li><a class="reference internal" href="#gresub-re-submit-a-failed-job" id="id7"><strong class="command">gresub</strong>: re-submit a failed job</a></li>
-<li><a class="reference internal" href="#glist-list-available-resources" id="id8"><strong class="command">glist</strong>: list available resources</a></li>
+<li><a class="reference internal" href="#gservers-list-available-resources" id="id8"><strong class="command">gservers</strong>: list available resources</a></li>
 <li><a class="reference internal" href="#ginfo-accessing-low-level-details-of-a-job" id="id9"><strong class="command">ginfo</strong>: accessing low-level details of a job</a></li>
 </ul>
 </li>
@@ -262,12 +262,12 @@ was running went unexpectedly down), you can re-submit it with the
 before being submitted again.  If you are unsure what state
 a job is in, check it with <strong class="command">gstat</strong>.</p>
 </div>
-<div class="section" id="glist-list-available-resources">
-<h2><a class="toc-backref" href="#id8"><strong class="command">glist</strong>: list available resources</a><a class="headerlink" href="#glist-list-available-resources" title="Permalink to this headline">¶</a></h2>
-<p>The <strong class="command">glist</strong> command prints out information about the configured resources.
+<div class="section" id="gservers-list-available-resources">
+<h2><a class="toc-backref" href="#id8"><strong class="command">gservers</strong>: list available resources</a><a class="headerlink" href="#gservers-list-available-resources" title="Permalink to this headline">¶</a></h2>
+<p>The <strong class="command">gservers</strong> command prints out information about the configured resources.
 For each resource, a summary of the information recorded in the configuration
 file and the current resource status is printed.  For example:</p>
-<div class="highlight-python"><pre>$ glist
+<div class="highlight-python"><pre>$ gservers
 +----------------------------------------------------------------+
 |                     smscg                                      |
 +================================================================+
@@ -447,7 +447,7 @@ job.13
 <li><a class="reference internal" href="#gget-retrieve-the-output-of-finished-jobs"><strong class="command">gget</strong>: retrieve the output of finished jobs</a></li>
 <li><a class="reference internal" href="#gclean-remove-a-completed-job-from-the-status-list"><strong class="command">gclean</strong>: remove a completed job from the status list</a></li>
 <li><a class="reference internal" href="#gresub-re-submit-a-failed-job"><strong class="command">gresub</strong>: re-submit a failed job</a></li>
-<li><a class="reference internal" href="#glist-list-available-resources"><strong class="command">glist</strong>: list available resources</a></li>
+<li><a class="reference internal" href="#gservers-list-available-resources"><strong class="command">gservers</strong>: list available resources</a></li>
 <li><a class="reference internal" href="#ginfo-accessing-low-level-details-of-a-job"><strong class="command">ginfo</strong>: accessing low-level details of a job</a></li>
 </ul>
 </li>

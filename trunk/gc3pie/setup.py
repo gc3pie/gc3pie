@@ -82,7 +82,7 @@ setuptools.setup(
             'gget = gc3utils.frontend:main',
             'ginfo = gc3utils.frontend:main',
             'gkill = gc3utils.frontend:main',
-            'glist = gc3utils.frontend:main',
+            'gservers = gc3utils.frontend:main',
             'gresub = gc3utils.frontend:main',
             'gstat = gc3utils.frontend:main',
             'gsub = gc3utils.frontend:main',

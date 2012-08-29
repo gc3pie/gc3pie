@@ -140,7 +140,7 @@ exist in the session.
   -r NAME, --resource NAME
     Submit jobs to a specific :term:`resource`. ``NAME`` is a
     reource name or comma-separated list of resource names.
-    Use the command `glist` to list available resources.
+    Use the command `gservers` to list available resources.
 
   -w DURATION, --wall-clock-time DURATION
     Set the time limit for each job (default is '8' for
