@@ -116,7 +116,7 @@ class CryptoApplication(gc3libs.Application):
         """
         # XXX: need to gather more info on how to post-process.
         # for the moment do nothing and report job's exit status
-        
+
         if self.execution.exitcode:
             gc3libs.log.debug(
                 'Application terminated. postprocessing with execution.exicode %d',
@@ -127,11 +127,11 @@ class CryptoApplication(gc3libs.Application):
 
         if self.execution.signal == 123:
             # XXX: this is fragile as it does not really applies to all
-            # DataStaging errors. 
+            # DataStaging errors.
             # Assume Data staging problem at the beginning of the job
             # resubmit
             self.execution.returncode = (0, 99)
-    
+
 class CryptoTask(RetryableTask, gc3libs.utils.Struct):
     """
     Run ``gnfs-cmd`` on a given range
@@ -174,7 +174,7 @@ class CryptoChunkedParameterSweep(ChunkedParameterSweep):
     """
 
     def __init__(self, range_start, range_end, slice, chunk_size,
-                 input_files_archive, gnfs_location, output_folder, grid=None, **kw):
+                 input_files_archive, gnfs_location, output_folder, **kw):
 
         # remember for later
         self.range_end = range_end
@@ -185,7 +185,7 @@ class CryptoChunkedParameterSweep(ChunkedParameterSweep):
         self.kw = kw
 
         ChunkedParameterSweep.__init__(
-            self, kw['jobname'], range_start, range_end, slice, chunk_size, grid)
+            self, kw['jobname'], range_start, range_end, slice, chunk_size)
 
     def new_task(self, param, **kw):
         """

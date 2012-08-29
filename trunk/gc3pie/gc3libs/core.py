@@ -650,6 +650,17 @@ specified in the configuration file.
         pass
 
 
+# Work around infinite recursion error when trying to compare
+# `UserDict` instances which can contain each other.  We know
+# that two identical tasks are the same object by
+# construction, so let's use this to check.
+def _contained(elt, lst):
+    i = id(elt)
+    for item in lst:
+        if i == id(item):
+            return True
+    return False
+
 
 class Engine(object):
     """
@@ -754,30 +765,21 @@ class Engine(object):
         instance results in a no-op.
         """
         state = task.execution.state
-        # Work around infinite recursion error when trying to compare
-        # `UserDict` instances which can contain each other.  We know
-        # that two identical tasks are the same object by
-        # construction, so let's use this to check.
-        def contained(elt, lst):
-            i = id(elt)
-            for item in lst:
-                if i == id(item):
-                    return True
-            return False
         if Run.State.NEW == state:
-            if not contained(task, self._new): self._new.append(task)
-        elif Run.State.SUBMITTED == state or Run.State.RUNNING == state or Run.State.UNKNOWN == state:
-            if not contained(task, self._in_flight): self._in_flight.append(task)
+            queue = self._new
+        elif state in [Run.State.SUBMITTED, Run.State.RUNNING, Run.State.UNKNOWN]:
+            queue = self._in_flight
         elif Run.State.STOPPED == state:
-            if not contained(task, self._stopped): self._stopped.append(task)
+            queue = self._stopped
         elif Run.State.TERMINATING == state:
-            if not contained(task, self._terminating): self._terminating.append(task)
+            queue = self._terminating
         elif Run.State.TERMINATED == state:
-            if not contained(task, self._terminated): self._terminated.append(task)
+            queue = self._terminated
         else:
             raise AssertionError("Unhandled state '%s' in gc3libs.core.Engine." % state)
-        task.attach(self)
-
+        if not _contained(task, queue):
+            queue.append(task)
+            task.attach(self)
 
     def remove(self, task):
         """Remove a `task` from the list of tasks managed by this Engine."""

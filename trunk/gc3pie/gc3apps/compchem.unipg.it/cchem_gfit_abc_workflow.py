@@ -48,17 +48,16 @@ ABC_RUN="/home/acostantini/workflow/script/abc.sh"
 # class MainSequentialABC --> 2 steps
 #
 class MainSequentialABC(SequentialTaskCollection):
-        def __init__(self, name, ABC_UML_IMAGE, output, g3cfile, dimensions, fortran_pes, inputfilelist_abc, grid=None, **kw):
+        def __init__(self, name, ABC_UML_IMAGE, output, g3cfile, dimensions, fortran_pes, inputfilelist_abc, **kw):
 
                 self.inputfilelist_abc = inputfilelist_abc
                 self.output_folder = output
                 self.kw = kw
                 self.name = name
-                self.grid = grid
 # first step --> __init__ source compiling
 
                 first_task = Gfit3C_ABC_uml_Application(abc_uml_image_file=ABC_UML_IMAGE, output_folder=output, g3c_input_file=g3cfile, dimension_file=dimensions, surface_file=fortran_pes, **kw)
-                SequentialTaskCollection.__init__(self, name, [first_task], grid)
+                SequentialTaskCollection.__init__(self, name, [first_task])
 
 # second step --> __init__ ABC execution (parallel)
 
@@ -70,7 +69,7 @@ class MainSequentialABC(SequentialTaskCollection):
 
                         abc_executable = os.path.join(first_task.output_dir, "abc.x") #first_task.outputs["abc.x"].path)
 
-                        second_task = ParallelABC(ABC_RUN, abc_executable, self.inputfilelist_abc, first_task.output_dir, self.grid, **self.kw)
+                        second_task = ParallelABC(ABC_RUN, abc_executable, self.inputfilelist_abc, first_task.output_dir, **self.kw)
                         self.add(second_task)
                         return Run.State.RUNNING
 
@@ -84,7 +83,7 @@ class MainSequentialABC(SequentialTaskCollection):
 # class ParallelABC --> ABC execution (parallel)
 #
 class ParallelABC(ParallelTaskCollection):
-        def __init__(self, executable, abc_executable, inputfilelist_abc, output_folder, grid=None, **kw):
+        def __init__(self, executable, abc_executable, inputfilelist_abc, output_folder, **kw):
 
                 parallel_task = []
                 for input_file in inputfilelist_abc:
@@ -92,7 +91,7 @@ class ParallelABC(ParallelTaskCollection):
 
                         parallel_task.append(ABC_Application(executable, abc_executable, input_file, output_folder, **kw))
 
-                ParallelTaskCollection.__init__(self, name, parallel_task, grid)
+                ParallelTaskCollection.__init__(self, name, parallel_task)
 
         def terminated(self):
                 self.execution.returncode = (0, 0)

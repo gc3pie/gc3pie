@@ -2,7 +2,7 @@
 #
 """
 """
-# Copyright (C) 2011 GC3, University of Zurich. All rights reserved.
+# Copyright (C) 2011, 2012 GC3, University of Zurich. All rights reserved.
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
@@ -31,10 +31,10 @@ __changelog__ = """
 provided 10 parameters and 400 mzXML input files
 
 for i in range(0,9):
-	Par(400)
-	   +> Seq(4) -> Par(2) -> (3)
-			   +-> Seq(4)
-			   +-> Seq(5)
+        Par(400)
+           +> Seq(4) -> Par(2) -> (3)
+                           +-> Seq(4)
+                           +-> Seq(5)
 
 """
 __docformat__ = 'reStructuredText'
@@ -81,7 +81,7 @@ class XtandemPostApplication(Application):
                 # arguments.append(" ["+os.path.relpath(os.path.join(root,file),output_folder)+"] ")
                 tar.add(os.path.join(root,file))
         tar.close()
-                
+
         self.iteration = iteration
         gc3libs.Application.__init__(self,
                                      executable = "/bin/echo",
@@ -150,7 +150,7 @@ class XtandemApplicationA(Application):
     def terminated(self):
         self.execution.returncode = 0
         gc3libs.log.info("\t\t\t\t\tCalling XtandemApplicationA.terminated()")
-        
+
 
 class GdemoWorkflow(SessionBasedScript):
     """
@@ -205,7 +205,7 @@ class GdemoWorkflow(SessionBasedScript):
     def new_tasks(self, extra):
 
         kw = extra.copy()
-        name = "GC3Pie_demo"   
+        name = "GC3Pie_demo"
 
         for param in self.parameters:
             name = "Gdemo_param_"+str(param)
@@ -224,17 +224,16 @@ class GdemoWorkflow(SessionBasedScript):
 # `self.params.iterations` passes, each pass corresponding to
 # an application of the `self.params.executable` function.
 #
-# This is the crucial point: 
+# This is the crucial point:
 
 class MainParallelIteration(ParallelTaskCollection):
 
     def __init__(self, param_value,
                  input_file_folder,
-                 output_folder,
-                 grid=None):
+                 output_folder):
 
         self.jobname = "Gdemo_MainParal_"+str(param_value)
-        
+
         gc3libs.log.info("\t\tCalling MainParallelIteration.__init(%d,%s)" % (param_value,input_file_folder))
 
         self.tasks = []
@@ -246,9 +245,9 @@ class MainParallelIteration(ParallelTaskCollection):
                     output_folder
                     )
                 )
-        ParallelTaskCollection.__init__(self, self.jobname, self.tasks, grid)
+        ParallelTaskCollection.__init__(self, self.jobname, self.tasks)
 
-    
+
     def __str__(self):
         return self.jobname
 
@@ -261,10 +260,9 @@ class InnerParallelIteration(ParallelTaskCollection):
     def __init__(self, param_value,
                  input_file,
                  output_folder,
-                 extra={},
-                 grid=None):
+                 extra={}):
 
-        
+
         gc3libs.log.info("\t\t\tCalling InnerParallelIteration.init(%d,%s)" % (param_value,input_file))
 
         tasks = []
@@ -293,7 +291,7 @@ class InnerParallelIteration(ParallelTaskCollection):
             )
 
         # actually init jobs
-        ParallelTaskCollection.__init__(self, self.jobname, tasks, grid)
+        ParallelTaskCollection.__init__(self, self.jobname, tasks)
 
     def __str__(self):
         return self.jobname
@@ -303,7 +301,7 @@ class InnerParallelIteration(ParallelTaskCollection):
         self.execution.returncode = 0
 
 class InnerSequentialIterationA(SequentialTaskCollection):
-    def __init__(self, param_value, input_file_name, output_folder, iteration, grid=None, **kw):
+    def __init__(self, param_value, input_file_name, output_folder, iteration, **kw):
 
         gc3libs.log.info("\t\t\t\tCalling InnerSequentialIterationA.__init__ for param [%d] and file [%s]" % (param_value, input_file_name))
 
@@ -313,7 +311,7 @@ class InnerSequentialIterationA(SequentialTaskCollection):
         self.jobname = "Gdemo_InnerSequenceA_"+str(self.param_value)
 
         initial_task = XtandemApplicationA(param_value, input_file_name, output_folder, iteration)
-        SequentialTaskCollection.__init__(self, self.jobname, [initial_task], grid)
+        SequentialTaskCollection.__init__(self, self.jobname, [initial_task])
 
     def __str__(self):
         return self.jobname
@@ -332,7 +330,7 @@ class InnerSequentialIterationA(SequentialTaskCollection):
 
 
 class InnerSequentialIterationB(SequentialTaskCollection):
-    def __init__(self, param_value, input_file_name, output_folder, iteration, grid=None, **kw):
+    def __init__(self, param_value, input_file_name, output_folder, iteration, **kw):
 
         gc3libs.log.info("\t\t\t\tCalling InnerSequentialIterationB.__init__ for param [%d] and file [%s]" % (param_value, input_file_name))
 
@@ -342,7 +340,7 @@ class InnerSequentialIterationB(SequentialTaskCollection):
         self.jobname = "Gdemo_InnerSequenceB_"+str(self.param_value)
 
         initial_task = XtandemApplicationB(param_value, input_file_name, output_folder, iteration)
-        SequentialTaskCollection.__init__(self, self.jobname, [initial_task], grid)
+        SequentialTaskCollection.__init__(self, self.jobname, [initial_task])
 
     def __str__(self):
         return self.jobname
@@ -361,7 +359,7 @@ class InnerSequentialIterationB(SequentialTaskCollection):
 
 
 class MainSequentialIteration(SequentialTaskCollection):
-    def __init__(self, param_value, inputfile_folder, output_folder, grid=None, **kw):
+    def __init__(self, param_value, inputfile_folder, output_folder, **kw):
         self.param_value = param_value
         self.inputfile_folder = inputfile_folder
         self.output_folder = output_folder
@@ -372,7 +370,7 @@ class MainSequentialIteration(SequentialTaskCollection):
 
         self.initial_task = MainParallelIteration(param_value,inputfile_folder,output_folder)
 
-        SequentialTaskCollection.__init__(self, self.jobname, [self.initial_task], grid)
+        SequentialTaskCollection.__init__(self, self.jobname, [self.initial_task])
 
     def next(self, iteration):
 
