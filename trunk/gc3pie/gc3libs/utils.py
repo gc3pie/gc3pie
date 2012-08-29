@@ -48,6 +48,14 @@ import gc3libs
 import gc3libs.exceptions
 import gc3libs.debug
 
+# This fixes an issue with Python 2.4, which does not have
+# `shutl.WindowsError`
+try:
+    WindowsError = shutil.WindowsError
+except AttributeError:
+    class NeverUsedException(Exception):
+        """this exception should never be raised"""
+    WindowsError = NeverUsedException
 
 def backup(path):
     """
@@ -229,7 +237,7 @@ def copyfile(src, dst, overwrite=False, link=False):
                 shutil.copy2(src, dst)
         else:
             shutil.copy2(src, dst)
-    except shutil.WindowsError:
+    except WindowsError:
         pass
     return True
 
