@@ -54,8 +54,7 @@ class ProcessFilesInParallel(ParallelTaskCollection):
     tasks to end.
     """
 
-    def __init__(self, directory, pattern, task_ctor,
-                 grid=None, **kw):
+    def __init__(self, directory, pattern, task_ctor, **kw):
         tasks = [ ]
         for filename in os.listdir(directory):
             if not fnmatch.fnmatch(filename, pattern):
@@ -70,7 +69,7 @@ class ProcessFilesInParallel(ParallelTaskCollection):
             # list of tasks to execute
             tasks,
             # boilerplate
-            grid=grid, **kw)
+            **kw)
 
 
 ## define our workflow, top to bottom
@@ -80,11 +79,10 @@ class SwathWorkflow(StagedTaskCollection):
     Process all the `.mzXML` files in a given directory.
     """
 
-    def __init__(self, directory, basename,
-                 grid=None, **kw):
+    def __init__(self, directory, basename, **kw):
         self.directory = directory
         self.basename = basename
-        StagedTaskCollection.__init__(self, grid=None, **kw)
+        StagedTaskCollection.__init__(self, **kw)
 
     def stage0(self):
         """
@@ -128,7 +126,7 @@ class SwathWorkflowStage0(ParallelTaskCollection):
       - chroma extraction (long job)
       - chroma extraction (short job) + file merger + MRT normalization
     """
-    def __init__(self, directory, basename, pattern, grid=None, **kw):
+    def __init__(self, directory, basename, pattern, **kw):
         self.directory = directory
         self.basename = basename
         self.pattern = basename + pattern
@@ -143,7 +141,7 @@ class SwathWorkflowStage0(ParallelTaskCollection):
                 ChromaExtractShortPlusNormalization(directory, pattern, **kw),
             ],
             # boilerplate
-            grid=grid, **kw)
+            **kw)
 
     def terminated(self):
         self.trafoxml_file = self.tasks[1].trafoxml_file
@@ -190,13 +188,12 @@ class ChromaExtractShortPlusNormalization(StagedTaskCollection):
     2. Merge all produced files;
     3. Run MRMRTNormalizer on the merged file.
     """
-    def __init__(self, directory, basename, pattern,
-                 grid=None, **kw):
+    def __init__(self, directory, basename, pattern, **kw):
         self.directory = directory
         self.basename = basename
         self.pattern = basename + pattern
         self.kw = kw
-        StagedTaskCollection.__init__(self, grid=None, **kw)
+        StagedTaskCollection.__init__(self, **kw)
 
     def stage0(self):
         """

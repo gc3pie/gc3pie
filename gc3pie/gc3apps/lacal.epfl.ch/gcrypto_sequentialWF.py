@@ -50,7 +50,7 @@ class CryptoApplication(gc3libs.Application):
     Run a Crypto job
     CryptoApplication(param, step, input_files_archive, output_folder, **kw)
     """
-    
+
     def __init__(self, start_range, step, input_files_archive, output, **kw):
 
         # set some execution defaults...
@@ -67,7 +67,7 @@ class CryptoApplication(gc3libs.Application):
         arguments.append(kw['requested_cores'])
         arguments.append("input.tgz")
 
-        src_crypto_bin = resource_filename(Requirement.parse("gc3pie"), 
+        src_crypto_bin = resource_filename(Requirement.parse("gc3pie"),
                                            "gc3libs/etc/gnfs-cmd")
 
         inputs = {input_files_archive:"input.tgz", src_crypto_bin:"gnfs-cmd" }
@@ -80,7 +80,7 @@ class CryptoApplication(gc3libs.Application):
             self,
             executable =  os.path.basename(src_crypto_bin),
             executables = ["input.tgz"],
-            arguments = arguments, 
+            arguments = arguments,
             inputs = inputs,
             outputs = [ '@output.files' ],
             # outputs = gc3libs.ANY_OUTPUT,
@@ -93,14 +93,14 @@ class CryptoApplication(gc3libs.Application):
         """
         Checks whether M*.gz files have been created
         Checks 'done' pattern in stdout
-        
+
         The exit status of the whole job is set to one of these values:
 
         *  0 -- all files processed successfully
         *  1 -- some files were *not* processed successfully
         *  2 -- no files processed successfully
         * 127 -- the ``codeml`` application did not run at all.
-         
+
         """
 
         gc3libs.log.debug('Application terminated. postprocessing with execution.signal [%d]' % self.execution.exitcode)
@@ -114,18 +114,18 @@ class CryptoParallel(ParallelTaskCollection):
     This is an alternative implementeation of the 'max_running' concept
     """
 
-    def __init__(self, begin=None, end=None, step=None, input_files_archive=None, output_folder=None, grid=None, **kw):
+    def __init__(self, begin=None, end=None, step=None, input_files_archive=None, output_folder=None, **kw):
 
         gc3libs.log.debug("Init ParallelCrypto: begin: %s, end: %s, step:%s" % (begin, end, step))
-        
+
         parallel_task = []
 
         name = end
 
         for param in range(int(begin), int(end), int(step)):
             parallel_task.append(CryptoApplication(param, step, input_files_archive, output_folder, **kw))
-            
-        ParallelTaskCollection.__init__(self, name, parallel_task, grid)
+
+        ParallelTaskCollection.__init__(self, name, parallel_task)
 
 
 class CryptoSequence(SequentialTaskCollection):
@@ -139,7 +139,7 @@ class CryptoSequence(SequentialTaskCollection):
     as the following rule:
     [ (end-range - begin_range) / step ] / DEFAULT_PARALLEL_RANGE_INCREMENT
     """
-    def __init__(self, start_range, stop_range, step, pincrement, input_files_archive, output, grid=None, **kw):
+    def __init__(self, start_range, stop_range, step, pincrement, input_files_archive, output, **kw):
 
         # self.parallel_task_increment = int(step) * DEFAULT_PARALLEL_RANGE_INCREMENT
         self.parallel_task_increment = int(step) * int(pincrement)
@@ -160,7 +160,7 @@ class CryptoSequence(SequentialTaskCollection):
 
         tasks.append(CryptoParallel(int(start_range), int(start_range) + self.parallel_task_increment, step, input_files_archive, output))
 
-        SequentialTaskCollection.__init__(self, name, tasks, grid)
+        SequentialTaskCollection.__init__(self, name, tasks)
 
     def next(self, done):
         """
@@ -218,7 +218,7 @@ class GCryptoScript(SessionBasedScript):
             self,
             version = __version__, # module version == script version
             application = CryptoApplication
-            # input_filename_pattern = '*' # we do not need this, is 
+            # input_filename_pattern = '*' # we do not need this, is
             )
 
 
@@ -230,18 +230,18 @@ class GCryptoScript(SessionBasedScript):
         an (input) path name; processing of the given path names is
         done in `parse_args`:meth:
         """
-        self.add_param('args', nargs='*', metavar='START_RANGE, END_RANGE, STEP', 
+        self.add_param('args', nargs='*', metavar='START_RANGE, END_RANGE, STEP',
                   help="Like in a for loop, define:"
                        "Start range, "
                        "end range, "
                        "increment "
                        )
-        
+
 
     def setup_options(self):
         self.add_param("-i", "--input_files", metavar="PATH",
                        action="store", dest="input_files_archive",
-                       default="input.tgz", 
+                       default="input.tgz",
                        help="Reference to input_file archive."
                        "By default, a file named 'input.tgz' will "
                        "be searched in the current directory.")

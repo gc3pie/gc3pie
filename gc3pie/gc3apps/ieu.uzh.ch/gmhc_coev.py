@@ -140,7 +140,7 @@ class GMhcCoevTask(SequentialTaskCollection):
 
     def __init__(self, single_run_duration, generations_to_do,
                  N, p_mut_coeff, choose_or_rand, sick_or_not, off_v_last,
-                 output_dir, executable=None, grid=None, **kw):
+                 output_dir, executable=None, **kw):
 
         """Create a new task running an ``MHC_coev`` binary.
 
@@ -205,7 +205,7 @@ class GMhcCoevTask(SequentialTaskCollection):
             # XXX: rounds to the nearest hour in excess
             requested_walltime = (single_run_duration + 60) / 60,
             **kw)
-        SequentialTaskCollection.__init__(self, self.jobname, [initial_task], grid)
+        SequentialTaskCollection.__init__(self, self.jobname, [initial_task])
 
 
     # regular expression for extracting the generation no. from an output file name

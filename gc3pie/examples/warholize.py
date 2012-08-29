@@ -19,11 +19,11 @@
 
 # GC3Pie tutorial - Warholize
 # ===========================
-# 
+#
 # In this tutorial we will show you how to use GC3Pie libraries in order
 # to build a command line script which will run a complex workflow with
 # both parallel and sequential tasks.
-# 
+#
 # The tutorial itself contains the complete source code of the
 # application (cfr. `Literate Programming`_ on Wikipedia), so that you
 # will be able to produce a working ``warholize.py`` script and
@@ -33,37 +33,37 @@
 # svn tree of GC3Pie::
 
 # $    ./pylit warholize.txt warholize.py
-# 
-# 
+#
+#
 # Introduction
 # ------------
-# 
+#
 # `Warholize` is a GC3Pie demo application to produce, from a generic
 # image picture, a new picture like the famous Warhol's work:
 # `Marylin`_. The script uses the powerful `ImageMagick`_ set of tools
 # (at least version 6.3.5-7). This tutorial will assume that both
 # `ImageMagick` and `GC3Pie` are already installed and configured.
-# 
+#
 # In order to produce a similar image we have to do a series of
 # transformations on the picture:
-# 
+#
 # 1) convert the original image to grayscale.
-# 
+#
 # 2) `colorize` the grayscale image using three different colors each
 #    time, based on the gray levels. We may, for instance, make all
 #    pixels with luminosity between 0-33% in red, pixels
 #    between 34-66% in yellow and pixels between 67% and 100% in green.
-# 
+#
 #    To do that, we first have to:
-# 
+#
 #    a) create a `Color Lookup Table` (LUT) using a combination of three
 #       randomly chosen colors
-# 
+#
 #    b) apply the LUT to the grayscale image
-# 
+#
 # 3) Finally, we can merge together all the colorized images and produce
 #    our `warholized` image.
-# 
+#
 # Clearly, step 2) depends on the step 1), and 3) depends on 2), so we
 # basically have a sequence of tasks, but since step 2) need to create
 # `N` different independent images, we can parallelize this step. In
@@ -78,8 +78,8 @@
 # .                      /        |        \      \
 # .        .------------.  .------------.       .------------.
 # .        | create LUT |  | create LUT |  ...  | create LUT |
-# .        `------------'  `------------'       `------------' 
-# .                   |           |         |      |       
+# .        `------------'  `------------'       `------------'
+# .                   |           |         |      |
 # .        .------------.  .------------.       .------------.
 # .        | apply  LUT |  |  apply LUT |  ...  |  apply LUT |
 # .        `------------'  `------------'       `------------'
@@ -90,23 +90,23 @@
 # .                        | merge `colorized` |
 # .                        |       images      |
 # .                        `-------------------'
-# 
+#
 # From top to bottom
 # ------------------
-# 
+#
 # We will write our script starting from the top and will descend to the
 # bottom, from the command line script, to the workflow and finally to
 # the single execution units which compose the application.
-# 
-# 
+#
+#
 # The script
 # ----------
-# 
+#
 # The `SessionBasedScript` class in the `gc3libs.cmdline` module is used
 # to create a generic script. It already have all what is needed to read
 # gc3pie configuration files, manage resources etc. The only thing
 # missing is, well, your application!
-# 
+#
 # Let's start importing it, among with the main `gc3libs` module::
 
 import gc3libs
@@ -124,15 +124,15 @@ class WarholizeScript(SessionBasedScript):
 
 # Please note that you must either write a small docstring for that
 # class, or add a `description` attribute.
-# 
+#
 # The way we want to use our script is straightforward::
 
 # $  warholize.py inputfile [inputfiles ...]
-# 
+#
 # and this will create a directory ``Warholized.<inputfile>`` in which
 # there will be a file called ``warhol_<inputfile>`` containing the
 # desired warholized image (and a lot of temporary files, at least for now).
-# 
+#
 # But we may want to add some optional argument to the script, in order
 # to decide how many colorized pictures the warholized image will be
 # made of, or if we want to resize the image. `SessionBasedScript` uses
@@ -183,27 +183,27 @@ class WarholizeScript(SessionBasedScript):
 # `WarholizeWorkflow` task which is the workflow described before. We
 # don't create an instance of the task from whitin `new_tasks`, but we
 # pass all the arguments needed. In the order:
-# 
+#
 #   * The job name (used to identify the task inside the session)
-# 
+#
 #   * the class object (not the instance!)
-# 
+#
 #   * arguments to be passed to the constructor of the class
-#   
+#
 #   * a dictionary containing the keyword arguments to be passed to the
 #     constructor of the class
-# 
+#
 # In our case we yield a different `WarholizeWorkflow` task for each
 # input file. These tasks will then run in parallel.
-# 
-# 
-# 
+#
+#
+#
 # The workflows
 # -------------
-# 
+#
 # Main sequential workflow
 # ++++++++++++++++++++++++
-# 
+#
 # The module `gc3libs.dag` contains two main objects,
 # `SequentialTaskCollection` and `ParallelTaskCollection` which we will
 # use to create our workflow. The first one, `WarholizeWorkflow`, is a
@@ -219,7 +219,7 @@ class WarholizeWorkflow(SequentialTaskCollection):
     """
 
     def __init__(self, input_image,  copies, ncolors,
-                 grid=None, size=None, **kw):
+                 size=None, **kw):
         """XXX do we need input_image and output_image? I guess so?"""
         self.input_image = input_image
         self.output_image = "warhol_%s" % os.path.basename(input_image)
@@ -260,17 +260,16 @@ class WarholizeWorkflow(SequentialTaskCollection):
                 self.output_dir, resize=self.resize),
             ]
 
-        SequentialTaskCollection.__init__(
-            self, self.jobname, self.tasks, grid=grid)
+        SequentialTaskCollection.__init__(self, self.jobname, self.tasks)
 
 # Finally, we to call the parent's constructor.
-# 
+#
 # This will create the initial task list, but we have to run also step 2
 # and 3. This is done by creating a `next` method. This method will be
 # called after all the tasks in `self.tasks` are finished. We cannot
 # create all the jobs at once because we don't have all the needed input
 # files yet.
-# 
+#
 # The `next` method will look like::
 
     def next(self, iteration):
@@ -298,11 +297,11 @@ class WarholizeWorkflow(SequentialTaskCollection):
 # `gc3libs.dag.SequentialTaskCollection`, in our case) to complete the
 # next step, and we return the current state, which will be
 # `gc3libs.Run.State.RUNNING` unless we have finished the computation.
-# 
-# 
+#
+#
 # Step one: convert to grayscale
 # ++++++++++++++++++++++++++++++
-# 
+#
 # `GrayScaleConvertApplication` is the application responsible to
 # convert to grayscale the input image, and resize it if needed. To
 # create an application we usually inherit from the
@@ -365,14 +364,14 @@ class GrayScaleConvertApplication(ApplicationWithCachedResults):
 
 # Creating a `gc3libs.Application` is straigthforward: you just
 # call the constructor with the executable, the arguments, and the
-# input/output files you will need. 
-# 
+# input/output files you will need.
+#
 # If you don't specify the ``output_dir`` directory, gc3pie libraries will
 # create one starting from the job name. It is quite important, then, to
 # generate unique jobname for your applications in order to avoid
 # conflits. If the output directory exists already, the old one will be
 # renamed.
-# 
+#
 # To do any kind of post processing you can define a `terminate` method
 # for your application. It will be called after your application will
 # terminate. In our case we want to copy the gray scale version of the
@@ -394,7 +393,7 @@ class GrayScaleConvertApplication(ApplicationWithCachedResults):
 
 # Step two: parallel workflow to create colorized images
 # ------------------------------------------------------
-# 
+#
 # The `TricolorizeMultipleImages` is responsible to create multiple
 # versions of the grayscale image with different coloration. It does it
 # by running multiple instance of `TricolorizeImage` with different
@@ -405,11 +404,11 @@ import itertools
 import random
 
 class TricolorizeMultipleImages(ParallelTaskCollection):
-    colors = ['yellow', 'blue', 'red', 
+    colors = ['yellow', 'blue', 'red',
               'navy', 'turquoise1', 'SeaGreen', 'gold',
               'orange', 'magenta']
 
-    def __init__(self, grayscaled_image, copies, ncolors, output_dir, grid=None):
+    def __init__(self, grayscaled_image, copies, ncolors, output_dir):
         gc3libs.log.info(
             "TricolorizeMultipleImages for %d copies run" % copies)
         self.jobname = "Warholizer_Parallel"
@@ -435,15 +434,14 @@ class TricolorizeMultipleImages(ParallelTaskCollection):
                 "%s.%d" % (self.output_dir, i),
                 "%s.%d" % (grayscaled_image, i),
                 colors,
-                self.warhol_dir,
-                grid=grid))
+                self.warhol_dir))
 
-        ParallelTaskCollection.__init__(self, self.jobname, self.tasks, grid)
+        ParallelTaskCollection.__init__(self, self.jobname, self.tasks)
 
 # The main loop will fill the `self.tasks` list with various
 # `TricolorizedImage`, each one with an unique combination of three
 # colors to use to generate the colorized image.
-# 
+#
 # The `TricolorizedImage` class is indeed a `SequentialTaskCollection`,
 # since it has to generate the LUT first, and then apply it to the
 # grayscale image. Again, the constructor of the class will add the
@@ -458,7 +456,7 @@ class TricolorizeImage(SequentialTaskCollection):
     grayscale image
     """
     def __init__(self, grayscaled_image, output_dir, output_file,
-                 colors, warhol_dir, grid=None):
+                 colors, warhol_dir):
         self.grayscaled_image = grayscaled_image
         self.output_dir = output_dir
         self.warhol_dir = warhol_dir
@@ -480,7 +478,7 @@ class TricolorizeImage(SequentialTaskCollection):
                 colors, self.warhol_dir),
             ]
 
-        SequentialTaskCollection.__init__(self, self.jobname, self.tasks, grid)
+        SequentialTaskCollection.__init__(self, self.jobname, self.tasks)
 
     def next(self, iteration):
         last = self.tasks[-1]
@@ -570,11 +568,11 @@ class ApplyLutApplication(ApplicationWithCachedResults):
 # which will copy the colorized image file in the top level directory,
 # so that it will be easier for the last application to find all the
 # needed files.
-# 
-# 
+#
+#
 # Step three: merge all them together
 # +++++++++++++++++++++++++++++++++++
-# 
+#
 # At this point we will have in the main output directory a bunch of
 # files named after ``grayscaled_<input_image>.N`` with N a sequential
 # integer and ``<input_image>`` the name of the original image. The last
@@ -638,7 +636,7 @@ class MergeImagesApplication(ApplicationWithCachedResults):
 
 # Making the script executable
 # ----------------------------
-# 
+#
 # Finally, in order to make the script *executable*, we add the
 # following lines to the end of the file. The `WarholizeScritp().run()`
 # call will be executed only when the file is run as a script, and will
@@ -652,36 +650,36 @@ if __name__ == '__main__':
 # Please note that the ``import warholize`` statement is important to
 # address `issue 95`_ and make the gc3pie scripts work with your current
 # session (`gstat`, `ginfo`...)
-#   
+#
 # Testing
 # -------
-# 
+#
 # To test this script I would suggest to use the famous `Lena` picture,
 # which can be found in the `miscelaneous` section of the `Signal and
 # Image Processing Institute`_ page. Download the image, rename it as
 # ``lena.tiff`` and run the following command::
 
 # $    ./warholize.py -C 1 lena.tiff --copies 9
-# 
+#
 # (add ``-r localhost`` if your gc3pie.conf script support it and you
-# want to test it locally). 
-# 
+# want to test it locally).
+#
 # After completion a file ``Warholized.lena.tiff/warhol_lena.tiff``
 # will be created.
-# 
-# 
+#
+#
 # .. Links
-# 
+#
 # .. _`Literate Programming`: http://en.wikipedia.org/wiki/Literate_programming
-# 
+#
 # .. _`PyLit Homepage`: http://pylit.berlios.de/index.html
-# 
+#
 # .. _`Marylin`: http://artobserved.com/artists/andy-warhol/
-# 
+#
 # .. _`ImageMagick`: http://www.imagemagick.org/
-# 
+#
 # .. _`PyCLI`: http://packages.python.org/pyCLI/
-# 
+#
 # .. _`Signal and Image Processing Institute`: http://sipi.usc.edu/database/?volume=misc
-# 
+#
 # .. _`issue 95`: http://code.google.com/p/gc3pie/issues/detail?id=95

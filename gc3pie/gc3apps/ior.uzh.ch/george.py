@@ -85,7 +85,7 @@ class ValueFunctionIteration(SequentialTaskCollection):
 
     def __init__(self, executable, initial_values_file,
                  total_iterations, slice_size=0,
-                 output_dir=TMPDIR, grid=None, **kw):
+                 output_dir=TMPDIR, **kw):
         """
         Create a new task that runs `executable` over a set of values
         (initially given by `initial_values_file`, then the output of
@@ -131,9 +131,9 @@ class ValueFunctionIteration(SequentialTaskCollection):
         # create initial task and register it
         initial_task = ValueFunctionIterationPass(executable, initial_values_file,
                                                   0, total_iterations, slice_size,
-                                                  self.datadir, self.extra, grid,
+                                                  self.datadir, self.extra,
                                                   parent=self.jobname)
-        SequentialTaskCollection.__init__(self, self.jobname, [initial_task], grid)
+        SequentialTaskCollection.__init__(self, self.jobname, [initial_task])
 
 
     def __str__(self):
@@ -167,7 +167,6 @@ class ValueFunctionIteration(SequentialTaskCollection):
                     self.total_iterations,
                     self.slice_size,
                     extra=self.extra,
-                    grid=self._grid,
                     parent=self.jobname,
                     )
                 )
@@ -223,7 +222,7 @@ class ValueFunctionIterationPass(ParallelTaskCollection):
     def __init__(self, executable, input_values_file,
                  iteration, total_iterations,
                  slice_size=0, datadir=TMPDIR, extra={ },
-                 grid=None, parent=None):
+                 parent=None):
         """
         Create a new tasks that runs `executable` over the set of
         values contained in file `input_values_file` (one
@@ -288,7 +287,7 @@ class ValueFunctionIterationPass(ParallelTaskCollection):
                 )
 
         # actually init jobs
-        ParallelTaskCollection.__init__(self, self.jobname, tasks, grid)
+        ParallelTaskCollection.__init__(self, self.jobname, tasks)
 
 
     def __str__(self):

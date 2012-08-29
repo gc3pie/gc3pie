@@ -301,7 +301,7 @@ class TurbomoleAndXmlProcessingPass(StagedTaskCollection):
     """
     def __init__(self, name, turbomole_application, output_dir,
                  db_dir, db_user, db_pass,
-                 grid, **kw):
+                 **kw):
         self.turbomole_application = turbomole_application
         self.output_dir = output_dir
         self.db_dir = db_dir
@@ -309,7 +309,7 @@ class TurbomoleAndXmlProcessingPass(StagedTaskCollection):
         self.db_pass = db_pass
         self.extra = kw
         # init superclass
-        StagedTaskCollection.__init__(self, name, grid)
+        StagedTaskCollection.__init__(self, name)
 
 
     def stage0(self):
@@ -348,8 +348,7 @@ class BasisSweepPasses(StagedTaskCollection):
       - second task is a parallel collection of RICC2 that uses the output files from
         the first stage as input, plus a new ``define.in``.
     """
-    def __init__(self, name, coord, ridft_in, ricc2_ins, work_dir,
-                 grid=None, **kw):
+    def __init__(self, name, coord, ridft_in, ricc2_ins, work_dir, **kw):
         """
         Construct a new `BasisSweepPasses` sequential collection.
 
@@ -382,10 +381,8 @@ class BasisSweepPasses(StagedTaskCollection):
         self.ridft_in = ridft_in
         self.ricc2_ins = ricc2_ins
         self.extra = kw
-        # XXX: `stage0` gets called before the class initialization is completed
-        self._grid = grid
         # init superclass
-        StagedTaskCollection.__init__(self, name, grid)
+        StagedTaskCollection.__init__(self, name)
 
 
     def stage0(self):
@@ -423,7 +420,7 @@ class BasisSweepPasses(StagedTaskCollection):
             # FIXME: make these settable on the command-line
             db_dir='/db/home/fox/gricomp', db_user='fox', db_pass='tueR!?05',
             # TaskCollection required params
-            grid=self._grid, **self.extra)
+            **self.extra)
 
 
     def stage1(self):
@@ -480,9 +477,9 @@ class BasisSweepPasses(StagedTaskCollection):
                     # FIXME: make these settable on the command-line
                     db_dir='/db/home/fox/gricomp', db_user='fox', db_pass='tueR!?05',
                     # TaskCollection required params
-                    grid=self._grid, **self.extra))
+                    **self.extra))
             gc3libs.log.debug("Created RICC2 task in directory '%s'", ricc2_dir)
-        return (ParallelTaskCollection(self.name + '.pass2', pass2, grid=self._grid))
+        return (ParallelTaskCollection(self.name + '.pass2', pass2))
 
 
 class BasisSweep(ParallelTaskCollection):
@@ -521,7 +518,7 @@ class BasisSweep(ParallelTaskCollection):
     def __init__(self, title, coord, bases, jkbases, cbases, cabses, work_dir,
                  valid1=acceptable_ridft_basis_set,
                  valid2=acceptable_ricc2_basis_set,
-                 grid=None, **kw):
+                 **kw):
         """
         Create a new tasks that runs several analyses in parallel, one
         for each accepted combination of orbital and RIJK basis.
@@ -553,7 +550,7 @@ class BasisSweep(ParallelTaskCollection):
                     list(expansions(ricc2_define_in,
                                     ORB_BASIS=orb_basis)),
                     work_dir, **kw))
-        ParallelTaskCollection.__init__(self, title, tasks, grid)
+        ParallelTaskCollection.__init__(self, title, tasks)
 
 
 ## main

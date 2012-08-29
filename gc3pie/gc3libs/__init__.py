@@ -106,11 +106,6 @@ from gc3libs.utils import defproperty, deploy_configuration_file, Enum, History,
 
 
 class Task(Persistable, Struct):
-    # XXX: alternative design: we could make Task take an additional
-    # `job` parameter, which is the controlled job (i.e., the one that
-    # `submit()` and friends act upon), defaulting to `self`.  This
-    # way, Task would become a mediator object binding a "grid" (core
-    # || engine) and a "job" (Application or whatnot).
     """
     Mix-in class implementing a facade for job control.
 
@@ -153,9 +148,7 @@ class Task(Persistable, Struct):
 
     """
 
-    # XXX: Why considering the possibility of init a Task with a core instance already ?
-    # XXX: why don't we just allow Tasks to be attached throught Task.attach(grid) ?
-    def __init__(self, name, grid=None, **kw):
+    def __init__(self, name, **kw):
         """
         Initialize a `Task` instance.
 
@@ -172,10 +165,7 @@ class Task(Persistable, Struct):
         self.execution = Run(attach=self)
         # `_grid` and `_attached` are set by `attach()`/`detach()`
         self._attached = False
-        if '_grid' not in self:
-            self._grid = None
-        if grid is not None:
-            self.attach(grid)
+        self._grid = None
         self.changed = True
 
     # manipulate the "grid" interface used to control the associated job
@@ -188,9 +178,9 @@ class Task(Persistable, Struct):
             if self._attached:
                 self.detach()
             #gc3libs.log.debug("Attaching %s to %s" % (self, grid))
-            self._grid = grid
-            self._grid.add(self)
+            grid.add(self)
             self._attached = True
+            self._grid = grid
 
     # create a class-shared fake "grid" object, that just throws a
     # DetachedFromGrid exception when any of its methods is used.  We
@@ -647,10 +637,6 @@ class Application(Task):
       to starting the application).  Alternately, one can pass in
       a list of strings of the form "name=value".
 
-    `grid`
-      if not `None`, equivalent to calling `Task.attach(self, grid)`.
-      This enables the use of the `Task`/active job control interface
-
     `output_base_url`
       if not `None`, this is prefixed to all output files (except
       stdout and stderr, which are always retrieved), so, for instance,
@@ -845,7 +831,6 @@ class Application(Task):
             jobname = "GC3Pie.%s" % jobname
 
         # task setup; creates the `.execution` attribute as well
-        kw.setdefault('grid', None)
         Task.__init__(self, jobname, **kw)
 
         # for k,v in self.outputs.iteritems():

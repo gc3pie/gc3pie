@@ -2,7 +2,7 @@
 #
 """
 """
-# Copyright (C) 2011 GC3, University of Zurich. All rights reserved.
+# Copyright (C) 2011, 2012 GC3, University of Zurich. All rights reserved.
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
@@ -72,7 +72,7 @@ class GdemoApplication(Application):
                                      requested_memory = 1,
                                      requested_cores = 1,
                                      requested_walltime = 1,
-                                     *kw
+                                     **kw
                                      )
 
 class Gdemo(SessionBasedScript):
@@ -139,7 +139,7 @@ class Gdemo(SessionBasedScript):
 # `self.params.iterations` passes, each pass corresponding to
 # an application of the `self.params.executable` function.
 #
-# This is the crucial point: 
+# This is the crucial point:
 
 class DemoIteration(SequentialTaskCollection):
     """
@@ -154,8 +154,8 @@ class DemoIteration(SequentialTaskCollection):
     which is a parallel collection of tasks, each of which is a
     single-core task executing the given program.
     """
-    
-    def __init__(self, init_value, add_value, grid=None, **kw):
+
+    def __init__(self, init_value, add_value, **kw):
         """
         Create a new tasks that runs `executable` over a set of values
         (initially given by `initial_values_file`, then the output of
@@ -179,7 +179,7 @@ class DemoIteration(SequentialTaskCollection):
 
         # create initial task and register it
         initial_task = GdemoApplication(self.init, self.increment, 0)
-        SequentialTaskCollection.__init__(self, self.jobname, [initial_task], grid)
+        SequentialTaskCollection.__init__(self, self.jobname, [initial_task])
 
 
     def __str__(self):

@@ -1,9 +1,9 @@
 #! /usr/bin/env python
 #
 """
-Driver script for performing an global optimization over the parameter space. 
+Driver script for performing an global optimization over the parameter space.
 """
-# Copyright (C) 2011 University of Zurich. All rights reserved.
+# Copyright (C) 2011, 2012 University of Zurich. All rights reserved.
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -28,12 +28,12 @@ __changelog__ = """
 __docformat__ = 'reStructuredText'
 
 
-# Calling syntax one4all: 
+# Calling syntax one4all:
 # -b ~/workspace/fpProj/model/base/ -x ~/workspace/fpProj/model/bin/forwardPremiumOut -e ~/workspace/fpProj/empirical/ -C 16 -NP 8 -xVars 'EA sigmaA' -xVarsDom '0.8 0.94 0.004 0.006' -sv info -t one4all --itermax 1 --countryList 'AU DE' -J 1000 -X i686 -r localhost --norm "fpSqr2" --initialPop "" -N
 
 
-# Remove all files in curPath if -N option specified. 
-if __name__ == '__main__':    
+# Remove all files in curPath if -N option specified.
+if __name__ == '__main__':
     import sys
     if '-N' in sys.argv:
         import os
@@ -43,9 +43,9 @@ if __name__ == '__main__':
         from pymods.support.support import rmFilesAndFolders
         curPath = os.getcwd()
         filesAndFolder = os.listdir(curPath)
-        if 'gParaSearch.csv' in filesAndFolder: # if another paraSearch was run in here before, clean up. 
-            rmFilesAndFolders(curPath) 
-            
+        if 'gParaSearch.csv' in filesAndFolder: # if another paraSearch was run in here before, clean up.
+            rmFilesAndFolders(curPath)
+
 if __name__ == "__main__":
     import gParaSearch
 
@@ -100,16 +100,16 @@ logger = wrapLogger(loggerName = 'gParaSearchLogger', streamVerb = 'INFO', logFi
 
 
 class gParaSearchDriver(SequentialTaskCollection):
-    
-    def __init__(self, pathToExecutable, pathToStageDir, architecture, baseDir, xVars, initialPop, 
-                 nPopulation, domain, solverVerb, problemType, pathEmpirical, 
-                 itermax, xConvCrit, yConvCrit, 
+
+    def __init__(self, pathToExecutable, pathToStageDir, architecture, baseDir, xVars, initialPop,
+                 nPopulation, domain, solverVerb, problemType, pathEmpirical,
+                 itermax, xConvCrit, yConvCrit,
                  makePlots, optStrategy, fWeight, fCritical, ctryList, analyzeResults, nlc, plot3dTable, combOverviews,
-                 output_dir = '/tmp', grid = None, **kw):
-        
+                 output_dir = '/tmp', **kw):
+
         logger.debug('entering gParaSearchDriver.__init__')
-        
-        # Set up initial variables and set the correct methods. 
+
+        # Set up initial variables and set the correct methods.
         self.pathToStageDir = pathToStageDir
         self.problemType = problemType
         self.pathToExecutable = pathToExecutable
@@ -125,7 +125,7 @@ class gParaSearchDriver(SequentialTaskCollection):
         self.analyzeResults = analyzeResults
         self.plot3dTable    = plot3dTable
         self.combOverviews = combOverviews
-          
+
         # Set solver options
         S_struct = {}
         S_struct['I_NP']         = int(nPopulation)
@@ -142,82 +142,82 @@ class gParaSearchDriver(SequentialTaskCollection):
         S_struct['workingDir']   = pathToStageDir
         S_struct['verbosity']    = self.verbosity
 
-        # Initialize solver 
-        self.deSolver = deKenPrice(S_struct) 
-        
-        # Set constraint function in solver. 
+        # Initialize solver
+        self.deSolver = deKenPrice(S_struct)
+
+        # Set constraint function in solver.
         self.deSolver.nlc = nlc
-        
+
         # create initial task and register it
         if initialPop:
             self.deSolver.newPop = np.loadtxt(initialPop, delimiter = '  ')
         else:
             self.deSolver.newPop = self.deSolver.drawInitialSample()
-        
+
         #self.deSolver.plotPopulation(self.deSolver.newPop)
         self.deSolver.I_iter += 1
-        self.evaluator = gParaSearchParallel(self.deSolver.newPop, self.deSolver.I_iter, self.pathToExecutable, self.pathToStageDir, 
-                                             self.architecture, self.baseDir, self.xVars, self.verbosity, self.problemType, self.analyzeResults, 
+        self.evaluator = gParaSearchParallel(self.deSolver.newPop, self.deSolver.I_iter, self.pathToExecutable, self.pathToStageDir,
+                                             self.architecture, self.baseDir, self.xVars, self.verbosity, self.problemType, self.analyzeResults,
                                              self.ctryList, **self.kw)
-        
+
         initial_task = self.evaluator
-        
-        SequentialTaskCollection.__init__(self, self.jobname, [initial_task], grid)
-        
-        
+
+        SequentialTaskCollection.__init__(self, self.jobname, [initial_task])
+
+
     def __str__(self):
         return self.jobname
-        
-    def next(self, *args): 
+
+    def next(self, *args):
         logger.debug('entering gParaSearchDriver.next')
-        
+
         self.changed = True
         newVals = self.evaluator.target(self.deSolver.newPop)
         self.deSolver.updatePopulation(self.deSolver.newPop, newVals)
-        # Stats for initial population: 
-        self.deSolver.printStats() 
+        # Stats for initial population:
+        self.deSolver.printStats()
         # make full overview table
         self.combOverviews(runDir = self.pathToStageDir, tablePath = self.pathToStageDir)
 
         # make plots
         if self.deSolver.I_plotting:
-            self.deSolver.plotPopulation(self.deSolver.FM_pop) 
+            self.deSolver.plotPopulation(self.deSolver.FM_pop)
             self.plot3dTable()
-            
+
         if not self.deSolver.checkConvergence():
             self.deSolver.newPop = self.deSolver.evolvePopulation(self.deSolver.FM_pop)
-            # Check constraints and resample points to maintain population size. 
-            self.deSolver.newPop = self.deSolver.enforceConstrReEvolve(self.deSolver.newPop)    
+            # Check constraints and resample points to maintain population size.
+            self.deSolver.newPop = self.deSolver.enforceConstrReEvolve(self.deSolver.newPop)
             self.deSolver.I_iter += 1
-            self.evaluator = gParaSearch.gParaSearchParallel(self.deSolver.newPop, self.deSolver.I_iter, self.pathToExecutable, self.pathToStageDir, 
-                                             self.architecture, self.baseDir, self.xVars, self.verbosity, self.problemType, self.analyzeResults, 
+            self.evaluator = gParaSearch.gParaSearchParallel(self.deSolver.newPop, self.deSolver.I_iter, self.pathToExecutable, self.pathToStageDir,
+                                             self.architecture, self.baseDir, self.xVars, self.verbosity, self.problemType, self.analyzeResults,
                                              self.ctryList, **self.kw)
             self.add(self.evaluator)
-        else: 
+        else:
             # post processing
             if self.deSolver.I_plotting:
                 self.plot3dTable()
-            
+
             open(os.path.join(self.pathToStageDir, 'jobDone'), 'w')
             # report success of sequential task
             self.execution.returncode = 0
             return Run.State.TERMINATED
         return Run.State.RUNNING
-        
 
-class gParaSearchParallel(ParallelTaskCollection, paraLoop_fp):    
-    
+
+class gParaSearchParallel(ParallelTaskCollection, paraLoop_fp):
+
     def __str__(self):
         return self.jobname
-    
- 
-    def __init__(self, inParaCombos, iteration, pathToExecutable, pathToStageDir, architecture, baseDir, xVars, 
+
+
+    def __init__(self, inParaCombos, iteration, pathToExecutable, pathToStageDir, architecture, baseDir, xVars,
                  solverVerb, problemType, analyzeResults, ctryList, **kw):
 
         logger.debug('entering gParaSearchParalell.__init__')
 
-        
-        # Set up initial variables and set the correct methods. 
+
+        # Set up initial variables and set the correct methods.
         self.pathToStageDir = pathToStageDir
         self.problemType = problemType
         self.executable = pathToExecutable
@@ -226,7 +226,7 @@ class gParaSearchParallel(ParallelTaskCollection, paraLoop_fp):
         self.verbosity = solverVerb.upper()
         self.xVars = xVars
         self.n = len(self.xVars.split())
-        self.analyzeResults = analyzeResults        
+        self.analyzeResults = analyzeResults
         self.ctryList = ctryList
         self.iteration = iteration
         self.jobname = 'evalSolverGuess' + '-' + kw['jobname'] + '-' + str(self.iteration)
@@ -234,38 +234,38 @@ class gParaSearchParallel(ParallelTaskCollection, paraLoop_fp):
         tasks = []
 
         # --- createJobs_x ---
-        
+
         # Log activity
         cDate = datetime.date.today()
         cTime = datetime.datetime.time(datetime.datetime.now())
         dateString = '{0:04d}-{1:02d}-{2:02d}-{3:02d}-{4:02d}-{5:02d}'.format(cDate.year, cDate.month, cDate.day, cTime.hour, cTime.minute, cTime.second)
         logger.debug('Establishing parallel task on %s' % dateString)
-        
+
         # Enter an iteration specific folder
         self.iterationFolder = os.path.join(self.pathToStageDir, 'Iteration-' + str(self.iteration))
-        try: 
+        try:
             os.mkdir(self.iterationFolder)
         except OSError:
             print '%s already exists' % self.iterationFolder
-            
+
         # save population to file
         np.savetxt(os.path.join(self.iterationFolder, 'curPopulation'), inParaCombos, delimiter = '  ')
 
-        # Take the list of parameter combinations and translate them in a comma separated list of values for each variable to be fed into paraLoop file. 
-        # This can be done much more elegantly with ','.join() but it works... 
+        # Take the list of parameter combinations and translate them in a comma separated list of values for each variable to be fed into paraLoop file.
+        # This can be done much more elegantly with ','.join() but it works...
         vals = []
         nVariables = range(len(inParaCombos[0]))
         for ixVar in nVariables:
             varValString = ''
             for ixParaCombo, paraCombo in enumerate(inParaCombos):
-                ### Should make more precise string conversion. 
+                ### Should make more precise string conversion.
                 varValString += str(paraCombo[ixVar])
-                if ixParaCombo < len(inParaCombos) - 1: 
+                if ixParaCombo < len(inParaCombos) - 1:
                     varValString += ', '
             vals.append( varValString )
-        
-        
-        # Make problem specific adjustments to the paraLoop file. 
+
+
+        # Make problem specific adjustments to the paraLoop file.
         if self.problemType == 'one4all':
             print 'one4all'
             variables = ['Ctry', 'Ctry', 'EA', 'EB', 'sigmaA', 'sigmaB']
@@ -277,7 +277,7 @@ class gParaSearchParallel(ParallelTaskCollection, paraLoop_fp):
             paraFiles = [ 'input/markovA.in', 'input/markovB.in', 'input/parameters.in', 'input/parameters.in', 'input/parameters.in', 'input/parameters.in' ]
             paraFileRegex = [ 'space-separated', 'space-separated', 'bar-separated', 'bar-separated' , 'bar-separated' , 'bar-separated'  ]
             self.analyzeResults.tablePath = self.iterationFolder
-            
+
         elif self.problemType == 'one4eachPair':
             print 'one4eachPair'
             # Check if EA or sigmaA are alone in the specified parameters. If so make diagnol adjustments
@@ -286,7 +286,7 @@ class gParaSearchParallel(ParallelTaskCollection, paraLoop_fp):
                 variables = [ 'EA', 'EB' ]
                 groups = [ '0', '0' ]
                 groupRestrs = [ 'diagnol', 'diagnol' ]
-                
+
                 writeVals.append(vals[0])
                 writeVals.append(vals[0])
                 paraCombosEA = [  np.append(ele[0], ele[0]) for ele in inParaCombos ]
@@ -300,14 +300,14 @@ class gParaSearchParallel(ParallelTaskCollection, paraLoop_fp):
                 writeVals.append(vals[1])
                 writeVals.append(vals[1])
                 paraCombosSigmaA = [  np.append(ele[1], ele[1]) for ele in inParaCombos ]
-                
+
             # match ctry with val
             ctryVals = {}
             for ixCtry, ctry in enumerate(ctryList):
                 ctryVals[ctry] = vals
-                
+
             self.variables = variables
-                
+
             # Prepare paraCombos matching to resulting table. Used in analyzeOverviewTable
             # !!! This should be dependent on problem type or on missing variables in xvars. !!!
             paraCombos = []
@@ -317,10 +317,10 @@ class gParaSearchParallel(ParallelTaskCollection, paraLoop_fp):
             self.paraCombos = paraCombos
             paraFiles = [ 'input/parameters.in', 'input/parameters.in', 'input/parameters.in', 'input/parameters.in' ]
             paraFileRegex = [  'bar-separated', 'bar-separated' , 'bar-separated' , 'bar-separated'  ]
-                
+
         elif self.problemType == 'one4eachCtry':
             print 'one4eachCtry'
-            
+
             ctry1List  = []
             ctry2List  = []
             EAList     = []
@@ -328,7 +328,7 @@ class gParaSearchParallel(ParallelTaskCollection, paraLoop_fp):
             sigmaAList = []
             sigmaBList = []
             self.paraCombos = []
-            
+
             ctryIndices = getIndex([len(ctryList), len(ctryList)], 'lowerTr')
             for ixCombo in range(len(inParaCombos)):
                 ctry1ListCombo = []
@@ -351,9 +351,9 @@ class gParaSearchParallel(ParallelTaskCollection, paraLoop_fp):
                 EBList.extend(map(str, EBListCombo))
                 sigmaAList.extend(map(str, sigmaAListCombo))
                 sigmaBList.extend(map(str, sigmaBListCombo))
-                
-            
-                    
+
+
+
             variables = ['Ctry', 'Ctry', 'EA', 'EB', 'sigmaA', 'sigmaB']
             groups    = [ 0, 0, 0, 0, 0, 0 ]
             groupRestrs = [ 'diagnol', 'diagnol', 'diagnol', 'diagnol', 'diagnol', 'diagnol' ]
@@ -365,40 +365,40 @@ class gParaSearchParallel(ParallelTaskCollection, paraLoop_fp):
             # variable list passed to analyzeOverviewTables
             self.variables = ['EA', 'sigmaA', 'EB', 'sigmaB']
             print 'Done setting up one4eachCtry. '
-                
-                
+
+
 
 
         # Write a para.loop file to generate grid jobs
-        para_loop = self.writeParaLoop(variables = variables, 
-                                       groups = groups, 
-                                       groupRestrs = groupRestrs, 
-                                       vals = writeVals, 
-                                       desPath = os.path.join(self.iterationFolder, 'para.loopTmp'), 
+        para_loop = self.writeParaLoop(variables = variables,
+                                       groups = groups,
+                                       groupRestrs = groupRestrs,
+                                       vals = writeVals,
+                                       desPath = os.path.join(self.iterationFolder, 'para.loopTmp'),
                                        paraFiles = paraFiles,
                                        paraFileRegex = paraFileRegex)
-        
+
         paraLoop_fp.__init__(self, verbosity = self.verbosity)
         tasks = self.generateTaskList(para_loop, self.iterationFolder)
         ParallelTaskCollection.__init__(self, self.jobname, tasks)
-        
+
     def target(self, inParaCombos):
-     
+
         logger.debug('entering gParaSearchParallel.target')
         # Each line in the resulting table (overviewSimu) represents one paraCombo
-        overviewTable = createOverviewTable(resultDir = self.iterationFolder, outFile = 'simulation.out', slUIPFile = 'slUIP.mat', 
-                                            exportFileName = 'overviewSimu', sortTable = False, 
+        overviewTable = createOverviewTable(resultDir = self.iterationFolder, outFile = 'simulation.out', slUIPFile = 'slUIP.mat',
+                                            exportFileName = 'overviewSimu', sortTable = False,
                                             logLevel = self.verbosity, logFile = os.path.join(self.pathToStageDir, 'createOverviewTable.log'))
 
-        result = self.analyzeResults(tableIn = overviewTable, varsIn = self.variables, valsIn = self.paraCombos, 
-                             targetVar = 'normDev', logLevel = self.verbosity, 
+        result = self.analyzeResults(tableIn = overviewTable, varsIn = self.variables, valsIn = self.paraCombos,
+                             targetVar = 'normDev', logLevel = self.verbosity,
                              logFile = os.path.join(self.iterat
                                                     ionFolder, os.path.join(self.pathToStageDir, 'analyzeOverview.log')))
         #result = [ ele[0] for ele in inParaCombos ]
         logger.info('Computed target: Returning result to solver')
         self.iteration += 1
         return result
-        
+
 
     def print_status(self, mins,means,vector,txt):
         print txt,mins, means, list(vector)
@@ -410,15 +410,15 @@ class gParaSearchParallel(ParallelTaskCollection, paraLoop_fp):
             executable = os.path.basename(self.executable)
             # start the inputs dictionary with syntax: client_path: server_path
             inputs = { self.executable:executable }
-            # make a "stage" directory where input files are collected on the client machine. 
+            # make a "stage" directory where input files are collected on the client machine.
             #path_to_stage_dir = self.make_directory_path(os.path.join(iterationFolder, 'NAME'), jobname)
             path_to_stage_dir = os.path.join(iterationFolder, jobname)
-            # input_dir is cwd/jobname (also referred to as "stage" dir. 
+            # input_dir is cwd/jobname (also referred to as "stage" dir.
             input_dir = path_to_stage_dir
             gc3libs.utils.mkdir(input_dir)
             prefix_len = len(input_dir) + 1
             # 1. files in the "initial" dir are copied verbatim
-            # ugly work around to determine the correct base dir in case of one4all. 
+            # ugly work around to determine the correct base dir in case of one4all.
             baseDir = os.path.join(os.getcwd(), 'base')
             for (path, changes) in substs.iteritems():
                 for (var, val, index, regex) in changes:
@@ -430,7 +430,7 @@ class gParaSearchParallel(ParallelTaskCollection, paraLoop_fp):
             # 2. apply substitutions to parameter files
             for (path, changes) in substs.iteritems():
                 for (var, val, index, regex) in changes:
-                    # new. make adjustments in the base dir itself. 
+                    # new. make adjustments in the base dir itself.
                     update_parameter_in_file(os.path.join(input_dir, path),
                                              var, index, val, regex)
             # 3. build input file list
@@ -453,7 +453,7 @@ class gParaSearchParallel(ParallelTaskCollection, paraLoop_fp):
             kwargs['requested_architecture'] = self.architecture
             kwargs['requested_cores'] = 1
             # hand over job to create
-            tasks.append(GPremiumApplication('./' + executable, [], inputs, outputs, **kwargs)) 
+            tasks.append(GPremiumApplication('./' + executable, [], inputs, outputs, **kwargs))
         return tasks
 
 class gParaSearchScript(SessionBasedScript, paraLoop_fp):
@@ -469,8 +469,8 @@ class gParaSearchScript(SessionBasedScript, paraLoop_fp):
             # only '.loop' files are considered as valid input
             input_filename_pattern = '*.loop',
         )
-        
-        
+
+
 
     def setup_options(self):
         self.add_param("-b", "--initial", metavar="DIR",
@@ -507,22 +507,22 @@ class gParaSearchScript(SessionBasedScript, paraLoop_fp):
         self.add_param("-e", "--pathEmpirical", metavar="PATH",
                        dest="pathEmpirical", default = '',
                        help="Path to empirical analysis folder")
-        self.add_param("-i", "--itermax", metavar="ARCH", type = int, 
+        self.add_param("-i", "--itermax", metavar="ARCH", type = int,
                        dest="itermax", default = '50',
                        help="Maximum number of iterations of solver. ")
-        self.add_param("-xC", "--xConvCrit", metavar="ARCH", type = float, 
+        self.add_param("-xC", "--xConvCrit", metavar="ARCH", type = float,
                        dest="xConvCrit", default = '1.e-8',
                        help="Convergence criteria for x variables. ")
-        self.add_param("-yC", "--yConvCrit", metavar="ARCH", type = float, 
+        self.add_param("-yC", "--yConvCrit", metavar="ARCH", type = float,
                        dest="yConvCrit", default = '1.e-3',
                        help="Convergence criteria for y variables. ")
-        self.add_param("-mP", "--makePlots", metavar="ARCH", type = bool, 
+        self.add_param("-mP", "--makePlots", metavar="ARCH", type = bool,
                        dest="makePlots", default = True,
                        help="Generate population plots each iteration.  ")
-        self.add_param("-oS", "--optStrategy", metavar="ARCH", type = int, 
+        self.add_param("-oS", "--optStrategy", metavar="ARCH", type = int,
                        dest="optStrategy", default = '1',
                        help="Which differential evolution technique to use. ")
-        self.add_param("-fW", "--fWeight", metavar="ARCH", type = float, 
+        self.add_param("-fW", "--fWeight", metavar="ARCH", type = float,
                        dest="fWeight", default = '0.85',
                        help="Weight of differential vector. ")
         self.add_param("-fC", "--fCritical", metavar="ARCH", type = float,
@@ -555,34 +555,34 @@ class gParaSearchScript(SessionBasedScript, paraLoop_fp):
 
 
     def new_tasks(self, extra):
-        
+
         logger.info('entering new_tasks')
-        
-        # Adjust logging level for stream handler. Could be extracted into a general function. 
+
+        # Adjust logging level for stream handler. Could be extracted into a general function.
         for handler in logger.handlers:
             if not isinstance(handler, logbook.FileHandler):
                 logger.handlers.remove(handler)
         mySH = logbook.StreamHandler(stream = sys.stdout, level = self.params.solverVerb.upper(), format_string = '{record.message}', bubble = True)
         logger.handlers.append(mySH)
-        
+
         baseDir = self.params.initial
         xVars    = self.params.xVars
 
         countryList = self.params.countryList.split()
-        
+
         ctryIndices = getIndex(base = [len(countryList), len(countryList)], restr = 'lowerTr')
         for ctryIndex in ctryIndices:
             logger.info(countryList[ctryIndex[0]] + countryList[ctryIndex[1]])
 
-            
+
         # Compute domain
         xVarsDom = self.params.xVarsDom.split()
         lowerBds = np.array([xVarsDom[i] for i in range(len(xVarsDom)) if i % 2 == 0], dtype = 'float64')
         upperBds = np.array([xVarsDom[i] for i in range(len(xVarsDom)) if i % 2 == 1], dtype = 'float64')
         domain = zip(lowerBds, upperBds)
-            
- 
-        # Make problem type specific adjustments. 
+
+
+        # Make problem type specific adjustments.
         if self.params.problemType == 'one4all':
             gdpTable = tableDict.fromTextFile(fileIn = os.path.join(self.params.pathEmpirical, 'outputInput/momentTable/Gdp/gdpMoments.csv'),
                                               delim = ',', width = 20)
@@ -591,10 +591,10 @@ class gParaSearchScript(SessionBasedScript, paraLoop_fp):
 
             logger.info('%s' % self.params.norm)
             norm = self.params.norm
-            try: 
+            try:
                 norm = int(norm)
             except ValueError:
-                if norm == "np.inf" or norm == "inf": 
+                if norm == "np.inf" or norm == "inf":
                     norm = np.inf
                 else:
                     pass # in particular custom norms
@@ -612,34 +612,34 @@ class gParaSearchScript(SessionBasedScript, paraLoop_fp):
             for ctryIndex in ctryIndices:
                 Ctry1 = countryList[ctryIndex[0]]
                 Ctry2 = countryList[ctryIndex[1]]
-                # Set Ctry information for this run. 
+                # Set Ctry information for this run.
                 update_parameter_in_file(os.path.join(baseDir, 'input/markovA.in'), 'Ctry',
                                           0,  Ctry1,  'space-separated')
                 update_parameter_in_file(os.path.join(baseDir, 'input/markovB.in'), 'Ctry',
                                           0,  Ctry2,  'space-separated')
-                # Get the correct Ctry Paras into base dir. 
+                # Get the correct Ctry Paras into base dir.
                 self.getCtryParas(baseDir, Ctry1, Ctry2)
                 # Copy base dir
                 ctryBaseDir = os.path.join(path_to_stage_dir, 'base' + Ctry1 + Ctry2)
-                try: 
+                try:
                     shutil.copytree(baseDir, ctryBaseDir)
                 except:
                     logger.info('%s already exists' % baseDir)
-            
+
             kwargs = extra.copy()
             kwargs['output_dir'] = path_to_stage_dir
-                
+
             # yield job
-            yield (jobname, gParaSearchDriver, 
-                   [ self.params.executable, path_to_stage_dir, self.params.architecture, 
-                     baseDir, self.params.xVars, self.params.initialPop, 
+            yield (jobname, gParaSearchDriver,
+                   [ self.params.executable, path_to_stage_dir, self.params.architecture,
+                     baseDir, self.params.xVars, self.params.initialPop,
                      self.params.nPopulation, domain, self.params.solverVerb, self.params.problemType,
                      self.params.pathEmpirical, self.params.itermax, self.params.xConvCrit, self.params.yConvCrit,
                      self.params.makePlots, self.params.optStrategy, self.params.fWeight, self.params.fCritical, self.params.countryList,
                      analyzeResults, nlc, plot3dTable, combOverviews
                    ], kwargs)
-            
-            
+
+
 
         elif self.params.problemType == 'one4eachPair':
             for ctryIndex in ctryIndices:
@@ -647,34 +647,34 @@ class gParaSearchScript(SessionBasedScript, paraLoop_fp):
                 Ctry2 = countryList[ctryIndex[1]]
                 logger.info(Ctry1 + Ctry2)
                 jobname = Ctry1 + '-' + Ctry2
-                # set stage dir. 
+                # set stage dir.
                 path_to_stage_dir = self.make_directory_path(self.params.output, jobname)
                 gc3libs.utils.mkdir(path_to_stage_dir)
                 #path_to_stage_dir = os.path.join(iterationFolder, jobname)
                 # Get moments table from empirical analysis
                 gdpTable = tableDict.fromTextFile(fileIn = os.path.join(self.params.pathEmpirical, 'outputInput/momentTable/Gdp/gdpMoments.csv'),
                                                   delim = ',', width = 20)
-                
-                # Set Ctry information for this run. 
+
+                # Set Ctry information for this run.
                 update_parameter_in_file(os.path.join(baseDir, 'input/markovA.in'), 'Ctry',
                                           0,  Ctry1,  'space-separated')
                 update_parameter_in_file(os.path.join(baseDir, 'input/markovB.in'), 'Ctry',
                                           0,  Ctry2,  'space-separated')
-                # Get the correct Ctry Paras into base dir. 
+                # Get the correct Ctry Paras into base dir.
                 self.getCtryParas(baseDir, Ctry1, Ctry2)
                 # Copy base dir
                 ctryBaseDir = os.path.join(path_to_stage_dir, 'base')
-                try: 
+                try:
                     shutil.copytree(baseDir, ctryBaseDir)
                 except:
                     logger.info('%s already exists' % baseDir)
-                EA = getParameter(fileIn = os.path.join(baseDir, 'input/parameters.in'), varIn = 'EA', 
+                EA = getParameter(fileIn = os.path.join(baseDir, 'input/parameters.in'), varIn = 'EA',
                                      regexIn = 'bar-separated')
-                EB = getParameter(fileIn = os.path.join(baseDir, 'input/parameters.in'), varIn = 'EB', 
+                EB = getParameter(fileIn = os.path.join(baseDir, 'input/parameters.in'), varIn = 'EB',
                                      regexIn = 'bar-separated')
-                sigmaA = getParameter(fileIn = os.path.join(baseDir, 'input/parameters.in'), varIn = 'sigmaA', 
+                sigmaA = getParameter(fileIn = os.path.join(baseDir, 'input/parameters.in'), varIn = 'sigmaA',
                                      regexIn = 'bar-separated')
-                sigmaB = getParameter(fileIn = os.path.join(baseDir, 'input/parameters.in'), varIn = 'sigmaB', 
+                sigmaB = getParameter(fileIn = os.path.join(baseDir, 'input/parameters.in'), varIn = 'sigmaB',
                                      regexIn = 'bar-separated')
                 # Pass ctry information to nlc
                 analyzeResults = anaOne4eachPair
@@ -682,21 +682,21 @@ class gParaSearchScript(SessionBasedScript, paraLoop_fp):
                 combOverviews = combineOverviews.combineOverviews(overviewSimuFile = 'overviewSimu', tableName = 'agTable', sortKeys = ['normDev'])
                 plot3dTable    = combineOverviews.plotTable(tablePath =os.path.join(path_to_stage_dir, 'agTable'), savePath = os.path.join(path_to_stage_dir, 'scatter3d'))
                 plot3dTable.columnNames = ['EA', 'sigmaA', 'normDev']
-                
+
                 executable = os.path.basename(self.params.executable)
                 kwargs = extra.copy()
                 kwargs['output_dir'] = path_to_stage_dir
-                
+
                 # yield job
-                yield (jobname, gParaSearchDriver, 
-                       [ self.params.executable, path_to_stage_dir, self.params.architecture, 
-                         ctryBaseDir, self.params.xVars, self.params.initialPop, 
+                yield (jobname, gParaSearchDriver,
+                       [ self.params.executable, path_to_stage_dir, self.params.architecture,
+                         ctryBaseDir, self.params.xVars, self.params.initialPop,
                          self.params.nPopulation, domain, self.params.solverVerb, self.params.problemType,
                          self.params.pathEmpirical, self.params.itermax, self.params.xConvCrit, self.params.yConvCrit,
                          self.params.makePlots, self.params.optStrategy, self.params.fWeight, self.params.fCritical, self.params.countryList,
                          analyzeResults, nlc, plot3dTable, combOverviews
                        ], kwargs)
-        
+
         elif self.params.problemType == 'one4eachCtry':
             gdpTable = tableDict.fromTextFile(fileIn = os.path.join(self.params.pathEmpirical, 'outputInput/momentTable/Gdp/gdpMoments.csv'),
                                               delim = ',', width = 20)
@@ -706,7 +706,7 @@ class gParaSearchScript(SessionBasedScript, paraLoop_fp):
                     xVars = ( self.params.xVars + ' ' ) * len(countryList)
                     xVars = xVars[:-1]
                 else:
-                    xVars = self.params.xVars * len(countryList)                    
+                    xVars = self.params.xVars * len(countryList)
                 if self.params.xVarsDom[-1:] != " ":
                     xVarsDom = ( self.params.xVarsDom + ' ' ) * len(countryList)
                     xVarsDom = xVarsDom[:-1].split()
@@ -717,16 +717,16 @@ class gParaSearchScript(SessionBasedScript, paraLoop_fp):
                 xVars = self.params.xVars
                 xVarsDom = self.params.xVarsDom[:-1].split()
             jobname = 'one4eachCtry'
-            
-            lowerBds = np.array([xVarsDom[i] for i in range(len(xVarsDom)) if i % 2 == 0], dtype = 'float64')		
-            upperBds = np.array([xVarsDom[i] for i in range(len(xVarsDom)) if i % 2 == 1], dtype = 'float64')		
+
+            lowerBds = np.array([xVarsDom[i] for i in range(len(xVarsDom)) if i % 2 == 0], dtype = 'float64')
+            upperBds = np.array([xVarsDom[i] for i in range(len(xVarsDom)) if i % 2 == 1], dtype = 'float64')
             domain = zip(lowerBds, upperBds)
 
             norm = self.params.norm
-            try: 
+            try:
                 norm = int(norm)
             except ValueError:
-                if norm == "np.inf" or norm == "inf": 
+                if norm == "np.inf" or norm == "inf":
                     norm = np.inf
                 else:
                     pass # in particular custom norms
@@ -739,24 +739,24 @@ class gParaSearchScript(SessionBasedScript, paraLoop_fp):
             nlc            = nlcOne4eachCtry(gdpTable = gdpTable, ctryList = countryList, domain = domain, logFile = os.path.join(path_to_stage_dir, 'nlc.log'))
             combOverviews  = combineOverviews.combineOverviews(overviewSimuFile = 'eSigmaTable', tableName = 'ag_eSigmaTable', sortKeys = ['norm'])
             deKenPrice.plotPopulation = plotPopOne4eachCtry(countryList)
-            
-            
-##            # Set solver variables		
-##            nXvars = len(xVars.split())		
-##            deKenPrice.I_NP         = int(self.params.nPopulation)		
-##            deKenPrice.F_weight     = float(self.params.fWeight)		
-##            deKenPrice.F_CR         = float(self.params.fCritical)		
-##            deKenPrice.I_D          = int(nXvars)		
-##            deKenPrice.lowerBds     = np.array([ element[0] for element in domain ], dtype = 'float64')		
-##            deKenPrice.upperBds     = np.array([ element[1] for element in domain ], dtype = 'float64')		
-##            deKenPrice.I_itermax    = int(self.params.itermax)		
-##            deKenPrice.F_VTR        = float(self.params.yConvCrit)		
-##            deKenPrice.I_strategy   = int(self.params.optStrategy)		
-##            deKenPrice.I_plotting   = int(self.params.makePlots)		
-##            deKenPrice.xConvCrit    = float(self.params.xConvCrit)		
-##            deKenPrice.workingDir   = path_to_stage_dir		
+
+
+##            # Set solver variables
+##            nXvars = len(xVars.split())
+##            deKenPrice.I_NP         = int(self.params.nPopulation)
+##            deKenPrice.F_weight     = float(self.params.fWeight)
+##            deKenPrice.F_CR         = float(self.params.fCritical)
+##            deKenPrice.I_D          = int(nXvars)
+##            deKenPrice.lowerBds     = np.array([ element[0] for element in domain ], dtype = 'float64')
+##            deKenPrice.upperBds     = np.array([ element[1] for element in domain ], dtype = 'float64')
+##            deKenPrice.I_itermax    = int(self.params.itermax)
+##            deKenPrice.F_VTR        = float(self.params.yConvCrit)
+##            deKenPrice.I_strategy   = int(self.params.optStrategy)
+##            deKenPrice.I_plotting   = int(self.params.makePlots)
+##            deKenPrice.xConvCrit    = float(self.params.xConvCrit)
+##            deKenPrice.workingDir   = path_to_stage_dir
 ##            deKenPrice.verbosity    = self.params.solverVerb
-            
+
 
             plot3dTable    = emptyFun
 #            plot3dTable    = combineOverviews.plotTable(tablePath =os.path.join(path_to_stage_dir, 'ag_eSigmaTable'), savePath = os.path.join(path_to_stage_dir, 'scatter3d'))
@@ -764,28 +764,28 @@ class gParaSearchScript(SessionBasedScript, paraLoop_fp):
             for ctryIndex in ctryIndices:
                 Ctry1 = countryList[ctryIndex[0]]
                 Ctry2 = countryList[ctryIndex[1]]
-                # Set Ctry information for this run. 
+                # Set Ctry information for this run.
                 update_parameter_in_file(os.path.join(baseDir, 'input/markovA.in'), 'Ctry',
                                           0,  Ctry1,  'space-separated')
                 update_parameter_in_file(os.path.join(baseDir, 'input/markovB.in'), 'Ctry',
                                           0,  Ctry2,  'space-separated')
-                # Get the correct Ctry Paras into base dir. 
+                # Get the correct Ctry Paras into base dir.
                 self.getCtryParas(baseDir, Ctry1, Ctry2)
                 # Copy base dir
                 ctryBaseDir = os.path.join(path_to_stage_dir, 'base' + Ctry1 + Ctry2)
-                try: 
+                try:
                     shutil.copytree(baseDir, ctryBaseDir)
                 except:
                     logger.info('%s already exists' % baseDir)
-            
+
             kwargs = extra.copy()
             kwargs['output_dir'] = path_to_stage_dir
-                
+
             # yield job
 
-            yield (jobname, gParaSearchDriver, 
-                   [ self.params.executable, path_to_stage_dir, self.params.architecture, 
-                     baseDir, xVars, self.params.initialPop, 
+            yield (jobname, gParaSearchDriver,
+                   [ self.params.executable, path_to_stage_dir, self.params.architecture,
+                     baseDir, xVars, self.params.initialPop,
                      self.params.nPopulation, domain, self.params.solverVerb, self.params.problemType,
                      self.params.pathEmpirical, self.params.itermax, self.params.xConvCrit, self.params.yConvCrit,
                      self.params.makePlots, self.params.optStrategy, self.params.fWeight, self.params.fCritical, self.params.countryList,
@@ -799,8 +799,8 @@ class gParaSearchScript(SessionBasedScript, paraLoop_fp):
         deKenPrice.F_CR         = float(self.params.fCritical)
         deKenPrice.I_D          = int(nXvars)
         if self.params.problemType == 'one4eachCtry':
-            deKenPrice.lowerBds = np.array([xVarsDom[i] for i in range(len(xVarsDom)) if i % 2 == 0], dtype = 'float64')		
-            deKenPrice.upperBds = np.array([xVarsDom[i] for i in range(len(xVarsDom)) if i % 2 == 1], dtype = 'float64')		
+            deKenPrice.lowerBds = np.array([xVarsDom[i] for i in range(len(xVarsDom)) if i % 2 == 0], dtype = 'float64')
+            deKenPrice.upperBds = np.array([xVarsDom[i] for i in range(len(xVarsDom)) if i % 2 == 1], dtype = 'float64')
         else:
             deKenPrice.lowerBds     = np.array([ element[0] for element in domain ], dtype = 'float64')
             deKenPrice.upperBds     = np.array([ element[1] for element in domain ], dtype = 'float64')
@@ -813,7 +813,7 @@ class gParaSearchScript(SessionBasedScript, paraLoop_fp):
         deKenPrice.verbosity    = self.params.solverVerb
 
         logger.info('done with new_tasks')
-        
+
 
 # run script
 
@@ -821,10 +821,3 @@ if __name__ == '__main__':
     logger.info('Starting: \n%s' % ' '.join(sys.argv))
     gParaSearchScript().run()
     logger.info('main done')
-    
-
-    
-    
-    
-    
-    
