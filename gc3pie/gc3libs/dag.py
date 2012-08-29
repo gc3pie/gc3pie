@@ -59,15 +59,15 @@ class TaskCollection(Task, gc3libs.utils.Struct):
             self.tasks = tasks
         Task.__init__(self, jobname)
 
-    # manipulate the "grid" interface used to control the associated task
-    def attach(self, grid):
+    # manipulate the "controller" interface used to control the associated task
+    def attach(self, controller):
         """
-        Use the given Grid interface for operations on the job
+        Use the given Controller interface for operations on the job
         associated with this task.
         """
         for task in self.tasks:
-            task.attach(grid)
-        Task.attach(self, grid)
+            task.attach(controller)
+        Task.attach(self, controller)
 
 
     def detach(self):
@@ -83,7 +83,7 @@ class TaskCollection(Task, gc3libs.utils.Struct):
         task.detach()
         self.tasks.append(task)
         if self._attached:
-            task.attach(self._grid)
+            task.attach(self._controller)
 
     def remove(self, task):
         """
@@ -105,7 +105,7 @@ class TaskCollection(Task, gc3libs.utils.Struct):
         Update the running state of all managed tasks.
         """
         for task in self.tasks:
-            self._grid.update_job_state(task, **kw)
+            self._controller.update_job_state(task, **kw)
 
 
     def kill(self, **kw):
@@ -119,7 +119,7 @@ class TaskCollection(Task, gc3libs.utils.Struct):
         # own subdir based on its `.persistent_id`
         for task in self.tasks:
             if output_dir is not None:
-                self._grid.fetch_output(
+                self._controller.fetch_output(
                     task,
                     os.path.join(output_dir, task.permanent_id),
                     overwrite,
@@ -151,7 +151,7 @@ class TaskCollection(Task, gc3libs.utils.Struct):
         # call should suspend the current thread and wait for
         # notifications from the Engine, but:
         #  - there's no way to tell if we are running threaded,
-        #  - `self.grid` could be a `Core` instance, thus not capable
+        #  - `self.controller` could be a `Core` instance, thus not capable
         #    of running independently.
         # For now this is a busy-wait loop, but we certainly need to revise this.
         while True:
@@ -572,15 +572,15 @@ class ChunkedParameterSweep(ParallelTaskCollection):
         but also creates new tasks if less than
         `chunk_size` are running.
         """
-        # XXX: proposal, reset chuck_size from self._grid.max_in_flight
+        # XXX: proposal, reset chuck_size from self._controller.max_in_flight
         # this is the way to pass new 'max-running' value to the class
-        # this creates though, a tigh coupling with 'grid' and maybe
+        # this creates though, a tigh coupling with 'controller' and maybe
         # limits the flexibility of the class.
         # In this way we obsolete 'chunked_size' as part of the __init__ args
-        # if self._grid:
+        # if self._controller:
         #     gc3libs.log.info("Updating %s chunk_size from %d to %d" %
-        #                      (self.__class__, self.chunk_size, self._grid.max_in_flight))
-        #     self.chunk_size =  self._grid.
+        #                      (self.__class__, self.chunk_size, self._controller.max_in_flight))
+        #     self.chunk_size =  self._controller.
         # XXX: shall we als could jobs in Run.State.STOPPED ?
         num_running = len([task for task in self.tasks if
                            task.execution.state in  [ Run.State.NEW,

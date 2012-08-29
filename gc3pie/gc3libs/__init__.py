@@ -163,39 +163,39 @@ class Task(Persistable, Struct):
         Struct.__init__(self, **kw)
         self.jobname = name
         self.execution = Run(attach=self)
-        # `_grid` and `_attached` are set by `attach()`/`detach()`
+        # `_controller` and `_attached` are set by `attach()`/`detach()`
         self._attached = False
-        self._grid = None
+        self._controller = None
         self.changed = True
 
-    # manipulate the "grid" interface used to control the associated job
-    def attach(self, grid):
+    # manipulate the "controller" interface used to control the associated job
+    def attach(self, controller):
         """
         Use the given Grid interface for operations on the job
         associated with this task.
         """
-        if self._grid != grid:
+        if self._controller != controller:
             if self._attached:
                 self.detach()
-            #gc3libs.log.debug("Attaching %s to %s" % (self, grid))
-            grid.add(self)
+            #gc3libs.log.debug("Attaching %s to %s" % (self, controller))
+            controller.add(self)
             self._attached = True
-            self._grid = grid
+            self._controller = controller
 
-    # create a class-shared fake "grid" object, that just throws a
-    # DetachedFromGrid exception when any of its methods is used.  We
+    # create a class-shared fake "controller" object, that just throws a
+    # DetachedFromController exception when any of its methods is used.  We
     # use this as a safeguard for detached `Task` objects, in order to
     # get sensible error reporting.
-    class __NoGrid(object):
+    class __NoController(object):
         # XXX: this returns a function object for whatever `name`;
-        # should be fine since a "grid" interface should just contain
+        # should be fine since a "controller" interface should just contain
         # methods, but one never knows...
         def __getattr__(self, name):
             def throw_error(*args, **kwargs):
-                raise gc3libs.exceptions.DetachedFromGridError(
-                    "Task object is not attached to a Grid interface.")
+                raise gc3libs.exceptions.DetachedFromControllerError(
+                    "Task object is not attached to a controller.")
             return throw_error
-    __no_grid = __NoGrid()
+    __no_controller = __NoController()
 
     def detach(self):
         """
@@ -207,10 +207,10 @@ class Task(Persistable, Struct):
 
             self._attached = False
             try:
-                self._grid.remove(self)
+                self._controller.remove(self)
             except:
                 pass
-            self._grid = Task.__no_grid
+            self._controller = Task.__no_controller
 
 
     # interface with pickle/gc3libs.persistence: do not save the
@@ -219,7 +219,7 @@ class Task(Persistable, Struct):
 
     def __getstate__(self):
         state = self.__dict__.copy()
-        state['_grid'] = None
+        state['_controller'] = None
         state['_attached'] = None
         state['changed'] = False
         return state
@@ -236,9 +236,9 @@ class Task(Persistable, Struct):
         Start the computational job associated with this `Task` instance.
         """
         assert self._attached, ("Task.submit() called on detached task %s." % self)
-        assert hasattr(self._grid, 'submit'), \
-               ("Invalid `_grid` object '%s' in Task %s" % (self._grid, self))
-        self._grid.submit(self, resubmit, **kw)
+        assert hasattr(self._controller, 'submit'), \
+               ("Invalid `_controller` object '%s' in Task %s" % (self._controller, self))
+        self._controller.submit(self, resubmit, **kw)
 
 
     def update_state(self, **kw):
@@ -248,9 +248,9 @@ class Task(Persistable, Struct):
         `.execution.state` will contain the new state.
         """
         assert self._attached, ("Task.update_state() called on detached task %s." % self)
-        assert hasattr(self._grid, 'update_job_state'), \
-               ("Invalid `_grid` object '%s' in Task %s" % (self._grid, self))
-        self._grid.update_job_state(self, **kw)
+        assert hasattr(self._controller, 'update_job_state'), \
+               ("Invalid `_controller` object '%s' in Task %s" % (self._controller, self))
+        self._controller.update_job_state(self, **kw)
 
 
     def kill(self, **kw):
@@ -260,9 +260,9 @@ class Task(Persistable, Struct):
         See :meth:`gc3libs.Core.kill` for a full explanation.
         """
         assert self._attached, ("Task.kill() called on detached task %s." % self)
-        assert hasattr(self._grid, 'kill'), \
-               ("Invalid `_grid` object '%s' in Task %s" % (self._grid, self))
-        self._grid.kill(self, **kw)
+        assert hasattr(self._controller, 'kill'), \
+               ("Invalid `_controller` object '%s' in Task %s" % (self._controller, self))
+        self._controller.kill(self, **kw)
 
 
     def fetch_output(self, output_dir=None, overwrite=False, **kw):
@@ -282,7 +282,7 @@ class Task(Persistable, Struct):
         """
         if self.execution.state == Run.State.TERMINATED:
             return self.output_dir
-        result = self._grid.fetch_output(self, output_dir, overwrite, **kw)
+        result = self._controller.fetch_output(self, output_dir, overwrite, **kw)
         if self.execution.state == Run.State.TERMINATING:
             self.execution.state = Run.State.TERMINATED
         return result
@@ -298,9 +298,9 @@ class Task(Persistable, Struct):
         See :meth:`gc3libs.Core.peek` for a full explanation.
         """
         assert self._attached, ("Task.peek() called on detached task %s." % self)
-        assert hasattr(self._grid, 'peek'), \
-               ("Invalid `_grid` object '%s' in Task %s" % (self._grid, self))
-        return self._grid.peek(self, what, offset, size, **kw)
+        assert hasattr(self._controller, 'peek'), \
+               ("Invalid `_controller` object '%s' in Task %s" % (self._controller, self))
+        return self._controller.peek(self, what, offset, size, **kw)
 
 
     def free(self, **kw):
@@ -374,7 +374,7 @@ class Task(Persistable, Struct):
         # call should suspend the current thread and wait for
         # notifications from the Engine, but:
         #  - there's no way to tell if we are running threaded,
-        #  - `self._grid` could be a `Core` instance, thus not capable
+        #  - `self._controller` could be a `Core` instance, thus not capable
         #    of running independently.
         # For now this is a poll+sleep loop, but we certainly need to revise it.
         while True:
@@ -1870,13 +1870,13 @@ class RetryableTask(Task):
         else:
             return False
 
-    def attach(self, grid):
+    def attach(self, controller):
         # here `Task.attach` is the invocation of the superclass'
-        # `attach` method (which attaches *this* object to a grid),
+        # `attach` method (which attaches *this* object to a controller),
         # while `self.task.attach` is the propagation of the `attach`
         # method to the wrapped task. (Same for `detach` below.)
-        Task.attach(self, grid)
-        self.task.attach(grid)
+        Task.attach(self, controller)
+        self.task.attach(controller)
 
     def detach(self):
         # see comment in `attach` above

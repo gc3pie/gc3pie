@@ -713,29 +713,32 @@ class Engine(object):
     """
 
 
-    def __init__(self, grid, tasks=list(), store=None,
+    def __init__(self, controller, tasks=list(), store=None,
                  can_submit=True, can_retrieve=True,
                  max_in_flight=0, max_submitted=0,
                  output_dir=None, fetch_output_overwrites=False):
         """
         Create a new `Engine` instance.  Arguments are as follows:
 
-        `grid`
+        :param controller:
           A `gc3libs.Core` instance, that will be used to operate on
           tasks.  This is the only required argument.
 
-        `apps`
+        :param list apps:
           Initial list of tasks to be managed by this Engine.  Tasks can
           be later added and removed with the `add` and `remove`
           methods (which see).  Defaults to the empty list.
 
-        `store`
+        :param store:
           An instance of `gc3libs.persistence.Store`, or `None`.  If
           not `None`, it will be used to persist tasks after each
           iteration; by default no store is used so no task state is
           persisted.
 
-        `can_submit`, `can_retrieve`, `max_in_flight`, `max_submitted`
+        :param can_submit:
+        :param can_retrieve:
+        :param max_in_flight:
+        :param max_submitted:
           Optional keyword arguments; see `Engine` for a description.
         """
         # internal-use attributes
@@ -745,7 +748,7 @@ class Engine(object):
         self._terminating = []
         self._terminated = []
         self._to_kill = []
-        self._core = grid
+        self._core = controller
         self._store = store
         for task in tasks:
             self.add(task)
