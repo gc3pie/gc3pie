@@ -50,7 +50,7 @@ Installation into a virtualenv has two distinct advantages:
    installed on the same machine where GC3Pie is.  You can find
    instructions for installing it at:
 
-     http://www.smscg.ch/WP/middleware/release_2_0/smscg_ui_Binary_Installation.html
+     http://www.smscg.ch/WP/middleware/ARC1/smscg_ui_Installation.html
 
    Additional OS-specific installation details can be found at:
 
