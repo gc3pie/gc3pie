@@ -419,7 +419,7 @@ class ArcLrms(LRMS):
             if arc_job.errors != '':
                 # XXX: how to deal with
                 # 'Data staging failed (pre-processing); Failed in files upload (post-processing)'
-                job.log("ARC reported error: %s" % arc_job.errors)
+                job.history("ARC reported error: %s" % arc_job.errors)
                 if "Data staging failed" in arc_job.errors:
                     job.returncode = (Run.Signals.DataStagingFailure, -1)
                 else:
@@ -429,7 +429,7 @@ class ArcLrms(LRMS):
                   and arc_job.requested_wall_time != -1
                   and arc_job.used_wall_time != -1
                   and arc_job.used_wall_time > arc_job.requested_wall_time):
-                job.log("Job exceeded requested wall-clock time (%d s),"
+                job.history("Job exceeded requested wall-clock time (%d s),"
                         " killed by remote batch system"
                         % arc_job.requested_wall_time)
                 job.returncode = (Run.Signals.RemoteError, -1)
@@ -437,7 +437,7 @@ class ArcLrms(LRMS):
                   and arc_job.requested_cpu_time != -1
                   and arc_job.used_cpu_time != -1
                   and arc_job.used_cpu_time > arc_job.requested_cpu_time):
-                job.log("Job exceeded requested CPU time (%d s),"
+                job.history("Job exceeded requested CPU time (%d s),"
                         " killed by remote batch system"
                         % arc_job.requested_cpu_time)
                 job.returncode = (Run.Signals.RemoteError, -1)
@@ -445,7 +445,7 @@ class ArcLrms(LRMS):
             elif (app.requested_memory is not None
                   and app.requested_memory != -1 and arc_job.used_memory != -1
                   and (arc_job.used_memory / 1024) > (app.requested_memory * 1024)):
-                job.log("Job used more memory (%d MB) than requested (%d MB),"
+                job.history("Job used more memory (%d MB) than requested (%d MB),"
                         " killed by remote batch system"
                         % (arc_job.used_memory / 1024, app.requested_memory * 1024))
                 job.returncode = (Run.Signals.RemoteError, -1)
