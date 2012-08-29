@@ -1119,7 +1119,7 @@ class SessionBasedScript(_Script):
                        default=None,
                        help="Submit jobs to a specific computational resources."
                        " NAME is a reource name or comma-separated list of such names."
-                       " Use the command `glist` to list available resources.")
+                       " Use the command `gservers` to list available resources.")
         self.add_param("-w", "--wall-clock-time", dest="wctime", default=str(8),  # 8 hrs
                        metavar="DURATION",
                        help="Set the time limit for each job (default %(default)s for '8 hours')."

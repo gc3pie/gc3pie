@@ -801,7 +801,7 @@ as more lines are written to the given stream.
         # exit code is practically limited to 7 bits ...
         return utils.ifelse(failed < 127, failed, 126)
 
-class cmd_glist(_BaseCmd):
+class cmd_gservers(_BaseCmd):
     """
 List status of computational resources.
     """
@@ -816,7 +816,7 @@ List status of computational resources.
                        help="Only print resource attributes whose name appears in"
                        " this comma-separated list. (Attribute name is as given in"
                        " the configuration file, or listed in the middle column"
-                       " in `glist` output.)")
+                       " in `gservers` output.)")
 
     def setup(self):
         """

@@ -16,7 +16,7 @@ The GC3Utils are lower-level commands, provided to perform common
 operations on jobs, regardless of their type or the application they run.
 
 For instance, GC3Utils provide commands to obtain the list and status
-of computational resources (:command:`glist`); to clear the list of jobs from
+of computational resources (:command:`gservers`); to clear the list of jobs from
 old and failed ones (:command:`gclean`); to get detailed information on a
 submitted job (:command:`ginfo`, mainly for debugging purposes).
 
@@ -231,14 +231,14 @@ before being submitted again.  If you are unsure what state
 a job is in, check it with :command:`gstat`.
 
 
-:command:`glist`: list available resources
-==========================================
+:command:`gservers`: list available resources
+=============================================
 
-The :command:`glist` command prints out information about the configured resources.
+The :command:`gservers` command prints out information about the configured resources.
 For each resource, a summary of the information recorded in the configuration
 file and the current resource status is printed.  For example::
 
-    $ glist
+    $ gservers
     +----------------------------------------------------------------+
     |                     smscg                                      |
     +================================================================+
