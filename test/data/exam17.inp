@@ -6,10 +6,10 @@
 !  The INTENSities are 0.13317, 0.21652, 0.14589
 !  The mean POLARIZABILITY is 0.53018
 !
-! GC3: grepLinesAndAnalyze("FINAL \s+ GVB", "", 5, -38.3334724789, GamessTst.tolE, "Eerr")
-! GC3: grepLinesAndAnalyze("FREQUENCY\:", "tail", 3, 1224.19, GamessTst.tolW, "Werr")
-! GC3: grepLinesAndAnalyze("IR+\s+INTENSITY\:", "tail", 4, 0.13317, GamessTst.tolI, "Ierr")
-! GC3: grepLinesAndAnalyze("MEAN+\sALPHA+\sPOL", "", 5, 0.53018, GamessTst.tolP, "Perr")
+! ggamess test: grepLinesAndAnalyze("FINAL \s+ GVB", "", 5, -38.3334724789, GamessTst.tolE, "Eerr")
+! ggamess test: grepLinesAndAnalyze("FREQUENCY\:", "tail", 3, 1224.19, GamessTst.tolW, "Werr")
+! ggamess test: grepLinesAndAnalyze("IR+\s+INTENSITY\:", "tail", 4, 0.13317, GamessTst.tolI, "Ierr")
+! ggamess test: grepLinesAndAnalyze("MEAN+\sALPHA+\sPOL", "", 5, 0.53018, GamessTst.tolP, "Perr")
 !
  $CONTRL SCFTYP=GVB  MULT=1  RUNTYP=HESSIAN  UNITS=BOHR $END
  $SYSTEM TIMLIM=1 $END

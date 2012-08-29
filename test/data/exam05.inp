@@ -16,9 +16,9 @@
 !    from the relaxed density (it is well known that CI
 !    does not satisfy the Hellmann-Feynmann theorem).
 !    The upper state has RMS gradient 0.032264079
-! GC3: grepLinesAndAnalyze("STATE\s\#\s\s\s\s", "", 6, 6.145036726, GamessTst.tolE, "Eerr")
-! GC3: grepLinesAndAnalyze("RMS \s+G", "", 4, 0.032264079, GamessTst.tolG, "Gerr")
-! GC3: grepAndFollow("DEBYE", "head","1", 4, 0.691104, GamessTst.tolD, "Derr")  
+! ggamess test: grepLinesAndAnalyze("STATE\s\#\s\s\s\s", "", 6, 6.145036726, GamessTst.tolE, "Eerr")
+! ggamess test: grepLinesAndAnalyze("RMS \s+G", "", 4, 0.032264079, GamessTst.tolG, "Gerr")
+! ggamess test: grepAndFollow("DEBYE", "head","1", 4, 0.691104, GamessTst.tolD, "Derr")  
 !
  $CONTRL SCFTYP=RHF CITYP=GUGA RUNTYP=GRADIENT $END
  $SYSTEM TIMLIM=1 $END

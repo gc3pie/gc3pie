@@ -18,11 +18,11 @@
 !    The RMS gradient is 0.027589766.
 !    FINAL localization sums are 30.57 and 25.14 Debye**2.
 !
-! GC3: grepLinesAndAnalyze("FINAL \s+UHF", "", 5, -37.2810867259, GamessTst.tolG, "Gerr")
-! GC3: grepLinesAndAnalyze("RMS \s+G", "", 4, 0.027589766, GamessTst.tolG, "Gerr")
-! GC3: grepLinesAndAnalyze("S-SQUARED", "", 3, 2.013, GamessTst.tolS, "Serr")
-! GC3: grepLinesAndAnalyze("FINAL+\s LOC", "head", 6, 30.57, GamessTst.tolL, "Lerr")
-! GC3: grepLinesAndAnalyze("FINAL+\s LOC", "tail", 6, 25.14, GamessTst.tolL, "Lerr")
+! ggamess test: grepLinesAndAnalyze("FINAL \s+UHF", "", 5, -37.2810867259, GamessTst.tolG, "Gerr")
+! ggamess test: grepLinesAndAnalyze("RMS \s+G", "", 4, 0.027589766, GamessTst.tolG, "Gerr")
+! ggamess test: grepLinesAndAnalyze("S-SQUARED", "", 3, 2.013, GamessTst.tolS, "Serr")
+! ggamess test: grepLinesAndAnalyze("FINAL+\s LOC", "head", 6, 30.57, GamessTst.tolL, "Lerr")
+! ggamess test: grepLinesAndAnalyze("FINAL+\s LOC", "tail", 6, 25.14, GamessTst.tolL, "Lerr")
 !
  $CONTRL SCFTYP=UHF MULT=3 RUNTYP=GRADIENT LOCAL=BOYS $END
  $SYSTEM TIMLIM=1 $END

@@ -10,7 +10,7 @@
 !      MIX=    -0.43      -0.4
 !     total    -8.96      -9.0
 !
-! GC3: grepLinesAndAnalyze("TOTAL+\s INTER", "tail", 6, -8.96, GamessTst.tolH, "Herr")
+! ggamess test: grepLinesAndAnalyze("TOTAL+\s INTER", "tail", 6, -8.96, GamessTst.tolH, "Herr")
 !
  $contrl scftyp=rhf runtyp=morokuma coord=zmt $end
  $system timlim=1 $end

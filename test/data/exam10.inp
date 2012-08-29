@@ -18,10 +18,10 @@
 !   the FREQuencies are 2169.66, 4140.11, and 4391.16
 !   the INTENSities are not evaluated.
 !
-! GC3: grepLinesAndAnalyze("FINAL \s+ RHF", "", 5, -74.9659012171, GamessTst.tolW, "Werr")
-! GC3: grepLinesAndAnalyze("FREQUENCY\:", "tail", 3, 2170.04, GamessTst.tolE, "Eerr")
-! GC3: grepLinesAndAnalyze("IR+\s+INTENSITY\:", "tail", 4, 0.17128, GamessTst.tolI, "Ierr")
-! GC3: grepLinesAndAnalyze("MEAN+\sALPHA+\sPOL", "", 5,0.40079, GamessTst.tolP, "Perr")
+! ggamess test: grepLinesAndAnalyze("FINAL \s+ RHF", "", 5, -74.9659012171, GamessTst.tolW, "Werr")
+! ggamess test: grepLinesAndAnalyze("FREQUENCY\:", "tail", 3, 2170.04, GamessTst.tolE, "Eerr")
+! ggamess test: grepLinesAndAnalyze("IR+\s+INTENSITY\:", "tail", 4, 0.17128, GamessTst.tolI, "Ierr")
+! ggamess test: grepLinesAndAnalyze("MEAN+\sALPHA+\sPOL", "", 5,0.40079, GamessTst.tolP, "Perr")
 !
  $CONTRL SCFTYP=RHF RUNTYP=HESSIAN UNITS=BOHR NZVAR=3 $END
  $SYSTEM TIMLIM=1 $END

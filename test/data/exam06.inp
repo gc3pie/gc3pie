@@ -23,8 +23,8 @@
 !    FINAL E= -37.2581791690, RMS gradient=0.0000012,
 !    r(CH)=1.1243353, ang(HCH)=98.8170741
 !
-! GC3: grepLinesAndAnalyze("FINAL \s+MCSCF", "tail", 5, -37.2581791690, GamessTst.tolE, "Eerr")
-! GC3: grepLinesAndAnalyze("RMS \s+G", "tail", 8, 0.0000012, GamessTst.tolG, "Gerr")
+! ggamess test: grepLinesAndAnalyze("FINAL \s+MCSCF", "tail", 5, -37.2581791690, GamessTst.tolE, "Eerr")
+! ggamess test: grepLinesAndAnalyze("RMS \s+G", "tail", 8, 0.0000012, GamessTst.tolG, "Gerr")
 !
  $CONTRL SCFTYP=MCSCF RUNTYP=OPTIMIZE NZVAR=3 COORD=ZMT $END
  $SYSTEM TIMLIM=1 $END

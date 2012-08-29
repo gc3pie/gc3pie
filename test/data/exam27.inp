@@ -16,8 +16,8 @@
 !    q(L6)=-0.153112, p(L6)=-0.014313,
 !    velocity(H,z)=0.028857623667
 !
-! GC3: grepAndFollow("SQRT\(AMU\)", "tail",  "head", 8, -9.12710, 0.0001, "Eerr")
-! GC3: grepAndFollow("VEL\(1\)=", "tail", "head", 3, 0.028857623667, GamessTst.tolV, "Verr")  
+! ggamess test: grepAndFollow("SQRT\(AMU\)", "tail",  "head", 8, -9.12710, 0.0001, "Eerr")
+! ggamess test: grepAndFollow("VEL\(1\)=", "tail", "head", 3, 0.028857623667, GamessTst.tolV, "Verr")  
 !
  $CONTRL SCFTYP=RHF RUNTYP=DRC $END
  $SYSTEM timlim=1 $END
