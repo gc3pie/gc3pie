@@ -78,7 +78,7 @@ class GamessApplication(gc3libs.Application):
         extra_args['jobname'] = input_file_name_sans
         # build generic `Application` obj
         gc3libs.Application.__init__(self,
-                                     executable = "/$RUNGMS", # XXX: should be: "rungms",
+                                     executable = "rungms",
                                      arguments = arguments,
                                      inputs = [ inp_file_path ] + list(other_input_files),
                                      outputs = [ output_file_name ],
