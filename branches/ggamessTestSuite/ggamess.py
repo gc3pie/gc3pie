@@ -129,7 +129,6 @@ of newly-created jobs so that this limit is never exceeded.
             else:
                 # Added Gamess Test Application
 		cls = GamessTestApplication
-		log = cls.logTest 
                 #cls = GamessApplication
             # construct GAMESS job
             #print "CLS %s", cls
@@ -205,9 +204,9 @@ of newly-created jobs so that this limit is never exceeded.
 #TODO: GamessTestApplcation class is only used when ggamess.py -N was provided 
 
 class GamessTestApplication(GamessApplication):
-	def __init__(self, logTest, inp_file_path, *other_input_files, **kw):
+	def __init__(self, inp_file_path, *other_input_files, **kw):
 		print "LOG"
-		self.logTest = logTest
+		self.logTest = []
 		GamessApplication.__init__(self, 
 					   inp_file_path, 
 					   *other_input_files,
