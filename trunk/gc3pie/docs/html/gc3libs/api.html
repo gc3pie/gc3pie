@@ -1214,7 +1214,7 @@ description.</p>
 
 <dl class="method">
 <dt id="gc3libs.cmdline.SessionBasedScript.print_tasks_table">
-<tt class="descname">print_tasks_table</tt><big>(</big><em>output=&lt;open file '&lt;stdout&gt;'</em>, <em>mode 'w' at 0x2ad68e570150&gt;</em>, <em>states=Enum(['TERMINATED'</em>, <em>'UNKNOWN'</em>, <em>'SUBMITTED'</em>, <em>'RUNNING'</em>, <em>'TERMINATING'</em>, <em>'STOPPED'</em>, <em>'NEW'])</em>, <em>only=&lt;type 'object'&gt;</em><big>)</big><a class="headerlink" href="#gc3libs.cmdline.SessionBasedScript.print_tasks_table" title="Permalink to this definition">¶</a></dt>
+<tt class="descname">print_tasks_table</tt><big>(</big><em>output=&lt;open file '&lt;stdout&gt;'</em>, <em>mode 'w' at 0x2b8de3ab0150&gt;</em>, <em>states=Enum(['TERMINATED'</em>, <em>'UNKNOWN'</em>, <em>'SUBMITTED'</em>, <em>'RUNNING'</em>, <em>'TERMINATING'</em>, <em>'STOPPED'</em>, <em>'NEW'])</em>, <em>only=&lt;type 'object'&gt;</em><big>)</big><a class="headerlink" href="#gc3libs.cmdline.SessionBasedScript.print_tasks_table" title="Permalink to this definition">¶</a></dt>
 <dd><p>Output a text table to stream <cite>output</cite>, giving details about
 tasks in the given states.</p>
 <p>Optional second argument <cite>states</cite> restricts the listing to
@@ -2226,7 +2226,7 @@ texts coming from the same template.  Templates can be nested, and
 expansions generated recursviely.</p>
 <dl class="class">
 <dt id="gc3libs.template.Template">
-<em class="property">class </em><tt class="descclassname">gc3libs.template.</tt><tt class="descname">Template</tt><big>(</big><em>template</em>, <em>validator=&lt;function &lt;lambda&gt; at 0x2ad80c8&gt;</em>, <em>**kw</em><big>)</big><a class="headerlink" href="#gc3libs.template.Template" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><tt class="descclassname">gc3libs.template.</tt><tt class="descname">Template</tt><big>(</big><em>template</em>, <em>validator=&lt;function &lt;lambda&gt; at 0x458a848&gt;</em>, <em>**kw</em><big>)</big><a class="headerlink" href="#gc3libs.template.Template" title="Permalink to this definition">¶</a></dt>
 <dd><p>A template object is a pair <cite>(obj, keywords)</cite>.  Methods are
 provided to substitute the keyword values into <cite>obj</cite>, and to
 iterate over expansions of the given keywords (optionally
@@ -3108,7 +3108,7 @@ are not altered to reflect <cite>mode</cite>.</p>
 
 <dl class="function">
 <dt id="gc3libs.utils.prettyprint">
-<tt class="descclassname">gc3libs.utils.</tt><tt class="descname">prettyprint</tt><big>(</big><em>D</em>, <em>indent=0</em>, <em>width=0</em>, <em>maxdepth=None</em>, <em>step=4</em>, <em>only_keys=None</em>, <em>output=&lt;open file '&lt;stdout&gt;'</em>, <em>mode 'w' at 0x2ad68e570150&gt;</em>, <em>_key_prefix=''</em>, <em>_exclude=None</em><big>)</big><a class="headerlink" href="#gc3libs.utils.prettyprint" title="Permalink to this definition">¶</a></dt>
+<tt class="descclassname">gc3libs.utils.</tt><tt class="descname">prettyprint</tt><big>(</big><em>D</em>, <em>indent=0</em>, <em>width=0</em>, <em>maxdepth=None</em>, <em>step=4</em>, <em>only_keys=None</em>, <em>output=&lt;open file '&lt;stdout&gt;'</em>, <em>mode 'w' at 0x2b8de3ab0150&gt;</em>, <em>_key_prefix=''</em>, <em>_exclude=None</em><big>)</big><a class="headerlink" href="#gc3libs.utils.prettyprint" title="Permalink to this definition">¶</a></dt>
 <dd><p>Print dictionary instance <cite>D</cite> in a YAML-like format.
 Each output line consists of:</p>
 <blockquote>
@@ -3965,6 +3965,114 @@ Return False otherwise</p>
 </dd></dl>
 
 </div>
+<div class="section" id="module-gc3libs.backends.batch">
+<span id="gc3libs-backends-batch"></span><h2><cite>gc3libs.backends.batch</cite><a class="headerlink" href="#module-gc3libs.backends.batch" title="Permalink to this headline">¶</a></h2>
+<p>This module provides a generic BatchSystem class from which all
+batch-like backends should inherit.</p>
+<dl class="class">
+<dt id="gc3libs.backends.batch.BatchSystem">
+<em class="property">class </em><tt class="descclassname">gc3libs.backends.batch.</tt><tt class="descname">BatchSystem</tt><big>(</big><em>name</em>, <em>architecture</em>, <em>max_cores</em>, <em>max_cores_per_job</em>, <em>max_memory_per_core</em>, <em>max_walltime</em>, <em>auth</em>, <em>frontend</em>, <em>transport</em>, <em>accounting_delay=15</em>, <em>**kw</em><big>)</big><a class="headerlink" href="#gc3libs.backends.batch.BatchSystem" title="Permalink to this definition">¶</a></dt>
+<dd><p>Base class for backends dealing with a batch-queue system (e.g.,
+PBS/TORQUE, Grid Engine, etc.)</p>
+<p>This is an abstract class, that you should subclass in order to
+interface with a given batch queuing system. (Remember to call
+this class&#8217; constructor in the derived class <tt class="docutils literal"><span class="pre">__init__</span></tt> method.)</p>
+<dl class="method">
+<dt id="gc3libs.backends.batch.BatchSystem.cancel_job">
+<tt class="descname">cancel_job</tt><big>(</big><em>*args</em>, <em>**kwargs</em><big>)</big><a class="headerlink" href="#gc3libs.backends.batch.BatchSystem.cancel_job" title="Permalink to this definition">¶</a></dt>
+<dd><p>Cancel a running job.  If <cite>app</cite> is associated to a queued or
+running remote job, tell the execution middleware to cancel
+it.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="gc3libs.backends.batch.BatchSystem.close">
+<tt class="descname">close</tt><big>(</big><em>*args</em>, <em>**kwargs</em><big>)</big><a class="headerlink" href="#gc3libs.backends.batch.BatchSystem.close" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return True if the list of files is expressed in one of the file transfer protocols the LRMS supports.
+Return False otherwise</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="gc3libs.backends.batch.BatchSystem.free">
+<tt class="descname">free</tt><big>(</big><em>*args</em>, <em>**kwargs</em><big>)</big><a class="headerlink" href="#gc3libs.backends.batch.BatchSystem.free" title="Permalink to this definition">¶</a></dt>
+<dd><p>Free up any remote resources used for the execution of <cite>app</cite>.
+In particular, this should delete any remote directories and
+files.</p>
+<p>Call this method when <cite>app.execution.state</cite> is anything other
+than <cite>TERMINATED</cite> results in undefined behavior and will
+likely be the cause of errors later on.  Be cautious.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="gc3libs.backends.batch.BatchSystem.get_jobid_from_submit_output">
+<tt class="descname">get_jobid_from_submit_output</tt><big>(</big><em>output</em>, <em>regexp</em><big>)</big><a class="headerlink" href="#gc3libs.backends.batch.BatchSystem.get_jobid_from_submit_output" title="Permalink to this definition">¶</a></dt>
+<dd><p>Parse the output of the submission command. Regexp is
+provided by the caller.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="gc3libs.backends.batch.BatchSystem.get_results">
+<tt class="descname">get_results</tt><big>(</big><em>*args</em>, <em>**kwargs</em><big>)</big><a class="headerlink" href="#gc3libs.backends.batch.BatchSystem.get_results" title="Permalink to this definition">¶</a></dt>
+<dd><p>Retrieve job output files into local directory <cite>download_dir</cite>
+(which must already exists).  Will not overwrite existing
+files, unless the optional argument <cite>overwrite</cite> is <cite>True</cite>.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="gc3libs.backends.batch.BatchSystem.peek">
+<tt class="descname">peek</tt><big>(</big><em>*args</em>, <em>**kwargs</em><big>)</big><a class="headerlink" href="#gc3libs.backends.batch.BatchSystem.peek" title="Permalink to this definition">¶</a></dt>
+<dd><p>Download <cite>size</cite> bytes (at offset <cite>offset</cite> from the start) from
+remote file <cite>remote_filename</cite> and write them into
+<cite>local_file</cite>.  If <cite>size</cite> is <cite>None</cite> (default), then snarf
+contents of remote file from <cite>offset</cite> unto the end.</p>
+<p>Argument <cite>local_file</cite> is either a local path name (string), or
+a file-like object supporting a <cite>.write()</cite> method.  If
+<cite>local_file</cite> is a path name, it is created if not existent,
+otherwise overwritten.</p>
+<p>Argument <cite>remote_filename</cite> is the name of a file in the remote job
+&#8220;sandbox&#8221;.</p>
+<p>Any exception raised by operations will be passed through.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="gc3libs.backends.batch.BatchSystem.submit_job">
+<tt class="descname">submit_job</tt><big>(</big><em>*args</em>, <em>**kwargs</em><big>)</big><a class="headerlink" href="#gc3libs.backends.batch.BatchSystem.submit_job" title="Permalink to this definition">¶</a></dt>
+<dd><p>This method will create a remote directory to store job&#8217;s
+sandbox, and will copy the sandbox in there.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="gc3libs.backends.batch.BatchSystem.update_job_state">
+<tt class="descname">update_job_state</tt><big>(</big><em>*args</em>, <em>**kwargs</em><big>)</big><a class="headerlink" href="#gc3libs.backends.batch.BatchSystem.update_job_state" title="Permalink to this definition">¶</a></dt>
+<dd><p>Query the state of the remote job associated with <cite>app</cite> and
+update <cite>app.execution.state</cite> accordingly.  Return the
+corresponding <cite>Run.State</cite>; see <cite>Run.State</cite> for more details.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="gc3libs.backends.batch.BatchSystem.validate_data">
+<tt class="descname">validate_data</tt><big>(</big><em>data_file_list</em><big>)</big><a class="headerlink" href="#gc3libs.backends.batch.BatchSystem.validate_data" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return True if the list of files is expressed in one of the file transfer protocols the LRMS supports.
+Return False otherwise</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="function">
+<dt id="gc3libs.backends.batch.generic_filename_mapping">
+<tt class="descclassname">gc3libs.backends.batch.</tt><tt class="descname">generic_filename_mapping</tt><big>(</big><em>jobname</em>, <em>jobid</em>, <em>file_name</em><big>)</big><a class="headerlink" href="#gc3libs.backends.batch.generic_filename_mapping" title="Permalink to this definition">¶</a></dt>
+<dd><p>Map STDOUT/STDERR filenames (as recorded in <cite>Application.outputs</cite>)
+to commonly used default STDOUT/STDERR file names (e.g.,
+<tt class="docutils literal"><span class="pre">&lt;jobname&gt;.o&lt;jobid&gt;</span></tt>).</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="gc3libs.backends.batch.make_remote_and_local_path_pair">
+<tt class="descclassname">gc3libs.backends.batch.</tt><tt class="descname">make_remote_and_local_path_pair</tt><big>(</big><em>transport</em>, <em>job</em>, <em>remote_relpath</em>, <em>local_root_dir</em>, <em>local_relpath</em><big>)</big><a class="headerlink" href="#gc3libs.backends.batch.make_remote_and_local_path_pair" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return list of (remote_path, local_path) pairs corresponding to</p>
+</dd></dl>
+
+</div>
 <div class="section" id="module-gc3libs.backends.arc0">
 <span id="gc3libs-backends-arc0"></span><h2><cite>gc3libs.backends.arc0</cite><a class="headerlink" href="#module-gc3libs.backends.arc0" title="Permalink to this headline">¶</a></h2>
 <p>Job control on ARC0 resources.</p>
@@ -4271,6 +4379,38 @@ and return a <cite>dict</cite> instance, mapping each host name to its attribute
 <tt class="descclassname">gc3libs.backends.sge.</tt><tt class="descname">parse_qstat_f</tt><big>(</big><em>qstat_output</em><big>)</big><a class="headerlink" href="#gc3libs.backends.sge.parse_qstat_f" title="Permalink to this definition">¶</a></dt>
 <dd><p>Parse SGE&#8217;s <tt class="docutils literal"><span class="pre">qstat</span> <span class="pre">-F</span></tt> output (as contained in string <cite>qstat_output</cite>)
 and return a <cite>dict</cite> instance, mapping each queue name to its attributes.</p>
+</dd></dl>
+
+</div>
+<div class="section" id="module-gc3libs.backends.pbs">
+<span id="gc3libs-backends-pbs"></span><h2><cite>gc3libs.backends.pbs</cite><a class="headerlink" href="#module-gc3libs.backends.pbs" title="Permalink to this headline">¶</a></h2>
+<p>Job control on PBS/Torque clusters (possibly connecting to the front-end via SSH).</p>
+<dl class="class">
+<dt id="gc3libs.backends.pbs.PbsLrms">
+<em class="property">class </em><tt class="descclassname">gc3libs.backends.pbs.</tt><tt class="descname">PbsLrms</tt><big>(</big><em>name</em>, <em>architecture</em>, <em>max_cores</em>, <em>max_cores_per_job</em>, <em>max_memory_per_core</em>, <em>max_walltime</em>, <em>auth</em>, <em>frontend</em>, <em>transport</em>, <em>accounting_delay=15</em>, <em>queue=None</em>, <em>**kw</em><big>)</big><a class="headerlink" href="#gc3libs.backends.pbs.PbsLrms" title="Permalink to this definition">¶</a></dt>
+<dd><p>Job control on PBS/Torque clusters (possibly by connecting via SSH to a submit node).</p>
+<dl class="method">
+<dt id="gc3libs.backends.pbs.PbsLrms.get_resource_status">
+<tt class="descname">get_resource_status</tt><big>(</big><em>*args</em>, <em>**kwargs</em><big>)</big><a class="headerlink" href="#gc3libs.backends.pbs.PbsLrms.get_resource_status" title="Permalink to this definition">¶</a></dt>
+<dd><p>Update the status of the resource associated with this <cite>LRMS</cite>
+instance in-place.  Return updated <cite>Resource</cite> object.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="function">
+<dt id="gc3libs.backends.pbs.count_jobs">
+<tt class="descclassname">gc3libs.backends.pbs.</tt><tt class="descname">count_jobs</tt><big>(</big><em>qstat_output</em>, <em>whoami</em><big>)</big><a class="headerlink" href="#gc3libs.backends.pbs.count_jobs" title="Permalink to this definition">¶</a></dt>
+<dd><p>Parse PBS/Torque&#8217;s <tt class="docutils literal"><span class="pre">qstat</span></tt> output (as contained in string <cite>qstat_output</cite>)
+and return a quadruple <cite>(R, Q, r, q)</cite> where:</p>
+<blockquote>
+<div><ul class="simple">
+<li><cite>R</cite> is the total number of running jobs in the PBS/Torque cell (from any user);</li>
+<li><cite>Q</cite> is the total number of queued jobs in the PBS/Torque cell (from any user);</li>
+<li><cite>r</cite> is the number of running jobs submitted by user <cite>whoami</cite>;</li>
+<li><cite>q</cite> is the number of queued jobs submitted by user <cite>whoami</cite></li>
+</ul>
+</div></blockquote>
 </dd></dl>
 
 </div>
@@ -4628,10 +4768,12 @@ don&#8217;t operate on single jobs.</p>
 <li><a class="reference internal" href="#module-gc3libs.authentication.ssh"><cite>gc3libs.authentication.ssh</cite></a></li>
 <li><a class="reference internal" href="#module-gc3libs.authentication.grid"><cite>gc3libs.authentication.grid</cite></a></li>
 <li><a class="reference internal" href="#module-gc3libs.backends"><cite>gc3libs.backends</cite></a></li>
+<li><a class="reference internal" href="#module-gc3libs.backends.batch"><cite>gc3libs.backends.batch</cite></a></li>
 <li><a class="reference internal" href="#module-gc3libs.backends.arc0"><cite>gc3libs.backends.arc0</cite></a></li>
 <li><a class="reference internal" href="#gc3libs-backends-arc1"><cite>gc3libs.backends.arc1</cite></a></li>
 <li><a class="reference internal" href="#module-gc3libs.backends.lsf"><cite>gc3libs.backends.lsf</cite></a></li>
 <li><a class="reference internal" href="#module-gc3libs.backends.sge"><cite>gc3libs.backends.sge</cite></a></li>
+<li><a class="reference internal" href="#module-gc3libs.backends.pbs"><cite>gc3libs.backends.pbs</cite></a></li>
 <li><a class="reference internal" href="#module-gc3libs.backends.shellcmd"><cite>gc3libs.backends.shellcmd</cite></a></li>
 <li><a class="reference internal" href="#module-gc3libs.backends.transport"><cite>gc3libs.backends.transport</cite></a></li>
 </ul>

@@ -107,6 +107,11 @@
 .. automodule:: gc3libs.backends
     :members:
 
+`gc3libs.backends.batch`
+========================
+.. automodule:: gc3libs.backends.batch
+    :members:
+
 `gc3libs.backends.arc0`
 =======================
 .. automodule:: gc3libs.backends.arc0
@@ -125,6 +130,11 @@
 `gc3libs.backends.sge`
 ======================
 .. automodule:: gc3libs.backends.sge
+    :members:
+
+`gc3libs.backends.pbs`
+======================
+.. automodule:: gc3libs.backends.pbs
     :members:
 
 `gc3libs.backends.shellcmd`
