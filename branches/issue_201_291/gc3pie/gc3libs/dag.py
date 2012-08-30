@@ -52,12 +52,12 @@ class TaskCollection(Task, gc3libs.utils.Struct):
     task states.
     """
 
-    def __init__(self, jobname, tasks=None):
+    def __init__(self, tasks=None, **kw):
         if tasks is None:
             self.tasks = [ ]
         else:
             self.tasks = tasks
-        Task.__init__(self, jobname)
+        Task.__init__(self, jobname, **kw)
 
     # manipulate the "controller" interface used to control the associated task
     def attach(self, controller):
@@ -213,9 +213,9 @@ class SequentialTaskCollection(TaskCollection):
     `TERMINATED` when all tasks have been run.
     """
 
-    def __init__(self, jobname, tasks, **kw):
+    def __init__(self, tasks, **kw):
         # XXX: check that `tasks` is a sequence type
-        TaskCollection.__init__(self, jobname, tasks)
+        TaskCollection.__init__(self, tasks)
         self._current_task = 0
 
 
@@ -391,15 +391,15 @@ class StagedTaskCollection(SequentialTaskCollection):
     code.
 
     """
-    def __init__(self, jobname, **kw):
+    def __init__(self, **kw):
         try:
             first_stage = self.stage0()
             if isinstance(first_stage, Task):
                 # init parent class with the initial task
-                SequentialTaskCollection.__init__(self, jobname, [first_stage], **kw)
+                SequentialTaskCollection.__init__(self, [first_stage], **kw)
             elif isinstance(first_stage, (int, long, tuple)):
                 # init parent class with no tasks, an dimmediately set the exitcode
-                SequentialTaskCollection.__init__(self, jobname, [], **kw)
+                SequentialTaskCollection.__init__(self, [], **kw)
                 self.execution.returncode = first_stage
                 self.execution.state = Run.State.TERMINATED
             else:
@@ -449,8 +449,8 @@ class ParallelTaskCollection(TaskCollection):
     reached the same terminal status.
     """
 
-    def __init__(self, jobname, tasks=None, **kw):
-        TaskCollection.__init__(self, jobname, tasks)
+    def __init__(self, tasks=None, **kw):
+        TaskCollection.__init__(self, jobname, tasks, **kw)
 
 
     def _state(self):
@@ -538,7 +538,7 @@ class ParallelTaskCollection(TaskCollection):
 
 class ChunkedParameterSweep(ParallelTaskCollection):
 
-    def __init__(self, jobname, min_value, max_value, step, chunk_size, **kw):
+    def __init__(self, min_value, max_value, step, chunk_size, **kw):
         """
         Like `ParallelTaskCollection`, but generate a sequence of jobs
         with a parameter varying from `min_value` to `max_value` in
@@ -553,7 +553,7 @@ class ChunkedParameterSweep(ParallelTaskCollection):
         initial = [ self.new_task(param) for param in
                     range(min_value, self._floor, step) ]
         # start with the initial chunk of jobs
-        ParallelTaskCollection.__init__(self,jobname, initial, **kw)
+        ParallelTaskCollection.__init__(self, initial, **kw)
 
 
     def new_task(self, param, **kw):

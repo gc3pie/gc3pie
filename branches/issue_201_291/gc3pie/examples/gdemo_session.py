@@ -178,7 +178,7 @@ class DemoIteration(SequentialTaskCollection):
 
         # create initial task and register it
         initial_task = GdemoApplication(self.init, self.increment, 0)
-        SequentialTaskCollection.__init__(self, self.jobname, [initial_task])
+        SequentialTaskCollection.__init__(self, [initial_task])
 
 
     def __str__(self):

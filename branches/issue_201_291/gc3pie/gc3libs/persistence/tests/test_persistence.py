@@ -374,7 +374,7 @@ class SqlStoreChecks(GenericStoreChecks):
                 sqlalchemy.Column('extra', sqlalchemy.VARCHAR(length=128)): GET.extra,
                 })
 
-        obj = SimpleTask("Antonio's task")
+        obj = SimpleTask()
         # obligatory XKCD citation ;-)
         # Ric, you can't just "cite" XKCD without inserting a
         # reference: http://xkcd.com/327/

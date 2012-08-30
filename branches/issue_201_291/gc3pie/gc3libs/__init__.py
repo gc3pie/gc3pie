@@ -143,13 +143,9 @@ class Task(Persistable, Struct):
     `execution`
       a `Run` instance; its state attribute is initially set to ``NEW``.
 
-    `jobname`
-      an arbitrary string associated to this task, used in the
-      `str` and `repr` methods.
-
     """
 
-    def __init__(self, name, **kw):
+    def __init__(self, **kw):
         """
         Initialize a `Task` instance.
 
@@ -162,7 +158,7 @@ class Task(Persistable, Struct):
                      implementing the same interface.
         """
         Struct.__init__(self, **kw)
-        self.jobname = name
+
         self.execution = Run(attach=self)
         # `_controller` and `_attached` are set by `attach()`/`detach()`
         self._attached = False
@@ -819,17 +815,8 @@ class Application(Task):
 
         self.tags = kw.pop('tags', list())
 
-        jobname = kw.pop('jobname', self.__class__.__name__)
-        # Check whether the first character of a jobname is an
-        # integer. SGE does not allow job names to start with a
-        # number, so add a prefix...
-        if len(jobname) == 0:
-            jobname = "GC3Pie.%s.%s" % (self.__class__.__name__, id(self))
-        elif str(jobname)[0] in string.digits:
-            jobname = "GC3Pie.%s" % jobname
-
         # task setup; creates the `.execution` attribute as well
-        Task.__init__(self, jobname, **kw)
+        Task.__init__(self, **kw)
 
         # for k,v in self.outputs.iteritems():
         #     gc3libs.log.debug("outputs[%s]=%s", repr(k), repr(v))
@@ -1107,7 +1094,8 @@ class Application(Task):
         # match any x86 arch...
         if self.requested_architecture is not None:
             xrsl += '(architecture="%s")' % self.requested_architecture
-        if self.jobname:
+        
+        if 'jobname' in self and self.jobname:
             xrsl += '(jobname="%s")' % self.jobname
 
         # XXX: experimental
@@ -1819,14 +1807,11 @@ class RetryableTask(Task):
     derived classes.
     """
 
-    def __init__(self, name, task, max_retries=0, **kw):
+    def __init__(self, task, max_retries=0, **kw):
         """
         Wrap `task` and resubmit it until `self.retry()` returns `False`.
 
         :param Task task: A `Task` instance that should be retried.
-
-        :param str jobname: The string identifying this `Task`
-            instance, see `Task`:class:.
 
         :param int max_retries: Maximum number of times `task` should be
             re-submitted; use 0 for 'no limit'.
@@ -1834,7 +1819,7 @@ class RetryableTask(Task):
         self.max_retries = max_retries
         self.retried = 0
         self.task = task
-        Task.__init__(self, name, **kw)
+        Task.__init__(self, **kw)
 
     def __getattr__(self, name):
         """Proxy public attributes of the wrapped task."""

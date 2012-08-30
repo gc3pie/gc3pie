@@ -260,7 +260,7 @@ class WarholizeWorkflow(SequentialTaskCollection):
                 self.output_dir, resize=self.resize),
             ]
 
-        SequentialTaskCollection.__init__(self, self.jobname, self.tasks)
+        SequentialTaskCollection.__init__(self, self.tasks)
 
 # Finally, we to call the parent's constructor.
 #
@@ -436,7 +436,7 @@ class TricolorizeMultipleImages(ParallelTaskCollection):
                 colors,
                 self.warhol_dir))
 
-        ParallelTaskCollection.__init__(self, self.jobname, self.tasks)
+        ParallelTaskCollection.__init__(self, self.tasks)
 
 # The main loop will fill the `self.tasks` list with various
 # `TricolorizedImage`, each one with an unique combination of three

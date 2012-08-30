@@ -239,7 +239,7 @@ a grayscale image from the input file::
 Finally, we call the parent's constructor.::
   
           SequentialTaskCollection.__init__(
-              self, self.jobname, self.tasks, grid=grid)
+              self, self.tasks, grid=grid)
   
 
 This will create the initial task list, but we have to run also step 2
@@ -328,11 +328,9 @@ Creating a `gc3libs.Application` is straigthforward: you just
 call the constructor with the executable, the arguments, and the
 input/output files you will need. 
 
-If you don't specify the ``output_dir`` directory, gc3pie libraries will
-create one starting from the job name. It is quite important, then, to
-generate unique jobname for your applications in order to avoid
-conflits. If the output directory exists already, the old one will be
-renamed.
+If you don't specify the ``output_dir`` directory, gc3pie libraries
+will create one starting from the class name. If the output directory
+exists already, the old one will be renamed.
 
 To do any kind of post processing you can define a `terminate` method
 for your application. It will be called after your application will
@@ -396,7 +394,7 @@ constructor `__init__`, creating the various subtasks we want to run::
                   self.warhol_dir,
                   grid=grid))
   
-          ParallelTaskCollection.__init__(self, self.jobname, self.tasks, grid)
+          ParallelTaskCollection.__init__(self, self.tasks, grid)
   
 The main loop will fill the `self.tasks` list with various
 `TricolorizedImage` tasks, each one with an unique combination of
@@ -441,7 +439,7 @@ output of the first job::
                   colors, self.warhol_dir),
               ]
   
-          SequentialTaskCollection.__init__(self, self.jobname, self.tasks, grid)
+          SequentialTaskCollection.__init__(self, self.tasks, grid)
   
       def next(self, iteration):
           last = self.tasks[-1]

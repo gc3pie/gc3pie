@@ -242,7 +242,7 @@ class MainParallelIteration(ParallelTaskCollection):
                     output_folder
                     )
                 )
-        ParallelTaskCollection.__init__(self, self.jobname, self.tasks)
+        ParallelTaskCollection.__init__(self, self.tasks)
 
 
     def __str__(self):
@@ -288,7 +288,7 @@ class InnerParallelIteration(ParallelTaskCollection):
             )
 
         # actually init jobs
-        ParallelTaskCollection.__init__(self, self.jobname, tasks)
+        ParallelTaskCollection.__init__(self, tasks)
 
     def __str__(self):
         return self.jobname
@@ -308,7 +308,7 @@ class InnerSequentialIterationA(SequentialTaskCollection):
         self.jobname = "Gdemo_InnerSequenceA_"+str(self.param_value)
 
         initial_task = XtandemApplicationA(param_value, input_file_name, output_folder, iteration)
-        SequentialTaskCollection.__init__(self, self.jobname, [initial_task])
+        SequentialTaskCollection.__init__(self, [initial_task])
 
     def __str__(self):
         return self.jobname
@@ -337,7 +337,7 @@ class InnerSequentialIterationB(SequentialTaskCollection):
         self.jobname = "Gdemo_InnerSequenceB_"+str(self.param_value)
 
         initial_task = XtandemApplicationB(param_value, input_file_name, output_folder, iteration)
-        SequentialTaskCollection.__init__(self, self.jobname, [initial_task])
+        SequentialTaskCollection.__init__(self, [initial_task])
 
     def __str__(self):
         return self.jobname
@@ -367,7 +367,7 @@ class MainSequentialIteration(SequentialTaskCollection):
 
         self.initial_task = MainParallelIteration(param_value,inputfile_folder,output_folder)
 
-        SequentialTaskCollection.__init__(self, self.jobname, [self.initial_task])
+        SequentialTaskCollection.__init__(self, [self.initial_task])
 
     def next(self, iteration):
 

@@ -209,7 +209,7 @@ username=NONEXISTENT
         # method changes the jobname in order not to have a digit at the
         # beginning of it.
         app = FakeApp(jobname='123Demo')
-        assert app.jobname == 'GC3Pie.123Demo'
+        assert app.jobname == '123Demo'
         self.transport.expected_answer['qsub'] = correct_submit()
         self.core.submit(app)
         assert app.execution.state == State.SUBMITTED
