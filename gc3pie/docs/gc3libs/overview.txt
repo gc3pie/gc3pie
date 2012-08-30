@@ -302,6 +302,13 @@ supported.
 .. _xRSL: http://www.nordugrid.org/documents/xrsl.pdf
 
 
+UML Diagram
+-----------
+
+An UML diagram of GC3Pie classes is available `here`_.
+
+.. _`here`: ../_images/gc3libs.UML.png
+
 
 .. (for Emacs only)
 ..
