@@ -10,13 +10,13 @@ where a ``geotop.inpts`` file is present.
 
 Therefore, to run a test of ``ggeotop`` it is sufficient to provide
 the path to a directory containing valid input files.  One such
-directories are provided here, as directory ``data/public_test``.
+directories are provided here, as directory ``data/GEOtop_public_test``.
 
 Invocation of ``ggeotop`` follows the usual session-based script
 conventions; in addition, the path to a statically-compiled GEOtop
 binary must be provided as argument to option ``-x``::
 
-    ggeotop -s TEST_SESSION_NAME -C 120 -x test/GEOtop_1_224_20120227_static -vvv data/public_test
+    ggeotop -s TEST_SESSION_NAME -C 120 -x geotop_1_224_20120227_static -vvv data/GEOtop_public_test
 
 The test data should generate only one GEOtop job::
 

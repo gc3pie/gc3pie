@@ -56,7 +56,7 @@ __docformat__ = 'reStructuredText'
 # for details, see: http://code.google.com/p/gc3pie/issues/detail?id=95
 if __name__ == "__main__":
     import ggeotop
-    GGeotopScript().run()
+    ggeotop.GGeotopScript().run()
 
 
 # std module imports
