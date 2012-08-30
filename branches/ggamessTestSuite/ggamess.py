@@ -96,7 +96,10 @@ of newly-created jobs so that this limit is never exceeded.
             version = __version__, # module version == script version
             input_filename_pattern = '*.inp'
             )
-	self.listOfTests = []
+	self.LFailedTestDesc = []  
+	self.LFailedTestNames = []  
+	self.NumberOfCorrectTests = 0
+	self.log = []
 
     def new_tasks(self, extra):
 	# setup AppPot parameters
@@ -125,10 +128,12 @@ of newly-created jobs so that this limit is never exceeded.
                 cls = GamessAppPotApplication
             else:
                 # Added Gamess Test Application
+		log = []
 		cls = GamessTestApplication
                 #cls = GamessApplication
             # construct GAMESS job
-            yield (
+            #print "CLS %s", cls
+	    yield (
                 # job name
                 gc3libs.utils.basename_sans(path),
                 # application class
@@ -144,9 +149,9 @@ of newly-created jobs so that this limit is never exceeded.
 		gc3libs.log.debug("ggamess.py: Tests were not executed")
 		print "NOT RUNNING TESTs"
 		return 
-	if len(self.listOfTests) == 0:
-		gc3libs.log.debug("The test list is empty.")
-		raise RuntimeError("The list with tests is empty. The tests will not be run.")
+	#if len(self.listOfTests) == 0:
+	#	gc3libs.log.debug("The test list is empty.")
+	#	raise RuntimeError("The list with tests is empty. The tests will not be run.")
 	
 	#print "PARAMS", self.params
 	# build job list
@@ -154,12 +159,21 @@ of newly-created jobs so that this limit is never exceeded.
 	#print "OLD", inputs 
 	myoutputs = []
 	testSet = GamessTestSuite(".")	
-	numberOfTests = len(self.listOfTests)
+	numberOfTests = len(testSet.listOfTests)
+	print numberOfTests
 	anyterminated = False
+	#import pdb;pdb.set_trace()
+	if not self.session:
+		raise RuntimeError("The session is empty.")
+		 
 	for app in self.session:
+		dir(app)
+		print self.session.list_names()
 		output_abs_path = os.path.join(app.output_dir, app.outputs[app.stdout].path)
 		myoutputs.append(output_abs_path)
-		
+	 	for message in app.logTest:
+	 		dir(message)
+		#print output_abs_path	
 	#if anyterminated is True:
 	#	testSet.runAll()
 	#else:
@@ -186,35 +200,43 @@ of newly-created jobs so that this limit is never exceeded.
 		else:
 			raise IOError("ggamess.py: Incorrect path of %s.", fileName)
 	return list_of_files_to_analyze
+# This class overrides GamessApplication class and triggers a test in terminated().
 
-class GamessTestApplication(gc3libs.application.gamess.GamessApplication):
-    def __init__(self):
-	GamessApplication.__init__(self)
-	self.log = dict() #A log with test results, keys are file names, values are strings to be shown to the user
+#TODO: GamessTestApplcation class is only used when ggamess.py -N was provided 
+
+class GamessTestApplication(GamessApplication):
+	def __init__(self, logTest, inp_file_path, *other_input_files, **kw):
+	#def __init__(self, logTest, inp_file_path):
+		print "LOG"
+		self.logTest = logTest
+		#GamessApplication.__init__(self, inp_file_path) 
+		GamessApplication.__init__(self, 
+					   inp_file_path, 
+					   *other_input_files,
+					   **kw
+					  )
+    #Methods to print the class name
+	def __str__(self):
+		return self.jobname
 	
-    def terminated(self):
-	self.terminated()
-	self.test = GamessTestSuite(".")
-	self.LFailedTestDesc = []  
-	self.LFailedTestNames = []  
-	if self.execution.exitcode == 0:
+	def terminated(self):
+		GamessApplication.terminated()
+		self.test = GamessTestSuite(".")
+		self.NumberOfTests += 1 
+		#if self.execution.exitcode == 0:
+		self.NumberOfCorrectTests = self.NumberOfCorrectTests + 1	
 		file_input = self.inp_file_path
-		#inputs = [self.inp_file_path for app in self.session]
-		#print "OUTPUTS", myoutputs
-		#print "INPUTS", inputs
-		#output_list = self.get_output_files_to_analyze(inputs, myoutputs)
 		#import pdb;pdb.set_trace()
 		file_output = os.path.join(self.output_dir, self.outputs[self.stdout].path)
 		gc3libs.log.info("TERMINATED IN: %s OUT %s", file_input, file_output)
+		#self.test.add(file_input,file_input)
 		test.generate_tests(file_input, file_output)
 		test.runAll()
-	else:
-		self.NumberOfTests = len(self.listOfTests)
-		self.NumberOfCorrectTests = 0
-		self.LFailedTestNames.append(file_output)
-		self.LFailedTestDesc.append("The file DID NOT terminated normally.")
-		gc3libs.log.debug("The file %s DID NOT terminated normally.", file_output)
-		self.NumberOfCorrectTests = self.NumberOfCorrectTests + 1	
+		self.log.append(test.log)
+		#else:
+			#self.LFailedTestNames.append(file_output)
+		#	self.log.append("The file %s DID NOT terminated normally.", file_output)
+			#gc3libs.log.debug("The file %s DID NOT terminated normally.", file_output)
 			
 # run it
 if __name__ == '__main__':

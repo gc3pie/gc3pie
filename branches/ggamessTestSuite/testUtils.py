@@ -107,9 +107,9 @@ class GamessTestSuite:
 		#self.LFailedTestDesc = []  
 		#self.NumberOfTests = len(self.listOfTests)
 		#self.NumberOfCorrectTests = 0
-		#if len(self.listOfTests) == 0:
-		#   gc3libs.log.debug("The test list is empty.")
-		#   raise RuntimeError("The list with tests is empty. The tests will not be run.")
+		if len(self.listOfTests) == 0:
+		   gc3libs.log.debug("The test list is empty.")
+		   raise RuntimeError("The list with tests is empty. The tests will not be run.")
 		#Each INP file shold have a GAMESS OUT file that terminated normally
 		#for file_input, file_output in zip(self.listOfTests, self.list_of_analyzed_files):
 			#print "runAll I", file_input
