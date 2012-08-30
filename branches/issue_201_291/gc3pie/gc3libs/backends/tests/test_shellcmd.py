@@ -93,8 +93,7 @@ type=none
         tmpdir = tempfile.mkdtemp(prefix=__name__, suffix='.d')
 
         app = gc3libs.Application(
-            executable = '/usr/bin/env',
-            arguments = [],
+            arguments = ['/usr/bin/env'],
             inputs = [],
             outputs = [],
             output_dir = tmpdir,
@@ -138,8 +137,7 @@ type=none
     def test_submission_too_many_jobs(self):
 
         app1 = gc3libs.Application(
-            executable = '/usr/bin/env',
-            arguments = [],
+            arguments = ['/usr/bin/env'],
             inputs = [],
             outputs = [],
             output_dir = ".",
@@ -153,8 +151,7 @@ type=none
 
         # this fails, as the number of cores exceeds the resource total
         app2 = gc3libs.Application(
-            executable = '/usr/bin/env',
-            arguments = [],
+            arguments = ['/usr/bin/env'],
             inputs = [],
             outputs = [],
             output_dir = ".",
@@ -174,8 +171,7 @@ type=none
         self.cleanup_file(tmpdir)
 
         app = gc3libs.Application(
-            executable = '/usr/bin/env',
-            arguments = [],
+            arguments = ['/usr/bin/env'],
             inputs = [],
             outputs = [],
             output_dir = tmpdir,

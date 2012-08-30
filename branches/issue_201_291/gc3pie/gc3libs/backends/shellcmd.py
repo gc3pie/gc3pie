@@ -233,8 +233,7 @@ class ShellcmdLrms(LRMS):
                 " (increase 'max_cores' to raise)." % self.name)
 
         gc3libs.log.debug("Executing local command '%s %s' ..."
-                          % (app.executable, str.join(" ", app.arguments)))
-
+                          % (app.executable, str.join(" ", app.arguments[1:])))
         # We cannot use `exec` or other front-end modules that
         # hide the differences between UNIX and Windows, exactly
         # because we need to get the PID of the submitted process.
@@ -379,7 +378,7 @@ class ShellcmdLrms(LRMS):
                               wrapper_dir,
                               ShellcmdLrms.WRAPPER_OUTPUT_FILENAME),
                           "-f", ShellcmdLrms.TIMEFMT,
-                          cmd, *app.arguments)
+                          cmd, *app.arguments[1:])
 
             except Exception, ex:
                 sys.excepthook(* sys.exc_info())

@@ -304,6 +304,7 @@ To create a generic application we create a class which inherit from
           self.grayscaled_image = grayscaled_image
   
           arguments = [
+              'convert',
               os.path.basename(input_image),
               '-colorspace',
               'gray',
@@ -315,7 +316,6 @@ To create a generic application we create a class which inherit from
   
           gc3libs.Application.__init__(
               self,
-              executable = 'convert',
               arguments = arguments + [grayscaled_image],
               inputs = [input_image],
               outputs = [grayscaled_image, 'stderr.txt', 'stdout.txt'],
@@ -479,8 +479,8 @@ gradient using all the listed colors. The code will look like::
               self.lutfile, input_image, str.join(", ", colors)))
           gc3libs.Application.__init__(
               self,
-              executable = "convert",
               arguments = [
+                  'convert',
                   '-size',
                   '1x1'] + [
                   "xc:%s" % color for color in colors] + [
@@ -522,8 +522,8 @@ The class will look like::
   
           gc3libs.Application.__init__(
               self,
-              executable = "convert",
               arguments = [
+                  'convert',
                   os.path.basename(input_image),
                   os.path.basename(lutfile),
                   '-clut',
@@ -587,8 +587,8 @@ Now it should be easy to write such application::
   
           gc3libs.Application.__init__(
               self,
-              executable = 'montage',
               arguments = input_filenames + [
+                  'montage',
                   '-tile',
                   '%dx%d' % (tile, tile),
                   '-geometry',

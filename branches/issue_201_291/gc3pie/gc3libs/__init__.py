@@ -44,6 +44,7 @@ import sys
 import time
 import types
 import subprocess
+import shlex
 
 import logging
 import logging.config
@@ -539,20 +540,10 @@ class Application(Task):
     The following parameters are *required* to create an `Application`
     instance:
 
-    `executable`
-      (string) name of the application binary to be
-      launched on the remote resource; the specifics of how this is
-      handled are dependent on the submission backend, but you may
-      always run a script that you upload through the `inputs`
-      mechanism by specifying ``./scriptname`` as `executable`.
-
     `arguments`
-      List of command-line arguments to pass to `executable`; any
-      object in the list will be converted to string via Python's
-      `str()`. Note that, in contrast with the UNIX ``execvp()``
-      usage, the first argument in this list will be passed as
-      ``argv[1]``, i.e., ``argv[0]`` will always be equal to
-      `executable`.
+      List or sequence of program arguments. The program to execute is
+      the first one.; any object in the list will be converted to
+      string via Python's `str()`.
 
     `inputs`
       Files that will be copied to the remote execution node before
@@ -679,7 +670,8 @@ class Application(Task):
 
     `arguments`
       list of strings specifying command-line arguments for executable
-      invocation; possibly empty
+      invocation; possibly empty. This will include also the
+      `executable` name as first element
 
     `inputs`
       dictionary mapping source URL (a `gc3libs.url.Url`:class:
@@ -725,10 +717,16 @@ class Application(Task):
       for submission; possibly empty.
     """
 
-    def __init__(self, executable, arguments, inputs, outputs, output_dir, **kw):
+    def __init__(self, arguments, inputs, outputs, output_dir, **kw):
         # required parameters
-        self.executable = executable
-        self.arguments = [ unicode(x) for x in arguments ]
+        if isinstance(arguments, types.StringTypes):
+            arguments = shlex.split(arguments)
+
+        if 'executable' in kw:
+            gc3libs.log.warning("`executable` argument is not supported anymore. Please use `arguments` only")
+
+        self.executable = str(arguments[0])
+        self.arguments = [ str(x) for x in arguments ]
 
         self.inputs = Application._io_spec_to_dict(gc3libs.url.UrlKeyDict, inputs, True)
         self.outputs = Application._io_spec_to_dict(gc3libs.url.UrlValueDict, outputs, False)
@@ -1133,11 +1131,8 @@ class Application(Task):
         Hence, to get a UNIX shell command-line, just concatenate the
         elements of the list, separating them with spaces.
 
-        The default implementation just concatenates the `executable`
-        and `arguments` attributes; override this method in derived
-        classes to provide appropriate invocation templates.
         """
-        return [self.executable] + ['"%s"' % i for i in self.arguments]
+        return [self.executable] + ['"%s"' % i for i in self.arguments[1:]]
 
 
     def qsub_sge(self, resource, _suppress_warning=False, **kw):

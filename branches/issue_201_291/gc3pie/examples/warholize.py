@@ -315,8 +315,8 @@ class ApplicationWithCachedResults(gc3libs.Application):
     Just like `gc3libs.Application`, but do not run at all
     if the expected result is already present on the filesystem.
     """
-    def __init__(self, executable, arguments, inputs, outputs, **kw):
-        gc3libs.Application.__init__(self, executable, arguments, inputs, outputs, **kw)
+    def __init__(self, arguments, inputs, outputs, **kw):
+        gc3libs.Application.__init__(self, arguments, inputs, outputs, **kw)
         # check if all the output files are already available
 
         all_outputs_available = True
@@ -340,6 +340,7 @@ class GrayScaleConvertApplication(ApplicationWithCachedResults):
         self.grayscaled_image = grayscaled_image
 
         arguments = [
+            'convert',
             os.path.basename(input_image),
             '-colorspace',
             'gray',
@@ -353,7 +354,6 @@ class GrayScaleConvertApplication(ApplicationWithCachedResults):
 
         ApplicationWithCachedResults.__init__(
             self,
-            executable = 'convert',
             arguments = arguments + [grayscaled_image],
             inputs = [input_image],
             outputs = [grayscaled_image, 'stderr.txt', 'stdout.txt'],
@@ -509,8 +509,8 @@ class CreateLutApplication(ApplicationWithCachedResults):
             self.lutfile, input_image, str.join(", ", colors)))
         ApplicationWithCachedResults.__init__(
             self,
-            executable = "convert",
             arguments = [
+                'convert',
                 '-size',
                 '1x1'] + [
                 "xc:%s" % color for color in colors] + [
@@ -540,8 +540,8 @@ class ApplyLutApplication(ApplicationWithCachedResults):
 
         ApplicationWithCachedResults.__init__(
             self,
-            executable = "convert",
             arguments = [
+                'convert',
                 os.path.basename(input_image),
                 os.path.basename(lutfile),
                 '-clut',
@@ -604,8 +604,7 @@ class MergeImagesApplication(ApplicationWithCachedResults):
 
         ApplicationWithCachedResults.__init__(
             self,
-            executable = 'montage',
-            arguments = input_filenames + [
+            arguments = ['montage'] + input_filenames + [
                 '-tile',
                 '%dx%d' % (tile, tile),
                 '-geometry',

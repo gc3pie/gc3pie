@@ -31,14 +31,16 @@ class SimpleScript(SessionBasedScript):
 
     def new_tasks(self, extra):
         def myfunc(*args, **kw):
-            return Application(args[0],
-                               args[1:],
-                               [],
-                               ['SimpleScript.stdout'],
-                               'SimpleScript.out.d')
+            return Application(arguments=args,
+                               inputs=[],
+                               outputs=['SimpleScript.stdout', 'SimpleScript.stderr'],
+                               output_dir='SimpleScript.out.d',
+                               stdout='SimpleScript.stderr',
+                               stderr='SimpleScript.stderr',
+                               join=True)
         yield ('MyJob',
                myfunc,
-               ('/bin/bash', '-c', '/bin/echo ciao > SimpleScript.stdout'),
+               ('/bin/bash', '-c', 'echo ciao > SimpleScript.stdout'),
                {})
 
 ## main: run tests

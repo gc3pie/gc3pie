@@ -33,8 +33,7 @@ def test_invalid_invocation():
 
 def test_mandatory_arguments():
     # check for all mandatory arguments
-    ma = {'executable': '/bin/true',
-          'arguments': [],
+    ma = {'arguments': ['/bin/true'],
           'inputs': [],
           'outputs': [],
           'output_dir': '/tmp',
@@ -63,8 +62,7 @@ def test_wrong_type_arguments():
     # What happens when you request non-integer cores/memory/walltime?
     # what happens when you request non-existent architecture?
 
-    ma = {'executable': '/bin/true',
-          'arguments': [],
+    ma = {'arguments': ['/bin/true'],
           'inputs': [],
           'outputs': [],
           'output_dir': '/tmp',
@@ -90,8 +88,7 @@ def test_wrong_type_arguments():
         yield _create_app, _tmpma
 
 def test_valid_invocation():
-    ma = {'executable': '/bin/true',
-          'arguments': [],
+    ma = {'arguments': ['/bin/true'],
           'inputs': ['/tmp/a', 'b'],
           'outputs': ['o1', 'o2'],
           'output_dir': '/tmp',

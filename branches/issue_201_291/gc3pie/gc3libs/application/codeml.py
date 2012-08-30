@@ -126,9 +126,8 @@ class CodemlApplication(gc3libs.Application):
                                     % (ctl, str(ex)))
         gc3libs.Application.__init__(
             self,
+            arguments = ["./codeml.pl"] + [ os.path.basename(ctl) for ctl in ctls ],
             # executable = os.path.basename(codeml_pl),
-            executable = "./codeml.pl",
-            arguments = [ os.path.basename(ctl) for ctl in ctls ],
             inputs = inputs,
             outputs = outputs,
             stdout = 'codeml.stdout.txt',

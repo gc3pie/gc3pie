@@ -61,8 +61,7 @@ class GdemoApplication(Application):
 
         self.iteration = iteration
         gc3libs.Application.__init__(self,
-                                     executable = "/usr/bin/expr",
-                                     arguments = [str(value_a), "+", str(value_b)],
+                                     arguments = ["/usr/bin/expr", str(value_a), "+", str(value_b)],
                                      inputs = [],
                                      outputs = [],
                                      output_dir = os.path.join(os.getcwd(),"Gdemo_result",str(iteration)),

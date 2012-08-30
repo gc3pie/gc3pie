@@ -70,7 +70,7 @@ class XtandemPostApplication(Application):
 
         gc3libs.log.info("\t\t\t\t\t\tCalling XtandemPostApplication.__init__(%d,%d) ... " % (param_value,iteration))
 
-        arguments = ["POST-Parameter: ",str(param_value),  " POST-Iteration: ", str(iteration)]
+        arguments = ["/bin/echo", "POST-Parameter: ",str(param_value),  " POST-Iteration: ", str(iteration)]
 
         tarfile_name = os.path.join(output_folder,str(param_value),str(iteration))+"POST.tgz"
 
@@ -84,7 +84,6 @@ class XtandemPostApplication(Application):
 
         self.iteration = iteration
         gc3libs.Application.__init__(self,
-                                     executable = "/bin/echo",
                                      arguments = arguments,
                                      inputs = {tarfile_name:os.path.basename(tarfile_name)},
                                      outputs = [],
@@ -109,8 +108,7 @@ class XtandemApplicationB(Application):
 
         self.iteration = iteration
         gc3libs.Application.__init__(self,
-                                     executable = "/bin/echo",
-                                     arguments = ["Parameter: ",str(param_value), " FileName: ", input_file, " Iteration: ", str(iteration)],
+                                     arguments = ["/bin/echo", "Parameter: ",str(param_value), " FileName: ", input_file, " Iteration: ", str(iteration)],
                                      inputs = [],
                                      outputs = [],
                                      output_dir = os.path.join(output_folder,str(param_value),str(iteration),os.path.basename(input_file),"B"),
@@ -134,8 +132,7 @@ class XtandemApplicationA(Application):
 
         self.iteration = iteration
         gc3libs.Application.__init__(self,
-                                     executable = "/bin/echo",
-                                     arguments = ["Parameter: ",str(param_value), " FileName: ", input_file, " Iteration: ", str(iteration)],
+                                     arguments = ["/bin/echo", "Parameter: ",str(param_value), " FileName: ", input_file, " Iteration: ", str(iteration)],
                                      inputs = [],
                                      outputs = [],
                                      output_dir = os.path.join(output_folder,str(param_value),str(iteration),os.path.basename(input_file),"A"),

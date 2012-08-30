@@ -328,8 +328,7 @@ class SqlStoreChecks(GenericStoreChecks):
 
     def test_default_fields(self):
         app = gc3libs.Application(
-            executable='/bin/true',
-            arguments=[],
+            arguments=['/bin/true'],
             inputs=[],
             outputs=[],
             output_dir='/tmp',
@@ -350,8 +349,7 @@ class SqlStoreChecks(GenericStoreChecks):
     # the `jobname` attribute is optional in the `Application` ctor
     def test_persist_Application_with_no_job_name(self):
         app = gc3libs.Application(
-            executable='/bin/true',
-            arguments=[],
+            arguments=['/bin/true'],
             inputs=[],
             outputs=[],
             output_dir='/tmp')

@@ -53,8 +53,7 @@ class Square(gc3libs.Application):
 
 
         gc3libs.Application.__init__(self,
-                                     executable = "/usr/bin/expr",
-                                     arguments = [str(x), "*", str(x)],
+                                     arguments = ["/usr/bin/expr", str(x), "*", str(x)],
                                      inputs = [],
                                      outputs = [],
                                      output_dir = None,
