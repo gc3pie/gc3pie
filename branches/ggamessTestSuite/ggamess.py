@@ -128,8 +128,8 @@ of newly-created jobs so that this limit is never exceeded.
                 cls = GamessAppPotApplication
             else:
                 # Added Gamess Test Application
-		log = []
 		cls = GamessTestApplication
+		log = cls.logTest 
                 #cls = GamessApplication
             # construct GAMESS job
             #print "CLS %s", cls
@@ -206,10 +206,8 @@ of newly-created jobs so that this limit is never exceeded.
 
 class GamessTestApplication(GamessApplication):
 	def __init__(self, logTest, inp_file_path, *other_input_files, **kw):
-	#def __init__(self, logTest, inp_file_path):
 		print "LOG"
 		self.logTest = logTest
-		#GamessApplication.__init__(self, inp_file_path) 
 		GamessApplication.__init__(self, 
 					   inp_file_path, 
 					   *other_input_files,
