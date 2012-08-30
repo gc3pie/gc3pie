@@ -148,7 +148,7 @@ class Task(Persistable, Struct):
 
     """
 
-    def __init__(self, name, **kw):
+    def __init__(self, name, **extra_args):
         """
         Initialize a `Task` instance.
 
@@ -160,7 +160,7 @@ class Task(Persistable, Struct):
                      :class:`gc3libs.Core` instance, or anything
                      implementing the same interface.
         """
-        Struct.__init__(self, **kw)
+        Struct.__init__(self, **extra_args)
         self.jobname = name
         self.execution = Run(attach=self)
         # `_controller` and `_attached` are set by `attach()`/`detach()`
@@ -231,17 +231,17 @@ class Task(Persistable, Struct):
 
     # grid-level actions on this Task object are re-routed to the
     # grid/engine/core instance
-    def submit(self, resubmit=False, **kw):
+    def submit(self, resubmit=False, **extra_args):
         """
         Start the computational job associated with this `Task` instance.
         """
         assert self._attached, ("Task.submit() called on detached task %s." % self)
         assert hasattr(self._controller, 'submit'), \
                ("Invalid `_controller` object '%s' in Task %s" % (self._controller, self))
-        self._controller.submit(self, resubmit, **kw)
+        self._controller.submit(self, resubmit, **extra_args)
 
 
-    def update_state(self, **kw):
+    def update_state(self, **extra_args):
         """
         In-place update of the execution state of the computational
         job associated with this `Task`.  After successful completion,
@@ -250,10 +250,10 @@ class Task(Persistable, Struct):
         assert self._attached, ("Task.update_state() called on detached task %s." % self)
         assert hasattr(self._controller, 'update_job_state'), \
                ("Invalid `_controller` object '%s' in Task %s" % (self._controller, self))
-        self._controller.update_job_state(self, **kw)
+        self._controller.update_job_state(self, **extra_args)
 
 
-    def kill(self, **kw):
+    def kill(self, **extra_args):
         """
         Terminate the computational job associated with this task.
 
@@ -262,10 +262,10 @@ class Task(Persistable, Struct):
         assert self._attached, ("Task.kill() called on detached task %s." % self)
         assert hasattr(self._controller, 'kill'), \
                ("Invalid `_controller` object '%s' in Task %s" % (self._controller, self))
-        self._controller.kill(self, **kw)
+        self._controller.kill(self, **extra_args)
 
 
-    def fetch_output(self, output_dir=None, overwrite=False, **kw):
+    def fetch_output(self, output_dir=None, overwrite=False, **extra_args):
         """
         Retrieve the outputs of the computational job associated with
         this task into directory `output_dir`, or, if that is `None`,
@@ -282,13 +282,13 @@ class Task(Persistable, Struct):
         """
         if self.execution.state == Run.State.TERMINATED:
             return self.output_dir
-        result = self._controller.fetch_output(self, output_dir, overwrite, **kw)
+        result = self._controller.fetch_output(self, output_dir, overwrite, **extra_args)
         if self.execution.state == Run.State.TERMINATING:
             self.execution.state = Run.State.TERMINATED
         return result
 
 
-    def peek(self, what='stdout', offset=0, size=None, **kw):
+    def peek(self, what='stdout', offset=0, size=None, **extra_args):
         """
         Download `size` bytes (at offset `offset` from the start) from
         the associated job standard output or error stream, and write them
@@ -300,10 +300,10 @@ class Task(Persistable, Struct):
         assert self._attached, ("Task.peek() called on detached task %s." % self)
         assert hasattr(self._controller, 'peek'), \
                ("Invalid `_controller` object '%s' in Task %s" % (self._controller, self))
-        return self._controller.peek(self, what, offset, size, **kw)
+        return self._controller.peek(self, what, offset, size, **extra_args)
 
 
-    def free(self, **kw):
+    def free(self, **extra_args):
         """
         Release any remote resources associated with this task.
 
@@ -725,7 +725,7 @@ class Application(Task):
       for submission; possibly empty.
     """
 
-    def __init__(self, executable, arguments, inputs, outputs, output_dir, **kw):
+    def __init__(self, executable, arguments, inputs, outputs, output_dir, **extra_args):
         # required parameters
         self.executable = executable
         self.arguments = [ unicode(x) for x in arguments ]
@@ -774,28 +774,28 @@ class Application(Task):
         self.output_dir = output_dir
 
         # optional params
-        self.output_base_url = kw.pop('output_base_url', None)
+        self.output_base_url = extra_args.pop('output_base_url', None)
 
         # FIXME: should use appropriate unit classes for requested_*
-        self.requested_cores = int(kw.pop('requested_cores', 1))
-        self.requested_memory = kw.pop('requested_memory', None)
-        self.requested_walltime = kw.pop('requested_walltime', None)
-        self.requested_architecture = kw.pop('requested_architecture', None)
+        self.requested_cores = int(extra_args.pop('requested_cores', 1))
+        self.requested_memory = extra_args.pop('requested_memory', None)
+        self.requested_walltime = extra_args.pop('requested_walltime', None)
+        self.requested_architecture = extra_args.pop('requested_architecture', None)
         if self.requested_architecture is not None \
                and self.requested_architecture not in [ Run.Arch.X86_32, Run.Arch.X86_64 ]:
             raise gc3libs.exceptions.InvalidArgument(
                 "Architecture must be either '%s' or '%s'"
                 % (Run.Arch.X86_32, Run.Arch.X86_64))
 
-        self.environment = kw.pop('environment', dict())
+        self.environment = extra_args.pop('environment', dict())
         self.environment = dict(Application._to_env_pair(x)
                                 for x in self.environment.items())
 
-        self.join = kw.pop('join', False)
-        self.stdin = kw.pop('stdin', None)
+        self.join = extra_args.pop('join', False)
+        self.stdin = extra_args.pop('stdin', None)
         if self.stdin and (self.stdin not in self.inputs):
             self.inputs[self.stdin] = os.path.basename(self.stdin)
-        self.stdout = kw.pop('stdout', None)
+        self.stdout = extra_args.pop('stdout', None)
         if self.stdout is not None and os.path.isabs(self.stdout):
             raise InvalidArgument(
                 "Absolute path '%s' passed as `Application.stdout`"
@@ -805,7 +805,7 @@ class Application(Task):
             and (self.stdout not in self.outputs)):
             self.outputs[self.stdout] = self.stdout
 
-        self.stderr = kw.pop('stderr', None)
+        self.stderr = extra_args.pop('stderr', None)
         if self.stderr == self.stdout or self.stderr == subprocess.STDOUT:
             self.join = True
             self.stderr = self.stdout
@@ -819,9 +819,9 @@ class Application(Task):
             and (self.stderr not in self.outputs)):
             self.outputs[self.stderr] = self.stderr
 
-        self.tags = kw.pop('tags', list())
+        self.tags = extra_args.pop('tags', list())
 
-        jobname = kw.pop('jobname', self.__class__.__name__)
+        jobname = extra_args.pop('jobname', self.__class__.__name__)
         # Check whether the first character of a jobname is an
         # integer. SGE does not allow job names to start with a
         # number, so add a prefix...
@@ -831,7 +831,7 @@ class Application(Task):
             jobname = "GC3Pie.%s" % jobname
 
         # task setup; creates the `.execution` attribute as well
-        Task.__init__(self, jobname, **kw)
+        Task.__init__(self, jobname, **extra_args)
 
         # for k,v in self.outputs.iteritems():
         #     gc3libs.log.debug("outputs[%s]=%s", repr(k), repr(v))
@@ -1140,7 +1140,7 @@ class Application(Task):
         return [self.executable] + ['"%s"' % i for i in self.arguments]
 
 
-    def qsub_sge(self, resource, _suppress_warning=False, **kw):
+    def qsub_sge(self, resource, _suppress_warning=False, **extra_args):
         # XXX: the `_suppress_warning` switch is only provided for
         # some applications to make use of this generic method without
         # logging the user-level warning, because, e.g., it has already
@@ -1210,7 +1210,7 @@ class Application(Task):
         return (qsub, self.cmdline(resource))
 
 
-    def bsub(self, resource, _suppress_warning=False, **kw):
+    def bsub(self, resource, _suppress_warning=False, **extra_args):
         # XXX: the `_suppress_warning` switch is only provided for
         # some applications to make use of this generic method without
         # logging the user-level warning, because, e.g., it has already
@@ -1261,7 +1261,7 @@ class Application(Task):
         return (bsub, self.cmdline(resource))
 
 
-    def qsub_pbs(self, resource, _suppress_warning=False, **kw):
+    def qsub_pbs(self, resource, _suppress_warning=False, **extra_args):
         """
         Similar to `qsub_sge()`, but for the PBS/TORQUE resource manager.
         """

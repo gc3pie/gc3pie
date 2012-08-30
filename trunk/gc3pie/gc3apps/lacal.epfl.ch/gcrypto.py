@@ -64,33 +64,33 @@ class CryptoApplication(gc3libs.Application):
 
     The following ranges are of interest: 800M-1200M and 2100M-2400M.
 
-    CryptoApplication(param, step, input_files_archive, output_folder, **kw)
+    CryptoApplication(param, step, input_files_archive, output_folder, **extra_args)
     """
 
-    def __init__(self, start, extent, gnfs_location, input_files_archive, output, **kw):
+    def __init__(self, start, extent, gnfs_location, input_files_archive, output, **extra_args):
 
         gnfs_executable_name = os.path.basename(gnfs_location)
 
         # set some execution defaults...
-        kw.setdefault('requested_cores', 4)
-        kw.setdefault('requested_architecture', Run.Arch.X86_64)
-        kw.setdefault('requested_walltime', 2)
+        extra_args.setdefault('requested_cores', 4)
+        extra_args.setdefault('requested_architecture', Run.Arch.X86_64)
+        extra_args.setdefault('requested_walltime', 2)
 
-        kw['jobname'] = "LACAL_%s" % str(start + extent)
-        kw['output_dir'] = os.path.join(output, str(start + extent))
+        extra_args['jobname'] = "LACAL_%s" % str(start + extent)
+        extra_args['output_dir'] = os.path.join(output, str(start + extent))
 
         # XXX: this will be changed once RTE will be validated
         # will use APPS/CRYPTO/LACAL-1.0
-        # kw['tags'] = [ 'TEST/CRYPTO-1.0' ]
-        # kw['tags'] = [ 'TEST/LACAL-1.0' ]
-        kw['tags'] = [ 'APPS/CRYPTO/LACAL-1.0' ]
+        # extra_args['tags'] = [ 'TEST/CRYPTO-1.0' ]
+        # extra_args['tags'] = [ 'TEST/LACAL-1.0' ]
+        extra_args['tags'] = [ 'APPS/CRYPTO/LACAL-1.0' ]
 
         gc3libs.Application.__init__(
             self,
 
             executable = "gnfs-cmd",
             executables = ["gnfs-cmd"],
-            arguments = [ start, extent, kw['requested_cores'], "input.tgz" ],
+            arguments = [ start, extent, extra_args['requested_cores'], "input.tgz" ],
             inputs = {
                 input_files_archive:"input.tgz",
                 gnfs_location:"gnfs-cmd",
@@ -99,7 +99,7 @@ class CryptoApplication(gc3libs.Application):
             # outputs = gc3libs.ANY_OUTPUT,
             stdout = 'gcrypto.log',
             join=True,
-            **kw
+            **extra_args
             )
 
     def terminated(self):
@@ -136,15 +136,15 @@ class CryptoTask(RetryableTask, gc3libs.utils.Struct):
     """
     Run ``gnfs-cmd`` on a given range
     """
-    def __init__(self, start, extent, gnfs_location, input_files_archive, output, **kw):
+    def __init__(self, start, extent, gnfs_location, input_files_archive, output, **extra_args):
         RetryableTask.__init__(
             self,
             # task name
             "LACAL_"+str(start), # jobname
             # actual computational job
-            CryptoApplication(start, extent, gnfs_location, input_files_archive, output, **kw),
+            CryptoApplication(start, extent, gnfs_location, input_files_archive, output, **extra_args),
             # keyword arguments
-            **kw)
+            **extra_args)
 
 
     def retry(self):
@@ -174,7 +174,7 @@ class CryptoChunkedParameterSweep(ChunkedParameterSweep):
     """
 
     def __init__(self, range_start, range_end, slice, chunk_size,
-                 input_files_archive, gnfs_location, output_folder, **kw):
+                 input_files_archive, gnfs_location, output_folder, **extra_args):
 
         # remember for later
         self.range_end = range_end
@@ -182,19 +182,19 @@ class CryptoChunkedParameterSweep(ChunkedParameterSweep):
         self.input_files_archive = input_files_archive
         self.gnfs_location = gnfs_location
         self.output_folder = output_folder
-        self.kw = kw
+        self.extra_args = extra_args
 
         ChunkedParameterSweep.__init__(
-            self, kw['jobname'], range_start, range_end, slice, chunk_size)
+            self, extra_args['jobname'], range_start, range_end, slice, chunk_size)
 
-    def new_task(self, param, **kw):
+    def new_task(self, param, **extra_args):
         """
         Create a new `CryptoApplication` for computing the range
         `param` to `param+self.parameter_count_increment`.
         """
         # return CryptoApplication(
         return CryptoTask(
-            param, self.step, self.gnfs_location, self.input_files_archive, self.output_folder, **self.kw.copy())
+            param, self.step, self.gnfs_location, self.input_files_archive, self.output_folder, **self.extra_args.copy())
 
 
 ## the script itself

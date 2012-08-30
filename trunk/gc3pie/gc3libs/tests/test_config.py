@@ -118,7 +118,7 @@ type - ssh
         yield parse_invalid_conf,  confstr
 
 @raises(gc3libs.exceptions.NoConfigurationFile)
-def import_invalid_conf(confstr, **kw):
+def import_invalid_conf(confstr, **extra_args):
     """`load` just ignores invalid input."""
     tmpfile = _setup_config_file(confstr)
     cfg = gc3libs.config.Configuration()
@@ -130,7 +130,7 @@ def import_invalid_conf(confstr, **kw):
     assert_equal(len(cfg.auths), 0)
 
 @raises(gc3libs.exceptions.ConfigurationError)
-def read_invalid_conf(confstr, **kw):
+def read_invalid_conf(confstr, **extra_args):
     """`merge_file` raises a `ConfigurationError` exception on invalid input."""
     tmpfile = _setup_config_file(confstr)
     cfg = gc3libs.config.Configuration()
@@ -140,7 +140,7 @@ def read_invalid_conf(confstr, **kw):
         os.remove(tmpfile)
 
 @raises(gc3libs.exceptions.ConfigurationError)
-def parse_invalid_conf(confstr, **kw):
+def parse_invalid_conf(confstr, **extra_args):
     """`_parse` raises a `ConfigurationError` exception on invalid input."""
     cfg = gc3libs.config.Configuration()
     defaults, resources, auths = cfg._parse(StringIO(confstr))

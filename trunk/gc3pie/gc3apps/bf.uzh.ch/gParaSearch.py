@@ -105,7 +105,7 @@ class gParaSearchDriver(SequentialTaskCollection):
                  nPopulation, domain, solverVerb, problemType, pathEmpirical,
                  itermax, xConvCrit, yConvCrit,
                  makePlots, optStrategy, fWeight, fCritical, ctryList, analyzeResults, nlc, plot3dTable, combOverviews,
-                 output_dir = '/tmp', **kw):
+                 output_dir = '/tmp', **extra_args):
 
         logger.debug('entering gParaSearchDriver.__init__')
 
@@ -116,12 +116,12 @@ class gParaSearchDriver(SequentialTaskCollection):
         self.architecture = architecture
         self.baseDir = baseDir
         self.verbosity = solverVerb.upper()
-        self.jobname = kw['jobname']
+        self.jobname = extra_args['jobname']
         self.ctryList = ctryList.split()
         self.xVars = xVars
         self.domain = domain
         self.n = len(self.xVars.split())
-        self.kw = kw
+        self.extra_args = extra_args
         self.analyzeResults = analyzeResults
         self.plot3dTable    = plot3dTable
         self.combOverviews = combOverviews
@@ -158,7 +158,7 @@ class gParaSearchDriver(SequentialTaskCollection):
         self.deSolver.I_iter += 1
         self.evaluator = gParaSearchParallel(self.deSolver.newPop, self.deSolver.I_iter, self.pathToExecutable, self.pathToStageDir,
                                              self.architecture, self.baseDir, self.xVars, self.verbosity, self.problemType, self.analyzeResults,
-                                             self.ctryList, **self.kw)
+                                             self.ctryList, **self.extra_args)
 
         initial_task = self.evaluator
 
@@ -191,7 +191,7 @@ class gParaSearchDriver(SequentialTaskCollection):
             self.deSolver.I_iter += 1
             self.evaluator = gParaSearch.gParaSearchParallel(self.deSolver.newPop, self.deSolver.I_iter, self.pathToExecutable, self.pathToStageDir,
                                              self.architecture, self.baseDir, self.xVars, self.verbosity, self.problemType, self.analyzeResults,
-                                             self.ctryList, **self.kw)
+                                             self.ctryList, **self.extra_args)
             self.add(self.evaluator)
         else:
             # post processing
@@ -212,7 +212,7 @@ class gParaSearchParallel(ParallelTaskCollection, paraLoop_fp):
 
 
     def __init__(self, inParaCombos, iteration, pathToExecutable, pathToStageDir, architecture, baseDir, xVars,
-                 solverVerb, problemType, analyzeResults, ctryList, **kw):
+                 solverVerb, problemType, analyzeResults, ctryList, **extra_args):
 
         logger.debug('entering gParaSearchParalell.__init__')
 
@@ -229,8 +229,8 @@ class gParaSearchParallel(ParallelTaskCollection, paraLoop_fp):
         self.analyzeResults = analyzeResults
         self.ctryList = ctryList
         self.iteration = iteration
-        self.jobname = 'evalSolverGuess' + '-' + kw['jobname'] + '-' + str(self.iteration)
-        self.kw = kw
+        self.jobname = 'evalSolverGuess' + '-' + extra_args['jobname'] + '-' + str(self.iteration)
+        self.extra_args = extra_args
         tasks = []
 
         # --- createJobs_x ---
@@ -446,7 +446,7 @@ class gParaSearchParallel(ParallelTaskCollection, paraLoop_fp):
             # all contents of the `output` directory are to be fetched
             outputs = { 'output/':'' }
             #kwargs = extra.copy()
-            kwargs = self.kw
+            kwargs = self.extra_args
             kwargs['stdout'] = 'forwardPremiumOut.log'
             kwargs['join'] = True
             kwargs['output_dir'] = os.path.join(path_to_stage_dir, 'output')

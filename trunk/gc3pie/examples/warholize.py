@@ -167,14 +167,14 @@ class WarholizeScript(SessionBasedScript):
             extra['size'] = self.params.size
         gc3libs.log.info("Creating main sequential task")
         for (i, input_file) in enumerate(self.params.args):
-            kw = extra.copy()
-            kw['output_dir'] = 'Warholized.%s' % os.path.basename(input_file)
+            extra_args = extra.copy()
+            extra_args['output_dir'] = 'Warholized.%s' % os.path.basename(input_file)
             yield ("Warholize.%d" % i,
                    WarholizeWorkflow,
                    [input_file,
                     self.params.copies,
                     self.params.num_colors],
-                   kw)
+                   extra_args)
 
 # `new_tasks` is used as a *generator* (but it could return a list as
 # well). Each *yielded* object is a tuple which rapresents a generic
@@ -219,7 +219,7 @@ class WarholizeWorkflow(SequentialTaskCollection):
     """
 
     def __init__(self, input_image,  copies, ncolors,
-                 size=None, **kw):
+                 size=None, **extra_args):
         """XXX do we need input_image and output_image? I guess so?"""
         self.input_image = input_image
         self.output_image = "warhol_%s" % os.path.basename(input_image)
@@ -235,7 +235,7 @@ class WarholizeWorkflow(SequentialTaskCollection):
             rows = math.sqrt(copies)
             self.resize = "%dx%d" % (int(x) / rows, int(y) / rows)
 
-        self.output_dir = os.path.relpath(kw.get('output_dir'))
+        self.output_dir = os.path.relpath(extra_args.get('output_dir'))
 
         self.ncolors = ncolors
         self.copies = copies
@@ -245,7 +245,7 @@ class WarholizeWorkflow(SequentialTaskCollection):
             raise gc3libs.exceptions.InvalidArgument(
                 "`copies` argument must be a perfect square.")
 
-        self.jobname = kw.get('jobname', 'WarholizedWorkflow')
+        self.jobname = extra_args.get('jobname', 'WarholizedWorkflow')
 
         self.grayscaled_image = "grayscaled_%s" % os.path.basename(self.input_image)
 
@@ -315,8 +315,8 @@ class ApplicationWithCachedResults(gc3libs.Application):
     Just like `gc3libs.Application`, but do not run at all
     if the expected result is already present on the filesystem.
     """
-    def __init__(self, executable, arguments, inputs, outputs, **kw):
-        gc3libs.Application.__init__(self, executable, arguments, inputs, outputs, **kw)
+    def __init__(self, executable, arguments, inputs, outputs, **extra_args):
+        gc3libs.Application.__init__(self, executable, arguments, inputs, outputs, **extra_args)
         # check if all the output files are already available
 
         all_outputs_available = True

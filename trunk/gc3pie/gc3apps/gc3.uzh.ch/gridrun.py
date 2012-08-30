@@ -64,7 +64,7 @@ class SmartApplication(Application):
     list is scanned for strings that name actual existing files or
     directories, which are automatically added to the `inputs` list.
     """
-    def __init__(self, executable, arguments, inputs=None, **kw):
+    def __init__(self, executable, arguments, inputs=None, **extra_args):
         # setup for finding actual files
         arguments = [ str(x) for x in arguments ]
         if inputs is not None:
@@ -81,7 +81,7 @@ class SmartApplication(Application):
                 arguments[i] = os.path.basename(arg)
 
         # recurse into superclass ctor
-        Application.__init__(self, executable, arguments, inputs, **kw)
+        Application.__init__(self, executable, arguments, inputs, **extra_args)
 
 
 ## the script itself
@@ -245,18 +245,18 @@ to the remote system as the command to be executed.
                 else:
                     arguments.append(arg)
 
-            kw = extra.copy()
-            kw['outputs'] = gc3libs.ANY_OUTPUT
-            kw['output_dir'] = self.make_directory_path(self.params.output, jobname)
-            kw['stdout'] = jobname + '.stdout.txt'
-            kw['stderr'] = jobname + '.stderr.txt'
+            extra_args = extra.copy()
+            extra_args['outputs'] = gc3libs.ANY_OUTPUT
+            extra_args['output_dir'] = self.make_directory_path(self.params.output, jobname)
+            extra_args['stdout'] = jobname + '.stdout.txt'
+            extra_args['stderr'] = jobname + '.stderr.txt'
             if self.params.retry is not None:
                 yield (jobname, RetryableTask, [
                     jobname,
-                    SmartApplication(executable, arguments, inputs, **kw),
+                    SmartApplication(executable, arguments, inputs, **extra_args),
                     self.params.retry,
-                    ], kw)
+                    ], extra_args)
             else:
                 yield (jobname, SmartApplication, [
                     executable, arguments, inputs
-                    ], kw)
+                    ], extra_args)

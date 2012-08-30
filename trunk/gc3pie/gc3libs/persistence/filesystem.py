@@ -68,7 +68,7 @@ class FilesystemStore(Store):
                  directory=gc3libs.Default.JOBS_DIR,
                  idfactory=IdFactory(),
                  protocol=DEFAULT_PROTOCOL,
-                 **kw):
+                 **extra_args):
         if isinstance(directory, gc3libs.url.Url):
             directory = directory.path
         self._directory = directory
@@ -217,7 +217,7 @@ class FilesystemStore(Store):
             raise
 
 
-def make_filesystemstore(url, *args, **kw):
+def make_filesystemstore(url, *args, **extra_args):
     """
     Return a `FilesystemStore`:class: instance, given a 'file:///' URL
     and optional initialization arguments.
@@ -234,7 +234,7 @@ def make_filesystemstore(url, *args, **kw):
       'FilesystemStore'
     """
     assert isinstance(url, gc3libs.url.Url)
-    return FilesystemStore(url.path, *args, **kw)
+    return FilesystemStore(url.path, *args, **extra_args)
 
 
 ## main: run tests

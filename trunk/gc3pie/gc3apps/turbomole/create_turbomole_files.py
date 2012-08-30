@@ -60,10 +60,10 @@ basis_set_names = [
     'aug-cc-pV5Z',
     ]
 
-def acceptable_ridft_basis_set(kw):
+def acceptable_ridft_basis_set(extra_args):
     """Define which combination of orbital and JK basis are valid."""
     def order(k): # small aux function
-        return basis_set_names.index(kw[k])
+        return basis_set_names.index(extra_args[k])
     orb_basis_nr = order('ORB_BASIS')
     jkbas_basis_nr = order('RIJK_BASIS')
     # only allow a jkbas if it's not *earlier* than the orbital basis;
@@ -74,10 +74,10 @@ def acceptable_ridft_basis_set(kw):
     # otherwise, the basis combination is acceptable
     return True
 
-def acceptable_ricc2_basis_set(kw):
+def acceptable_ricc2_basis_set(extra_args):
     """Define which combination of CABS and CBAS are valid."""
     def order(k): # small aux function
-        return basis_set_names.index(kw[k])
+        return basis_set_names.index(extra_args[k])
     orb_basis_nr = order('ORB_BASIS')
     cabs_basis_nr = order('CABS_BASIS')
     cbas_basis_nr = order('CBAS_BASIS')

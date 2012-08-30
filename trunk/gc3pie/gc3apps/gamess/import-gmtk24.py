@@ -250,14 +250,14 @@ class Struct(dict):
       | >>> x['A']
       | 1
     """
-    def __init__(self, transform=None, **kw):
+    def __init__(self, transform=None, **extra_args):
         if transform is not None:
             self.__dict__['_transform'] = transform
         else:
             def same(x):
                 return x
             self.__dict__['_transform'] = same
-        for k,v in kw.items():
+        for k,v in extra_args.items():
              self[k] = v
     def __getattr__(self, key):
         return self[self.__dict__['_transform'](key)]
@@ -309,8 +309,8 @@ class UpcaseStruct(Struct):
       {'A': 1, 'B': 2}
     """
     __slots__ = [ ]
-    def __init__(self, **kw):
-        Struct.__init__(self, transform = lambda key: key.upper(), **kw)
+    def __init__(self, **extra_args):
+        Struct.__init__(self, transform = lambda key: key.upper(), **extra_args)
 
 
 class Atom(object):
@@ -482,7 +482,7 @@ def read_turbomole_coords(input):
     return result
                 
 
-def turbomol_to_gamess(input_file_name, output_file_name, template_file_name, **kw):
+def turbomol_to_gamess(input_file_name, output_file_name, template_file_name, **extra_args):
     """
     Read TURBOMOL coordinates and output a GAMESS file using the
     specified template.
@@ -499,9 +499,9 @@ def turbomol_to_gamess(input_file_name, output_file_name, template_file_name, **
     f.close()
     # write output
     f = open(output_file_name, 'w')
-    kw['NAME'] = os.path.basename(input_file_name)
-    kw['ATOMS'] = data
-    f.write(template % kw)
+    extra_args['NAME'] = os.path.basename(input_file_name)
+    extra_args['ATOMS'] = data
+    f.write(template % extra_args)
     f.close()
 
 

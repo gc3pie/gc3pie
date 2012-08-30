@@ -110,14 +110,14 @@ class PbsLrms(batch.BatchSystem):
                  accounting_delay = 15,
                  # these are specific to this backend
                  queue = None,
-                 **kw):
+                 **extra_args):
 
         # init base class
         batch.BatchSystem.__init__(
             self, name,
             architecture, max_cores, max_cores_per_job,
             max_memory_per_core, max_walltime, auth,
-            frontend, transport, accounting_delay, **kw)
+            frontend, transport, accounting_delay, **extra_args)
 
         # backend-specific setup
         self.queue = queue

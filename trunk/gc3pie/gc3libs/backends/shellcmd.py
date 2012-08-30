@@ -76,7 +76,7 @@ class ShellcmdLrms(LRMS):
                  # these are specific to `ShellcmdLrms`
                  time_cmd='/usr/bin/time',
                  spooldir=None,
-                 **kw):
+                 **extra_args):
 
         # init base class
         LRMS.__init__(

@@ -46,10 +46,10 @@ class Square(gc3libs.Application):
 
         _outputs = []
 
-        # kw.setdefault('stdout', 'stdout.txt')
-        # kw.setdefault('stderr', 'stderr.txt')
+        # extra_args.setdefault('stdout', 'stdout.txt')
+        # extra_args.setdefault('stderr', 'stderr.txt')
         
-        #  gc3libs.Application.__init__(self, executable, arguments, inputs, outputs, output_dir, **kw):
+        #  gc3libs.Application.__init__(self, executable, arguments, inputs, outputs, output_dir, **extra_args):
 
 
         gc3libs.Application.__init__(self,

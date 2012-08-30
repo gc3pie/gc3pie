@@ -141,7 +141,7 @@ class SqlStore(Store):
     """
 
     def __init__(self, url, table_name="store", idfactory=None,
-                 extra_fields={}, create=True, **kw):
+                 extra_fields={}, create=True, **extra_args):
         """
         Open a connection to the storage database identified by
         url. It will use the correct backend (MySQL, psql, sqlite3)
@@ -269,7 +269,7 @@ class SqlStore(Store):
 
 
 # register all URLs that SQLAlchemy can handle
-def make_sqlstore(url, *args, **kw):
+def make_sqlstore(url, *args, **extra_args):
     """
     Return a `SqlStore`:class: instance, given a SQLAlchemy URL and
     optional initialization arguments.
@@ -295,7 +295,7 @@ def make_sqlstore(url, *args, **kw):
         # rewrite ``sqlite`` URLs to be RFC compliant, see:
         # http://code.google.com/p/gc3pie/issues/detail?id=261
         url = "%s://%s/%s" % (url.scheme, url.netloc, url.path)
-    return SqlStore(str(url), *args, **kw)
+    return SqlStore(str(url), *args, **extra_args)
 
 
 ## main: run tests

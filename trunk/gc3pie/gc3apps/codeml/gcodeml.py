@@ -204,7 +204,7 @@ of newly-created jobs so that this limit is never exceeded.
 
             # Python 2.4 does not allow named arguments after a
             # variable-length positional argument list (*args), so we
-            # need to pass the named arguments as part of the `kw`
+            # need to pass the named arguments as part of the `extra_args`
             # dictionary.
             kwargs['codeml'] = self.params.codeml
             kwargs['requested_memory'] = self.params.memory_per_core

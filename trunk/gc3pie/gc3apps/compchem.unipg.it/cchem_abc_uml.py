@@ -67,7 +67,7 @@ ABC_APPOTRUN="gsiftp://idgc3grid01.uzh.ch/local_repo/ABC/abc_appotrun.sh"
 # (memory="2000")
 
 class Gfit3C_ABC_uml_Application(Application):
-    def __init__(self, abc_uml_image_file, abc_apppotrun_file, output_folder, g3c_input_file=None, dimension_file=None, surface_file=None, **kw):
+    def __init__(self, abc_uml_image_file, abc_apppotrun_file, output_folder, g3c_input_file=None, dimension_file=None, surface_file=None, **extra_args):
 
         inputs = [(abc_uml_image_file, "abc.img"), (abc_apppotrun_file, "apppot-run")]
 
@@ -81,7 +81,7 @@ class Gfit3C_ABC_uml_Application(Application):
         else:
             raise gc3libs.exceptions.InvalidArgument("Missing critical argument surface file [%s], g3c_file [%s], dimension_file [%s]" % (surface_file, g3c_input_file, dimension_file))
 
-        kw['tags'] = ["TEST/APPPOT-0"]
+        extra_args['tags'] = ["TEST/APPPOT-0"]
 
         gc3libs.Application.__init__(self,
                                      executable = "$APPPOT_STARTUP",
@@ -90,7 +90,7 @@ class Gfit3C_ABC_uml_Application(Application):
                                      outputs = [ ("abc.x", "abc."+abc_prefix), (os.path.basename(abc_prefix).split(".g3c")[0]+"_log.tgz", os.path.basename(abc_prefix).split(".g3c")[0]+"_log.tgz")],
                                      join = True,
                                      stdout = os.path.basename(abc_prefix).split(".g3c")[0]+".log",
-                                     **kw
+                                     **extra_args
                                      )
 
 class ABC_uml_Workflow(SessionBasedScript):
@@ -148,10 +148,10 @@ class ABC_uml_Workflow(SessionBasedScript):
 
     def new_tasks(self, extra):
 
-         kw = extra.copy()
+         extra_args = extra.copy()
 
          if self.params.dimensions and self.params.g3cfile and self.counter < 1:
-             #     def __init__(self, abc_uml_image_file, abc_apppotrun_file, output_folder, g3c_input_file=None, dimension_file=None, surface_file=None, **kw):
+             #     def __init__(self, abc_uml_image_file, abc_apppotrun_file, output_folder, g3c_input_file=None, dimension_file=None, surface_file=None, **extra_args):
              name = "Gfit3C_"+str(os.path.basename(self.params.g3cfile))
 
              yield (name, Gfit3C_ABC_uml_Application, [
@@ -160,7 +160,7 @@ class ABC_uml_Workflow(SessionBasedScript):
                      self.params.output,
                      self.params.g3cfile,
                      self.params.dimensions,
-                     ], kw)
+                     ], extra_args)
              self.counter = self.counter + 1
 
 
@@ -178,4 +178,4 @@ class ABC_uml_Workflow(SessionBasedScript):
          #             ABC_EXECUTABLE,
          #             path,
          #             self.params.output,
-         #             ], kw)
+         #             ], extra_args)

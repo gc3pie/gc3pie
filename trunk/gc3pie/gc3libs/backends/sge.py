@@ -287,14 +287,14 @@ class SgeLrms(batch.BatchSystem):
                  # these are inherited from the `BatchSystem` class
                  frontend, transport,
                  accounting_delay = 15,
-                 **kw):
+                 **extra_args):
 
         # init base class
         batch.BatchSystem.__init__(
             self, name,
             architecture, max_cores, max_cores_per_job,
             max_memory_per_core, max_walltime, auth,
-            frontend, transport, accounting_delay, **kw)
+            frontend, transport, accounting_delay, **extra_args)
 
         self.qsub = self._get_command_argv('qsub')
 

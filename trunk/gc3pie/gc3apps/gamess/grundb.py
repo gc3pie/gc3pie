@@ -207,12 +207,12 @@ class Job(Gc3utilsJob):
     A small extension to `gc3utils.Job.Job`, with a few convenience
     extensions.
     """
-    def __init__(self, **kw):
-        kw.setdefault('log', list())
-        kw.setdefault('state', None) # user-visible status
-        kw.setdefault('status', -1)  # gc3utils status (internal use only)
-        kw.setdefault('timestamp', gc3utils.utils.defaultdict(time.time))
-        Gc3utilsJob.__init__(self, **kw)
+    def __init__(self, **extra_args):
+        extra_args.setdefault('log', list())
+        extra_args.setdefault('state', None) # user-visible status
+        extra_args.setdefault('status', -1)  # gc3utils status (internal use only)
+        extra_args.setdefault('timestamp', gc3utils.utils.defaultdict(time.time))
+        Gc3utilsJob.__init__(self, **extra_args)
     def is_valid(self):
         # override validity checks -- this will not be a valid `Gc3utilsJob`
         # object until Grid.submit() is called on it ...
@@ -368,8 +368,8 @@ class JobCollection(dict):
     A collection of `Job` objects, indexed and accessible by `(input,
     instance)` pair.
     """
-    def __init__(self, **kw):
-        self.default_job_initializer = kw
+    def __init__(self, **extra_args):
+        self.default_job_initializer = extra_args
 
     def add(self, job):
         """Add a `Job` instance to the collection."""
