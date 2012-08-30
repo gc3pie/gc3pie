@@ -76,9 +76,10 @@ from pkg_resources import Requirement, resource_filename
 
 # gc3 library imports
 import gc3libs
-from gc3libs import Application, Run, Task, RetryableTask
+from gc3libs import Application, Run, Task
 from gc3libs.cmdline import SessionBasedScript, executable_file
 import gc3libs.utils
+from gc3libs.workflow import RetryableTask
 
 
 GEOTOP_INPUT_ARCHIVE = "input.tgz"

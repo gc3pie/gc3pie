@@ -600,6 +600,177 @@ class ChunkedParameterSweep(ParallelTaskCollection):
             self.changed = True
         return ParallelTaskCollection.update_state(self, **kw)
 
+
+class RetryableTask(Task):
+    """
+    Wrap a `Task` instance and re-submit it until a specified
+    termination condition is met.
+
+    By default, the re-submission upon failure happens iff execution
+    terminated with nonzero return code; the failed task is retried up
+    to `self.max_retries` times (indefinitely if `self.max_retries` is 0).
+
+    Override the `retry` method to implement a different retryal policy.
+
+    *Note:* The resubmission code is implemented in the
+    `terminated`:meth:, so be sure to call it if you override in
+    derived classes.
+    """
+
+    def __init__(self, name, task, max_retries=0, **kw):
+        """
+        Wrap `task` and resubmit it until `self.retry()` returns `False`.
+
+        :param Task task: A `Task` instance that should be retried.
+
+        :param str jobname: The string identifying this `Task`
+            instance, see `Task`:class:.
+
+        :param int max_retries: Maximum number of times `task` should be
+            re-submitted; use 0 for 'no limit'.
+        """
+        self.max_retries = max_retries
+        self.retried = 0
+        self.task = task
+        Task.__init__(self, name, **kw)
+
+    def __getattr__(self, name):
+        """Proxy public attributes of the wrapped task."""
+        if name.startswith('_'):
+            raise AttributeError(
+                "'%s' object has no attribute '%s'"
+                % (self.__class__.__name__, name))
+        return getattr(self.task, name)
+
+    def retry(self):
+        """
+        Return `True` or `False`, depending on whether the failed task
+        should be re-submitted or not.
+
+        The default behavior is to retry a task iff its execution
+        terminated with nonzero returncode and the maximum retry limit
+        has not been reached.  If `self.max_retries` is 0, then the
+        dependent task is retried indefinitely.
+
+        Override this method in subclasses to implement a different
+        policy.
+        """
+        if (self.task.execution.returncode != 0
+            and ((self.max_retries > 0
+                  and self.retried < self.max_retries)
+                 or self.max_retries == 0)):
+            return True
+        else:
+            return False
+
+    def attach(self, controller):
+        # here `Task.attach` is the invocation of the superclass'
+        # `attach` method (which attaches *this* object to a controller),
+        # while `self.task.attach` is the propagation of the `attach`
+        # method to the wrapped task. (Same for `detach` below.)
+        Task.attach(self, controller)
+        self.task.attach(controller)
+
+    def detach(self):
+        # see comment in `attach` above
+        Task.detach(self)
+        self.task.detach()
+
+    def fetch_output(self, *args, **kw):
+        self.task.fetch_output(*args, **kw)
+
+    def free(self, **kw):
+        self.task.free(**kw)
+
+    def kill(self, **kw):
+        self.task.kill(**kw)
+
+    def peek(self, *args, **kw):
+        return self.task.peek(*args, **kw)
+
+    def submit(self, resubmit=False, **kw):
+        self.task.submit(**kw)
+        # immediately update state if submission of managed task was successful;
+        # otherwise this task may remain in ``NEW`` state which causes an
+        # unwanted resubmission if the managing programs ends or is interrupted
+        # just after the submission...
+        # XXX: this is a case for a generic publish/subscribe mechanism!
+        if self.task.execution.state != Run.State.NEW:
+            self.execution.state = self._recompute_state()
+
+    def _recompute_state(self):
+        """
+        Determine and return the state based on the current state and
+        the state of the wrapped task.
+        """
+        own_state = self.execution.state
+        task_state = self.task.execution.state
+        if own_state == task_state:
+            return own_state
+        elif own_state == Run.State.NEW:
+            if task_state == Run.State.NEW:
+                return Run.State.NEW
+            elif task_state in [ Run.State.SUBMITTED,
+                                 Run.State.RUNNING,
+                                 Run.State.STOPPED,
+                                 Run.State.UNKNOWN ]:
+                return task_state
+            else:
+                return Run.State.RUNNING
+        elif own_state == Run.State.SUBMITTED:
+            if task_state in [ Run.State.NEW, Run.State.SUBMITTED ]:
+                return Run.State.SUBMITTED
+            elif task_state in [ Run.State.RUNNING,
+                                 Run.State.TERMINATING,
+                                 Run.State.TERMINATED ]:
+                return Run.State.RUNNING
+            else:
+                return task_state
+        elif own_state == Run.State.RUNNING:
+            if task_state in [ Run.State.STOPPED, Run.State.UNKNOWN ]:
+                return task_state
+            else:
+                # if task is NEW, SUBMITTED, RUNNING, etc. -- keep our state
+                return own_state
+        elif own_state in [ Run.State.TERMINATING, Run.State.TERMINATED ]:
+            assert task_state == Run.State.TERMINATED
+            return Run.State.TERMINATED
+        elif own_state in [ Run.State.STOPPED, Run.State.UNKNOWN ]:
+            if task_state in [ Run.State.NEW,
+                               Run.State.SUBMITTED,
+                               Run.State.RUNNING,
+                               Run.State.TERMINATING,
+                               Run.State.TERMINATED ]:
+                return Run.State.RUNNING
+            else:
+                return own_state
+        else:
+            # should not happen!
+            raise AssertionError("Unhandled own state '%s'"
+                                 " in RetryableTask._recompute_state()", own_state)
+
+    def update_state(self):
+        """
+        Update the state of the dependent task, then resubmit it if it's
+        TERMINATED and `self.retry()` is `True`.
+        """
+        own_state_old = self.execution.state
+        self.task.update_state()
+        own_state_new = self._recompute_state()
+        if (self.task.execution.state == Run.State.TERMINATED and own_state_old != Run.State.TERMINATED):
+            self.execution.returncode = self.task.execution.returncode
+            if self.retry():
+                self.retried += 1
+                self.task.submit(resubmit=True)
+                own_state_new = Run.State.RUNNING
+            else:
+                own_state_new = Run.State.TERMINATED
+            self.changed = True
+        if own_state_new != own_state_old:
+            self.execution.state = own_state_new
+            self.changed = True
+
+
 ## main: run tests
 
 if "__main__" == __name__:

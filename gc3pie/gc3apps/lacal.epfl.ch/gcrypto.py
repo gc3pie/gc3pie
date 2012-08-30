@@ -46,7 +46,7 @@ from gc3libs.cmdline import SessionBasedScript, existing_file, positive_int, non
 from gc3libs import Application, Run, Task, RetryableTask
 import gc3libs.exceptions
 import gc3libs.application
-from gc3libs.workflow import SequentialTaskCollection, ParallelTaskCollection, ChunkedParameterSweep
+from gc3libs.workflow import SequentialTaskCollection, ParallelTaskCollection, ChunkedParameterSweep, RetryableTask
 
 DEFAULT_INPUTFILE_LOCATION="srm://dpm.lhep.unibe.ch/dpm/lhep.unibe.ch/home/crypto/lacal_input_files.tgz"
 DEFAULT_GNFS_LOCATION="srm://dpm.lhep.unibe.ch/dpm/lhep.unibe.ch/home/crypto/gnfs-cmd_20120406"
