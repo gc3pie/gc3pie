@@ -57,7 +57,7 @@ import gc3libs
 from gc3libs import Application, Run, Task
 from gc3libs.cmdline import SessionBasedScript
 from gc3libs.compat.collections import defaultdict
-from gc3libs.dag import SequentialTaskCollection
+from gc3libs.workflow import SequentialTaskCollection
 
 
 ## auxilirary functions
