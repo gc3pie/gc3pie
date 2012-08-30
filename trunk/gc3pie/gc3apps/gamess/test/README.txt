@@ -3,7 +3,7 @@ Sample data for testing GAMESS is in the ``data/`` directory.
 To execute tests, just call ``ggamess`` with one or more input files
 from the ``data/`` directory::
 
-    ggamess.py -s XXX -C45 -vvv data/exam01.inp
+    ggamess.py -s XXX -C45 -R 2012R1 -vvv data/exam01.inp
 
 If the log level is DEBUG, you should see that the produced xRSL looks
 like the following:
