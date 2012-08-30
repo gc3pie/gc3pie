@@ -478,7 +478,7 @@ class TricolorizeImage(SequentialTaskCollection):
                 colors, self.warhol_dir),
             ]
 
-        SequentialTaskCollection.__init__(self, self.jobname, self.tasks)
+        SequentialTaskCollection.__init__(self, self.tasks)
 
     def next(self, iteration):
         last = self.tasks[-1]

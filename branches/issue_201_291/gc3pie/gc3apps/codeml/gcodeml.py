@@ -226,7 +226,6 @@ of newly-created jobs so that this limit is never exceeded.
                 CodemlRetryPolicy, # the task constructor
                 [ # the following parameters are passed to the
                     # `CodemlRetryPolicy` constructor:
-                    jobname, # = name; used for display purposes
                     app,     # = task; the codeml application object defined above
                     3        # = max_retries; max no. of retries of the task
                 ],

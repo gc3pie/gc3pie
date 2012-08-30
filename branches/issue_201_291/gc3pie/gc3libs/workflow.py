@@ -52,12 +52,12 @@ class TaskCollection(Task, gc3libs.utils.Struct):
     task states.
     """
 
-    def __init__(self, tasks=None, **kw):
+    def __init__(self, tasks=None, **extra_args):
         if tasks is None:
             self.tasks = [ ]
         else:
             self.tasks = tasks
-        Task.__init__(self, jobname, **kw)
+        Task.__init__(self, **extra_args)
 
     # manipulate the "controller" interface used to control the associated task
     def attach(self, controller):
@@ -450,7 +450,7 @@ class ParallelTaskCollection(TaskCollection):
     """
 
     def __init__(self, tasks=None, **extra_args):
-        TaskCollection.__init__(self, jobname, tasks, **extra_args)
+        TaskCollection.__init__(self, tasks, **extra_args)
 
 
     def _state(self):
@@ -617,14 +617,11 @@ class RetryableTask(Task):
     derived classes.
     """
 
-    def __init__(self, name, task, max_retries=0, **extra_args):
+    def __init__(self, task, max_retries=0, **extra_args):
         """
         Wrap `task` and resubmit it until `self.retry()` returns `False`.
 
         :param Task task: A `Task` instance that should be retried.
-
-        :param str jobname: The string identifying this `Task`
-            instance, see `Task`:class:.
 
         :param int max_retries: Maximum number of times `task` should be
             re-submitted; use 0 for 'no limit'.
@@ -632,7 +629,7 @@ class RetryableTask(Task):
         self.max_retries = max_retries
         self.retried = 0
         self.task = task
-        Task.__init__(self, name, **extra_args)
+        Task.__init__(self, **extra_args)
 
     def __getattr__(self, name):
         """Proxy public attributes of the wrapped task."""

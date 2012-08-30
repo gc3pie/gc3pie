@@ -139,8 +139,6 @@ class CryptoTask(RetryableTask, gc3libs.utils.Struct):
     def __init__(self, start, extent, gnfs_location, input_files_archive, output, **extra_args):
         RetryableTask.__init__(
             self,
-            # task name
-            "LACAL_"+str(start), # jobname
             # actual computational job
             CryptoApplication(start, extent, gnfs_location, input_files_archive, output, **extra_args),
             # keyword arguments

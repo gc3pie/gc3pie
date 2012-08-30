@@ -56,7 +56,7 @@ __docformat__ = 'reStructuredText'
 # for details, see: http://code.google.com/p/gc3pie/issues/detail?id=95
 if __name__ == "__main__":
     import ggeotop
-    GGeotopScript().run()
+    ggeotop.GGeotopScript().run()
 
 
 # std module imports
@@ -303,8 +303,6 @@ class GeotopTask(RetryableTask, gc3libs.utils.Struct):
     def __init__(self, simulation_dir, executable=None, **extra_args):
         RetryableTask.__init__(
             self,
-            # task name
-            os.path.basename(simulation_dir),
             # actual computational job
             GeotopApplication(simulation_dir, executable, **extra_args),
             # keyword arguments
