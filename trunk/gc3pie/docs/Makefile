@@ -4,6 +4,8 @@
 # You can set these variables from the command line.
 SPHINXOPTS    =
 SPHINXBUILD   = python $(shell which sphinx-build)
+PYREVERSE     = pyreverse
+DOT           = dot
 PAPER         = a4
 BUILDDIR      = .
 
@@ -38,10 +40,16 @@ clean:
 		$(BUILDDIR)/changes \
 		$(BUILDDIR)/linkcheck \
 		$(BUILDDIR)/doctest \
+        $(BUILDDIR)/packages_gc3pie.dot \
+        $(BUILDDIR)/classes_gc3pie.dot \
 		;
 
 html:
+	@echo "Generating UML diagram."
+	$(PYREVERSE) -p gc3pie ../gc3libs ../gc3utils
+	$(DOT) -Tpng classes_gc3pie.dot > $(BUILDDIR)/gc3libs.UML.png
 	$(SPHINXBUILD) -b html $(ALLSPHINXOPTS) $(BUILDDIR)/html
+	mv $(BUILDDIR)/gc3libs.UML.png $(BUILDDIR)/html/_images/
 	@echo
 	@echo "Build finished. The HTML pages are in $(BUILDDIR)/html."
 
