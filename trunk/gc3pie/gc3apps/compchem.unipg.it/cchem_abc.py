@@ -51,6 +51,7 @@ from gc3libs import Application, Run, Task, RetryableTask
 import gc3libs.exceptions
 from gc3libs.cmdline import SessionBasedScript, executable_file, nonnegative_int
 import gc3libs.utils
+from gc3libs.workflow import RetryableTask
 
 
 
