@@ -58,7 +58,7 @@ import gc3libs
 from gc3libs import Application, Run, Task
 from gc3libs.application.turbomole import TurbomoleApplication, TurbomoleDefineApplication
 from gc3libs.cmdline import SessionBasedScript
-from gc3libs.dag import StagedTaskCollection, ParallelTaskCollection
+from gc3libs.workflow import StagedTaskCollection, ParallelTaskCollection
 from gc3libs.template import Template, expansions
 import gc3libs.utils
 

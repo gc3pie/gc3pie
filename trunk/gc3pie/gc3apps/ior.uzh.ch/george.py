@@ -53,7 +53,7 @@ import types
 import gc3libs
 from gc3libs import Application, Run, Task
 from gc3libs.cmdline import SessionBasedScript, executable_file, nonnegative_int, positive_int
-from gc3libs.dag import SequentialTaskCollection, ParallelTaskCollection
+from gc3libs.workflow import SequentialTaskCollection, ParallelTaskCollection
 import gc3libs.utils
 
 IN_VALUES_FILE = 'ValuesIn.txt'

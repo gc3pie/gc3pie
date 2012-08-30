@@ -4,7 +4,7 @@ import sys
 
 
 import gc3libs
-from gc3libs.dag import ParallelTaskCollection, StagedTaskCollection
+from gc3libs.workflow import ParallelTaskCollection, StagedTaskCollection
 import gc3libs.utils
 
 

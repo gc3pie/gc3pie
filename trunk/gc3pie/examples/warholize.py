@@ -204,12 +204,12 @@ class WarholizeScript(SessionBasedScript):
 # Main sequential workflow
 # ++++++++++++++++++++++++
 #
-# The module `gc3libs.dag` contains two main objects,
+# The module `gc3libs.workflow` contains two main objects,
 # `SequentialTaskCollection` and `ParallelTaskCollection` which we will
 # use to create our workflow. The first one, `WarholizeWorkflow`, is a
 # sequential one, so::
 
-from gc3libs.dag import SequentialTaskCollection, ParallelTaskCollection
+from gc3libs.workflow import SequentialTaskCollection, ParallelTaskCollection
 import math
 from gc3libs import Run
 
@@ -293,8 +293,8 @@ class WarholizeWorkflow(SequentialTaskCollection):
 
 # At each iteration, we call `self.add()` to add an instance of a
 # task-like class (`gc3libs.Application`,
-# `gc3libs.dag.ParallelTaskCollection` or
-# `gc3libs.dag.SequentialTaskCollection`, in our case) to complete the
+# `gc3libs.workflow.ParallelTaskCollection` or
+# `gc3libs.workflow.SequentialTaskCollection`, in our case) to complete the
 # next step, and we return the current state, which will be
 # `gc3libs.Run.State.RUNNING` unless we have finished the computation.
 #
@@ -398,7 +398,7 @@ class GrayScaleConvertApplication(ApplicationWithCachedResults):
 # versions of the grayscale image with different coloration. It does it
 # by running multiple instance of `TricolorizeImage` with different
 # color arguments. Since we want to run the various colorization in
-# parallel, it inherits from `gc3libs.dag.ParallelTaskCollection` class::
+# parallel, it inherits from `gc3libs.workflow.ParallelTaskCollection` class::
 
 import itertools
 import random
