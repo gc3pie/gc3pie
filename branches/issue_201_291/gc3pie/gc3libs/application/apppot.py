@@ -52,7 +52,7 @@ class AppPotApplication(gc3libs.Application):
     """
     def __init__(self, arguments, inputs, outputs, output_dir,
                  apppot_img=None, apppot_changes=None, apppot_tag='ENV/APPPOT-0.21',
-                 apppot_extra=[], **kw):
+                 apppot_extra=[], **extra_args):
         # AppPot-specific setup
         apppot_start_args = [] 
         if apppot_img is not None:
@@ -61,27 +61,27 @@ class AppPotApplication(gc3libs.Application):
         if apppot_changes is not None:
             AppPotApplication._add_to_inputs(inputs, apppot_changes, 'apppot.changes.tar.gz')
             apppot_start_args += ['--changes', 'apppot.changes.tar.gz']
-        if kw.has_key('requested_memory'):
-            apppot_start_args += ['--mem', ("%dM" % (int(kw['requested_memory']) * 1000))]
+        if extra_args.has_key('requested_memory'):
+            apppot_start_args += ['--mem', ("%dM" % (int(extra_args['requested_memory']) * 1000))]
             # FIXME: we need to remove the memory limit because batch
             # systems miscompute the amount of memory actually used by
             # an UMLx process...
-            del kw['requested_memory']
+            del extra_args['requested_memory']
         if apppot_extra:
             for arg in apppot_extra:
                 apppot_start_args += ['--extra', arg]
         apppot_start_args += [ executable ] + arguments
 
-        if 'tags' in kw:
-            kw['tags'].append(apppot_tag)
+        if 'tags' in extra_args:
+            extra_args['tags'].append(apppot_tag)
         else:
-            kw['tags'] = [ apppot_tag ]
+            extra_args['tags'] = [ apppot_tag ]
         
         # init base class
         gc3libs.Application.__init__(
             self,
             [ 'apppot-start.sh'] + apppot_start_args, # arguments
-            inputs, outputs, output_dir, **kw)
+            inputs, outputs, output_dir, **extra_args)
 
     @staticmethod
     def _add_to_inputs(inputs, localpath, remotepath):

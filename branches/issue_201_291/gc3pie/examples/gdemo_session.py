@@ -50,12 +50,12 @@ import sys
 import gc3libs
 from gc3libs import Application, Run, Task
 from gc3libs.cmdline import SessionBasedScript, _Script
-from gc3libs.dag import SequentialTaskCollection, ParallelTaskCollection
+from gc3libs.workflow import SequentialTaskCollection, ParallelTaskCollection
 import gc3libs.utils
 
 class GdemoApplication(Application):
 
-    def __init__(self, value_a, value_b, iteration, **kw):
+    def __init__(self, value_a, value_b, iteration, **extra_args):
 
         gc3libs.log.info("Calling GdemoApplication.__init__(%d,%d,%d) ... " % (value_a,value_b,iteration))
 
@@ -71,7 +71,7 @@ class GdemoApplication(Application):
                                      requested_memory = 1,
                                      requested_cores = 1,
                                      requested_walltime = 1,
-                                     **kw
+                                     **extra_args
                                      )
 
 class Gdemo(SessionBasedScript):
@@ -120,7 +120,7 @@ class Gdemo(SessionBasedScript):
 
     def new_tasks(self, extra):
 
-        kw = extra.copy()
+        extra_args = extra.copy()
         name = "GC3Pie_demo"
 
         gc3libs.log.info("Calling Gdemo.next_tastk() ... ")
@@ -128,7 +128,7 @@ class Gdemo(SessionBasedScript):
         yield (name, DemoIteration, [
                 self.init_value,
                 self.add_value
-                ], kw)
+                ], extra_args)
 
 
 
@@ -154,7 +154,7 @@ class DemoIteration(SequentialTaskCollection):
     single-core task executing the given program.
     """
 
-    def __init__(self, init_value, add_value, **kw):
+    def __init__(self, init_value, add_value, **extra_args):
         """
         Create a new tasks that runs `executable` over a set of values
         (initially given by `initial_values_file`, then the output of

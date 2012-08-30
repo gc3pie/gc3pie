@@ -57,7 +57,7 @@ import gc3libs
 from gc3libs import Application, Run, Task
 from gc3libs.cmdline import SessionBasedScript
 from gc3libs.compat.collections import defaultdict
-from gc3libs.dag import SequentialTaskCollection
+from gc3libs.workflow import SequentialTaskCollection
 
 
 ## auxilirary functions
@@ -86,10 +86,10 @@ class GMhcCoevApplication(Application):
     """
     def __init__(self,
                  N, p_mut_coeff, choose_or_rand, sick_or_not, off_v_last,
-                 output_dir, latest_work=None, executable=None, **kw):
-        kw.setdefault('requested_memory', 1)
-        kw.setdefault('requested_cores', 1)
-        kw.setdefault('requested_architecture', Run.Arch.X86_64)
+                 output_dir, latest_work=None, executable=None, **extra_args):
+        extra_args.setdefault('requested_memory', 1)
+        extra_args.setdefault('requested_cores', 1)
+        extra_args.setdefault('requested_architecture', Run.Arch.X86_64)
         # command-line parameters to pass to the MHC_coev_* program
         self.N = N
         self.p_mut_coeff = p_mut_coeff
@@ -114,7 +114,7 @@ class GMhcCoevApplication(Application):
                                  # the MatLab workspace, but allow 5
                                  # minutes for I/O before the job is
                                  # killed forcibly by the batch system
-                                 kw.get('requested_walltime')*60 - 5,
+                                 extra_args.get('requested_walltime')*60 - 5,
                                  N, p_mut_coeff, choose_or_rand, sick_or_not, off_v_last,
                                  ],
                              inputs = inputs,
@@ -123,7 +123,7 @@ class GMhcCoevApplication(Application):
                              stdout = 'matlab.log',
                              stderr = 'matlab.err',
                              tags = [ 'APPS/BIO/MHC_COEV-040711' ],
-                             **kw)
+                             **extra_args)
 
 
 class GMhcCoevTask(SequentialTaskCollection):
@@ -140,7 +140,7 @@ class GMhcCoevTask(SequentialTaskCollection):
 
     def __init__(self, single_run_duration, generations_to_do,
                  N, p_mut_coeff, choose_or_rand, sick_or_not, off_v_last,
-                 output_dir, executable=None, **kw):
+                 output_dir, executable=None, **extra_args):
 
         """Create a new task running an ``MHC_coev`` binary.
 
@@ -179,13 +179,13 @@ class GMhcCoevTask(SequentialTaskCollection):
         self.choose_or_rand = choose_or_rand
         self.sick_or_not = sick_or_not
         self.off_v_last = off_v_last
-        self.extra = kw
+        self.extra = extra_args
 
         self.generations_done = 0
 
         # make up a sensibel job name if there isn't one
-        if 'jobname' in kw:
-            self.jobname = kw['jobname']
+        if 'jobname' in extra_args:
+            self.jobname = extra_args['jobname']
         else:
             if self.executable is None:
                 self.jobname = ('MHC_coev.%s.%s.%s.%s.%s'
@@ -194,8 +194,8 @@ class GMhcCoevTask(SequentialTaskCollection):
                 os.path.basename(self.executable)
 
         # remove potentially conflicting kyword arguments
-        kw.pop('output_dir', None)
-        kw.pop('requested_walltime', None)
+        extra_args.pop('output_dir', None)
+        extra_args.pop('requested_walltime', None)
 
         # create initial task and register it
         initial_task = GMhcCoevApplication(
@@ -204,7 +204,7 @@ class GMhcCoevTask(SequentialTaskCollection):
             executable = self.executable,
             # XXX: rounds to the nearest hour in excess
             requested_walltime = (single_run_duration + 60) / 60,
-            **kw)
+            **extra_args)
         SequentialTaskCollection.__init__(self, self.jobname, [initial_task])
 
 

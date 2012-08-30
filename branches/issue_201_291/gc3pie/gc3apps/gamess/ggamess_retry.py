@@ -2,7 +2,7 @@
 #
 #   ggamess_retry.py -- Front-end script for submitting multiple GAMESS jobs to SMSCG.
 #
-#   Copyright (C) 2010, 2011 GC3, University of Zurich
+#   Copyright (C) 2010, 2011, 2012 GC3, University of Zurich
 #
 #   This program is free software: you can redistribute it and/or modify
 #   it under the terms of the GNU General Public License as published by
@@ -47,21 +47,21 @@ import os
 import gc3libs
 from gc3libs.application.gamess import GamessApplication
 from gc3libs.cmdline import SessionBasedScript
+from gc3libs.workflow import RetryableTask
 
 
 ## retry policy
 
-class GamessRetryPolicy(gc3libs.RetryableTask, gc3libs.utils.Struct):
+class GamessRetryPolicy(RetryableTask):
 
-    def __init__(self, inp_file_path, *other_input_files, **kw):
+    def __init__(self, inp_file_path, *other_input_files, **extra_args):
         """Constructor. Interface compatible with `GamessApplication`:class:"""
-        if kw.has_key('tags'):
-            kw['tags'].append('ENV/CPU/OPTERON-2350')
+        if extra_args.has_key('tags'):
+            extra_args['tags'].append('ENV/CPU/OPTERON-2350')
         else:
-            kw['tags'] = [ 'ENV/CPU/OPTERON-2350' ]
-        task = GamessApplication(inp_file_path, *other_input_files, **kw)
-        gc3libs.RetryableTask.__init__(self, task.jobname, task, max_retries=3, **kw)
-        gc3libs.utils.Struct.__init__(self, **kw)
+            extra_args['tags'] = [ 'ENV/CPU/OPTERON-2350' ]
+        task = GamessApplication(inp_file_path, *other_input_files, **extra_args)
+        RetryableTask.__init__(self, task.jobname, task, max_retries=3, **extra_args)
 
 
     def retry(self):
@@ -87,7 +87,7 @@ class GamessRetryPolicy(gc3libs.RetryableTask, gc3libs.utils.Struct):
                 # try spreading over more cores and resubmit
                 gamess.requested_cores *= 2
                 return True
-            
+
 
 
 ## the main script

@@ -118,11 +118,11 @@ class GDockingApplication(RosettaDockingApplication):
     """
     def __init__(self, pdb_file_path, native_file_path=None,
                  number_of_decoys_to_create=1, flags_file=None,
-                 collect=False, **kw):
+                 collect=False, **extra_args):
         RosettaDockingApplication.__init__(
             self, pdb_file_path, native_file_path,
             number_of_decoys_to_create, flags_file,
-            **kw)
+            **extra_args)
         # save pdb_file_path for later processing
         self.pdb_file_path = pdb_file_path
         # define additional attributes

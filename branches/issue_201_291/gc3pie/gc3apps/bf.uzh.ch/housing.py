@@ -60,9 +60,9 @@ logger = wrapLogger(loggerName = __name__ + 'logger', streamVerb = 'DEBUG', logF
 class housingApplication(Application):
     _invalid_chars = re.compile(r'[^_a-zA-Z0-9]+', re.X)
 
-    def __init__(self, executable, arguments, inputs, outputs, output_dir, **kw):
-#        kw.setdefault('requested_walltime', 2)
-        Application.__init__(self, executable, arguments, inputs, outputs, output_dir, **kw)
+    def __init__(self, executable, arguments, inputs, outputs, output_dir, **extra_args):
+#        extra_args.setdefault('requested_walltime', 2)
+        Application.__init__(self, executable, arguments, inputs, outputs, output_dir, **extra_args)
 
     def fetch_output_error(self, ex):
 
@@ -182,6 +182,6 @@ class housingApplication(Application):
 
 class housingApppotApplication(housingApplication, gc3libs.application.apppot.AppPotApplication):
     _invalid_chars = re.compile(r'[^_a-zA-Z0-9]+', re.X)
-    def __init__(self, executable, arguments, inputs, outputs, output_dir, **kw):
-#        kw.setdefault('requested_walltime', 2) # unnecessary.. gc3pie automatically sets default to 8
-        gc3libs.application.apppot.AppPotApplication.__init__(self, executable, arguments, inputs, outputs, output_dir, **kw)
+    def __init__(self, executable, arguments, inputs, outputs, output_dir, **extra_args):
+#        extra_args.setdefault('requested_walltime', 2) # unnecessary.. gc3pie automatically sets default to 8
+        gc3libs.application.apppot.AppPotApplication.__init__(self, executable, arguments, inputs, outputs, output_dir, **extra_args)

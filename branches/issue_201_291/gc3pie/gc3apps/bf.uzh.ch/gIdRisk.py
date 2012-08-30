@@ -88,7 +88,7 @@ from pymods.support.support import wrapLogger
 import gc3libs
 from gc3libs import Application, Run, Task
 from gc3libs.cmdline import SessionBasedScript
-#from gc3libs.dag import SequentialTaskCollection, ParallelTaskCollection
+#from gc3libs.workflow import SequentialTaskCollection, ParallelTaskCollection
 import gc3libs.utils
 
 import gc3libs.debug

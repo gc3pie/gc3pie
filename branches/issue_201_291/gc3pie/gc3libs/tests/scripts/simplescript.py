@@ -30,13 +30,11 @@ class SimpleScript(SessionBasedScript):
     version = '1'
 
     def new_tasks(self, extra):
-        def myfunc(*args, **kw):
-            return Application(arguments=args,
-                               inputs=[],
-                               outputs=['SimpleScript.stdout', 'SimpleScript.stderr'],
-                               output_dir='SimpleScript.out.d',
-                               stdout='SimpleScript.stderr',
-                               stderr='SimpleScript.stderr',
+        def myfunc(*args, **extra_args):
+            return Application(args,
+                               [],
+                               ['SimpleScript.stdout'],
+                               'SimpleScript.out.d',
                                join=True)
         yield ('MyJob',
                myfunc,

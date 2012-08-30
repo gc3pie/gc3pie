@@ -96,24 +96,24 @@ class TaskCollection(Task, gc3libs.utils.Struct):
     # task execution manipulation -- these methods should be overriden
     # in derived classes, to implement the desired policy.
 
-    def submit(self, resubmit=False, **kw):
+    def submit(self, resubmit=False, **extra_args):
         raise NotImplementedError("Called abstract method TaskCollection.submit() - this should be overridden in derived classes.")
 
 
-    def update_state(self, **kw):
+    def update_state(self, **extra_args):
         """
         Update the running state of all managed tasks.
         """
         for task in self.tasks:
-            self._controller.update_job_state(task, **kw)
+            self._controller.update_job_state(task, **extra_args)
 
 
-    def kill(self, **kw):
+    def kill(self, **extra_args):
         # XXX: provide default implementation that kills all jobs?
         raise NotImplementedError("Called abstract method TaskCollection.kill() - this should be overridden in derived classes.")
 
 
-    def fetch_output(self, output_dir=None, overwrite=False, **kw):
+    def fetch_output(self, output_dir=None, overwrite=False, **extra_args):
         # if `output_dir` is not None, it is interpreted as the base
         # directory where to download files; each task will get its
         # own subdir based on its `.persistent_id`
@@ -123,10 +123,10 @@ class TaskCollection(Task, gc3libs.utils.Struct):
                     task,
                     os.path.join(output_dir, task.permanent_id),
                     overwrite,
-                    **kw)
+                    **extra_args)
 
 
-    def peek(self, what, offset=0, size=None, **kw):
+    def peek(self, what, offset=0, size=None, **extra_args):
         """
         Raise a `gc3libs.exceptions.InvalidOperation` error, as there
         is no meaningful semantics that can be defined for `peek` into
@@ -213,19 +213,19 @@ class SequentialTaskCollection(TaskCollection):
     `TERMINATED` when all tasks have been run.
     """
 
-    def __init__(self, tasks, **kw):
+    def __init__(self, tasks, **extra_args):
         # XXX: check that `tasks` is a sequence type
         TaskCollection.__init__(self, tasks)
         self._current_task = 0
 
 
-    def kill(self, **kw):
+    def kill(self, **extra_args):
         """
         Stop execution of this sequence.  Kill currently-running task
         (if any), then set collection state to TERMINATED.
         """
         if self._current_task is not None:
-            self.tasks[self._current_task].kill(**kw)
+            self.tasks[self._current_task].kill(**extra_args)
         self.execution.state = Run.State.TERMINATED
         self.execution.returncode = (Run.Signals.Cancelled, -1)
         self.changed = True
@@ -317,14 +317,14 @@ class SequentialTaskCollection(TaskCollection):
         self.changed = True
 
 
-    def submit(self, resubmit=False, **kw):
+    def submit(self, resubmit=False, **extra_args):
         """
         Start the current task in the collection.
         """
         if self._current_task is None:
             self._current_task = 0
         task = self.tasks[self._current_task]
-        task.submit(resubmit, **kw)
+        task.submit(resubmit, **extra_args)
         if task.execution.state == Run.State.NEW:
             # submission failed, state unchanged
             self.execution.state = Run.State.NEW
@@ -336,7 +336,7 @@ class SequentialTaskCollection(TaskCollection):
         return self.execution.state
 
 
-    def update_state(self, **kw):
+    def update_state(self, **extra_args):
         """
         Update state of the collection, based on the jobs' statuses.
         """
@@ -347,7 +347,7 @@ class SequentialTaskCollection(TaskCollection):
         else:
             # update state of current task
             task = self.tasks[self._current_task]
-            task.update_state(**kw)
+            task.update_state(**extra_args)
             gc3libs.log.debug("Task #%d in state %s"
                              % (self._current_task, task.execution.state))
         # set state based on the state of current task
@@ -391,15 +391,15 @@ class StagedTaskCollection(SequentialTaskCollection):
     code.
 
     """
-    def __init__(self, **kw):
+    def __init__(self, **extra_args):
         try:
             first_stage = self.stage0()
             if isinstance(first_stage, Task):
                 # init parent class with the initial task
-                SequentialTaskCollection.__init__(self, [first_stage], **kw)
+                SequentialTaskCollection.__init__(self, [first_stage], **extra_args)
             elif isinstance(first_stage, (int, long, tuple)):
                 # init parent class with no tasks, an dimmediately set the exitcode
-                SequentialTaskCollection.__init__(self, [], **kw)
+                SequentialTaskCollection.__init__(self, [], **extra_args)
                 self.execution.returncode = first_stage
                 self.execution.state = Run.State.TERMINATED
             else:
@@ -449,8 +449,8 @@ class ParallelTaskCollection(TaskCollection):
     reached the same terminal status.
     """
 
-    def __init__(self, tasks=None, **kw):
-        TaskCollection.__init__(self, jobname, tasks, **kw)
+    def __init__(self, tasks=None, **extra_args):
+        TaskCollection.__init__(self, jobname, tasks, **extra_args)
 
 
     def _state(self):
@@ -488,13 +488,13 @@ class ParallelTaskCollection(TaskCollection):
         return Run.State.UNKNOWN
 
 
-    def kill(self, **kw):
+    def kill(self, **extra_args):
         """
         Terminate all tasks in the collection, and set collection
         state to `TERMINATED`.
         """
         for task in self.tasks:
-            task.kill(**kw)
+            task.kill(**extra_args)
         self.execution.state = Run.State.TERMINATED
         self.execution.returncode = (Run.Signals.Cancelled, -1)
         self.changed = True
@@ -508,23 +508,23 @@ class ParallelTaskCollection(TaskCollection):
         return [ task.progress() for task in self.tasks ]
 
 
-    def submit(self, resubmit=False, **kw):
+    def submit(self, resubmit=False, **extra_args):
         """
         Start all tasks in the collection.
         """
         for task in self.tasks:
-            task.submit(resubmit, **kw)
+            task.submit(resubmit, **extra_args)
         self.execution.state = self._state()
 
 
-    def update_state(self, **kw):
+    def update_state(self, **extra_args):
         """
         Update state of all tasks in the collection.
         """
         for task in self.tasks:
             #gc3libs.log.debug("Updating state of %s in collection %s ..."
             #                  % (task, self))
-            task.update_state(**kw)
+            task.update_state(**extra_args)
         self.execution.state = self._state()
         if self.execution.state == Run.State.TERMINATED:
             self.execution.returncode = (0, 0)
@@ -538,7 +538,7 @@ class ParallelTaskCollection(TaskCollection):
 
 class ChunkedParameterSweep(ParallelTaskCollection):
 
-    def __init__(self, min_value, max_value, step, chunk_size, **kw):
+    def __init__(self, min_value, max_value, step, chunk_size, **extra_args):
         """
         Like `ParallelTaskCollection`, but generate a sequence of jobs
         with a parameter varying from `min_value` to `max_value` in
@@ -553,10 +553,10 @@ class ChunkedParameterSweep(ParallelTaskCollection):
         initial = [ self.new_task(param) for param in
                     range(min_value, self._floor, step) ]
         # start with the initial chunk of jobs
-        ParallelTaskCollection.__init__(self, initial, **kw)
+        ParallelTaskCollection.__init__(self, initial, **extra_args)
 
 
-    def new_task(self, param, **kw):
+    def new_task(self, param, **extra_args):
         """
         Return the `Task` corresponding to the parameter value `param`.
 
@@ -566,7 +566,7 @@ class ChunkedParameterSweep(ParallelTaskCollection):
 
 
     # this is called at every cycle
-    def update_state(self, **kw):
+    def update_state(self, **extra_args):
         """
         Like `ParallelTaskCollection.update_state()`,
         but also creates new tasks if less than
@@ -595,10 +595,181 @@ class ChunkedParameterSweep(ParallelTaskCollection):
             # generate more tasks
             top = min(self._floor + (self.chunk_size * self.step), self.max_value)
             for param in range(self._floor, top, self.step):
-                self.add(self.new_task(param, **kw))
+                self.add(self.new_task(param, **extra_args))
             self._floor = top
             self.changed = True
-        return ParallelTaskCollection.update_state(self, **kw)
+        return ParallelTaskCollection.update_state(self, **extra_args)
+
+
+class RetryableTask(Task):
+    """
+    Wrap a `Task` instance and re-submit it until a specified
+    termination condition is met.
+
+    By default, the re-submission upon failure happens iff execution
+    terminated with nonzero return code; the failed task is retried up
+    to `self.max_retries` times (indefinitely if `self.max_retries` is 0).
+
+    Override the `retry` method to implement a different retryal policy.
+
+    *Note:* The resubmission code is implemented in the
+    `terminated`:meth:, so be sure to call it if you override in
+    derived classes.
+    """
+
+    def __init__(self, name, task, max_retries=0, **extra_args):
+        """
+        Wrap `task` and resubmit it until `self.retry()` returns `False`.
+
+        :param Task task: A `Task` instance that should be retried.
+
+        :param str jobname: The string identifying this `Task`
+            instance, see `Task`:class:.
+
+        :param int max_retries: Maximum number of times `task` should be
+            re-submitted; use 0 for 'no limit'.
+        """
+        self.max_retries = max_retries
+        self.retried = 0
+        self.task = task
+        Task.__init__(self, name, **extra_args)
+
+    def __getattr__(self, name):
+        """Proxy public attributes of the wrapped task."""
+        if name.startswith('_'):
+            raise AttributeError(
+                "'%s' object has no attribute '%s'"
+                % (self.__class__.__name__, name))
+        return getattr(self.task, name)
+
+    def retry(self):
+        """
+        Return `True` or `False`, depending on whether the failed task
+        should be re-submitted or not.
+
+        The default behavior is to retry a task iff its execution
+        terminated with nonzero returncode and the maximum retry limit
+        has not been reached.  If `self.max_retries` is 0, then the
+        dependent task is retried indefinitely.
+
+        Override this method in subclasses to implement a different
+        policy.
+        """
+        if (self.task.execution.returncode != 0
+            and ((self.max_retries > 0
+                  and self.retried < self.max_retries)
+                 or self.max_retries == 0)):
+            return True
+        else:
+            return False
+
+    def attach(self, controller):
+        # here `Task.attach` is the invocation of the superclass'
+        # `attach` method (which attaches *this* object to a controller),
+        # while `self.task.attach` is the propagation of the `attach`
+        # method to the wrapped task. (Same for `detach` below.)
+        Task.attach(self, controller)
+        self.task.attach(controller)
+
+    def detach(self):
+        # see comment in `attach` above
+        Task.detach(self)
+        self.task.detach()
+
+    def fetch_output(self, *args, **extra_args):
+        self.task.fetch_output(*args, **extra_args)
+
+    def free(self, **extra_args):
+        self.task.free(**extra_args)
+
+    def kill(self, **extra_args):
+        self.task.kill(**extra_args)
+
+    def peek(self, *args, **extra_args):
+        return self.task.peek(*args, **extra_args)
+
+    def submit(self, resubmit=False, **extra_args):
+        self.task.submit(**extra_args)
+        # immediately update state if submission of managed task was successful;
+        # otherwise this task may remain in ``NEW`` state which causes an
+        # unwanted resubmission if the managing programs ends or is interrupted
+        # just after the submission...
+        # XXX: this is a case for a generic publish/subscribe mechanism!
+        if self.task.execution.state != Run.State.NEW:
+            self.execution.state = self._recompute_state()
+
+    def _recompute_state(self):
+        """
+        Determine and return the state based on the current state and
+        the state of the wrapped task.
+        """
+        own_state = self.execution.state
+        task_state = self.task.execution.state
+        if own_state == task_state:
+            return own_state
+        elif own_state == Run.State.NEW:
+            if task_state == Run.State.NEW:
+                return Run.State.NEW
+            elif task_state in [ Run.State.SUBMITTED,
+                                 Run.State.RUNNING,
+                                 Run.State.STOPPED,
+                                 Run.State.UNKNOWN ]:
+                return task_state
+            else:
+                return Run.State.RUNNING
+        elif own_state == Run.State.SUBMITTED:
+            if task_state in [ Run.State.NEW, Run.State.SUBMITTED ]:
+                return Run.State.SUBMITTED
+            elif task_state in [ Run.State.RUNNING,
+                                 Run.State.TERMINATING,
+                                 Run.State.TERMINATED ]:
+                return Run.State.RUNNING
+            else:
+                return task_state
+        elif own_state == Run.State.RUNNING:
+            if task_state in [ Run.State.STOPPED, Run.State.UNKNOWN ]:
+                return task_state
+            else:
+                # if task is NEW, SUBMITTED, RUNNING, etc. -- keep our state
+                return own_state
+        elif own_state in [ Run.State.TERMINATING, Run.State.TERMINATED ]:
+            assert task_state == Run.State.TERMINATED
+            return Run.State.TERMINATED
+        elif own_state in [ Run.State.STOPPED, Run.State.UNKNOWN ]:
+            if task_state in [ Run.State.NEW,
+                               Run.State.SUBMITTED,
+                               Run.State.RUNNING,
+                               Run.State.TERMINATING,
+                               Run.State.TERMINATED ]:
+                return Run.State.RUNNING
+            else:
+                return own_state
+        else:
+            # should not happen!
+            raise AssertionError("Unhandled own state '%s'"
+                                 " in RetryableTask._recompute_state()", own_state)
+
+    def update_state(self):
+        """
+        Update the state of the dependent task, then resubmit it if it's
+        TERMINATED and `self.retry()` is `True`.
+        """
+        own_state_old = self.execution.state
+        self.task.update_state()
+        own_state_new = self._recompute_state()
+        if (self.task.execution.state == Run.State.TERMINATED and own_state_old != Run.State.TERMINATED):
+            self.execution.returncode = self.task.execution.returncode
+            if self.retry():
+                self.retried += 1
+                self.task.submit(resubmit=True)
+                own_state_new = Run.State.RUNNING
+            else:
+                own_state_new = Run.State.TERMINATED
+            self.changed = True
+        if own_state_new != own_state_old:
+            self.execution.state = own_state_new
+            self.changed = True
+
 
 ## main: run tests
 

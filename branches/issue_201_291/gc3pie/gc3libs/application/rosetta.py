@@ -50,7 +50,7 @@ class RosettaApplication(gc3libs.Application):
       * `arguments`: If present, they will be appended to the Rosetta application command line.
     """
     def __init__(self, application, application_release, inputs, outputs=[],
-                 flags_file=None, database=None, arguments=[], **kw):
+                 flags_file=None, database=None, arguments=[], **extra_args):
 
         # we're submitting Rosetta jobs thorugh the support script
         # "rosetta.sh", so do the specific setup tailored to this
@@ -108,16 +108,16 @@ class RosettaApplication(gc3libs.Application):
         if arguments:
             _arguments.extend(arguments)
 
-        kw['application_tag'] = 'rosetta'
+        extra_args['application_tag'] = 'rosetta'
         application_release = "APPS/BIO/ROSETTA-%s" % application_release
         # application_release = "TEST/BIO/ROSETTA-%s"  % application_release
-        if 'tags' in kw:
-            kw['tags'].append(application_release)
+        if 'tags' in extra_args:
+            extra_args['tags'].append(application_release)
         else:
-            kw['tags'] = [ application_release ]
+            extra_args['tags'] = [ application_release ]
 
-        kw.setdefault('stdout', application+'.stdout.txt')
-        kw.setdefault('stderr', application+'.stderr.txt')
+        extra_args.setdefault('stdout', application+'.stdout.txt')
+        extra_args.setdefault('stderr', application+'.stderr.txt')
 
         rosetta_sh = self.__protocol + '.sh'
         _inputs[src_rosetta_sh] = rosetta_sh
@@ -127,7 +127,7 @@ class RosettaApplication(gc3libs.Application):
             arguments = [ "%s" % rosetta_sh] + _arguments,
             inputs = _inputs,
             outputs = _outputs,
-            **kw)
+            **extra_args)
 
     def terminated(self):
         """
@@ -165,7 +165,7 @@ class RosettaDockingApplication(RosettaApplication):
     """
     def __init__(self, pdb_file_path, native_file_path=None,
                  number_of_decoys_to_create=1, flags_file=None,
-                 application_release='3.1', **kw):
+                 application_release='3.1', **extra_args):
         pdb_file_name = os.path.basename(pdb_file_path)
         pdb_file_dir = os.path.dirname(pdb_file_path)
         pdb_file_name_sans = os.path.splitext(pdb_file_name)[0]
@@ -187,9 +187,9 @@ class RosettaDockingApplication(RosettaApplication):
                 "-in:file:native", os.path.basename(native_file_path),
                 "-out:file:o", pdb_file_name_sans,
                 "-out:nstruct", number_of_decoys_to_create,
-                ] + kw.pop('arguments', []),
-            output_dir = kw.pop('output_dir', pdb_file_dir),
-            **kw)
+                ] + extra_args.pop('arguments', []),
+            output_dir = extra_args.pop('output_dir', pdb_file_dir),
+            **extra_args)
 
 
 

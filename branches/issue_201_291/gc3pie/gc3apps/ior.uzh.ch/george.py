@@ -53,7 +53,7 @@ import types
 import gc3libs
 from gc3libs import Application, Run, Task
 from gc3libs.cmdline import SessionBasedScript, executable_file, nonnegative_int, positive_int
-from gc3libs.dag import SequentialTaskCollection, ParallelTaskCollection
+from gc3libs.workflow import SequentialTaskCollection, ParallelTaskCollection
 import gc3libs.utils
 
 IN_VALUES_FILE = 'ValuesIn.txt'
@@ -85,7 +85,7 @@ class ValueFunctionIteration(SequentialTaskCollection):
 
     def __init__(self, executable, initial_values_file,
                  total_iterations, slice_size=0,
-                 output_dir=TMPDIR, **kw):
+                 output_dir=TMPDIR, **extra_args):
         """
         Create a new task that runs `executable` over a set of values
         (initially given by `initial_values_file`, then the output of
@@ -109,7 +109,7 @@ class ValueFunctionIteration(SequentialTaskCollection):
         self.total_iterations = total_iterations - 1
         self.slice_size = slice_size
         self.datadir = output_dir
-        self.extra = kw
+        self.extra = extra_args
 
         # count initial values
         if os.path.exists(initial_values_file):
@@ -125,7 +125,7 @@ class ValueFunctionIteration(SequentialTaskCollection):
         self.values_filename_fmt = ('values.%%0%dd.txt'
                                     % (1 + int(math.log10(total_iterations))))
 
-        self.jobname = kw.get('jobname',
+        self.jobname = extra_args.get('jobname',
                               gc3libs.utils.basename_sans(initial_values_file))
 
         # create initial task and register it
@@ -268,8 +268,8 @@ class ValueFunctionIterationPass(ParallelTaskCollection):
         tasks = [ ]
         for start in range(0, total_input_values, slice_size):
             # create new job to handle this slice of values
-            kw = extra.copy()
-            kw['parent'] = self.jobname
+            extra_args = extra.copy()
+            extra_args['parent'] = self.jobname
             tasks.append(
                 ValueFunctionIterationApplication(
                     executable,
@@ -282,7 +282,7 @@ class ValueFunctionIterationPass(ParallelTaskCollection):
                     start,
                     end=min(start + slice_size - 1, total_input_values),
                     output_dir = datasubdir,
-                    **kw
+                    **extra_args
                     )
                 )
 
@@ -331,12 +331,12 @@ class ValueFunctionIterationApplication(Application):
     """
 
     def __init__(self, executable, input_values_file, iteration, total_iterations,
-                 start=0, end=None, parent=None, **kw):
+                 start=0, end=None, parent=None, **extra_args):
         count = _count_input_values(input_values_file)
         if end is None:
             end = count-1 # last allowed position
         # make a readable jobname, indicating what part of the computation this is
-        kw.setdefault('jobname',
+        extra_args.setdefault('jobname',
                       '%s.%d--%d' % (
                           parent or gc3libs.utils.basename_sans(input_values_file),
                           start, end))
@@ -345,14 +345,14 @@ class ValueFunctionIterationApplication(Application):
             os.path.basename(executable),
             # `start` and `end` arguments to `executable` follow the
             # FORTRAN convention of being 1-based
-            arguments = [ kw['discount_factor'], iteration, total_iterations,
+            arguments = [ extra_args['discount_factor'], iteration, total_iterations,
                           count, start+1, end+1 ],
             inputs = { executable:os.path.basename(executable),
                        input_values_file:IN_VALUES_FILE },
             outputs = { OUT_VALUES_FILE:OUT_VALUES_FILE },
             join = True,
             stdout = 'job.log', # stdout + stderr
-            **kw)
+            **extra_args)
 
 
     def __str__(self):
@@ -502,10 +502,10 @@ class GeorgeScript(SessionBasedScript):
                                % (path, name))
 
             # import running parameters from cfg file
-            kw = extra.copy()
-            kw['jobname'] = name
+            extra_args = extra.copy()
+            extra_args['jobname'] = name
             try:
-                kw.setdefault('discount_factor',
+                extra_args.setdefault('discount_factor',
                               p.getfloat(name, 'discount_factor'))
             except (KeyError, ConfigParser.Error, ValueError), ex:
                 self.log.error("Could not read required parameter 'discount_factor'"
@@ -516,7 +516,7 @@ class GeorgeScript(SessionBasedScript):
                 self.params.execute, path,
                 self.params.iterations,
                 self.params.slice_size
-                ], kw)
+                ], extra_args)
 
 
     def print_summary_table(self, output, stats):

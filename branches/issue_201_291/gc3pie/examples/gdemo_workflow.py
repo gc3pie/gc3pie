@@ -62,11 +62,11 @@ import tarfile
 import gc3libs
 from gc3libs import Application, Run, Task
 from gc3libs.cmdline import SessionBasedScript, _Script
-from gc3libs.dag import SequentialTaskCollection, ParallelTaskCollection
+from gc3libs.workflow import SequentialTaskCollection, ParallelTaskCollection
 import gc3libs.utils
 
 class XtandemPostApplication(Application):
-    def __init__(self, param_value, output_folder, iteration, **kw):
+    def __init__(self, param_value, output_folder, iteration, **extra_args):
 
         gc3libs.log.info("\t\t\t\t\t\tCalling XtandemPostApplication.__init__(%d,%d) ... " % (param_value,iteration))
 
@@ -94,7 +94,7 @@ class XtandemPostApplication(Application):
                                      requested_memory = 1,
                                      requested_cores = 1,
                                      requested_walltime = 1,
-                                     *kw
+                                     *extra_args
                                      )
 
     def terminated(self):
@@ -102,7 +102,7 @@ class XtandemPostApplication(Application):
         self.execution.returncode = 0
 
 class XtandemApplicationB(Application):
-    def __init__(self, param_value, input_file, output_folder, iteration, **kw):
+    def __init__(self, param_value, input_file, output_folder, iteration, **extra_args):
 
         gc3libs.log.info("\t\t\t\t\tCalling XtandemApplicationB.__init__(%d,%s,%d) ... " % (param_value,input_file,iteration))
 
@@ -118,7 +118,7 @@ class XtandemApplicationB(Application):
                                      requested_memory = 1,
                                      requested_cores = 1,
                                      requested_walltime = 1,
-                                     *kw
+                                     **extra_args
                                      )
     def terminated(self):
         self.execution.returncode = 0
@@ -126,7 +126,7 @@ class XtandemApplicationB(Application):
 
 
 class XtandemApplicationA(Application):
-    def __init__(self, param_value, input_file, output_folder, iteration, **kw):
+    def __init__(self, param_value, input_file, output_folder, iteration, **extra_args):
 
         gc3libs.log.info("\t\t\t\t\tCalling XtandemApplicationA.__init__(%d,%s,%d) ... " % (param_value,input_file,iteration))
 
@@ -142,7 +142,7 @@ class XtandemApplicationA(Application):
                                      requested_memory = 1,
                                      requested_cores = 1,
                                      requested_walltime = 1,
-                                     *kw
+                                     **extra_args
                                      )
     def terminated(self):
         self.execution.returncode = 0
@@ -201,7 +201,7 @@ class GdemoWorkflow(SessionBasedScript):
 
     def new_tasks(self, extra):
 
-        kw = extra.copy()
+        extra_args = extra.copy()
         name = "GC3Pie_demo"
 
         for param in self.parameters:
@@ -213,7 +213,7 @@ class GdemoWorkflow(SessionBasedScript):
                     param,
                     self.input_folder,
                     self.output_folder,
-                    ], kw)
+                    ], extra_args)
 
 ## support classes
 
@@ -265,16 +265,16 @@ class InnerParallelIteration(ParallelTaskCollection):
         tasks = []
 
         self.jobname = "Gdemo_paral_"+str(param_value)
-        kw = extra.copy()
+        extra_args = extra.copy()
         # XXX: do I need this ?
-        kw['parent'] = self.jobname
+        extra_args['parent'] = self.jobname
         tasks.append(
             InnerSequentialIterationA(
                 param_value,
                 input_file,
                 output_folder,
                 iteration=0,
-                **kw
+                **extra_args
                 )
             )
         tasks.append(
@@ -283,7 +283,7 @@ class InnerParallelIteration(ParallelTaskCollection):
                 input_file,
                 output_folder,
                 iteration=0,
-                **kw
+                **extra_args
                 )
             )
 
@@ -298,7 +298,7 @@ class InnerParallelIteration(ParallelTaskCollection):
         self.execution.returncode = 0
 
 class InnerSequentialIterationA(SequentialTaskCollection):
-    def __init__(self, param_value, input_file_name, output_folder, iteration, **kw):
+    def __init__(self, param_value, input_file_name, output_folder, iteration, **extra_args):
 
         gc3libs.log.info("\t\t\t\tCalling InnerSequentialIterationA.__init__ for param [%d] and file [%s]" % (param_value, input_file_name))
 
@@ -327,7 +327,7 @@ class InnerSequentialIterationA(SequentialTaskCollection):
 
 
 class InnerSequentialIterationB(SequentialTaskCollection):
-    def __init__(self, param_value, input_file_name, output_folder, iteration, **kw):
+    def __init__(self, param_value, input_file_name, output_folder, iteration, **extra_args):
 
         gc3libs.log.info("\t\t\t\tCalling InnerSequentialIterationB.__init__ for param [%d] and file [%s]" % (param_value, input_file_name))
 
@@ -356,7 +356,7 @@ class InnerSequentialIterationB(SequentialTaskCollection):
 
 
 class MainSequentialIteration(SequentialTaskCollection):
-    def __init__(self, param_value, inputfile_folder, output_folder, **kw):
+    def __init__(self, param_value, inputfile_folder, output_folder, **extra_args):
         self.param_value = param_value
         self.inputfile_folder = inputfile_folder
         self.output_folder = output_folder

@@ -129,7 +129,7 @@ class Session(list):
 
     DEFAULT_JOBS_DIR = 'jobs'
 
-    def __init__(self, path, store_url=None, create=True, **kw):
+    def __init__(self, path, store_url=None, create=True, **extra_args):
         """
         First argument `path` is the path to the session directory.
 
@@ -156,7 +156,7 @@ class Session(list):
         # Session not yet created
         self.created = -1
         self.finished = -1
-        self.cmdline = kw.get('cmdline', None)
+        self.cmdline = extra_args.get('cmdline', None)
 
         # check if there is an old-style session to load
         oldstyle_index = self.path + '.csv'
@@ -178,17 +178,17 @@ class Session(list):
                 if err.errno == 2:  # "No such file or directory"
                     gc3libs.log.debug(
                         "Assuming session is incomplete or corrupted, creating it again.")
-                    self._create_session(store_url, **kw)
+                    self._create_session(store_url, **extra_args)
                 else:
                     raise
         else:
             if create:
-                self._create_session(store_url, **kw)
+                self._create_session(store_url, **extra_args)
             else:
                 raise gc3libs.exceptions.InvalidArgument(
                     "Session '%s' not found" % self.path)
 
-    def _create_session(self, store_url, **kw):
+    def _create_session(self, store_url, **extra_args):
         if store_url:
             self.store_url = store_url
         else:
@@ -197,7 +197,7 @@ class Session(list):
         # or SQLite raises an "OperationalError: unable to open
         # database file None None"
         gc3libs.utils.mkdir(self.path)
-        self.store = gc3libs.persistence.make_store(self.store_url, **kw)
+        self.store = gc3libs.persistence.make_store(self.store_url, **extra_args)
         self._save_store_url_file()
         self._save_index_file()
 
@@ -314,7 +314,7 @@ class Session(list):
         gc3libs.log.info("Successfully converted old-style session"
                          " to new-style session directory '%s'", self.path)
 
-    def _load_session(self, **kw):
+    def _load_session(self, **extra_args):
         """
         Load an existing session from disk.
 
@@ -330,7 +330,7 @@ class Session(list):
             gc3libs.log.error(
                 "Unable to load session: file %s is missing." % (store_fname))
             raise
-        self.store = gc3libs.persistence.make_store(self.store_url, **kw)
+        self.store = gc3libs.persistence.make_store(self.store_url, **extra_args)
 
         idx_filename = os.path.join(self.path, self.INDEX_FILENAME)
         try:

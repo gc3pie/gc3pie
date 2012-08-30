@@ -94,7 +94,7 @@ from createTable import createOverviewTable
 import gc3libs
 from gc3libs import Application, Run, Task
 from gc3libs.cmdline import SessionBasedScript
-from gc3libs.dag import SequentialTaskCollection, ParallelTaskCollection
+from gc3libs.workflow import SequentialTaskCollection, ParallelTaskCollection
 import gc3libs.utils
 
 import gc3libs.debug
@@ -162,7 +162,7 @@ class solveParaCombination(SequentialTaskCollection):
 ##        self.substs['input/parameters.in'].append(('beta', betaVal, '(0,)', 'bar-separated'))
 ##        if self.iter == 1:
 ##            # then loop over wbar
-##            self.kw['jobname'] = self.kw['jobname'] + '_' + 'beta' + '=' + str(self.beta_task.costlyOptimizer.best_x)
+##            self.extra_args['jobname'] = self.extra_args['jobname'] + '_' + 'beta' + '=' + str(self.beta_task.costlyOptimizer.best_x)
 ##            xVar = 'wBarLower'
 ##            xInitialGuess = [-0.15, 0.15]
 ##            targetVar = 'iBar_Shock0Agent0'
@@ -170,7 +170,7 @@ class solveParaCombination(SequentialTaskCollection):
 ##            solverParas['plotting'] = False
 ##            solverParas['target_fx'] = -0.1
 ##            solverParas['convCrit'] = 1.e-4
-##            self.wBarLower_task = idRiskParaSearchDriver(xVar, xInitialGuess, targetVar, self.paraFolder, self.pathToExecutable, self.architecture, self.localBaseDir, self.substs, solverParas, **self.kw)
+##            self.wBarLower_task = idRiskParaSearchDriver(xVar, xInitialGuess, targetVar, self.paraFolder, self.pathToExecutable, self.architecture, self.localBaseDir, self.substs, solverParas, **self.extra_args)
 ##            self.add(self.wBarLower_task)
 ##        else:
 ##            if self.wBarLower_task.execution.returncode == 13:
@@ -178,7 +178,7 @@ class solveParaCombination(SequentialTaskCollection):
 ##                self.execution.returncode = 13
 ##                self.failed = True
 ##                return Run.State.TERMINATED
-##            logger.debug('converged for beta and wBarLower for job %s' % self.kw['jobname'])
+##            logger.debug('converged for beta and wBarLower for job %s' % self.extra_args['jobname'])
 ##            wBarTable = tableDict.fromTextFile(os.path.join(self.paraFolder, 'optimwBarLower', 'overviewSimu'), width = 20, prec = 10)
 ##            optimalRunTable = wBarTable.getSubset( np.abs(wBarTable['wBarLower'] - self.wBarLower_task.costlyOptimizer.best_x) < 1.e-7 )
 ##            optimalRunFile = open(os.path.join(self.paraFolder, 'optimalRun'), 'w')

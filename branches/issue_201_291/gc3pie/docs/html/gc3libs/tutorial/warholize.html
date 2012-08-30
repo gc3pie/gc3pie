@@ -263,7 +263,7 @@ a grayscale image from the input file:</p>
 </div>
 <p>Finally, we call the parent&#8217;s constructor.:</p>
 <div class="highlight-python"><div class="highlight"><pre><span class="n">SequentialTaskCollection</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span>
-    <span class="bp">self</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">jobname</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">tasks</span><span class="p">,</span> <span class="n">grid</span><span class="o">=</span><span class="n">grid</span><span class="p">)</span>
+    <span class="bp">self</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">tasks</span><span class="p">,</span> <span class="n">grid</span><span class="o">=</span><span class="n">grid</span><span class="p">)</span>
 </pre></div>
 </div>
 <p>This will create the initial task list, but we have to run also step 2
@@ -323,6 +323,7 @@ is:</p>
         <span class="bp">self</span><span class="o">.</span><span class="n">grayscaled_image</span> <span class="o">=</span> <span class="n">grayscaled_image</span>
 
         <span class="n">arguments</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="s">&#39;convert&#39;</span><span class="p">,</span>
             <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">basename</span><span class="p">(</span><span class="n">input_image</span><span class="p">),</span>
             <span class="s">&#39;-colorspace&#39;</span><span class="p">,</span>
             <span class="s">&#39;gray&#39;</span><span class="p">,</span>
@@ -334,7 +335,6 @@ is:</p>
 
         <span class="n">gc3libs</span><span class="o">.</span><span class="n">Application</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span>
             <span class="bp">self</span><span class="p">,</span>
-            <span class="n">executable</span> <span class="o">=</span> <span class="s">&#39;convert&#39;</span><span class="p">,</span>
             <span class="n">arguments</span> <span class="o">=</span> <span class="n">arguments</span> <span class="o">+</span> <span class="p">[</span><span class="n">grayscaled_image</span><span class="p">],</span>
             <span class="n">inputs</span> <span class="o">=</span> <span class="p">[</span><span class="n">input_image</span><span class="p">],</span>
             <span class="n">outputs</span> <span class="o">=</span> <span class="p">[</span><span class="n">grayscaled_image</span><span class="p">,</span> <span class="s">&#39;stderr.txt&#39;</span><span class="p">,</span> <span class="s">&#39;stdout.txt&#39;</span><span class="p">],</span>
@@ -347,11 +347,9 @@ is:</p>
 <p>Creating a <cite>gc3libs.Application</cite> is straigthforward: you just
 call the constructor with the executable, the arguments, and the
 input/output files you will need.</p>
-<p>If you don&#8217;t specify the <tt class="docutils literal"><span class="pre">output_dir</span></tt> directory, gc3pie libraries will
-create one starting from the job name. It is quite important, then, to
-generate unique jobname for your applications in order to avoid
-conflits. If the output directory exists already, the old one will be
-renamed.</p>
+<p>If you don&#8217;t specify the <tt class="docutils literal"><span class="pre">output_dir</span></tt> directory, gc3pie libraries
+will create one starting from the class name. If the output directory
+exists already, the old one will be renamed.</p>
 <p>To do any kind of post processing you can define a <cite>terminate</cite> method
 for your application. It will be called after your application will
 terminate. In our case we want to copy the gray scale version of the
@@ -413,7 +411,7 @@ constructor <cite>__init__</cite>, creating the various subtasks we want to run:
                 <span class="bp">self</span><span class="o">.</span><span class="n">warhol_dir</span><span class="p">,</span>
                 <span class="n">grid</span><span class="o">=</span><span class="n">grid</span><span class="p">))</span>
 
-        <span class="n">ParallelTaskCollection</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">jobname</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">tasks</span><span class="p">,</span> <span class="n">grid</span><span class="p">)</span>
+        <span class="n">ParallelTaskCollection</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">tasks</span><span class="p">,</span> <span class="n">grid</span><span class="p">)</span>
 </pre></div>
 </div>
 <p>The main loop will fill the <cite>self.tasks</cite> list with various
@@ -456,7 +454,7 @@ output of the first job:</p>
                 <span class="n">colors</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">warhol_dir</span><span class="p">),</span>
             <span class="p">]</span>
 
-        <span class="n">SequentialTaskCollection</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">jobname</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">tasks</span><span class="p">,</span> <span class="n">grid</span><span class="p">)</span>
+        <span class="n">SequentialTaskCollection</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">tasks</span><span class="p">,</span> <span class="n">grid</span><span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">next</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">iteration</span><span class="p">):</span>
         <span class="n">last</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">tasks</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
@@ -493,8 +491,8 @@ gradient using all the listed colors. The code will look like:</p>
             <span class="bp">self</span><span class="o">.</span><span class="n">lutfile</span><span class="p">,</span> <span class="n">input_image</span><span class="p">,</span> <span class="nb">str</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="s">&quot;, &quot;</span><span class="p">,</span> <span class="n">colors</span><span class="p">)))</span>
         <span class="n">gc3libs</span><span class="o">.</span><span class="n">Application</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span>
             <span class="bp">self</span><span class="p">,</span>
-            <span class="n">executable</span> <span class="o">=</span> <span class="s">&quot;convert&quot;</span><span class="p">,</span>
             <span class="n">arguments</span> <span class="o">=</span> <span class="p">[</span>
+                <span class="s">&#39;convert&#39;</span><span class="p">,</span>
                 <span class="s">&#39;-size&#39;</span><span class="p">,</span>
                 <span class="s">&#39;1x1&#39;</span><span class="p">]</span> <span class="o">+</span> <span class="p">[</span>
                 <span class="s">&quot;xc:</span><span class="si">%s</span><span class="s">&quot;</span> <span class="o">%</span> <span class="n">color</span> <span class="k">for</span> <span class="n">color</span> <span class="ow">in</span> <span class="n">colors</span><span class="p">]</span> <span class="o">+</span> <span class="p">[</span>
@@ -534,8 +532,8 @@ file named as <tt class="docutils literal"><span class="pre">grayscaled_&lt;inpu
 
         <span class="n">gc3libs</span><span class="o">.</span><span class="n">Application</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span>
             <span class="bp">self</span><span class="p">,</span>
-            <span class="n">executable</span> <span class="o">=</span> <span class="s">&quot;convert&quot;</span><span class="p">,</span>
             <span class="n">arguments</span> <span class="o">=</span> <span class="p">[</span>
+                <span class="s">&#39;convert&#39;</span><span class="p">,</span>
                 <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">basename</span><span class="p">(</span><span class="n">input_image</span><span class="p">),</span>
                 <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">basename</span><span class="p">(</span><span class="n">lutfile</span><span class="p">),</span>
                 <span class="s">&#39;-clut&#39;</span><span class="p">,</span>
@@ -595,8 +593,8 @@ command:</p>
 
         <span class="n">gc3libs</span><span class="o">.</span><span class="n">Application</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span>
             <span class="bp">self</span><span class="p">,</span>
-            <span class="n">executable</span> <span class="o">=</span> <span class="s">&#39;montage&#39;</span><span class="p">,</span>
             <span class="n">arguments</span> <span class="o">=</span> <span class="n">input_filenames</span> <span class="o">+</span> <span class="p">[</span>
+                <span class="s">&#39;montage&#39;</span><span class="p">,</span>
                 <span class="s">&#39;-tile&#39;</span><span class="p">,</span>
                 <span class="s">&#39;</span><span class="si">%d</span><span class="s">x</span><span class="si">%d</span><span class="s">&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="n">tile</span><span class="p">,</span> <span class="n">tile</span><span class="p">),</span>
                 <span class="s">&#39;-geometry&#39;</span><span class="p">,</span>

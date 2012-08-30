@@ -58,9 +58,9 @@ class CodemlApplication(gc3libs.Application):
     to be copied to the execution site.
     """
 
-    def __init__(self, *ctls, **kw):
+    def __init__(self, *ctls, **extra_args):
         # optional keyword argument 'codeml', defaulting to None
-        codeml = kw.get('codeml', None)
+        codeml = extra_args.get('codeml', None)
 
         # we're submitting CODEML jobs thorugh the support script
         # "codeml.pl", so do the specific setup tailored to this
@@ -73,10 +73,10 @@ class CodemlApplication(gc3libs.Application):
         inputs = { codeml_pl:'codeml.pl' }
         if codeml is None:
             # use the RTE
-            if 'tags' in kw:
-                kw['tags'].append('APPS/BIO/CODEML-4.4.3')
+            if 'tags' in extra_args:
+                extra_args['tags'].append('APPS/BIO/CODEML-4.4.3')
             else:
-                kw['tags'] = [ 'APPS/BIO/CODEML-4.4.3' ]
+                extra_args['tags'] = [ 'APPS/BIO/CODEML-4.4.3' ]
         else:
             # use provided binary
             inputs[codeml] = 'codeml'
@@ -137,7 +137,7 @@ class CodemlApplication(gc3libs.Application):
             # `required_walltime` attribute, so we do not risk jobs
             # being killed because they exceed allotted running time
             #required_walltime = ...,
-            **kw
+            **extra_args
             )
 
         # these attributes will get their actual value after

@@ -167,14 +167,14 @@ class WarholizeScript(SessionBasedScript):
             extra['size'] = self.params.size
         gc3libs.log.info("Creating main sequential task")
         for (i, input_file) in enumerate(self.params.args):
-            kw = extra.copy()
-            kw['output_dir'] = 'Warholized.%s' % os.path.basename(input_file)
+            extra_args = extra.copy()
+            extra_args['output_dir'] = 'Warholized.%s' % os.path.basename(input_file)
             yield ("Warholize.%d" % i,
                    WarholizeWorkflow,
                    [input_file,
                     self.params.copies,
                     self.params.num_colors],
-                   kw)
+                   extra_args)
 
 # `new_tasks` is used as a *generator* (but it could return a list as
 # well). Each *yielded* object is a tuple which rapresents a generic
@@ -204,12 +204,12 @@ class WarholizeScript(SessionBasedScript):
 # Main sequential workflow
 # ++++++++++++++++++++++++
 #
-# The module `gc3libs.dag` contains two main objects,
+# The module `gc3libs.workflow` contains two main objects,
 # `SequentialTaskCollection` and `ParallelTaskCollection` which we will
 # use to create our workflow. The first one, `WarholizeWorkflow`, is a
 # sequential one, so::
 
-from gc3libs.dag import SequentialTaskCollection, ParallelTaskCollection
+from gc3libs.workflow import SequentialTaskCollection, ParallelTaskCollection
 import math
 from gc3libs import Run
 
@@ -219,7 +219,7 @@ class WarholizeWorkflow(SequentialTaskCollection):
     """
 
     def __init__(self, input_image,  copies, ncolors,
-                 size=None, **kw):
+                 size=None, **extra_args):
         """XXX do we need input_image and output_image? I guess so?"""
         self.input_image = input_image
         self.output_image = "warhol_%s" % os.path.basename(input_image)
@@ -235,7 +235,7 @@ class WarholizeWorkflow(SequentialTaskCollection):
             rows = math.sqrt(copies)
             self.resize = "%dx%d" % (int(x) / rows, int(y) / rows)
 
-        self.output_dir = os.path.relpath(kw.get('output_dir'))
+        self.output_dir = os.path.relpath(extra_args.get('output_dir'))
 
         self.ncolors = ncolors
         self.copies = copies
@@ -245,7 +245,7 @@ class WarholizeWorkflow(SequentialTaskCollection):
             raise gc3libs.exceptions.InvalidArgument(
                 "`copies` argument must be a perfect square.")
 
-        self.jobname = kw.get('jobname', 'WarholizedWorkflow')
+        self.jobname = extra_args.get('jobname', 'WarholizedWorkflow')
 
         self.grayscaled_image = "grayscaled_%s" % os.path.basename(self.input_image)
 
@@ -293,8 +293,8 @@ class WarholizeWorkflow(SequentialTaskCollection):
 
 # At each iteration, we call `self.add()` to add an instance of a
 # task-like class (`gc3libs.Application`,
-# `gc3libs.dag.ParallelTaskCollection` or
-# `gc3libs.dag.SequentialTaskCollection`, in our case) to complete the
+# `gc3libs.workflow.ParallelTaskCollection` or
+# `gc3libs.workflow.SequentialTaskCollection`, in our case) to complete the
 # next step, and we return the current state, which will be
 # `gc3libs.Run.State.RUNNING` unless we have finished the computation.
 #
@@ -315,8 +315,8 @@ class ApplicationWithCachedResults(gc3libs.Application):
     Just like `gc3libs.Application`, but do not run at all
     if the expected result is already present on the filesystem.
     """
-    def __init__(self, arguments, inputs, outputs, **kw):
-        gc3libs.Application.__init__(self, arguments, inputs, outputs, **kw)
+    def __init__(self, arguments, inputs, outputs, **extra_args):
+        gc3libs.Application.__init__(self, arguments, inputs, outputs, **extra_args)
         # check if all the output files are already available
 
         all_outputs_available = True
@@ -398,7 +398,7 @@ class GrayScaleConvertApplication(ApplicationWithCachedResults):
 # versions of the grayscale image with different coloration. It does it
 # by running multiple instance of `TricolorizeImage` with different
 # color arguments. Since we want to run the various colorization in
-# parallel, it inherits from `gc3libs.dag.ParallelTaskCollection` class::
+# parallel, it inherits from `gc3libs.workflow.ParallelTaskCollection` class::
 
 import itertools
 import random

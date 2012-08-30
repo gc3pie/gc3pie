@@ -76,9 +76,10 @@ from pkg_resources import Requirement, resource_filename
 
 # gc3 library imports
 import gc3libs
-from gc3libs import Application, Run, Task, RetryableTask
+from gc3libs import Application, Run, Task
 from gc3libs.cmdline import SessionBasedScript, executable_file
 import gc3libs.utils
+from gc3libs.workflow import RetryableTask
 
 
 GEOTOP_INPUT_ARCHIVE = "input.tgz"
@@ -147,7 +148,7 @@ class GeotopApplication(Application):
                               x.__class__,x.message)
             raise
 
-    def __init__(self, simulation_dir, executable=None, **kw):
+    def __init__(self, simulation_dir, executable=None, **extra_args):
         # remember for later
         self.simulation_dir = simulation_dir
 
@@ -168,11 +169,11 @@ class GeotopApplication(Application):
             executable_name = '/$GEOTOP'
 
         # set some execution defaults...
-        kw.setdefault('requested_cores', 1)
-        kw.setdefault('requested_architecture', Run.Arch.X86_64)
-        kw.setdefault('requested_walltime',8)
+        extra_args.setdefault('requested_cores', 1)
+        extra_args.setdefault('requested_architecture', Run.Arch.X86_64)
+        extra_args.setdefault('requested_walltime',8)
         # ...and remove excess ones
-        kw.pop('output_dir', None)
+        extra_args.pop('output_dir', None)
         Application.__init__(
             self,
             # executable = executable_name,
@@ -188,7 +189,7 @@ class GeotopApplication(Application):
             stdout = 'ggeotop.log',
             join=True,
             tags = [ 'APPS/EARTH/GEOTOP-1.224' ],
-            **kw)
+            **extra_args)
 
 
     def terminated(self):
@@ -299,15 +300,15 @@ class GeotopTask(RetryableTask, gc3libs.utils.Struct):
     """
     Run ``geotop`` on a given simulation directory until completion.
     """
-    def __init__(self, simulation_dir, executable=None, **kw):
+    def __init__(self, simulation_dir, executable=None, **extra_args):
         RetryableTask.__init__(
             self,
             # task name
             os.path.basename(simulation_dir),
             # actual computational job
-            GeotopApplication(simulation_dir, executable, **kw),
+            GeotopApplication(simulation_dir, executable, **extra_args),
             # keyword arguments
-            **kw)
+            **extra_args)
 
     def retry(self):
         """

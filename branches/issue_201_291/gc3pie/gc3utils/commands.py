@@ -64,7 +64,7 @@ class _BaseCmd(gc3libs.cmdline.GC3UtilsScript):
     Set version string in `gc3libs.cmdline.GC3UtilsScript`:class: to
     this package's version.
     """
-    def __init__(self, **kw):
+    def __init__(self, **extra_args):
         gc3libs.cmdline.GC3UtilsScript.__init__(self, version=__version__)
 
 

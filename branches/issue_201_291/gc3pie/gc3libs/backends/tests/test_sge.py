@@ -137,7 +137,7 @@ def qdel_failed_acl(jobid=123):
 
 
 class FakeApp(gc3libs.Application):
-    def __init__(self, **kw):
+    def __init__(self, **extra_args):
         gc3libs.Application.__init__(
             self,
             arguments = ['/bin/hostname'], # mandatory
@@ -146,7 +146,7 @@ class FakeApp(gc3libs.Application):
             output_dir = "./fakedir",    # mandatory
             stdout = "stdout.txt",
             stderr = "stderr.txt",
-            requested_cores = 1, **kw)
+            requested_cores = 1, **extra_args)
 
 
 class TestBackendSge(object):

@@ -50,33 +50,33 @@ class GamessApplication(gc3libs.Application):
     `output`.  Note that a GAMESS-US job is *always* submitted with
     `join = True`, therefore any `stderr` setting is ignored.
     """
-    def __init__(self, inp_file_path, *other_input_files, **kw):
+    def __init__(self, inp_file_path, *other_input_files, **extra_args):
         input_file_name = os.path.basename(inp_file_path)
         input_file_name_sans = os.path.splitext(input_file_name)[0]
         output_file_name = input_file_name_sans + '.dat'
-        # add defaults to `kw` if not already present
-        kw.setdefault('stdout', input_file_name_sans + '.out')
-        kw.setdefault('tags', list())
-        self.verno = kw.get('verno', None)
+        # add defaults to `extra_args` if not already present
+        extra_args.setdefault('stdout', input_file_name_sans + '.out')
+        extra_args.setdefault('tags', list())
+        self.verno = extra_args.get('verno', None)
         if self.verno is not None:
-            kw['tags'].append("APPS/CHEM/GAMESS-%s" % self.verno)
+            extra_args['tags'].append("APPS/CHEM/GAMESS-%s" % self.verno)
         else:
             # no VERNO specified
-            kw['tags'].append("APPS/CHEM/GAMESS")
+            extra_args['tags'].append("APPS/CHEM/GAMESS")
         # `rungms` has a fixed structure for positional arguments:
         # INPUT VERNO NCPUS; if one of them is to be omitted,
         # we use the empty string instead.
         arguments = [
             "/$RUNGMS",
             input_file_name,
-            str(kw.get('verno') or ""),
-            str(kw.get('requested_cores') or "")
+            str(extra_args.get('verno') or ""),
+            str(extra_args.get('requested_cores') or "")
             ]
-        if 'extbas' in kw:
-           other_input_files += kw['extbas']
-           arguments.extend(['--extbas', os.path.basename(kw['extbas'])])
+        if 'extbas' in extra_args:
+           other_input_files += extra_args['extbas']
+           arguments.extend(['--extbas', os.path.basename(extra_args['extbas'])])
         #set job name
-        kw['job_name'] = input_file_name_sans
+        extra_args['job_name'] = input_file_name_sans
         # build generic `Application` obj
         gc3libs.Application.__init__(self,
                                      arguments = arguments,
@@ -85,7 +85,7 @@ class GamessApplication(gc3libs.Application):
                                      join = True,
                                      # needed by `ggamess`
                                      inp_file_path = inp_file_path,
-                                     **kw)
+                                     **extra_args)
 
     _termination_re = re.compile(r'EXECUTION \s+ OF \s+ GAMESS \s+ TERMINATED \s+-?(?P<gamess_outcome>NORMALLY|ABNORMALLY)-?'
                                  r'|ddikick.x: .+ (exited|quit) \s+ (?P<ddikick_outcome>gracefully|unexpectedly)', re.X)
@@ -159,7 +159,7 @@ class GamessApplication(gc3libs.Application):
             output_file.close()
 
 
-    def qgms(self, resource, **kw):
+    def qgms(self, resource, **extra_args):
         """
         Return the *argv*-vector for invoking `qgms` to run GAMESS-US
         with the parameters embedded in this object.
@@ -200,7 +200,7 @@ class GamessApplication(gc3libs.Application):
     bsub = qgms
 
 
-    def cmdline(self, resource, **kw):
+    def cmdline(self, resource, **extra_args):
         raise NotImplementedError(
             "There is currently no way of running GAMESS directly from the command-line."
             " GAMESS invocation requires too many deployment-specific parameters"
@@ -231,20 +231,20 @@ class GamessAppPotApplication(GamessApplication,
     `output`.  Note that a GAMESS-US job is *always* submitted with
     `join = True`, therefore any `stderr` setting is ignored.
     """
-    def __init__(self, inp_file_path, *other_input_files, **kw):
+    def __init__(self, inp_file_path, *other_input_files, **extra_args):
         input_file_name = os.path.basename(inp_file_path)
         input_file_name_sans = os.path.splitext(input_file_name)[0]
         output_file_name = input_file_name_sans + '.dat'
-        # add defaults to `kw` if not already present
-        kw.setdefault('stdout', input_file_name_sans + '.out')
-        kw.setdefault('application_tag', "gamess")
-        kw.setdefault('tags', list())
-        kw['tags'].insert(0, "APPS/CHEM/GAMESS-APPPOT-0.11.11.08")
-        if kw.has_key('extbas') and kw['extbas'] is not None:
-            other_input_files += kw['extbas']
+        # add defaults to `extra_args` if not already present
+        extra_args.setdefault('stdout', input_file_name_sans + '.out')
+        extra_args.setdefault('application_tag', "gamess")
+        extra_args.setdefault('tags', list())
+        extra_args['tags'].insert(0, "APPS/CHEM/GAMESS-APPPOT-0.11.11.08")
+        if extra_args.has_key('extbas') and extra_args['extbas'] is not None:
+            other_input_files += extra_args['extbas']
             arguments.extend(['--extbas', os.path.basename(extbas)])
         # set job name
-        kw['job_name'] = input_file_name_sans
+        extra_args['job_name'] = input_file_name_sans
         # init superclass
         gc3libs.application.apppot.AppPotApplication.__init__(
             self,
@@ -256,15 +256,15 @@ class GamessAppPotApplication(GamessApplication,
             arguments = [
                 "localgms",
                 input_file_name,
-                str(kw.get('verno') or "00"),
-                str(kw.get('requested_cores') or "")
+                str(extra_args.get('verno') or "00"),
+                str(extra_args.get('requested_cores') or "")
                 ],
             inputs = [ inp_file_path ] + list(other_input_files),
             outputs = [ output_file_name ],
             join = True,
             # needed by `ggamess`
             inp_file_path = inp_file_path,
-            **kw)
+            **extra_args)
 
     # XXX: need to override the `qgms`, `qsub` and `cmdline`
     # definitions made by `GamessApplication`.  This can go away
