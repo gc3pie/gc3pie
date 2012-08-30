@@ -19,7 +19,7 @@ PROG = os.path.basename(sys.argv[0])
 
 cmdline = OptionParser("%s [options] BASENAME" % PROG,
                        description="""
-Create a group of input files by recursive substitution 
+Create a group of input files by recursive substitution
 into a template.  The template is hard-coded into the script.
 Generated files follow the pattern specified by BASENAME,
 with a sequential number appended.
@@ -36,7 +36,7 @@ def match_ispher_with_basis(kw):
     """Ensure we have ISPHER=1 if (and only if) the basis set requires it."""
     def val(k): # small aux function
         return str(kw[k])
-    if (kw.has_key('SIMPLEBASIS') 
+    if (kw.has_key('SIMPLEBASIS')
         and val('SIMPLEBASIS') in [ "CCD", "CCT", "CCQ", "CC5", "CC6" ]):
         # CCn requires ISPHER=1
         if val('ISPHER') == "1":
@@ -98,7 +98,7 @@ ${GEOMETRY}
                       GEOMETRY = [
         # beware that GAMESS won't run if there is a blank
         # line at the end of the $DATA section; so be sure
-        # to put the closing `"""` at the very end of the 
+        # to put the closing `"""` at the very end of the
         # last $DATA line
         """Water
 C1
@@ -123,7 +123,7 @@ H     1.0   0.6252197764   0.6252197764   0.6252197764""",
                       ITOL = [20, 15, 10],
                       ILOAD = [9, 7, 5],
                       BASIS = [Template("GBASIS=${SIMPLEBASIS}",
-                                        SIMPLEBASIS = ["MINI", "MIDI", "DZV", "TZV", 
+                                        SIMPLEBASIS = ["MINI", "MIDI", "DZV", "TZV",
                                                        "CCD", "CCT", "CCQ", "CC5", "CC6"]),
                                Template("GBASIS=${GBASIS} NGAUSS=${NGAUSS} ${NPFUNC} ${NDFUNC} ${NFFUNC}",
                                         acceptable_gbasis_and_ngauss,
@@ -137,8 +137,8 @@ H     1.0   0.6252197764   0.6252197764   0.6252197764""",
                       ISPHER = [-1, +1], # 0 is also a legal value; -1 is default
                      ) # end of GAMESS_INP
 
-    
-                                        
+
+
 ## main
 
 if "__main__" == __name__:

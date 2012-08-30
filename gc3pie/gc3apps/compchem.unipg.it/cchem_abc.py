@@ -56,7 +56,7 @@ from gc3libs.workflow import RetryableTask
 
 
 class ABCApplication(Application):
-    def __init__(self, abc_executable, *input_files, **kw):
+    def __init__(self, abc_executable, *input_files, **extra_args):
 
         gc3libs.Application.__init__(
             self,
@@ -66,7 +66,7 @@ class ABCApplication(Application):
             outputs = gc3libs.ANY_OUTPUT,
             join = True,
             stdout = 'abc.log',
-            **kw
+            **extra_args
             )
 
 
@@ -190,14 +190,14 @@ class ABCWorkflow(SessionBasedScript):
                     inputs.append(abc_input_filename)
                     gc3libs.log.debug("  ... written file '%s'", abc_input_filename)
 
-                kw = extra.copy()
-                kw['output_dir'] = os.path.join(
+                extra_args = extra.copy()
+                extra_args['output_dir'] = os.path.join(
                     self.make_directory_path(self.params.output, jobname), 'output')
                 if self.params.retry is not None:
                     yield (jobname, RetryableTask, [
                         jobname,
-                        ABCApplication(*inputs, **kw),
+                        ABCApplication(*inputs, **extra_args),
                         self.params.retry,
-                        ], kw)
+                        ], extra_args)
                 else:
-                    yield (jobname, ABCApplication, inputs, kw)
+                    yield (jobname, ABCApplication, inputs, extra_args)

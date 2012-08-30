@@ -284,7 +284,7 @@ class _Script(cli.app.CommandLineApp):
     ## applications.  Think twice before overriding them, and read
     ## the pyCLI docs before :-)
     ##
-    def __init__(self, **kw):
+    def __init__(self, **extra_args):
         """
         Perform initialization and set the version, help and usage
         strings.
@@ -312,18 +312,18 @@ class _Script(cli.app.CommandLineApp):
 
         """
         # use keyword arguments to set additional instance attrs
-        for k, v in kw.items():
+        for k, v in extra_args.items():
             if k not in ['name', 'description']:
                 setattr(self, k, v)
         # init and setup pyCLI classes
-        if 'version' not in kw:
+        if 'version' not in extra_args:
             try:
-                kw['version'] = self.version
+                extra_args['version'] = self.version
             except AttributeError:
                 raise AssertionError("Missing required parameter 'version'.")
-        if 'description' not in kw:
+        if 'description' not in extra_args:
             if self.__doc__ is not None:
-                kw['description'] = self.__doc__
+                extra_args['description'] = self.__doc__
             else:
                 raise AssertionError("Missing required parameter 'description'.")
 
@@ -336,10 +336,10 @@ class _Script(cli.app.CommandLineApp):
 
         self.argparser_factory = argparser_factory
         # init superclass
-        kw.setdefault('name',
+        extra_args.setdefault('name',
                       os.path.splitext(os.path.basename(sys.argv[0]))[0])
-        kw.setdefault('reraise', Exception)
-        cli.app.CommandLineApp.__init__(self, **kw)
+        extra_args.setdefault('reraise', Exception)
+        cli.app.CommandLineApp.__init__(self, **extra_args)
         # provide some defaults
         self.verbose_logging_threshold = 0
 
@@ -507,7 +507,7 @@ class _Script(cli.app.CommandLineApp):
 
     def _make_config(self,
                      config_file_locations=gc3libs.Default.CONFIG_FILE_LOCATIONS,
-                     **kw):
+                     **extra_args):
         """
         Return a `gc3libs.config.Configuration`:class: instance configured by parsing
         the configuration file(s) located at `config_file_locations`.
@@ -531,9 +531,9 @@ class _Script(cli.app.CommandLineApp):
                     " a sample one has been copied in that location;"
                     " please edit it and define resources." % location)
         # set defaults
-        kw.setdefault('auto_enable_auth', True)
+        extra_args.setdefault('auto_enable_auth', True)
         try:
-            return gc3libs.config.Configuration(*config_file_locations, **kw)
+            return gc3libs.config.Configuration(*config_file_locations, **extra_args)
         except:
             self.log.error("Failed loading config file(s) from '%s'",
                            str.join("', '", config_file_locations))
@@ -616,8 +616,8 @@ class GC3UtilsScript(_Script):
     ## the pyCLI docs before :-)
     ##
 
-    def __init__(self, **kw):
-        _Script.__init__(self, main=self.main, **kw)
+    def __init__(self, **extra_args):
+        _Script.__init__(self, main=self.main, **extra_args)
 
     def setup(self):
         """
@@ -1049,7 +1049,7 @@ class SessionBasedScript(_Script):
         raise gc3libs.exceptions.InvalidArgument(
             "PLEASE SET `application` in `SessionBasedScript` CONSTRUCTOR")
 
-    def __init__(self, **kw):
+    def __init__(self, **extra_args):
         """
         Perform initialization and set the version, help and usage
         strings.
@@ -1079,7 +1079,7 @@ class SessionBasedScript(_Script):
         self.stats_only_for = None  # by default, print stats of all kind of jobs
         self.instances_per_file = 1
         self.instances_per_job = 1
-        self.extra = {}  # extra kw arguments passed to `parse_args`
+        self.extra = {}  # extra extra_args arguments passed to `parse_args`
         # use bogus values that should point ppl to the right place
         self.input_filename_pattern = 'PLEASE SET `input_filename_pattern` IN `SessionBasedScript` CONSTRUCTOR'
         # catch omission of mandatory `application` ctor param (see above)
@@ -1088,7 +1088,7 @@ class SessionBasedScript(_Script):
         _Script.__init__(
             self,
             main=self._main,
-            **kw
+            **extra_args
             )
 
     def setup(self):

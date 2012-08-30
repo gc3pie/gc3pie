@@ -76,10 +76,10 @@ basis_set_names = [
     'aug-cc-pV5Z',
     ]
 
-def acceptable_ridft_basis_set(kw):
+def acceptable_ridft_basis_set(extra_args):
     """Define which combination of orbital and JK basis are valid."""
     def order(k): # small aux function
-        return basis_set_names.index(kw[k])
+        return basis_set_names.index(extra_args[k])
     orb_basis_nr = order('ORB_BASIS')
     jkbas_basis_nr = order('RIJK_BASIS')
     # only allow a jkbas if it's not *earlier* than the orbital basis;
@@ -90,10 +90,10 @@ def acceptable_ridft_basis_set(kw):
     # otherwise, the basis combination is acceptable
     return True
 
-def acceptable_ricc2_basis_set(kw):
+def acceptable_ricc2_basis_set(extra_args):
     """Define which combination of CABS and CBAS are valid."""
     def order(k): # small aux function
-        return basis_set_names.index(kw[k])
+        return basis_set_names.index(extra_args[k])
     orb_basis_nr = order('ORB_BASIS')
     cabs_basis_nr = order('CABS_BASIS')
     cbas_basis_nr = order('CBAS_BASIS')
@@ -218,7 +218,7 @@ class XmlLintApplication(LocalApplication):
     def __init__(self, turbomole_output_dir, output_dir,
                  validation_log='validation.log',
                  schema='/links/xml-recources/xml-validation/CML3scheme.xsd',
-                 **kw):
+                 **extra_args):
         self.validation_log = validation_log
         # find the control_*.xml in the TURBOMOLE output directory
         control_xml = None
@@ -238,7 +238,7 @@ class XmlLintApplication(LocalApplication):
             output_dir = output_dir,
             stdout = None,
             stderr = validation_log,
-            **kw)
+            **extra_args)
 
     def terminated(self):
         validation_logfile = open(os.path.join(self.output_dir, self.validation_log), 'r')
@@ -252,7 +252,7 @@ class XmlLintApplication(LocalApplication):
 
 class XmlDbApplication(LocalApplication):
     # /opt/eXist/bin/client.sh -u fox -m "/db/home/fox/${projectdir}" -p control_* -P 'tueR!?05' -s 1>/dev/null 2>&1
-    def __init__(self, turbomole_output_dir, output_dir, db_dir, db_user, db_pass, db_log='db.log', **kw):
+    def __init__(self, turbomole_output_dir, output_dir, db_dir, db_user, db_pass, db_log='db.log', **extra_args):
         # find the control_*.xml in the TURBOMOLE output directory
         control_xml = None
         for filename in os.listdir(turbomole_output_dir):
@@ -290,7 +290,7 @@ class XmlDbApplication(LocalApplication):
             stdout = db_log,
             stderr = db_log,
             join=True,
-            **kw)
+            **extra_args)
 
 
 class TurbomoleAndXmlProcessingPass(StagedTaskCollection):
@@ -301,13 +301,13 @@ class TurbomoleAndXmlProcessingPass(StagedTaskCollection):
     """
     def __init__(self, name, turbomole_application, output_dir,
                  db_dir, db_user, db_pass,
-                 **kw):
+                 **extra_args):
         self.turbomole_application = turbomole_application
         self.output_dir = output_dir
         self.db_dir = db_dir
         self.db_user = db_user
         self.db_pass = db_pass
-        self.extra = kw
+        self.extra = extra_args
         # init superclass
         StagedTaskCollection.__init__(self, name)
 
@@ -348,7 +348,7 @@ class BasisSweepPasses(StagedTaskCollection):
       - second task is a parallel collection of RICC2 that uses the output files from
         the first stage as input, plus a new ``define.in``.
     """
-    def __init__(self, name, coord, ridft_in, ricc2_ins, work_dir, **kw):
+    def __init__(self, name, coord, ridft_in, ricc2_ins, work_dir, **extra_args):
         """
         Construct a new `BasisSweepPasses` sequential collection.
 
@@ -369,8 +369,8 @@ class BasisSweepPasses(StagedTaskCollection):
 
         """
         # need to remove this, we override it both in pass1 and pass2
-        if kw.has_key('output_dir'):
-            del kw['output_dir']
+        if extra_args.has_key('output_dir'):
+            del extra_args['output_dir']
         # remember for later
         self.orb_basis = ridft_in._keywords['ORB_BASIS']
         self.rijk_basis = ridft_in._keywords['RIJK_BASIS']
@@ -380,7 +380,7 @@ class BasisSweepPasses(StagedTaskCollection):
         self.coord = coord
         self.ridft_in = ridft_in
         self.ricc2_ins = ricc2_ins
-        self.extra = kw
+        self.extra = extra_args
         # init superclass
         StagedTaskCollection.__init__(self, name)
 
@@ -518,19 +518,19 @@ class BasisSweep(ParallelTaskCollection):
     def __init__(self, title, coord, bases, jkbases, cbases, cabses, work_dir,
                  valid1=acceptable_ridft_basis_set,
                  valid2=acceptable_ricc2_basis_set,
-                 **kw):
+                 **extra_args):
         """
         Create a new tasks that runs several analyses in parallel, one
         for each accepted combination of orbital and RIJK basis.
         """
-        kw.setdefault('memory', 2000) # XXX: check with `requested_memory`
+        extra_args.setdefault('memory', 2000) # XXX: check with `requested_memory`
 
         ridft_define_in = Template(
             RIDFT_DEFINE_IN, valid1,
             TITLE=title,
             ORB_BASIS=bases,
             RIJK_BASIS=jkbases,
-            RIDFT_MEMORY = [kw['memory']]
+            RIDFT_MEMORY = [extra_args['memory']]
             ) # end of RIDFT template
 
         ricc2_define_in = Template(
@@ -538,7 +538,7 @@ class BasisSweep(ParallelTaskCollection):
             # the ORB_BASIS will be derived from the RIDFT_DEFINE_IN template
             CBAS_BASIS=cbases,
             CABS_BASIS=cabses,
-            RICC2_MEMORY = [kw['memory']],
+            RICC2_MEMORY = [extra_args['memory']],
             ) # end of RICC2 template
 
         tasks = [ ]
@@ -549,7 +549,7 @@ class BasisSweep(ParallelTaskCollection):
                     title + '.seq', coord, ridft,
                     list(expansions(ricc2_define_in,
                                     ORB_BASIS=orb_basis)),
-                    work_dir, **kw))
+                    work_dir, **extra_args))
         ParallelTaskCollection.__init__(self, title, tasks)
 
 

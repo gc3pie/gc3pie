@@ -180,7 +180,7 @@ def cache_for(lapse):
     return decorator
 
 
-def cat(*args, **kw):
+def cat(*args, **extra_args):
     """
     Concatenate the contents of all `args` into `output`.  Both
     `output` and each of the `args` can be a file-like object or a
@@ -189,8 +189,8 @@ def cat(*args, **kw):
     If `append` is `True`, then `output` is opened in append-only
     mode; otherwise it is overwritten.
     """
-    output = kw.get('output', sys.stdout)
-    append = kw.get('append', True)
+    output = extra_args.get('output', sys.stdout)
+    append = extra_args.get('append', True)
     # ensure `output` is a file-like object, opened in write-mode
     try:
         output.write('')
@@ -432,11 +432,11 @@ def first(seq):
     raise TypeError("Argument to `first()` method needs to be iterator or sequence.")
 
 
-def from_template(template, **kw):
+def from_template(template, **extra_args):
     """
     Return the contents of `template`, substituting all occurrences
     of Python formatting directives '%(key)s' with the corresponding values
-    taken from dictionary `kw`.
+    taken from dictionary `extra_args`.
 
     If `template` is an object providing a `read()` method, that is
     used to gather the template contents; else, if a file named
@@ -453,8 +453,8 @@ def from_template(template, **kw):
     else:
         # treat `template` as a string
         template_contents = template
-    # substitute `kw` into `t` and return it
-    return (template_contents % kw)
+    # substitute `extra_args` into `t` and return it
+    return (template_contents % extra_args)
 
 
 def getattr_nested(obj, name):
@@ -932,9 +932,9 @@ class Singleton(object):
        True
 
     """
-    def __new__(cls, *args, **kw):
+    def __new__(cls, *args, **extra_args):
         if not hasattr(cls, '_instance'):
-            cls._instance = super(Singleton, cls).__new__(cls, *args, **kw)
+            cls._instance = super(Singleton, cls).__new__(cls, *args, **extra_args)
         return cls._instance
 
 
@@ -1047,7 +1047,7 @@ class Struct(object, UserDict.DictMixin):
       3
 
     """
-    def __init__(self, initializer=None, **kw):
+    def __init__(self, initializer=None, **extra_args):
         if initializer is not None:
             try:
                 # initializer is `dict`-like?
@@ -1057,7 +1057,7 @@ class Struct(object, UserDict.DictMixin):
                 # initializer is a sequence of (name,value) pairs?
                 for name, value in initializer:
                     self[name] = value
-        for name, value in kw.items():
+        for name, value in extra_args.items():
             self[name] = value
 
     def copy(self):

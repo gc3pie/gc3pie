@@ -104,8 +104,8 @@ class LRMS(gc3libs.utils.Struct):
                  architecture, max_cores, max_cores_per_job,
                  max_memory_per_core, max_walltime, auth=None,
                  # additional arguments can set instance attributes
-                 **kw):
-        gc3libs.utils.Struct.__init__(self, **kw)
+                 **extra_args):
+        gc3libs.utils.Struct.__init__(self, **extra_args)
 
         self.name = str(name)
         self.updated = False

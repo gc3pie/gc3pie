@@ -53,7 +53,7 @@ class GzodsApp(gc3libs.Application):
     """
     This class is derived from gc3libs.Application and defines ZODS app with its input and output files.
     """
-    def __init__(self, filename,**kw):
+    def __init__(self, filename,**extra_args):
         if self.check_input(filename) is None:
                 raise gc3libs.exceptions.InputFileError(
                         "Cannot find auxiliary files for input file '%s'."
@@ -74,7 +74,7 @@ class GzodsApp(gc3libs.Application):
             executable = '$MPIEXEC', # mandatory
             arguments = [
                 # these are arguments to `mpirun`
-                "-n", kw['requested_cores'],
+                "-n", extra_args['requested_cores'],
                 # this is the real ZODS command-line
                 '$ZODS_BINDIR/simulator', os.path.basename(filename),
             ],
@@ -82,7 +82,7 @@ class GzodsApp(gc3libs.Application):
             outputs = gc3libs.ANY_OUTPUT,           # mandatory
             stdout = "stdout+err.txt",
             join=True,
-            **kw)
+            **extra_args)
 
 
     def terminated(self):

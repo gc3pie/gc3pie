@@ -105,7 +105,7 @@ specified in the configuration file.
         return len(self._lrms)
 
 
-    def free(self, app, **kw):
+    def free(self, app, **extra_args):
         """
         Free up any remote resources used for the execution of `app`.
         In particular, this should delete any remote directories and
@@ -121,29 +121,29 @@ specified in the configuration file.
         assert isinstance(app, Task), \
             "Core.free: passed an `app` argument which is not a `Task` instance."
         if isinstance(app, Application):
-            return self.__free_application(app, **kw)
+            return self.__free_application(app, **extra_args)
         else:
             # must be a `Task` instance
-            return self.__free_task(app, **kw)
+            return self.__free_task(app, **extra_args)
 
-    def __free_application(self, app, **kw):
+    def __free_application(self, app, **extra_args):
         """Implementation of `free` on `Application` objects."""
         if app.execution.state not in [ Run.State.TERMINATING, Run.State.TERMINATED ]:
             raise gc3libs.exceptions.InvalidOperation(
                 "Attempting to free resources of job '%s',"
                 " which is in non-terminal state." % app)
 
-        auto_enable_auth = kw.get('auto_enable_auth', self.auto_enable_auth)
+        auto_enable_auth = extra_args.get('auto_enable_auth', self.auto_enable_auth)
 
         lrms =  self.get_backend(app.execution.resource_name)
         lrms.free(app)
 
-    def __free_task(self, task, **kw):
+    def __free_task(self, task, **extra_args):
         """Implementation of `free` on generic `Task` objects."""
-        return task.free(**kw)
+        return task.free(**extra_args)
 
 
-    def submit(self, app, resubmit=False, **kw):
+    def submit(self, app, resubmit=False, **extra_args):
         """
         Submit a job running an instance of the given `app`.  Upon
         successful submission, call the `submitted` method on the
@@ -160,17 +160,17 @@ specified in the configuration file.
         assert isinstance(app, Task), \
             "Core.submit: passed an `app` argument which is not a `Task` instance."
         if isinstance(app, Application):
-            return self.__submit_application(app, resubmit, **kw)
+            return self.__submit_application(app, resubmit, **extra_args)
         else:
             # must be a `Task` instance
-            return self.__submit_task(app, resubmit, **kw)
+            return self.__submit_task(app, resubmit, **extra_args)
 
-    def __submit_application(self, app, resubmit, **kw):
+    def __submit_application(self, app, resubmit, **extra_args):
         """Implementation of `submit` on `Application` objects."""
 
         gc3libs.log.debug("Submitting %s ..." % str(app))
 
-        auto_enable_auth = kw.get('auto_enable_auth', self.auto_enable_auth)
+        auto_enable_auth = extra_args.get('auto_enable_auth', self.auto_enable_auth)
 
         job = app.execution
         if resubmit:
@@ -261,13 +261,13 @@ specified in the configuration file.
         else:
             return
 
-    def __submit_task(self, task, resubmit, **kw):
+    def __submit_task(self, task, resubmit, **extra_args):
         """Implementation of `submit` on generic `Task` objects."""
-        kw.setdefault('auto_enable_auth', self.auto_enable_auth)
-        task.submit(resubmit, **kw)
+        extra_args.setdefault('auto_enable_auth', self.auto_enable_auth)
+        task.submit(resubmit, **extra_args)
 
 
-    def update_job_state(self, *apps, **kw):
+    def update_job_state(self, *apps, **extra_args):
         """
         Update state of all applications passed in as arguments.
 
@@ -289,13 +289,13 @@ specified in the configuration file.
                 non-existing auth section).
 
         """
-        self.__update_application((app for app in apps if isinstance(app, Application)), **kw)
-        self.__update_task((app for app in apps if not isinstance(app, Application)), **kw)
+        self.__update_application((app for app in apps if isinstance(app, Application)), **extra_args)
+        self.__update_task((app for app in apps if not isinstance(app, Application)), **extra_args)
 
-    def __update_application(self, apps, **kw):
+    def __update_application(self, apps, **extra_args):
         """Implementation of `update_job_state` on `Application` objects."""
-        update_on_error = kw.get('update_on_error', False)
-        auto_enable_auth = kw.get('auto_enable_auth', self.auto_enable_auth)
+        update_on_error = extra_args.get('update_on_error', False)
+        auto_enable_auth = extra_args.get('auto_enable_auth', self.auto_enable_auth)
 
         for app in apps:
             state = app.execution.state
@@ -370,7 +370,7 @@ specified in the configuration file.
                                   ex.__class__.__name__, str(ex), exc_info=True)
                 continue
 
-    def __update_task(self, tasks, **kw):
+    def __update_task(self, tasks, **extra_args):
         """Implementation of `update_job_state` on generic `Task` objects."""
         for task in tasks:
             assert isinstance(task, Task), \
@@ -378,7 +378,7 @@ specified in the configuration file.
             task.update_state()
 
 
-    def fetch_output(self, app, download_dir=None, overwrite=False, **kw):
+    def fetch_output(self, app, download_dir=None, overwrite=False, **extra_args):
         """
         Retrieve output into local directory `app.output_dir`;
         optional argument `download_dir` overrides this.
@@ -409,12 +409,12 @@ specified in the configuration file.
         assert isinstance(app, Task), \
             "Core.fetch_output: passed an `app` argument which is not a `Task` instance."
         if isinstance(app, Application):
-            self.__fetch_output_application(app, download_dir, overwrite, **kw)
+            self.__fetch_output_application(app, download_dir, overwrite, **extra_args)
         else:
             # generic `Task` object
-            self.__fetch_output_task(app, download_dir, overwrite, **kw)
+            self.__fetch_output_task(app, download_dir, overwrite, **extra_args)
 
-    def __fetch_output_application(self, app, download_dir, overwrite, **kw):
+    def __fetch_output_application(self, app, download_dir, overwrite, **extra_args):
         """Implementation of `fetch_output` on `Application` objects."""
         job = app.execution
         if job.state in [ Run.State.NEW, Run.State.SUBMITTED ]:
@@ -422,7 +422,7 @@ specified in the configuration file.
                 "Output not available: '%s' currently in state '%s'"
                 % (app, app.execution.state))
 
-        auto_enable_auth = kw.get('auto_enable_auth', self.auto_enable_auth)
+        auto_enable_auth = extra_args.get('auto_enable_auth', self.auto_enable_auth)
 
         # Prepare/Clean download dir
         if download_dir is None:
@@ -493,19 +493,19 @@ specified in the configuration file.
             job.info = ("Output snapshot downloaded to '%s'" % download_dir)
 
 
-    def __fetch_output_task(self, task, download_dir, overwrite, **kw):
+    def __fetch_output_task(self, task, download_dir, overwrite, **extra_args):
         """Implementation of `fetch_output` on generic `Task` objects."""
-        return task.fetch_output(download_dir, overwrite, **kw)
+        return task.fetch_output(download_dir, overwrite, **extra_args)
 
 
-    def get_resources(self, **kw):
+    def get_resources(self, **extra_args):
         """
         Return list of resources configured into this `Core` instance.
         """
         return [ lrms for lrms in self._lrms.itervalues() ]
 
 
-    def kill(self, app, **kw):
+    def kill(self, app, **extra_args):
         """
         Terminate a job.
 
@@ -516,14 +516,14 @@ specified in the configuration file.
         assert isinstance(app, Task), \
             "Core.kill: passed an `app` argument which is not a `Task` instance."
         if isinstance(app, Application):
-            self.__kill_application(app, **kw)
+            self.__kill_application(app, **extra_args)
         else:
-            self.__kill_task(app, **kw)
+            self.__kill_task(app, **extra_args)
 
-    def __kill_application(self, app, **kw):
+    def __kill_application(self, app, **extra_args):
         """Implementation of `kill` on `Application` objects."""
         job = app.execution
-        auto_enable_auth = kw.get('auto_enable_auth', self.auto_enable_auth)
+        auto_enable_auth = extra_args.get('auto_enable_auth', self.auto_enable_auth)
         try:
             lrms = self.get_backend(job.resource_name)
             lrms.cancel_job(app)
@@ -543,12 +543,12 @@ specified in the configuration file.
         job.signal = Run.Signals.Cancelled
         job.history.append("Cancelled.")
 
-    def __kill_task(self, task, **kw):
-        kw.setdefault('auto_enable_auth', self.auto_enable_auth)
-        task.kill(**kw)
+    def __kill_task(self, task, **extra_args):
+        extra_args.setdefault('auto_enable_auth', self.auto_enable_auth)
+        task.kill(**extra_args)
 
 
-    def peek(self, app, what='stdout', offset=0, size=None, **kw):
+    def peek(self, app, what='stdout', offset=0, size=None, **extra_args):
         """
         Download `size` bytes (at `offset` bytes from the start) from
         the remote job standard output or error stream, and write them
@@ -566,11 +566,11 @@ specified in the configuration file.
         assert isinstance(app, Task), \
             "Core.peek: passed an `app` argument which is not a `Task` instance."
         if isinstance(app, Application):
-            return self.__peek_application(app, what, offset, size, **kw)
+            return self.__peek_application(app, what, offset, size, **extra_args)
         else:
-            return self.__peek_task(app, what, offset, size, **kw)
+            return self.__peek_task(app, what, offset, size, **extra_args)
 
-    def __peek_application(self, app, what, offset, size, **kw):
+    def __peek_application(self, app, what, offset, size, **extra_args):
         """Implementation of `peek` on `Application` objects."""
         job = app.execution
         if what == 'stdout':
@@ -588,7 +588,7 @@ specified in the configuration file.
             local_file = open(filename, 'r')
         else:
             # Get authN
-            auto_enable_auth = kw.get('auto_enable_auth', self.auto_enable_auth)
+            auto_enable_auth = extra_args.get('auto_enable_auth', self.auto_enable_auth)
             lrms = self.get_backend(job.resource_name)
             local_file = tempfile.NamedTemporaryFile(suffix='.tmp', prefix='gc3libs.')
             lrms.peek(app, remote_filename, local_file, offset, size)
@@ -597,12 +597,12 @@ specified in the configuration file.
 
         return local_file
 
-    def __peek_task(self, task, what, offset, size, **kw):
+    def __peek_task(self, task, what, offset, size, **extra_args):
         """Implementation of `peek` on generic `Task` objects."""
-        return task.peek(what, offset, size, **kw)
+        return task.peek(what, offset, size, **extra_args)
 
 
-    def update_resources(self, **kw):
+    def update_resources(self, **extra_args):
         """
         Update the state of resources configured into this `Core` instance.
 
@@ -611,7 +611,7 @@ specified in the configuration file.
         """
         for lrms in self._lrms.itervalues():
             try:
-                auto_enable_auth = kw.get('auto_enable_auth', self.auto_enable_auth)
+                auto_enable_auth = extra_args.get('auto_enable_auth', self.auto_enable_auth)
                 resource = lrms.get_resource_status()
                 resource.updated = True
             except Exception, ex:
@@ -1083,14 +1083,14 @@ class Engine(object):
     # implement a Core-like interface, so `Engine` objects can be used
     # as substitutes for `Core`.
 
-    def free(self, task, **kw):
+    def free(self, task, **extra_args):
         """
         Proxy for `Core.free`, which see.
         """
         self._core.free(task)
 
 
-    def submit(self, task, resubmit=False, **kw):
+    def submit(self, task, resubmit=False, **extra_args):
         """
         Submit `task` at the next invocation of `perform`.
 
@@ -1102,7 +1102,7 @@ class Engine(object):
         return self.add(task)
 
 
-    def update_job_state(self, *tasks, **kw):
+    def update_job_state(self, *tasks, **extra_args):
         """
         Return list of *current* states of the given tasks.  States
         will only be updated at the next invocation of `progress`; in
@@ -1112,7 +1112,7 @@ class Engine(object):
         pass
 
 
-    def fetch_output(self, task, output_dir=None, overwrite=False, **kw):
+    def fetch_output(self, task, output_dir=None, overwrite=False, **extra_args):
         """
         Proxy for `Core.fetch_output` (which see).
         """
@@ -1120,21 +1120,21 @@ class Engine(object):
             output_dir = os.path.join(self.output_dir, task.persistent_id)
         if overwrite is None:
             overwrite = self.fetch_output_overwrites
-        self._core.fetch_output(task, output_dir, overwrite, **kw)
+        self._core.fetch_output(task, output_dir, overwrite, **extra_args)
 
 
-    def kill(self, task, **kw):
+    def kill(self, task, **extra_args):
         """
         Schedule a task for killing on the next `progress` run.
         """
         self._to_kill.append(task)
 
 
-    def peek(self, task, what='stdout', offset=0, size=None, **kw):
+    def peek(self, task, what='stdout', offset=0, size=None, **extra_args):
         """
         Proxy for `Core.peek` (which see).
         """
-        self._core.peek(task, what, offset, size, **kw)
+        self._core.peek(task, what, offset, size, **extra_args)
 
 
     def close(self):

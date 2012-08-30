@@ -54,14 +54,14 @@ from gc3libs.workflow import RetryableTask
 
 class GamessRetryPolicy(RetryableTask):
 
-    def __init__(self, inp_file_path, *other_input_files, **kw):
+    def __init__(self, inp_file_path, *other_input_files, **extra_args):
         """Constructor. Interface compatible with `GamessApplication`:class:"""
-        if kw.has_key('tags'):
-            kw['tags'].append('ENV/CPU/OPTERON-2350')
+        if extra_args.has_key('tags'):
+            extra_args['tags'].append('ENV/CPU/OPTERON-2350')
         else:
-            kw['tags'] = [ 'ENV/CPU/OPTERON-2350' ]
-        task = GamessApplication(inp_file_path, *other_input_files, **kw)
-        RetryableTask.__init__(self, task.jobname, task, max_retries=3, **kw)
+            extra_args['tags'] = [ 'ENV/CPU/OPTERON-2350' ]
+        task = GamessApplication(inp_file_path, *other_input_files, **extra_args)
+        RetryableTask.__init__(self, task.jobname, task, max_retries=3, **extra_args)
 
 
     def retry(self):

@@ -130,7 +130,7 @@ class Configuration(gc3libs.utils.Struct):
 
     """
 
-    def __init__(self, *locations, **kw):
+    def __init__(self, *locations, **extra_args):
         self._auth_factory = None
 
         # these fields are required
@@ -138,8 +138,8 @@ class Configuration(gc3libs.utils.Struct):
         self.auths = defaultdict(gc3libs.utils.Struct)
 
         # use keyword arguments to set defaults
-        self.auto_enable_auth = kw.pop('auto_enable_auth', True)
-        self.update(kw)
+        self.auto_enable_auth = extra_args.pop('auto_enable_auth', True)
+        self.update(extra_args)
 
         # load configuration files if any
         if len(locations) > 0:
@@ -426,7 +426,7 @@ class Configuration(gc3libs.utils.Struct):
         Return factory for auth credentials configured in section ``[auth/name]``.
         """
         # use `lambda` for delayed evaluation
-        return (lambda **kw: self.auth_factory.get(name, **kw))
+        return (lambda **extra_args: self.auth_factory.get(name, **extra_args))
 
 
     def make_resources(self, ignore_errors=True):

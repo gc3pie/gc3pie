@@ -54,13 +54,13 @@ class ProcessFilesInParallel(ParallelTaskCollection):
     tasks to end.
     """
 
-    def __init__(self, directory, pattern, task_ctor, **kw):
+    def __init__(self, directory, pattern, task_ctor, **extra_args):
         tasks = [ ]
         for filename in os.listdir(directory):
             if not fnmatch.fnmatch(filename, pattern):
                 continue
             pathname = os.path.join(directory, filename)
-            tasks.append(task_ctor(pathname, **kw))
+            tasks.append(task_ctor(pathname, **extra_args))
 
         ParallelTaskCollection.__init__(
             self,
@@ -69,7 +69,7 @@ class ProcessFilesInParallel(ParallelTaskCollection):
             # list of tasks to execute
             tasks,
             # boilerplate
-            **kw)
+            **extra_args)
 
 
 ## define our workflow, top to bottom
@@ -79,10 +79,10 @@ class SwathWorkflow(StagedTaskCollection):
     Process all the `.mzXML` files in a given directory.
     """
 
-    def __init__(self, directory, basename, **kw):
+    def __init__(self, directory, basename, **extra_args):
         self.directory = directory
         self.basename = basename
-        StagedTaskCollection.__init__(self, **kw)
+        StagedTaskCollection.__init__(self, **extra_args)
 
     def stage0(self):
         """
@@ -126,22 +126,22 @@ class SwathWorkflowStage0(ParallelTaskCollection):
       - chroma extraction (long job)
       - chroma extraction (short job) + file merger + MRT normalization
     """
-    def __init__(self, directory, basename, pattern, **kw):
+    def __init__(self, directory, basename, pattern, **extra_args):
         self.directory = directory
         self.basename = basename
         self.pattern = basename + pattern
-        self.kw = kw
+        self.extra_args = extra_args
         ParallelTaskCollection.__init__(
             self,
             # jobname
             make_identifier("Stage 0 of Swath workflow in directory %s processing files %s" % (directory, pattern)),
             # tasks
             [
-                ProcessFilesInParallel(directory, pattern, ChromaExtractLong, **kw),
-                ChromaExtractShortPlusNormalization(directory, pattern, **kw),
+                ProcessFilesInParallel(directory, pattern, ChromaExtractLong, **extra_args),
+                ChromaExtractShortPlusNormalization(directory, pattern, **extra_args),
             ],
             # boilerplate
-            **kw)
+            **extra_args)
 
     def terminated(self):
         self.trafoxml_file = self.tasks[1].trafoxml_file
@@ -156,7 +156,7 @@ class SwathWorkflowStage0(ParallelTaskCollection):
 
 
 class ChromaExtractLong(Application):
-    def __init__(self, path, **kw):
+    def __init__(self, path, **extra_args):
         outfile = replace_suffix(
             os.path.basename(path, '.mzML.gz', '._chrom.mzML'))
         Application.__init__(
@@ -172,7 +172,7 @@ class ChromaExtractLong(Application):
                 ],
             inputs=[path],
             outputs=[outfile],
-            **kw)
+            **extra_args)
         self.mzmlgz_file = path
         self.outfile = outfile
 
@@ -188,19 +188,19 @@ class ChromaExtractShortPlusNormalization(StagedTaskCollection):
     2. Merge all produced files;
     3. Run MRMRTNormalizer on the merged file.
     """
-    def __init__(self, directory, basename, pattern, **kw):
+    def __init__(self, directory, basename, pattern, **extra_args):
         self.directory = directory
         self.basename = basename
         self.pattern = basename + pattern
-        self.kw = kw
-        StagedTaskCollection.__init__(self, **kw)
+        self.extra_args = extra_args
+        StagedTaskCollection.__init__(self, **extra_args)
 
     def stage0(self):
         """
         Run chroma extraction (short).
         """
         return ProcessFilesInParallel(self.directory, self.pattern, ChromaExtractShort,
-                                      **self.kw)
+                                      **self.extra_args)
 
     def stage1(self):
         """
@@ -219,7 +219,7 @@ class ChromaExtractShortPlusNormalization(StagedTaskCollection):
             # record this for ease of referencing from other jobs
             outfilename=outfile,
             # std options from the script
-            **self.kw)
+            **self.extra_args)
 
     def stage2(self):
         """
@@ -236,7 +236,7 @@ class ChromaExtractShortPlusNormalization(StagedTaskCollection):
             # record this for ease of referencing from other jobs
             outfilename=outfile,
             # std options from the script
-            **self.kw)
+            **self.extra_args)
 
     def terminated(self):
         """
@@ -248,7 +248,7 @@ class ChromaExtractShortPlusNormalization(StagedTaskCollection):
 
 
 class ChromaExtractShort(Application):
-    def __init__(self, path, **kw):
+    def __init__(self, path, **extra_args):
         outfile = replace_suffix(
             os.path.basename(path, '.mzML.gz', '._rtnorm.chrom.mzML'))
         Application.__init__(
@@ -264,7 +264,7 @@ class ChromaExtractShort(Application):
                 ],
             inputs=[path],
             outputs=[outfile],
-            **kw)
+            **extra_args)
         self.mzmlgz_file = path
         self.outfile = outfile
 
@@ -273,7 +273,7 @@ class ChromaExtractShort(Application):
 
 
 class MRMAnalyzerApplication(Application):
-    def __init__(self, mzmlgz_file, trafoxml_file, chrom_file, **kw):
+    def __init__(self, mzmlgz_file, trafoxml_file, chrom_file, **extra_args):
         assert mzmlgz_filename.endswith('.mzML.gz')
         assert trafoxml_file.endswith('rtnorm.trafoXML')
         outfile = replace_suffix(mzmlgz_file, '.mzML.gz', '_.featureXML')
@@ -292,7 +292,7 @@ class MRMAnalyzerApplication(Application):
                 ],
             inputs=[mzmlgz_file, trafoxml_file, chrom_file],
             outputs=[outfile],
-            **kw)
+            **extra_args)
 
 
 class FeatureXMLToTSVApplication(Application):
@@ -312,7 +312,7 @@ class FeatureXMLToTSVApplication(Application):
                 ],
             inputs=[path],
             outputs=[outfile],
-            **kw)
+            **extra_args)
 
 
 # class MProphetApplication(Application):
@@ -323,4 +323,4 @@ class FeatureXMLToTSVApplication(Application):
 #             arguments=[],
 #             inputs=[path],
 #             outputs=[outfile],
-#             **kw)
+#             **extra_args)

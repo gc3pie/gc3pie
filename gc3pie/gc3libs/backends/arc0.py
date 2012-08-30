@@ -81,7 +81,7 @@ class ArcLrms(LRMS):
                  arc_ldap=None,
                  frontend=None,
                  lost_job_timeout=gc3libs.Default.ARC_LOST_JOB_TIMEOUT,
-                 **kw):
+                 **extra_args):
 
         # check if arc module has been imported
         if not have_arclib_module:

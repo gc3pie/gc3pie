@@ -118,13 +118,13 @@ class BatchSystem(LRMS):
                  # these are specific to the this backend
                  frontend, transport,
                  accounting_delay = 15,
-                 **kw):
+                 **extra_args):
 
         # init base class
         LRMS.__init__(
             self, name,
             architecture, max_cores, max_cores_per_job,
-            max_memory_per_core, max_walltime, auth, **kw)
+            max_memory_per_core, max_walltime, auth, **extra_args)
 
         # backend-specific setup
         self.frontend = frontend

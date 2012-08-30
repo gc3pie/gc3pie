@@ -30,7 +30,7 @@ class SimpleScript(SessionBasedScript):
     version = '1'
 
     def new_tasks(self, extra):
-        def myfunc(*args, **kw):
+        def myfunc(*args, **extra_args):
             return Application(args[0],
                                args[1:],
                                [],

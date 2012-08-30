@@ -454,7 +454,7 @@ class UrlValueDict(dict):
         False
 
     """
-    def __init__(self, iter_or_dict=None, force_abs=False, **kw):
+    def __init__(self, iter_or_dict=None, force_abs=False, **extra_args):
         self._force_abs = force_abs
         if iter_or_dict is not None:
             try:
@@ -465,7 +465,7 @@ class UrlValueDict(dict):
                 # then assume `iter_or_dict` is an iterator over (key, value) pairs
                 for k,v in iter_or_dict:
                     self[k] = v
-        for k,v in kw.iteritems():
+        for k,v in extra_args.iteritems():
             self[k] = v
 
     def __setitem__(self, key, value):

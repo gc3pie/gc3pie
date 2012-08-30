@@ -96,24 +96,24 @@ class TaskCollection(Task, gc3libs.utils.Struct):
     # task execution manipulation -- these methods should be overriden
     # in derived classes, to implement the desired policy.
 
-    def submit(self, resubmit=False, **kw):
+    def submit(self, resubmit=False, **extra_args):
         raise NotImplementedError("Called abstract method TaskCollection.submit() - this should be overridden in derived classes.")
 
 
-    def update_state(self, **kw):
+    def update_state(self, **extra_args):
         """
         Update the running state of all managed tasks.
         """
         for task in self.tasks:
-            self._controller.update_job_state(task, **kw)
+            self._controller.update_job_state(task, **extra_args)
 
 
-    def kill(self, **kw):
+    def kill(self, **extra_args):
         # XXX: provide default implementation that kills all jobs?
         raise NotImplementedError("Called abstract method TaskCollection.kill() - this should be overridden in derived classes.")
 
 
-    def fetch_output(self, output_dir=None, overwrite=False, **kw):
+    def fetch_output(self, output_dir=None, overwrite=False, **extra_args):
         # if `output_dir` is not None, it is interpreted as the base
         # directory where to download files; each task will get its
         # own subdir based on its `.persistent_id`
@@ -123,10 +123,10 @@ class TaskCollection(Task, gc3libs.utils.Struct):
                     task,
                     os.path.join(output_dir, task.permanent_id),
                     overwrite,
-                    **kw)
+                    **extra_args)
 
 
-    def peek(self, what, offset=0, size=None, **kw):
+    def peek(self, what, offset=0, size=None, **extra_args):
         """
         Raise a `gc3libs.exceptions.InvalidOperation` error, as there
         is no meaningful semantics that can be defined for `peek` into
@@ -213,19 +213,19 @@ class SequentialTaskCollection(TaskCollection):
     `TERMINATED` when all tasks have been run.
     """
 
-    def __init__(self, jobname, tasks, **kw):
+    def __init__(self, jobname, tasks, **extra_args):
         # XXX: check that `tasks` is a sequence type
         TaskCollection.__init__(self, jobname, tasks)
         self._current_task = 0
 
 
-    def kill(self, **kw):
+    def kill(self, **extra_args):
         """
         Stop execution of this sequence.  Kill currently-running task
         (if any), then set collection state to TERMINATED.
         """
         if self._current_task is not None:
-            self.tasks[self._current_task].kill(**kw)
+            self.tasks[self._current_task].kill(**extra_args)
         self.execution.state = Run.State.TERMINATED
         self.execution.returncode = (Run.Signals.Cancelled, -1)
         self.changed = True
@@ -317,14 +317,14 @@ class SequentialTaskCollection(TaskCollection):
         self.changed = True
 
 
-    def submit(self, resubmit=False, **kw):
+    def submit(self, resubmit=False, **extra_args):
         """
         Start the current task in the collection.
         """
         if self._current_task is None:
             self._current_task = 0
         task = self.tasks[self._current_task]
-        task.submit(resubmit, **kw)
+        task.submit(resubmit, **extra_args)
         if task.execution.state == Run.State.NEW:
             # submission failed, state unchanged
             self.execution.state = Run.State.NEW
@@ -336,7 +336,7 @@ class SequentialTaskCollection(TaskCollection):
         return self.execution.state
 
 
-    def update_state(self, **kw):
+    def update_state(self, **extra_args):
         """
         Update state of the collection, based on the jobs' statuses.
         """
@@ -347,7 +347,7 @@ class SequentialTaskCollection(TaskCollection):
         else:
             # update state of current task
             task = self.tasks[self._current_task]
-            task.update_state(**kw)
+            task.update_state(**extra_args)
             gc3libs.log.debug("Task #%d in state %s"
                              % (self._current_task, task.execution.state))
         # set state based on the state of current task
@@ -391,15 +391,15 @@ class StagedTaskCollection(SequentialTaskCollection):
     code.
 
     """
-    def __init__(self, jobname, **kw):
+    def __init__(self, jobname, **extra_args):
         try:
             first_stage = self.stage0()
             if isinstance(first_stage, Task):
                 # init parent class with the initial task
-                SequentialTaskCollection.__init__(self, jobname, [first_stage], **kw)
+                SequentialTaskCollection.__init__(self, jobname, [first_stage], **extra_args)
             elif isinstance(first_stage, (int, long, tuple)):
                 # init parent class with no tasks, an dimmediately set the exitcode
-                SequentialTaskCollection.__init__(self, jobname, [], **kw)
+                SequentialTaskCollection.__init__(self, jobname, [], **extra_args)
                 self.execution.returncode = first_stage
                 self.execution.state = Run.State.TERMINATED
             else:
@@ -449,7 +449,7 @@ class ParallelTaskCollection(TaskCollection):
     reached the same terminal status.
     """
 
-    def __init__(self, jobname, tasks=None, **kw):
+    def __init__(self, jobname, tasks=None, **extra_args):
         TaskCollection.__init__(self, jobname, tasks)
 
 
@@ -488,13 +488,13 @@ class ParallelTaskCollection(TaskCollection):
         return Run.State.UNKNOWN
 
 
-    def kill(self, **kw):
+    def kill(self, **extra_args):
         """
         Terminate all tasks in the collection, and set collection
         state to `TERMINATED`.
         """
         for task in self.tasks:
-            task.kill(**kw)
+            task.kill(**extra_args)
         self.execution.state = Run.State.TERMINATED
         self.execution.returncode = (Run.Signals.Cancelled, -1)
         self.changed = True
@@ -508,23 +508,23 @@ class ParallelTaskCollection(TaskCollection):
         return [ task.progress() for task in self.tasks ]
 
 
-    def submit(self, resubmit=False, **kw):
+    def submit(self, resubmit=False, **extra_args):
         """
         Start all tasks in the collection.
         """
         for task in self.tasks:
-            task.submit(resubmit, **kw)
+            task.submit(resubmit, **extra_args)
         self.execution.state = self._state()
 
 
-    def update_state(self, **kw):
+    def update_state(self, **extra_args):
         """
         Update state of all tasks in the collection.
         """
         for task in self.tasks:
             #gc3libs.log.debug("Updating state of %s in collection %s ..."
             #                  % (task, self))
-            task.update_state(**kw)
+            task.update_state(**extra_args)
         self.execution.state = self._state()
         if self.execution.state == Run.State.TERMINATED:
             self.execution.returncode = (0, 0)
@@ -538,7 +538,7 @@ class ParallelTaskCollection(TaskCollection):
 
 class ChunkedParameterSweep(ParallelTaskCollection):
 
-    def __init__(self, jobname, min_value, max_value, step, chunk_size, **kw):
+    def __init__(self, jobname, min_value, max_value, step, chunk_size, **extra_args):
         """
         Like `ParallelTaskCollection`, but generate a sequence of jobs
         with a parameter varying from `min_value` to `max_value` in
@@ -553,10 +553,10 @@ class ChunkedParameterSweep(ParallelTaskCollection):
         initial = [ self.new_task(param) for param in
                     range(min_value, self._floor, step) ]
         # start with the initial chunk of jobs
-        ParallelTaskCollection.__init__(self,jobname, initial, **kw)
+        ParallelTaskCollection.__init__(self,jobname, initial, **extra_args)
 
 
-    def new_task(self, param, **kw):
+    def new_task(self, param, **extra_args):
         """
         Return the `Task` corresponding to the parameter value `param`.
 
@@ -566,7 +566,7 @@ class ChunkedParameterSweep(ParallelTaskCollection):
 
 
     # this is called at every cycle
-    def update_state(self, **kw):
+    def update_state(self, **extra_args):
         """
         Like `ParallelTaskCollection.update_state()`,
         but also creates new tasks if less than
@@ -595,10 +595,10 @@ class ChunkedParameterSweep(ParallelTaskCollection):
             # generate more tasks
             top = min(self._floor + (self.chunk_size * self.step), self.max_value)
             for param in range(self._floor, top, self.step):
-                self.add(self.new_task(param, **kw))
+                self.add(self.new_task(param, **extra_args))
             self._floor = top
             self.changed = True
-        return ParallelTaskCollection.update_state(self, **kw)
+        return ParallelTaskCollection.update_state(self, **extra_args)
 
 
 class RetryableTask(Task):
@@ -617,7 +617,7 @@ class RetryableTask(Task):
     derived classes.
     """
 
-    def __init__(self, name, task, max_retries=0, **kw):
+    def __init__(self, name, task, max_retries=0, **extra_args):
         """
         Wrap `task` and resubmit it until `self.retry()` returns `False`.
 
@@ -632,7 +632,7 @@ class RetryableTask(Task):
         self.max_retries = max_retries
         self.retried = 0
         self.task = task
-        Task.__init__(self, name, **kw)
+        Task.__init__(self, name, **extra_args)
 
     def __getattr__(self, name):
         """Proxy public attributes of the wrapped task."""
@@ -676,20 +676,20 @@ class RetryableTask(Task):
         Task.detach(self)
         self.task.detach()
 
-    def fetch_output(self, *args, **kw):
-        self.task.fetch_output(*args, **kw)
+    def fetch_output(self, *args, **extra_args):
+        self.task.fetch_output(*args, **extra_args)
 
-    def free(self, **kw):
-        self.task.free(**kw)
+    def free(self, **extra_args):
+        self.task.free(**extra_args)
 
-    def kill(self, **kw):
-        self.task.kill(**kw)
+    def kill(self, **extra_args):
+        self.task.kill(**extra_args)
 
-    def peek(self, *args, **kw):
-        return self.task.peek(*args, **kw)
+    def peek(self, *args, **extra_args):
+        return self.task.peek(*args, **extra_args)
 
-    def submit(self, resubmit=False, **kw):
-        self.task.submit(**kw)
+    def submit(self, resubmit=False, **extra_args):
+        self.task.submit(**extra_args)
         # immediately update state if submission of managed task was successful;
         # otherwise this task may remain in ``NEW`` state which causes an
         # unwanted resubmission if the managing programs ends or is interrupted

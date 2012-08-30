@@ -33,8 +33,8 @@ import gc3libs.cmdline
 import gc3libs.session
 
 class TestScript(cli.test.FunctionalTest):
-    def __init__(self, *args, **kw):
-        cli.test.FunctionalTest.__init__(self, *args, **kw)
+    def __init__(self, *args, **extra_args):
+        cli.test.FunctionalTest.__init__(self, *args, **extra_args)
         self.scriptdir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'scripts')
 
 

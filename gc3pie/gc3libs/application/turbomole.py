@@ -44,7 +44,7 @@ class TurbomoleApplication(gc3libs.Application):
 
     :param others: Path(s) to additional input files.
     """
-    def __init__(self, program, control, *others, **kw):
+    def __init__(self, program, control, *others, **extra_args):
         src_wrapper_sh = resource_filename(
             Requirement.parse("gc3pie"), "gc3libs/etc/turbomole.sh")
 
@@ -58,9 +58,9 @@ class TurbomoleApplication(gc3libs.Application):
         self.program = program
 
         # set defaults for keyword arguments
-        kw.setdefault('join', True)
-        kw.setdefault('stdout', program + '.log')
-        kw.setdefault('output_dir', None)
+        extra_args.setdefault('join', True)
+        extra_args.setdefault('stdout', program + '.log')
+        extra_args.setdefault('output_dir', None)
         
         gc3libs.Application.__init__(
             self,
@@ -68,7 +68,7 @@ class TurbomoleApplication(gc3libs.Application):
             arguments = [ program ],
             inputs = inputs,
             outputs = gc3libs.ANY_OUTPUT,
-            **kw
+            **extra_args
             )
 
     def terminated(self):
@@ -104,7 +104,7 @@ class TurbomoleDefineApplication(gc3libs.Application):
 
     :param others: Path(s) to additional input files.
     """
-    def __init__(self, program, define_in, coord, *others, **kw):
+    def __init__(self, program, define_in, coord, *others, **extra_args):
         src_wrapper_sh = resource_filename(
             Requirement.parse("gc3pie"), "gc3libs/etc/turbomole.sh")
 
@@ -119,9 +119,9 @@ class TurbomoleDefineApplication(gc3libs.Application):
         self.program = program
 
         # set defaults for keyword arguments
-        kw.setdefault('join', True)
-        kw.setdefault('stdout', program + '.log')
-        kw.setdefault('output_dir', None)
+        extra_args.setdefault('join', True)
+        extra_args.setdefault('stdout', program + '.log')
+        extra_args.setdefault('output_dir', None)
         
         gc3libs.Application.__init__(
             self,
@@ -129,7 +129,7 @@ class TurbomoleDefineApplication(gc3libs.Application):
             arguments = [ program ],
             inputs = inputs,
             outputs = gc3libs.ANY_OUTPUT,
-            **kw
+            **extra_args
             )
 
 

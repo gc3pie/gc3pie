@@ -305,23 +305,23 @@ def engineProgress(self):
 import gc3libs.core
 gc3libs.core.Engine.progress = engineProgress
 
-def script__init__(self, **kw):
+def script__init__(self, **extra_args):
     """
 temporary overload for _Script.__init__
     """
     # use keyword arguments to set additional instance attrs
-    for k,v in kw.items():
+    for k,v in extra_args.items():
         if k not in ['name', 'description']:
             setattr(self, k, v)
     # init and setup pyCLI classes
-    if not kw.has_key('version'):
+    if not extra_args.has_key('version'):
         try:
-            kw['version'] = self.version
+            extra_args['version'] = self.version
         except AttributeError:
             raise AssertionError("Missing required parameter 'version'.")
-    if not kw.has_key('description'):
+    if not extra_args.has_key('description'):
         if self.__doc__ is not None:
-            kw['description'] = self.__doc__
+            extra_args['description'] = self.__doc__
         else:
             raise AssertionError("Missing required parameter 'description'.")
     # allow overriding command-line options in subclasses
@@ -337,7 +337,7 @@ temporary overload for _Script.__init__
         # remove the '.py' extension, if any
         name=os.path.splitext(os.path.basename(sys.argv[0]))[0],
         reraise = Exception,
-        **kw
+        **extra_args
         )
     # provide some defaults
     self.verbose_logging_threshold = 0
