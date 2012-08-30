@@ -1,0 +1,5 @@
+#foldername,literal|regexp,"searchstring",start,end
+gracefully,literal,gracefully,90.0
+io_error,literal,"I/O ERROR"
+timed_out,literal,"ddikick.x: Timed out"
+failed_creating,literal,"Failed creating"
