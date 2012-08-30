@@ -507,10 +507,10 @@ class ArcLrms(LRMS):
             # the old and new download directories
             for entry in entries:
                 dst = os.path.join(download_dir, entry)
-                if os.path.exists(entry):
+                if os.path.exists(dst):
                     # remove temporary download location
                     shutil.rmtree(tmp_download_dir, ignore_errors=True)
-                    raise gc3libs.exceptions.UnrecoverableDataStagingError(
+                    gc3libs.log.warning(
                         "Entry '%s' in download directory '%s' already exists,"
                         " and no overwriting was requested."
                         % (entry, download_dir))
