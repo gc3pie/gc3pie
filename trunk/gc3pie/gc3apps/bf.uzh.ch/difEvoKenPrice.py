@@ -1,3 +1,5 @@
+#! /usr/bin/env python
+
 """
 Driver script for performing an global optimization over the parameter space. 
 This code is an adaptation of the following MATLAB code: http://www.icsi.berkeley.edu/~storn/DeMat.zip
@@ -7,7 +9,7 @@ Please refer to this web site for more information: http://www.icsi.berkeley.edu
 import numpy as np
 import sys, os
 import logbook
-from supportGc3 import wrapLogger
+#from supportGc3 import wrapLogger
 try:
   import matplotlib
   matplotlib.use('SVG')
@@ -17,6 +19,63 @@ except:
   matplotLibAvailable = False
   
 np.set_printoptions(linewidth = 300, precision = 8, suppress = True)
+
+
+
+class wrapLogger():
+    def __init__(self, loggerName = 'myLogger', streamVerb = 'DEBUG', logFile = 'logFile'):
+        self.loggerName = loggerName
+        self.streamVerb = streamVerb
+        self.logFile    = logFile
+        logger = getLogger(loggerName = self.loggerName, streamVerb = self.streamVerb, logFile = self.logFile)
+        self.wrappedLog = logger
+
+    def __getstate__(self):
+        state = self.__dict__.copy()
+        del state['wrappedLog']
+        return state
+    def __setstate__(self, state):
+        self.__dict__ = state
+        logger = getLogger(loggerName = self.loggerName, streamVerb = self.streamVerb, logFile = self.logFile)
+        self.wrappedLog = logger
+        
+    def __getattr__(self, attr):
+        # see if this object has attr
+        # NOTE do not use hasattr, it goes into
+        # infinite recurrsion
+        if attr in self.__dict__:
+            # this object has it
+            return getattr(self, attr)
+        # proxy to the wrapped object
+        return getattr(self.wrappedLog, attr)
+    
+    def __hasattr__(self, attr):
+        if attr in self.__dict__:
+            return getattr(self, attr)
+        return getattr(self.wrappedLog, attr)
+    
+
+
+def getLogger(loggerName = 'mylogger.log', streamVerb = 'DEBUG', logFile = 'log'):
+
+    # Get a logger instance.
+    logger = logbook.Logger(name = loggerName)
+    
+    # set up logger
+    mySH = logbook.StreamHandler(stream = sys.stdout, level = streamVerb.upper(), format_string = '{record.message}', bubble = True)
+    mySH.format_string = '{record.message}'
+    logger.handlers.append(mySH)
+    if logFile:
+        myFH = logbook.FileHandler(filename = logFile, level = 'DEBUG', bubble = True)
+        myFH.format_string = '{record.message}' 
+        logger.handlers.append(myFH)   
+    
+    try:
+        stdErr = list(logbook.handlers.Handler.stack_manager.iter_context_objects())[0]
+        stdErr.pop_application()
+    except: 
+        pass
+    return logger
 
 
 class deKenPrice:
@@ -37,16 +96,22 @@ class deKenPrice:
     if evaluator:
       self.evaluator = evaluator
       self.target    = evaluator.target
-      self.nlc       = evaluator.nlc
+      try: 
+        self.nlc       = evaluator.nlc
+      except AttributeError: 
+        self.nlc = lambda x: [ 1 ] * len(paraStruct['I_NP'])
+         
     self.S_struct = paraStruct
 
     self.matplotLibAvailable = matplotLibAvailable
 
-    #self.setOptions(paraStruct)
+    
+    self.setOptions(paraStruct)
 
 
     # Set up loggers
-    self.logger = wrapLogger(loggerName = __name__, streamVerb = self.verbosity, logFile = os.path.join(self.workingDir, __name__ + '.log'))
+#    self.logger = wrapLogger(loggerName = __name__, streamVerb = self.verbosity, logFile = os.path.join(self.workingDir, __name__ + '.log'))
+    self.logger = wrapLogger(loggerName = __name__, streamVerb = 'DEBUG', logFile = os.path.join(self.workingDir, __name__ + '.log'))
     
     # Initialize variables that needed for state retention. 
     self.FM_popold     = np.zeros( (self.I_NP, self.I_D) )  # toggle population
@@ -75,8 +140,7 @@ class deKenPrice:
       
   def setOptions(self, struct):
     # This is just for notational convenience and to keep the code uncluttered.--------
-    self.lowerBds     = self.S_struct['lowerBds']
-    self.upperBds     = self.S_struct['upperBds']
+
     self.I_NP         = self.S_struct['I_NP']
     self.F_weight     = self.S_struct['F_weight']
     self.F_CR         = self.S_struct['F_CR']
@@ -85,9 +149,18 @@ class deKenPrice:
     self.F_VTR        = self.S_struct['F_VTR']
     self.I_strategy   = self.S_struct['I_strategy']
     self.I_plotting   = self.S_struct['I_plotting']
-    self.xConvCrit    = self.S_struct['xConvCrit']
-    self.workingDir   = self.S_struct['workingDir']
-    self.verbosity    = self.S_struct['verbosity']
+    try: 
+      self.lowerBds     = self.S_struct['lowerBds']
+      self.upperBds     = self.S_struct['upperBds']      
+      self.xConvCrit    = self.S_struct['xConvCrit']
+      self.workingDir   = self.S_struct['workingDir']
+      self.verbosity    = self.S_struct['verbosity']
+    except AttributeError: 
+      self.lowerBds     = 
+      self.upperBds     = self.S_struct['upperBds']        
+      self.xConvCrit = 1.e-7
+      self.workingDir = os.getcwd()
+      self.verbosity = 'DEBUG'
 
 
   def deopt(self):
@@ -104,39 +177,28 @@ class deKenPrice:
     self.I_iter += 1
     if self.I_iter == 0:
       self.FM_pop = self.drawInitialSample()
-      # Evaluate target for the first time
-      self.evaluator.createJobs_x(self.FM_pop)
-      self.S_vals = self.target(self.FM_pop)
-      self.logger.debug('x -> f(x)')
-      for x, fx in zip(self.FM_pop, self.S_vals):
-        self.logger.debug('%s -> %s' % (x.tolist(), fx))
-      # Remember the best population members and their value. 
-      self.updatePopulation(self.FM_pop, self.S_vals)
-      # Stats for initial population: 
-      self.printStats()
-      # make plots
-      if self.I_plotting:
-        self.plotPopulation() 
-      return False
+      self.FM_ui  = self.FM_pop.copy()
 
     elif self.I_iter > 0:
       # self.I_iter += 1
       self.FM_ui = self.evolvePopulation(self.FM_pop)
       # Check constraints and resample points to maintain population size. 
       self.FM_ui = self.enforceConstrReEvolve(self.FM_ui)
-      # EVALUATE TARGET #
-      self.evaluator.createJobs_x(self.FM_ui)
-      self.S_tempvals = self.target(self.FM_ui)
-      self.logger.debug('x -> f(x)')
-      for x, fx in zip(self.FM_ui, self.S_tempvals):
-        self.logger.debug('%s -> %s' % (x.tolist(), fx))
-      self.updatePopulation(self.FM_ui, self.S_tempvals)
-      # create output
-      self.printStats()
-      # make plots
-      if self.I_plotting:
-        self.plotPopulation()      
-      return self.checkConvergence()
+        
+    # EVALUATE TARGET #
+    self.evaluator.createJobs_x(self.FM_ui)
+    self.S_tempvals = self.target(self.FM_ui)
+    self.logger.debug('x -> f(x)')
+    for x, fx in zip(self.FM_ui, self.S_tempvals):
+      self.logger.debug('%s -> %s' % (x.tolist(), fx))
+    self.updatePopulation(self.FM_ui, self.S_tempvals)
+    # create output
+    self.printStats()
+    # make plots
+    if self.I_plotting:
+      self.plotPopulation()   
+        
+    return self.checkConvergence()
 
   def checkConvergence(self):
     converged = False
@@ -371,9 +433,15 @@ class deKenPrice:
     return pop
 
   def drawPopulationMember(self, dim):
+    '''
+      Draw one population member of dimension dim. 
+    '''
     return self.lowerBds + np.random.random_sample( dim ) * ( self.upperBds - self.lowerBds )
 
   def enforceConstrResample(self, pop):
+    '''
+      Check that each ele satisfies fullfills all constraints. If not, then draw a new population memeber and check constraint. 
+    '''
     maxDrawSize = self.I_NP * 100
     dim = self.I_D
     for ixEle, ele in enumerate(pop):
@@ -389,6 +457,10 @@ class deKenPrice:
     return pop
 
   def checkConstraints(self, pop):
+    '''
+      Check which ele satisfies all constraints. 
+      cSat: Vector of length nPopulation. Each element signals whether the corresponding population member satisfies all constraints. 
+    '''
     cSat = np.empty( ( len(pop) ), dtype = bool)
     for ixEle, ele in enumerate(pop):
       constr = self.nlc(ele)
@@ -396,14 +468,18 @@ class deKenPrice:
     return cSat
 
   def enforceConstrReEvolve(self, pop):
+    '''
+      Check that each ele satisfies fullfills all constraints. If not, then draw a generate a new population memeber from the existing ones
+      self.evolvePopulation and check constraint. 
+    '''
     popNew = np.zeros( (self.I_NP, self.I_D ) )
     cSat = self.checkConstraints(pop)
     popNew = pop[cSat, :]
     while not len(popNew) >= self.I_NP:
-      reEvolvePop = self.evolvePopulation(self.FM_pop)
-      cSat = self.checkConstraints(reEvolvePop)
-      popNew = np.append(popNew, reEvolvePop[cSat, :], axis = 0)
-    reEvlolvedPop = popNew[:self.I_NP, :]
+      reEvolvePop = self.evolvePopulation(self.FM_pop) # generate a completely new set of population members
+      cSat = self.checkConstraints(reEvolvePop)        # cSat a points to the elements that satisfy the constraints. 
+      popNew = np.append(popNew, reEvolvePop[cSat, :], axis = 0) # Append all new members to the new population that satisfy the constraints. 
+    reEvlolvedPop = popNew[:self.I_NP, :]  # Subset the popNew to length I_NP. All members will satisfy the constraints. 
     #self.logger.debug('reEvolved population: ')
     #self.logger.debug(popNew)
     return reEvlolvedPop
@@ -528,7 +604,8 @@ class Rosenbrock:
     S_struct['I_refresh']    = I_refresh
     S_struct['I_plotting']   = I_plotting
 
-    deKenPrice(self, S_struct)
+#    deKenPrice(self, S_struct)
+    deKenPrice(S_struct, self)
 
   def target(self, vectors):
 
@@ -553,6 +630,6 @@ class Rosenbrock:
 
 if __name__ == '__main__':
   x = np.array([3., 5., 6.])
-  jacobianFD(x, testFun)
-#  Rosenbrock()
+#  jacobianFD(x, testFun)
+  Rosenbrock()
 
