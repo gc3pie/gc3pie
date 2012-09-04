@@ -103,20 +103,13 @@ class GamessTestSuite:
 		return r
 	
 	def runAll(self):
+		self.log = []
 		#self.LFailedTestNames = []  
 		#self.LFailedTestDesc = []  
 		#self.NumberOfTests = len(self.listOfTests)
 		#self.NumberOfCorrectTests = 0
 		if len(self.listOfTests) == 0:
-		   gc3libs.log.debug("The test list is empty.")
-		   raise RuntimeError("The list with tests is empty. The tests will not be run.")
-		#Each INP file shold have a GAMESS OUT file that terminated normally
-		#for file_input, file_output in zip(self.listOfTests, self.list_of_analyzed_files):
-			#print "runAll I", file_input
-			#print "runAll O", file_output
-			#gc3libs.log.info("Testing filename %s", filename)	
-			#Check if the file exists
-			#TODO: This might be not needed
+		   gc3libs.log.debug("The list with tests is empty. Skipping.")
 		#	if os.path.exists(file_input) == False:
 		#			LFailedTestNames.append(filename)
 		#			LFailedTestDesc.append("The file DOES NOT exist.")
@@ -136,55 +129,57 @@ class GamessTestSuite:
 		#		LFailedTestDesc.append("The file DID NOT terminated normally.")
 		#		gc3libs.log.debug("The file %s DID NOT terminated normally.", file_output)
 		#		continue
-		#	NumberOfCorrectTests = NumberOfCorrectTests + 1	
-		NumberOfIncorrectResults = 0
 		
-		if len(self.LFailedTestNames) > 0:
-			gc3libs.log.info("Please check carefully each of the following runs as these tests will not be executed:")
-			for test, desc in zip(self.LFailedTestNames, self.LFailedTestDesc):
-				gc3libs.log.info( "%s : %s", test,desc)
-			gc3libs.log.info("Running the remaining %s tests.",self.NumberOfCorrectTests)
-		else:
-			gc3libs.log.info("Detected %s tests.",self.NumberOfCorrectTests)
+		#if len(self.LFailedTestNames) > 0:
+		#	gc3libs.log.info("Please check carefully each of the following runs as these tests will not be executed:")
+		#	for test, desc in zip(self.LFailedTestNames, self.LFailedTestDesc):
+		#			gc3libs.log.info( "%s : %s", test,desc)
+		#	gc3libs.log.info("Running the remaining %s tests.",self.NumberOfCorrectTests)
+		#else:
+		#	gc3libs.log.info("Detected %s tests.",self.NumberOfCorrectTests)
 			
-		#print "list", len(self.listOfTests)
-		#print "queue", len(self.exQ)
+		numberOfIncorrectResults = 0 
+		numberOfCorrectTests = 0 
+		LFailedTestNames = []		
 		for testName, testObj in zip(self.listOfTests, self.exQ):
-			#print testName
-			if testName in LFailedTestNames:
-				continue
-			#print "testOBJ", testObj
-			(isCorrect, str) = testObj.run()
-			
-			finalString = testName + ":" + str 
+			print testName
+		#	if testName in LFailedTestNames:
+		#		continue
+			(isCorrect, testLogs) = testObj.run()
+			finalString = testName + ":" + testLogs 
 			if (isCorrect):
+				numberOfCorrectTests = numberOfCorrectTests + 1	
 				message = '%-89s    %s' %(finalString, "Passed.")
 				self.log.append(message) 
 			else:
-				NumberOfIncorrectResults = NumberOfIncorrectResults + 1
+				numberOfIncorrectResults = numberOfIncorrectResults + 1
 				LFailedTestNames.append(testName)
 				LFailedTestDesc.append("!!FAILED")
 				message =  '%-89s    %s' %(finalString, "!!FAILED.")
 				self.log.append(message)
-		if NumberOfCorrectTests != NumberOfTests:
-			print "Only", NumberOfCorrectTests,"out of",NumberOfTests, "terminated normally."
-		else:
-			print NumberOfCorrectTests,"out of",NumberOfTests, "terminated normally."
-		if NumberOfIncorrectResults == 0:
-			gc3libs.log.info("All job(s) got correct numerical results.")
-		else:
-			gc3libs.log.info("%d job(s) got incorrect numerical results. Please examine why.", NumberOfIncorrectResults) 
+		#if NumberOfCorrectTests != NumberOfTests:
+		#	print "Only", NumberOfCorrectTests,"out of",NumberOfTests, "terminated normally."
+		#else:
+		#	print NumberOfCorrectTests,"out of",NumberOfTests, "terminated normally."
+		#if NumberOfIncorrectResults == 0:
+		#	gc3libs.log.info("All job(s) got correct numerical results.")
+		#else:
+		#	gc3libs.log.info("%d job(s) got incorrect numerical results. Please examine why.", NumberOfIncorrectResults) 
 
-# Generate tests, e.g. call appropriate method from testLine and testNextLine class. If there is a "GC3" keyword in the INP file the test is added to a list of tests
+# Generate tests, e.g. call appropriate method from testLine and testNextLine class. If there is a "GC3" keyword in the INP file the test is added to a list of tests.
+# In case the files do not exist just report it so that the execution continues.
+
 	def generate_tests(self,filenameINP, filenameOUT):
 		try:	
 			file = open(filenameINP, 'r') 
 			foundlines = self.grep("ggamess test", file)	
 			file.close()
 		except IOError:
-			raise IOError("There is a problem with a file %s.", filenameINP) 
+			gc3libs.log.debug("There is a problem with a file %s. Skipping.", filenameINP)
+			return 
 		if os.path.exists(filenameOUT) == False:
-			raise IOError("The file %s does not exists.", filenameOUT) 
+			gc3libs.log.debug("The file %s does not exists. Skipping.", filenameOUT)
+			return 
 		if len(foundlines) > 0 :
 			self.addTest(filenameINP, filenameOUT)		
 			
@@ -195,32 +190,25 @@ class GamessTestSuite:
 		labelFollow = "grepAndFollow"  
 		suffix1 = len(labelAnalyze+"(")
 		suffix2 = len(labelFollow+"(")
-		#print filename
 		for line in foundlines:
 		    if  line.find(labelAnalyze)> 0:
 			pos1 = line.find(labelAnalyze)+suffix1  
-			end = line.find(")")
+			end = line.rfind(")") # Find the last occurence of ")"
 			arg1 = line[pos1:end]
-			#print "after grepanalyze:", line[pos1:end]
 			paramList.append(arg1)
 			functionList.append(labelAnalyze)
 			pos1 = -1
 			continue
 		    if line.find(labelFollow) > 0:
-			#print "line", line
 			pos2 = line.find(labelFollow) + suffix2
-			end = line.find(")")
+			end = line.rfind(")")
 			arg2 = line[pos2:end]
-			#print "after grepandfollow:", line[pos2:end]
 			pos2 = -1
 			functionList.append(labelFollow)
 			paramList.append(arg2)	
 			continue 	
 		i = 0
-		#import pdb; pdb.set_trace()
 		for args,function in zip(paramList, functionList):
-			 #print i
-			 #i = i + 1
 			 argList = args.split(",")
 			 argListNew = []
 			 # Remove "" 
@@ -240,11 +228,9 @@ class GamessTestSuite:
 					fn(argList[0], argList[1], int(argList[2]), float(argList[3]), argList[4], argList[5])
 					self.exQ.append(app)
 			 except IndexError:
-			 	app.debug() # for testing purposes
 				gc3libs.log.debug("Index error. No. of arguments %d exceeds the required number %d. in file %s", len(argList), 7, filenameOUT)                                                                           		
 					
 			 except AttributeError:
-			 	app.debug() # for testing purposes
 				gc3libs.log.debug("Attribute error. arguments %s in function %s from object %s on file %s are incorrect", args, function, app, filenameOUT)                                                                           		
 			 
 #ex1.debug()
