@@ -107,6 +107,32 @@ class gParaSearchDriver(SequentialTaskCollection):
                  makePlots, optStrategy, fWeight, fCritical, ctryList, analyzeResults, nlc, plot3dTable, combOverviews,
                  output_dir = '/tmp', **extra_args):
 
+        '''
+          pathToExecutable: Path to main executable. 
+          pathToStageDir  : Path to directory in which the action takes place. Usually set to os.getcwd(). 
+          architecture    : Set the architecture used. 
+          baseDir         : Directory in which the input files are assembled. This directory is sent as input to the cluseter. 
+          xVars           : Names of the x variables.
+          initialPop      : The initial population if recovering from earlier failure. 
+          nPopulation     : Population size. 
+          domain          : The domain of the x variables. List of (lowerbound, upperbound) tuples. 
+          solverVerb      : Verbosity of the solver. 
+          problemType     : The problem type of the forward premium optimization. One4all, one4each etc. 
+          pathEmpirical   : Path to the empirical results of the forward premium project. 
+          itermax         : Maximum # of iterations of the solver. 
+          xConvCrit       : Convergence criteria for x variables. 
+          yConvCrit       : Convergence criteria for the y variables. 
+          makePlots       : Make plots? 
+          optStrategy     : The kind of differential evolution strategy to use. 
+          fWeight         : 
+          fCritical       : 
+          ctryList        : The list of ctrys analyzed. 
+          analyzeResults  : Function to analyze the output retrieved from the servers. 
+          nlc             : Constraint function. 
+          plot3dTable     : Function to generate 3d plots. 
+          combOverviews   : Function to combine overviews. 
+        '''
+
         logger.debug('entering gParaSearchDriver.__init__')
 
         # Set up initial variables and set the correct methods.
