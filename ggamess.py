@@ -129,9 +129,7 @@ of newly-created jobs so that this limit is never exceeded.
             else:
                 # Added Gamess Test Application
 		cls = GamessTestApplication
-                #cls = GamessApplication
             # construct GAMESS job
-            #print "CLS %s", cls
 	    yield (
                 # job name
                 gc3libs.utils.basename_sans(path),
@@ -158,20 +156,34 @@ of newly-created jobs so that this limit is never exceeded.
 	#print "OLD", inputs 
 	myoutputs = []
 	testSet = GamessTestSuite(".")	
-	numberOfTests = len(testSet.listOfTests)
-	print numberOfTests
-	anyterminated = False
 	#import pdb;pdb.set_trace()
 	if not self.session:
 		raise RuntimeError("The session is empty.")
 		 
-	for app in self.session:
-		dir(app)
-		print self.session.list_names()
-		output_abs_path = os.path.join(app.output_dir, app.outputs[app.stdout].path)
-		myoutputs.append(output_abs_path)
-	 	for message in app.logTest:
-	 		dir(message)
+	for job in self.session:
+		#import pdb; pdb.set_trace()
+		if job.execution.state == "SUBMITTED":
+			gc3libs.log.info(" %s job SUBMITTED", job.job_name)
+			continue
+		elif job.execution.state == "RUNNING":
+			gc3libs.log.info(" %s job RUNNING", job.job_name)
+			continue
+		elif job.execution.state == "TERMINATING":
+			gc3libs.log.info(" %s job TERMINATING", job.job_name)
+			continue
+		elif job.execution.state == "Failed":
+			gc3libs.log.info(" %s job Failed", job.job_name)
+			continue
+		elif job.execution.state == "TERMINATED":
+			#gc3libs.log.info(" %s job TERMINATED", job.job_name)
+			output_abs_path = os.path.join(job.output_dir, job.outputs[job.stdout].path)
+			myoutputs.append(output_abs_path)
+	 		for message in job.logTest:
+	 			if len(message) == 0:
+					gc3libs.log.debug("No messages for job: %s.", job.job_name)
+				else:
+					print message
+			continue
 		#print output_abs_path	
 	#if anyterminated is True:
 	#	testSet.runAll()
@@ -205,8 +217,10 @@ of newly-created jobs so that this limit is never exceeded.
 
 class GamessTestApplication(GamessApplication):
 	def __init__(self, inp_file_path, *other_input_files, **kw):
-		print "LOG"
 		self.logTest = []
+		self.NumberOfTests = 0 
+		self.NumberOfCorrectTests = 0 
+			
 		GamessApplication.__init__(self, 
 					   inp_file_path, 
 					   *other_input_files,
@@ -217,19 +231,20 @@ class GamessTestApplication(GamessApplication):
 		return self.jobname
 	
 	def terminated(self):
-		GamessApplication.terminated()
-		self.test = GamessTestSuite(".")
-		self.NumberOfTests += 1 
+		GamessApplication.terminated(self)
+		test = GamessTestSuite(".")
 		#if self.execution.exitcode == 0:
-		self.NumberOfCorrectTests = self.NumberOfCorrectTests + 1	
+		#self.NumberOfCorrectTests = self.NumberOfCorrectTests + 1	
+		#self.NumberOfTests += 1 
 		file_input = self.inp_file_path
 		#import pdb;pdb.set_trace()
 		file_output = os.path.join(self.output_dir, self.outputs[self.stdout].path)
 		gc3libs.log.info("TERMINATED IN: %s OUT %s", file_input, file_output)
 		#self.test.add(file_input,file_input)
 		test.generate_tests(file_input, file_output)
+		#Run a single test. TODO : change runAll to runTest
 		test.runAll()
-		self.log.append(test.log)
+		self.logTest.append(test.log)
 		#else:
 			#self.LFailedTestNames.append(file_output)
 		#	self.log.append("The file %s DID NOT terminated normally.", file_output)

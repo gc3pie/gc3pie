@@ -67,18 +67,15 @@ class TestLine:
 		if (val > tol):
 			return (False,ret)
 		else:
-			if (self.DEBUG):
-				print "... passed"
 			return (True,ret)
 	
 # Analyze the argument in LPositionInLine. Return the index of the column that correspond the a target value. 
 	def checkPositionInLine(self, posInLine):
 		try:
 			selNo = int(posInLine)
-			#print selNo, "selNo"
 			selNo = selNo - 1 #for array indexing
 		except ValueError:
-				print "Could not convert to int, positionInLine must be integer"
+				gc3libs.log.debug("Could not convert %s to int, positionInLine must be integer", posInLine)
 				selNo = -1
 		return selNo
 	
@@ -98,12 +95,12 @@ class TestLine:
 		elif (matchedLine == ""): #head is assumed
 			which = 1
 		else:
-			#try to convert to int
+			#convert to int
 			try:
 				which = int(matchedLine)
 				return which
 			except ValueError:
-				print "ERROR: ",matchedLine," is incorrect."
+				gc3libs.log.debug("ERROR: %s is incorrect. ",matchedLine)
 				return -1
 			which = -1
 		return which
@@ -152,12 +149,12 @@ class TestLine:
 	def getValueFromLine(self, line, position):
 		list = line.split()
 		if (position > len(list)):
-			print "Out of boundary, check the position in the target line."
+			gc3libs.log.debug("Out of boundary, check the position in the target line.")
 			return ""
 		try:
 			value = float(list[position])
 		except ValueError:
-			print "Could not convert to float, list(selNo) = ",list[position]," must be float"
+			gc3libs.log.debug("Could not convert to float, list(selNo) = %s must be float",list[position])
 			return ""
 		return value
 	
@@ -180,7 +177,7 @@ class TestLine:
 			gc3libs.log.debug("LValues %s", self.LValues)
 			gc3libs.log.debug("LTolerances %s", self.LTolerances) 
 		if (len(self.LPattern) == 0):
-			print "Empty test. Skipping."
+			gc3libs.log.debug("Empty test. Skipping.")
 			return False
 		
 		for pattern, whichLine, positionInLine, value, tolerance, label in zip(self.LPattern, self.LMatchedLine, self.LPositionInLine, self.LValues, self.LTolerances, self.LLabel):
@@ -189,44 +186,35 @@ class TestLine:
 			which = self.checkMatchedLine(whichLine)
 			#whichFollowing  = self.checkMatchedLine(followingLine)
 			
-			if (self.DEBUG):
-				print "Internal Test No.", testNo
-				print "CHECKED MatchedLine", which
+			gc3libs.log.debug("Internal Test No. %s", testNo)
+			gc3libs.log.debug("CHECKED MatchedLine %s", which)
 			#Extract the position of the value within the target line	
 			pos = self.checkPositionInLine(positionInLine)
-			if (self.DEBUG):
-				print "CHECKED positionInLine", pos
+			gc3libs.log.debug("CHECKED positionInLine %s", pos)
 			 
 			#Extract a list of lines that match a regexp and line indices as lists. 
 			(numList,linesFound) = self.grepFile(filename, pattern) 
 			
 			# Nothing Found
 			if (len(linesFound) == 0):
-				if (self.DEBUG):
-					print "Nothing found with your regexp."
+				gc3libs.log.debug("Nothing found with your regexp.")
 				finalFlag = finalFlag and False
 				continue
 			
 			(numLine, targetLine) = self.getTargetLine(numList, linesFound, which)
 			 
-			if (self.DEBUG):
-				print "MATCHED LINE: ", targetLine
-			
+			gc3libs.log.debug("MATCHED LINE: %s", targetLine)
 	
 			#Extract the value from matched line
 			valL = self.getValueFromLine(targetLine, pos)
 			if (valL == ""):
-				print "ERROR: Cannot retrieve the float value from line", targetLine
+				gc3libs.log.debug("ERROR: Cannot retrieve the float value from line %s", targetLine)
 				return False
 			else:
-				if (self.DEBUG):
-					print "comparing", valL, "against", value;
-					
-				(flag, str) = self.chkabs(valL, value, tolerance, label)
-				
-			 	finalStr = finalStr + str
+				gc3libs.log.debug("Comparing %s against %s", valL, value)
+				(flag, strOut) = self.chkabs(valL, value, tolerance, label)
+			 	finalStr = finalStr + strOut
 				finalFlag = finalFlag and flag
-			
 		return (finalFlag,finalStr)
 	
 	  
