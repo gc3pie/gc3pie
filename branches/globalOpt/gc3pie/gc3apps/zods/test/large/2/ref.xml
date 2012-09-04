@@ -1,0 +1,15 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<data>
+  <coordinate_system type="local">
+    <unit_cell>25.0107 24.7710 14.4226 90 109.691 90</unit_cell>
+  </coordinate_system>
+  <arrays>
+    <array>
+      <storage method="local" />
+      <size>61 1 1</size>
+      <origin>(0,0,0)</origin>
+      <step>(0.0,0.0,0.05)(0,0.0,0.0)(0,0,0.0)</step>
+      <intensities></intensities>
+    </array>
+  </arrays>
+</data>
