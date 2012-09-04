@@ -23,6 +23,8 @@
 VIRTUALENV_URL="https://raw.github.com/pypa/virtualenv/master/virtualenv.py"
 GC3_SVN_URL="http://gc3pie.googlecode.com/svn/trunk/gc3pie"
 
+VIRTUALENV_CMD="virtualenv"
+
 # Defaults
 VENVDIR=$HOME/gc3pie
 DEVELOP=0
@@ -53,8 +55,15 @@ require_command () {
 function install_virtualenv(){
     DESTDIR=$1
 
-    $dl_cmd virtualenv.py $VIRTUALENV_URL
-    python virtualenv.py --system-site-packages $DESTDIR  
+    have_command virtualenv
+    if [ $? -ne 0 ]
+    then
+	$dl_cmd virtualenv.py $VIRTUALENV_URL
+	VIRTUALENV_CMD="python virtualenv.py"
+    fi
+    # python virtualenv.py --system-site-packages $DESTDIR
+    echo "DBG: using virtualenv command: [$VIRTUALENV_CMD]"
+    $VIRTUALENV_CMD --system-site-packages $DESTDIR
 }
 
 function install_gc3pie_via_pip(){
