@@ -27,17 +27,16 @@ __version__ = 'development version (SVN $Revision$)'
 # summary of user-visible changes
 __changelog__ = """
   2011-11-08:
-    * New command line option ``--extbasis`` for using an
-      external basis definition with GAMESS.
+    * New command line option ``--extbasis`` for using an external basis definition with GAMESS.
   2011-10-11:
     * Allow running GAMESS from an AppPot container.
   2010-12-20:
     * Initial release, forked off the ``grosetta`` sources.
-  2012-16-8: 
+  2012-08-16: 
     * Modification of terminated().
     * Correct execution: ./ggamess.py -R 2011R1 test/data/exam01.inp -N 
-  2012-16-23: 
-    * Pre-release of beta version 
+  2012-08-23: 
+    * Pre-release of GAMESS Testing Suite 
 """ 
 __author__ = 'Riccardo Murri <riccardo.murri@uzh.ch>'
 __docformat__ = 'reStructuredText'
@@ -45,6 +44,7 @@ __docformat__ = 'reStructuredText'
 import os
 import sys
 import gc3libs
+from gc3libs import Run
 from testUtils import GamessTestSuite
 from gc3libs.application.gamess import GamessApplication, GamessAppPotApplication
 from gc3libs.cmdline import SessionBasedScript, existing_file
@@ -86,9 +86,6 @@ of newly-created jobs so that this limit is never exceeded.
                        dest='extbas',
                        type=existing_file, default=None,
                        help="Make the specified external basis file available to jobs.")
-	self.add_param("-t", "--test", action="store_true", #metavar='TEST', 
-		       dest="test", default=False,
-		       help="Execute tests defined in the input files.")
 	
     def __init__(self):
         SessionBasedScript.__init__(
@@ -98,7 +95,7 @@ of newly-created jobs so that this limit is never exceeded.
             )
 	self.LFailedTestDesc = []  
 	self.LFailedTestNames = []  
-	self.NumberOfCorrectTests = 0
+	self.number_of_correct_tests = 0
 	self.log = []
 
     def new_tasks(self, extra):
@@ -142,113 +139,61 @@ of newly-created jobs so that this limit is never exceeded.
 # This method is called after the session has been completed and the results are generated. The method is triggered with option -t.
 # If any of the jobs terminated test is launched.    
     def after_main_loop(self):
-	if self.params.test is False:
-		gc3libs.log.debug("ggamess.py: Tests were not executed")
-		print "NOT RUNNING TESTs"
-		return 
-	#if len(self.listOfTests) == 0:
-	#	gc3libs.log.debug("The test list is empty.")
-	#	raise RuntimeError("The list with tests is empty. The tests will not be run.")
-	
-	#print "PARAMS", self.params
-	# build job list
-        #inputs = self._search_for_input_files(self.params.args)
-	#print "OLD", inputs 
+        no_of_tests = 0    	
+	number_of_incorrect_tests = 0 
+	number_of_correct_tests = 0 
 	myoutputs = []
-	testSet = GamessTestSuite(".")	
-	#import pdb;pdb.set_trace()
 	if not self.session:
 		raise RuntimeError("The session is empty.")
 		 
 	for job in self.session:
-		#import pdb; pdb.set_trace()
-		if job.execution.state == "SUBMITTED":
-			gc3libs.log.info(" %s job SUBMITTED", job.job_name)
+        	no_of_tests = no_of_tests + 1   	
+		#import pdb;pdb.set_trace()
+		if job.execution.state in [Run.State.SUBMITTED, Run.State.RUNNING, Run.State.TERMINATING, Run.State.UNKNOWN, Run.State.STOPPED]:
+			number_of_incorrect_tests = number_of_incorrect_tests + 1
+			gc3libs.log.info(" %s job in state %s", job.jobname, job.execution.state)
 			continue
-		elif job.execution.state == "RUNNING":
-			gc3libs.log.info(" %s job RUNNING", job.job_name)
-			continue
-		elif job.execution.state == "TERMINATING":
-			gc3libs.log.info(" %s job TERMINATING", job.job_name)
-			continue
-		elif job.execution.state == "Failed":
-			gc3libs.log.info(" %s job Failed", job.job_name)
-			continue
-		elif job.execution.state == "TERMINATED":
-			#gc3libs.log.info(" %s job TERMINATED", job.job_name)
+		elif job.execution.state in Run.State.TERMINATED: 
+			number_of_correct_tests = number_of_correct_tests + 1	
+			gc3libs.log.debug(" %s job has TERMINATED", job.jobname)
 			output_abs_path = os.path.join(job.output_dir, job.outputs[job.stdout].path)
-			myoutputs.append(output_abs_path)
+			#myoutputs.append(output_abs_path)
 	 		for message in job.logTest:
-	 			if len(message) == 0:
-					gc3libs.log.debug("No messages for job: %s.", job.job_name)
+	 			if not message: 
+					gc3libs.log.debug("No tests detected for job: %s.", job.jobname)
 				else:
-					print message
+					gc3libs.log.debug("Test %s: %s.", job.jobname, message)
 			continue
-		#print output_abs_path	
-	#if anyterminated is True:
-	#	testSet.runAll()
-	#else:
-	#	gc3libs.log.debug("None submitted job has TERMINATED.")
+	if number_of_correct_tests != no_of_tests:
+		gc3libs.log.debug("Only %s out of %s terminated normally.", number_of_correct_tests, no_of_tests)
+	else:
+		gc3libs.log.debug("%s out of %s tests teminated normally", number_of_correct_tests, no_of_tests) 
+	if number_of_incorrect_tests == 0:
+		gc3libs.log.info("All job(s) got correct numerical results.")
+	else:
+		gc3libs.log.info("%s job(s) got incorrect numerical results. Please examine why.", number_of_incorrect_tests) 
 		
-# Given a list of input files and list of output dirs from the session, generate a list of possible paths to output files
-    def get_output_files_to_analyze(self, myinputs, myoutput_dirs):
-	list_of_files_to_analyze = []
-	gc3libs.log.info("Checking the results of your test GAMESS calculations, the output files (exam??.out) will be taken from %s directory.", TestSet.dirLog)
-	for fileNameInput, output_dir in zip(myinputs, myoutput_dirs):
-		#print fileNameInput
-		fileName = os.path.split(fileNameInput)
-		if len(fileName) > 1:
-			fileName = os.path.join(output_dir, fileName[1])
-			#print "1stage", fileName
-			fileName = os.path.splitext(fileName)
-			fileNameOutput = fileName[0] + '.out'
-			#print "2stage",fileNameOutput
-			if os.path.exists(fileNameOutput):
-				list_of_files_to_analyze.append(fileNameOutput)
-			else:
-				gc3libs.log.info("File %s does not exist", fileNameOutput)
-				continue
-		else:
-			raise IOError("ggamess.py: Incorrect path of %s.", fileName)
-	return list_of_files_to_analyze
 # This class overrides GamessApplication class and triggers a test in terminated().
-
 #TODO: GamessTestApplcation class is only used when ggamess.py -N was provided 
 
 class GamessTestApplication(GamessApplication):
 	def __init__(self, inp_file_path, *other_input_files, **kw):
 		self.logTest = []
-		self.NumberOfTests = 0 
-		self.NumberOfCorrectTests = 0 
 			
 		GamessApplication.__init__(self, 
 					   inp_file_path, 
 					   *other_input_files,
 					   **kw
 					  )
-    #Methods to print the class name
-	def __str__(self):
-		return self.jobname
-	
 	def terminated(self):
 		GamessApplication.terminated(self)
 		test = GamessTestSuite(".")
-		#if self.execution.exitcode == 0:
-		#self.NumberOfCorrectTests = self.NumberOfCorrectTests + 1	
-		#self.NumberOfTests += 1 
 		file_input = self.inp_file_path
-		#import pdb;pdb.set_trace()
 		file_output = os.path.join(self.output_dir, self.outputs[self.stdout].path)
-		gc3libs.log.info("TERMINATED IN: %s OUT %s", file_input, file_output)
-		#self.test.add(file_input,file_input)
+		gc3libs.log.debug("Analyzing GAMESS input %s and %s output files.", file_input, file_output)
 		test.generate_tests(file_input, file_output)
-		#Run a single test. TODO : change runAll to runTest
-		test.runAll()
+		test.runTests()
 		self.logTest.append(test.log)
-		#else:
-			#self.LFailedTestNames.append(file_output)
-		#	self.log.append("The file %s DID NOT terminated normally.", file_output)
-			#gc3libs.log.debug("The file %s DID NOT terminated normally.", file_output)
 			
 # run it
 if __name__ == '__main__':
