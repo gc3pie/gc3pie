@@ -272,7 +272,7 @@ do
     case "$1" in
         -d|--target)
             shift
-            VENVDIR=$1
+            VENVDIR=$(readlink -f $1)
             shift
             ;;
         -p|--python)
