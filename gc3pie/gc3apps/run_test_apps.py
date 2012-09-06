@@ -134,25 +134,24 @@ class CodemlTest(TestRunner):
                      '-s', self.sessiondir,
                      '-C', '120',
                      'data/small_flat']
-        self.outputdir = os.path.join(self.testdir, 'data', 'small_flat.out')
+        self.datadir = os.path.join(self.testdir, 'data/small_flat')
+        self.outputdir = os.path.join(datadir, 'small_flat.out')
 
     def cleanup(self):
         for d in (self.outputdir, self.sessiondir):
             if os.path.exists(d):
-                gc3libs.log.debug("GGamess: removing directory %s" % d)
+                gc3libs.log.debug("GCodeml: removing directory %s" % d)
                 shutil.rmtree(d)
 
     def terminate(self):
-        datadir = os.path.join(self.testdir, 'data/small_flat')
-        outputdir = os.path.join(datadir, 'small_flat.out')
-        if not os.path.isdir(outputdir):
-            gc3libs.log.error("GCodeml: No output directory `%s` found" % outputdir)
+        if not os.path.isdir(self.outputdir):
+            gc3libs.log.error("GCodeml: No output directory `%s` found" % self.outputdir)
             self.passed = False
             return
 
-        for ctlfile in os.listdir(datadir):
+        for ctlfile in os.listdir(self.datadir):
             if ctlfile.endswith('.ctl'):
-                outfile = os.path.join(outputdir, ctlfile[:-3]+'mlc')
+                outfile = os.path.join(self.outputdir, ctlfile[:-3]+'mlc')
                 if not os.path.exists(outfile):
                     gc3libs.log.error("GCodeml: No output file %s" % outfile)
                     self.passed = False
@@ -160,7 +159,7 @@ class CodemlTest(TestRunner):
                 fd = open(outfile)
                 output = fd.readlines()
                 fd.close()
-                if not output[-1].startswith("Time used:"):
+                if not output or output[-1].startswith("Time used:"):
                     gc3libs.log.error("GCodeml: Error in output file `%s`" % outfile)
                     self.passed = False
                     return 
