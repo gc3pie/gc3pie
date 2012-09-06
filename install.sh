@@ -20,7 +20,9 @@
 #  59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
 #
 
-VIRTUALENV_URL="https://raw.github.com/pypa/virtualenv/master/virtualenv.py"
+VIRTUALENV_LATEST_URL="https://raw.github.com/pypa/virtualenv/master/virtualenv.py"
+VIRTUALENV_172_URL="https://raw.github.com/pypa/virtualenv/1.7.2/virtualenv.py"
+PIP_11_URL="http://pypi.python.org/packages/source/p/pip/pip-1.1.tar.gz"
 GC3_SVN_URL="http://gc3pie.googlecode.com/svn/trunk/gc3pie"
 
 VIRTUALENV_CMD="virtualenv"
@@ -31,6 +33,7 @@ DEVELOP=0
 WITHAPPS=1
 OVERWRITEDIR=0
 ASKCONFIRMATION=1
+PYTHON=python
 
 # Auxiliary functions
 
@@ -52,24 +55,71 @@ require_command () {
   fi
 }
 
-function install_virtualenv(){
-    DESTDIR=$1
-
-    have_command virtualenv
-    if [ $? -ne 0 ]
-    then
-	$dl_cmd virtualenv.py $VIRTUALENV_URL
-	VIRTUALENV_CMD="python virtualenv.py"
+integer_to_boolean () {
+    # Get an integer `N` as input,
+    # returns the string "Yes" if N > 0
+    # returns the string "No" otherwise
+    N=$1
+    if [ -n "$N" ] && [ "$N" -ge 1 ]; then
+        echo "Yes"
+    else
+        echo "No"
     fi
-    # python virtualenv.py --system-site-packages $DESTDIR
-    echo "DBG: using virtualenv command: [$VIRTUALENV_CMD]"
-    $VIRTUALENV_CMD --system-site-packages $DESTDIR
 }
 
-function install_gc3pie_via_pip(){
+install_virtualenv () {
+    DESTDIR=$1
 
-    pipbin=($VENVDIR/bin/pip*)
-    if [ ${#pipbin[*]} -lt 1 ]; then
+    # Check python version using the *same* system used by
+    # virtualenv.py
+    $PYTHON <<EOF
+import sys
+if sys.version_info < (2, 5):
+  sys.exit(101)
+else:
+  sys.exit(0)
+EOF
+    case $? in
+        101)
+            # Using virtualenv 1.7.2, which is compatible with python
+            # version < 2.5
+            echo "GC3Pie install: WARNING: Using an old and possibly unsupported version of 'virtualenv' (1.7.2)"
+            VIRTUALENV_URL=$VIRTUALENV_172_URL
+            echo "GC3Pie install: WARNING: Using an old and possibly unsupported version of 'pip' (1.1)"
+            $dl_cmd pip-1.1.tar.gz $PIP_11_URL
+            ;;
+        0)
+            # using latest virtualenv
+            VIRTUALENV_URL=$VIRTUALENV_LATEST_URL
+            ;;
+        *)
+            cat 1>&2 <<EOF
+=====================================================
+GC3Pie install: ERROR: unable to check python version
+=====================================================
+
+The script was unable to check the version of the current python
+installation (check returned an exit status of "$?"). This check is needed to know which version of the "virtualenv" script we need to download.
+
+Please contact the GC3Pie team by sending an email go
+gc3pie@googlegroups.com and remember to attach the full output of the
+script, in order to help us to identify the problem.
+
+Aborting installation!
+EOF
+            ;;
+    esac
+
+	$dl_cmd virtualenv.py $VIRTUALENV_URL
+	VIRTUALENV_CMD="$PYTHON virtualenv.py"
+
+    # python virtualenv.py --system-site-packages $DESTDIR
+    $VIRTUALENV_CMD --system-site-packages -p $PYTHON $DESTDIR
+}
+
+install_gc3pie_via_pip () {
+    PATH=$VENVDIR/bin:$PATH
+    if ! have_command pip; then
 cat 1>&2 <<EOF
 ===============================================
 GC3Pie install: ERROR: 'pip' command not found.
@@ -82,16 +132,15 @@ the GC3Pie team by sending an email to gc3pie@googlegroups.com
 Remember to attach the full output of the script, in order to help us
 to identify the problem.
 
-Aborting installation!"
+Aborting installation!
 EOF
         exit 1
     fi
-    pip=${pipbin[0]}
     echo "Installing GC3Pie from PIP package"
-    $pip install gc3pie
+    pip install gc3pie
 }
 
-function install_gc3pie_via_svn(){
+install_gc3pie_via_svn () {
 
     have_command svn
     if [ $? -ne 0 ]
@@ -135,7 +184,7 @@ EOF
     )
 }
 
-function install_gc3apps(){
+install_gc3apps () {
     echo "Installing extra applications in $VENVDIR"
 
     if [ $DEVELOP -eq 0 ]
@@ -167,7 +216,7 @@ function install_gc3apps(){
     fi        
 }
 
-function usage(){
+usage () {
 cat <<EOF
 This program will install GC3Pie in your home directory.
 
@@ -178,6 +227,7 @@ Options
 
       -d, --target=DIRECTORY Install GC3Pie virtual environment int DIRECTORY.
                              (Default: $VENVDIR)
+      -p, --python=EXE       The python interpreter to use. The default is $(which python).
       --develop              Install development version. Requires svn and gcc.
       --no-gc3apps           Do not install extra GC3 applications, like gcodeml, grosetta and gamess.
       --overwrite            Remove target directory if it already exists.
@@ -213,7 +263,7 @@ EOF
 fi
 
 
-ARGS=$(getopt -o "d:h" -l "target:,help,develop,no-gc3apps,overwrite,yes" -- "$@")
+ARGS=$(getopt -o "d:p:h" -l "target:,python:,help,develop,no-gc3apps,overwrite,yes" -- "$@")
 eval set  -- "$ARGS"
 
 # Main program
@@ -223,6 +273,11 @@ do
         -d|--target)
             shift
             VENVDIR=$1
+            shift
+            ;;
+        -p|--python)
+            shift
+            PYTHON=$1
             shift
             ;;
         -h|--help)
@@ -273,6 +328,15 @@ the GC3Pie team by sending an email to gc3pie@googlegroups.com
 
 Remember to attach the full output of the script, in order to help us
 to identify the problem.
+
+Installation info:
+
+Destination directory:    $VENVDIR
+Python executable:        $PYTHON
+Ask for confirmation:     $(integer_to_boolean $ASKCONFIRMATION)
+Development mode:         $(integer_to_boolean $DEVELOP)
+Install gc3apps:          $(integer_to_boolean $WITHAPPS)
+Overwrite:                $(integer_to_boolean $OVERWRITEDIR)
 
 EOF
 
@@ -341,7 +405,7 @@ EOF
     exit 1
 fi
 
-source $VENVDIR/bin/activate
+. $VENVDIR/bin/activate
 
 rc=0
 if [ $DEVELOP -eq 0 ]
@@ -376,7 +440,7 @@ then
     echo "In order to work with GC3Pie you have to enale the virtual"
     echo "environment with the command:"
     echo
-    echo "    source ~/gc3pie/bin/activate"
+    echo "    . $VENVDIR/bin/activate"
     echo
     echo "You need to run the above command on every new shell you open just once before using GC3Pie commands."
     echo 
