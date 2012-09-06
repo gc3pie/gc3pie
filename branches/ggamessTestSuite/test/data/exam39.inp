@@ -198,8 +198,8 @@
 !   runs which step through w, and the ZPVA results require part
 !   of the third nuclear derivatives, not just the above tensor.
 !
-! ggamess test: grepAndFollow("Raman\s Intensity \s at \s omega", "head", 8, 3, 122.21, 0.01, "RIerr")
-! ggamess test: grepAndFollow("Hyper \s Raman\s Intensity \s at \s omega", "head", 8, 3, 976.50, 0.01, "HRIerr")
+! ggamess test: grepAndFollow("Raman\s Intensity \s at \s omega", "first", 8, 3, 122.21, 0.01, "RIerr")
+! ggamess test: grepAndFollow("Hyper \s Raman\s Intensity \s at \s omega", "first", 8, 3, 976.50, 0.01, "HRIerr")
 !
 
  $contrl scftyp=rhf runtyp=tdhfx nosym=1 ispher=0 $end

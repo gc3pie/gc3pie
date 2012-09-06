@@ -23,7 +23,7 @@
 !
 ! ggamess test: = gmsPattern.GamessPattern("exam33.out")
 ! ggamess test: grepLinesAndAnalyze("FINAL \s MCSCF", "", 5, -93.0223942017, GamessTst.tolE, "Eerr")
-! ggamess test: grepLinesAndAnalyze("RMS \s G", "head", 4, 0.045100935, GamessTst.tolG, "Gerr")
+! ggamess test: grepLinesAndAnalyze("RMS \s G", "first", 4, 0.045100935, GamessTst.tolG, "Gerr")
 !
  $contrl scftyp=mcscf runtyp=gradient nzvar=3 $end
  $system timlim=3 mwords=2 memddi=1 $end

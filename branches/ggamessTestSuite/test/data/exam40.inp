@@ -38,9 +38,9 @@
 !     RMS change of X =            .000011
 !     PARALLEL GRADIENT (in seam) has RMS=.026456
 !
-! ggamess test: grepLinesAndAnalyze("ENERGY \s OF \s FIRST \s STATE", "tail", 6, -38.941516, 0.000001, "E1err")
-! ggamess test: grepLinesAndAnalyze("ENERGY \s OF \s SECOND \s STATE", "tail", 6, -38.941513, 0.000001, "E2err")
-! ggamess test: grepLinesAndAnalyze("RMS \s EFFECTIVE \s GRADIENT", "tail", 5, 0.000005, 0.000001, "RMSerr")
+! ggamess test: grepLinesAndAnalyze("ENERGY \s OF \s FIRST \s STATE", "last", 6, -38.941516, 0.000001, "E1err")
+! ggamess test: grepLinesAndAnalyze("ENERGY \s OF \s SECOND \s STATE", "last", 6, -38.941513, 0.000001, "E2err")
+! ggamess test: grepLinesAndAnalyze("RMS \s EFFECTIVE \s GRADIENT", "last", 5, 0.000005, 0.000001, "RMSerr")
 !
  $contrl runtyp=mex ispher=1 nzvar=3 $end
  $system timlim=2 $end

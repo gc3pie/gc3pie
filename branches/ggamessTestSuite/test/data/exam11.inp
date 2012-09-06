@@ -9,8 +9,8 @@
 !   2    1.22802  1.23827  64.747  -91.5735346  0.59986
 !   3    1.22974  1.16350  72.039  -91.5814775  0.89968
 !
-! ggamess test: grepLinesAndAnalyze("TOTAL \s+  ENERGY", "tail", 4, -91.5814775, 0.000001, "Eerr")
-! ggamess test: grepLinesAndAnalyze("PATH\s+ DISTANCE", "tail", 6, 0.89968, GamessTst.tolR, "Rerr")
+! ggamess test: grepLinesAndAnalyze("TOTAL \s+  ENERGY", "last", 4, -91.5814775, 0.000001, "Eerr")
+! ggamess test: grepLinesAndAnalyze("PATH\s+ DISTANCE", "last", 6, 0.89968, GamessTst.tolR, "Rerr")
 !
  $CONTRL SCFTYP=RHF RUNTYP=IRC NZVAR=3 $END
  $SYSTEM TIMLIM=1 $END
