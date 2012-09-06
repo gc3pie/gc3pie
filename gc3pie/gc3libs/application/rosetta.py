@@ -68,11 +68,6 @@ class RosettaApplication(gc3libs.Application):
         # remember the protocol name for event methods
         self.__protocol = application
 
-        # _inputs = gc3libs.Application._io_spec_to_dict(inputs)
-        # _inputs = inputs
-        _inputs = gc3libs.Application._io_spec_to_dict(gc3libs.url.UrlKeyDict, inputs, True)
-
-
         # since ARC/xRSL does not allow wildcards in the "outputFiles"
         # line, and Rosetta can create ouput files whose number/name
         # is not known in advance, the support script will create a
@@ -83,17 +78,12 @@ class RosettaApplication(gc3libs.Application):
             self.__protocol + '.log',
             self.__protocol + '.tar.gz'
             ]
-
-        # if len(outputs) > 0:
         if outputs:
             _arguments = ['--tar', str.join(' ', [ str(o) for o in outputs ])]
         else:
             _arguments = ['--tar', '*.pdb *.sc *.fasc']
-        # XXX: this is too gdocking-specific!
-        # for opt, file in _inputs.items():
-        #     _arguments.append(opt)
-        #     _arguments.append(os.path.basename(file))
 
+        _inputs = gc3libs.Application._io_spec_to_dict(gc3libs.url.UrlKeyDict, inputs, True)
         if flags_file:
             _inputs[flags_file] = self.__protocol + '.flags'
             # the `rosetta.sh` driver will do this automatically:
@@ -104,13 +94,10 @@ class RosettaApplication(gc3libs.Application):
             _arguments.append("-database")
             _arguments.append(os.path.basename(database))
 
-        #if len(arguments) > 0:
         if arguments:
             _arguments.extend(arguments)
 
-        extra_args['application_tag'] = 'rosetta'
         application_release = "APPS/BIO/ROSETTA-%s" % application_release
-        # application_release = "TEST/BIO/ROSETTA-%s"  % application_release
         if 'tags' in extra_args:
             extra_args['tags'].append(application_release)
         else:
@@ -124,11 +111,12 @@ class RosettaApplication(gc3libs.Application):
 
         gc3libs.Application.__init__(
             self,
-            executable = "%s" % rosetta_sh,
+            executable = "./%s" % rosetta_sh,
             arguments = _arguments,
             inputs = _inputs,
             outputs = _outputs,
             **extra_args)
+
 
     def terminated(self):
         """
@@ -154,7 +142,6 @@ class RosettaApplication(gc3libs.Application):
         else:
             gc3libs.log.error("Could not find output archive '%s' for Rosetta job"
                               % tar_file_name)
-
 
 
 class RosettaDockingApplication(RosettaApplication):
