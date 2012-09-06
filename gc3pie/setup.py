@@ -110,8 +110,6 @@ setuptools.setup(
         'psutil>=0.6.1',
         # Needed for parsing human-readable dates (gselect uses it).
         'parsedatetime',
-        # Unum -- define and manipulate quantities with units attached
-        #'Unum',
         ],
     # additional non-Python files to be bundled in the package
     data_files = [
@@ -136,7 +134,6 @@ setuptools.setup(
             'gc3apps/gamess/ggamess.py',
             ],),
         ],
-
 
     # `zip_safe` can ease deployment, but is only allowed if the package
     # do *not* do any __file__/__path__ magic nor do they access package data

@@ -1,7 +1,7 @@
 #! /usr/bin/env python
 #
 """
-Housing-specific methods and overloads. 
+Housing-specific methods and overloads.
 """
 # Copyright (C) 2011 University of Zurich. All rights reserved.
 #
@@ -37,6 +37,7 @@ from supportGc3 import format_newVal, update_parameter_in_file, safe_eval, str2m
 from paraLoop import paraLoop
 
 from gc3libs import Application, Run
+from gc3libs.quantity import Memory, kB, MB, GB, Duration, hours, minutes, seconds
 import shutil
 
 import logbook, sys
@@ -61,7 +62,7 @@ class housingApplication(Application):
     _invalid_chars = re.compile(r'[^_a-zA-Z0-9]+', re.X)
 
     def __init__(self, executable, arguments, inputs, outputs, output_dir, **extra_args):
-#        extra_args.setdefault('requested_walltime', 2)
+#        extra_args.setdefault('requested_walltime', 2*hours)
         Application.__init__(self, executable, arguments, inputs, outputs, output_dir, **extra_args)
 
     def fetch_output_error(self, ex):
@@ -69,11 +70,11 @@ class housingApplication(Application):
         if self.execution.state == Run.State.TERMINATING:
         # do notify task/main application that we're done
         # ignore error, let's continue
-            self.execution.state = Run.State.TERMINATED            
+            self.execution.state = Run.State.TERMINATED
             logger.debug('fetch_output_error occured... continuing')
             if self.persistent_id:
                 logger.debug('jobid: %s exception: %s' % (self.persistent_id, str(ex)))
-            else: 
+            else:
                 logger.debug('info: %s exception: %s' % (self.info, str(ex)))
             return None
         else:
@@ -83,10 +84,10 @@ class housingApplication(Application):
     # def submit_error(self, ex):
     #     logger.debug('submit_error occured... continuing')
 
-    #     try: 
+    #     try:
     #         if self.lrms_jobid:
     #             logger.debug('jobid: %s info: %s exception: %s' % (self.lrms_jobid, self.info, str(ex)))
-    #         else: 
+    #         else:
     #             logger.debug('info: %s exception: %s' % (self.info, str(ex)))
     #     except AttributeError:
     #         logger.debug('no `lrms_jobid` hence submission didnt happen')
@@ -112,7 +113,7 @@ class housingApplication(Application):
                     # backup with numerical suffix
                     gc3libs.utils.backup(dest_entry)
                 os.rename(os.path.join(wrong_output_dir, entry), dest_entry)
-            try: 
+            try:
                 os.rmdir(wrong_output_dir)
             except:
                 logger.warning('could not delete wront output dir = %s' % wrong_output_dir)
@@ -128,9 +129,9 @@ class housingApplication(Application):
             #curPanel = 'SOEP'
         #elif ctry == 'uk':
             #curPanel = 'BHPS'
-        #else: 
+        #else:
             #logger.critical('unknown profile %s' % profile)
-            #os.exit(1)        
+            #os.exit(1)
         #empOwnershipFile = os.path.join(os.path.split(output_dir)[0], 'input', curPanel + 'OwnershipProfilealleduc.out')
         #ownershipTableFile = os.path.join(output_dir, 'ownershipTable.out')
         #if os.path.exists(aggregateOut):
@@ -152,7 +153,7 @@ class housingApplication(Application):
                 #profileOwnershipTable.keep(['age', 'owner'])
                 #profileOwnershipTable.rename('owner', 'thOwnership_' + profile)
                 #ownershipTable.merge(profileOwnershipTable, 'age')
-                #ownershipTable.drop('_merge')  
+                #ownershipTable.drop('_merge')
                 #yVars.append('thOwnership_' + profile)
             #f = open(ownershipTableFile, 'w')
             #print >> f, ownershipTable
@@ -163,12 +164,12 @@ class housingApplication(Application):
                 #logger.debug('couldnt make ownershipTableFile')
 
             #try:
-                #self.execution.exitcode = plotOwnerProfiles(path2input = os.path.join(os.getcwd(), 'localBaseDir', 'input'), 
+                #self.execution.exitcode = plotOwnerProfiles(path2input = os.path.join(os.getcwd(), 'localBaseDir', 'input'),
                                                         #path2output = output_dir, simuFileName = 'aggregate.out')
             #except:
                 #logger.debug('couldnt make ownerprofile plot. plotOwnerProfiles crashed, couldnt even set exitcode. ')
             # make plot of life-cycle simulation (all variables)
-            try:                
+            try:
                 makeAggregatePlot(self.output_dir)
 #                plotSimulation(table = os.path.join(output_dir, 'aggregate.out'), xVar = 'age', yVars = ['wealth', 'theta1', 'theta2', 'theta3', 'theta4', 'theta5', 'cons', 'income'], figureFile = os.path.join(self.output_dir, 'aggregate.png'), verb = 'CRITICAL' )
             except:
@@ -183,5 +184,5 @@ class housingApplication(Application):
 class housingApppotApplication(housingApplication, gc3libs.application.apppot.AppPotApplication):
     _invalid_chars = re.compile(r'[^_a-zA-Z0-9]+', re.X)
     def __init__(self, executable, arguments, inputs, outputs, output_dir, **extra_args):
-#        extra_args.setdefault('requested_walltime', 2) # unnecessary.. gc3pie automatically sets default to 8
+#        extra_args.setdefault('requested_walltime', 2*hours) # unnecessary.. gc3pie automatically sets default to 8
         gc3libs.application.apppot.AppPotApplication.__init__(self, executable, arguments, inputs, outputs, output_dir, **extra_args)

@@ -174,14 +174,14 @@ class GamessApplication(gc3libs.Application):
         if self.requested_walltime:
             # XXX: should this be an error instead?
             gc3libs.log.warning(
-                "Requested %d hours of wall-clock time,"
+                "Requested duration of at least %s,"
                 " but setting running time limits is not supported by the `qgms` script."
                 " Ignoring request, GAMESS job will be submitted with unspecified running time.",
                 self.requested_walltime)
         if self.requested_memory:
             # XXX: should this be an error instead?
             gc3libs.log.warning(
-                "Requested %d Gigabytes of memory per core,"
+                "Requested %s of memory per core,"
                 " but setting memory limits is not supported by the `qgms` script."
                 " Ignoring request, GAMESS job will be submitted with unspecified memory requirements.",
                 self.requested_memory)
