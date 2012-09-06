@@ -856,7 +856,7 @@ class Application(Task):
     @staticmethod
     def _io_spec_to_dict(ctor, spec, force_abs):
         """
-        (This class is only used for internal processing of `input`
+        (This function is only used for internal processing of `input`
         and `output` fields.)
 
         Return a dictionary formed by pairs `URL:name` or `name:URL`.
@@ -901,6 +901,10 @@ class Application(Task):
             # is `spec` dict-like?
             return ctor(((str(k), str(v)) for k,v in spec.iteritems()),
                         force_abs=force_abs)
+        except UnicodeError, err:
+            raise gc3libs.exceptions.InvalidValue(
+                "Use of non-ASCII file names is not (yet) supported in GC3Pie: %s: %s"
+                % (err.__class__.__name__, str(err)))
         except AttributeError:
             # `spec` is a list-like
             def convert_to_tuple(val):
