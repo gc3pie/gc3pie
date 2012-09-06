@@ -10,8 +10,69 @@
  Installation of GC3Utils
 --------------------------
 
-Installation
-============
+Quick start
+===========
+
+We provide an installation script which automatically try to install
+GC3pie in your home directory. Running this script is as simple as
+running::
+
+    sh -c "$(curl -s http://gc3pie.googlecode.com/svn/install.sh)"
+
+or, if you are using **bash**::
+
+    sh <(curl -s http://gc3pie.googlecode.com/svn/install.sh)
+
+This script will create a directory ``~/gc3pie`` and will install the
+latest release of gc3pie and all its dependencies. 
+
+The script accept various options in order to alter the standard
+behavior. Specifically:
+
+  -d PATH
+      will install gc3pie in ``PATH`` instead of ``~/gc3pie``
+
+  --overwrite
+      will overwrite the destination directory if it already
+      exists. Default behavior is to abort installation.
+
+  --develop
+      instead of installing the latest *release* of GC3Pie, it will
+      install the *development branch* from the SVN repository.
+
+  --yes
+      do not ask for confirmation: and assume `yes` reply to every
+      question.
+
+  -p PYTHON
+      uses ``PYTHON`` as python binary. By default the installation
+      script will look for a ``python`` binary in standard ``PATH``.
+
+  --no-gc3apps
+       Do not install extra GC3 applications, like gcodeml, grosetta
+       and gamess.
+
+in order to pass these options to the installation script you have to
+download it using `curl`, `wget` or a similar tool, and run the
+command::
+
+    sh ./install.sh [options]
+
+replacing, of course, ``[options]`` with the options you want to
+supply to the script.
+
+In case you have trouble running the installation script you can send
+an email to gc3pie@googlegroups.com asking for help. Remember to
+include the full output of the script in your email, in order to help
+us to identify the problem.
+
+
+Manual installation
+===================
+
+In case you can't or don't want to use the automatic installation
+script, the following instructions will guide you through all the
+steps needed to manually install GC3Pie on your computer.
 
 These instructions show how to install GC3Pie from the GC3 source
 repository into a separate python environment (called `virtualenv`_).
