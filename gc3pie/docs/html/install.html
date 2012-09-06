@@ -63,8 +63,81 @@
             
   <div class="section" id="installation-of-gc3utils">
 <h1>Installation of GC3Utils<a class="headerlink" href="#installation-of-gc3utils" title="Permalink to this headline">¶</a></h1>
-<div class="section" id="installation">
-<h2>Installation<a class="headerlink" href="#installation" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="quick-start">
+<h2>Quick start<a class="headerlink" href="#quick-start" title="Permalink to this headline">¶</a></h2>
+<p>We provide an installation script which automatically try to install
+GC3pie in your home directory. Running this script is as simple as
+running:</p>
+<div class="highlight-python"><pre>sh -c "$(curl -s http://gc3pie.googlecode.com/svn/install.sh)"</pre>
+</div>
+<p>or, if you are using <strong>bash</strong>:</p>
+<div class="highlight-python"><pre>sh &lt;(curl -s http://gc3pie.googlecode.com/svn/install.sh)</pre>
+</div>
+<p>This script will create a directory <tt class="docutils literal"><span class="pre">~/gc3pie</span></tt> and will install the
+latest release of gc3pie and all its dependencies.</p>
+<p>The script accept various options in order to alter the standard
+behavior. Specifically:</p>
+<blockquote>
+<div><table class="docutils option-list" frame="void" rules="none">
+<col class="option" />
+<col class="description" />
+<tbody valign="top">
+<tr><td class="option-group">
+<kbd><span class="option">-d <var>PATH</var></span></kbd></td>
+<td>will install gc3pie in <tt class="docutils literal"><span class="pre">PATH</span></tt> instead of <tt class="docutils literal"><span class="pre">~/gc3pie</span></tt></td></tr>
+</tbody>
+</table>
+<p class="attribution">&mdash;overwrite
+will overwrite the destination directory if it already
+exists. Default behavior is to abort installation.</p>
+</div></blockquote>
+<blockquote>
+<div><table class="docutils option-list" frame="void" rules="none">
+<col class="option" />
+<col class="description" />
+<tbody valign="top">
+<tr><td class="option-group">
+<kbd><span class="option">--develop</span></kbd></td>
+<td>instead of installing the latest <em>release</em> of GC3Pie, it will
+install the <em>development branch</em> from the SVN repository.</td></tr>
+</tbody>
+</table>
+<p class="attribution">&mdash;yes
+do not ask for confirmation: and assume <cite>yes</cite> reply to every
+question.</p>
+</div></blockquote>
+<blockquote>
+<div><table class="docutils option-list" frame="void" rules="none">
+<col class="option" />
+<col class="description" />
+<tbody valign="top">
+<tr><td class="option-group">
+<kbd><span class="option">-p <var>PYTHON</var></span></kbd></td>
+<td>uses <tt class="docutils literal"><span class="pre">PYTHON</span></tt> as python binary. By default the installation
+script will look for a <tt class="docutils literal"><span class="pre">python</span></tt> binary in standard <tt class="docutils literal"><span class="pre">PATH</span></tt>.</td></tr>
+</tbody>
+</table>
+<p class="attribution">&mdash;no-gc3apps
+Do not install extra GC3 applications, like gcodeml, grosetta
+and gamess.</p>
+</div></blockquote>
+<p>in order to pass these options to the installation script you have to
+download it using <cite>curl</cite>, <cite>wget</cite> or a similar tool, and run the
+command:</p>
+<div class="highlight-python"><pre>sh ./install.sh [options]</pre>
+</div>
+<p>replacing, of course, <tt class="docutils literal"><span class="pre">[options]</span></tt> with the options you want to
+supply to the script.</p>
+<p>In case you have trouble running the installation script you can send
+an email to <a class="reference external" href="mailto:gc3pie&#37;&#52;&#48;googlegroups&#46;com">gc3pie<span>&#64;</span>googlegroups<span>&#46;</span>com</a> asking for help. Remember to
+include the full output of the script in your email, in order to help
+us to identify the problem.</p>
+</div>
+<div class="section" id="manual-installation">
+<h2>Manual installation<a class="headerlink" href="#manual-installation" title="Permalink to this headline">¶</a></h2>
+<p>In case you can&#8217;t or don&#8217;t want to use the automatic installation
+script, the following instructions will guide you through all the
+steps needed to manually install GC3Pie on your computer.</p>
 <p>These instructions show how to install GC3Pie from the GC3 source
 repository into a separate python environment (called <a class="reference external" href="http://pypi.python.org/pypi/virtualenv/1.7">virtualenv</a>).
 Installation into a virtualenv has two distinct advantages:</p>
@@ -320,7 +393,8 @@ in order to build the documentation locally.</p>
   <h3><a href="index.html">Table Of Contents</a></h3>
   <ul>
 <li><a class="reference internal" href="#">Installation of GC3Utils</a><ul>
-<li><a class="reference internal" href="#installation">Installation</a></li>
+<li><a class="reference internal" href="#quick-start">Quick start</a></li>
+<li><a class="reference internal" href="#manual-installation">Manual installation</a></li>
 <li><a class="reference internal" href="#upgrade">Upgrade</a></li>
 <li><a class="reference internal" href="#html-documentation">HTML Documentation</a></li>
 </ul>
