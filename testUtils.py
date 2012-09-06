@@ -12,7 +12,7 @@
 #   This program is distributed in the hope that it will be useful,
 #   but WITHOUT ANY WARRANTY; without even the implied warranty of
 #   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-#   GNU General Public License for more details.
+#   GNU General Public License for more delasts.
 #
 #   You should have received a copy of the GNU General Public License
 #   along with this program.  If not, see <http://www.gnu.org/licenses/>.
@@ -24,8 +24,8 @@ Logic for executing tests within GAMESS. Tests are executed if INP files include
 __version__ = 'development version (SVN $Revision$)'
 # summary of user-visible changes
 __changelog__ = """
-  2012-09-05:
-    * Initial release of GAMESS Test Suite by modifing terminated() and , not refactorized and optimized. 
+  2012-09-05: * Initial release of GAMESS Test Suite by modifing terminated() and , not refactorized and optimized. 
+  2012-09-06: * Created a class template for test implementation (testScenario.py) and derived TestNextLine and TestLine classes as sample implementations 
 """
 __author__ = 'Lukasz Miroslaw <lukasz.miroslaw@uzh.ch>'
 __docformat__ = 'reStructuredText'
@@ -33,12 +33,9 @@ __docformat__ = 'reStructuredText'
 import os.path
 import sys
 import re
-#import pprint
 import gc3libs
 
-#import gmsPattern
-from testLine import TestLine
-from testNextLine import TestNextLine
+from testScenario import TestLine, TestNextLine
 
 #This class is responsible for running the tests. Directory with log files.
 class GamessTestSuite:
@@ -82,12 +79,10 @@ class GamessTestSuite:
 # C percent (%), such as reference weight in MCQDPT
 
 
-	def __init__(self, directory):
+	def __init__(self):
  		self.exQ = []
 		self.list_with_tests = []
 		self.list_of_analyzed_files = []
-		self.dirLog = directory
-		os.chdir(self.dirLog)
 		
 	def prepareInputFiles(self):
 		listOfFiles = _getInputFiles(self)
@@ -200,13 +195,13 @@ class GamessTestSuite:
 #NOTES:
 #Incorrect grepex expression is not supported. Example:grepLinesAndAnalyze("TOTAL \s INTERACTION \s (DELTA", .. will raise a traceback.
 #Special characters such as : < ( * need to be defined as /< /( /*
-#head -2 | tail -1 is translated into "2"
+#first -2 | last -1 is translated into "2"
 #Interesting cases: exam39
 
 #TUTORIAL
 # Each test is started with a search for a regular expression. The regular expression
 # outputs either a single line or a group of lines. 
-# matchedLinePosition defines which matched line to select: first, last or Nth line. (tail | head | "" | "2" | 2)
+# matchedLinePosition defines which matched line to select: first, last or Nth line. (last | first | "" | "2" | 2)
 # and returns ONE final line with target information.
 # 
 # There are two cases. 

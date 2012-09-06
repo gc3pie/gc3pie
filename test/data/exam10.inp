@@ -19,8 +19,8 @@
 !   the INTENSities are not evaluated.
 !
 ! ggamess test: grepLinesAndAnalyze("FINAL \s+ RHF", "", 5, -74.9659012171, GamessTst.tolW, "Werr")
-! ggamess test: grepLinesAndAnalyze("FREQUENCY\:", "tail", 3, 2170.04, GamessTst.tolE, "Eerr")
-! ggamess test: grepLinesAndAnalyze("IR+\s+INTENSITY\:", "tail", 4, 0.17128, GamessTst.tolI, "Ierr")
+! ggamess test: grepLinesAndAnalyze("FREQUENCY\:", "last", 3, 2170.04, GamessTst.tolE, "Eerr")
+! ggamess test: grepLinesAndAnalyze("IR+\s+INTENSITY\:", "last", 4, 0.17128, GamessTst.tolI, "Ierr")
 ! ggamess test: grepLinesAndAnalyze("MEAN+\sALPHA+\sPOL", "", 5,0.40079, GamessTst.tolP, "Perr")
 !
  $CONTRL SCFTYP=RHF RUNTYP=HESSIAN UNITS=BOHR NZVAR=3 $END

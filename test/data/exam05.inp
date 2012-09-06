@@ -18,7 +18,7 @@
 !    The upper state has RMS gradient 0.032264079
 ! ggamess test: grepLinesAndAnalyze("STATE\s\#\s\s\s\s", "", 6, 6.145036726, GamessTst.tolE, "Eerr")
 ! ggamess test: grepLinesAndAnalyze("RMS \s+G", "", 4, 0.032264079, GamessTst.tolG, "Gerr")
-! ggamess test: grepAndFollow("DEBYE", "head","1", 4, 0.691104, GamessTst.tolD, "Derr")  
+! ggamess test: grepAndFollow("DEBYE", "first","1", 4, 0.691104, GamessTst.tolD, "Derr")  
 !
  $CONTRL SCFTYP=RHF CITYP=GUGA RUNTYP=GRADIENT $END
  $SYSTEM TIMLIM=1 $END

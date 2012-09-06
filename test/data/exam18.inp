@@ -5,7 +5,7 @@
 !  A separate run gives E(P)= -6.32635, so De= 26.95 kcal/mol
 !
 ! ggamess test: grepLinesAndAnalyze("FINAL \s+ RHF", "", 5, -12.6956518722, GamessTst.tolE, "Eerr")
-! ggamess test: grepLinesAndAnalyze("FREQUENCY\:", "tail", 2, 913.17, GamessTst.tolW, "Werr")
+! ggamess test: grepLinesAndAnalyze("FREQUENCY\:", "last", 2, 913.17, GamessTst.tolW, "Werr")
 !
  $CONTRL SCFTYP=RHF RUNTYP=HESSIAN PP=SBKJC NZVAR=1 $END
  $SYSTEM TIMLIM=1 $END

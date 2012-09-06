@@ -18,9 +18,9 @@
 !  TOTAL INTERACTION            =     -.0079213676 A.U.
 !  TOTAL FREE ENERGY IN SOLVENT =  -115.0425622162 A.U.
 !
-! ggamess test: grepLinesAndAnalyze("FINAL \s RHF", "tail", 5, -115.0425622162, GamessTst.tolE, "Eerr")
-! ggamess test: grepLinesAndAnalyze("RMS \s G", "tail", 8, 0.0000033, GamessTst.tolG, "Gerr")
-! ggamess test: grepLinesAndAnalyze("TOTAL \s INTERACTION \s \(DELTA", "tail", 13, -0.0079213676, GamessTst.tolE, "Eerr")
+! ggamess test: grepLinesAndAnalyze("FINAL \s RHF", "last", 5, -115.0425622162, GamessTst.tolE, "Eerr")
+! ggamess test: grepLinesAndAnalyze("RMS \s G", "last", 8, 0.0000033, GamessTst.tolG, "Gerr")
+! ggamess test: grepLinesAndAnalyze("TOTAL \s INTERACTION \s \(DELTA", "last", 13, -0.0079213676, GamessTst.tolE, "Eerr")
 !
  $contrl scftyp=rhf runtyp=optimize nzvar=12 $end
  $system timlim=2 mwords=2 $end

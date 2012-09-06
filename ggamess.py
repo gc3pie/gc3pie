@@ -12,7 +12,7 @@
 #   This program is distributed in the hope that it will be useful,
 #   but WITHOUT ANY WARRANTY; without even the implied warranty of
 #   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-#   GNU General Public License for more details.
+#   GNU General Public License for more delasts.
 #
 #   You should have received a copy of the GNU General Public License
 #   along with this program.  If not, see <http://www.gnu.org/licenses/>.
@@ -140,17 +140,17 @@ of newly-created jobs so that this limit is never exceeded.
 # If any of the jobs terminated test is launched.    
     def after_main_loop(self):
         no_of_tests = 0    	
-	number_of_incorrect_tests = 0 
+	number_of_unfinished_tests = 0 
 	number_of_correct_tests = 0 
 	myoutputs = []
 	if not self.session:
 		raise RuntimeError("The session is empty.")
-		 
+ 	#TODO: Detect TERMINATED but numerically incorrect tests		 
 	for job in self.session:
         	no_of_tests = no_of_tests + 1   	
 		#import pdb;pdb.set_trace()
 		if job.execution.state in [Run.State.SUBMITTED, Run.State.RUNNING, Run.State.TERMINATING, Run.State.UNKNOWN, Run.State.STOPPED]:
-			number_of_incorrect_tests = number_of_incorrect_tests + 1
+			number_of_unfinished_tests = number_of_unfinished_tests + 1
 			gc3libs.log.info(" %s job in state %s", job.jobname, job.execution.state)
 			continue
 		elif job.execution.state in Run.State.TERMINATED: 
@@ -168,10 +168,10 @@ of newly-created jobs so that this limit is never exceeded.
 		gc3libs.log.debug("Only %s out of %s terminated normally.", number_of_correct_tests, no_of_tests)
 	else:
 		gc3libs.log.debug("%s out of %s tests teminated normally", number_of_correct_tests, no_of_tests) 
-	if number_of_incorrect_tests == 0:
-		gc3libs.log.info("All job(s) got correct numerical results.")
+	if number_of_unfinished_tests == 0:
+		gc3libs.log.info("All job(s) terminated normally.")
 	else:
-		gc3libs.log.info("%s job(s) got incorrect numerical results. Please examine why.", number_of_incorrect_tests) 
+		gc3libs.log.info("%s job(s) did not terminated normally . Please examine why.", number_of_unfinished_tests) 
 		
 # This class overrides GamessApplication class and triggers a test in terminated().
 #TODO: GamessTestApplcation class is only used when ggamess.py -N was provided 
@@ -187,7 +187,7 @@ class GamessTestApplication(GamessApplication):
 					  )
 	def terminated(self):
 		GamessApplication.terminated(self)
-		test = GamessTestSuite(".")
+		test = GamessTestSuite()
 		file_input = self.inp_file_path
 		file_output = os.path.join(self.output_dir, self.outputs[self.stdout].path)
 		gc3libs.log.debug("Analyzing GAMESS input %s and %s output files.", file_input, file_output)

@@ -7,8 +7,8 @@
 !  The mean POLARIZABILITY is 0.53018
 !
 ! ggamess test: grepLinesAndAnalyze("FINAL \s+ GVB", "", 5, -38.3334724789, GamessTst.tolE, "Eerr")
-! ggamess test: grepLinesAndAnalyze("FREQUENCY\:", "tail", 3, 1224.19, GamessTst.tolW, "Werr")
-! ggamess test: grepLinesAndAnalyze("IR+\s+INTENSITY\:", "tail", 4, 0.13317, GamessTst.tolI, "Ierr")
+! ggamess test: grepLinesAndAnalyze("FREQUENCY\:", "last", 3, 1224.19, GamessTst.tolW, "Werr")
+! ggamess test: grepLinesAndAnalyze("IR+\s+INTENSITY\:", "last", 4, 0.13317, GamessTst.tolI, "Ierr")
 ! ggamess test: grepLinesAndAnalyze("MEAN+\sALPHA+\sPOL", "", 5, 0.53018, GamessTst.tolP, "Perr")
 !
  $CONTRL SCFTYP=GVB  MULT=1  RUNTYP=HESSIAN  UNITS=BOHR $END

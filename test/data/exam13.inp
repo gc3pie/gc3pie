@@ -18,9 +18,9 @@
 !   H(XX)=0.301208  H(YY)=-0.258153  H(ZZ)=-0.043055
 !  Potential:  V(O)=-22.330374    V(H)=-1.006648
 !
-! ggamess test: grepLinesAndAnalyze("FINAL\sRHF", "tail", 5, -76.0440311075, GamessTst.tolE, "Eerr")
-! ggamess test: grepAndFollow("EFGZZ", "tail", "head", 3, -0.043055, GamessTst.tolG, "Gerr")  
-! ggamess test: grepAndFollow("ESU-CM", "tail", "head", 3, -1.296492, GamessTst.tolD, "Derr")  
+! ggamess test: grepLinesAndAnalyze("FINAL\sRHF", "last", 5, -76.0440311075, GamessTst.tolE, "Eerr")
+! ggamess test: grepAndFollow("EFGZZ", "last", "first", 3, -0.043055, GamessTst.tolG, "Gerr")  
+! ggamess test: grepAndFollow("ESU-CM", "last", "first", 3, -1.296492, GamessTst.tolD, "Derr")  
 !
  $CONTRL SCFTYP=RHF RUNTYP=ENERGY UNITS=BOHR ISPHER=1 $END
  $SYSTEM TIMLIM=1 $END

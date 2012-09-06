@@ -20,8 +20,8 @@
 !
 ! ggamess test: grepLinesAndAnalyze("FINAL \s+GVB", "", 5, -37.2562020559, GamessTst.tolE, "Eerr")
 ! ggamess test: grepLinesAndAnalyze("RMS \s+G", "", 4, 0.019618475, GamessTst.tolG, "Gerr")
-! ggamess test: grepAndFollow("OVERLAP\s+LOW", "head","head", 8, 0.64506, GamessTst.tolO, "Oerr")  
-! ggamess test: grepAndFollow("DEBYE", "head","1", 4, 1.249835, GamessTst.tolD, "Derr") #works with head and index 1
+! ggamess test: grepAndFollow("OVERLAP\s+LOW", "first","first", 8, 0.64506, GamessTst.tolO, "Oerr")  
+! ggamess test: grepAndFollow("DEBYE", "first","1", 4, 1.249835, GamessTst.tolD, "Derr") #works with first and index 1
 !
 
  $CONTRL SCFTYP=GVB  RUNTYP=GRADIENT  COORD=ZMT  $END
