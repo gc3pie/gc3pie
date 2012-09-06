@@ -35,6 +35,8 @@ import gc3libs
 import gc3libs.authentication
 from gc3libs.compat.collections import defaultdict
 import gc3libs.utils
+
+from gc3libs.quantity import Memory, kB, MB, GB, Duration, hours, minutes, seconds
 from gc3libs.utils import defproperty
 
 
@@ -74,6 +76,24 @@ def _parse_architecture(arch_str):
     if len(archs) == 0:
         raise ValueError("Empty or invalid 'architecture' setting.")
     return set(archs)
+
+def _legacy_parse_duration(duration_str):
+    try:
+        # old-style config: integral number of hours
+        return int(duration_str)*hours
+    except ValueError:
+        # apply `Duration` parsing rules; if this fails, users will
+        # see the error message from the `Duration` parser.
+        return Duration(duration_str)
+
+def _legacy_parse_memory(memory_str):
+    try:
+        # old-style config: integral number of GBs
+        return int(memory_str)*GB
+    except ValueError:
+        # apply usual quantity parsing rules; if this fails, users
+        # will see the error message from the `Memory`/`Quantity` parser.
+        return Memory(memory_str)
 
 
 ## the main class of this module
@@ -239,15 +259,15 @@ class Configuration(gc3libs.utils.Struct):
         type conversion is performed here, so that the returned dictionaries
         conform to a specified schema:
 
-          ===================  ==============
+          ===================  =========================
           Attribute name       Type
-          ===================  ==============
+          ===================  =========================
           architecture         set of strings
           max_cores            int
           max_cores_per_job    int
-          max_memory_per_core  int
-          max_walltime         int
-          ===================  ==============
+          max_memory_per_core  gc3libs.quantity.Memory
+          max_walltime         gc3libs.quantity.Duration
+          ===================  =========================
 
         Any attribute not mentioned in the above table will have type
         ``str`` (i.e., it is left unchanged).
@@ -383,8 +403,8 @@ class Configuration(gc3libs.utils.Struct):
         'architecture':        _parse_architecture,
         'max_cores':           int,
         'max_cores_per_job':   int,
-        'max_memory_per_core': int,
-        'max_walltime':        int,
+        'max_memory_per_core': _legacy_parse_memory,
+        'max_walltime':        _legacy_parse_duration,
         }
 
     @staticmethod
@@ -549,6 +569,7 @@ class Configuration(gc3libs.utils.Struct):
                     raise gc3libs.exceptions.ConfigurationError(
                         "Missing required configuration parameter '%s' for resource '%s'"
                         % (argname, resdict['name']))
+            # finally, try to construct backend class...
             return cls(**dict(resdict))
         except Exception, err:
             gc3libs.log.error(
