@@ -381,12 +381,6 @@ class _Script(cli.app.CommandLineApp):
                        default=str.join(',', gc3libs.Default.CONFIG_FILE_LOCATIONS),
                        help="Comma separated list of configuration files",
                        )
-
-        self.add_param("--config-files",
-                       action="store",
-                       default=str.join(',', gc3libs.Default.CONFIG_FILE_LOCATIONS),
-                       help="Comma separated list of configuration files",
-                       )
         return
 
     def pre_run(self):
