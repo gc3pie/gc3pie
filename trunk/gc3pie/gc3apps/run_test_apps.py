@@ -300,7 +300,7 @@ class GDockingTest(TestRunner):
                      '-f', 'data/flags',
                      'data/1bjpA.pdb', 
                      ]
-        self.jobdirs = [os.path.join(self.testdir, "1bjpA.%s" % d) for d in ('0--1', '2--3', '4--5')]
+        self.jobdirs = [os.path.join(self.testdir, "1bjpA.%s" % d) for d in ('1--2', '3--4', '5--5')]
 
     def cleanup(self):
         for d in self.jobdirs + [self.sessiondir]:
