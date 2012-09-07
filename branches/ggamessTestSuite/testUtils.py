@@ -35,50 +35,11 @@ import sys
 import re
 import gc3libs
 
-from testScenario import TestLine, TestNextLine
+from testScenarios import TestLine, TestNextLine
 
 #This class is responsible for running the tests. Directory with log files.
 class GamessTestSuite:
        
-	#Predefined tolerances
-	
-	tolC =  0.3
-  	tolD =  0.0001
-  	tolE =  0.00000001
-  	tolG =  0.00001
-  	tolH =  0.0001
-  	tolI =  0.0001
-  	tolL =  0.1
-  	tolO =  0.0001
-  	tolP =  0.0001
-  	tolR =  0.0001
-  	tolS =  0.01
-  	tolT =  0.000001
-  	tolV =  0.00000001
-  	tolW =  0.1
-  	tolX =  0.00001    	
-
-# E energy in a.u. :  
-# W vibrational frequency (cm-1)
-# I IR intensity
-# P Mean Alpha Polarization ??
-# H heat of formation in kcal/mol 
-# G RMS gradient in a.u.
-# L localisation sum (debye**2)
-# T T1 diagnostic from CC
-
-# D RMS dipole moment  
-# X basis set exponent  
-# S spin momentum (a.u.)
-# O overlap (such as GVB)
-
-# O polarisability
-# V velocity (a.u.), such as in DRC
-# R distance (in bohr), such as in IRC 
-# tols are tolerances, digs are the numbers of sig. digits.
-# C percent (%), such as reference weight in MCQDPT
-
-
 	def __init__(self):
  		self.exQ = []
 		self.list_with_tests = []
@@ -109,19 +70,18 @@ class GamessTestSuite:
 		self.log = []
 		if self.list_with_tests is None:
 		   gc3libs.log.debug("The list with tests is empty. Skipping.")
-		
-		failed_test_names = []	
-		failed_test_desc = []	
-		for testName, testObj in zip(self.list_with_tests, self.exQ):
-			#print testName
+	 	   return
+		#failed_test_names = []	
+		#failed_test_desc = []	
+		for test_name,testObj in zip(self.list_with_tests, self.exQ):
 			(isCorrect, testLogs) = testObj.run()
-			finalString = testName + ":" + testLogs 
+			finalString = test_name + ":" + testLogs 
 			if (isCorrect):
 				message = '%-89s    %s' %(finalString, "Passed.")
 				self.log.append(message) 
 			else:
-				failed_test_names.append(testName)
-				failed_test_desc.append("!!FAILED")
+		#		failed_test_names.append(testName)
+		#		failed_test_desc.append("!!FAILED")
 				message =  '%-89s    %s' %(finalString, "!!FAILED.")
 				self.log.append(message)
 
@@ -139,8 +99,10 @@ class GamessTestSuite:
 		if os.path.exists(filename_out) == False:
 			gc3libs.log.debug("The file %s does not exists. Skipping.", filename_out)
 			return 
-		if len(foundlines) > 0 :
-			self.addTest(filename_inp, filename_out)		
+		if foundlines is None:
+			gc3libs.log.debug("File %s does not contain tests. Skipping.", filename_inp)
+			return 
+		self.addTest(filename_inp, filename_out)		
 			
 		param_list = []
 		function_list = []
@@ -177,6 +139,7 @@ class GamessTestSuite:
 				if function==label_follow:
 					app = TestNextLine(filename_out)
 					fn = getattr(app, label_follow)   
+					#import pdb;pdb.set_trace()
 					fn(arg_list[0], arg_list[1], arg_list[2], int(arg_list[3]), float(arg_list[4]), arg_list[5], arg_list[6])
 					self.exQ.append(app)
 	   			elif function==label_analyze:
@@ -188,6 +151,7 @@ class GamessTestSuite:
 				gc3libs.log.debug("Index error. No. of arguments %d exceeds the required number %d. in file %s", len(arg_list), 7, filename_out)                                                                           		
 					
 			 except AttributeError:
+				import pdb;pdb.set_trace()
 				gc3libs.log.debug("Attribute error. arguments %s in function %s from object %s on file %s are incorrect", args, function, app, filename_out)                                                                           		
 			 
 #python -m pdb ./gdemo.py
