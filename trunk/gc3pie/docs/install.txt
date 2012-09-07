@@ -6,9 +6,9 @@
 .. include:: global.inc
 
 
---------------------------
- Installation of GC3Utils
---------------------------
+------------------------
+ Installation of GC3Pie
+------------------------
 
 Quick start
 ===========
@@ -17,54 +17,59 @@ We provide an installation script which automatically try to install
 GC3pie in your home directory. Running this script is as simple as
 running::
 
-    sh -c "$(curl -s http://gc3pie.googlecode.com/svn/install.sh)"
+    sh -c "$(wget -O- http://gc3pie.googlecode.com/svn/install.sh)"
 
-or, if you are using **bash**::
+The above command creates a directory `$HOME/gc3pie`:file: and installs
+the latest release of GC3Pie and all its dependencies into it.
 
-    sh <(curl -s http://gc3pie.googlecode.com/svn/install.sh)
+In case you have trouble running the installation script you can send
+an email to `<mailto:gc3pie@googlegroups.com>` asking for help. Please
+include the full output of the script in your email, in order to help
+us to identify the problem.
 
-This script will create a directory ``~/gc3pie`` and will install the
-latest release of gc3pie and all its dependencies. 
 
-The script accept various options in order to alter the standard
-behavior. Specifically:
+Non-standard installation options
+=================================
 
-  -d PATH
-      will install gc3pie in ``PATH`` instead of ``~/gc3pie``
+The installation script accept a few options that select alternatives
+to the standard behavior.  In order to use these options, you have to:
+
+1. download the installation script into a file named `install.sh`:file: ::
+
+     wget http://gc3pie.googlecode.com/svn/install.sh
+
+2. run the command::
+
+     sh ./install.sh [options]
+
+   replacing the string ``[options]`` with the actual options you want
+   to pass to the script.
+
+The accepted options are as follows:
+
+  -d DIRECTORY
+      Install GC3Pie in location ``DIRECTORY`` instead of ``$HOME/gc3pie``
 
   --overwrite
-      will overwrite the destination directory if it already
+      Overwrite the destination directory if it already
       exists. Default behavior is to abort installation.
 
   --develop
-      instead of installing the latest *release* of GC3Pie, it will
+      Instead of installing the latest *release* of GC3Pie, it will
       install the *development branch* from the SVN repository.
 
   --yes
-      do not ask for confirmation: and assume `yes` reply to every
+      Run non-interactively, and assume a "yes" reply to every
       question.
 
   -p PYTHON
-      uses ``PYTHON`` as python binary. By default the installation
-      script will look for a ``python`` binary in standard ``PATH``.
+      Uses the given ``PYTHON`` program as python interpreter.  By
+      default the installation script looks for a ``python`` binary in
+      the standard ``$PATH``.
 
   --no-gc3apps
-       Do not install extra GC3 applications, like gcodeml, grosetta
-       and gamess.
-
-in order to pass these options to the installation script you have to
-download it using `curl`, `wget` or a similar tool, and run the
-command::
-
-    sh ./install.sh [options]
-
-replacing, of course, ``[options]`` with the options you want to
-supply to the script.
-
-In case you have trouble running the installation script you can send
-an email to gc3pie@googlegroups.com asking for help. Remember to
-include the full output of the script in your email, in order to help
-us to identify the problem.
+       Do not install any of the GC3Apps, e.g., ``gcodeml``,
+       ``grosetta`` and ``ggamess``.
 
 
 Manual installation
