@@ -19,6 +19,7 @@
 #  with this program; if not, write to the Free Software Foundation, Inc.,
 #  59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
 #
+PROG="GC3Pie install"
 
 VIRTUALENV_LATEST_URL="https://raw.github.com/pypa/virtualenv/master/virtualenv.py"
 VIRTUALENV_172_URL="https://raw.github.com/pypa/virtualenv/1.7.2/virtualenv.py"
@@ -31,7 +32,7 @@ VIRTUALENV_CMD="virtualenv"
 VENVDIR=$HOME/gc3pie
 DEVELOP=0
 WITHAPPS=1
-OVERWRITEDIR=0
+OVERWRITEDIR=ask
 ASKCONFIRMATION=1
 PYTHON=python
 
@@ -45,6 +46,14 @@ die () {
   exit $rc
 }
 
+say () {
+    echo "$PROG: $@";
+}
+
+warn () {
+    echo 1>&2 "$PROG: WARNING: $@";
+}
+
 have_command () {
   type "$1" >/dev/null 2>/dev/null
 }
@@ -55,15 +64,141 @@ require_command () {
   fi
 }
 
+require_cc () {
+    have_command $CC || have_command cc
+    if [ $? -ne 0 ]
+    then
+        cat 1>&2 <<EOF
+====================================================
+GC3Pie install: ERROR: Unable to find a C compiler!"
+====================================================
+
+To install the GC3Pie development branch, a C language compiler
+is needed.
+
+Please, install one using the software manager of your distribution.
+If this computer already has a C compiler, set the environment variable
+CC to the full path to the C compiler command.
+
+If the above looks like Greek to you, please contact the GC3Pie team
+by sending an email to gc3pie@googlegroups.com.
+
+Aborting installation!
+EOF
+        exit 1
+    fi
+}
+
+require_svn () {
+    have_command svn
+    if [ $? -ne 0 ]
+    then
+        cat 1>&2 <<EOF
+========================================================
+GC3Pie install: ERROR: Unable to find the 'svn' command!
+========================================================
+
+To install the GC3Pie development branch installation,
+the SubVersion ('svn') command is needed.
+
+Please, install it using the software manager of your distribution
+or download it from http://subversion.tigris.org/
+
+If the above looks like Greek to you, please contact the GC3Pie team
+by sending an email to gc3pie@googlegroups.com.
+
+Aborting installation!
+EOF
+        exit 1
+    fi
+
+}
+
 integer_to_boolean () {
     # Get an integer `N` as input,
     # returns the string "Yes" if N > 0
     # returns the string "No" otherwise
     N=$1
     if [ -n "$N" ] && [ "$N" -ge 1 ]; then
-        echo "Yes"
+        echo "yes"
     else
-        echo "No"
+        echo "no"
+    fi
+}
+
+have_sw_package () {
+    # instead of guessing which distribution this is, we check for the
+    # package manager name as it basically identifies the distro
+    if have_command dpkg; then
+        (dpkg -l "$1" | egrep -q ^i ) >/dev/null 2>/dev/null;
+    elif have_command rpm; then
+        rpm -q "$1" >/dev/null 2>/dev/null;
+    fi
+}
+
+which_missing_packages () {
+    missing=''
+    for pkgname in "$@"; do
+        if have_sw_package "$pkgname"; then
+            continue;
+        else
+            missing="$missing $pkgname"
+        fi
+    done
+    echo "$missing"
+}
+
+install_required_sw () {
+    # instead of guessing which distribution this is, we check for the
+    # package manager name as it basically identifies the distro
+    if have_command apt-get; then
+        # Debian/Ubuntu
+        missing=$(which_missing_packages subversion python-dev gcc g++)
+        if [ -n "$missing" ]; then
+            cat 1>&2 <<EOF
+=====================================================
+GC3Pie install: ERROR: missing software prerequisites
+=====================================================
+
+The following software packages need to be installed
+in order for GC3Pie to work: $missing
+
+Please ask your system administrator to install them,
+or, if you have root access, you can do that by
+running the following command from the 'root' account:
+
+    apt-get install $missing
+
+EOF
+            exit 2
+        fi
+    elif have_command yum; then
+        # RHEL/CentOS
+        missing=$(which_missing_packages subversion python-devel gcc gcc-g++)
+        if [ -n "$missing" ]; then
+            cat 1>&2 <<EOF
+=====================================================
+GC3Pie install: ERROR: missing software prerequisites
+=====================================================
+
+The following software packages need to be installed
+in order for GC3Pie to work: $missing
+
+Please ask your system administrator to install them,
+or, if you have root access, you can do that by
+running the following command from the 'root' account:
+
+    yum install $missing
+
+EOF
+            exit 2
+        fi
+    elif have_command zypper; then
+        # SuSE
+        warn "Cannot check if requisite software is installed: SuSE and compatible Linux distributions are not yet supported. I'm proceeding anyway, but you may run into errors later. Please write to gc3pie@googlegroups.com asking for information."
+    else
+        # ???
+        die 1 "Cannot determine what package manager this Linux distribution has, so I cannot check if requisite software is installed. I'm proceeding anyway, but you may run into errors later. Please write to gc3pie@googlegroups.com to get help."
     fi
 }
 
@@ -81,12 +216,11 @@ else:
 EOF
     case $? in
         101)
-            # Using virtualenv 1.7.2, which is compatible with python
-            # version < 2.5
-            echo "GC3Pie install: WARNING: Using an old and possibly unsupported version of 'virtualenv' (1.7.2)"
+            # Using virtualenv 1.7.2, which is compatible with Python version < 2.5
+            warn "Using an old and possibly unsupported version of 'virtualenv' (1.7.2)"
             VIRTUALENV_URL=$VIRTUALENV_172_URL
-            echo "GC3Pie install: WARNING: Using an old and possibly unsupported version of 'pip' (1.1)"
-            $dl_cmd pip-1.1.tar.gz $PIP_11_URL
+            warn "Using an old and possibly unsupported version of 'pip' (1.1)"
+            download pip-1.1.tar.gz $PIP_11_URL
             ;;
         0)
             # using latest virtualenv
@@ -98,20 +232,22 @@ EOF
 GC3Pie install: ERROR: unable to check python version
 =====================================================
 
-The script was unable to check the version of the current python
-installation (check returned an exit status of "$?"). This check is needed to know which version of the "virtualenv" script we need to download.
+The script was unable to check the version of the Python
+language installed (check returned an exit status of "$?").
+This check is needed to know which version of the "virtualenv"
+auxiliary script we need to download.
 
-Please contact the GC3Pie team by sending an email go
-gc3pie@googlegroups.com and remember to attach the full output of the
-script, in order to help us to identify the problem.
+Please contact the GC3Pie team by sending an email to
+'gc3pie@googlegroups.com' and attach the full output of
+this script, in order to help us identify the problem.
 
 Aborting installation!
 EOF
             ;;
     esac
 
-	$dl_cmd virtualenv.py $VIRTUALENV_URL
-	VIRTUALENV_CMD="$PYTHON virtualenv.py"
+        download virtualenv.py $VIRTUALENV_URL
+        VIRTUALENV_CMD="$PYTHON virtualenv.py"
 
     # python virtualenv.py --system-site-packages $DESTDIR
     $VIRTUALENV_CMD --system-site-packages -p $PYTHON $DESTDIR
@@ -127,7 +263,7 @@ GC3Pie install: ERROR: 'pip' command not found.
 
 The script was unable to create a valid virtual environment. If the
 above output does not help you in solving the issue, please contact
-the GC3Pie team by sending an email to gc3pie@googlegroups.com
+the GC3Pie team by sending an email to gc3pie@googlegroups.com.
 
 Remember to attach the full output of the script, in order to help us
 to identify the problem.
@@ -141,40 +277,8 @@ EOF
 }
 
 install_gc3pie_via_svn () {
-
-    have_command svn
-    if [ $? -ne 0 ]
-    then
-        cat 1>&2 <<EOF
-=====================================================
-GC3Pie install: ERROR: Unable to find 'svn' command!"
-=====================================================
-
-GC3Pie development branch installation *needs* subversion.
-Please, install it using the software manager of your distribution
-or downloading it from http://subversion.tigris.org/
-
-Aborting installation!
-EOF
-        exit 1
-    fi
-
-    have_command $CC || have_command cc
-    if [ $? -ne 0 ]
-    then
-        cat 1>&2 <<EOF
-====================================================
-GC3Pie install: ERROR: Unable to find a C compiler!"
-====================================================
-
-GC3Pie development branch installation *needs* a C compiler. Please,
-install one using the software manager of your distribution.
-
-Aborting installation!
-EOF
-        exit 1
-    fi
-
+    require_cc
+    require_svn
     (
         cd $VENVDIR
         echo "Downloading GC3Pie from subversion repository $GC3_SVN_URL"
@@ -213,91 +317,65 @@ install_gc3apps () {
             binary=$(basename $cmd .py)
             ln -s  $LIBDIR/$cmd     $VENVDIR/bin/$binary
         done
-    fi        
+    fi
 }
 
 usage () {
 cat <<EOF
-This program will install GC3Pie in your home directory.
+This program will install GC3Pie in your directory '$HOME/gc3pie'.
 
 usage:
 $0 [OPTIONS]
 
-Options
+Options:
 
-      -d, --target=DIRECTORY Install GC3Pie virtual environment int DIRECTORY.
+      -d, --target DIRECTORY Install GC3Pie virtual environment into DIRECTORY.
                              (Default: $VENVDIR)
-      -p, --python=EXE       The python interpreter to use. The default is $(which python).
+
+      -p, --python EXE       The python interpreter to use. The default is $(which python).
+
       --develop              Install development version. Requires svn and gcc.
+
       --no-gc3apps           Do not install extra GC3 applications, like gcodeml, grosetta and gamess.
+
       --overwrite            Remove target directory if it already exists.
+
       --yes                  Do not ask for confirmation: assume a 'yes' reply to every question.
+
       -h, --help             print this help
 EOF
 }
 
-# Download command
-if have_command curl
-then
-    dl_cmd="curl -L -s -o"
-elif have_command wget
-then
-    dl_cmd="wget -O"
-else
-    cat 1>&2 <<EOF
-=========================================================
-GC3Pie install: ERROR: No 'curl' or 'wget' command found.
-=========================================================
 
-The script needs either 'curl' or 'wget' commands to run. 
-Please, install at least one of them using the software manager of
-your distribution, or downloading it from internet.
-
-wget: http://www.gnu.org/software/wget/
-
-curl: http://curl.haxx.se/
-
-Aborting installation!
-EOF
-    exit 1
-fi
-
-
+# Main program
 ARGS=$(getopt -o "d:p:h" -l "target:,python:,help,develop,no-gc3apps,overwrite,yes" -- "$@")
 eval set  -- "$ARGS"
 
-# Main program
 while true
 do
     case "$1" in
         -d|--target)
             shift
             VENVDIR=$(readlink -f $1)
-            shift
             ;;
         -p|--python)
             shift
             PYTHON=$1
-            shift
             ;;
         -h|--help)
             usage
             exit 0
             ;;
         --develop)
-            shift
             DEVELOP=1
             ;;
         --no-gc3apps)
-            shift
             WITHAPPS=0
             ;;
         --overwrite)
-            shift
-            OVERWRITEDIR=1
+            OVERWRITEDIR=yes
             ;;
         --yes)
-            shift
             ASKCONFIRMATION=0
             ;;
         --)
@@ -305,26 +383,30 @@ do
             break
             ;;
         *)
-            echo "Unknown option $1"
+            warn "Unknown option: $1"
             echo
             usage
             exit 1
             ;;
     esac
+    shift
 done
 
-versioninfo="*latest stable version* of"
-[ $DEVELOP -eq 1 ] && versioninfo="*development version* of"
+if [ $DEVELOP -eq 1 ]; then
+    versioninfo="*development version*"
+else
+    versioninfo="*latest stable version*"
+fi
 
 cat <<EOF
 ==========================
 GC3Pie installation script
 ==========================
 
-This script will install $versioninfo GC3Pie in "$VENVDIR". 
+This script installs $versioninfo of GC3Pie in "$VENVDIR".
 
-If you will encounter any problem running this script, please contact
-the GC3Pie team by sending an email to gc3pie@googlegroups.com
+If you encounter any problem running this script, please contact
+the GC3Pie team by sending an email to gc3pie@googlegroups.com.
 
 Remember to attach the full output of the script, in order to help us
 to identify the problem.
@@ -336,7 +418,7 @@ Python executable:        $PYTHON
 Ask for confirmation:     $(integer_to_boolean $ASKCONFIRMATION)
 Development mode:         $(integer_to_boolean $DEVELOP)
 Install gc3apps:          $(integer_to_boolean $WITHAPPS)
-Overwrite:                $(integer_to_boolean $OVERWRITEDIR)
+Overwrite:                $OVERWRITEDIR
 
 EOF
 
@@ -351,11 +433,54 @@ then
     echo
 fi
 
+# check and install prerequisites
+install_required_sw
+
+# Download command
+if have_command curl
+then
+    download () { curl -L -s -o "$@"; }
+elif have_command wget
+then
+    download () { wget -O "$@"; }
+else
+    cat 1>&2 <<EOF
+=========================================================
+GC3Pie install: ERROR: No 'curl' or 'wget' command found.
+=========================================================
+
+The script needs either one of the 'curl' or 'wget' commands to run.
+Please, install at least one of them using the software manager of
+your distribution, or downloading it from internet.
+
+wget: http://www.gnu.org/software/wget/
+
+curl: http://curl.haxx.se/
+
+Aborting installation!
+EOF
+    exit 1
+fi
 
 # Install virtualenv
 if [ -d $VENVDIR ]
 then
-    if [ $OVERWRITEDIR -eq 0 ]
+    if [ $OVERWRITEDIR = 'ask' ]; then
+        echo "Destination directory '$VENVDIR' already exists."
+        echo "I can wipe it out in order to make a new installation,"
+        echo "but this means any files in that directory, and the ones"
+        echo "underneath it will be deleted."
+        echo
+        read -p "Do you want to wipe the installation directory '$VENVDIR'? [yN] " yn
+        if [ "$yn" != "y" -a "$yn" != "Y" ]
+        then
+            say "*Not* overwriting destination directory '$VENVDIR'."
+            OVERWRITEDIR=no
+        else
+            OVERWRITEDIR=yes
+        fi
+    fi
+    if [ $OVERWRITEDIR = 'no' ]
     then
 cat 1>&2 <<EOF
 =============================================================================================
@@ -378,13 +503,15 @@ In order to proceed, you must take one of the following action:
 Aborting installation!
 EOF
         exit 1
-    else
+    elif [ $OVERWRITEDIR = 'yes' ]; then
         echo "Removing directory $VENVDIR as requested."
         rm -rf $VENVDIR
+    else
+        die 66 "Internal error: unexpected value '$OVERWRITEDIR' for OVERWRITEDIR."
     fi
 fi
 
-echo "Installing GC3Pie virtualenv in $VENVDIR"
+echo "Installing GC3Pie virtualenv in $VENVDIR ..."
 install_virtualenv $VENVDIR
 if [ $? -ne 0 ]
 then
@@ -395,7 +522,7 @@ GC3Pie install: ERROR: Unable to create a new virtualenv in $VENVDIR: "virtualen
 
 The script was unable to create a valid virtual environment. If the
 above output does not help you in solving the issue, please contact
-the GC3Pie team by sending an email to gc3pie@googlegroups.com
+the GC3Pie team by sending an email to gc3pie@googlegroups.com.
 
 Remember to attach the full output of the script, in order to help us
 to identify the problem.
@@ -410,18 +537,18 @@ fi
 rc=0
 if [ $DEVELOP -eq 0 ]
 then
-    echo "Installing GC3Pie stable release"
+    echo "Installing GC3Pie stable release ..."
     install_gc3pie_via_pip
     rc=$?
 else
-    echo "Installing GC3Pie *development* tree using Subversion"
+    echo "Installing GC3Pie *development* tree using Subversion ..."
     install_gc3pie_via_svn
     rc=$?
 fi
 
 if [ $rc -eq 0 ]
 then
-    if [ $WITHAPPS -eq 1 ] 
+    if [ $WITHAPPS -eq 1 ]
     then
         install_gc3apps
         if [ $? -ne 0 ]
@@ -443,8 +570,8 @@ then
     echo "    . $VENVDIR/bin/activate"
     echo
     echo "You need to run the above command on every new shell you open just once before using GC3Pie commands."
-    echo 
+    echo
     echo "If the shell's prompt starts with '(gc3pie)' it means that the virtual environment"
     echo "has been enabled."
-    
+
 fi
