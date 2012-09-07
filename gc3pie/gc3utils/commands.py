@@ -20,7 +20,7 @@ Implementation of the `core` command-line front-ends.
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 #
 __docformat__ = 'reStructuredText'
-__version__ = 'development version (SVN $Revision$)'
+__version__ = '2.0.0-a2 version (SVN $Revision$)'
 __author__ = "Sergio Maffioletti <sergio.maffioletti@gc3.uzh.ch>, "
 "Riccardo Murri <riccardo.murri@uzh.ch>"
 "Antonio Messina <arcimboldo@gmail.com>"

@@ -40,7 +40,7 @@ import setuptools
 import setuptools.dist
 setuptools.setup(
     name = "gc3pie",
-    version = "1.1.dev", # see: http://packages.python.org/distribute/setuptools.html
+    version = '2.0.0-a2', # see: http://packages.python.org/distribute/setuptools.html
 
     packages = setuptools.find_packages(exclude=['ez_setup'])+['.'],
     # metadata for upload to PyPI
