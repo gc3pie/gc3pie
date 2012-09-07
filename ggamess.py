@@ -171,7 +171,7 @@ of newly-created jobs so that this limit is never exceeded.
 	if number_of_unfinished_tests == 0:
 		gc3libs.log.info("All job(s) terminated normally.")
 	else:
-		gc3libs.log.info("%s job(s) did not terminated normally . Please examine why.", number_of_unfinished_tests) 
+		gc3libs.log.info("%s job(s) have not terminated. Please examine why.", number_of_unfinished_tests) 
 		
 # This class overrides GamessApplication class and triggers a test in terminated().
 #TODO: GamessTestApplcation class is only used when ggamess.py -N was provided 
@@ -192,6 +192,7 @@ class GamessTestApplication(GamessApplication):
 		file_output = os.path.join(self.output_dir, self.outputs[self.stdout].path)
 		gc3libs.log.debug("Analyzing GAMESS input %s and %s output files.", file_input, file_output)
 		test.generate_tests(file_input, file_output)
+	 	import pdb;pdb.set_trace()
 		test.runTests()
 		self.logTest.append(test.log)
 			

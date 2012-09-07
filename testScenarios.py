@@ -47,6 +47,26 @@ class Test:
 		self.tolW =  0.1
 		self.tolX =  0.00001
 
+# E energy in a.u. :  
+# W vibrational frequency (cm-1)
+# I IR intensity
+# P Mean Alpha Polarization ??
+# H heat of formation in kcal/mol 
+# G RMS gradient in a.u.
+# L localisation sum (debye**2)
+# T T1 diagnostic from CC
+
+# D RMS dipole moment  
+# X basis set exponent  
+# S spin momentum (a.u.)
+# O overlap (such as GVB)
+
+# O polarisability
+# V velocity (a.u.), such as in DRC
+# R distance (in bohr), such as in IRC 
+# tols are tolerances, digs are the numbers of sig. digits.
+# C percent (%), such as reference weight in MCQDPT
+
 #Compare valLog and valOK against the tolerance.	
 	
 	def chkabs(self,valLog, valOK, tol, label):
@@ -86,12 +106,11 @@ class Test:
 		else:
 			#convert to int
 			try:
-				which = int(matchedLine)
-				return which
+				return int(matchedLine)
 			except ValueError:
 				gc3libs.log.debug("ERROR: %s is incorrect. ",matchedLine)
-				return -1
-			which = -1
+				return None
+			which = None
 		return which
 			
 #Search for pattern in the file. Return a list of lines together with the line numbers. 
@@ -212,7 +231,10 @@ class TestNextLine(Test):
 			#Extract the position of the value within the target line	
 			pos = self.checkPositionInLine(positionInLine)
 			gc3libs.log.debug("CHECKED positionInLine %s", pos)
-			if (whichFollowing < 0):
+			if whichFollowing is None:
+				gc3libs.log.debug("ERROR: whichFollowing %s is incorrect.",whichFollowing) 
+				return False
+			if which is None:
 				gc3libs.log.debug("ERROR: whichFollowing %s is incorrect.",whichFollowing) 
 				return False
 			
@@ -270,7 +292,7 @@ class TestLine(Test):
 		gc3libs.log.debug("Test: %s", self.name)
 		gc3libs.log.debug("LPattern %s", self.LPattern)
 		gc3libs.log.debug("LMatchedLine %s", self.LMatchedLine)
-		gc3libs.log.debug("LFollowingLine %s", self.LFollowingLine) 
+		#gc3libs.log.debug("LFollowingLine %s", self.LFollowingLine) 
 		gc3libs.log.debug("LPositionInLine %s", self.LPositionInLine) 
 		gc3libs.log.debug("LValues %s", self.LValues)
 		gc3libs.log.debug("LTolerances %s", self.LTolerances) 
