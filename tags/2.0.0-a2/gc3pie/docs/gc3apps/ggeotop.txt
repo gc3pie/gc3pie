@@ -1,0 +1,392 @@
+.. Hey Emacs, this is -*- rst -*-
+
+   This file follows reStructuredText markup syntax; see
+   http://docutils.sf.net/rst.html for more information.
+
+.. include:: ../global.inc
+
+
+.. _ggeotop:
+
+The `ggeotop`:command: script
+=============================
+
+GC3Apps provide a script drive execution of multiple ``GEOtop``
+jobs. It uses the generic `gc3libs.cmdline.SessionBasedScript`
+framework.
+
+From GEOtop's "read me" file:
+::
+    #
+    # RUNNING
+    # Run this simulation by calling the executable (GEOtop_1.223_static) 
+    # and giving the simulation directory as an argument.
+    # 
+    # EXAMPLE
+    # ls2:/group/geotop/sim/tmp/000001>./GEOtop_1.223_static ./
+    # 
+    # TERMINATION OF SIMULATION BY GEOTOP
+    # When GEOtop terminates due to an internal error, it mostly reports this
+    # by writing a corresponding file (_FAILED_RUN or _FAILED_RUN.old) in the
+    # simulation directory. When is terminates sucessfully this file is
+    # named (_SUCCESSFUL_RUN or _SUCCESSFUL_RUN.old).
+    # 
+    # RESTARTING SIMULATIONS THAT WERE TERMINATED BY THE SERVER
+    # When a simulation is started again with the same arguments as described
+    # above (RUNNING), then it continues from the last saving point. If
+    # GEOtop finds a file indicating a successful/failed run, it terminates.
+
+
+Introduction
+------------
+
+`ggeotop`:command: driver script acan the specified INPUT directories
+recursively for simulation directories and submit a job for each one
+found; job progress is monitored and, when a job is done, its output
+files are retrieved back into the simulation directory itself.
+
+A simulation directory is defined as a directory containing a
+``geotop.inpts`` file, an ``in`` and an ``out`` folders.
+
+The ``ggeotop`` command keeps a record of jobs (submitted, executed
+and pending) in a session file (set name with the ``-s`` option); at
+each invocation of the command, the status of all recorded jobs is
+updated, output from finished jobs is collected, and a summary table
+of all known jobs is printed.  New jobs are added to the session if
+new input files are added to the command line.
+
+Options can specify a maximum number of jobs that should be in
+'SUBMITTED' or 'RUNNING' state; ``ggeotop`` will delay submission of
+newly-created jobs so that this limit is never exceeded.
+
+Options can specify a maximum number of jobs that should be in
+'SUBMITTED' or 'RUNNING' state; `ggeotop`:command: will delay submission
+of newly-created jobs so that this limit is never exceeded.
+
+In more detail, `ggeotop`:command: does the following:
+   
+1. Reads the `session`:term: (specified on the command line with the
+   ``--session`` option) and loads all stored jobs into memory.
+   If the session directory does not exist, one will be created with
+   empty contents.
+   
+2. Recursively scans trough ``input`` folder searching for any valid
+   folder.
+   
+   `ggeotop`:command: will generate a collection of jobs one for each
+   valid input folder. Each job will transfer the input folder to the
+   remote execution node and run ``GEOTop``. 
+   ``GEOTop`` reads geotop.inpts files for getting instructions on how
+   to find the input data, what and how to process and where to place
+   generated output results. Extracted from a generic geotop.inpts
+   file:
+
+::
+
+   DemFile = "in/dem"
+   MeteoFile = "in/meteo"
+   SkyViewFactorMapFile = "in/svf"
+   SlopeMapFile = "in/slp"
+   AspectMapFile = "in/asp"
+   
+   !==============================================
+   !   DIST OUTPUT
+   !==============================================
+   SoilAveragedTempTensorFile = "out/maps/T"
+   NetShortwaveRadiationMapFile="out/maps/SWnet"
+   InShortwaveRadiationMapFile="out/maps/SWin"
+   InLongwaveRadiationMapFile="out/maps/LWin"
+   SWEMapFile= "out/maps/SWE" 
+   AirTempMapFile = "out/maps/Ta"
+   
+
+3. Updates the state of all existing jobs, collects output from
+   finished jobs, and submits new jobs generated in step 2.
+
+4. For each of the terminated jobs, a post-process routine is executed
+   to check and validate the consistency of the generated output. If
+   no ``_SUCCESSFUL_RUN`` or ``_FAILED_RUN`` file is found, the
+   related job will be resubmitted together with the current input and
+   output folders. GEOTop is capable of restarting an interrupted
+   claculation by inspecting the intermediate results generated in
+   ``out`` folder.
+
+   Finally, a summary table of all known jobs is printed.  (To control
+   the amount of printed information, see the ``-l`` command-line
+   option in the `session-based script`:ref: section.)
+
+4. If the ``-C`` command-line option was given (see below), waits
+   the specified amount of seconds, and then goes back to step 3.
+
+   The program `ggeotop`:command: exits when all jobs have run to
+   completion, i.e., when all valid input folders have been computed.
+
+Execution can be interrupted at any time by pressing :kbd:`Ctrl+C`.
+If the execution has been interrupted, it can be resumed at a later
+stage by calling `ggeotop`:command: with exactly the same
+command-line options.
+
+Command-line invocation of `ggeotop`:command:
+----------------------------------------------
+
+The `ggeotop`:command: script is based on GC3Pie's `session-based
+script <session-based script>`:ref: model; please read also the
+`session-based script`:ref: section for an introduction to sessions
+and generic command-line options.
+
+A `ggeotop`:command: command-line is constructed as follows:
+
+1. Each argument (at least one should be specified) is considered as a
+   folder reference.
+2. ``-x`` option is used to specify the path to the GEOtop executable
+   file.
+**Example 1.** The following command-line invocation uses
+`ggeotop`:command: to run ``GEOTop`` on all valid input folder found
+in the recursive check of ``input_folder``
+::
+
+   $ ggeotop -x /apps/geotop/bin/geotop_1_224_20120227_static ./input_folder
+
+**Example 2.**
+::
+   
+   $ ggeotop --session SAMPLE_SESSION -w 24 -x /apps/geotop/bin/geotop_1_224_20120227_static ./input_folder
+
+In this example, job information is stored into session
+``SAMPLE_SESSION`` (see the documentation of the ``--session`` option
+in `session-based script`:ref:).  The command above creates the jobs,
+submits them, and finally prints the following status report::
+
+  Status of jobs in the 'SAMPLE_SESSION' session: (at 10:53:46, 02/28/12)
+  NEW   0/50    (0.0%)  
+  RUNNING   0/50    (0.0%)  
+  STOPPED   0/50    (0.0%)  
+  SUBMITTED   50/50   (100.0%) 
+  TERMINATED   0/50    (0.0%)  
+  TERMINATING   0/50    (0.0%)  
+  total   50/50   (100.0%) 
+
+Calling `ggeotop`:command: over and over again will result in the same jobs
+being monitored; 
+
+The ``-C`` option tells `ggeotop`:command: to continue running until
+all jobs have finished running and the output files have been
+correctly retrieved.  On successful completion, the command given in
+*example 2.* above, would print::
+
+  Status of jobs in the 'SAMPLE_SESSION' session: (at 11:05:50, 02/28/12)
+  NEW   0/50    (0.0%)  
+  RUNNING   0/50    (0.0%)  
+  STOPPED   0/540    (0.0%)  
+  SUBMITTED   0/50    (0.0%)  
+  TERMINATED   50/50   (100.0%) 
+  TERMINATING   0/50    (0.0%)  
+  ok   50/50   (100.0%) 
+  total   50/50   (100.0%) 
+
+Each job will be named after the folder name (e.g. 000002) (you could
+see this by passing the ``-l`` option to `ggeotop`:command:).; each of
+these jobs will fill the related input folder with the produced
+outputs.
+
+For each job, the set of output files is automatically retrieved and
+placed in the locations described below.  
+
+Output files for `ggeotop`:command:
+------------------------------------
+
+Upon successful completion, the output directory of each
+`ggeotop`:command: job contains:
+
+* the ``out`` folder will contains what has been produced during the
+  computation of the related job.
+
+
+Example usage
+-------------
+
+This section contains commented example sessions with
+`ggeotop`:command:.
+
+Manage a set of jobs from start to end
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+*In typical operation,* one calls `ggeotop`:command: with the ``-C``
+option and lets it manage a set of jobs until completion.
+
+So, to analyse all valid folders under ``input_folder``, submitting
+200 jobs simultaneously each of them requesting 2GB of memory and 8
+hours of `wall-clock time <walltime>`:term:, one can use the following
+command-line invocation::
+  
+  $ ggeotop -s example -C 120 -x
+  /apps/geotop/bin/geotop_1_224_20120227_static -w 8 input_folder
+
+The ``-s example`` option tells `ggeotop`:command: to store
+information about the computational jobs in the ``example.jobs``
+directory.
+
+The ``-C 120`` option tells `ggeotop`:command: to update job state
+every 120 seconds; output from finished jobs is retrieved and new jobs
+are submitted at the same interval.
+
+The above command will start by printing a status report like the
+following:
+::
+   Status of jobs in the 'example.csv' session:
+   SUBMITTED   1/1 (100.0%)
+   
+It will continue printing an updated status report every 120 seconds
+until the requested parameter range has been computed.
+
+In GC3Pie terminology when a job is finished and its output has been
+successfully retrieved, the job is marked as ``TERMINATED``::
+
+  Status of jobs in the 'example.csv' session:
+  TERMINATED   1/1 (100.0%)
+
+Using GC3Pie utilities
+----------------------
+
+GC3Pie comes with a set of generic utilities that could be used as a
+complemet to the `ggeotop`:command: command to better manage a entire
+session execution.
+
+:command:`gkill`: cancel a running job
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+To cancel a running job, you can use the command :command:`gkill`.  For
+instance, to cancel *job.16*, you would type the following command
+into the terminal::
+
+  gkill job.16
+
+or::
+
+  gkill -s example job.16
+
+gkill could also be used to cancel jobs in  a given state
+::
+
+  gkill -s example -l UNKNOWN
+
+.. warning:: 
+
+   *There's no way to undo a cancel operation!* Once you have issued a
+   :command:`gkill` command, the job is deleted and it cannot be resumed.
+   (You can still re-submit it with :command:`gresub`, though.)
+
+
+:command:`ginfo`: accessing low-level details of a job
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+It is sometimes necessary, for debugging purposes, to print out all
+the details about a job; the :command:`ginfo` command does just that: prints
+all the details that GC3Utils know about a single job.
+
+For instance, to print out detailed information about `job.13` in
+session `example`, you would type
+::
+
+    ginfo -s example job.13
+
+For a job in ``RUNNING`` or ``SUBMITTED`` state, only little
+information is known: basically, where the job is running, and when it
+was started::
+
+If you omit the job number, information about *all* jobs in the
+session will be printed.
+
+Most of the output is only useful if you are familiar with GC3Utils
+inner working. Nonetheless, :command:`ginfo` output is definitely something
+you should include in any report about a misbehaving job!
+
+For a finished job, the information is more complete and can include
+error messages in case the job has failed
+::
+
+    $ ginfo -s example job.13
+    job.13
+        cores: 2
+	execution_targets: hera.wsl.ch
+	log: 
+            SUBMITTED at Tue May 15 09:52:05 2012
+	    Submitted to 'wsl' at Tue May 15 09:52:05 2012
+	    RUNNING at Tue May 15 10:07:39 2012
+	lrms_jobid: gsiftp://hera.wsl.ch:2811/jobs/116613370683251353308673
+	lrms_jobname: GC3Pie_00002
+	original_exitcode: -1
+	queue: smscg.q
+	resource_name: wsl
+	state_last_changed: 1337069259.18
+	stderr_filename: ggeotop.log
+	stdout_filename: ggeotop.log
+	timestamp: 
+	    RUNNING: 1337069259.18
+	    SUBMITTED: 1337068325.26
+	unknown_iteration: 0
+	used_cputime: 1380
+	used_memory: 3382706
+
+With option ``-v``, :command:`ginfo` output is even more verbose and complete,
+and includes information about the application itself, the input and
+output files, plus some backend-specific information
+::
+
+  $ ginfo -c -s example job.13
+  job.13
+    arguments: 00002
+    changed: False
+    environment: 
+    executable: geotop_static
+    executables: geotop_static
+    execution: 
+        _arc0_state_last_checked: 1337069259.18
+        _exitcode: 0
+        _signal: None
+        _state: TERMINATED
+        cores: 2
+        download_dir: /data/geotop/results/00002
+        execution_targets: hera.wsl.ch
+        log:
+            SUBMITTED at Tue May 15 09:52:04 2012
+            Submitted to 'wsl' at Tue May 15 09:52:04 2012
+            TERMINATING at Tue May 15 10:07:39 2012
+            Final output downloaded to '/data/geotop/results/00002'
+            TERMINATED at Tue May 15 10:07:43 2012
+        lrms_jobid: gsiftp://hera.wsl.ch:2811/jobs/11441337068324584585032
+        lrms_jobname: GC3Pie_00002
+        original_exitcode: 0
+        queue: smscg.q
+        resource_name: wsl
+        state_last_changed: 1337069263.13
+        stderr_filename: ggeotop.log
+        stdout_filename: ggeotop.log
+        timestamp:
+            SUBMITTED: 1337068324.87
+            TERMINATED: 1337069263.13
+            TERMINATING: 1337069259.18
+        unknown_iteration: 0
+        used_cputime: 360
+        used_memory: 3366977
+        used_walltime: 300
+    jobname: GC3Pie_00002
+    join: True
+    output_base_url: None
+    output_dir: /data/geotop/results/00002
+    outputs: 
+        @output.list: file, , @output.list, None, None, None, None
+        ggeotop.log: file, , ggeotop.log, None, None, None, None
+    persistent_id: job.1698503
+    requested_architecture: x86_64
+    requested_cores: 2
+    requested_memory: 4
+    requested_walltime: 4
+    stderr: None
+    stdin: None
+    stdout: ggeotop.log
+    tags: APPS/EARTH/GEOTOP
+
+.. References
+
+.. _grid: http://www.smscg.ch
