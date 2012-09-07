@@ -37,7 +37,7 @@ from gc3libs.utils import read_contents
 
 def make_sessiondir(basedir, name='TEST_SESSION'):
     """
-    returns an unique session dir name inside `basedir`
+    Returns an unique session dir name inside `basedir`
     """
     sessiondir = os.path.join(basedir, name)
     if os.path.exists(sessiondir):
@@ -49,7 +49,27 @@ def make_sessiondir(basedir, name='TEST_SESSION'):
             sessiondir = orig_sessiondir + '.%d' % item
 
     os.mkdir(sessiondir)
-    return os.path.basename(sessiondir)
+    return sessiondir
+
+def make_log_files(basedir, name='UNKNOWN'):
+    """
+    Returns a pair of file descriptor (`stdout`, `stderr`) to be used
+    to redirect standard output and error of the application.
+
+    Files are in `basedir` and are named after the `name` plus
+    `.stdout.log` or `.stderr.log`. In case at least one of the files
+    already exists, an integer will be added to the filenames.
+    """
+    basefile = os.path.join(basedir, name)
+    out = basefile + '.stdout.log'
+    err = basefile + '.stderr.log'
+    if os.path.exists(out) or os.path.exists(err):
+        item = 1
+        while os.path.exists(out) or os.path.exists(err):
+            out = basefile + '.%d.stdout.log' % item
+            err = basefile + '.%d.stderr.log' % item
+            item += 1
+    return (open(out, 'w'), open(err,'w'))
 
 # Generic Test class
 # ==================
@@ -100,7 +120,7 @@ class TestRunner(object):
         """
         pass
 
-    def run_test(self, *extra_args):
+    def run_test(self, extra_args, stdout=subprocess.PIPE, stderr=subprocess.PIPE):
         """
         This method will actually execute the tests. This method is
         not supposed to be overwritten.
@@ -110,15 +130,15 @@ class TestRunner(object):
         """
         gc3libs.log.debug("Running command `%s`" % str.join(' ', self.args + list(extra_args)))
         self.proc = subprocess.Popen(str.join(' ', self.args + list(extra_args)),
-                                     stdout=subprocess.PIPE,
-                                     stderr=subprocess.PIPE,
+                                     stdout=stdout,
+                                     stderr=stderr,
                                      shell=True)
 
     def __str__(self):
         return str.join(" ", self.args)
 
 
-class CodemlTest(TestRunner):
+class GCodemlTest(TestRunner):
     def __str__(self):
         return "GCodeml"
 
@@ -135,12 +155,12 @@ class CodemlTest(TestRunner):
                      '-C', '120',
                      'data/small_flat']
         self.datadir = os.path.join(self.testdir, 'data/small_flat')
-        self.outputdir = os.path.join(datadir, 'small_flat.out')
+        self.outputdir = os.path.join(self.datadir, 'small_flat.out')
 
     def cleanup(self):
         for d in (self.outputdir, self.sessiondir):
             if os.path.exists(d):
-                gc3libs.log.debug("GCodeml: removing directory %s" % d)
+                gc3libs.log.info("GCodeml: removing directory %s" % d)
                 shutil.rmtree(d)
 
     def terminate(self):
@@ -159,14 +179,14 @@ class CodemlTest(TestRunner):
                 fd = open(outfile)
                 output = fd.readlines()
                 fd.close()
-                if not output or output[-1].startswith("Time used:"):
+                if not output or not output[-1].startswith("Time used:"):
                     gc3libs.log.error("GCodeml: Error in output file `%s`" % outfile)
                     self.passed = False
                     return 
 
         self.passed = True
 
-class GamessTest(TestRunner):
+class GGamessTest(TestRunner):
     def __str__(self):
         return "GGamess"
 
@@ -187,27 +207,26 @@ class GamessTest(TestRunner):
     def cleanup(self):
         for d in (self.examdir, self.sessiondir):
             if os.path.exists(d):
-                gc3libs.log.debug("GGamess: removing directory %s" % d)
+                gc3libs.log.info("GGamess: removing directory %s" % d)
                 shutil.rmtree(d)
 
     def terminate(self):
         """
         Parse the output and clean up the directory
         """
-        if not hasattr(self, 'stdout'):
-            examfile = os.path.join(self.examdir, 'exam01')
-            if not os.path.isfile(examfile):
-                self.passed = False
-                return
-            self.stdout = read_contents(examfile)
+        examfile = os.path.join(self.examdir, 'exam01.out')
+        if not os.path.isfile(examfile):
+            self.passed = False
+        stdout = read_contents(examfile)
         
-        if re.match('.*\n (EXECUTION OF GAMESS TERMINATED NORMALLY).*', self.stdout, re.M|re.S):
+        if re.match('.*\n (EXECUTION OF GAMESS TERMINATED NORMALLY).*', stdout, re.M|re.S):
             self.passed = True
         else:
             gc3libs.log.error("GGamess: Output file %s does not match success regexp" % examfile)
             self.passed = False
 
-class RosettaTest(TestRunner):
+
+class GRosettaTest(TestRunner):
     def __str__(self):
         return "GRosetta"
 
@@ -264,7 +283,7 @@ class RosettaTest(TestRunner):
         self.passed = True
 
 
-class DockingTest(TestRunner):
+class GDockingTest(TestRunner):
     def __str__(self):
         return "GDocking"
 
@@ -308,24 +327,20 @@ class DockingTest(TestRunner):
 ## main: run tests
 applicationdirs = {
     # 'bf.uzh.ch': None,
-    'codeml': (CodemlTest,),
+    'codeml': (GCodemlTest,),
     # 'compchem.unipg.it': None,
-    'gamess': (GamessTest,),
+    'gamess': (GGamessTest,),
     # 'gc3.uzh.ch': None,
     # 'geotop': None,
     # 'ieu.uzh.ch': None,
     # 'imsb.ethz.ch': None,
     # 'ior.uzh.ch': None,
     # 'lacal.epfl.ch': None,
-    'rosetta': (RosettaTest, DockingTest),
+    'rosetta': (GRosettaTest, GDockingTest),
     # 'turbomole': None,
     # 'zods': None,
     }
 
-
-running = []
-finished = []
-extra_args = sys.argv[1:]
 
 class RunTests(cli.app.CommandLineApp):
     """
@@ -368,6 +383,8 @@ class RunTests(cli.app.CommandLineApp):
         self.params.args = [i.rstrip('/') for i in self.params.args]
         self.applicationdirs = {}
         self.extra_args = []
+        self.running = []
+        self.finished = []
 
         loglevel = max(1, logging.ERROR - 10 * max(0, self.params.verbose))
         logging.basicConfig(format='GC3Pie test runner: [%(asctime)s] %(levelname)-8s: %(message)s',
@@ -398,53 +415,44 @@ class RunTests(cli.app.CommandLineApp):
                     os.chdir(appdir)
                     app = cls(appdir)
                     gc3libs.log.info("Running test %s on dir `%s`" % (app, appdir))
-                    app.run_test(*self.extra_args)
+                    baselog = os.path.join(parentdir,
+                                               os.path.basename(sys.argv[0]).replace('.py','') + '.' + os.path.basename(str(app).lower()))
+                    stdout, stderr = make_log_files(parentdir, str(app))
+                    app.run_test(self.extra_args, stdout=stdout, stderr=stderr)
                     app.appdir = appdir
-                    running.append(app)
-                except TestNotFound, ex:
-                    gc3libs.log.error(str(ex))
+                    self.running.append(app)
                 except Exception, ex:
                     gc3libs.log.error("%s: %s" % (app, ex))
                 finally:
-                    os.chdir(parentdir)            
+                    os.chdir(parentdir)
 
-        while running:
-            for app in running:
+        while self.running:
+            for app in self.running:
                 if app.proc.poll() is not None:
-                    running.remove(app)
-                    finished.append(app)
+                    self.running.remove(app)
+                    self.finished.append(app)
                     # Terminate application
                     try:
                         os.chdir(app.appdir)
                         gc3libs.log.debug("Calling `terminate()` method of application %s" % app)
                         app.terminate()
-                        # write log
-                        logfile = os.path.join(parentdir,
-                                               os.path.basename(sys.argv[0]).replace('.py','') + '.' + os.path.basename(app.appdir) + '.log')
-                        gc3libs.log.info("Writing standard output and error for application %s to the file `%s`" % (app, logfile))
-                        fd = open(logfile, 'w')
-                        fd.write('\n%s STANDARD OUTPUT %s\n' % ('='*40, '='*40))
-                        fd.write(app.proc.stdout.read())
-                        fd.write('\n%s STANDARD ERROR %s\n' % ('='*40, '='*40))
-                        fd.write(app.proc.stderr.read())
-                        fd.write('\n%s APPLICATION STATUS %s\n' % ('='*40, '='*40))
-                        fd.write("Application passed: %s\n" % app.passed)
-                        fd.write("Return code:        %s\n" % app.proc.returncode)
-                        fd.close()
                     except Exception, ex:
                         gc3libs.log.error(
                             "Error while calling `terminate()` method of application %s: %s" % (app, str(ex)))
                     finally:
-                        fd.close()
                         os.chdir(parentdir)            
                     gc3libs.log.info("Application %s terminated with return code `%d`" % (app, app.proc.returncode))
+                    if app.passed:
+                        gc3libs.log.info("Application %s PASSED the tests" % str(app))
+                    else:
+                        gc3libs.log.info("Application %s DID NOT PASS the tests" % str(app))
 
-            if not running: break
+            if not self.running: break
             gc3libs.log.debug("Sleeping %d seconds" % self.params.delay)
             time.sleep(self.params.delay)
 
-        gc3libs.log.info("All application finished")
-        for app in finished:
+        gc3libs.log.info("All applications have finished")
+        for app in self.finished:
             print "Application:    %s" % app
             print "  Return code:  %d" % (app.proc.returncode)
             print "  Test passed?: %s" % app.passed
