@@ -272,9 +272,9 @@ def str2vals(strIn):
 
 def format_newVal(newVal):
     import re
-    if re.match("^[0-9]*\.[0-9]*$", str(newVal)):
+    if re.match("^[-]*[0-9]*\.[0-9]*$", str(newVal)):
 #    if '.' in str(newVal):
-        newValMat = '%.10f' % float(newVal)
+        newValMat = ('%25.15f' % float(newVal)).strip()
     else:
         try:
             # try to convert to integer, and use decimal repr

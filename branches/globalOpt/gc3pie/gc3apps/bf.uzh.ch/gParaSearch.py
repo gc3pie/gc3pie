@@ -239,6 +239,26 @@ class gParaSearchParallel(ParallelTaskCollection, paraLoop_fp):
 
     def __init__(self, inParaCombos, iteration, pathToExecutable, pathToStageDir, architecture, baseDir, xVars,
                  solverVerb, problemType, analyzeResults, ctryList, **extra_args):
+        
+        '''
+          Generate a list of tasks and initialize a ParallelTaskCollection with them. 
+          Uses paraLoop class to generate a list of (descriptions, substitutions for the input files). Descriptions are generated from
+          variable names that are hard coded in this method right now. 
+          Uses method generateTaskList to create a list of GPremiumApplication's which are invoked from a list of inputs (appropriately adjusted input files), 
+          the output directory and some further settings for each run. 
+          
+          inParaCombos:      List of tuples defining the parameter combinations.
+          iteration:         Current iteration number. 
+          pathToExecutable:  Path to the executable (the external program to be called). 
+          pathToStageDir:    Root path. Usually os.getcwd()
+          architecture:      32 or 64 bit.
+          baseDir:           Directory in which the input files are located. 
+          xVars:             Names of the x variables. 
+          solverVerb:        Logger verbosity. 
+          problemType:       Forward premium specific flag to determine which case to look at. 
+          analyzeResults:    Function to use to analyze the emerging output. 
+          ctryList:          Forward premium specific list of ctrys to look at. 
+        '''
 
         logger.debug('entering gParaSearchParalell.__init__')
 
