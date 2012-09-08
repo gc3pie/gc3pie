@@ -15,7 +15,7 @@
 !  amplitude is for the pi->pi* double, namely -0.146352.
 !  The R-CCSD(T) denominator is 1.126.
 !
-! ggamess test: grepLinesAndAnalyze("CR-CCSD\(T\)\_L\s ENERGY\:", "last", 5, -130.1517479953, GamessTst.tolE, "Eerr")
+! ggamess test: grepLinesAndAnalyze("CR-CCSD\(T\)\s ENERGY\:", "last", 5, -130.1517479953, GamessTst.tolE, "Eerr")
 ! ggamess test: grepLinesAndAnalyze("T1 \s DIAGNOSTIC", "", 4, 0.01448788, GamessTst.tolT, "Terr")
 !
  $contrl scftyp=rhf cctyp=cr-cc runtyp=energy nzvar=3 $end

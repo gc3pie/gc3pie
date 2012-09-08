@@ -46,7 +46,7 @@ class Test:
 		self.tolV =  0.00000001
 		self.tolW =  0.1
 		self.tolX =  0.00001
-
+		self.tolerances = {'tolC': self.tolC, 'tolD': self.tolD, 'tolE': self.tolE,'tolG': self.tolG, 'tolH': self.tolH,'tolI':  self.tolI, 'tolL': self.tolL, 'tolO': self.tolO, 'tolP': self.tolP, 'tolR': self.tolR , 'tolS': self.tolS , 'tolT': self.tolT , 'tolV': self.tolV , 'tolW': self.tolW , 'tolX': self.tolX}
 # E energy in a.u. :  
 # W vibrational frequency (cm-1)
 # I IR intensity
@@ -76,6 +76,16 @@ class Test:
 			return (False,ret)
 		else:
 			return (True,ret)
+	
+	def check_tolerance(self, tolerance):
+		# self.tolerances contains entries of a type dict('tolC',self.tolC)
+	 	try:
+		    return float(tolerance)
+		except ValueError:
+		    gc3libs.log.debug("Could not convert %s to float, tolerance must be flaot", tolerance)
+		    for tol_key in self.tolerances.keys():
+		        if tolerance.find(tol_key) > 0:
+		            return float(self.tolerances[tol_key])
 	
 # Analyze the argument in LPositionInLine. Return the index of the column that correspond the a target value. 
 	
@@ -224,9 +234,10 @@ class TestNextLine(Test):
 			#Encode the index of the line of interest
 			which = self.checkMatchedLine(whichLine)
 			whichFollowing  = self.checkMatchedLine(followingLine)
-			
+		 	tolerance = self.check_tolerance(tolerance)	
 			gc3libs.log.debug("Internal Test No. %s", testNo)
 			gc3libs.log.debug("CHECKED MatchedLine %s", which)
+			gc3libs.log.debug("CHECKED tolerance %s", tolerance)
 			gc3libs.log.debug("CHECKED followingLine %s", whichFollowing)
 			#Extract the position of the value within the target line	
 			pos = self.checkPositionInLine(positionInLine)
@@ -304,9 +315,11 @@ class TestLine(Test):
 			testNo = testNo + 1
 			#Encode the index of the line of interest
 			which = self.checkMatchedLine(whichLine)
+			#import pdb;pdb.set_trace()
 			#whichFollowing  = self.checkMatchedLine(followingLine)
-			
+		 	tolerance = self.check_tolerance(tolerance)	
 			gc3libs.log.debug("Internal Test No. %s", testNo)
+			gc3libs.log.debug("CHECKED Tolerance %s", tolerance)
 			gc3libs.log.debug("CHECKED MatchedLine %s", which)
 			#Extract the position of the value within the target line	
 			pos = self.checkPositionInLine(positionInLine)
