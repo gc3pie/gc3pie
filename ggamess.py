@@ -136,7 +136,7 @@ of newly-created jobs so that this limit is never exceeded.
                 parameters,
                 # keyword arguments, see `GamessApplication.__init__`
                 kwargs)
-# This method is called after the session has been completed and the results are generated. The method is triggered with option -t.
+# This method is called after the session has been completed and the results are generated. 
 # If any of the jobs terminated test is launched.    
     def after_main_loop(self):
         no_of_tests = 0    	
@@ -192,7 +192,7 @@ class GamessTestApplication(GamessApplication):
 		file_output = os.path.join(self.output_dir, self.outputs[self.stdout].path)
 		gc3libs.log.debug("Analyzing GAMESS input %s and %s output files.", file_input, file_output)
 		test.generate_tests(file_input, file_output)
-	 	import pdb;pdb.set_trace()
+	 	#import pdb;pdb.set_trace()
 		test.runTests()
 		self.logTest.append(test.log)
 			
