@@ -23,7 +23,7 @@ int main()
   double x; // variable for input value
   double y;
   std::string a;
-  indata.open("test.in"); // opens the file
+  indata.open("parameters.in"); // opens the file
   if(!indata) { // file couldn't be opened
     std::cerr << "Error: file could not be opened" << endl;
   }
@@ -35,7 +35,7 @@ int main()
   cout << "fun val = " << fun << endl;
 
   ofstream myfile;
-  myfile.open ("test.out");
+  myfile.open ("rosenbrock.out");
   myfile << fun << endl;
   myfile.close();
 
