@@ -2,6 +2,22 @@
 #
 """
   Class to perform global optimization. 
+  
+  An implementation of Ken Price's Differnetial Evolution algorithm generates
+  guesses that are evaluated in parallel using gc3pie. The objective function
+  must be an executable file receiving inputs through a parameter file. 
+  
+  An instance of `GlobalOptimizer` will perform the entire optimization
+  in a directory on the local machine named `path_to_stage_dir`. 
+  
+  At each iteration an instance of 'ComputePhenotypes' will prepare input files
+  in an input-specific directory and execute the objective function. When all
+  jobs are complete, the objective's output is analyzed with the user-supplied
+  function `target_fun'. This function returns the function value for all
+  analyzed input vectors. 
+  
+  With this information, the optimizer generates a new guess. The instance of
+  `GlobalOptimizer' iterates until some convergence criteria is satisfied. 
 """
 
 # Copyright (C) 2011, 2012 University of Zurich. All rights reserved.
@@ -28,10 +44,6 @@ __changelog__ = """
 """
 __docformat__ = 'reStructuredText'
 
-
-# To do: 
-# Call paraLoop directly instead of writing para.loop files. 
-
 # For now use export export PYTHONPATH=~/workspace/globalOpt/gc3pie/ to allow import 
 # of gc3libs
 
@@ -50,6 +62,7 @@ import gc3libs.debug
 import gc3libs.config
 import gc3libs.core
 from gc3libs.workflow import SequentialTaskCollection, ParallelTaskCollection
+from gc3libs.optimizer.examples.rosenbrock.opt_rosenbrock import compute_target_rosenbrock
 from gc3libs import Application, Run
 
 # optimizer specific imports
@@ -77,19 +90,6 @@ log.addHandler(file_handler)
 
 float_fmt = '%25.15f'
 
-def compute_target_rosenbrock(pop_location_tuple):
-    '''
-      Given a list of (population, location) compute and return list of target values. 
-    '''
-    fxVals = []
-    for (pop, loc) in pop_location_tuple:
-        outputDir = os.path.join(loc, 'output')
-        f = open(os.path.join(outputDir, 'rosenbrock.out'))
-        line = f.readline().strip()
-        fxVal = float(line)
-        fxVals.append(fxVal)
-    return fxVals
- 
 class GlobalOptimizer(SequentialTaskCollection):
 
     def __init__(self, jobname = 'rosenbrock', path_to_stage_dir = '/tmp/rosenbrock',
@@ -356,7 +356,7 @@ class ComputePhenotypes(ParallelTaskCollection, ParaLoop):
             # hand over job to create
             tasks.append(Application('./' + executable, [], inputs, outputs, **kwargs))
         return tasks
-
+    
 
 if __name__ == '__main__':
     log.info('Starting: \n%s' % ' '.join(sys.argv))
@@ -381,8 +381,6 @@ if __name__ == '__main__':
             print "Job in status %s " % app.execution.state
             time.sleep(5)
             engine.progress()
-#            sys.stdout.write("[ %s ]\r" % app.execution.state)
-#            sys.stdout.flush()
         except:
             raise
     
