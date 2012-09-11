@@ -9,7 +9,8 @@ Please refer to this web site for more information: http://www.icsi.berkeley.edu
 import numpy as np
 import sys, os
 import logbook
-#from supportGc3 import wrapLogger
+import logging
+from supportGc3 import wrapLogger
 try:
   import matplotlib
   matplotlib.use('SVG')
@@ -20,9 +21,9 @@ except:
   
 np.set_printoptions(linewidth = 300, precision = 8, suppress = True)
 
-from supportGc3 import wrapLogger
+log = logging.getLogger('gc3.gc3libs.optimizer')
 
-class deKenPrice:
+class DifferentialEvolution:
   '''
     Differential evolution optimizer class. 
     Solver iterations can be driven externally (see for ex. gParaSearchDriver) or from within the class (self.deopt()).
@@ -55,7 +56,8 @@ class deKenPrice:
 
     # Set up loggers
 #    self.logger = wrapLogger(loggerName = __name__, streamVerb = self.verbosity, logFile = os.path.join(self.workingDir, __name__ + '.log'))
-    self.logger = wrapLogger(loggerName = __name__, streamVerb = 'DEBUG', logFile = os.path.join(self.workingDir, __name__ + '.log'))
+#    self.logger = wrapLogger(loggerName = __name__, streamVerb = 'DEBUG', logFile = os.path.join(self.workingDir, __name__ + '.log'))
+    self.logger = log
     
     # Initialize variables that needed for state retention. 
     self.FM_popold     = np.zeros( (self.I_NP, self.I_D) )  # toggle population
