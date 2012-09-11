@@ -402,7 +402,7 @@ class _Script(cli.app.CommandLineApp):
         cli.app.CommandLineApp.pre_run(self)
 
         ## setup GC3Libs logging
-        loglevel = max(1, logging.ERROR - 10 * max(0, self.params.verbose - self.verbose_logging_threshold))
+        loglevel = max(1, logging.WARNING - 10 * max(0, self.params.verbose - self.verbose_logging_threshold))
         gc3libs.configure_logger(loglevel, self.name)
         self.log = logging.getLogger('gc3.gc3utils')  # alternate: ('gc3.' + self.name)
         self.log.setLevel(loglevel)
