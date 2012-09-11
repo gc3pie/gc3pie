@@ -26,6 +26,9 @@ See the output of ``ggamess --help`` for program usage instructions.
 __version__ = 'development version (SVN $Revision$)'
 # summary of user-visible changes
 __changelog__ = """
+  2012-09-11:
+    * Latest GAMESS release is the default for command-line
+      option ``-R``.
   2011-11-08:
     * New command line option ``--extbasis`` for using an
       external basis definition with GAMESS.
@@ -33,12 +36,7 @@ __changelog__ = """
     * Allow running GAMESS from an AppPot container.
   2010-12-20:
     * Initial release, forked off the ``grosetta`` sources.
-  2012-16-8: 
-    * Modification of terminated().
-    * Correct execution: ./ggamess.py -R 2011R1 test/data/exam01.inp -N 
-  2012-16-23: 
-    * Pre-release of beta version 
-""" 
+"""
 __author__ = 'Riccardo Murri <riccardo.murri@uzh.ch>'
 __docformat__ = 'reStructuredText'
 
@@ -78,9 +76,9 @@ of newly-created jobs so that this limit is never exceeded.
                        " file, or to a `.changes` file generated with the"
                        " `apppot-snap` utility.")
         self.add_param("-R", "--verno", metavar="VERNO",
-                       dest="verno", default=None,
-                       help="Use the specified version of GAMESS"
-                       " (second argument to the localgms/rungms script).")
+                       dest="verno", default='2012R1',
+                       help="Request the specified version of GAMESS"
+                       " (default: %(default)s).")
         self.add_param("-e", "--extbas", metavar='FILE',
                        dest='extbas',
                        type=existing_file, default=None,
