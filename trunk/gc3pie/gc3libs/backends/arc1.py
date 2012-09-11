@@ -63,6 +63,12 @@ class Arc1Lrms(LRMS):
                  lost_job_timeout=gc3libs.Default.ARC_LOST_JOB_TIMEOUT,
                  **extra_args):
 
+        log.warning(
+            "The ARC1 backend (used in resource '%s') is deprecated"
+            " and will be removed in a future release."
+            " Consider changing your configuration.",
+            name)
+
         # check if arc module has been imported
         if not have_arc_module:
             raise gc3libs.exceptions.LRMSError(
@@ -74,7 +80,7 @@ class Arc1Lrms(LRMS):
             architecture, max_cores, max_cores_per_job,
             max_memory_per_core, max_walltime, auth)
 
-        # ARC0-specific setup
+        # ARC1-specific setup
         self.lost_job_timeout = lost_job_timeout
         self.arc_ldap = arc_ldap
         if frontend is None:
