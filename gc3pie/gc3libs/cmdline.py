@@ -407,6 +407,15 @@ class _Script(cli.app.CommandLineApp):
         self.log = logging.getLogger('gc3.gc3utils')  # alternate: ('gc3.' + self.name)
         self.log.setLevel(loglevel)
         self.log.propagate = True
+        # since it may time quite some time before jobs are created
+        # and the first report is displayed, print a startup banner so
+        # that users get some kind of feedback ...
+        print("Starting %s;"
+              " use the '-v' command-line option to get"
+              " a more verbose report of activity."
+              % (self.name,))
+        self.log.info("Starting %s at %s; invoked as '%s'",
+                      self.name, time.asctime(), str.join(' ', sys.argv))
 
         # Read config file(s) from command line
         self.params.config_files = self.params.config_files.split(',')
