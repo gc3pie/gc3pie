@@ -25,7 +25,7 @@
 !  true reaction path always curves, and thus does not lie
 !  along rectangular grid points.
 !
-! ggamess test: grepLinesAndAnalyze("E\(MP2\)=", "last", 2, -229.3943496933, GamessTst.tolE, "Eerr")
+! ggamess test: grepLinesAndAnalyze("E\(MP2\)=", "last", 2, -229.3943496933, app.tolE, "Eerr")
 !
  $contrl scftyp=rhf runtyp=surface
          icharg=-1 coord=zmt mplevl=2 $end

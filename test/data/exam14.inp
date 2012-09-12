@@ -6,10 +6,10 @@
 !  Dipole LENGTH is <Q>=0.392614
 !  Dipole VELOCITY is <d/dQ>=0.368205
 !
-! ggamess test: grepLinesAndAnalyze("STATE\s\#\s\s\s\s 1", "", 6, -75.010111355, GamessTst.tolE, "Eerr")
-! ggamess test: grepLinesAndAnalyze("STATE\s\#\s\s\s\s 2", "", 6, -74.394581939, GamessTst.tolE, "Eerr")  
-! ggamess test: grepLinesAndAnalyze("E[*]BOHR", 2, 7, 0.392614, GamessTst.tolD, "Derr")  
-! ggamess test: grepLinesAndAnalyze("E[/]BOHR", 1, 8, 0.368205, GamessTst.tolD, "Derr")  
+! ggamess test: grepLinesAndAnalyze("STATE\s\#\s\s\s\s 1", "", 6, -75.010111355, app.tolE, "Eerr")
+! ggamess test: grepLinesAndAnalyze("STATE\s\#\s\s\s\s 2", "", 6, -74.394581939, app.tolE, "Eerr")  
+! ggamess test: grepLinesAndAnalyze("E[*]BOHR", 2, 7, 0.392614, app.tolD, "Derr")  
+! ggamess test: grepLinesAndAnalyze("E[/]BOHR", 1, 8, 0.368205, app.tolD, "Derr")  
 !
  $CONTRL SCFTYP=NONE CITYP=GUGA RUNTYP=TRANSITN UNITS=BOHR $END
  $SYSTEM TIMLIM=1 $END

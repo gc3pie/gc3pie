@@ -18,9 +18,9 @@
 !    The Hydrogen atom spin density is 0.0129735.
 !    The dipole moment is 0.025099 Debye.
 !    The RMS gradient is 0.027505548
-! ggamess test: grepLinesAndAnalyze("FINAL\s+ ROHF", "", 5, -37.2778767090, GamessTst.tolE, "Eerr")
-! ggamess test: grepLinesAndAnalyze("RMS \s+G", "", 4, 0.027505548, GamessTst.tolG, "Gerr")
-! ggamess test: grepAndFollow("DEBYE", "first", "first", 4, 0.025099, GamessTst.tolD, "Derr")
+! ggamess test: grepLinesAndAnalyze("FINAL\s+ ROHF", "", 5, -37.2778767090, app.tolE, "Eerr")
+! ggamess test: grepLinesAndAnalyze("RMS \s+G", "", 4, 0.027505548, app.tolG, "Gerr")
+! ggamess test: grepAndFollow("DEBYE", "first", "first", 4, 0.025099, app.tolD, "Derr")
 !
  $CONTRL SCFTYP=ROHF MULT=3 RUNTYP=GRADIENT COORD=CART $END
  $SYSTEM TIMLIM=1 $END

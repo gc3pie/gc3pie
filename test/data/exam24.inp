@@ -4,9 +4,9 @@
 !  FINAL energy is -74.9666740766 after 12 iterations
 !  Induced dipole= -0.03663, RMS gradient= 0.033467686
 !
-! ggamess test: grepLinesAndAnalyze("FINAL \s+ RHF", "", 5, -74.9666740766, GamessTst.tolE, "Eerr")
-! ggamess test: grepLinesAndAnalyze("RMS\s+G", "", 4, 0.033467686, GamessTst.tolG, "Gerr")
-! ggamess test: grepLinesAndAnalyze("Z\(IND\)", "", 3, -0.03663, GamessTst.tolD, "Derr")
+! ggamess test: grepLinesAndAnalyze("FINAL \s+ RHF", "", 5, -74.9666740766, app.tolE, "Eerr")
+! ggamess test: grepLinesAndAnalyze("RMS\s+G", "", 4, 0.033467686, app.tolG, "Gerr")
+! ggamess test: grepLinesAndAnalyze("Z\(IND\)", "", 3, -0.03663, app.tolD, "Derr")
 !
  $contrl scftyp=rhf runtyp=gradient coord=zmt $end
  $system timlim=1 $end

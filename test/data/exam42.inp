@@ -23,8 +23,8 @@
 !  and RMS gradient= 0.026601131 at the CC(2,3) level.
 !    (will optimize to -92.4941853332 at 1.1966876)
 !
-! ggamess test: grepLinesAndAnalyze("CR-CCSD\(T\)\_L\sE=", "first", 5, -92.4930167395, GamessTst.tolG, "Gerr")
-! ggamess test: grepLinesAndAnalyze("RMS \s+G", "first", 4, 0.026601131, GamessTst.tolG, "Gerr")
+! ggamess test: grepLinesAndAnalyze("CR-CCSD\(T\)\_L\sE=", "first", 5, -92.4930167395, app.tolG, "Gerr")
+! ggamess test: grepLinesAndAnalyze("RMS \s+G", "first", 4, 0.026601131, app.tolG, "Gerr")
 !
  $contrl scftyp=rohf cctyp=cr-ccl mult=2 nzvar=1
          runtyp=gradient numgrd=.true. ispher=1 $end

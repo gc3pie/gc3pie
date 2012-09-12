@@ -42,7 +42,6 @@ class GamessTestSuite:
        
 	def __init__(self):
  		self.exQ = []
-		self.list_with_tests = []
 		self.list_of_analyzed_files = []
 		
 	def prepareInputFiles(self):
@@ -52,11 +51,6 @@ class GamessTestSuite:
 			lines = FILE.readlines()	
 			posLine = self.grep(r"\$[A-Za-z]+", FILE)
 			FILE.close()
-
-# Add detected tests to the apriopriate lists 	
-	def addTest(self, file_in, file_out):
-		self.list_with_tests.append(file_in)
-		self.list_of_analyzed_files.append(file_out)
 
 # Search for pattern in a file	
 	def grep(self,pattern,file_obj):
@@ -68,22 +62,23 @@ class GamessTestSuite:
 	
 	def runTests(self):
 		self.log = []
-		if self.list_with_tests is None:
+		self.final_flag = True
+		self.is_correct = False
+		if self.filename_inp is None:
 		   gc3libs.log.debug("The list with tests is empty. Skipping.")
 	 	   return
-		#failed_test_names = []	
-		#failed_test_desc = []	
-		for test_name,testObj in zip(self.list_with_tests, self.exQ):
-			(isCorrect, testLogs) = testObj.run()
-			finalString = test_name + ":" + testLogs 
-			if (isCorrect):
-				message = '%-89s    %s' %(finalString, "Passed.")
-				self.log.append(message) 
+		#TODO: if Failed testLogs is empty - fix
+		#import pdb;pdb.set_trace()
+		for testObj in self.exQ:
+			(self.is_correct, test_log) = testObj.run()
+			local_flag = False
+			if (self.is_correct):
+				local_flag = True
 			else:
-		#		failed_test_names.append(testName)
-		#		failed_test_desc.append("!!FAILED")
-				message =  '%-89s    %s' %(finalString, "!!FAILED.")
-				self.log.append(message)
+				local_flag = False
+				self.log.append(test_log)
+			#import pdb;pdb.set_trace()
+			self.final_flag = self.final_flag and local_flag 
 
 # Generate tests, e.g. call appropriate method from testLine and testNextLine class. If there is a "GC3" keyword in the INP file the test is added to a list of tests.
 # In case the files do not exist just report it so that the execution continues.
@@ -94,7 +89,7 @@ class GamessTestSuite:
 			foundlines = self.grep("ggamess test", file)	
 			file.close()
 		except IOError:
-			gc3libs.log.debug("There is a problem with a file %s. Skipping.", filename_inp)
+			gc3libs.log.warning("There is a problem with a file %s. Skipping.", filename_inp)
 			return 
 		if os.path.exists(filename_out) == False:
 			gc3libs.log.debug("The file %s does not exists. Skipping.", filename_out)
@@ -102,7 +97,8 @@ class GamessTestSuite:
 		if foundlines is None:
 			gc3libs.log.debug("File %s does not contain tests. Skipping.", filename_inp)
 			return 
-		self.addTest(filename_inp, filename_out)		
+		self.filename_inp = filename_inp
+		self.filename_out =  filename_out		
 			
 		param_list = []
 		function_list = []
@@ -148,11 +144,11 @@ class GamessTestSuite:
 					fn(arg_list[0], arg_list[1], int(arg_list[2]), float(arg_list[3]), arg_list[4], arg_list[5])
 					self.exQ.append(app)
 			 except IndexError:
-				gc3libs.log.debug("Index error. No. of arguments %d exceeds the required number %d. in file %s", len(arg_list), 7, filename_out)                                                                           		
+				gc3libs.log.warning("Index error. No. of arguments %d exceeds the required number %d. in file %s", len(arg_list), 7, filename_out)                                                                           		
 					
 			 except AttributeError:
-				import pdb;pdb.set_trace()
-				gc3libs.log.debug("Attribute error. arguments %s in function %s from object %s on file %s are incorrect", args, function, app, filename_out)                                                                           		
+				#import pdb;pdb.set_trace()
+				gc3libs.log.warning("Attribute error. arguments %s in function %s from object %s on file %s are incorrect", args, function, app, filename_out)                                                                           		
 			 
 #python -m pdb ./gdemo.py
 
@@ -173,6 +169,6 @@ class GamessTestSuite:
 # 2. If you want to extract the values from the line that FOLLOWS the target line run grepAndFollow.
 
 # positionInLine extracts the value from the target line by extracting the column WITHIN the line.
-# Example: positionInLine =  "4" | 4
+
 # Value defines a value which will be compared with the value extracted from the file.
 # Tol - acceptable difference between Value and value extracted from the text		

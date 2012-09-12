@@ -25,8 +25,8 @@
 !   input compared to the natural internals, and take many
 !   fewer steps to converge than Cartesian coordinates.
 !
-! ggamess test: grepLinesAndAnalyze("FINAL\s R-AM1", "last", 5, -48.7022570475, GamessTst.tolE, "Eerr")
-! ggamess test: grepLinesAndAnalyze("RMS \s+G", "last", 8, 0.0000207, GamessTst.tolG, "Gerr")
+! ggamess test: grepLinesAndAnalyze("FINAL\s R-AM1", "last", 5, -48.7022570475, app.tolE, "Eerr")
+! ggamess test: grepLinesAndAnalyze("RMS \s+G", "last", 8, 0.0000207, app.tolG, "Gerr")
 !
  $contrl scftyp=rhf runtyp=optimize coord=zmt $end
  $system timlim=1 $end

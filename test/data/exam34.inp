@@ -15,8 +15,8 @@
 !   state lies within Cs symmetry, the initial guess
 !   geometry below is very slightly bent into Cs.
 !
-! ggamess test: grepLinesAndAnalyze("CONVERGED \s STATE", "last", 5, -113.7017742428, GamessTst.tolE, "Eerr")
-! ggamess test: grepLinesAndAnalyze("RMS \s G", "last", 4, 0.025762549, GamessTst.tolG, "Gerr")
+! ggamess test: grepLinesAndAnalyze("CONVERGED \s STATE", "last", 5, -113.7017742428, app.tolE, "Eerr")
+! ggamess test: grepLinesAndAnalyze("RMS \s G", "last", 4, 0.025762549, app.tolG, "Gerr")
 !
  $contrl scftyp=rhf cityp=cis runtyp=gradient nzvar=6 $end
  $system timlim=1 $end
