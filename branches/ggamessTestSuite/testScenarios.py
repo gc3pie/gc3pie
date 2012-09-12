@@ -22,12 +22,12 @@ class Test:
 
 	def __init__(self, name):
 		self.name = name #file name, such as exam01.log
-		self.LPattern = [] #patterns 
-		self.LMatchedLine = [] #first | last - select first or last line from the lines that match 
-		self.LPositionInLine = [] #extract numerical value from the line at given position
-		self.LValues = [] #target Values 
-		self.LTolerances = [] #tolerances
-		self.LLabel = [] #Label, such as energy, gradient, etc. 
+		#self.LPattern = [] #patterns 
+		#self.LMatchedLine = [] #first | last - select first or last line from the lines that match 
+		#self.LPositionInLine = [] #extract numerical value from the line at given position
+		#self.LValues = [] #target Values 
+		#self.LTolerances = [] #tolerances
+		#self.LLabel = [] #Label, such as energy, gradient, etc. 
 		self.DEBUG = False
 	    #Predefined tolerances
 
@@ -82,7 +82,6 @@ class Test:
 	 	try:
 		    return float(tolerance)
 		except ValueError:
-		    gc3libs.log.debug("Could not convert %s to float, tolerance must be flaot", tolerance)
 		    for tol_key in self.tolerances.keys():
 		        if tolerance.find(tol_key) > 0:
 		            return float(self.tolerances[tol_key])
@@ -119,8 +118,8 @@ class Test:
 				return int(matchedLine)
 			except ValueError:
 				gc3libs.log.debug("ERROR: %s is incorrect. ",matchedLine)
-				return None
-			which = None
+				return 0 
+			which = 0 
 		return which
 			
 #Search for pattern in the file. Return a list of lines together with the line numbers. 
@@ -140,8 +139,9 @@ class Test:
 		for num, line in enumerate(lines):
 			match = regexp.search(line.strip())
 			if match:
-				matchedLineNumbers.append(num)
-				matchedLinesTemp.append(line)
+				if line.find("ggamess test") <= 0:
+					matchedLineNumbers.append(num)
+					matchedLinesTemp.append(line)
 		return (matchedLineNumbers,matchedLinesTemp)
 		 
  
@@ -176,36 +176,6 @@ class Test:
 			return ""                		
 		return value
 
-class TestNextLine(Test):
-	def __init__(self, name):
-		Test.__init__(self,name)
-		self.LFollowingLine = [] #first | last - select first or last line in a file AFTER matched lines
-
-	def grepAndFollow(self, pattern, matchedLinePosition, followingLinePosition, positionInLine, value, tol, name):
-		self.LPattern.append(pattern)  
-		self.LMatchedLine.append(matchedLinePosition) 
-		self.LFollowingLine.append(followingLinePosition)
-		self.LPositionInLine.append(positionInLine)
-		self.LValues.append(value)
-		self.LTolerances.append(tol)
-		self.LLabel.append(name)
-
-	#Extract num+whichFollowing line number from the file. 
-	def grepNext(self, filename, num, whichFollowing):	
-		FILE = open(filename, 'r')
-		lines = FILE.readlines()
-		FILE.close()
-		lenLines = len(lines) 		 
-		if (whichFollowing > 0 ): 
-			sum = whichFollowing+num
-			if (sum < lenLines-1):
-					targetLine = lines[num+whichFollowing]
-			else:
-				if (self.DEBUG):
-					gc3libs.log.debug("Out of boundary. Skipping.")
-					gc3libs.log.debug("Length of file is: %s and the extracted line has a number %s.", lenLines, whichFollowing)
-				return ""						
-		return targetLine	
 
 #Run each test. To optimize the execution each file is analyzed only ONCE. Internal lists drive the execution.
 # 
@@ -229,142 +199,115 @@ class TestNextLine(Test):
 			gc3libs.log.debug("Empty test. Skipping.")
 			final_report.append("Empty test. Skipping.")
 			return (False, '')
+	 	pattern = self.LPattern
+		whichLine = self.LMatchedLine
+		followingLine = self.LFollowingLine
+		positionInLine = self.LPositionInLine
+		value = self.LValues
+		tolerance = self.LTolerances
+		label = self.LLabel	
+		gc3libs.log.debug("Internal Test No. %s", testNo)
+		tolerance = self.check_tolerance(tolerance)	
+		gc3libs.log.debug("CHECKED tolerance %s", tolerance)
 		
-		for pattern, whichLine, followingLine, positionInLine, value, tolerance, label in zip(self.LPattern, self.LMatchedLine, self.LFollowingLine, self.LPositionInLine, self.LValues, self.LTolerances, self.LLabel):
-			testNo = testNo + 1
-			#Encode the index of the line of interest
-			which = self.checkMatchedLine(whichLine)
+		#Extract the position of the value within the target line	
+		pos = self.checkPositionInLine(positionInLine)
+		gc3libs.log.debug("CHECKED positionInLine %s", pos)
+		which = self.checkMatchedLine(whichLine)
+		gc3libs.log.debug("CHECKED MatchedLine %s", which)
+		if which == 0:
+			gc3libs.log.debug("ERROR: which %s is incorrect.") 
+			final_report.append("ERROR: which parameter is incorrect.") 	
+			return (False, final_report)
+			
+		#Extract a list of lines that match a regexp and line indices as lists. 
+		(numList,linesFound) = self.grepFile(filename, pattern) 
+		
+		# Nothing Found
+		if (len(linesFound) == 0):
+			gc3libs.log.debug("Nothing found with your regexp.")
+			final_report.append("Nothing found with your regular expression: " + pattern) 	
+			final_flag = final_flag and False
+			return (False, final_report)
+	
+		(numLine, targetLine) = self.getTargetLine(numList, linesFound, which)
+		
+	
+		#case grepAndFollow                                                                               	
+		if followingLine is not None:
 			whichFollowing  = self.checkMatchedLine(followingLine)
-		 	tolerance = self.check_tolerance(tolerance)	
-			gc3libs.log.debug("Internal Test No. %s", testNo)
-			gc3libs.log.debug("CHECKED MatchedLine %s", which)
-			gc3libs.log.debug("CHECKED tolerance %s", tolerance)
 			gc3libs.log.debug("CHECKED followingLine %s", whichFollowing)
-			#Extract the position of the value within the target line	
-			pos = self.checkPositionInLine(positionInLine)
-			gc3libs.log.debug("CHECKED positionInLine %s", pos)
 			if whichFollowing is None:
 				gc3libs.log.debug("ERROR: whichFollowing parameter is incorrect.",whichFollowing) 
 				log = "ERROR: whichFollowing parameter is incorrect."
 				final_report.append(log)
-				continue
-			if which is None:
-				gc3libs.log.debug("ERROR: whichFollowing %s is incorrect.") 
-				final_report.append("ERROR: which parameter is incorrect.") 	
-				continue
-			
-			#Extract a list of lines that match a regexp and line indices as lists. 
-			(numList,linesFound) = self.grepFile(filename, pattern) 
-			
-			# Nothing Found
-			if (len(linesFound) == 0):
-				gc3libs.log.debug("Nothing found with your regexp.")
-				final_report.append("Nothing found with your regular expression: " + pattern) 	
-				final_flag = final_flag and False
-				continue
-			
-			(numLine, targetLineT) = self.getTargetLine(numList, linesFound, which)
-			
+        			return (False, final_report)
 			targetLine = self.grepNext(filename, numLine, whichFollowing)
-			
 			gc3libs.log.debug("MATCHED LINE: %s", targetLine)
+		else:		
+			(numLine, targetLine) = self.getTargetLine(numList, linesFound, which)
+			gc3libs.log.debug("MATCHED LINE: %s", targetLine)
+	
+	
+		#Extract the value from matched line
+		valL = self.getValueFromLine(targetLine, pos)
 		
-			#Extract the value from matched line
-			valL = self.getValueFromLine(targetLine, pos)
-			if (valL == ""):
-				gc3libs.log.debug("ERROR: Cannot retrieve the float value from line %s.", targetLine)
-				final_report.append("ERROR: Cannot retrieve the float value from line " + targetLine)
-				continue
-			else:
-				gc3libs.log.debug("Comparing %s against %s.", valL, value)
-				(flag, deviation) = self.chkabs(valL, value, tolerance, label)
-				if deviation > 0:
-					deviation = " " + label + '=%.2E ' %(deviation)
-					final_report.append("ERROR: deviation found: " + deviation)
-				final_flag = final_flag and flag
+		if valL is None: #Empty:
+			gc3libs.log.debug("ERROR: Cannot retrieve the float value from line %s.", targetLine)
+			final_report.append("ERROR: Cannot retrieve the float value from line " + targetLine)
+			return (False, final_report)
+		else:
+			gc3libs.log.debug("Comparing %s against %s.", valL, value)
+			(flag, deviation) = self.chkabs(valL, value, tolerance, label)
+			if deviation > 0:
+				deviation = " " + label + '=%.2E ' %(deviation)
+				final_report.append("ERROR: deviation found: " + deviation)
+			final_flag = final_flag and flag
 			
 		return (final_flag,final_report)
+
+
+
+class TestNextLine(Test):
+
+	def grepAndFollow(self, pattern, matchedLinePosition, followingLinePosition, positionInLine, value, tol, name):
+		pattern = re.sub(r"[ \"]", r"", pattern) 
+
+		self.LPattern = pattern                    	
+		self.LMatchedLine = matchedLinePosition 
+		self.LFollowingLine = followingLinePosition
+		self.LPositionInLine = positionInLine
+		self.LValues = value
+		self.LTolerances  = tol
+		self.LLabel = name
+
+	#Extract num+whichFollowing line number from the file. 
+	def grepNext(self, filename, num, whichFollowing):	
+		FILE = open(filename, 'r')
+		lines = FILE.readlines()
+		FILE.close()
+		lenLines = len(lines)
+		if (whichFollowing > 0 ): 
+			sum = whichFollowing+num
+			if (sum < lenLines-1):
+				targetLine = lines[num+whichFollowing]
+			else:
+				gc3libs.log.debug("grepNext: Out of boundary. ")
+				#gc3libs.log.debug("Length of file is: %s and the extracted line has a number %s.", lenLines, whichFollowing)
+				return None						
+		return targetLine	
 
 
 class TestLine(Test):	
 	def grepLinesAndAnalyze(self, pattern, matchedLinePosition, positionInLine, value, tol, name):
 		pattern = re.sub(r"[ \"]", r"", pattern) 
-		self.LMatchedLine.append(matchedLinePosition) 
-		self.LPattern.append(pattern)  	
-		self.LPositionInLine.append(positionInLine)
-		self.LValues.append(value)
-		self.LTolerances.append(tol)
-		self.LLabel.append(name)
 
+		self.LPattern = pattern                    	
+		self.LMatchedLine = matchedLinePosition 
+		self.LFollowingLine = None 
+		self.LPositionInLine = positionInLine
+		self.LValues = value
+		self.LTolerances  = tol
+		self.LLabel = name
 
-#Run each test. To optimize the execution each file is analyzed only ONCE. Internal lists drive the execution.
-# 
-#Internal parameters: 
-# whichFolowing
-# final_flag is True only when all the tests return True
-# final_string contains the test labels with results (Eerr=0.0E)
-	def run(self):
-		final_report = []
-		filename = self.name 
-		final_str = ""
-		final_flag = True
-		testNo = 0
-		gc3libs.log.debug("Test: %s", self.name)
-		gc3libs.log.debug("LPattern %s", self.LPattern)
-		gc3libs.log.debug("LMatchedLine %s", self.LMatchedLine)
-		#gc3libs.log.debug("LFollowingLine %s", self.LFollowingLine) 
-		gc3libs.log.debug("LPositionInLine %s", self.LPositionInLine) 
-		gc3libs.log.debug("LValues %s", self.LValues)
-		gc3libs.log.debug("LTolerances %s", self.LTolerances) 
-		if (len(self.LPattern) == 0):
-			gc3libs.log.debug("Empty test. Skipping.")
-			final_report.append("Empty test. Skipping.")
-			return (False, '')
-		
-		for pattern, whichLine, positionInLine, value, tolerance, label in zip(self.LPattern, self.LMatchedLine, self.LPositionInLine, self.LValues, self.LTolerances, self.LLabel):
-			testNo = testNo + 1
-			#Encode the index of the line of interest
-			which = self.checkMatchedLine(whichLine)
-			#import pdb;pdb.set_trace()
-			#whichFollowing  = self.checkMatchedLine(followingLine)
-		 	tolerance = self.check_tolerance(tolerance)	
-			gc3libs.log.debug("Internal Test No. %s", testNo)
-			gc3libs.log.debug("CHECKED Tolerance %s", tolerance)
-			gc3libs.log.debug("CHECKED MatchedLine %s", which)
-			#Extract the position of the value within the target line	
-			pos = self.checkPositionInLine(positionInLine)
-			gc3libs.log.debug("CHECKED positionInLine %s", pos)
-			 
-			#Extract a list of lines that match a regexp and line indices as lists. 
-			(numList,linesFound) = self.grepFile(filename, pattern) 
-			
-			# Nothing Found
-			if (len(linesFound) == 0):
-				gc3libs.log.debug("Nothing found with your regexp.")
-				log = "Nothing found with your regular expression."
-				final_report.append(log)
-				final_flag = final_flag and False
-				continue
-			
-			(numLine, targetLine) = self.getTargetLine(numList, linesFound, which)
-			 
-			gc3libs.log.debug("MATCHED LINE: %s", targetLine)
-	
-			#Extract the value from matched line
-			valL = self.getValueFromLine(targetLine, pos)
-			if (valL == ""):
-				gc3libs.log.debug("ERROR: Cannot retrieve the float value from line %s", targetLine)
-				log = "ERROR: Cannot retrieve the float value from line " + targetLine
-				final_report.append(log)
-				continue
-			else:
-				gc3libs.log.debug("Comparing %s against %s", valL, value)
-				(flag, deviation) = self.chkabs(valL, value, tolerance, label)				
-				if deviation > 0:
-					deviation = " " + label + '=%.2E ' %(deviation)
-					final_report.append("ERROR: deviation found: " + deviation)
-				else:
-					final_str = final_str + ''
-				final_flag = final_flag and flag                              
-		return (final_flag,final_report)
 	
