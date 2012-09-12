@@ -11,9 +11,9 @@
 !    E(MP2) is -75.7060362006, RMS grad=0.017449522
 !    dipole moments are SCF=2.435689, MP2=2.329368
 !
-! ggamess test: grepLinesAndAnalyze("E\(MP2\)", "last", 2, -75.7060362006, GamessTst.tolE, "Eerr")
-! ggamess test: grepLinesAndAnalyze("RMS \s+G", "last", 4, 0.017449522, GamessTst.tolG, "Gerr")
-! ggamess test: grepAndFollow("DEBYE", "last", "1", 4, 2.329368, GamessTst.tolD, "Derr")
+! ggamess test: grepLinesAndAnalyze("E\(MP2\)", "last", 2, -75.7060362006, app.tolE, "Eerr")
+! ggamess test: grepLinesAndAnalyze("RMS \s+G", "last", 4, 0.017449522, app.tolG, "Gerr")
+! ggamess test: grepAndFollow("DEBYE", "last", "1", 4, 2.329368, app.tolD, "Derr")
 !
  $CONTRL SCFTYP=RHF MPLEVL=2 RUNTYP=GRADIENT $END
  $SYSTEM TIMLIM=1 MEMDDI=1 PARALL=.TRUE. $END

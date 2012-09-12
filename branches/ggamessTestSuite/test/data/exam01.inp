@@ -18,7 +18,6 @@
 !    FINAL E= -37.2380397693, 5 iters, RMS grad= .0000067
 !    FINAL E= -37.2380397698, 3 iters, RMS grad= .0000004
 ! ggamess test: grepLinesAndAnalyze("FINAL \s+ RHF", "last", 5, -37.2380397698, app.tolE, "Eerr")
-! ggamess test: grepAndFollow("OVERLAP\s+LOW", "first","first", 8, 0.64506, app.tolO, "Oerr") 
 ! ggamess test: grepLinesAndAnalyze("RMS \s+ G", "last", 8, .0000004, app.tolG, "Gerr")
 
  $CONTRL SCFTYP=RHF RUNTYP=OPTIMIZE COORD=ZMT NZVAR=0 $END

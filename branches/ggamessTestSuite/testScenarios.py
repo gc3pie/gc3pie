@@ -71,11 +71,11 @@ class Test:
 	
 	def chkabs(self,valLog, valOK, tol, label):
 		val = abs(valOK - valLog)
-		ret = " " + label + '=%.2E ' %(val)
-		if (val > tol):
-			return (False,ret)
+		deviation = val - tol
+		if (val <= tol):
+			return (True,0)
 		else:
-			return (True,ret)
+			return (False,deviation)
 	
 	def check_tolerance(self, tolerance):
 		# self.tolerances contains entries of a type dict('tolC',self.tolC)
@@ -211,12 +211,12 @@ class TestNextLine(Test):
 # 
 #Internal parameters: 
 # whichFolowing
-# finalFlag is True only when all the tests return True
-# finalString contains the test labels with results (Eerr=0.0E)
+# final_flag is True only when all the tests return True
+# final_string contains the test labels with results (Eerr=0.0E)
 	def run(self):
 		filename = self.name
-		finalStr = ""
-		finalFlag = True
+		final_report = []
+		final_flag = True
 		testNo = 0
 		gc3libs.log.debug("Test: %s", self.name)
 		gc3libs.log.debug("LPattern %s", self.LPattern)
@@ -227,7 +227,8 @@ class TestNextLine(Test):
 		gc3libs.log.debug("LTolerances %s", self.LTolerances) 
 		if (len(self.LPattern) == 0):
 			gc3libs.log.debug("Empty test. Skipping.")
-			return False
+			final_report.append("Empty test. Skipping.")
+			return (False, '')
 		
 		for pattern, whichLine, followingLine, positionInLine, value, tolerance, label in zip(self.LPattern, self.LMatchedLine, self.LFollowingLine, self.LPositionInLine, self.LValues, self.LTolerances, self.LLabel):
 			testNo = testNo + 1
@@ -243,11 +244,14 @@ class TestNextLine(Test):
 			pos = self.checkPositionInLine(positionInLine)
 			gc3libs.log.debug("CHECKED positionInLine %s", pos)
 			if whichFollowing is None:
-				gc3libs.log.debug("ERROR: whichFollowing %s is incorrect.",whichFollowing) 
-				return False
+				gc3libs.log.debug("ERROR: whichFollowing parameter is incorrect.",whichFollowing) 
+				log = "ERROR: whichFollowing parameter is incorrect."
+				final_report.append(log)
+				continue
 			if which is None:
-				gc3libs.log.debug("ERROR: whichFollowing %s is incorrect.",whichFollowing) 
-				return False
+				gc3libs.log.debug("ERROR: whichFollowing %s is incorrect.") 
+				final_report.append("ERROR: which parameter is incorrect.") 	
+				continue
 			
 			#Extract a list of lines that match a regexp and line indices as lists. 
 			(numList,linesFound) = self.grepFile(filename, pattern) 
@@ -255,7 +259,8 @@ class TestNextLine(Test):
 			# Nothing Found
 			if (len(linesFound) == 0):
 				gc3libs.log.debug("Nothing found with your regexp.")
-				finalFlag = finalFlag and False
+				final_report.append("Nothing found with your regular expression: " + pattern) 	
+				final_flag = final_flag and False
 				continue
 			
 			(numLine, targetLineT) = self.getTargetLine(numList, linesFound, which)
@@ -268,14 +273,17 @@ class TestNextLine(Test):
 			valL = self.getValueFromLine(targetLine, pos)
 			if (valL == ""):
 				gc3libs.log.debug("ERROR: Cannot retrieve the float value from line %s.", targetLine)
-				return False
+				final_report.append("ERROR: Cannot retrieve the float value from line " + targetLine)
+				continue
 			else:
 				gc3libs.log.debug("Comparing %s against %s.", valL, value)
-				(flag, strOut) = self.chkabs(valL, value, tolerance, label)
-			 	finalStr = finalStr + strOut
-				finalFlag = finalFlag and flag
+				(flag, deviation) = self.chkabs(valL, value, tolerance, label)
+				if deviation > 0:
+					deviation = " " + label + '=%.2E ' %(deviation)
+					final_report.append("ERROR: deviation found: " + deviation)
+				final_flag = final_flag and flag
 			
-		return (finalFlag,finalStr)
+		return (final_flag,final_report)
 
 
 class TestLine(Test):	
@@ -293,12 +301,13 @@ class TestLine(Test):
 # 
 #Internal parameters: 
 # whichFolowing
-# finalFlag is True only when all the tests return True
-# finalString contains the test labels with results (Eerr=0.0E)
+# final_flag is True only when all the tests return True
+# final_string contains the test labels with results (Eerr=0.0E)
 	def run(self):
-		filename = self.name
-		finalStr = ""
-		finalFlag = True
+		final_report = []
+		filename = self.name 
+		final_str = ""
+		final_flag = True
 		testNo = 0
 		gc3libs.log.debug("Test: %s", self.name)
 		gc3libs.log.debug("LPattern %s", self.LPattern)
@@ -309,7 +318,8 @@ class TestLine(Test):
 		gc3libs.log.debug("LTolerances %s", self.LTolerances) 
 		if (len(self.LPattern) == 0):
 			gc3libs.log.debug("Empty test. Skipping.")
-			return False
+			final_report.append("Empty test. Skipping.")
+			return (False, '')
 		
 		for pattern, whichLine, positionInLine, value, tolerance, label in zip(self.LPattern, self.LMatchedLine, self.LPositionInLine, self.LValues, self.LTolerances, self.LLabel):
 			testNo = testNo + 1
@@ -331,7 +341,9 @@ class TestLine(Test):
 			# Nothing Found
 			if (len(linesFound) == 0):
 				gc3libs.log.debug("Nothing found with your regexp.")
-				finalFlag = finalFlag and False
+				log = "Nothing found with your regular expression."
+				final_report.append(log)
+				final_flag = final_flag and False
 				continue
 			
 			(numLine, targetLine) = self.getTargetLine(numList, linesFound, which)
@@ -342,11 +354,17 @@ class TestLine(Test):
 			valL = self.getValueFromLine(targetLine, pos)
 			if (valL == ""):
 				gc3libs.log.debug("ERROR: Cannot retrieve the float value from line %s", targetLine)
-				return False
+				log = "ERROR: Cannot retrieve the float value from line " + targetLine
+				final_report.append(log)
+				continue
 			else:
 				gc3libs.log.debug("Comparing %s against %s", valL, value)
-				(flag, strOut) = self.chkabs(valL, value, tolerance, label)
-			 	finalStr = finalStr + strOut
-				finalFlag = finalFlag and flag
-		return (finalFlag,finalStr)
+				(flag, deviation) = self.chkabs(valL, value, tolerance, label)				
+				if deviation > 0:
+					deviation = " " + label + '=%.2E ' %(deviation)
+					final_report.append("ERROR: deviation found: " + deviation)
+				else:
+					final_str = final_str + ''
+				final_flag = final_flag and flag                              
+		return (final_flag,final_report)
 	

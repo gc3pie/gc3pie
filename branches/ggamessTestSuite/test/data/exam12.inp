@@ -10,8 +10,8 @@
 !   the FINAL E= -76.5841347569, RMS gradient=0.0000007,
 !   R(CC)=1.21193 and R(CH)=1.07797.
 !
-! ggamess test: grepLinesAndAnalyze("FINAL \s R-SVWN", "last", 5, -76.5841347569, GamessTst.tolE, "Eerr")
-! ggamess test: grepLinesAndAnalyze("RMS \s G", "last", 8, 0.0000007, GamessTst.tolG, "Gerr") #TODO: 8-> 9 causes error!!!
+! ggamess test: grepLinesAndAnalyze("FINAL \s R-SVWN", "last", 5, -76.5841347569, app.tolE, "Eerr")
+! ggamess test: grepLinesAndAnalyze("RMS \s G", "last", 8, 0.0000007, app.tolG, "Gerr") #TODO: 8-> 9 causes error!!!
 !
  $CONTRL SCFTYP=RHF DFTTYP=SVWN RUNTYP=OPTIMIZE NZVAR=5 $END
  $SYSTEM TIMLIM=3 $END

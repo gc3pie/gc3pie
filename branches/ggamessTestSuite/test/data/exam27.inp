@@ -17,7 +17,7 @@
 !    velocity(H,z)=0.028857623667
 !
 ! ggamess test: grepAndFollow("SQRT\(AMU\)", "last",  "first", 8, -9.12710, 0.0001, "Eerr")
-! ggamess test: grepAndFollow("VEL\(1\)=", "last", "first", 3, 0.028857623667, GamessTst.tolV, "Verr")  
+! ggamess test: grepAndFollow("VEL\(1\)=", "last", "first", 3, 0.028857623667, app.tolV, "Verr")  
 !
  $CONTRL SCFTYP=RHF RUNTYP=DRC $END
  $SYSTEM timlim=1 $END

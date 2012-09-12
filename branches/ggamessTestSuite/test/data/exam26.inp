@@ -23,8 +23,8 @@
 !  PH bonds, and O lone pairs to the correlation energy are
 !  -0.0442096, -0.0237793, and -0.0378790, respectively.
 !
-! ggamess test: grepLinesAndAnalyze("FINAL \s+ RHF", "", 5, -415.2660357291, GamessTst.tolE, "Eerr")
-! ggamess test: grepLinesAndAnalyze("DIAGONAL\s SUM\s D", "last", 4, 28.389125, GamessTst.tolL, "Lerr")
+! ggamess test: grepLinesAndAnalyze("FINAL \s+ RHF", "", 5, -415.2660357291, app.tolE, "Eerr")
+! ggamess test: grepLinesAndAnalyze("DIAGONAL\s SUM\s D", "last", 4, 28.389125, app.tolL, "Lerr")
 !
  $contrl scftyp=rhf runtyp=energy local=ruednbrg mplevl=0 $end
  $system timlim=1 $end

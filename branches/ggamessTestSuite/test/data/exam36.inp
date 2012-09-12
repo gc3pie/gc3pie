@@ -12,9 +12,9 @@
 !   true FREQ= 1605.72, 3311.13, 3315.17, 3405.91(2)
 !   the lowest true vibration is the most intense, 1.09748
 !
-! ggamess test: grepLinesAndAnalyze("FINAL \s MCSCF", "", 5, -77.9753563843, GamessTst.tolE, "Eerr")
-! ggamess test: grepLinesAndAnalyze("FREQUENCY:", "2", 4, 319.87, GamessTst.tolW, "Werr") #first -2 | last -1
-! ggamess test: grepLinesAndAnalyze("IR \s INTENSITY:", "2", 5, 1.09748, GamessTst.tolI, "Ierr") 
+! ggamess test: grepLinesAndAnalyze("FINAL \s MCSCF", "", 5, -77.9753563843, app.tolE, "Eerr")
+! ggamess test: grepLinesAndAnalyze("FREQUENCY:", "2", 4, 319.87, app.tolW, "Werr") #first -2 | last -1
+! ggamess test: grepLinesAndAnalyze("IR \s INTENSITY:", "2", 5, 1.09748, app.tolI, "Ierr") 
 !
  $contrl scftyp=mcscf runtyp=hessian ispher=1 $end
  $system timlim=2 memddi=5 $end

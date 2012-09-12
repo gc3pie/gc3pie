@@ -11,8 +11,8 @@
 !   approximate structure lies about 11 mHartree above 
 !   the actual minimum.
 !
-! ggamess test: grepLinesAndAnalyze("FINAL \s RHF", "", 5, -169.0085355753, GamessTst.tolE, "Eerr")
-! ggamess test: grepLinesAndAnalyze("RMS \s G", "", 4, 0.008157643, GamessTst.tolG, "Gerr")
+! ggamess test: grepLinesAndAnalyze("FINAL \s RHF", "", 5, -169.0085355753, app.tolE, "Eerr")
+! ggamess test: grepLinesAndAnalyze("RMS \s G", "", 4, 0.008157643, app.tolG, "Gerr")
 !
  $contrl scftyp=rhf runtyp=gradient coord=zmt $end
  $system timlim=2 $end
