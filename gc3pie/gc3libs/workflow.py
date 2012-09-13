@@ -39,7 +39,7 @@ import gc3libs.exceptions
 import gc3libs.utils
 
 
-class TaskCollection(Task, gc3libs.utils.Struct):
+class TaskCollection(Task):
     """
     Base class for all task collections. A "task collection" is a
     group of tasks, that can be managed collectively as a single one.
