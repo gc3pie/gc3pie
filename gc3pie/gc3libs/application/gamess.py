@@ -83,7 +83,7 @@ class GamessApplication(gc3libs.Application):
                 "Requested %s of memory per core; depending on how the execution site"
                 " handles memory limits, this may lead to an error in the ``ddikick``"
                 " startup.  In that case, re-run without memory specification.",
-                self.requested_memory)
+                extra_args['requested_memory'])
         # build generic `Application` obj
         gc3libs.Application.__init__(self,
                                      executable = "rungms",
