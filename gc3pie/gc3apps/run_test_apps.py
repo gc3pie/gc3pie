@@ -253,7 +253,6 @@ class GRosettaTest(TestRunner):
             if os.path.exists(d):
                 gc3libs.log.debug("GRosetta: removing directory %s" % d)
                 shutil.rmtree(d)
-            shutil.rmtree(self.sessiondir)
 
     def terminate(self):
         for jobdir in self.jobdirs:
@@ -307,7 +306,6 @@ class GDockingTest(TestRunner):
             if os.path.exists(d):
                 gc3libs.log.debug("GRosetta: removing directory %s" % d)
                 shutil.rmtree(d)
-            shutil.rmtree(self.sessiondir)
 
     def terminate(self):
         for jobdir in self.jobdirs:
