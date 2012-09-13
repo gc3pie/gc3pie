@@ -1042,7 +1042,12 @@ class Application(Task):
         argv = [ self.executable ] + self.arguments
         xrsl.append('(arguments="-c" "%s")' % str.join(' ', [('%s' % x) for x in argv]))
         # preserve execute permission on all input files
-        executables = [ ]
+        executable = []
+        if self.has_key('executables'):
+            # there are already references to files that should be
+            # executables
+            # e.g. a reference to a remote file that cannot be checked locally
+            executables = self.executables
         for l, r in self.inputs.iteritems():
             if os.access(l.path, os.X_OK):
                 executables.append(r)
