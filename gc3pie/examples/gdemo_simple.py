@@ -95,7 +95,7 @@ while app.execution.state in [ gc3libs.Run.State.SUBMITTED,
         time.sleep(5)
         # This call will contact the resource(s) and get the current
         # job state
-        g.update_job_state(app)
+        core.update_job_state(app)
         sys.stdout.write("[ %s ]\r" % app.execution.state)
         sys.stdout.flush()
     except:
@@ -110,6 +110,6 @@ print "Job is now in state %s. Fetching output." % app.execution.state
 # By default overwrite is False. If the output directory exists, it
 # will be renamed by appending a unique numerical suffix in the form
 # of output_dir.~N~ with N the first available number.
-g.fetch_output(app, overwrite=False)
+core.fetch_output(app, overwrite=False)
 
 print "Done. Results are in %s" % app.output_dir
