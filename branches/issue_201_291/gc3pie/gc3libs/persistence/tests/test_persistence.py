@@ -134,7 +134,7 @@ class PersistableClassWithSlots(NonPersistableClassWithSlots):
 
 class MyChunkedParameterSweep(gc3libs.workflow.ChunkedParameterSweep):
     def new_task(self, param, **extra_args):
-        yield Task('TaskName', **extra_args)
+        return Task('TaskName', **extra_args)
 
 
 class MyStagedTaskCollection(gc3libs.workflow.StagedTaskCollection):

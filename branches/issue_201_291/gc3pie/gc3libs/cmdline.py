@@ -53,6 +53,7 @@ import sys
 import random
 from texttable import Texttable
 import time
+from decimal import Decimal, ROUND_DOWN
 
 ## 3rd party modules
 import cli  # pyCLI
@@ -949,7 +950,7 @@ class SessionBasedScript(_Script):
             table.add_row([
                     state,
                     "%d/%d" % (stats[state], total),
-                    "(%.1f%%)" % (100.0 * stats[state] / total)
+                    "(%.2f%%)" % (100.00 * stats[state] / total)
                     ])
         output.write(table.draw())
         output.write("\n")

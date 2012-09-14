@@ -67,10 +67,6 @@ class GdemoApplication(Application):
                                      output_dir = os.path.join(os.getcwd(),"Gdemo_result",str(iteration)),
                                      stdout = "stdout.txt",
                                      stderr = "stderr.txt",
-                                     # set computational requirements. XXX this is mandatory, thus probably should become part of the Application's signature
-                                     requested_memory = 1,
-                                     requested_cores = 1,
-                                     requested_walltime = 1,
                                      **extra_args
                                      )
 
@@ -87,32 +83,10 @@ class Gdemo(SessionBasedScript):
             )
 
 
-    def _setup(self):
-        _Script.setup(self)
-
-        self.add_param("-v", "--verbose", action="count", dest="verbose", default=0,
-                       help="Be more detailed in reporting program activity."
-                       " Repeat to increase verbosity.")
-
-        self.add_param("-J", "--max-running", type=int, dest="max_running", default=50,
-                       metavar="NUM",
-                       help="Allow no more than NUM concurrent jobs (default: %(default)s)"
-                       " to be in SUBMITTED or RUNNING state."
-                       )
-        self.add_param("-C", "--continuous", type=int, dest="wait", default=0,
-                       metavar="INTERVAL",
-                       help="Keep running, monitoring jobs and possibly submitting new ones or"
-                       " fetching results every INTERVAL seconds. Exit when all jobs are finished."
-                       )
-        self.add_param("-w", "--wall-clock-time", dest="wctime", default=str(8), # 8 hrs
-                       metavar="DURATION",
-                       help="Each job will run for at most DURATION time"
-                       " (default: %(default)s hours), after which it"
-                       " will be killed and considered failed. DURATION can be a whole"
-                       " number, expressing duration in hours, or a string of the form HH:MM,"
-                       " specifying that a job can last at most HH hours and MM minutes."
-                       )
-        return
+    def setup_options(self):
+        self.add_param("-n", "--iterations",
+                       default=10, type=int,
+                       help="Number of iterations")
 
     def parse_args(self):
         self.init_value = 1
@@ -124,11 +98,11 @@ class Gdemo(SessionBasedScript):
         name = "GC3Pie_demo"
 
         gc3libs.log.info("Calling Gdemo.next_tastk() ... ")
-
         yield (name, DemoIteration, [
-                self.init_value,
-                self.add_value
-                ], extra_args)
+            self.init_value,
+            self.add_value,
+            self.params.iterations,
+            ], extra_args)
 
 
 
@@ -154,7 +128,7 @@ class DemoIteration(SequentialTaskCollection):
     single-core task executing the given program.
     """
 
-    def __init__(self, init_value, add_value, **extra_args):
+    def __init__(self, init_value, add_value, iterations, **extra_args):
         """
         Create a new tasks that runs `executable` over a set of values
         (initially given by `initial_values_file`, then the output of
@@ -171,7 +145,7 @@ class DemoIteration(SequentialTaskCollection):
 
         self.init = init_value
         self.increment = add_value
-        self.limit = 10
+        self.limit = iterations
         self.jobname = "Gdemo_Iternation"
 
         gc3libs.log.info("Calling DemoIteration.__init__() ... ")
