@@ -35,6 +35,7 @@ warnings.simplefilter("ignore")
 from gc3libs import log, Run
 from gc3libs.backends import LRMS
 import gc3libs.exceptions
+from gc3libs.quantity import kB, GB, MB, hours, minutes, seconds
 from gc3libs.utils import *
 
 # this is where arc0 libraries are installed from release 11.05
@@ -441,13 +442,13 @@ class ArcLrms(LRMS):
                         " killed by remote batch system"
                         % arc_job.requested_cpu_time)
                 job.returncode = (Run.Signals.RemoteError, -1)
-            # note: arc_job.used_memory is in KiB (!), app.requested_memory is in GiB
+            # note: arc_job.used_memory is in KiB (!)
             elif (app.requested_memory is not None
-                  and app.requested_memory != -1 and arc_job.used_memory != -1
-                  and (arc_job.used_memory / 1024) > (app.requested_memory * 1024)):
-                job.history("Job used more memory (%d MB) than requested (%d MB),"
+                  and arc_job.used_memory != -1
+                  and arc_job.used_memory > app.requested_memory.amount(kB)):
+                job.history("Job used more memory (%d MB) than requested (%s),"
                         " killed by remote batch system"
-                        % (arc_job.used_memory / 1024, app.requested_memory * 1024))
+                        % (arc_job.used_memory / 1024, app.requested_memory.amount(MB)))
                 job.returncode = (Run.Signals.RemoteError, -1)
             else:
                 # presume everything went well...
@@ -507,10 +508,10 @@ class ArcLrms(LRMS):
             # the old and new download directories
             for entry in entries:
                 dst = os.path.join(download_dir, entry)
-                if os.path.exists(entry):
+                if os.path.exists(dst):
                     # remove temporary download location
                     shutil.rmtree(tmp_download_dir, ignore_errors=True)
-                    raise gc3libs.exceptions.UnrecoverableDataStagingError(
+                    gc3libs.log.warning(
                         "Entry '%s' in download directory '%s' already exists,"
                         " and no overwriting was requested."
                         % (entry, download_dir))

@@ -79,6 +79,7 @@ import gc3libs.utils
 from gc3libs.application.codeml import CodemlApplication
 from gc3libs.cmdline import SessionBasedScript, executable_file
 from gc3libs.persistence.accessors import GET, GetValue
+from gc3libs.quantity import Memory, kB, MB, GB, Duration, hours, minutes, seconds
 from gc3libs.workflow import RetryableTask
 
 
@@ -257,7 +258,7 @@ of newly-created jobs so that this limit is never exceeded.
                 sqla.Column('codeml_walltime_h1', sqla.INTEGER()) : GetValue()             .time_used[1]                      ,#.ONLY(CodemlApplication), # time used by the codeml H1 run (sec)
                 sqla.Column('aln_len',            sqla.TEXT())    : GetValue()             .aln_info['aln_len']                                    , # alignement length
                 sqla.Column('seq',                sqla.TEXT())    : GetValue()             .aln_info['n_seq']                                      , # num of sequences
-                sqla.Column('requested_walltime', sqla.INTEGER()) : GetValue(default=None) .requested_walltime                ,#.ONLY(CodemlApplication), # requested walltime
+                sqla.Column('requested_walltime', sqla.INTEGER()) : GetValue(default=None) .requested_walltime.amount(hours)  ,#.ONLY(CodemlApplication), # requested walltime
                 sqla.Column('requested_cores',    sqla.INTEGER()) : GetValue(default=None) .requested_cores                   ,#.ONLY(CodemlApplication), # num of cores requested
                 sqla.Column('tags',               sqla.TEXT())    : GetValue()             .tags[0]                           ,#.ONLY(CodemlApplication), # run-time env.s (RTE) requested; e.g. 'APPS/BIO/CODEML-4.4.3'
                 sqla.Column('used_walltime',      sqla.INTEGER()) : GetValue(default=None) .execution.used_walltime           ,#.ONLY(CodemlApplication), # used walltime

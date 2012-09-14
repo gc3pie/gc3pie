@@ -23,12 +23,14 @@ __docformat__ = 'reStructuredText'
 __version__ = 'development version (SVN $Revision$)'
 
 
-import gc3libs
-import gc3libs.application
-from gc3libs.exceptions import *
 import os
 import os.path
 from pkg_resources import Requirement, resource_filename
+
+import gc3libs
+import gc3libs.application
+from gc3libs.exceptions import *
+from gc3libs.quantity import GB, hours
 
 
 class Square(gc3libs.Application):
@@ -48,7 +50,7 @@ class Square(gc3libs.Application):
 
         # extra_args.setdefault('stdout', 'stdout.txt')
         # extra_args.setdefault('stderr', 'stderr.txt')
-        
+
         #  gc3libs.Application.__init__(self, executable, arguments, inputs, outputs, output_dir, **extra_args):
 
 
@@ -60,9 +62,9 @@ class Square(gc3libs.Application):
                                      stdout = "stdout.txt",
                                      stderr = "stderr.txt",
                                      # set computational requirements. XXX this is mandatory, thus probably should become part of the Application's signature
-                                     requested_memory = 1,
+                                     requested_memory = 1*GB,
                                      requested_cores = 1,
-                                     requested_walltime = 1
+                                     requested_walltime = 1*hours,
                                      )
 
 

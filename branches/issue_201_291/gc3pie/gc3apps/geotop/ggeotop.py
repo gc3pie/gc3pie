@@ -79,6 +79,7 @@ import gc3libs
 from gc3libs import Application, Run, Task
 from gc3libs.cmdline import SessionBasedScript, executable_file
 import gc3libs.utils
+from gc3libs.quantity import Memory, kB, MB, GB, Duration, hours, minutes, seconds
 from gc3libs.workflow import RetryableTask
 
 
@@ -171,7 +172,7 @@ class GeotopApplication(Application):
         # set some execution defaults...
         extra_args.setdefault('requested_cores', 1)
         extra_args.setdefault('requested_architecture', Run.Arch.X86_64)
-        extra_args.setdefault('requested_walltime',8)
+        extra_args.setdefault('requested_walltime', Duration(8, hours))
         # ...and remove excess ones
         extra_args.pop('output_dir', None)
         Application.__init__(

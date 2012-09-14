@@ -39,6 +39,11 @@
 .. automodule:: gc3libs.persistence
     :members:
 
+`gc3libs.quantity`
+=====================
+.. automodule:: gc3libs.quantity
+    :members:
+
 `gc3libs.template`
 ==================
 .. automodule:: gc3libs.template

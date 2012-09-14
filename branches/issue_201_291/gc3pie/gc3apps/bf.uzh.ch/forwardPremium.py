@@ -1,9 +1,9 @@
 #! /usr/bin/env python
 #
 """
-ForwardPremium-specific methods and overloads. 
+ForwardPremium-specific methods and overloads.
 """
-# Copyright (C) 2011 University of Zurich. All rights reserved.
+# Copyright (C) 2011, 2012 University of Zurich. All rights reserved.
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -36,6 +36,7 @@ from supportGc3 import format_newVal, update_parameter_in_file, safe_eval, str2m
 from paraLoop import paraLoop
 
 from gc3libs import Application, Run
+from gc3libs.quantity import Memory, kB, MB, GB, Duration, hours, minutes, seconds
 import shutil
 
 import logbook, sys
@@ -45,33 +46,33 @@ logger = wrapLogger(loggerName = __name__ + 'logger', streamVerb = 'DEBUG', logF
 
 class GPremiumApplication(Application):
     _invalid_chars = re.compile(r'[^_a-zA-Z0-9]+', re.X)
-    
+
     def __init__(self, executable, arguments, inputs, outputs, output_dir, **extra_args):
-        Application.__init__(self, executable, arguments, inputs, outputs, output_dir, requested_walltime = 1)
-    
+        Application.__init__(self, executable, arguments, inputs, outputs, output_dir, requested_walltime = 1*hours)
+
     def fetch_output_error(self, ex):
 
         if self.execution.state == Run.State.TERMINATING:
         # do notify task/main application that we're done
         # ignore error, let's continue
-            self.execution.state = Run.State.TERMINATED            
+            self.execution.state = Run.State.TERMINATED
             logger.debug('fetch_output_error occured... continuing')
             if self.persistent_id:
                 logger.debug('jobid: %s exception: %s' % (self.persistent_id, str(ex)))
-            else: 
+            else:
                 logger.debug('info: %s exception: %s' % (self.info, str(ex)))
             return None
         else:
         # non-terminal state, pass on error
             return ex
-        
+
     # def submit_error(self, ex):
     #     logger.debug('submit_error occured... continuing')
-        
-    #     try: 
+
+    #     try:
     #         if self.lrms_jobid:
     #             logger.debug('jobid: %s info: %s exception: %s' % (self.lrms_jobid, self.info, str(ex)))
-    #         else: 
+    #         else:
     #             logger.debug('info: %s exception: %s' % (self.info, str(ex)))
     #     except AttributeError:
     #         logger.debug('no `lrms_jobid` hence submission didnt happen')
@@ -111,12 +112,12 @@ class GPremiumApplication(Application):
         simulation_out = os.path.join(output_dir, 'simulation.out')
         # -- clean the output dir from all files but simulation.out --
         # forwardPremiumOut creates .pol files which are huge. These are deleted if forwardPremiumOut runs through
-        # if it doesn't however this is the dirty way of cleaning out the unnecessary output. 
-        # This issue should be fixed by using log4cpp for output and not couts. 
+        # if it doesn't however this is the dirty way of cleaning out the unnecessary output.
+        # This issue should be fixed by using log4cpp for output and not couts.
         for dirFile in os.listdir(output_dir):
             if dirFile != simulation_out:
                 os.remove(dirFile)
-        # ------------------------------------ 
+        # ------------------------------------
         if os.path.exists(simulation_out):
             self.execution.exitcode = 0
 ##            ofile = open(simulation_out, 'r')
@@ -142,22 +143,22 @@ class GPremiumApplication(Application):
         else:
             # no `simulation.out` found, signal error
             self.execution.exitcode = 2
-         
-            
+
+
 class paraLoop_fp(paraLoop):
     '''
       Adds functionality for the forwardPremium application to the general paraLoop class by adding
       1) getCtryParas
-      2) fillInputDir. 
-      Both functions are used to prepare the input folder sent to the grid. 
+      2) fillInputDir.
+      Both functions are used to prepare the input folder sent to the grid.
     '''
     def __init__(self, verbosity):
         paraLoop.__init__(self, verbosity)
-    
+
     def getCtryParas(self, baseDir, Ctry1, Ctry2):
         '''
-          Obtain the right markov input files (markovMatrices.in, markovMoments.in 
-          and markov.out) and overwrite the existing ones in the baseDir/input folder. 
+          Obtain the right markov input files (markovMatrices.in, markovMoments.in
+          and markov.out) and overwrite the existing ones in the baseDir/input folder.
         '''
         import glob
         # Find Ctry pair
@@ -169,16 +170,16 @@ class paraLoop_fp(paraLoop):
         filesToCopy.append(os.path.join(CtryPresetPath, 'markov.out'))
         for fileToCopy in filesToCopy:
             shutil.copy(fileToCopy, inputFolder)
-##        if not os.path.isdir(outputFolder): 
+##        if not os.path.isdir(outputFolder):
 ##            os.mkdir(outputFolder)
 ##        shutil.copy(os.path.join(CtryPresetPath, 'markov.out'), inputFolder)
-        
+
     def fillInputDir(self, baseDir, input_dir):
         '''
-          Copy folder /input and all files in the base dir to input_dir. 
-          This is slightly more involved than before because we need to 
+          Copy folder /input and all files in the base dir to input_dir.
+          This is slightly more involved than before because we need to
           exclude the markov directory which contains markov information
-          for all country pairs. 
+          for all country pairs.
         '''
         import glob
         inputFolder = os.path.join(baseDir, 'input')

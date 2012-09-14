@@ -2,7 +2,7 @@
 #
 """
 """
-# Copyright (C) 2011, GC3, University of Zurich. All rights reserved.
+# Copyright (C) 2011, 2012, GC3, University of Zurich. All rights reserved.
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
@@ -22,10 +22,12 @@ __docformat__ = 'reStructuredText'
 __version__ = '$Revision$'
 
 
-from gc3libs import Application, Run
 from nose.tools import raises
-from gc3libs.exceptions import InvalidArgument
 from nose.plugins.skip import SkipTest
+
+from gc3libs import Application, Run
+import gc3libs.exceptions
+
 
 @raises(TypeError)
 def test_invalid_invocation():
@@ -38,7 +40,7 @@ def test_mandatory_arguments():
           'outputs': [],
           'output_dir': '/tmp',
           }
-    
+
     # test *valid* invocation
     Application(**ma)
 
@@ -46,7 +48,7 @@ def test_mandatory_arguments():
     def _create_app(tmp):
         Application(**_tmp)
         assert False, "We should have got an exception!"
-        
+
     # test *invalid* invocation removing only one of the arguments
     for k in ma:
         _tmp = ma.copy()
@@ -66,14 +68,14 @@ def test_wrong_type_arguments():
           'inputs': [],
           'outputs': [],
           'output_dir': '/tmp',
-          'requested_cores': 1,          
+          'requested_cores': 1,
           }
-    
-    @raises(InvalidArgument, ValueError)
+
+    @raises(gc3libs.exceptions.InvalidArgument, ValueError)
     def _create_app(tmp):
         app = Application(**_tmpma)
         raise SkipTest("FIXME invalid arguments")
-        
+
     for k,v  in {
         # 'inputs' : ['duplicated', 'duplicated'],
         # duplicated inputs doesnt raise an exception but just a warning
@@ -94,15 +96,19 @@ def test_valid_invocation():
           'output_dir': '/tmp',
           }
     app = Application(**ma)
-    
+
+@raises(gc3libs.exceptions.InvalidValue)
 def test_io_spec_to_dict_unicode():
     import gc3libs.url
-    Application._io_spec_to_dict(gc3libs.url.UrlKeyDict, {u'/tmp/\u0246':u'\u0246', '/tmp/b/':'b'}, True)
-    raise SkipTest("FIXME: I don't know if this method should or should not raise a UnicodeError!")
+    Application._io_spec_to_dict(
+        gc3libs.url.UrlKeyDict, {
+            u'/tmp/\u0246':u'\u0246',
+            '/tmp/b/':'b'},
+        True)
+
 
 ## main: run tests
 
 if "__main__" == __name__:
     import nose
     nose.runmodule()
-

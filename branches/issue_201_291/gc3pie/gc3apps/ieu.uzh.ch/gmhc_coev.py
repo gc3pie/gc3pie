@@ -57,6 +57,7 @@ import gc3libs
 from gc3libs import Application, Run, Task
 from gc3libs.cmdline import SessionBasedScript
 from gc3libs.compat.collections import defaultdict
+from gc3libs.quantity import Memory, kB, MB, GB, Duration, hours, minutes, seconds
 from gc3libs.workflow import SequentialTaskCollection
 
 
@@ -87,7 +88,7 @@ class GMhcCoevApplication(Application):
     def __init__(self,
                  N, p_mut_coeff, choose_or_rand, sick_or_not, off_v_last,
                  output_dir, latest_work=None, executable=None, **extra_args):
-        extra_args.setdefault('requested_memory', 1)
+        extra_args.setdefault('requested_memory', 1*GB)
         extra_args.setdefault('requested_cores', 1)
         extra_args.setdefault('requested_architecture', Run.Arch.X86_64)
         # command-line parameters to pass to the MHC_coev_* program
@@ -114,7 +115,8 @@ class GMhcCoevApplication(Application):
                                  # the MatLab workspace, but allow 5
                                  # minutes for I/O before the job is
                                  # killed forcibly by the batch system
-                                 extra_args.get('requested_walltime')*60 - 5,
+                                 extra_args.get('requested_walltime').amount(minutes) - 5,
+                                 # rest of `MHC_coev` args as passed
                                  N, p_mut_coeff, choose_or_rand, sick_or_not, off_v_last,
                                  ],
                              inputs = inputs,
@@ -150,8 +152,11 @@ class GMhcCoevTask(SequentialTaskCollection):
         executable together with the saved workspace until
         `generations_to_do` generations have been computed.
 
-        :param int single_run_duration: Duration of a single step in minutes.
-        :param int   generations_to_do: Count of generations that ``MHC_coev`` should simulate.
+        :param single_run_duration:
+          Duration of a single step (as a `gc3libs.quantity.Duration`:class: value)
+
+        :param int generations_to_do:
+          Count of generations that ``MHC_coev`` should simulate.
 
         :param              N: Passed unchanged to the MHC_coev program.
         :param    p_mut_coeff: Passed unchanged to the MHC_coev program.
@@ -159,20 +164,21 @@ class GMhcCoevTask(SequentialTaskCollection):
         :param    sick_or_not: Passed unchanged to the MHC_coev program.
         :param     off_v_last: Passed unchanged to the MHC_coev program.
 
-        :param str output_dir: Path to a directory where output files
-        from all runs should be collected.
+        :param str output_dir:
+          Path to a directory where output files
+          from all runs should be collected.
 
-        :param str executable: Path to the ``MHC_coev`` executable
-        binary, or `None` (default) to specify that the default
-        version available on the execution site should be used.
-
-        :param grid: See `TaskCollection`.
+        :param str executable:
+          Path to the ``MHC_coev`` executable binary, or `None`
+          (default) to specify that the default version available on
+          the execution site should be used.
 
         """
         # remember values for later use
         self.executable = executable
         self.output_dir = output_dir
-        self.single_run_duration = single_run_duration
+        # allow 5 extra minutes for final saving the MatLab workspace
+        self.single_run_duration = single_run_duration + 5*minutes
         self.generations_to_do = generations_to_do
         self.p_mut_coeff = p_mut_coeff
         self.N = N
@@ -202,8 +208,7 @@ class GMhcCoevTask(SequentialTaskCollection):
             N, p_mut_coeff, choose_or_rand, sick_or_not, off_v_last,
             output_dir = os.path.join(output_dir, 'tmp'),
             executable = self.executable,
-            # XXX: rounds to the nearest hour in excess
-            requested_walltime = (single_run_duration + 60) / 60,
+            requested_walltime = self.single_run_duration,
             **extra_args)
         SequentialTaskCollection.__init__(self, self.jobname, [initial_task])
 
@@ -264,7 +269,11 @@ class GMhcCoevTask(SequentialTaskCollection):
         os.removedirs(task_output_dir)
 
         # scan for common failures and take correction measures
-        report = open(os.path.join(self.output_dir, stdout_filename), 'a')
+        report_filename = os.path.join(self.output_dir, stdout_filename)
+        if os.path.exists(report_filename):
+            report = open(report_filename, 'a')
+        else:
+            report = open(report_filename, 'w')
 
         # 0. did the job run at all?
         if last_run.used_walltime < 5: # 5 minutes
@@ -276,24 +285,24 @@ class GMhcCoevTask(SequentialTaskCollection):
             return done
 
         # 1. out of memory?
-        elif (# generic memory error (convert both values to MBs for comparison)
-            (last_run.used_memory / 1024) >= (self.extra.requested_memory * 1024)
+        elif (# generic memory error
+            (last_run.used_memory >= self.extra['requested_memory'])
             # MATLAB-specific error condition
             or (last_run.exitcode == 255
                 and ('Out of memory.' in stderr_contents
                      or 'MATLAB:nomem' in stderr_contents))):
-            self.extra.requested_memory = _increase(self.extra.requested_memory, 8) # start growing linearly at 8GB
+            self.extra['requested_memory'] = _increase(self.extra['requested_memory'], 8*GB, increment=2*GB) # start growing linearly at 8GB
             report.write(
                 "gmhc_coev: Possible out-of-memory condition detected in job %s,"
-                " will request %dGB for next run.\n"
+                " will request %s for next run.\n"
                 % (self.tasks[done], self.requested_memory,))
 
         # 2. not enough time to compute even one generation?
         elif (generation_files_count == 0
               # be sure that the job has run for at least the expected time, +/- 30 minutes
               and (last_run.used_walltime / 60) > (self.single_run_duration - 30)):
-            self.single_run_duration = _increase(self.single_run_duration, 24*60,
-                                                 increase=4*60)
+            self.single_run_duration = _increase(self.single_run_duration, 24*hours,
+                                                 increase=4*hours)
             report.write(
                 "gmhc_coev: Job %s could not complete 1 generation in the allotted time,"
                 " will request %d minutes for next run.\n"
@@ -311,13 +320,13 @@ class GMhcCoevTask(SequentialTaskCollection):
                          " Computed %s generations, %s to do; submitting another job.\n"
                          % (self.generations_done, self.generations_to_do))
             report.close()
+            print (">>>>>> GmhcCoevTask.next(): before creating new App, single_run_duration=%s" % self.single_run_duration)
             self.add(
                 GMhcCoevApplication(self.N, self.p_mut_coeff, self.choose_or_rand, self.sick_or_not, self.off_v_last,
                                     output_dir = os.path.join(self.output_dir, 'tmp'),
                                     latest_work = latest_work,
                                     executable = self.executable,
-                                    # XXX: need wallclock time support in minutes!!
-                                    required_walltime = max(self.single_run_duration/60, 1),
+                                    requested_walltime = self.single_run_duration,
                                     **self.extra))
             return Run.State.RUNNING
         else:
@@ -476,7 +485,7 @@ newly-created jobs so that this limit is never exceeded.
                             kwargs['executable'] = self.params.executable
                             yield (('%s#%d' % (basename, iter)),
                                    GMhcCoevTask,
-                                   [self.params.walltime*60, # single_run_duration
+                                   [self.params.walltime,    # single_run_duration
                                     self.params.generations,
                                     N,
                                     p_mut_coeff,

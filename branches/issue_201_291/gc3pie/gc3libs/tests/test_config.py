@@ -40,6 +40,7 @@ from gc3libs import Run
 import gc3libs.config
 import gc3libs.core
 import gc3libs.template
+from gc3libs.quantity import GB, hours
 from gc3libs.backends.shellcmd import ShellcmdLrms
 
 
@@ -84,8 +85,8 @@ architecture = x86_64
         # test parsed values
         assert_equal(resources['test']['name'],            'test')
         assert_equal(resources['test']['max_cores_per_job'],    2)
-        assert_equal(resources['test']['max_memory_per_core'],  2)
-        assert_equal(resources['test']['max_walltime'],         8)
+        assert_equal(resources['test']['max_memory_per_core'],  2*GB)
+        assert_equal(resources['test']['max_walltime'],         8*hours)
         assert_equal(resources['test']['max_cores'],            2)
         assert_equal(resources['test']['architecture'],
                                            set([Run.Arch.X86_64]))

@@ -51,6 +51,7 @@ import logging.config
 log = logging.getLogger("gc3.gc3libs")
 
 import gc3libs.exceptions
+from gc3libs.quantity import Memory, kB, MB, GB, Duration, hours, minutes, seconds
 
 
 # this needs to be defined before we import other GC3Libs modules, as
@@ -596,13 +597,10 @@ class Application(Task):
       Output file names are interpreted relative to this base directory.
 
     `requested_cores`,`requested_memory`,`requested_walltime`
-      specify resource requirements for the application: the
-      number of independent execution units (CPU cores), amount of
-      memory (in GB; will be converted to a whole number by
-      truncating any decimal digits), amount of wall-clock time to
-      allocate for the computational job (in hours; will be
-      converted to a whole number by truncating any decimal
-      digits).
+      specify resource requirements for the application:
+      * the number of independent execution units (CPU cores),
+      * amount of memory (as a `gc3libs.quantity.Memory`:class: object),
+      * amount of wall-clock time to allocate for the computational job (as a `gc3libs.quantity.Duration`:class: object).
 
     The following optional parameters may be additionally
     specified as keyword arguments and will be given special
@@ -769,10 +767,17 @@ class Application(Task):
         # optional params
         self.output_base_url = extra_args.pop('output_base_url', None)
 
-        # FIXME: should use appropriate unit classes for requested_*
         self.requested_cores = int(extra_args.pop('requested_cores', 1))
         self.requested_memory = extra_args.pop('requested_memory', None)
+        assert (self.requested_memory is None
+                or isinstance(self.requested_memory, gc3libs.quantity.Memory)), \
+            ("Expected `Memory` instance for `requested_memory, got %r %s instead."
+             % (self.requested_memory, type(self.requested_memory)))
         self.requested_walltime = extra_args.pop('requested_walltime', None)
+        assert (self.requested_walltime is None
+                or isinstance(self.requested_walltime, gc3libs.quantity.Duration)), \
+            ("Expected `Duration` instance for `requested_walltime, got %r %s instead."
+             % (self.requested_memory, type(self.requested_memory)))
         self.requested_architecture = extra_args.pop('requested_architecture', None)
         if self.requested_architecture is not None \
                and self.requested_architecture not in [ Run.Arch.X86_32, Run.Arch.X86_64 ]:
@@ -835,7 +840,7 @@ class Application(Task):
     @staticmethod
     def _io_spec_to_dict(ctor, spec, force_abs):
         """
-        (This class is only used for internal processing of `input`
+        (This function is only used for internal processing of `input`
         and `output` fields.)
 
         Return a dictionary formed by pairs `URL:name` or `name:URL`.
@@ -880,6 +885,10 @@ class Application(Task):
             # is `spec` dict-like?
             return ctor(((str(k), str(v)) for k,v in spec.iteritems()),
                         force_abs=force_abs)
+        except UnicodeError, err:
+            raise gc3libs.exceptions.InvalidValue(
+                "Use of non-ASCII file names is not (yet) supported in GC3Pie: %s: %s"
+                % (err.__class__.__name__, str(err)))
         except AttributeError:
             # `spec` is a list-like
             def convert_to_tuple(val):
@@ -926,12 +935,12 @@ class Application(Task):
                 continue
             if (self.requested_memory is not None
                 and self.requested_memory > self.requested_cores * lrms.max_memory_per_core):
-                gc3libs.log.info("Rejecting resource '%s': requested more memory (%d GB) that resource provides (%d GB, %d GB per CPU core)"
+                gc3libs.log.info("Rejecting resource '%s': requested more memory (%s) that resource provides (%s, %s per CPU core)"
                                  % (lrms.name, self.requested_memory, self.requested_cores*lrms.max_memory_per_core, lrms.max_memory_per_core))
                 continue
             if (self.requested_walltime is not None
                 and self.requested_walltime > lrms.max_walltime):
-                gc3libs.log.info("Rejecting resource '%s': requested a longer duration (%d h) that resource provides (%s h)"
+                gc3libs.log.info("Rejecting resource '%s': requested a longer duration (%s) that resource provides (%s)"
                                  % (lrms.name, self.requested_walltime, lrms.max_walltime))
                 continue
             if not lrms.validate_data(self.inputs.keys()) or not lrms.validate_data(self.outputs.values()):
@@ -1078,10 +1087,12 @@ class Application(Task):
             xrsl.append('(environment=%s)' %
                         str.join(' ', [ ('("%s" "%s")' % kv) for kv in self.environment ]))
         if self.requested_walltime:
-            xrsl.append('(wallTime="%d hours")' % self.requested_walltime)
+            # xRSL assumes minutes by default
+            xrsl.append('(wallTime="%d")' % self.requested_walltime.amount(minutes))
         if self.requested_memory:
             # ARC's "memory" is memory per "rank" (= core in MPI-speak)
-            xrsl.append('(memory="%d")' % (1000 * self.requested_memory / self.requested_cores))
+            xrsl.append('(memory="%d")'
+                        % (self.requested_memory.amount(MB) / self.requested_cores))
         if self.requested_cores:
             xrsl.append('(count="%d")' % self.requested_cores)
         # XXX: the xRSL specification states that the "architecture" value
@@ -1090,16 +1101,9 @@ class Application(Task):
         # as `uname -a` values, so there is no single value that can
         # match any x86 arch...
         if self.requested_architecture is not None:
-<<<<<<< HEAD
-            xrsl += '(architecture="%s")' % self.requested_architecture
-        
-        if 'jobname' in self and self.jobname:
-            xrsl += '(jobname="%s")' % self.jobname
-=======
             xrsl.append('(architecture="%s")' % self.requested_architecture)
         if self.jobname:
             xrsl.append('(jobname="%s")' % self.jobname)
->>>>>>> master
 
         # XXX: experimental
         # this should be harmless if cache registration would not work
@@ -1123,7 +1127,7 @@ class Application(Task):
         elements of the list, separating them with spaces.
 
         """
-        return [self.executable] + ['"%s"' % i for i in self.arguments[1:]]
+        return [self.executable] + ['%s' % i for i in self.arguments[1:]]
 
 
     def qsub_sge(self, resource, _suppress_warning=False, **extra_args):
@@ -1168,10 +1172,10 @@ class Application(Task):
         qsub += ['-cwd', '-S', '/bin/sh']
         if self.requested_walltime:
             # SGE uses `s_rt` for wall-clock time limit, expressed in seconds
-            qsub += ['-l', 's_rt=%d' % (3600 * self.requested_walltime)]
+            qsub += ['-l', 's_rt=%d' % self.requested_walltime.amount(seconds)]
         if self.requested_memory:
-            # SGE uses `mem_free` for memory limits; 'G' suffix allowed for Gigabytes
-            qsub += ['-l', 'mem_free=%dG' % self.requested_memory]
+            # SGE uses `mem_free` for memory limits; 'M' suffix allowed for Megabytes
+            qsub += ['-l', 'mem_free=%dM' % self.requested_memory.amount(MB)]
         if self.join:
             qsub += ['-j', 'yes']
         if self.stdout:
@@ -1227,10 +1231,12 @@ class Application(Task):
         bsub += ['-cwd', '.', '-L', '/bin/sh', '-n', ('%d' % self.requested_cores)]
         if self.requested_walltime:
             # LSF wants walltime as HH:MM (days expressed as many hours)
-            bsub += ['-W', ('%02d:00' % self.requested_walltime)]
+            hours = int(self.requested_walltime.amount(hours))
+            minutes = int(self.requested_walltime.amount(minutes)) % 60
+            bsub += ['-W', ('%02d:%02d' % (hours, minutes))]
         if self.requested_memory:
             # LSF uses `rusage[mem=...]` for memory limits (number of MBs)
-            bsub += ['-R', ('rusage[mem=%d]' % 1000*self.requested_memory)]
+            bsub += ['-R', ('rusage[mem=%d]' % self.requested_memory.amount(MB))]
         if self.stdout:
             bsub += ['-oo', ('%s' % self.stdout)]
             if not self.join and not self.stderr:
@@ -1255,7 +1261,7 @@ class Application(Task):
         if self.requested_walltime:
             qsub += ['-l', 'walltime=%s' % (3600 * self.requested_walltime)]
         if self.requested_memory:
-            qsub += ['-l', 'mem=%dgb' % self.requested_memory]
+            qsub += ['-l', 'mem=%dmb' % self.requested_memory.amount(MB)]
         if self.stdin:
             # `self.stdin` is the full pathname on the GC3Pie client host;
             # it is copied to its basename on the execution host

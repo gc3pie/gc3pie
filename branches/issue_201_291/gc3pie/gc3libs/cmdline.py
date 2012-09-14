@@ -67,6 +67,7 @@ import gc3libs.exceptions
 import gc3libs.persistence
 import gc3libs.utils
 import gc3libs.url
+from gc3libs.quantity import Memory, kB, MB, GB, Duration, hours, minutes, seconds
 from gc3libs.session import Session
 
 
@@ -373,12 +374,6 @@ class _Script(cli.app.CommandLineApp):
                        help="Print more detailed information about the program's activity."
                        " Increase verbosity each time this option is encountered on the"
                        " command line."
-                       )
-
-        self.add_param("--config-files",
-                       action="store",
-                       default=str.join(',', gc3libs.Default.CONFIG_FILE_LOCATIONS),
-                       help="Comma separated list of configuration files",
                        )
 
         self.add_param("--config-files",
@@ -1111,21 +1106,23 @@ class SessionBasedScript(_Script):
                        " NUM must be a whole number."
                        )
         self.add_param("-m", "--memory-per-core", dest="memory_per_core",
-                       type=positive_int, default=2,  # 2 GB
+                       type=Memory, default=2*GB,  # 2 GB
                        metavar="GIGABYTES",
-                       help="Set the amount of memory required per execution core, in gigabytes (Default: %(default)s)."
-                       " Currently, GIGABYTES can only be an integer number; no fractional amounts are allowed.")
+                       help="Set the amount of memory required per execution core; default: %(default)s."
+                       " Specify this as an integral number followed by a unit, e.g.,"
+                       " '512MB' or '4GB'.")
         self.add_param("-r", "--resource", action="store", dest="resource_name", metavar="NAME",
                        default=None,
                        help="Submit jobs to a specific computational resources."
                        " NAME is a reource name or comma-separated list of such names."
                        " Use the command `gservers` to list available resources.")
-        self.add_param("-w", "--wall-clock-time", dest="wctime", default=str(8),  # 8 hrs
+        self.add_param("-w", "--wall-clock-time", dest="wctime", default='8 hours',
                        metavar="DURATION",
-                       help="Set the time limit for each job (default %(default)s for '8 hours')."
+                       help="Set the time limit for each job; default is %(default)s."
                        " Jobs exceeding this limit will be stopped and considered as 'failed'."
-                       " The duration can be expressed as a whole number (indicating the duration in hours)"
-                       " or as a string in the form 'hours:minutes'."
+                       " The duration can be expressed as a whole number followed by a time unit,"
+                       " e.g., '3600 s', '60 minutes', '8 hours', or a combination thereof,"
+                       " e.g., '2hours 30minutes'."
                        )
 
         # 2. session control
@@ -1195,21 +1192,12 @@ class SessionBasedScript(_Script):
         _Script.pre_run(self)
 
         ## consistency checks
-        n = self.params.wctime.count(":")
-        if 0 == n:  # wctime expressed in hours
-            duration = int(self.params.wctime)*60*60
-            if duration < 1:
-                raise cli.app.Error("Argument to option -w/--wall-clock-time must be a positive integer.")
-            self.params.wctime = duration
-        elif 1 == n:  # wctime expressed as 'HH:MM'
-            hrs, mins = self.params.wctime.split(":")
-            self.params.wctime = hrs*60*60 + mins*60
-        elif 2 == n:  # wctime expressed as 'HH:MM:SS'
-            hrs, mins, secs = self.params.wctime.split(":")
-            self.params.wctime = hrs*60*60 + mins*60 + secs
-        else:
-            raise cli.app.Error("Argument to option -w/--wall-clock-time must have the form 'HH:MM' or be a duration expressed in hours.")
-        self.params.walltime = int(self.params.wctime) / 3600
+        try:
+            # FIXME: backwards-compatibility, remove after 2.0 release
+            self.params.walltime = Duration(int(self.params.wctime), hours)
+        except ValueError:
+            # cannot convert to `int`, use extended parsing
+            self.params.walltime = Duration(self.params.wctime)
 
         ## determine the session file name (and possibly create an empty index)
         self.session_uri = gc3libs.url.Url(self.params.session)

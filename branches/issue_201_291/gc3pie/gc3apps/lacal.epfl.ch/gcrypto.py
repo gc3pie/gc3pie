@@ -46,6 +46,7 @@ from gc3libs.cmdline import SessionBasedScript, existing_file, positive_int, non
 from gc3libs import Application, Run, Task, RetryableTask
 import gc3libs.exceptions
 import gc3libs.application
+from gc3libs.quantity import Memory, kB, MB, GB, Duration, hours, minutes, seconds
 from gc3libs.workflow import SequentialTaskCollection, ParallelTaskCollection, ChunkedParameterSweep, RetryableTask
 
 DEFAULT_INPUTFILE_LOCATION="srm://dpm.lhep.unibe.ch/dpm/lhep.unibe.ch/home/crypto/lacal_input_files.tgz"
@@ -74,7 +75,7 @@ class CryptoApplication(gc3libs.Application):
         # set some execution defaults...
         extra_args.setdefault('requested_cores', 4)
         extra_args.setdefault('requested_architecture', Run.Arch.X86_64)
-        extra_args.setdefault('requested_walltime', 2)
+        extra_args.setdefault('requested_walltime', 2*hours)
 
         extra_args['jobname'] = "LACAL_%s" % str(start + extent)
         extra_args['output_dir'] = os.path.join(output, str(start + extent))

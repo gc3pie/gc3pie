@@ -26,7 +26,7 @@
     <script type="text/javascript" src="_static/underscore.js"></script>
     <script type="text/javascript" src="_static/doctools.js"></script>
     <link rel="top" title="gc3pie development (SVN $Revision$) documentation" href="#" />
-    <link rel="next" title="Installation of GC3Utils" href="install.html" />
+    <link rel="next" title="Installation of GC3Pie" href="install.html" />
  
 <script type="text/javascript">
   var _gaq = _gaq || [];
@@ -46,7 +46,7 @@
           <a href="py-modindex.html" title="Python Module Index"
              >modules</a> |</li>
         <li class="right" >
-          <a href="install.html" title="Installation of GC3Utils"
+          <a href="install.html" title="Installation of GC3Pie"
              accesskey="N">next</a> |</li>
         <li><a href="#">gc3pie development (SVN $Revision$) documentation</a> &raquo;</li> 
       </ul>
@@ -90,8 +90,10 @@ running state (<strong class="command">gstat</strong>), forcibly terminating it
 <h2>Table of Contents<a class="headerlink" href="#table-of-contents" title="Permalink to this headline">¶</a></h2>
 <div class="toctree-wrapper compound">
 <ul>
-<li class="toctree-l1"><a class="reference internal" href="install.html">Installation of GC3Utils</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="install.html#installation">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="install.html">Installation of GC3Pie</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="install.html#quick-start">Quick start</a></li>
+<li class="toctree-l2"><a class="reference internal" href="install.html#non-standard-installation-options">Non-standard installation options</a></li>
+<li class="toctree-l2"><a class="reference internal" href="install.html#manual-installation">Manual installation</a></li>
 <li class="toctree-l2"><a class="reference internal" href="install.html#upgrade">Upgrade</a></li>
 <li class="toctree-l2"><a class="reference internal" href="install.html#html-documentation">HTML Documentation</a></li>
 </ul>
@@ -230,41 +232,39 @@ running state (<strong class="command">gstat</strong>), forcibly terminating it
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="gc3libs/api.html">GC3Libs programming API</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="gc3libs/api.html#module-gc3libs"><cite>gc3libs</cite></a></li>
-<li class="toctree-l3"><a class="reference internal" href="gc3libs/api.html#module-gc3libs.cmdline"><cite>gc3libs.cmdline</cite></a></li>
-<li class="toctree-l3"><a class="reference internal" href="gc3libs/api.html#module-gc3libs.core"><cite>gc3libs.core</cite></a></li>
+<li class="toctree-l3"><a class="reference internal" href="gc3libs/api.html#gc3libs"><cite>gc3libs</cite></a></li>
+<li class="toctree-l3"><a class="reference internal" href="gc3libs/api.html#gc3libs-cmdline"><cite>gc3libs.cmdline</cite></a></li>
+<li class="toctree-l3"><a class="reference internal" href="gc3libs/api.html#gc3libs-core"><cite>gc3libs.core</cite></a></li>
 <li class="toctree-l3"><a class="reference internal" href="gc3libs/api.html#gc3libs-dag"><cite>gc3libs.dag</cite></a></li>
 <li class="toctree-l3"><a class="reference internal" href="gc3libs/api.html#module-gc3libs.exceptions"><cite>gc3libs.exceptions</cite></a></li>
-<li class="toctree-l3"><a class="reference internal" href="gc3libs/api.html#module-gc3libs.persistence"><cite>gc3libs.persistence</cite></a><ul>
-<li class="toctree-l4"><a class="reference internal" href="gc3libs/api.html#a-usage-warning">A usage warning</a></li>
-</ul>
-</li>
+<li class="toctree-l3"><a class="reference internal" href="gc3libs/api.html#gc3libs-persistence"><cite>gc3libs.persistence</cite></a></li>
+<li class="toctree-l3"><a class="reference internal" href="gc3libs/api.html#gc3libs-quantity"><cite>gc3libs.quantity</cite></a></li>
 <li class="toctree-l3"><a class="reference internal" href="gc3libs/api.html#module-gc3libs.template"><cite>gc3libs.template</cite></a></li>
 <li class="toctree-l3"><a class="reference internal" href="gc3libs/api.html#module-gc3libs.url"><cite>gc3libs.url</cite></a></li>
-<li class="toctree-l3"><a class="reference internal" href="gc3libs/api.html#module-gc3libs.utils"><cite>gc3libs.utils</cite></a></li>
+<li class="toctree-l3"><a class="reference internal" href="gc3libs/api.html#gc3libs-utils"><cite>gc3libs.utils</cite></a></li>
 <li class="toctree-l3"><a class="reference internal" href="gc3libs/api.html#gc3libs-resource"><cite>gc3libs.Resource</cite></a></li>
 <li class="toctree-l3"><a class="reference internal" href="gc3libs/api.html#module-gc3libs.application"><cite>gc3libs.application</cite></a></li>
-<li class="toctree-l3"><a class="reference internal" href="gc3libs/api.html#module-gc3libs.application.apppot"><cite>gc3libs.application.apppot</cite></a></li>
-<li class="toctree-l3"><a class="reference internal" href="gc3libs/api.html#module-gc3libs.application.gamess"><cite>gc3libs.application.gamess</cite></a></li>
-<li class="toctree-l3"><a class="reference internal" href="gc3libs/api.html#module-gc3libs.application.rosetta"><cite>gc3libs.application.rosetta</cite></a></li>
-<li class="toctree-l3"><a class="reference internal" href="gc3libs/api.html#module-gc3libs.authentication"><cite>gc3libs.authentication</cite></a></li>
-<li class="toctree-l3"><a class="reference internal" href="gc3libs/api.html#module-gc3libs.authentication.ssh"><cite>gc3libs.authentication.ssh</cite></a></li>
-<li class="toctree-l3"><a class="reference internal" href="gc3libs/api.html#module-gc3libs.authentication.grid"><cite>gc3libs.authentication.grid</cite></a></li>
-<li class="toctree-l3"><a class="reference internal" href="gc3libs/api.html#module-gc3libs.backends"><cite>gc3libs.backends</cite></a></li>
-<li class="toctree-l3"><a class="reference internal" href="gc3libs/api.html#module-gc3libs.backends.batch"><cite>gc3libs.backends.batch</cite></a></li>
-<li class="toctree-l3"><a class="reference internal" href="gc3libs/api.html#module-gc3libs.backends.arc0"><cite>gc3libs.backends.arc0</cite></a></li>
+<li class="toctree-l3"><a class="reference internal" href="gc3libs/api.html#gc3libs-application-apppot"><cite>gc3libs.application.apppot</cite></a></li>
+<li class="toctree-l3"><a class="reference internal" href="gc3libs/api.html#gc3libs-application-gamess"><cite>gc3libs.application.gamess</cite></a></li>
+<li class="toctree-l3"><a class="reference internal" href="gc3libs/api.html#gc3libs-application-rosetta"><cite>gc3libs.application.rosetta</cite></a></li>
+<li class="toctree-l3"><a class="reference internal" href="gc3libs/api.html#gc3libs-authentication"><cite>gc3libs.authentication</cite></a></li>
+<li class="toctree-l3"><a class="reference internal" href="gc3libs/api.html#gc3libs-authentication-ssh"><cite>gc3libs.authentication.ssh</cite></a></li>
+<li class="toctree-l3"><a class="reference internal" href="gc3libs/api.html#gc3libs-authentication-grid"><cite>gc3libs.authentication.grid</cite></a></li>
+<li class="toctree-l3"><a class="reference internal" href="gc3libs/api.html#gc3libs-backends"><cite>gc3libs.backends</cite></a></li>
+<li class="toctree-l3"><a class="reference internal" href="gc3libs/api.html#gc3libs-backends-batch"><cite>gc3libs.backends.batch</cite></a></li>
+<li class="toctree-l3"><a class="reference internal" href="gc3libs/api.html#gc3libs-backends-arc0"><cite>gc3libs.backends.arc0</cite></a></li>
 <li class="toctree-l3"><a class="reference internal" href="gc3libs/api.html#gc3libs-backends-arc1"><cite>gc3libs.backends.arc1</cite></a></li>
-<li class="toctree-l3"><a class="reference internal" href="gc3libs/api.html#module-gc3libs.backends.lsf"><cite>gc3libs.backends.lsf</cite></a></li>
-<li class="toctree-l3"><a class="reference internal" href="gc3libs/api.html#module-gc3libs.backends.sge"><cite>gc3libs.backends.sge</cite></a></li>
-<li class="toctree-l3"><a class="reference internal" href="gc3libs/api.html#module-gc3libs.backends.pbs"><cite>gc3libs.backends.pbs</cite></a></li>
-<li class="toctree-l3"><a class="reference internal" href="gc3libs/api.html#module-gc3libs.backends.shellcmd"><cite>gc3libs.backends.shellcmd</cite></a></li>
-<li class="toctree-l3"><a class="reference internal" href="gc3libs/api.html#module-gc3libs.backends.transport"><cite>gc3libs.backends.transport</cite></a></li>
+<li class="toctree-l3"><a class="reference internal" href="gc3libs/api.html#gc3libs-backends-lsf"><cite>gc3libs.backends.lsf</cite></a></li>
+<li class="toctree-l3"><a class="reference internal" href="gc3libs/api.html#gc3libs-backends-sge"><cite>gc3libs.backends.sge</cite></a></li>
+<li class="toctree-l3"><a class="reference internal" href="gc3libs/api.html#gc3libs-backends-pbs"><cite>gc3libs.backends.pbs</cite></a></li>
+<li class="toctree-l3"><a class="reference internal" href="gc3libs/api.html#gc3libs-backends-shellcmd"><cite>gc3libs.backends.shellcmd</cite></a></li>
+<li class="toctree-l3"><a class="reference internal" href="gc3libs/api.html#gc3libs-backends-transport"><cite>gc3libs.backends.transport</cite></a></li>
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="gc3libs/api.html#gc3utils-modules">GC3Utils modules</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="gc3libs/api.html#module-gc3utils"><cite>gc3utils</cite></a></li>
 <li class="toctree-l3"><a class="reference internal" href="gc3libs/api.html#module-gc3utils.frontend"><cite>gc3utils.frontend</cite></a></li>
-<li class="toctree-l3"><a class="reference internal" href="gc3libs/api.html#module-gc3utils.commands"><cite>gc3utils.commands</cite></a></li>
+<li class="toctree-l3"><a class="reference internal" href="gc3libs/api.html#gc3utils-commands"><cite>gc3utils.commands</cite></a></li>
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="gc3libs/index.html#outline-of-the-contents">Outline of the contents</a></li>
@@ -327,7 +327,7 @@ running state (<strong class="command">gstat</strong>), forcibly terminating it
 
   <h4>Next topic</h4>
   <p class="topless"><a href="install.html"
-                        title="next chapter">Installation of GC3Utils</a></p>
+                        title="next chapter">Installation of GC3Pie</a></p>
 <div id="searchbox" style="display: none">
   <h3>Quick search</h3>
     <form class="search" action="search.html" method="get">
@@ -355,7 +355,7 @@ running state (<strong class="command">gstat</strong>), forcibly terminating it
           <a href="py-modindex.html" title="Python Module Index"
              >modules</a> |</li>
         <li class="right" >
-          <a href="install.html" title="Installation of GC3Utils"
+          <a href="install.html" title="Installation of GC3Pie"
              >next</a> |</li>
         <li><a href="#">gc3pie development (SVN $Revision$) documentation</a> &raquo;</li> 
       </ul>

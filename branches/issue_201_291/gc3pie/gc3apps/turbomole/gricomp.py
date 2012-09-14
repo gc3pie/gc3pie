@@ -58,6 +58,7 @@ import gc3libs
 from gc3libs import Application, Run, Task
 from gc3libs.application.turbomole import TurbomoleApplication, TurbomoleDefineApplication
 from gc3libs.cmdline import SessionBasedScript
+from gc3libs.quantity import Memory, kB, MB, GB, Duration, hours, minutes, seconds
 from gc3libs.workflow import StagedTaskCollection, ParallelTaskCollection
 from gc3libs.template import Template, expansions
 import gc3libs.utils
@@ -404,7 +405,7 @@ class BasisSweepPasses(StagedTaskCollection):
                           self.name, self.orb_basis, self.rijk_basis, ridft_dir)
         # RIDFT expected to complete in 1 hour regardless
         extra = self.extra.copy()
-        extra.setdefault('requested_walltime', 1) # 1 hour
+        extra.setdefault('requested_walltime', 1*hours)
         return TurbomoleAndXmlProcessingPass(
             # job name
             ('ridft-%s-%s-%s' % (self.name, self.orb_basis, self.rijk_basis)),
@@ -452,9 +453,9 @@ class BasisSweepPasses(StagedTaskCollection):
                 or 'aug-cc-pV5Z' == self.rijk_basis
                 or 'aug-cc-pV5Z' == cbas
                 or 'aug-cc-pV5Z' == cabs):
-                extra.setdefault('requested_walltime', 4) # 4 hours
+                extra.setdefault('requested_walltime', 4*hours)
             else:
-                extra.setdefault('requested_walltime', 1) # 1 hour
+                extra.setdefault('requested_walltime', 1*hours)
             pass2.append(
                 TurbomoleAndXmlProcessingPass(
                     # job name

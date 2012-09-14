@@ -42,8 +42,9 @@ except ImportError:
 from gc3libs import log, Run
 from gc3libs.backends import LRMS
 import gc3libs.exceptions
+from gc3libs.quantity import kB, GB, MB, hours, minutes, seconds
 from gc3libs.utils import *
-from gc3libs.Resource import Resource
+
 
 
 class Arc1Lrms(LRMS):
@@ -441,13 +442,13 @@ class Arc1Lrms(LRMS):
                         " killed by remote batch system"
                         % arc_job.RequestedTotalWallTime.GetPeriod())
                 job.returncode = (Run.Signals.RemoteError, -1)
-            # note: arc_job.used_memory is in KiB (!), app.requested_memory is in GiB
+            # note: arc_job.used_memory is in KiB (!)
             elif (app.requested_memory is not None
                   and arc_job.UsedMainMemory > -1
-                  and (arc_job.UsedMainMemory / 1024) > (app.requested_memory * 1024)):
-                job.log("Job used more memory (%d MB) than requested (%d MB),"
+                  and arc_job.UsedMainMemory > app.requested_memory.amount(kB)):
+                job.log("Job used more memory (%d MB) than requested (%s),"
                         " killed by remote batch system"
-                        % (arc_job.UsedMainMemory / 1024, app.requested_memory * 1024))
+                        % (arc_job.UsedMainMemory / 1024, app.requested_memory.amount(MB)))
                 job.returncode = (Run.Signals.RemoteError, -1)
             else:
                 # presume everything went well...

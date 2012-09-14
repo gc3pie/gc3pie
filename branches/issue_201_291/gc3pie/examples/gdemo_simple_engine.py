@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-#
-# @(#)gdemo_simple.py
+# @(#)gdemo_simple_engine.py
 #
 #
 # Copyright (C) 2009-2012 GC3, University of Zurich. All rights reserved.
@@ -25,9 +25,8 @@ This simple script will create an instance of a `GdemoSimpleApp` class
 which inherits from `Application`:class and which basically run the
 command `/bin/hostname`.
 
-It will create an instance of `Core`:class and will submit the
-`GdemoSimpleApp` instance, check its status until the application is
-terminated and then fetch the output.
+It will show how to use the `Engine`:class class in order to manage an
+application.
 
 You can specify the resource you want to use by passing its name as
 command line argument.
@@ -58,7 +57,8 @@ class GdemoSimpleApp(gc3libs.Application):
     def __init__(self):
         gc3libs.Application.__init__(
             self,
-            arguments = ['/bin/hostname'], # mandatory
+            executable = '/bin/hostname', # mandatory
+            arguments = [],               # mandatory
             inputs = [],                  # mandatory
             outputs = [],                 # mandatory
             output_dir = "./mygc3job",    # mandatory
@@ -74,41 +74,35 @@ cfg = gc3libs.config.Configuration(*gc3libs.Default.CONFIG_FILE_LOCATIONS,
                                    **{'auto_enable_auth': True})
 core = gc3libs.core.Core(cfg)
 
+# Create an instance of `Engine` using the `Core` instance.
+engine = gc3libs.core.Engine(core)
 # in case you want to select a specific resource, call
 # `Core.select_resource(...)`
 if len(sys.argv)>1:
     core.select_resource(sys.argv[1])
 
-# Submit your application.
-core.submit(app)
+# Add your application to the `Engine` class
+engine.add(app)
 
-# After submssion, you have to check the application for its state:
+# engine does not automatically submit the application, you have to
+# call the `progress()` method
+engine.progress()
+# after the first call your application should be in SUBMITTED status
+# and its `Execution` object should have a `lrms_jobid` attribute.
 print  "Job id: %s" % app.execution.lrms_jobid
 
 # Periodically check the status of your application.
-while app.execution.state in [ gc3libs.Run.State.SUBMITTED,
-                               gc3libs.Run.State.RUNNING,
-                               ]:
+while app.execution.state != gc3libs.Run.State.TERMINATED:
     try:
         print "Job in status %s " % app.execution.state
         time.sleep(5)
         # This call will contact the resource(s) and get the current
         # job state
-        g.update_job_state(app)
+        engine.progress()
         sys.stdout.write("[ %s ]\r" % app.execution.state)
         sys.stdout.flush()
     except:
         raise
 
-print "Job is now in state %s. Fetching output." % app.execution.state
-
-# You can specify a different `download_dir` option if you want to
-# override the value used in the GdemoSimpleApp initialization
-# (app.output_dir).
-
-# By default overwrite is False. If the output directory exists, it
-# will be renamed by appending a unique numerical suffix in the form
-# of output_dir.~N~ with N the first available number.
-g.fetch_output(app, overwrite=False)
-
-print "Done. Results are in %s" % app.output_dir
+print "Job is now in state %s." % app.execution.state
+print "The output of the application is in %s" % app.output_dir
