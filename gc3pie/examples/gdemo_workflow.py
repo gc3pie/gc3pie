@@ -91,10 +91,6 @@ class XtandemPostApplication(Application):
                                      output_dir = os.path.join(output_folder,str(param_value),str(iteration),"POST"),
                                      join = True,
                                      stdout = "stdout.log",
-                                     # set computational requirements. XXX this is mandatory, thus probably should become part of the Application's signature
-                                     requested_memory = 1,
-                                     requested_cores = 1,
-                                     requested_walltime = 1,
                                      *extra_args
                                      )
 
@@ -116,10 +112,6 @@ class XtandemApplicationB(Application):
                                      output_dir = os.path.join(output_folder,str(param_value),str(iteration),os.path.basename(input_file),"B"),
                                      stdout = "stdout.txt",
                                      stderr = "stderr.txt",
-                                     # set computational requirements. XXX this is mandatory, thus probably should become part of the Application's signature
-                                     requested_memory = 1,
-                                     requested_cores = 1,
-                                     requested_walltime = 1,
                                      **extra_args
                                      )
     def terminated(self):
@@ -141,10 +133,6 @@ class XtandemApplicationA(Application):
                                      output_dir = os.path.join(output_folder,str(param_value),str(iteration),os.path.basename(input_file),"A"),
                                      stdout = "stdout.txt",
                                      stderr = "stderr.txt",
-                                     # set computational requirements. XXX this is mandatory, thus probably should become part of the Application's signature
-                                     requested_memory = 1,
-                                     requested_cores = 1,
-                                     requested_walltime = 1,
                                      **extra_args
                                      )
     def terminated(self):
@@ -164,33 +152,6 @@ class GdemoWorkflow(SessionBasedScript):
             input_filename_pattern = '*.ini',
             )
 
-
-    def _setup(self):
-        _Script.setup(self)
-
-        self.add_param("-v", "--verbose", action="count", dest="verbose", default=0,
-                       help="Be more detailed in reporting program activity."
-                       " Repeat to increase verbosity.")
-
-        self.add_param("-J", "--max-running", type=int, dest="max_running", default=50,
-                       metavar="NUM",
-                       help="Allow no more than NUM concurrent jobs (default: %(default)s)"
-                       " to be in SUBMITTED or RUNNING state."
-                       )
-        self.add_param("-C", "--continuous", type=int, dest="wait", default=0,
-                       metavar="INTERVAL",
-                       help="Keep running, monitoring jobs and possibly submitting new ones or"
-                       " fetching results every INTERVAL seconds. Exit when all jobs are finished."
-                       )
-        self.add_param("-w", "--wall-clock-time", dest="wctime", default=str(8), # 8 hrs
-                       metavar="DURATION",
-                       help="Each job will run for at most DURATION time"
-                       " (default: %(default)s hours), after which it"
-                       " will be killed and considered failed. DURATION can be a whole"
-                       " number, expressing duration in hours, or a string of the form HH:MM,"
-                       " specifying that a job can last at most HH hours and MM minutes."
-                       )
-        return
 
     def parse_args(self):
         self.input_folder = str(self.params.args[0])
