@@ -31,6 +31,7 @@ import tempfile
 # 3rd party imports
 from nose.plugins.skip import SkipTest
 from nose.tools import raises, assert_equal
+from nose import with_setup
 
 try:
     import sqlalchemy
@@ -42,6 +43,8 @@ except:
 # GC3Pie imports
 import gc3libs
 from gc3libs import Run, Task
+import gc3libs.workflow
+
 import gc3libs.exceptions
 from gc3libs.persistence import make_store, Persistable
 from gc3libs.persistence.accessors import GET
@@ -127,6 +130,16 @@ class NonPersistableClassWithSlots(object):
 
 class PersistableClassWithSlots(NonPersistableClassWithSlots):
     __slots__ = ["attr", "persistent_id"]
+
+
+class MyChunkedParameterSweep(gc3libs.workflow.ChunkedParameterSweep):
+    def new_task(self, param, **extra_args):
+        yield Task('TaskName', **extra_args)
+
+
+class MyStagedTaskCollection(gc3libs.workflow.StagedTaskCollection):
+    def stage0(self):
+        return Task('Stage0')
 
 
 def _run_generic_tests(store):
@@ -260,6 +273,37 @@ class GenericStoreChecks(object):
 
         # return objects for further testing
         return (container_id, objid)
+
+    def test_task_objects(self):
+        """
+        Test that all `Task`-like objects are persistable
+        """
+        def check_task(task):
+            fd, tmpfile = tempfile.mkstemp()
+            store = make_store("sqlite://%s" % tmpfile)
+            try:
+                id = store.save(task)
+                store.load(id)
+            finally:
+                os.remove(tmpfile)
+
+        for obj in [
+            Task('Test Task'),
+            gc3libs.workflow.TaskCollection(
+                'Test TaskCollection', tasks=[Task('1'), Task('2')]),
+            gc3libs.workflow.SequentialTaskCollection(
+                'Test SequentialTaskCollection', [Task('1'), Task('2')]),
+            MyStagedTaskCollection(
+                'Test StagedTaskCollection'),
+            gc3libs.workflow.ParallelTaskCollection(
+                'Test ParallelTaskCollection', tasks=[Task('1'), Task('2')]),
+            MyChunkedParameterSweep(
+                'Test ChunkedParameterSweep', 1, 20, 1, 5),
+            gc3libs.workflow.RetryableTask(
+                'Test RetryableTask', Task('Task1')),
+            ]:
+            check_task.description = "Test that Task-like `%s` class is stored correctly" %  obj.__class__.__name__
+            yield check_task, obj
 
 
 class TestFilesystemStore(GenericStoreChecks):
