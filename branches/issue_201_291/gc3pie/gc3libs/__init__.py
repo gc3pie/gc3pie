@@ -878,17 +878,17 @@ class Application(Task):
         """
         try:
             # is `spec` dict-like?
-            return ctor(((unicode(k), unicode(v)) for k,v in spec.iteritems()),
+            return ctor(((str(k), str(v)) for k,v in spec.iteritems()),
                         force_abs=force_abs)
         except AttributeError:
             # `spec` is a list-like
             def convert_to_tuple(val):
                 if isinstance(val, types.StringTypes):
-                    l = unicode(val)
+                    l = str(val)
                     r = os.path.basename(l)
                     return (l, r)
                 else:
-                    return (unicode(val[0]), unicode(val[1]))
+                    return (str(val[0]), str(val[1]))
             return ctor((convert_to_tuple(x) for x in spec),
                         force_abs=force_abs)
 
@@ -1006,41 +1006,40 @@ class Application(Task):
           object; if you overload this method, force the result to be
           a 'str'!
         """
-        # XXX: ARC0 seems to behave inconsistently if './something' is
-        # given as `executable`; however, commands run fine without
-        # the leading `./`, so let us just remove it and hope for the best.
-        xrsl= str.join(' ', [
-                '&',
-                '(executable="%s")' % utils.ifelse(self.executable.startswith('./'),
-                                                   self.executable[2:],
-                                                   self.executable),
-                '(gmlog=".gc3pie_arc")', # FIXME: should check if conflicts with any input/output files
-                ])
-        # treat 'arguments' separately
-        if self.arguments:
-            xrsl += '(arguments=%s)' % str.join(' ', [('"%s"' % x) for x in self.arguments])
+        # build `xrsl` incrementally; concatenate all parts into a
+        # single string at the end
+        xrsl= [
+            '&',
+            '(executable="/bin/sh")',
+            '(gmlog=".gc3pie_arc")', # XXX: should check if conflicts with any input/output files
+            ]
+        # concat `executable` and `arguments` to form the command-line
+        argv = [ self.executable ] + self.arguments
+        xrsl.append('(arguments="-c" "%s")' % str.join(' ', [('%s' % x) for x in argv]))
         # preserve execute permission on all input files
         executables = [ ]
         for l, r in self.inputs.iteritems():
             if os.access(l.path, os.X_OK):
                 executables.append(r)
         if len(executables) > 0:
-            xrsl += ('(executables=%s)'
-                     % str.join(' ', [('"%s"' % x) for x in executables]))
+            xrsl.append('(executables=%s)'
+                        % str.join(' ', [('"%s"' % x) for x in executables]))
         if self.stdin:
-            xrsl += '(stdin="%s")' % self.stdin
+            xrsl.append('(stdin="%s")' % self.stdin)
+        # XXX: this can go away when we have the ternary operator
+        # `x = a if y else b` (Python 2.5)
         if self.join:
-            xrsl += '(join="yes")'
+            xrsl.append('(join="yes")')
         else:
-            xrsl += '(join="no")'
+            xrsl.append('(join="no")')
         if self.stdout:
-            xrsl += '(stdout="%s")' % self.stdout
+            xrsl.append('(stdout="%s")' % self.stdout)
         if self.stderr and not self.join:
-            xrsl += '(stderr="%s")' % self.stderr
+            xrsl.append('(stderr="%s")' % self.stderr)
         if len(self.inputs) > 0:
-            xrsl += ('(inputFiles=%s)'
-                     % str.join(' ', [ ('("%s" "%s")' % (r, l))
-                                       for (l,r) in self.inputs.items() ]))
+            xrsl.append('(inputFiles=%s)'
+                        % str.join(' ', [ ('("%s" "%s")' % (r, l))
+                                          for (l,r) in self.inputs.items() ]))
         if len(self.outputs) > 0:
             # XXX: this can go away when we have the ternary operator
             # `x = a if y else b` (Python 2.5)
@@ -1072,39 +1071,44 @@ class Application(Task):
                                         if (remotename != self.stdout
                                             and remotename != self.stderr)]]
             if len(outputs_) > 0:
-                xrsl += ('(outputFiles=%s)' % str.join(' ', outputs_))
+                xrsl.append('(outputFiles=%s)' % str.join(' ', outputs_))
         if len(self.tags) > 0:
-            xrsl += str.join('\n', [
-                    ('(runTimeEnvironment="%s")' % rte) for rte in self.tags ])
+            xrsl += [('(runTimeEnvironment="%s")' % rte) for rte in self.tags ]
         if len(self.environment) > 0:
-            xrsl += ('(environment=%s)' %
-                     str.join(' ', [ ('("%s" "%s")' % kv) for kv in self.environment ]))
+            xrsl.append('(environment=%s)' %
+                        str.join(' ', [ ('("%s" "%s")' % kv) for kv in self.environment ]))
         if self.requested_walltime:
-            xrsl += '(wallTime="%d hours")' % self.requested_walltime
+            xrsl.append('(wallTime="%d hours")' % self.requested_walltime)
         if self.requested_memory:
             # ARC's "memory" is memory per "rank" (= core in MPI-speak)
-            xrsl += '(memory="%d")' % (1000 * self.requested_memory / self.requested_cores)
+            xrsl.append('(memory="%d")' % (1000 * self.requested_memory / self.requested_cores))
         if self.requested_cores:
-            xrsl += '(count="%d")' % self.requested_cores
+            xrsl.append('(count="%d")' % self.requested_cores)
         # XXX: the xRSL specification states that the "architecture" value
         # is matched against the value reported as `uname -a` on the cluster,
         # but different Linux distributions use "i386", "i586" and "i686"
         # as `uname -a` values, so there is no single value that can
         # match any x86 arch...
         if self.requested_architecture is not None:
+<<<<<<< HEAD
             xrsl += '(architecture="%s")' % self.requested_architecture
         
         if 'jobname' in self and self.jobname:
             xrsl += '(jobname="%s")' % self.jobname
+=======
+            xrsl.append('(architecture="%s")' % self.requested_architecture)
+        if self.jobname:
+            xrsl.append('(jobname="%s")' % self.jobname)
+>>>>>>> master
 
         # XXX: experimental
         # this should be harmless if cache registration would not work
-        xrsl += '(cache="yes")'
+        xrsl.append('(cache="yes")')
 
         # WARNING: ARClib SWIG bindings cannot resolve the overloaded
         # constructor if the argument is a Python "unicode" object;
         # force it to be a "str"!
-        return str(xrsl)
+        return str.join(' ', xrsl)
 
 
     def cmdline(self, resource):

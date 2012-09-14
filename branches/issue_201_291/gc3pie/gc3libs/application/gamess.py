@@ -67,7 +67,7 @@ class GamessApplication(gc3libs.Application):
         # INPUT VERNO NCPUS; if one of them is to be omitted,
         # we use the empty string instead.
         arguments = [
-            "/$RUNGMS",
+            "rungms",
             input_file_name,
             str(extra_args.get('verno') or ""),
             str(extra_args.get('requested_cores') or "")
@@ -76,7 +76,7 @@ class GamessApplication(gc3libs.Application):
            other_input_files += extra_args['extbas']
            arguments.extend(['--extbas', os.path.basename(extra_args['extbas'])])
         #set job name
-        extra_args['job_name'] = input_file_name_sans
+        extra_args['jobname'] = input_file_name_sans
         # build generic `Application` obj
         gc3libs.Application.__init__(self,
                                      arguments = arguments,
@@ -187,7 +187,7 @@ class GamessApplication(gc3libs.Application):
                 self.requested_memory)
         if self.requested_cores:
             qgms_argv += ['-n', '%d' % self.requested_cores]
-        # silently ignore `self.job_name`: `qgms` will set it to a default
+        # silently ignore `self.jobname`: `qgms` will set it to a default
 
         # finally, add the input files
         qgms_argv += [ os.path.basename(r) for r in self.inputs.values() ]
@@ -244,7 +244,7 @@ class GamessAppPotApplication(GamessApplication,
             other_input_files += extra_args['extbas']
             arguments.extend(['--extbas', os.path.basename(extbas)])
         # set job name
-        extra_args['job_name'] = input_file_name_sans
+        extra_args['jobname'] = input_file_name_sans
         # init superclass
         gc3libs.application.apppot.AppPotApplication.__init__(
             self,
@@ -283,5 +283,3 @@ if "__main__" == __name__:
     import doctest
     doctest.testmod(name="gamess",
                     optionflags=doctest.NORMALIZE_WHITESPACE)
-
-

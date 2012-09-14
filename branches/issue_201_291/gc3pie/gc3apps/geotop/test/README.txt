@@ -10,8 +10,12 @@ where a ``geotop.inpts`` file is present.
 
 Therefore, to run a test of ``ggeotop`` it is sufficient to provide
 the path to a directory containing valid input files.  One such
+<<<<<<< HEAD
 directories are provided here, as directory
 ``data/GEOtop_public_test``.
+=======
+directories are provided here, as directory ``data/GEOtop_public_test``.
+>>>>>>> master
 
 Invocation of ``ggeotop`` follows the usual session-based script
 conventions; in addition, the path to a statically-compiled GEOtop
