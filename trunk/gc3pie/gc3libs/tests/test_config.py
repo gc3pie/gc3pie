@@ -41,7 +41,7 @@ import gc3libs.config
 import gc3libs.core
 import gc3libs.template
 from gc3libs.backends.shellcmd import ShellcmdLrms
-
+from gc3libs.quantity import Memory, Duration
 
 def _setup_config_file(confstr):
     (fd, name) = tempfile.mkstemp()
@@ -77,15 +77,15 @@ architecture = x86_64
         # test types
         assert_is_instance(resources['test']['name'],         str)
         assert_is_instance(resources['test']['max_cores_per_job'], int)
-        assert_is_instance(resources['test']['max_memory_per_core'], int)
-        assert_is_instance(resources['test']['max_walltime'], int)
+        assert_is_instance(resources['test']['max_memory_per_core'], Memory)
+        assert_is_instance(resources['test']['max_walltime'], Duration)
         assert_is_instance(resources['test']['max_cores'],    int)
         assert_is_instance(resources['test']['architecture'], set)
         # test parsed values
         assert_equal(resources['test']['name'],            'test')
         assert_equal(resources['test']['max_cores_per_job'],    2)
-        assert_equal(resources['test']['max_memory_per_core'],  2)
-        assert_equal(resources['test']['max_walltime'],         8)
+        assert_equal(resources['test']['max_memory_per_core'],  Memory('2 GB'))
+        assert_equal(resources['test']['max_walltime'],         Duration('8hours'))
         assert_equal(resources['test']['max_cores'],            2)
         assert_equal(resources['test']['architecture'],
                                            set([Run.Arch.X86_64]))
