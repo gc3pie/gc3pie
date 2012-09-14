@@ -80,7 +80,7 @@ architecture = x86_64
                                  '--config-files', self.cfgfile,
                                  '-r', 'localhost')
 
-        assert_true(re.match('.*TERMINATED\s+1/1\s+\(100.0%\).*', result.stdout, re.S))
+        assert_true(re.match('.*TERMINATED\s+1/1\s+\(100.00%\).*', result.stdout, re.S))
 
         # FIXME: output dir should be inside session dir
         session_dir = os.path.join(self.env.base_path, 'TestOne')
