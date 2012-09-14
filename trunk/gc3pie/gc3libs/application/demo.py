@@ -30,7 +30,7 @@ from pkg_resources import Requirement, resource_filename
 import gc3libs
 import gc3libs.application
 from gc3libs.exceptions import *
-from gc3libs.quantity import GB, hour
+from gc3libs.quantity import GB, hours
 
 
 class Square(gc3libs.Application):
