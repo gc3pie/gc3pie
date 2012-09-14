@@ -950,7 +950,7 @@ class SessionBasedScript(_Script):
             table.add_row([
                     state,
                     "%d/%d" % (stats[state], total),
-                    "(%.1f%%)" % Decimal(str(100.00 * stats[state] / total)).quantize(Decimal('0.1'), rounding=ROUND_DOWN)
+                    "(%.2f%%)" % (100.00 * stats[state] / total)
                     ])
         output.write(table.draw())
         output.write("\n")
