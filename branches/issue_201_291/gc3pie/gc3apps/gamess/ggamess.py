@@ -26,6 +26,9 @@ See the output of ``ggamess --help`` for program usage instructions.
 __version__ = 'development version (SVN $Revision$)'
 # summary of user-visible changes
 __changelog__ = """
+  2012-09-11:
+    * Latest GAMESS release is the default for command-line
+      option ``-R``.
   2011-11-08:
     * New command line option ``--extbasis`` for using an
       external basis definition with GAMESS.
@@ -33,21 +36,27 @@ __changelog__ = """
     * Allow running GAMESS from an AppPot container.
   2010-12-20:
     * Initial release, forked off the ``grosetta`` sources.
-  2012-16-8: 
-    * Modification of terminated().
-    * Correct execution: ./ggamess.py -R 2011R1 test/data/exam01.inp -N 
-  2012-16-23: 
-    * Pre-release of beta version 
-""" 
+"""
 __author__ = 'Riccardo Murri <riccardo.murri@uzh.ch>'
 __docformat__ = 'reStructuredText'
 
+
+# stdlib imports
 import os
 import sys
+
+# GC3Pie imports
 import gc3libs
-from testUtils import GamessTestSuite
 from gc3libs.application.gamess import GamessApplication, GamessAppPotApplication
 from gc3libs.cmdline import SessionBasedScript, existing_file
+
+
+# run script, but allow GC3Pie persistence module to access classes defined here;
+# for details, see: http://code.google.com/p/gc3pie/issues/detail?id=95
+if __name__ == '__main__':
+    import ggamess
+    ggamess.GGamessScript().run()
+
 
 class GGamessScript(SessionBasedScript):
     """
@@ -78,17 +87,14 @@ of newly-created jobs so that this limit is never exceeded.
                        " file, or to a `.changes` file generated with the"
                        " `apppot-snap` utility.")
         self.add_param("-R", "--verno", metavar="VERNO",
-                       dest="verno", default=None,
-                       help="Use the specified version of GAMESS"
-                       " (second argument to the localgms/rungms script).")
+                       dest="verno", default='2012R1',
+                       help="Request the specified version of GAMESS"
+                       " (default: %(default)s).")
         self.add_param("-e", "--extbas", metavar='FILE',
                        dest='extbas',
                        type=existing_file, default=None,
                        help="Make the specified external basis file available to jobs.")
-	self.add_param("-t", "--test", action="store_true", #metavar='TEST', 
-		       dest="test", default=False,
-		       help="Execute tests defined in the input files.")
-	
+
     def __init__(self):
         SessionBasedScript.__init__(
             self,
@@ -98,7 +104,7 @@ of newly-created jobs so that this limit is never exceeded.
 
 
     def new_tasks(self, extra):
-	# setup AppPot parameters
+        # setup AppPot parameters
         use_apppot = False
         apppot_img = None
         apppot_changes = None
@@ -134,72 +140,3 @@ of newly-created jobs so that this limit is never exceeded.
                 parameters,
                 # keyword arguments, see `GamessApplication.__init__`
                 kwargs)
-# This method is called after the session has been completed and the results are generated. The method is triggered with option -t.
-    
-    def after_main_loop(self):
-	print "SELF.", self.params.test
-	if self.params.test is False:
-		gc3libs.log.debug("ggamess.py: Tests were not executed")
-		print "NOT RUNNING TESTs"
-		return 
-
-	#print "PARAMS", self.params
-	# build job list
-        inputs = self._search_for_input_files(self.params.args)
-	#print "OLD", inputs 
-	
-	#inputs = [task. for task in self.session_uri.path]
-	#input_list = []
-	#for app in self.session:
-	#	print "myI",app.outputs
-	#	print "myO",app.inputs
-	#	print "myOutDir", app.output_dir
-	
-	# transform set with input files to a list	
-	input_list = [myinput for myinput  in inputs]
-	#for myinput in inputs:
-	#	input_list.append(myinput)
-	#output_dirs = []
-	#jobs = list(self.session)
-
-	#list of output directories
-	#for job in jobs:
-	# 	output_dirs.append(job.output_dir) 
-	output_dirs = [job.output_dir for job in self.session]
-	#sort both list to make sure they correspond to the same files
-	input_list.sort()
- 	output_dirs.sort()
- 	#print 'INPUTSsearch', input_list
- 	#print 'OUTPUTs', output_dirs
-	
-	testSet = GamessTestSuite(".")	
-	output_list = self.get_output_files_to_analyze(input_list, output_dirs)
-	for file_input, file_output in zip(input_list,output_list):
-		#print "I/O", file_input, file_output
-		testSet.generate_tests(file_input, file_output)
-	testSet.runAll()
-
-# Given a list of input files and list of output dirs from the session, generate a list of possible paths to output files
-    def get_output_files_to_analyze(self, myinputs, myoutput_dirs):
-	list_of_files_to_analyze = []
-	for fileNameInput, output_dir in zip(myinputs, myoutput_dirs):
-		#print fileNameInput
-		fileName = os.path.split(fileNameInput)
-		if len(fileName) > 1:
-			fileName = os.path.join(output_dir, fileName[1])
-			#print "1stage", fileName
-			fileName = os.path.splitext(fileName)
-			fileNameOutput = fileName[0] + '.out'
-			#print "2stage",fileNameOutput
-			if os.path.exists(fileNameOutput):
-				list_of_files_to_analyze.append(fileNameOutput)
-			else:
-				gc3libs.log.info("File %s does not exist", fileNameOutput)
-				continue
-		else:
-			raise IOError("ggamess.py: Incorrect path of %s.", fileName)
-	return list_of_files_to_analyze
-	
-# run it
-if __name__ == '__main__':
-    GGamessScript().run()
