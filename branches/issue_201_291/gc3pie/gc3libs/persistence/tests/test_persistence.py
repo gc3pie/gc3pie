@@ -134,12 +134,12 @@ class PersistableClassWithSlots(NonPersistableClassWithSlots):
 
 class MyChunkedParameterSweep(gc3libs.workflow.ChunkedParameterSweep):
     def new_task(self, param, **extra_args):
-        return Task('TaskName', **extra_args)
+        return Task(**extra_args)
 
 
 class MyStagedTaskCollection(gc3libs.workflow.StagedTaskCollection):
     def stage0(self):
-        return Task('Stage0')
+        return Task()
 
 
 def _run_generic_tests(store):
@@ -288,19 +288,13 @@ class GenericStoreChecks(object):
                 os.remove(tmpfile)
 
         for obj in [
-            Task('Test Task'),
-            gc3libs.workflow.TaskCollection(
-                'Test TaskCollection', tasks=[Task('1'), Task('2')]),
-            gc3libs.workflow.SequentialTaskCollection(
-                'Test SequentialTaskCollection', [Task('1'), Task('2')]),
-            MyStagedTaskCollection(
-                'Test StagedTaskCollection'),
-            gc3libs.workflow.ParallelTaskCollection(
-                'Test ParallelTaskCollection', tasks=[Task('1'), Task('2')]),
-            MyChunkedParameterSweep(
-                'Test ChunkedParameterSweep', 1, 20, 1, 5),
-            gc3libs.workflow.RetryableTask(
-                'Test RetryableTask', Task('Task1')),
+            Task(),
+            gc3libs.workflow.TaskCollection(tasks=[Task(), Task()]),
+            gc3libs.workflow.SequentialTaskCollection([Task(), Task()]),
+            MyStagedTaskCollection(),
+            gc3libs.workflow.ParallelTaskCollection(tasks=[Task(), Task()]),
+            MyChunkedParameterSweep(1, 20, 1, 5),
+            gc3libs.workflow.RetryableTask(Task()),
             ]:
             check_task.description = "Test that Task-like `%s` class is stored correctly" %  obj.__class__.__name__
             yield check_task, obj
