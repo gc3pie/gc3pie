@@ -1023,8 +1023,7 @@ class Application(Task):
             '(gmlog=".gc3pie_arc")', # XXX: should check if conflicts with any input/output files
             ]
         # concat `executable` and `arguments` to form the command-line
-        argv = [ self.executable ] + self.arguments
-        xrsl.append('(arguments="-c" "%s")' % str.join(' ', [('%s' % x) for x in argv]))
+        xrsl.append('(arguments="-c" "%s")' % str.join(' ', [('%s' % x) for x in self.arguments]))
         # preserve execute permission on all input files
         executables = []
         if self.has_key('executables'):
@@ -1107,7 +1106,7 @@ class Application(Task):
         # match any x86 arch...
         if self.requested_architecture is not None:
             xrsl.append('(architecture="%s")' % self.requested_architecture)
-        if self.jobname:
+        if 'jobname' in self:
             xrsl.append('(jobname="%s")' % self.jobname)
 
         # XXX: experimental
