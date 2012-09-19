@@ -152,7 +152,7 @@ class GCodemlTest(TestRunner):
         os.chdir(self.testdir)
         self.args = ['../gcodeml.py',
                      '-s', self.sessiondir,
-                     '-C', '120',
+                     '-C', '45',
                      'data/small_flat']
         self.datadir = os.path.join(self.testdir, 'data/small_flat')
         self.outputdir = os.path.join(self.datadir, 'small_flat.out')
@@ -237,7 +237,7 @@ class GRosettaTest(TestRunner):
         
         self.args = ['../grosetta.py',
                      '-s', self.sessiondir,
-                     '-C', '120', '-vvv',
+                     '-C', '45', '-vvv',
                      '--total-decoys', '5',
                      '--decoys-per-job', '2',
                      'data/flags',
