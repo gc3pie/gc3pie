@@ -55,6 +55,7 @@ import glob
 import time
 import logging
 import numpy as np
+import shutil
 
 # gc3libs imports
 import gc3libs
@@ -320,11 +321,12 @@ class ComputePhenotypes(ParallelTaskCollection, ParaLoop):
             path_to_stage_dir = os.path.join(iterationFolder, jobname)
             # input_dir is cwd/jobname (also referred to as "stage" dir.
             path_to_stage_base_dir = os.path.join(path_to_stage_dir, 'base')
-            gc3libs.utils.mkdir(path_to_stage_base_dir)
+  #          gc3libs.utils.mkdir(path_to_stage_base_dir)
             prefix_len = len(path_to_stage_base_dir) + 1
             # 1. files in the "initial" dir are copied verbatim
             base_dir = self.base_dir
-            gc3libs.utils.copytree(base_dir , path_to_stage_base_dir) # copy entire input directory
+            shutil.copytree(self.base_dir, path_to_stage_base_dir, ignore=shutil.ignore_patterns('.svn'))           
+#            gc3libs.utils.copytree(base_dir , path_to_stage_base_dir) # copy entire input directory
             # 2. apply substitutions to parameter files
             for (path, changes) in substs.iteritems():
                 for (var, val, index, regex) in changes:
@@ -333,6 +335,8 @@ class ComputePhenotypes(ParallelTaskCollection, ParaLoop):
                                              var, index, val, regex)
             # 3. build input file list
             for dirpath,dirnames,filenames in os.walk(path_to_stage_base_dir):
+                #if '.svn' in dirnames: # http://stackoverflow.com/questions/4276255/os-walk-exclude-svn-folders
+                    #dirnames.remove('.svn')
                 for filename in filenames:
                     # cut the leading part, which is == to path_to_stage_dir
                     relpath = dirpath[prefix_len:]
