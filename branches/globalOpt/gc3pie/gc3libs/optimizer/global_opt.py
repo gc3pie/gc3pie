@@ -3,21 +3,22 @@
 """
   Class to perform global optimization. 
   
-  An implementation of Ken Price's Differnetial Evolution algorithm generates
-  guesses that are evaluated in parallel using gc3pie. The objective function
-  must be an executable file receiving inputs through a parameter file. 
+  Some optimization algorithm (for example Ken Price's Differnetial 
+  Evolution algorithm) generates guesses that are evaluated in parallel 
+  using gc3pie. 
   
-  An instance of `GlobalOptimizer` will perform the entire optimization
+  An instance of :class:`GlobalOptimizer` will perform the entire optimization
   in a directory on the local machine named `path_to_stage_dir`. 
   
-  At each iteration an instance of 'ComputePhenotypes' will prepare input files
-  in an input-specific directory and execute the objective function. When all
+  At each iteration an instance of 'ComputePhenotypes' lets the user-defined 
+  function `task_constructor` generate :class:`Application` instances that are
+  used to execute the jobs in parallel on the grid. When all
   jobs are complete, the objective's output is analyzed with the user-supplied
   function `target_fun'. This function returns the function value for all
   analyzed input vectors. 
   
   With this information, the optimizer generates a new guess. The instance of
-  `GlobalOptimizer' iterates until some convergence criteria is satisfied. 
+  class:`GlobalOptimizer' iterates until some convergence criteria is satisfied. 
 """
 
 # Copyright (C) 2011, 2012 University of Zurich. All rights reserved.
@@ -89,11 +90,9 @@ log.addHandler(file_handler)
 
 class GlobalOptimizer(SequentialTaskCollection):
 
-    def __init__(self, jobname = 'rosenbrock', path_to_stage_dir = '/tmp/rosenbrock',
-                 n_dim = 2, n_population = 100, initial_pop = [], lower_bds = [-2, -2], upper_bds = [2, 2], bnd_constr = 0, iter_max = 200, 
-                 x_crit = None, y_crit = 1.e-8, opt_strat = 1, f_weight = 0.85, f_cross = 1., nlc = None, plot_output = 0, verbosity = 'DEBUG', 
-                 task_constructor = [], 
-                 target_fun = compute_target_rosenbrock, **extra_args ):
+    def __init__(self, jobname = '', path_to_stage_dir = '',
+                 optimizer = None, task_constructor = None,
+                 target_fun = None, **extra_args ):
                  
         '''
           Main loop for the global optimizer. 
@@ -102,20 +101,11 @@ class GlobalOptimizer(SequentialTaskCollection):
           jobname -- string that labels this optimization case. 
           path_to_stage_dir -- directory in which to perform the optimization. 
           
-          n_dim -- Dimension of the objective function.
-          n_population -- Size of the populatin. 
-          initial_pop -- Population to start with. 
-          lower_bds -- Lower bounds for the input variables when drawing initial guess. 
-          upper_bds -- Upper bounds for the input variables when drawing initial guess. 
-          iter_max -- Maximum # of iterations of the solver. 
-          x_crit -- Convergence criteria for x variables. 
-          y_crit -- Convergence criteria for the y variables. 
-          plot_output -- Generate plots. 
-          opt_strat -- The kind of differential evolution strategy to use. Ranges from 1 to 6. See difEvoKenPrice.py for description. 
-          f_weight -- DE-stepsize F_weight ex [0, 2]
-          f_cross -- Crossover probabililty constant ex [0, 1]
-          nlc -- Constraint function. 
-          verbosity -- Verbosity of the solver. 
+          optimizer -- Optimizer instance that conforms to the abstract class optimization algorithm. 
+          task_constructor -- Takes a list of x vectors and the path to the current iteration directory. 
+                              Returns Application instances that can be executed on the grid. 
+          target_fun -- Takes a list of (x_vector, application_instance) tuples and returns the corresponding
+                        function value for the x_vector. 
         '''
 
         log.debug('entering globalOptimizer.__init__')
@@ -123,43 +113,14 @@ class GlobalOptimizer(SequentialTaskCollection):
         # Set up initial variables and set the correct methods.
         self.jobname = jobname
         self.path_to_stage_dir = path_to_stage_dir
-
+        self.optimizer = optimizer
         self.target_fun = target_fun
         self.task_constructor = task_constructor
-        
         self.extra_args = extra_args
-        
-        # Initialize stage dir
-        if not os.path.isdir(self.path_to_stage_dir):
-            os.makedirs(self.path_to_stage_dir)
 
-        # Initialize solver
-        opt_settings = {}
-        opt_settings['nDim']         = n_dim
-        opt_settings['nPopulation']  = n_population
-        opt_settings['F_weight']     = f_weight
-        opt_settings['F_CR']         = f_cross
-        opt_settings['lowerBds']     = lower_bds
-        opt_settings['upperBds']     = upper_bds
-        opt_settings['I_bnd_constr'] = bnd_constr
-        opt_settings['itermax']      = iter_max
-        opt_settings['F_VTR']        = y_crit
-        opt_settings['optStrategy']  = opt_strat
-        opt_settings['I_refresh']    = 0
-        opt_settings['I_plotting']   = plot_output
-        opt_settings['verbosity']    = verbosity
-        opt_settings['workingDir']   = self.path_to_stage_dir
-        
-        self.deSolver = DifferentialEvolution(opt_settings)             
+        self.optimizer.I_iter += 1
 
-        if not initial_pop:
-            self.deSolver.newPop = self.deSolver.drawInitialSample()
-        else:
-            self.deSolver.newPop = initial_pop
-
-        self.deSolver.I_iter += 1
-
-        self.evaluator = ComputePhenotypes(self.deSolver.newPop, self.jobname, self.deSolver.I_iter, task_constructor, path_to_stage_dir)
+        self.evaluator = ComputePhenotypes(self.optimizer.newPop, self.jobname, self.optimizer.I_iter, path_to_stage_dir, task_constructor)
 
         initial_task = self.evaluator
 
@@ -170,28 +131,28 @@ class GlobalOptimizer(SequentialTaskCollection):
 
         self.changed = True
         # pass on (popMem, Application)
-        pop_task_tuple = [(popEle, task) for (popEle, task) in zip(self.deSolver.newPop, self.evaluator.tasks)]
+        pop_task_tuple = [(popEle, task) for (popEle, task) in zip(self.optimizer.newPop, self.evaluator.tasks)]
 
         newVals = self.target_fun(pop_task_tuple)
-        self.deSolver.updatePopulation(self.deSolver.newPop, newVals)
+        self.optimizer.updatePopulation(self.optimizer.newPop, newVals)
         # Stats for initial population:
-        self.deSolver.printStats()
+        self.optimizer.printStats()
 
         ## make plots
-        #if self.deSolver.I_plotting:
-            #self.deSolver.plotPopulation(self.deSolver.FM_pop)
+        #if self.optimizer.I_plotting:
+            #self.optimizer.plotPopulation(self.optimizer.FM_pop)
             #self.plot3dTable()
 
-        if not self.deSolver.checkConvergence():
-            self.deSolver.newPop = self.deSolver.evolvePopulation(self.deSolver.FM_pop)
+        if not self.optimizer.checkConvergence():
+            self.optimizer.newPop = self.optimizer.evolvePopulation(self.optimizer.FM_pop)
             # Check constraints and resample points to maintain population size.
-            self.deSolver.newPop = self.deSolver.enforceConstrReEvolve(self.deSolver.newPop)
-            self.deSolver.I_iter += 1
-            self.evaluator = ComputePhenotypes(self.deSolver.newPop, self.jobname, self.deSolver.I_iter, self.task_constructor, self.path_to_stage_dir)
+            self.optimizer.newPop = self.optimizer.enforceConstrReEvolve(self.optimizer.newPop)
+            self.optimizer.I_iter += 1
+            self.evaluator = ComputePhenotypes(self.optimizer.newPop, self.jobname, self.optimizer.I_iter, self.path_to_stage_dir, self.task_constructor)
             self.add(self.evaluator)
         else:
             # post processing
-            if self.deSolver.I_plotting:
+            if self.optimizer.I_plotting:
                 self.plot3dTable()
 
             open(os.path.join(self.path_to_stage_dir, 'jobDone'), 'w')
@@ -210,25 +171,18 @@ class ComputePhenotypes(ParallelTaskCollection):
         return self.jobname
 
 
-    def __init__(self, inParaCombos, jobname, iteration, task_constructor, path_to_stage_dir, **extra_args):
+    def __init__(self, inParaCombos, jobname, iteration, path_to_stage_dir, task_constructor, **extra_args):
 
         """
           Generate a list of tasks and initialize a ParallelTaskCollection with them. 
-          
-          Uses paraLoop class to generate a list of (descriptions, substitutions for the input files). 
-          Uses method generateTaskList to create a list of GPremiumApplication's which are invoked from a list of inputs (appropriately adjusted input files), 
-          the output directory and some further settings for each run. 
 
           Keyword arguments: 
           inParaCombos -- List of tuples defining the parameter combinations.
           jobname -- Name of GlobalOptimizer instance driving the optimization. 
           iteration -- Current iteration number. 
           path_to_stage_dir -- Path to directory in which optimization takes place. 
-          path_to_executable --  Path to the executable (the external program to be called). 
-          base_dir -- Directory in which the input files are located. 
-          x_vars -- Names of the x variables. 
-          para_files -- List of parameter files corresponding to the x variables. 
-          para_file_formats -- List of format strings for parameter files. Values can be: space-separated, bar-separated or a regular expression. 
+          task_constructor -- Takes a list of x vectors and the path to the current iteration directory. 
+                              Returns Application instances that can be executed on the grid. 
         """
 
         log.debug('entering gParaSearchParalell.__init__')
@@ -260,34 +214,3 @@ class ComputePhenotypes(ParallelTaskCollection):
         self.tasks = [ task_constructor(x_vec, self.iterationFolder) for x_vec in inParaCombos ]
         ParallelTaskCollection.__init__(self, self.jobname, self.tasks)
 
-
-
-if __name__ == '__main__':
-    log.info('Starting: \n%s' % ' '.join(sys.argv))
-    # clean up
-    os.system('rm -fr /tmp/rosenbrock')
-
-    # create an instance globalObt
-    globalOptObj = GlobalOptimizer(y_crit=0.1)
-    app = globalOptObj
-    
-    # create an instance of Core. Read configuration from your default
-    # configuration file
-    cfg = gc3libs.config.Configuration(*gc3libs.Default.CONFIG_FILE_LOCATIONS,
-                                       **{'auto_enable_auth': True})
-    g = gc3libs.core.Core(cfg)
-    engine = gc3libs.core.Engine(g)
-    engine.add(app)
-    
-    # Periodically check the status of your application.
-    while app.execution.state != gc3libs.Run.State.TERMINATED:
-        try:
-            print "Job in status %s " % app.execution.state
-            time.sleep(5)
-            engine.progress()
-        except:
-            raise
-    
-    print "Job is now in state %s. Fetching output." % app.execution.state
-    
-    log.info('main done')
