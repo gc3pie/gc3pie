@@ -554,7 +554,7 @@ class ChunkedParameterSweep(ParallelTaskCollection):
         for param in range(min_value, self._floor, step):
             initial.append(self.new_task(param))
         # start with the initial chunk of jobs
-        ParallelTaskCollection.__init__(self,jobname, initial, **extra_args)
+        ParallelTaskCollection.__init__(self, jobname, initial, **extra_args)
 
 
     def new_task(self, param, **extra_args):
