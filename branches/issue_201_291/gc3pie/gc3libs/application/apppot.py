@@ -72,7 +72,7 @@ class AppPotApplication(gc3libs.Application):
         if apppot_extra:
             for arg in apppot_extra:
                 apppot_start_args += ['--extra', arg]
-        apppot_start_args += [ executable ] + arguments
+        apppot_start_args += arguments
 
         if 'tags' in extra_args:
             extra_args['tags'].append(apppot_tag)
@@ -104,10 +104,10 @@ class AppPotApplication(gc3libs.Application):
             # because otherwise ARC insists that 'apppot-start.sh'
             # should be included in "inputFiles", but it obviously
             # breaks all other submission schemes...
-            original_executable = self.executable
-            self.executable = '/$APPPOT_STARTUP'
+            original_executable = self.arguments[0]
+            self.arguments[0] = '/$APPPOT_STARTUP'
             jobdesc = gc3libs.Application.xrsl(self, resource)
-            self.executable = original_executable
+            self.arguments[0] = original_executable
             return jobdesc
 
 

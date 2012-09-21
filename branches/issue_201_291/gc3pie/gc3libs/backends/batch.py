@@ -309,11 +309,11 @@ class BatchSystem(LRMS):
                                       local_path.path, self.frontend)
                 raise
 
-        if app.executable.startswith('./'):
+        if app.arguments[0].startswith('./'):
             gc3libs.log.debug("Making remote path '%s' executable.",
-                              app.executable)
+                              app.arguments[0])
             self.transport.chmod(os.path.join(ssh_remote_folder,
-                                              app.executable), 0755)
+                                              app.arguments[0]), 0755)
 
         try:
             sub_cmd, aux_script = self._submit_command(app)

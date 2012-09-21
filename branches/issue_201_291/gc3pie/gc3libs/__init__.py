@@ -658,13 +658,9 @@ class Application(Task):
     After successful construction, an `Application` object is
     guaranteed to have the following instance attributes:
 
-    `executable`
-      a string specifying the executable name
-
     `arguments`
       list of strings specifying command-line arguments for executable
-      invocation; possibly empty. This will include also the
-      `executable` name as first element
+      invocation. The first element must be the executable.
 
     `inputs`
       dictionary mapping source URL (a `gc3libs.url.Url`:class:
@@ -718,7 +714,6 @@ class Application(Task):
         if 'executable' in extra_args:
             gc3libs.log.warning("`executable` argument is not supported anymore. Please use `arguments` only")
 
-        self.executable = str(arguments[0])
         self.arguments = [ str(x) for x in arguments ]
 
         self.inputs = Application._io_spec_to_dict(gc3libs.url.UrlKeyDict, inputs, True)
@@ -1022,7 +1017,6 @@ class Application(Task):
             '(executable="/bin/sh")',
             '(gmlog=".gc3pie_arc")', # XXX: should check if conflicts with any input/output files
             ]
-        # concat `executable` and `arguments` to form the command-line
         xrsl.append('(arguments="-c" "%s")' % str.join(' ', [('%s' % x) for x in self.arguments]))
         # preserve execute permission on all input files
         executables = []
@@ -1131,7 +1125,7 @@ class Application(Task):
         elements of the list, separating them with spaces.
 
         """
-        return [self.executable] + ['%s' % i for i in self.arguments[1:]]
+        return ['%s' % i for i in self.arguments[1:]]
 
 
     def qsub_sge(self, resource, _suppress_warning=False, **extra_args):

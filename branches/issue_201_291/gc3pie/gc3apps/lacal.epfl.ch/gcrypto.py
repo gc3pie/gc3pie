@@ -78,7 +78,6 @@ class CryptoApplication(gc3libs.Application):
         extra_args['jobname'] = "LACAL_%s" % str(start + extent)
         extra_args['output_dir'] = os.path.join(extra_args['output_dir'], str(start + extent))
         extra_args['tags'] = [ 'APPS/CRYPTO/LACAL-1.0' ]
-        extra_args['executables'] = ["./gnfs-cmd"]
         extra_args['requested_memory'] = Memory(
             int(extra_args['requested_memory'].amount() / float(extra_args['requested_cores'])),
             unit=extra_args['requested_memory'].unit)
@@ -86,8 +85,7 @@ class CryptoApplication(gc3libs.Application):
         gc3libs.Application.__init__(
             self,
 
-            executable = "./gnfs-cmd",
-            arguments = [ start, extent, extra_args['requested_cores'], "input.tgz" ],
+            arguments = [ "./gnfs-cmd", start, extent, extra_args['requested_cores'], "input.tgz" ],
             inputs = {
                 input_files_archive:"input.tgz",
                 gnfs_location:"./gnfs-cmd",
