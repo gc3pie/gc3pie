@@ -32,16 +32,78 @@ __changelog__ = """
 __docformat__ = 'reStructuredText'
 
 import os
+import sys
+from gc3libs import Application
+sys.path.append('../../')
+from support_gc3 import update_parameter_in_file
 
+float_fmt = '%25.15f'
 
-def compute_target_rosenbrock(pop_location_tuple):
+def task_constructor_rosenbrock(x_vals, iteration_directory, **extra_args):
     '''
-      Given a list of (population, location), compute and return list of target 
+      Given solver guess `x_vals`, return an instance of :class:`Application`
+      set up to produce the output :def:`target_fun` of :class:`GlobalOptimizer'
+      analyzes to produce the corresponding function values. 
+    '''
+    import shutil
+    
+    # Set some initial variables
+    path_to_rosenbrock_example = os.getcwd()
+    path_to_executable = os.path.join(path_to_rosenbrock_example, 'bin/rosenbrock')
+    base_dir = os.path.join(path_to_rosenbrock_example, 'base')
+    
+    x_vars = ['x1', 'x2']
+    para_files = ['parameters.in', 'parameters.in']
+    para_file_formats = ['space-separated', 'space-separated']
+    index = 0 # We are dealing with scalar inputs
+    
+    jobname = 'para_' + '_'.join(['%s=' % var + ('%25.15f' % val).strip() for (var, val) in zip(x_vars, x_vals)])
+    path_to_stage_dir = os.path.join(iteration_directory, jobname)
+    
+    executable = os.path.basename(path_to_executable)
+    # start the inputs dictionary with syntax: client_path: server_path
+    inputs = { path_to_executable:executable }
+    path_to_stage_base_dir = os.path.join(path_to_stage_dir, 'base')
+    shutil.copytree(base_dir, path_to_stage_base_dir, ignore=shutil.ignore_patterns('.svn'))
+    for var, val, para_file, para_file_format in zip(x_vars, x_vals, para_files, para_file_formats):
+        val = (float_fmt % val).strip() 
+        update_parameter_in_file(os.path.join(path_to_stage_base_dir, para_file),
+                                 var, index, val, para_file_format)
+
+    prefix_len = len(path_to_stage_base_dir) + 1        
+    for dirpath,dirnames,filenames in os.walk(path_to_stage_base_dir):
+        for filename in filenames:
+            # cut the leading part, which is == to path_to_stage_dir
+            relpath = dirpath[prefix_len:]
+            # ignore output directory contents in resubmission
+            if relpath.startswith('output'):
+                continue
+            remote_path = os.path.join(relpath, filename)
+            inputs[os.path.join(dirpath, filename)] = remote_path
+    # all contents of the `output` directory are to be fetched
+   # outputs = { 'output/':'' }
+    outputs = gc3libs.ANY_OUTPUT
+    #{ '*':'' }
+    #kwargs = extra.copy()
+    kwargs = extra_args # e.g. architecture
+    kwargs['stdout'] = executable + '.log'
+    kwargs['join'] = True
+    kwargs['output_dir'] =  os.path.join(path_to_stage_dir, 'output')
+    gc3libs.log.debug("Output dir: %s" % kwargs['output_dir'])
+    kwargs['requested_architecture'] = 'x86_64'
+    kwargs['requested_cores'] = 1
+    # hand over job to create
+    return Application('./' + executable, [], inputs, outputs, **kwargs)
+
+
+def compute_target_rosenbrock(pop_task_tuple):
+    '''
+      Given a list of (population, task), compute and return list of target 
       values. 
     '''
     fxVals = []
-    for (pop, loc) in pop_location_tuple:
-        outputDir = os.path.join(loc, 'output')
+    for (pop, task) in pop_task_tuple:
+        outputDir = task.output_dir
         f = open(os.path.join(outputDir, 'rosenbrock.out'))
         line = f.readline().strip()
         fxVal = float(line)
@@ -60,7 +122,7 @@ if __name__ == '__main__':
 
     # create an instance globalObt
     from gc3libs.optimizer.global_opt import GlobalOptimizer
-    globalOptObj = GlobalOptimizer(y_crit=0.1)
+    globalOptObj = GlobalOptimizer(y_crit=0.1, task_constructor = task_constructor_rosenbrock)
     app = globalOptObj
     
     # create an instance of Core. Read configuration from your default

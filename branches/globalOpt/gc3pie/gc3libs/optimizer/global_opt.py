@@ -67,9 +67,7 @@ from gc3libs.optimizer.examples.rosenbrock.opt_rosenbrock import compute_target_
 from gc3libs import Application, Run
 
 # optimizer specific imports
-from support_gc3 import update_parameter_in_file
 from dif_evolution import DifferentialEvolution
-from para_loop import ParaLoop
 
 # For now use __file__ to determine path to the example files. Could also use pkg_resources. 
 path_to_rosenbrock_example = os.path.join(os.path.dirname(__file__), 'examples/rosenbrock/')
@@ -89,16 +87,12 @@ file_handler.setLevel(logging.DEBUG)
 log.addHandler(stream_handler)
 log.addHandler(file_handler)
 
-float_fmt = '%25.15f'
-
 class GlobalOptimizer(SequentialTaskCollection):
 
     def __init__(self, jobname = 'rosenbrock', path_to_stage_dir = '/tmp/rosenbrock',
                  n_dim = 2, n_population = 100, initial_pop = [], lower_bds = [-2, -2], upper_bds = [2, 2], bnd_constr = 0, iter_max = 200, 
                  x_crit = None, y_crit = 1.e-8, opt_strat = 1, f_weight = 0.85, f_cross = 1., nlc = None, plot_output = 0, verbosity = 'DEBUG', 
-                 path_to_executable = os.path.join(path_to_rosenbrock_example, 'bin/rosenbrock'),
-                 base_dir = os.path.join(path_to_rosenbrock_example, 'base'), 
-                 x_vars = ['x1', 'x2'], para_files = ['parameters.in', 'parameters.in'], para_file_formats = ['space-separated', 'space-separated'],
+                 task_constructor = [], 
                  target_fun = compute_target_rosenbrock, **extra_args ):
                  
         '''
@@ -122,13 +116,6 @@ class GlobalOptimizer(SequentialTaskCollection):
           f_cross -- Crossover probabililty constant ex [0, 1]
           nlc -- Constraint function. 
           verbosity -- Verbosity of the solver. 
-
-          path_to_executable -- Path to main executable. 
-          base_dir -- Directory in which the input files are assembled. This directory is sent as input to the cluseter. 
-          x_vars -- Names of the x variables.
-          para_files -- List of parameter files corresponding to the x variables. 
-          para_file_formats -- List of format strings for parameter files. Values can be: space-separated, bar-separated or a regular expression. 
-          target_fun --  Function to analyze the output retrieved from the servers and generate list of f values. 
         '''
 
         log.debug('entering globalOptimizer.__init__')
@@ -137,12 +124,8 @@ class GlobalOptimizer(SequentialTaskCollection):
         self.jobname = jobname
         self.path_to_stage_dir = path_to_stage_dir
 
-        self.path_to_executable = path_to_executable
-        self.base_dir = base_dir
-        self.x_vars = x_vars
-        self.para_files = para_files
-        self.para_file_formats = para_file_formats
         self.target_fun = target_fun
+        self.task_constructor = task_constructor
         
         self.extra_args = extra_args
         
@@ -176,8 +159,7 @@ class GlobalOptimizer(SequentialTaskCollection):
 
         self.deSolver.I_iter += 1
 
-        self.evaluator = ComputePhenotypes(self.deSolver.newPop, self.jobname, self.deSolver.I_iter, path_to_stage_dir, 
-                                           self.path_to_executable, self.base_dir, self.x_vars, self.para_files, self.para_file_formats) 
+        self.evaluator = ComputePhenotypes(self.deSolver.newPop, self.jobname, self.deSolver.I_iter, task_constructor, path_to_stage_dir)
 
         initial_task = self.evaluator
 
@@ -187,16 +169,13 @@ class GlobalOptimizer(SequentialTaskCollection):
         log.debug('entering gParaSearchDriver.next')
 
         self.changed = True
-        # pass on (popMem, location)
-        pop_location_tuple = [(popEle, 
-                             os.path.join(self.path_to_stage_dir, 'Iteration-' + str(self.deSolver.I_iter), 'para_' + '_'.join([(var + '=' + 
-                                                               (float_fmt % val).strip()) for (var,val) in zip(self.x_vars, popEle) ] ) ) ) for popEle in self.deSolver.newPop]
-        newVals = self.target_fun(pop_location_tuple)
+        # pass on (popMem, Application)
+        pop_task_tuple = [(popEle, task) for (popEle, task) in zip(self.deSolver.newPop, self.evaluator.tasks)]
+
+        newVals = self.target_fun(pop_task_tuple)
         self.deSolver.updatePopulation(self.deSolver.newPop, newVals)
         # Stats for initial population:
         self.deSolver.printStats()
-        ## make full overview table
-        #self.combOverviews(runDir = self.pathToStageDir, tablePath = self.pathToStageDir)
 
         ## make plots
         #if self.deSolver.I_plotting:
@@ -208,10 +187,7 @@ class GlobalOptimizer(SequentialTaskCollection):
             # Check constraints and resample points to maintain population size.
             self.deSolver.newPop = self.deSolver.enforceConstrReEvolve(self.deSolver.newPop)
             self.deSolver.I_iter += 1
-            self.evaluator = ComputePhenotypes(self.deSolver.newPop, self.jobname, self.deSolver.I_iter, self.path_to_stage_dir, 
-                                           self.path_to_executable, self.base_dir, self.x_vars, self.para_files, self.para_file_formats)
-            #computePhenotypes(self.deSolver.newPop, self.jobname, 
-                                             #self.deSolver.I_iter, self.pathToStageDir, self.optSettings, self.targetSettings)
+            self.evaluator = ComputePhenotypes(self.deSolver.newPop, self.jobname, self.deSolver.I_iter, self.task_constructor, self.path_to_stage_dir)
             self.add(self.evaluator)
         else:
             # post processing
@@ -228,14 +204,13 @@ class GlobalOptimizer(SequentialTaskCollection):
     def __str__(self):
         return self.jobname
 
-class ComputePhenotypes(ParallelTaskCollection, ParaLoop):
+class ComputePhenotypes(ParallelTaskCollection):
 
     def __str__(self):
         return self.jobname
 
 
-    def __init__(self, inParaCombos, jobname, iteration, path_to_stage_dir, 
-                 path_to_executable, base_dir, x_vars, para_files, para_file_formats, **extra_args):
+    def __init__(self, inParaCombos, jobname, iteration, task_constructor, path_to_stage_dir, **extra_args):
 
         """
           Generate a list of tasks and initialize a ParallelTaskCollection with them. 
@@ -263,11 +238,6 @@ class ComputePhenotypes(ParallelTaskCollection, ParaLoop):
         self.iteration = iteration        
 
         self.path_to_stage_dir = path_to_stage_dir
-        self.path_to_executable = path_to_executable
-        self.base_dir = base_dir
-        self.x_vars = x_vars
-        self.para_files = para_files
-        self.para_file_formats = para_file_formats
         self.verbosity = 'DEBUG'
         self.extra_args = extra_args
 
@@ -287,85 +257,15 @@ class ComputePhenotypes(ParallelTaskCollection, ParaLoop):
         # save population to file
         np.savetxt(os.path.join(self.iterationFolder, 'curPopulation'), inParaCombos, delimiter = '  ')
 
-        # Take the list of parameter combinations and translate them in a comma separated list of values for each variable to be fed into paraLoop file.
-        # This can be done much more elegantly with ','.join() but it works...
-        vals = []
-        nVariables = range(len(inParaCombos[0]))
-        for ixVar in nVariables:
-            vals.append([paraCombo[ixVar] for paraCombo in inParaCombos])
-     
-        params = {}
-        n_vars = len(self.x_vars)
-        params['variables'] = self.x_vars
-        params['indices'] = np.array(['(0)'] * n_vars)
-        params['paraFiles'] = self.para_files
-        params['paraProps'] = np.array(['None'] * n_vars)
-        params['groups'] = np.array([0] * n_vars)
-        params['groupRestrs'] = np.array(['diagnol'] * n_vars)
-        params['paraFileRegex'] = self.para_file_formats
-        params['vals'] = np.array(vals)
+        self.tasks = [ task_constructor(x_vec, self.iterationFolder) for x_vec in inParaCombos ]
+        ParallelTaskCollection.__init__(self, self.jobname, self.tasks)
 
-        ParaLoop.__init__(self, verbosity = 'CRITICAL')
-        tasks = self.gen_task_list(self.iterationFolder, params)
-        ParallelTaskCollection.__init__(self, self.jobname, tasks)
-        
-    def gen_task_list(self, iterationFolder, params):
-        # Fill the task list
-        tasks = []
-        for jobname, substs in self.process_para_file(path_to_para_loop = None, params = params):
-            executable = os.path.basename(self.path_to_executable)
-            # start the inputs dictionary with syntax: client_path: server_path
-            inputs = { self.path_to_executable:executable }
-            # make a "stage" directory where input files are collected on the client machine.
-            #path_to_stage_dir = self.make_directory_path(os.path.join(iterationFolder, 'NAME'), jobname)
-            path_to_stage_dir = os.path.join(iterationFolder, jobname)
-            # input_dir is cwd/jobname (also referred to as "stage" dir.
-            path_to_stage_base_dir = os.path.join(path_to_stage_dir, 'base')
-  #          gc3libs.utils.mkdir(path_to_stage_base_dir)
-            prefix_len = len(path_to_stage_base_dir) + 1
-            # 1. files in the "initial" dir are copied verbatim
-            base_dir = self.base_dir
-            shutil.copytree(self.base_dir, path_to_stage_base_dir, ignore=shutil.ignore_patterns('.svn'))           
-#            gc3libs.utils.copytree(base_dir , path_to_stage_base_dir) # copy entire input directory
-            # 2. apply substitutions to parameter files
-            for (path, changes) in substs.iteritems():
-                for (var, val, index, regex) in changes:
-                    # new. make adjustments in the base dir itself.
-                    update_parameter_in_file(os.path.join(path_to_stage_base_dir, path),
-                                             var, index, val, regex)
-            # 3. build input file list
-            for dirpath,dirnames,filenames in os.walk(path_to_stage_base_dir):
-                #if '.svn' in dirnames: # http://stackoverflow.com/questions/4276255/os-walk-exclude-svn-folders
-                    #dirnames.remove('.svn')
-                for filename in filenames:
-                    # cut the leading part, which is == to path_to_stage_dir
-                    relpath = dirpath[prefix_len:]
-                    # ignore output directory contents in resubmission
-                    if relpath.startswith('output'):
-                        continue
-                    remote_path = os.path.join(relpath, filename)
-                    inputs[os.path.join(dirpath, filename)] = remote_path
-            # all contents of the `output` directory are to be fetched
-           # outputs = { 'output/':'' }
-            outputs = gc3libs.ANY_OUTPUT
-            #{ '*':'' }
-            #kwargs = extra.copy()
-            kwargs = self.extra_args
-            kwargs['stdout'] = executable + '.log'
-            kwargs['join'] = True
-            kwargs['output_dir'] =  os.path.join(path_to_stage_dir, 'output')
-            gc3libs.log.debug("Output dir: %s" % kwargs['output_dir'])
-            kwargs['requested_architecture'] = 'x86_64'
-            kwargs['requested_cores'] = 1
-            # hand over job to create
-            tasks.append(Application('./' + executable, [], inputs, outputs, **kwargs))
-        return tasks
-    
+
 
 if __name__ == '__main__':
     log.info('Starting: \n%s' % ' '.join(sys.argv))
     # clean up
-    os.system('rm -r /tmp/rosenbrock')
+    os.system('rm -fr /tmp/rosenbrock')
 
     # create an instance globalObt
     globalOptObj = GlobalOptimizer(y_crit=0.1)
