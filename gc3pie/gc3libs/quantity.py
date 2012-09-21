@@ -835,6 +835,10 @@ _TIMESPEC_VALS = [
 
 ## aliases for common units
 
+B = Memory.B
+byte = B
+bytes = B
+
 kB = Memory.kB
 MB = Memory.MB
 GB = Memory.GB
