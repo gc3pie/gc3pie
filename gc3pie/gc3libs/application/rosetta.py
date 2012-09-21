@@ -49,6 +49,9 @@ class RosettaApplication(gc3libs.Application):
       * `database`: (local) path to the Rosetta DB; if this is not specified, then it is assumed that the correct location will be available at the remote execution site as environment variable ``ROSETTA_DB_LOCATION``
       * `arguments`: If present, they will be appended to the Rosetta application command line.
     """
+
+    application_name = 'rosetta'
+
     def __init__(self, application, application_release, inputs, outputs=[],
                  flags_file=None, database=None, arguments=[], **extra_args):
 
@@ -151,6 +154,9 @@ class RosettaDockingApplication(RosettaApplication):
 
     Currently used in the `gdocking` app.
     """
+
+    application_name = 'rosetta_docking'
+
     def __init__(self, pdb_file_path, native_file_path=None,
                  number_of_decoys_to_create=1, flags_file=None,
                  application_release='3.1', **extra_args):

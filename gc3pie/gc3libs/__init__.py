@@ -749,6 +749,17 @@ class Application(Task):
       for submission; possibly empty.
     """
 
+    application_name = 'generic'
+    """
+    A name for applications of this class.
+
+    This string is used as a prefix for configuration items related to
+    this application in configured resources.  For example, if the
+    `application_name` is ``foo``, then the application interface code
+    in GC3Pie might search for ``foo_cmd``, ``foo_extra_args``, etc.
+    See `qsub_sge`:meth: for an actual example.
+    """
+
     def __init__(self, executable, arguments, inputs, outputs, output_dir, **extra_args):
         # required parameters
         self.executable = executable

@@ -58,6 +58,8 @@ class CodemlApplication(gc3libs.Application):
     to be copied to the execution site.
     """
 
+    application_name = 'codeml'
+
     def __init__(self, *ctls, **extra_args):
         # optional keyword argument 'codeml', defaulting to None
         codeml = extra_args.get('codeml', None)

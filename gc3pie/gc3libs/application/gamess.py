@@ -50,6 +50,9 @@ class GamessApplication(gc3libs.Application):
     `output`.  Note that a GAMESS-US job is *always* submitted with
     `join = True`, therefore any `stderr` setting is ignored.
     """
+
+    application_name = 'gamess'
+
     def __init__(self, inp_file_path, *other_input_files, **extra_args):
         input_file_name = os.path.basename(inp_file_path)
         input_file_name_sans = os.path.splitext(input_file_name)[0]
@@ -191,6 +194,9 @@ class GamessAppPotApplication(GamessApplication,
     `output`.  Note that a GAMESS-US job is *always* submitted with
     `join = True`, therefore any `stderr` setting is ignored.
     """
+
+    application_name = 'gamess'
+
     def __init__(self, inp_file_path, *other_input_files, **extra_args):
         input_file_name = os.path.basename(inp_file_path)
         input_file_name_sans = os.path.splitext(input_file_name)[0]
