@@ -85,7 +85,6 @@ class CryptoApplication(gc3libs.Application):
 
         gc3libs.Application.__init__(
             self,
-
             executable = "./gnfs-cmd",
             arguments = [ start, extent, extra_args['requested_cores'], "input.tgz" ],
             inputs = {
@@ -129,7 +128,8 @@ class CryptoApplication(gc3libs.Application):
             # resubmit
             self.execution.returncode = (0, 99)
 
-class CryptoTask(RetryableTask, gc3libs.utils.Struct):
+
+class CryptoTask(RetryableTask):
     """
     Run ``gnfs-cmd`` on a given range
     """
@@ -145,7 +145,6 @@ class CryptoTask(RetryableTask, gc3libs.utils.Struct):
             # keyword arguments
             **extra_args)
 
-
     def retry(self):
         """
         Resubmit a cryto application instance iff it exited with code 99.
@@ -157,6 +156,7 @@ class CryptoTask(RetryableTask, gc3libs.utils.Struct):
             return True
         else:
             return False
+
 
 class CryptoChunkedParameterSweep(ChunkedParameterSweep):
     """
