@@ -46,6 +46,7 @@ import csv
 import fnmatch
 import lockfile
 import logging
+import math
 import os
 import os.path
 import re
@@ -946,11 +947,16 @@ class SessionBasedScript(_Script):
         table.set_deco(0)     # no decorations
         table.set_cols_align(['r', 'r', 'c'])
         total = stats['total']
+        # ensure we display enough decimal digits in percentages when
+        # running a large number of jobs; see Issue 308 for a more
+        # detailed descrition of the problem
+        precision = max(1, math.log10(total) - 1)
+        fmt = '(%%.%df%%%%)' % precision
         for state in sorted(stats.keys()):
             table.add_row([
                     state,
                     "%d/%d" % (stats[state], total),
-                    "(%.2f%%)" % (100.00 * stats[state] / total)
+                    fmt % (100.00 * stats[state] / total)
                     ])
         output.write(table.draw())
         output.write("\n")
