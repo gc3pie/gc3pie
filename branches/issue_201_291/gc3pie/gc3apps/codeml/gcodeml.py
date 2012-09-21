@@ -244,7 +244,7 @@ of newly-created jobs so that this limit is never exceeded.
                 # NB: enlarge window to at least 150 columns to read this table properly!
                 sqla.Column('class',              sqla.TEXT())    : (lambda obj: obj.__class__.__name__)                                              , # task class
                 sqla.Column('name',               sqla.TEXT())    : GetValue()             .jobname                                                   , # job name
-                sqla.Column('executable',         sqla.TEXT())    : GetValue(default=None) .executable                        ,#.ONLY(CodemlApplication), # program executable
+                sqla.Column('executable',         sqla.TEXT())    : GetValue(default=None) .arguments[0]                        ,#.ONLY(CodemlApplication), # program executable
                 sqla.Column('output_path',        sqla.TEXT())    : GetValue(default=None) .output_dir                        ,#.ONLY(CodemlApplication), # fullpath to codeml output directory
                 sqla.Column('input_path',         sqla.TEXT())    : _get_input_path                                                                   , # fullpath to codeml input directory
                 sqla.Column('mlc_exists_h0',      sqla.TEXT())    : GetValue(default=None) .exists[0]                         ,#.ONLY(CodemlApplication), # exists codeml *.H0.mlc output file
