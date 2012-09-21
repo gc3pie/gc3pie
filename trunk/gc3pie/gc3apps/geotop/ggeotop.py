@@ -178,7 +178,7 @@ class GeotopApplication(Application):
         Application.__init__(
             self,
             # executable = executable_name,
-            executable = os.path.basename(geotop_wrapper_sh),
+            executable = './'+os.path.basename(geotop_wrapper_sh),
             # GEOtop requires only one argument: the simulation directory
             # In our case, since all input files are staged to the
             # execution directory, the only argument is fixed to ``.``
