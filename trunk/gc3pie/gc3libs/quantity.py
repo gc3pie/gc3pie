@@ -7,7 +7,6 @@ conversion among compatible units.
 For details and the discussion leading up to this,
 see: `<http://code.google.com/p/gc3pie/issues/detail?id=47>`
 
-
 """
 # Copyright (C) 2011, 2012, GC3, University of Zurich. All rights reserved.
 #
@@ -110,11 +109,11 @@ def _split_amount_and_unit(val, default_unit=None, allow=None):
 # since the code for `_Quantity` comparison methods is basically the
 # same for all methods, we use a decorator-based approach to reduce
 # boilerplate code...  Oh, how do I long for LISP macros! :-)
-def _make_comparison_function(op, base):
+def _make_comparison_function(op, domain):
     """
     Return a function that compares ensures that the two operands
     belong to the same class, and then compares their value (obtained
-    by converting to `base`) with the passed relational operator `op`.
+    by converting to `domain`) with the passed relational operator `op`.
 
     Completely discards the function being decorated.
     """
@@ -124,12 +123,12 @@ def _make_comparison_function(op, base):
                 "Cannot compare '%s' with '%s':"
                 " Can only compare homogeneous quantities!"
                 % (self.__class__.__name__, other.__class__.__name__))
-            return op(base(self), base(other))
+            return op(self.amount(unit=self.base, conv=domain), other.amount(unit=self.base, conv=domain))
         return cmp_fn
     return decorate
 
 
-class _Quantity(int):
+class _Quantity(object):
     """
     Represent a dimensioned value.
 
@@ -172,23 +171,30 @@ class _Quantity(int):
     """
 
     __slots__ = (
+        '_amount',
         '_base',
         '_name',
         '_unit',
         '_UNITS',
         )
 
-    def amount(self, unit=None):
+    def amount(self, unit=None, conv=(lambda value: value)):
         """
         Return the (numerical) amount of this quantity.
 
         If the optional argument `unit` is specified, return the
         amount in the given units; otherwise, the amount is expressed
         in the units stored in the `unit`:attr: attribute.
+
+        The optional argument `conv` can be used to convert the
+        amounts to a specific numerical domain.  For example,
+        `conv=int` returns the amount as an integer multiple of the
+        unit amount; in particular, the returned amount will be `0` if
+        the quantity is less than one unit amount.
         """
         if unit is None:
             unit = self.unit
-        return (self / unit)
+        return (conv(self._amount) / conv(unit._amount))
 
     @defproperty
     def base():
@@ -259,7 +265,8 @@ class _Quantity(int):
             new = cls._new_from_amount_and_unit(val.amount(), val.unit)
         elif unit is cls:
             # special case to bootstrap the base unit
-            new = super(_Quantity, cls).__new__(cls, 1)
+            new = super(_Quantity, cls).__new__(cls)
+            new._amount = 1
             new._unit = new
         else:
             # default: quantity is int(val)*unit
@@ -276,7 +283,8 @@ class _Quantity(int):
 
     @classmethod
     def _new_from_amount_and_unit(cls, amount, unit):
-        new = super(_Quantity, cls).__new__(cls, amount*unit.amount(cls._base))
+        new = super(_Quantity, cls).__new__(cls)
+        new._amount = amount*unit.amount(cls._base)
         new._unit = unit
         new._name = None
         return new
@@ -295,7 +303,7 @@ class _Quantity(int):
 
 
     ## string representation
-    def to_str(self, fmt, unit=None):
+    def to_str(self, fmt, unit=None, conv=(lambda value: value)):
         """
         Return a string representation of the quantity.
 
@@ -316,13 +324,15 @@ class _Quantity(int):
         :param unit:
           Unit quantity; the numeric amount is a multiple of this unit.
 
+        :param conv:
+          Passed unchanged to the `amount`:meth: method (which see).
         """
         if unit is None:
             unit = self.unit
         try:
-            return (fmt % (self.amount(unit), unit.name))
+            return (fmt % (self.amount(unit, conv=conv), unit.name))
         except TypeError: # not all arguments converted
-            return (fmt % self.amount(unit)) + unit.name
+            return (fmt % self.amount(unit, conv=conv)) + unit.name
 
     def __str__(self):
         """Return a standard string representation of this quantity."""
@@ -361,12 +371,22 @@ class _Quantity(int):
     __rmul__ = __mul__
 
     def __div__(self, other):
+        """Return the ratio of two quantities, as a floating-point number."""
         assert isinstance(other, self.__class__), \
                ("Cannot divide '%s' by '%s':"
                 " can only take the ratio of homogeneous quantities."
                 % (self.__class__.__name__, other.__class__.__name__))
         # the quotient of two (homogeneous) quantities is a ratio (pure number)
-        return (float(self) / float(other))
+        return (self.amount(self.base, conv=float) / other.amount(self.base, conv=float))
+
+    def __floordiv__(self, other):
+        """Return the ratio of two quantities, as an whole number."""
+        assert isinstance(other, self.__class__), \
+               ("Cannot divide '%s' by '%s':"
+                " can only take the ratio of homogeneous quantities."
+                % (self.__class__.__name__, other.__class__.__name__))
+        # the quotient of two (homogeneous) quantities is a ratio (pure number)
+        return (self.amount(self.base, conv=int) / other.amount(self.base, conv=int))
 
 
     ## rich comparison operators, to ensure only homogeneous quantities are compared
@@ -405,7 +425,7 @@ class Quantity(object):
     The name of the base unit is given as argument to the metaclass
     instance::
 
-      >>> class Memory1(int):
+      >>> class Memory1(object):
       ...   __metaclass__ = Quantity('B')
       ...
       >>> B = Memory1('1 B')
@@ -416,7 +436,7 @@ class Quantity(object):
     key gives the unit name, and its value gives the ratio of the new
     unit to the base unit.  For example::
 
-      >>> class Memory2(int):
+      >>> class Memory2(object):
       ...   __metaclass__ = Quantity('B', kB=1000, MB=1000*1000)
       ...
       >>> a_thousand_kB = Memory2('1000kB')
@@ -452,7 +472,7 @@ class Quantity(object):
         return newcls
 
 
-class Memory(int):
+class Memory(object):
     """
     Represent an amount of RAM.
 
@@ -517,8 +537,19 @@ class Memory(int):
 
         >>> a_megabyte.to_str('%d [%s]', unit=Memory.kB)
         '1000 [kB]'
-        >>> a_megabyte.to_str('%g%s', unit=Memory.GB)
+
+    A third optional argument `conv` can set the numerical type to be
+    used for conversion computations::
+
+        >>> a_megabyte.to_str('%g%s', unit=Memory.GB, conv=float)
         '0.001GB'
+
+    The default numerical type is `int`, which in particular implies
+    that you get a null amount if the requested unit is larger than
+    the quantity::
+
+        >>> a_megabyte.to_str('%g%s', unit=Memory.GB, conv=int)
+        '0GB'
 
     Conversion to string uses the unit originally used for defining
     the quantity and the ``%g%s`` format::
@@ -543,7 +574,7 @@ class Memory(int):
         )
 
 
-class Duration(int):
+class Duration(object):
     """
     Represent the duration of a time lapse.
 
@@ -554,7 +585,7 @@ class Duration(int):
 
         >>> l3 = Duration('1day 4hours 9minutes 16seconds')
         >>> l3.amount(Duration.s) # convert to seconds
-        101356.0
+        101356
 
     * Any of the terms can be omitted (in which case it defaults
       to zero)::
@@ -592,7 +623,7 @@ class Duration(int):
         >>> # 1 day, 2 hours, 3 minutes, 4 seconds
         >>> l2 = Duration('01:02:03:04')
         >>> l2.amount(Duration.s)
-        93784.0
+        93784
 
       However, the formats HH:MM and MM:SS are rejected as ambiguous::
 
@@ -616,7 +647,7 @@ class Duration(int):
         >>> an_hour = Duration('1 hour')
         >>> a_day = 24 * an_hour
         >>> a_day.amount(Duration.h)
-        24.0
+        24
 
     The quantities ``Duration.hours``, ``Duration.minutes`` and
     ``Duration.seconds`` (and their single-letter abbreviations ``h``,
@@ -641,16 +672,16 @@ class Duration(int):
       >>> a_day1 == a_day2
       True
       >>> a_day1.amount(s)
-      86400.0
+      86400
       >>> a_day2.amount(s)
-      86400.0
+      86400
 
       >>> a_day == an_hour
       False
       >>> a_day.amount(minutes)
-      1440.0
+      1440
       >>> an_hour.amount(minutes)
-      60.0
+      60
 
     Basic arithmetic is possible with durations::
 
@@ -660,7 +691,7 @@ class Duration(int):
 
       >>> one_hour = two_hours - an_hour
       >>> one_hour.amount(seconds)
-      3600.0
+      3600
 
     The `to_str`:meth: method allows representing a duration as a
     string, and provides choice of the output format and unit.  The
@@ -679,6 +710,19 @@ class Duration(int):
 
         >>> an_hour.to_str('%d [%s]', unit=Duration.m)
         '60 [m]'
+
+    A third optional argument `conv` can set the numerical type to be
+    used for conversion computations::
+
+        >>> an_hour.to_str('%.1f [%s]', unit=Duration.m, conv=float)
+        '60.0 [m]'
+
+    The default numerical type is `int`, which in particular implies
+    that you get a null amount if the requested unit is larger than
+    the quantity::
+
+        >>> an_hour.to_str('%d [%s]', unit=Duration.days)
+        '0 [days]'
 
     Conversion to string uses the unit originally used for defining
     the quantity and the ``%g%s`` format::
@@ -775,22 +819,21 @@ class Duration(int):
             >>> td1 = timedelta(days=1)
             >>> l1 = Duration(td1)
             >>> l1.amount(Duration.s)
-            86400.0
+            86400
             >>> l1 == Duration('1 day')
             True
 
             >>> td2 = timedelta(hours=1, minutes=1, seconds=1)
             >>> l2 = Duration(td2)
             >>> l2.amount(Duration.s)
-            3661.0
-
+            3661
         """
         try:
             # Python 2.7 onwards
-            return cls._new_from_amount_and_unit(td.total_seconds(), Duration.s)
+            return cls._new_from_amount_and_unit(int(td.total_seconds()), Duration.s)
         except AttributeError:
             return cls._new_from_amount_and_unit(
-                (td.microseconds + (td.seconds + td.days * 24 * 3600) * 10**6) / 10**6,
+                int(td.seconds + td.days * 24 * 3600),
                 Duration.s)
 
     def to_timedelta(duration):
