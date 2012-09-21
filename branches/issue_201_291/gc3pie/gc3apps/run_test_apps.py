@@ -118,7 +118,10 @@ class TestRunner(object):
         The current working directory while this method is called is
         `self.appdir`.
         """
-        pass
+        if self.proc.returncode == 0:
+            self.passed = True
+        else:
+            self.passed = False
 
     def run_test(self, extra_args, stdout=subprocess.PIPE, stderr=subprocess.PIPE):
         """
@@ -326,10 +329,24 @@ class GGeotopTest(TestRunner):
     def __str__(self):
         return "GGeotop"
 
+    def __init__(self, appdir):
+        self.testdir = os.path.join(appdir, 'test')
+        self.sessiondir = make_sessiondir(self.testdir)
+        os.chdir(self.testdir)
+        
+        self.args = ['../ggeotop.py',
+                     '-s', self.sessiondir,
+                     '-C', '45',
+                     '-vvv',
+                     '-x', 'geotop_1_224_20120227_static',
+                     'data/GEOtop_public_test',
+                     ]
+
 
 class GCryptoTest(TestRunner):
     def __str__(self):
         return "GCrypto"
+
 
 class GMhCoevTest(TestRunner):
     def __str__(self):
@@ -339,6 +356,7 @@ class GMhCoevTest(TestRunner):
 class GZodsTest(TestRunner):
     def __str__(self):
         return "GZods"
+
     def __init__(self, appdir):
         self.testdir = os.path.join(appdir, 'test')
         self.sessiondir = make_sessiondir(self.testdir)
@@ -351,12 +369,6 @@ class GZodsTest(TestRunner):
                      'data/small',
                      ]
 
-    def terminate(self):
-        if self.proc.returncode == 0:
-            self.passed = True
-        else:
-            self.passed = False
-
 
 ## main: run tests
 applicationdirs = {
@@ -365,7 +377,7 @@ applicationdirs = {
     # 'compchem.unipg.it': None,
     'gamess': (GGamessTest,),
     # 'gc3.uzh.ch': None,
-    # 'geotop': (GGeotopTest, ),
+    'geotop': (GGeotopTest, ),
     # 'ieu.uzh.ch': (GMhCoevTest, ),
     # 'imsb.ethz.ch': None,
     # 'ior.uzh.ch': None,
