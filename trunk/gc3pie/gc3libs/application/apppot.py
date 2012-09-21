@@ -51,6 +51,9 @@ class AppPotApplication(gc3libs.Application):
     * `apppot_extra`: List of additional UML boot command-line arguments.
       (Passed to the AppPot instance via ``apppot-start``'s ``--extra`` option.)
     """
+
+    application_name = 'apppot'
+
     def __init__(self, executable, arguments, inputs, outputs, output_dir,
                  apppot_img=None, apppot_changes=None, apppot_tag='ENV/APPPOT-0.21',
                  apppot_extra=[], **extra_args):
