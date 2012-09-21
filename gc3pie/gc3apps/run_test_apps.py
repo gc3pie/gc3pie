@@ -320,8 +320,44 @@ class GDockingTest(TestRunner):
                 self.passed = False
                 return
         self.passed = True
+
+
+class GGeotopTest(TestRunner):
+    def __str__(self):
+        return "GGeotop"
+
+
+class GCryptoTest(TestRunner):
+    def __str__(self):
+        return "GCrypto"
+
+class GMhCoevTest(TestRunner):
+    def __str__(self):
+        return "Gmh_coev"
+
+
+class GZodsTest(TestRunner):
+    def __str__(self):
+        return "GZods"
+    def __init__(self, appdir):
+        self.testdir = os.path.join(appdir, 'test')
+        self.sessiondir = make_sessiondir(self.testdir)
+        os.chdir(self.testdir)
         
-    
+        self.args = ['../gzods.py',
+                     '-s', self.sessiondir,
+                     '-C', '45',
+                     '-vvv',
+                     'data/small',
+                     ]
+
+    def terminate(self):
+        if self.proc.returncode == 0:
+            self.passed = True
+        else:
+            self.passed = False
+
+
 ## main: run tests
 applicationdirs = {
     # 'bf.uzh.ch': None,
@@ -329,14 +365,14 @@ applicationdirs = {
     # 'compchem.unipg.it': None,
     'gamess': (GGamessTest,),
     # 'gc3.uzh.ch': None,
-    # 'geotop': None,
-    # 'ieu.uzh.ch': None,
+    # 'geotop': (GGeotopTest, ),
+    # 'ieu.uzh.ch': (GMhCoevTest, ),
     # 'imsb.ethz.ch': None,
     # 'ior.uzh.ch': None,
-    # 'lacal.epfl.ch': None,
+    # 'lacal.epfl.ch': (GCryptoTest, ),
     'rosetta': (GRosettaTest, GDockingTest),
     # 'turbomole': None,
-    # 'zods': None,
+    'zods': (GZodsTest, ),
     }
 
 
