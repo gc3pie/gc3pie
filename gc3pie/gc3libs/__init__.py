@@ -247,6 +247,32 @@ class Task(Persistable, Struct):
         In-place update of the execution state of the computational
         job associated with this `Task`.  After successful completion,
         `.execution.state` will contain the new state.
+
+        After the job has reached the `TERMINATING` state, the following
+        attributes are also set:
+
+        `execution.duration`
+          Time lapse from start to end of the job at the remote
+          execution site, as a `gc3libs.quantity.Duration`:class: value.
+          (This is also often referred to as the 'wall-clock time' or
+          `walltime`:term: of the job.)
+
+        `execution.max_used_memory`
+          Maximum amount of RAM used during job execution, represented
+          as a `gc3libs.quantity.Memory`:class: value.
+
+        `execution.used_cpu_time`
+          Total time (as a `gc3libs.quantity.Duration`:class: value) that the
+          processors has been actively executing the job's code.
+
+        The execution backend may set additional attributes; the exact
+        name and format of these additional attributes is
+        backend-specific.  However, you can easily identify the
+        backend-specific attributes because their name is prefixed
+        with the (lowercased) backend name; for instance, the
+        `PbsLrms`:class: backend sets attributes `pbs_queue`,
+        `pbs_end_time`, etc.
+
         """
         assert self._attached, ("Task.update_state() called on detached task %s." % self)
         assert hasattr(self._controller, 'update_job_state'), \

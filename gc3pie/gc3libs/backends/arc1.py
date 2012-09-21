@@ -460,12 +460,21 @@ class Arc1Lrms(LRMS):
                 # presume everything went well...
                 job.returncode = (0, 0)
             # pass
-        job.lrms_jobname = arc_job.Name
 
-        job.original_exitcode = arc_job.ExitCode
-        #job.used_walltime = arc_job.UsedTotalWallTime.GetPeriod() # exressed in sec.
-        #job.used_cputime = arc_job.UsedTotalCPUTime.GetPeriod() # expressed in sec.
-        job.used_memory = arc_job.UsedMainMemory # expressed in KiB
+        # common job reporting info, see Issue #78 and `Task.update_state`
+        job.duration = gc3libs.utils.ifelse(arc_job.UsedTotalWallTime.GetPeriod() != -1,
+                                            arc_job.UsedTotalWallTime.GetPeriod() * seconds,
+                                            None)
+        job.max_used_memory = gc3libs.utils.ifelse(arc_job.UsedMainMemory != -1,
+                                                   arc_job.UsedMainMemory * kB,
+                                                   None)
+        job.used_cpu_time = gc3libs.utils.ifelse(arc_job.UsedTotalCPUTime.GetPeriod() != -1,
+                                                 arc_job.UsedTotalCPUTime.GetPeriod() * seconds,
+                                                 None)
+
+        # additional info
+        job.arc_original_exitcode = arc_job.ExitCode
+        job.arc_jobname = arc_job.Name
 
         job.state = state
         return state

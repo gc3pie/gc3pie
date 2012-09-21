@@ -23,7 +23,10 @@ __docformat__ = 'reStructuredText'
 __version__ = 'development version (SVN $Revision$)'
 
 
+# stdlib imports
+import datetime
 from getpass import getuser
+import math
 import os
 import posixpath
 import random
@@ -34,20 +37,52 @@ import time
 
 from gc3libs.compat.collections import defaultdict
 
+# GC3Pie imports
 from gc3libs import log, Run
 from gc3libs.backends import LRMS
 import gc3libs.exceptions
-import gc3libs.utils as utils # first, to_bytes
+from gc3libs.quantity import Memory, kB, MB, GB, Duration, hours, minutes, seconds
+import gc3libs.utils
 from gc3libs.utils import same_docstring_as
-
 import transport
-
 import batch
 
-_qsub_jobid_re = re.compile(r'Your job (?P<jobid>\d+) \("(?P<jobname>.+)"\) has been submitted', re.I)
 
-def _int_floor(s):
-    return int(float(s))
+## auxiliary functions
+
+def _int_floor(val):
+    """Return `val` rounded to nearest integer towards 0."""
+    return int(math.floor(float(val)))
+
+def _to_duration(val):
+    """Convert a floating point number of seconds to a `gc3libs.quantity.Duration` value."""
+    try:
+        return float(val)*seconds
+    except Exception, err:
+        gc3libs.log.warning(
+            "Grid Engine backend:"
+            " Cannot interpret '%s' as a duration (time unit: seconds):"
+            " %s: %s.",
+            err.__class__.__name__, str(err), val)
+        return None
+
+def _to_memory(val):
+    """Convert a Grid Engine MEMORY value to a `gc3libs.quantity.Memory` one."""
+    try:
+        unit = val[-1]
+        if unit in ['G', 'g']:
+            return float(val[:-2])*GB
+        elif unit in ['M', 'm']:
+            return float(val[:-2])*MB
+        elif unit in ['K', 'k']:
+            return float(val[:-2])*kB
+        else:
+            # SGE's default is bytes
+            return float(val)*Memory.B
+    except Exception, err:
+        gc3libs.log.warning(
+            "Grid Engine backend: Cannot interpret '%s' as a MEMORY value.", val)
+        return None
 
 # `_convert` is a `dict` instance, mapping key names to functions
 # that parse a value from a string into a Python native type.
@@ -65,21 +100,32 @@ _convert = {
     'np_load_medium':float,
     'np_load_long':  float,
     'num_proc':      _int_floor, # SGE considers `num_proc` a floating-point value...
-    'swap_free':     utils.to_bytes,
-    'swap_total':    utils.to_bytes,
-    'swap_used':     utils.to_bytes,
-    'mem_free':      utils.to_bytes,
-    'mem_used':      utils.to_bytes,
-    'mem_total':     utils.to_bytes,
-    'virtual_free':  utils.to_bytes,
-    'virtual_used':  utils.to_bytes,
-    'virtual_total': utils.to_bytes,
+    'swap_free':     gc3libs.utils.to_bytes,
+    'swap_total':    gc3libs.utils.to_bytes,
+    'swap_used':     gc3libs.utils.to_bytes,
+    'mem_free':      gc3libs.utils.to_bytes,
+    'mem_used':      gc3libs.utils.to_bytes,
+    'mem_total':     gc3libs.utils.to_bytes,
+    'virtual_free':  gc3libs.utils.to_bytes,
+    'virtual_used':  gc3libs.utils.to_bytes,
+    'virtual_total': gc3libs.utils.to_bytes,
 }
 def _parse_value(key, value):
     try:
         return _convert[key](value)
     except:
         return value
+
+
+def _parse_asctime(val):
+    try:
+        # XXX: replace with datetime.strptime(...) in Python 2.5+
+        return datetime.datetime(*(time.strptime(val, '%a %b %d %H:%M:%S %Y')[0:6]))
+    except Exception, err:
+        gc3libs.log.error(
+            "Cannot parse '%s' as a SGE-format time stamp: %s: %s",
+            val, err.__class__.__name__, str(err))
+        return None
 
 
 def parse_qstat_f(qstat_output):
@@ -96,7 +142,7 @@ def parse_qstat_f(qstat_output):
     _property_line_re = re.compile(r'^[a-z]{2}:([a-z_]+)=(.+)', re.I|re.X)
     def dzdict():
         def zdict():
-            return defaultdict(lambda: 0)
+            return defaultdict(int)
         return defaultdict(zdict)
     result = defaultdict(dzdict)
     qname = None
@@ -237,16 +283,6 @@ def count_jobs(qstat_output, whoami):
     return (total_running, total_queued, own_running, own_queued)
 
 
-def _job_info_normalize(self, job):
-    if job.haskey('used_cputime'):
-        # convert from string to int. Also convert from float representation to int
-        job.used_cputime =  int(job.used_cputime.split('.')[0])
-
-    if job.haskey('used_memory'):
-        # store used memory in MiB
-        job.used_memory = utils.to_bytes(mem + 'B') / 1024
-
-
 # FIXME: I think this function is completely wrong and only exists to
 # support GAMESS' ``qgms``, which does not allow users to specify the
 # name of STDOUT/STDERR files.  When we have a standard flexible
@@ -270,6 +306,12 @@ def _sge_filename_mapping(jobname, jobid, file_name):
             }[file_name]
     except KeyError:
         return file_name
+
+
+_qsub_jobid_re = re.compile(r'Your job (?P<jobid>\d+) \("(?P<jobname>.+)"\) has been submitted', re.I)
+"""
+Regex for extracting the job number and name from Grid Engine's `qsub` output.
+"""
 
 
 class SgeLrms(batch.BatchSystem):
@@ -336,21 +378,32 @@ class SgeLrms(batch.BatchSystem):
     def _acct_command(self, job):
         return ("%s -j %s" % (self._qacct, job.lrms_jobid))
 
+    _qacct_keyval_mapping = {
+        # qacct field name
+        # |              `Task.execution` attribute
+        # |              |
+        # |              |                       converter function
+        # |              |                       |
+        # |              |                       |
+        #   ... common backend attrs (see Issue 78) ...
+        'slots':         ('cores',               int),
+        'exit_status':   ('exitcode',            int),
+        'cpu':           ('used_cpu_time',       _to_duration),
+        'ru_wallclock':  ('duration',            _to_duration),
+        'maxvmem':       ('max_used_memory',     _to_memory),
+        #   ... SGE-only attrs ...
+        'end_time':      ('sge_completion_time', _parse_asctime),
+        'failed':        ('sge_failed',          int),
+        'granted_pe':    ('sge_granted_pe',      str),
+        'hostname':      ('sge_hostname',        str),
+        'jobname':       ('sge_jobname',         str),
+        'qname':         ('sge_queue',           str),
+        'qsub_time':     ('sge_submission_time', _parse_asctime),
+        'start_time':    ('sge_start_time',      _parse_asctime),
+        }
+
     def _parse_acct_output(self, stdout):
         jobstatus = dict()
-        mapping = {
-            'qname':         'queue',
-            'jobname':       'job_name',
-            'slots':         'cores',
-            'exit_status':   'exit_status',
-            'failed':        'sge_system_failed',
-            'cpu':           'used_cpu_time',
-            'ru_wallclock':  'used_walltime',
-            'maxvmem':       'used_memory',
-            'end_time':      'sge_completion_time',
-            'qsub_time':     'sge_submission_time',
-            }
-
         for line in stdout.split('\n'):
             # skip empty and header lines
             line = line.strip()
@@ -359,18 +412,20 @@ class SgeLrms(batch.BatchSystem):
             # extract key/value pairs from `qacct` output
             key, value = line.split(' ', 1)
             value = value.strip()
+            if key == 'failed':
+                # value may be, e.g., "100 : assumedly after job"
+                value = value.split()[0]
             try:
-                jobstatus[mapping[key]] = value
-
-                if key == 'failed':
-                    # value may be, e.g., "100 : assumedly after job"
-                    failure = int(value.split()[0])
+                dest, conv = self._qacct_keyval_mapping[key]
+                jobstatus[dest] = conv(value)
             except KeyError:
-                log.debug("Ignoring job information '%s=%s';"
-                          " no mapping defined for it"
-                          " in 'gc3libs/backends/sge.py'."
-                          % (key,value))
-
+                # no conversion by default -- keep it a string
+                jobstatus['sge_' + key] = value
+            except (ValueError, TypeError), err:
+                log.error(
+                    "Cannot parse value '%s' for qacct parameter '%s': %s: %s",
+                    value, key, err.__class__.__name__, str(err))
+                jobstatus[dest] = None
         return jobstatus
 
     def _cancel_command(self, jobid):
