@@ -732,29 +732,37 @@ class Duration(object):
 
     """
     __metaclass__ = Quantity(
-        # base unit is seconds; use the SI symbol 's'
-        's',
+        # base unit is nanoseconds; use the SI symbol 'ns'
+        'ns',
         # alternate spellings
-        sec=1,
-        secs=1,
-        second=1,
-        seconds=1,
+        nanosec=1,
+        nanoseconds=1,
+        # microsecond(s)
+        ms=1000,
+        microsec=1000,
+        microseconds=1000,
+        # seconds(s)
+        s=10**6,
+        sec=10**6,
+        secs=10**6,
+        second=10**6,
+        seconds=10**6,
         # minute(s)
-        m=60,
-        min=60,
-        mins=60,
-        minute=60,
-        minutes=60,
+        m=60 * 10**6,
+        min=60 * 10**6,
+        mins=60 * 10**6,
+        minute=60 * 10**6,
+        minutes=60 * 10**6,
         # hour(s)
-        h=60*60,
-        hr=60*60,
-        hrs=60*60,
-        hour=60*60,
+        h=60*60 * 10**6,
+        hr=60*60 * 10**6,
+        hrs=60*60 * 10**6,
+        hour=60*60 * 10**6,
         hours=60*60,
         # day(s)
-        d=24*60*60,
-        day=24*60*60,
-        days=24*60*60,
+        d=24*60*60 * 10**6,
+        day=24*60*60 * 10**6,
+        days=24*60*60 * 10**6,
         )
 
     # override ctor to hook `_new_from_timedelta` in
