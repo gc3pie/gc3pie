@@ -180,7 +180,7 @@ class GeotopApplication(Application):
             # GEOtop requires only one argument: the simulation directory
             # In our case, since all input files are staged to the
             # execution directory, the only argument is fixed to ``.``
-            arguments = [os.path.basename(geotop_wrapper_sh), 'input.tgz', executable_name ],
+            arguments = ['./'+os.path.basename(geotop_wrapper_sh), 'input.tgz', executable_name ],
             inputs = inputs,
             outputs = gc3libs.ANY_OUTPUT,
             # outputs = outputs,
