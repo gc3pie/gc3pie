@@ -1191,12 +1191,7 @@ class Application(Task):
         return [self.executable] + ['"%s"' % i for i in self.arguments]
 
 
-    def qsub_sge(self, resource, _suppress_warning=False, **extra_args):
-        # XXX: the `_suppress_warning` switch is only provided for
-        # some applications to make use of this generic method without
-        # logging the user-level warning, because, e.g., it has already
-        # been taken care in some other way (cf. GAMESS' `qgms`).
-        # Use with care and don't depend on it!
+    def qsub_sge(self, resource, **extra_args):
         """
         Get an SGE ``qsub`` command-line invocation for submitting an
         instance of this application.
@@ -1250,12 +1245,25 @@ class Application(Task):
             # options are present, Grid Engine sets but ignores the
             # error-path attribute."
             qsub += ['-e', '%s' % self.stderr]
-        if self.requested_cores != 1 and not _suppress_warning:
-            # XXX: should this be an error instead?
-            log.warning("Application requested %d cores,"
-                        " but there is no generic way of expressing this requirement in SGE!"
-                        " Ignoring request, but this will likely result in malfunctioning later on.",
-                        self.requested_cores)
+        if self.requested_cores != 1:
+            pe_cfg_name = (self.application_name + '_pe')
+            if pe_cfg_name in resource:
+                pe_name = resource.get(pe_cfg_name)
+            elif 'generic_pe' in resource:
+                pe_name = resource.get('generic_pe')
+                # XXX: overly verbose reporting?
+                log.info(
+                    "Application %s requested %d cores,"
+                    " but no '%s' configuration item is defined on resource '%s';"
+                    " using the 'generic_pe' setting to submit the parallel job.",
+                    self, self.requested_cores, pe_cfg_name, resource.name)
+            else:
+                raise gc3libs.exceptions.InternalError(
+                    "Application %s requested %d cores,"
+                    " but neither '%s' nor 'generic_pe' appear in the configuration"
+                    " of resource '%s'.  Please fix the configuration and retry."
+                    % (self, self.requested_cores, pe_cfg_name, resource.name))
+            qsub += ['-pe', pe_name, ('%d' % self.requested_cores)]
         if 'jobname' in self and self.jobname:
             qsub += ['-N', '%s' % self.jobname]
         return (qsub, self.cmdline(resource))
