@@ -42,6 +42,16 @@ Glossary
     term CPU is used for the package, and *core* is one of the several
     independent processing units within the package.
 
+  CPU Time
+    The total time that computing units (processor `core`:term:) are
+    actively executing a `job`:term:.  For single-threaded jobs, this
+    is normally *less* then the actual duration ('wall-clock time' or
+    `walltime`:term:), because some time is lost in I/O and system
+    operations.  For parallel jobs the CPU time is normally larger
+    than the duration, because several processor cores are active on
+    the job at the same time; the quotient of the CPU time and the
+    duration measures the efficiency of the parallel job.
+
   Job
     A computational job is a single run of a non-interactive
     application.  The prototypical example is a run of GAMESS_ on a

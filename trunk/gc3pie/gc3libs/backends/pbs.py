@@ -23,6 +23,7 @@ __docformat__ = 'reStructuredText'
 __version__ = 'development version (SVN $Revision$)'
 
 
+import datetime
 import os
 import posixpath
 import random
@@ -36,12 +37,117 @@ from gc3libs.compat.collections import defaultdict
 from gc3libs import log, Run
 from gc3libs.backends import LRMS
 import gc3libs.exceptions
+from gc3libs.quantity import Memory, kB, MB, GB, Duration, seconds, minutes, hours
 import gc3libs.utils as utils # first, to_bytes
 from gc3libs.utils import same_docstring_as
 
 import transport
 
 import batch
+
+
+## data for parsing PBS commands output
+
+# regexps for extracting relevant strings
+
+_qsub_jobid_re = re.compile(r'(?P<jobid>\d+.*)', re.I)
+
+_qstat_line_re = re.compile(
+    r'^(?P<jobid>\d+)[^\d]+\s+'
+    '(?P<jobname>[^\s]+)\s+'
+    '(?P<username>[^\s]+)\s+'
+    '(?P<time_used>[^\s]+)\s+'
+    '(?P<state>[^\s]+)\s+'
+    '(?P<queue>[^\s]+)')
+
+_tracejob_queued_re = re.compile(
+    '(?P<submission_time>\d+/\d+/\d+\s+\d+:\d+:\d+)\s+.\s+'
+    'Job Queued at request of .*job name =\s*(?P<job_name>[^,]+),'
+    '\s+queue =\s*(?P<queue>[^,]+)')
+
+_tracejob_run_re = re.compile(
+    '(?P<running_time>\d+/\d+/\d+\s+\d+:\d+:\d+)\s+.\s+'
+    'Job Run at request of .*')
+
+_tracejob_last_re = re.compile('(?P<end_time>\d+/\d+/\d+\s+\d+:\d+:\d+)\s+.\s+Exit_status=(?P<exit_status>\d+)\s+'
+                                  'resources_used.cput=(?P<used_cpu_time>[^ ]+)\s+'
+                                  'resources_used.mem=(?P<mem>[^ ]+)\s+'
+                                  'resources_used.vmem=(?P<used_memory>[^ ]+)\s+'
+                                  'resources_used.walltime=(?P<used_walltime>[^ ]+)')
+
+# convert data to GC3Pie internal format
+
+def _to_memory(val):
+    """
+    Convert a memory quantity as it appears in the PBS logs to GC3Pie `Memory` value.
+
+    Examples::
+
+      >>> _to_memory('44kb') == 44*kB
+      True
+      >>> _to_memory('12mb') == 12*MB
+      True
+      >>> _to_memory('2gb') == 2*GB
+      True
+      >>> _to_memory('1024') == Memory(1024, 'B')
+      True
+
+    """
+    # extract the `kb`, `mb`, etc. suffix, if there is one
+    unit = val[-2:]
+    # XXX: check that PBS uses base-2 units
+    if unit == 'kb':
+        return int(val[:-2])*Memory.KiB
+    elif unit == 'mb':
+        return int(val[:-2])*Memory.MiB
+    elif unit == 'gb':
+        return int(val[:-2])*Memory.GiB
+    elif unit == 'tb':
+        return int(val[:-2])*Memory.TiB
+    else:
+        if val[-1] == 'b':
+            # XXX bytes
+            val = int(val[:-1])
+        else:
+            # a pure number
+            val = int(val)
+        return Memory(int(val), 'B')
+
+
+def _parse_asctime(val):
+    try:
+        # XXX: replace with datetime.strptime(...) in Python 2.5+
+        return datetime.datetime(*(time.strptime(val, '%m/%d/%Y %H:%M:%S')[0:6]))
+    except Exception, err:
+        gc3libs.log.error(
+            "Cannot parse '%s' as a PBS-format time stamp: %s: %s",
+            val, err.__class__.__name__, str(err))
+        return None
+
+
+_tracejob_keyval_mapping = {
+    # regexp group name
+    # |               `Task.execution` attribute
+    # |               |
+    # |               |                       converter function
+    # |               |                       |
+    # |               |                       |
+    #   ... common backend attrs (see Issue 78) ...
+    'exit_status':    ('exitcode',            int),
+    'used_cpu_time':  ('used_cpu_time',       Duration),
+    'used_walltime':  ('duration',            Duration),
+    'used_memory':    ('max_used_memory',     _to_memory),
+    #   ... PBS-only attrs ...
+    'mem':            ('pbs_max_used_ram',    _to_memory),
+    'submission_time':('pbs_submission_time', _parse_asctime),
+    'running_time':   ('pbs_running_time',    _parse_asctime),
+    'end_time':       ('pbs_end_time',        _parse_asctime),
+    'queue':          ('pbs_queue',           str),
+    'job_name':       ('pbs_jobname',         str),
+    }
+
+
+## code
 
 def count_jobs(qstat_output, whoami):
     """
@@ -58,12 +164,6 @@ def count_jobs(qstat_output, whoami):
     own_running = 0
     own_queued = 0
     n = 0
-    _qstat_line_re = re.compile(r'^(?P<jobid>\d+)[^\d]+\s+'
-                                '(?P<jobname>[^\s]+)\s+'
-                                '(?P<username>[^\s]+)\s+'
-                                '(?P<time_used>[^\s]+)\s+'
-                                '(?P<state>[^\s]+)\s+'
-                                '(?P<queue>[^\s]+)')
     for line in qstat_output.split('\n'):
         # import pdb; pdb.set_trace()
         log.info("Output line: %s" %  line)
@@ -80,17 +180,6 @@ def count_jobs(qstat_output, whoami):
         log.info("running: %d, queued: %d" % (total_running, total_queued))
 
     return (total_running, total_queued, own_running, own_queued)
-
-
-_qsub_jobid_re = re.compile(r'(?P<jobid>\d+.*)', re.I)
-_tracejob_last_re = re.compile('(?P<end_time>\d+/\d+/\d+\s+\d+:\d+:\d+)\s+.\s+Exit_status=(?P<exit_status>\d+)\s+'
-                                  'resources_used.cput=(?P<used_cpu_time>[^ ]+)\s+'
-                                  'resources_used.mem=(?P<mem>[^ ]+)\s+'
-                                  'resources_used.vmem=(?P<used_memory>[^ ]+)\s+'
-                                  'resources_used.walltime=(?P<used_walltime>[^ ]+)')
-_tracejob_queued_re = re.compile('(?P<submission_time>\d+/\d+/\d+\s+\d+:\d+:\d+)\s+.\s+'
-                                         'Job Queued at request of .*job name =\s*(?P<job_name>[^,]+),'
-                                         '\s+queue =\s*(?P<queue>[^,]+)')
 
 
 class PbsLrms(batch.BatchSystem):
@@ -165,14 +254,28 @@ class PbsLrms(batch.BatchSystem):
         return jobstatus
 
     def _parse_acct_output(self, stdout):
-        retstatus = {}
+        jobstatus = {}
         for line in stdout.split('\n'):
-            # skip empty and header lines
-            if _tracejob_last_re.match(line):
-                retstatus.update(_tracejob_last_re.match(line).groupdict())
-            elif _tracejob_queued_re.match(line):
-                retstatus.update(_tracejob_queued_re.match(line).groupdict())
-        return retstatus
+            # XXX: make a list of the three regexps and loop over it
+            match = _tracejob_queued_re.match(line)
+            if match:
+                for key, value in match.groupdict().iteritems():
+                    attr, conv = _tracejob_keyval_mapping[key]
+                    jobstatus[attr] = conv(value)
+                continue
+            match = _tracejob_run_re.match(line)
+            if match:
+                for key, value in match.groupdict().iteritems():
+                    attr, conv = _tracejob_keyval_mapping[key]
+                    jobstatus[attr] = conv(value)
+                continue
+            match = _tracejob_last_re.match(line)
+            if match:
+                for key, value in match.groupdict().iteritems():
+                    attr, conv = _tracejob_keyval_mapping[key]
+                    jobstatus[attr] = conv(value)
+                break
+        return jobstatus
 
     def _cancel_command(self, jobid):
         return ("%s %s" % (self._qdel, jobid))

@@ -456,12 +456,20 @@ class ArcLrms(LRMS):
         job.lrms_jobname = arc_job.job_name # see Issue #78
 
         # Common struture as described in Issue #78
-        job.queue = arc_job.queue
-        job.cores = arc_job.cpu_count
-        job.original_exitcode = arc_job.exitcode
-        job.used_walltime = arc_job.used_wall_time # exressed in sec.
-        job.used_cputime = arc_job.used_cpu_time # expressed in sec.
-        job.used_memory = arc_job.used_memory # expressed in KiB
+        job.duration = gc3libs.utils.ifelse(arc_job.used_walltime != -1,
+                                            arc_job.used_wall_time * seconds,
+                                            None)
+        job.max_used_memory = gc3libs.utils.ifelse(arc_job.used_memory != -1,
+                                                   arc_job.used_memory * kB,
+                                                   None)
+        job.used_cpu_time = gc3libs.utils.ifelse(arc_job.used_cpu_time != -1,
+                                                 arc_job.used_cpu_time * seconds,
+                                                 None)
+
+        # additional info
+        job.cores = gc3libs.utils.ifelse(arc_job.cpu_count != -1, arc_job.cpu_count, None)
+        job.arc_original_exitcode = arc_job.exitcode
+        job.arc_queue = gc3libs.utils.ifelse(arc_job.queue != '', arc_job.queue, None)
 
         job.state = state
         return state

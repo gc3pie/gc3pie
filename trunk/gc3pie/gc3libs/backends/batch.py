@@ -436,8 +436,8 @@ class BatchSystem(LRMS):
                 if exit_code == 0:
                     jobstatus = self._parse_acct_output(stdout)
                     job.update(jobstatus)
-                    if 'exit_status' in jobstatus:
-                        job.returncode = int(jobstatus['exit_status'])
+                    if 'exitcode' in jobstatus:
+                        job.returncode = int(jobstatus['exitcode'])
                         job.state = Run.State.TERMINATING
                     return job.state
 
