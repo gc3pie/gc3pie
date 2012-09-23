@@ -82,6 +82,7 @@ class Default(object):
     PBS_LRMS = 'pbs'
     LSF_LRMS = 'lsf'
     SHELLCMD_LRMS = 'shellcmd'
+    SLURM_LRMS = 'slurm'
     SUBPROCESS_LRMS = 'subprocess'
 
     # Transport information
@@ -1352,6 +1353,57 @@ class Application(Task):
         if 'jobname' in self and self.jobname:
             qsub += ['-N', '"%s"' % self.jobname]
         return (qsub, self.cmdline(resource))
+
+
+    def sbatch(self, resource, **extra_args):
+        """
+        Get a SLURM ``sbatch`` command-line invocation for submitting an
+        instance of this application.
+
+        Return a pair `(cmd_argv, app_argv)`.  Both `cmd_argv` and
+        `app_argv` are *argv*-lists: the command name is included as
+        first item (index 0) of the list, further items are
+        command-line arguments; `cmd_argv` is the *argv*-list for the
+        submission command (excluding the actual application command
+        part); `app_argv` is the *argv*-list for invoking the
+        application.  By overriding this method, one can add futher
+        resource-specific options at the end of the `cmd_argv`
+        *argv*-list.
+
+        In the construction of the command-line invocation, one should
+        assume that all the input files (as named in `Application.inputs`)
+        have been copied to the current working directory, and that output
+        files should be created in this same directory.
+
+        Override this method in application-specific classes to
+        provide appropriate invocation templates and/or add different
+        submission options.
+        """
+        # sbatch --job-name="jobname" --mem-per-cpu="MBs" --input="filename" --output="filename" --no-requeue -n "number of slots" --cpus-per-task=1 --time="minutes" script.sh
+        sbatch = list(resource.sbatch)
+        sbatch += ['--no-requeue']
+        if self.requested_walltime:
+            # SLURM uses `--time` for wall-clock time limit, expressed in minutes
+            sbatch += ['--time', '%d' % self.requested_walltime.amount(minutes)]
+        if self.requested_memory:
+            # SLURM uses `mem_free` for memory limits; 'M' suffix allowed for Megabytes
+            sbatch += ['--mem-per-cpu', '%d' % (self.requested_memory.amount(MB) / self.requested_cores) ]
+        if self.stdout:
+            sbatch += ['--output', '%s' % self.stdout]
+        if self.stdin:
+            # `self.stdin` is the full pathname on the GC3Pie client host;
+            # it is copied to its basename on the execution host
+            sbatch += ['--input', '%s' % os.path.basename(self.stdin)]
+        if self.stderr:
+            # from the sbatch(1) man page: "If both the -j y and the -e
+            # options are present, Grid Engine sets but ignores the
+            # error-path attribute."
+            sbatch += ['-e', '%s' % self.stderr]
+        if self.requested_cores != 1:
+            sbatch += ['-n', ('%d' % self.requested_cores), '--cpus-per-task', '1']
+        if 'jobname' in self and self.jobname:
+            sbatch += ['--job-name', ('%s' % self.jobname)]
+        return (sbatch, self.cmdline(resource))
 
 
     # Operation error handlers; called when transition from one state

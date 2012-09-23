@@ -288,6 +288,15 @@ with the ``sge_accounting_delay`` parameter, whose default is 15 seconds
   * ``sge_accounting_delay``: Time (in seconds) a failure in `qacct`:command: will *not* be considered critical.
 
 
+``slurm`` resources
+~~~~~~~~~~~~~~~~~~~
+
+The following configuration keys are required in a ``slurm``-type resource section:
+
+  * ``transport``: Possible values are: ``ssh`` or ``local``.   If ``ssh``, we try to connect to the host specified in ``frontend`` via SSH in order to execute SLURM commands.  If ``local``, the SLURM commands are run directly on the machine where GC3Pie is installed.
+  * ``frontend``: should contain the `FQDN (Fully-qualified domain name)`:abbr: of the SLURM front-end node. This configuration item is only relevant if ``transport`` is ``local``. An SSH connection will be attempted to this node, in order to submit jobs and retrieve status info.
+
+
 Example ``resource`` sections
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
