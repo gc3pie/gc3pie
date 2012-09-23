@@ -89,7 +89,7 @@ def _to_memory(val):
       True
       >>> _to_memory('2gb') == 2*GB
       True
-      >>> _to_memory('1024') == Memory(1024, 'B')
+      >>> _to_memory('1024') == Memory(1024, Memory.B)
       True
 
     """
@@ -97,13 +97,13 @@ def _to_memory(val):
     unit = val[-2:]
     # XXX: check that PBS uses base-2 units
     if unit == 'kb':
-        return int(val[:-2])*Memory.KiB
+        return int(val[:-2])*Memory.kB
     elif unit == 'mb':
-        return int(val[:-2])*Memory.MiB
+        return int(val[:-2])*Memory.MB
     elif unit == 'gb':
-        return int(val[:-2])*Memory.GiB
+        return int(val[:-2])*Memory.GB
     elif unit == 'tb':
-        return int(val[:-2])*Memory.TiB
+        return int(val[:-2])*Memory.TB
     else:
         if val[-1] == 'b':
             # XXX bytes
@@ -111,7 +111,7 @@ def _to_memory(val):
         else:
             # a pure number
             val = int(val)
-        return Memory(int(val), 'B')
+        return int(val)*Memory.B
 
 
 def _parse_asctime(val):
