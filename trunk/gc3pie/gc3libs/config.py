@@ -544,6 +544,9 @@ class Configuration(gc3libs.utils.Struct):
             elif resdict['type'] == gc3libs.Default.SHELLCMD_LRMS:
                 from gc3libs.backends.shellcmd import ShellcmdLrms
                 cls = ShellcmdLrms
+            elif resdict['type'] == gc3libs.Default.SLURM_LRMS:
+                from gc3libs.backends.slurm import SlurmLrms
+                cls = SlurmLrms
             else:
                 raise gc3libs.exceptions.ConfigurationError(
                     "Unknown resource type '%s'" % resdict['type'])

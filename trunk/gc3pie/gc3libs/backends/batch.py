@@ -323,6 +323,7 @@ class BatchSystem(LRMS):
                 script_filename = ('./script.%x.sh' % random.randint(0, sys.maxint))
                 # save script to a temporary file and submit that one instead
                 local_script_file = tempfile.NamedTemporaryFile()
+                local_script_file.write('#!/bin/sh\n')
                 local_script_file.write(aux_script)
                 local_script_file.flush()
                 # upload script to remote location
