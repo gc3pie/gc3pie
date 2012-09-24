@@ -329,6 +329,8 @@ class SgeLrms(batch.BatchSystem):
                  # these are inherited from the `BatchSystem` class
                  frontend, transport,
                  accounting_delay = 15,
+                 # these are specific to the SGE class
+                 default_pe = None,
                  **extra_args):
 
         # init base class
@@ -337,6 +339,8 @@ class SgeLrms(batch.BatchSystem):
             architecture, max_cores, max_cores_per_job,
             max_memory_per_core, max_walltime, auth,
             frontend, transport, accounting_delay, **extra_args)
+
+        self.default_pe = default_pe
 
         self.qsub = self._get_command_argv('qsub')
 
