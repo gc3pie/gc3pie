@@ -34,7 +34,7 @@ Non-standard installation options
 The installation script accept a few options that select alternatives
 to the standard behavior.  In order to use these options, you have to:
 
-1. download the installation script into a file named `install.sh`:file: ::
+1. download the installation script into a file named `install.sh`:file:::
 
      wget http://gc3pie.googlecode.com/svn/install.sh
 
@@ -282,17 +282,17 @@ Upgrade
 These instructions show how to upgrade the GC3Pie scripts to the
 latest version found in the GC3 svn repository.
 
-1. `cd` to the directory containing the GC3Pie virtualenv;
-   assuming it's named ``gc3pie`` as in the above installation
+1. `cd`:command: to the directory containing the GC3Pie virtualenv;
+   assuming it is named ``gc3pie`` as in the above installation
    instructions, you can issue the commands::
 
      cd $HOME/gc3pie # use '/opt/gc3pie' if root
 
-2. Activate the virtualenv ::
+2. Activate the virtualenv::
 
      source bin/activate
 
-3. Upgrade the `gc3pie` source and run the `setup.py` script again::
+3. Upgrade the `gc3pie` source and run the `setup.py`:file: script again::
 
      cd src
      svn up
