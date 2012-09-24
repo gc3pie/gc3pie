@@ -85,6 +85,9 @@ class GMhcCoevApplication(Application):
     Custom class to wrap the execution of a single step of the
     ``MHC_coev_*`` program by A. B. Wilson and collaborators.
     """
+
+    application_name = 'mhc_coev'
+
     def __init__(self,
                  N, p_mut_coeff, choose_or_rand, sick_or_not, off_v_last,
                  output_dir, latest_work=None, executable=None, **extra_args):

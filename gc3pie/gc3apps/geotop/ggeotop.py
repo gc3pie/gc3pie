@@ -114,6 +114,8 @@ class GeotopApplication(Application):
     # above (RUNNING), then it continues from the last saving point. If
     # GEOtop finds a file indicating a successful/failed run, it terminates.
 
+    application_name = 'geotop'
+
     def _scan_and_tar(self, simulation_dir):
         try:
             gc3libs.log.debug("Compressing input folder '%s'" % simulation_dir)
