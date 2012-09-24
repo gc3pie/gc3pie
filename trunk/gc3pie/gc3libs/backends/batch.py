@@ -70,7 +70,8 @@ def generic_filename_mapping(jobname, jobid, file_name):
     except KeyError:
         return file_name
 
-def make_remote_and_local_path_pair(transport, job, remote_relpath, local_root_dir, local_relpath):
+
+def _make_remote_and_local_path_pair(transport, job, remote_relpath, local_root_dir, local_relpath):
     """
     Return list of (remote_path, local_path) pairs corresponding to
     """
@@ -569,7 +570,7 @@ class BatchSystem(LRMS):
                 if remote_relpath == gc3libs.ANY_OUTPUT:
                     remote_relpath = ''
                     local_relpath = ''
-                stageout += make_remote_and_local_path_pair(
+                stageout += _make_remote_and_local_path_pair(
                     self.transport, job, remote_relpath, download_dir, local_relpath)
 
             # copy back all files, renaming them to adhere to the ArcLRMS convention

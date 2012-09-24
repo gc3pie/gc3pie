@@ -350,28 +350,6 @@ _bjobs_long_re = re.compile(
     )
 
 
-def _make_remote_and_local_path_pair(transport, job, remote_relpath, local_root_dir, local_relpath):
-    """
-    Return list of (remote_path, local_path) pairs corresponding to
-    """
-    # see https://github.com/fabric/fabric/issues/306 about why it is
-    # correct to use `posixpath.join` for remote paths (instead of `os.path.join`)
-    remote_path = posixpath.join(job.ssh_remote_folder, remote_relpath)
-    local_path = os.path.join(local_root_dir, local_relpath)
-    if transport.isdir(remote_path):
-        # recurse, accumulating results
-        result = [ ]
-        for entry in transport.listdir(remote_path):
-            result += _make_remote_and_local_path_pair(
-                transport, job,
-                posixpath.join(remote_relpath, entry),
-                local_path, entry)
-        return result
-    else:
-        return [(remote_path, local_path)]
-
-
-
 class LsfLrms(batch.BatchSystem):
     """
     Job control on LSF clusters (possibly by connecting via SSH to a submit node).
