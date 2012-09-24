@@ -1232,7 +1232,14 @@ class Application(Task):
             qsub += ['-l', 's_rt=%d' % self.requested_walltime.amount(seconds)]
         if self.requested_memory:
             # SGE uses `mem_free` for memory limits; 'M' suffix allowed for Megabytes
-            qsub += ['-l', 'mem_free=%dM' % self.requested_memory.amount(MB)]
+            # XXX: there are a number of problems here:
+            #   - `mem_free` might not be requestable, i.e., submission will fail
+            #   - `mem_free` might be a JOB consumable, meaning the value should be the total amount of memory requested by the job
+            #   - in the end it's all matter of local configuration, so we might need to request `h_vmem` (job total) *and* `virtual_free` (per-slot consumable) ...
+            # Let's make whatever works in our cluster, and see how we can
+            # extend/change it when issue reports come...
+            qsub += ['-l', ('mem_free=%dM'
+                            % (self.requested_memory.amount(MB) / self.requested_cores))]
         if self.join:
             qsub += ['-j', 'yes']
         if self.stdout:
