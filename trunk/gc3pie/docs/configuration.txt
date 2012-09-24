@@ -269,12 +269,6 @@ The following configuration keys are required in a ``sge``-type resource section
   * ``frontend``: should contain the `FQDN (Fully-qualified domain name)`:abbr: of the SGE front-end node. An SSH connection will be attempted to this node, in order to submit jobs and retrieve status info.
   * ``transport``: Possible values are: ``ssh`` or ``local``.   If ``ssh``, we try to connect to the host specified in ``frontend`` via SSH in order to execute SGE commands.  If ``local``, the SGE commands are run directly on the machine where GC3Pie is installed.
 
-Since the installation path to supported applications is not known (there
-is no information system, differently from ARC), then the path must be
-specified here:
-
-  * ``gamess_location``: UNIX path name of the directory containing a valid `qgms`:command: script
-
 When a job has finished, the SGE batch system does not (by default)
 immediately write its information into the accounting database.  This
 creates a time window during which no information is reported about
