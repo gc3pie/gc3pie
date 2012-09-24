@@ -269,6 +269,15 @@ The following configuration keys are required in a ``sge``-type resource section
   * ``frontend``: should contain the `FQDN (Fully-qualified domain name)`:abbr: of the SGE front-end node. An SSH connection will be attempted to this node, in order to submit jobs and retrieve status info.
   * ``transport``: Possible values are: ``ssh`` or ``local``.   If ``ssh``, we try to connect to the host specified in ``frontend`` via SSH in order to execute SGE commands.  If ``local``, the SGE commands are run directly on the machine where GC3Pie is installed.
 
+To submit parallel jobs to SGE, a "parallel environment" name must be
+specified.  You can specify the PE to be used with a specific
+application using a configuration parameter *application name* +
+``_pe`` (e.g., ``gamess_pe``, ``zods_pe``); the ``default_pe``
+parameter dictates the parallel environment to use if no
+application-specific one is defined.  *If neither the
+application-specific, nor the ``default_pe`` parallel environments are
+defined, then it will not be possible to submit parallel jobs.*
+
 When a job has finished, the SGE batch system does not (by default)
 immediately write its information into the accounting database.  This
 creates a time window during which no information is reported about

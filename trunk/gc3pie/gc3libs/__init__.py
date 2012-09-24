@@ -1257,20 +1257,21 @@ class Application(Task):
             pe_cfg_name = (self.application_name + '_pe')
             if pe_cfg_name in resource:
                 pe_name = resource.get(pe_cfg_name)
-            elif 'generic_pe' in resource:
-                pe_name = resource.get('generic_pe')
-                # XXX: overly verbose reporting?
-                log.info(
-                    "Application %s requested %d cores,"
-                    " but no '%s' configuration item is defined on resource '%s';"
-                    " using the 'generic_pe' setting to submit the parallel job.",
-                    self, self.requested_cores, pe_cfg_name, resource.name)
             else:
-                raise gc3libs.exceptions.InternalError(
-                    "Application %s requested %d cores,"
-                    " but neither '%s' nor 'generic_pe' appear in the configuration"
-                    " of resource '%s'.  Please fix the configuration and retry."
-                    % (self, self.requested_cores, pe_cfg_name, resource.name))
+                pe_name = resource.get('default_pe')
+                if pe_name is not None:
+                    # XXX: overly verbose reporting?
+                    log.info(
+                        "Application %s requested %d cores,"
+                        " but no '%s' configuration item is defined on resource '%s';"
+                        " using the 'default_pe' setting to submit the parallel job.",
+                        self, self.requested_cores, pe_cfg_name, resource.name)
+                else:
+                    raise gc3libs.exceptions.InternalError(
+                        "Application %s requested %d cores,"
+                        " but neither '%s' nor 'default_pe' appear in the configuration"
+                        " of resource '%s'.  Please fix the configuration and retry."
+                        % (self, self.requested_cores, pe_cfg_name, resource.name))
             qsub += ['-pe', pe_name, ('%d' % self.requested_cores)]
         if 'jobname' in self and self.jobname:
             qsub += ['-N', '%s' % self.jobname]
