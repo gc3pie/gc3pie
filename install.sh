@@ -564,7 +564,7 @@ then
     echo "Installation of GC3Pie is done!"
     echo "==============================="
     echo
-    echo "In order to work with GC3Pie you have to enale the virtual"
+    echo "In order to work with GC3Pie you have to enable the virtual"
     echo "environment with the command:"
     echo
     echo "    . $VENVDIR/bin/activate"
