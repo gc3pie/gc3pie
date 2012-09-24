@@ -31,10 +31,10 @@ from nose.plugins.skip import SkipTest
 from nose.tools import assert_equal
 
 import gc3libs
+from gc3libs.backends.slurm import count_jobs
 import gc3libs.core
 import gc3libs.config
 from gc3libs.quantity import Memory, KiB, MiB, GiB, Duration, seconds, minutes, hours
-
 
 from faketransport import FakeTransport
 
@@ -58,7 +58,7 @@ def sacct_no_accounting(jobid=123):
         'SLURM accounting storage is disabled\n')
 
 def squeue_pending(jobid=123):
-    # squeue --noheader --format='%i|%T|%u|%U|%r|%R' -j $jobid
+    # squeue --noheader --format='%i|%T|%r' -j $jobid
     return (
         # command exitcode
         0,
@@ -298,6 +298,43 @@ squeue  = /usr/local/bin/squeue
     assert_equal(b._sacct,    '/usr/local/sbin/sacct')
     assert_equal(b._scancel,  '/usr/local/bin/scancel')
     assert_equal(b._squeue,   '/usr/local/bin/squeue')
+
+def test_count_jobs():
+    squeue_stdout = '''474867:PENDING:first_user:21913:Priority:(Priority)
+474870:PENDING:first_user:21913:Priority:(Priority)
+475753:PENDING:first_user:21913:Resources:(Resources)
+475747:PENDING:first_user:21913:Resources:(Resources)
+475751:PENDING:first_user:21913:Priority:(Priority)
+474723:RUNNING:third_user:20345:None:nid0[0002,0005,0013,0017,0022-0023,0028-0029,0040,0046,0050,0058-0059,0061,0066,0068-0069,0081,0091,0100,0110,0122-0123,0132-0133,0186-0187,0193,0212-0213,0230-0231,0234-0235,0240,0276-0277,0280-0281,0294-0295,0298-0299,0302,0314,0325,0332-0333,0335,0337,0341,0344-0345,0352-0353,0358-0359,0370-0371,0386-0387,0429,0444-0445,0450-0451,0466-0467,0492,0508,0528-0529,0544-0545,0551,0562-0563,0578-0579,0608,0628,0636-0637,0642-0644,0651,0654-0655,0658,0670-0673,0684-0685,0698-0699,0709,0735,0744-0745,0771,0776-0777,0780-0781,0802-0803,0818,0822-0823,0828,0832-0833,0840,0885,0894,0906-0907,0909,0946,0948,0972-0973,1011,1022,1024-1025,1052,1059,1074,1098,1100-1103,1106,1122,1132-1133,1137,1139,1141-1143,1164-1165,1169,1198-1199,1202,1232-1233,1254-1255,1262,1274-1275,1304,1315,1324-1325,1334-1335,1356-1359,1394-1395,1420-1421,1424,1455,1459,1488,1492-1493,1519]
+475738:RUNNING:first_user:21913:None:nid00[136-137]
+475744:RUNNING:first_user:21913:None:nid00[182-183]
+475438:RUNNING:second_user:21239:None:nid00[686,720-721,751]
+475440:RUNNING:second_user:21239:None:nid00[363,875,916-917]
+475448:RUNNING:second_user:21239:None:nid0[0306-0307,1206-1207]
+475450:RUNNING:second_user:21239:None:nid0[1263-1265,1296]
+475452:RUNNING:second_user:21239:None:nid0[0656,0687,1070,1105]
+475736:RUNNING:first_user:21913:None:nid0[0041,1512]
+475651:RUNNING:second_user:21239:None:nid00[026,217,867,924]
+475726:RUNNING:first_user:21913:None:nid00[742-743]
+'''
+    # first user has 4 running jobs and 5 queued ones
+    R, Q, r, q = gc3libs.backends.slurm.count_jobs(squeue_stdout, 'first_user')
+    assert_equal(R, 11)
+    assert_equal(Q, 5)
+    assert_equal(r, 4)
+    assert_equal(q, 5)
+    # second user has 6 running jobs and no queued ones
+    R, Q, r, q = gc3libs.backends.slurm.count_jobs(squeue_stdout, 'second_user')
+    assert_equal(R, 11)
+    assert_equal(Q, 5)
+    assert_equal(r, 6)
+    assert_equal(q, 0)
+    # third user has only 1 running job
+    R, Q, r, q = gc3libs.backends.slurm.count_jobs(squeue_stdout, 'third_user')
+    assert_equal(R, 11)
+    assert_equal(Q, 5)
+    assert_equal(r, 1)
+    assert_equal(q, 0)
 
 
 if __name__ == "__main__":
