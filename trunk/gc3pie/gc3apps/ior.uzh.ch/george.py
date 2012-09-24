@@ -330,6 +330,8 @@ class ValueFunctionIterationApplication(Application):
     `self.output_values` attribute.
     """
 
+    application_name = 'vfi'
+
     def __init__(self, executable, input_values_file, iteration, total_iterations,
                  start=0, end=None, parent=None, **extra_args):
         count = _count_input_values(input_values_file)

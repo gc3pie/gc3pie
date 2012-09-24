@@ -3,7 +3,7 @@
 """
 Housing-specific methods and overloads.
 """
-# Copyright (C) 2011 University of Zurich. All rights reserved.
+# Copyright (C) 2011, 2012 University of Zurich. All rights reserved.
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -59,6 +59,9 @@ from pymods.support.support import getParameter
 logger = wrapLogger(loggerName = __name__ + 'logger', streamVerb = 'DEBUG', logFile = __name__ + '.log')
 
 class housingApplication(Application):
+
+    application_name = 'housing'
+
     _invalid_chars = re.compile(r'[^_a-zA-Z0-9]+', re.X)
 
     def __init__(self, executable, arguments, inputs, outputs, output_dir, **extra_args):

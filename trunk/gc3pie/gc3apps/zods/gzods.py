@@ -53,6 +53,9 @@ class GzodsApp(gc3libs.Application):
     """
     This class is derived from gc3libs.Application and defines ZODS app with its input and output files.
     """
+
+    application_name = 'zods'
+
     def __init__(self, filename,**extra_args):
         if self.check_input(filename) is None:
                 raise gc3libs.exceptions.InputFileError(
