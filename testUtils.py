@@ -1,6 +1,6 @@
 #! /usr/bin/env python
 
-#   ggamess.py -- Front-end script for submitting multiple GAMESS jobs to SMSCG.
+#   testUtils.py -- Front-end script for management of GAMESS tests. 
 #
 #   Copyright (C) 2010-2012 GC3, University of Zurich
 #
@@ -18,7 +18,8 @@
 #   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 """
-Logic for executing tests within GAMESS. Tests are executed if INP files include their definition in an appropriate format.
+TestUtils class implements logic for test execution within GAMESS. 
+Tests are executed if INP files include their definition in an appropriate syntax (for more information about this syntax see testScenarios.py).
 
 """
 __version__ = 'development version (SVN $Revision$)'
@@ -26,6 +27,7 @@ __version__ = 'development version (SVN $Revision$)'
 __changelog__ = """
   2012-09-05: * Initial release of GAMESS Test Suite by modifing terminated() and , not refactorized and optimized. 
   2012-09-06: * Created a class template for test implementation (testScenario.py) and derived TestNextLine and TestLine classes as sample implementations 
+  2012-09-25: * First version of Gamess Test Suite. 
 """
 __author__ = 'Lukasz Miroslaw <lukasz.miroslaw@uzh.ch>'
 __docformat__ = 'reStructuredText'
@@ -36,8 +38,10 @@ import re
 import gc3libs
 
 from testScenarios import TestLine, TestNextLine
+"""
 
-#This class is responsible for running the tests. Directory with log files.
+This class is responsible for running the tests. Directory with log files.
+"""
 class GamessTestSuite:
        
 	def __init__(self):
@@ -52,7 +56,7 @@ class GamessTestSuite:
 			posLine = self.grep(r"\$[A-Za-z]+", FILE)
 			FILE.close()
 
-# Search for pattern in a file	
+# Search for pattern in a given file	
 	def grep(self,pattern,file_obj):
 		r=[]
   		for line in file_obj:
@@ -68,7 +72,6 @@ class GamessTestSuite:
 		   gc3libs.log.debug("The list with tests is empty. Skipping.")
 	 	   return
 		#TODO: if Failed testLogs is empty - fix
-		#import pdb;pdb.set_trace()
 		for testObj in self.exQ:
 			(self.is_correct, test_log) = testObj.run()
 			local_flag = False
@@ -77,11 +80,10 @@ class GamessTestSuite:
 			else:
 				local_flag = False
 				self.log.append(test_log)
-			#import pdb;pdb.set_trace()
 			self.final_flag = self.final_flag and local_flag 
 
-# Generate tests, e.g. call appropriate method from testLine and testNextLine class. If there is a "GC3" keyword in the INP file the test is added to a list of tests.
-# In case the files do not exist just report it so that the execution continues.
+# Generate tests, e.g. call appropriate method from testLine and testNextLine class (name of the class is taken from the input file and getattr is used to call a given method. If there is a "! gamess test" keyword in the INP file the test is added to a list of tests.
+# In case the files do not exist a self.log stores the error message and the execution continues.
 
 	def generate_tests(self,filename_inp, filename_out):
 		try:	
@@ -126,7 +128,6 @@ class GamessTestSuite:
 		for args,function in zip(param_list, function_list):
 			 arg_list = args.split(",")
 			 arg_list_new = []
-			 # Remove "" 
 			 for arg in arg_list:
 				argnew = re.sub(r"[ \"]", r"", arg)
 				arg_list_new.append(argnew) 
@@ -135,7 +136,6 @@ class GamessTestSuite:
 				if function==label_follow:
 					app = TestNextLine(filename_out)
 					fn = getattr(app, label_follow)   
-					#import pdb;pdb.set_trace()
 					fn(arg_list[0], arg_list[1], arg_list[2], int(arg_list[3]), float(arg_list[4]), arg_list[5], arg_list[6])
 					self.exQ.append(app)
 	   			elif function==label_analyze:
@@ -147,28 +147,27 @@ class GamessTestSuite:
 				gc3libs.log.warning("Index error. No. of arguments %d exceeds the required number %d. in file %s", len(arg_list), 7, filename_out)                                                                           		
 					
 			 except AttributeError:
-				#import pdb;pdb.set_trace()
 				gc3libs.log.warning("Attribute error. arguments %s in function %s from object %s on file %s are incorrect", args, function, app, filename_out)                                                                           		
 			 
-#python -m pdb ./gdemo.py
 
-#NOTES:
-#Incorrect grepex expression is not supported. Example:grepLinesAndAnalyze("TOTAL \s INTERACTION \s (DELTA", .. will raise a traceback.
-#Special characters such as : < ( * need to be defined as /< /( /*
-#first -2 | last -1 is translated into "2"
-#Interesting cases: exam39
 
-#TUTORIAL
-# Each test is started with a search for a regular expression. The regular expression
-# outputs either a single line or a group of lines. 
-# matchedLinePosition defines which matched line to select: first, last or Nth line. (last | first | "" | "2" | 2)
-# and returns ONE final line with target information.
-# 
-# There are two cases. 
-# 1. If you want to extract the values from the target line run grepLinesAndAnalyze.
-# 2. If you want to extract the values from the line that FOLLOWS the target line run grepAndFollow.
 
-# positionInLine extracts the value from the target line by extracting the column WITHIN the line.
 
-# Value defines a value which will be compared with the value extracted from the file.
-# Tol - acceptable difference between Value and value extracted from the text		
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

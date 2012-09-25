@@ -1,14 +1,45 @@
 #! /usr/bin/env python
+#   testScenarios.py -- Front-end script for implementation of syntax used in Test GAMESS Suite.
+#
+#   Copyright (C) 2010-2012 GC3, University of Zurich
+#
+#   This program is free software: you can redistribute it and/or modify
+#   it under the terms of the GNU General Public License as published by
+#   the Free Software Foundation, either version 3 of the License, or
+#   (at your option) any later version.
+#
+#   This program is distributed in the hope that it will be useful,
+#   but WITHOUT ANY WARRANTY; without even the implied warranty of
+#   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#   GNU General Public License for more delasts.
+#
+#   You should have received a copy of the GNU General Public License
+#   along with this program.  If not, see <http://www.gnu.org/licenses/>.
+#
+"""
+TestScenarios.py class extracts test execution within GAMESS. 
+Tests are executed if INP files include their definition in an appropriate syntax (for more information about this syntax see testScenarios.py).
+
+"""
+__version__ = 'development version (SVN $Revision$)'
+# summary of user-visible changes
+__changelog__ = """
+  2012-09-05: * Initial release of GAMESS Test Suite 
+  2012-09-06: * Created a class template for test implementation (testScenario.py) and derived TestNextLine and TestLine classes as sample implementations 
+  2012-09-25: * First version of Gamess Test Suite. 
+"""
+__author__ = 'Lukasz Miroslaw <lukasz.miroslaw@uzh.ch>'
+__docformat__ = 'reStructuredText'
+
 import re	
 import os.path
 import gc3libs
-#This class will be used to storne the patterns logic. Each pattern is assigned to a file. Each file can have 
-# multiple patterns. 
-#TODO: Each pattern can be assigned a label such as energy, gradient, etc. (do we need this?)
+#This class will be used to store the patterns logic. 
+# Each pattern is assigned to a file. Each file can have multiple patterns. 
 
 class Test:
 
-#Description of parameters:
+# Description of parameters:
 # positionInLine: selected number within the line that represents a field to be extracted   
 # 
 # The function prepares data structures for the followint task:
@@ -22,12 +53,6 @@ class Test:
 
 	def __init__(self, name):
 		self.name = name #file name, such as exam01.log
-		#self.LPattern = [] #patterns 
-		#self.LMatchedLine = [] #first | last - select first or last line from the lines that match 
-		#self.LPositionInLine = [] #extract numerical value from the line at given position
-		#self.LValues = [] #target Values 
-		#self.LTolerances = [] #tolerances
-		#self.LLabel = [] #Label, such as energy, gradient, etc. 
 		self.DEBUG = False
 	    #Predefined tolerances
 
@@ -68,7 +93,6 @@ class Test:
 # C percent (%), such as reference weight in MCQDPT
 
 #Compare valLog and valOK against the tolerance.	
-	
 	def chkabs(self,valLog, valOK, tol, label):
 		val = abs(valOK - valLog)
 		deviation = val - tol
@@ -76,7 +100,8 @@ class Test:
 			return (True,0)
 		else:
 			return (False,deviation)
-	
+
+#Check a given parameter for consistency. Return a correct value.	
 	def check_tolerance(self, tolerance):
 		# self.tolerances contains entries of a type dict('tolC',self.tolC)
 	 	try:
@@ -86,9 +111,8 @@ class Test:
 		        if tolerance.find(tol_key) > 0:
 		            return float(self.tolerances[tol_key])
 	
-# Analyze the argument in LPositionInLine. Return the index of the column that correspond the a target value. 
-	
-	def checkPositionInLine(self, posInLine):
+#Check a given parameter for consistency. Return a correct value.	
+	def check_position(self, posInLine):
 		try:
 			selNo = int(posInLine)
 			selNo = selNo - 1 #for array indexing
@@ -97,12 +121,9 @@ class Test:
 			selNo = -1
 		return selNo
 	
-# Analyze the argument in LMatched. Return the index of the line of interest. 
-# first -> 1, 
-# last -> 99
-# numerical value (also as a text) -> numerical value
+# Check a parameter matchedLine for consistency. Return the index of the line of interest as follows: first -> 1, last -> 99, numerical value (also as a string) -> numerical value
 	
-	def checkMatchedLine(self,matchedLine):
+	def check_matchedLine(self,matchedLine):
 		if (type(matchedLine) == type(4) ): # a strange way of checking the integer type
 			which = matchedLine
 			return which
@@ -123,9 +144,7 @@ class Test:
 		return which
 			
 #Search for pattern in the file. Return a list of lines together with the line numbers. 
-# The line numbers are used later by grepAndFollow()
-	
-	def grepFile(self, filename, pattern, whichFollowing = 0):
+	def grep_file(self, filename, pattern, whichFollowing = 0):
 		regexp = re.compile(pattern, re.VERBOSE) #  
 		FILE = open(filename, 'r')
 		lines = FILE.readlines()
@@ -145,9 +164,8 @@ class Test:
 		return (matchedLineNumbers,matchedLinesTemp)
 		 
  
-		
 #Extract a SINGLE line from a map of detected lines with its line number.
-	def getTargetLine(self, lineNumbersList, matchedLinesList, whichLine):
+	def get_targetLine(self, lineNumbersList, matchedLinesList, whichLine):
 		lenT = len(matchedLinesList)
 		numberCorrect = 0
 		lineCorrect = ""
@@ -163,8 +181,8 @@ class Test:
 				lineCorrect = matchedLinesList[finalWich].strip()
 		return (numberCorrect, lineCorrect)
 	
-	
-	def getValueFromLine(self, line, position):
+#Extract a target value from a given line 
+	def get_valueFromLine(self, line, position):
 		list = line.split()
 		if (position > len(list)):
 			gc3libs.log.debug("Out of boundary, check the position in the target line.")
@@ -178,16 +196,12 @@ class Test:
 
 
 #Run each test. To optimize the execution each file is analyzed only ONCE. Internal lists drive the execution.
-# 
 #Internal parameters: 
-# whichFolowing
 # final_flag is True only when all the tests return True
-# final_string contains the test labels with results (Eerr=0.0E)
 	def run(self):
 		filename = self.name
 		final_report = []
 		final_flag = True
-		testNo = 0
 		gc3libs.log.debug("Test: %s", self.name)
 		gc3libs.log.debug("LPattern %s", self.LPattern)
 		gc3libs.log.debug("LMatchedLine %s", self.LMatchedLine)
@@ -206,14 +220,13 @@ class Test:
 		value = self.LValues
 		tolerance = self.LTolerances
 		label = self.LLabel	
-		gc3libs.log.debug("Internal Test No. %s", testNo)
 		tolerance = self.check_tolerance(tolerance)	
 		gc3libs.log.debug("CHECKED tolerance %s", tolerance)
 		
 		#Extract the position of the value within the target line	
-		pos = self.checkPositionInLine(positionInLine)
+		pos = self.check_position(positionInLine)
 		gc3libs.log.debug("CHECKED positionInLine %s", pos)
-		which = self.checkMatchedLine(whichLine)
+		which = self.check_matchedLine(whichLine)
 		gc3libs.log.debug("CHECKED MatchedLine %s", which)
 		if which == 0:
 			gc3libs.log.debug("ERROR: which %s is incorrect.") 
@@ -221,7 +234,7 @@ class Test:
 			return (False, final_report)
 			
 		#Extract a list of lines that match a regexp and line indices as lists. 
-		(numList,linesFound) = self.grepFile(filename, pattern) 
+		(numList,linesFound) = self.grep_file(filename, pattern) 
 		
 		# Nothing Found
 		if (len(linesFound) == 0):
@@ -230,27 +243,25 @@ class Test:
 			final_flag = final_flag and False
 			return (False, final_report)
 	
-		(numLine, targetLine) = self.getTargetLine(numList, linesFound, which)
-		
+		(numLine, targetLine) = self.get_targetLine(numList, linesFound, which)
 	
 		#case grepAndFollow                                                                               	
 		if followingLine is not None:
-			whichFollowing  = self.checkMatchedLine(followingLine)
+			whichFollowing  = self.check_matchedLine(followingLine)
 			gc3libs.log.debug("CHECKED followingLine %s", whichFollowing)
 			if whichFollowing is None:
 				gc3libs.log.debug("ERROR: whichFollowing parameter is incorrect.",whichFollowing) 
 				log = "ERROR: whichFollowing parameter is incorrect."
 				final_report.append(log)
         			return (False, final_report)
-			targetLine = self.grepNext(filename, numLine, whichFollowing)
+			targetLine = self.grep_next(filename, numLine, whichFollowing)
 			gc3libs.log.debug("MATCHED LINE: %s", targetLine)
 		else:		
-			(numLine, targetLine) = self.getTargetLine(numList, linesFound, which)
+			(numLine, targetLine) = self.get_targetLine(numList, linesFound, which)
 			gc3libs.log.debug("MATCHED LINE: %s", targetLine)
 	
-	
 		#Extract the value from matched line
-		valL = self.getValueFromLine(targetLine, pos)
+		valL = self.get_valueFromLine(targetLine, pos)
 		
 		if valL is None: #Empty:
 			gc3libs.log.debug("ERROR: Cannot retrieve the float value from line %s.", targetLine)
@@ -260,14 +271,25 @@ class Test:
 			gc3libs.log.debug("Comparing %s against %s.", valL, value)
 			(flag, deviation) = self.chkabs(valL, value, tolerance, label)
 			if deviation > 0:
-				deviation = " " + label + '=%.2E ' %(deviation)
-				final_report.append("ERROR: deviation found: " + deviation)
+				deviation = label + str(deviation)
+				final_report.append("ERROR: wnen compared " + str(valL)+" against " + str(value) + " deviation found: " + deviation)
 			final_flag = final_flag and flag
-			
 		return (final_flag,final_report)
+"""
+The user edits GAMESS input files by introducing two types of testing scenario encoded in
+a special syntax. These two classes define the test and implement a method that prepares the class object to be executed. 
+There are two testing scenario that have been provided:
 
+1. Extraction of a specific value from a given target line (see TestLine class and
+grepAndAnalyze method).
 
+2. Extraction of a specific value from the line AFTER a target line (see TestNextLine
+and grepAndFollow method).
 
+Target lines that contain the value of interest is extracted with a regular expression (regex statement).
+If regex extracts many lines the user has a chance to specify which one to select (option head or tail). Once the line has been selected it is divided into separable strings a string that represent the value of interest is selected with positionInLine parameter.
+
+"""
 class TestNextLine(Test):
 
 	def grepAndFollow(self, pattern, matchedLinePosition, followingLinePosition, positionInLine, value, tol, name):
@@ -282,7 +304,7 @@ class TestNextLine(Test):
 		self.LLabel = name
 
 	#Extract num+whichFollowing line number from the file. 
-	def grepNext(self, filename, num, whichFollowing):	
+	def grep_next(self, filename, num, whichFollowing):	
 		FILE = open(filename, 'r')
 		lines = FILE.readlines()
 		FILE.close()
@@ -293,7 +315,6 @@ class TestNextLine(Test):
 				targetLine = lines[num+whichFollowing]
 			else:
 				gc3libs.log.debug("grepNext: Out of boundary. ")
-				#gc3libs.log.debug("Length of file is: %s and the extracted line has a number %s.", lenLines, whichFollowing)
 				return None						
 		return targetLine	
 
