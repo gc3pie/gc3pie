@@ -221,10 +221,10 @@ class ArcLrms(LRMS):
         try:
             xrsl = arclib.Xrsl(xrsl)
         except Exception, ex:
-            raise gc3libs.exceptions.LRMSSubmitError('Failed in getting `Xrsl` object from arclib: %s: %s'
-                                  % (ex.__class__.__name__, str(ex)))
+            raise gc3libs.exceptions.LRMSSubmitError(
+                'Error getting `Xrsl` object from arclib: %s: %s'
+                % (ex.__class__.__name__, str(ex)))
 
-        # queues = self._get_queues()
         queues = self._filter_queues(self._get_queues(), job)
         if len(queues) == 0:
             raise gc3libs.exceptions.LRMSSubmitError('No ARC queues found')
@@ -236,7 +236,8 @@ class ArcLrms(LRMS):
         try:
             lrms_jobid = arclib.SubmitJob(xrsl,targets)
         except arclib.JobSubmissionError, ex:
-            raise gc3libs.exceptions.LRMSSubmitError('Got error from arclib.SubmitJob(): %s' % str(ex))
+            raise gc3libs.exceptions.LRMSSubmitError(
+                'Got error from arclib.SubmitJob(): %s' % str(ex))
 
         # save job ID for future reference
         job.lrms_jobid = lrms_jobid
