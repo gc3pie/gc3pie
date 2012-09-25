@@ -37,6 +37,10 @@ __changelog__ = """
     * Correct execution: ./ggamess.py -R 2011R1 test/data/exam01.inp -N 
   2012-08-23: 
     * Pre-release of GAMESS Testing Suite 
+  2012-08-14: 
+    * Beta release of GAMESS Testing Suite 
+  2012-09-25: 
+    * First release of GAMESS Testing Suite 
 """ 
 __author__ = 'Riccardo Murri <riccardo.murri@uzh.ch>'
 __docformat__ = 'reStructuredText'
@@ -124,7 +128,7 @@ of newly-created jobs so that this limit is never exceeded.
                     kwargs['apppot_changes'] = apppot_changes
                 cls = GamessAppPotApplication
             else:
-                # Added Gamess Test Application
+                # GamessTestApplication is derived from GamessApplication
 		cls = GamessTestApplication
             # construct GAMESS job
 	    yield (
@@ -136,28 +140,24 @@ of newly-created jobs so that this limit is never exceeded.
                 parameters,
                 # keyword arguments, see `GamessApplication.__init__`
                 kwargs)
+
+
 # This method is called after the session has been completed and the results are generated. 
-# If any of the jobs terminated test is launched.    
+# For jobs terminated correctly print out the report with statistics about completed and uncompleted tests. If the test failed job.logTest is printed out.      
     def after_main_loop(self):
         no_of_tests = 0    	
 	number_of_unfinished_tests = 0 
 	number_of_correct_tests = 0 
-	myoutputs = []
 	if not self.session:
 		raise RuntimeError("The session is empty.")
- 	#TODO: Detect TERMINATED but numerically incorrect tests		 
 	for job in self.session:
         	no_of_tests = no_of_tests + 1   	
-		#import pdb;pdb.set_trace()
 		if job.execution.state in [Run.State.SUBMITTED, Run.State.RUNNING, Run.State.TERMINATING, Run.State.UNKNOWN, Run.State.STOPPED]:
 			number_of_unfinished_tests = number_of_unfinished_tests + 1
 			gc3libs.log.info(" %s job in state %s", job.jobname, job.execution.state)
 			continue
 		elif job.execution.state in Run.State.TERMINATED: 
 			gc3libs.log.debug(" %s job has TERMINATED", job.jobname)
-			output_abs_path = os.path.join(job.output_dir, job.outputs[job.stdout].path)
-			#myoutputs.append(output_abs_path)
-			#print job.logTest		 
 			if job.is_correct is True:
 				number_of_correct_tests = number_of_correct_tests + 1	
 				message = '%-89s    %s' %(job.jobname, "Passed.")
@@ -166,35 +166,20 @@ of newly-created jobs so that this limit is never exceeded.
 				number_of_unfinished_tests = number_of_unfinished_tests + 1
 				message =  '%-89s    %s' %(job.jobname, "!!FAILED.")
 				print message 
-				for mess in job.logTest:
-			        	print mess
-			#for message in job.logTest:
-	 		#	if not message: 
-					#gc3libs.log.debug("No tests detected for job: %s.", job.jobname)
-			#		print "No tests detected for job ", job.jobname
-			#	else:
-			#		print "Test ", job.jobname, " :", message
-					#gc3libs.log.debug("Test %s: %s.", job.jobname, message)
-			#continue
+				for log_entry in job.logTest:
+			        	print log_entry
 	if number_of_correct_tests != no_of_tests:
 		print "Only", number_of_correct_tests, "out of", no_of_tests," terminated normally."
-		#gc3libs.log.debug("Only %s out of %s terminated normally.", number_of_correct_tests, no_of_tests)
 	else:
 		print number_of_correct_tests, "out of", no_of_tests," tests teminated normally."
-		#gc3libs.log.debug("%s out of %s tests teminated normally", number_of_correct_tests, no_of_tests) 
 	if number_of_unfinished_tests == 0:
 		print "All job(s) terminated normally." 
-		#gc3libs.log.info("All job(s) terminated normally.")
 	else:
 		print number_of_unfinished_tests,  "job(s) have not terminated correctly. Please examine why." 
-		#gc3libs.log.info("%s job(s) have not terminated. Please examine why.", number_of_unfinished_tests) 
 		
-# This class overrides GamessApplication class and triggers a test in terminated().
-#TODO: GamessTestApplcation class is only used when ggamess.py -N was provided 
-
+# This class overrides GamessApplication class and launches a test in terminated().
 class GamessTestApplication(GamessApplication):
 	def __init__(self, inp_file_path, *other_input_files, **kw):
-		#import pdb;pdb.set_trace()
 		self.logTest = []
 	        self.is_correct = False		
 		GamessApplication.__init__(self, 
@@ -210,7 +195,6 @@ class GamessTestApplication(GamessApplication):
 			test = GamessTestSuite()
 			gc3libs.log.debug("Analyzing GAMESS input %s and %s output files.", file_input, file_output)
 			test.generate_tests(file_input, file_output)
-			#import pdb;pdb.set_trace()
 			test.runTests()
 	        	self.is_correct = test.final_flag
 			self.logTest.append(test.log)
