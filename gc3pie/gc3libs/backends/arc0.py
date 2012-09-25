@@ -456,7 +456,7 @@ class ArcLrms(LRMS):
         job.lrms_jobname = arc_job.job_name # see Issue #78
 
         # Common struture as described in Issue #78
-        job.duration = gc3libs.utils.ifelse(arc_job.used_walltime != -1,
+        job.duration = gc3libs.utils.ifelse(arc_job.used_wall_time != -1,
                                             arc_job.used_wall_time * seconds,
                                             None)
         job.max_used_memory = gc3libs.utils.ifelse(arc_job.used_memory != -1,
