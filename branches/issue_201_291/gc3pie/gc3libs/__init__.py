@@ -83,6 +83,7 @@ class Default(object):
     PBS_LRMS = 'pbs'
     LSF_LRMS = 'lsf'
     SHELLCMD_LRMS = 'shellcmd'
+    SLURM_LRMS = 'slurm'
     SUBPROCESS_LRMS = 'subprocess'
 
     # Transport information
@@ -243,6 +244,32 @@ class Task(Persistable, Struct):
         In-place update of the execution state of the computational
         job associated with this `Task`.  After successful completion,
         `.execution.state` will contain the new state.
+
+        After the job has reached the `TERMINATING` state, the following
+        attributes are also set:
+
+        `execution.duration`
+          Time lapse from start to end of the job at the remote
+          execution site, as a `gc3libs.quantity.Duration`:class: value.
+          (This is also often referred to as the 'wall-clock time' or
+          `walltime`:term: of the job.)
+
+        `execution.max_used_memory`
+          Maximum amount of RAM used during job execution, represented
+          as a `gc3libs.quantity.Memory`:class: value.
+
+        `execution.used_cpu_time`
+          Total time (as a `gc3libs.quantity.Duration`:class: value) that the
+          processors has been actively executing the job's code.
+
+        The execution backend may set additional attributes; the exact
+        name and format of these additional attributes is
+        backend-specific.  However, you can easily identify the
+        backend-specific attributes because their name is prefixed
+        with the (lowercased) backend name; for instance, the
+        `PbsLrms`:class: backend sets attributes `pbs_queue`,
+        `pbs_end_time`, etc.
+
         """
         assert self._attached, ("Task.update_state() called on detached task %s." % self)
         assert hasattr(self._controller, 'update_job_state'), \
@@ -706,6 +733,17 @@ class Application(Task):
       for submission; possibly empty.
     """
 
+    application_name = 'generic'
+    """
+    A name for applications of this class.
+
+    This string is used as a prefix for configuration items related to
+    this application in configured resources.  For example, if the
+    `application_name` is ``foo``, then the application interface code
+    in GC3Pie might search for ``foo_cmd``, ``foo_extra_args``, etc.
+    See `qsub_sge`:meth: for an actual example.
+    """
+
     def __init__(self, arguments, inputs, outputs, output_dir, **extra_args):
         # required parameters
         if isinstance(arguments, types.StringTypes):
@@ -813,6 +851,16 @@ class Application(Task):
             self.outputs[self.stderr] = self.stderr
 
         self.tags = extra_args.pop('tags', list())
+
+        if 'jobname' in extra_args:
+            # Check whether the first character of a jobname is an
+            # integer. SGE does not allow job names to start with a
+            # number, so add a prefix...
+            jobname = extra_args['jobname']
+            if len(jobname) == 0:
+                extra_args['jobname'] = "GC3Pie.%s.%s" % (self.__class__.__name__, id(self))
+            elif str(jobname)[0] in string.digits:
+                extra_args['jobname'] = "GC3Pie.%s" % jobname
 
         # task setup; creates the `.execution` attribute as well
         Task.__init__(self, **extra_args)
@@ -1128,12 +1176,7 @@ class Application(Task):
         return ['%s' % i for i in self.arguments[1:]]
 
 
-    def qsub_sge(self, resource, _suppress_warning=False, **extra_args):
-        # XXX: the `_suppress_warning` switch is only provided for
-        # some applications to make use of this generic method without
-        # logging the user-level warning, because, e.g., it has already
-        # been taken care in some other way (cf. GAMESS' `qgms`).
-        # Use with care and don't depend on it!
+    def qsub_sge(self, resource, **extra_args):
         """
         Get an SGE ``qsub`` command-line invocation for submitting an
         instance of this application.
@@ -1173,7 +1216,14 @@ class Application(Task):
             qsub += ['-l', 's_rt=%d' % self.requested_walltime.amount(seconds)]
         if self.requested_memory:
             # SGE uses `mem_free` for memory limits; 'M' suffix allowed for Megabytes
-            qsub += ['-l', 'mem_free=%dM' % self.requested_memory.amount(MB)]
+            # XXX: there are a number of problems here:
+            #   - `mem_free` might not be requestable, i.e., submission will fail
+            #   - `mem_free` might be a JOB consumable, meaning the value should be the total amount of memory requested by the job
+            #   - in the end it's all matter of local configuration, so we might need to request `h_vmem` (job total) *and* `virtual_free` (per-slot consumable) ...
+            # Let's make whatever works in our cluster, and see how we can
+            # extend/change it when issue reports come...
+            qsub += ['-l', ('mem_free=%dM'
+                            % (self.requested_memory.amount(MB) / self.requested_cores))]
         if self.join:
             qsub += ['-j', 'yes']
         if self.stdout:
@@ -1187,12 +1237,26 @@ class Application(Task):
             # options are present, Grid Engine sets but ignores the
             # error-path attribute."
             qsub += ['-e', '%s' % self.stderr]
-        if self.requested_cores != 1 and not _suppress_warning:
-            # XXX: should this be an error instead?
-            log.warning("Application requested %d cores,"
-                        " but there is no generic way of expressing this requirement in SGE!"
-                        " Ignoring request, but this will likely result in malfunctioning later on.",
-                        self.requested_cores)
+        if self.requested_cores != 1:
+            pe_cfg_name = (self.application_name + '_pe')
+            if pe_cfg_name in resource:
+                pe_name = resource.get(pe_cfg_name)
+            else:
+                pe_name = resource.get('default_pe')
+                if pe_name is not None:
+                    # XXX: overly verbose reporting?
+                    log.info(
+                        "Application %s requested %d cores,"
+                        " but no '%s' configuration item is defined on resource '%s';"
+                        " using the 'default_pe' setting to submit the parallel job.",
+                        self, self.requested_cores, pe_cfg_name, resource.name)
+                else:
+                    raise gc3libs.exceptions.InternalError(
+                        "Application %s requested %d cores,"
+                        " but neither '%s' nor 'default_pe' appear in the configuration"
+                        " of resource '%s'.  Please fix the configuration and retry."
+                        % (self, self.requested_cores, pe_cfg_name, resource.name))
+            qsub += ['-pe', pe_name, ('%d' % self.requested_cores)]
         if 'jobname' in self and self.jobname:
             qsub += ['-N', '%s' % self.jobname]
         return (qsub, self.cmdline(resource))
@@ -1281,6 +1345,57 @@ class Application(Task):
         if 'jobname' in self and self.jobname:
             qsub += ['-N', '"%s"' % self.jobname]
         return (qsub, self.cmdline(resource))
+
+
+    def sbatch(self, resource, **extra_args):
+        """
+        Get a SLURM ``sbatch`` command-line invocation for submitting an
+        instance of this application.
+
+        Return a pair `(cmd_argv, app_argv)`.  Both `cmd_argv` and
+        `app_argv` are *argv*-lists: the command name is included as
+        first item (index 0) of the list, further items are
+        command-line arguments; `cmd_argv` is the *argv*-list for the
+        submission command (excluding the actual application command
+        part); `app_argv` is the *argv*-list for invoking the
+        application.  By overriding this method, one can add futher
+        resource-specific options at the end of the `cmd_argv`
+        *argv*-list.
+
+        In the construction of the command-line invocation, one should
+        assume that all the input files (as named in `Application.inputs`)
+        have been copied to the current working directory, and that output
+        files should be created in this same directory.
+
+        Override this method in application-specific classes to
+        provide appropriate invocation templates and/or add different
+        submission options.
+        """
+        # sbatch --job-name="jobname" --mem-per-cpu="MBs" --input="filename" --output="filename" --no-requeue -n "number of slots" --cpus-per-task=1 --time="minutes" script.sh
+        sbatch = list(resource.sbatch)
+        sbatch += ['--no-requeue']
+        if self.requested_walltime:
+            # SLURM uses `--time` for wall-clock time limit, expressed in minutes
+            sbatch += ['--time', '%d' % self.requested_walltime.amount(minutes)]
+        if self.requested_memory:
+            # SLURM uses `mem_free` for memory limits; 'M' suffix allowed for Megabytes
+            sbatch += ['--mem-per-cpu', '%d' % (self.requested_memory.amount(MB) / self.requested_cores) ]
+        if self.stdout:
+            sbatch += ['--output', '%s' % self.stdout]
+        if self.stdin:
+            # `self.stdin` is the full pathname on the GC3Pie client host;
+            # it is copied to its basename on the execution host
+            sbatch += ['--input', '%s' % os.path.basename(self.stdin)]
+        if self.stderr:
+            # from the sbatch(1) man page: "If both the -j y and the -e
+            # options are present, Grid Engine sets but ignores the
+            # error-path attribute."
+            sbatch += ['-e', '%s' % self.stderr]
+        if self.requested_cores != 1:
+            sbatch += ['-n', ('%d' % self.requested_cores), '--cpus-per-task', '1']
+        if 'jobname' in self and self.jobname:
+            sbatch += ['--job-name', ('%s' % self.jobname)]
+        return (sbatch, self.cmdline(resource))
 
 
     # Operation error handlers; called when transition from one state

@@ -38,6 +38,9 @@ class Square(gc3libs.Application):
     Square class, takes a filename containing a list of integer to be squared.
     writes an output containing the square of each of them
     """
+
+    application_name = 'demo'
+
     def __init__(self, x):
         # src_square_sh = resource_filename(Requirement.parse("gc3utils"),
         #                                   "gc3libs/etc/square.sh")

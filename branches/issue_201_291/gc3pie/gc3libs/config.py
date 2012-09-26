@@ -532,7 +532,6 @@ class Configuration(gc3libs.utils.Struct):
                 cls = ArcLrms
             elif resdict['type'] == gc3libs.Default.ARC1_LRMS:
                 from gc3libs.backends.arc1 import Arc1Lrms
-                return Arc1Lrms(**dict(resdict))
             elif resdict['type'] == gc3libs.Default.SGE_LRMS:
                 from gc3libs.backends.sge import SgeLrms
                 cls = SgeLrms
@@ -545,6 +544,9 @@ class Configuration(gc3libs.utils.Struct):
             elif resdict['type'] == gc3libs.Default.SHELLCMD_LRMS:
                 from gc3libs.backends.shellcmd import ShellcmdLrms
                 cls = ShellcmdLrms
+            elif resdict['type'] == gc3libs.Default.SLURM_LRMS:
+                from gc3libs.backends.slurm import SlurmLrms
+                cls = SlurmLrms
             else:
                 raise gc3libs.exceptions.ConfigurationError(
                     "Unknown resource type '%s'" % resdict['type'])

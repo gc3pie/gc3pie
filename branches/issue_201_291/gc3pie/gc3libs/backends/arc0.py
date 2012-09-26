@@ -221,10 +221,10 @@ class ArcLrms(LRMS):
         try:
             xrsl = arclib.Xrsl(xrsl)
         except Exception, ex:
-            raise gc3libs.exceptions.LRMSSubmitError('Failed in getting `Xrsl` object from arclib: %s: %s'
-                                  % (ex.__class__.__name__, str(ex)))
+            raise gc3libs.exceptions.LRMSSubmitError(
+                'Error getting `Xrsl` object from arclib: %s: %s'
+                % (ex.__class__.__name__, str(ex)))
 
-        # queues = self._get_queues()
         queues = self._filter_queues(self._get_queues(), job)
         if len(queues) == 0:
             raise gc3libs.exceptions.LRMSSubmitError('No ARC queues found')
@@ -236,7 +236,8 @@ class ArcLrms(LRMS):
         try:
             lrms_jobid = arclib.SubmitJob(xrsl,targets)
         except arclib.JobSubmissionError, ex:
-            raise gc3libs.exceptions.LRMSSubmitError('Got error from arclib.SubmitJob(): %s' % str(ex))
+            raise gc3libs.exceptions.LRMSSubmitError(
+                'Got error from arclib.SubmitJob(): %s' % str(ex))
 
         # save job ID for future reference
         job.lrms_jobid = lrms_jobid
@@ -456,12 +457,20 @@ class ArcLrms(LRMS):
         job.lrms_jobname = arc_job.job_name # see Issue #78
 
         # Common struture as described in Issue #78
-        job.queue = arc_job.queue
-        job.cores = arc_job.cpu_count
-        job.original_exitcode = arc_job.exitcode
-        job.used_walltime = arc_job.used_wall_time # exressed in sec.
-        job.used_cputime = arc_job.used_cpu_time # expressed in sec.
-        job.used_memory = arc_job.used_memory # expressed in KiB
+        job.duration = gc3libs.utils.ifelse(arc_job.used_wall_time != -1,
+                                            arc_job.used_wall_time * seconds,
+                                            None)
+        job.max_used_memory = gc3libs.utils.ifelse(arc_job.used_memory != -1,
+                                                   arc_job.used_memory * kB,
+                                                   None)
+        job.used_cpu_time = gc3libs.utils.ifelse(arc_job.used_cpu_time != -1,
+                                                 arc_job.used_cpu_time * seconds,
+                                                 None)
+
+        # additional info
+        job.cores = gc3libs.utils.ifelse(arc_job.cpu_count != -1, arc_job.cpu_count, None)
+        job.arc_original_exitcode = arc_job.exitcode
+        job.arc_queue = gc3libs.utils.ifelse(arc_job.queue != '', arc_job.queue, None)
 
         job.state = state
         return state

@@ -1,0 +1,214 @@
+The `gamess` script
+=============================
+
+GC3Apps provide a script drive execution of multiple ``gamess`` jobs
+each of them with a different input file. 
+It uses the generic `gc3libs.cmdline.SessionBasedScript` framework.
+
+The purpose of GAMESS is to execute *several concurrent
+runs* of GAMESS each with separate input file. These runs are performed in
+parallel using every available GC3Pie parameters.
+ 
+GAMESS Testing Suite
+=============================
+
+The purpose of GAMESS Testing Suite is to simplify testing procedure for GAMESS users.
+Tests are defined inside INP files as comments of a special syntax. The user controls whether tests should be called or not and on which version of GAMESS.
+
+Key Features
+******************
+- GAMESS Testing Suite is a Python implementation of CHEKTST script released with GAMESS (<gamess>/tools/checktst) written by D. G. Fedorov, AIST, July 20, 2004.
+- New types of tests can be easily added by introducing new Python classes that follow the proposed scheme (see testScenarios.py for examples).
+- Only edition of INP files is required to define a test. 
+
+**Example of execution:**
+
+- ggamess.py exam01.inp exam02.inp –R 2011R1 –N –t
+- ggamess.py <path to directory with inp files> –R 2011R1 –C 20 –t
+
+where
+-N indicates it is a new GC3Pie session (job)
+-C indicates that the session will not terminate until all the jobs are terminated normally. Each 20 seconds a report on execution is generated to standard output.
+-R specifies the version of GAMESS.
+
+Description
+******************
+
+The user edits GAMESS input files by introducing two types of testing scenario encoded in
+a special syntax. The Software analyzes GAMESS OUTPUT files and executes the test by
+comparing the correct value with the one found in the OUTPUT file. There are two testing scenario that have been provided:
+
+1. Extraction of a specific value from a given target line (see TestLine class and
+grepAndAnalyze method).
+
+2. Extraction of a specific value from the line AFTER a target line (see TestNextLine
+and grepAndFollow method).
+
+Target lines that contain the value of interest is extracted with a regular expression (regex statement).
+If regex extracts many lines the user has a chance to specify which one to select (option head or tail). Once the line has been selected it is divided into separable strings a string that represent the value of interest is selected with positionInLine parameter.
+
+*******************
+Example input file:
+*******************
+! EXAM01.
+
+! ggamess test:  grepLinesAndAnalyze("FINAL \s+ RHF", "tail", 5, -37.2380397698, app.tolE, "Eerr")
+
+! ggamess test: grepAndFollow("OVERLAP\s +LOW", "head","head", 8, 0.64506, app.tolO, "Oerr")
+! ggamess test: grepLinesAndAnalyze("RMS \s+ G", "tail", 8, .0000004, app.tolG, "Gerr")
+ 
+$CONTRL SCFTYP=RHF RUNTYP=OPTIMIZE
+
+COORD=ZMT NZVAR=0 $END 
+
+$SYSTEM TIMLIM=1 $END
+
+$STATPT OPTTOL=1.0E-5 $END
+
+$BASIS GBASIS=STO NGAUSS=2 $END
+
+$GUESS GUESS=HUCKEL $END
+
+$DATA
+Methylene...1-A-1 state...RHF/STO-2G
+
+Cnv 2
+
+C
+
+H
+
+
+H
+
+1 rCH
+
+1 rCH
+2 aHCH
+rCH=1.09
+
+aHCH=110.0
+
+$END
+
+
+Syntax
+******************
+
+The following lines added to the GAMESS INP files define the tests. There can be multiple lines in each file.
+
+!ggamess test: grepLinesAndAnalyze(REGEX, MATCHEDLINE,
+POSITIONINLINE, VALUE, TOLERANCE, LABEL)
+
+! ggamess test: grepAndFollow(REGEX, MATCHEDLINE, FOLLOWINGLINE
+POSITIONINLINE, VALUE, TOLERANCE, LABEL)
+
+where:
+
+- REGEX = string. A regular expression that extracts the group of target that follow the regular expression. More information about regexp can be found in grep manual page (man grep) or under `link <http://en.wikipedia.org/wiki/Regular_expression>`_.
+
+- MATCHEDLINE = "tail" | “head” | “number”. Specifies a single line from a group of lines.
+
+Note: sometimes the extracted line does not contain target value (VALUEOUT) and the line after MATCHEDLINE must be specified. FOLLOWINGLINE is responsible for that. 
+
+- FOLLOWINGLINE = “head” | “int” | int
+
+- POSITIONINLINE = “int” | int
+
+Specifies the index of the column that corresponds to a target value. REGEX, MATCHEDLINE and POSITIONINLINE define a value (VALUEOUT) from GAMESS output file that will be compared with VALUE up to given tolerance TOL.
+
+- VALUE = float. The correct value.
+
+- TOL = float. Tolerance used for proper comparison. Tolerances for energy, vibrational frequency, IR intensity, Mean Alpha Polarization, heat of formation in kcal/mol, etc. have already been predefined and can be accessed with predefined names such as TolE, tolG, etc (see Appendix 1).
+
+The validation must meet the following equation encoded in this pseudo code:
+
+IF ABS(VALUE – VALUEOUT) > TOL \
+TEST IS NOT ACCEPTED \ 
+
+ELSE \
+TEST IS ACCEPTED
+ 
+- LABEL = string. Description of type of test.
+
+Description of parameters
+************************************
+
+The parameters will be explained on two examples: \
+!ggamess test: grepLinesAndAnalyze("RMS \s+ G", "tail", 8, .0000004,
+GamessTst.tolG, "Gerr") \
+!ggamess test: grepAndFollow("OVERLAP\s+LOW", "head","head", 8,
+0.64506, GamessTst.tolO, "Oerr")
+
+- REGEX = “RMS\s+ G" or REGEX = “OVERLAP\s+LOW” will extract all the lines that contain “RMS G” or “OVERLAP\\s+LOW” string. For example in exam01.inp seven lines will be extracted.
+
+- MATCHEDLINE = “tail” will extract the last line from group of lines found by regex.
+
+MATCHEDLINE = “head” will extract the first line from group of lines found by regex.
+MATCHEDLINE = “8” will extract the 8th line from group of lines found by regex.
+
+- VALUE = .0000004 or VALUE = .64506 – correct value for comparison
+
+- Tol = GamessTst.tolG or TOL = GamessTst.tolO – predefined tolerances that are decoded into 0.00001 and 0.0001, respectively.
+
+- LABEL = "Gerr" or LABEL = “Oerr” specify the type of extracted value, e.g. RMS gradient in a.u. or IR intensity, respectively
+
+- FOLLOWINGLINE = “head” selects first line after the line extracted by MATCHEDLINE
+
+USAGE
+*******
+1. Edit INP files and define the tests using the syntax described above.
+2. Execute the tests by adding –t option to standard ggamess.py execution.
+
+If GAMESS terminates correctly GAMESS output file is automatically analyzed
+according to the tests defined in a given INP file.
+
+3. Report from the test in generated to standard output. Example report:
+
+./ggamess.py test/data/ -N -s new -R 2012R1 -vvv
+
+gc3.gc3libs: INFO: Running the remaining 43 tests.
+
+ 
+
+test/data/exam43.inp: Eerr=0.00E+00  Passed.
+
+test/data/exam26.inp: Gerr=0.00E+00  Passed.
+
+test/data/exam33.inp: EAerr=0.00E+00  Passed.
+
+test/data/exam23.inp: EBerr=0.00E+00  Passed.
+
+test/data/exam28.inp: EXCerreV=3.67E-01  Passed.
+
+test/data/exam07.inp: OSCerr=5.00E-03  Passed.
+
+test/data/exam40.inp: Gerr=2.05E-02  Passed.
+
+test/data/exam03.inp: Eerr=0.00E+00  Passed.
+
+test/data/exam35.inp: Gerr=0.00E+00  Passed.
+
+test/data/exam06.inp: Eerr=0.00E+00  Passed.
+
+test/data/exam17.inp: Gerr=0.00E+00  Passed.
+
+test/data/exam16.inp: Eerr=0.00E+00         Passed.
+
+test/data/exam01.inp: Eerr=0.00E+00         Passed.
+
+Modified Files
+***************
+Following files have been added to or modified in GC3Pie:
+
+- ggamess.py
+- testUtils.py
+- testLine.py, testNextLine.py
+
+
+NOTES
+*******
+
+- Incorrect grepex expression is not supported. Example:grepLinesAndAnalyze("TOTAL \s INTERACTION \s (DELTA", .. will raise a traceback.
+- Special characters such as : < ( * need to be defined as /< /( /* 
+

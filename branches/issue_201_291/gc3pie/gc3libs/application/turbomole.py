@@ -44,6 +44,9 @@ class TurbomoleApplication(gc3libs.Application):
 
     :param others: Path(s) to additional input files.
     """
+
+    application_name = 'turbomole'
+
     def __init__(self, program, control, *others, **extra_args):
         src_wrapper_sh = resource_filename(
             Requirement.parse("gc3pie"), "gc3libs/etc/turbomole.sh")
@@ -61,7 +64,7 @@ class TurbomoleApplication(gc3libs.Application):
         extra_args.setdefault('join', True)
         extra_args.setdefault('stdout', program + '.log')
         extra_args.setdefault('output_dir', None)
-        
+
         gc3libs.Application.__init__(
             self,
             arguments = [ "./turbomole.sh", program ],
@@ -83,7 +86,7 @@ class TurbomoleApplication(gc3libs.Application):
             return
         self.execution.exitcode = 0 # SUCCESS
         return
-        
+
 
 class TurbomoleDefineApplication(gc3libs.Application):
     """
@@ -103,6 +106,9 @@ class TurbomoleDefineApplication(gc3libs.Application):
 
     :param others: Path(s) to additional input files.
     """
+
+    application_name = 'turbomole_define'
+
     def __init__(self, program, define_in, coord, *others, **extra_args):
         src_wrapper_sh = resource_filename(
             Requirement.parse("gc3pie"), "gc3libs/etc/turbomole.sh")
@@ -121,7 +127,7 @@ class TurbomoleDefineApplication(gc3libs.Application):
         extra_args.setdefault('join', True)
         extra_args.setdefault('stdout', program + '.log')
         extra_args.setdefault('output_dir', None)
-        
+
         gc3libs.Application.__init__(
             self,
             arguments = [ "./turbomole.sh", program ],

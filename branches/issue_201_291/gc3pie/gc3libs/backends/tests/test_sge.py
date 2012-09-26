@@ -21,6 +21,7 @@
 __docformat__ = 'reStructuredText'
 __version__ = '$Revision$'
 
+import datetime
 import os
 import tempfile
 
@@ -29,6 +30,8 @@ from nose.tools import assert_equal
 import gc3libs
 import gc3libs.core
 import gc3libs.config
+from gc3libs.quantity import Memory, kB, MB, GB, Duration, seconds, minutes, hours
+
 State = gc3libs.Run.State
 
 from faketransport import FakeTransport
@@ -37,18 +40,18 @@ from faketransport import FakeTransport
 
 
 def correct_submit(jobid=123):
-    out = """Your job %s ("DemoPBSApp") has been submitted
+    out = """Your job %s ("DemoSGEApp") has been submitted
 """ % jobid
     return (0, out, "")
 
 def correct_qstat_queued(jobid=123):
-    out = """  %s 0.00000 DemoPBSApp antonio      qw    03/15/2012 08:53:34                                    1
+    out = """  %s 0.00000 DemoSGEApp antonio      qw    03/15/2012 08:53:34                                    1
 """ % jobid
     return (0, out, "")
 
 
 def correct_qstat_running(jobid=123):
-    out = """  %s 0.55500 DemoPBSApp antonio      r     03/15/2012 08:53:42 all.q@compute-0-2.local            1
+    out = """  %s 0.55500 DemoSGEApp antonio      r     03/15/2012 08:53:42 all.q@compute-0-2.local            1
 """ % jobid
     return (0, out, "")
 
@@ -72,7 +75,7 @@ group        antonio
 owner        antonio
 project      NONE
 department   defaultdepartment
-jobname      DemoPBSApp
+jobname      DemoSGEApp
 jobnumber    %s
 taskid       undefined
 account      sge
@@ -113,7 +116,7 @@ arid         undefined
     return (0, out, "")
 
 
-def qsub_failed_jobnamestartswithdigit(jobname='123DemoPBSApp'):
+def qsub_failed_jobnamestartswithdigit(jobname='123DemoSGEApp'):
     out = ""
     err = """Unable to run job: denied: "%s" is not a valid object name (cannot start with a digit).
 Exiting.
@@ -180,9 +183,9 @@ username=NONEXISTENT
 
         self.core = gc3libs.core.Core(self.cfg)
 
-        b = self.core.get_backend('example')
-        b.transport = FakeTransport()
-        self.transport = b.transport
+        self.backend = self.core.get_backend('example')
+        self.backend.transport = FakeTransport()
+        self.transport = self.backend.transport
         # Basic responses
         self.transport.expected_answer['qstat'] = qstat_notfound()
         self.transport.expected_answer['tracejob'] = qacct_notfound()
@@ -203,16 +206,16 @@ username=NONEXISTENT
             assert False
         except Exception, e:
             assert isinstance(e, gc3libs.exceptions.LRMSError)
-        assert app.execution.state == State.NEW
+        assert_equal(app.execution.state, State.NEW)
 
         # This second example will show how the Application.__init__()
         # method changes the jobname in order not to have a digit at the
         # beginning of it.
         app = FakeApp(jobname='123Demo')
-        assert app.jobname == '123Demo'
+        assert_equal(app.jobname, 'GC3Pie.123Demo')
         self.transport.expected_answer['qsub'] = correct_submit()
         self.core.submit(app)
-        assert app.execution.state == State.SUBMITTED
+        assert_equal(app.execution.state, State.SUBMITTED)
 
 
     #     # Submission failed (unauthrozed user):
@@ -221,7 +224,7 @@ username=NONEXISTENT
     #         self.core.submit(app)
     #     except Exception, e:
     #         assert isinstance(e, gc3libs.exceptions.LRMSError)
-    #     assert app.execution.state == State.NEW
+    #     assert_equal(app.execution.state, State.NEW)
 
 
     def test_sge_basic_workflow(self):
@@ -229,26 +232,26 @@ username=NONEXISTENT
         # Succesful submission:
         self.transport.expected_answer['qsub'] = correct_submit()
         self.core.submit(app)
-        assert app.execution.state == State.SUBMITTED
+        assert_equal(app.execution.state, State.SUBMITTED)
 
 
         # Update state. We would expect the job to be SUBMITTED
         self.transport.expected_answer['qstat'] = correct_qstat_queued()
         self.transport.expected_answer['qacct'] = qacct_notfound()
         self.core.update_job_state(app)
-        assert app.execution.state == State.SUBMITTED
+        assert_equal(app.execution.state, State.SUBMITTED)
 
         # Update state. We would expect the job to be RUNNING
         self.transport.expected_answer['qstat'] = correct_qstat_running()
         self.transport.expected_answer['qacct'] = qacct_notfound()
         self.core.update_job_state(app)
-        assert app.execution.state == State.RUNNING
+        assert_equal(app.execution.state, State.RUNNING)
 
         # Job done. qstat doesn't find it, qacct should.
         self.transport.expected_answer['qstat'] = qstat_notfound()
         self.transport.expected_answer['qacct'] = correct_qacct_done()
         self.core.update_job_state(app)
-        assert app.execution.state == State.TERMINATING
+        assert_equal(app.execution.state, State.TERMINATING)
 
 
     def test_qacct_parsing(self):
@@ -257,14 +260,25 @@ username=NONEXISTENT
         self.core.submit(app)
         self.transport.expected_answer['qacct'] = correct_qacct_done()
         self.core.update_job_state(app)
-        assert app.execution.state == State.TERMINATING
+        assert_equal(app.execution.state, State.TERMINATING)
 
         job = app.execution
-        assert job.exitcode == 0
-        assert job.returncode == 0
-        assert job['used_walltime'] == '10'
-        assert job['used_memory'] == '13.152M'
-        assert job['used_cpu_time'] == '0.248'
+        # common job reporting values (see Issue 78)
+        assert_equal(job.exitcode,        0)
+        assert_equal(job.returncode,      0)
+        assert_equal(job.duration,        10*seconds)
+        assert (job.max_used_memory - 13.152*MB) < 1*MB # floating point approx
+        assert_equal(job.used_cpu_time,   0.248*seconds)
+        # SGE-specific values
+        assert_equal(job.sge_queue,       'all.q')
+        assert_equal(job.sge_jobname,     'DemoSGEApp')
+        assert_equal(job.sge_submission_time,
+                     datetime.datetime(year=2012, month=3, day=15, hour=8, minute=42, second=46))
+        assert_equal(job.sge_start_time,
+                     datetime.datetime(year=2012, month=3, day=15, hour=8, minute=43, second=0))
+        assert_equal(job.sge_completion_time,
+                     datetime.datetime(year=2012, month=3, day=15, hour=8, minute=43, second=10))
+        assert_equal(job.sge_failed,      0)
 
     def test_delete_job(self):
         app = FakeApp()
@@ -273,17 +287,17 @@ username=NONEXISTENT
 
         self.transport.expected_answer['qdel'] = qdel_success()
         self.core.kill(app)
-        assert app.execution.state == State.TERMINATED
+        assert_equal(app.execution.state, State.TERMINATED)
 
     def test_delete_job(self):
         app = FakeApp()
         self.transport.expected_answer['qsub'] = correct_submit()
         self.core.submit(app)
-        assert app.execution.state == State.SUBMITTED
+        assert_equal(app.execution.state, State.SUBMITTED)
 
         self.transport.expected_answer['qdel'] = qdel_failed_acl()
         self.core.kill(app)
-        assert app.execution.state == State.TERMINATED
+        assert_equal(app.execution.state, State.TERMINATED)
 
 
 

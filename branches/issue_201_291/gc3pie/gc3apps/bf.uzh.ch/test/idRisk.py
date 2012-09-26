@@ -46,6 +46,8 @@ from supportGc3 import wrapLogger
 logger = wrapLogger(loggerName = __name__ + 'logger', streamVerb = 'DEBUG', logFile = __name__ + '.log')
 
 class idRiskApplication(Application):
+    application_name = 'idrisk'
+
     _invalid_chars = re.compile(r'[^_a-zA-Z0-9]+', re.X)
 
     def __init__(self, executable, arguments, inputs, outputs, output_dir, **extra_args):

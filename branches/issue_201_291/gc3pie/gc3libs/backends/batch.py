@@ -70,7 +70,8 @@ def generic_filename_mapping(jobname, jobid, file_name):
     except KeyError:
         return file_name
 
-def make_remote_and_local_path_pair(transport, job, remote_relpath, local_root_dir, local_relpath):
+
+def _make_remote_and_local_path_pair(transport, job, remote_relpath, local_root_dir, local_relpath):
     """
     Return list of (remote_path, local_path) pairs corresponding to
     """
@@ -323,6 +324,7 @@ class BatchSystem(LRMS):
                 script_filename = ('./script.%x.sh' % random.randint(0, sys.maxint))
                 # save script to a temporary file and submit that one instead
                 local_script_file = tempfile.NamedTemporaryFile()
+                local_script_file.write('#!/bin/sh\n')
                 local_script_file.write(aux_script)
                 local_script_file.flush()
                 # upload script to remote location
@@ -436,8 +438,8 @@ class BatchSystem(LRMS):
                 if exit_code == 0:
                     jobstatus = self._parse_acct_output(stdout)
                     job.update(jobstatus)
-                    if 'exit_status' in jobstatus:
-                        job.returncode = int(jobstatus['exit_status'])
+                    if 'exitcode' in jobstatus:
+                        job.returncode = int(jobstatus['exitcode'])
                         job.state = Run.State.TERMINATING
                     return job.state
 
@@ -568,7 +570,7 @@ class BatchSystem(LRMS):
                 if remote_relpath == gc3libs.ANY_OUTPUT:
                     remote_relpath = ''
                     local_relpath = ''
-                stageout += make_remote_and_local_path_pair(
+                stageout += _make_remote_and_local_path_pair(
                     self.transport, job, remote_relpath, download_dir, local_relpath)
 
             # copy back all files, renaming them to adhere to the ArcLRMS convention

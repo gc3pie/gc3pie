@@ -85,6 +85,9 @@ class GMhcCoevApplication(Application):
     Custom class to wrap the execution of a single step of the
     ``MHC_coev_*`` program by A. B. Wilson and collaborators.
     """
+
+    application_name = 'mhc_coev'
+
     def __init__(self,
                  N, p_mut_coeff, choose_or_rand, sick_or_not, off_v_last,
                  output_dir, latest_work=None, executable=None, **extra_args):
@@ -274,9 +277,13 @@ class GMhcCoevTask(SequentialTaskCollection):
             report = open(report_filename, 'a')
         else:
             report = open(report_filename, 'w')
+        report.write(
+            "gmhc_coev: About last job: duration=%s, exitcode=%d, max_used_memory=%s\n"
+            % (last_run.duration, last_run.exitcode, last_run.max_used_memory))
+
 
         # 0. did the job run at all?
-        if last_run.used_walltime < 5: # 5 minutes
+        if last_run.duration < 5*minutes:
             report.write(
                 "gmhc_coev: Job %s did not run at all,"
                 " will try resubmitting to a different resource.\n"
@@ -286,7 +293,7 @@ class GMhcCoevTask(SequentialTaskCollection):
 
         # 1. out of memory?
         elif (# generic memory error
-            (last_run.used_memory >= self.extra['requested_memory'])
+            (last_run.max_used_memory >= self.extra['requested_memory'])
             # MATLAB-specific error condition
             or (last_run.exitcode == 255
                 and ('Out of memory.' in stderr_contents
@@ -300,7 +307,7 @@ class GMhcCoevTask(SequentialTaskCollection):
         # 2. not enough time to compute even one generation?
         elif (generation_files_count == 0
               # be sure that the job has run for at least the expected time, +/- 30 minutes
-              and (last_run.used_walltime / 60) > (self.single_run_duration - 30)):
+              and (last_run.duration > (self.single_run_duration - 30*minutes))):
             self.single_run_duration = _increase(self.single_run_duration, 24*hours,
                                                  increase=4*hours)
             report.write(
