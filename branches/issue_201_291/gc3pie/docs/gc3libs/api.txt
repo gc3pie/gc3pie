@@ -24,9 +24,9 @@
 .. automodule:: gc3libs.core
     :members:
 
-`gc3libs.dag`
-=============
-.. automodule:: gc3libs.dag
+`gc3libs.workflow`
+==================
+.. automodule:: gc3libs.workflow
     :members:
 
 `gc3libs.exceptions`
