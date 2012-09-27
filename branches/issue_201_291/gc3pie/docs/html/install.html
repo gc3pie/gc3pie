@@ -82,7 +82,7 @@ us to identify the problem.</p>
 <p>The installation script accept a few options that select alternatives
 to the standard behavior.  In order to use these options, you have to:</p>
 <ol class="arabic">
-<li><p class="first">download the installation script into a file named <tt class="file docutils literal"><span class="pre">install.sh</span></tt></p>
+<li><p class="first">download the installation script into a file named <tt class="file docutils literal"><span class="pre">install.sh</span></tt>:</p>
 <div class="highlight-python"><pre>wget http://gc3pie.googlecode.com/svn/install.sh</pre>
 </div>
 </li>
@@ -351,17 +351,17 @@ mailing-list &lt;gc3pie&#64;googlegroups.com&gt;</cite> is there to help you :-)
 <p>These instructions show how to upgrade the GC3Pie scripts to the
 latest version found in the GC3 svn repository.</p>
 <ol class="arabic">
-<li><p class="first"><cite>cd</cite> to the directory containing the GC3Pie virtualenv;
-assuming it&#8217;s named <tt class="docutils literal"><span class="pre">gc3pie</span></tt> as in the above installation
+<li><p class="first"><strong class="command">cd</strong> to the directory containing the GC3Pie virtualenv;
+assuming it is named <tt class="docutils literal"><span class="pre">gc3pie</span></tt> as in the above installation
 instructions, you can issue the commands:</p>
 <div class="highlight-python"><pre>cd $HOME/gc3pie # use '/opt/gc3pie' if root</pre>
 </div>
 </li>
-<li><p class="first">Activate the virtualenv</p>
+<li><p class="first">Activate the virtualenv:</p>
 <div class="highlight-python"><pre>source bin/activate</pre>
 </div>
 </li>
-<li><p class="first">Upgrade the <cite>gc3pie</cite> source and run the <cite>setup.py</cite> script again:</p>
+<li><p class="first">Upgrade the <cite>gc3pie</cite> source and run the <tt class="file docutils literal"><span class="pre">setup.py</span></tt> script again:</p>
 <div class="highlight-python"><pre>cd src
 svn up
 env CC=gcc ./setup.py develop</pre>

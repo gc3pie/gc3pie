@@ -84,6 +84,15 @@ command to print a short usage message and exit immediately after.</p>
 started packing many processing units into a single package: now the
 term CPU is used for the package, and <em>core</em> is one of the several
 independent processing units within the package.</dd>
+<dt id="term-cpu-time">CPU Time</dt>
+<dd>The total time that computing units (processor <a class="reference internal" href="#term-core"><em class="xref std std-term">core</em></a>) are
+actively executing a <a class="reference internal" href="#term-job"><em class="xref std std-term">job</em></a>.  For single-threaded jobs, this
+is normally <em>less</em> then the actual duration (&#8216;wall-clock time&#8217; or
+<a class="reference internal" href="#term-walltime"><em class="xref std std-term">walltime</em></a>), because some time is lost in I/O and system
+operations.  For parallel jobs the CPU time is normally larger
+than the duration, because several processor cores are active on
+the job at the same time; the quotient of the CPU time and the
+duration measures the efficiency of the parallel job.</dd>
 <dt id="term-job">Job</dt>
 <dd>A computational job is a single run of a non-interactive
 application.  The prototypical example is a run of <a class="reference external" href="http://www.msg.ameslab.gov/gamess/">GAMESS</a> on a
