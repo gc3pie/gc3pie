@@ -63,19 +63,19 @@ class GamessTestSuite:
 			if re.search(pattern,line):
 				r.append(line)
 		return r
-	
+# final_flag is true if the tests defined for that input file were all correct. final_flag is set first in self.generate_tests()	
 	def runTests(self):
+		if self.final_flag is False:
+			return
 		self.log = []
-		self.final_flag = True
-		self.is_correct = False
 		if self.filename_inp is None:
 		   gc3libs.log.debug("The list with tests is empty. Skipping.")
 	 	   return
-		#TODO: if Failed testLogs is empty - fix
+		#import pdb;pdb.set_trace()
 		for testObj in self.exQ:
-			(self.is_correct, test_log) = testObj.run()
+			(test_correct, test_log) = testObj.run()
 			local_flag = False
-			if (self.is_correct):
+			if (test_correct):
 				local_flag = True
 			else:
 				local_flag = False
@@ -86,6 +86,7 @@ class GamessTestSuite:
 # In case the files do not exist a self.log stores the error message and the execution continues.
 
 	def generate_tests(self,filename_inp, filename_out):
+		self.final_flag = False # Default behaviour. 
 		try:	
 			file = open(filename_inp, 'r') 
 			foundlines = self.grep("ggamess test", file)	
@@ -98,6 +99,7 @@ class GamessTestSuite:
 			return 
 		if foundlines is None:
 			gc3libs.log.debug("File %s does not contain tests. Skipping.", filename_inp)
+			self.log("File "+ filename_inp + "  does not contain tests. Skipping.")
 			return 
 		self.filename_inp = filename_inp
 		self.filename_out =  filename_out		
@@ -108,6 +110,7 @@ class GamessTestSuite:
 		label_follow = "grepAndFollow"  
 		suffix1 = len(label_analyze+"(")
 		suffix2 = len(label_follow+"(")
+		#import pdb;pdb.set_trace()
 		for line in foundlines:
 		    if  line.find(label_analyze)> 0:
 			pos1 = line.find(label_analyze)+suffix1  
@@ -149,25 +152,5 @@ class GamessTestSuite:
 			 except AttributeError:
 				gc3libs.log.warning("Attribute error. arguments %s in function %s from object %s on file %s are incorrect", args, function, app, filename_out)                                                                           		
 			 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+		self.final_flag = True # Success. 
 

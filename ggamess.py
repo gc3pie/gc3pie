@@ -189,6 +189,7 @@ class GamessTestApplication(GamessApplication):
 					  )
 	def terminated(self):
 		GamessApplication.terminated(self)
+		import pdb;pdb.set_trace()
 		file_input = self.inp_file_path
 		file_output = os.path.join(self.output_dir, self.outputs[self.stdout].path)
 		if self.execution.exitcode == 0: 
