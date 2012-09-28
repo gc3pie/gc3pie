@@ -58,10 +58,13 @@ class GDemoScript(gc3libs.cmdline.SessionBasedScript):
     version = '0.1'
 
     def new_tasks(self, extra):
-        yield ('GDemoApp',
-               GDemoSimpleApp,
-               [], extra)
+        return [
+            ('GDemoApp',
+             GDemoSimpleApp,
+             [],
+             extra,),
+            ]
 
 if __name__ == "__main__":
-    from exercise_B import GDemoScript
+    from exercise_B_1 import GDemoScript
     GDemoScript().run()
