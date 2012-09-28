@@ -59,10 +59,12 @@ class GDemoScript(gc3libs.cmdline.SessionBasedScript):
         # GC3Pie will delay submission of jobs if these exceed the
         # maximum number of jobs for a resource. Please note that in
         # `exercise_A` you have to do it by yourself.
+        jobs = []
         for i in range(10):
-            yield ('GDemoApp',
+            jobs.append( ('GDemoApp',
                    GDemoSimpleApp,
-                   [], extra)
+                   [], extra))
+        return jobs
 
 if __name__ == "__main__":
     from exercise_B_2 import GDemoScript
