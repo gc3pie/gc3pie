@@ -1158,7 +1158,6 @@ class SessionBasedScript(_Script):
                        " destination directory does not exist, it is created."
                        " The following strings will be substituted into DIRECTORY,"
                        " to specify an output location that varies with each submitted job:"
-                       " the string 'PATH' is replaced by the directory where the job input resides;"
                        " the string 'NAME' is replaced by the job name;"
                        " 'DATE' is replaced by the submission date in ISO format (YYYY-MM-DD);"
                        " 'TIME' is replaced by the submission time formatted as HH:MM."
