@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="iso-8859-1"?>
+<input xsi:noNamespaceSchemaLocation="simulator.xsd" print_level="1" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" job_name="nalaf4_m">
+  <reference_intensities file_name="ref.xml" file_format="xml"></reference_intensities>
+  <average_structure>
+    <file format="cif" name="nalaf4_big.cif" />
+    <atomic_displacement>
+      <adp atom="F1" />
+    </atomic_displacement>
+  </average_structure>
+  <disentanglement translational_symmetry_directions="c">
+    <user_defined>
+      <chemical_units_list>
+        <chemical_unit label="NALA" probability="0.5" atom_list="Na2;La2,(X,Y,Z+1/2)"></chemical_unit>
+        <chemical_unit label="F" probability="1" atom_list="F1"></chemical_unit>
+      </chemical_units_list>
+      <sets_of_alternatives_list>
+        <set_of_alternatives label="soa" chemical_units_list="NALA;NALA,(X,Y,1-Z)"></set_of_alternatives>
+        <set_of_alternatives label="soa_f" chemical_units_list="F"></set_of_alternatives>
+      </sets_of_alternatives_list>
+    </user_defined>
+  </disentanglement>
+  <disordered_crystal_simulation>
+    <default_crystal_builder n_MC_cycles="40" crystal_dimensions="100,100,1" />
+  </disordered_crystal_simulation>
+  <interactions>
+    <interaction>
+      <discrete parameters="p1">
+        <chemical_units>NALA;NALA,(1,0,0)</chemical_units>
+      </discrete>
+    </interaction>
+    <interaction>
+      <spring parameters="s1;r1">
+        <atoms>F1;Na2</atoms>
+      </spring>
+    </interaction>
+    <interaction>
+      <spring parameters="s2;r2">
+        <atoms>F1;La2</atoms>
+      </spring>
+    </interaction>
+  </interactions>
+  <independent_parameters>
+    <parameter label="p1" value="0.35" />
+    <parameter label="s1" value="20" />
+    <parameter label="r1" value="2.5" />
+    <parameter label="s2" value="30" />
+    <parameter label="r2" value="2.6" />
+  </independent_parameters>
+  <intensity_calculation lot_dimensions="20,20,1" n_lots="20" form_factor_type="x-ray" />
+  <run_type>
+    <optimize_model n_clones="1">
+      <output>
+        <crystals output_file_formats="xml,discus,xyz,pdb" />
+        <intensities output_file_formats="xml,vtk" print_clone_intensities="false" />
+      </output>
+      <optimization_method>
+        <differential_evolution n_gene_sets="5" n_generations="6">
+          <constraints>
+            <parameter name="s1" min="10" max="80" />
+            <parameter name="r1" min="2.2" max="2.8" />
+            <parameter name="s2" min="15" max="70" />
+            <parameter name="r2" min="2.2" max="2.8" />
+            <parameter name="p1" min="-0.5" max="0.7" />
+          </constraints>
+        </differential_evolution>
+      </optimization_method>
+    </optimize_model>
+  </run_type>
+  <analysis output="cuau_m.an">
+    <analyses_list>
+      <composition />
+      <conditional_probability>
+        <conditions_list>
+          <chemical_unit_condition chemical_units_list="NALA,(X+1,Y,Z)" />
+        </conditions_list>
+      </conditional_probability>
+    </analyses_list>
+  </analysis>
+</input>
