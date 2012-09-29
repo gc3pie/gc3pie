@@ -235,7 +235,6 @@ class ABC_Workflow(SessionBasedScript):
 # dimensions+gc3file --> compiling gfit + abc
          if self.params.dimensions and self.params.g3cfile:
              name = "Gfit3C_"+str(os.path.basename(self.params.g3cfile))
-             #self.real_outputfolder = self.make_directory_path(self.params.output, name)
 # yield for MainSequential_ABC
              yield (name, MainSequentialABC, [
                      name,

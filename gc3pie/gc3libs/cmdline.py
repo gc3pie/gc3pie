@@ -744,7 +744,7 @@ class SessionBasedScript(_Script):
                        " matching the glob pattern '%s'"
                        % self.input_filename_pattern)
 
-    def make_directory_path(self, pathspec, jobname, *args):
+    def make_directory_path(self, pathspec, jobname):
         """
         Return a path to a directory, suitable for storing the output
         of a job (named after `jobname`).  It is not required that the
@@ -761,27 +761,13 @@ class SessionBasedScript(_Script):
           * ``SESSION`` is replaced with the name of the current session
             (as specified by the ``-s``/``--session`` command-line option)
             with a suffix ``.out`` appended;
-          * ``PATH`` is replaced with the path to directory containing
-            `args[0]` (if it's an existing filename), or to the
-            current directory;
           * ``NAME`` is replaced with `jobname`;
           * ``DATE`` is replaced with the current date, in *YYYY-MM-DD* format;
           * ``TIME`` is replaced with the current time, in *HH:MM* format.
 
         """
-        if len(args) == 0:
-            path = os.getcwd()
-        else:
-            arg0 = str(args[0])
-            if os.path.isdir(arg0):
-                path = arg0
-            elif os.path.isfile(arg0):
-                path = os.path.dirname(arg0)
-            else:
-                path = os.getcwd()
         return (pathspec
                 .replace('SESSION', self.params.session + '.out')
-                .replace('PATH', path)
                 .replace('NAME', jobname)
                 .replace('DATE', time.strftime('%Y-%m-%d'))
                 .replace('TIME', time.strftime('%H:%M')))

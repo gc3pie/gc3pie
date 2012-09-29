@@ -394,7 +394,7 @@ newly-created jobs so that this limit is never exceeded.
         self.actions['output'].default = 'NPOPSIZE/PARAMS/ITERATION'
 
 
-    def make_directory_path(self, pathspec, jobname, *args):
+    def make_directory_path(self, pathspec, jobname):
         """
         Return a path to a directory, suitable for storing the output
         of a job (named after `jobname`).  It is not required that the
@@ -414,7 +414,7 @@ newly-created jobs so that this limit is never exceeded.
             .replace('POPSIZE', str(N))
             .replace('PARAMS', basename)
             .replace('ITERATION', iteration),
-            jobname, *args)
+            jobname)
 
 
     def new_tasks(self, extra):

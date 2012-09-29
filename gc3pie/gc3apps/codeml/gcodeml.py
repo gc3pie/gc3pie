@@ -212,12 +212,10 @@ of newly-created jobs so that this limit is never exceeded.
             kwargs['requested_cores'] = self.params.ncores
             kwargs['requested_walltime'] = self.params.walltime
             # Use the `make_directory_path` method (from
-            # `SessionBasedScript`) to expand strings like ``PATH``,
-            # ``NAME``, etc. in the template.  The ``PATH`` will be
-            # set from the directory containing the first ``.ctl``
-            # file.
+            # `SessionBasedScript`) to expand strings like
+            # ``NAME``, etc. in the template.
             jobname = (os.path.basename(dirpath) or dirpath) + '.out'
-            kwargs['output_dir'] = self.make_directory_path(self.params.output, jobname, *ctl_files)
+            kwargs['output_dir'] = self.make_directory_path(self.params.output, jobname)
 
             app = CodemlApplication(*ctl_files, **kwargs)
 
