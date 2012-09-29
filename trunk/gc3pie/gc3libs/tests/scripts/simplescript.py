@@ -30,16 +30,48 @@ class SimpleScript(SessionBasedScript):
     version = '1'
 
     def new_tasks(self, extra):
-        def myfunc(*args, **extra_args):
-            return Application(args,
-                               [],
-                               ['SimpleScript.stdout'],
-                               'SimpleScript.out.d',
-                               join=True)
-        yield ('MyJob',
-               myfunc,
-               ('/bin/bash', '-c', 'echo ciao > SimpleScript.stdout'),
-               {})
+
+        default_output_dir = extra.pop('output_dir')
+        return [
+            # old-style
+            ('MyJob',
+               Application,
+               [
+                   # arguments
+                   ('/bin/bash', '-c', 'echo ciao > SimpleScript.stdout'),
+                   # inputs
+                   [],
+                   # outputs
+                   ['SimpleScript.stdout'],
+                 ],
+             dict(output_dir='SimpleScript.out.d', join=True)),
+            # new style, with explicit output dir
+            Application(
+                # arguments
+                ('/bin/bash', '-c', 'echo ciao > SimpleScript.stdout'),
+                # inputs
+                [],
+                # outputs
+                ['SimpleScript.stdout'],
+                # output_dir
+                'SimpleScript.out2.d',
+                # extra args
+                join=True,
+                **extra
+                ),
+            # new style, with output dir gotten from `self.extra`
+            Application(
+                # arguments
+                ('/bin/bash', '-c', 'echo ciao > SimpleScript.stdout'),
+                # inputs
+                [],
+                # outputs
+                ['SimpleScript.stdout'],
+                join=True,
+                output_dir = default_output_dir,
+                **extra
+                ),
+            ]
 
 ## main: run tests
 

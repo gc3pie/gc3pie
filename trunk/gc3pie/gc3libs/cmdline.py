@@ -790,8 +790,17 @@ class SessionBasedScript(_Script):
 
         See also: `new_tasks`:meth:
         """
+        ## default creation arguments
+        self.extra.setdefault('requested_cores', self.params.ncores)
+        self.extra.setdefault('requested_memory',
+                            self.params.ncores * self.params.memory_per_core)
+        self.extra.setdefault('requested_walltime', self.params.walltime)
+        # XXX: assumes `make_directory_path` substitutes ``NAME`` with `jobname`; keep in sync!
+        self.extra.setdefault('output_dir',
+                              self.make_directory_path(self.params.output, 'NAME'))
+
         ## build job list
-        new_jobs = list(self.new_tasks(self.extra))
+        new_jobs = list(self.new_tasks(self.extra.copy()))
         # pre-allocate Job IDs
         if len(new_jobs) > 0:
             # XXX: can't we just make `reserve` part of the `IdFactory` contract?
@@ -803,34 +812,52 @@ class SessionBasedScript(_Script):
 
         # add new jobs to the session
         existing_job_names = self.session.list_names()
-        for jobname, cls, args, kwargs in new_jobs:
-            #self.log.debug("SessionBasedScript.process_args():"
-            #               " considering adding new job defined by:"
-            #               " jobname=%s cls=%s args=%s kwargs=%s ..."
-            #               % (jobname, cls, args, kwargs))
-            if jobname in existing_job_names:
-                #self.log.debug("  ...already existing job, skipping it.")
-                continue
-            #self.log.debug("New job '%s', adding it to session." % jobname)
-            kwargs.setdefault('jobname', jobname)
-            kwargs.setdefault('requested_cores', self.params.ncores)
-            kwargs.setdefault('requested_memory',
-                              self.params.ncores * self.params.memory_per_core)
-            kwargs.setdefault('requested_walltime', self.params.walltime)
-            kwargs.setdefault('output_dir',
-                              self.make_directory_path(self.params.output,
-                                                       jobname, *args))
-            # create a new `Application` object
-            try:
-                app = cls(*args, **kwargs)
-                self.session.add(app, flush=False)
-                self.log.debug("Added task '%s' to session." % jobname)
-            except Exception, ex:
-                self.log.error("Could not create job '%s': %s."
-                               % (jobname, str(ex)), exc_info=__debug__)
-                # XXX: should we raise an exception here?
-                #raise AssertionError("Could not create job '%s': %s: %s"
-                #                     % (jobname, ex.__class__.__name__, str(ex)))
+        warning_on_old_style_given = False
+        for n, item in enumerate(new_jobs):
+            if isinstance(item, tuple):
+                if not warning_on_old_style_given:
+                    self.log.warning("Using old-style new tasks list; please update the code!")
+                    warning_on_old_style_given = True
+                # build Task for (jobname, classname, args, kwargs)
+                jobname, cls, args, kwargs = item
+                if jobname in existing_job_names:
+                    continue
+                kwargs.setdefault('jobname', jobname)
+                kwargs.setdefault('output_dir',
+                                  self.make_directory_path(self.params.output, jobname))
+                kwargs.setdefault('requested_cores',    self.extra['requested_cores'])
+                kwargs.setdefault('requested_memory',   self.extra['requested_memory'])
+                kwargs.setdefault('requested_walltime', self.extra['requested_walltime'])
+                # create a new `Task` object
+                try:
+                    task = cls(*args, **kwargs)
+                except Exception, ex:
+                    self.log.error("Could not create job '%s': %s."
+                                   % (jobname, str(ex)), exc_info=__debug__)
+                    continue
+                    # XXX: should we raise an exception here?
+                    #raise AssertionError("Could not create job '%s': %s: %s"
+                    #                     % (jobname, ex.__class__.__name__, str(ex)))
+
+            elif isinstance(item, gc3libs.Task):
+                task = item
+                if 'jobname' not in task:
+                    task.jobname = ("%s-N%d" % (task.__class__.__name__, n+1))
+
+            else:
+                raise InternalError(
+                    "SessionBasedScript.process_args got %r (%s),"
+                    " but was expecting a gc3libs.Task instance" % (item, type(item)))
+
+            # patch output_dir if it's not changed from the default
+            if task.output_dir == self.extra['output_dir']:
+                # user did not change the `output_dir` default, expand it now
+                task.output_dir = self.make_directory_path(self.extra['output_dir'], task.jobname)
+
+            # all done, append to session
+            self.session.add(task, flush=False)
+            self.log.debug("Added task '%s' to session." % task.jobname)
+
 
     def new_tasks(self, extra):
         """
@@ -1281,7 +1308,12 @@ class SessionBasedScript(_Script):
                 self.log.info("Done cleaning up old session jobs, starting with new one afresh...")
 
         ## update session based on command-line args
-        self.process_args()
+        if len(self.session) == 0:
+            self.process_args()
+        elif self.params.args:
+            self.log.warning(
+                "Session already exists, ignoring command-line arguments: %s",
+                str.join(' ', self.params.args))
 
         # save the session list immediately, so newly added jobs will
         # be in it if the script is stopped here

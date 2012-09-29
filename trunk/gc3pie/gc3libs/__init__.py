@@ -855,14 +855,17 @@ class Application(Task):
 
         self.tags = extra_args.pop('tags', list())
 
-        jobname = extra_args.pop('jobname', self.__class__.__name__)
-        # Check whether the first character of a jobname is an
-        # integer. SGE does not allow job names to start with a
-        # number, so add a prefix...
-        if len(jobname) == 0:
-            jobname = "GC3Pie.%s.%s" % (self.__class__.__name__, id(self))
-        elif str(jobname)[0] in string.digits:
-            jobname = "GC3Pie.%s" % jobname
+        if 'jobname' in extra_args:
+            jobname = extra_args['jobname']
+            # Check whether the first character of a jobname is an
+            # integer. SGE does not allow job names to start with a
+            # number, so add a prefix...
+            if len(jobname) == 0:
+                gc3libs.log.warning("Empty string passed as jobname to %s", self)
+                jobname = "GC3Pie.%s.%s" % (self.__class__.__name__, id(self))
+            elif str(jobname)[0] in string.digits:
+                jobname = "GC3Pie.%s" % jobname
+            extra_args['jobname'] = jobname
 
         # task setup; creates the `.execution` attribute as well
         Task.__init__(self, **extra_args)
