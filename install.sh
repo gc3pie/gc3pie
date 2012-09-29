@@ -255,11 +255,20 @@ EOF
 
 install_gc3pie_via_pip () {
     PATH=$VENVDIR/bin:$PATH
-    if ! have_command pip; then
+    if ! test -x $VENVDIR/bin/pip; then
+        # sometimes virtualenv installs pip as pip-X.Y, try to patch this
+        for pip in $VENVDIR/bin/pip-*; do
+            if test -x $pip; then
+                ln -s $pip $VENVDIR/bin/pip
+                break
+            fi
+        done
+    fi
+    if ! test -x $VENVDIR/bin/pip; then
 cat 1>&2 <<EOF
-===============================================
-GC3Pie install: ERROR: 'pip' command not found.
-===============================================
+=====================================================================
+GC3Pie install: ERROR: cannot find command 'pip' in '$VENVDIR/bin'
+=====================================================================
 
 The script was unable to create a valid virtual environment. If the
 above output does not help you in solving the issue, please contact
@@ -272,8 +281,8 @@ Aborting installation!
 EOF
         exit 1
     fi
-    echo "Installing GC3Pie from PIP package"
-    pip install gc3pie
+    echo "Installing GC3Pie from PyPI package with '$VENVDIR/bin/pip' ..."
+    $VENVDIR/bin/pip install gc3pie
 }
 
 install_gc3pie_via_svn () {
