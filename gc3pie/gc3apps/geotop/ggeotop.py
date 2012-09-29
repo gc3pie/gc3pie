@@ -36,7 +36,7 @@ Contents of a typical input folder::
     maps/
 """
 
-__version__ = 'development version (SVN $Revision$)'
+__version__ = '2.0.0-rc1 version (SVN $Revision$)'
 # summary of user-visible changes
 __changelog__ = """
 
