@@ -1116,7 +1116,7 @@ implementation does nothing.</p>
 
 <dl class="method">
 <dt id="gc3libs.cmdline.SessionBasedScript.make_directory_path">
-<tt class="descname">make_directory_path</tt><big>(</big><em>pathspec</em>, <em>jobname</em>, <em>*args</em><big>)</big><a class="headerlink" href="#gc3libs.cmdline.SessionBasedScript.make_directory_path" title="Permalink to this definition">¶</a></dt>
+<tt class="descname">make_directory_path</tt><big>(</big><em>pathspec</em>, <em>jobname</em><big>)</big><a class="headerlink" href="#gc3libs.cmdline.SessionBasedScript.make_directory_path" title="Permalink to this definition">¶</a></dt>
 <dd><p>Return a path to a directory, suitable for storing the output
 of a job (named after <cite>jobname</cite>).  It is not required that the
 returned path points to an existing directory.</p>
@@ -1131,9 +1131,6 @@ within <cite>pathspec</cite>:</p>
 <li><tt class="docutils literal"><span class="pre">SESSION</span></tt> is replaced with the name of the current session
 (as specified by the <tt class="docutils literal"><span class="pre">-s</span></tt>/<tt class="docutils literal"><span class="pre">--session</span></tt> command-line option)
 with a suffix <tt class="docutils literal"><span class="pre">.out</span></tt> appended;</li>
-<li><tt class="docutils literal"><span class="pre">PATH</span></tt> is replaced with the path to directory containing
-<cite>args[0]</cite> (if it&#8217;s an existing filename), or to the
-current directory;</li>
 <li><tt class="docutils literal"><span class="pre">NAME</span></tt> is replaced with <cite>jobname</cite>;</li>
 <li><tt class="docutils literal"><span class="pre">DATE</span></tt> is replaced with the current date, in <em>YYYY-MM-DD</em> format;</li>
 <li><tt class="docutils literal"><span class="pre">TIME</span></tt> is replaced with the current time, in <em>HH:MM</em> format.</li>
@@ -1216,7 +1213,7 @@ description.</p>
 
 <dl class="method">
 <dt id="gc3libs.cmdline.SessionBasedScript.print_tasks_table">
-<tt class="descname">print_tasks_table</tt><big>(</big><em>output=&lt;open file '&lt;stdout&gt;'</em>, <em>mode 'w' at 0x2b55f06ed1e0&gt;</em>, <em>states=Enum(['TERMINATED'</em>, <em>'UNKNOWN'</em>, <em>'SUBMITTED'</em>, <em>'RUNNING'</em>, <em>'TERMINATING'</em>, <em>'STOPPED'</em>, <em>'NEW'])</em>, <em>only=&lt;type 'object'&gt;</em><big>)</big><a class="headerlink" href="#gc3libs.cmdline.SessionBasedScript.print_tasks_table" title="Permalink to this definition">¶</a></dt>
+<tt class="descname">print_tasks_table</tt><big>(</big><em>output=&lt;open file '&lt;stdout&gt;'</em>, <em>mode 'w' at 0x2b73995ce1e0&gt;</em>, <em>states=Enum(['TERMINATED'</em>, <em>'UNKNOWN'</em>, <em>'SUBMITTED'</em>, <em>'RUNNING'</em>, <em>'TERMINATING'</em>, <em>'STOPPED'</em>, <em>'NEW'])</em>, <em>only=&lt;type 'object'&gt;</em><big>)</big><a class="headerlink" href="#gc3libs.cmdline.SessionBasedScript.print_tasks_table" title="Permalink to this definition">¶</a></dt>
 <dd><p>Output a text table to stream <cite>output</cite>, giving details about
 tasks in the given states.</p>
 <p>Optional second argument <cite>states</cite> restricts the listing to
@@ -1385,6 +1382,140 @@ int.</p>
 <span class="gr">ArgumentTypeError</span>: <span class="n">&#39;ThisWillRaiseAnException&#39; is not a positive integer number.</span>
 </pre></div>
 </div>
+</dd></dl>
+
+</div>
+<div class="section" id="module-gc3libs.config">
+<span id="gc3libs-config"></span><h2><cite>gc3libs.config</cite><a class="headerlink" href="#module-gc3libs.config" title="Permalink to this headline">¶</a></h2>
+<p>Deal with GC3Pie configuration files.</p>
+<dl class="class">
+<dt id="gc3libs.config.Configuration">
+<em class="property">class </em><tt class="descclassname">gc3libs.config.</tt><tt class="descname">Configuration</tt><big>(</big><em>*locations</em>, <em>**extra_args</em><big>)</big><a class="headerlink" href="#gc3libs.config.Configuration" title="Permalink to this definition">¶</a></dt>
+<dd><p>In-memory representation of the GC3Pie configuration.</p>
+<p>This class provides facilities for:</p>
+<ul class="simple">
+<li>parsing configuration files (methods <a class="reference internal" href="#gc3libs.config.Configuration.load" title="gc3libs.config.Configuration.load"><tt class="xref py py-meth docutils literal"><span class="pre">load()</span></tt></a> and
+<a class="reference internal" href="#gc3libs.config.Configuration.merge_file" title="gc3libs.config.Configuration.merge_file"><tt class="xref py py-meth docutils literal"><span class="pre">merge_file()</span></tt></a>);</li>
+<li>validating the loaded values;</li>
+<li>instanciating the internal GC3Pie objects resulting from the
+configuration (methods <a class="reference internal" href="#gc3libs.config.Configuration.make_auth" title="gc3libs.config.Configuration.make_auth"><tt class="xref py py-meth docutils literal"><span class="pre">make_auth()</span></tt></a> and
+<tt class="xref py py-meth docutils literal"><span class="pre">make_resource()</span></tt>).</li>
+</ul>
+<p>The constructor takes a list of files to load (<cite>locations</cite>) and a
+list of key=value pairs to provide defaults for the configuration.
+Both lists are optional and can be omitted, resulting in a
+configuration containing only GC3Pie default values.</p>
+<p>Example 1: initialization from config file:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">os</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">example_cfgfile</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">dirname</span><span class="p">(</span><span class="n">__file__</span><span class="p">),</span> <span class="s">&#39;etc/gc3pie.conf.example&#39;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">cfg</span> <span class="o">=</span> <span class="n">Configuration</span><span class="p">(</span><span class="n">example_cfgfile</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">cfg</span><span class="o">.</span><span class="n">debug</span>
+<span class="go">&#39;0&#39;</span>
+</pre></div>
+</div>
+<p>Example 2: initialization from key=value list:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">cfg</span> <span class="o">=</span> <span class="n">Configuration</span><span class="p">(</span><span class="n">auto_enable_auth</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span> <span class="n">foo</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">bar</span><span class="o">=</span><span class="s">&#39;baz&#39;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">cfg</span><span class="o">.</span><span class="n">auto_enable_auth</span>
+<span class="go">False</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">cfg</span><span class="o">.</span><span class="n">foo</span>
+<span class="go">1</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">cfg</span><span class="o">.</span><span class="n">bar</span>
+<span class="go">&#39;baz&#39;</span>
+</pre></div>
+</div>
+<p>When both a configuration file <em>and</em> a key=value list is present,
+values in the configuration files override those in the key=value
+list:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">cfg</span> <span class="o">=</span> <span class="n">Configuration</span><span class="p">(</span><span class="n">example_cfgfile</span><span class="p">,</span> <span class="n">debug</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">cfg</span><span class="o">.</span><span class="n">debug</span>
+<span class="go">&#39;0&#39;</span>
+</pre></div>
+</div>
+<p>Example 3: default initialization:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">cfg</span> <span class="o">=</span> <span class="n">Configuration</span><span class="p">()</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">cfg</span><span class="o">.</span><span class="n">auto_enable_auth</span>
+<span class="go">True</span>
+</pre></div>
+</div>
+<dl class="attribute">
+<dt id="gc3libs.config.Configuration.auth_factory">
+<tt class="descname">auth_factory</tt><a class="headerlink" href="#gc3libs.config.Configuration.auth_factory" title="Permalink to this definition">¶</a></dt>
+<dd><p>The instance of <a class="reference internal" href="#gc3libs.authentication.Auth" title="gc3libs.authentication.Auth"><tt class="xref py py-class docutils literal"><span class="pre">gc3libs.authentication.Auth</span></tt></a> used to
+manage auth access for the resources.</p>
+<p>This is a <em>read-only</em> attribute, created upon first access
+with the values set in <cite>self.auths</cite> and <cite>self.auto_enabled</cite>.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="gc3libs.config.Configuration.load">
+<tt class="descname">load</tt><big>(</big><em>*locations</em><big>)</big><a class="headerlink" href="#gc3libs.config.Configuration.load" title="Permalink to this definition">¶</a></dt>
+<dd><p>Merge settings from configuration files into this <cite>Configuration</cite> instance.</p>
+<p>Environment variables and <cite>~</cite> references are expanded in the
+location file names.</p>
+<p>If any of the specified files does not exist or cannot be read
+(for whatever reason), a message is logged but the error is
+ignored.  However, a <cite>NoConfigurationFile</cite> exception is raised
+if <em>none</em> of the specified locations could be read.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name" colspan="2">Raises <a class="reference internal" href="#gc3libs.exceptions.NoConfigurationFile" title="gc3libs.exceptions.NoConfigurationFile">gc3libs.exceptions.NoConfigurationFile</a>:</th></tr>
+<tr class="field-odd field"><td>&nbsp;</td><td class="field-body">if none of the specified files could be read.</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="gc3libs.config.Configuration.make_auth">
+<tt class="descname">make_auth</tt><big>(</big><em>name</em><big>)</big><a class="headerlink" href="#gc3libs.config.Configuration.make_auth" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return factory for auth credentials configured in section <tt class="docutils literal"><span class="pre">[auth/name]</span></tt>.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="gc3libs.config.Configuration.make_resources">
+<tt class="descname">make_resources</tt><big>(</big><em>ignore_errors=True</em><big>)</big><a class="headerlink" href="#gc3libs.config.Configuration.make_resources" title="Permalink to this definition">¶</a></dt>
+<dd><p>Make backend objects corresponding to the configured resources.</p>
+<p>Return a dictionary, mapping the resource name (string) into
+the corresponding backend object.</p>
+<p>By default, errors in constructing backends (e.g., due to a
+bad configuration) are silently ignored: the offending
+configuration is just dropped.  This can be changed by setting
+the optional argument <cite>ignore_errors</cite> to <cite>False</cite>: in this
+case, an exception is raised whenever we fail to construct a
+backend.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="gc3libs.config.Configuration.merge_file">
+<tt class="descname">merge_file</tt><big>(</big><em>filename</em><big>)</big><a class="headerlink" href="#gc3libs.config.Configuration.merge_file" title="Permalink to this definition">¶</a></dt>
+<dd><p>Read configuration files and merge the settings into this <cite>Configuration</cite> object.</p>
+<p>Contrary to <a class="reference internal" href="#gc3libs.config.Configuration.load" title="gc3libs.config.Configuration.load"><tt class="xref py py-meth docutils literal"><span class="pre">load()</span></tt></a> (which see), the file name is taken
+literally and an error is raised if the file cannot be read
+for whatever reason.</p>
+<p>Any parameter which is set in the configuration files
+<tt class="docutils literal"><span class="pre">[DEFAULT]</span></tt> section, and whose name does not start with
+underscore (<tt class="docutils literal"><span class="pre">_</span></tt>) defines an attribute in the current
+<cite>Configuration</cite>.</p>
+<div class="admonition warning">
+<p class="first admonition-title">Warning</p>
+<p class="last">No type conversion is performed on values set this way - so
+they all end up being strings!</p>
+</div>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name" colspan="2">Raises <a class="reference internal" href="#gc3libs.exceptions.ConfigurationError" title="gc3libs.exceptions.ConfigurationError">gc3libs.exceptions.ConfigurationError</a>:</th></tr>
+<tr class="field-odd field"><td>&nbsp;</td><td class="field-body">if the
+configuration file does not exist, cannot be read, is
+corrupt or has wrong format.</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
 </dd></dl>
 
 </div>
@@ -2563,7 +2694,7 @@ texts coming from the same template.  Templates can be nested, and
 expansions generated recursviely.</p>
 <dl class="class">
 <dt id="gc3libs.template.Template">
-<em class="property">class </em><tt class="descclassname">gc3libs.template.</tt><tt class="descname">Template</tt><big>(</big><em>template</em>, <em>validator=&lt;function &lt;lambda&gt; at 0x3d91de8&gt;</em>, <em>**extra_args</em><big>)</big><a class="headerlink" href="#gc3libs.template.Template" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><tt class="descclassname">gc3libs.template.</tt><tt class="descname">Template</tt><big>(</big><em>template</em>, <em>validator=&lt;function &lt;lambda&gt; at 0x37d1aa0&gt;</em>, <em>**extra_args</em><big>)</big><a class="headerlink" href="#gc3libs.template.Template" title="Permalink to this definition">¶</a></dt>
 <dd><p>A template object is a pair <cite>(obj, keywords)</cite>.  Methods are
 provided to substitute the keyword values into <cite>obj</cite>, and to
 iterate over expansions of the given keywords (optionally
@@ -3445,7 +3576,7 @@ are not altered to reflect <cite>mode</cite>.</p>
 
 <dl class="function">
 <dt id="gc3libs.utils.prettyprint">
-<tt class="descclassname">gc3libs.utils.</tt><tt class="descname">prettyprint</tt><big>(</big><em>D</em>, <em>indent=0</em>, <em>width=0</em>, <em>maxdepth=None</em>, <em>step=4</em>, <em>only_keys=None</em>, <em>output=&lt;open file '&lt;stdout&gt;'</em>, <em>mode 'w' at 0x2b55f06ed1e0&gt;</em>, <em>_key_prefix=''</em>, <em>_exclude=None</em><big>)</big><a class="headerlink" href="#gc3libs.utils.prettyprint" title="Permalink to this definition">¶</a></dt>
+<tt class="descclassname">gc3libs.utils.</tt><tt class="descname">prettyprint</tt><big>(</big><em>D</em>, <em>indent=0</em>, <em>width=0</em>, <em>maxdepth=None</em>, <em>step=4</em>, <em>only_keys=None</em>, <em>output=&lt;open file '&lt;stdout&gt;'</em>, <em>mode 'w' at 0x2b73995ce1e0&gt;</em>, <em>_key_prefix=''</em>, <em>_exclude=None</em><big>)</big><a class="headerlink" href="#gc3libs.utils.prettyprint" title="Permalink to this definition">¶</a></dt>
 <dd><p>Print dictionary instance <cite>D</cite> in a YAML-like format.
 Each output line consists of:</p>
 <blockquote>
@@ -5167,6 +5298,7 @@ don&#8217;t operate on single jobs.</p>
 <li><a class="reference internal" href="#">GC3Libs programming API</a><ul>
 <li><a class="reference internal" href="#module-gc3libs"><cite>gc3libs</cite></a></li>
 <li><a class="reference internal" href="#module-gc3libs.cmdline"><cite>gc3libs.cmdline</cite></a></li>
+<li><a class="reference internal" href="#module-gc3libs.config"><cite>gc3libs.config</cite></a></li>
 <li><a class="reference internal" href="#module-gc3libs.core"><cite>gc3libs.core</cite></a></li>
 <li><a class="reference internal" href="#module-gc3libs.workflow"><cite>gc3libs.workflow</cite></a></li>
 <li><a class="reference internal" href="#module-gc3libs.exceptions"><cite>gc3libs.exceptions</cite></a></li>

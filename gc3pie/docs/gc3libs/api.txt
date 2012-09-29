@@ -19,6 +19,11 @@
 .. automodule:: gc3libs.cmdline
     :members:
 
+`gc3libs.config`
+================
+.. automodule:: gc3libs.config
+    :members:
+
 `gc3libs.core`
 ==============
 .. automodule:: gc3libs.core
