@@ -1133,7 +1133,7 @@ class SessionBasedScript(_Script):
         self.add_param("-r", "--resource", action="store", dest="resource_name", metavar="NAME",
                        default=None,
                        help="Submit jobs to a specific computational resources."
-                       " NAME is a reource name or comma-separated list of such names."
+                       " NAME is a resource name or comma-separated list of such names."
                        " Use the command `gservers` to list available resources.")
         self.add_param("-w", "--wall-clock-time", dest="wctime", default='8 hours',
                        metavar="DURATION",
