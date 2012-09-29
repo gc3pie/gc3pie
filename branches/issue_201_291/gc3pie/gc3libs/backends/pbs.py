@@ -300,7 +300,7 @@ class PbsLrms(batch.BatchSystem):
 
             log.debug("Computing updated values for total/available slots ...")
             (total_running, self.queued,
-             self.user_run, self.user_queued) = count_jobs(qstat_stdout, username)
+             self.user_run, self.user_queued) = count_jobs(qstat_stdout, self._username)
             self.total_run = total_running
             self.free_slots = -1
             self.used_quota = -1
