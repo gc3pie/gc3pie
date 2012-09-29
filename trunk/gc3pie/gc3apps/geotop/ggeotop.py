@@ -390,18 +390,14 @@ newly-created jobs so that this limit is never exceeded.
         # as well as 'in' and 'out' fodlers
         for path in self._validate_input_folders(self.params.args):
             # construct GEOtop job
-            yield (
+            yield GeotopTask(
+                path,                   # path to the directory containing input files
+                self.params.executable, # path to the GEOtop executable
                 # job name
-                gc3libs.utils.basename_sans(path),
-                # task constructor
-                GeotopTask,
-                [ # parameters passed to the constructor, see `GeotopTask.__init__`
-                    path,                   # path to the directory containing input files
-                    self.params.executable, # path to the GEOtop executable
-                ],
+                jobname=gc3libs.utils.basename_sans(path),
                 # extra keyword arguments passed to the constructor,
                 # see `GeotopTask.__init__`
-                extra.copy()
+                **extra.copy()
                 )
 
     def _validate_input_folders(self, paths):
