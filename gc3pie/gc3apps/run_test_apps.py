@@ -243,7 +243,7 @@ class GRosettaTest(TestRunner):
                      '-C', '45', '-vvv',
                      '--total-decoys', '5',
                      '--decoys-per-job', '2',
-                     'data/flags',
+                     'data/grosetta.flags',
                      'data/alignment.filt',
                      'data/boinc_aaquery0*',
                      'data/query.*',
@@ -299,7 +299,7 @@ class GDockingTest(TestRunner):
                      '-C', '45',
                      '--decoys-per-file', '5',
                      '--decoys-per-job', '2',
-                     '-f', 'data/flags',
+                     '-f', 'data/gdocking.flags',
                      'data/1bjpA.pdb',
                      ]
         self.jobdirs = [os.path.join(self.testdir, "1bjpA.%s" % d) for d in ('1--2', '3--4', '5--5')]
