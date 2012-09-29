@@ -77,12 +77,12 @@ class TestRunner(object):
     def __init__(self, appdir):
         """
         TO OVERRIDE
-        
+
         Must set `self.args` as a list with the command line arguemnts
         to run. Please note that the extra arguments may be added to
         the list in `self.args`.
 
-        When the `run_test()` method is called, 
+        When the `run_test()` method is called,
 
         If you need to run on a specific directory you can
         `os.chdir()` to it. However, the following methods will run
@@ -93,7 +93,7 @@ class TestRunner(object):
         * `terminate()`
 
         * `cleanup()`
-        
+
         """
         os.chdir(appdir)
         self.args = ['/bin/true']
@@ -155,7 +155,7 @@ class GCodemlTest(TestRunner):
         os.chdir(self.testdir)
         self.args = ['../gcodeml.py',
                      '-s', self.sessiondir,
-                     '-C', '120',
+                     '-C', '45',
                      'data/small_flat']
         self.datadir = os.path.join(self.testdir, 'data/small_flat')
         self.outputdir = os.path.join(self.datadir, 'small_flat.out')
@@ -185,7 +185,7 @@ class GCodemlTest(TestRunner):
                 if not output or not output[-1].startswith("Time used:"):
                     gc3libs.log.error("GCodeml: Error in output file `%s`" % outfile)
                     self.passed = False
-                    return 
+                    return
 
         self.passed = True
 
@@ -206,7 +206,7 @@ class GGamessTest(TestRunner):
                      '-C', '45',
                      '-R', '2012R1',
                      'data/exam01.inp']
-        
+
     def cleanup(self):
         for d in (self.examdir, self.sessiondir):
             if os.path.exists(d):
@@ -221,7 +221,7 @@ class GGamessTest(TestRunner):
         if not os.path.isfile(examfile):
             self.passed = False
         stdout = read_contents(examfile)
-        
+
         if re.match('.*\n (EXECUTION OF GAMESS TERMINATED NORMALLY).*', stdout, re.M|re.S):
             self.passed = True
         else:
@@ -237,10 +237,10 @@ class GRosettaTest(TestRunner):
         self.testdir = os.path.join(appdir, 'test')
         self.sessiondir = make_sessiondir(self.testdir)
         os.chdir(self.testdir)
-        
+
         self.args = ['../grosetta.py',
                      '-s', self.sessiondir,
-                     '-C', '120', '-vvv',
+                     '-C', '45', '-vvv',
                      '--total-decoys', '5',
                      '--decoys-per-job', '2',
                      'data/flags',
@@ -264,11 +264,11 @@ class GRosettaTest(TestRunner):
                 self.passed = False
                 return
             outfile = os.path.join(jobdir, 'minirosetta.static.stdout.txt')
-            
+
             if not os.path.isfile(outfile):
                 gc3libs.log.error("GRosetta: missing output file %s" % outfile)
                 self.passed = False
-                return 
+                return
             fd = open(outfile)
             output = fd.readlines()
             fd.close()
@@ -300,7 +300,7 @@ class GDockingTest(TestRunner):
                      '--decoys-per-file', '5',
                      '--decoys-per-job', '2',
                      '-f', 'data/flags',
-                     'data/1bjpA.pdb', 
+                     'data/1bjpA.pdb',
                      ]
         self.jobdirs = [os.path.join(self.testdir, "1bjpA.%s" % d) for d in ('1--2', '3--4', '5--5')]
 
@@ -315,9 +315,9 @@ class GDockingTest(TestRunner):
             if not os.path.isdir(jobdir):
                 gc3libs.log.error("GDocking: missing job directory %s" % jobdir)
                 self.passed = False
-                return 
+                return
             outfile = os.path.join(jobdir, 'docking_protocol.stdout.txt')
-            
+
             if not os.path.isfile(outfile):
                 gc3libs.log.error("GDocking: missing output file %s" % outfile)
                 self.passed = False
@@ -333,7 +333,7 @@ class GGeotopTest(TestRunner):
         self.testdir = os.path.join(appdir, 'test')
         self.sessiondir = make_sessiondir(self.testdir)
         os.chdir(self.testdir)
-        
+
         self.args = ['../ggeotop.py',
                      '-s', self.sessiondir,
                      '-C', '45',
@@ -361,7 +361,7 @@ class GZodsTest(TestRunner):
         self.testdir = os.path.join(appdir, 'test')
         self.sessiondir = make_sessiondir(self.testdir)
         os.chdir(self.testdir)
-        
+
         self.args = ['../gzods.py',
                      '-s', self.sessiondir,
                      '-C', '45',
@@ -396,7 +396,7 @@ class RunTests(cli.app.CommandLineApp):
         cli.app.CommandLineApp.setup(self)
         self.add_param('-r', '--resource', metavar='RESOURCE',
                        help="Resource, string identifying the name of the resource to use.")
-        
+
         self.add_param('args',
                        nargs='*',
                        metavar='TESTS',
@@ -407,7 +407,7 @@ class RunTests(cli.app.CommandLineApp):
                        default=60,
                        type=int,
                        help="Seconds to sleep between two check.",)
-        
+
         self.add_param('--no-cleanup', dest='cleanup',
                        default=True,
                        action='store_false',
@@ -453,7 +453,7 @@ class RunTests(cli.app.CommandLineApp):
 
         parentdir = os.getcwd()
         for appdir, clss in self.applicationdirs.iteritems():
-            if not clss: continue        
+            if not clss: continue
             appdir = os.path.abspath(appdir)
 
             for cls in clss:
@@ -486,7 +486,7 @@ class RunTests(cli.app.CommandLineApp):
                         gc3libs.log.error(
                             "Error while calling `terminate()` method of application %s: %s" % (app, str(ex)))
                     finally:
-                        os.chdir(parentdir)            
+                        os.chdir(parentdir)
                     gc3libs.log.info("Application %s terminated with return code `%d`" % (app, app.proc.returncode))
                     if app.passed:
                         gc3libs.log.info("Application %s PASSED the tests" % str(app))

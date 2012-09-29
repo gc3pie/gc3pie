@@ -54,7 +54,7 @@ class AppPotApplication(gc3libs.Application):
 
     application_name = 'apppot'
 
-    def __init__(self, executable, arguments, inputs, outputs, output_dir,
+    def __init__(self, arguments, inputs, outputs, output_dir,
                  apppot_img=None, apppot_changes=None, apppot_tag='ENV/APPPOT-0.21',
                  apppot_extra=[], **extra_args):
         # AppPot-specific setup
@@ -75,7 +75,7 @@ class AppPotApplication(gc3libs.Application):
         if apppot_extra:
             for arg in apppot_extra:
                 apppot_start_args += ['--extra', arg]
-        apppot_start_args += [ executable ] + arguments
+        apppot_start_args += arguments
 
         if 'tags' in extra_args:
             extra_args['tags'].append(apppot_tag)
@@ -85,8 +85,7 @@ class AppPotApplication(gc3libs.Application):
         # init base class
         gc3libs.Application.__init__(
             self,
-            'apppot-start.sh', # executable
-            apppot_start_args, # arguments
+            [ './apppot-start.sh'] + apppot_start_args, # arguments
             inputs, outputs, output_dir, **extra_args)
 
     @staticmethod
@@ -108,10 +107,10 @@ class AppPotApplication(gc3libs.Application):
             # because otherwise ARC insists that 'apppot-start.sh'
             # should be included in "inputFiles", but it obviously
             # breaks all other submission schemes...
-            original_executable = self.executable
-            self.executable = '/$APPPOT_STARTUP'
+            original_executable = self.arguments[0]
+            self.arguments[0] = '/$APPPOT_STARTUP'
             jobdesc = gc3libs.Application.xrsl(self, resource)
-            self.executable = original_executable
+            self.arguments[0] = original_executable
             return jobdesc
 
 

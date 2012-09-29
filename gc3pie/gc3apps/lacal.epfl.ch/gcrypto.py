@@ -78,15 +78,15 @@ class CryptoApplication(gc3libs.Application):
         extra_args['jobname'] = "LACAL_%s" % str(start + extent)
         extra_args['output_dir'] = os.path.join(extra_args['output_dir'], str(start + extent))
         extra_args['tags'] = [ 'APPS/CRYPTO/LACAL-1.0' ]
-        extra_args['executables'] = ["./gnfs-cmd"]
+        extra_args['executables'] = ['gnfs-cmd']
         extra_args['requested_memory'] = Memory(
             int(extra_args['requested_memory'].amount() / float(extra_args['requested_cores'])),
             unit=extra_args['requested_memory'].unit)
 
         gc3libs.Application.__init__(
             self,
-            executable = "./gnfs-cmd",
-            arguments = [ start, extent, extra_args['requested_cores'], "input.tgz" ],
+
+            arguments = [ "./gnfs-cmd", start, extent, extra_args['requested_cores'], "input.tgz" ],
             inputs = {
                 input_files_archive:"input.tgz",
                 gnfs_location:"./gnfs-cmd",
@@ -136,8 +136,6 @@ class CryptoTask(RetryableTask):
     def __init__(self, start, extent, gnfs_location, input_files_archive, output, **extra_args):
         RetryableTask.__init__(
             self,
-            # task name
-            "LACAL_"+str(start), # jobname
             # actual computational job
             CryptoApplication(start, extent, gnfs_location, input_files_archive, output, **extra_args),
             # XXX: should decide which policy to use here for max_retries

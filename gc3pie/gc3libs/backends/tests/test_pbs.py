@@ -30,7 +30,7 @@ from nose.tools import assert_equal
 import gc3libs
 import gc3libs.core
 import gc3libs.config
-from gc3libs.quantity import Memory, KiB, MiB, GiB, Duration, seconds, minutes, hours
+from gc3libs.quantity import Memory, kB, MB, GB, Duration, seconds, minutes, hours
 
 
 from faketransport import FakeTransport
@@ -145,11 +145,10 @@ class FakeApp(gc3libs.Application):
     def __init__(self):
         gc3libs.Application.__init__(
             self,
-            executable = '/bin/hostname', # mandatory
-            arguments = [],               # mandatory
-            inputs = [],                  # mandatory
-            outputs = [],                 # mandatory
-            output_dir = "./fakedir",    # mandatory
+            arguments = ['/bin/hostname'], # mandatory
+            inputs = [],                   # mandatory
+            outputs = [],                  # mandatory
+            output_dir = "./fakedir",      # mandatory
             stdout = "stdout.txt",
             stderr = "stderr.txt",
             requested_cores = 1,)
@@ -257,12 +256,12 @@ username=NONEXISTENT
         # common job reporting values (see Issue 78)
         assert_equal(job.exitcode,        0)
         assert_equal(job.duration,        2*minutes + 5*seconds)
-        assert_equal(job.max_used_memory, 190944*KiB)
+        assert_equal(job.max_used_memory, 190944*kB)
         assert_equal(job.used_cpu_time,   0*seconds)
         # PBS-specific values
         assert_equal(job.pbs_queue,       'short')
         assert_equal(job.pbs_jobname,     'DemoPBSApp')
-        assert_equal(job.pbs_max_used_ram, 2364*KiB)
+        assert_equal(job.pbs_max_used_ram, 2364*kB)
         assert_equal(job.pbs_submission_time,
                      datetime.datetime(year=2012, month=3, day=9, hour=9, minute=31, second=53))
         assert_equal(job.pbs_running_time,
@@ -295,12 +294,12 @@ username=NONEXISTENT
         # common job reporting values (see Issue 78)
         assert_equal(status['exitcode'],        0)
         assert_equal(status['duration'],        2*minutes + 5*seconds)
-        assert_equal(status['max_used_memory'], 190944*KiB)
+        assert_equal(status['max_used_memory'], 190944*kB)
         assert_equal(status['used_cpu_time'],   0*seconds)
         # PBS-specific values
         assert_equal(status['pbs_queue'],       'short')
         assert_equal(status['pbs_jobname'],     'DemoPBSApp')
-        assert_equal(status['pbs_max_used_ram'], 2364*KiB)
+        assert_equal(status['pbs_max_used_ram'], 2364*kB)
         assert_equal(status['pbs_submission_time'],
                      datetime.datetime(year=2012, month=3, day=9, hour=9, minute=31, second=53))
         assert_equal(status['pbs_running_time'],

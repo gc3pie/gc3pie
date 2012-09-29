@@ -91,6 +91,12 @@ architecture = x86_64
             )
 
         assert_true(
+            os.path.isfile(
+                os.path.join(self.env.base_path, 'SimpleScript.out.d', 'SimpleScript.stdout')
+                )
+            )
+
+        assert_true(
             os.path.isdir(session_dir)
             )
 

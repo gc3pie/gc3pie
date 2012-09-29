@@ -31,14 +31,14 @@ class SimpleScript(SessionBasedScript):
 
     def new_tasks(self, extra):
         def myfunc(*args, **extra_args):
-            return Application(args[0],
-                               args[1:],
+            return Application(args,
                                [],
                                ['SimpleScript.stdout'],
-                               'SimpleScript.out.d')
+                               'SimpleScript.out.d',
+                               join=True)
         yield ('MyJob',
                myfunc,
-               ('/bin/bash', '-c', '/bin/echo ciao > SimpleScript.stdout'),
+               ('/bin/bash', '-c', 'echo ciao > SimpleScript.stdout'),
                {})
 
 ## main: run tests

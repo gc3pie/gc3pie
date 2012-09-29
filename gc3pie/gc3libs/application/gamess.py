@@ -70,6 +70,7 @@ class GamessApplication(gc3libs.Application):
         # INPUT VERNO NCPUS; if one of them is to be omitted,
         # we use the empty string instead.
         arguments = [
+            "rungms",
             input_file_name,
             str(extra_args.get('verno') or ""),
             str(extra_args.get('requested_cores') or "")
@@ -89,7 +90,6 @@ class GamessApplication(gc3libs.Application):
                 extra_args['requested_memory'])
         # build generic `Application` obj
         gc3libs.Application.__init__(self,
-                                     executable = "rungms",
                                      arguments = arguments,
                                      inputs = [ inp_file_path ] + list(other_input_files),
                                      outputs = [ output_file_name ],
@@ -214,13 +214,13 @@ class GamessAppPotApplication(GamessApplication,
         # init superclass
         gc3libs.application.apppot.AppPotApplication.__init__(
             self,
-            executable = "localgms",
             # `rungms` has a fixed structure for positional arguments:
             # INPUT VERNO NCPUS; if one of them is to be omitted,
             # we cannot use the empty string instead because `apppot-start`
             # cannot detect it from the kernel command line, so we have to
             # hard-code default values here...
             arguments = [
+                "localgms",
                 input_file_name,
                 str(extra_args.get('verno') or "00"),
                 str(extra_args.get('requested_cores') or "")

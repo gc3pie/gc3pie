@@ -27,7 +27,7 @@
     <script type="text/javascript" src="_static/doctools.js"></script>
     <link rel="top" title="gc3pie development (SVN $Revision$) documentation" href="index.html" />
     <link rel="next" title="Troubleshooting GC3Pie" href="troubleshooting.html" />
-    <link rel="prev" title="Installation of GC3Utils" href="install.html" />
+    <link rel="prev" title="Installation of GC3Pie" href="install.html" />
  
 <script type="text/javascript">
   var _gaq = _gaq || [];
@@ -50,7 +50,7 @@
           <a href="troubleshooting.html" title="Troubleshooting GC3Pie"
              accesskey="N">next</a> |</li>
         <li class="right" >
-          <a href="install.html" title="Installation of GC3Utils"
+          <a href="install.html" title="Installation of GC3Pie"
              accesskey="P">previous</a> |</li>
         <li><a href="index.html">gc3pie development (SVN $Revision$) documentation</a> &raquo;</li> 
       </ul>
@@ -309,14 +309,14 @@ information system update frequency.</p>
 <li><tt class="docutils literal"><span class="pre">transport</span></tt>: Possible values are: <tt class="docutils literal"><span class="pre">ssh</span></tt> or <tt class="docutils literal"><span class="pre">local</span></tt>.   If <tt class="docutils literal"><span class="pre">ssh</span></tt>, we try to connect to the host specified in <tt class="docutils literal"><span class="pre">frontend</span></tt> via SSH in order to execute SGE commands.  If <tt class="docutils literal"><span class="pre">local</span></tt>, the SGE commands are run directly on the machine where GC3Pie is installed.</li>
 </ul>
 </div></blockquote>
-<p>Since the installation path to supported applications is not known (there
-is no information system, differently from ARC), then the path must be
-specified here:</p>
-<blockquote>
-<div><ul class="simple">
-<li><tt class="docutils literal"><span class="pre">gamess_location</span></tt>: UNIX path name of the directory containing a valid <strong class="command">qgms</strong> script</li>
-</ul>
-</div></blockquote>
+<p>To submit parallel jobs to SGE, a &#8220;parallel environment&#8221; name must be
+specified.  You can specify the PE to be used with a specific
+application using a configuration parameter <em>application name</em> +
+<tt class="docutils literal"><span class="pre">_pe</span></tt> (e.g., <tt class="docutils literal"><span class="pre">gamess_pe</span></tt>, <tt class="docutils literal"><span class="pre">zods_pe</span></tt>); the <tt class="docutils literal"><span class="pre">default_pe</span></tt>
+parameter dictates the parallel environment to use if no
+application-specific one is defined.  <em>If neither the
+application-specific, nor the ``default_pe`` parallel environments are
+defined, then it will not be possible to submit parallel jobs.</em></p>
 <p>When a job has finished, the SGE batch system does not (by default)
 immediately write its information into the accounting database.  This
 creates a time window during which no information is reported about
@@ -329,6 +329,16 @@ with the <tt class="docutils literal"><span class="pre">sge_accounting_delay</sp
 <blockquote>
 <div><ul class="simple">
 <li><tt class="docutils literal"><span class="pre">sge_accounting_delay</span></tt>: Time (in seconds) a failure in <strong class="command">qacct</strong> will <em>not</em> be considered critical.</li>
+</ul>
+</div></blockquote>
+</div>
+<div class="section" id="slurm-resources">
+<h3><tt class="docutils literal"><span class="pre">slurm</span></tt> resources<a class="headerlink" href="#slurm-resources" title="Permalink to this headline">¶</a></h3>
+<p>The following configuration keys are required in a <tt class="docutils literal"><span class="pre">slurm</span></tt>-type resource section:</p>
+<blockquote>
+<div><ul class="simple">
+<li><tt class="docutils literal"><span class="pre">transport</span></tt>: Possible values are: <tt class="docutils literal"><span class="pre">ssh</span></tt> or <tt class="docutils literal"><span class="pre">local</span></tt>.   If <tt class="docutils literal"><span class="pre">ssh</span></tt>, we try to connect to the host specified in <tt class="docutils literal"><span class="pre">frontend</span></tt> via SSH in order to execute SLURM commands.  If <tt class="docutils literal"><span class="pre">local</span></tt>, the SLURM commands are run directly on the machine where GC3Pie is installed.</li>
+<li><tt class="docutils literal"><span class="pre">frontend</span></tt>: should contain the <abbr title="Fully-qualified domain name">FQDN</abbr> of the SLURM front-end node. This configuration item is only relevant if <tt class="docutils literal"><span class="pre">transport</span></tt> is <tt class="docutils literal"><span class="pre">local</span></tt>. An SSH connection will be attempted to this node, in order to submit jobs and retrieve status info.</li>
 </ul>
 </div></blockquote>
 </div>
@@ -423,6 +433,7 @@ file.</p>
 <li><a class="reference internal" href="#arc0-resources"><tt class="docutils literal"><span class="pre">arc0</span></tt> resources</a></li>
 <li><a class="reference internal" href="#arc1-resources"><tt class="docutils literal"><span class="pre">arc1</span></tt> resources</a></li>
 <li><a class="reference internal" href="#sge-resources"><tt class="docutils literal"><span class="pre">sge</span></tt> resources</a></li>
+<li><a class="reference internal" href="#slurm-resources"><tt class="docutils literal"><span class="pre">slurm</span></tt> resources</a></li>
 <li><a class="reference internal" href="#example-resource-sections">Example <tt class="docutils literal"><span class="pre">resource</span></tt> sections</a></li>
 </ul>
 </li>
@@ -433,7 +444,7 @@ file.</p>
 
   <h4>Previous topic</h4>
   <p class="topless"><a href="install.html"
-                        title="previous chapter">Installation of GC3Utils</a></p>
+                        title="previous chapter">Installation of GC3Pie</a></p>
   <h4>Next topic</h4>
   <p class="topless"><a href="troubleshooting.html"
                         title="next chapter">Troubleshooting GC3Pie</a></p>
@@ -467,7 +478,7 @@ file.</p>
           <a href="troubleshooting.html" title="Troubleshooting GC3Pie"
              >next</a> |</li>
         <li class="right" >
-          <a href="install.html" title="Installation of GC3Utils"
+          <a href="install.html" title="Installation of GC3Pie"
              >previous</a> |</li>
         <li><a href="index.html">gc3pie development (SVN $Revision$) documentation</a> &raquo;</li> 
       </ul>

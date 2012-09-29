@@ -67,8 +67,7 @@ class TurbomoleApplication(gc3libs.Application):
 
         gc3libs.Application.__init__(
             self,
-            executable = "./turbomole.sh",
-            arguments = [ program ],
+            arguments = [ "./turbomole.sh", program ],
             inputs = inputs,
             outputs = gc3libs.ANY_OUTPUT,
             **extra_args
@@ -131,8 +130,7 @@ class TurbomoleDefineApplication(gc3libs.Application):
 
         gc3libs.Application.__init__(
             self,
-            executable = "./turbomole.sh",
-            arguments = [ program ],
+            arguments = [ "./turbomole.sh", program ],
             inputs = inputs,
             outputs = gc3libs.ANY_OUTPUT,
             **extra_args

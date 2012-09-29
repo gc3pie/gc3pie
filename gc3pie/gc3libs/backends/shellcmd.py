@@ -232,9 +232,8 @@ class ShellcmdLrms(LRMS):
                 "Resource %s already running maximum allowed number of jobs"
                 " (increase 'max_cores' to raise)." % self.name)
 
-        gc3libs.log.debug("Executing local command '%s %s' ..."
-                          % (app.executable, str.join(" ", app.arguments)))
-
+        gc3libs.log.debug("Executing local command '%s' ..."
+                          % (str.join(" ", app.arguments[1:])))
         # We cannot use `exec` or other front-end modules that
         # hide the differences between UNIX and Windows, exactly
         # because we need to get the PID of the submitted process.
@@ -267,9 +266,9 @@ class ShellcmdLrms(LRMS):
                 # try to ensure that a local executable really has
                 # execute permissions, but ignore failures (might be a
                 # link to a file we do not own)
-                if app.executable.startswith('./'):
+                if app.arguments[0].startswith('./'):
                     try:
-                        os.chmod(app.executable, 0755)
+                        os.chmod(app.arguments[0], 0755)
                     except OSError:
                         pass
 
@@ -322,10 +321,10 @@ class ShellcmdLrms(LRMS):
                     os.environ[k] = v
 
                 ## finally.. exec()
-                cmd = app.executable
-                if not os.path.isabs(app.executable) and os.path.exists(app.executable):
+                cmd = app.arguments[0]
+                if not os.path.isabs(cmd) and os.path.exists(cmd):
                     # local file
-                    cmd = os.path.join(os.getcwd(), app.executable)
+                    cmd = os.path.join(os.getcwd(), app.arguments[0])
 
                 # Create the directory in which the pid and the output
                 # from the wrapper script will be stored
@@ -379,12 +378,12 @@ class ShellcmdLrms(LRMS):
                               wrapper_dir,
                               ShellcmdLrms.WRAPPER_OUTPUT_FILENAME),
                           "-f", ShellcmdLrms.TIMEFMT,
-                          cmd, *app.arguments)
+                          cmd, *app.arguments[1:])
 
             except Exception, ex:
                 sys.excepthook(* sys.exc_info())
                 gc3libs.log.error("Failed starting local process '%s': %s"
-                                  % (app.executable, str(ex)))
+                                  % (app.arguments[0], str(ex)))
                 # simulate what the shell does in case of failed exec
                 sys.exit(127)
 

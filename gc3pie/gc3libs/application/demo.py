@@ -54,12 +54,8 @@ class Square(gc3libs.Application):
         # extra_args.setdefault('stdout', 'stdout.txt')
         # extra_args.setdefault('stderr', 'stderr.txt')
 
-        #  gc3libs.Application.__init__(self, executable, arguments, inputs, outputs, output_dir, **extra_args):
-
-
         gc3libs.Application.__init__(self,
-                                     executable = "/usr/bin/expr",
-                                     arguments = [str(x), "*", str(x)],
+                                     arguments = ["/usr/bin/expr", str(x), "*", str(x)],
                                      inputs = [],
                                      outputs = [],
                                      output_dir = None,
@@ -68,7 +64,7 @@ class Square(gc3libs.Application):
                                      # set computational requirements. XXX this is mandatory, thus probably should become part of the Application's signature
                                      requested_memory = 1*GB,
                                      requested_cores = 1,
-                                     requested_walltime = 1*hour,
+                                     requested_walltime = 1*hours,
                                      )
 
 

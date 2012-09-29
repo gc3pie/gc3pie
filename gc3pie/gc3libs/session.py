@@ -78,9 +78,9 @@ class Session(list):
     the `len()` operator returns the number of tasks in the session;
     iteration over a session returns the tasks one by one::
 
-        >>> task1 = gc3libs.Task('task1')
+        >>> task1 = gc3libs.Task()
         >>> id1 = session.add(task1)
-        >>> task2 = gc3libs.Task('task2')
+        >>> task2 = gc3libs.Task()
         >>> id2 = session.add(task2)
         >>> len(session)
         2
@@ -386,7 +386,7 @@ class Session(list):
             0
 
             #. add a task to it
-            >>> task = gc3libs.Task('task')
+            >>> task = gc3libs.Task()
             >>> tid1 = session.add(task)
             >>> len(session)
             1

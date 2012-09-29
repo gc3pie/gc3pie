@@ -143,8 +143,7 @@ class FakeApp(gc3libs.Application):
     def __init__(self, **extra_args):
         gc3libs.Application.__init__(
             self,
-            executable = '/bin/hostname', # mandatory
-            arguments = [],               # mandatory
+            arguments = ['/bin/hostname'], # mandatory
             inputs = [],                  # mandatory
             outputs = [],                 # mandatory
             output_dir = "./fakedir",    # mandatory

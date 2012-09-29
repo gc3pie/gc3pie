@@ -74,8 +74,8 @@ class GzodsApp(gc3libs.Application):
         gc3libs.Application.__init__(
             self,
             tags=["APPS/CHEM/ZODS-0.336"],
-            executable = 'mpiexec', # mandatory
             arguments = [
+                'mpiexec',
                 # these are arguments to `mpiexec`
                 "-n", extra_args['requested_cores'],
                 # this is the real ZODS command-line
