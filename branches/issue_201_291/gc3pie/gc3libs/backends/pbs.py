@@ -284,7 +284,7 @@ class PbsLrms(batch.BatchSystem):
     @same_docstring_as(LRMS.get_resource_status)
     @LRMS.authenticated
     def get_resource_status(self):
-        self._resource.updated = False
+        self.updated = False
         try:
             self.transport.connect()
 
