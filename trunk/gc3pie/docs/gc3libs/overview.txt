@@ -305,9 +305,10 @@ supported.
 UML Diagram
 -----------
 
-An UML diagram of GC3Pie classes is available `here`_.
+An `UML diagram of GC3Pie classes`__ is available (also in `PNG format`__)
 
-.. _`here`: ../_images/gc3libs.UML.png
+.. __: ../_images/gc3libs.UML.svg
+.. __: ../_images/gc3libs.UML.png
 
 
 .. (for Emacs only)
