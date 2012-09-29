@@ -61,8 +61,7 @@ class GdemoApplication(Application):
 
         self.iteration = iteration
         gc3libs.Application.__init__(self,
-                                     executable = "/usr/bin/expr",
-                                     arguments = [str(value_a), "+", str(value_b)],
+                                     arguments = ["/usr/bin/expr", str(value_a), "+", str(value_b)],
                                      inputs = [],
                                      outputs = [],
                                      output_dir = os.path.join(os.getcwd(),"Gdemo_result",str(iteration)),
@@ -153,7 +152,7 @@ class DemoIteration(SequentialTaskCollection):
 
         # create initial task and register it
         initial_task = GdemoApplication(self.init, self.increment, 0)
-        SequentialTaskCollection.__init__(self, self.jobname, [initial_task])
+        SequentialTaskCollection.__init__(self, [initial_task])
 
 
     def __str__(self):

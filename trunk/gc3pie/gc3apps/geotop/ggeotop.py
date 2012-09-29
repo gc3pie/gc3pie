@@ -179,12 +179,10 @@ class GeotopApplication(Application):
         extra_args.pop('output_dir', None)
         Application.__init__(
             self,
-            # executable = executable_name,
-            executable = './'+os.path.basename(geotop_wrapper_sh),
             # GEOtop requires only one argument: the simulation directory
             # In our case, since all input files are staged to the
             # execution directory, the only argument is fixed to ``.``
-            arguments = [ 'input.tgz', executable_name ],
+            arguments = ['./'+os.path.basename(geotop_wrapper_sh), 'input.tgz', executable_name ],
             inputs = inputs,
             outputs = gc3libs.ANY_OUTPUT,
             # outputs = outputs,
@@ -228,7 +226,7 @@ class GeotopApplication(Application):
 
         tmp_output_dir = self.output_dir
         exclude = [
-            os.path.basename(self.executable),
+            os.path.basename(self.arguments[0]),
             self.stdout,
             self.stderr,
             GEOTOP_OUTPUT_ARCHIVE,
@@ -306,8 +304,6 @@ class GeotopTask(RetryableTask, gc3libs.utils.Struct):
     def __init__(self, simulation_dir, executable=None, **extra_args):
         RetryableTask.__init__(
             self,
-            # task name
-            os.path.basename(simulation_dir),
             # actual computational job
             GeotopApplication(simulation_dir, executable, **extra_args),
             # keyword arguments

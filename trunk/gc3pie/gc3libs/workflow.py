@@ -52,12 +52,12 @@ class TaskCollection(Task):
     task states.
     """
 
-    def __init__(self, jobname, tasks=None):
+    def __init__(self, tasks=None, **extra_args):
         if tasks is None:
             self.tasks = [ ]
         else:
             self.tasks = tasks
-        Task.__init__(self, jobname)
+        Task.__init__(self, **extra_args)
 
     # manipulate the "controller" interface used to control the associated task
     def attach(self, controller):
@@ -213,9 +213,9 @@ class SequentialTaskCollection(TaskCollection):
     `TERMINATED` when all tasks have been run.
     """
 
-    def __init__(self, jobname, tasks, **extra_args):
+    def __init__(self, tasks, **extra_args):
         # XXX: check that `tasks` is a sequence type
-        TaskCollection.__init__(self, jobname, tasks)
+        TaskCollection.__init__(self, tasks)
         self._current_task = 0
 
 
@@ -391,15 +391,15 @@ class StagedTaskCollection(SequentialTaskCollection):
     code.
 
     """
-    def __init__(self, jobname, **extra_args):
+    def __init__(self, **extra_args):
         try:
             first_stage = self.stage0()
             if isinstance(first_stage, Task):
                 # init parent class with the initial task
-                SequentialTaskCollection.__init__(self, jobname, [first_stage], **extra_args)
+                SequentialTaskCollection.__init__(self, [first_stage], **extra_args)
             elif isinstance(first_stage, (int, long, tuple)):
                 # init parent class with no tasks, an dimmediately set the exitcode
-                SequentialTaskCollection.__init__(self, jobname, [], **extra_args)
+                SequentialTaskCollection.__init__(self, [], **extra_args)
                 self.execution.returncode = first_stage
                 self.execution.state = Run.State.TERMINATED
             else:
@@ -449,8 +449,8 @@ class ParallelTaskCollection(TaskCollection):
     reached the same terminal status.
     """
 
-    def __init__(self, jobname, tasks=None, **extra_args):
-        TaskCollection.__init__(self, jobname, tasks)
+    def __init__(self, tasks=None, **extra_args):
+        TaskCollection.__init__(self, tasks, **extra_args)
 
 
     def _state(self):
@@ -538,7 +538,7 @@ class ParallelTaskCollection(TaskCollection):
 
 class ChunkedParameterSweep(ParallelTaskCollection):
 
-    def __init__(self, jobname, min_value, max_value, step, chunk_size, **extra_args):
+    def __init__(self, min_value, max_value, step, chunk_size, **extra_args):
         """
         Like `ParallelTaskCollection`, but generate a sequence of jobs
         with a parameter varying from `min_value` to `max_value` in
@@ -554,7 +554,7 @@ class ChunkedParameterSweep(ParallelTaskCollection):
         for param in range(min_value, self._floor, step):
             initial.append(self.new_task(param))
         # start with the initial chunk of jobs
-        ParallelTaskCollection.__init__(self, jobname, initial, **extra_args)
+        ParallelTaskCollection.__init__(self, initial, **extra_args)
 
 
     def new_task(self, param, **extra_args):
@@ -618,14 +618,11 @@ class RetryableTask(Task):
     derived classes.
     """
 
-    def __init__(self, name, task, max_retries=0, **extra_args):
+    def __init__(self, task, max_retries=0, **extra_args):
         """
         Wrap `task` and resubmit it until `self.retry()` returns `False`.
 
         :param Task task: A `Task` instance that should be retried.
-
-        :param str jobname: The string identifying this `Task`
-            instance, see `Task`:class:.
 
         :param int max_retries: Maximum number of times `task` should be
             re-submitted; use 0 for 'no limit'.
@@ -633,7 +630,7 @@ class RetryableTask(Task):
         self.max_retries = max_retries
         self.retried = 0
         self.task = task
-        Task.__init__(self, name, **extra_args)
+        Task.__init__(self, **extra_args)
 
     def __getattr__(self, name):
         """Proxy public attributes of the wrapped task."""

@@ -61,7 +61,7 @@ class GamessRetryPolicy(RetryableTask):
         else:
             extra_args['tags'] = [ 'ENV/CPU/OPTERON-2350' ]
         task = GamessApplication(inp_file_path, *other_input_files, **extra_args)
-        RetryableTask.__init__(self, task.jobname, task, max_retries=3, **extra_args)
+        RetryableTask.__init__(self, task, max_retries=3, **extra_args)
 
 
     def retry(self):

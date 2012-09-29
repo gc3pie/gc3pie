@@ -114,8 +114,7 @@ class RosettaApplication(gc3libs.Application):
 
         gc3libs.Application.__init__(
             self,
-            executable = "./%s" % rosetta_sh,
-            arguments = _arguments,
+            arguments = [ ("./%s" % rosetta_sh) ] + _arguments,
             inputs = _inputs,
             outputs = _outputs,
             **extra_args)

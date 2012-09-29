@@ -70,7 +70,7 @@ def test_store_ctor_with_extra_arguments():
         'idfactory': IdFactory(),
         'protocol': DEFAULT_PROTOCOL,
         'extra_fields': {sqlalchemy.Column('extra',         sqlalchemy.TEXT())    : lambda x: "test"},
-        
+
         }
 
     def run_test(cls, args):
@@ -80,7 +80,7 @@ def test_store_ctor_with_extra_arguments():
         yield run_test, cls, args
         if os.path.exists(tmpdir):
             shutil.rmtree(tmpdir)
-    
+
 ## for testing basic functionality we do no need fully-fledged GC3Pie
 ## objects; let's define some simple make-do's.
 
@@ -134,12 +134,12 @@ class PersistableClassWithSlots(NonPersistableClassWithSlots):
 
 class MyChunkedParameterSweep(gc3libs.workflow.ChunkedParameterSweep):
     def new_task(self, param, **extra_args):
-        return Task('TaskName', **extra_args)
+        return Task(**extra_args)
 
 
 class MyStagedTaskCollection(gc3libs.workflow.StagedTaskCollection):
     def stage0(self):
-        return Task('Stage0')
+        return Task()
 
 
 def _run_generic_tests(store):
@@ -288,19 +288,13 @@ class GenericStoreChecks(object):
                 os.remove(tmpfile)
 
         for obj in [
-            Task('Test Task'),
-            gc3libs.workflow.TaskCollection(
-                'Test TaskCollection', tasks=[Task('1'), Task('2')]),
-            gc3libs.workflow.SequentialTaskCollection(
-                'Test SequentialTaskCollection', [Task('1'), Task('2')]),
-            MyStagedTaskCollection(
-                'Test StagedTaskCollection'),
-            gc3libs.workflow.ParallelTaskCollection(
-                'Test ParallelTaskCollection', tasks=[Task('1'), Task('2')]),
-            MyChunkedParameterSweep(
-                'Test ChunkedParameterSweep', 1, 20, 1, 5),
-            gc3libs.workflow.RetryableTask(
-                'Test RetryableTask', Task('Task1')),
+            Task(),
+            gc3libs.workflow.TaskCollection(tasks=[Task(), Task()]),
+            gc3libs.workflow.SequentialTaskCollection([Task(), Task()]),
+            MyStagedTaskCollection(),
+            gc3libs.workflow.ParallelTaskCollection(tasks=[Task(), Task()]),
+            MyChunkedParameterSweep(1, 20, 1, 5),
+            gc3libs.workflow.RetryableTask(Task()),
             ]:
             check_task.description = "Test that Task-like `%s` class is stored correctly" %  obj.__class__.__name__
             yield check_task, obj
@@ -372,8 +366,7 @@ class SqlStoreChecks(GenericStoreChecks):
 
     def test_default_fields(self):
         app = gc3libs.Application(
-            executable='/bin/true',
-            arguments=[],
+            arguments=['/bin/true'],
             inputs=[],
             outputs=[],
             output_dir='/tmp',
@@ -394,8 +387,7 @@ class SqlStoreChecks(GenericStoreChecks):
     # the `jobname` attribute is optional in the `Application` ctor
     def test_persist_Application_with_no_job_name(self):
         app = gc3libs.Application(
-            executable='/bin/true',
-            arguments=[],
+            arguments=['/bin/true'],
             inputs=[],
             outputs=[],
             output_dir='/tmp')
@@ -420,7 +412,7 @@ class SqlStoreChecks(GenericStoreChecks):
                 sqlalchemy.Column('extra', sqlalchemy.VARCHAR(length=128)): GET.extra,
                 })
 
-        obj = SimpleTask("Antonio's task")
+        obj = SimpleTask()
         # obligatory XKCD citation ;-)
         # Ric, you can't just "cite" XKCD without inserting a
         # reference: http://xkcd.com/327/

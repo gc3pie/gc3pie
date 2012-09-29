@@ -44,6 +44,7 @@ import sys
 import time
 import types
 import subprocess
+import shlex
 
 import logging
 import logging.config
@@ -144,13 +145,9 @@ class Task(Persistable, Struct):
     `execution`
       a `Run` instance; its state attribute is initially set to ``NEW``.
 
-    `jobname`
-      an arbitrary string associated to this task, used in the
-      `str` and `repr` methods.
-
     """
 
-    def __init__(self, name, **extra_args):
+    def __init__(self, **extra_args):
         """
         Initialize a `Task` instance.
 
@@ -163,7 +160,6 @@ class Task(Persistable, Struct):
                      implementing the same interface.
         """
         Struct.__init__(self, **extra_args)
-        self.jobname = name
         self.execution = Run(attach=self)
         # `_controller` and `_attached` are set by `attach()`/`detach()`
         self._attached = False
@@ -567,20 +563,10 @@ class Application(Task):
     The following parameters are *required* to create an `Application`
     instance:
 
-    `executable`
-      (string) name of the application binary to be
-      launched on the remote resource; the specifics of how this is
-      handled are dependent on the submission backend, but you may
-      always run a script that you upload through the `inputs`
-      mechanism by specifying ``./scriptname`` as `executable`.
-
     `arguments`
-      List of command-line arguments to pass to `executable`; any
-      object in the list will be converted to string via Python's
-      `str()`. Note that, in contrast with the UNIX ``execvp()``
-      usage, the first argument in this list will be passed as
-      ``argv[1]``, i.e., ``argv[0]`` will always be equal to
-      `executable`.
+      List or sequence of program arguments. The program to execute is
+      the first one.; any object in the list will be converted to
+      string via Python's `str()`.
 
     `inputs`
       Files that will be copied to the remote execution node before
@@ -699,12 +685,9 @@ class Application(Task):
     After successful construction, an `Application` object is
     guaranteed to have the following instance attributes:
 
-    `executable`
-      a string specifying the executable name
-
     `arguments`
       list of strings specifying command-line arguments for executable
-      invocation; possibly empty
+      invocation. The first element must be the executable.
 
     `inputs`
       dictionary mapping source URL (a `gc3libs.url.Url`:class:
@@ -761,9 +744,17 @@ class Application(Task):
     See `qsub_sge`:meth: for an actual example.
     """
 
-    def __init__(self, executable, arguments, inputs, outputs, output_dir, **extra_args):
+    def __init__(self, arguments, inputs, outputs, output_dir, **extra_args):
         # required parameters
-        self.executable = executable
+        if isinstance(arguments, types.StringTypes):
+            arguments = shlex.split(arguments)
+
+        if 'executable' in extra_args:
+            gc3libs.log.warning(
+                "The `executable` argument is not supported anymore in GC3Pie 2.0."
+                " Please adapt your code and use `arguments` only.")
+            arguments = [ executable ] + list(arguments)
+
         self.arguments = [ str(x) for x in arguments ]
 
         self.inputs = Application._io_spec_to_dict(gc3libs.url.UrlKeyDict, inputs, True)
@@ -874,7 +865,7 @@ class Application(Task):
             jobname = "GC3Pie.%s" % jobname
 
         # task setup; creates the `.execution` attribute as well
-        Task.__init__(self, jobname, **extra_args)
+        Task.__init__(self, **extra_args)
 
         # for k,v in self.outputs.iteritems():
         #     gc3libs.log.debug("outputs[%s]=%s", repr(k), repr(v))
@@ -1076,9 +1067,7 @@ class Application(Task):
             '(executable="/bin/sh")',
             '(gmlog=".gc3pie_arc")', # XXX: should check if conflicts with any input/output files
             ]
-        # concat `executable` and `arguments` to form the command-line
-        argv = [ self.executable ] + self.arguments
-        xrsl.append('(arguments="-c" "%s")' % str.join(' ', [('%s' % x) for x in argv]))
+        xrsl.append('(arguments="-c" "%s")' % str.join(' ', self.arguments))
         # preserve execute permission on all input files
         executables = []
         if self.has_key('executables'):
@@ -1161,7 +1150,7 @@ class Application(Task):
         # match any x86 arch...
         if self.requested_architecture is not None:
             xrsl.append('(architecture="%s")' % self.requested_architecture)
-        if self.jobname:
+        if 'jobname' in self:
             xrsl.append('(jobname="%s")' % self.jobname)
 
         # XXX: experimental
@@ -1185,11 +1174,8 @@ class Application(Task):
         Hence, to get a UNIX shell command-line, just concatenate the
         elements of the list, separating them with spaces.
 
-        The default implementation just concatenates the `executable`
-        and `arguments` attributes; override this method in derived
-        classes to provide appropriate invocation templates.
         """
-        return [self.executable] + ['"%s"' % i for i in self.arguments]
+        return self.arguments[:]
 
 
     def qsub_sge(self, resource, **extra_args):

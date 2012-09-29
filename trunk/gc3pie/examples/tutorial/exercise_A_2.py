@@ -1,6 +1,15 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-#
-# @(#)gdemo_simple.py
+"""
+
+Exercise A (2)
+
+Starting from `exercise_A_2.py`:
+
+* add a post-processing method that extract the value of the `model
+  name` row
+
+"""
 #
 #
 # Copyright (C) 2009-2012 GC3, University of Zurich. All rights reserved.
@@ -19,24 +28,13 @@
 #  You should have received a copy of the GNU General Public License along
 #  with this program; if not, write to the Free Software Foundation, Inc.,
 #  59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
-"""This is a basic script to demonstrate the basics of GC3Pie.
 
-This simple script will create an instance of a `GdemoSimpleApp` class
-which inherits from `Application`:class and which basically run the
-command `/bin/hostname`.
-
-It will create an instance of `Core`:class and will submit the
-`GdemoSimpleApp` instance, check its status until the application is
-terminated and then fetch the output.
-
-You can specify the resource you want to use by passing its name as
-command line argument.
-"""
 
 # stdlib imports
 import logging
 import sys
 import time
+import os
 
 # GC3Pie imports
 import gc3libs
@@ -58,12 +56,32 @@ class GdemoSimpleApp(gc3libs.Application):
     def __init__(self):
         gc3libs.Application.__init__(
             self,
-            arguments = ['/bin/hostname'], # mandatory
+            arguments = ['/bin/cat', '/proc/cpuinfo'], # mandatory
             inputs = [],                  # mandatory
             outputs = [],                 # mandatory
             output_dir = "./mygc3job",    # mandatory
             stdout = "stdout.txt",)
 
+    def terminated(self):
+        """
+        Called when the job state transitions to `TERMINATED`, i.e.,
+        the job has finished execution (with whatever exit status, see
+        `returncode`) and the final output has been retrieved.
+
+        The location where the final output has been stored is
+        available in attribute `self.output_dir`.
+
+        The default implementation does nothing, override in derived
+        classes to implement additional behavior.
+        """
+        fname = os.path.join(self.output_dir, 'stdout.txt')
+        fd = open(fname)
+        self.model_name = 'UNKNOWN'
+        for line in fd:
+            if line.startswith('model name'):
+                self.model_name = line.split(':', 1)[1].strip()
+                break
+        fd.close()
 
 # create an instance of GdemoSimpleApp
 app = GdemoSimpleApp()
