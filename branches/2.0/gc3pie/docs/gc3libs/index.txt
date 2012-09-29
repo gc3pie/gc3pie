@@ -1,0 +1,40 @@
+.. Hey Emacs, this is -*- rst -*-
+
+   This file follows reStructuredText markup syntax; see
+   http://docutils.sf.net/rst.html for more information.
+
+.. include:: ../global.inc
+
+
+.. _gc3libs:
+
+---------
+ GC3Libs
+---------
+
+This document is the technical reference for the GC3Libs programming
+model, aimed at programmers who want to use GC3Libs to implement
+computational workflows in Python.
+
+.. toctree::
+
+  overview
+  tutorial/warholize
+  api
+
+
+Outline of the contents
+=======================
+
+The `Programming overview <overview>` section presents the main
+concepts behind GC3Libs programming.
+
+The `GC3Libs modules <api>` section is a comprehensive list of all
+the modules, classes and functions comprising GC3Libs; its content is
+automatically generated from docstrings in the source code.
+
+The `Contributing to GC3Pie <contributing>` chapter provides some
+instructions to prospective contributors: code organization, style and
+formatting guide, etc.
+
+

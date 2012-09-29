@@ -1,0 +1,271 @@
+.. Hey Emacs, this is -*- rst -*-
+
+   This file follows reStructuredText markup syntax; see
+   http://docutils.sf.net/rst.html for more information.
+
+.. include:: global.inc
+
+
+.. _troubleshooting:
+
+Troubleshooting GC3Pie
+======================
+
+This page lists a number of errors and issues that you might run into,
+together with their solution.  Please use the `GC3Pie mailing list`_
+for further help and for any problem not reported here!
+
+Each section covers a different Python error; the section is named
+after the error name appearing in the *last line* of the Python
+traceback.  (See section `What is a Python traceback?`_ below)
+
+.. contents::
+
+
+What is a Python traceback?
+---------------------------
+
+A *traceback* is a long Python error message, detailing the call stack
+in the code that lead to a specific error condition.
+
+Tracebacks always look like this one (the number of lines printed, the
+files involved and the actual error message will, of course, vary)::
+
+    Traceback (most recent call last):
+     File "/home/mpackard/gc3pie/bin/gsub", line 9, in <module>
+       load_entry_point('gc3pie==1.0rc7', 'console_scripts', 'gsub')()
+     File "/home/mpackard/gc3pie/lib/python2.5/site-packages/gc3pie-1.0rc7-py2.5.egg/gc3utils/frontend.py", line 137, in main
+       import gc3utils.commands
+     File "/home/mpackard/gc3pie/lib/python2.5/site-packages/gc3pie-1.0rc7-py2.5.egg/gc3utils/commands.py", line 31, in <module>
+       import cli.app
+     File "/home/mpackard/gc3pie/lib/python2.5/site-packages/pyCLI-2.0.2-py2.5.egg/cli/app.py", line 37, in <module>
+       from cli.util import ifelse, ismethodof
+     File "/home/mpackard/gc3pie/lib/python2.5/site-packages/pyCLI-2.0.2-py2.5.egg/cli/util.py", line 28, in <module>
+       BaseStringIO = StringIO.StringIO
+    AttributeError: 'module' object has no attribute 'StringIO'
+
+Let's analyize how a traceback is formed, top to bottom.
+
+A traceback is *always* started by the line::
+
+    Traceback (most recent call last):
+
+Then follow a number of line pairs like this one::
+
+    File "/home/mpackard/gc3pie/lib/python2.5/site-packages/gc3pie-1.0rc7-py2.5.egg/gc3utils/frontend.py", line 137, in main
+      import gc3utils.commands
+
+The first line shows the file name and the line number where the
+program stopped; the second line displays the instruction that Python
+was executing when the error occurred.  *We shall always omit this
+part of the traceback in the listings below.*
+
+Finally, the traceback ends with the error message on the *last* line::
+
+    AttributeError: 'module' object has no attribute 'StringIO'
+
+Just look up this error message in the section headers below; if you
+cannot find any relevant section, please write to the `GC3Pie mailing
+list`_ for help.
+
+
+Common errors using GC3Pie
+--------------------------
+
+This section section lists Python errors that may happen when using
+GC3Pie; each section is named after the error name appearing in the
+*last line* of the Python traceback.  (See section `What is a Python
+traceback?`_ above.)  
+
+If you get an error that is not listed here, please get in touch via
+the `GC3Pie mailing list`_.
+
+
+AttributeError: args
+~~~~~~~~~~~~~~~~~~~~
+
+This error is signaled by a traceback like the following::
+
+    Traceback (most recent call last):
+      ...
+      File "/opt/nordugrid/lib/python2.4/site-packages/arclib.py",
+ line 1146, in <lambda>
+        __getattr__ = lambda self, name: _swig_getattr(self,
+ CertificateError, name)
+      File "/opt/nordugrid/lib/python2.4/site-packages/arclib.py",
+ line 54, in _swig_getattr
+        raise AttributeError(name)
+    AttributeError: args
+
+This is due to a version mismatch between the Python interpreter and
+the NorduGrid ARClib; it's really the same issue as in `ImportError:
+.../site-packages/_arclib.so: undefined symbol: Py_InitModule4`_,
+which see for a discussion and remedies.
+
+
+AttributeError: `module` object has no attribute `StringIO`
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+This error::
+
+    Traceback (most recent call last):
+     ...
+     File "/home/mpackard/gc3pie/lib/python2.5/site-packages/pyCLI-2.0.2-py2.5.egg/cli/util.py",
+    line 28, in <module>
+       BaseStringIO = StringIO.StringIO
+    AttributeError: 'module' object has no attribute 'StringIO'
+
+is due to a conflicts of the `pyCLI library <pycli>`_ (prior to version 2.0.3) and the
+`Debian/Ubuntu package *python-stats* <python-stats>`_
+
+.. _pycli: http://pypi.python.org/pypi/pyCLI
+.. _python-stats: http://packages.debian.org/squeeze/python-stats 
+
+There are three ways to get rid of the error:
+
+1. Uninstall the `*python-stats* package <python-stats>` (run the command ``apt-get remove python-stats`` as user ``root``)
+2. Upgrade `pyCLI`_ to version 2.0.3 at least.
+3. `Upgrade`:ref: GC3Pie, which will force an upgrade of pyCLI.
+
+
+DistributionNotFound
+~~~~~~~~~~~~~~~~~~~~
+
+If you get this error::
+
+    Traceback (most recent call last):
+        ...
+    pkg_resources.DistributionNotFound: gc3pie==1.0rc2
+
+It usually means that you didn't run ``source ../bin/activate;
+./setup.py develop`` when upgrading GC3Pie.
+
+Please re-do the steps in the `GC3Pie Upgrade instructions
+<upgrade>`:ref: to fix the error.
+
+
+FTPControlError: Server responded: File unavailable.
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Sample error traceback::
+
+    Traceback (most recent call last):
+      ...
+      File "/opt/nordugrid/lib/python2.5/site-packages/arclib.py", line 1405, in Download
+        def Download(self, *args): return _arclib.FTPControl_Download(self, *args)
+    arclib.FTPControlError: Server responded: File unavailable.
+
+This error happens when trying to view a non-existent file with the
+`gtail`:command: command; see `Issue 111`_ for details.
+
+.. _`Issue 111`: http://code.google.com/p/gc3pie/issues/detail?id=111
+
+Once a job goes into ``RUNNING`` state, its standard output log is not
+made immediately available to the batch system.  The only solution is
+to try again later; if the error persists, there might be some problem
+with the application that is not creating its output file as expected.
+This would needs further investigation and you are encouraged to
+report to the `GC3Pie mailing list`_ about it.
+
+
+ImportError: ``.../site-packages/_arclib.so``: undefined symbol: ``Py_InitModule4``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+This error::
+
+    Traceback (most recent call last):
+      ...
+      File ".../site-packages/arclib.py", line 17, in swig_import_helper
+        import _arclib
+    ImportError: .../site-packages/_arclib.so: undefined symbol: Py_InitModule4
+
+Is due to a mismatch of the Python version and the NorduGrid ARClib
+library: it occurs when the `arclib`:file: library has been compiled
+for a different Python version than the one you're using.
+
+NorduGrid_ compiles their ARC/Python library with the default Python
+that comes with the Linux distribution; thus, if you are using a
+Python version different from the default, there's a good chance that
+the ARC library will not work with that Python.
+
+A rule of thumb to determine if you are using the default Python is to
+run the command ``which python``.  If this outputs anything different
+from `/usr/bin/python`:file: or `/bin/python`:file:, then you are
+using a custom Python version.  You might want to ask your systems
+administrator to install the version of `arclib`:file: appropriate for
+your Python, or to revert to the default Python.
+
+Failing that, please ask on the `GC3Pie mailing list`_: each case is
+subtly different and it's impossible to give universally-valid
+instructions.
+
+
+ImportError: No module named ``pstats``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+This error only occurs on Debian and Ubuntu GNU/Linux::
+
+    Traceback (most recent call last):
+    File ".../pyCLI-2.0.2-py2.6.egg/cli/util.py", line 19, in <module>
+       import pstats
+    ImportError: No module named pstats
+
+To solve the issue: install the `*python-profiler* package <python-profiler>`::
+
+  apt-get install python-profiler # as `root` user
+
+.. _python-profiler: http://packages.debian.org/squeeze/python-profiler
+
+
+NoResources: Could not initialize any computational resource - please check log and configuration file.
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+This error::
+
+    Traceback (most recent call last):
+      ...
+      File ".../src/gc3libs/core.py", line 150, in submit
+        raise gc3libs.exceptions.NoResources("Could not initialize any computational resource"
+    gc3libs.exceptions.NoResources: Could not initialize any computational resource - please check log and configuration file.
+
+can have two different causes:
+
+1. You didn't create a configuration file, or you did not list any resource in it.
+2. Some other error prevented the resources from being initialized, or the configuration file from being properly read.
+
+
+Terminate called after throwing an instance of ``LdapQueryError``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+This error has been reported after some days of running the
+`gcodeml`:command: script with the ARC backend::
+
+    terminate called after throwing an instance of 'LdapQueryError'
+     what():  Thread creation in ParallelLdapQueries failed
+    Aborted
+
+We believe this is a `bug in the ARC libraries`__, but not much
+information is known at the moment.  So, if you see an instance of
+this, please get in touch via the `GC3Pie mailing list`_.
+
+.. __: http://bugzilla.nordugrid.org/show_bug.cgi?id=2830
+
+
+ValueError: I/O operation on closed file
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Sample error traceback (may be repeated multiple times over)::
+
+    Traceback (most recent call last):
+      File "/usr/lib/python2.5/logging/__init__.py", line 750, in emit
+        self.stream.write(fs % msg)
+    ValueError: I/O operation on closed file
+
+
+This is discussed in `Issue 182`_; a fix have been committed to
+release 1.0, so if you are seeing this error, you are either running a
+pre-release version of GC3Pie and should upgrade_, or you are running
+the bleeding-edge version of the code, and you are welcome to
+`contribute to the discussion of the fix <issue 182>`.
+
+.. _`Issue 182`: http://code.google.com/p/gc3pie/issues/detail?id=182
