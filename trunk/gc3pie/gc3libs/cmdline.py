@@ -51,7 +51,6 @@ import os
 import os.path
 import re
 import sys
-import random
 from texttable import Texttable
 import time
 from decimal import Decimal, ROUND_DOWN
@@ -819,7 +818,6 @@ class SessionBasedScript(_Script):
 
         # add new jobs to the session
         existing_job_names = self.session.list_names()
-        random.seed()
         for jobname, cls, args, kwargs in new_jobs:
             #self.log.debug("SessionBasedScript.process_args():"
             #               " considering adding new job defined by:"
