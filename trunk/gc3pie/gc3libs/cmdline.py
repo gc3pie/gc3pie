@@ -53,7 +53,6 @@ import re
 import sys
 from texttable import Texttable
 import time
-from decimal import Decimal, ROUND_DOWN
 
 ## 3rd party modules
 import cli  # pyCLI
