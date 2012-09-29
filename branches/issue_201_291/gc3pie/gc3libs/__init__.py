@@ -1065,7 +1065,7 @@ class Application(Task):
             '(executable="/bin/sh")',
             '(gmlog=".gc3pie_arc")', # XXX: should check if conflicts with any input/output files
             ]
-        xrsl.append('(arguments="-c" "%s")' % str.join(' ', [('%s' % x) for x in self.arguments]))
+        xrsl.append('(arguments="-c" "%s")' % str.join(' ', self.arguments))
         # preserve execute permission on all input files
         executables = []
         if self.has_key('executables'):
@@ -1173,7 +1173,7 @@ class Application(Task):
         elements of the list, separating them with spaces.
 
         """
-        return ['%s' % i for i in self.arguments[1:]]
+        return self.arguments[:]
 
 
     def qsub_sge(self, resource, **extra_args):
