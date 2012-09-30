@@ -119,7 +119,9 @@ setuptools.setup(
             'etc/logging.conf.example',
             'etc/rosetta.sh',
             ],
-        'gc3apps': [
+    },
+    data_files = [
+        ('gc3apps', [
             'gc3apps/gc3.uzh.ch/gridrun.py',
             'gc3apps/zods/gzods.py',
             'gc3apps/geotop/ggeotop.py',
@@ -132,9 +134,8 @@ setuptools.setup(
             'gc3apps/codeml/gcodeml.py',
             'gc3apps/gamess/grundb.py',
             'gc3apps/gamess/ggamess.py',
-            ],
-        },
-
+            ]),
+    ],
     # `zip_safe` can ease deployment, but is only allowed if the package
     # do *not* do any __file__/__path__ magic nor do they access package data
     # files by file name (use `pkg_resources` instead).
