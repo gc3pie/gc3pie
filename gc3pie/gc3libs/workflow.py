@@ -242,7 +242,7 @@ class SequentialTaskCollection(TaskCollection):
 
     def __init__(self, tasks, **extra_args):
         # XXX: check that `tasks` is a sequence type
-        TaskCollection.__init__(self, tasks)
+        TaskCollection.__init__(self, tasks, **extra_args)
         self._current_task = 0
 
 
