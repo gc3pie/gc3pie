@@ -585,8 +585,7 @@ Now it should be easy to write such application::
   
           gc3libs.Application.__init__(
               self,
-              arguments = input_filenames + [
-                  'montage',
+              arguments = ['montage'] + input_filenames + [
                   '-tile',
                   '%dx%d' % (tile, tile),
                   '-geometry',
