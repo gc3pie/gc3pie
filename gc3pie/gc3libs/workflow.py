@@ -212,6 +212,19 @@ class TaskCollection(Task):
         return result
 
 
+    def terminated(self):
+        """
+        Called when the job state transitions to `TERMINATED`, i.e.,
+        the job has finished execution (with whatever exit status, see
+        `returncode`) and the final output has been retrieved.
+
+        Default implementation for `TaskCollection` is to set the
+        exitcode to the maximum of the exit codes of its tasks.
+        """
+        self.execution._exitcode = max(
+            task.execution._exitcode for task in self.tasks
+            )
+    
 class SequentialTaskCollection(TaskCollection):
     """
     A `SequentialTaskCollection` runs its tasks one at a time.
