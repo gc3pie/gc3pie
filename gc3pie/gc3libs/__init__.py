@@ -362,10 +362,7 @@ class Task(Persistable, Struct):
 
         See :meth:`gc3libs.Core.free` for a full explanation.
         """
-        assert self._attached, ("Task.free() called on detached task %s." % self)
-        assert hasattr(self._controller, 'free'), \
-               ("Invalid `_controller` object '%s' in Task %s" % (self._controller, self))
-        self._controller.free(self, **extra_args)
+        return
 
 
     # convenience methods, do not really add any functionality over
