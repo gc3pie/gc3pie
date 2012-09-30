@@ -305,6 +305,8 @@ install_gc3apps () {
         for cmd in $VENVDIR/gc3apps/*.py
         do
             ln -s $cmd $VENVDIR/bin/$(basename $cmd .py)
+            # setup.py install package_data without the 'x' permission
+            chmod +x "$cmd"
         done
     else
         LIBDIR=$VENVDIR/src/gc3apps
