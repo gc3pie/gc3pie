@@ -482,7 +482,7 @@ specified in the configuration file.
 
         if job.state == Run.State.TERMINATING:
             gc3libs.log.debug("Final output of '%s' retrieved" % str(app))
-        return Task.fetch_output(self, download_dir)
+        return Task.fetch_output(app, download_dir)
 
 
     def __fetch_output_task(self, task, download_dir, overwrite, **extra_args):
