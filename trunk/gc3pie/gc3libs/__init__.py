@@ -159,6 +159,7 @@ class Task(Persistable, Struct):
                      :class:`gc3libs.Core` instance, or anything
                      implementing the same interface.
         """
+        Persistable.__init__(self, **extra_args)
         Struct.__init__(self, **extra_args)
         self.execution = Run(attach=self)
         # `_controller` and `_attached` are set by `attach()`/`detach()`
