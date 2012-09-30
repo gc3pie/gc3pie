@@ -849,8 +849,9 @@ class SessionBasedScript(_Script):
                     "SessionBasedScript.process_args got %r (%s),"
                     " but was expecting a gc3libs.Task instance" % (item, type(item)))
 
-            # patch output_dir if it's not changed from the default
-            if task.output_dir == self.extra['output_dir']:
+            # patch output_dir if it's not changed from the default,
+            # or if it's not defined (e.g., TaskCollection)
+            if 'output_dir' not in task or task.output_dir == self.extra['output_dir']:
                 # user did not change the `output_dir` default, expand it now
                 task.output_dir = self.make_directory_path(self.extra['output_dir'], task.jobname)
 
