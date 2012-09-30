@@ -849,14 +849,25 @@ class SessionBasedScript(_Script):
                     "SessionBasedScript.process_args got %r (%s),"
                     " but was expecting a gc3libs.Task instance" % (item, type(item)))
 
-            # patch output_dir if it's not changed from the default
-            if task.output_dir == self.extra['output_dir']:
+            # patch output_dir if it's not changed from the default,
+            # or if it's not defined (e.g., TaskCollection)
+            if 'output_dir' not in task or task.output_dir == self.extra['output_dir']:
                 # user did not change the `output_dir` default, expand it now
-                task.output_dir = self.make_directory_path(self.extra['output_dir'], task.jobname)
+                self._fix_output_dir(task, task.jobname)
 
             # all done, append to session
             self.session.add(task, flush=False)
             self.log.debug("Added task '%s' to session." % task.jobname)
+
+    def _fix_output_dir(self, task, name):
+        """Substitute the NAME string in output paths."""
+        task.output_dir = task.output_dir.replace('NAME', name)
+        try:
+            for subtask in task.tasks:
+                self._fix_output_dir(subtask, name)
+        except AttributeError:
+            # no subtasks
+            pass
 
 
     def new_tasks(self, extra):
@@ -1133,7 +1144,7 @@ class SessionBasedScript(_Script):
         self.add_param("-r", "--resource", action="store", dest="resource_name", metavar="NAME",
                        default=None,
                        help="Submit jobs to a specific computational resources."
-                       " NAME is a reource name or comma-separated list of such names."
+                       " NAME is a resource name or comma-separated list of such names."
                        " Use the command `gservers` to list available resources.")
         self.add_param("-w", "--wall-clock-time", dest="wctime", default='8 hours',
                        metavar="DURATION",

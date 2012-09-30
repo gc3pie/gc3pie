@@ -98,6 +98,10 @@ class Persistable(object):
     when a container holding a reference to it is saved.
 
     """
+    def __init__(self, *args, **kwargs):
+        # ensure object will be saved next time Store.save() is invoked
+        self.changed = True
+
     def __str__(self):
         try:
             return str(self.persistent_id)
