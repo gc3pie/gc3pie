@@ -20,7 +20,7 @@ Authentication support with Grid proxy certificates.
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 #
 __docformat__ = 'reStructuredText'
-__version__ = 'development version (SVN $Revision$)'
+__version__ = '2.0.0-rc2 version (SVN $Revision$)'
 
 import errno
 import getpass
