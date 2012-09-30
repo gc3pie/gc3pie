@@ -853,7 +853,7 @@ class SessionBasedScript(_Script):
             # or if it's not defined (e.g., TaskCollection)
             if 'output_dir' not in task or task.output_dir == self.extra['output_dir']:
                 # user did not change the `output_dir` default, expand it now
-                task.output_dir = self.make_directory_path(self.extra['output_dir'], task.jobname)
+                self._fix_output_dir(task, task.jobname)
 
             # all done, append to session
             self.session.add(task, flush=False)
