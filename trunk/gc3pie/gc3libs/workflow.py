@@ -117,15 +117,27 @@ class TaskCollection(Task):
         # if `output_dir` is not None, it is interpreted as the base
         # directory where to download files; each task will get its
         # own subdir based on its `.persistent_id`
-        if output_dir is None:
-            output_dir = self.get('output_dir', None)
-        if output_dir is not None:
-            for task in self.tasks:
-                self._controller.fetch_output(
-                    task,
-                    os.path.join(output_dir, task.persistent_id),
-                    overwrite,
-                    **extra_args)
+        coll_output_dir = self._get_download_dir(output_dir)
+        for task in self.tasks:
+            if 'output_dir' in task:
+                task_output_dir = task.output_dir
+            else:
+                task_output_dir = task.persistent_id
+            # XXX: uses a feature from `os.path.join`: if the second
+            # path is absolute, the first path is discarded and the
+            # second one is returned unchanged
+            task_output_dir = os.path.join(coll_output_dir, task_output_dir)
+            self._controller.fetch_output(
+                task,
+                task_output_dir,
+                overwrite,
+                **extra_args)
+        for task in self.tasks:
+            if task.execution.state != Run.State.TERMINATED:
+                return coll_output_dir
+        self.execution.state = Run.State.TERMINATED
+        self.changed = True
+        return coll_output_dir
 
 
     def peek(self, what, offset=0, size=None, **extra_args):
