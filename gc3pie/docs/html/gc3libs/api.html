@@ -1213,7 +1213,7 @@ description.</p>
 
 <dl class="method">
 <dt id="gc3libs.cmdline.SessionBasedScript.print_tasks_table">
-<tt class="descname">print_tasks_table</tt><big>(</big><em>output=&lt;open file '&lt;stdout&gt;'</em>, <em>mode 'w' at 0x2b73995ce1e0&gt;</em>, <em>states=Enum(['TERMINATED'</em>, <em>'UNKNOWN'</em>, <em>'SUBMITTED'</em>, <em>'RUNNING'</em>, <em>'TERMINATING'</em>, <em>'STOPPED'</em>, <em>'NEW'])</em>, <em>only=&lt;type 'object'&gt;</em><big>)</big><a class="headerlink" href="#gc3libs.cmdline.SessionBasedScript.print_tasks_table" title="Permalink to this definition">¶</a></dt>
+<tt class="descname">print_tasks_table</tt><big>(</big><em>output=&lt;open file '&lt;stdout&gt;'</em>, <em>mode 'w' at 0x2b2a886961e0&gt;</em>, <em>states=Enum(['TERMINATED'</em>, <em>'UNKNOWN'</em>, <em>'SUBMITTED'</em>, <em>'RUNNING'</em>, <em>'TERMINATING'</em>, <em>'STOPPED'</em>, <em>'NEW'])</em>, <em>only=&lt;type 'object'&gt;</em><big>)</big><a class="headerlink" href="#gc3libs.cmdline.SessionBasedScript.print_tasks_table" title="Permalink to this definition">¶</a></dt>
 <dd><p>Output a text table to stream <cite>output</cite>, giving details about
 tasks in the given states.</p>
 <p>Optional second argument <cite>states</cite> restricts the listing to
@@ -2351,6 +2351,234 @@ in <cite>except</cite> clauses to exclude &#8220;try again&#8221; situations.</p
 </dd></dl>
 
 </div>
+<div class="section" id="module-gc3libs.session">
+<span id="gc3libs-session"></span><h2><cite>gc3libs.session</cite><a class="headerlink" href="#module-gc3libs.session" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="gc3libs.session.Session">
+<em class="property">class </em><tt class="descclassname">gc3libs.session.</tt><tt class="descname">Session</tt><big>(</big><em>path</em>, <em>store_url=None</em>, <em>create=True</em>, <em>**extra_args</em><big>)</big><a class="headerlink" href="#gc3libs.session.Session" title="Permalink to this definition">¶</a></dt>
+<dd><p>A &#8216;session&#8217; is a persistent collection of tasks.</p>
+<p>Tasks added to the session are persistently recorded using an
+instance of <cite>gc3libs.persistence.Store</cite>.  Stores can be shared
+among different sessions: each session knows wich jobs it &#8216;owns&#8217;.</p>
+<p>A session is associated to a directory, which holds all the data
+releated to that session. Specifically, two files are always
+created in the session directory andused internally by this class:</p>
+<ul class="simple">
+<li><cite>index.txt</cite>: contains a list of all job IDs
+associated with this session;</li>
+<li><cite>store.url</cite>:  its contents are the URL of the store to create
+(as would be passed to the <cite>gc3libs.persistence.make_store</cite> factory).</li>
+</ul>
+<p>To only argument needed to instantiate a session is the <cite>path</cite> of
+the directory; the directory name will be used as the identifier
+of the session itself.  For example, the following code creates a
+temporary directory and the two files mentioned above inside it:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">tempfile</span><span class="p">;</span> <span class="n">tmpdir</span> <span class="o">=</span> <span class="n">tempfile</span><span class="o">.</span><span class="n">mktemp</span><span class="p">(</span><span class="nb">dir</span><span class="o">=</span><span class="s">&#39;.&#39;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">session</span> <span class="o">=</span> <span class="n">Session</span><span class="p">(</span><span class="n">tmpdir</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="nb">sorted</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">listdir</span><span class="p">(</span><span class="n">tmpdir</span><span class="p">))</span>
+<span class="go">[&#39;created&#39;, &#39;session_ids.txt&#39;, &#39;store.url&#39;]</span>
+</pre></div>
+</div>
+<p>When a <cite>Session</cite> object is created with a <cite>path</cite> argument pointing
+to an existing valid session, the index of jobs is automatically
+loaded into memory, and the store pointed to by the <tt class="docutils literal"><span class="pre">store.url</span></tt>
+file in the session directory will be used, <em>disregarding the
+contents of the `store_url` argument.</em></p>
+<p>In other words, the <cite>store_url</cite> argument is only used when
+<em>creating a new session</em>.  If no <cite>store_url</cite> argument is passed
+(i.e., it has its default value), a <cite>Session</cite> object will
+instantiate and use a <tt class="xref py py-class docutils literal"><span class="pre">FileSystemStore</span></tt> store, keeping data
+in the <tt class="docutils literal"><span class="pre">jobs</span></tt> subdirectory of the session directory.</p>
+<p>Methods <cite>add</cite> and <cite>remove</cite> are provided to manage the collection;
+the <cite>len()</cite> operator returns the number of tasks in the session;
+iteration over a session returns the tasks one by one:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">task1</span> <span class="o">=</span> <span class="n">gc3libs</span><span class="o">.</span><span class="n">Task</span><span class="p">()</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">id1</span> <span class="o">=</span> <span class="n">session</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">task1</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">task2</span> <span class="o">=</span> <span class="n">gc3libs</span><span class="o">.</span><span class="n">Task</span><span class="p">()</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">id2</span> <span class="o">=</span> <span class="n">session</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">task2</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="nb">len</span><span class="p">(</span><span class="n">session</span><span class="p">)</span>
+<span class="go">2</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="n">session</span><span class="p">:</span>
+<span class="gp">... </span>    <span class="k">print</span><span class="p">(</span><span class="nb">type</span><span class="p">(</span><span class="n">t</span><span class="p">))</span>
+<span class="go">&lt;class &#39;gc3libs.Task&#39;&gt;</span>
+<span class="go">&lt;class &#39;gc3libs.Task&#39;&gt;</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">session</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">id1</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="nb">len</span><span class="p">(</span><span class="n">session</span><span class="p">)</span>
+<span class="go">1</span>
+</pre></div>
+</div>
+<p>When passed the <cite>flush=False</cite> optional argument, methods <cite>add</cite> and
+<cite>remove</cite> do not update the session metadata: i.e., the tasks are
+added or removed from the store and the in-memory task list, but
+the updated task list is not saved back to disk.  This is useful
+when making many changes in a row; call <cite>Session.flush</cite> to persist
+the full set of changes.</p>
+<p>The <tt class="xref py py-class docutils literal"><span class="pre">Store</span></tt> object is anyway accessible in the
+<tt class="xref py py-attr docutils literal"><span class="pre">store</span></tt> attribute of each <cite>Session</cite> instance:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="nb">type</span><span class="p">(</span><span class="n">session</span><span class="o">.</span><span class="n">store</span><span class="p">)</span>
+<span class="go">&lt;class &#39;gc3libs.persistence.filesystem.FilesystemStore&#39;&gt;</span>
+</pre></div>
+</div>
+<p>However, <cite>Session</cite> defines methods <cite>save</cite> and <cite>load</cite> as a
+convenient proxy to the corresponding <cite>Store</cite> methods:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">obj</span> <span class="o">=</span> <span class="n">gc3libs</span><span class="o">.</span><span class="n">persistence</span><span class="o">.</span><span class="n">Persistable</span><span class="p">()</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">oid</span> <span class="o">=</span> <span class="n">session</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="n">obj</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">obj2</span> <span class="o">=</span> <span class="n">session</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">oid</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">obj</span><span class="o">.</span><span class="n">persistent_id</span> <span class="o">==</span> <span class="n">obj2</span><span class="o">.</span><span class="n">persistent_id</span>
+<span class="go">True</span>
+</pre></div>
+</div>
+<p>The whole session data can be removed by using method <cite>destroy</cite>:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">session</span><span class="o">.</span><span class="n">destroy</span><span class="p">()</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">session</span><span class="o">.</span><span class="n">path</span><span class="p">)</span>
+<span class="go">False</span>
+</pre></div>
+</div>
+<dl class="method">
+<dt id="gc3libs.session.Session.add">
+<tt class="descname">add</tt><big>(</big><em>task</em>, <em>flush=True</em><big>)</big><a class="headerlink" href="#gc3libs.session.Session.add" title="Permalink to this definition">¶</a></dt>
+<dd><p>Add a <cite>Task</cite> to the current session, save it to the associated
+persistent storage, and return the assigned <cite>persistent_id</cite>:</p>
+<div class="highlight-python"><pre>#. create new, empty session
+&gt;&gt;&gt; import tempfile; tmpdir = tempfile.mktemp(dir='.')
+&gt;&gt;&gt; session = Session(tmpdir)
+&gt;&gt;&gt; len(session)
+0
+
+#. add a task to it
+&gt;&gt;&gt; task = gc3libs.Task()
+&gt;&gt;&gt; tid1 = session.add(task)
+&gt;&gt;&gt; len(session)
+1</pre>
+</div>
+<p>Duplicates are silently ignored: the same object can be added
+many times to the session, but gets the same ID each time:</p>
+<div class="highlight-python"><pre>#. add a different task
+&gt;&gt;&gt; tid2 = session.add(task)
+&gt;&gt;&gt; len(session)
+1
+&gt;&gt;&gt; tid1 == tid2
+True
+
+# do cleanup
+&gt;&gt;&gt; session.destroy()
+&gt;&gt;&gt; os.path.exists(session.path)
+False</pre>
+</div>
+</dd></dl>
+
+<dl class="method">
+<dt id="gc3libs.session.Session.destroy">
+<tt class="descname">destroy</tt><big>(</big><big>)</big><a class="headerlink" href="#gc3libs.session.Session.destroy" title="Permalink to this definition">¶</a></dt>
+<dd><p>Remove the session directory and all the tasks it contains
+from the store which are associated to this session.</p>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">This will remove the associated task storage <em>if and only if</em>
+the storage is contained in the session directory!</p>
+</div>
+</dd></dl>
+
+<dl class="method">
+<dt id="gc3libs.session.Session.flush">
+<tt class="descname">flush</tt><big>(</big><big>)</big><a class="headerlink" href="#gc3libs.session.Session.flush" title="Permalink to this definition">¶</a></dt>
+<dd><p>Update session metadata.</p>
+<p>Should be used after a save/remove operations, to ensure that
+the session state and metadata is correctly persisted.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="gc3libs.session.Session.forget">
+<tt class="descname">forget</tt><big>(</big><em>task_id</em>, <em>flush=True</em><big>)</big><a class="headerlink" href="#gc3libs.session.Session.forget" title="Permalink to this definition">¶</a></dt>
+<dd><p>Remove task identified by <cite>task_id</cite> from the current session
+<em>but not</em> from the associated storage.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="gc3libs.session.Session.list_ids">
+<tt class="descname">list_ids</tt><big>(</big><big>)</big><a class="headerlink" href="#gc3libs.session.Session.list_ids" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return set of all task IDs belonging to this session.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="gc3libs.session.Session.list_names">
+<tt class="descname">list_names</tt><big>(</big><big>)</big><a class="headerlink" href="#gc3libs.session.Session.list_names" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return set of names of tasks belonging to this session.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="gc3libs.session.Session.load">
+<tt class="descname">load</tt><big>(</big><em>obj_id</em><big>)</big><a class="headerlink" href="#gc3libs.session.Session.load" title="Permalink to this definition">¶</a></dt>
+<dd><p>Load an object from persistent storage and return it.</p>
+<p>This is just a convenience proxy for calling method <cite>load</cite> on
+the <cite>Store</cite> instance associated with this session.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="gc3libs.session.Session.remove">
+<tt class="descname">remove</tt><big>(</big><em>task_id</em>, <em>flush=True</em><big>)</big><a class="headerlink" href="#gc3libs.session.Session.remove" title="Permalink to this definition">¶</a></dt>
+<dd><p>Remove task identified by <cite>task_id</cite> from the current session
+<em>and</em> from the associated storage.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="gc3libs.session.Session.save">
+<tt class="descname">save</tt><big>(</big><em>obj</em><big>)</big><a class="headerlink" href="#gc3libs.session.Session.save" title="Permalink to this definition">¶</a></dt>
+<dd><p>Save an object to the persistent storage and return
+<cite>persistent_id</cite> of the saved object.</p>
+<p>This is just a convenience proxy for calling method <cite>save</cite> on
+the <cite>Store</cite> instance associated with this session.</p>
+<p>The object is <em>not</em> added to the session, nor is session
+meta-data updated:</p>
+<div class="highlight-python"><pre># create an empty session
+&gt;&gt;&gt; import tempfile; tmpdir = tempfile.mktemp(dir='.')
+&gt;&gt;&gt; session = Session(tmpdir)
+&gt;&gt;&gt; 0 == len(session)
+True
+
+# use `save` on an object
+&gt;&gt;&gt; obj = gc3libs.persistence.Persistable()
+&gt;&gt;&gt; oid = session.save(obj)
+
+# session is still empty
+&gt;&gt;&gt; 0 == len(session)
+True
+
+# do cleanup
+&gt;&gt;&gt; session.destroy()
+&gt;&gt;&gt; os.path.exists(session.path)
+False</pre>
+</div>
+</dd></dl>
+
+<dl class="method">
+<dt id="gc3libs.session.Session.save_all">
+<tt class="descname">save_all</tt><big>(</big><em>flush=True</em><big>)</big><a class="headerlink" href="#gc3libs.session.Session.save_all" title="Permalink to this definition">¶</a></dt>
+<dd><p>Save all modified tasks to persistent storage.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="gc3libs.session.Session.set_end_timestamp">
+<tt class="descname">set_end_timestamp</tt><big>(</big><em>time=None</em><big>)</big><a class="headerlink" href="#gc3libs.session.Session.set_end_timestamp" title="Permalink to this definition">¶</a></dt>
+<dd><p>Create a file named <cite>finished</cite> in the session directory. It&#8217;s
+creation/modification time will be used to know when the
+session has finished.</p>
+<p>Please note that <cite>Session</cite> does not know when a session is
+finished, so this method should be called by a
+<tt class="xref py py-class docutils literal"><span class="pre">SessionBasedScript</span></tt> class.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="gc3libs.session.Session.set_start_timestamp">
+<tt class="descname">set_start_timestamp</tt><big>(</big><em>time=None</em><big>)</big><a class="headerlink" href="#gc3libs.session.Session.set_start_timestamp" title="Permalink to this definition">¶</a></dt>
+<dd><p>Create a file named <cite>created</cite> in the session directory. It&#8217;s
+creation/modification time will be used to know when the
+session has sarted.</p>
+</dd></dl>
+
+</dd></dl>
+
+</div>
 <div class="section" id="module-gc3libs.persistence">
 <span id="gc3libs-persistence"></span><h2><cite>gc3libs.persistence</cite><a class="headerlink" href="#module-gc3libs.persistence" title="Permalink to this headline">¶</a></h2>
 <p>Facade to store and retrieve Job information from permanent storage.</p>
@@ -2694,7 +2922,7 @@ texts coming from the same template.  Templates can be nested, and
 expansions generated recursviely.</p>
 <dl class="class">
 <dt id="gc3libs.template.Template">
-<em class="property">class </em><tt class="descclassname">gc3libs.template.</tt><tt class="descname">Template</tt><big>(</big><em>template</em>, <em>validator=&lt;function &lt;lambda&gt; at 0x37d1aa0&gt;</em>, <em>**extra_args</em><big>)</big><a class="headerlink" href="#gc3libs.template.Template" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><tt class="descclassname">gc3libs.template.</tt><tt class="descname">Template</tt><big>(</big><em>template</em>, <em>validator=&lt;function &lt;lambda&gt; at 0x5472b90&gt;</em>, <em>**extra_args</em><big>)</big><a class="headerlink" href="#gc3libs.template.Template" title="Permalink to this definition">¶</a></dt>
 <dd><p>A template object is a pair <cite>(obj, keywords)</cite>.  Methods are
 provided to substitute the keyword values into <cite>obj</cite>, and to
 iterate over expansions of the given keywords (optionally
@@ -3576,7 +3804,7 @@ are not altered to reflect <cite>mode</cite>.</p>
 
 <dl class="function">
 <dt id="gc3libs.utils.prettyprint">
-<tt class="descclassname">gc3libs.utils.</tt><tt class="descname">prettyprint</tt><big>(</big><em>D</em>, <em>indent=0</em>, <em>width=0</em>, <em>maxdepth=None</em>, <em>step=4</em>, <em>only_keys=None</em>, <em>output=&lt;open file '&lt;stdout&gt;'</em>, <em>mode 'w' at 0x2b73995ce1e0&gt;</em>, <em>_key_prefix=''</em>, <em>_exclude=None</em><big>)</big><a class="headerlink" href="#gc3libs.utils.prettyprint" title="Permalink to this definition">¶</a></dt>
+<tt class="descclassname">gc3libs.utils.</tt><tt class="descname">prettyprint</tt><big>(</big><em>D</em>, <em>indent=0</em>, <em>width=0</em>, <em>maxdepth=None</em>, <em>step=4</em>, <em>only_keys=None</em>, <em>output=&lt;open file '&lt;stdout&gt;'</em>, <em>mode 'w' at 0x2b2a886961e0&gt;</em>, <em>_key_prefix=''</em>, <em>_exclude=None</em><big>)</big><a class="headerlink" href="#gc3libs.utils.prettyprint" title="Permalink to this definition">¶</a></dt>
 <dd><p>Print dictionary instance <cite>D</cite> in a YAML-like format.
 Each output line consists of:</p>
 <blockquote>
@@ -3600,7 +3828,7 @@ indented <cite>step</cite> spaces from the enclosing dictionary.</p>
 
 <dl class="function">
 <dt id="gc3libs.utils.progressive_number">
-<tt class="descclassname">gc3libs.utils.</tt><tt class="descname">progressive_number</tt><big>(</big><em>qty=None</em>, <em>id_filename='/home/rmurri/.gc3/next_id.txt'</em><big>)</big><a class="headerlink" href="#gc3libs.utils.progressive_number" title="Permalink to this definition">¶</a></dt>
+<tt class="descclassname">gc3libs.utils.</tt><tt class="descname">progressive_number</tt><big>(</big><em>qty=None</em>, <em>id_filename='/home/amessina/.gc3/next_id.txt'</em><big>)</big><a class="headerlink" href="#gc3libs.utils.progressive_number" title="Permalink to this definition">¶</a></dt>
 <dd><p>Return a positive integer, whose value is guaranteed to
 be monotonically increasing across different invocations
 of this function, and also across separate instances of the
@@ -3879,34 +4107,6 @@ If the file does not exist, it is created.</p>
 <p class="last">This module is deprecated and will be removed in a future release.
 Do not depend on it.</p>
 </div>
-<span class="target" id="module-gc3libs.Resource"></span><p>A specialized dictionary for representing computational resource characteristics.</p>
-<dl class="class">
-<dt id="gc3libs.Resource.Resource">
-<em class="property">class </em><tt class="descclassname">gc3libs.Resource.</tt><tt class="descname">Resource</tt><big>(</big><em>**keywd</em><big>)</big><a class="headerlink" href="#gc3libs.Resource.Resource" title="Permalink to this definition">¶</a></dt>
-<dd><p><cite>Resource</cite> objects are dictionaries, comprised of the following keys.</p>
-<p>Statically provided, i.e., specified at construction time and changed never after:</p>
-<blockquote>
-<div>arc_ldap             string
-architecture         list of string *
-auth                 string  *
-frontend             string  *
-gamess_location      string
-max_cores_per_job    int     *
-max_memory_per_core  int     *
-max_walltime         int     *
-name                 string  *
-ncores               int
-type                 int     *</div></blockquote>
-<p>Starred attributes are required for object construction.</p>
-<dl class="docutils">
-<dt>Dynamically provided (i.e., defined by the <cite>get_resource_status()</cite> method or similar):</dt>
-<dd>free_slots          int
-user_run            int
-user_queued         int
-queued              int</dd>
-</dl>
-</dd></dl>
-
 </div>
 <div class="section" id="module-gc3libs.application">
 <span id="gc3libs-application"></span><h2><cite>gc3libs.application</cite><a class="headerlink" href="#module-gc3libs.application" title="Permalink to this headline">¶</a></h2>
@@ -5302,6 +5502,7 @@ don&#8217;t operate on single jobs.</p>
 <li><a class="reference internal" href="#module-gc3libs.core"><cite>gc3libs.core</cite></a></li>
 <li><a class="reference internal" href="#module-gc3libs.workflow"><cite>gc3libs.workflow</cite></a></li>
 <li><a class="reference internal" href="#module-gc3libs.exceptions"><cite>gc3libs.exceptions</cite></a></li>
+<li><a class="reference internal" href="#module-gc3libs.session"><cite>gc3libs.session</cite></a></li>
 <li><a class="reference internal" href="#module-gc3libs.persistence"><cite>gc3libs.persistence</cite></a><ul>
 <li><a class="reference internal" href="#a-usage-warning">A usage warning</a></li>
 </ul>

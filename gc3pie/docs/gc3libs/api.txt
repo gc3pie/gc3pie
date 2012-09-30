@@ -39,6 +39,11 @@
 .. automodule:: gc3libs.exceptions
    :members:
 
+`gc3libs.session`
+=================
+.. automodule:: gc3libs.session
+    :members:
+
 `gc3libs.persistence`
 =====================
 .. automodule:: gc3libs.persistence
