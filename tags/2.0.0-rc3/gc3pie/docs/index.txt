@@ -1,0 +1,74 @@
+.. GC3Pie documentation master file, created by
+   sphinx-quickstart on Wed Nov 17 09:38:24 2010.
+
+   You can adapt this file completely to your liking, but it should at least
+   contain the root `toctree` directive.
+
+.. Hey Emacs, this is -*- rst -*-
+
+   This file follows reStructuredText markup syntax; see
+   http://docutils.sf.net/rst.html for more information.
+
+.. include:: global.inc
+
+
+====================================
+  Welcome to GC3Pie documentation!
+====================================
+
+
+--------------
+ Introduction
+--------------
+
+GC3Pie is a Python package for running large job campaigns on diverse
+batch-oriented execution environments (for instance: a Sun/Oracle/Open
+`Grid Engine`_ cluster, or the Swiss National Distributed Computing
+Infrastructure SMSCG_).  It also provides facilities for implementing
+command-line driver scripts, in the form of Python object classes
+whose behavior can be customized by overriding specified object
+methods.
+
+GC3Pie is comprised of three main components: 
+
+- :ref:`GC3Libs`: A library of Python classes for controlling the life-cycle
+  of a Grid or batch computational job collections. *GC3Libs* provides
+  services for submitting computational jobs to Grids and batch
+  systems and controlling their execution, persisting job information,
+  and retrieving the final output.
+
+- :ref:`GC3Apps`: A collection of driver scripts to run large job
+  campaigns. These are all "glue scripts" to control hundreds or
+  thousand job instances at once; they are used in production by
+  various research groups, but are also publicly available as examples
+  of GC3Libs coding.
+
+- :ref:`GC3Utils`: This is a small set of low-level utilities to
+  perform various control and cleanup tasks, like querying a job's
+  running state (:command:`gstat`), forcibly terminating it
+  (:command:`gkill`), re-submitting a job (:command:`gresub`), etc.
+
+
+-------------------
+ Table of Contents
+-------------------
+
+.. toctree::
+
+  install
+  configuration
+  troubleshooting
+  gc3apps/index
+  gc3utils
+  gc3libs/index
+  contributing
+  credits
+  glossary
+
+--------------------
+ Indices and tables
+--------------------
+
+* :ref:`genindex`
+* :ref:`modindex`
+* :ref:`search`

@@ -1,0 +1,469 @@
+.. Hey Emacs, this is -*- rst -*-
+
+   This file follows reStructuredText markup syntax; see
+   http://docutils.sf.net/rst.html for more information.
+
+.. include:: global.inc
+
+
+Contributing to GC3Pie
+======================
+
+First of all, thanks for wanting to contribute to GC3Pie!  GC3Pie
+is an open-ended endeavour, and we're always looking for new ideas,
+suggestions, and new code.  (And also, for fixes to bugs old and new ;-))
+
+The paragraphs below should brief you about the organization of the
+GC3Pie code repositories, and the suggested guidelines for code and
+documentation style.  Feel free to request more info or discuss the
+existing recommendations on the `GC3Pie mailing list`_
+
+
+
+Code repository organization
+----------------------------
+
+GC3Pie code is hosted in a `Google Code`_ repository, which you can
+access online__ or using any Subversion_ client.  Refer to the
+`checkout instructions`_ to grab a copy of the sources.
+
+.. _`checkout instructions`: http://code.google.com/p/gc3pie/source/checkout
+.. _`google code`: http://code.google.com/
+.. __: http://code.google.com/p/gc3pie/source/browse
+
+Please note that anyone can read the sources, but you need to be
+granted *committer* status before you can make any modifications into
+the code; read section `how can I get access to the SVN repository?`_
+below to request write-access to the repository.
+
+
+Repository structure
+~~~~~~~~~~~~~~~~~~~~
+
+The GC3Pie code repository follows the `standard subversion layout`__:
+
+* ``trunk`` is the place for development code: it has all the latest
+  and greatest features, and also the newest and nastiest bugs.
+* ``tags`` is where released code is: each subdirectory of ``tags`` is
+  a snapshot of a release of GC3Pie code, and should never change.
+* ``branches`` are alternative development lines, for instance code
+  from past releases that still gets bugfixes, or experimental
+  features that have not been implemented in the main development line
+  ``trunk`` (because, e.g., they require a radical API change).
+
+.. __: http://stackoverflow.com/a/109009/459543
+
+We shall now describe the contents of the ``trunk`` directory, as
+there is where most new code will land.  Organization of the code in
+``tags`` and ``branches`` is very similar and you should be able to
+adapt easily.
+
+The ``gc3pie`` directory in ``trunk`` contains all GC3Pie code.  It
+has one subdirectory for each of the main parts of GC3Pie:
+
+* The ``gc3libs`` directory contains the GC3Libs code, which is the
+  core of GC3Pie.  GC3Libs are extensively described in the `API
+  <api.html>`_ section of this document; read the module descriptions
+  to find out where your new suggested functionality would suit best.
+  If unsure, ask on the `GC3Pie mailing list`_.
+
+* The ``gc3utils`` directory contains the sources for the low-level
+  GC3Utils command-line utilities. 
+
+* The ``gc3apps`` directory contains the sources for higher level
+  scripts that implement some computational use case of independent
+  interest.  
+
+  The ``gc3apps`` directory contains one subdirectory per *application
+  script*.  Actually, each subdirectory can contain one or more Python
+  scripts, as long as they form a coherent bundle; for instance,
+  Rosetta_ is a suite of applications in computational biology: there
+  are different GC3Apps script corresponding to different uses of the
+  Rosetta_ suite, all of them grouped into the ``rosetta``
+  subdirectory.
+
+  Subdirectories of the ``gc3apps`` directory follow this naming
+  convention:
+
+  - the directory name is the main application name, if the
+    application that the scripts wrap is a known, publicly-released
+    computational application (e.g., Rosetta_, GAMESS_)
+
+  - the directory name is the requestor's name, if the application
+    that the scripts wrap is some research code that is being
+    internally developed. For instance, the ``bf.uzh.ch`` directory
+    contains scripts that wrap code for economic simulations that is
+    being developed at the `Banking and Finance Institute of the University
+    of Zurich`__
+
+    .. __: http://www.bf.uzh.ch/
+
+
+How can I get access to the SVN repository?
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Please send an email to <gc3pie-dev@googlegroups.com>.  Note that, in
+order to access the `GC3Pie source repository`__ you will need a
+`Google Account`_, so sending the request email from a Gmail_ address
+might be a good idea.
+
+.. _gmail: http://gmail.com/
+.. _`google account`: http://www.google.com/accounts
+.. __: http://code.google.com/p/gc3pie/
+
+
+Testing the code
+----------------
+
+In developing GC3Pie we try to use a `Test Driven Development`_
+approach, in the light of the quote: *It's tested or it's broken*. We
+use `tox`_ and `nose`_ as test runners, which make creating tests very
+easy.
+
+.. _`Test Driven Development`: http://en.wikipedia.org/wiki/Test-driven_development
+.. _`tox`: http://tox.testrun.org/latest/
+.. _`nose`: http://readthedocs.org/docs/nose/en/latest/
+
+
+Organizing tests
+~~~~~~~~~~~~~~~~
+
+Each single python file should have a test file inside a ``tests``
+subpackage with filename created by prefixing ``test_`` to the
+filename to test.  For example, if you created a file ``foo.py``,
+there should be a file ``tests/test_foo.py`` which will contains tests
+for ``foo.py``.
+
+Even though following the naming convention above is not always
+possible, each test regarding a specific component should be in a file
+inside a ``tests`` directory inside that component.  For instance,
+tests for the subpackage `gc3libs.persistence` are located inside the
+directory ``gc3libs/persistence/tests`` but are not named after the
+specific file.
+
+
+Writing tests
+~~~~~~~~~~~~~
+
+Please remember that it may be hard to understand, whenever a test
+fails, if it's a bug in the code or in the tests!  Therefore please
+remember:
+
+* Try to keep tests as simple as possible, and *always* simpler than
+  the tested code. (*Debugging is twice as hard as writing the code in
+  the first place.*,  Brian W. Kernighan and P. J. Plauger)
+
+* Write multiple indipendent tests to test different possible behavior
+  and/or different methods of a class.
+
+* Tests should cover methods and functions, but also specific use cases.
+
+* If you are fixing a bug, it's good practice to write a test to check
+  if the bug is still there, in order to avoid to re-include the bug
+  in the future.
+
+* Tests should clean up every temporary file they create.
+
+Writing tests is very easy: just create a file whose name begins with
+``test_``, then put in it some functions which name begins with
+``test_``; the nose_ framework will automatically call each one of
+them. Moreover, nose_ will run also any doctest_ which will be found in
+the code.
+
+.. _doctest: http://wiki.python.org/moin/DocTest
+
+Full documentation of the nose_ framework is available at the `nose`_
+website. However, there are some of the interesting features you may
+want to use to improve your tests, detailed in the following sections.
+
+
+Testing for errors
+++++++++++++++++++
+
+If your test must verify that the code raises an exception, instead
+of wrapping the test inside a ``try: ... except:`` block you can use
+the `@raises` decorator from the `nose.tools` module::
+
+    from nose.tools import raises
+
+    @raises(TypeError)
+    def test_invalid_invocation():
+        Application()
+
+This is exactly the same as writing::
+
+     try:
+         Application()
+         assert False, "we should have got an exception"
+     except TypeError:
+         pass
+
+
+Skipping tests
+++++++++++++++
+
+If you want to skip a test, just raise a `SkipTest` exception
+(imported from the `nose.plugins.skip` module). This is useful when
+you know that the test will fail, either because the code is not ready
+yet, or because some environmental conditions are not satisfied (e.g.,
+an optional module is missing, or the code needs to access a service
+that is not available).  For example::
+
+    from nose.plugins.skip import SkipTest
+    try:
+        import MySQLdb
+    except ImportError:
+        raise SkipTest("Error importing MySQL backend. Skipping MySQL low level tests")
+
+
+Generating tests
+++++++++++++++++
+
+It is possible to use `Python generators`_ to create multiple
+tests at run time::
+
+    def test_evens():
+        for i in range(0, 5):
+            yield check_even, i, i*3
+
+    def check_even(n, nn):
+        assert n % 2 == 0 or nn % 2 == 0
+
+This will result in five tests: nose_ will iterate the generator,
+creating a function test case wrapper for each tuple it
+yields. Specifically, in the example above, nose_ will execute the
+function calls ``check_even(0,0)``, ``check_even(1,3)``, ...,
+``check_even(4,12)`` as if each of them were written in the source as
+a separate test; if any of them fails (i.e., raises an
+`AssertionError`), then the test is considered failed.
+
+.. _`python generators`: http://wiki.python.org/moin/Generators
+
+
+Grouping tests into classes
++++++++++++++++++++++++++++
+
+Tests that share the same set-up or clean-up code should be grouped
+into *test classes*:
+
+* The exact same set-up and clean-up code *(fixtures)* will be run
+  before and after each test, but is written down only once.
+
+* Python class inheritance can be used to run the same tests on
+  different configurations (e.g., by just overriding the set-up and
+  clean-up code).
+
+A test class is a regular Python class, whose name begins with
+``Test`` (first letter must be uppercase); each method whose name
+begins with ``test_`` defines a test case.
+
+If the class defines a `setUp` method, it will be called *before each
+test method*. If the class defines a `tearDown` method, it will be
+called *after each test method*. 
+
+If class methods ``setup_class`` and ``teardown_class`` are defined,
+nose_ will invoke them *once* (before and after performing the tests
+of that class, respectively).
+
+A canonical example of a test class with fixtures looks like this::
+
+    class TestClass(object):
+
+       @classmethod
+       def setup_class(cls):
+          ...
+
+       @classmethod
+       def teardown_class(cls):
+          ...
+
+       def setUp(self):
+          ...
+
+       def tearDown(self):
+          ...
+
+       def test_case_1(self):
+          ...
+
+       def test_case_2(self):
+          ...
+
+       def test_case_3(self):
+          ...
+
+The nose_ framework will execute a code like this::
+
+    TestClass.setup_class()
+    for test_method in get_test_classes():
+       obj = TestClass()
+       obj.setUp()
+       try:
+          obj.test_method()
+       finally:
+          obj.tearDown()
+    TestClass.teardown_class()
+
+That is, for each test case, a new instance of the `TestClass` is
+created, set up, and torn down -- thus approximating the Platonic
+ideal of running each test in a completely new, pristine environment.
+
+
+Running multiple tests
+~~~~~~~~~~~~~~~~~~~~~~
+
+In order to test GC3Pie against multiple version of python we use
+`tox`_, which creates virtual environments for all configured python
+version, runs `nose`_ inside each one of them, and prints a summary of
+the test results. 
+
+Running tox_ is straightforward; just type ``tox`` on the command-line
+in GC3Pie's top level source directory.
+
+The default ``tox.ini`` file shipped with GC3Pie attempts to test all
+Python versions from 2.4 to 2.7 (inclusive).  If you want to run tests
+only for a specific version of python, for instance Python 2.6, use
+the ``-e`` option::
+
+    tox -e py26
+    [...]
+    Ran 118 tests in 14.168s
+
+    OK (SKIP=9)
+    __________________________________________________________ [tox summary] ___________________________________________________________
+    [TOX] py26: commands succeeded
+    [TOX] congratulations :)
+
+(See section `skipping tests`_ for a discussion about how and when to
+define skipped tests.)
+
+Option ``-r`` instructs `tox`:command: to re-build the testing virtual environment.
+
+.. todo::
+
+   When should ``-r`` be used?
+
+
+Coding style
+------------
+
+**Python code should be written according to PEP 8 recommendations.**
+(And by this we mean not just the code style.)
+
+.. _`pep 8`: http://www.python.org/dev/peps/pep-0008/
+
+Please take the time to read `PEP 8`_ through, as it is widely-used
+across the Python programming community -- it will benefit your
+contribution to any free/open-source Python project!
+
+Anyway, here's a short summary for the impatient:
+
+* use English nouns to name variables and classes; use verbs to
+  name object methods.
+
+* use 4 spaces to indent code; never use TABs.
+
+* use lowercase letters for method and variable names; use underscores
+  ``_`` to separate words in multi-word identifiers (e.g.,
+  ``lower_case_with_underscores``) 
+
+* use "CamelCase" for class and exception names.
+
+* but, above all, do not blindly follow the rules and try to do the
+  thing that *enhances code clarity and readability!*
+
+
+Here's other code conventions that apply to GC3Pie code; since they
+are not always widely followed or known, a short rationale is given
+for each of them.
+
+* Every class and function should have a docstring. Use
+  reStructuredText_ markup for docstrings and documentation text
+  files.
+
+  *Rationale:* A concise English description of the purpose of a
+  function can be faster to read than the code.  Also, undocumented
+  functions and classes do not appear in this documentation, which
+  makes them invisible to new users.
+
+  .. _reStructuredText: http://docutils.sourceforge.net/rst.html
+
+
+* Use fully-qualified names for all imported symbols; i.e., write
+  ``import foo`` and then use ``foo.bar()`` instead of ``from foo
+  import bar``.  If there are few imports from a module, and the
+  imported names do *clearly* belong to another module, this rule can
+  be relaxed if this enhances readability, but *never* do use
+  unqualified names for exceptions.
+
+  *Rationale:* There are so many functions and classes in GC3Pie, so
+  it may be hard to know to which module the function `count` belongs.
+  (Think especially of people who have to bugfix a module they didn't
+  write in the first place.)
+
+
+* Use double quotes ``"`` to enclose strings representing messages meant
+  for human consumption (e.g., log messages, or strings that will be
+  printed on the users' terminal screen).
+
+  *Rationale:* The apostrophe character ``'`` is a normal occurrence in
+  English text; use of the double quotes minimizes the chances that
+  you introduce a syntax error by terminating a string in its middle.
+
+
+* Follow normal typographic conventions when writing user messages and
+  output; prefer clarity and avoid ambiguity, even if this makes the
+  messages longer.
+
+  *Rationale:* Messages meant to be read by users *will* be read by
+  users; and if they are not read by users, they will be fired back
+  verbatim on the mailing list on the next request for support. So
+  they'd better be clear, or you'll find yourself wondering what that
+  message was intended to mean 6 months ago.
+
+  Common typographical conventions enhance readability, and help users
+  identify lines of readable text.
+
+
+* Use single quotes ``'`` for strings that are meant for internal
+  program usage (e.g., attribute names).
+
+  *Rationale:* To distinguish them visually from messages to the user.
+
+
+* Use triple quotes ``"""`` for docstrings, even if they fit on a single
+  line. 
+
+  *Rationale:* Visual distinction.
+
+
+* Each file should have this structure:
+
+  - the first line is the `hash-bang line`__,
+  - the module docstring (explain briefly the module purpose and
+    features),
+  - the copyright and licence notice,
+  - module imports (in the order suggested by :PEP:`8`)
+  - and then the code...
+
+  *Rationale:* The docstring should be on top so it's the first thing
+  one reads when inspecting a file.  The copyright notice is just a
+  waste of space, but we're required by law to have it.
+  
+  .. __: http://en.wikipedia.org/wiki/Shebang_(Unix)
+
+
+
+Questions?
+----------
+
+Please write to the `GC3Pie mailing list`_; we try to do our best to
+answer promptly.
+
+
+
+.. (for Emacs only)
+..
+  Local variables:
+  mode: rst
+  End:
