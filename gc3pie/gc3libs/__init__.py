@@ -1326,7 +1326,7 @@ class Application(Task):
         """
         qsub = list(resource.qsub)
         if self.requested_walltime:
-            qsub += ['-l', 'walltime=%s' % (3600 * self.requested_walltime)]
+            qsub += ['-l', 'walltime=%s' % (self.requested_walltime.amount(seconds))]
         if self.requested_memory:
             qsub += ['-l', 'mem=%dmb' % self.requested_memory.amount(MB)]
         if self.stdin:
