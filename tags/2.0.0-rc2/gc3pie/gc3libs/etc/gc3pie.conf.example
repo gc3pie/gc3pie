@@ -1,0 +1,213 @@
+# ~/.gc3/gc3utils.conf
+#
+#  THIS IS JUST AN EXAMPLE CONFIGURATION FILE.  If you do not change
+#  this file from its default, jobs will only run on your computer and
+#  nowhere else.  In order to harness the full power of GC3Pie, edit
+#  the file and define resources available into your environment,
+#  using the supplied ones as guides.
+#
+#  Please see:
+#    http://gc3pie.googlecode.com/svn/trunk/gc3pie/docs/html/configuration.html
+#  for details on this file format and contents.
+
+
+[DEFAULT]
+# The `DEFAULT` section is entirely optional; if present, its values can
+# be used to interpolate values in other sections, using the `%(name)s` syntax.
+# See documentation of the `SafeConfigParser` object at:
+#   http://docs.python.org/library/configparser.html
+debug = 0
+
+
+# Auth sections: [auth/name]
+#
+# You can have as many `auth/name` sections as you want;
+# this allows you to define different auths for different resources.
+# Each `resource/***` section can reference one (and one only) auth
+# section.
+#
+# Examples:
+#
+# 1) The following section can be used to define an `smscg` auth that
+# is used to access the resources of the distributed computing
+# infrastructure SMSCG (http://www.smscg.ch/).
+#
+# You need to insert three values here, for which we can provide no
+# default: "aai_username", "idp", and "vo".
+#
+# aai_username: This is the "username" you are asked for when accessing 
+#   any SWITCHaai/Shibboleth web page, e.g., https://gc3-aai01.uzh.ch/secure/
+#
+# idp: Find this out with the command "slcs-info": it prints a list of IdP
+#   (Identity Provider IDs) followed by the human-readable name of the associated
+#   institution. Pick the one that corresponds to you University.
+#   It is always the last two components of the University's Internet domain name 
+#   (e.g., "uzh.ch" or "ethz.ch").
+# 
+# vo: In order to use SMSCG, you must sign up to a VO (Virtual Organisation).
+#   One the words "life", "earth", "atlas" or "crypto" should be here.
+#   Find out more at: http://www.smscg.ch/www/user/
+
+#
+# [auth/smscg]
+# type = voms-proxy
+# cert_renewal_method = slcs
+# aai_username = PLEASE-SET-aai_username-IN-gc3pie.conf
+# idp =  PLEASE-SET-idp-IN-gc3pie.conf
+# vo = smscg
+#
+# 2) The following section shows how to define an auth section for
+# accessing computers via SSH.  The same section can be re-used on all
+# computers where your username and/or identity file (public/private
+# key) is the same:
+# 
+# [auth/ssh_alice]
+# type = ssh
+# username = your_ssh_user_name_on_computer_alice
+#
+# 3) If you have a different account name on some resources, you can create
+# another auth section with, e.g.
+#
+# [auth/ssh_on_bob]
+# type = ssh
+# username = your_ssh_user_name_on_computer_bob
+
+
+# Resource sections: [resource/<resource_name>]
+#
+# You can have as many `resource/name` sections as you want; this
+# allows you to define many different resources.
+#
+# Resources are distinguished by the value of the `type` key:
+#
+#  type      meaning
+#  ========  ======================================================================
+#  arc0      resource is accessed using the ARC 0.8.x middleware
+#  sge       resource is a Grid Engine cluster, accessed via qsub/qstat over SSH
+#  lsf       resource is an LSF cluster, accessed via bsub/bjobs over SSH
+#  pbs       resource is a TORQUE/OpenPBS cluster, accessed via qsub/qstat over SSH
+#  shellcmd  run jobs on the local computer
+#
+# Every resource/*** section must reference a valid auth/*** section.
+# Resources of `arc0` type can only reference voms-proxy/grid-proxy
+# type auth sections; resources of lsf/pbs/sge type can only reference
+# ssh type sections; the `shellcmd`/localhost resources currently
+# ignore whatever auth info is passed.
+#
+# Some keys are commmon to all resource types:
+#
+#    * type: Resource type, see above
+#    * auth: the name of a valid auth/*** section; only the authentication 
+#      	     section name (after the `/` must be specified).
+#    * max_cores: Total number of cores provided by the resource
+#    * max_cores_per_job: Maximum number of CPU cores that a job can request; 
+#            a resource will be dropped during the brokering process if a job 
+#            requests more cores than this.
+#    * max_memory_per_core: Max amount of memory (expressed in GBs) 
+#      	     that a job can request
+#    * max_walltime: Maximum job running time (in hours)
+#
+
+# The following two sections should be enough to run on the local
+# machine only; adjust the `max_cores` parameter to set the number of
+# jobs that you would like to spawn concurrently
+
+[auth/noauth]
+type=none
+
+[resource/localhost]
+# change the following to `enabled=no` to quickly disable
+enabled=yes
+type=shellcmd
+auth=noauth
+transport=local
+# where the GNU `time` command is located; 
+# the default is fine on almost any Linux distribution.
+time_cmd=/usr/bin/time
+# max_cores sets a limit on the number of cuncurrently-running jobs
+max_cores=2
+max_cores_per_job=2
+# adjust the following to match the features of your local computer
+max_memory_per_core=2
+max_walltime=2
+architecture=x64_64
+
+# Examples:
+#
+# 1) A single cluster, accessed through the ARC middleware:
+#
+# [resource/idgc3grid01]
+# enabled = no
+# type = arc0
+# auth = smscg
+# frontend = idgc3grid01.uzh.ch
+# name = gc3
+# arc_ldap = ldap://idgc3grid01.uzh.ch:2135/o=grid/mds-vo-name=local
+# max_cores_per_job = 256
+# max_memory_per_core = 2
+# max_walltime = 99999
+# max_cores = 320
+# architecture = x86_64
+
+# 2) Access to the whole SMSCG distributed infrastructure, seen as a
+# single compute resource:
+# 
+# [resource/smscg]
+# enabled = false
+# name = smscg
+# type = arc0
+# auth = smscg
+# arc_ldap = ldap://giis.smscg.ch:2135/o=grid/mds-vo-name=Switzerland
+# max_cores_per_job = 256
+# max_memory_per_core = 2
+# max_walltime = 24
+# ncores = 8000
+# architecture = i686, x86_64
+
+# 3) A single Sun Grid Engine cluster, accessed by SSH'ing to the
+# front-end node to control jobs via qsub/qstat:
+#
+# [resource/schroedinger]
+# enabled = no
+# type = sge
+# auth = ssh
+# transport = ssh
+# frontend = idesl1.uzh.ch
+# architecture = x86_64
+# max_cores = 4096
+# max_cores_per_job = 1024
+# max_memory_per_core = 3
+# max_walltime = 72
+# # see http://gridengine.info/2005/11/04/immediate-accounting-data-flushing
+# # if you need to lower this
+# accounting_delay = 15
+# # you can specify alternate paths to the SGE commands, e.g., to use
+# # wrapper scripts or to specify addtional options; GC3Pie will *append*
+# # the standard arguments to what you specify here
+# #qsub = /usr/local/bin/qsub -q whatever.q
+# #qstat = /usr/local/bin/qstat
+# #qacct = /usr/local/sbin/qacct.sh
+# #qdel = /usr/local/bin/qdel
+
+# 4) A single LSF cluster, accessed directly (i.e., GC3Pie must be
+# running on the cluster front-end node):
+#
+# [resource/brutus]
+# enabled = no
+# type = lsf
+# auth = none
+# transport = local
+# frontend = brutus.ethz.ch
+# architecture = x86_64
+# max_cores = 8192
+# max_cores_per_job = 1024
+# max_memory_per_core = 3
+# max_walltime = 72
+# # you can specify alternate paths to the LSF commands, e.g., to use
+# # wrapper scripts or to specify addtional options; GC3Pie will *append*
+# # the standard arguments to what you specify here
+# #bsub = bsub -R lustre
+# #bjobs = bjobs
+# #bkill = /path/to/my/bkill.sh
+# #bqueues = bqueues
+# #lshosts = lshosts
