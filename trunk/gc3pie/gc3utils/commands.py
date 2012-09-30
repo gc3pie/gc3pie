@@ -125,7 +125,8 @@ force removal of a job regardless.
                 app.attach(self._core)
 
                 if app.execution.state != Run.State.NEW:
-                    if app.execution.state != Run.State.TERMINATED:
+                    if app.execution.state not in [ Run.State.TERMINATED,
+                                                    Run.State.TERMINATING ]:
                         if self.params.force:
                             self.log.warning("Job '%s' not in terminal state:"
                                              " attempting to kill before cleaning up.", app)
