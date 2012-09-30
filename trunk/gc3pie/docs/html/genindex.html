@@ -102,6 +102,10 @@
   </dt>
 
         
+  <dt><a href="gc3libs/api.html#gc3libs.session.Session.add">(gc3libs.session.Session method)</a>
+  </dt>
+
+        
   <dt><a href="gc3libs/api.html#gc3libs.workflow.TaskCollection.add">(gc3libs.workflow.TaskCollection method)</a>
   </dt>
 
@@ -424,6 +428,10 @@
   <dt><a href="gc3libs/api.html#gc3libs.utils.deploy_configuration_file">deploy_configuration_file() (in module gc3libs.utils)</a>
   </dt>
 
+      
+  <dt><a href="gc3libs/api.html#gc3libs.session.Session.destroy">destroy() (gc3libs.session.Session method)</a>
+  </dt>
+
   </dl></td>
   <td style="width: 33%" valign="top"><dl>
       
@@ -524,14 +532,22 @@
   <dt><a href="gc3libs/api.html#gc3utils.commands.cmd_gselect.filter_by_state">filter_by_state() (gc3utils.commands.cmd_gselect method)</a>
   </dt>
 
-  </dl></td>
-  <td style="width: 33%" valign="top"><dl>
       
   <dt><a href="gc3libs/api.html#gc3utils.commands.cmd_gselect.filter_by_submission_date">filter_by_submission_date() (gc3utils.commands.cmd_gselect method)</a>
   </dt>
 
+  </dl></td>
+  <td style="width: 33%" valign="top"><dl>
       
   <dt><a href="gc3libs/api.html#gc3libs.utils.first">first() (in module gc3libs.utils)</a>
+  </dt>
+
+      
+  <dt><a href="gc3libs/api.html#gc3libs.session.Session.flush">flush() (gc3libs.session.Session method)</a>
+  </dt>
+
+      
+  <dt><a href="gc3libs/api.html#gc3libs.session.Session.forget">forget() (gc3libs.session.Session method)</a>
   </dt>
 
       
@@ -685,7 +701,7 @@
   </dt>
 
       
-  <dt><a href="gc3libs/api.html#module-gc3libs.Resource">gc3libs.Resource (module)</a>
+  <dt><a href="gc3libs/api.html#module-gc3libs.session">gc3libs.session (module)</a>
   </dt>
 
       
@@ -907,19 +923,33 @@
   </dt>
 
       
+  <dt><a href="gc3libs/api.html#gc3libs.session.Session.list_ids">list_ids() (gc3libs.session.Session method)</a>
+  </dt>
+
+      
   <dt><a href="gc3libs/api.html#gc3utils.commands.cmd_gsession.list_jobs">list_jobs() (gc3utils.commands.cmd_gsession method)</a>
+  </dt>
+
+      
+  <dt><a href="gc3libs/api.html#gc3libs.session.Session.list_names">list_names() (gc3libs.session.Session method)</a>
   </dt>
 
       
   <dt><a href="gc3libs/api.html#gc3libs.config.Configuration.load">load() (gc3libs.config.Configuration method)</a>
   </dt>
 
+      <dd><dl>
+        
+  <dt><a href="gc3libs/api.html#gc3libs.session.Session.load">(gc3libs.session.Session method)</a>
+  </dt>
+
+      </dl></dd>
+  </dl></td>
+  <td style="width: 33%" valign="top"><dl>
       
   <dt><a href="gc3libs/api.html#gc3libs.exceptions.LoadError">LoadError</a>
   </dt>
 
-  </dl></td>
-  <td style="width: 33%" valign="top"><dl>
       
   <dt><a href="gc3libs/api.html#gc3libs.utils.lock">lock() (in module gc3libs.utils)</a>
   </dt>
@@ -1215,6 +1245,10 @@
   </dt>
 
         
+  <dt><a href="gc3libs/api.html#gc3libs.session.Session.remove">(gc3libs.session.Session method)</a>
+  </dt>
+
+        
   <dt><a href="gc3libs/api.html#gc3libs.workflow.TaskCollection.remove">(gc3libs.workflow.TaskCollection method)</a>
   </dt>
 
@@ -1223,12 +1257,6 @@
   <dt><a href="glossary.html#term-resource"><strong>Resource</strong></a>
   </dt>
 
-      <dd><dl>
-        
-  <dt><a href="gc3libs/api.html#gc3libs.Resource.Resource">(class in gc3libs.Resource)</a>
-  </dt>
-
-      </dl></dd>
       
   <dt><a href="gc3libs/api.html#gc3libs.workflow.RetryableTask.retry">retry() (gc3libs.workflow.RetryableTask method)</a>
   </dt>
@@ -1282,6 +1310,14 @@
   </dt>
 
       
+  <dt><a href="gc3libs/api.html#gc3libs.session.Session.save">save() (gc3libs.session.Session method)</a>
+  </dt>
+
+      
+  <dt><a href="gc3libs/api.html#gc3libs.session.Session.save_all">save_all() (gc3libs.session.Session method)</a>
+  </dt>
+
+      
   <dt><a href="gc3libs/api.html#gc3libs.Application.sbatch">sbatch() (gc3libs.Application method)</a>
   </dt>
 
@@ -1297,8 +1333,22 @@
   <dt><a href="glossary.html#term-session"><strong>Session</strong></a>
   </dt>
 
+      <dd><dl>
+        
+  <dt><a href="gc3libs/api.html#gc3libs.session.Session">(class in gc3libs.session)</a>
+  </dt>
+
+      </dl></dd>
       
   <dt><a href="gc3libs/api.html#gc3libs.cmdline.SessionBasedScript">SessionBasedScript (class in gc3libs.cmdline)</a>
+  </dt>
+
+      
+  <dt><a href="gc3libs/api.html#gc3libs.session.Session.set_end_timestamp">set_end_timestamp() (gc3libs.session.Session method)</a>
+  </dt>
+
+      
+  <dt><a href="gc3libs/api.html#gc3libs.session.Session.set_start_timestamp">set_start_timestamp() (gc3libs.session.Session method)</a>
   </dt>
 
       
@@ -1345,6 +1395,8 @@
   <dt><a href="gc3libs/api.html#gc3libs.Run.shellexit_to_returncode">shellexit_to_returncode() (gc3libs.Run static method)</a>
   </dt>
 
+  </dl></td>
+  <td style="width: 33%" valign="top"><dl>
       
   <dt><a href="gc3libs/api.html#gc3utils.commands.cmd_gsession.show_log">show_log() (gc3utils.commands.cmd_gsession method)</a>
   </dt>
@@ -1353,8 +1405,6 @@
   <dt><a href="gc3libs/api.html#gc3libs.Run.signal">signal (gc3libs.Run attribute)</a>
   </dt>
 
-  </dl></td>
-  <td style="width: 33%" valign="top"><dl>
       
   <dt><a href="gc3libs/api.html#gc3libs.utils.Singleton">Singleton (class in gc3libs.utils)</a>
   </dt>
