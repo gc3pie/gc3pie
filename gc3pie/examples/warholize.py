@@ -169,12 +169,9 @@ class WarholizeScript(SessionBasedScript):
         for (i, input_file) in enumerate(self.params.args):
             extra_args = extra.copy()
             extra_args['output_dir'] = 'Warholized.%s' % os.path.basename(input_file)
-            yield ("Warholize.%d" % i,
-                   WarholizeWorkflow,
-                   [input_file,
-                    self.params.copies,
-                    self.params.num_colors],
-                   extra_args)
+            yield  WarholizeWorkflow(input_file,
+                                     self.params.copies,
+                                     self.params.num_colors, **extra_args)
 
 # `new_tasks` is used as a *generator* (but it could return a list as
 # well). Each *yielded* object is a tuple which rapresents a generic
