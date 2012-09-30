@@ -29,8 +29,8 @@ can implement problem-specific job control policies.
 __docformat__ = 'reStructuredText'
 __version__ = 'development version (SVN $Revision$)'
 
-
 import time
+import os
 
 from gc3libs.compat.collections import defaultdict
 
@@ -117,11 +117,13 @@ class TaskCollection(Task):
         # if `output_dir` is not None, it is interpreted as the base
         # directory where to download files; each task will get its
         # own subdir based on its `.persistent_id`
-        for task in self.tasks:
-            if output_dir is not None:
+        if output_dir is None:
+            output_dir = self.get('output_dir', None)
+        if output_dir is not None:
+            for task in self.tasks:
                 self._controller.fetch_output(
                     task,
-                    os.path.join(output_dir, task.permanent_id),
+                    os.path.join(output_dir, task.persistent_id),
                     overwrite,
                     **extra_args)
 
