@@ -305,12 +305,40 @@ class Task(Persistable, Struct):
         :return: Path to the directory where the job output has been
                  collected.
         """
+        #result = self._controller.fetch_output(self, output_dir, overwrite, **extra_args)
         if self.execution.state == Run.State.TERMINATED:
             return self.output_dir
-        result = self._controller.fetch_output(self, output_dir, overwrite, **extra_args)
+        # advance state to TERMINATED
         if self.execution.state == Run.State.TERMINATING:
+            self.output_dir = self._get_download_dir(output_dir)
+            self.execution.info = ("Final output downloaded to '%s'" % self.output_dir)
             self.execution.state = Run.State.TERMINATED
-        return result
+            self.changed = True
+            return self.output_dir
+        else:
+            download_dir = self._get_download_dir(output_dir)
+            self.execution.info = ("Output snapshot downloaded to '%s'" % download_dir)
+            return download_dir
+
+    def _get_download_dir(self, download_dir):
+        """
+        Return a directory path where to download this Task's output files.
+
+        If the given `download_dir` is not None, return that.  Otherwise,
+        return the directory saved on this object in attribute `output_dir`.
+        If all else fails, raise `gc3libs.exceptions.InvalidArgument`.
+        """
+        # determine download dir
+        if download_dir is not None:
+            return download_dir
+        else:
+            try:
+                return self.output_dir
+            except AttributeError:
+                raise gc3libs.exceptions.InvalidArgument(
+                    "`Task._get_download_dir()` called with no explicit download directory,"
+                    " but object '%s' has no `output_dir` attribute set either."
+                    % (self, type(self)))
 
 
     def peek(self, what='stdout', offset=0, size=None, **extra_args):
