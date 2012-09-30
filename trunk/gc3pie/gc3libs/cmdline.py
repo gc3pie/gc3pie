@@ -859,13 +859,12 @@ class SessionBasedScript(_Script):
             self.session.add(task, flush=False)
             self.log.debug("Added task '%s' to session." % task.jobname)
 
-    @staticmethod
-    def _fix_output_dir(task, name):
+    def _fix_output_dir(self, task, name):
         """Substitute the NAME string in output paths."""
         task.output_dir = task.output_dir.replace('NAME', name)
         try:
             for subtask in task.tasks:
-                _fix_output_dir(subtask, name)
+                self._fix_output_dir(subtask, name)
         except AttributeError:
             # no subtasks
             pass
