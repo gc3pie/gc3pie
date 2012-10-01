@@ -312,11 +312,13 @@ HTML Documentation
 HTML documentation for the GC3Libs programming interface can be
 read online at:
 
-  http://gc3pie.googlecode.com/svn/trunk/docs/html/index.html
+  http://gc3pie.googlecode.com/svn/trunk/gc3pie/docs/html/index.html
 
-You can also generate a local copy from the sources::
+If you installed GC3Pie manually, or if you installed it using the
+``install.sh`` script with the ``--develop`` option, you can also
+access a local copy of the documentation from the sources::
 
-  cd $HOME/gc3pie # use '/opt/gc3pie' if root
+  cd $HOME/gc3pie # or wherever the gc3pie virtualenv is installed
   cd src/docs
   make html
 
