@@ -145,12 +145,14 @@ of newly-created jobs so that this limit is never exceeded.
 # This method is called after the session has been completed and the results are generated. 
 # For jobs terminated correctly print out the report with statistics about completed and uncompleted tests. If the test failed job.logTest is printed out.      
     def after_main_loop(self):
-        no_of_tests = 0    	
+        no_of_tests = 0 
+	print_report = False   	
 	number_of_unfinished_tests = 0 
 	number_of_correct_tests = 0 
 	if not self.session:
 		raise RuntimeError("The session is empty.")
 	for job in self.session:
+		#import pdb;pdb.set_trace()
         	no_of_tests = no_of_tests + 1   	
 		if job.execution.state in [Run.State.SUBMITTED, Run.State.RUNNING, Run.State.TERMINATING, Run.State.UNKNOWN, Run.State.STOPPED]:
 			number_of_unfinished_tests = number_of_unfinished_tests + 1
@@ -158,6 +160,10 @@ of newly-created jobs so that this limit is never exceeded.
 			continue
 		elif job.execution.state in Run.State.TERMINATED: 
 			gc3libs.log.debug(" %s job has TERMINATED", job.jobname)
+			if job.tests_enabled is False:
+				gc3libs.log.debug("No tests defined in the file %s or tests not defined correctly.", job.inp_file_path)	
+				continue 
+			print_report = True # The flag job.test_enabled has changed to True
 			if job.is_correct is True:
 				number_of_correct_tests = number_of_correct_tests + 1	
 				message = '%-89s    %s' %(job.jobname, "Passed.")
@@ -168,20 +174,22 @@ of newly-created jobs so that this limit is never exceeded.
 				print message 
 				for log_entry in job.logTest:
 			        	print log_entry
-	if number_of_correct_tests != no_of_tests:
-		print "Only", number_of_correct_tests, "out of", no_of_tests," terminated normally."
-	else:
-		print number_of_correct_tests, "out of", no_of_tests," tests teminated normally."
-	if number_of_unfinished_tests == 0:
-		print "All job(s) terminated normally." 
-	else:
-		print number_of_unfinished_tests,  "job(s) have not terminated correctly. Please examine why." 
+	if print_report is True:
+		if number_of_correct_tests != no_of_tests:
+			print "Only", number_of_correct_tests, "out of", no_of_tests," terminated normally."
+		else:
+			print number_of_correct_tests, "out of", no_of_tests," tests teminated normally."
+		if number_of_unfinished_tests == 0:
+			print "All job(s) terminated normally." 
+		else:
+			print number_of_unfinished_tests,  "job(s) have not terminated correctly. Please examine why." 
 		
 # This class overrides GamessApplication class and launches a test in terminated().
 class GamessTestApplication(GamessApplication):
 	def __init__(self, inp_file_path, *other_input_files, **kw):
 		self.logTest = []
 	        self.is_correct = False		
+		self.tests_enabled = False
 		GamessApplication.__init__(self, 
 					   inp_file_path, 
 					   *other_input_files,
@@ -195,10 +203,12 @@ class GamessTestApplication(GamessApplication):
 		if self.execution.exitcode == 0: 
 			test = GamessTestSuite()
 			gc3libs.log.debug("Analyzing GAMESS input %s and %s output files.", file_input, file_output)
-			test.generate_tests(file_input, file_output)
-			test.runTests()
-	        	self.is_correct = test.final_flag
-			self.logTest.append(test.log)
+			isOK = test.generate_tests(file_input, file_output)
+			if isOK is True:
+			    test.runTests()
+	        	    self.is_correct = test.final_flag
+			    self.tests_enabled = True
+			    self.logTest.append(test.log)
 		else:
 			gc3libs.log.debug("The job %s did not terminated correctly", file_input)		
 # run it

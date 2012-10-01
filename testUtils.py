@@ -45,6 +45,7 @@ This class is responsible for running the tests. Directory with log files.
 class GamessTestSuite:
        
 	def __init__(self):
+		self.log = []
  		self.exQ = []
 		self.list_of_analyzed_files = []
 		
@@ -67,7 +68,6 @@ class GamessTestSuite:
 	def runTests(self):
 		if self.final_flag is False:
 			return
-		self.log = []
 		if self.filename_inp is None:
 		   gc3libs.log.debug("The list with tests is empty. Skipping.")
 	 	   return
@@ -93,14 +93,14 @@ class GamessTestSuite:
 			file.close()
 		except IOError:
 			gc3libs.log.warning("There is a problem with a file %s. Skipping.", filename_inp)
-			return 
+			return False 
 		if os.path.exists(filename_out) == False:
 			gc3libs.log.debug("The file %s does not exists. Skipping.", filename_out)
-			return 
-		if foundlines is None:
+			return False
+		if not foundlines:
 			gc3libs.log.debug("File %s does not contain tests. Skipping.", filename_inp)
-			self.log("File "+ filename_inp + "  does not contain tests. Skipping.")
-			return 
+			self.log.append("File "+ filename_inp + "  does not contain tests. Skipping.")
+			return False
 		self.filename_inp = filename_inp
 		self.filename_out =  filename_out		
 			
@@ -152,5 +152,6 @@ class GamessTestSuite:
 			 except AttributeError:
 				gc3libs.log.warning("Attribute error. arguments %s in function %s from object %s on file %s are incorrect", args, function, app, filename_out)                                                                           		
 			 
-		self.final_flag = True # Success. 
+		self.final_flag = True # Success.
+		return self.final_flag 
 
