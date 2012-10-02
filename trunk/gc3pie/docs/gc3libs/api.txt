@@ -69,17 +69,6 @@
 .. automodule:: gc3libs.utils
     :members:
 
-`gc3libs.Resource`
-==================
-
-.. warning:: 
-
-   This module is deprecated and will be removed in a future release.
-   Do not depend on it.
-
-.. automodule:: gc3libs.Resource
-    :members:
-
 `gc3libs.application`
 =====================
 .. automodule:: gc3libs.application
