@@ -1327,9 +1327,9 @@ class Application(Task):
         bsub += ['-cwd', '.', '-L', '/bin/sh', '-n', ('%d' % self.requested_cores)]
         if self.requested_walltime:
             # LSF wants walltime as HH:MM (days expressed as many hours)
-            hours = int(self.requested_walltime.amount(hours))
-            minutes = int(self.requested_walltime.amount(minutes)) % 60
-            bsub += ['-W', ('%02d:%02d' % (hours, minutes))]
+            hs = int(self.requested_walltime.amount(hours))
+            ms = int(self.requested_walltime.amount(minutes)) % 60
+            bsub += ['-W', ('%02d:%02d' % (hs, ms))]
         if self.requested_memory:
             # LSF uses `rusage[mem=...]` for memory limits (number of MBs)
             bsub += ['-R', ('rusage[mem=%d]' % self.requested_memory.amount(MB))]
