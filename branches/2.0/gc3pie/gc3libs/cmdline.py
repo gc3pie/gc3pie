@@ -845,7 +845,7 @@ class SessionBasedScript(_Script):
                     task.jobname = ("%s-N%d" % (task.__class__.__name__, n+1))
 
             else:
-                raise InternalError(
+                raise gc3libs.exceptions.InternalError(
                     "SessionBasedScript.process_args got %r (%s),"
                     " but was expecting a gc3libs.Task instance" % (item, type(item)))
 
