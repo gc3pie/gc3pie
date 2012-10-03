@@ -37,14 +37,23 @@ import gc3libs.core
 loglevel = logging.ERROR
 configure_logger(loglevel, "test_isse_335")
 
+class MySequentialCollection(SequentialTaskCollection):
+    def next(self, x):
+        """ensure that the next() is called only once per task."""
+        if not hasattr(self, 'next_called_n_times'):
+            self.next_called_n_times = 1
+        else:
+            self.next_called_n_times += 1
+        return SequentialTaskCollection.next(self, x)
+
 class test_issue_335(object):
     def setUp(self):
         self.tmpdir = tempfile.mkdtemp()
 
     def test_issue(self):
         """Test that SequentialTasksCollection goes in terminated state when all of its tasks are in TERMINATED state."""
-        self.ptasks = 2
-        task = SequentialTaskCollection(
+        self.ptasks = 5
+        task = MySequentialCollection(
             [
                 Application(
                     ['echo','test1'],
@@ -65,6 +74,7 @@ class test_issue_335(object):
                 engine.progress()
                 assert_equal(task.execution.state, Run.State.TERMINATED)
                 break
+        assert_equal(task.next_called_n_times, self.ptasks)
 
     def tearDown(self):
         shutil.rmtree(self.tmpdir)
