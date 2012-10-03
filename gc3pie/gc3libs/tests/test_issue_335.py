@@ -48,7 +48,9 @@ def test_issue():
     engine.add(task)
     while True:
         engine.progress()
-        if [t for t in task.tasks if t.execution.state == Run.State.TERMINATED] == task.tasks:
+
+        if len([t for t in task.tasks if t.execution.state == Run.State.TERMINATED]) == 2:
+            engine.progress()
             assert_equal(task.execution.state, Run.State.TERMINATED)
             break
     
