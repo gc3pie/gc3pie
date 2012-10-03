@@ -64,13 +64,8 @@ class TaskCollection(Task):
         """
         Use the given Controller interface for operations on the job
         associated with this task.
-        """
-        for task in self.tasks:
-            if not task._attached:
-                task.attach(controller)
-                break
-        Task.attach(self, controller)
-
+        """        
+        raise NotImplementedError("Called abstract method TaskCollection.attach() - this should be overridden in derived classes.")
 
     def detach(self):
         for task in self.tasks:
@@ -226,6 +221,17 @@ class SequentialTaskCollection(TaskCollection):
     def add(self, task):
         task.detach()
         self.tasks.append(task)
+
+    def attach(self, controller):
+        """
+        Use the given Controller interface for operations on the job
+        associated with this task.
+        """
+        for task in self.tasks:
+            if not task._attached:
+                task.attach(controller)
+                break
+        Task.attach(self, controller)
 
     def kill(self, **extra_args):
         """
@@ -452,6 +458,16 @@ class ParallelTaskCollection(TaskCollection):
         self.tasks.append(task)
         if self._attached:
             task.attach(self._controller)
+
+    def attach(self, controller):
+        """
+        Use the given Controller interface for operations on the job
+        associated with this task.
+        """
+        for task in self.tasks:
+            if not task._attached:
+                task.attach(controller)
+        Task.attach(self, controller)
 
     def kill(self, **extra_args):
         """
