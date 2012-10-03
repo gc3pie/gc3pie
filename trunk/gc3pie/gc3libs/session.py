@@ -176,9 +176,13 @@ class Session(list):
             except IOError, err:
                 gc3libs.log.debug("Cannot load session '%s': %s", path, str(err))
                 if err.errno == 2:  # "No such file or directory"
-                    gc3libs.log.debug(
-                        "Assuming session is incomplete or corrupted, creating it again.")
-                    self._create_session(store_url, **extra_args)
+                    if create:
+                        gc3libs.log.debug(
+                            "Assuming session is incomplete or corrupted, creating it again.")
+                        self._create_session(store_url, **extra_args)
+                    else:
+                        raise gc3libs.exceptions.InvalidArgument(
+                            "Directory '%s' does not contains a valid session" % self.path)
                 else:
                     raise
         else:
