@@ -66,7 +66,9 @@ class TaskCollection(Task):
         associated with this task.
         """
         for task in self.tasks:
-            task.attach(controller)
+            if not task._attached:
+                task.attach(controller)
+                break
         Task.attach(self, controller)
 
 
@@ -80,10 +82,8 @@ class TaskCollection(Task):
         """
         Add a task to the collection.
         """
-        task.detach()
-        self.tasks.append(task)
-        if self._attached:
-            task.attach(self._controller)
+        raise NotImplementedError("Called abstract method TaskCollection.add() - this should be overridden in derived classes.")
+
 
     def remove(self, task):
         """
@@ -220,14 +220,12 @@ class SequentialTaskCollection(TaskCollection):
 
     def __init__(self, tasks, **extra_args):
         # XXX: check that `tasks` is a sequence type
-        if len(tasks) > 1:
-            self._queue = tasks[1:]
-            tasks = [tasks[0]]
-        else:
-            self._queue = []
         TaskCollection.__init__(self, tasks, **extra_args)
         self._current_task = 0
 
+    def add(self, task):
+        task.detach()
+        self.tasks.append(task)
 
     def kill(self, **extra_args):
         """
@@ -274,41 +272,6 @@ class SequentialTaskCollection(TaskCollection):
             return Run.State.RUNNING
 
 
-    def _next_step(self):
-        """
-        Book-keeping for advancement through the task list.
-        Call :meth:`next` and set `execution.state` based on its
-        return value.  Also, advance `self._current_task` if not at end
-        of the list.
-        """
-        if self._queue:
-            newtask = self._queue.pop(0)
-            self.tasks.append(newtask)
-            newtask.attach(self._controller)
-            nxt = Run.State.NEW
-        else:
-            nxt = self.next(self._current_task)
-        if nxt == Run.State.TERMINATED:
-            # set returncode when all tasks are terminated
-            self.execution.returncode = 0 # optimistic start...
-            # ...but override if something has gone wrong
-            for task in self.tasks:
-                if task.execution.returncode != 0:
-                    self.execution.exitcode = 1
-                    break
-            # returncode can be overridden in the `terminated()` hook
-            self.execution.state = Run.State.TERMINATED
-            self._current_task = None
-        elif nxt in Run.State:
-            self.execution.state = nxt
-            self._current_task += 1
-        else:
-            # `nxt` must be a valid index into `self.tasks`
-            self._current_task = nxt
-            self.submit(resubmit=True)
-        self.changed = True
-
-
     def submit(self, resubmit=False, **extra_args):
         """
         Start the current task in the collection.
@@ -345,21 +308,17 @@ class SequentialTaskCollection(TaskCollection):
         # set state based on the state of current task
         if self._current_task == 0 and task.execution.state in [ Run.State.NEW, Run.State.SUBMITTED ]:
             self.execution.state = task.execution.state
-        elif (task.execution.state == Run.State.TERMINATED
-              and self._current_task == len(self.tasks)-1):
-            if self._queue:
-                newtask = self._queue.pop(0)
-                self.tasks.append(newtask)
-                newtask.attach(self._controller)
-                nxt = Run.State.NEW
-            else:
-                nxt = self.next(self._current_task)
+        elif (task.execution.state == Run.State.TERMINATED):
+            nxt = self.next(self._current_task)
             if nxt in Run.State:
                 self.execution.state = nxt
                 if self.execution.state not in [ Run.State.STOPPED,
                                                  Run.State.TERMINATED ]:
                     self._current_task += 1
                     self.changed = True
+                    next_task = self.tasks[self._current_task]
+                    next_task.attach(self._controller)
+                    self.submit(resubmit=True)
             else:
                 # `nxt` must be a valid index into `self.tasks`
                 self._current_task = nxt
@@ -485,6 +444,14 @@ class ParallelTaskCollection(TaskCollection):
                 return state
         return Run.State.UNKNOWN
 
+    def add(self, task):
+        """
+        Add a task to the collection.
+        """
+        task.detach()
+        self.tasks.append(task)
+        if self._attached:
+            task.attach(self._controller)
 
     def kill(self, **extra_args):
         """
