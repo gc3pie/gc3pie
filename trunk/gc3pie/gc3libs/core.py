@@ -1041,15 +1041,15 @@ class Engine(object):
             state = task.execution.state
             result[state] += 1
         if only:
-            result[Run.State.TERMINATING] = len([task for task in self._terminating
+            result[Run.State.TERMINATING] += len([task for task in self._terminating
                                                                if isinstance(task, only)])
         else:
-            result[Run.State.TERMINATING] = len(self._terminating)
+            result[Run.State.TERMINATING] += len(self._terminating)
         if only:
-            result[Run.State.TERMINATED] = len([task for task in self._terminated
+            result[Run.State.TERMINATED] += len([task for task in self._terminated
                                                                if isinstance(task, only)])
         else:
-            result[Run.State.TERMINATED] = len(self._terminated)
+            result[Run.State.TERMINATED] += len(self._terminated)
 
         # for TERMINATED tasks, compute the number of successes/failures
         for task in self._terminated:
