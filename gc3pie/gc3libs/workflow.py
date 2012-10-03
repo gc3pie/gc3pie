@@ -153,28 +153,6 @@ class TaskCollection(Task):
         raise NotImplementedError("Called abstract method TaskCollection.progress() - this should be overridden in derived classes.")
 
 
-    def wait(self, interval=60):
-        """
-        Block until execution state reaches `TERMINATED`, then return
-        a list of return codes.  Note that this does not automatically
-        fetch the output.
-
-        :param integer interval: Poll job state every this number of seconds
-        """
-        # FIXME: I'm not sure how to deal with this... Ideally, this
-        # call should suspend the current thread and wait for
-        # notifications from the Engine, but:
-        #  - there's no way to tell if we are running threaded,
-        #  - `self.controller` could be a `Core` instance, thus not capable
-        #    of running independently.
-        # For now this is a busy-wait loop, but we certainly need to revise this.
-        while True:
-            self.progress()
-            if self.execution.state == Run.State.TERMINATED:
-                return [ task.execution.returncode
-                         for task in self.tasks ]
-            time.sleep(interval)
-
 
     def stats(self, only=None):
         """
@@ -242,6 +220,11 @@ class SequentialTaskCollection(TaskCollection):
 
     def __init__(self, tasks, **extra_args):
         # XXX: check that `tasks` is a sequence type
+        if len(tasks) > 1:
+            self._queue = tasks[1:]
+            tasks = [tasks[0]]
+        else:
+            self._queue = []
         TaskCollection.__init__(self, tasks, **extra_args)
         self._current_task = 0
 
@@ -291,30 +274,6 @@ class SequentialTaskCollection(TaskCollection):
             return Run.State.RUNNING
 
 
-    def progress(self):
-        """
-        Sequentially advance tasks in the collection through all steps
-        of a regular lifecycle.  When the last task transitions to
-        TERMINATED state, the collection's state is set to TERMINATED
-        as well and this method becomes a no-op.  If during execution,
-        any of the managed jobs gets into state `STOPPED` or
-        `UNKNOWN`, then an exception `Task.UnexpectedExecutionState`
-        is raised.
-        """
-        if execution.state == Run.State.TERMINATED:
-            return
-        if self._current_task is None:
-            # (re)submit initial task
-            self._current_task = 0
-        task = self.tasks[self._current_task]
-        task.progress()
-        if task.execution.state == Run.State.SUBMITTED and self._current_task == 0:
-            self.execution.state = Run.State.SUBMITTED
-        elif task.execution.state == Run.State.TERMINATED:
-            self._next_step()
-        else:
-            self.execution.state = Run.State.RUNNING
-
     def _next_step(self):
         """
         Book-keeping for advancement through the task list.
@@ -322,7 +281,13 @@ class SequentialTaskCollection(TaskCollection):
         return value.  Also, advance `self._current_task` if not at end
         of the list.
         """
-        nxt = self.next(self._current_task)
+        if self._queue:
+            newtask = self._queue.pop(0)
+            self.tasks.append(newtask)
+            newtask.attach(self._controller)
+            nxt = Run.State.NEW
+        else:
+            nxt = self.next(self._current_task)
         if nxt == Run.State.TERMINATED:
             # set returncode when all tasks are terminated
             self.execution.returncode = 0 # optimistic start...
@@ -382,7 +347,13 @@ class SequentialTaskCollection(TaskCollection):
             self.execution.state = task.execution.state
         elif (task.execution.state == Run.State.TERMINATED
               and self._current_task == len(self.tasks)-1):
-            nxt = self.next(self._current_task)
+            if self._queue:
+                newtask = self._queue.pop(0)
+                self.tasks.append(newtask)
+                newtask.attach(self._controller)
+                nxt = Run.State.NEW
+            else:
+                nxt = self.next(self._current_task)
             if nxt in Run.State:
                 self.execution.state = nxt
                 if self.execution.state not in [ Run.State.STOPPED,
