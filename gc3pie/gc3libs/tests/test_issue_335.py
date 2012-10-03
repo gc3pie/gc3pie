@@ -23,6 +23,9 @@ __version__ = '$Revision$'
 
 import sys
 import logging
+import os
+import shutil
+import tempfile
 
 from nose.tools import assert_equal
 
@@ -34,25 +37,39 @@ import gc3libs.core
 loglevel = logging.ERROR
 configure_logger(loglevel, "test_isse_335")
 
-def test_issue():
-    """Test that SequentialTasksCollection goes in terminated state when all of its tasks are in TERMINATED state."""
-    task = SequentialTaskCollection(
-        [Application(['echo','test1'],[],[],'test1.out'),
-         Application(['echo','test2'],[],[],'test2.out'),]
-        )
-    cfg = gc3libs.config.Configuration(
-        *gc3libs.Default.CONFIG_FILE_LOCATIONS,
-        **{'auto_enable_auth': True})
-    core = gc3libs.core.Core(cfg)
-    engine = gc3libs.core.Engine(core)
-    engine.add(task)
-    while True:
-        engine.progress()
+class test_issue_335(object):
+    def setUp(self):
+        self.tmpdir = tempfile.mkdtemp()
 
-        if len([t for t in task.tasks if t.execution.state == Run.State.TERMINATED]) == 2:
+    def test_issue(self):
+        """Test that SequentialTasksCollection goes in terminated state when all of its tasks are in TERMINATED state."""
+        self.ptasks = 2
+        task = SequentialTaskCollection(
+            [
+                Application(
+                    ['echo','test1'],
+                    [],[],
+                    os.path.join(self.tmpdir, 'test.%d.d' % i)) for i in range(self.ptasks)
+                ]
+            )
+        cfg = gc3libs.config.Configuration(
+            *gc3libs.Default.CONFIG_FILE_LOCATIONS,
+            **{'auto_enable_auth': True})
+        core = gc3libs.core.Core(cfg)
+        engine = gc3libs.core.Engine(core)
+        engine.add(task)
+        while True:
             engine.progress()
-            assert_equal(task.execution.state, Run.State.TERMINATED)
-            break
+
+            if len([t for t in task.tasks if t.execution.state == Run.State.TERMINATED]) == self.ptasks:
+                engine.progress()
+                assert_equal(task.execution.state, Run.State.TERMINATED)
+                break
+
+    def tearDown(self):
+        shutil.rmtree(self.tmpdir)
+
+
     
 if "__main__" == __name__:
     import nose
