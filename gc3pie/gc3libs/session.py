@@ -182,7 +182,7 @@ class Session(list):
                         self._create_session(store_url, **extra_args)
                     else:
                         raise gc3libs.exceptions.InvalidArgument(
-                            "Directory '%s' does not contains a valid session" % self.path)
+                            "Directory '%s' does not contain a valid session" % self.path)
                 else:
                     raise
         else:
