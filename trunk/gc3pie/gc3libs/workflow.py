@@ -199,7 +199,7 @@ class TaskCollection(Task):
         self.execution._exitcode = max(
             task.execution._exitcode for task in self.tasks
             )
-    
+
 class SequentialTaskCollection(TaskCollection):
     """
     A `SequentialTaskCollection` runs its tasks one at a time.
