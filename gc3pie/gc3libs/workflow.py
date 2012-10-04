@@ -114,7 +114,7 @@ class TaskCollection(Task):
         # own subdir based on its `.persistent_id`
         coll_output_dir = self._get_download_dir(output_dir)
         for task in self.tasks:
-            if task.execution.state != Run.State.TERMINATING:
+            if task.execution.state == Run.State.TERMINATED:
                 continue
             if 'output_dir' in task:
                 task_output_dir = task.output_dir
