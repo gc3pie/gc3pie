@@ -141,6 +141,16 @@ order to access the <a class="reference external" href="http://code.google.com/p
 might be a good idea.</p>
 </div>
 </div>
+<div class="section" id="package-generation">
+<h2>Package generation<a class="headerlink" href="#package-generation" title="Permalink to this headline">¶</a></h2>
+<p>Due to issue <a class="reference external" href="http://code.google.com/p/gc3pie/issues/detail?id=329">329</a>, we don&#8217;t use the automatic discovery <em>feature</em> of
+<tt class="docutils literal"><span class="pre">setuptools</span></tt>, so the files included in the distributed packages are
+those in the <tt class="docutils literal"><span class="pre">MANIFEST.in</span></tt> file, please check <a class="reference external" href="http://docs.python.org/distutils/sourcedist.html#the-manifest-in-template">The MANIFEST.in
+template</a> section of the python documentation for a syntax
+reference. We usually include only code, documentation, and related
+files. We also include the regression tests, but we <strong>do not include</strong>
+the application tests in <tt class="docutils literal"><span class="pre">gc3apps/*/test</span></tt> directories.</p>
+</div>
 <div class="section" id="testing-the-code">
 <h2>Testing the code<a class="headerlink" href="#testing-the-code" title="Permalink to this headline">¶</a></h2>
 <p>In developing GC3Pie we try to use a <a class="reference external" href="http://en.wikipedia.org/wiki/Test-driven_development">Test Driven Development</a>
@@ -332,6 +342,15 @@ __________________________________________________________ [tox summary] _______
 define skipped tests.)</p>
 <p>Option <tt class="docutils literal"><span class="pre">-r</span></tt> instructs <strong class="command">tox</strong> to re-build the testing virtual environment.</p>
 </div>
+<div class="section" id="opening-the-python-debugger-while-running-a-test">
+<h3>Opening the python debugger while running a test<a class="headerlink" href="#opening-the-python-debugger-while-running-a-test" title="Permalink to this headline">¶</a></h3>
+<p>When running using <cite>nosetests</cite>:command you cannot just execute
+<cite>pdb.set_trace()</cite> to open a debugger console. However, you can run the
+<cite>set_trace()</cite> function of the <cite>nose.tools</cite> module:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="kn">import</span> <span class="nn">nose.tools</span><span class="p">;</span> <span class="n">nose</span><span class="o">.</span><span class="n">tools</span><span class="o">.</span><span class="n">set_trace</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
 </div>
 <div class="section" id="coding-style">
 <h2>Coding style<a class="headerlink" href="#coding-style" title="Permalink to this headline">¶</a></h2>
@@ -437,6 +456,7 @@ answer promptly.</p>
 <li><a class="reference internal" href="#how-can-i-get-access-to-the-svn-repository">How can I get access to the SVN repository?</a></li>
 </ul>
 </li>
+<li><a class="reference internal" href="#package-generation">Package generation</a></li>
 <li><a class="reference internal" href="#testing-the-code">Testing the code</a><ul>
 <li><a class="reference internal" href="#organizing-tests">Organizing tests</a></li>
 <li><a class="reference internal" href="#writing-tests">Writing tests</a><ul>
@@ -447,6 +467,7 @@ answer promptly.</p>
 </ul>
 </li>
 <li><a class="reference internal" href="#running-multiple-tests">Running multiple tests</a></li>
+<li><a class="reference internal" href="#opening-the-python-debugger-while-running-a-test">Opening the python debugger while running a test</a></li>
 </ul>
 </li>
 <li><a class="reference internal" href="#coding-style">Coding style</a></li>

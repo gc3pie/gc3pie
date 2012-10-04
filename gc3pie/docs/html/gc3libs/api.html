@@ -286,6 +286,12 @@ elements of the list, separating them with spaces.</p>
 </dd></dl>
 
 <dl class="method">
+<dt id="gc3libs.Application.fetch_output">
+<tt class="descname">fetch_output</tt><big>(</big><em>download_dir</em>, <em>overwrite</em>, <em>**extra_args</em><big>)</big><a class="headerlink" href="#gc3libs.Application.fetch_output" title="Permalink to this definition">¶</a></dt>
+<dd><p>Calls the corresponding method of the controller.</p>
+</dd></dl>
+
+<dl class="method">
 <dt id="gc3libs.Application.fetch_output_error">
 <tt class="descname">fetch_output_error</tt><big>(</big><em>ex</em><big>)</big><a class="headerlink" href="#gc3libs.Application.fetch_output_error" title="Permalink to this definition">¶</a></dt>
 <dd><p>Invocation of <cite>Core.fetch_output()</cite> on this object failed;
@@ -1213,7 +1219,7 @@ description.</p>
 
 <dl class="method">
 <dt id="gc3libs.cmdline.SessionBasedScript.print_tasks_table">
-<tt class="descname">print_tasks_table</tt><big>(</big><em>output=&lt;open file '&lt;stdout&gt;'</em>, <em>mode 'w' at 0x2ac4e63701e0&gt;</em>, <em>states=Enum(['TERMINATED'</em>, <em>'UNKNOWN'</em>, <em>'SUBMITTED'</em>, <em>'RUNNING'</em>, <em>'TERMINATING'</em>, <em>'STOPPED'</em>, <em>'NEW'])</em>, <em>only=&lt;type 'object'&gt;</em><big>)</big><a class="headerlink" href="#gc3libs.cmdline.SessionBasedScript.print_tasks_table" title="Permalink to this definition">¶</a></dt>
+<tt class="descname">print_tasks_table</tt><big>(</big><em>output=&lt;open file '&lt;stdout&gt;'</em>, <em>mode 'w' at 0x2ae428d041e0&gt;</em>, <em>states=Enum(['TERMINATED'</em>, <em>'UNKNOWN'</em>, <em>'SUBMITTED'</em>, <em>'RUNNING'</em>, <em>'TERMINATING'</em>, <em>'STOPPED'</em>, <em>'NEW'])</em>, <em>only=&lt;type 'object'&gt;</em><big>)</big><a class="headerlink" href="#gc3libs.cmdline.SessionBasedScript.print_tasks_table" title="Permalink to this definition">¶</a></dt>
 <dd><p>Output a text table to stream <cite>output</cite>, giving details about
 tasks in the given states.</p>
 <p>Optional second argument <cite>states</cite> restricts the listing to
@@ -1873,6 +1879,19 @@ can implement problem-specific job control policies.</p>
 <p>The collection state is set to <cite>TERMINATED</cite> once all tasks have
 reached the same terminal status.</p>
 <dl class="method">
+<dt id="gc3libs.workflow.ParallelTaskCollection.add">
+<tt class="descname">add</tt><big>(</big><em>task</em><big>)</big><a class="headerlink" href="#gc3libs.workflow.ParallelTaskCollection.add" title="Permalink to this definition">¶</a></dt>
+<dd><p>Add a task to the collection.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="gc3libs.workflow.ParallelTaskCollection.attach">
+<tt class="descname">attach</tt><big>(</big><em>controller</em><big>)</big><a class="headerlink" href="#gc3libs.workflow.ParallelTaskCollection.attach" title="Permalink to this definition">¶</a></dt>
+<dd><p>Use the given Controller interface for operations on the job
+associated with this task.</p>
+</dd></dl>
+
+<dl class="method">
 <dt id="gc3libs.workflow.ParallelTaskCollection.kill">
 <tt class="descname">kill</tt><big>(</big><em>**extra_args</em><big>)</big><a class="headerlink" href="#gc3libs.workflow.ParallelTaskCollection.kill" title="Permalink to this definition">¶</a></dt>
 <dd><p>Terminate all tasks in the collection, and set collection
@@ -1947,6 +1966,13 @@ subsequent task is started, otherwise no action is performed.</p>
 they were given to the constructor, and sets the state to
 <cite>TERMINATED</cite> when all tasks have been run.</p>
 <dl class="method">
+<dt id="gc3libs.workflow.SequentialTaskCollection.attach">
+<tt class="descname">attach</tt><big>(</big><em>controller</em><big>)</big><a class="headerlink" href="#gc3libs.workflow.SequentialTaskCollection.attach" title="Permalink to this definition">¶</a></dt>
+<dd><p>Use the given Controller interface for operations on the job
+associated with this task.</p>
+</dd></dl>
+
+<dl class="method">
 <dt id="gc3libs.workflow.SequentialTaskCollection.kill">
 <tt class="descname">kill</tt><big>(</big><em>**extra_args</em><big>)</big><a class="headerlink" href="#gc3libs.workflow.SequentialTaskCollection.kill" title="Permalink to this definition">¶</a></dt>
 <dd><p>Stop execution of this sequence.  Kill currently-running task
@@ -1977,18 +2003,6 @@ given to the constructor, and sets the state to TERMINATED
 when all tasks have been run.  This method can (and should) be
 overridden in derived classes to implement policies for serial
 job execution.</p>
-</dd></dl>
-
-<dl class="method">
-<dt id="gc3libs.workflow.SequentialTaskCollection.progress">
-<tt class="descname">progress</tt><big>(</big><big>)</big><a class="headerlink" href="#gc3libs.workflow.SequentialTaskCollection.progress" title="Permalink to this definition">¶</a></dt>
-<dd><p>Sequentially advance tasks in the collection through all steps
-of a regular lifecycle.  When the last task transitions to
-TERMINATED state, the collection&#8217;s state is set to TERMINATED
-as well and this method becomes a no-op.  If during execution,
-any of the managed jobs gets into state <cite>STOPPED</cite> or
-<cite>UNKNOWN</cite>, then an exception <cite>Task.UnexpectedExecutionState</cite>
-is raised.</p>
 </dd></dl>
 
 <dl class="method">
@@ -2098,22 +2112,6 @@ exitcode to the maximum of the exit codes of its tasks.</p>
 <dt id="gc3libs.workflow.TaskCollection.update_state">
 <tt class="descname">update_state</tt><big>(</big><em>**extra_args</em><big>)</big><a class="headerlink" href="#gc3libs.workflow.TaskCollection.update_state" title="Permalink to this definition">¶</a></dt>
 <dd><p>Update the running state of all managed tasks.</p>
-</dd></dl>
-
-<dl class="method">
-<dt id="gc3libs.workflow.TaskCollection.wait">
-<tt class="descname">wait</tt><big>(</big><em>interval=60</em><big>)</big><a class="headerlink" href="#gc3libs.workflow.TaskCollection.wait" title="Permalink to this definition">¶</a></dt>
-<dd><p>Block until execution state reaches <cite>TERMINATED</cite>, then return
-a list of return codes.  Note that this does not automatically
-fetch the output.</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>interval</strong> (<em>integer</em>) &#8211; Poll job state every this number of seconds</td>
-</tr>
-</tbody>
-</table>
 </dd></dl>
 
 </dd></dl>
@@ -2932,7 +2930,7 @@ texts coming from the same template.  Templates can be nested, and
 expansions generated recursviely.</p>
 <dl class="class">
 <dt id="gc3libs.template.Template">
-<em class="property">class </em><tt class="descclassname">gc3libs.template.</tt><tt class="descname">Template</tt><big>(</big><em>template</em>, <em>validator=&lt;function &lt;lambda&gt; at 0x5d18320&gt;</em>, <em>**extra_args</em><big>)</big><a class="headerlink" href="#gc3libs.template.Template" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><tt class="descclassname">gc3libs.template.</tt><tt class="descname">Template</tt><big>(</big><em>template</em>, <em>validator=&lt;function &lt;lambda&gt; at 0x50e91b8&gt;</em>, <em>**extra_args</em><big>)</big><a class="headerlink" href="#gc3libs.template.Template" title="Permalink to this definition">¶</a></dt>
 <dd><p>A template object is a pair <cite>(obj, keywords)</cite>.  Methods are
 provided to substitute the keyword values into <cite>obj</cite>, and to
 iterate over expansions of the given keywords (optionally
@@ -3814,7 +3812,7 @@ are not altered to reflect <cite>mode</cite>.</p>
 
 <dl class="function">
 <dt id="gc3libs.utils.prettyprint">
-<tt class="descclassname">gc3libs.utils.</tt><tt class="descname">prettyprint</tt><big>(</big><em>D</em>, <em>indent=0</em>, <em>width=0</em>, <em>maxdepth=None</em>, <em>step=4</em>, <em>only_keys=None</em>, <em>output=&lt;open file '&lt;stdout&gt;'</em>, <em>mode 'w' at 0x2ac4e63701e0&gt;</em>, <em>_key_prefix=''</em>, <em>_exclude=None</em><big>)</big><a class="headerlink" href="#gc3libs.utils.prettyprint" title="Permalink to this definition">¶</a></dt>
+<tt class="descclassname">gc3libs.utils.</tt><tt class="descname">prettyprint</tt><big>(</big><em>D</em>, <em>indent=0</em>, <em>width=0</em>, <em>maxdepth=None</em>, <em>step=4</em>, <em>only_keys=None</em>, <em>output=&lt;open file '&lt;stdout&gt;'</em>, <em>mode 'w' at 0x2ae428d041e0&gt;</em>, <em>_key_prefix=''</em>, <em>_exclude=None</em><big>)</big><a class="headerlink" href="#gc3libs.utils.prettyprint" title="Permalink to this definition">¶</a></dt>
 <dd><p>Print dictionary instance <cite>D</cite> in a YAML-like format.
 Each output line consists of:</p>
 <blockquote>
@@ -3838,7 +3836,7 @@ indented <cite>step</cite> spaces from the enclosing dictionary.</p>
 
 <dl class="function">
 <dt id="gc3libs.utils.progressive_number">
-<tt class="descclassname">gc3libs.utils.</tt><tt class="descname">progressive_number</tt><big>(</big><em>qty=None</em>, <em>id_filename='/home/rmurri/.gc3/next_id.txt'</em><big>)</big><a class="headerlink" href="#gc3libs.utils.progressive_number" title="Permalink to this definition">¶</a></dt>
+<tt class="descclassname">gc3libs.utils.</tt><tt class="descname">progressive_number</tt><big>(</big><em>qty=None</em>, <em>id_filename='/home/amessina/.gc3/next_id.txt'</em><big>)</big><a class="headerlink" href="#gc3libs.utils.progressive_number" title="Permalink to this definition">¶</a></dt>
 <dd><p>Return a positive integer, whose value is guaranteed to
 be monotonically increasing across different invocations
 of this function, and also across separate instances of the
