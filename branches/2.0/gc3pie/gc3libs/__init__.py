@@ -1071,6 +1071,12 @@ class Application(Task):
 
         return selected
 
+    def fetch_output(self, download_dir, overwrite, **extra_args):
+        """
+        Calls the corresponding method of the controller.
+        """
+        return self._controller.fetch_output(self, download_dir, overwrite, **extra_args)
+
     ##
     ## backend interface methods
     ##

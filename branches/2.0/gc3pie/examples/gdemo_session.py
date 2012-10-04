@@ -98,11 +98,13 @@ class Gdemo(SessionBasedScript):
         name = "GC3Pie_demo"
 
         gc3libs.log.info("Calling Gdemo.next_tastk() ... ")
-        yield (name, DemoIteration, [
+        return [
+            DemoIteration(
             self.init_value,
             self.add_value,
             self.params.iterations,
-            ], extra_args)
+            **extra_args),
+            ]
 
 
 
@@ -152,7 +154,7 @@ class DemoIteration(SequentialTaskCollection):
 
         # create initial task and register it
         initial_task = GdemoApplication(self.init, self.increment, 0)
-        SequentialTaskCollection.__init__(self, [initial_task])
+        SequentialTaskCollection.__init__(self, [initial_task], **extra_args)
 
 
     def __str__(self):
