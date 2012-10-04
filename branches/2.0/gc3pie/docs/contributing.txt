@@ -112,6 +112,20 @@ might be a good idea.
 .. __: http://code.google.com/p/gc3pie/
 
 
+Package generation
+------------------
+
+Due to issue 329_, we don't use the automatic discovery *feature* of
+``setuptools``, so the files included in the distributed packages are
+those in the ``MANIFEST.in`` file, please check `The MANIFEST.in
+template`_ section of the python documentation for a syntax
+reference. We usually include only code, documentation, and related
+files. We also include the regression tests, but we **do not include**
+the application tests in ``gc3apps/*/test`` directories.
+
+.. _329: http://code.google.com/p/gc3pie/issues/detail?id=329
+.. _`The MANIFEST.in template`: http://docs.python.org/distutils/sourcedist.html#the-manifest-in-template
+
 Testing the code
 ----------------
 
@@ -342,6 +356,15 @@ Option ``-r`` instructs `tox`:command: to re-build the testing virtual environme
 .. todo::
 
    When should ``-r`` be used?
+
+Opening the python debugger while running a test
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+When running using `nosetests`:command you cannot just execute
+`pdb.set_trace()` to open a debugger console. However, you can run the
+`set_trace()` function of the `nose.tools` module::
+
+    import nose.tools; nose.tools.set_trace()
 
 
 Coding style
