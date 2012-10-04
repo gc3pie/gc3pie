@@ -38,6 +38,9 @@ def read_whole_file(path):
 #
 import setuptools
 import setuptools.dist
+from setuptools.command import sdist
+del sdist.finders[:]
+
 setuptools.setup(
     name = "gc3pie",
     version = "2.0.dev", # see: http://packages.python.org/distribute/setuptools.html
