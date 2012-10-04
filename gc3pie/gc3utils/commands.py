@@ -625,16 +625,11 @@ released once the output files have been fetched.
                         "Output of '%s' already downloaded to '%s'"
                         % (app.persistent_id, app.output_dir))
 
-                if self.params.download_dir is None:
-                    download_dir = os.path.join(os.getcwd(), app.persistent_id)
-                else:
-                    download_dir = os.path.join(self.params.download_dir, app.persistent_id)
-
-                app.fetch_output(download_dir, overwrite=self.params.overwrite)
+                self._core.fetch_output(app, output_dir=self.params.download_dir, overwrite=self.params.overwrite)
                 if app.execution.state == Run.State.TERMINATED:
                     print("Job final results were successfully retrieved in '%s'" % download_dir)
                 else:
-                    print("A snapshot of job results was successfully retrieved in '%s'" % download_dir)
+                    print("A snapshot of job results was successfully retrieved in '%s'" % app.download_dir)
                 self.session.store.replace(app.persistent_id, app)
 
             except Exception, ex:
