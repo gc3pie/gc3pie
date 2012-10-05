@@ -147,7 +147,7 @@ of newly-created jobs so that this limit is never exceeded.
                        " By default, request the CODEML-4.4.3 run time tag"
                        " and use the remotely-provided application.")
         # change default for the "-o"/"--output" option
-        self.actions['output'].default = 'PATH/NAME'
+        self.actions['output'].default = 'NAME'
 
 
     def new_tasks(self, extra):
