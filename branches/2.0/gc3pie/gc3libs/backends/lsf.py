@@ -380,7 +380,6 @@ class LsfLrms(batch.BatchSystem):
         # LSF commands
         self._bjobs = self._get_command('bjobs')
         self._bkill = self._get_command('bkill')
-        self._bqueues = self._get_command('bqueues')
         self._lshosts = self._get_command('lshosts')
 
 
@@ -500,7 +499,6 @@ class LsfLrms(batch.BatchSystem):
             # lhost output format:
             # ($nodeid,$OStype,$model,$cpuf,$ncpus,$maxmem,$maxswp)
             _command = ('%s -w' % self._lshosts)
-            log.debug("Running `%s`... ", _command)
             exit_code, stdout, stderr = self.transport.execute_command(_command)
             if exit_code != 0:
                 # cannot continue
@@ -516,29 +514,24 @@ class LsfLrms(batch.BatchSystem):
             else:
                 lhosts_output = [ ]
 
-            # Run bqueues to get information about the status of system queues
-            # used to build running_jobs and queued
-            _command = self._bqueues
-            log.debug("Running `%s`... ", _command)
-            exit_code, stdout, stderr = self.transport.execute_command(_command)
-            if exit_code != 0:
-                # cannot continue
-                raise gc3libs.exceptions.LRMSError(
-                    "LSF backend failed executing '%s':"
-                    "exit code: %d; stdout: '%s'; stderr: '%s'." %
-                    (_command, exit_code, stdout, stderr))
+            # compute self.total_slots
+            self.max_cores = 0
+            for line in lhosts_output:
+                # HOST_NAME      type    model  cpuf ncpus maxmem maxswp server RESOURCES
+                (hostname, h_type, h_model, h_cpuf, h_ncpus) = line.strip().split()[0:5]
+                try:
+                    self.max_cores +=  int(h_ncpus)
+                except ValueError:
+                    # h_ncpus == '-'
+                    pass
 
-            if stdout:
-                bqueues_output = stdout.strip().split('\n')
-                bqueues_output.pop(0)
-            else:
-                bqueues_output = [ ]
-
-            # Run bjobs to get information about the jobs for a given user
-            # used to compute  self.user_run and self.user_queued
+            # Run `bjobs -u all -w` to get information about the jobs for a given
+            # user used to compute `running_jobs`, `self.queued`,
+            # `self.user_run` and `self.user_queued`.
+            #
             # bjobs output format:
             # JOBID   USER    STAT  QUEUE      FROM_HOST   EXEC_HOST   JOB_NAME   SUBMIT_TIME
-            _command = self._bjobs
+            _command = ('%s -u all -w' % self._bjobs)
             log.debug("Runing `%s`... ", _command)
             exit_code, stdout, stderr = self.transport.execute_command(_command)
             if exit_code != 0:
@@ -555,56 +548,42 @@ class LsfLrms(batch.BatchSystem):
             else:
                 bjobs_output = [ ]
 
-            # compute self.total_slots
-            self.max_cores = 0
-            for line in lhosts_output:
-                # HOST_NAME      type    model  cpuf ncpus maxmem maxswp server RESOURCES
-                (hostname, h_type, h_model, h_cpuf, h_ncpus) = line.strip().split()[0:5]
-                try:
-                    self.max_cores +=  int(h_ncpus)
-                except ValueError:
-                    # h_ncpus == '-'
-                    pass
-
-            # compute total queued
-            self.queued = 0
-            running_jobs = 0
-            for line in bqueues_output:
-                # QUEUE_NAME      PRIO STATUS          MAX JL/U JL/P JL/H NJOBS  PEND   RUN  SUSP
-                (queue_name, priority, status, max_j, jlu, jlp, jlh, n_jobs, j_pend, j_run, j_susp) = line.split()
-                self.queued += int(j_pend)
-                running_jobs += int(j_run)
-
-            self.free_slots = self.max_cores - running_jobs
-
             # user runing/queued
-            self.user_run = 0
+            used_cores = 0
+            self.queued = 0
             self.user_queued = 0
+            self.user_run = 0
 
-            queued_status = ['PEND', 'PSUSP', 'USUSP', 'SSUSP', 'WAIT', 'ZOMBI']
+            queued_statuses = ['PEND', 'PSUSP', 'USUSP', 'SSUSP', 'WAIT', 'ZOMBI']
             for line in bjobs_output:
                 # JOBID   USER    STAT  QUEUE      FROM_HOST   EXEC_HOST   JOB_NAME   SUBMIT_TIME
                 (jobid, user, stat, queue, from_h, exec_h) = line.strip().split()[0:6]
                 # to compute the number of cores allocated per each job
                 # we use the output format of EXEC_HOST field
                 # e.g.: 1*cpt178:2*cpt151
-                per_node_allocated_cores_list = exec_h.split(':')
-                for node in per_node_allocated_cores_list:
+                for node in exec_h.split(':'):
                     try:
-                        # mutli core
+                        # multi core
                         (cores, n_name) = node.split('*')
                     except ValueError:
                         # single core
                         cores = 1
-                        n_name = node
                 try:
-                    if stat in queued_status:
-                        self.user_queued += int(cores)
-                    else:
-                        self.user_run += int(cores)
+                    cores = int(cores)
                 except ValueError:
                     # core == '-'
                     pass
+                used_cores += cores
+
+                if stat in queued_statuses:
+                    self.queued += 1
+                if user == self._username:
+                    if stat in queued_statuses:
+                        self.user_queued += 1
+                    else:
+                        self.user_run += 1
+
+            self.free_slots = self.max_cores - used_cores
 
             return self
 
