@@ -350,23 +350,34 @@ class _Quantity(object):
                     % (self.__class__.__name__, self.amount(), self.unit.__class__.__name__, id(self.unit)))
 
     ## arithmetic: allow multiplication by a scalar, and division by a quantity (of the same kind)
+    @staticmethod
+    def _smallest_unit(self, other):
+        self_unit_amount = self.unit.amount(self.base)
+        other_unit_amount = other.unit.amount(self.base)
+        if self_unit_amount <= other_unit_amount:
+            return self.unit
+        else:
+            return other.unit
+
     def __add__(self, other):
         assert isinstance(other, self.__class__), \
                ("Cannot add '%s' to '%s':"
                 " can sum only homogeneous quantities."
                 % (self.__class__.__name__, other.__class__.__name__))
+        unit = self._smallest_unit(self, other)
         return self._new_from_amount_and_unit(
-            (self.amount(self.base) + other.amount(self.base)) / self.unit.amount(self.base),
-            unit=self.unit)
+            (self.amount(self.base) + other.amount(self.base)) / unit.amount(self.base),
+            unit=unit)
 
     def __sub__(self, other):
         assert isinstance(other, self.__class__), \
                ("Cannot subtract '%s' from '%s':"
                 " can only operate on homogeneous quantities."
                 % (self.__class__.__name__, other.__class__.__name__))
+        unit = self._smallest_unit(self, other)
         return self._new_from_amount_and_unit(
-            (self.amount(self.base) - other.amount(self.base)) / self.unit.amount(self.base),
-            unit=self.unit)
+            (self.amount(self.base) - other.amount(self.base)) / unit.amount(self.base),
+            unit=unit)
 
     def __mul__(self, coeff):
         return self._new_from_amount_and_unit(coeff * self.amount(), self.unit)
@@ -524,6 +535,35 @@ class Memory(object):
         >>> two_bytes = byte + byte
         >>> two_bytes == 2*byte
         True
+
+    It is also possible to add memory quantities defined with
+    different units; the result is naturally expressed in the smaller
+    unit of the two::
+
+        >>> one_gigabyte_and_half = 1*Memory.GB + 500*Memory.MB
+        >>> one_gigabyte_and_half
+        Memory(1500, unit=MB)
+
+    Note that the two unit class and numeric amount are accessible through
+    the `unit` and `amount`:meth: attributes::
+
+        >>> one_gigabyte_and_half.unit
+        Memory(1, unit=MB)
+        >>> one_gigabyte_and_half.amount()
+        1500
+
+    The `amount`:meth: method accepts an optional specification of an
+    alternate unit to express the amount into::
+
+        >>> one_gigabyte_and_half.amount(Memory.GB)
+        1
+
+    An optional `conv` argument is available to specify a numerical
+    domain for conversion, in case the default integer arithmetic
+    is not precise enough::
+
+        >>> one_gigabyte_and_half.amount(Memory.GB, conv=float)
+        1.5
 
     The `to_str`:meth: method allows representing a quantity as a
     string, and provides choice of the output format and unit.  The
@@ -697,6 +737,35 @@ class Duration(object):
       >>> one_hour = two_hours - an_hour
       >>> one_hour.amount(seconds)
       3600
+
+    It is also possible to add duration quantities defined with
+    different units; the result is naturally expressed in the smaller
+    unit of the two::
+
+        >>> one_hour_and_half = an_hour + 30*minutes
+        >>> one_hour_and_half
+        Duration(90, unit=m)
+
+    Note that the two unit class and numeric amount are accessible through
+    the `unit` and `amount`:meth: attributes::
+
+        >>> one_hour_and_half.unit
+        Duration(1, unit=m)
+        >>> one_hour_and_half.amount()
+        90
+
+    The `amount`:meth: method accepts an optional specification of an
+    alternate unit to express the amount into::
+
+        >>> one_hour_and_half.amount(Duration.hours)
+        1
+
+    An optional `conv` argument is available to specify a numerical
+    domain for conversion, in case the default integer arithmetic
+    is not precise enough::
+
+        >>> one_hour_and_half.amount(Duration.hours, conv=float)
+        1.5
 
     The `to_str`:meth: method allows representing a duration as a
     string, and provides choice of the output format and unit.  The
