@@ -320,12 +320,6 @@ class ShellcmdLrms(LRMS):
                 for k,v in app.environment.iteritems():
                     os.environ[k] = v
 
-                ## finally.. exec()
-                cmd = app.arguments[0]
-                if not os.path.isabs(cmd) and os.path.exists(cmd):
-                    # local file
-                    cmd = os.path.join(os.getcwd(), app.arguments[0])
-
                 # Create the directory in which the pid and the output
                 # from the wrapper script will be stored
                 wrapper_dir = os.path.join(
@@ -378,7 +372,8 @@ class ShellcmdLrms(LRMS):
                               wrapper_dir,
                               ShellcmdLrms.WRAPPER_OUTPUT_FILENAME),
                           "-f", ShellcmdLrms.TIMEFMT,
-                          cmd, *app.arguments[1:])
+                          "/bin/sh", "-c", 
+                          str.join(' ', app.arguments)
 
             except Exception, ex:
                 sys.excepthook(* sys.exc_info())
