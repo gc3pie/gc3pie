@@ -373,7 +373,7 @@ class ShellcmdLrms(LRMS):
                               ShellcmdLrms.WRAPPER_OUTPUT_FILENAME),
                           "-f", ShellcmdLrms.TIMEFMT,
                           "/bin/sh", "-c", 
-                          str.join(' ', app.arguments)
+                          str.join(' ', app.arguments))
 
             except Exception, ex:
                 sys.excepthook(* sys.exc_info())
