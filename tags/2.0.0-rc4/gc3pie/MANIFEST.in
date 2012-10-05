@@ -1,0 +1,6 @@
+include *.py
+recursive-include gc3libs *.py
+recursive-include gc3apps *.py
+recursive-include gc3utils *.py
+recursive-include docs/html/ *.html *.js *.css *.svg *.jpg *.png *.gif
+prune gc3apps/*/test
