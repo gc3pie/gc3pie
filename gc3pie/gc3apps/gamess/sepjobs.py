@@ -20,7 +20,7 @@
 """
 Classify GAMESS output files according to keyword matches.
 """
-__version__ = 'development version (SVN $Revision$)'
+__version__ = '2.0.0-rc4 version (SVN $Revision$)'
 # summary of user-visible changes
 __changelog__ = """
   2011-08-18:

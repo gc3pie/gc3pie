@@ -43,7 +43,7 @@ del sdist.finders[:]
 
 setuptools.setup(
     name = "gc3pie",
-    version = "2.0.dev", # see: http://packages.python.org/distribute/setuptools.html
+    version = '2.0.0-rc4', # see: http://packages.python.org/distribute/setuptools.html
 
     packages = setuptools.find_packages(exclude=['ez_setup']),
     # metadata for upload to PyPI

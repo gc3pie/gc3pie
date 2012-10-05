@@ -36,7 +36,7 @@ in core Python, namely:
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 #
 __docformat__ = 'reStructuredText'
-__version__ = 'development version (SVN $Revision$)'
+__version__ = '2.0.0-rc4 version (SVN $Revision$)'
 
 
 import gc3libs

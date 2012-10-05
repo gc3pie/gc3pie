@@ -23,7 +23,7 @@ via SSH.
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 #
 __docformat__ = 'reStructuredText'
-__version__ = 'development version (SVN $Revision$)'
+__version__ = '2.0.0-rc4 version (SVN $Revision$)'
 
 
 import os
@@ -304,6 +304,7 @@ class SshTransport(Transport):
         try:
             # check connection first
             self.connect()
+            gc3libs.log.debug("SshTransport running `%s`... ", command)
             stdin_stream, stdout_stream, stderr_stream = self.ssh.exec_command(command)
             stdout = stdout_stream.read()
             stderr = stderr_stream.read()

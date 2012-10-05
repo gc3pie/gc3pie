@@ -7,7 +7,7 @@ It uses the generic `gc3libs.cmdline.SessionBasedScript` framework.
 
 See the output of ``gcrypto --help`` for program usage instructions.
 """
-__version__ = 'development version (SVN $Revision$)'
+__version__ = '2.0.0-rc4 version (SVN $Revision$)'
 # summary of user-visible changes
 __changelog__ = """
   2012-01-29:
@@ -78,7 +78,7 @@ class CryptoApplication(gc3libs.Application):
         extra_args['jobname'] = "LACAL_%s" % str(start + extent)
         extra_args['output_dir'] = os.path.join(extra_args['output_dir'], str(start + extent))
         extra_args['tags'] = [ 'APPS/CRYPTO/LACAL-1.0' ]
-        extra_args['executables'] = ['gnfs-cmd']
+        extra_args['executables'] = ['./gnfs-cmd']
         extra_args['requested_memory'] = Memory(
             int(extra_args['requested_memory'].amount() / float(extra_args['requested_cores'])),
             unit=extra_args['requested_memory'].unit)
@@ -183,7 +183,7 @@ class CryptoChunkedParameterSweep(ChunkedParameterSweep):
         self.extra_args = extra_args
 
         ChunkedParameterSweep.__init__(
-            self, extra_args['jobname'], range_start, range_end, slice, chunk_size)
+            self, range_start, range_end, slice, chunk_size, **self.extra_args)
 
     def new_task(self, param, **extra_args):
         """
@@ -251,6 +251,19 @@ of newly-created jobs so that this limit is never exceeded.
         an (input) path name; processing of the given path names is
         done in `parse_args`:meth:
         """
+
+        # self.add_param('args',
+        #                nargs='*',
+        #                metavar=
+        #                """
+        #                [range_start] [range_end] [slice],
+        #                help=[range_start]: Positive integer value of the range start.
+        #                [range_end]: Positive integer value of the range end.
+        #                [slice]: Positive integer value of the increment.
+        #                """
+        #                )
+
+
         self.add_param('range_start', type=nonnegative_int,
                   help="Non-negative integer value of the range start.")
         self.add_param('range_end', type=positive_int,
@@ -259,6 +272,14 @@ of newly-created jobs so that this limit is never exceeded.
                   help="Positive integer value of the increment.")
 
     def parse_args(self):
+        # XXX: why is this necessary ? shouldn't add_params of 'args' handle this ?
+        # check on the use of nargs and type.
+        # if len(self.params.args) != 3:
+        #     raise ValueError("gcrypto takes exaclty 3 arguments (%d are given)" % len(self.params.args))
+        # self.params.range_start = int(self.params.args[0])
+        # self.params.range_end = int(self.params.args[1])
+        # self.params.slice = int(self.params.args[2])
+
         if self.params.range_end <= self.params.range_start:
             # Failed
             raise ValueError("End range cannot be smaller than Start range. Start range %d. End range %d" % (self.params.range_start, self.params.range_end))
