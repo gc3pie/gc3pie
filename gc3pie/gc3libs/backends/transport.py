@@ -304,6 +304,7 @@ class SshTransport(Transport):
         try:
             # check connection first
             self.connect()
+            gc3libs.log.debug("SshTransport running `%s`... ", command)
             stdin_stream, stdout_stream, stderr_stream = self.ssh.exec_command(command)
             stdout = stdout_stream.read()
             stderr = stderr_stream.read()
