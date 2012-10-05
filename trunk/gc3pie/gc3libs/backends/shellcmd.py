@@ -317,7 +317,7 @@ class ShellcmdLrms(LRMS):
                         pass
 
                 ## set up environment
-                for k,v in app.environment:
+                for k,v in app.environment.iteritems():
                     os.environ[k] = v
 
                 ## finally.. exec()
