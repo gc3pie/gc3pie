@@ -380,17 +380,34 @@ class _Quantity(object):
             unit=unit)
 
     def __mul__(self, coeff):
+        try:
+            float(coeff)
+        except TypeError:
+            raise TypeError("Cannot multiply '%s' and '%s':"
+                            " can only multiply '%s' by a pure number."
+                            ""% (coeff.__class__.__name__,
+                                 self.__class__.__name__,
+                                 self.__class__.__name__))
         return self._new_from_amount_and_unit(coeff * self.amount(), self.unit)
     __rmul__ = __mul__
 
     def __div__(self, other):
         """Return the ratio of two quantities, as a floating-point number."""
-        assert isinstance(other, self.__class__), \
-               ("Cannot divide '%s' by '%s':"
-                " can only take the ratio of homogeneous quantities."
-                % (self.__class__.__name__, other.__class__.__name__))
-        # the quotient of two (homogeneous) quantities is a ratio (pure number)
-        return (self.amount(self.base, conv=float) / other.amount(self.base, conv=float))
+        if not isinstance(other, self.__class__):
+            try:
+                float(other)
+            except TypeError:
+                raise TypeError(
+                    "Cannot multiply '%s' and '%s': can only take"
+                    " the ratio of '%s' and a pure number or an"
+                    " homogeneous quantity." % (coeff.__class__.__name__,
+                                                self.__class__.__name__,
+                                                self.__class__.__name__))
+
+            return self._new_from_amount_and_unit(self.amount(self.base, conv=float) / other, self.unit)
+        else:
+            # the quotient of two (homogeneous) quantities is a ratio (pure number)
+            return (self.amount(self.base, conv=float) / other.amount(self.base, conv=float))
 
     def __floordiv__(self, other):
         """Return the ratio of two quantities, as an whole number."""
