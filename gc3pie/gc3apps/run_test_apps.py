@@ -328,7 +328,7 @@ class TestAppsScript(SessionBasedScript):
         print "Status of applications:"
 
         for task in self.get_tasks():
-            print "Task %s: %s (passwd: %s)" % (task, task.execution.state, task.passed)
+            print "Task %s: %s (passed: %s)" % (task, task.execution.state, task.passed)
         
 if __name__ == "__main__":
     from run_test_apps import TestAppsScript
