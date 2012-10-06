@@ -32,7 +32,7 @@ __version__ = 'development version (SVN $Revision$)'
 import time
 import os
 
-from gc3libs.compat.collections import defaultdict
+from gc3libs.compat._collections import defaultdict
 
 from gc3libs import log, Run, Task
 import gc3libs.exceptions

@@ -31,7 +31,7 @@ import sys
 import tempfile
 import time
 
-from gc3libs.compat.collections import defaultdict
+from gc3libs.compat._collections import defaultdict
 
 from gc3libs import log, Run
 from gc3libs.backends import LRMS

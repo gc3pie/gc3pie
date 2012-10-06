@@ -41,7 +41,7 @@ import UserDict
 
 import lockfile
 
-from gc3libs.compat.collections import defaultdict
+from gc3libs.compat._collections import defaultdict
 import gc3libs.compat.functools as functools
 
 import gc3libs
