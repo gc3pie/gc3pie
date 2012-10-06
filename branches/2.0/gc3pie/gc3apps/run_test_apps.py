@@ -315,9 +315,10 @@ class TestAppsScript(SessionBasedScript):
                        help="Directories of the applications you want to test.")
 
     def setup_options(self):
-        self.add_param('-R', '--test-resource', dest='test_resource',
-                       default='smscg',
-                       help="Which resource to use for the tests")
+        self.add_param('-R', '--test-resource', dest='test_resource', metavar='RESOURCE',
+                       required=True,
+                       help="Resource to use for the tests. This resource will be passed"
+                       " to the test scripts as argument of the `-r` option.")
 
     def new_tasks(self, extra):
         extra_args = extra.copy()
@@ -336,7 +337,8 @@ class TestAppsScript(SessionBasedScript):
     def before_main_loop(self):
         print "Tests passed from command line: %s" % str.join(", ", self.params.args)
         lrms = self._controller._core.get_backend(self.params.test_resource)
-        # Needed to get, if it's needed, a proxy certificate
+        # The resource may requires a password to be properly
+        # initialized (e.g. x509 proxy certificates).
         lrms.get_resource_status()
 
     def after_main_loop(self):
