@@ -34,7 +34,7 @@ import tempfile
 import warnings
 warnings.simplefilter("ignore")
 
-from gc3libs.compat.collections import defaultdict
+from gc3libs.compat._collections import defaultdict
 
 import gc3libs
 import gc3libs.debug
