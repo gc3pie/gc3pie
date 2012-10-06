@@ -1,6 +1,48 @@
 #! /usr/bin/env python
 #
 """
+This script will run all configured tests for directories in
+``gc3pie/gc3apps``.
+
+A valid test is a class that inherits both from `TestRunner`:class and
+`Task`:class classes. Each test is associated to a directory (which is
+supposed to contain a `test` subdir) and a `SessionBasedScript`:class that
+accepts the following standard options:
+
+  -s SESSION
+      the session dir to use.
+
+  -r RESOURCE
+      the remote resource to use (corresponds to the `-R` option of
+      the script).
+
+  -C 45
+      to configure the polling frequency.
+
+  -vvv
+      to increase verbosity.
+
+A test is therefore an application that is run in a
+`ParallelTaskCollection` on the localhost, and that executes a gc3
+script to submit the tests to a remote resource.
+
+The signature of the `__init__` method of the test class must be::
+
+    def __init__(self, appdir, **extra_args):
+
+where `appdir` is the application directory
+(e.g. ``gc3pie/gc3apps/rosetta``).
+
+After a test is completed, the script will assume that the
+`terminated()` method of the test had set the `self.passed` attribute
+to a boolean, with the obvious meaning.
+
+For each directory multiple tests can be defined. However, different
+tests with different arguments must be different classes.
+
+In order to *enable* one or more tests for a specific directory you
+have to update the `RunTestsInParallel.applicationdirs` dictionary and
+add a mapping `directory` => `(Test1, Test2, Test3)`
 """
 # Copyright (C) 2012, GC3, University of Zurich. All rights reserved.
 #
@@ -32,12 +74,19 @@ from gc3libs.workflow import ParallelTaskCollection, TaskCollection
 
 
 class TestRunner(object):
+    """
+    This class is used to initialize some commonly used attributes and
+    values of the `**extra` arguments passed by the
+    `SessionBasedScript`.
+    """
     def __init__(self, appdir, kw):
         self.appdir = os.path.abspath(appdir)
         self.testdir = os.path.join(self.appdir, 'test')
         self.passed = False
         kw['environment'] = {'PYTHONUNBUFFERED': 'yes'}
         kw['output_dir'] = os.path.join(kw.get('output_dir', ''), os.path.basename(appdir))
+        kw['stdout'] = str(self).lower()+'.stdout.log'
+        kw['stderr'] = str(self).lower()+'.stderr.log'
         self.stdargs = ['-s', 'TEST_SESSION',
                         '-r', kw['resource'],
                         '-C', '45',
@@ -50,17 +99,14 @@ class GCodemlTest(TestRunner, Application):
 
     def __init__(self, appdir, **kw):
         TestRunner.__init__(self, appdir, kw)
-        self.args = ['./gcodeml.py'] + self.stdargs + [ 'small_flat' ]
         self.datadir = os.path.join(self.testdir, 'data/small_flat')
         Application.__init__(
                          self,
-                         self.args,
+                         arguments=['./gcodeml.py'] + self.stdargs + ['small_flat'],
                          inputs=[
                              os.path.join(self.appdir, 'gcodeml.py'),
                              self.datadir],
                          outputs=['small_flat.out'],
-                         stdout='gcodeml.stdout.log',
-                         stderr='gcodeml.stderr.log',
                          **kw)
 
     def terminated(self):
@@ -96,17 +142,14 @@ class GGamessTest(TestRunner, Application):
     def __init__(self, appdir, **kw):
         TestRunner.__init__(self, appdir, kw)
 
-        self.args = ['./ggamess.py' ] + self.stdargs + [
-                     '-R', '2012R1',
-                     'exam01.inp']
         Application.__init__(
             self,
-            self.args,
+            arguments=['./ggamess.py' ] + self.stdargs + [
+                     '-R', '2012R1',
+                     'exam01.inp'],
             inputs=[os.path.join(self.appdir, 'ggamess.py'),
                     os.path.join(self.appdir, 'test/data/exam01.inp')],
             outputs=['exam01'],
-            stdout='ggamess.stdout.log',
-            stderr='ggamess.stderr.log',
             **kw)
 
     def terminated(self):
@@ -142,8 +185,6 @@ class GGeotopTest(TestRunner, Application):
                     'test/geotop_1_224_20120227_static',
                     'test/data/GEOtop_public_test']],
             outputs=['GEOtop_public_test/out'],
-            stdout='ggeotop.stdout.log',
-            stderr='ggeotop.stderr.log',
             **kw)
         
     def terminated(self):
@@ -163,8 +204,6 @@ class GZodsTest(TestRunner, Application):
                 os.path.join(self.appdir, i) for i in [
                     'gzods.py', 'test/data/small']],
             outputs=['small', 'input'],
-            stdout='gzods.stdout.log',
-            stderr='gzods.stderr.log',
             **kw)
 
     def terminated(self):
@@ -177,25 +216,22 @@ class GRosettaTest(TestRunner, Application):
 
     def __init__(self, appdir, **kw):
         TestRunner.__init__(self, appdir, kw)
-        self.args = ['./grosetta.py' ] + self.stdargs + [       
-            '--total-decoys', '5',
-            '--decoys-per-job', '2',
-            'data/grosetta.flags',
-            'data/alignment.filt',
-            'data/boinc_aaquery0*',
-            'data/query.*',
-            'data/*.pdb',
-            ]
         self.jobdirs = [ '0--1', '2--3', '4--5']
         
         Application.__init__(
             self,
-            self.args,
+            arguments=['./grosetta.py' ] + self.stdargs + [
+                '--total-decoys', '5',
+                '--decoys-per-job', '2',
+                'data/grosetta.flags',
+                'data/alignment.filt',
+                'data/boinc_aaquery0*',
+                'data/query.*',
+                'data/*.pdb',
+                ],
             inputs=[os.path.join(self.appdir, 'grosetta.py'),
                     os.path.join(self.appdir, 'test/data')],
             outputs=self.jobdirs + ['data'],
-            stdout='grosetta.stdout.log',
-            stderr='grosetta.stderr.log',
             **kw)
 
     def terminated(self):
@@ -234,22 +270,20 @@ class GDockingTest(TestRunner, Application):
         TestRunner.__init__(self, appdir, kw)
         kw['output_dir'] = os.path.join(os.path.dirname(self.appdir), 'docking')
 
-        self.args = ['./gdocking.py' ] + self.stdargs + [
+        self.jobdirs = ["1bjpA.%s" % d for d in ('1--2', '3--4', '5--5')]
+        Application.__init__(
+            self,
+            arguments=['./gdocking.py' ] + self.stdargs + [
                      '--decoys-per-file', '5',
                      '--decoys-per-job', '2',
                      '-f', 'data/gdocking.flags',
                      'data/1bjpA.pdb',
-                     ]
-        self.jobdirs = ["1bjpA.%s" % d for d in ('1--2', '3--4', '5--5')]
-        Application.__init__(self,
-                             self.args,
-                             inputs=[
-                                 os.path.join(self.appdir, 'gdocking.py'),
-                                 os.path.join(self.appdir, 'test/data')],
-                             outputs=[self.jobdirs],
-                             stdout='gdocking.stdout.log',
-                             stderr='gdocking.stderr.log',
-                             **kw)
+                     ],
+            inputs=[
+                os.path.join(self.appdir, 'gdocking.py'),
+                os.path.join(self.appdir, 'test/data')],
+            outputs=[self.jobdirs],
+            **kw)
 
     def terminated(self):
         for jobdir in self.jobdirs:
@@ -297,7 +331,7 @@ class RunTestsInParallel(ParallelTaskCollection):
         for testdir, classes in tests.iteritems():
             appdir = os.path.abspath(testdir)
 
-            tasks+= [cls(appdir, **extra) for cls in classes if issubclass(cls, Task)]
+            tasks+= [cls(appdir, **extra) for cls in classes if issubclass(cls, Task) and issubclass(cls, TestRunner)]
         ParallelTaskCollection.__init__(self, tasks, **extra)
 
 
@@ -312,13 +346,16 @@ class TestAppsScript(SessionBasedScript):
                        nargs='*',
                        metavar='TESTS',
                        default=RunTestsInParallel.applicationdirs.keys(),
-                       help="Directories of the applications you want to test.")
+                       help="If no `TEST` is given all configured tests will be run. If one or more"
+                       " directories are given from command line, only "
+                       "tests configured for those directories will be "
+                       "run.")
 
     def setup_options(self):
         self.add_param('-R', '--test-resource', dest='test_resource', metavar='RESOURCE',
                        required=True,
-                       help="Resource to use for the tests. This resource will be passed"
-                       " to the test scripts as argument of the `-r` option.")
+                       help="Run test script so that they are submitted to `RESOURCE` resource, "
+                       "by addiong option `-r RESOURCE` to the gc3apps script.")
 
     def new_tasks(self, extra):
         extra_args = extra.copy()
