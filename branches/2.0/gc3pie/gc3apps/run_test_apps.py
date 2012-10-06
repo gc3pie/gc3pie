@@ -142,6 +142,8 @@ class GGeotopTest(TestRunner, Application):
                     'test/geotop_1_224_20120227_static',
                     'test/data/GEOtop_public_test']],
             outputs=['GEOtop_public_test/out'],
+            stdout='ggeotop.stdout.log',
+            stderr='ggeotop.stderr.log',
             **kw)
         
     def terminated(self):
@@ -160,9 +162,14 @@ class GZodsTest(TestRunner, Application):
             inputs=[
                 os.path.join(self.appdir, i) for i in [
                     'gzods.py', 'test/data/small']],
-            outputs=['small'],
+            outputs=['small', 'input'],
+            stdout='gzods.stdout.log',
+            stderr='gzods.stderr.log',
             **kw)
 
+    def terminated(self):
+        if self.execution._exitcode == 0:
+            self.passed = True
 
 class GRosettaTest(TestRunner, Application):
     def __str__(self):
@@ -225,7 +232,7 @@ class GDockingTest(TestRunner, Application):
 
     def __init__(self, appdir, **kw):
         TestRunner.__init__(self, appdir, kw)
-        kw['output_dir'] = 'docking'
+        kw['output_dir'] = os.path.join(os.path.dirname(self.appdir), 'docking')
 
         self.args = ['./gdocking.py' ] + self.stdargs + [
                      '--decoys-per-file', '5',
@@ -300,6 +307,13 @@ class TestAppsScript(SessionBasedScript):
     """
     version = '1.0'
 
+    def setup_args(self):
+        self.add_param('args',
+                       nargs='*',
+                       metavar='TESTS',
+                       default=RunTestsInParallel.applicationdirs.keys(),
+                       help="Directories of the applications you want to test.")
+
     def setup_options(self):
         self.add_param('-R', '--test-resource', dest='test_resource',
                        default='smscg',
@@ -320,6 +334,7 @@ class TestAppsScript(SessionBasedScript):
                 yield t
 
     def before_main_loop(self):
+        print "Tests passed from command line: %s" % str.join(", ", self.params.args)
         lrms = self._controller._core.get_backend(self.params.test_resource)
         # Needed to get, if it's needed, a proxy certificate
         lrms.get_resource_status()
