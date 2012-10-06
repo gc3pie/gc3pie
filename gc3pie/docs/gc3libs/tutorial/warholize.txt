@@ -147,30 +147,17 @@ case it will be something like::
       def new_tasks(self, extra):
           gc3libs.log.info("Creating main sequential task")
           for (i, input_file) in enumerate(self.params.args):
-              kw = extra.copy()
-              kw['output_dir'] = 'Warholized.%s' % os.path.basename(input_file)
-              yield ("Warholize.%d" % i,
-                     WarholizeWorkflow,
-                     [input_file,
-                      self.params.copies,],
-                     kw)
+              extra_args = extra.copy()
+              extra_args['output_dir'] = 'Warholized.%s' % os.path.basename(input_file)
+              yield WarholizeWorkflow(input_file,
+                                      self.params.copies,
+                                      **extra_args)
   
 `new_tasks` is used as a *generator* (but it could return a list as
-well). Each *yielded* object is a tuple which rapresents a generic
-Task. In GC3Pie, a task is either a single application or a complex
-workflow, and rapresents an *execution unit*. In our case we create a
-`WarholizeWorkflow` task which is the workflow described before. We
-don't create an instance of the task from whitin `new_tasks`, but we
-pass all the arguments needed to create one. In the order:
-
-  * The job name (used to identify the task inside the session)
-
-  * the class object (not the instance!)
-
-  * arguments to be passed to the constructor of the class
-  
-  * a dictionary containing the keyword arguments to be passed to the
-    constructor of the class
+well). Each *yielded* object is a *task*. In GC3Pie, a *task* is
+either a single application or a complex workflow, and rapresents an
+*execution unit*. In our case we create a `WarholizeWorkflow` task
+which is the workflow described before. 
 
 In our case we yield a different `WarholizeWorkflow` task for each
 input file. These tasks will run in parallel.
@@ -189,14 +176,14 @@ The workflows
 Main sequential workflow
 ++++++++++++++++++++++++
 
-The module `gc3libs.dag` contains two main objects:
+The module `gc3libs.workflow` contains two main objects:
 `SequentialTaskCollection` and `ParallelTaskCollection`. They execute
 tasks in serial and in parallel, respectively. We will use both of
 them to create our workflow; the first one, `WarholizeWorkflow`, is a
 sequential task, therefore we have to inherit from
 `SequentialTaskCollection` and customize its `__init__` method::
 
-  from gc3libs.dag import SequentialTaskCollection, ParallelTaskCollection
+  from gc3libs.workflow import SequentialTaskCollection, ParallelTaskCollection
   import math
   from gc3libs import Run
   
@@ -205,7 +192,7 @@ sequential task, therefore we have to inherit from
       Main workflow.
       """
   
-      def __init__(self, input_image,  copies, grid=None, **kw):
+      def __init__(self, input_image,  copies, **extra_args):
           self.input_image = input_image
           self.output_image = "warhol_%s" % os.path.basename(input_image)
   
@@ -213,7 +200,7 @@ sequential task, therefore we have to inherit from
               "Producing a warholized version of input file %s "
               "and store it in %s" % (input_image, self.output_image))
     
-          self.output_dir = os.path.relpath(kw.get('output_dir'))
+          self.output_dir = os.path.relpath(extra_args.get('output_dir'))
   
           self.copies = copies
   
@@ -222,7 +209,7 @@ sequential task, therefore we have to inherit from
               raise gc3libs.exceptions.InvalidArgument(
                   "`copies` argument must be a perfect square.")
   
-          self.jobname = kw.get('jobname', 'WarholizedWorkflow')
+          self.jobname = extra_args.get('jobname', 'WarholizedWorkflow')
           self.grayscaled_image = "grayscaled_%s" % os.path.basename(self.input_image)
   
 Up to now we just parsed the arguments. The following lines, instead,
@@ -239,7 +226,7 @@ a grayscale image from the input file::
 Finally, we call the parent's constructor.::
   
           SequentialTaskCollection.__init__(
-              self, self.tasks, grid=grid)
+              self, self.tasks)
   
 
 This will create the initial task list, but we have to run also step 2
@@ -276,9 +263,9 @@ In our case, however, the `next` method is quite simple::
   
 At each iteration, we call `self.add()` to add an instance of a
 task-like class (`gc3libs.Application`,
-`gc3libs.dag.ParallelTaskCollection` or
-`gc3libs.dag.SequentialTaskCollection`, in our case) to complete the
-next step, and we return the current state, which will be
+`gc3libs.workflow.ParallelTaskCollection` or
+`gc3libs.workflow.SequentialTaskCollection`, in our case) to complete
+the next step, and we return the current state, which will be
 `gc3libs.Run.State.RUNNING` unless we have finished the computation.
 
 
@@ -353,7 +340,7 @@ versions of the grayscale image with different coloration chosen
 randomly from a list of available colors. It does it by running
 multiple instance of `TricolorizeImage` with different
 arguments. Since we want to run the various colorization in parallel,
-it inherits from `gc3libs.dag.ParallelTaskCollection` class. Like we
+it inherits from `gc3libs.workflow.ParallelTaskCollection` class. Like we
 did for `GrayScaleConvertApplication`, we only need to customize the
 constructor `__init__`, creating the various subtasks we want to run::
 
@@ -365,7 +352,7 @@ constructor `__init__`, creating the various subtasks we want to run::
                 'indigo', 'navy', 'turquoise1', 'SeaGreen', 'gold',
                 'orange', 'magenta']
   
-      def __init__(self, grayscaled_image, copies, output_dir, grid=None):
+      def __init__(self, grayscaled_image, copies, output_dir):
           gc3libs.log.info(
               "TricolorizeMultipleImages for %d copies run" % copies)
           self.jobname = "Warholizer_Parallel"
@@ -391,10 +378,9 @@ constructor `__init__`, creating the various subtasks we want to run::
                   "%s.%d" % (self.output_dir, i),
                   "%s.%d" % (grayscaled_image, i),
                   colors,
-                  self.warhol_dir,
-                  grid=grid))
+                  self.warhol_dir))
   
-          ParallelTaskCollection.__init__(self, self.tasks, grid)
+          ParallelTaskCollection.__init__(self, self.tasks)
   
 The main loop will fill the `self.tasks` list with various
 `TricolorizedImage` tasks, each one with an unique combination of
@@ -417,7 +403,7 @@ output of the first job::
       grayscale image
       """
       def __init__(self, grayscaled_image, output_dir, output_file,
-                   colors, warhol_dir, grid=None):
+                   colors, warhol_dir):
           self.grayscaled_image = grayscaled_image
           self.output_dir = output_dir
           self.warhol_dir = warhol_dir
@@ -439,7 +425,7 @@ output of the first job::
                   colors, self.warhol_dir),
               ]
   
-          SequentialTaskCollection.__init__(self, self.tasks, grid)
+          SequentialTaskCollection.__init__(self, self.tasks)
   
       def next(self, iteration):
           last = self.tasks[-1]
