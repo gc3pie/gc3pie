@@ -189,20 +189,20 @@ import gc3libs
 
 class SshTransport(Transport):
 
-    ssh = None
-    sftp = None
-    _is_open = False
-    transport_channel = None
-
     def __init__(self, remote_frontend,
                  port=gc3libs.Default.SSH_PORT,
                  username=None):
         self.remote_frontend = remote_frontend
         self.port = port
         self.username = username
+
         self.ssh = paramiko.SSHClient()
         self.ssh_config = paramiko.SSHConfig()
         self.keyfile = None
+        self.sftp = None
+        self._is_open = False
+        self.transport_channel = None
+        
         try:
             config_filename = os.path.expanduser('~/.ssh/config')
             config_file = open(config_filename)
