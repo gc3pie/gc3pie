@@ -291,6 +291,7 @@ squeue  = /usr/local/bin/squeue
 
     cfg = gc3libs.config.Configuration()
     cfg.merge_file(tmpfile)
+    os.remove(tmpfile)
     b = cfg.make_resources()['example']
 
     assert_equal(b.sbatch,   ['/usr/local/bin/sbatch', '--constraint=gpu'])
