@@ -407,7 +407,7 @@ class TestAppsScript(SessionBasedScript):
 
     def before_main_loop(self):
         print "Tests passed from command line: %s" % str.join(", ", self.params.args)
-        lrms = self._controller._core.get_backend(self.params.test_resource)
+        lrms = self._core.get_backend(self.params.test_resource)
         # The resource may requires a password to be properly
         # initialized (e.g. x509 proxy certificates).
         lrms.get_resource_status()
