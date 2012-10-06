@@ -359,6 +359,16 @@ class _Quantity(object):
         else:
             return other.unit
 
+    @classmethod
+    def _get_best_unit(cls, amount):
+        units = sorted(cls._UNITS.values())
+        prev = units[0].base
+        for unit in units:
+            if prev.amount(unit.base) <= amount < unit.amount(unit.base):
+                return prev
+            prev = unit
+        return unit
+
     def __add__(self, other):
         assert isinstance(other, self.__class__), \
                ("Cannot add '%s' to '%s':"
@@ -393,6 +403,7 @@ class _Quantity(object):
 
     def __div__(self, other):
         """Return the ratio of two quantities, as a floating-point number."""
+        # import pdb; pdb.set_trace()
         if not isinstance(other, self.__class__):
             try:
                 float(other)
@@ -403,8 +414,9 @@ class _Quantity(object):
                     " homogeneous quantity." % (coeff.__class__.__name__,
                                                 self.__class__.__name__,
                                                 self.__class__.__name__))
-
-            return self._new_from_amount_and_unit(self.amount(self.base, conv=float) / other, self.unit)
+            amount = self.amount(self.base, conv=float) / other
+            unit = self._get_best_unit(amount)
+            return self._new_from_amount_and_unit(amount / unit.amount(unit.base), unit)
         else:
             # the quotient of two (homogeneous) quantities is a ratio (pure number)
             return (self.amount(self.base, conv=float) / other.amount(self.base, conv=float))
