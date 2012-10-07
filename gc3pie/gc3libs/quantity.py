@@ -335,8 +335,10 @@ class _Quantity(object):
             return (fmt % self.amount(unit, conv=conv)) + unit.name
 
     def __str__(self):
-        """Return a standard string representation of this quantity."""
-        return self.to_str('%g%s')
+        """
+        Return a human-readable string representation of this quantity.
+        """
+        return self.to_str("%g%s")
 
     def __repr__(self):
         """Return a string representation that can be read back with `eval()`."""
@@ -468,6 +470,9 @@ class Quantity(object):
         # create additional units and add them as class attributes
         for name, amount in self.other_units.iteritems():
             unit = newcls(amount, unit=newcls._base, name=name)
+            # make new units default to self when printing the amount
+            unit._unit = unit
+            newcls.register(unit)
             setattr(newcls, name, unit)
         return newcls
 
