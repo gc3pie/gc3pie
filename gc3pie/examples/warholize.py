@@ -166,33 +166,32 @@ class WarholizeScript(SessionBasedScript):
         if self.params.size:
             extra['size'] = self.params.size
         gc3libs.log.info("Creating main sequential task")
+        tasks = []
         for (i, input_file) in enumerate(self.params.args):
             extra_args = extra.copy()
             extra_args['output_dir'] = 'Warholized.%s' % os.path.basename(input_file)
-            yield  WarholizeWorkflow(input_file,
-                                     self.params.copies,
-                                     self.params.num_colors, **extra_args)
+            tasks.append(WarholizeWorkflow(input_file,
+                                           self.params.copies,
+                                           self.params.num_colors, **extra_args))
+        return [ParallelTaskCollection(tasks, **extra)]
 
-# `new_tasks` is used as a *generator* (but it could return a list as
-# well). Each *yielded* object is a tuple which rapresents a generic
-# Task. In GC3Pie, a task is either a single task or a complex workflow,
-# and rapresents an *execution unit*. In our case we create a
-# `WarholizeWorkflow` task which is the workflow described before. We
-# don't create an instance of the task from whitin `new_tasks`, but we
-# pass all the arguments needed. In the order:
-#
-#   * The job name (used to identify the task inside the session)
-#
-#   * the class object (not the instance!)
-#
-#   * arguments to be passed to the constructor of the class
-#
-#   * a dictionary containing the keyword arguments to be passed to the
-#     constructor of the class
+# `new_tasks` must return a list of tasks.  In GC3Pie, a *task* is
+# either a single application or a complex workflow, and rapresents an
+# *execution unit*. In our case we create a `WarholizeWorkflow` task
+# which is the workflow described before, and we return a
+# `ParallelTaskCollection` to contains all these tasks, in order to
+# execute those tasks in parallel.
 #
 # In our case we yield a different `WarholizeWorkflow` task for each
-# input file. These tasks will then run in parallel.
+# input file. These tasks will run in parallel.
 #
+# Please note that we are using the `gc3libs.log` module to log
+# informations about the execution. This module works like the
+# `logging`_ module and has methods like `error`, `warning`, `info` or
+# `debug`, but its logging level is automatically configured by
+# `SessionBasedScript`'s constructor.  This way you can increase the
+# verbosity of your script by simply adding ``-v`` options from the
+# command line.
 #
 #
 # The workflows
