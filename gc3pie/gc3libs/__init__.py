@@ -1171,7 +1171,7 @@ class Application(Task):
             xrsl += [('(runTimeEnvironment="%s")' % rte) for rte in self.tags ]
         if len(self.environment) > 0:
             xrsl.append('(environment=%s)' %
-                        str.join(' ', [ ('("%s" "%s")' % kv) for kv in self.environment ]))
+                        str.join(' ', [ ('("%s" "%s")' % kv) for kv in self.environment.iteritems() ]))
         if self.requested_walltime:
             # xRSL assumes minutes by default
             xrsl.append('(wallTime="%d")' % self.requested_walltime.amount(minutes))
