@@ -209,5 +209,4 @@ architecture=x64_64
 # #bsub = bsub -R lustre
 # #bjobs = bjobs
 # #bkill = /path/to/my/bkill.sh
-# #bqueues = bqueues
 # #lshosts = lshosts
