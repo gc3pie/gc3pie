@@ -142,10 +142,6 @@ class FilesystemStore(Store):
             raise gc3libs.exceptions.LoadError(
                 "Retrieved persistent ID '%s' does not match given ID '%s'"
                 % (obj.persistent_id, id_))
-        # FIXME: compatibility fix for sessions whose lifetime extends
-        # over r2623, REMOVE BEFORE RELEASE!
-        if hasattr(obj, "execution") and hasattr(obj.execution, "log") and not hasattr(obj.execution, "history"):
-            obj.execution.history = obj.execution.log
         return obj
 
     @same_docstring_as(Store.remove)
