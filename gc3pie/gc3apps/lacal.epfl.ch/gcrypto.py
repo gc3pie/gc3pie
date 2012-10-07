@@ -252,32 +252,33 @@ of newly-created jobs so that this limit is never exceeded.
         done in `parse_args`:meth:
         """
 
-        self.add_param('args',
-                       nargs='*',
-                       metavar=
-                       """
-                       [range_start] [range_end] [slice],
-                       help=[range_start]: Positive integer value of the range start.
-                       [range_end]: Positive integer value of the range end.
-                       [slice]: Positive integer value of the increment.
-                       """
-                       )
+        # self.add_param('args',
+        #                nargs='*',
+        #                metavar=
+        #                """
+        #                [range_start] [range_end] [slice],
+        #                help=[range_start]: Positive integer value of the range start.
+        #                [range_end]: Positive integer value of the range end.
+        #                [slice]: Positive integer value of the increment.
+        #                """
+        #                )
 
 
-        # self.add_param('range_start', type=nonnegative_int,
-        #           help="Non-negative integer value of the range start.")
-        # self.add_param('range_end', type=positive_int,
-        #           help="Positive integer value of the range end.")
-        # self.add_param('slice', type=positive_int,
-        #           help="Positive integer value of the increment.")
+        self.add_param('range_start', type=nonnegative_int,
+                  help="Non-negative integer value of the range start.")
+        self.add_param('range_end', type=positive_int,
+                  help="Positive integer value of the range end.")
+        self.add_param('slice', type=positive_int,
+                  help="Positive integer value of the increment.")
+
     def parse_args(self):
         # XXX: why is this necessary ? shouldn't add_params of 'args' handle this ?
         # check on the use of nargs and type.
-        if len(self.params.args) != 3:
-            raise ValueError("gcrypto takes exaclty 3 arguments (%d are given)" % len(self.params.args))
-        self.params.range_start = int(self.params.args[0])
-        self.params.range_end = int(self.params.args[1])
-        self.params.slice = int(self.params.args[2])
+        # if len(self.params.args) != 3:
+        #     raise ValueError("gcrypto takes exaclty 3 arguments (%d are given)" % len(self.params.args))
+        # self.params.range_start = int(self.params.args[0])
+        # self.params.range_end = int(self.params.args[1])
+        # self.params.slice = int(self.params.args[2])
 
         if self.params.range_end <= self.params.range_start:
             # Failed
