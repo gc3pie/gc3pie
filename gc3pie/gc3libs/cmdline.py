@@ -1321,10 +1321,10 @@ class SessionBasedScript(_Script):
         ## update session based on command-line args
         if len(self.session) == 0:
             self.process_args()
-        elif self.params.args:
+        else:
             self.log.warning(
-                "Session already exists, ignoring command-line arguments: %s",
-                str.join(' ', self.params.args))
+                "Session already exists, some command-line arguments might be ignored."
+                )
 
         # save the session list immediately, so newly added jobs will
         # be in it if the script is stopped here
