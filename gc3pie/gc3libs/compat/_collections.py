@@ -166,26 +166,36 @@ except NameError:
 try:
     OrderedDict
 except:
+    # Backport of OrderedDict() class that runs on Python 2.4, 2.5, 2.6, 2.7 and pypy.
+    # Passes Python2.7's test suite and incorporates all the latest updates.
+
     try:
         from thread import get_ident as _get_ident
     except ImportError:
         from dummy_thread import get_ident as _get_ident
+
+    try:
+        from _abcoll import KeysView, ValuesView, ItemsView
+    except ImportError:
+        pass
+
+
     class OrderedDict(dict):
         'Dictionary that remembers insertion order'
         # An inherited dict maps keys to values.
         # The inherited dict provides __getitem__, __len__, __contains__, and get.
         # The remaining methods are order-aware.
-        # Big-O running times for all methods are the same as regular dictionaries.
+        # Big-O running times for all methods are the same as for regular dictionaries.
 
-        # The internal self.__map dict maps keys to links in a doubly linked list.
+        # The internal self.__map dictionary maps keys to links in a doubly linked list.
         # The circular doubly linked list starts and ends with a sentinel element.
         # The sentinel element never gets deleted (this simplifies the algorithm).
         # Each link is stored as a list of length three:  [PREV, NEXT, KEY].
 
         def __init__(self, *args, **kwds):
-            '''Initialize an ordered dictionary.  The signature is the same as
-            regular dictionaries, but keyword arguments are not recommended because
-            their insertion order is arbitrary.
+            '''Initialize an ordered dictionary.  Signature is the same as for
+            regular dictionaries, but keyword arguments are not recommended
+            because their insertion order is arbitrary.
 
             '''
             if len(args) > 1:
@@ -198,53 +208,75 @@ except:
                 self.__map = {}
             self.__update(*args, **kwds)
 
-        def __setitem__(self, key, value, PREV=0, NEXT=1, dict_setitem=dict.__setitem__):
+        def __setitem__(self, key, value, dict_setitem=dict.__setitem__):
             'od.__setitem__(i, y) <==> od[i]=y'
-            # Setting a new item creates a new link at the end of the linked list,
-            # and the inherited dictionary is updated with the new key/value pair.
+            # Setting a new item creates a new link which goes at the end of the linked
+            # list, and the inherited dictionary is updated with the new key/value pair.
             if key not in self:
                 root = self.__root
-                last = root[PREV]
-                last[NEXT] = root[PREV] = self.__map[key] = [last, root, key]
+                last = root[0]
+                last[1] = root[0] = self.__map[key] = [last, root, key]
             dict_setitem(self, key, value)
 
-        def __delitem__(self, key, PREV=0, NEXT=1, dict_delitem=dict.__delitem__):
+        def __delitem__(self, key, dict_delitem=dict.__delitem__):
             'od.__delitem__(y) <==> del od[y]'
-            # Deleting an existing item uses self.__map to find the link which gets
-            # removed by updating the links in the predecessor and successor nodes.
+            # Deleting an existing item uses self.__map to find the link which is
+            # then removed by updating the links in the predecessor and successor nodes.
             dict_delitem(self, key)
             link_prev, link_next, key = self.__map.pop(key)
-            link_prev[NEXT] = link_next
-            link_next[PREV] = link_prev
+            link_prev[1] = link_next
+            link_next[0] = link_prev
 
         def __iter__(self):
             'od.__iter__() <==> iter(od)'
-            # Traverse the linked list in order.
-            NEXT, KEY = 1, 2
             root = self.__root
-            curr = root[NEXT]
+            curr = root[1]
             while curr is not root:
-                yield curr[KEY]
-                curr = curr[NEXT]
+                yield curr[2]
+                curr = curr[1]
 
         def __reversed__(self):
             'od.__reversed__() <==> reversed(od)'
-            # Traverse the linked list in reverse order.
-            PREV, KEY = 0, 2
             root = self.__root
-            curr = root[PREV]
+            curr = root[0]
             while curr is not root:
-                yield curr[KEY]
-                curr = curr[PREV]
+                yield curr[2]
+                curr = curr[0]
 
         def clear(self):
             'od.clear() -> None.  Remove all items from od.'
-            for node in self.__map.itervalues():
-                del node[:]
-            root = self.__root
-            root[:] = [root, root, None]
-            self.__map.clear()
+            try:
+                for node in self.__map.itervalues():
+                    del node[:]
+                root = self.__root
+                root[:] = [root, root, None]
+                self.__map.clear()
+            except AttributeError:
+                pass
             dict.clear(self)
+
+        def popitem(self, last=True):
+            '''od.popitem() -> (k, v), return and remove a (key, value) pair.
+            Pairs are returned in LIFO order if last is true or FIFO order if false.
+
+            '''
+            if not self:
+                raise KeyError('dictionary is empty')
+            root = self.__root
+            if last:
+                link = root[0]
+                link_prev = link[0]
+                link_prev[1] = root
+                root[0] = link_prev
+            else:
+                link = root[1]
+                link_next = link[1]
+                root[1] = link_next
+                link_next[0] = root
+            key = link[2]
+            del self.__map[key]
+            value = dict.pop(self, key)
+            return key, value
 
         # -- the following methods do not depend on the internal structure --
 
@@ -270,20 +302,48 @@ except:
                 yield self[k]
 
         def iteritems(self):
-            'od.iteritems -> an iterator over the (key, value) pairs in od'
+            'od.iteritems -> an iterator over the (key, value) items in od'
             for k in self:
                 yield (k, self[k])
 
-        update = MutableMapping.update
+        def update(*args, **kwds):
+            '''od.update(E, **F) -> None.  Update od from dict/iterable E and F.
 
-        __update = update # let subclasses override update without breaking __init__
+            If E is a dict instance, does:           for k in E: od[k] = E[k]
+            If E has a .keys() method, does:         for k in E.keys(): od[k] = E[k]
+            Or if E is an iterable of items, does:   for k, v in E: od[k] = v
+            In either case, this is followed by:     for k, v in F.items(): od[k] = v
+
+            '''
+            if len(args) > 2:
+                raise TypeError('update() takes at most 2 positional '
+                                'arguments (%d given)' % (len(args),))
+            elif not args:
+                raise TypeError('update() takes at least 1 argument (0 given)')
+            self = args[0]
+            # Make progressively weaker assumptions about "other"
+            other = ()
+            if len(args) == 2:
+                other = args[1]
+            if isinstance(other, dict):
+                for key in other:
+                    self[key] = other[key]
+            elif hasattr(other, 'keys'):
+                for key in other.keys():
+                    self[key] = other[key]
+            else:
+                for key, value in other:
+                    self[key] = value
+            for key, value in kwds.items():
+                self[key] = value
+
+        __update = update  # let subclasses override update without breaking __init__
 
         __marker = object()
 
         def pop(self, key, default=__marker):
-            '''od.pop(k[,d]) -> v, remove specified key and return the corresponding
-            value.  If key is not found, d is returned if given, otherwise KeyError
-            is raised.
+            '''od.pop(k[,d]) -> v, remove specified key and return the corresponding value.
+            If key is not found, d is returned if given, otherwise KeyError is raised.
 
             '''
             if key in self:
@@ -300,17 +360,6 @@ except:
                 return self[key]
             self[key] = default
             return default
-
-        def popitem(self, last=True):
-            '''od.popitem() -> (k, v), return and remove a (key, value) pair.
-            Pairs are returned in LIFO order if last is true or FIFO order if false.
-
-            '''
-            if not self:
-                raise KeyError('dictionary is empty')
-            key = next(reversed(self) if last else iter(self))
-            value = self.pop(key)
-            return key, value
 
         def __repr__(self, _repr_running={}):
             'od.__repr__() <==> repr(od)'
@@ -341,14 +390,14 @@ except:
 
         @classmethod
         def fromkeys(cls, iterable, value=None):
-            '''OD.fromkeys(S[, v]) -> New ordered dictionary with keys from S.
-            If not specified, the value defaults to None.
+            '''OD.fromkeys(S[, v]) -> New ordered dictionary with keys from S
+            and values equal to v (which defaults to None).
 
             '''
-            self = cls()
+            d = cls()
             for key in iterable:
-                self[key] = value
-            return self
+                d[key] = value
+            return d
 
         def __eq__(self, other):
             '''od.__eq__(y) <==> od==y.  Comparison to another OD is order-sensitive
@@ -360,10 +409,9 @@ except:
             return dict.__eq__(self, other)
 
         def __ne__(self, other):
-            'od.__ne__(y) <==> od!=y'
             return not self == other
 
-        # -- the following methods support python 3.x style dictionary views --
+        # -- the following methods are only used in Python 2.7 --
 
         def viewkeys(self):
             "od.viewkeys() -> a set-like object providing a view on od's keys"
@@ -376,34 +424,3 @@ except:
         def viewitems(self):
             "od.viewitems() -> a set-like object providing a view on od's items"
             return ItemsView(self)
-
-
-if __name__ == '__main__':
-    # verify that instances can be pickled
-    from cPickle import loads, dumps
-    Point = namedtuple('Point', 'x, y', True)
-    p = Point(x=10, y=20)
-    assert p == loads(dumps(p, -1))
-
-    # test and demonstrate ability to override methods
-    class Point(namedtuple('Point', 'x y')):
-        @property
-        def hypot(self):
-            return (self.x ** 2 + self.y ** 2) ** 0.5
-        def __str__(self):
-            return 'Point: x=%6.3f y=%6.3f hypot=%6.3f' % (self.x, self.y, self.hypot)
-
-    for p in Point(3,4), Point(14,5), Point(9./7,6):
-        print p
-
-    class Point(namedtuple('Point', 'x y')):
-        'Point class with optimized _make() and _replace() without error-checking'
-        _make = classmethod(tuple.__new__)
-        def _replace(self, _map=map, **kwds):
-            return self._make(_map(kwds.get, ('x', 'y'), self))
-
-    print Point(11, 22)._replace(x=100)
-
-    import doctest
-    TestResults = namedtuple('TestResults', 'failed attempted')
-    print TestResults(*doctest.testmod())
