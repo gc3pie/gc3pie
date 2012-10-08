@@ -282,10 +282,6 @@ class ArcLrms(LRMS):
                 'INLRMS:O':  Run.State.RUNNING,
                 'INLRMS:S':  Run.State.STOPPED,
                 'INLRMS:H':  Run.State.STOPPED,
-                # XXX: it seems that `INLRMS:X` is a notation used in
-                # the manual to mean `INLRMS:*`, i.e., any of the
-                # above, not an actual state ...
-                'INLRMS:X':  Run.State.STOPPED,
                 # the `-ING` states below are used by ARC to mean that
                 # the GM has received a request for action but the job
                 # has not yet terminated; in particular, the output is
@@ -329,7 +325,6 @@ class ArcLrms(LRMS):
                     INLRMS:R        RUNNING
                     INLRMS:O        STOPPED
                     INLRMS:E        STOPPED
-                    INLRMS:X        STOPPED
                     INLRMS:S        STOPPED
                     INLRMS:H        STOPPED
                     FINISHING       RUNNING
