@@ -23,6 +23,7 @@ __docformat__ = 'reStructuredText'
 __version__ = 'development version (SVN $Revision$)'
 
 
+import datetime
 import os
 import posixpath
 import random
@@ -36,6 +37,7 @@ from gc3libs.compat._collections import defaultdict
 from gc3libs import log, Run
 from gc3libs.backends import LRMS
 import gc3libs.exceptions
+from gc3libs.quantity import Duration, hours, minutes, seconds, Memory, GB, MB, kB, bytes
 import gc3libs.utils as utils # first, to_bytes
 from gc3libs.utils import *
 
@@ -378,6 +380,7 @@ class LsfLrms(batch.BatchSystem):
         self.bsub = self._get_command_argv('bsub')
 
         # LSF commands
+        self._bacct = self._get_command('bacct')
         self._bjobs = self._get_command('bjobs')
         self._bkill = self._get_command('bkill')
         self._lshosts = self._get_command('lshosts')
@@ -468,8 +471,75 @@ class LsfLrms(batch.BatchSystem):
         assert 'state' in jobstatus
         return jobstatus
 
-    # The same command is used in LSF to get the status and the accouting info
-    _parse_acct_output = _parse_stat_output
+    _TIMESTAMP_FMT = '%a %b %d %H:%M:%S %Y' # e.g., 'Mon Oct  8 12:04:56 2012'
+
+    @staticmethod
+    def _parse_timespec(ts):
+        """Parse a timestamp as it appears in LSF bjobs/bacct logs."""
+        try:
+            # FIXME: I couldn't find examples of LSF output that
+            # contain a year spec, so I'm adding the current year to
+            # the output.  This is certainly not the correct thing to
+            # do, but it works most of the time.
+            year = datetime.date.today().year
+            # XXX: datetime.strptime() only available starting Py 2.5
+            return datetime.datetime(*(time.strptime(
+                ('%s %s' % (ts, year)),
+                LsfLrms._TIMESTAMP_FMT)[0:6]))
+        except ValueError, err:
+            gc3libs.log.error(
+                "Cannot parse '%s' as an LSF timestamp: %s: %s",
+                ts, err.__class__.__name__, err)
+            raise
+
+    @staticmethod
+    def _parse_memspec(m):
+        unit = m[-1]
+        if unit == 'G':
+            return Memory(int(m[:-1]), unit=GB)
+        elif unit == 'M':
+            return Memory(int(m[:-1]), unit=MB)
+        elif unit in ['K', 'k']: # XXX: not sure which one is used
+            return Memory(int(m[:-1]), unit=kB)
+        else:
+            # XXX: what does LSF use as a default?
+            return Memory(int(m), unit=bytes)
+
+    _RESOURCE_USAGE_RE = re.compile(r'^\s+ CPU_T \s+ WAIT \s+ TURNAROUND \s+ STATUS \s+ HOG_FACTOR \s+ MEM \s+ SWAP', re.X)
+    _EVENT_RE = re.compile(
+        r'^(Mon|Tue|Wed|Thu|Fri|Sat|Sun)'
+        ' \s+ (Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)'
+        ' \s+ [0-9]+ \s+ [0-9:]+:'
+        ' \s+ (?P<event>Submitted|Dispatched|Completed)', re.X)
+
+    @staticmethod
+    def _parse_acct_output(stdout):
+        data = dict()
+        lines = iter(stdout.split('\n'))
+        for line in lines:
+            match = LsfLrms._EVENT_RE.match(line)
+            if match:
+                timestamp = line.split(': ')[0]
+                event = match.group('event')
+                if event == 'Submitted':
+                    data['lsf_submission_time'] = LsfLrms._parse_timespec(timestamp)
+                elif event == 'Dispatched':
+                    data['lsf_start_time'] = LsfLrms._parse_timespec(timestamp)
+                elif event == 'Completed':
+                    data['lsf_completion_time'] = LsfLrms._parse_timespec(timestamp)
+                continue
+            match = LsfLrms._RESOURCE_USAGE_RE.match(line)
+            if match:
+                # actual resource usage is on next line
+                rusage = lines.next()
+                cpu_t, wait, turnaround, status, hog_factor, mem, swap = rusage.split()
+                # common backend attrs (see Issue 78)
+                data['used_cpu_time'] = Duration(float(cpu_t), unit=seconds)
+                data['max_used_memory'] = LsfLrms._parse_memspec(mem) + LsfLrms._parse_memspec(swap)
+                # the resource usage line is the last interesting line
+                break
+        return data
+
 
     def _cancel_command(self, jobid):
         return ("%s %s" % (self._bkill, jobid))
