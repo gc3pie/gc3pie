@@ -443,7 +443,8 @@ class _Script(cli.app.CommandLineApp):
             sys.stderr.write("%s: Exiting upon user request (Ctrl+C)\n" % self.name)
             return 13
         except SystemExit, ex:
-            return ex.code
+            #  sys.exit() has been called in `post_run()`.
+            raise
         # the following exception handlers put their error message
         # into `msg` and the exit code into `rc`; the closing stanza
         # tries to log the message and only outputs it to stderr if
