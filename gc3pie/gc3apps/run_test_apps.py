@@ -134,7 +134,7 @@ class GCodemlTest(TestRunner, Application):
 
         self.passed = True
 
-        
+
 class GGamessTest(TestRunner, Application):
     def __str__(self):
         return "GGamess"
@@ -186,7 +186,7 @@ class GGeotopTest(TestRunner, Application):
                     'test/data/GEOtop_public_test']],
             outputs=['GEOtop_public_test/out'],
             **kw)
-        
+
     def terminated(self):
         self.passed = os.path.isdir(os.path.join(self.output_dir, 'out'))
 
@@ -210,6 +210,7 @@ class GZodsTest(TestRunner, Application):
         if self.execution._exitcode == 0:
             self.passed = True
 
+
 class GRosettaTest(TestRunner, Application):
     def __str__(self):
         return "GRosetta"
@@ -217,7 +218,7 @@ class GRosettaTest(TestRunner, Application):
     def __init__(self, appdir, **kw):
         TestRunner.__init__(self, appdir, kw)
         self.jobdirs = [ '0--1', '2--3', '4--5']
-        
+
         Application.__init__(
             self,
             arguments=['./grosetta.py' ] + self.stdargs + [
@@ -299,6 +300,39 @@ class GDockingTest(TestRunner, Application):
                 return
         self.passed = True
 
+class GCryptoTest(TestRunner, Application):
+    def __str__(self):
+        return "GCrypto"
+
+    def __init__(self, appdir, **kw):
+        TestRunner.__init__(self, appdir, kw)
+
+        args = ['/bin/true']
+        ifiles = [os.path.join(self.appdir, 'gcrypto.py'),
+                  os.path.join(self.testdir, 'input.tgz'),
+                  os.path.join(self.testdir, 'gnfs-cmd_20120406'),
+                  ]
+        if os.path.isdir(self.testdir) and min(os.path.isfile(f) for f in ifiles):
+            # input files found. Run gcrypto test.
+            args = [
+                './gcrypto.py',
+                '-i', 'input.tgz',
+                '-g', 'gnfs-cmd_20120406',
+                '-c', '2'] + self.stdargs + [
+                '800000000', '800001000', '500',
+                ]
+
+        Application.__init__(
+            self,
+            arguments=args,
+            inputs=ifiles,
+            outputs=['@output.list'],
+            **kw)
+
+    def terminated(self):
+        if self.execution._exitcode == 0:
+            self.passed = True
+
 
 class RunTestsInParallel(ParallelTaskCollection):
     applicationdirs = {
@@ -311,7 +345,7 @@ class RunTestsInParallel(ParallelTaskCollection):
         # 'ieu.uzh.ch': (GMhCoevTest, ),
         # 'imsb.ethz.ch': None,
         # 'ior.uzh.ch': None,
-        # 'lacal.epfl.ch': (GCryptoTest, ),
+        'lacal.epfl.ch': (GCryptoTest, ),
         'rosetta': (GRosettaTest, GDockingTest),
         # 'turbomole': None,
         'zods': (GZodsTest, ),
@@ -383,7 +417,7 @@ class TestAppsScript(SessionBasedScript):
 
         for task in self.get_tasks():
             print "Task %s: %s (passed: %s)" % (task, task.execution.state, task.passed)
-        
+
 if __name__ == "__main__":
     from run_test_apps import TestAppsScript
     TestAppsScript().run()
