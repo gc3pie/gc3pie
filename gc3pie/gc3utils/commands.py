@@ -873,7 +873,17 @@ List status of computational resources.
 
 class cmd_gsession(_BaseCmd):
     """
-Manage sessions
+`gsession` get info on a session.
+
+Usage:
+
+    gsession `command` [options] SESSION_DIR
+
+commands are listed below, under `subcommands`.
+
+To get detaileid info on a specific command, run:
+
+    gsession `command` --help
     """
 
     # Setup methods
@@ -884,10 +894,15 @@ Manage sessions
         subparser.add_argument('session')
         subparser.add_argument('-v', '--verbose', action='count')
 
+
     def setup(self):
         gc3libs.cmdline._Script.setup(self)
 
-        self.subparsers = self.argparser.add_subparsers()
+        self.subparsers = self.argparser.add_subparsers(
+            title="subcommands",
+            description="gsession accept the the following subcommands. "
+            "Each subcommand requires a `SESSION` directory as argument.")
+
         self._add_subcmd(
             'abort',
             self.abort_session,
@@ -927,7 +942,7 @@ Manage sessions
         try:
             self.session = Session(self.params.session, create=False)
         except gc3libs.exceptions.InvalidArgument, ex:
-            raise RuntimeError('Session %s not found' % self.params.session)
+            raise RuntimeError('Session %s not found. Please specify a valid session directory as argument' % self.params.session)
 
         for task_id in self.session.tasks:
             self.session.tasks[task_id].kill()
@@ -966,10 +981,14 @@ Manage sessions
 
         This method basically call the command "gstat -n -v -s SESSION"
         """
-        self.session = Session(self.params.session, create=False)
+        try:
+            self.session = Session(self.params.session, create=False)
+        except gc3libs.exceptions.InvalidArgument, ex:
+            raise RuntimeError('Session %s not found. Please specify a valid session directory as argument' % self.params.session)
+
         job_ids = self.session.tasks.keys()
         cmd = gc3utils.commands.cmd_gstat
-        sys.argv = ['gstat', '-n', '-v', '-s', self.params.session] + job_ids
+        sys.argv = ['gstat', '-n', '-s', self.params.session] + job_ids
         return cmd().run()
 
     def show_log(self):
@@ -979,7 +998,10 @@ Manage sessions
         This method will print the history of the jobs in SESSION in a
         logfile fashon
         """
-        self.session = Session(self.params.session, create=False)
+        try:
+            self.session = Session(self.params.session, create=False)
+        except gc3libs.exceptions.InvalidArgument, ex:
+            raise RuntimeError('Session %s not found. Please specify a valid session directory as argument' % self.params.session)
         timestamps = []
         task_queue = list(self.session.tasks.values())
         while task_queue:
