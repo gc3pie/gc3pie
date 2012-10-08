@@ -15,8 +15,8 @@ GC3Apps provide a script drive execution of multiple ``GEOtop``
 jobs. It uses the generic `gc3libs.cmdline.SessionBasedScript`
 framework.
 
-From GEOtop's "read me" file:
-::
+From GEOtop's "read me" file::
+
     #
     # RUNNING
     # Run this simulation by calling the executable (GEOtop_1.223_static) 
@@ -140,10 +140,10 @@ A `ggeotop`:command: command-line is constructed as follows:
    folder reference.
 2. ``-x`` option is used to specify the path to the GEOtop executable
    file.
+
 **Example 1.** The following command-line invocation uses
 `ggeotop`:command: to run ``GEOTop`` on all valid input folder found
-in the recursive check of ``input_folder``
-::
+in the recursive check of ``input_folder``::
 
    $ ggeotop -x /apps/geotop/bin/geotop_1_224_20120227_static ./input_folder
 
@@ -233,6 +233,7 @@ are submitted at the same interval.
 The above command will start by printing a status report like the
 following:
 ::
+
    Status of jobs in the 'example.csv' session:
    SUBMITTED   1/1 (100.0%)
    
@@ -294,17 +295,6 @@ For a job in ``RUNNING`` or ``SUBMITTED`` state, only little
 information is known: basically, where the job is running, and when it
 was started::
 
-If you omit the job number, information about *all* jobs in the
-session will be printed.
-
-Most of the output is only useful if you are familiar with GC3Utils
-inner working. Nonetheless, :command:`ginfo` output is definitely something
-you should include in any report about a misbehaving job!
-
-For a finished job, the information is more complete and can include
-error messages in case the job has failed
-::
-
     $ ginfo -s example job.13
     job.13
         cores: 2
@@ -327,6 +317,48 @@ error messages in case the job has failed
 	unknown_iteration: 0
 	used_cputime: 1380
 	used_memory: 3382706
+
+If you omit the job number, information about *all* jobs in the
+session will be printed.
+
+Most of the output is only useful if you are familiar with GC3Utils
+inner working. Nonetheless, :command:`ginfo` output is definitely something
+you should include in any report about a misbehaving job!
+
+For a finished job, the information is more complete and can include
+error messages in case the job has failed::
+
+  $ ginfo -c -s example job.13
+  job.13
+      _arc0_state_last_checked: 1337069259.18
+      _exitcode: 0
+      _signal: None
+      _state: TERMINATED
+      cores: 2
+      download_dir: /data/geotop/results/00002
+      execution_targets: hera.wsl.ch
+      log:
+          SUBMITTED at Tue May 15 09:52:04 2012
+          Submitted to 'wsl' at Tue May 15 09:52:04 2012
+          TERMINATING at Tue May 15 10:07:39 2012
+          Final output downloaded to '/data/geotop/results/00002'
+          TERMINATED at Tue May 15 10:07:43 2012
+      lrms_jobid: gsiftp://hera.wsl.ch:2811/jobs/11441337068324584585032
+      lrms_jobname: GC3Pie_00002
+      original_exitcode: 0
+      queue: smscg.q
+      resource_name: wsl
+      state_last_changed: 1337069263.13
+      stderr_filename: ggeotop.log
+      stdout_filename: ggeotop.log
+      timestamp:
+          SUBMITTED: 1337068324.87
+          TERMINATED: 1337069263.13
+          TERMINATING: 1337069259.18
+      unknown_iteration: 0
+      used_cputime: 360
+      used_memory: 3366977
+      used_walltime: 300
 
 With option ``-v``, :command:`ginfo` output is even more verbose and complete,
 and includes information about the application itself, the input and

@@ -41,7 +41,7 @@ import UserDict
 
 import lockfile
 
-from gc3libs.compat.collections import defaultdict
+from gc3libs.compat._collections import defaultdict, OrderedDict
 import gc3libs.compat.functools as functools
 
 import gc3libs
@@ -706,7 +706,7 @@ def prettyprint(D, indent=0, width=0, maxdepth=None, step=4,
     if _exclude is None:
         _exclude = set()
     _exclude.add(id(D))
-    for k,v in sorted(D.iteritems()):
+    for k,v in D.iteritems():
         leading_spaces = indent * ' '
         full_name = "%s%s" % (_key_prefix, k)
         if only_keys is not None:
@@ -732,7 +732,7 @@ def prettyprint(D, indent=0, width=0, maxdepth=None, step=4,
         if id(v) in _exclude:
             continue
         first = str.join('', [leading_spaces, str(k), ': '])
-        if isinstance(v, (dict, UserDict.DictMixin, UserDict.UserDict)):
+        if isinstance(v, (dict, UserDict.DictMixin, UserDict.UserDict, OrderedDict)):
             if maxdepth is None or maxdepth > 0:
                 if maxdepth is None:
                     depth = None

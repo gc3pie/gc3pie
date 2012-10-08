@@ -71,7 +71,7 @@ from gc3libs import Application, Task
 from gc3libs.utils import read_contents
 from gc3libs.cmdline import SessionBasedScript
 from gc3libs.workflow import ParallelTaskCollection, TaskCollection
-
+from gc3libs.backends.shellcmd import ShellcmdLrms
 
 class TestRunner(object):
     """
@@ -91,6 +91,9 @@ class TestRunner(object):
                         '-r', kw['resource'],
                         '-C', '45',
                         '-vvvv']
+
+    def compatible_resources(self, resources):
+        return [r for r in resources if isinstance(r, ShellcmdLrms)]
 
 
 class GCodemlTest(TestRunner, Application):
@@ -407,7 +410,7 @@ class TestAppsScript(SessionBasedScript):
 
     def before_main_loop(self):
         print "Tests passed from command line: %s" % str.join(", ", self.params.args)
-        lrms = self._controller._core.get_backend(self.params.test_resource)
+        lrms = self._core.get_backend(self.params.test_resource)
         # The resource may requires a password to be properly
         # initialized (e.g. x509 proxy certificates).
         lrms.get_resource_status()
