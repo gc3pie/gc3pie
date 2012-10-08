@@ -53,6 +53,7 @@ if ON_RTD:
         'pysqlite2',
         'sqlalchemy',
         'sqlite3',
+        'texttable',
         ]
     for mod_name in MOCK_MODULES:
         sys.modules[mod_name] = Mock()
