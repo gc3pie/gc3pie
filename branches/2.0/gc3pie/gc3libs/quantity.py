@@ -653,9 +653,9 @@ class Duration(object):
     Represent the duration of a time lapse.
 
     Construction of a duration can be done by parsing a string
-    specification; several formats are accepted::
+    specification; several formats are accepted:
 
-    * A duration as an aggregate of days, hours, minutes and seconds::
+    * A duration is an aggregate of days, hours, minutes and seconds::
 
         >>> l3 = Duration('1day 4hours 9minutes 16seconds')
         >>> l3.amount(Duration.s) # convert to seconds
