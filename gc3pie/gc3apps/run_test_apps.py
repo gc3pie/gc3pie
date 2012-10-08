@@ -326,7 +326,7 @@ class GCryptoTest(TestRunner, Application):
             self,
             arguments=args,
             inputs=ifiles,
-            outputs=['@output.list'],
+            outputs=['NAME'],
             **kw)
 
     def terminated(self):
