@@ -108,7 +108,7 @@ A `grosetta`:command: command-line is constructed as follows:
 2. then follows any number of input files (copied from your PC to the execution site);
 3. then a literal colon character ``:``;
 4. finally, you can list any number of output file patterns (copied
-   back from the execution site to your PC); wildcards (e.g., "*.pdb")
+   back from the execution site to your PC); wildcards (e.g., ``*.pdb``)
    are allowed, but you must enclose them in quotes.  Note that:
 
    - you can omit the output files: the default is ``"*.pdb" "*.sc" "*.fasc"``
