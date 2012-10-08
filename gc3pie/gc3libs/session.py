@@ -383,13 +383,13 @@ class Session(list):
         Add a `Task` to the current session, save it to the associated
         persistent storage, and return the assigned `persistent_id`::
 
-            #. create new, empty session
+            >>> # create new, empty session
             >>> import tempfile; tmpdir = tempfile.mktemp(dir='.')
             >>> session = Session(tmpdir)
             >>> len(session)
             0
 
-            #. add a task to it
+            >>> # add a task to it
             >>> task = gc3libs.Task()
             >>> tid1 = session.add(task)
             >>> len(session)
@@ -398,14 +398,14 @@ class Session(list):
         Duplicates are silently ignored: the same object can be added
         many times to the session, but gets the same ID each time::
 
-            #. add a different task
+            >>> # add a different task
             >>> tid2 = session.add(task)
             >>> len(session)
             1
             >>> tid1 == tid2
             True
 
-            # do cleanup
+            >>> # do cleanup
             >>> session.destroy()
             >>> os.path.exists(session.path)
             False
