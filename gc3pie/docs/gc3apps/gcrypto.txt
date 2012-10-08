@@ -76,12 +76,13 @@ In more detail, `gcrypto`:command: does the following:
    empty contents.
    
 2. Divide the initial parameter range, given in the command-line,
-   into `chunks`:term: taking the ``-J`` value as a reference. So
+   into chunks taking the ``-J`` value as a reference. So
    from a coomand line argument like the following:
    ::
+
       $ gcrypto  800000000 1200000000 1000 -J 200
    
-   `gcrypto`:command: will generate an initial `chunks`:term: of 200 jobs
+   `gcrypto`:command: will generate an initial chunks of 200 jobs
    starting from the initial range 800000000 incrementing of 1000.
    All jobs will run ``gnfs-cmd`` on a specific parameter set
    (e.g. 800000000, 800001000, 800002000, ...). `gcrypto`:command: will keep
@@ -153,7 +154,7 @@ Those files are:
 
 When `gcrypto`:command: has to be executed with a different set of input
 files, an additional command line argument ``--input-files`` could be
-used to specify the locatin of a `tar.gz`:ref: archive containing the
+used to specify the locatin of a ``tar.gz`` archive containing the
 input files that ``gnfs-cmd`` will expect. Similarly, when a different
 version of gnfs-cmd command needs to be used, the command line
 argument ``--gnfs-cmd`` could be used to specify the location of the
@@ -184,7 +185,7 @@ three mandatory arguments:
    $ gcrypto 800000000 1200000000 1000
 
 In this case `gcrypto`:command: will use the default values for
-determine the `chunks`:term: size from the default value of the ``-J``
+determine the chunks size from the default value of the ``-J``
 option (default value is 50 simulatenous jobs).
 
 **Example 2.**
@@ -242,14 +243,14 @@ Output files for `gcrypto`:command:
 Upon successful completion, the output directory of each
 `gcrypto`:command: job contains:
 
-* a number of `.tgz`:term: files each of them correspondin to a step
+* a number of ``.tgz`` files each of them correspondin to a step
   within the execution of the ``gnfs-cmd`` command.
-* A log file named `gcrypto.log`:term: containing both the
+* A log file named `gcrypto.log`:file: containing both the
   `stdout`:term: and the `stderr`:term: of the ``gnfs-cmd``
   execution.
 
 .. note::
-   The number of `.tgz`:term: files may depend on whether the
+   The number of ``.tgz`` files may depend on whether the
    execution of the ``gnfs-cmd`` command has completed or not
    (e.g. jobs may be killed by the batch system when exausting
    requested resources)
@@ -285,8 +286,8 @@ are submitted at the same interval.
 The above command will start by printing a status report like the
 following:: 
 
-Status of jobs in the 'example.csv' session:
-SUBMITTED   1/1 (100.0%)
+  Status of jobs in the 'example.csv' session:
+  SUBMITTED   1/1 (100.0%)
 
 It will continue printing an updated status report every 120 seconds
 until the requested parameter range has been computed.
@@ -348,18 +349,6 @@ For a job in ``RUNNING`` or ``SUBMITTED`` state, only little
 information is known: basically, where the job is running, and when it
 was started::
 
-
-If you omit the job number, information about *all* jobs in the
-session will be printed.
-
-Most of the output is only useful if you are familiar with GC3Utils
-inner working. Nonetheless, :command:`ginfo` output is definitely something
-you should include in any report about a misbehaving job!
-
-For a finished job, the information is more complete and can include
-error messages in case the job has failed
-::
-
     $ ginfo -s example job.13
     job.13
         cores: 2
@@ -383,10 +372,51 @@ error messages in case the job has failed
 	used_cputime: 1380
 	used_memory: 3382706
 
+If you omit the job number, information about *all* jobs in the
+session will be printed.
+
+Most of the output is only useful if you are familiar with GC3Utils
+inner working. Nonetheless, :command:`ginfo` output is definitely something
+you should include in any report about a misbehaving job!
+
+For a finished job, the information is more complete and can include
+error messages in case the job has failed::
+
+  $ ginfo -c -s example job.13
+  job.13
+      _arc0_state_last_checked: 1337069259.18
+      _exitcode: 0
+      _signal: None
+      _state: TERMINATED
+      cores: 2
+      download_dir: /data/crypto/results/example.out/8000001000
+      execution_targets: hera.wsl.ch
+      log:
+          SUBMITTED at Tue May 15 09:52:04 2012
+          Submitted to 'wsl' at Tue May 15 09:52:04 2012
+          TERMINATING at Tue May 15 10:07:39 2012
+          Final output downloaded to '/data/crypto/results/example.out/8000001000'
+          TERMINATED at Tue May 15 10:07:43 2012
+      lrms_jobid: gsiftp://hera.wsl.ch:2811/jobs/11441337068324584585032
+      lrms_jobname: LACAL_800001000
+      original_exitcode: 0
+      queue: smscg.q
+      resource_name: wsl
+      state_last_changed: 1337069263.13
+      stderr_filename: gcrypto.log
+      stdout_filename: gcrypto.log
+      timestamp:
+          SUBMITTED: 1337068324.87
+          TERMINATED: 1337069263.13
+          TERMINATING: 1337069259.18
+      unknown_iteration: 0
+      used_cputime: 360
+      used_memory: 3366977
+      used_walltime: 300
+
 With option ``-v``, :command:`ginfo` output is even more verbose and complete,
 and includes information about the application itself, the input and
-output files, plus some backend-specific information
-::
+output files, plus some backend-specific information::
 
   $ ginfo -c -s example job.13
   job.13
@@ -444,6 +474,7 @@ output files, plus some backend-specific information
     stdin: None
     stdout: gcrypto.log
     tags: APPS/CRYPTO/LACAL-1.0
+
 
 .. References
 

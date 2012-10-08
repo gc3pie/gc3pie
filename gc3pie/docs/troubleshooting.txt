@@ -263,9 +263,7 @@ Sample error traceback (may be repeated multiple times over)::
 
 
 This is discussed in `Issue 182`_; a fix have been committed to
-release 1.0, so if you are seeing this error, you are either running a
-pre-release version of GC3Pie and should upgrade_, or you are running
-the bleeding-edge version of the code, and you are welcome to
-`contribute to the discussion of the fix <issue 182>`.
+release 1.0, so if you are seeing this error, you are running a
+pre-release version of GC3Pie and should `upgrade`:ref:.
 
 .. _`Issue 182`: http://code.google.com/p/gc3pie/issues/detail?id=182

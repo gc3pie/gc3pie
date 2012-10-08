@@ -52,7 +52,7 @@ log = logging.getLogger("gc3.gc3libs")
 
 import gc3libs.exceptions
 from gc3libs.quantity import Memory, kB, MB, GB, Duration, hours, minutes, seconds
-
+from gc3libs.compat._collections import OrderedDict
 
 # this needs to be defined before we import other GC3Libs modules, as
 # they may depend on it
@@ -1638,7 +1638,7 @@ class Run(Struct):
         if 'history' not in self:
             self.history = History()
         if 'timestamp' not in self:
-            self.timestamp = { }
+            self.timestamp = OrderedDict()
 
 
     @defproperty

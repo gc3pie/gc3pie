@@ -56,7 +56,7 @@ import time
 import gc3libs
 from gc3libs import Application, Run, Task
 from gc3libs.cmdline import SessionBasedScript
-from gc3libs.compat.collections import defaultdict
+from gc3libs.compat._collections import defaultdict
 from gc3libs.quantity import Memory, kB, MB, GB, Duration, hours, minutes, seconds
 from gc3libs.workflow import SequentialTaskCollection
 

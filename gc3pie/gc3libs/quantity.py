@@ -352,12 +352,29 @@ class _Quantity(object):
     ## arithmetic: allow multiplication by a scalar, and division by a quantity (of the same kind)
     @staticmethod
     def _smallest_unit(self, other):
+        """
+        Return the smallest between `self.unit` and `other.unit`.
+        """
         self_unit_amount = self.unit.amount(self.base)
         other_unit_amount = other.unit.amount(self.base)
         if self_unit_amount <= other_unit_amount:
             return self.unit
         else:
             return other.unit
+
+    @classmethod
+    def _largest_nonfractional_unit(cls, amount):
+        """
+        Return largest unit such that `amount` is larger than 1 when
+        expressed in that unit.
+        """
+        units = sorted(cls._UNITS.values())
+        prev = units[0].base
+        for unit in units:
+            if prev.amount(unit.base) <= amount < unit.amount(unit.base):
+                return prev
+            prev = unit
+        return unit
 
     def __add__(self, other):
         assert isinstance(other, self.__class__), \
@@ -380,20 +397,44 @@ class _Quantity(object):
             unit=unit)
 
     def __mul__(self, coeff):
+        if __debug__:
+            try:
+                float(coeff)
+            except (TypeError, ValueError):
+                raise TypeError("Cannot multiply '%s' and '%s':"
+                                " can only multiply '%s' by a pure number."
+                                ""% (coeff.__class__.__name__,
+                                     self.__class__.__name__,
+                                     self.__class__.__name__))
         return self._new_from_amount_and_unit(coeff * self.amount(), self.unit)
     __rmul__ = __mul__
 
     def __div__(self, other):
-        """Return the ratio of two quantities, as a floating-point number."""
-        assert isinstance(other, self.__class__), \
-               ("Cannot divide '%s' by '%s':"
-                " can only take the ratio of homogeneous quantities."
-                % (self.__class__.__name__, other.__class__.__name__))
-        # the quotient of two (homogeneous) quantities is a ratio (pure number)
-        return (self.amount(self.base, conv=float) / other.amount(self.base, conv=float))
+        """
+        Return the ratio of two quantities (as a floating-point number),
+        or divide a quantity by the specified amount.
+        """
+        try:
+            # the quotient of two (homogeneous) quantities is a ratio (pure number)
+            return (self.amount(self.base, conv=float) / other.amount(self.base, conv=float))
+        except AttributeError:
+            # we could really return `self * (1.0/other)`, but we want
+            # to set the unit to a possibly smaller one (see
+            # `_get_best_unit` above) to have a better "human" representation
+            try:
+                amount = self.amount(self.base, conv=float) / float(other)
+            except TypeError:
+                raise TypeError(
+                    "Cannot multiply '%s' and '%s': can only take"
+                    " the ratio of '%s' and a pure number or an"
+                    " homogeneous quantity." % (coeff.__class__.__name__,
+                                                self.__class__.__name__,
+                                                self.__class__.__name__))
+            unit = self._largest_nonfractional_unit(amount)
+            return self._new_from_amount_and_unit(amount / unit.amount(self.base), unit)
 
     def __floordiv__(self, other):
-        """Return the ratio of two quantities, as an whole number."""
+        """Return the ratio of two quantities (as a whole number)."""
         assert isinstance(other, self.__class__), \
                ("Cannot divide '%s' by '%s':"
                 " can only take the ratio of homogeneous quantities."
@@ -535,6 +576,44 @@ class Memory(object):
         >>> two_bytes = byte + byte
         >>> two_bytes == 2*byte
         True
+        >>> half_gigabyte = a_gigabyte / 2
+        >>> half_gigabyte
+        Memory(476.837, unit=MiB)
+
+    The ratio of two memory quantities is correctly computed as a pure
+    (floating-point) number::
+
+        >>> a_gigabyte / a_megabyte
+        1000.0
+
+    It is also possible to add memory quantities defined with
+    different units; the result is naturally expressed in the smaller
+    unit of the two::
+
+        >>> one_gigabyte_and_half = 1*Memory.GB + 500*Memory.MB
+        >>> one_gigabyte_and_half
+        Memory(1500, unit=MB)
+
+    Note that the two unit class and numeric amount are accessible through
+    the `unit` and `amount`:meth: attributes::
+
+        >>> one_gigabyte_and_half.unit
+        Memory(1, unit=MB)
+        >>> one_gigabyte_and_half.amount()
+        1500
+
+    The `amount`:meth: method accepts an optional specification of an
+    alternate unit to express the amount into::
+
+        >>> one_gigabyte_and_half.amount(Memory.GB)
+        1
+
+    An optional `conv` argument is available to specify a numerical
+    domain for conversion, in case the default integer arithmetic
+    is not precise enough::
+
+        >>> one_gigabyte_and_half.amount(Memory.GB, conv=float)
+        1.5
 
     It is also possible to add memory quantities defined with
     different units; the result is naturally expressed in the smaller
@@ -624,9 +703,9 @@ class Duration(object):
     Represent the duration of a time lapse.
 
     Construction of a duration can be done by parsing a string
-    specification; several formats are accepted::
+    specification; several formats are accepted:
 
-    * A duration as an aggregate of days, hours, minutes and seconds::
+    * A duration is an aggregate of days, hours, minutes and seconds::
 
         >>> l3 = Duration('1day 4hours 9minutes 16seconds')
         >>> l3.amount(Duration.s) # convert to seconds

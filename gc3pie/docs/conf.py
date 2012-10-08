@@ -44,15 +44,16 @@ if ON_RTD:
         'MySQLdb',
         'arc',
         'arclib',
+        'cli',
         'lockfile',
         'paramiko',
         'parsedatetime',
         'psutil',
-        'pyCLI',
         'pycrypto',
         'pysqlite2',
         'sqlalchemy',
         'sqlite3',
+        'texttable',
         ]
     for mod_name in MOCK_MODULES:
         sys.modules[mod_name] = Mock()
