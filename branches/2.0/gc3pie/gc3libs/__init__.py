@@ -1042,10 +1042,8 @@ class Application(Task):
         finally, should all preceding parameters compare equal, `a` is
         preferred over `b` if it has less running jobs from the same user.
         """
-        a_ = (a.user_queued, -a.free_slots,
-              a.queued, a.user_run)
-        b_ = (b.user_queued, -b.free_slots,
-              b.queued, b.user_run)
+        a_ = (a.user_queued, -a.free_slots, a.queued, a.user_run)
+        b_ = (b.user_queued, -b.free_slots, b.queued, b.user_run)
         return cmp(a_, b_)
 
     def rank_resources(self, resources):
@@ -1055,20 +1053,16 @@ class Application(Task):
         By default, less-loaded resources come first;
         see `_cmp_resources`.
         """
-        # return sorted(resources, cmp=self._cmp_resources)
-
         # shift lrms that are already in application.execution_targets
         # to the bottom of the list
         selected = sorted(resources, cmp=self._cmp_resources)
-
-        if 'execution_targets' in self.execution:
+        if '_execution_targets' in self.execution:
             for lrms in selected:
                 if (hasattr(lrms, 'frontend')
-                    and lrms.frontend in self.execution.execution_targets):
+                     and lrms.frontend in self.execution._execution_targets):
                     # append resource to the bottom of the list
                     selected.remove(lrms)
                     selected.append(lrms)
-
         return selected
 
     def fetch_output(self, download_dir, overwrite, **extra_args):
@@ -1631,7 +1625,8 @@ class Run(Struct):
         self._exitcode = None
         self._signal = None
 
-        self.execution_targets = []
+        # to overcome the "black hole" effect
+        self._execution_targets = []
 
         Struct.__init__(self, initializer, **keywd)
 
