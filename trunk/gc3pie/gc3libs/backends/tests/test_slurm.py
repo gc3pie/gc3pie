@@ -34,7 +34,7 @@ import gc3libs
 from gc3libs.backends.slurm import count_jobs
 import gc3libs.core
 import gc3libs.config
-from gc3libs.quantity import Memory, KiB, MiB, GiB, Duration, seconds, minutes, hours
+from gc3libs.quantity import Memory, kB, MB, GB, Duration, seconds, minutes, hours
 
 from faketransport import FakeTransport
 
@@ -91,7 +91,7 @@ def squeue_notfound(jobid=123):
     # squeue --noheader --format='%i|%T|%u|%U|%r|%R' -j $jobid
     return (
         # command exitcode
-        0,
+        1,
         # stdout
         '',
         # stderr
@@ -120,9 +120,56 @@ def scancel_permission_denied(jobid=123):
         "scancel: error: Kill job error on job id %d: Access/permission denied\n" % jobid)
 
 
-def sacct_done():
-    # FIXME: missing sacct output!
-    return (0, '', '')
+def sacct_done_bad_timestamps(jobid=123):
+    #    $ sudo sacct --noheader --parsable --format jobid,ncpus,cputimeraw,elapsed,submit,start,end,exitcode,maxrss,maxvmsize,totalcpu -j 19
+    return (
+        # command exitcode (yes, it's really 0!)
+        0,
+        # stdout
+        """
+123|0:0|1|00:01:06|00:00:00|2012-09-24T10:48:34|2012-09-24T10:47:28|2012-09-24T10:48:34|||
+123.0|0:0|1|00:01:05|00:00:00|2012-09-24T10:47:29|2012-09-24T10:47:29|2012-09-24T10:48:34|0|0|
+        """.strip(),
+        # stderr
+        "")
+
+
+def sacct_done_parallel(jobid=123):
+    # sample gotten from J.-G. Piccinali, CSCS
+    return (
+        # command exitcode
+        0,
+        # stdout
+        """
+123|0:0|64|00:00:23|00:01.452|2012-09-04T11:18:06|2012-09-04T11:18:24|2012-09-04T11:18:47|||
+123.batch|0:0|1|00:00:23|00:01.452|2012-09-04T11:18:24|2012-09-04T11:18:24|2012-09-04T11:18:47|7884K|49184K|
+        """.strip(),
+        # stderr
+        "")
+
+
+def sacct_done_relative_timestamps(jobid=123):
+    # sample gotten from J.-G. Piccinali, CSCS using SLURM_TIME_FORMAT=relative
+    return (
+        # command exitcode
+        0,
+        # stdout
+        """
+123|0:0|64|00:00:23|00:01.452|4 Sep 11:18|4 Sep 11:18|4 Sep 11:18|||
+123.batch|0:0|1|00:00:23|00:01.452|4 Sep 11:18|4 Sep 11:18|4 Sep 11:18|7884K|49184K|
+        """.strip(),
+        # stderr
+        "")
+
+
+def sacct_no_accounting(jobid=123):
+    return (
+        # command exitcode
+        1,
+        # stdout
+        "",
+        # stderr
+        "SLURM accounting storage is disabled\n")
 
 
 #import gc3libs.Run.State as State
@@ -209,31 +256,60 @@ username=NONEXISTENT
         assert_equal(app.execution.state, State.TERMINATING)
 
 
-    def test_parse_sacct_output(self):
-        raise SkipTest("FIXME: sacct output parsing not yet implemented!")
+    def test_parse_sacct_output_parallel(self):
+        """Test `sacct` output with a successful parallel job."""
         app = FakeApp()
         self.transport.expected_answer['sbatch'] = correct_submit()
         self.core.submit(app)
-        self.transport.expected_answer['sacct'] = sacct_done()
+        self.transport.expected_answer['squeue'] = squeue_notfound()
+        self.transport.expected_answer['sacct'] = sacct_done_parallel()
+        self.core.update_job_state(app)
+        assert_equal(app.execution.state, State.TERMINATING)
+
+        job = app.execution
+        # common job reporting values (see Issue 78)
+        assert_equal(job.cores,           64)
+        assert_equal(job.exitcode,        0)
+        assert_equal(job.signal,          0)
+        assert_equal(job.duration,        23*seconds)
+        assert_equal(job.max_used_memory, 49184*kB)
+        assert_equal(job.used_cpu_time,   1.452*seconds)
+        # SLURM-specific values
+        assert_equal(job.slurm_max_used_ram, 7884*kB)
+        assert_equal(job.slurm_submission_time,
+                     datetime.datetime(year=2012, month=9, day=4, hour=11, minute=18, second=6))
+        assert_equal(job.slurm_start_time,
+                     datetime.datetime(year=2012, month=9, day=4, hour=11, minute=18, second=24))
+        assert_equal(job.slurm_completion_time,
+                     datetime.datetime(year=2012, month=9, day=4, hour=11, minute=18, second=47))
+
+
+    def test_parse_sacct_output_bad_timestamps(self):
+        """Test `sacct` output with out-of-order timestamps."""
+        app = FakeApp()
+        self.transport.expected_answer['sbatch'] = correct_submit()
+        self.core.submit(app)
+        self.transport.expected_answer['squeue'] = squeue_notfound()
+        self.transport.expected_answer['sacct'] = sacct_done_bad_timestamps()
         self.core.update_job_state(app)
         assert_equal(app.execution.state, State.TERMINATING)
 
         job = app.execution
         # common job reporting values (see Issue 78)
         assert_equal(job.exitcode,        0)
-        assert_equal(job.duration,        2*minutes + 5*seconds)
-        assert_equal(job.max_used_memory, 190944*KiB)
+        assert_equal(job.signal,          0)
+        assert_equal(job.duration,        66*seconds)
+        assert_equal(job.max_used_memory, 0*kB)
         assert_equal(job.used_cpu_time,   0*seconds)
         # SLURM-specific values
-        assert_equal(job.slurm_queue,       'short')
-        assert_equal(job.slurm_jobname,     'DemoSLURMApp')
-        assert_equal(job.slurm_max_used_ram, 2364*KiB)
+        assert_equal(job.slurm_max_used_ram, 0*kB)
         assert_equal(job.slurm_submission_time,
-                     datetime.datetime(year=2012, month=3, day=9, hour=9, minute=31, second=53))
-        assert_equal(job.slurm_running_time,
-                     datetime.datetime(year=2012, month=3, day=9, hour=9, minute=32, second=3))
-        assert_equal(job.slurm_end_time,
-                     datetime.datetime(year=2012, month=3, day=9, hour=9, minute=34, second=8))
+                     datetime.datetime(year=2012, month=9, day=24, hour=10, minute=47, second=28))
+        assert_equal(job.slurm_start_time,
+                     datetime.datetime(year=2012, month=9, day=24, hour=10, minute=47, second=29))
+        assert_equal(job.slurm_completion_time,
+                     datetime.datetime(year=2012, month=9, day=24, hour=10, minute=48, second=34))
+
 
     def test_cancel_job1(self):
         app = FakeApp()

@@ -615,35 +615,6 @@ class Memory(object):
         >>> one_gigabyte_and_half.amount(Memory.GB, conv=float)
         1.5
 
-    It is also possible to add memory quantities defined with
-    different units; the result is naturally expressed in the smaller
-    unit of the two::
-
-        >>> one_gigabyte_and_half = 1*Memory.GB + 500*Memory.MB
-        >>> one_gigabyte_and_half
-        Memory(1500, unit=MB)
-
-    Note that the two unit class and numeric amount are accessible through
-    the `unit` and `amount`:meth: attributes::
-
-        >>> one_gigabyte_and_half.unit
-        Memory(1, unit=MB)
-        >>> one_gigabyte_and_half.amount()
-        1500
-
-    The `amount`:meth: method accepts an optional specification of an
-    alternate unit to express the amount into::
-
-        >>> one_gigabyte_and_half.amount(Memory.GB)
-        1
-
-    An optional `conv` argument is available to specify a numerical
-    domain for conversion, in case the default integer arithmetic
-    is not precise enough::
-
-        >>> one_gigabyte_and_half.amount(Memory.GB, conv=float)
-        1.5
-
     The `to_str`:meth: method allows representing a quantity as a
     string, and provides choice of the output format and unit.  The
     format string should contain exactly two ``%``-specifiers: the

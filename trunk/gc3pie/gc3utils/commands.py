@@ -848,13 +848,13 @@ List status of computational resources.
         for resource in sorted(resources, cmp=cmp_by_name):
             table = Texttable(0)  # max_width=0 => dynamically resize cells
             table.set_deco(Texttable.HEADER | Texttable.BORDER)  # also: .VLINES, .HLINES
-            table.set_cols_align(['r', 'l'])
-            table.header([resource.name, ""])
+            table.set_cols_align(['r', 'l', 'l'])
+            table.header(['', resource.name, ''])
 
             # not all resources support the same keys...
             def output_if_exists(name, print_name):
                 if hasattr(resource, name) and ((not self.params.keys) or name in self.params.keys):
-                    table.add_row((("%s / %s" % (print_name, name)), getattr(resource, name)))
+                    table.add_row((name, ("( %s )" % print_name), getattr(resource, name)))
             output_if_exists('frontend', "Frontend host name")
             output_if_exists('type', "Access mode")
             output_if_exists('auth', "Authorization name")
@@ -865,8 +865,8 @@ List status of computational resources.
             output_if_exists('user_run', "Own running jobs")
             #output_if_exists('free_slots', "Free job slots")
             output_if_exists('max_cores_per_job', "Max cores per job")
-            output_if_exists('max_memory_per_core', "Max memory per core (MB)")
-            output_if_exists('max_walltime', "Max walltime per job (minutes)")
+            output_if_exists('max_memory_per_core', "Max memory per core")
+            output_if_exists('max_walltime', "Max walltime per job")
             output_if_exists('applications', "Supported applications")
             print(table.draw())
 

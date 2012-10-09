@@ -536,6 +536,7 @@ class Configuration(gc3libs.utils.Struct):
                 cls = ArcLrms
             elif resdict['type'] == gc3libs.Default.ARC1_LRMS:
                 from gc3libs.backends.arc1 import Arc1Lrms
+                cls = Arc1Lrms
             elif resdict['type'] == gc3libs.Default.SGE_LRMS:
                 from gc3libs.backends.sge import SgeLrms
                 cls = SgeLrms

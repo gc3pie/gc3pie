@@ -782,7 +782,7 @@ class Application(Task):
             gc3libs.log.warning(
                 "The `executable` argument is not supported anymore in GC3Pie 2.0."
                 " Please adapt your code and use `arguments` only.")
-            arguments = [ executable ] + list(arguments)
+            arguments = [ extra_args['executable'] ] + list(arguments)
 
         self.arguments = [ str(x) for x in arguments ]
 
