@@ -38,7 +38,7 @@ from gc3libs import log, Run
 from gc3libs.backends import LRMS
 import gc3libs.backends.batch as batch
 import gc3libs.exceptions
-from gc3libs.quantity import Memory, kB, MB, GB, Duration, seconds, minutes, hours
+from gc3libs.quantity import Memory, bytes, kB, MB, GB, Duration, seconds, minutes, hours
 import gc3libs.backends.transport as transport
 import gc3libs.utils as utils # first, to_bytes
 from gc3libs.utils import same_docstring_as
@@ -243,62 +243,17 @@ class SlurmLrms(batch.BatchSystem):
     #    $ sudo sacct --noheader --parsable --format jobid,ncpus,cputimeraw,elapsed,submit,eligible,reserved,start,end,exitcode,maxrss,maxvmsize,totalcpu -j 14
     #    14|1|10|00:00:10|2012-09-23T23:38:41|2012-09-23T23:38:41|49710-06:28:06|2012-09-23T23:38:31|2012-09-23T23:38:41|0:0|||00:00:00|
     #
+    #    $ sudo sacct --noheader --parsable --format jobid,ncpus,cputimeraw,elapsed,submit,start,end,exitcode,maxrss,maxvmsize,totalcpu -j 19
+    #    19|1|66|00:01:06|2012-09-24T10:48:34|2012-09-24T10:47:28|2012-09-24T10:48:34|0:0|||00:00:00|
+    #    19.0|1|65|00:01:05|2012-09-24T10:47:29|2012-09-24T10:47:29|2012-09-24T10:48:34|0:0|0|0|00:00:00|
+    #
     #    $ env SLURM_TIME_FORMAT=standard sacct -S 0901 --noheader --parsable --format jobid,ncpus,cputimeraw,elapsed,submit,eligible,reserved,start,end,exitcode,maxrss,maxvmsize,totalcpu
-    #    449002|32|128|00:00:04|2012-09-04T11:09:26|2012-09-04T11:09:26|00:00:12|2012-09-04T11:09:38|2012-09-04T11:09:42|0:0|||00:00:00|
-    #    449018|64|1472|00:00:23|2012-09-04T11:18:06|2012-09-04T11:18:06|00:00:18|2012-09-04T11:18:24|2012-09-04T11:18:47|0:0|||00:01.452|
-    #    449018.batch|1|23|00:00:23|2012-09-04T11:18:24|2012-09-04T11:18:24|00:00:-02|2012-09-04T11:18:24|2012-09-04T11:18:47|0:0|7884K|49184K|00:01.452|
-    #    449057|3200|659200|00:03:26|2012-09-04T11:19:45|2012-09-04T11:19:45|00:00:12|2012-09-04T11:19:57|2012-09-04T11:23:23|0:0|||00:01.620|
-    #    449057.batch|1|206|00:03:26|2012-09-04T11:19:57|2012-09-04T11:19:57|00:00:-02|2012-09-04T11:19:57|2012-09-04T11:23:23|0:0|7896K|49184K|00:01.620|
-    #    449217|3200|0|00:00:00|2012-09-04T11:42:58|2012-09-04T11:42:58|00:00:05|2012-09-04T11:43:03|2012-09-04T11:43:03|0:0|||00:00.720|
-    #    449217.batch|1|272|00:04:32|2012-09-03T17:22:53|2012-09-03T17:22:53|00:00:-02|2012-09-03T17:22:53|2012-09-03T17:27:25|0:0|7484K|47820K|00:00.720|
-    #    449218|3200|790400|00:04:07|2012-09-04T11:43:09|2012-09-04T11:43:09|00:25:34|2012-09-04T12:08:43|2012-09-04T12:12:50|0:0|||00:01.620|
-    #    449218.batch|1|67774|18:49:34|2012-09-03T17:23:16|2012-09-03T17:23:16|00:00:-02|2012-09-03T17:23:16|2012-09-04T12:12:50|0:0|10448K|71172K|00:01.620|
-    #    450069|0|0|00:00:00|2012-09-05T19:03:56|2012-09-05T19:03:56|00:00:00|2012-09-05T19:03:56|2012-09-05T19:03:56|0:1|||00:00:00|
-    #    450070|0|0|00:00:00|2012-09-05T19:04:01|2012-09-05T19:04:01|00:00:00|2012-09-05T19:04:01|2012-09-05T19:04:01|0:1|||00:00:00|
-    #    450085|32|0|00:00:00|2012-09-05T19:06:31|2012-09-05T19:06:31|00:00:01|2012-09-05T19:06:32|2012-09-05T19:06:32|0:0|||00:00:00|
-    #    450086|32|0|00:00:00|2012-09-05T19:06:34|2012-09-05T19:06:34|00:00:01|2012-09-05T19:06:35|2012-09-05T19:06:35|0:0|||00:00:00|
-    #    450087|32|64|00:00:02|2012-09-05T19:06:36|2012-09-05T19:06:36|00:00:03|2012-09-05T19:06:39|2012-09-05T19:06:41|0:0|||00:00:00|
-    #    450089|44800|0|00:00:00|2012-09-05T19:06:46|2012-09-05T19:06:46|00:00:10|2012-09-05T19:06:56|2012-09-05T19:06:56|0:0|||00:00:00|
-    #    450090|44800|313600|00:00:07|2012-09-05T19:07:01|2012-09-05T19:07:01|00:00:07|2012-09-05T19:07:08|2012-09-05T19:07:15|0:0|||00:00:00|
-    #    450133|32|2176|00:01:08|2012-09-05T19:12:57|2012-09-05T19:12:57|00:00:00|2012-09-05T19:12:57|2012-09-05T19:14:05|0:0|||00:00.324|
-    #    450133.batch|1|68|00:01:08|2012-09-05T19:12:57|2012-09-05T19:12:57|00:00:-02|2012-09-05T19:12:57|2012-09-05T19:14:05|0:0|7768K|49136K|00:00.324|
-    #    450134|47872|0|00:00:00|2012-09-05T19:15:14|2012-09-05T19:15:14|00:01:19|2012-09-05T19:16:33|2012-09-05T19:16:33|0:0|||00:00:00|
-    #    450135|47584|0|00:00:00|2012-09-05T19:16:54|2012-09-05T19:16:54|01:07:08|2012-09-05T20:24:02|2012-09-05T20:24:02|0:0|||00:00:00|
-    #    450136|47584|0|00:00:00|2012-09-05T19:17:18|2012-09-05T19:17:18|00:28:29|2012-09-05T19:45:47|2012-09-05T19:45:47|0:0|||00:00:00|
-    #    450139|9600|3945600|00:06:51|2012-09-05T19:28:53|2012-09-05T19:28:53|00:00:28|2012-09-05T19:29:21|2012-09-05T19:36:12|0:0|||00:00:00|
-    #    450141|640|33920|00:00:53|2012-09-05T19:36:30|2012-09-05T19:36:30|00:00:05|2012-09-05T19:36:35|2012-09-05T19:37:28|0:0|||00:00:00|
-    #    450142|0|0|00:00:00|2012-09-05T19:45:41|2012-09-05T19:45:41|00:29:58|2012-09-05T20:15:39|2012-09-05T20:15:39|0:0|||00:00:00|
-    #    450183|3200|748800|00:03:54|2012-09-05T20:01:01|2012-09-05T20:01:01|00:00:22|2012-09-05T20:01:23|2012-09-05T20:05:17|0:0|||00:01.628|
-    #    450183.batch|1|234|00:03:54|2012-09-05T20:01:23|2012-09-05T20:01:23|00:00:-02|2012-09-05T20:01:23|2012-09-05T20:05:17|0:0|7904K|49184K|00:01.628|
-    #    450184|6400|3001600|00:07:49|2012-09-05T20:06:22|2012-09-05T20:06:22|00:00:11|2012-09-05T20:06:33|2012-09-05T20:14:22|0:0|||00:01.828|
-    #    450184.batch|1|469|00:07:49|2012-09-05T20:06:33|2012-09-05T20:06:33|00:00:-02|2012-09-05T20:06:33|2012-09-05T20:14:22|0:0|8940K|62988K|00:01.828|
-    #    450185|9600|2937600|00:05:06|2012-09-05T20:06:47|2012-09-05T20:06:47|00:06:28|2012-09-05T20:13:15|2012-09-05T20:18:21|0:0|||00:02.004|
-    #    450185.batch|1|306|00:05:06|2012-09-05T20:13:15|2012-09-05T20:13:15|00:00:-02|2012-09-05T20:13:15|2012-09-05T20:18:21|0:0|7904K|49184K|00:02.004|
-    #    450186|12800|0|00:00:00|2012-09-05T20:06:57|2012-09-05T20:06:57|00:07:54|2012-09-05T20:14:51|2012-09-05T20:14:51|0:0|||00:00:00|
-    #    450187|0|0|00:00:00|2012-09-05T20:19:18|2012-09-05T20:19:18|00:02:04|2012-09-05T20:21:22|2012-09-05T20:21:22|0:0|||00:00:00|
-    #    450188|0|0|00:00:00|2012-09-05T20:22:30|2012-09-05T20:22:30|00:00:10|2012-09-05T20:22:40|2012-09-05T20:22:40|0:0|||00:00:00|
-    #    459281|32|64|00:00:02|2012-09-12T09:16:46|2012-09-12T09:16:46|00:00:00|2012-09-12T09:16:46|2012-09-12T09:16:48|0:0|||00:00:00|
-    #    459307|32|2144|00:01:07|2012-09-12T09:23:45|2012-09-12T09:23:45|00:00:01|2012-09-12T09:23:46|2012-09-12T09:24:53|0:0|||00:00.320|
-    #    459307.batch|1|67|00:01:07|2012-09-12T09:23:46|2012-09-12T09:23:46|00:00:-02|2012-09-12T09:23:46|2012-09-12T09:24:53|0:0|7740K|49020K|00:00.320|
-    #    459308|27264|0|00:00:00|2012-09-12T09:30:32|2012-09-12T09:30:32|00:03:05|2012-09-12T09:33:37|2012-09-12T09:33:37|0:0|||00:00:00|
-    #    459309|25600|0|00:00:00|2012-09-12T09:32:07|2012-09-12T09:32:07|00:01:30|2012-09-12T09:33:37|2012-09-12T09:33:37|0:0|||00:00:00|
-    #    459310|25600|2278400|00:01:29|2012-09-12T09:33:45|2012-09-12T09:33:45|00:01:36|2012-09-12T09:35:21|2012-09-12T09:36:50|0:0|||00:01.208|
-    #    459310.batch|1|89|00:01:29|2012-09-12T09:35:21|2012-09-12T09:35:21|00:00:-02|2012-09-12T09:35:21|2012-09-12T09:36:50|0:0|8748K|50232K|00:01.208|
-    #    459311|47744|4487936|00:01:34|2012-09-12T09:38:18|2012-09-12T09:38:18|00:05:27|2012-09-12T09:43:45|2012-09-12T09:45:19|0:0|||00:01.964|
-    #    459311.batch|1|94|00:01:34|2012-09-12T09:43:45|2012-09-12T09:43:45|00:00:-02|2012-09-12T09:43:45|2012-09-12T09:45:19|0:0|9.50M|51088K|00:01.964|
-    #    459312|47744|4487936|00:01:34|2012-09-12T09:54:52|2012-09-12T09:54:52|00:00:01|2012-09-12T09:54:53|2012-09-12T09:56:27|0:0|||00:01.964|
-    #    459312.batch|1|94|00:01:34|2012-09-12T09:54:53|2012-09-12T09:54:53|00:00:-02|2012-09-12T09:54:53|2012-09-12T09:56:27|0:0|9.50M|51088K|00:01.964|
-    #    459549|32|0|00:00:00|2012-09-12T11:58:14|2012-09-12T11:58:14|00:00:10|2012-09-12T11:58:24|2012-09-12T11:58:24|0:0|||00:00:00|
-    #    459550|64|192|00:00:03|2012-09-12T11:58:27|2012-09-12T11:58:27|00:00:25|2012-09-12T11:58:52|2012-09-12T11:58:55|0:0|||00:00:00|
-    #    459566|32|96|00:00:03|2012-09-12T12:01:58|2012-09-12T12:01:58|00:00:01|2012-09-12T12:01:59|2012-09-12T12:02:02|0:0|||00:00.064|
-    #    459566.batch|1|3|00:00:03|2012-09-12T12:01:59|2012-09-12T12:01:59|00:00:-02|2012-09-12T12:01:59|2012-09-12T12:02:02|0:0|11468K|163664K|00:00.064|
-    #    459569|32|2336|00:01:13|2012-09-12T12:02:26|2012-09-12T12:02:26|00:00:01|2012-09-12T12:02:27|2012-09-12T12:03:40|0:1|||00:00.004|
-    #    459569.batch|1|73|00:01:13|2012-09-12T12:02:27|2012-09-12T12:02:27|00:00:-02|2012-09-12T12:02:27|2012-09-12T12:03:40|0:15|27664K|234196K|00:00.004|
-    #    459574|32|32|00:00:01|2012-09-12T12:04:53|2012-09-12T12:04:53|00:00:00|2012-09-12T12:04:53|2012-09-12T12:04:54|0:0|||00:00.232|
-    #    459574.batch|1|1|00:00:01|2012-09-12T12:04:53|2012-09-12T12:04:53|00:00:-02|2012-09-12T12:04:53|2012-09-12T12:04:54|0:0|0|0|00:00.232|
-    #    459578|32|320|00:00:10|2012-09-12T12:06:53|2012-09-12T12:06:53|00:00:00|2012-09-12T12:06:53|2012-09-12T12:07:03|0:0|||00:00.004|
-    #    459578.batch|1|11|00:00:11|2012-09-12T12:06:53|2012-09-12T12:06:53|00:00:-02|2012-09-12T12:06:53|2012-09-12T12:07:04|0:15|28740K|174496K|00:00.004|
-    #        #
+    #    449002|32|128|00:00:04|2012-09-04T11:09:26|2012-09-04T11:09:38|2012-09-04T11:09:42|0:0|||00:00:00|
+    #    449018|64|1472|00:00:23|2012-09-04T11:18:06|2012-09-04T11:18:24|2012-09-04T11:18:47|0:0|||00:01.452|
+    #    449018.batch|1|23|00:00:23|2012-09-04T11:18:24|2012-09-04T11:18:24|2012-09-04T11:18:47|0:0|7884K|49184K|00:01.452|
+    #    449057|3200|659200|00:03:26|2012-09-04T11:19:45|2012-09-04T11:19:57|2012-09-04T11:23:23|0:0|||00:01.620|
+    #    449057.batch|1|206|00:03:26|2012-09-04T11:19:57|2012-09-04T11:19:57|2012-09-04T11:23:23|0:0|7896K|49184K|00:01.620|
+    #
     # Warning: the `SLURM_TIME_FORMAT` environment variable influences how the times are reported,
     # so it should always be set to `standard` to get ISO8601 reporting.  See below for an example
     # of non-standard (SLURM_TIME_FORMAT=relative) report:
@@ -317,17 +272,132 @@ class SlurmLrms(batch.BatchSystem):
     #    SLURM accounting storage is disabled
     #
     def _acct_command(self, job):
-        return  '%s %s' % (self._sacct, job.lrms_jobid)
+        return  '%s --noheader --parsable --format jobid,exitcode,ncpus,elapsed,totalcpu,submit,start,end,maxrss,maxvmsize -j %s' % (self._sacct, job.lrms_jobid)
 
     def _parse_acct_output(self, stdout):
-        jobstatus = dict()
-        log.warning("The SLURM backend (resource '%s') cannot yet parse the resource usage records.", self.name)
-        # set all common resource usage attributes to `None`
-        jobstatus['duration'] = None
-        jobstatus['exitcode'] = None
-        jobstatus['max_used_memory'] = None
-        jobstatus['used_cpu_time'] = None
-        return jobstatus
+        acct = dict(
+            exitcode=0,
+            cores=0,
+            duration=Duration(0, unit=seconds),
+            used_cpu_time=Duration(0, unit=seconds),
+            max_used_memory=Memory(0, unit=bytes),
+            )
+        for line in stdout.split('\n'):
+            line = line.strip()
+            if line == '':
+                continue
+            # because of the trailing `|` we have an extra empty field
+            jobid, exit, ncpus, elapsed, totalcpu, submit, start, end, maxrss, maxvmsize, _ = line.split('|')
+            # SLURM job IDs have the form `jobID[.step]`: only the
+            # lines with the `step` part carry resource usage records,
+            # whereas the total `jobID` line carries the exit codes
+            # and overall duration/timing information.
+            if '.' not in jobid:
+                # master job record
+                acct['duration'] = SlurmLrms._parse_duration(elapsed)
+                acct['used_cpu_time' ] = SlurmLrms._parse_duration(totalcpu)
+                # compute POSIX exit status
+                exitcode, signal = exit.split(':')
+                acct['exitcode'] = (int(exitcode) << 8) + (int(signal) & 0x7f)
+                # XXX: the master job record seems to report the
+                # *requested* slots, whereas the step records report
+                # the actual usage.  In our case these should be the
+                # same, as the job script only runs one single step.
+                # However, in the general case computing the *actual*
+                # CPU usage is a mess, as we would have to check which
+                # steps were executed simultaneously and which ones
+                # were executed one after the other...
+                acct['cores'] = int(ncpus)
+                # provide starting point for resource usage records
+                acct['max_used_memory'] = Memory(0, unit=MB)
+                acct['slurm_max_used_ram'] = Memory(0, unit=MB)
+                # XXX: apparently, Ubuntu's SLURM 2.3 has a bug
+                # wherein `submit` == `end` in the master job record,
+                # and the actual start time must be gathered from the
+                # step records... try to work around
+                submit = SlurmLrms._parse_timestamp(submit)
+                start = SlurmLrms._parse_timestamp(start)
+                end = SlurmLrms._parse_timestamp(end)
+                acct['slurm_submission_time'] = min(submit, start)
+                acct['slurm_start_time'] = end # will be set when looping on tasks, see below
+                acct['slurm_completion_time'] = max(submit, start, end)
+            else:
+                # common resource usage records (see Issue 78)
+                vmem = SlurmLrms._parse_memspec(maxvmsize)
+                acct['max_used_memory'] = max(vmem, acct['max_used_memory'])
+                # SLURM-specific resource usage records
+                mem = SlurmLrms._parse_memspec(maxrss)
+                acct['slurm_max_used_ram'] = max(mem, acct['slurm_max_used_ram'])
+                # XXX: see above for timestamps
+                submit = SlurmLrms._parse_timestamp(submit)
+                start = SlurmLrms._parse_timestamp(start)
+                acct['slurm_submission_time'] = min(submit, acct['slurm_submission_time'])
+                acct['slurm_start_time'] = min(start, acct['slurm_start_time'])
+        return acct
+
+    @staticmethod
+    def _parse_duration(d):
+        """
+        Parse a SLURM duration expression, in the form ``DD-HH:MM:SS.UUU``.
+
+        The ``DD``, ``HH`` and ``.UUU`` parts are optional.
+        """
+        total = Duration(0, unit=seconds)
+        if '-' in d:
+            # DD-HH:MM:SS
+            ndays, d = d.split('-')
+            total = Duration(int(ndays), unit=days)
+        parts = list(reversed(d.split(':')))
+        assert len(parts) > 0
+        secs = parts[0]
+        if '.' in secs:
+            # SS.UUU
+            total += Duration(float(secs), unit=seconds)
+        else:
+            total += Duration(int(secs), unit=seconds)
+        if len(parts) > 1:
+            total += Duration(int(parts[1]), unit=minutes)
+        if len(parts) > 2:
+            total += Duration(int(parts[2]), unit=hours)
+        return total
+
+    @staticmethod
+    def _parse_memspec(m):
+        unit = m[-1]
+        if unit == 'G':
+            return Memory(int(m[:-1]), unit=GB)
+        elif unit == 'M':
+            return Memory(int(m[:-1]), unit=MB)
+        elif unit == 'K': # XXX: not sure which one is used
+            return Memory(int(m[:-1]), unit=kB)
+        else:
+            # XXX: what does SLURM use as a default?
+            return Memory(int(m), unit=bytes)
+
+    @staticmethod
+    def _parse_timestamp(ts):
+        """
+        Parse a SLURM timestamp.
+
+        The 'standard' format for SLURM timestamps is ISO8601;
+        raise an error if any other format is detected.
+        """
+        # XXX: datetime.strptime() only available starting Py 2.5
+        try:
+            return datetime.datetime(*(time.strptime(ts, SlurmLrms._TIMEFMT_ISO8601)[0:6]))
+        except ValueError, err:
+            gc3libs.log.error(
+                "Could not parse '%s' as an SLURM 'standard' (ISO8601) timestamp: %s: %s"
+                " Please set the environment variable 'SLURM_TIME_FORMAT' to 'standard'"
+                " on the SLURM frontend computer.",
+                ts, err.__class__.__name__, err)
+            # XXX: this results in an invalid timestamp...
+            return None
+
+    _TIMEFMT_ISO8601 = '%Y-%m-%dT%H:%M:%S'
+    """
+    A strptime() format string for parsing ISO8601 timestamps.
+    """
 
 
     # kill cmd: scancel
@@ -354,19 +424,19 @@ class SlurmLrms(batch.BatchSystem):
         try:
             self.transport.connect()
 
-            _command = ("%s --noheader -o %%i|%%T|%%u|%%U|%%r|%%R" % self._squeue)
+            _command = ("%s --noheader -o '%%i|%%T|%%u|%%U|%%r|%%R'" % self._squeue)
             log.debug("Running `%s`...", _command)
-            exit_code, qstat_stdout, stderr = self.transport.execute_command(_command)
-            if exit_code != 0:
+            exitcode, stdout, stderr = self.transport.execute_command(_command)
+            if exitcode != 0:
                 # cannot continue
                 raise gc3libs.exceptions.LRMSError(
                     "SLURM backend failed executing '%s':"
                     " exit code: %d; stdout: '%s', stderr: '%s'"
-                    % (_command, exit_code, stdout, stderr))
+                    % (_command, exitcode, stdout, stderr))
 
             log.debug("Computing updated values for total/available slots ...")
             (total_running, self.queued,
-             self.user_run, self.user_queued) = count_jobs(qstat_stdout, username)
+             self.user_run, self.user_queued) = count_jobs(stdout, self._username)
             self.total_run = total_running
             self.free_slots = -1
             self.used_quota = -1
