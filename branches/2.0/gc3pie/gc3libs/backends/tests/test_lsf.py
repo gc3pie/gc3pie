@@ -280,6 +280,7 @@ SUMMARY:      ( time unit: second )
  Maximum hog factor of a job:  0.00      Minimum hog factor of a job:  0.00
 
     """)
+    assert_equal(acct['duration'], Duration('67s'))
     assert_equal(acct['used_cpu_time'], Duration('0.08s'))
     assert_equal(acct['max_used_memory'], Memory('227MB'))
     # timestamps
@@ -327,6 +328,7 @@ SUMMARY:      ( time unit: second )
  Average hog factor of a job:  0.00 ( cpu time / turnaround time )
  Maximum hog factor of a job:  0.00      Minimum hog factor of a job:  0.00
     """)
+    assert_equal(acct['duration'], Duration('6s'))
     assert_equal(acct['used_cpu_time'], Duration('0.04s'))
     assert_equal(acct['max_used_memory'], Memory('37MB'))
     # timestamps
@@ -374,6 +376,7 @@ SUMMARY:      ( time unit: second )
  Average hog factor of a job:  0.00 ( cpu time / turnaround time )
  Maximum hog factor of a job:  0.00      Minimum hog factor of a job:  0.00
 """)
+    assert_equal(acct['duration'], Duration('55s'))
     assert_equal(acct['used_cpu_time'], Duration('0.04s'))
     assert_equal(acct['max_used_memory'], Memory('35MB'))
     # timestamps

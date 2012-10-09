@@ -534,6 +534,11 @@ class LsfLrms(batch.BatchSystem):
                 rusage = lines.next()
                 cpu_t, wait, turnaround, status, hog_factor, mem, swap = rusage.split()
                 # common backend attrs (see Issue 78)
+                if 'lsf_completion_time' in data and 'lsf_start_time' in data:
+                    data['duration'] = Duration(data['lsf_completion_time'] - data['lsf_start_time'])
+                else:
+                    # XXX: what should we use for jobs that did not run at all?
+                    data['duration'] = Duration(0, unit=seconds)
                 data['used_cpu_time'] = Duration(float(cpu_t), unit=seconds)
                 data['max_used_memory'] = LsfLrms._parse_memspec(mem) + LsfLrms._parse_memspec(swap)
                 # the resource usage line is the last interesting line
