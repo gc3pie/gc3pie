@@ -131,26 +131,25 @@ class ArcLrms(LRMS):
             raise gc3libs.exceptions.LRMSError('Failed while killing job. Error type %s, message %s' % (ex.__class__,str(ex)))
 
 
-    # excluded_targets is the list of targets hostnames where the application
-    # has been already running; thus to be excluded for the next submission
-    # candidate_queues is the list of available queues
-    # this method simply returns a
-    def _filter_queues(self, candidate_queues, job):
+    def _filter_targets(self, candidate_targets, job):
         """
-        Excludes from the list of candidate queuse those corresponding to hosts
-        where a given job has been already running.
-        If all queues have been already tried, clear execution_targets list and
-        start again.
-        """
-        # use queue.cluster.hostname to match entries from job.execution_targets list
-        queues = [ queue for queue in candidate_queues
-                   if queue.cluster.hostname not in job.execution_targets ]
-        if not queues:
-            # assume all available targes have been tried. Clean list and start over again
-            queues = candidate_queues
-            job.execution_targets = [ ]
+        Excludes from the list of candidate execution targets those
+        corresponding to hosts where the given `job` has been already
+        running.
 
-        return queues
+        When all targets have been already tried, admit again all
+        targets as candidates.
+        """
+        if '_arc0_execution_targets' not in job:
+            job._arc0_execution_targets = [ ]
+        # use target.cluster.hostname to match entries from job._arc0_execution_targets
+        targets = [ target for target in candidate_targets
+                   if target.cluster.hostname not in job._arc0_execution_targets ]
+        if not targets:
+            # assume all available targes have been tried. Clean list and start over again
+            targets = candidate_targets
+            job._arc0_execution_targets = [ ]
+        return targets
 
 
     # ARC refreshes the InfoSys every 30 seconds by default;
@@ -164,8 +163,7 @@ class ArcLrms(LRMS):
         `arclib.Cluster` object.
         """
         if self.arc_ldap is not None:
-            log.info("Updating ARC resource information from '%s'"
-                      % self.arc_ldap)
+            log.info("Updating ARC resource information from '%s'", self.arc_ldap)
             return arclib.GetClusterResources(
                 arclib.URL(self.arc_ldap), True, '', 1)
         else:
@@ -186,10 +184,11 @@ class ArcLrms(LRMS):
         """
         jobs = {}
         clusters = self._get_clusters()
-        log.debug('Arc0LRMS._get_clusters() returned %d cluster resources.' % len(clusters))
+        log.debug('Arc0LRMS._get_clusters() returned %d cluster resources.',
+                  len(clusters))
         job_list = arclib.GetAllJobs(clusters, True, '', 3)
-        log.info("Updating list of jobs belonging to resource '%s': got %d jobs."
-                 % (self.name, len(job_list)))
+        log.info("Updating list of jobs belonging to resource '%s': got %d jobs.",
+                 self.name, len(job_list))
         for job in job_list:
             jobs[job.id] = job
         return jobs
@@ -200,12 +199,12 @@ class ArcLrms(LRMS):
     @cache_for(gc3libs.Default.ARC_CACHE_TIME)
     def _get_queues(self):
         clusters = self._get_clusters()
-        log.debug('_get_clusters returned [%d] cluster resources' % len(clusters))
+        log.debug('Arc0Lrms._get_clusters() returned %d cluster resources', len(clusters))
         if not clusters:
             # empty list of clusters. Not following back to system GIIS configuration
             # returning empty list
             return clusters
-        log.info("Updating resource Queues information")
+        log.debug("Updating ARC0 resource queue information ...")
         return arclib.GetQueueInfo(clusters, arclib.MDS_FILTER_CLUSTERINFO,
                                    True, '', 5)
 
@@ -225,11 +224,12 @@ class ArcLrms(LRMS):
                 'Error getting `Xrsl` object from arclib: %s: %s'
                 % (ex.__class__.__name__, str(ex)))
 
-        queues = self._filter_queues(self._get_queues(), job)
+        queues = self._get_queues()
         if len(queues) == 0:
             raise gc3libs.exceptions.LRMSSubmitError('No ARC queues found')
 
-        targets = arclib.PerformStandardBrokering(arclib.ConstructTargets(queues, xrsl))
+        targets = self._filter_targets(
+            arclib.PerformStandardBrokering(arclib.ConstructTargets(queues, xrsl)), job)
         if len(targets) == 0:
             raise gc3libs.exceptions.LRMSSubmitError('No ARC targets found')
 
@@ -246,7 +246,7 @@ class ArcLrms(LRMS):
         # this will be attached to the job object.
         # see Issue 227
         url = arclib.URL(lrms_jobid)
-        job.execution_targets.append(url.Host())
+        job._arc0_execution_targets.append(url.Host())
 
         # state is known at this point, so mark this as a successful update
         job._arc0_state_last_checked = time.time()
