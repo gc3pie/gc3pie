@@ -161,6 +161,9 @@ class Configuration(gc3libs.utils.Struct):
         self.auto_enable_auth = extra_args.pop('auto_enable_auth', True)
         self.update(extra_args)
 
+        # save the list of (valid) config files
+        self.cfgfiles = []
+
         # load configuration files if any
         if len(locations) > 0:
             self.load(*locations)
@@ -194,6 +197,7 @@ class Configuration(gc3libs.utils.Struct):
                 continue # with next `filename`
 
             try:
+                self.cfgfiles.append(os.path.abspath(filename))
                 self.merge_file(filename)
                 files_successfully_read += 1
             except gc3libs.exceptions.ConfigurationError:
@@ -572,6 +576,15 @@ class Configuration(gc3libs.utils.Struct):
                     raise gc3libs.exceptions.ConfigurationError(
                         "Missing required configuration parameter '%s' for resource '%s'"
                         % (argname, resdict['name']))
+
+            # Convert epilogue/prologue scripts to absolute path
+            for (k, v) in resdict.iteritems():
+                if k in ['prologue', 'epilogue' ] or k.endswith('_prologue') or k.endswith('_epilogue'):
+                    for cfgfile in self.cfgfiles:
+                        path = os.path.join(os.path.dirname(cfgfile), v)
+                        resdict[k] = os.path.abspath(path)
+                        break
+
             # finally, try to construct backend class...
             return cls(**dict(resdict))
         except Exception, err:

@@ -22,7 +22,9 @@
 # stdlib imports
 from cStringIO import StringIO
 import os
+import shutil
 import tempfile
+import re
 
 # nose
 from nose.tools import istest, nottest, raises, assert_equal
@@ -36,7 +38,7 @@ except ImportError:
         assert_true(isinstance(obj, cls))
 
 # GC3Pie imports
-from gc3libs import Run
+from gc3libs import Run, Application
 import gc3libs.config
 import gc3libs.core
 import gc3libs.template
@@ -347,6 +349,115 @@ def _check_bad_conf(conf):
     finally:
         os.remove(tmp)
 
+class TestPrologueEpilogueScripts(object):
+    """
+    Test `prologue` and `epilogue` options for batch backends
+    """
+    def setUp(self):
+        # setup conf dir and conf file
+        cfgstring = """
+[auth/ssh]
+type = ssh
+username = gc3pie
+
+[resource/test]
+type = shellcmd
+auth = ssh
+transport = local
+max_cores_per_job = 2
+max_memory_per_core = 2
+max_walltime = 8
+max_cores = 2
+architecture = x86_64
+prologue = scripts/shellcmd_pre.sh
+epilogue = scripts/shellcmd_post.sh
+myapp_prologue = scripts/myapp_shellcmd_pre.sh
+myapp_epilogue = scripts/myapp_shellcmd_post.sh
+
+[resource/testpbs]
+type = pbs
+auth = ssh
+frontend = localhost
+transport = local
+max_cores_per_job = 2
+max_memory_per_core = 2
+max_walltime = 8
+max_cores = 2
+architecture = x86_64
+prologue = scripts/shellcmd_pre.sh
+epilogue = scripts/shellcmd_post.sh
+myapp_prologue = scripts/myapp_shellcmd_pre.sh
+myapp_epilogue = scripts/myapp_shellcmd_post.sh
+"""
+        self.tmpdir = tempfile.mkdtemp()
+        # setup config file and sctipts
+        cfgfname = os.path.join(self.tmpdir, 'gc3pie.conf')
+        fdcfg = open(cfgfname, 'w')
+        fdcfg.write(cfgstring)
+        fdcfg.close()
+        self.cfg = gc3libs.config.Configuration(cfgfname, auto_enable_auth=True)
+
+        self.scripts = ['prologue', 'epilogue', 'myapp_prologue', 'myapp_epilogue']
+        os.mkdir(os.path.join(self.tmpdir, 'scripts'))
+        for k,v in self.cfg['resources']['test'].iteritems():
+            if k in self.scripts:
+                scriptfd = open(os.path.join(self.tmpdir, v), 'w')
+                scriptfd.write('echo %s' % k)
+                scriptfd.close()
+
+        self.cfg = gc3libs.config.Configuration(cfgfname)
+        # self.resources = self.cfg.make_resources()
+        # assert_equal(resources['test']['prologue'], 'scripts/shellcmd_pre.sh')
+    def test_scriptfiles_are_abs(self):
+        """Test that prologue and epilogue scripts are absolute pathnames"""
+        self.core = gc3libs.core.Core(self.cfg)
+        for resource in self.core.get_resources():
+            for script in self.scripts:
+                assert os.path.isfile(resource[script])
+                assert_equal( os.path.abspath(resource[script]),
+                              resource[script])
+
+    def test_pbs_prologue_and_epilogue_contents(self):
+        """Test that prologue and epilogue scripts are correctly inserted into the submission script"""
+        # Ugly hack. We have to list the job dirs to check which one
+        # is the new one.
+        jobdir = os.path.expanduser('~/.gc3pie_jobs')
+        jobs = []
+        if os.path.isdir(jobdir):
+            jobs = os.listdir(jobdir)
+        app = Application(['/bin/true'], [], [], '')
+        self.core = gc3libs.core.Core(self.cfg)
+        self.core.select_resource('testpbs')
+        try:
+            self.core.submit(app)
+        except Exception, ex:
+            # it is normal to have an error since we don't probably
+            # run a pbs server in this machine.
+            pass
+
+        newjobs = [ d for d in os.listdir(jobdir) if d not in jobs]
+
+        # There must be only one more job...
+        assert_equal( len(newjobs), 1)
+
+        newjobdir = os.path.join(jobdir, newjobs[0])
+        # and only one file in it
+        assert_equal(len(os.listdir(newjobdir)), 1)
+
+        # Check the content of the script file
+        scriptfname = os.path.join(newjobdir, (os.listdir(newjobdir)[0]))
+        scriptfile = open(scriptfname)
+        assert re.match("#!/bin/sh.*# prologue file `.*` BEGIN.*echo prologue.*# prologue file END.*/bin/true.*# epilogue file `.*` BEGIN.*echo epilogue.*# epilogue file END", scriptfile.read(), re.DOTALL|re.M)
+        scriptfile.close()
+
+        # kill the job
+        if app.execution.state != Run.State.NEW:
+            self.core.kill(app)
+
+        shutil.rmtree(newjobdir)
+
+    def tearDown(self):
+        shutil.rmtree(self.tmpdir)
 
 
 if __name__ == "__main__":
