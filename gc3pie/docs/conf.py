@@ -45,6 +45,8 @@ if ON_RTD:
         'arc',
         'arclib',
         'cli',
+        'cli.app',
+        'cli._ext.argparse',
         'lockfile',
         'paramiko',
         'parsedatetime',
