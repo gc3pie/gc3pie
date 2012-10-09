@@ -463,7 +463,12 @@ class BatchSystem(LRMS):
                     # XXX: we should set the `signal` part accordingly
                     job.signal = 0
 
-                return job.state
+                # SLURM's `squeue` command exits with code 0 if the job ID exists
+                # in the database (i.e., a job with that ID has been run) but prints
+                # no output.  In this case, we need to continue and examine the
+                # accounting command output to get the termination status etc.
+                if job.state != Run.State.TERMINATING:
+                    return job.state
 
             # In some batch systems, jobs disappear from qstat
             # output as soon as they are finished. In these cases,
